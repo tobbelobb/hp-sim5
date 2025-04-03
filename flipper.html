@@ -1292,6 +1292,7 @@
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
         world.addComponent(obs1, new PositionComponent(0.25, 0.6));
+        world.addComponent(obs1, new MassComponent(-1.0));
         world.addComponent(obs1, new RadiusComponent(0.1));
         world.addComponent(obs1, new ObstaclePushComponent(obsPush));
         world.addComponent(obs1, new RenderableComponent('circle', obsColor));
@@ -1299,6 +1300,7 @@
         const obs2 = world.createEntity();
         world.addComponent(obs2, new ObstacleTagComponent());
         world.addComponent(obs2, new PositionComponent(0.75, 0.5));
+        world.addComponent(obs2, new MassComponent(-1.0));
         world.addComponent(obs2, new RadiusComponent(0.1));
         world.addComponent(obs2, new ObstaclePushComponent(obsPush));
         world.addComponent(obs2, new RenderableComponent('circle', obsColor));
@@ -1306,6 +1308,7 @@
         const obs3 = world.createEntity();
         world.addComponent(obs3, new ObstacleTagComponent());
         world.addComponent(obs3, new PositionComponent(0.7, 1.0));
+        world.addComponent(obs3, new MassComponent(-1.0));
         world.addComponent(obs3, new RadiusComponent(0.12));
         world.addComponent(obs3, new ObstaclePushComponent(obsPush));
         world.addComponent(obs3, new RenderableComponent('circle', obsColor));
@@ -1313,6 +1316,7 @@
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
         world.addComponent(obs4, new PositionComponent(0.2, 1.2));
+        world.addComponent(obs4, new MassComponent(-1.0));
         world.addComponent(obs4, new RadiusComponent(0.1));
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
         world.addComponent(obs4, new RenderableComponent('circle', obsColor));
@@ -1349,8 +1353,8 @@
 
 
         // --- Cable Setup ---
-        // Connect: ball1 -> obs4 -> obs3 -> ball2
-        // Entities involved: ball1, obs4, obs3, ball2
+        // Connect: ball2 -> obs4 -> obs3 -> ball1
+        // Entities involved: ball2, obs4, obs3, ball1
         // Obstacles need WheelOrientation and CableLink (rolling)
         // Balls need CableLink (attachment or rolling?) Let's use attachment for simplicity.
 
@@ -1366,14 +1370,14 @@
         // Create Cable Joint Entities
         const initialRestLengthSegment = 0.2; // Initial guess, will be dynamic
 
-        const joint1 = world.createEntity(); // ball1 <-> obs4
-        world.addComponent(joint1, new CableJointComponent(ball1, obs4, initialRestLengthSegment));
+        const joint1 = world.createEntity(); // ball2 <-> obs4
+        world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialRestLengthSegment));
 
         const joint2 = world.createEntity(); // obs4 <-> obs3
         world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialRestLengthSegment));
 
-        const joint3 = world.createEntity(); // obs3 <-> ball2
-        world.addComponent(joint3, new CableJointComponent(obs3, ball2, initialRestLengthSegment));
+        const joint3 = world.createEntity(); // obs3 <-> ball1
+        world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialRestLengthSegment));
 
         // Optional: Create Cable Path Entity
         const cablePath = world.createEntity();
