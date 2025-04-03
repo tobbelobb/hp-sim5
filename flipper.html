@@ -1415,8 +1415,10 @@
 
         // Add necessary components to obstacles (assuming they act as wheels)
         world.addComponent(obs4, new WheelOrientationComponent(true)); // Clockwise preference
+        world.addComponent(obs4, new OrientationComponent());
         world.addComponent(obs4, new CableLinkComponent('rolling'));
         world.addComponent(obs3, new WheelOrientationComponent(true)); // Clockwise preference
+        world.addComponent(obs3, new OrientationComponent());
         world.addComponent(obs3, new CableLinkComponent('rolling'));
         // Add CableLink to balls (as attachment points)
         world.addComponent(ball1, new CableLinkComponent('attachment'));
