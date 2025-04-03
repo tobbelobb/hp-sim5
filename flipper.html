@@ -1264,6 +1264,33 @@
 
                  this.c.restore(); // Restore context state
             }
+
+            // Render Cable Joints
+            const jointEntities = world.query([CableJointComponent, RenderableComponent]);
+            this.c.strokeStyle = '#FFFF00'; // Default yellow, could use component color
+            this.c.lineWidth = 2;
+            for (const entityId of jointEntities) {
+                const jointComp = world.getComponent(entityId, CableJointComponent);
+                const renderComp = world.getComponent(entityId, RenderableComponent); // Get render comp for color/shape check
+
+                if (!jointComp.isActive || renderComp.shape !== 'line') continue; // Skip inactive or non-line joints
+
+                // Use cached world attachment points
+                const pA = jointComp.attachmentPointA_world;
+                const pB = jointComp.attachmentPointB_world;
+
+                // Check if points are valid (initialized)
+                if (pA.lengthSq() > 0 && pB.lengthSq() > 0) {
+                    this.c.strokeStyle = renderComp.color; // Use component's color
+                    this.c.beginPath();
+                    this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+                    this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+                    this.c.stroke();
+                }
+            }
+            this.c.lineWidth = 1; // Reset line width
+
+
         }
     }
 
@@ -1429,12 +1456,15 @@
 
         const joint1 = world.createEntity(); // ball2 <-> obs4
         world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialRestLengthSegment));
+        world.addComponent(joint1, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
         const joint2 = world.createEntity(); // obs4 <-> obs3
         world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialRestLengthSegment));
+        world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
         const joint3 = world.createEntity(); // obs3 <-> ball1
         world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialRestLengthSegment));
+        world.addComponent(joint3, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
         // Optional: Create Cable Path Entity
         const cablePath = world.createEntity();
