@@ -466,27 +466,32 @@
                 // Let's assume the preference dictates the "upper" or "lower" tangent relative to the center line.
                 // If both CW, maybe they prefer the tangent that wraps "under" (alpha - (pi/2 - phi))?
                 // If both CCW, maybe they prefer the tangent that wraps "over" (alpha + (pi/2 - phi))?
-                // This needs a clearer definition based on Fig 3/4. Let's try one version:
-                if (wheelOrientation1.clockwisePreference) { // Assume CW prefers "lower" tangent
-                    alpha1 = alpha - (Math.PI / 2 - phi);
-                    alpha2 = alpha - (Math.PI / 2 - phi);
-                } else { // Assume CCW prefers "upper" tangent
-                     alpha1 = alpha + (Math.PI / 2 - phi);
-                     alpha2 = alpha + (Math.PI / 2 - phi);
+                // Let's try removing the PI/2 based on geometric intuition (radius angle = alpha +/- phi)
+                // The sign depends on preference (upper/lower tangent).
+                if (wheelOrientation1.clockwisePreference) { // Assume CW prefers "lower" tangent (angle < alpha)
+                    alpha1 = alpha - phi; // Was alpha - (PI/2 - phi)
+                    alpha2 = alpha - phi; // Was alpha - (PI/2 - phi)
+                } else { // Assume CCW prefers "upper" tangent (angle > alpha)
+                     alpha1 = alpha + phi; // Was alpha + (PI/2 - phi)
+                     alpha2 = alpha + phi; // Was alpha + (PI/2 - phi)
                 }
-                 // TODO: Verify this interpretation of preference vs tangent selection.
+                 // TODO: Verify this interpretation. Signs might need further adjustment based on r1 vs r2.
 
             } else {
                 // Internal tangents (crossed)
                 // Again, preference should pick one of the two internal tangents.
                 // If C1 is CW and C2 is CCW, which crossed tangent is preferred?
-                // Let's try one combination based on the formula structure:
+                // Let's try removing the PI/2 here as well.
+                // For internal tangents, the offsets phi add/subtract differently.
+                // Geometry: angle = alpha +/- phi. Which sign depends on preference combo.
                  if (wheelOrientation1.clockwisePreference) { // C1 CW, C2 CCW
-                    alpha1 = alpha - (Math.PI / 2 + phi); // C1 angle
-                    alpha2 = alpha + (Math.PI / 2 + phi); // C2 angle (opposite side)
+                    // C1 wants lower tangent relative to alpha, C2 wants upper tangent relative to alpha?
+                    alpha1 = alpha - phi; // Was alpha - (PI/2 + phi)
+                    alpha2 = alpha + phi; // Was alpha + (PI/2 + phi)
                 } else { // C1 CCW, C2 CW
-                    alpha1 = alpha + (Math.PI / 2 + phi); // C1 angle
-                    alpha2 = alpha - (Math.PI / 2 + phi); // C2 angle (opposite side)
+                    // C1 wants upper, C2 wants lower?
+                    alpha1 = alpha + phi; // Was alpha + (PI/2 + phi)
+                    alpha2 = alpha - phi; // Was alpha - (PI/2 + phi)
                 }
                  // TODO: Verify this interpretation.
             }
@@ -526,11 +531,13 @@
             // Angle of the radius connecting p_circle to the tangent point.
             // This is alpha +/- (PI/2 - phi) based on geometry.
             let tangent_point_angle_on_circle;
-            // Determine which tangent based on wheel preference (e.g., does it prefer cable wrapping CW or CCW?)
-            if (!wheelOrientation.clockwisePreference) { // Prefers CCW wrapping ("upper" tangent relative to alpha)
-                 tangent_point_angle_on_circle = alpha + (Math.PI / 2.0 - phi);
-            } else { // Prefers CW wrapping ("lower" tangent relative to alpha)
-                 tangent_point_angle_on_circle = alpha - (Math.PI / 2.0 - phi);
+            // Determine which tangent based on wheel preference. Let's try swapping the logic.
+            // Original: CCW -> alpha + (PI/2 - phi), CW -> alpha - (PI/2 - phi)
+            // Swapped:
+            if (wheelOrientation.clockwisePreference) { // Prefers CW wrapping
+                 tangent_point_angle_on_circle = alpha + (Math.PI / 2.0 - phi); // Was alpha - ...
+            } else { // Prefers CCW wrapping
+                 tangent_point_angle_on_circle = alpha - (Math.PI / 2.0 - phi); // Was alpha + ...
             }
 
             const a_circle = new Vector2(
