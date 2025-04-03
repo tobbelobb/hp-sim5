@@ -1093,7 +1093,9 @@
                 const invMassB = massB > 0 ? 1.0 / massB : 0.0;
                 const totalInvMass = invMassA + invMassB;
 
-                if (totalInvMass <= 0.0) continue; // Both objects immovable
+                if (totalInvMass <= 0.0) {
+                  continue; // Both objects immovable
+                }
 
                 // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
                 const pAttachA = joint.attachmentPointA_world;
@@ -1122,8 +1124,8 @@
                     // deltaP_B = -(invMassB / totalInvMass) * error * dir
 
                     // Calculate the displacement vectors
-                    const deltaA = dir.clone().scale((invMassA / totalInvMass) * error);
-                    const deltaB = dir.clone().scale(-(invMassB / totalInvMass) * error);
+                    const deltaA = dir.clone().scale((invMassA / totalInvMass) * error * 10.0);
+                    const deltaB = dir.clone().scale(-(invMassB / totalInvMass) * error * 10.0);
 
                     // Apply displacement to the entity positions.
                     // This assumes the attachment point moves rigidly with the center.
@@ -1363,7 +1365,7 @@
         const ball1 = world.createEntity();
         world.addComponent(ball1, new BallTagComponent());
         world.addComponent(ball1, new PositionComponent(0.92, 0.5));
-        world.addComponent(ball1, new VelocityComponent(-0.2, 3.5));
+        world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
         world.addComponent(ball1, new RadiusComponent(ballRadius));
         world.addComponent(ball1, new MassComponent(ballMass));
         world.addComponent(ball1, new RestitutionComponent(ballRestitution));
@@ -1373,7 +1375,7 @@
         const ball2 = world.createEntity();
         world.addComponent(ball2, new BallTagComponent());
         world.addComponent(ball2, new PositionComponent(0.08, 0.5));
-        world.addComponent(ball2, new VelocityComponent(0.2, 3.5));
+        world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
         world.addComponent(ball2, new RadiusComponent(ballRadius));
         world.addComponent(ball2, new MassComponent(ballMass));
         world.addComponent(ball2, new RestitutionComponent(ballRestitution));
