@@ -498,6 +498,51 @@
             return { a1, a2 };
         }
 
+        // Helper: Calculate tangent points between a point and a circle (Algorithm 3 from paper)
+        _tangentPointCircle(p_attach, p_circle, r_circle, wheelOrientation) {
+            const dVec = new Vector2().subtractVectors(p_circle, p_attach);
+            const dSq = dVec.lengthSq();
+
+            if (dSq <= r_circle * r_circle + 1e-9) { // Add tolerance
+                // Point is inside or on the circle, no unique tangent from the outside.
+                // Return the point on the circle circumference closest to the attachment point.
+                console.warn("Cable tangent calculation: Attachment point inside or on rolling circle.");
+                const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0);
+                // The attachment point itself is p_attach.
+                // The point on the circle is p_circle + dir * (-r_circle)
+                return {
+                    a_attach: p_attach.clone(), // Attachment point remains the same
+                    a_circle: p_circle.clone().add(dir, -r_circle) // Point on circumference towards p_attach
+                };
+            }
+
+            const d = Math.sqrt(dSq);
+            const alpha = Math.atan2(dVec.y, dVec.x); // Angle from p_attach to p_circle
+            // Angle between (p_attach -> p_circle) line and tangent line, at p_attach
+            const phi = Math.asin(r_circle / d);
+
+            // Angle of the radius connecting p_circle to the tangent point.
+            // This is alpha +/- (PI/2 - phi) based on geometry.
+            let tangent_point_angle_on_circle;
+            // Determine which tangent based on wheel preference (e.g., does it prefer cable wrapping CW or CCW?)
+            if (!wheelOrientation.clockwisePreference) { // Prefers CCW wrapping ("upper" tangent relative to alpha)
+                 tangent_point_angle_on_circle = alpha + (Math.PI / 2.0 - phi);
+            } else { // Prefers CW wrapping ("lower" tangent relative to alpha)
+                 tangent_point_angle_on_circle = alpha - (Math.PI / 2.0 - phi);
+            }
+
+            const a_circle = new Vector2(
+                p_circle.x + r_circle * Math.cos(tangent_point_angle_on_circle),
+                p_circle.y + r_circle * Math.sin(tangent_point_angle_on_circle)
+            );
+
+            return {
+                a_attach: p_attach.clone(), // Attachment point doesn't change
+                a_circle: a_circle          // Calculated tangent point on the circle
+            };
+        }
+
+
         // Helper: Calculate distance moved along circle surface between two angles
         _arcLength(radius, angle_start, angle_end) {
              let deltaAngle = angle_end - angle_start;
@@ -579,32 +624,42 @@
                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
                     // linkB.prevAttachmentPointWorld.set(attachmentB_current);
 
-                } else if (linkA.type === 'attachment' && linkB.type === 'rolling' && radiusB && wheelOrientB) {
+                } else if (linkA.type === 'attachment' && linkB.type === 'rolling' && radiusB && wheelOrientB && orientCompB) {
                     // --- Attachment <-> Rolling ---
-                    // Attachment point A is just the position of entity A
-                    attachmentA_current = posA.clone();
-                    s1 = 0; // No surface travel on attachment point
+                    const tangents = this._tangentPointCircle(posA, posB, radiusB, wheelOrientB);
+                    attachmentA_current = tangents.a_attach; // This is just posA
+                    attachmentB_current = tangents.a_circle;
+                    s1 = 0; // No surface travel on attachment point A
 
-                    // Find tangent from point A to circle B
-                    // Simplified: Use Algorithm 3 logic (Tangent Point Circle) - needs implementation
-                    // Placeholder: Use center of B for now
-                    console.warn(`CableAttachmentUpdateSystem: Attachment-Rolling tangent not fully implemented for joint ${jointId}`);
-                    attachmentB_current = posB.clone(); // Placeholder
-                    s2 = 0; // Placeholder
+                    // Calculate s2 based on circle B's rotation
+                    if (prevAttachB_world.lengthSq() > 0) {
+                         const anglePrevB = Math.atan2(prevAttachB_world.y - posB.y, prevAttachB_world.x - posB.x);
+                         const angleCurrB = Math.atan2(attachmentB_current.y - posB.y, attachmentB_current.x - posB.x);
+                         s2 = this._arcLength(radiusB, anglePrevB, angleCurrB);
+                    } else {
+                         s2 = 0; // Initialize s2 if no previous point
+                    }
 
                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
-                    // linkB.prevAttachmentPointWorld.set(attachmentB_current); // Update B's prev point
+                    // linkB.prevAttachmentPointWorld.set(attachmentB_current); // Moved after rest length update
 
-                } else if (linkA.type === 'rolling' && linkB.type === 'attachment' && radiusA && wheelOrientA) {
+                } else if (linkA.type === 'rolling' && linkB.type === 'attachment' && radiusA && wheelOrientA && orientCompA) {
                      // --- Rolling <-> Attachment ---
-                     attachmentB_current = posB.clone();
-                     s2 = 0;
+                     const tangents = this._tangentPointCircle(posB, posA, radiusA, wheelOrientA); // Note order swap
+                     attachmentA_current = tangents.a_circle; // Tangent on circle A
+                     attachmentB_current = tangents.a_attach; // This is just posB
+                     s2 = 0; // No surface travel on attachment point B
 
-                     console.warn(`CableAttachmentUpdateSystem: Rolling-Attachment tangent not fully implemented for joint ${jointId}`);
-                     attachmentA_current = posA.clone(); // Placeholder
-                     s1 = 0; // Placeholder
+                     // Calculate s1 based on circle A's rotation
+                     if (prevAttachA_world.lengthSq() > 0) {
+                         const anglePrevA = Math.atan2(prevAttachA_world.y - posA.y, prevAttachA_world.x - posA.x);
+                         const angleCurrA = Math.atan2(attachmentA_current.y - posA.y, attachmentA_current.x - posA.x);
+                         s1 = this._arcLength(radiusA, anglePrevA, angleCurrA);
+                     } else {
+                         s1 = 0; // Initialize s1 if no previous point
+                     }
 
-                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Update A's prev point
+                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
                      // linkB.prevAttachmentPointWorld.set(attachmentB_current); // Moved after rest length update
 
                 } else if (linkA.type === 'attachment' && linkB.type === 'attachment') {
