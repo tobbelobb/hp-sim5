@@ -665,14 +665,13 @@
                      attachmentB_current = tangents.a_attach; // This is just posB
                      s2 = 0; // No surface travel on attachment point B
 
-                     // Calculate s1 based on circle A's rotation
-                     if (prevAttachA_world.lengthSq() > 0) {
-                         const anglePrevA = Math.atan2(prevAttachA_world.y - posA.y, prevAttachA_world.x - posA.x);
-                         const angleCurrA = Math.atan2(attachmentA_current.y - posA.y, attachmentA_current.x - posA.x);
-                         s1 = this._arcLength(radiusA, anglePrevA, angleCurrA);
-                     } else {
-                         s1 = 0; // Initialize s1 if no previous point
-                     }
+                     // Calculate s1 based on circle A's BODY rotation
+                     if (orientCompA) {
+                        let deltaAngleA = orientCompA.angle - orientCompA.prevAngle;
+                        s1 = this._signedArcLength(radiusA, deltaAngleA);
+                    } else {
+                        s1 = 0;
+                    }
 
                      // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
                      // linkB.prevAttachmentPointWorld.set(attachmentB_current); // Moved after rest length update
