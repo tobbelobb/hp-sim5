@@ -1510,7 +1510,7 @@
         // Create Cable Joint Entities with correct initial rest lengths
         const joint1 = world.createEntity(); // ball2 <-> obs4
         world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialDist1));
-        world.addComponent(joint1, new RenderableComponent('line', '#FFFF00')); // Yellow line
+        world.addComponent(joint1, new RenderableComponent('line', '#FF0000')); // Red line
 
         const joint2 = world.createEntity(); // obs4 <-> obs3
         world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialDist2));
@@ -1518,7 +1518,7 @@
 
         const joint3 = world.createEntity(); // obs3 <-> ball1
         world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialDist3));
-        world.addComponent(joint3, new RenderableComponent('line', '#FFFF00')); // Yellow line
+        world.addComponent(joint3, new RenderableComponent('line', '#00FF00')); // Green line
 
         // Optional: Create Cable Path Entity
         const cablePath = world.createEntity();
