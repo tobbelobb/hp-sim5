@@ -62,8 +62,4 @@ TODO:
 
 In essence, Cable Joints become another type of constraint that the core physics solver system needs to handle, but they require dedicated pre-solver systems to update their dynamic properties (attachment points and rest length).
 
-
-<task>
-  connect the two balls, obstacle 4 (index 3),
-  and obstacle 3 (index 2) with a cable joint.
-</tasks>
+To test that the cable joints work, connect the two balls, obstacle 4 (index 3), and obstacle 3 (index 2) with a cable.
