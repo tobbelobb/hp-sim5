@@ -513,7 +513,8 @@
                 // The point on the circle is p_circle + dir * (-r_circle)
                 return {
                     a_attach: p_attach.clone(), // Attachment point remains the same
-                    a_circle: p_circle.clone().add(dir, -r_circle) // Point on circumference towards p_attach
+                    // Return point on circumference CLOSEST to p_attach
+                    a_circle: p_circle.clone().add(dir, r_circle)
                 };
             }
 
@@ -1117,12 +1118,25 @@
 
                     // Apply position corrections
                     // TODO: Account for rotation if attachment points are not centers
-                    // Simple correction assuming attachment points move with entity centers:
-                    posA.add(correction, invMassA);
-                    posB.add(correction, -invMassB); // Move in opposite direction
+                    // Apply position corrections based on attachment points.
+                    // This is still an approximation without handling rotation explicitly,
+                    // but it directs the correction based on the constraint points.
+                    // deltaP_A = (invMassA / totalInvMass) * error * dir
+                    // deltaP_B = -(invMassB / totalInvMass) * error * dir
+
+                    // Calculate the displacement vectors
+                    const deltaA = dir.clone().scale((invMassA / totalInvMass) * error);
+                    const deltaB = dir.clone().scale(-(invMassB / totalInvMass) * error);
+
+                    // Apply displacement to the entity positions.
+                    // This assumes the attachment point moves rigidly with the center.
+                    // A more correct PBD solver would handle angular effects.
+                    posA.add(deltaA);
+                    posB.add(deltaB);
+
 
                     // If handling rotation, the correction needs to be applied differently:
-                    // deltaPosA = invMassA * correction
+                    // deltaPosA = invMassA * correction_impulse
                     // deltaPosB = -invMassB * correction
                     // deltaRotA = invInertiaA * cross(radiusVecA, correction)
                     // deltaRotB = -invInertiaB * cross(radiusVecB, correction)
@@ -1453,19 +1467,57 @@
         world.addComponent(ball1, new CableLinkComponent('attachment'));
         world.addComponent(ball2, new CableLinkComponent('attachment'));
 
-        // Create Cable Joint Entities
-        const initialRestLengthSegment = 0.2; // Initial guess, will be dynamic
+        // --- Calculate Initial Cable State ---
+        // Need to compute initial attachment points and rest lengths
+        // Get relevant components
+        const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
+        const link_ball1 = world.getComponent(ball1, CableLinkComponent);
+        const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
+        const link_ball2 = world.getComponent(ball2, CableLinkComponent);
+        const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
+        const radius_obs3 = world.getComponent(obs3, RadiusComponent).radius;
+        const wheel_obs3 = world.getComponent(obs3, WheelOrientationComponent);
+        const link_obs3 = world.getComponent(obs3, CableLinkComponent);
+        const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
+        const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
+        const wheel_obs4 = world.getComponent(obs4, WheelOrientationComponent);
+        const link_obs4 = world.getComponent(obs4, CableLinkComponent);
 
+        // Create a temporary calculator instance (or duplicate logic)
+        const attachmentCalculator = new CableAttachmentUpdateSystem(); // Use its helpers
+
+        // Calculate initial points for joint1 (ball2 attachment <-> obs4 rolling)
+        const initialPoints1 = attachmentCalculator._tangentPointCircle(pos_ball2, pos_obs4, radius_obs4, wheel_obs4);
+        const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+        link_ball2.prevAttachmentPointWorld.set(initialPoints1.a_attach); // Initialize prev point
+        link_obs4.prevAttachmentPointWorld.set(initialPoints1.a_circle);  // Initialize prev point
+
+        // Calculate initial points for joint2 (obs4 rolling <-> obs3 rolling)
+        const initialPoints2 = attachmentCalculator._tangentCircleCircle(pos_obs4, radius_obs4, wheel_obs4, pos_obs3, radius_obs3, wheel_obs3);
+        const initialDist2 = initialPoints2.a1.clone().subtract(initialPoints2.a2).length();
+        // link_obs4 already initialized by joint1, check if consistent? For now, overwrite is fine for init.
+        link_obs4.prevAttachmentPointWorld.set(initialPoints2.a1);
+        link_obs3.prevAttachmentPointWorld.set(initialPoints2.a2); // Initialize prev point
+
+        // Calculate initial points for joint3 (obs3 rolling <-> ball1 attachment)
+        const initialPoints3 = attachmentCalculator._tangentPointCircle(pos_ball1, pos_obs3, radius_obs3, wheel_obs3);
+        const initialDist3 = initialPoints3.a_attach.clone().subtract(initialPoints3.a_circle).length();
+        // link_obs3 already initialized by joint2.
+        link_obs3.prevAttachmentPointWorld.set(initialPoints3.a_circle);
+        link_ball1.prevAttachmentPointWorld.set(initialPoints3.a_attach); // Initialize prev point
+
+
+        // Create Cable Joint Entities with correct initial rest lengths
         const joint1 = world.createEntity(); // ball2 <-> obs4
-        world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialRestLengthSegment));
+        world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialDist1));
         world.addComponent(joint1, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
         const joint2 = world.createEntity(); // obs4 <-> obs3
-        world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialRestLengthSegment));
+        world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialDist2));
         world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
         const joint3 = world.createEntity(); // obs3 <-> ball1
-        world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialRestLengthSegment));
+        world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialDist3));
         world.addComponent(joint3, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
         // Optional: Create Cable Path Entity
