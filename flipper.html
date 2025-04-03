@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ECS Pinball</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #202020; font-family: sans-serif; }
+        canvas { border: 1px solid black; display: block; margin: 10px auto; }
+        #controls { text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        Score: <span id="score">0</span> |
+        <button id="pauseBtn" tabindex="-1">Pause</button>
+        <button id="resetBtn" tabindex="-1">Reset</button>
+    </div>
+    <canvas id="myCanvas"></canvas>
+
+<script>
+
+    // --- Utility: Vector2 ---
+    // (Same as before, keep it separate as it's a fundamental data type)
+    class Vector2 {
+        constructor(x = 0.0, y = 0.0) { this.x = x; this.y = y; }
+        set(v) { this.x = v.x; this.y = v.y; }
+        clone() { return new Vector2(this.x, this.y); }
+        add(v, s = 1.0) { this.x += v.x * s; this.y += v.y * s; return this; }
+        addVectors(a, b) { this.x = a.x + b.x; this.y = a.y + b.y; return this; }
+        subtract(v, s = 1.0) { this.x -= v.x * s; this.y -= v.y * s; return this; }
+        subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
+        length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+        lengthSq() { return this.x * this.x + this.y * this.y; } // Optimization
+        scale(s) { this.x *= s; this.y *= s; return this; }
+        dot(v) { return this.x * v.x + this.y * v.y; }
+        perp() { return new Vector2(-this.y, this.x); }
+        normalize() { const l = this.length(); if (l > 0) this.scale(1.0 / l); return this; }
+    }
+
+    // --- Utility: Geometry ---
+    function closestPointOnSegment(p, a, b) {
+        const ab = new Vector2().subtractVectors(b, a);
+        const ap = new Vector2().subtractVectors(p, a);
+        let t = ap.dot(ab);
+        if (t <= 0.0) return a.clone();
+        const denom = ab.dot(ab);
+        if (t >= denom) return b.clone();
+        t = t / denom;
+        return a.clone().add(ab, t);
+    }
+
+    // --- ECS Core ---
+    class World {
+        constructor() {
+            this.entities = new Map(); // entityId -> Set<ComponentClass>
+            this.components = new Map(); // ComponentClass -> Map<entityId, ComponentInstance>
+            this.nextEntityId = 0;
+            this.systems = [];
+            this.resources = {}; // Global data like gravity, dt
+        }
+
+        createEntity() {
+            const id = this.nextEntityId++;
+            this.entities.set(id, new Set());
+            return id;
+        }
+
+        addComponent(entityId, component) {
+            const componentClass = component.constructor;
+            if (!this.components.has(componentClass)) {
+                this.components.set(componentClass, new Map());
+            }
+            this.components.get(componentClass).set(entityId, component);
+            if (this.entities.has(entityId)) {
+                this.entities.get(entityId).add(componentClass);
+            } else {
+                 console.warn(`Entity ${entityId} does not exist when adding ${componentClass.name}`);
+            }
+        }
+
+        getComponent(entityId, componentClass) {
+            const componentMap = this.components.get(componentClass);
+            return componentMap ? componentMap.get(entityId) : undefined;
+        }
+
+        hasComponent(entityId, componentClass) {
+             const componentMap = this.components.get(componentClass);
+             return componentMap ? componentMap.has(entityId) : false;
+        }
+
+        removeComponent(entityId, componentClass) {
+             const componentMap = this.components.get(componentClass);
+             if (componentMap) {
+                 componentMap.delete(entityId);
+             }
+             const entityComponents = this.entities.get(entityId);
+             if (entityComponents) {
+                 entityComponents.delete(componentClass);
+             }
+        }
+
+        destroyEntity(entityId) {
+            if (!this.entities.has(entityId)) return;
+            for (const componentClass of this.entities.get(entityId)) {
+                this.removeComponent(entityId, componentClass);
+            }
+            this.entities.delete(entityId);
+        }
+
+        query(componentClasses) {
+            const entities = [];
+            if (componentClasses.length === 0) return [];
+
+            // Start with entities having the first component
+            const firstComponentMap = this.components.get(componentClasses[0]);
+            if (!firstComponentMap) return [];
+
+            for (const entityId of firstComponentMap.keys()) {
+                let hasAll = true;
+                for (let i = 1; i < componentClasses.length; i++) {
+                    if (!this.hasComponent(entityId, componentClasses[i])) {
+                        hasAll = false;
+                        break;
+                    }
+                }
+                if (hasAll) {
+                    entities.push(entityId);
+                }
+            }
+            return entities;
+        }
+
+        registerSystem(system) {
+            this.systems.push(system);
+        }
+
+        setResource(name, value) {
+            this.resources[name] = value;
+        }
+
+        getResource(name) {
+            return this.resources[name];
+        }
+
+        clear() {
+             this.entities.clear();
+             this.components.clear();
+             this.nextEntityId = 0;
+             // Keep systems and resources usually
+        }
+
+        update(dt) {
+            const pauseState = this.getResource('pauseState');
+            const isPaused = pauseState ? pauseState.paused : false;
+
+            for (const system of this.systems) {
+                if (system.update && (!system.runInPause && isPaused)) {
+                    continue; // Skip non-pause systems if paused
+                }
+                 if (system.update) {
+                    system.update(this, dt);
+                 }
+            }
+            canvas.focus();
+        }
+    }
+
+    // --- Components (Plain Data) ---
+
+    class PositionComponent { constructor(x = 0, y = 0) { this.pos = new Vector2(x, y); } }
+    class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
+    class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
+    class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
+    class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
+    class GravityAffectedComponent { /* Tag component */ }
+    class BallTagComponent { /* Tag component */ }
+    class ScoredTagComponent { /* Tag component */ }
+    class ObstacleTagComponent { /* Tag component */ }
+    class FlipperTagComponent { /* Tag component */ }
+    class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
+    class ScoreComponent { constructor(score = 0) { this.value = score; } }
+    class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
+
+    class FlipperStateComponent {
+        constructor(length, restAngle, maxRotation, angularVelocity) {
+            this.length = length;
+            this.restAngle = restAngle;
+            this.maxRotation = Math.abs(maxRotation);
+            this.sign = Math.sign(maxRotation); // Direction it rotates
+            this.angularVelocity = angularVelocity;
+            // Dynamic state
+            this.rotation = 0.0; // Current rotation from restAngle
+            this.currentAngularVelocity = 0.0; // Velocity in the last frame
+            this.pressed = false; // Was it activated?
+        }
+    }
+
+    class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
+
+    // Render-specific component (could be more complex)
+    class RenderableComponent {
+        constructor(shape = 'circle', color = '#888888') {
+            this.shape = shape; // 'circle', 'flipper', 'border'
+            this.color = color;
+        }
+    }
+
+    // --- Systems (Logic) ---
+
+    // --- System: Input --- (Simplified Click Handling)
+    class InputSystem {
+         runInPause = true; // Input should work even when paused to unpause/interact
+
+         constructor(canvas) {
+             this.canvas = canvas;
+             this.clicks = [];
+             this.releases = [];
+             this.canvas.setAttribute('tabindex', '0');
+             this.canvas.style.outline = 'none';
+             this.canvas.focus();
+             this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this)); // works for mouse and touch
+             this.canvas.addEventListener('pointerup', this.handlePointerUp.bind(this));
+             this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
+             this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
+         }
+
+         handleKeyup(event) {
+             if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
+                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 if (flipperEntities.length < 2) {
+                   return;
+                 }
+                 var firstPos = world.getComponent(flipperEntities[0], PositionComponent).pos;
+                 var secondPos = world.getComponent(flipperEntities[1], PositionComponent).pos;
+                 if (firstPos.x < secondPos.x) {
+                     if (event.key == 'ArrowLeft') {
+                       this.releases.push(firstPos);
+                     }
+                     if  (event.key == 'ArrowRight') {
+                       this.releases.push(secondPos);
+                     }
+                 } else {
+                     if (event.key == 'ArrowLeft') {
+                       this.releases.push(secondPos);
+                     }
+                     if  (event.key == 'ArrowRight') {
+                       this.releases.push(firstPos);
+                     }
+                 }
+             }
+         }
+
+         handleKeydown(event) {
+             if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
+                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 if (flipperEntities.length < 2) {
+                   return;
+                 }
+                 var firstPos = world.getComponent(flipperEntities[0], PositionComponent).pos;
+                 var secondPos = world.getComponent(flipperEntities[1], PositionComponent).pos;
+                 if (firstPos.x < secondPos.x) {
+                     if (event.key == 'ArrowLeft') {
+                       this.clicks.push(firstPos);
+                     }
+                     if  (event.key == 'ArrowRight') {
+                       this.clicks.push(secondPos);
+                     }
+                 } else {
+                     if (event.key == 'ArrowLeft') {
+                       this.clicks.push(secondPos);
+                     }
+                     if  (event.key == 'ArrowRight') {
+                       this.clicks.push(firstPos);
+                     }
+                 }
+             }
+         }
+
+         handlePointerDown(event) {
+             const rect = this.canvas.getBoundingClientRect();
+             const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
+             const simX = (event.clientX - rect.left) / scale;
+             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+             this.clicks.push(new Vector2(simX, simY));
+         }
+
+         handlePointerUp(event) {
+             const rect = this.canvas.getBoundingClientRect();
+             const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
+             const simX = (event.clientX - rect.left) / scale;
+             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+             this.releases.push(new Vector2(simX, simY));
+         }
+
+         update(world, dt) {
+             if (this.clicks.length === 0 && this.releases.length == 0) return;
+
+             if (this.clicks.length > 0) {
+                 const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
+                 // Find flippers and check if clicked near pivot
+                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 for (const entityId of flipperEntities) {
+                     const pos = world.getComponent(entityId, PositionComponent).pos;
+                     const state = world.getComponent(entityId, FlipperStateComponent);
+                     // Simple distance check to pivot
+                     if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) { // Click near pivot activates
+                          state.pressed = true;
+                     }
+                 }
+             }
+
+             if (this.releases.length > 0) {
+                 const releasePos = this.releases.shift();
+                 // Find flippers and check if released near pivot
+                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 for (const entityId of flipperEntities) {
+                     const pos = world.getComponent(entityId, PositionComponent).pos;
+                     const state = world.getComponent(entityId, FlipperStateComponent);
+                     // Simple distance check to pivot
+                     if (releasePos.clone().subtract(pos).lengthSq() < state.length ** 2) { // release near pivot activates
+                          state.pressed = false;
+                     }
+                 }
+             }
+
+             // Could add logic here to interact with pause button entity if it existed
+         }
+    }
+
+
+    // --- System: Flipper Motion ---
+    class FlipperMotionSystem {
+        runInPause = true;
+        update(world, dt) {
+            const flipperEntities = world.query([FlipperStateComponent]);
+            for (const entityId of flipperEntities) {
+                const state = world.getComponent(entityId, FlipperStateComponent);
+
+                const prevRotation = state.rotation;
+                if (state.pressed) {
+                    state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
+                } else {
+                    state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
+                }
+                // Avoid division by zero if dt is tiny
+                state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
+            }
+        }
+    }
+
+    // --- System: Gravity ---
+    class GravitySystem {
+        runInPause = false;
+        update(world, dt) {
+            const gravity = world.getResource('gravity');
+            if (!gravity) return;
+
+            const entities = world.query([VelocityComponent, GravityAffectedComponent]);
+            for (const entityId of entities) {
+                const velComp = world.getComponent(entityId, VelocityComponent);
+                velComp.vel.add(gravity, dt);
+            }
+        }
+    }
+
+    // --- System: Movement ---
+    class MovementSystem {
+        runInPause = false;
+        update(world, dt) {
+            const entities = world.query([PositionComponent, VelocityComponent]);
+            for (const entityId of entities) {
+                const posComp = world.getComponent(entityId, PositionComponent);
+                const velComp = world.getComponent(entityId, VelocityComponent);
+                posComp.pos.add(velComp.vel, dt);
+            }
+        }
+    }
+
+    // --- System: Collision ---
+    class CollisionSystem {
+        runInPause = false;
+
+        _getFlipperTip(flipperPos, flipperState) {
+             const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+             const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+             return flipperPos.clone().add(dir, flipperState.length);
+        }
+
+        update(world, dt) {
+            const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+            const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+            const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
+            const borderEntities = world.query([BorderComponent]); // Should be only one
+
+            // --- Ball-Ball Collisions ---
+            for (let i = 0; i < ballEntities.length; i++) {
+                for (let j = i + 1; j < ballEntities.length; j++) {
+                    const e1 = ballEntities[i];
+                    const e2 = ballEntities[j];
+
+                    const p1 = world.getComponent(e1, PositionComponent).pos;
+                    const v1 = world.getComponent(e1, VelocityComponent).vel;
+                    const r1 = world.getComponent(e1, RadiusComponent).radius;
+                    const m1 = world.getComponent(e1, MassComponent).mass;
+                    const res1 = world.getComponent(e1, RestitutionComponent).restitution;
+
+                    const p2 = world.getComponent(e2, PositionComponent).pos;
+                    const v2 = world.getComponent(e2, VelocityComponent).vel;
+                    const r2 = world.getComponent(e2, RadiusComponent).radius;
+                    const m2 = world.getComponent(e2, MassComponent).mass;
+                    const res2 = world.getComponent(e2, RestitutionComponent).restitution;
+
+                    const restitution = Math.min(res1, res2);
+                    const dir = new Vector2().subtractVectors(p2, p1);
+                    const dSq = dir.lengthSq();
+                    const rSum = r1 + r2;
+
+                    if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+                    const d = Math.sqrt(dSq);
+                    dir.scale(1.0 / d); // Normalize
+
+                    // Resolve penetration
+                    const corr = (rSum - d) / 2.0;
+                    p1.add(dir, -corr);
+                    p2.add(dir, corr);
+
+                    // Resolve velocity
+                    const vel1_dot = v1.dot(dir);
+                    const vel2_dot = v2.dot(dir);
+
+                    const newV1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2);
+                    const newV2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2);
+
+                    v1.add(dir, newV1_dot - vel1_dot);
+                    v2.add(dir, newV2_dot - vel2_dot);
+                }
+            }
+
+            // --- Ball-Obstacle Collisions ---
+             for (const ballId of ballEntities) {
+                const p1 = world.getComponent(ballId, PositionComponent).pos;
+                const v1 = world.getComponent(ballId, VelocityComponent).vel;
+                const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+                 for (const obsId of obstacleEntities) {
+                     const p2 = world.getComponent(obsId, PositionComponent).pos;
+                     const r2 = world.getComponent(obsId, RadiusComponent).radius;
+                     const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
+
+                     const dir = new Vector2().subtractVectors(p1, p2);
+                     const dSq = dir.lengthSq();
+                     const rSum = r1 + r2;
+
+                     if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+                     const d = Math.sqrt(dSq);
+                     dir.scale(1.0 / d); // Normalize
+
+                     // Resolve penetration
+                     const corr = rSum - d;
+                     p1.add(dir, corr);
+
+                     // Resolve velocity (simple push)
+                     const v_dot = v1.dot(dir);
+                     v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
+
+                     // Add ScoredTagComponent to the ball that scored
+                     world.addComponent(ballId, new ScoredTagComponent());
+                 }
+             }
+
+
+             // --- Ball-Flipper Collisions ---
+            for (const ballId of ballEntities) {
+                const p1 = world.getComponent(ballId, PositionComponent).pos;
+                const v1 = world.getComponent(ballId, VelocityComponent).vel;
+                const r1 = world.getComponent(ballId, RadiusComponent).radius;
+                // Ball restitution handled in border/ball-ball
+
+                 for (const flipId of flipperEntities) {
+                     const fp = world.getComponent(flipId, PositionComponent).pos;
+                     const fr = world.getComponent(flipId, RadiusComponent).radius; // Flipper thickness/radius
+                     const fs = world.getComponent(flipId, FlipperStateComponent);
+                     // Note: Flipper restitution isn't used in the original logic this way,
+                     // it simply imparts surface velocity. We'll stick to that.
+
+                     const tip = this._getFlipperTip(fp, fs);
+                     const closest = closestPointOnSegment(p1, fp, tip);
+
+                     const dir = new Vector2().subtractVectors(p1, closest);
+                     const dSq = dir.lengthSq();
+                     const rSum = r1 + fr;
+
+                     if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+                     const d = Math.sqrt(dSq);
+                     dir.scale(1.0 / d); // Normalize
+
+                     // Resolve penetration
+                     const corr = rSum - d;
+                     p1.add(dir, corr);
+
+                     // Resolve velocity - Calculate surface velocity at contact point
+                     const radiusVec = closest.clone().subtract(fp); // Vector from pivot to contact point
+                     // Add the penetration correction offset relative to the pivot
+                     const contactPointOnFlipperSurface = fp.clone().add(radiusVec).add(dir, -fr); // Approx point on flipper surface
+                     const radiusToSurface = contactPointOnFlipperSurface.subtract(fp);
+
+
+                     // Velocity of the flipper surface at the contact point = w x r (angular velocity cross radius vector)
+                     // In 2D, (0,0,w) x (rx, ry, 0) = (-w*ry, w*rx, 0)
+                     const surfaceVel = new Vector2(-fs.currentAngularVelocity * radiusToSurface.y, fs.currentAngularVelocity * radiusToSurface.x);
+
+                     // Project ball velocity and surface velocity onto the collision normal
+                     const v_dot = v1.dot(dir);
+                     const surfVel_dot = surfaceVel.dot(dir);
+
+                     // Simple model: Make the ball's normal velocity match the flipper's surface normal velocity
+                     // This effectively means v_new_dot = surfVel_dot
+                     // More physically plausible might involve restitution e = (v_new_dot - surfVel_dot) / (surfVel_dot - v_dot)
+                     // But sticking to original logic:
+                     v1.add(dir, surfVel_dot - v_dot);
+
+                 }
+            }
+
+            // --- Ball-Border Collisions ---
+             if (borderEntities.length > 0) {
+                 const borderId = borderEntities[0]; // Assume only one border
+                 const borderComp = world.getComponent(borderId, BorderComponent);
+                 const borderPoints = borderComp.points;
+
+                 if (borderPoints.length >= 3) {
+                     for (const ballId of ballEntities) {
+                         const p1 = world.getComponent(ballId, PositionComponent).pos;
+                         const v1 = world.getComponent(ballId, VelocityComponent).vel;
+                         const r1 = world.getComponent(ballId, RadiusComponent).radius;
+                         const res1 = world.getComponent(ballId, RestitutionComponent).restitution;
+
+                         let minDistSq = Infinity;
+                         let closestSegPoint = new Vector2();
+                         let edgeNormal = new Vector2();
+                         let edgeStart = null;
+                         let edgeEnd = null;
+
+                         // Find closest point on the entire border polygon
+                         for (let i = 0; i < borderPoints.length; i++) {
+                             const a = borderPoints[i];
+                             const b = borderPoints[(i + 1) % borderPoints.length];
+                             const closestPtOnSeg = closestPointOnSegment(p1, a, b);
+                             const distSq = p1.clone().subtract(closestPtOnSeg).lengthSq();
+
+                             if (distSq < minDistSq) {
+                                 minDistSq = distSq;
+                                 closestSegPoint.set(closestPtOnSeg);
+                                 edgeStart = a;
+                                 edgeEnd = b;
+                             }
+                         }
+
+                         if (minDistSq > r1 * r1) continue; // Not colliding
+
+                         // Calculate normal (outward-pointing assuming clockwise vertices)
+                         const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
+                         const normal = edgeVec.perp().normalize(); // Points outwards for CW polygon
+
+                         // Check if the ball center is outside the border (it should be!)
+                         // If the closest point is a vertex, the normal needs careful handling,
+                         // but for simple penetration resolution, using the segment normal is often okay.
+                         const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
+                         let collisionNormal = ballToClosest.clone();
+                         if (collisionNormal.lengthSq() < 1e-9) {
+                             // Ball center is exactly on the border segment, use edge normal
+                             collisionNormal.set(normal);
+                         } else {
+                              collisionNormal.normalize();
+                         }
+
+
+                         // Ensure normal points from border towards ball
+                         // Check if ball is roughly 'inside' the normal direction from the closest point
+                         if (ballToClosest.dot(normal) < 0) {
+                            // Ball might be inside corner, use segment normal but check distance
+                            collisionNormal.set(normal); // Use segment normal for resolution
+                         }
+
+
+                         const dist = Math.sqrt(minDistSq);
+
+                         // Resolve penetration
+                         const penetration = r1 - dist;
+                         if (penetration > 0) {
+                             p1.add(collisionNormal, penetration);
+                         }
+
+                         // Resolve velocity
+                         const v_dot = v1.dot(collisionNormal);
+                         if (v_dot < 0) { // Only apply restitution if moving towards the wall
+                             const v_new_dot = -v_dot * res1; // Reflect velocity component
+                             v1.add(collisionNormal, v_new_dot - v_dot);
+                         }
+                     }
+                 }
+            }
+        } // end update
+    }
+
+    class ScoreSystem {
+        runInPause = false;
+
+        update(world, dt) {
+            // One entity is holding the global score
+            const scoreEntity = world.query([ScoreComponent])[0]; // Shold be only one scoreEntity
+            const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
+
+            // Multiple entities might have scored since the previous update
+            const scoredEntities = world.query([ScoredTagComponent]);
+            for (const scoredId of scoredEntities) {
+               world.removeComponent(scoredId, ScoredTagComponent);
+               scoreComp.value++;
+            }
+        }
+    }
+
+
+    // --- System: Score Display ---
+    class ScoreDisplaySystem {
+        runInPause = true; // Score should update even if paused? Or maybe not? Your call.
+        constructor(elementId) {
+            this.scoreElement = document.getElementById(elementId);
+        }
+        update(world, dt) {
+            const scoreEntity = world.query([ScoreComponent])[0]; // Shold be only one scoreEntity
+            if (scoreEntity !== undefined && this.scoreElement) {
+                const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
+                this.scoreElement.textContent = scoreComp.value.toString();
+            }
+        }
+    }
+
+    // --- System: Rendering ---
+    class RenderSystem {
+        runInPause = true; // Always render
+        constructor(canvas, cScale, simHeight) {
+            this.canvas = canvas;
+            this.c = canvas.getContext("2d");
+            this.cScale = cScale;
+            this.simHeight = simHeight; // Needed for y-flipping
+        }
+
+        // Coordinate transformation helpers
+        cX(x) { return x * this.cScale; }
+        cY(y) { return this.canvas.height - y * this.cScale; }
+
+        drawDisc(x, y, radius) {
+            this.c.beginPath();
+            this.c.arc(x, y, radius, 0.0, 2.0 * Math.PI);
+            this.c.closePath();
+            this.c.fill();
+        }
+
+        update(world, dt) {
+            this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // Render Border
+            const borderEntities = world.query([BorderComponent, RenderableComponent]);
+            if (borderEntities.length > 0) {
+                 const borderComp = world.getComponent(borderEntities[0], BorderComponent);
+                 const renderComp = world.getComponent(borderEntities[0], RenderableComponent);
+                 const points = borderComp.points;
+                 if (points.length >= 2) {
+                    this.c.strokeStyle = renderComp.color;
+                    this.c.lineWidth = 5; // Make this a component property?
+                    this.c.beginPath();
+                    let v = points[0];
+                    this.c.moveTo(this.cX(v.x), this.cY(v.y));
+                    for (let i = 1; i < points.length + 1; i++) {
+                        v = points[i % points.length];
+                        this.c.lineTo(this.cX(v.x), this.cY(v.y));
+                    }
+                    this.c.stroke();
+                    this.c.lineWidth = 1;
+                 }
+            }
+
+
+            // Render Balls
+            const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
+            for (const entityId of ballEntities) {
+                const posComp = world.getComponent(entityId, PositionComponent);
+                const radiusComp = world.getComponent(entityId, RadiusComponent);
+                const renderComp = world.getComponent(entityId, RenderableComponent);
+
+                this.c.fillStyle = renderComp.color;
+                this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
+            }
+
+            // Render Obstacles
+            const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
+            for (const entityId of obstacleEntities) {
+                 const posComp = world.getComponent(entityId, PositionComponent);
+                 const radiusComp = world.getComponent(entityId, RadiusComponent);
+                 const renderComp = world.getComponent(entityId, RenderableComponent);
+
+                 this.c.fillStyle = renderComp.color;
+                 this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
+            }
+
+
+            // Render Flippers
+            const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RenderableComponent]);
+            for (const entityId of flipperEntities) {
+                 const posComp = world.getComponent(entityId, PositionComponent);
+                 const radiusComp = world.getComponent(entityId, RadiusComponent); // Flipper thickness
+                 const stateComp = world.getComponent(entityId, FlipperStateComponent);
+                 const renderComp = world.getComponent(entityId, RenderableComponent);
+
+                 this.c.fillStyle = renderComp.color;
+
+                 const pivotX = this.cX(posComp.pos.x);
+                 const pivotY = this.cY(posComp.pos.y);
+                 const angle = stateComp.restAngle + stateComp.sign * stateComp.rotation;
+
+                 this.c.save(); // Save context state
+                 this.c.translate(pivotX, pivotY);
+                 this.c.rotate(-angle); // Rotate Coordinate System (negative because canvas y is down)
+
+                 // Draw the flipper rectangle and circles
+                 const flipperDrawLength = stateComp.length * this.cScale;
+                 const flipperDrawRadius = radiusComp.radius * this.cScale;
+
+                 this.c.fillRect(0.0, -flipperDrawRadius, flipperDrawLength, 2.0 * flipperDrawRadius);
+                 this.drawDisc(0, 0, flipperDrawRadius); // At pivot
+                 this.drawDisc(flipperDrawLength, 0, flipperDrawRadius); // At tip
+
+                 this.c.restore(); // Restore context state
+            }
+        }
+    }
+
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    canvas.width = window.innerWidth - 20;
+    canvas.height = window.innerHeight - 100;
+
+    const flipperHeight = 1.7; // Target simulation height for scaling
+    const cScale = canvas.height / flipperHeight;
+    const simWidth = canvas.width / cScale;
+    const simHeight = canvas.height / cScale;
+
+    let world = new World();
+
+    function setupScene() {
+         world.clear(); // Clear entities and components
+
+        // --- Resources ---
+        world.setResource('gravity', new Vector2(0.0, -3.0));
+        world.setResource('dt', 1.0 / 60.0);
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
+        // Create a component for pause state and store it as a resource for easy access
+        world.setResource('pauseState', new PauseStateComponent(true));
+
+
+        // --- Entities and Components ---
+
+        const offset = 0.02;
+
+        // Border Entity (Clockwise points for outward normal calc)
+        const borderEntity = world.createEntity();
+        const borderPoints = [
+             new Vector2(0.74, 0.0),
+             new Vector2(0.74, 0.25),
+             new Vector2(1.0 - offset, 0.4),
+             new Vector2(1.0 - offset, flipperHeight - offset),
+             new Vector2(offset, flipperHeight - offset),
+             new Vector2(offset, 0.4),
+             new Vector2(0.26, 0.25),
+             new Vector2(0.26, 0.0)
+        ];
+        world.addComponent(borderEntity, new BorderComponent(borderPoints));
+        world.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
+
+
+        // Ball Entities
+        const ballRadius = 0.03;
+        const ballMass = Math.PI * ballRadius * ballRadius;
+        const ballRestitution = 0.4; // Slightly higher for more bounce
+
+        const ball1 = world.createEntity();
+        world.addComponent(ball1, new BallTagComponent());
+        world.addComponent(ball1, new PositionComponent(0.92, 0.5));
+        world.addComponent(ball1, new VelocityComponent(-0.2, 3.5));
+        world.addComponent(ball1, new RadiusComponent(ballRadius));
+        world.addComponent(ball1, new MassComponent(ballMass));
+        world.addComponent(ball1, new RestitutionComponent(ballRestitution));
+        world.addComponent(ball1, new GravityAffectedComponent());
+        world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
+
+        const ball2 = world.createEntity();
+        world.addComponent(ball2, new BallTagComponent());
+        world.addComponent(ball2, new PositionComponent(0.08, 0.5));
+        world.addComponent(ball2, new VelocityComponent(0.2, 3.5));
+        world.addComponent(ball2, new RadiusComponent(ballRadius));
+        world.addComponent(ball2, new MassComponent(ballMass));
+        world.addComponent(ball2, new RestitutionComponent(ballRestitution));
+        world.addComponent(ball2, new GravityAffectedComponent());
+        world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
+
+        // Obstacle Entities
+        const obsColor = "#FF8000";
+        const obsPush = 2.0;
+
+        const obs1 = world.createEntity();
+        world.addComponent(obs1, new ObstacleTagComponent());
+        world.addComponent(obs1, new PositionComponent(0.25, 0.6));
+        world.addComponent(obs1, new RadiusComponent(0.1));
+        world.addComponent(obs1, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs1, new RenderableComponent('circle', obsColor));
+
+        const obs2 = world.createEntity();
+        world.addComponent(obs2, new ObstacleTagComponent());
+        world.addComponent(obs2, new PositionComponent(0.75, 0.5));
+        world.addComponent(obs2, new RadiusComponent(0.1));
+        world.addComponent(obs2, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs2, new RenderableComponent('circle', obsColor));
+
+        const obs3 = world.createEntity();
+        world.addComponent(obs3, new ObstacleTagComponent());
+        world.addComponent(obs3, new PositionComponent(0.7, 1.0));
+        world.addComponent(obs3, new RadiusComponent(0.12));
+        world.addComponent(obs3, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs3, new RenderableComponent('circle', obsColor));
+
+        const obs4 = world.createEntity();
+        world.addComponent(obs4, new ObstacleTagComponent());
+        world.addComponent(obs4, new PositionComponent(0.2, 1.2));
+        world.addComponent(obs4, new RadiusComponent(0.1));
+        world.addComponent(obs4, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs4, new RenderableComponent('circle', obsColor));
+
+
+        // Flipper Entities
+        const flipRadius = 0.03; // Thickness
+        const flipLength = 0.2;
+        const flipMaxRotation = 1.0; // Radians
+        const flipRestAngle = 0.5; // Radians from horizontal
+        const flipAngularVelocity = 20.0; // Radians per second
+        const flipColor = "#FF0000";
+        const flipRestitution = 0.2;
+
+        const flipper1 = world.createEntity();
+        world.addComponent(flipper1, new FlipperTagComponent());
+        world.addComponent(flipper1, new PositionComponent(0.26, 0.22));
+        world.addComponent(flipper1, new RadiusComponent(flipRadius));
+        world.addComponent(flipper1, new FlipperStateComponent(flipLength, -flipRestAngle, flipMaxRotation, flipAngularVelocity));
+        world.addComponent(flipper1, new RestitutionComponent(flipRestitution));
+        world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
+
+        const flipper2 = world.createEntity();
+        world.addComponent(flipper2, new FlipperTagComponent());
+        world.addComponent(flipper2, new PositionComponent(0.74, 0.22));
+        world.addComponent(flipper2, new RadiusComponent(flipRadius));
+        world.addComponent(flipper2, new FlipperStateComponent(flipLength, Math.PI + flipRestAngle, -flipMaxRotation, flipAngularVelocity));
+        world.addComponent(flipper2, new RestitutionComponent(flipRestitution));
+        world.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
+
+        // Score Entity
+        const scoreEntity = world.createEntity();
+        world.addComponent(scoreEntity, new ScoreComponent(0));
+
+        // --- Systems Registration (Order Matters!) ---
+        if (world.systems.length === 0) { // Only register systems once
+             world.registerSystem(new InputSystem(canvas));
+             world.registerSystem(new FlipperMotionSystem());
+             world.registerSystem(new GravitySystem());
+             world.registerSystem(new MovementSystem());
+             world.registerSystem(new CollisionSystem()); // Collision response modifies pos/vel before render. Also tags which balls scored this round.
+             world.registerSystem(new ScoreSystem());
+             world.registerSystem(new ScoreDisplaySystem('score'));
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight));
+        }
+
+         // Update button text based on initial pause state
+         const pauseState = world.getResource('pauseState');
+         pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+    }
+
+
+    // --- Main Loop ---
+    let lastTime = 0;
+    function gameLoop(currentTime) {
+        const dt = world.getResource('dt'); // Use fixed timestep for stability
+        // Alternative: Calculate actual elapsed time
+        // const elapsed = (currentTime - lastTime) / 1000.0;
+        // lastTime = currentTime;
+        // const dt = Math.min(elapsed, 1.0 / 30.0); // Clamp max dt
+
+        world.update(dt);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Event Listeners ---
+    pauseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) {
+            pauseState.paused = !pauseState.paused;
+            pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+        }
+    });
+
+    resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setupScene(); // Re-initialize the world state
+        // Ensure pause state resource is reset if needed
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) pauseState.paused = true; // Start paused after reset
+        pauseBtn.textContent = "Resume";
+    });
+
+    // --- Start ---
+    setupScene();
+    requestAnimationFrame(gameLoop);
+
+</script>
+
+</body>
+</html>
