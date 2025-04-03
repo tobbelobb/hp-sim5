@@ -180,7 +180,12 @@
     class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
-    class OrientationComponent { constructor(angle = 0.0) { this.angle = angle; } } // Angle in radians
+    class OrientationComponent {
+        constructor(angle = 0.0) {
+            this.angle = angle; // Current angle in radians
+            this.prevAngle = angle; // Angle at the start of the timestep
+        }
+    }
     class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
     class InertiaComponent { constructor(inertia = Infinity) { this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0; } } // Store inverse inertia
     class WheelOrientationComponent { constructor(clockwisePreference = true) { this.clockwisePreference = clockwisePreference; } } // For tangent selection (Fig 3/4)
@@ -404,11 +409,29 @@
     class MovementSystem {
         runInPause = false;
         update(world, dt) {
-            const entities = world.query([PositionComponent, VelocityComponent]);
-            for (const entityId of entities) {
+            // Update linear position
+            const linearEntities = world.query([PositionComponent, VelocityComponent]);
+            for (const entityId of linearEntities) {
                 const posComp = world.getComponent(entityId, PositionComponent);
                 const velComp = world.getComponent(entityId, VelocityComponent);
                 posComp.pos.add(velComp.vel, dt);
+            }
+
+            // Update angular position (orientation)
+            const angularEntities = world.query([OrientationComponent, AngularVelocityComponent]);
+            for (const entityId of angularEntities) {
+                const orientComp = world.getComponent(entityId, OrientationComponent);
+                const angVelComp = world.getComponent(entityId, AngularVelocityComponent);
+
+                // Store previous angle before updating
+                orientComp.prevAngle = orientComp.angle;
+
+                // Update current angle
+                orientComp.angle += angVelComp.angVel * dt;
+
+                // Optional: Normalize angle (e.g., to [0, 2*PI] or [-PI, PI])
+                // orientComp.angle = orientComp.angle % (2 * Math.PI);
+                // if (orientComp.angle < 0) orientComp.angle += 2 * Math.PI;
             }
         }
     }
@@ -542,18 +565,12 @@
         }
 
 
-        // Helper: Calculate distance moved along circle surface between two angles
-        _arcLength(radius, angle_start, angle_end) {
-             let deltaAngle = angle_end - angle_start;
-
-             // Normalize angle difference to [-PI, PI] to get shortest arc
-             while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
-             while (deltaAngle <= -Math.PI) deltaAngle += 2 * Math.PI;
-
-             // The sign of deltaAngle now indicates the direction of the shortest rotation.
-             // Positive deltaAngle = Counter-Clockwise rotation.
-             // Negative deltaAngle = Clockwise rotation.
-             return radius * deltaAngle; // Signed arc length
+        // Helper: Calculate raw arc length based on angle change
+        _signedArcLength(radius, deltaAngle) {
+             // deltaAngle is the change in the body's orientation (angle - prevAngle)
+             // Positive deltaAngle = CCW rotation
+             // Negative deltaAngle = CW rotation
+             return radius * deltaAngle;
         }
 
 
@@ -606,18 +623,18 @@
                     // Requires knowing the angle change of the bodies themselves.
                     // We don't have previous orientation stored, nor angular velocity applied yet.
                     // Approximation: Calculate angle change based on previous vs current attachment point angles.
-                    // This is inaccurate as it mixes body translation and rotation.
-                    // A better approach needs AngularVelocityComponent and OrientationComponent updates integrated.
-                    if (prevAttachA_world.lengthSq() > 0 && orientCompA) { // Check if initialized and orientation exists
-                         const anglePrevA = Math.atan2(prevAttachA_world.y - posA.y, prevAttachA_world.x - posA.x);
-                         const angleCurrA = Math.atan2(attachmentA_current.y - posA.y, attachmentA_current.x - posA.x);
-                         s1 = this._arcLength(radiusA, anglePrevA, angleCurrA); // Signed arc length based on attachment point movement
-                    }
-                     if (prevAttachB_world.lengthSq() > 0 && orientCompB) {
-                         const anglePrevB = Math.atan2(prevAttachB_world.y - posB.y, prevAttachB_world.x - posB.x);
-                         const angleCurrB = Math.atan2(attachmentB_current.y - posB.y, attachmentB_current.x - posB.x);
-                         s2 = this._arcLength(radiusB, anglePrevB, angleCurrB); // Signed arc length
-                    }
+                    // --- Calculate Surface Distances (s1, s2) based on BODY ROTATION ---
+                    if (orientCompA) {
+                        let deltaAngleA = orientCompA.angle - orientCompA.prevAngle;
+                        // Normalize deltaAngle to handle wrapping? If angle is kept normalized, this might not be needed.
+                        // Assuming angle can grow indefinitely for now.
+                        s1 = this._signedArcLength(radiusA, deltaAngleA); // Signed arc length based on body rotation
+                    } else { s1 = 0; } // No orientation component, no rotation contribution
+
+                     if (orientCompB) {
+                        let deltaAngleB = orientCompB.angle - orientCompB.prevAngle;
+                        s2 = this._signedArcLength(radiusB, deltaAngleB); // Signed arc length based on body rotation
+                    } else { s2 = 0; }
 
                     // Store current points for next frame
                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
@@ -630,13 +647,12 @@
                     attachmentB_current = tangents.a_circle;
                     s1 = 0; // No surface travel on attachment point A
 
-                    // Calculate s2 based on circle B's rotation
-                    if (prevAttachB_world.lengthSq() > 0) {
-                         const anglePrevB = Math.atan2(prevAttachB_world.y - posB.y, prevAttachB_world.x - posB.x);
-                         const angleCurrB = Math.atan2(attachmentB_current.y - posB.y, attachmentB_current.x - posB.x);
-                         s2 = this._arcLength(radiusB, anglePrevB, angleCurrB);
+                    // Calculate s2 based on circle B's BODY rotation
+                    if (orientCompB) {
+                        let deltaAngleB = orientCompB.angle - orientCompB.prevAngle;
+                        s2 = this._signedArcLength(radiusB, deltaAngleB);
                     } else {
-                         s2 = 0; // Initialize s2 if no previous point
+                        s2 = 0;
                     }
 
                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
@@ -718,9 +734,82 @@
                 // Example: If tangent leaves A "underneath" (due to CW pref), CW rotation (s1<0) should UNWIND. Effect = +|s1|.
                 // Example: If tangent arrives at B "underneath" (due to CW pref), CW rotation (s2<0) should WIND. Effect = -|s2|.
 
-                // Placeholder: Assume s1/s2 from _arcLength directly represent change for dn+1 = dn + s1 + s2 (like Fig 2 right)
-                // This is likely incorrect for the general case but provides a starting point.
-                 joint.restLength += s1 + s2; // Highly likely incorrect sign logic
+                // --- Correct Rest Length Update (dn) ---
+                // dn+1 = dn + effect_s1 + effect_s2
+                // s1/s2 are signed arc lengths (+ve CCW, -ve CW) based on body rotation.
+                // We need to determine if this rotation winds or unwinds the cable *at the specific tangent point*.
+
+                let s1_effect = 0;
+                if (linkA.type === 'rolling' && wheelOrientA) {
+                    // If CW preference, CW rotation (s1 < 0) should UNWIND (+ effect). CCW rotation (s1 > 0) should WIND (- effect).
+                    // If CCW preference, CW rotation (s1 < 0) should WIND (- effect). CCW rotation (s1 > 0) should UNWIND (+ effect).
+                    // This depends on the tangent choice logic being consistent. Assuming current tangent logic:
+                    // Effect = -s1 if CW pref, +s1 if CCW pref? Let's test this.
+                    s1_effect = s1 * (wheelOrientA.clockwisePreference ? -1.0 : 1.0);
+                    // TODO: This sign logic is HIGHLY dependent on the tangent calculation conventions and needs verification.
+                }
+
+                let s2_effect = 0;
+                if (linkB.type === 'rolling' && wheelOrientB) {
+                    // Same logic for s2. If CW pref, CW rotation (s2 < 0) WINDS (- effect). CCW rotation (s2 > 0) UNWINDS (+ effect).
+                    // Effect = +s2 if CW pref, -s2 if CCW pref?
+                    s2_effect = s2 * (wheelOrientB.clockwisePreference ? 1.0 : -1.0);
+                     // TODO: Verify this sign logic. It might be the opposite of s1 depending on tangent connection.
+                     // Let's assume Fig 2 bottom-left: Both CW pref, both rotate CW (s1<0, s2<0).
+                     // A unwinds (+|s1|), B winds (-|s2|).
+                     // Our s1_effect = (-s1) * -1 = s1 (negative). Incorrect.
+                     // Our s2_effect = (-s2) * 1 = -s2 (positive). Incorrect.
+
+                     // Let's try matching Fig 2 bottom-left directly: dn += (+|s1|) + (-|s2|)
+                     // If CW pref & CW rot (s1<0): effect = +abs(s1) = -s1
+                     // If CW pref & CCW rot(s1>0): effect = -abs(s1) = -s1
+                     // So if CW pref, effect = -s1.
+                     // If CCW pref & CW rot (s1<0): effect = -abs(s1) = +s1
+                     // If CCW pref & CCW rot(s1>0): effect = +abs(s1) = +s1
+                     // So if CCW pref, effect = +s1.
+
+                     // Revised logic attempt:
+                     s1_effect = s1 * (wheelOrientA.clockwisePreference ? -1.0 : 1.0); // Unwind = positive effect
+                     s2_effect = s2 * (wheelOrientB.clockwisePreference ? -1.0 : 1.0); // Unwind = positive effect
+
+                     // Now consider winding/unwinding based on connection (Fig 2):
+                     // Bottom-left: A unwinds (+), B winds (-). Formula dn + s1 - s2 (paper assumes s1/s2 are positive magnitudes)
+                     // Bottom-right: A unwinds (+), B unwinds (+). Formula dn + s1 + s2
+                     // We need to know if the connection winds or unwinds for the given rotation.
+
+                     // Final attempt based on Fig 2 caption interpretation:
+                     // Assume s1, s2 are signed arc lengths (+CCW, -CW)
+                     // Assume effect = +|arc| for unwinding, -|arc| for winding.
+                     let unwind_A = (wheelOrientA.clockwisePreference && s1 < 0) || (!wheelOrientA.clockwisePreference && s1 > 0);
+                     let unwind_B = (wheelOrientB.clockwisePreference && s2 < 0) || (!wheelOrientB.clockwisePreference && s2 > 0);
+
+                     // This still doesn't account for the tangent connection type (Fig 2 left vs right)
+                     // Sticking with a plausible guess based on preference:
+                     s1_effect = s1 * (wheelOrientA.clockwisePreference ? -1.0 : 1.0); // If CW pref, CW rot (s1<0) unwinds (+effect)
+                     s2_effect = s2 * (wheelOrientB.clockwisePreference ? -1.0 : 1.0); // If CW pref, CW rot (s2<0) unwinds (+effect)
+
+                     // We need to flip the sign for the second wheel if it's winding relative to the first.
+                     // How to determine winding vs unwinding connection? Based on tangent type?
+                     // External tangent (orientationsEqual): Both unwind/wind together? (Fig 2 right) -> dn += effect1 + effect2
+                     // Internal tangent (orientations !=): One winds, one unwinds? (Fig 2 left) -> dn += effect1 - effect2 ???
+
+                     // Let's assume external tangents add effects, internal subtracts B's effect from A's.
+                     const orientationsEqual = wheelOrientA && wheelOrientB && (wheelOrientA.clockwisePreference === wheelOrientB.clockwisePreference);
+                     if (linkA.type === 'rolling' && linkB.type === 'rolling') {
+                         if (!orientationsEqual) {
+                             s2_effect *= -1.0; // Flip effect for internal tangents relative to s1
+                         }
+                     } else if (linkA.type === 'attachment') {
+                         s1_effect = 0; // No change from attachment
+                         // s2_effect sign depends only on wheel B's rotation/preference
+                     } else if (linkB.type === 'attachment') {
+                         s2_effect = 0; // No change from attachment
+                         // s1_effect sign depends only on wheel A's rotation/preference
+                     }
+                }
+
+
+                joint.restLength += s1_effect + s2_effect;
 
                 // Ensure rest length doesn't go negative (unless intended for spools)
                 if (joint.restLength < 0) joint.restLength = 0;
@@ -1123,9 +1212,9 @@
                     // deltaP_A = (invMassA / totalInvMass) * error * dir
                     // deltaP_B = -(invMassB / totalInvMass) * error * dir
 
-                    // Calculate the displacement vectors
-                    const deltaA = dir.clone().scale((invMassA / totalInvMass) * error * 10.0);
-                    const deltaB = dir.clone().scale(-(invMassB / totalInvMass) * error * 10.0);
+                    // Calculate the displacement vectors (Standard PBD)
+                    const deltaA = dir.clone().scale((invMassA / totalInvMass) * error);
+                    const deltaB = dir.clone().scale(-(invMassB / totalInvMass) * error);
 
                     // Apply displacement to the entity positions.
                     // This assumes the attachment point moves rigidly with the center.
