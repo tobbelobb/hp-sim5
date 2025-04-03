@@ -13,6 +13,7 @@
         Score: <span id="score">0</span> |
         <button id="pauseBtn" tabindex="-1">Pause</button>
         <button id="resetBtn" tabindex="-1">Reset</button>
+        <button id="stepBtn">Step</button>
     </div>
     <canvas id="myCanvas"></canvas>
 
@@ -1299,6 +1300,7 @@
     const canvas = document.getElementById("myCanvas");
     const pauseBtn = document.getElementById("pauseBtn");
     const resetBtn = document.getElementById("resetBtn");
+    const stepBtn = document.getElementById("stepBtn");
 
     canvas.width = window.innerWidth - 20;
     canvas.height = window.innerHeight - 100;
@@ -1499,14 +1501,18 @@
 
     // --- Main Loop ---
     let lastTime = 0;
-    function gameLoop(currentTime) {
-        const dt = world.getResource('dt'); // Use fixed timestep for stability
-        // Alternative: Calculate actual elapsed time
-        // const elapsed = (currentTime - lastTime) / 1000.0;
-        // lastTime = currentTime;
-        // const dt = Math.min(elapsed, 1.0 / 30.0); // Clamp max dt
+    let doStep = true; // Whether to do a single step when paused
 
-        world.update(dt);
+    function gameLoop(currentTime) {
+        const dt = world.getResource('dt');
+        const pauseState = world.getResource('pauseState');
+
+        if (!pauseState.paused || doStep) {
+            if (doStep) pauseState.paused = false;
+            world.update(dt);
+            if (doStep) pauseState.paused = true;
+            doStep = false; // Reset step flag after executing one step
+        }
 
         requestAnimationFrame(gameLoop);
     }
@@ -1528,6 +1534,15 @@
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true; // Start paused after reset
         pauseBtn.textContent = "Resume";
+        doStep = true;
+    });
+
+    stepBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState && pauseState.paused) {
+            doStep = true;
+        }
     });
 
     // --- Start ---
