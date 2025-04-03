@@ -179,6 +179,42 @@
     class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
+    class OrientationComponent { constructor(angle = 0.0) { this.angle = angle; } } // Angle in radians
+    class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
+    class InertiaComponent { constructor(inertia = Infinity) { this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0; } } // Store inverse inertia
+    class WheelOrientationComponent { constructor(clockwisePreference = true) { this.clockwisePreference = clockwisePreference; } } // For tangent selection (Fig 3/4)
+
+    // Defines how a cable interacts with this entity at a specific point
+    class CableLinkComponent {
+        constructor(type = 'attachment', spoolLength = 0.0) {
+            this.type = type; // 'rolling', 'attachment', 'pinhole', 'hybrid'
+            this.spoolLength = spoolLength; // Remaining length for hybrid/spool types
+            // Cache previous world attachment point to calculate surface distance travelled (s1/s2)
+            this.prevAttachmentPointWorld = new Vector2();
+            this.currentAttachmentPointLocal = new Vector2(); // Updated by CableAttachmentUpdateSystem
+        }
+    }
+
+    // Represents a single segment constraint between two entities
+    class CableJointComponent {
+        constructor(entityA, entityB, restLength = 1.0) {
+            this.entityA = entityA;
+            this.entityB = entityB;
+            this.restLength = restLength; // dn - the dynamic maximum length
+            this.isActive = true; // For merge/split logic
+            // Cache world attachment points calculated by CableAttachmentUpdateSystem
+            this.attachmentPointA_world = new Vector2();
+            this.attachmentPointB_world = new Vector2();
+        }
+    }
+
+    // Represents the entire cable path
+    class CablePathComponent {
+        constructor(jointEntities = []) {
+            this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
+        }
+    }
+
 
     class FlipperStateComponent {
         constructor(length, restAngle, maxRotation, angularVelocity) {
@@ -195,6 +231,7 @@
     }
 
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
+
 
     // Render-specific component (could be more complex)
     class RenderableComponent {
@@ -375,10 +412,12 @@
         }
     }
 
-    // --- System: Collision ---
-    class CollisionSystem {
+    // --- System: PBD Constraint Solver ---
+    // Handles both Collisions and Cable Joint constraints using PBD
+    class PBDConstraintSolverSystem {
         runInPause = false;
 
+        // --- Helper Functions (Keep existing ones) ---
         _getFlipperTip(flipperPos, flipperState) {
              const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
              const dir = new Vector2(Math.cos(angle), Math.sin(angle));
@@ -601,9 +640,72 @@
                          }
                      }
                  }
-            }
+            } // end Ball-Border Collisions
+
+
+            // --- Cable Joint Constraints ---
+            const jointEntities = world.query([CableJointComponent]);
+            for (const jointId of jointEntities) {
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (!joint.isActive) continue;
+
+                const entityA = joint.entityA;
+                const entityB = joint.entityB;
+
+                // Get components (Position, Mass are essential for PBD)
+                const posA = world.getComponent(entityA, PositionComponent)?.pos;
+                const massA = world.getComponent(entityA, MassComponent)?.mass;
+                const posB = world.getComponent(entityB, PositionComponent)?.pos;
+                const massB = world.getComponent(entityB, MassComponent)?.mass;
+
+                if (!posA || !massA || !posB || !massB) {
+                    console.warn(`CableJoint ${jointId} constraint skipped: Missing Pos/Mass on entities ${entityA} or ${entityB}`);
+                    continue;
+                }
+
+                const invMassA = massA > 0 ? 1.0 / massA : 0.0;
+                const invMassB = massB > 0 ? 1.0 / massB : 0.0;
+                const totalInvMass = invMassA + invMassB;
+
+                if (totalInvMass <= 0.0) continue; // Both objects immovable
+
+                // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
+                const pAttachA = joint.attachmentPointA_world;
+                const pAttachB = joint.attachmentPointB_world;
+
+                const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
+                const currentDist = dir.length();
+                const restLength = joint.restLength; // dn
+
+                // Constraint: currentDist <= restLength
+                if (currentDist > restLength) {
+                    const error = currentDist - restLength;
+                    dir.normalize(); // Normalize direction vector
+
+                    // Calculate position correction (PBD)
+                    // deltaP = error * direction / totalInvMass
+                    // Apply correction weighted by inverse mass
+                    const correction = dir.scale(error / totalInvMass);
+
+                    // Apply position corrections
+                    // TODO: Account for rotation if attachment points are not centers
+                    // Simple correction assuming attachment points move with entity centers:
+                    posA.add(correction, invMassA);
+                    posB.add(correction, -invMassB); // Move in opposite direction
+
+                    // If handling rotation, the correction needs to be applied differently:
+                    // deltaPosA = invMassA * correction
+                    // deltaPosB = -invMassB * correction
+                    // deltaRotA = invInertiaA * cross(radiusVecA, correction)
+                    // deltaRotB = -invInertiaB * cross(radiusVecB, correction)
+                    // This requires InertiaComponent and OrientationComponent updates.
+                }
+            } // end Cable Joint Constraints
+
+
         } // end update
     }
+
 
     class ScoreSystem {
         runInPause = false;
@@ -873,16 +975,57 @@
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
 
+
+        // --- Cable Setup ---
+        // Connect: ball1 -> obs4 -> obs3 -> ball2
+        // Entities involved: ball1, obs4, obs3, ball2
+        // Obstacles need WheelOrientation and CableLink (rolling)
+        // Balls need CableLink (attachment or rolling?) Let's use attachment for simplicity.
+
+        // Add necessary components to obstacles (assuming they act as wheels)
+        world.addComponent(obs4, new WheelOrientationComponent(true)); // Clockwise preference
+        world.addComponent(obs4, new CableLinkComponent('rolling'));
+        world.addComponent(obs3, new WheelOrientationComponent(true)); // Clockwise preference
+        world.addComponent(obs3, new CableLinkComponent('rolling'));
+        // Add CableLink to balls (as attachment points)
+        world.addComponent(ball1, new CableLinkComponent('attachment'));
+        world.addComponent(ball2, new CableLinkComponent('attachment'));
+
+        // Create Cable Joint Entities
+        const initialRestLengthSegment = 0.2; // Initial guess, will be dynamic
+
+        const joint1 = world.createEntity(); // ball1 <-> obs4
+        world.addComponent(joint1, new CableJointComponent(ball1, obs4, initialRestLengthSegment));
+
+        const joint2 = world.createEntity(); // obs4 <-> obs3
+        world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialRestLengthSegment));
+
+        const joint3 = world.createEntity(); // obs3 <-> ball2
+        world.addComponent(joint3, new CableJointComponent(obs3, ball2, initialRestLengthSegment));
+
+        // Optional: Create Cable Path Entity
+        const cablePath = world.createEntity();
+        world.addComponent(cablePath, new CablePathComponent([joint1, joint2, joint3]));
+
+
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
              world.registerSystem(new InputSystem(canvas));
-             world.registerSystem(new FlipperMotionSystem());
-             world.registerSystem(new GravitySystem());
-             world.registerSystem(new MovementSystem());
-             world.registerSystem(new CollisionSystem()); // Collision response modifies pos/vel before render. Also tags which balls scored this round.
-             world.registerSystem(new ScoreSystem());
-             world.registerSystem(new ScoreDisplaySystem('score'));
-             world.registerSystem(new RenderSystem(canvas, cScale, simHeight));
+             world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
+             world.registerSystem(new GravitySystem());      // Applies gravity acceleration
+             world.registerSystem(new MovementSystem());     // Updates position based on velocity
+
+             // --- Cable Systems (Run BEFORE constraint solving) ---
+             world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
+             world.registerSystem(new CablePinholeSystem());        // Balances rest lengths across pinholes (if any)
+
+             // --- Constraint Solver (Handles collisions AND cable joints) ---
+             world.registerSystem(new PBDConstraintSolverSystem()); // Resolves penetrations and cable length violations
+
+             // --- Scoring and Rendering ---
+             world.registerSystem(new ScoreSystem());             // Updates score based on tags
+             world.registerSystem(new ScoreDisplaySystem('score')); // Displays score
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight)); // Draws everything
         }
 
          // Update button text based on initial pause state
