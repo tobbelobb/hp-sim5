@@ -412,6 +412,378 @@
         }
     }
 
+
+    // --- System: Cable Attachment Update ---
+    // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
+    class CableAttachmentUpdateSystem {
+        runInPause = false; // Physics system
+
+        // Helper: Calculate tangent points between two circles (Algorithm 4 from paper)
+        _tangentCircleCircle(p1, r1, wheelOrientation1, p2, r2, wheelOrientation2) {
+            const dVec = new Vector2().subtractVectors(p2, p1);
+            const dSq = dVec.lengthSq();
+            const d = Math.sqrt(dSq);
+
+            // Determine effective radii based on orientation matching
+            let r, r_eff1, r_eff2;
+            const orientationsEqual = wheelOrientation1.clockwisePreference === wheelOrientation2.clockwisePreference;
+            if (orientationsEqual) {
+                r = Math.abs(r2 - r1); // Difference for same winding
+                r_eff1 = r1;
+                r_eff2 = r2;
+            } else {
+                r = r1 + r2; // Sum for opposite winding
+                r_eff1 = r1;
+                r_eff2 = -r2; // Effectively flips the second radius sign for calculation
+            }
+
+            if (d <= r + 1e-6) { // Add tolerance for floating point
+                 // Circles overlapping or tangent internally/externally in a way that doesn't allow the desired tangent
+                 console.warn("Cable tangent calculation: Circles too close or overlapping. d=", d, "r=", r);
+                 // Fallback: Return points on the line connecting centers, offset by radii along that line.
+                 // This might not be the 'tangent' but prevents errors.
+                 const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0); // Avoid normalizing zero vector
+                 return {
+                     a1: p1.clone().add(dir, r1),
+                     a2: p2.clone().add(dir, -r2) // Move p2's point back along the center line
+                 };
+            }
+
+
+            // Angle of the line connecting centers
+            let alpha = Math.atan2(dVec.y, dVec.x);
+            // Angle offset due to radii difference/sum
+            const phi = Math.acos(r / d); // Use acos as per paper's geometry implied by Fig 3/4 logic
+
+            let alpha1, alpha2;
+
+            // Calculate angles based on relative orientations (Paper Appendix Alg 4 logic)
+            if (orientationsEqual) {
+                // External tangents
+                // Determine which tangent pair based on clockwisePreference.
+                // We need *one* consistent tangent based on the winding order implied by preferences.
+                // Let's assume the preference dictates the "upper" or "lower" tangent relative to the center line.
+                // If both CW, maybe they prefer the tangent that wraps "under" (alpha - (pi/2 - phi))?
+                // If both CCW, maybe they prefer the tangent that wraps "over" (alpha + (pi/2 - phi))?
+                // This needs a clearer definition based on Fig 3/4. Let's try one version:
+                if (wheelOrientation1.clockwisePreference) { // Assume CW prefers "lower" tangent
+                    alpha1 = alpha - (Math.PI / 2 - phi);
+                    alpha2 = alpha - (Math.PI / 2 - phi);
+                } else { // Assume CCW prefers "upper" tangent
+                     alpha1 = alpha + (Math.PI / 2 - phi);
+                     alpha2 = alpha + (Math.PI / 2 - phi);
+                }
+                 // TODO: Verify this interpretation of preference vs tangent selection.
+
+            } else {
+                // Internal tangents (crossed)
+                // Again, preference should pick one of the two internal tangents.
+                // If C1 is CW and C2 is CCW, which crossed tangent is preferred?
+                // Let's try one combination based on the formula structure:
+                 if (wheelOrientation1.clockwisePreference) { // C1 CW, C2 CCW
+                    alpha1 = alpha - (Math.PI / 2 + phi); // C1 angle
+                    alpha2 = alpha + (Math.PI / 2 + phi); // C2 angle (opposite side)
+                } else { // C1 CCW, C2 CW
+                    alpha1 = alpha + (Math.PI / 2 + phi); // C1 angle
+                    alpha2 = alpha - (Math.PI / 2 + phi); // C2 angle (opposite side)
+                }
+                 // TODO: Verify this interpretation.
+            }
+
+
+            // Calculate attachment points using the angles
+            const a1 = new Vector2(p1.x + r1 * Math.cos(alpha1), p1.y + r1 * Math.sin(alpha1));
+            const a2 = new Vector2(p2.x + r2 * Math.cos(alpha2), p2.y + r2 * Math.sin(alpha2)); // Use original r2
+
+            return { a1, a2 };
+        }
+
+        // Helper: Calculate distance moved along circle surface between two angles
+        _arcLength(radius, angle_start, angle_end) {
+             let deltaAngle = angle_end - angle_start;
+
+             // Normalize angle difference to [-PI, PI] to get shortest arc
+             while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+             while (deltaAngle <= -Math.PI) deltaAngle += 2 * Math.PI;
+
+             // The sign of deltaAngle now indicates the direction of the shortest rotation.
+             // Positive deltaAngle = Counter-Clockwise rotation.
+             // Negative deltaAngle = Clockwise rotation.
+             return radius * deltaAngle; // Signed arc length
+        }
+
+
+        update(world, dt) {
+            const jointEntities = world.query([CableJointComponent]);
+
+            for (const jointId of jointEntities) {
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (!joint.isActive) continue;
+
+                const entityA = joint.entityA;
+                const entityB = joint.entityB;
+
+                // Get components for Entity A
+                const posA = world.getComponent(entityA, PositionComponent)?.pos;
+                const orientCompA = world.getComponent(entityA, OrientationComponent); // Needed for s1 calc
+                const radiusA = world.getComponent(entityA, RadiusComponent)?.radius; // Assume circle for now
+                const wheelOrientA = world.getComponent(entityA, WheelOrientationComponent); // Assume exists if rolling
+                const linkA = world.getComponent(entityA, CableLinkComponent);
+
+                // Get components for Entity B
+                const posB = world.getComponent(entityB, PositionComponent)?.pos;
+                const orientCompB = world.getComponent(entityB, OrientationComponent); // Needed for s2 calc
+                const radiusB = world.getComponent(entityB, RadiusComponent)?.radius; // Assume circle for now
+                const wheelOrientB = world.getComponent(entityB, WheelOrientationComponent); // Assume exists if rolling
+                const linkB = world.getComponent(entityB, CableLinkComponent);
+
+                if (!posA || !linkA || !posB || !linkB) {
+                    console.warn(`CableJoint ${jointId} missing required components on entities ${entityA} or ${entityB}`);
+                    continue;
+                }
+
+                // Store previous world points before calculating new ones
+                const prevAttachA_world = linkA.prevAttachmentPointWorld.clone();
+                const prevAttachB_world = linkB.prevAttachmentPointWorld.clone();
+
+                let attachmentA_current, attachmentB_current;
+                let s1 = 0.0; // Signed distance travelled on surface A (+ve CCW, -ve CW)
+                let s2 = 0.0; // Signed distance travelled on surface B (+ve CCW, -ve CW)
+
+                // --- Calculate Current Attachment Points ---
+                // TODO: Handle different link types (attachment, pinhole, general shapes)
+                if (linkA.type === 'rolling' && linkB.type === 'rolling' && radiusA && wheelOrientA && radiusB && wheelOrientB) {
+                    // --- Rolling <-> Rolling (Circle-Circle Tangent) ---
+                    const tangents = this._tangentCircleCircle(posA, radiusA, wheelOrientA, posB, radiusB, wheelOrientB);
+                    attachmentA_current = tangents.a1;
+                    attachmentB_current = tangents.a2;
+
+                    // --- Calculate Surface Distances (s1, s2) ---
+                    // Requires knowing the angle change of the bodies themselves.
+                    // We don't have previous orientation stored, nor angular velocity applied yet.
+                    // Approximation: Calculate angle change based on previous vs current attachment point angles.
+                    // This is inaccurate as it mixes body translation and rotation.
+                    // A better approach needs AngularVelocityComponent and OrientationComponent updates integrated.
+                    if (prevAttachA_world.lengthSq() > 0 && orientCompA) { // Check if initialized and orientation exists
+                         const anglePrevA = Math.atan2(prevAttachA_world.y - posA.y, prevAttachA_world.x - posA.x);
+                         const angleCurrA = Math.atan2(attachmentA_current.y - posA.y, attachmentA_current.x - posA.x);
+                         s1 = this._arcLength(radiusA, anglePrevA, angleCurrA); // Signed arc length based on attachment point movement
+                    }
+                     if (prevAttachB_world.lengthSq() > 0 && orientCompB) {
+                         const anglePrevB = Math.atan2(prevAttachB_world.y - posB.y, prevAttachB_world.x - posB.x);
+                         const angleCurrB = Math.atan2(attachmentB_current.y - posB.y, attachmentB_current.x - posB.x);
+                         s2 = this._arcLength(radiusB, anglePrevB, angleCurrB); // Signed arc length
+                    }
+
+                    // Store current points for next frame
+                    // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
+                    // linkB.prevAttachmentPointWorld.set(attachmentB_current);
+
+                } else if (linkA.type === 'attachment' && linkB.type === 'rolling' && radiusB && wheelOrientB) {
+                    // --- Attachment <-> Rolling ---
+                    // Attachment point A is just the position of entity A
+                    attachmentA_current = posA.clone();
+                    s1 = 0; // No surface travel on attachment point
+
+                    // Find tangent from point A to circle B
+                    // Simplified: Use Algorithm 3 logic (Tangent Point Circle) - needs implementation
+                    // Placeholder: Use center of B for now
+                    console.warn(`CableAttachmentUpdateSystem: Attachment-Rolling tangent not fully implemented for joint ${jointId}`);
+                    attachmentB_current = posB.clone(); // Placeholder
+                    s2 = 0; // Placeholder
+
+                    // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
+                    // linkB.prevAttachmentPointWorld.set(attachmentB_current); // Update B's prev point
+
+                } else if (linkA.type === 'rolling' && linkB.type === 'attachment' && radiusA && wheelOrientA) {
+                     // --- Rolling <-> Attachment ---
+                     attachmentB_current = posB.clone();
+                     s2 = 0;
+
+                     console.warn(`CableAttachmentUpdateSystem: Rolling-Attachment tangent not fully implemented for joint ${jointId}`);
+                     attachmentA_current = posA.clone(); // Placeholder
+                     s1 = 0; // Placeholder
+
+                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Update A's prev point
+                     // linkB.prevAttachmentPointWorld.set(attachmentB_current); // Moved after rest length update
+
+                } else if (linkA.type === 'attachment' && linkB.type === 'attachment') {
+                    // --- Attachment <-> Attachment ---
+                    attachmentA_current = posA.clone(); // Attach at center
+                    attachmentB_current = posB.clone();
+                    s1 = 0;
+                    s2 = 0;
+                     // No surface distance change for fixed attachments
+                     // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
+                     // linkB.prevAttachmentPointWorld.set(attachmentB_current);
+
+                } else {
+                    // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
+                    console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}`);
+                    attachmentA_current = posA.clone(); // Fallback
+                    attachmentB_current = posB.clone(); // Fallback
+                    s1 = 0;
+                    s2 = 0;
+                    // linkA.prevAttachmentPointWorld.set(attachmentA_current); // Moved after rest length update
+                    // linkB.prevAttachmentPointWorld.set(attachmentB_current);
+                }
+
+                // --- Update Rest Length (dn) ---
+                // dn+1 = dn + effect_of_s1 + effect_of_s2
+                // The effect depends on whether the signed arc length s corresponds to winding or unwinding
+                // for the specific tangent connection determined by wheel orientations.
+
+                // Let's analyze Fig 2 Bottom Left:
+                // - Both wheels CW preference (assumed).
+                // - Both rotate CW. s1 < 0, s2 < 0 (using our _arcLength convention).
+                // - Wheel A unwinds cable: Effect should be positive, proportional to |s1|.
+                // - Wheel B winds cable: Effect should be negative, proportional to |s2|.
+                // - Formula given: dn+1 = dn + s1 - s2. This implies s1 is positive unwound length, s2 is positive wound length.
+                // This conflicts with our signed s convention.
+
+                // Let's redefine s1, s2 as the *amount of cable released* from each wheel.
+                // If wheel A (CW pref) rotates CW (negative deltaAngle), it *releases* cable. released_s1 = -s1 = +ve.
+                // If wheel A (CW pref) rotates CCW (positive deltaAngle), it *takes up* cable. released_s1 = -s1 = -ve.
+                // So, released_s1 = -s1 if CW pref, released_s1 = +s1 if CCW pref.
+                // released_s1 = s1 * (wheelOrientA.clockwisePreference ? -1 : 1); // Check logic
+
+                // Let's rethink based on the tangent calculation and winding direction.
+                // The tangent calculation implicitly defines which side of the wheel the cable leaves/arrives.
+                // We need to know if the rotation deltaAngle moves the tangent point *along* the cable path (winding)
+                // or *against* the cable path (unwinding).
+
+                // SIMPLIFICATION ATTEMPT 2: Use the paper's formula structure directly,
+                // but calculate s1_paper and s2_paper as the *positive lengths* corresponding
+                // to the arc travelled, and determine the signs based on winding/unwinding.
+
+                let s1_effect = 0;
+                let s2_effect = 0;
+
+                // Determine winding/unwinding based on rotation direction (sign of s) and wheel preference.
+                // This is complex and depends on the specific tangent chosen.
+                // Example: If tangent leaves A "underneath" (due to CW pref), CW rotation (s1<0) should UNWIND. Effect = +|s1|.
+                // Example: If tangent arrives at B "underneath" (due to CW pref), CW rotation (s2<0) should WIND. Effect = -|s2|.
+
+                // Placeholder: Assume s1/s2 from _arcLength directly represent change for dn+1 = dn + s1 + s2 (like Fig 2 right)
+                // This is likely incorrect for the general case but provides a starting point.
+                 joint.restLength += s1 + s2; // Highly likely incorrect sign logic
+
+                // Ensure rest length doesn't go negative (unless intended for spools)
+                if (joint.restLength < 0) joint.restLength = 0;
+
+
+                // Store calculated world attachment points in the joint component for the solver
+                joint.attachmentPointA_world.set(attachmentA_current);
+                joint.attachmentPointB_world.set(attachmentB_current);
+
+                // Initialize prevAttachmentPointWorld on first run *after* calculating current points
+                if (prevAttachA_world.lengthSq() === 0) {
+                    linkA.prevAttachmentPointWorld.set(attachmentA_current);
+                } else {
+                    // Store current points for next frame (only if not first run)
+                    linkA.prevAttachmentPointWorld.set(attachmentA_current);
+                }
+                 if (prevAttachB_world.lengthSq() === 0) {
+                    linkB.prevAttachmentPointWorld.set(attachmentB_current);
+                } else {
+                     linkB.prevAttachmentPointWorld.set(attachmentB_current);
+                }
+
+
+                // TODO: Handle Hybrid link logic (check spoolLength, switch type)
+                // TODO: Handle Merge/Split triggers (e.g., spoolLength < 0)
+            }
+        }
+    }
+
+
+    // --- System: Cable Pinhole System ---
+    // Balances rest lengths across pinholes (Algorithm 1, lines 9-15)
+    class CablePinholeSystem {
+         runInPause = false;
+
+         update(world, dt) {
+             // Query for pinhole links. Need CablePathComponent to easily find adjacent joints.
+             const cablePaths = world.query([CablePathComponent]);
+             if (cablePaths.length === 0) return; // No paths defined
+
+             // Iterate through all defined cable paths
+             for (const pathId of cablePaths) {
+                 const pathComp = world.getComponent(pathId, CablePathComponent);
+                 const joints = pathComp.jointEntities;
+
+                 // Iterate through the path looking for pinholes by checking link types at connection points
+                 for (let i = 0; i < joints.length - 1; i++) {
+                     const jointLeftId = joints[i];
+                     const jointRightId = joints[i+1];
+
+                     const jointLeft = world.getComponent(jointLeftId, CableJointComponent);
+                     const jointRight = world.getComponent(jointRightId, CableJointComponent);
+
+                     if (!jointLeft || !jointRight || !jointLeft.isActive || !jointRight.isActive) continue;
+
+                     // The entity connecting these two joints is the potential pinhole
+                     const potentialPinholeEntity = jointLeft.entityB; // Assumes joint connects A->B, B->C
+                     if (potentialPinholeEntity !== jointRight.entityA) {
+                          console.warn("Cable path inconsistency detected near joint", jointLeftId);
+                          continue; // Skip if joints aren't connected as expected
+                     }
+
+                     const pinholeLink = world.getComponent(potentialPinholeEntity, CableLinkComponent);
+                     if (!pinholeLink || pinholeLink.type !== 'pinhole') continue; // Not a pinhole connection
+
+                     // --- Found a Pinhole: Apply Algorithm 1 logic ---
+
+                     // Get current distances (d) - calculated using current attachment points from previous system
+                     // Ensure attachment points are valid before calculating length
+                     if (jointLeft.attachmentPointA_world.lengthSq() === 0 || jointLeft.attachmentPointB_world.lengthSq() === 0 ||
+                         jointRight.attachmentPointA_world.lengthSq() === 0 || jointRight.attachmentPointB_world.lengthSq() === 0) {
+                         console.warn(`Pinhole ${potentialPinholeEntity}: Skipping due to uninitialized attachment points on joints ${jointLeftId} or ${jointRightId}`);
+                         continue;
+                     }
+
+                     const d_left = jointLeft.attachmentPointB_world.clone().subtract(jointLeft.attachmentPointA_world).length();
+                     const d_right = jointRight.attachmentPointB_world.clone().subtract(jointRight.attachmentPointA_world).length();
+
+                     // Get rest lengths (dn)
+                     const dn_left = jointLeft.restLength;
+                     const dn_right = jointRight.restLength;
+
+                     // Algorithm 1, lines 11 & 13 logic: Transfer overstretch
+                     const overstretch_left = d_left - dn_left;
+                     const overstretch_right = d_right - dn_right;
+
+                     let adjustment = 0;
+                     const tolerance = 1e-6; // Tolerance for floating point comparisons
+
+                     // If left side is tight (overstretched) and right has slack (or less overstretched)
+                     if (overstretch_left > tolerance) {
+                         // Amount to potentially transfer from right's slack or length
+                         // Transfer amount is the overstretch, but capped by the available length on the other side
+                         const transferAmount = Math.min(overstretch_left, Math.max(0, dn_right)); // Don't make dn_right negative
+                         adjustment = transferAmount;
+                     }
+                     // If right side is tight (overstretched) and left has slack (or less overstretched)
+                     else if (overstretch_right > tolerance) {
+                          // Amount to potentially transfer from left's slack or length
+                          const transferAmount = Math.min(overstretch_right, Math.max(0, dn_left)); // Don't make dn_left negative
+                          adjustment = -transferAmount; // Negative because we transfer from left to right
+                     }
+
+                     // Apply the adjustment atomically if significant
+                     if (Math.abs(adjustment) > 1e-9) {
+                        jointLeft.restLength += adjustment;
+                        jointRight.restLength -= adjustment;
+                        // Clamp rest lengths to avoid negative values due to floating point errors
+                        if (jointLeft.restLength < 0) jointLeft.restLength = 0;
+                        if (jointRight.restLength < 0) jointRight.restLength = 0;
+                     }
+                 }
+             }
+         }
+    }
+
+
     // --- System: PBD Constraint Solver ---
     // Handles both Collisions and Cable Joint constraints using PBD
     class PBDConstraintSolverSystem {
