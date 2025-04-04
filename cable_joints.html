@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cable Joints</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #202020; font-family: sans-serif; }
+        canvas { border: 1px solid black; display: block; margin: 10px auto; }
+        #controls { text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        Score: <span id="score">0</span> |
+        <button id="pauseBtn" tabindex="-1">Pause</button>
+        <button id="resetBtn" tabindex="-1">Reset</button>
+        <button id="stepBtn">Step</button>
+    </div>
+    <canvas id="myCanvas"></canvas>
+
+<script>
+
+    // --- Utility: Vector2 ---
+    class Vector2 {
+        constructor(x = 0.0, y = 0.0) { this.x = x; this.y = y; }
+        set(v) { this.x = v.x; this.y = v.y; }
+        clone() { return new Vector2(this.x, this.y); }
+        add(v, s = 1.0) { this.x += v.x * s; this.y += v.y * s; return this; }
+        addVectors(a, b) { this.x = a.x + b.x; this.y = a.y + b.y; return this; }
+        subtract(v, s = 1.0) { this.x -= v.x * s; this.y -= v.y * s; return this; }
+        subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
+        length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+        lengthSq() { return this.x * this.x + this.y * this.y; } // Optimization
+        scale(s) { this.x *= s; this.y *= s; return this; }
+        dot(v) { return this.x * v.x + this.y * v.y; }
+        perp() { return new Vector2(-this.y, this.x); }
+        normalize() { const l = this.length(); if (l > 0) this.scale(1.0 / l); return this; }
+    }
+
+    // --- Utility: Geometry ---
+    function closestPointOnSegment(p, a, b) {
+        const ab = new Vector2().subtractVectors(b, a);
+        const ap = new Vector2().subtractVectors(p, a);
+        let t = ap.dot(ab);
+        if (t <= 0.0) return a.clone();
+        const denom = ab.dot(ab);
+        if (t >= denom) return b.clone();
+        t = t / denom;
+        return a.clone().add(ab, t);
+    }
+
+    // Helper: Calculate tangent points between a point and a circle (Algorithm 3 from Cable Joints paper)
+    function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
+      const dVec = new Vector2().subtractVectors(p_circle, p_attach);
+      const dSq = dVec.lengthSq();
+
+      if (dSq <= r_circle * r_circle + 1e-9) {
+        console.warn("Cable tangent calculation: Attachment point inside or on rolling circle.");
+        const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0);
+        return {
+          a_attach: p_attach.clone(),
+          a_circle: p_circle.clone().add(dir, r_circle)
+        };
+      }
+
+      const d = Math.sqrt(dSq);
+      const alpha = Math.atan2(dVec.y, dVec.x);
+      const phi = Math.asin(r_circle / d);
+
+      let tangent_point_angle_on_circle;
+      if ((cw && pointIsFirst) || (!cw && !pointIsFirst)) {
+        tangent_point_angle_on_circle = alpha + phi + Math.PI/2;
+      } else {
+        tangent_point_angle_on_circle = alpha - phi - Math.PI/2;
+      }
+
+      const a_circle = new Vector2(
+        p_circle.x + r_circle * Math.cos(tangent_point_angle_on_circle),
+        p_circle.y + r_circle * Math.sin(tangent_point_angle_on_circle)
+      );
+
+      return {
+        a_attach: p_attach.clone(), // Attachment point doesn't change
+        a_circle: a_circle          // Calculated tangent point on the circle
+      };
+    }
+
+    function tangentFromPointToCircle(p_attach, p_circle, r_circle, cw) {
+      return _tangentPointCircle(p_attach, p_circle, r_circle, cw, true);
+    }
+    function tangentFromCircleToPoint(p_attach, p_circle, r_circle, cw) {
+      return _tangentPointCircle(p_attach, p_circle, r_circle, cw, false);
+    }
+    /**
+     * Calculates signed arc length between two world-space points on the circumference of a wheel.
+     *
+     * @param {Vector2} prevPoint - Previous attachment point on the wheel (world-space)
+     * @param {Vector2} currPoint - Current attachment point on the wheel (world-space)
+     * @param {Vector2} center - Center of the wheel (world-space)
+     * @param {number} radius - Radius of the wheel
+     * @param {boolean} clockwisePreference - If true, positive arc length means CW, else CCW
+     * @returns {number} Signed arc length (positive = preferred direction)
+     */
+    function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwisePreference) {
+      const toPrev = new Vector2().subtractVectors(prevPoint, center);
+      const toCurr = new Vector2().subtractVectors(currPoint, center);
+
+      // Get angle between the two vectors (signed)
+      let angle = Math.atan2(toCurr.y, toCurr.x) - Math.atan2(toPrev.y, toPrev.x);
+
+      // Normalize angle to range [-π, π]
+      if (angle > Math.PI) angle -= 2 * Math.PI;
+      if (angle < -Math.PI) angle += 2 * Math.PI;
+
+      // If wheel is clockwise, positive angle should represent CW → flip sign
+      if (clockwisePreference) {
+        angle *= -1;
+      }
+
+      // Arc length = radius * angle (signed)
+      return radius * angle;
+    }
+
+
+    // --- ECS Core ---
+    class World {
+        constructor() {
+            this.entities = new Map(); // entityId -> Set<ComponentClass>
+            this.components = new Map(); // ComponentClass -> Map<entityId, ComponentInstance>
+            this.nextEntityId = 0;
+            this.systems = [];
+            this.resources = {}; // Global data like gravity, dt
+        }
+
+        createEntity() {
+            const id = this.nextEntityId++;
+            this.entities.set(id, new Set());
+            return id;
+        }
+
+        addComponent(entityId, component) {
+            const componentClass = component.constructor;
+            if (!this.components.has(componentClass)) {
+                this.components.set(componentClass, new Map());
+            }
+            this.components.get(componentClass).set(entityId, component);
+            if (this.entities.has(entityId)) {
+                this.entities.get(entityId).add(componentClass);
+            } else {
+                 console.warn(`Entity ${entityId} does not exist when adding ${componentClass.name}`);
+            }
+        }
+
+        getComponent(entityId, componentClass) {
+            const componentMap = this.components.get(componentClass);
+            return componentMap ? componentMap.get(entityId) : undefined;
+        }
+
+        hasComponent(entityId, componentClass) {
+             const componentMap = this.components.get(componentClass);
+             return componentMap ? componentMap.has(entityId) : false;
+        }
+
+        removeComponent(entityId, componentClass) {
+             const componentMap = this.components.get(componentClass);
+             if (componentMap) {
+                 componentMap.delete(entityId);
+             }
+             const entityComponents = this.entities.get(entityId);
+             if (entityComponents) {
+                 entityComponents.delete(componentClass);
+             }
+        }
+
+        destroyEntity(entityId) {
+            if (!this.entities.has(entityId)) return;
+            for (const componentClass of this.entities.get(entityId)) {
+                this.removeComponent(entityId, componentClass);
+            }
+            this.entities.delete(entityId);
+        }
+
+        query(componentClasses) {
+            const entities = [];
+            if (componentClasses.length === 0) return [];
+
+            // Start with entities having the first component
+            const firstComponentMap = this.components.get(componentClasses[0]);
+            if (!firstComponentMap) return [];
+
+            for (const entityId of firstComponentMap.keys()) {
+                let hasAll = true;
+                for (let i = 1; i < componentClasses.length; i++) {
+                    if (!this.hasComponent(entityId, componentClasses[i])) {
+                        hasAll = false;
+                        break;
+                    }
+                }
+                if (hasAll) {
+                    entities.push(entityId);
+                }
+            }
+            return entities;
+        }
+
+        registerSystem(system) {
+            this.systems.push(system);
+        }
+
+        setResource(name, value) {
+            this.resources[name] = value;
+        }
+
+        getResource(name) {
+            return this.resources[name];
+        }
+
+        clear() {
+             this.entities.clear();
+             this.components.clear();
+             this.nextEntityId = 0;
+             // Keep systems and resources usually
+        }
+
+        update(dt) {
+            const pauseState = this.getResource('pauseState');
+            const isPaused = pauseState ? pauseState.paused : false;
+
+            for (const system of this.systems) {
+                if (system.update && (!system.runInPause && isPaused)) {
+                    continue; // Skip non-pause systems if paused
+                }
+                 if (system.update) {
+                    system.update(this, dt);
+                 }
+            }
+            canvas.focus();
+        }
+    }
+
+    // --- Components (Plain Data) ---
+
+    class PositionComponent { constructor(x = 0, y = 0) { this.pos = new Vector2(x, y); } }
+    class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
+    class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
+    class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
+    class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
+    class GravityAffectedComponent { /* Tag component */ }
+    class BallTagComponent { /* Tag component */ }
+    class ObstacleTagComponent { /* Tag component */ }
+    class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
+    class WheelOrientationComponent { constructor(clockwisePreference = true) { this.clockwisePreference = clockwisePreference; } } // For tangent selection (Fig 3/4)
+
+    class CableLinkComponent {
+        constructor() {
+            this.prevAttachmentPointWorld = new Vector2(); // Used for all but pure attachments
+            this.spoolLength = 0.0; // Only used for 'hybrid' and 'rolling' with spools
+            this.active = true; // Used for merge/split logic
+        }
+    }
+    class CableLinkAttachmentTagComponent { }
+    class CableLinkRollingTagComponent { }
+
+    // Represents a single segment constraint between two entities
+    class CableJointComponent {
+        constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
+            this.entityA = entityA;
+            this.entityB = entityB;
+            this.restLength = restLength; // dn - the dynamic maximum length
+            this.isActive = true; // For merge/split logic
+            this.attachmentPointA_world = attachmentPointA_world.clone();
+            this.attachmentPointB_world = attachmentPointB_world.clone();
+        }
+    }
+
+    // Represents the entire cable path
+    class CablePathComponent {
+        constructor(jointEntities = []) {
+            this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
+        }
+    }
+
+
+    // Render-specific component (could be more complex)
+    class RenderableComponent {
+        constructor(shape = 'circle', color = '#888888') {
+            this.shape = shape; // 'circle', 'flipper', 'border'
+            this.color = color;
+        }
+    }
+
+    // --- Systems (Logic) ---
+
+    // --- System: Gravity ---
+    class GravitySystem {
+        runInPause = false;
+        update(world, dt) {
+            const gravity = world.getResource('gravity');
+            if (!gravity) return;
+
+            const entities = world.query([VelocityComponent, GravityAffectedComponent]);
+            for (const entityId of entities) {
+                const velComp = world.getComponent(entityId, VelocityComponent);
+                velComp.vel.add(gravity, dt);
+            }
+        }
+    }
+
+    // --- System: Movement ---
+    class MovementSystem {
+        runInPause = false;
+        update(world, dt) {
+            // Update linear position
+            const linearEntities = world.query([PositionComponent, VelocityComponent]);
+            for (const entityId of linearEntities) {
+                const posComp = world.getComponent(entityId, PositionComponent);
+                const velComp = world.getComponent(entityId, VelocityComponent);
+                posComp.pos.add(velComp.vel, dt);
+            }
+        }
+    }
+
+
+    // --- System: Cable Attachment Update ---
+    // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
+    class CableAttachmentUpdateSystem {
+        runInPause = false; // Physics system
+
+        update(world, dt) {
+            const jointEntities = world.query([CableJointComponent]);
+
+            for (const jointId of jointEntities) {
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (!joint.isActive) continue;
+
+                const entityA = joint.entityA;
+                const entityB = joint.entityB;
+
+                // Get components for Entity A
+                const posA = world.getComponent(entityA, PositionComponent)?.pos;
+                const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
+                const cwA = world.getComponent(entityA, WheelOrientationComponent)?.clockwisePreference;
+                const attachmentLinkA = world.getComponent(entityA, CableLinkAttachmentTagComponent);
+                const rollingLinkA = world.getComponent(entityA, CableLinkRollingTagComponent);
+                const linkA = world.getComponent(entityA, CableLinkComponent);
+
+                // Get components for Entity B
+                const posB = world.getComponent(entityB, PositionComponent)?.pos;
+                const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
+                const cwB = world.getComponent(entityB, WheelOrientationComponent)?.clockwisePreference;
+                const attachmentLinkB = world.getComponent(entityB, CableLinkAttachmentTagComponent);
+                const rollingLinkB = world.getComponent(entityB, CableLinkRollingTagComponent);
+                const linkB = world.getComponent(entityB, CableLinkComponent);
+
+                if (!posA || !linkA || !posB || !linkB) {
+                    console.warn(`CableJoint ${jointId} missing required components on entities ${entityA} or ${entityB}`);
+                    continue;
+                }
+
+                let attachmentA_current, attachmentB_current;
+                let sA = 0.0;
+                let sB = 0.0;
+
+                // --- Calculate Current Attachment Points ---
+                if (attachmentLinkA && rollingLinkB && radiusB && cwB) {
+                    const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
+                    attachmentA_current = tangents.a_attach; // This is just posA
+                    attachmentB_current = tangents.a_circle; // Tangent on circle B
+                    sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
+                } else if (rollingLinkA && attachmentLinkB && radiusA && cwA) {
+                    const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
+                    attachmentA_current = tangents.a_circle; // Tangent on circle A
+                    attachmentB_current = tangents.a_attach; // This is just posB
+                    sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
+                } else if (attachmentLinkA && attachmentLinkB) {
+                    attachmentA_current = posA.clone(); // Attach at center
+                    attachmentB_current = posB.clone();
+                } else {
+                    // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
+                    console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}`);
+                    attachmentA_current = posA.clone(); // Fallback
+                    attachmentB_current = posB.clone(); // Fallback
+                }
+
+                console.log("sA: ", sA);
+                console.log("sB: ", sB);
+                joint.restLength += sB - sA;
+
+                // Ensure rest length doesn't go negative
+                if (joint.restLength < 0) joint.restLength = 0;
+
+                joint.attachmentPointA_world.set(attachmentA_current);
+                joint.attachmentPointB_world.set(attachmentB_current);
+            }
+        }
+    }
+
+
+    // --- System: PBD Constraint Solver ---
+    // Handles both Collisions and Cable Joint constraints using PBD
+    class PBDConstraintSolverSystem {
+        runInPause = false;
+
+        update(world, dt) {
+            const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+            const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent]);
+
+            // --- Ball-Ball Collisions ---
+            for (let i = 0; i < ballEntities.length; i++) {
+                for (let j = i + 1; j < ballEntities.length; j++) {
+                    const e1 = ballEntities[i];
+                    const e2 = ballEntities[j];
+
+                    const p1 = world.getComponent(e1, PositionComponent).pos;
+                    const v1 = world.getComponent(e1, VelocityComponent).vel;
+                    const r1 = world.getComponent(e1, RadiusComponent).radius;
+                    const m1 = world.getComponent(e1, MassComponent).mass;
+                    const res1 = world.getComponent(e1, RestitutionComponent).restitution;
+
+                    const p2 = world.getComponent(e2, PositionComponent).pos;
+                    const v2 = world.getComponent(e2, VelocityComponent).vel;
+                    const r2 = world.getComponent(e2, RadiusComponent).radius;
+                    const m2 = world.getComponent(e2, MassComponent).mass;
+                    const res2 = world.getComponent(e2, RestitutionComponent).restitution;
+
+                    const restitution = Math.min(res1, res2);
+                    const dir = new Vector2().subtractVectors(p2, p1);
+                    const dSq = dir.lengthSq();
+                    const rSum = r1 + r2;
+
+                    if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+                    const d = Math.sqrt(dSq);
+                    dir.scale(1.0 / d); // Normalize
+
+                    // Resolve penetration
+                    const corr = (rSum - d) / 2.0;
+                    p1.add(dir, -corr);
+                    p2.add(dir, corr);
+
+                    // Resolve velocity
+                    const vel1_dot = v1.dot(dir);
+                    const vel2_dot = v2.dot(dir);
+
+                    const newV1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2);
+                    const newV2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2);
+
+                    v1.add(dir, newV1_dot - vel1_dot);
+                    v2.add(dir, newV2_dot - vel2_dot);
+                }
+            }
+
+            // --- Ball-Obstacle Collisions ---
+            for (const ballId of ballEntities) {
+                const p1 = world.getComponent(ballId, PositionComponent).pos;
+                const v1 = world.getComponent(ballId, VelocityComponent).vel;
+                const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+                 for (const obsId of obstacleEntities) {
+                     const p2 = world.getComponent(obsId, PositionComponent).pos;
+                     const r2 = world.getComponent(obsId, RadiusComponent).radius;
+                     const pushVel = 2.0;
+
+                     const dir = new Vector2().subtractVectors(p1, p2);
+                     const dSq = dir.lengthSq();
+                     const rSum = r1 + r2;
+
+                     if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+                     const d = Math.sqrt(dSq);
+                     dir.scale(1.0 / d); // Normalize
+
+                     // Resolve penetration
+                     const corr = rSum - d;
+                     p1.add(dir, corr);
+
+                     // Resolve velocity (simple push)
+                     const v_dot = v1.dot(dir);
+                     v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
+                 }
+             }
+
+            // --- Cable Joint Constraints ---
+            const jointEntities = world.query([CableJointComponent]);
+            for (const jointId of jointEntities) {
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (!joint.isActive) continue;
+
+                const entityA = joint.entityA;
+                const entityB = joint.entityB;
+
+                const posA = world.getComponent(entityA, PositionComponent)?.pos;
+                const massA = world.getComponent(entityA, MassComponent)?.mass;
+                const velA = world.getComponent(entityA, VelocityComponent)?.vel
+                const posB = world.getComponent(entityB, PositionComponent)?.pos;
+                const massB = world.getComponent(entityB, MassComponent)?.mass;
+                const velB = world.getComponent(entityB, VelocityComponent)?.vel
+
+                if (!posA || !massA || !posB || !massB) {
+                    console.warn(`CableJoint ${jointId} constraint skipped: Missing Pos/Mass on entities ${entityA} or ${entityB}`);
+                    continue;
+                }
+
+                const invMassA = massA > 0 ? 1.0 / massA : 0.0;
+                const invMassB = massB > 0 ? 1.0 / massB : 0.0;
+                const totalInvMass = invMassA + invMassB;
+
+                if (totalInvMass <= 0.0) {
+                  continue; // Both objects immovable
+                }
+
+                // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
+                const pAttachA = joint.attachmentPointA_world;
+                const pAttachB = joint.attachmentPointB_world;
+
+                const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
+                const currentDist = dir.length();
+                const restLength = joint.restLength; // dn
+
+                // Constraint: currentDist <= restLength
+                if (currentDist > restLength) {
+                    const error = currentDist - restLength;
+                    dir.normalize(); // Normalize direction vector
+                    const corr = error / totalInvMass;
+
+                    // Calculate the displacement vectors (Standard PBD)
+                    const deltaA = dir.clone().scale(invMassA * corr);
+                    const deltaB = dir.clone().scale(-invMassB * corr);
+
+                    // Apply displacement to the entity positions.
+                    // This assumes the attachment point moves rigidly with the center.
+                    // A more correct PBD solver would handle angular effects.
+                    posA.add(deltaA);
+                    posB.add(deltaB);
+
+                    // Resolve velocity
+                    if (velA && invMassA > 0) {
+                      velA.add(deltaA, 1.0 / dt); // v_new = v_old + delta_p / dt
+                    }
+                    if (velB && invMassB > 0) {
+                      velB.add(deltaB, 1.0 / dt); // v_new = v_old + delta_p / dt
+                    }
+                }
+            } // end Cable Joint Constraints
+        } // end update
+    }
+
+    // --- System: Rendering ---
+    class RenderSystem {
+        runInPause = true; // Always render
+        constructor(canvas, cScale, simHeight) {
+            this.canvas = canvas;
+            this.c = canvas.getContext("2d");
+            this.cScale = cScale;
+            this.simHeight = simHeight; // Needed for y-flipping
+        }
+
+        // Coordinate transformation helpers
+        cX(x) { return x * this.cScale; }
+        cY(y) { return this.canvas.height - y * this.cScale; }
+
+        drawDisc(x, y, radius) {
+            this.c.beginPath();
+            this.c.arc(x, y, radius, 0.0, 2.0 * Math.PI);
+            this.c.closePath();
+            this.c.fill();
+        }
+
+        update(world, dt) {
+            this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // Render Balls
+            const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
+            for (const entityId of ballEntities) {
+                const posComp = world.getComponent(entityId, PositionComponent);
+                const radiusComp = world.getComponent(entityId, RadiusComponent);
+                const renderComp = world.getComponent(entityId, RenderableComponent);
+
+                this.c.fillStyle = renderComp.color;
+                this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
+            }
+
+            // Render Obstacles
+            const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
+            for (const entityId of obstacleEntities) {
+                 const posComp = world.getComponent(entityId, PositionComponent);
+                 const radiusComp = world.getComponent(entityId, RadiusComponent);
+                 const renderComp = world.getComponent(entityId, RenderableComponent);
+
+                 this.c.fillStyle = renderComp.color;
+                 this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
+            }
+
+            // Render Cable Joints
+            const jointEntities = world.query([CableJointComponent, RenderableComponent]);
+            this.c.strokeStyle = '#FFFF00'; // Default yellow, could use component color
+            this.c.lineWidth = 2;
+            for (const entityId of jointEntities) {
+                const jointComp = world.getComponent(entityId, CableJointComponent);
+                const renderComp = world.getComponent(entityId, RenderableComponent); // Get render comp for color/shape check
+
+                if (!jointComp.isActive || renderComp.shape !== 'line') continue; // Skip inactive or non-line joints
+
+                // Use cached world attachment points
+                const pA = jointComp.attachmentPointA_world;
+                const pB = jointComp.attachmentPointB_world;
+
+                // Check if points are valid (initialized)
+                if (pA.lengthSq() > 0 && pB.lengthSq() > 0) {
+                    this.c.strokeStyle = renderComp.color; // Use component's color
+                    this.c.beginPath();
+                    this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+                    this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+                    this.c.stroke();
+                }
+            }
+            this.c.lineWidth = 1; // Reset line width
+        }
+    }
+
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+
+    canvas.width = window.innerWidth - 20;
+    canvas.height = window.innerHeight - 100;
+
+    const cScale = canvas.height;
+    const simWidth = canvas.width / cScale;
+    const simHeight = canvas.height / cScale;
+
+    let world = new World();
+
+    function setupScene() {
+         world.clear(); // Clear entities and components
+
+        // --- Resources ---
+        world.setResource('gravity', new Vector2(0.0, -10.0));
+        world.setResource('dt', 1.0 / 60.0);
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
+        // Create a component for pause state and store it as a resource for easy access
+        world.setResource('pauseState', new PauseStateComponent(true));
+
+
+        // --- Entities and Components ---
+        // Ball Entities
+        const ballRadius = 0.03;
+        const ballRestitution = 0.4; // Slightly higher for more bounce
+
+        const ball1 = world.createEntity();
+        world.addComponent(ball1, new BallTagComponent());
+        world.addComponent(ball1, new PositionComponent(0.4, 0.5));
+        world.addComponent(ball1, new VelocityComponent(0.0, 1.0));
+        world.addComponent(ball1, new RadiusComponent(ballRadius));
+        world.addComponent(ball1, new MassComponent(0.3));
+        world.addComponent(ball1, new RestitutionComponent(ballRestitution));
+        world.addComponent(ball1, new GravityAffectedComponent());
+        world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
+
+        const ball2 = world.createEntity();
+        world.addComponent(ball2, new BallTagComponent());
+        world.addComponent(ball2, new PositionComponent(1.0, 0.3));
+        world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
+        world.addComponent(ball2, new RadiusComponent(ballRadius));
+        world.addComponent(ball2, new MassComponent(0.1));
+        world.addComponent(ball2, new RestitutionComponent(ballRestitution));
+        world.addComponent(ball2, new GravityAffectedComponent());
+        world.addComponent(ball2, new RenderableComponent('circle', '#00FF00'));
+
+        // Obstacle Entities
+        const obsColor = "#FF8000";
+        const obs1 = world.createEntity();
+        world.addComponent(obs1, new ObstacleTagComponent());
+        world.addComponent(obs1, new PositionComponent(0.75, 0.75));
+        world.addComponent(obs1, new MassComponent(-1.0));
+        world.addComponent(obs1, new RadiusComponent(0.1));
+        world.addComponent(obs1, new RenderableComponent('circle', obsColor));
+
+
+        // --- Cable Setup ---
+        // Connect: ball1 -> obs1 -> ball2
+        // Obstacles need WheelOrientation, Orientation, and CableLink (rolling)
+        // Balls need CableLink. Let's use attachment (not rolling for now) for simplicity.
+        // Add necessary components to obstacles (assuming they act as wheels)
+        world.addComponent(obs1, new WheelOrientationComponent(true));
+        world.addComponent(obs1, new CableLinkComponent());
+        world.addComponent(obs1, new CableLinkRollingTagComponent());
+        // Add CableLink to balls (as attachment points)
+        world.addComponent(ball1, new CableLinkComponent());
+        world.addComponent(ball2, new CableLinkComponent());
+        world.addComponent(ball1, new CableLinkAttachmentTagComponent());
+        world.addComponent(ball2, new CableLinkAttachmentTagComponent());
+
+        // --- Calculate Initial Cable State ---
+        // Need to compute initial attachment points and rest lengths
+        // Get relevant components
+        const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
+        const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
+        const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
+        const cw_obs1 = world.getComponent(obs1, WheelOrientationComponent).clockwisePreference;
+        const link_obs1 = world.getComponent(obs1, CableLinkComponent);
+        const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
+        const link_ball2 = world.getComponent(ball2, CableLinkComponent);
+
+        // Calculate initial points for joint1 (ball1 attachment <-> obs1 rolling)
+        const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
+        const initialPoints2 = tangentFromCircleToPoint(pos_ball2, pos_obs1, radius_obs1, cw_obs1);
+
+        // Create Cable Joint Entities with correct initial rest lengths
+        const joint1 = world.createEntity(); // ball1 <-> obs1
+        const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+        world.addComponent(joint1, new CableJointComponent(
+          ball1, obs1, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle)); // Order matters
+        world.addComponent(joint1, new RenderableComponent('line', '#FF0000')); // Red line
+
+        const joint2 = world.createEntity(); // obs1 <-> ball2
+        const initialDist2 = initialPoints2.a_attach.clone().subtract(initialPoints2.a_circle).length();
+        world.addComponent(joint2, new CableJointComponent(
+          obs1, ball2, initialDist2, initialPoints2.a_circle, initialPoints2.a_attach)); // Order matters
+        world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
+
+        const cablePath = world.createEntity();
+        world.addComponent(cablePath, new CablePathComponent([joint1, joint2])); // Order matters
+
+
+        // --- Systems Registration (Order Matters!) ---
+        if (world.systems.length === 0) { // Only register systems once
+             world.registerSystem(new GravitySystem());      // Applies gravity acceleration
+             world.registerSystem(new MovementSystem());     // Updates position based on velocity
+
+             // --- Cable Systems (Run BEFORE constraint solving) ---
+             world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
+
+             // --- Constraint Solver (Handles collisions AND cable joints) ---
+             world.registerSystem(new PBDConstraintSolverSystem()); // Resolves penetrations and cable length violations
+
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight)); // Draws everything
+        }
+
+         // Update button text based on initial pause state
+         const pauseState = world.getResource('pauseState');
+         pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+    }
+
+
+    // --- Main Loop ---
+    let lastTime = 0;
+    let doStep = true; // Whether to do a single step when paused
+
+    function gameLoop(currentTime) {
+        const dt = world.getResource('dt');
+        const pauseState = world.getResource('pauseState');
+
+        if (!pauseState.paused || doStep) {
+            if (doStep) pauseState.paused = false;
+            world.update(dt);
+            if (doStep) pauseState.paused = true;
+            doStep = false; // Reset step flag after executing one step
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Event Listeners ---
+    pauseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) {
+            pauseState.paused = !pauseState.paused;
+            pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+        }
+    });
+
+    resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setupScene(); // Re-initialize the world state
+        // Ensure pause state resource is reset if needed
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) pauseState.paused = true; // Start paused after reset
+        pauseBtn.textContent = "Resume";
+        doStep = true;
+    });
+
+    stepBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState && pauseState.paused) {
+            doStep = true;
+        }
+    });
+
+    // --- Start ---
+    setupScene();
+    requestAnimationFrame(gameLoop);
+
+</script>
+
+</body>
+</html>
