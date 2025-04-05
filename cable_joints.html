@@ -28,6 +28,7 @@
         addVectors(a, b) { this.x = a.x + b.x; this.y = a.y + b.y; return this; }
         subtract(v, s = 1.0) { this.x -= v.x * s; this.y -= v.y * s; return this; }
         subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
+        distanceTo(b) { return Math.sqrt((this.x - b.x)*(this.x - b.x) + (this.y - b.y)*(this.y - b.y)); }
         length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
         lengthSq() { return this.x * this.x + this.y * this.y; } // Optimization
         scale(s) { this.x *= s; this.y *= s; return this; }
@@ -269,6 +270,7 @@
             this.isActive = true; // For merge/split logic
             this.attachmentPointA_world = attachmentPointA_world.clone();
             this.attachmentPointB_world = attachmentPointB_world.clone();
+            this.tension = 0.0;
         }
     }
 
@@ -323,75 +325,128 @@
     // --- System: Cable Attachment Update ---
     // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
     class CableAttachmentUpdateSystem {
-        runInPause = false; // Physics system
+      runInPause = false; // Physics system
 
-        update(world, dt) {
-            const jointEntities = world.query([CableJointComponent]);
+      update(world, dt) {
+        const jointEntities = world.query([CableJointComponent]);
 
-            for (const jointId of jointEntities) {
-                const joint = world.getComponent(jointId, CableJointComponent);
-                if (!joint.isActive) continue;
+        for (const jointId of jointEntities) {
+          const joint = world.getComponent(jointId, CableJointComponent);
+          if (!joint.isActive) continue;
 
-                const entityA = joint.entityA;
-                const entityB = joint.entityB;
+          const entityA = joint.entityA;
+          const entityB = joint.entityB;
 
-                // Get components for Entity A
-                const posA = world.getComponent(entityA, PositionComponent)?.pos;
-                const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
-                const cwA = world.getComponent(entityA, WheelOrientationComponent)?.clockwisePreference;
-                const attachmentLinkA = world.getComponent(entityA, CableLinkAttachmentTagComponent);
-                const rollingLinkA = world.getComponent(entityA, CableLinkRollingTagComponent);
-                const linkA = world.getComponent(entityA, CableLinkComponent);
+          // Get components for Entity A
+          const posA = world.getComponent(entityA, PositionComponent)?.pos;
+          const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
+          const cwA = world.getComponent(entityA, WheelOrientationComponent)?.clockwisePreference;
+          const attachmentLinkA = world.getComponent(entityA, CableLinkAttachmentTagComponent);
+          const rollingLinkA = world.getComponent(entityA, CableLinkRollingTagComponent);
+          const linkA = world.getComponent(entityA, CableLinkComponent);
 
-                // Get components for Entity B
-                const posB = world.getComponent(entityB, PositionComponent)?.pos;
-                const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
-                const cwB = world.getComponent(entityB, WheelOrientationComponent)?.clockwisePreference;
-                const attachmentLinkB = world.getComponent(entityB, CableLinkAttachmentTagComponent);
-                const rollingLinkB = world.getComponent(entityB, CableLinkRollingTagComponent);
-                const linkB = world.getComponent(entityB, CableLinkComponent);
+          // Get components for Entity B
+          const posB = world.getComponent(entityB, PositionComponent)?.pos;
+          const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
+          const cwB = world.getComponent(entityB, WheelOrientationComponent)?.clockwisePreference;
+          const attachmentLinkB = world.getComponent(entityB, CableLinkAttachmentTagComponent);
+          const rollingLinkB = world.getComponent(entityB, CableLinkRollingTagComponent);
+          const linkB = world.getComponent(entityB, CableLinkComponent);
 
-                if (!posA || !linkA || !posB || !linkB) {
-                    console.warn(`CableJoint ${jointId} missing required components on entities ${entityA} or ${entityB}`);
-                    continue;
-                }
+          if (!posA || !linkA || !posB || !linkB) {
+            console.warn(`CableJoint ${jointId} missing required components on entities ${entityA} or ${entityB}`);
+            continue;
+          }
 
-                let attachmentA_current, attachmentB_current;
-                let sA = 0.0;
-                let sB = 0.0;
+          let attachmentA_current, attachmentB_current;
+          let sA = 0.0;
+          let sB = 0.0;
 
-                // --- Calculate Current Attachment Points ---
-                if (attachmentLinkA && rollingLinkB && radiusB && cwB) {
-                    const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
-                    attachmentA_current = tangents.a_attach; // This is just posA
-                    attachmentB_current = tangents.a_circle; // Tangent on circle B
-                    sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
-                } else if (rollingLinkA && attachmentLinkB && radiusA && cwA) {
-                    const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
-                    attachmentA_current = tangents.a_circle; // Tangent on circle A
-                    attachmentB_current = tangents.a_attach; // This is just posB
-                    sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
-                } else if (attachmentLinkA && attachmentLinkB) {
-                    attachmentA_current = posA.clone(); // Attach at center
-                    attachmentB_current = posB.clone();
-                } else {
-                    // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
-                    console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}`);
-                    attachmentA_current = posA.clone(); // Fallback
-                    attachmentB_current = posB.clone(); // Fallback
-                }
+          // --- Calculate Current Attachment Points ---
+          if (attachmentLinkA && rollingLinkB && radiusB && cwB) {
+            const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
+            attachmentA_current = tangents.a_attach; // This is just posA
+            attachmentB_current = tangents.a_circle; // Tangent on circle B
+            sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
+          } else if (rollingLinkA && attachmentLinkB && radiusA && cwA) {
+            const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
+            attachmentA_current = tangents.a_circle; // Tangent on circle A
+            attachmentB_current = tangents.a_attach; // This is just posB
+            sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
+          } else if (attachmentLinkA && attachmentLinkB) {
+            attachmentA_current = posA.clone(); // Attach at center
+            attachmentB_current = posB.clone();
+          } else {
+            // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
+            console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}`);
+            attachmentA_current = posA.clone(); // Fallback
+            attachmentB_current = posB.clone(); // Fallback
+          }
 
-                console.log("sA: ", sA);
-                console.log("sB: ", sB);
-                joint.restLength += sB - sA;
+          joint.tension = (new Vector2().subtractVectors(joint.attachmentPointA_world, joint.attachmentPointB_world).length())/joint.restLength;
+          if (joint.tension < 0.0) joint.tension = 0.0;
+          joint.restLength += sB - sA;
 
-                // Ensure rest length doesn't go negative
-                if (joint.restLength < 0) joint.restLength = 0;
+          // Ensure rest length doesn't go negative
+          if (joint.restLength < 0) joint.restLength = 0;
 
-                joint.attachmentPointA_world.set(attachmentA_current);
-                joint.attachmentPointB_world.set(attachmentB_current);
-            }
+          joint.attachmentPointA_world.set(attachmentA_current);
+          joint.attachmentPointB_world.set(attachmentB_current);
         }
+
+        const pathEntities = world.query([CablePathComponent]);
+        for (const pathId of pathEntities) {
+          const path = world.getComponent(pathId, CablePathComponent);
+          if (!path) continue;
+          const jointsInPath = path.jointEntities;
+          for (let i = 0; i < jointsInPath.length - 1; i++) { // Iterate over adjacent pairs
+            const jointId_i = jointsInPath[i];
+            const jointId_i_plus_1 = jointsInPath[i + 1];
+            const joint_i = world.getComponent(jointId_i, CableJointComponent);
+            const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+            // Ensure both joints exist and are active
+            if (!joint_i || !joint_i_plus_1 || !joint_i.isActive || !joint_i_plus_1.isActive) continue;
+            // Check if they share a rolling pulley
+            // We need the rolling status of the connection points
+            const isB_i_Rolling = world.hasComponent(joint_i.entityB, CableLinkRollingTagComponent);
+            const isA_i_plus_1_Rolling = world.hasComponent(joint_i_plus_1.entityA, CableLinkRollingTagComponent);
+
+            // Assuming standard path structure A->B, A->B, check B_i == A_i+1
+            if (isB_i_Rolling && isA_i_plus_1_Rolling && joint_i.entityB === joint_i_plus_1.entityA) {
+              // Calculate current lengths using the attachment points updated in Pass A
+              const currentDist_i = joint_i.attachmentPointA_world.distanceTo(joint_i.attachmentPointB_world);
+              const currentDist_i_plus_1 = joint_i_plus_1.attachmentPointA_world.distanceTo(joint_i_plus_1.attachmentPointB_world);
+
+              // Get rest lengths (these include the geometric deltas from Pass A)
+              const dn_i = joint_i.restLength;
+              const dn_i_plus_1 = joint_i_plus_1.restLength;
+
+              // Calculate totals needed for equalization
+              const totalDN = dn_i + dn_i_plus_1;
+              const totalCurrentDist = currentDist_i + currentDist_i_plus_1;
+              const error = totalDN - totalCurrentDist;
+              const totalTension = joint_i.tension + joint_i_plus_1.tension;
+
+
+              // Avoid division by zero; keep existing lengths if degenerate
+              if (totalDN > 1e-9 && totalCurrentDist > 1e-9) {
+                // Calculate and assign new rest lengths to equalize tension ratio (d/dn)
+                // This overrides the purely geometric lengths for this pair.
+                joint_i.restLength += error * (joint_i.tension / totalTension);
+                joint_i_plus_1.restLength += error * (joint_i_plus_1.tension / totalTension);
+              }
+            }
+          }
+        }
+        // --- Pass C: Final clamp for all joints ---
+        // Ensure no negative rest lengths after all adjustments.
+        for (const jointId of jointEntities) {
+          const joint = world.getComponent(jointId, CableJointComponent);
+          if (joint && joint.isActive && joint.restLength < 0) {
+            joint.restLength = 0;
+          }
+        }
+      }
     }
 
 
