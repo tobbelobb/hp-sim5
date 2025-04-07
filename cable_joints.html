@@ -288,11 +288,25 @@
         const jointId_i_plus_1 = jointEntities[i + 1];
         const joint_i = world.getComponent(jointId_i, CableJointComponent);
         const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-        const isB_i_Rolling = world.hasComponent(joint_i.entityB, CableLinkRollingTagComponent);
-        const isA_i_plus_1_Rolling = world.hasComponent(joint_i_plus_1.entityA, CableLinkRollingTagComponent);
+        const linkId = joint_i.entityB;
+        const linkId2 = joint_i_plus_1.entityA;
+        const isRolling = world.hasComponent(linkId, CableLinkRollingTagComponent);
         // Assuming standard path structure A->B, A->B, check B_i == A_i+1
-        if (isB_i_Rolling && isA_i_plus_1_Rolling && joint_i.entityB === joint_i_plus_1.entityA) {
-          this.totalRestLength += world.getComponent(joint_i.entityB, CableLinkComponent).stored;
+        if (linkId === linkId2 && isRolling) {
+          const rolling_link = world.getComponent(linkId, CableLinkComponent);
+          const center = world.getComponent(linkId, PositionComponent).pos;
+          const radius = world.getComponent(linkId, RadiusComponent).radius;
+          const cw = world.getComponent(linkId, WheelOrientationComponent).clockwisePreference;
+
+          const initialStoredLength = signedArcLengthOnWheel(
+              joint_i.attachmentPointB_world,
+              joint_i_plus_1.attachmentPointA_world,
+              center,
+              radius,
+              cw
+          );
+          world.getComponent(linkId, CableLinkComponent).stored = initialStoredLength;
+          this.totalRestLength += initialStoredLength;
         }
       }
     }
