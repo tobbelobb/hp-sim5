@@ -359,7 +359,63 @@
     runInPause = false; // Physics system
 
     update(world, dt) {
-      const jointEntities = world.query([CableJointComponent]);
+      var jointEntities = world.query([CableJointComponent]);
+
+      // Merge joints
+      const pathEntities = world.query([CablePathComponent]);
+      for (const pathId of pathEntities) {
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (!path || path.jointEntities.length < 2) continue;
+        const jointsInPath = path.jointEntities;
+        for (let i = 0; i < jointsInPath.length - 1; i++) { // Iterate over adjacent pairs
+          const jointId_i = jointsInPath[i];
+          const jointId_i_plus_1 = jointsInPath[i + 1];
+          const joint_i = world.getComponent(jointId_i, CableJointComponent);
+          const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+          const linkId = joint_i.entityB;
+          const linkId2 = joint_i_plus_1.entityA;
+          const isRolling = world.hasComponent(linkId, CableLinkRollingTagComponent);
+          // Assuming standard path structure A->B, A->B, check B_i == A_i+1
+          if (linkId === linkId2 && isRolling) {
+            const link = world.getComponent(linkId, CableLinkComponent);
+            if (link.stored < 0.0) {
+              joint_i.restLength += joint_i_plus_1.restLength + link.stored;
+              joint_i.entityB = joint_i_plus_1.entityB;
+              link.active = false;
+              joint_i_plus_1.isActive = false;
+              world.destroyEntity(jointId_i_plus_1);
+              jointsInPath.splice(1, i+1);
+              jointEntities.splice(1, jointId_i_plus_1);
+            }
+          }
+        }
+      }
+
+      for (const pathId of pathEntities) {
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (!path || path.jointEntities.length < 2) continue;
+        const jointsInPath = path.jointEntities;
+        const jointId_first = jointsInPath[0];
+        const jointId_last = jointsInPath[jointsInPath.length - 1];
+
+        const joint_first = world.getComponent(jointId_first, CableJointComponent);
+        const joint_last = world.getComponent(jointId_last, CableJointComponent);
+        // Ensure both joints exist and are active
+        if (!joint_first || !joint_last || !joint_first.isActive || !joint_last.isActive) continue;
+
+        // Calculate current lengths using the attachment points updated in Pass A
+        const currentDist_first = joint_first.attachmentPointA_world.distanceTo(joint_first.attachmentPointB_world);
+        const currentDist_last = joint_last.attachmentPointA_world.distanceTo(joint_last.attachmentPointB_world);
+        const s = world.getComponent(joint_first.entityB, CableLinkComponent).stored;
+
+        // Get rest lengths (these include the geometric deltas from Pass A)
+        const dn_first = joint_first.restLength;
+        const dn_last = joint_last.restLength;
+
+        const totalCurrentDist = dn_first + dn_last + s;
+        const error = path.totalRestLength - totalCurrentDist;
+        // console.log(error); // error is and should be very close to zero
+      }
 
       for (const jointId of jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
@@ -425,33 +481,6 @@
         joint.attachmentPointB_world.set(attachmentB_current);
       }
 
-      // Full cable pre-solver is only used for debugging
-      const pathEntities = world.query([CablePathComponent]);
-      for (const pathId of pathEntities) {
-        const path = world.getComponent(pathId, CablePathComponent);
-        if (!path || path.jointEntities.length < 2) continue;
-        const jointsInPath = path.jointEntities;
-        const jointId_first = jointsInPath[0];
-        const jointId_last = jointsInPath[jointsInPath.length - 1];
-
-        const joint_first = world.getComponent(jointId_first, CableJointComponent);
-        const joint_last = world.getComponent(jointId_last, CableJointComponent);
-        // Ensure both joints exist and are active
-        if (!joint_first || !joint_last || !joint_first.isActive || !joint_last.isActive) continue;
-
-        // Calculate current lengths using the attachment points updated in Pass A
-        const currentDist_first = joint_first.attachmentPointA_world.distanceTo(joint_first.attachmentPointB_world);
-        const currentDist_last = joint_last.attachmentPointA_world.distanceTo(joint_last.attachmentPointB_world);
-        const s = world.getComponent(joint_first.entityB, CableLinkComponent).stored;
-
-        // Get rest lengths (these include the geometric deltas from Pass A)
-        const dn_first = joint_first.restLength;
-        const dn_last = joint_last.restLength;
-
-        const totalCurrentDist = dn_first + dn_last + s;
-        const error = path.totalRestLength - totalCurrentDist;
-        // console.log(error); // Is and should be very close to zero
-      }
     }
   }
 
@@ -722,7 +751,7 @@
     world.addComponent(ball1, new PositionComponent(2.5*0.5, 2.1*0.5));
     world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
-    world.addComponent(ball1, new MassComponent(0.10001));
+    world.addComponent(ball1, new MassComponent(0.1001));
     world.addComponent(ball1, new RestitutionComponent(ballRestitution));
     world.addComponent(ball1, new GravityAffectedComponent());
     world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
@@ -799,9 +828,9 @@
       world.registerSystem(new MovementSystem());     // Updates position based on velocity
 
       // --- Cable Systems (Run BEFORE constraint solving) ---
-      world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
       world.registerSystem(new PBDBallBallCollisions());
       world.registerSystem(new PBDBallObstacleCollisions());
+      world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
       world.registerSystem(new PBDCableConstraintSolver());
 
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight)); // Draws everything
