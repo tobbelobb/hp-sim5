@@ -404,9 +404,6 @@
           attachmentB_current = posB.clone(); // Fallback
         }
 
-        joint.tension = (new Vector2().subtractVectors(joint.attachmentPointA_world, joint.attachmentPointB_world).length())/joint.restLength;
-        if (joint.tension < 0.0) joint.tension = 0.0;
-
         // Ensure rest length doesn't go negative
         if (joint.restLength < 0) joint.restLength = 0;
 
@@ -414,61 +411,32 @@
         joint.attachmentPointB_world.set(attachmentB_current);
       }
 
+      // Full path pre-solver is only used for debugging
       const pathEntities = world.query([CablePathComponent]);
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
-        if (!path) continue;
+        if (!path || path.jointEntities.length < 2) continue;
         const jointsInPath = path.jointEntities;
-        for (let i = 0; i < jointsInPath.length - 1; i++) { // Iterate over adjacent pairs
-          const jointId_i = jointsInPath[i];
-          const jointId_i_plus_1 = jointsInPath[i + 1];
-          const joint_i = world.getComponent(jointId_i, CableJointComponent);
-          const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-          // Ensure both joints exist and are active
-          if (!joint_i || !joint_i_plus_1 || !joint_i.isActive || !joint_i_plus_1.isActive) continue;
-          // Check if they share a rolling pulley
-          // We need the rolling status of the connection points
-          const isB_i_Rolling = world.hasComponent(joint_i.entityB, CableLinkRollingTagComponent);
-          const isA_i_plus_1_Rolling = world.hasComponent(joint_i_plus_1.entityA, CableLinkRollingTagComponent);
+        const jointId_first = jointsInPath[0];
+        const jointId_last = jointsInPath[jointsInPath.length - 1];
 
-          // Assuming standard path structure A->B, A->B, check B_i == A_i+1
-          if (isB_i_Rolling && isA_i_plus_1_Rolling && joint_i.entityB === joint_i_plus_1.entityA) {
-            // Calculate current lengths using the attachment points updated in Pass A
-            const currentDist_i = joint_i.attachmentPointA_world.distanceTo(joint_i.attachmentPointB_world);
-            const currentDist_i_plus_1 = joint_i_plus_1.attachmentPointA_world.distanceTo(joint_i_plus_1.attachmentPointB_world);
+        const joint_first = world.getComponent(jointId_first, CableJointComponent);
+        const joint_last = world.getComponent(jointId_last, CableJointComponent);
+        // Ensure both joints exist and are active
+        if (!joint_first || !joint_last || !joint_first.isActive || !joint_last.isActive) continue;
 
-            // Get rest lengths (these include the geometric deltas from Pass A)
-            const dn_i = joint_i.restLength;
-            const dn_i_plus_1 = joint_i_plus_1.restLength;
+        // Calculate current lengths using the attachment points updated in Pass A
+        const currentDist_first = joint_first.attachmentPointA_world.distanceTo(joint_first.attachmentPointB_world);
+        const currentDist_last = joint_last.attachmentPointA_world.distanceTo(joint_last.attachmentPointB_world);
+        const s = world.getComponent(joint_first.entityB, CableLinkComponent).stored;
 
-            // Calculate totals needed for equalization
-            const totalDN = path.totalRestLength - world.getComponent(joint_i.entityB, CableLinkComponent).stored;
-            // dn_i + dn_i_plus_1 == totalDN
+        // Get rest lengths (these include the geometric deltas from Pass A)
+        const dn_first = joint_first.restLength;
+        const dn_last = joint_last.restLength;
 
-
-            const err_i = currentDist_i - dn_i;
-            const err_i_plus_1 = currentDist_i_plus_1 - dn_i_plus_1;
-            const totalCurrentDist = currentDist_i + currentDist_i_plus_1;
-            const error = totalDN - totalCurrentDist;
-
-
-            //// Avoid division by zero; keep existing lengths if degenerate
-            //if (totalDN > 1e-9 && totalCurrentDist > 1e-9) {
-            //  // Calculate and assign new rest lengths to equalize tension ratio (d/dn)
-            //  // This overrides the purely geometric lengths for this pair.
-            //  joint_i.restLength += error * (joint_i.tension / totalTension);
-            //  joint_i_plus_1.restLength += error * (joint_i_plus_1.tension / totalTension);
-            //}
-          }
-        }
-      }
-      // --- Pass C: Final clamp for all joints ---
-      // Ensure no negative rest lengths after all adjustments.
-      for (const jointId of jointEntities) {
-        const joint = world.getComponent(jointId, CableJointComponent);
-        if (joint && joint.isActive && joint.restLength < 0) {
-          joint.restLength = 0;
-        }
+        const totalCurrentDist = dn_first + dn_last + s;
+        const error = path.totalRestLength - totalCurrentDist;
+        console.log(error); // Is and should be very close to zero
       }
     }
   }
@@ -734,17 +702,17 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0.65, 0.5));
+    world.addComponent(ball1, new PositionComponent(0.5, 0.5));
     world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
-    world.addComponent(ball1, new MassComponent(0.1));
+    world.addComponent(ball1, new MassComponent(0.101));
     world.addComponent(ball1, new RestitutionComponent(ballRestitution));
     world.addComponent(ball1, new GravityAffectedComponent());
     world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(0.85, 0.3));
+    world.addComponent(ball2, new PositionComponent(1.00, 0.3));
     world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
