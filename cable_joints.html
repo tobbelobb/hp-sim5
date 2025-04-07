@@ -391,6 +391,17 @@
         }
       }
 
+      // Split joints
+      // Entities that can cause a split
+      const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
+      for (const pathId of pathEntities) {
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (!path || path.jointEntities.length < 1) continue;
+        for (const jointId of path.jointEntities) {
+
+        }
+      }
+
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
         if (!path || path.jointEntities.length < 2) continue;
