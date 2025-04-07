@@ -219,7 +219,7 @@
       this.entities.clear();
       this.components.clear();
       this.nextEntityId = 0;
-      // Keep systems and resources usually
+      // Keep systems and resources
     }
 
     update(dt) {
@@ -400,8 +400,8 @@
         } else {
           // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
           console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}`);
-          attachmentA_current = posA.clone(); // Fallback
-          attachmentB_current = posB.clone(); // Fallback
+          attachmentA_current = posA.clone();
+          attachmentB_current = posB.clone();
         }
 
         // Ensure rest length doesn't go negative
@@ -411,7 +411,7 @@
         joint.attachmentPointB_world.set(attachmentB_current);
       }
 
-      // Full path pre-solver is only used for debugging
+      // Full cable pre-solver is only used for debugging
       const pathEntities = world.query([CablePathComponent]);
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
@@ -436,22 +436,15 @@
 
         const totalCurrentDist = dn_first + dn_last + s;
         const error = path.totalRestLength - totalCurrentDist;
-        console.log(error); // Is and should be very close to zero
+        // console.log(error); // Is and should be very close to zero
       }
     }
   }
 
-
-  // --- System: PBD Constraint Solver ---
-  // Handles both Collisions and Cable Joint constraints using PBD
-  class PBDConstraintSolverSystem {
+  class PBDBallBallCollisions {
     runInPause = false;
-
     update(world, dt) {
       const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
-      const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent]);
-
-      // --- Ball-Ball Collisions ---
       for (let i = 0; i < ballEntities.length; i++) {
         for (let j = i + 1; j < ballEntities.length; j++) {
           const e1 = ballEntities[i];
@@ -495,8 +488,15 @@
           v2.add(dir, newV2_dot - vel2_dot);
         }
       }
+    }
+  }
 
-      // --- Ball-Obstacle Collisions ---
+  class PBDBallObstacleCollisions {
+    runInPause = false;
+
+    update(world, dt) {
+      const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+      const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent]);
       for (const ballId of ballEntities) {
         const p1 = world.getComponent(ballId, PositionComponent).pos;
         const v1 = world.getComponent(ballId, VelocityComponent).vel;
@@ -525,8 +525,13 @@
           v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
         }
       }
+    }
+  }
 
-      // --- Cable Joint Constraints ---
+  class PBDCableConstraintSolver {
+    runInPause = false;
+
+    update(world, dt) {
       const pathEntities = world.query([CablePathComponent]);
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
@@ -564,8 +569,8 @@
         const dirB = new Vector2().subtractVectors(pAttachB, jointB.attachmentPointA_world);
         const currentDistA = dirA.length();
         const currentDistB = dirB.length();
-        const restLengthA = jointA.restLength; // dn
-        const restLengthB = jointB.restLength; // dn
+        const restLengthA = jointA.restLength;
+        const restLengthB = jointB.restLength;
 
         // Constraint: currentDist <= restLength
         if (currentDistA > restLengthA || currentDistB > restLengthB) {
@@ -593,8 +598,8 @@
             velB.add(deltaB, 1.0 / dt); // v_new = v_old + delta_p / dt
           }
         }
-      } // end Cable Joint Constraints
-    } // end update
+      }
+    }
   }
 
   // --- System: Rendering ---
@@ -645,7 +650,6 @@
 
       // Render Cable Joints
       const jointEntities = world.query([CableJointComponent, RenderableComponent]);
-      this.c.strokeStyle = '#FFFF00'; // Default yellow, could use component color
       this.c.lineWidth = 2;
       for (const entityId of jointEntities) {
         const jointComp = world.getComponent(entityId, CableJointComponent);
@@ -653,7 +657,6 @@
 
         if (!jointComp.isActive || renderComp.shape !== 'line') continue; // Skip inactive or non-line joints
 
-        // Use cached world attachment points
         const pA = jointComp.attachmentPointA_world;
         const pB = jointComp.attachmentPointB_world;
 
@@ -677,7 +680,7 @@
   canvas.width = window.innerWidth - 20;
   canvas.height = window.innerHeight - 100;
 
-  const cScale = canvas.height;
+  const cScale = canvas.height/2;
   const simWidth = canvas.width / cScale;
   const simHeight = canvas.height / cScale;
 
@@ -702,17 +705,17 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0.5, 0.5));
+    world.addComponent(ball1, new PositionComponent(2.5*0.5, 2.1*0.5));
     world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
-    world.addComponent(ball1, new MassComponent(0.101));
+    world.addComponent(ball1, new MassComponent(0.10001));
     world.addComponent(ball1, new RestitutionComponent(ballRestitution));
     world.addComponent(ball1, new GravityAffectedComponent());
     world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.00, 0.3));
+    world.addComponent(ball2, new PositionComponent(1.7*1.00, 4*0.3));
     world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
@@ -724,7 +727,7 @@
     const obsColor = "#FF8000";
     const obs1 = world.createEntity();
     world.addComponent(obs1, new ObstacleTagComponent());
-    world.addComponent(obs1, new PositionComponent(0.75, 0.75));
+    world.addComponent(obs1, new PositionComponent(2*0.75, 2*0.75));
     world.addComponent(obs1, new MassComponent(-1.0));
     world.addComponent(obs1, new RadiusComponent(0.1));
     world.addComponent(obs1, new RenderableComponent('circle', obsColor));
@@ -783,9 +786,9 @@
 
       // --- Cable Systems (Run BEFORE constraint solving) ---
       world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
-
-      // --- Constraint Solver (Handles collisions AND cable joints) ---
-      world.registerSystem(new PBDConstraintSolverSystem()); // Resolves penetrations and cable length violations
+      world.registerSystem(new PBDBallBallCollisions());
+      world.registerSystem(new PBDBallObstacleCollisions());
+      world.registerSystem(new PBDCableConstraintSolver());
 
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight)); // Draws everything
     }
@@ -798,9 +801,9 @@
 
   // --- Main Loop ---
   let lastTime = 0;
-  let doStep = true; // Whether to do a single step when paused
+  let doStep = true;
 
-  function gameLoop(currentTime) {
+  function loop(currentTime) {
     const dt = world.getResource('dt');
     const pauseState = world.getResource('pauseState');
 
@@ -808,10 +811,10 @@
       if (doStep) pauseState.paused = false;
       world.update(dt);
       if (doStep) pauseState.paused = true;
-      doStep = false; // Reset step flag after executing one step
+      doStep = false;
     }
 
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(loop);
   }
 
   // --- Event Listeners ---
@@ -826,10 +829,9 @@
 
   resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    setupScene(); // Re-initialize the world state
-    // Ensure pause state resource is reset if needed
+    setupScene();
     const pauseState = world.getResource('pauseState');
-    if (pauseState) pauseState.paused = true; // Start paused after reset
+    if (pauseState) pauseState.paused = true;
     pauseBtn.textContent = "Resume";
     doStep = true;
   });
@@ -844,7 +846,7 @@
 
   // --- Start ---
   setupScene();
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 
 </script>
 
