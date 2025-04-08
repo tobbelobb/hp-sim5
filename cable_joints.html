@@ -398,36 +398,41 @@
     runInPause = false; // Physics system
 
     update(world, dt) {
-      //var jointEntities = world.query([CableJointComponent]);
 
       //// Merge joints
       const pathEntities = world.query([CablePathComponent]);
-      //for (const pathId of pathEntities) {
-      //  const path = world.getComponent(pathId, CablePathComponent);
-      //  if (!path || path.jointEntities.length < 2) continue;
-      //  const jointsInPath = path.jointEntities;
-      //  for (let i = 0; i < jointsInPath.length - 1; i++) { // Iterate over adjacent pairs
-      //    const jointId_i = jointsInPath[i];
-      //    const jointId_i_plus_1 = jointsInPath[i + 1];
-      //    const joint_i = world.getComponent(jointId_i, CableJointComponent);
-      //    const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-      //    const linkId = joint_i.entityB;
-      //    const linkId2 = joint_i_plus_1.entityA;
-      //    const isRolling = world.hasComponent(linkId, CableLinkRollingTagComponent);
-      //    // Assuming standard path structure A->B, A->B, check B_i == A_i+1
-      //    if (linkId === linkId2 && isRolling) {
-      //      const link = world.getComponent(linkId, CableLinkComponent);
-      //      if (link.stored < 0.0) {
-      //        joint_i.restLength += joint_i_plus_1.restLength + link.stored;
-      //        joint_i.entityB = joint_i_plus_1.entityB;
-      //        joint_i_plus_1.isActive = false;
-      //        world.destroyEntity(jointId_i_plus_1);
-      //        jointsInPath.splice(1, i+1);
-      //        jointEntities.splice(1, jointId_i_plus_1);
-      //      }
-      //    }
-      //  }
-      //}
+      for (const pathId of pathEntities) {
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (!path || path.jointEntities.length < 2) continue;
+        const jointsInPath = path.jointEntities;
+        for (let i = 0; i < path.jointEntities.length - 1; i++) { // Iterate over adjacent pairs
+          const jointId_i = path.jointEntities[i];
+          const jointId_i_plus_1 = path.jointEntities[i + 1];
+          const joint_i = world.getComponent(jointId_i, CableJointComponent);
+          const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+          const linkId = joint_i.entityB;
+          const linkId2 = joint_i_plus_1.entityA;
+          if (linkId !== linkId2) {
+            log.warn("Merge loop saw disconnected cable path");
+          }
+          const isRolling = path.linkTypes[i + 1] === 'rolling';
+          // Assuming standard path structure A->B, A->B, check B_i == A_i+1
+          if (isRolling) {
+            if (path.stored[i + 1] < 0.0) {
+              console.log(path);
+              joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
+              path.jointEntities.splice(i+1, 1);
+              path.stored.splice(i+1, 1);
+              path.cw.splice(i+1, 1);
+              path.linkTypes.splice(i+1, 1);
+              joint_i.entityB = joint_i_plus_1.entityB;
+              joint_i_plus_1.isActive = false;
+              world.destroyEntity(jointId_i_plus_1);
+              console.log(path);
+            }
+          }
+        }
+      }
 
       // Split joints
       // Entities that can cause a split
@@ -489,31 +494,28 @@
       //  }
       //}
 
-      //for (const pathId of pathEntities) {
-      //  const path = world.getComponent(pathId, CablePathComponent);
-      //  if (!path || path.jointEntities.length < 2) continue;
-      //  const jointsInPath = path.jointEntities;
-      //  const jointId_first = jointsInPath[0];
-      //  const jointId_last = jointsInPath[jointsInPath.length - 1];
+      // Debugging/test loop 1
+      for (const pathId of pathEntities) {
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (!path || path.jointEntities.length < 1) continue;
+        var totalCurrentDist = 0.0;
+        var totalCurrentRestLength = 0.0;
+        for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
+          const jointId = path.jointEntities[jointIdx];
+          const joint = world.getComponent(jointId, CableJointComponent);
 
-      //  const joint_first = world.getComponent(jointId_first, CableJointComponent);
-      //  const joint_last = world.getComponent(jointId_last, CableJointComponent);
-      //  // Ensure both joints exist and are active
-      //  if (!joint_first || !joint_last || !joint_first.isActive || !joint_last.isActive) continue;
+          // Ensure joint exist and is active
+          if (!joint || !joint.isActive) continue;
 
-      //  // Calculate current lengths using the attachment points updated in Pass A
-      //  const currentDist_first = joint_first.attachmentPointA_world.distanceTo(joint_first.attachmentPointB_world);
-      //  const currentDist_last = joint_last.attachmentPointA_world.distanceTo(joint_last.attachmentPointB_world);
-      //  const s = world.getComponent(joint_first.entityB, CableLinkComponent).stored;
+          // Calculate current lengths using the attachment points updated in Pass A
+          const currentDist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+          totalCurrentDist += currentDist + path.stored[jointIdx + 1];
+          totalCurrentRestLength += joint.restLength + path.stored[jointIdx + 1];
+        }
 
-      //  // Get rest lengths (these include the geometric deltas from Pass A)
-      //  const dn_first = joint_first.restLength;
-      //  const dn_last = joint_last.restLength;
-
-      //  const totalCurrentDist = dn_first + dn_last + s;
-      //  const error = path.totalRestLength - totalCurrentDist;
-      //  // console.log(error); // error is and should be very close to zero
-      //}
+        const error = path.totalRestLength - totalCurrentRestLength;
+        console.log("error path ",  pathId, ": ", error); // rest length error is and should be very close to zero
+      }
 
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
