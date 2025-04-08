@@ -446,6 +446,7 @@
     runInPause = false; // Physics system
 
     update(world, dt) {
+      var skipJoints = [];
 
       //// Merge joints
       const pathEntities = world.query([CablePathComponent]);
@@ -464,9 +465,9 @@
             log.warn("Merge loop saw disconnected cable path");
           }
           const isRolling = path.linkTypes[i + 1] === 'rolling';
-          // Assuming standard path structure A->B, A->B, check B_i == A_i+1
           if (isRolling) {
             if (path.stored[i + 1] < 0.0) {
+              console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1}.`);
               joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
               path.jointEntities.splice(i+1, 1);
               path.stored.splice(i+1, 1);
@@ -475,6 +476,7 @@
               joint_i.entityB = joint_i_plus_1.entityB;
               joint_i_plus_1.isActive = false;
               world.destroyEntity(jointId_i_plus_1);
+              skipJoints.push(jointId_i);
             }
           }
         }
@@ -489,7 +491,10 @@
         for (var jointIndex = 0; jointIndex < path.jointEntities.length; jointIndex++) {
           const jointId = path.jointEntities[jointIndex];
           const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint.isActive) continue;
+          if (!joint.isActive || skipJoints.includes(jointId)) {
+            console.log("continues");
+            continue;
+          }
           const pA = joint.attachmentPointA_world;
           const pB = joint.attachmentPointB_world;
           for (const splitterId of potentialSplitters) {
@@ -500,7 +505,7 @@
             const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
             if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
               console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
-              console.log(path.cw);
+              //console.log(path.stored);
               const cw = true;
               const initialPoints = tangentFromCircleToPoint(pB, posSplitter, radiusSplitter, cw);
               const initialDist = initialPoints.a_attach.clone().subtract(initialPoints.a_circle).length();
@@ -514,6 +519,8 @@
                 splitterId, joint.entityB, initialDist, initialPoints.a_circle, initialPoints.a_attach));
               world.addComponent(newJointId, new RenderableComponent('line', '#0000FF'));
 
+              // TODO There's something here driving up error.
+              // The attachment point calculations are not spot on.
               const initialPointsJ = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
               const initialDistJ = initialPointsJ.a_attach.clone().subtract(initialPointsJ.a_circle).length();
               joint.entityB = splitterId;
@@ -528,7 +535,7 @@
                   cw
               );
               path.stored.splice(jointIndex + 1, 0, s);
-              console.log(path.cw);
+              //console.log(path.stored);
             }
           }
         }
@@ -554,7 +561,7 @@
         }
 
         const error = path.totalRestLength - totalCurrentRestLength;
-        //console.log("error path ",  pathId, ": ", error); // rest length error is and should be very close to zero
+        console.log("error path ",  pathId, ": ", error); // rest length error is and should be very close to zero
       }
 
       for (const pathId of pathEntities) {
