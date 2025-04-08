@@ -434,7 +434,9 @@
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
         if (!path || path.jointEntities.length < 1) continue;
-        for (const jointId of path.jointEntities) {
+        let jointIndex = 0;
+        while (jointIndex < path.jointEntities.length) {
+          const jointId = path.jointEntities[jointIndex];
           const joint = world.getComponent(jointId, CableJointComponent);
           if (!joint.isActive) continue;
           const pA = joint.attachmentPointA_world;
@@ -478,9 +480,11 @@
               joint.entityB = splitterId;
               joint.attachmentPointB_world.set(initialPointsJ.a_circle);
               joint.restLength = initialDistJ;
+              path.jointEntities.splice(jointIndex + 1, 0, newJointId);
 
             }
           }
+          jointIndex++;
         }
       }
 
