@@ -121,6 +121,43 @@
     return radius * angle;
   }
 
+  /**
+   * Checks if a line segment intersects a circle.
+   * @param {Vector2} p1 - Start point of the segment
+   * @param {Vector2} p2 - End point of the segment
+   * @param {Vector2} center - Center of the circle
+   * @param {number} radius - Radius of the circle
+   * @returns {boolean} True if the segment intersects the circle, false otherwise.
+   */
+  function lineSegmentCircleIntersection(p1, p2, center, radius) {
+    // 1. Check if either endpoint is inside the circle
+    if (p1.distanceTo(center) <= radius || p2.distanceTo(center) <= radius) {
+      return true;
+    }
+
+    // 2. Check if the projection of the center onto the line lies within the segment
+    const d = new Vector2().subtractVectors(p2, p1);
+    const lc = new Vector2().subtractVectors(center, p1);
+    const dLengthSq = d.lengthSq();
+
+    // Project center onto the line containing the segment
+    let t = lc.dot(d);
+    if (dLengthSq > 1e-9) { // Avoid division by zero for zero-length segment
+        t /= dLengthSq;
+    }
+
+    if (t < 0.0) {
+      return false; // Closest point is p1
+    } else if (t > 1.0) {
+      return false; // Closest point is p2
+    }
+
+    const closestPointOnLine = p1.clone().add(d, t);
+
+    // 3. Check if the closest point on the segment is within the circle's radius
+    return closestPointOnLine.distanceTo(center) <= radius;
+  }
+
 
   // --- ECS Core ---
   class World {
@@ -398,7 +435,52 @@
         const path = world.getComponent(pathId, CablePathComponent);
         if (!path || path.jointEntities.length < 1) continue;
         for (const jointId of path.jointEntities) {
+          const joint = world.getComponent(jointId, CableJointComponent);
+          if (!joint.isActive) continue;
+          const pA = joint.attachmentPointA_world;
+          const pB = joint.attachmentPointB_world;
+          for (const splitterId of potentialSplitters) {
+            if (splitterId === joint.entityA || splitterId === joint.entityB) {
+              continue;
+            }
+            const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
+            const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
+            if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
+              console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
+              const initialPoints1 = tangentFromCircleToPoint(pB, posSplitter, radiusSplitter, true);
+              const initialPoints2 = tangentFromCircleToPoint(pB, posSplitter, radiusSplitter, false);
+              const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+              const initialDist2 = initialPoints2.a_attach.clone().subtract(initialPoints2.a_circle).length();
 
+              // Find the tangent that is the shortest. A bit lazy way to do it maybe.
+              let initialPoints;
+              let initialDist
+              let cw;
+              if (initialDist1 < initialDist2) {
+                initialPoints = initialPoints1;
+                initialDist = initialDist1;
+                cw = true;
+              } else {
+                initialPoints = initialPoints2;
+                initialDist = initialDist2;
+                cw = false;
+              }
+
+              const newJointId = world.createEntity();
+              world.addComponent(splitterId, new WheelOrientationComponent(cw));
+              world.addComponent(splitterId, new CableLinkRollingTagComponent());
+              world.addComponent(newJointId, new CableJointComponent(
+                splitterId, joint.entityB, initialDist, initialPoints.a_circle, initialPoints.a_attach));
+              world.addComponent(newJointId, new RenderableComponent('line', '#0000FF'));
+
+              const initialPointsJ = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
+              const initialDistJ = initialPointsJ.a_attach.clone().subtract(initialPointsJ.a_circle).length();
+              joint.entityB = splitterId;
+              joint.attachmentPointB_world.set(initialPointsJ.a_circle);
+              joint.restLength = initialDistJ;
+
+            }
+          }
         }
       }
 
@@ -759,7 +841,7 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(2.5*0.5, 2.1*0.5));
+    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.1*0.5));
     world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
@@ -769,7 +851,7 @@
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.7*1.00, 4*0.3));
+    world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.3));
     world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
