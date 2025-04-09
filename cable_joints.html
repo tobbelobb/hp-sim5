@@ -771,8 +771,27 @@
         for (let j = i + 1; j < ballEntities.length; j++) {
           const e1 = ballEntities[i];
           const e2 = ballEntities[j];
+          // TODO: When a ball moves, the joint.attachmentPointA_world and joint.attachmentPointB_world connected
+          // to it must also move by the same amount
           //e1_jointAs = [];
-          //world.query
+          //e1_jointBs = [];
+          //e2_jointAs = [];
+          //e2_jointBs = [];
+          //for (const jointId in world.query([CableJointComponent])) {
+          //  const joint = world.getComponent(jointId, CableJointComponent);
+          //  if (joint.entityA === e1) {
+          //    e1_jointAs.push(jointId);
+          //  }
+          //  if (joint.entityB === e1) {
+          //    e1_jointBs.push(jointId);
+          //  }
+          //  if (joint.entityA === e2) {
+          //    e1_jointAs.push(jointId);
+          //  }
+          //  if (joint.entityB === e2) {
+          //    e1_jointBs.push(jointId);
+          //  }
+          //}
 
           const p1 = world.getComponent(e1, PositionComponent).pos;
           const v1 = world.getComponent(e1, VelocityComponent).vel;
