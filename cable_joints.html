@@ -570,31 +570,18 @@
             debugPoints[`posB`] = { pos: posB.clone(), color: '#FFFFFF' };// white
             attachmentA_current = tangents.a_attach; // This is just posA
             attachmentB_current = tangents.a_circle; // Tangent on circle B
-            // This is a terrible hack
-            const entityC = world.getComponent(path.jointEntities[B], CableJointComponent).entityB;
-            const posC = world.getComponent(entityC, PositionComponent).pos;
-            if (path.linkTypes[B+1] === 'rolling') {
-              const radiusC = world.getComponent(entityC, RadiusComponent).radius;
-              const cwC = path.cw[B+1];
-              const tangents2 = tangentFromCircleToCircle(posB, radiusB, cwB, posC, radiusC, cwC);
-              const sB = signedArcLengthOnWheel(tangents2.a_circle, attachmentB_current, posB, radiusB, cwB);
-              path.stored[B] -= sB;
-              joint.restLength += sB;
-              console.log(`sB: updated path.stored[${B}] by ${-sB}. cwB was ${cwB}.`);
-              debugPoints[`joint_${jointId}_prevB`] =
-                { pos: tangents2.a_circle.clone(), color: '#FF00FF' };// Magenta
-              debugPoints[`joint_${jointId}_currB`] =
-                { pos: attachmentB_current.clone(), color: '#00FFFF' }; // Cyan
-              console.log(joint.attachmentPointB_world.clone().subtract(attachmentB_current).length());
-            } else {
-              const sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
-              path.stored[B] -= sB;
-              joint.restLength += sB;
-              console.log(`sB: updated path.stored[${B}] by ${-sB}. cwB was ${cwB}.`);
-            }
+            const sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
+            path.stored[B] -= sB;
+            joint.restLength += sB;
             if (path.stored.length === 4 && B === 1) {
               //console.log(joint.attachmentPointB_world);
               //console.log(attachmentB_current);
+              debugPoints[`joint_${jointId}_prevB`] =
+                { pos: joint.attachmentPointB_world.clone(), color: '#FF00FF' };// Magenta
+              debugPoints[`joint_${jointId}_currB`] =
+                { pos: attachmentB_current.clone(), color: '#00FFFF' }; // Cyan
+              console.log(joint.attachmentPointB_world.clone().subtract(attachmentB_current).length());
+              console.log(`sB: updated path.stored[${B}] by ${-sB}. cwB was ${cwB}.`);
             }
           } else if (rollingLinkA && attachmentLinkB && radiusA) {
             const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
@@ -1065,7 +1052,7 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.0*0.5));
+    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.1*0.5));
     world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
@@ -1076,7 +1063,7 @@
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
     world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.3));
-    world.addComponent(ball2, new VelocityComponent(-0.75, 0.0));
+    world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
     world.addComponent(ball2, new RestitutionComponent(ballRestitution));
