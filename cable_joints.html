@@ -448,38 +448,78 @@
     update(world, dt) {
       const pathEntities = world.query([CablePathComponent]);
       //// Merge joints
-      var skipJoints = [];
-      //for (const pathId of pathEntities) {
-      //  const path = world.getComponent(pathId, CablePathComponent);
-      //  if (!path || path.jointEntities.length < 2) continue;
-      //  const jointsInPath = path.jointEntities;
-      //  for (let i = 0; i < path.jointEntities.length - 1; i++) { // Iterate over adjacent pairs
-      //    const jointId_i = path.jointEntities[i];
-      //    const jointId_i_plus_1 = path.jointEntities[i + 1];
-      //    const joint_i = world.getComponent(jointId_i, CableJointComponent);
-      //    const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-      //    const linkId = joint_i.entityB;
-      //    const linkId2 = joint_i_plus_1.entityA;
-      //    if (linkId !== linkId2) {
-      //      log.warn("Merge loop saw disconnected cable path");
-      //    }
-      //    const isRolling = path.linkTypes[i + 1] === 'rolling';
-      //    if (isRolling) {
-      //      if (path.stored[i + 1] < 0.0) {
-      //        console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1}.`);
-      //        joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
-      //        path.jointEntities.splice(i+1, 1);
-      //        path.stored.splice(i+1, 1);
-      //        path.cw.splice(i+1, 1);
-      //        path.linkTypes.splice(i+1, 1);
-      //        joint_i.entityB = joint_i_plus_1.entityB;
-      //        joint_i_plus_1.isActive = false;
-      //        world.destroyEntity(jointId_i_plus_1);
-      //        skipJoints.push(jointId_i);
-      //      }
-      //    }
-      //  }
-      //}
+      for (const pathId of pathEntities) {
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (!path || path.jointEntities.length < 2) continue;
+        const jointsInPath = path.jointEntities;
+        for (let i = 0; i < path.jointEntities.length - 1; i++) { // Iterate over adjacent pairs
+          const jointId_i = path.jointEntities[i];
+          const jointId_i_plus_1 = path.jointEntities[i + 1];
+          const joint_i = world.getComponent(jointId_i, CableJointComponent);
+          const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+          const linkId = joint_i.entityB;
+          const linkId2 = joint_i_plus_1.entityA;
+          if (linkId !== linkId2) {
+            log.warn("Merge loop saw disconnected cable path");
+          }
+          console.log(`was stored: ${path.stored[i+1]}`);
+          const isRolling = path.linkTypes[i + 1] === 'rolling';
+          if (isRolling) {
+            if (path.stored[i + 1] < 0.0) {
+              console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1}.`);
+              const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
+              const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
+              const cwA = path.cw[i];
+              const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
+              const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
+              const cwB = path.cw[i+2];
+              joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
+              joint_i.entityB = joint_i_plus_1.entityB;
+              const isRollingA = path.linkTypes[i] === 'rolling';
+              const isAttachmentA = path.linkTypes[i] === 'attachment';
+              const isRollingB = path.linkTypes[i+2] === 'rolling';
+              const isAttachmentB = path.linkTypes[i+2] === 'attachment';
+              if (isRollingA && isRollingB) {
+                const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+                const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
+                path.stored[i] += sA;
+                joint.restLength -= sA;
+                const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
+                path.stored[i+2] -= sB;
+                joint.restLength += sB;
+                joint_i.attachmentPointA_world = tangents.a_circle;
+                joint_i.attachmentPointB_world = tangents.b_circle;
+              } else if (isRollingA && isAttachmentB) {
+                const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
+                const sA = signedArcLengthOnWheel(joint_1.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
+                path.stored[i] += sA;
+                joint_i.restLength -= sA;
+                joint_i.attachmentPointA_world = tangents.a_circle;
+                joint_i.attachmentPointB_world = tangents.a_attach;
+              } else if (isAttachmentA && isRollingB) {
+                const tangents = tangentFromCircleToPoint(posA, posB, radiusB, cwB);
+                const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.a_circle, posB, radiusB, cwB);
+                path.stored[i+2] -= sB;
+                joint_i.restLength += sB;
+                console.log(`sB merge: updated path.stored[${i+2}] by ${-sB}`);
+                joint_i.attachmentPointA_world = tangents.a_attach;
+                joint_i.attachmentPointB_world = tangents.a_circle;
+              } else {
+                joint_i.attachmentPointA_world = posA;
+                joint_i.attachmentPointB_world = posB;
+              }
+
+              path.jointEntities.splice(i+1, 1);
+              path.stored.splice(i+1, 1);
+              path.cw.splice(i+1, 1);
+              path.linkTypes.splice(i+1, 1);
+              joint_i_plus_1.isActive = false;
+              world.destroyEntity(jointId_i_plus_1);
+            }
+          }
+        }
+        console.log(`path.stored up here: ${path.stored}`);
+      }
 
 
       for (const pathId of pathEntities) {
@@ -527,6 +567,7 @@
             sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
             path.stored[B] -= sB;
             joint.restLength += sB;
+            console.log(`sB: updated path.stored[${B}] by ${-sB}`);
           } else if (rollingLinkA && attachmentLinkB && radiusA) {
             const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
             attachmentA_current = tangents.a_circle; // Tangent on circle A
@@ -534,6 +575,7 @@
             sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
             path.stored[A] += sA;
             joint.restLength -= sA;
+            console.log(`sA: updated path.stored[${A}] by ${-sA}`);
           } else if (rollingLinkA && rollingLinkB) {
             const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
             attachmentA_current = tangents.a_circle;
@@ -544,9 +586,8 @@
             sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
             path.stored[B] -= sB;
             joint.restLength += sB;
+            console.log(`sA and sB: updated path.stored[${B}] by ${-sB} and path.stored[${A}] by ${sA}`);
           } else {
-            // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
-            console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}: ${path.linkTypes[A]}, ${path.linkTypes[B]}`);
             attachmentA_current = posA.clone();
             attachmentB_current = posB.clone();
           }
@@ -568,7 +609,7 @@
         for (var jointIndex = 0; jointIndex < path.jointEntities.length; jointIndex++) {
           const jointId = path.jointEntities[jointIndex];
           const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint.isActive || skipJoints.includes(jointId)) {
+          if (!joint.isActive) {
             console.log("continues");
             continue;
           }
@@ -687,7 +728,8 @@
         }
 
         const error = path.totalRestLength - totalCurrentRestLength;
-        console.log("error path ",  pathId, ": ", error); // rest length error is and should be very close to zero
+        console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+        console.log(`stored: ${path.stored}`);
       }
     }
   }
@@ -1052,6 +1094,7 @@
 
     if (!pauseState.paused || doStep) {
       if (doStep) pauseState.paused = false;
+      console.log("----------------------------------------------");
       world.update(dt);
       if (doStep) pauseState.paused = true;
       doStep = false;
