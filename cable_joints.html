@@ -340,7 +340,7 @@
   class BallTagComponent { /* Tag component */ }
   class ObstacleTagComponent { /* Tag component */ }
   class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
-  class CableLinkComponent { /* Tag component */ }
+  class CableLinkComponent { constructor(x = 0, y = 0) { this.prevPos = new Vector2(x, y); } }
 
   // Represents a single segment constraint between two entities
   class CableJointComponent {
@@ -446,6 +446,11 @@
     runInPause = false; // Physics system
 
     update(world, dt) {
+      const debugPoints = world.getResource('debugRenderPoints');
+      // Clear points from the previous frame
+      for (const key in debugPoints) {
+          delete debugPoints[key];
+      }
       const pathEntities = world.query([CablePathComponent]);
       //// Merge joints
       for (const pathId of pathEntities) {
@@ -544,6 +549,7 @@
 
           // Get components for Entity B
           const posB = world.getComponent(entityB, PositionComponent)?.pos;
+          const velB = world.getComponent(entityB, VelocityComponent)?.vel;
           const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
           const cwB = path.cw[B];
           const attachmentLinkB = path.linkTypes[B] === 'attachment';
@@ -556,24 +562,45 @@
           }
 
           let attachmentA_current, attachmentB_current;
-          let sA = 0.0;
-          let sB = 0.0;
 
           // --- Calculate Current Attachment Points ---
           if (attachmentLinkA && rollingLinkB && radiusB) {
             const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
+            debugPoints[`posA`] = { pos: posA.clone(), color: '#000000' };// black
+            debugPoints[`posB`] = { pos: posB.clone(), color: '#FFFFFF' };// white
             attachmentA_current = tangents.a_attach; // This is just posA
             attachmentB_current = tangents.a_circle; // Tangent on circle B
-            sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
-            path.stored[B] -= sB;
-            joint.restLength += sB;
-            if (path.stored.length === 4 && B === 1)
+            // This is a terrible hack
+            const entityC = world.getComponent(path.jointEntities[B], CableJointComponent).entityB;
+            const posC = world.getComponent(entityC, PositionComponent).pos;
+            if (path.linkTypes[B+1] === 'rolling') {
+              const radiusC = world.getComponent(entityC, RadiusComponent).radius;
+              const cwC = path.cw[B+1];
+              const tangents2 = tangentFromCircleToCircle(posB, radiusB, cwB, posC, radiusC, cwC);
+              const sB = signedArcLengthOnWheel(tangents2.a_circle, attachmentB_current, posB, radiusB, cwB);
+              path.stored[B] -= sB;
+              joint.restLength += sB;
               console.log(`sB: updated path.stored[${B}] by ${-sB}. cwB was ${cwB}.`);
+              debugPoints[`joint_${jointId}_prevB`] =
+                { pos: tangents2.a_circle.clone(), color: '#FF00FF' };// Magenta
+              debugPoints[`joint_${jointId}_currB`] =
+                { pos: attachmentB_current.clone(), color: '#00FFFF' }; // Cyan
+              console.log(joint.attachmentPointB_world.clone().subtract(attachmentB_current).length());
+            } else {
+              const sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
+              path.stored[B] -= sB;
+              joint.restLength += sB;
+              console.log(`sB: updated path.stored[${B}] by ${-sB}. cwB was ${cwB}.`);
+            }
+            if (path.stored.length === 4 && B === 1) {
+              //console.log(joint.attachmentPointB_world);
+              //console.log(attachmentB_current);
+            }
           } else if (rollingLinkA && attachmentLinkB && radiusA) {
             const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
             attachmentA_current = tangents.a_circle; // Tangent on circle A
             attachmentB_current = tangents.a_attach; // This is just posB
-            sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
+            const sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
             path.stored[A] += sA;
             joint.restLength -= sA;
             if (path.stored.length === 4 && A === 1)
@@ -582,10 +609,10 @@
             const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
             attachmentA_current = tangents.a_circle;
             attachmentB_current = tangents.b_circle;
-            sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
+            const sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
             path.stored[A] += sA;
             joint.restLength -= sA;
-            sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
+            const sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
             path.stored[B] -= sB;
             joint.restLength += sB;
             if (path.stored.length === 4 && (A === 1 || B === 1))
@@ -697,12 +724,16 @@
                   cw
               );
               // The line is slightly stretched due to the intersection with the new link (the splitterId Entity).
-              // Distributes the discrepancy (length_error) to one sides of the new link only.
+              // Distributes the discrepancy (length_error) to both sides of the new link such that tension remains constant on both sides of the new link.
+              // The paper states:
+              // "The rest length of the original joint is distributed among the new joints such that the tension on both sides are equal."
+              // "The rest length is split such that the tension remains constant."
+              // "tension (the current length divided by the rest length)"
               const length_error = initialDist2 - (joint.restLength - initialDist1 - s);
-              joint.restLength = joint.restLength - initialDist1 - s;
+              joint.restLength = initialDist2 - length_error*initialDist2/(initialDist1+initialDist2);
               //console.log(`New joint.restLength down here is ${joint.restLength}`);
               world.addComponent(newJointId, new CableJointComponent(
-                splitterId, entityB, initialDist1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
+                splitterId, entityB, initialDist1 - length_error*initialDist1/(initialDist1+initialDist2), attachmentPointAForNewJoint, attachmentPointBForNewJoint));
               world.addComponent(newJointId, new RenderableComponent('line', '#0000FF'));
               //console.log("s is this: ", s);
               joint.attachmentPointB_world.set(newAttachmentPointBForJoint);
@@ -712,6 +743,11 @@
             }
           }
         }
+      }
+
+      const linkEntities = world.query([CableLinkComponent, PositionComponent]);
+      for (const link of linkEntities) {
+        world.getComponent(link, CableLinkComponent).prevPos = world.getComponent(link, PositionComponent).pos;
       }
 
       // Debugging/test loop 1
@@ -735,7 +771,7 @@
 
         const error = path.totalRestLength - totalCurrentRestLength;
         //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-        console.log(`stored: ${path.stored}`);
+        //console.log(`stored: ${path.stored}`);
       }
     }
   }
@@ -748,6 +784,8 @@
         for (let j = i + 1; j < ballEntities.length; j++) {
           const e1 = ballEntities[i];
           const e2 = ballEntities[j];
+          //e1_jointAs = [];
+          //world.query
 
           const p1 = world.getComponent(e1, PositionComponent).pos;
           const v1 = world.getComponent(e1, VelocityComponent).vel;
@@ -969,6 +1007,28 @@
         }
       }
       this.c.lineWidth = 1; // Reset line width
+
+      const debugPoints = world.getResource('debugRenderPoints');
+      if (debugPoints) {
+          const debugRadius = 3; // Pixel radius for debug dots
+          this.c.save(); // Save current style state
+          for (const key in debugPoints) {
+              const pointData = debugPoints[key];
+              if (pointData && pointData.pos) {
+                  this.c.fillStyle = pointData.color;
+                  // Use drawDisc or fillRect for small points
+                  this.c.beginPath();
+                  this.c.arc(
+                      this.cX(pointData.pos.x),
+                      this.cY(pointData.pos.y),
+                      debugRadius,
+                      0, 2 * Math.PI
+                  );
+                  this.c.fill();
+              }
+          }
+          this.c.restore(); // Restore previous style state
+      }
     }
   }
 
@@ -995,6 +1055,7 @@
     world.setResource('simHeight', simHeight);
     // Create a component for pause state and store it as a resource for easy access
     world.setResource('pauseState', new PauseStateComponent(true));
+    world.setResource('debugRenderPoints', {}); // Initialize empty object for debug points
 
 
     // --- Entities and Components ---
@@ -1004,7 +1065,7 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.1*0.5));
+    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.0*0.5));
     world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
@@ -1015,7 +1076,7 @@
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
     world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.3));
-    world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
+    world.addComponent(ball2, new VelocityComponent(-0.75, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
     world.addComponent(ball2, new RestitutionComponent(ballRestitution));
@@ -1076,6 +1137,7 @@
       world.registerSystem(new MovementSystem());     // Updates position based on velocity
 
       // --- Cable Systems (Run BEFORE constraint solving) ---
+
       world.registerSystem(new PBDBallBallCollisions());
       world.registerSystem(new PBDBallObstacleCollisions());
       world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
