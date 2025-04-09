@@ -452,32 +452,6 @@
           delete debugPoints[key];
       }
 
-      const allJointEntities = world.query([CableJointComponent]);
-      for (const jointId of allJointEntities) {
-          const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint || !joint.isActive) continue; // Skip inactive joints
-
-          const entityA = joint.entityA;
-          const entityB = joint.entityB;
-
-          const posAComp = world.getComponent(entityA, PositionComponent);
-          const linkAComp = world.getComponent(entityA, CableLinkComponent);
-          const posBComp = world.getComponent(entityB, PositionComponent);
-          const linkBComp = world.getComponent(entityB, CableLinkComponent);
-
-          // Check if both linked entities have the necessary components to calculate delta
-          if (posAComp && linkAComp) {
-              const deltaA = new Vector2().subtractVectors(posAComp.pos, linkAComp.prevPos);
-              joint.attachmentPointA_world.add(deltaA);
-          }
-          if (posBComp && linkBComp) {
-              const deltaB = new Vector2().subtractVectors(posBComp.pos, linkBComp.prevPos);
-              joint.attachmentPointB_world.add(deltaB);
-          }
-      }
-
-
-
       const pathEntities = world.query([CablePathComponent]);
       //// Merge joints
       for (const pathId of pathEntities) {
@@ -1088,7 +1062,7 @@
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
     world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.3));
-    world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
+    world.addComponent(ball2, new VelocityComponent(-0.7, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
     world.addComponent(ball2, new RestitutionComponent(ballRestitution));
