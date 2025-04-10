@@ -822,9 +822,10 @@
               }
               joint.entityB = splitterId; // Original joint now connects A -> Splitter
 
+              // Calculate stored length 's' on the new splitter link
               const s = signedArcLengthOnWheel(
-                  newAttachmentPointBForJoint,
-                  attachmentPointAForNewJoint,
+                  newAttachmentPointBForJoint, // Point on splitter from A side
+                  attachmentPointAForNewJoint, // Point on splitter from B side
                   posSplitter,
                   radiusSplitter,
                   cw
