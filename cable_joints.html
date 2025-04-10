@@ -472,7 +472,7 @@
           //console.log(`was stored: ${path.stored[i+1]}`);
           const isRolling = path.linkTypes[i + 1] === 'rolling';
           if (isRolling) {
-            if (path.stored[i + 1] < 0.0) {
+            if (path.stored[i + 1] < 0.01) {
               console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1}.`);
               const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
               const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
@@ -768,6 +768,11 @@
                 console.warn(`Splitting cable joint attached to ${linkTypeA} is not supported.`);
               }
               joint.entityB = splitterId;
+
+              const rA = newAttachmentPointBForJoint.clone().subtract(posSplitter);
+              console.log(rA.length());
+              const rB = attachmentPointAForNewJoint.clone().subtract(posSplitter);
+              console.log(rB.length());
               const s = signedArcLengthOnWheel(
                   newAttachmentPointBForJoint,
                   attachmentPointAForNewJoint,
@@ -775,6 +780,7 @@
                   radiusSplitter,
                   cw
               );
+
               // The line is slightly stretched due to the intersection with the new link (the splitterId Entity).
               // Distributes the discrepancy (length_error) to both sides of the new link such that tension remains constant on both sides of the new link.
               // The paper states:
