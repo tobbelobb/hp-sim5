@@ -1013,10 +1013,15 @@
             continue;
         }
 
+        // --- Calculate Total Path Error ---
+        const totalPathError = totalCurrentLength - path.totalRestLength;
+
         // --- 2. Iterate Through Joints and Apply Corrections ---
-        for (const jointId of path.jointEntities) {
-          const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint || !joint.isActive) continue;
+        // Apply correction only if the entire path is longer than its rest length
+        if (totalPathError > epsilon) {
+            for (const jointId of path.jointEntities) {
+              const joint = world.getComponent(jointId, CableJointComponent);
+              if (!joint || !joint.isActive) continue;
 
           const entityA = joint.entityA;
           const entityB = joint.entityB;
@@ -1050,15 +1055,13 @@
           const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
           const currentLength = dir.length();
 
-          // Calculate error for this specific joint
-          const error = currentLength - joint.restLength;
-
-          // Apply correction only if the joint is currently longer than its target length
-          if (error > 0 && currentLength > epsilon) {
+          // We use the totalPathError calculated earlier, not individual joint error.
+          // Apply correction if the joint has non-zero length (to avoid NaN with normalization)
+          if (currentLength > epsilon) {
             dir.scale(1.0 / currentLength); // Normalize direction vector
 
-            // Use the path's total inverse mass for the correction magnitude
-            const corr = error / pathTotalInvMass;
+            // Use the path's total error and total inverse mass for the correction magnitude
+            const corr = totalPathError / pathTotalInvMass;
 
             // Calculate displacement vectors (Standard PBD)
             // Distribute correction based on individual inverse masses
@@ -1077,10 +1080,10 @@
             if (velB && invMassB > 0 && dt > epsilon) {
               velB.add(deltaB, 1.0 / dt); // v_new = v_old + delta_p / dt
             }
-          }
+          } // End if currentLength > epsilon
         } // End loop through joints in path
-      } // End loop through paths
-    }
+      } // End if totalPathError > epsilon
+    } // End loop through paths
   }
 
   // --- System: Rendering ---
