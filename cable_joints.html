@@ -518,7 +518,7 @@
                 joint_i.attachmentPointA_world = tangents.a_circle;
                 joint_i.attachmentPointB_world = tangents.a_attach;
               } else if (isAttachmentA && isRollingB) {
-                const tangents = tangentFromCircleToPoint(posA, posB, radiusB, cwB);
+                const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
                 const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.a_circle, posB, radiusB, cwB);
                 path.stored[i+2] -= sB;
                 console.log(`    Merge Step 2 (AttachA-RollB): Adding sB=${sB.toFixed(4)} to joint_i.restLength`);
