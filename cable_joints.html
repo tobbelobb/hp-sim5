@@ -796,14 +796,42 @@
               // "The rest length of the original joint is distributed among the new joints such that the tension on both sides are equal."
               // "The rest length is split such that the tension remains constant."
               // "tension (the current length divided by the rest length)"
-              const length_error = initialDist2 - (joint.restLength - initialDist1 - s);
-              joint.restLength = initialDist2 - length_error*initialDist2/(initialDist1+initialDist2);
-              //console.log(`New joint.restLength down here is ${joint.restLength}`);
+              // Distribute original rest length (minus new stored length s)
+              // between the two new segments to maintain equal tension.
+              const originalRestLength = joint.restLength; // Store before modifying
+              const totalDist = initialDist1 + initialDist2;
+              let newRestLength1 = 0; // For new joint (splitter -> entityB)
+              let newRestLength2 = 0; // For original joint (entityA -> splitter)
+
+              if (totalDist > 1e-9) { // Avoid division by zero if distances are tiny
+                  const availableRestLength = originalRestLength - s;
+                  if (availableRestLength < 0) {
+                      console.warn(`Split resulted in negative available rest length (${availableRestLength.toFixed(4)}). Clamping.`);
+                      // This might happen if s is large due to tight wrapping.
+                      // Simple clamp for now, might need better handling.
+                      newRestLength1 = 0;
+                      newRestLength2 = 0;
+                  } else {
+                      newRestLength1 = availableRestLength * initialDist1 / totalDist;
+                      newRestLength2 = availableRestLength * initialDist2 / totalDist;
+                  }
+              } else {
+                  console.warn("Split occurred with near-zero distance between new segments.");
+                  // Assign zero rest lengths if distances are negligible
+                  newRestLength1 = 0;
+                  newRestLength2 = 0;
+              }
+
+              // Update original joint (now entityA -> splitter)
+              joint.restLength = newRestLength2;
+              joint.attachmentPointB_world.set(newAttachmentPointBForJoint); // Update endpoint
+
+              // Create the new joint (splitter -> entityB)
               world.addComponent(newJointId, new CableJointComponent(
-                splitterId, entityB, initialDist1 - length_error*initialDist1/(initialDist1+initialDist2), attachmentPointAForNewJoint, attachmentPointBForNewJoint));
-              world.addComponent(newJointId, new RenderableComponent('line', '#0000FF'));
-              console.log("s is this: ", s);
-              joint.attachmentPointB_world.set(newAttachmentPointBForJoint);
+                  splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
+              world.addComponent(newJointId, new RenderableComponent('line', '#0000FF')); // Blue line for new joint
+
+              console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
               path.stored.splice(jointIndex + 1, 0, s);
 
               //console.log(path.stored);
