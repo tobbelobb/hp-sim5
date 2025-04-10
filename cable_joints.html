@@ -500,7 +500,7 @@
             const angleThreshold = Math.PI / 180.0; // 1 degree
 
             // Merge if link has radius, stored length < radius, AND angle > threshold
-            if (radiusComp && storedLength < linkRadius && angle > angleThreshold) {
+            if (radiusComp && storedLength < linkRadius && angle < angleThreshold) {
               console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)}°)`);
               const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
               const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius; // Nullish coalescing for safety
@@ -787,7 +787,7 @@
                 joint.restLength -= sA;
                 //console.log(`split increased restLength (-sA) by ${-sA}`)
                 newAttachmentPointBForJoint = initialPoints.b_circle;
-                console.log("New attachment A changes stored by: ", sA);
+                // console.log("New attachment A changes stored by: ", sA);
               } else if (linkTypeA === 'attachment') {
                 initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw); // HERE
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
@@ -797,10 +797,6 @@
               }
               joint.entityB = splitterId;
 
-              const rA = newAttachmentPointBForJoint.clone().subtract(posSplitter);
-              console.log(rA.length());
-              const rB = attachmentPointAForNewJoint.clone().subtract(posSplitter);
-              console.log(rB.length());
               const s = signedArcLengthOnWheel(
                   newAttachmentPointBForJoint,
                   attachmentPointAForNewJoint,
