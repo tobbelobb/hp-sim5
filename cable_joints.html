@@ -770,6 +770,8 @@
               } else if (linkTypeA === 'attachment') {
                 debugPoints[`posA`] =
                   { pos: posA.clone(), color: '#FFFFFF' };// White
+                debugPoints[`posSplitter`] =
+                  { pos: posSplitter.clone(), color: '#FFFFFF' };// White
                 initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
                 newAttachmentPointBForJoint = initialPoints2.a_circle;
