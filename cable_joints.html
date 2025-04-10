@@ -728,7 +728,6 @@
                 const sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
                 path.stored[jointIndex + 1] -= sB;
                 joint.restLength += sB;
-                //console.log(`split increased restLength (sB) by ${sB}`)
               } else if (linkTypeB === 'attachment') {
                 initialPoints = tangentFromCircleToPoint(posB, posSplitter, radiusSplitter, cw);
                 initialDist1 = initialPoints.a_attach.clone().subtract(initialPoints.a_circle).length();
