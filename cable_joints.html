@@ -527,96 +527,167 @@
         //console.log(`path.stored up here: ${path.stored}`);
       }
 
+
       // -- New attachment points --
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
+        if (!path) continue; // Ensure path exists
+
+        // Iterate through joints to calculate NEW tangent points and update lengths
         for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
           const jointId = path.jointEntities[jointIdx];
           const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint.isActive) continue;
-          const A = jointIdx;
-          const B = jointIdx + 1;
+          if (!joint || !joint.isActive) continue; // Check joint validity
+
+          const A = jointIdx; // Index for link/cw/stored related to entity A side
+          const B = jointIdx + 1; // Index for link/cw/stored related to entity B side
 
           const entityA = joint.entityA;
           const entityB = joint.entityB;
 
-          // Get components for Entity A
-          const posA = world.getComponent(entityA, PositionComponent)?.pos;
-          const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
+          // Get components for Entity A using CURRENT positions
+          const posAComp = world.getComponent(entityA, PositionComponent);
+          const radiusAComp = world.getComponent(entityA, RadiusComponent);
+          const linkAComp = world.getComponent(entityA, CableLinkComponent); // Needed for prevPos if rolling
+          const posA = posAComp?.pos;
+          const radiusA = radiusAComp?.radius;
           const cwA = path.cw[A];
           const attachmentLinkA = path.linkTypes[A] === 'attachment';
           const rollingLinkA = path.linkTypes[A] === 'rolling';
-          const linkA = world.getComponent(entityA, CableLinkComponent);
 
-          // Get components for Entity B
-          const posB = world.getComponent(entityB, PositionComponent)?.pos;
-          const velB = world.getComponent(entityB, VelocityComponent)?.vel;
-          const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
+          // Get components for Entity B using CURRENT positions
+          const posBComp = world.getComponent(entityB, PositionComponent);
+          const radiusBComp = world.getComponent(entityB, RadiusComponent);
+          const linkBComp = world.getComponent(entityB, CableLinkComponent); // Needed for prevPos if rolling
+          const posB = posBComp?.pos;
+          const radiusB = radiusBComp?.radius;
           const cwB = path.cw[B];
           const attachmentLinkB = path.linkTypes[B] === 'attachment';
           const rollingLinkB = path.linkTypes[B] === 'rolling';
-          const linkB = world.getComponent(entityB, CableLinkComponent);
 
-          if (!posA || !linkA || !posB || !linkB) {
-            console.warn(`CableJoint ${jointId} missing required components on entities ${entityA} or ${entityB}`);
+          // --- Essential Checks ---
+          if (!posA || !posB) {
+            console.warn(`CableJoint ${jointId} missing PositionComponent on entities ${entityA} or ${entityB}. Skipping update.`);
             continue;
           }
+          if (rollingLinkA && (!radiusAComp || !linkAComp)) {
+             console.warn(`CableJoint ${jointId} entity ${entityA} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
+             continue;
+          }
+           if (rollingLinkB && (!radiusBComp || !linkBComp)) {
+             console.warn(`CableJoint ${jointId} entity ${entityB} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
+             continue;
+          }
+          // --- End Checks ---
+
 
           let attachmentA_current, attachmentB_current;
+          let sA = 0; // Change in stored length on side A due to wrapping/unwrapping this frame
+          let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
 
-          // --- Calculate Current Attachment Points ---
-          if (attachmentLinkA && rollingLinkB && radiusB) {
-            const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
-            debugPoints[`posA`] = { pos: posA.clone(), color: '#000000' };// black
-            debugPoints[`posB`] = { pos: posB.clone(), color: '#FFFFFF' };// white
+          // --- Calculate Ideal Current Attachment Points based on CURRENT entity positions ---
+          let tangents; // Declare tangents variable outside specific cases
+          if (attachmentLinkA && rollingLinkB) {
+            tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
             attachmentA_current = tangents.a_attach; // This is just posA
             attachmentB_current = tangents.a_circle; // Tangent on circle B
-            const sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
-            path.stored[B] -= sB;
-            joint.restLength += sB;
-            if (path.stored.length === 4 && B === 1) {
-              //console.log(joint.attachmentPointB_world);
-              //console.log(attachmentB_current);
-              debugPoints[`joint_${jointId}_prevB`] =
-                { pos: joint.attachmentPointB_world.clone(), color: '#FF00FF' };// Magenta
-              debugPoints[`joint_${jointId}_currB`] =
-                { pos: attachmentB_current.clone(), color: '#00FFFF' }; // Cyan
-              console.log(joint.attachmentPointB_world.clone().subtract(attachmentB_current).length());
-              console.log(`sB: updated path.stored[${B}] by ${-sB}. cwB was ${cwB}.`);
-            }
-          } else if (rollingLinkA && attachmentLinkB && radiusA) {
-            const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
+          } else if (rollingLinkA && attachmentLinkB) {
+            tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
             attachmentA_current = tangents.a_circle; // Tangent on circle A
             attachmentB_current = tangents.a_attach; // This is just posB
-            const sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
-            path.stored[A] += sA;
-            joint.restLength -= sA;
-            if (path.stored.length === 4 && A === 1)
-              console.log(`sA: updated path.stored[${A}] by ${-sA}`);
           } else if (rollingLinkA && rollingLinkB) {
-            const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-            attachmentA_current = tangents.a_circle;
-            attachmentB_current = tangents.b_circle;
-            const sA = signedArcLengthOnWheel(joint.attachmentPointA_world, attachmentA_current, posA, radiusA, cwA);
-            path.stored[A] += sA;
-            joint.restLength -= sA;
-            const sB = signedArcLengthOnWheel(joint.attachmentPointB_world, attachmentB_current, posB, radiusB, cwB);
-            path.stored[B] -= sB;
-            joint.restLength += sB;
-            if (path.stored.length === 4 && (A === 1 || B === 1))
-              console.log(`sA and sB: updated path.stored[${B}] by ${-sB} and path.stored[${A}] by ${sA}`);
-          } else {
+            tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+            if (tangents) {
+                attachmentA_current = tangents.a_circle;
+                attachmentB_current = tangents.b_circle;
+            } else {
+                // Fallback if tangent calculation fails (e.g., overlap)
+                console.warn(`Could not calculate tangents between rolling ${entityA} and ${entityB}. Using previous points.`);
+                // Keep previous points to avoid NaN issues, but lengths won't update correctly this frame
+                attachmentA_current = joint.attachmentPointA_world.clone();
+                attachmentB_current = joint.attachmentPointB_world.clone();
+                // Set sA and sB to 0 because we couldn't calculate the change
+                sA = 0;
+                sB = 0;
+                // Skip the arc length calculation below for this case
+                // We will jump directly to updating the joint's points at the end
+            }
+          } else { // attachmentLinkA && attachmentLinkB
             attachmentA_current = posA.clone();
             attachmentB_current = posB.clone();
+            sA = 0; // No arc length change for point-to-point
+            sB = 0;
           }
 
-          // Ensure rest length doesn't go negative
-          if (joint.restLength < 0) joint.restLength = 0;
+          // --- Calculate Wrapping/Unwrapping (sA, sB) if tangents were calculated ---
+          // This section is skipped if tangents == null (e.g., circle-circle overlap fallback)
+          if (tangents !== null) { // Check if tangents were successfully calculated or if it's point-to-point
+              if (rollingLinkA) {
+                  // Project the previous attachment point onto the current frame
+                  const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(linkAComp.prevPos);
+                  const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
+                  // Calculate arc length between projected old point and new point, relative to current center
+                  sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
+                  //debugPoints[`joint_${jointId}_prevA`] =
+                  //  { pos: projected_prevAttachA.clone(), color: '#FF00FF' };// Magenta
+                  //debugPoints[`joint_${jointId}_currA`] =
+                  //  { pos: attachmentA_current.clone(), color: '#00FFFF' }; // Cyan
+              } else {
+                  sA = 0; // Not rolling, no arc length change on A
+              }
 
+              if (rollingLinkB) {
+                  // Project the previous attachment point onto the current frame
+                  const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(linkBComp.prevPos);
+                  const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
+                  // Calculate arc length between projected old point and new point, relative to current center
+                  sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
+                  debugPoints[`joint_${jointId}_prevB`] =
+                    { pos: projected_prevAttachB.clone(), color: '#FF00FF' };// Magenta
+                  debugPoints[`joint_${jointId}_currB`] =
+                    { pos: attachmentB_current.clone(), color: '#00FFFF' }; // Cyan
+              } else {
+                  sB = 0; // Not rolling, no arc length change on B
+              }
+          }
+          // --- End Wrapping/Unwrapping Calculation ---
+
+
+          // --- Update stored lengths and rest length based on calculated sA and sB ---
+          // sA > 0 means cable wrapped onto A (in preferred direction) -> stored[A] increases, restLength decreases
+          path.stored[A] += sA;
+          joint.restLength -= sA;
+          //console.log(`Added rest length ${-sA}`);
+
+          // sB > 0 means cable wrapped onto B (in preferred direction) -> stored[B] increases, restLength decreases
+          // Correction from previous attempt: My interpretation of signedArcLength was reversed for the second point.
+          // If signedArcLength(prev, curr) is positive (meaning curr is 'ahead' of prev in the preferred direction),
+          // it means cable has *unwrapped* from the wheel between prev and curr.
+          // So, stored length should DECREASE, and free length (restLength) should INCREASE.
+          path.stored[B] -= sB; // Correct: Positive sB means unwrapped, so decrease stored
+          joint.restLength += sB; // Correct: Positive sB means unwrapped, so increase free length
+          //console.log(`Added rest length ${sA}`);
+
+          // Debugging logs (optional)
+          //if (sA !== 0 || sB !== 0) {
+              console.log(`Joint ${jointId}: sA=${sA.toFixed(4)}, sB=${sB.toFixed(4)} -> stored[A]=${path.stored[A].toFixed(4)}, stored[B]=${path.stored[B].toFixed(4)}, restLen=${joint.restLength.toFixed(4)}`);
+          //}
+
+
+          // Ensure rest length doesn't go negative
+          if (joint.restLength < 0) {
+              // Simple clamping - might need refinement if issues arise
+              // console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}), clamping to 0.`);
+              // Optionally distribute deficit back to stored lengths if needed
+              joint.restLength = 0;
+          }
+
+          // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
           joint.attachmentPointA_world.set(attachmentA_current);
           joint.attachmentPointB_world.set(attachmentB_current);
-        }
-      }
+
+        } // End loop through joints
+      } // End loop through paths
 
       // Split joints
       // Entities that can cause a split
@@ -689,7 +760,7 @@
                 initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
                 newAttachmentPointAForJoint = initialPoints.a_circle;
-                const sA = signedArcLengthOnWheel(joint.attachmentPointA_world, newAttachmentPointAForJoint, posA, radiusA, cwA);
+                const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                 path.stored[jointIndex] += sA;
                 joint.restLength -= sA;
@@ -711,6 +782,10 @@
                   radiusSplitter,
                   cw
               );
+              debugPoints[`newAttachmentPointBForJoint`] =
+                { pos: newAttachmentPointBForJoint.clone(), color: '#FFFFFF' };// White
+              debugPoints[`attachmentPointAForNewJoint`] =
+                { pos: attachmentPointAForNewJoint.clone(), color: '#0FFFFF' }; // Cyan
               // The line is slightly stretched due to the intersection with the new link (the splitterId Entity).
               // Distributes the discrepancy (length_error) to both sides of the new link such that tension remains constant on both sides of the new link.
               // The paper states:
@@ -723,7 +798,7 @@
               world.addComponent(newJointId, new CableJointComponent(
                 splitterId, entityB, initialDist1 - length_error*initialDist1/(initialDist1+initialDist2), attachmentPointAForNewJoint, attachmentPointBForNewJoint));
               world.addComponent(newJointId, new RenderableComponent('line', '#0000FF'));
-              //console.log("s is this: ", s);
+              console.log("s is this: ", s);
               joint.attachmentPointB_world.set(newAttachmentPointBForJoint);
               path.stored.splice(jointIndex + 1, 0, s);
 
@@ -735,7 +810,11 @@
 
       const linkEntities = world.query([CableLinkComponent, PositionComponent]);
       for (const link of linkEntities) {
-        world.getComponent(link, CableLinkComponent).prevPos = world.getComponent(link, PositionComponent).pos;
+        const pos = world.getComponent(link, PositionComponent).pos;
+        const prevPos = world.getComponent(link, CableLinkComponent).prevPos;
+        //console.log("Current pos: ", pos)
+        //console.log("Previous pos: ", prevPos)
+        world.getComponent(link, CableLinkComponent).prevPos = pos.clone();
       }
 
       // Debugging/test loop 1
@@ -758,7 +837,7 @@
         }
 
         const error = path.totalRestLength - totalCurrentRestLength;
-        //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+        console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
         //console.log(`stored: ${path.stored}`);
       }
     }
@@ -1025,7 +1104,7 @@
   canvas.width = window.innerWidth - 20;
   canvas.height = window.innerHeight - 100;
 
-  const cScale = canvas.height/2;
+  const cScale = canvas.height;
   const simWidth = canvas.width / cScale;
   const simHeight = canvas.height / cScale;
 
@@ -1089,12 +1168,16 @@
     // Need to compute initial attachment points and rest lengths
     // Get relevant components
     const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
+    const link_ball1 = world.getComponent(ball1, CableLinkComponent);
+    link_ball1.prevPos = pos_ball1.clone();
     const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
     const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
     const cw_obs1 = true;
     const link_obs1 = world.getComponent(obs1, CableLinkComponent);
+    link_obs1.prevPos = pos_obs1.clone();
     const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
     const link_ball2 = world.getComponent(ball2, CableLinkComponent);
+    link_ball2.prevPos = pos_ball2.clone();
 
     // Calculate initial points for joint1 (ball1 attachment <-> obs1 rolling)
     const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
