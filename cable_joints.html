@@ -1010,23 +1010,60 @@
     constructor(canvas, cScale, simHeight) {
       this.canvas = canvas;
       this.c = canvas.getContext("2d");
-      this.cScale = cScale;
-      this.simHeight = simHeight; // Needed for y-flipping
+      this.baseCScale = cScale; // Original scale (pixels per sim unit at 1x zoom)
+      this.simHeight = simHeight; // Original sim height (usually 2.0)
+
+      // --- Viewport Settings ---
+      this.viewScaleMultiplier = 2.0; // Zoom level (2.0 = 2x zoom)
+      // Calculate the original full simulation width
+      const originalSimWidth = this.canvas.width / this.baseCScale;
+      // Set the horizontal offset in simulation units to center the middle half
+      this.viewOffsetX_sim = originalSimWidth / 4.0;
+      // Vertical offset (optional, keep 0 for now to center vertically at y=0)
+      this.viewOffsetY_sim = 0.0;
+      // --- End Viewport Settings ---
+
+      // Calculate the effective scale used for drawing
+      this.effectiveCScale = this.baseCScale * this.viewScaleMultiplier;
     }
 
     // Coordinate transformation helpers
-    cX(x) { return x * this.cScale; }
-    cY(y) { return this.canvas.height - y * this.cScale; }
+    cX(simX) {
+      // 1. Shift simulation coordinate relative to the view offset
+      // 2. Scale by the effective scale
+      return (simX - this.viewOffsetX_sim) * this.effectiveCScale;
+    }
+    cY(simY) {
+      // 1. Shift simulation coordinate relative to the view offset
+      // 2. Scale by the effective scale
+      // 3. Flip Y and potentially adjust based on canvas height if needed (standard flip)
+      // Note: Simple vertical centering at y=0 is assumed here.
+      // For true vertical panning, this needs adjustment similar to cX.
+      const scaledY = (simY - this.viewOffsetY_sim) * this.effectiveCScale;
+      // Center the view vertically. We map simY=viewOffsetY_sim to canvas.height/2
+      return this.canvas.height / 2.0 - scaledY;
+       // Original simple flip: return this.canvas.height - scaledY;
+    }
 
-    drawDisc(x, y, radius) {
+    // Use effective scale for radius
+    drawDisc(simX, simY, simRadius) {
       this.c.beginPath();
-      this.c.arc(x, y, radius, 0.0, 2.0 * Math.PI);
+      this.c.arc(
+        this.cX(simX),
+        this.cY(simY),
+        simRadius * this.effectiveCScale, // Scale radius by zoom
+        0.0, 2.0 * Math.PI
+      );
       this.c.closePath();
       this.c.fill();
     }
 
     update(world, dt) {
       this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      // Base line width and debug radius (adjust as needed)
+      const baseLineWidth = 2;
+      const baseDebugRadius = 3;
 
       // Render Balls
       const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
@@ -1036,7 +1073,8 @@
         const renderComp = world.getComponent(entityId, RenderableComponent);
 
         this.c.fillStyle = renderComp.color;
-        this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
+        // Use drawDisc with simulation coordinates/radius
+        this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
       }
 
       // Render Obstacles
@@ -1047,52 +1085,57 @@
         const renderComp = world.getComponent(entityId, RenderableComponent);
 
         this.c.fillStyle = renderComp.color;
-        this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
+        // Use drawDisc with simulation coordinates/radius
+        this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
       }
 
       // Render Cable Joints
       const jointEntities = world.query([CableJointComponent, RenderableComponent]);
-      this.c.lineWidth = 2;
+      // Scale line width by zoom
+      this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
       for (const entityId of jointEntities) {
         const jointComp = world.getComponent(entityId, CableJointComponent);
-        const renderComp = world.getComponent(entityId, RenderableComponent); // Get render comp for color/shape check
+        const renderComp = world.getComponent(entityId, RenderableComponent);
 
-        if (!jointComp.isActive || renderComp.shape !== 'line') continue; // Skip inactive or non-line joints
+        if (!jointComp.isActive || renderComp.shape !== 'line') continue;
 
         const pA = jointComp.attachmentPointA_world;
         const pB = jointComp.attachmentPointB_world;
 
-        // Check if points are valid (initialized)
         if (pA.lengthSq() > 0 && pB.lengthSq() > 0) {
-          this.c.strokeStyle = renderComp.color; // Use component's color
+          this.c.strokeStyle = renderComp.color;
           this.c.beginPath();
+          // Use transformed coordinates
           this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
           this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
           this.c.stroke();
         }
       }
-      this.c.lineWidth = 1; // Reset line width
+      this.c.lineWidth = 1; // Reset line width (or keep scaled?)
 
+      // Render Debug Points
       const debugPoints = world.getResource('debugRenderPoints');
       if (debugPoints) {
-          const debugRadius = 3; // Pixel radius for debug dots
-          this.c.save(); // Save current style state
+          // Keep debug points a constant pixel size, or scale them?
+          const scaledDebugRadius = baseDebugRadius; // Option 1: Constant pixel size
+          // const scaledDebugRadius = baseDebugRadius * this.viewScaleMultiplier; // Option 2: Scale with zoom
+          this.c.save();
           for (const key in debugPoints) {
               const pointData = debugPoints[key];
               if (pointData && pointData.pos) {
                   this.c.fillStyle = pointData.color;
-                  // Use drawDisc or fillRect for small points
                   this.c.beginPath();
+                  // Use transformed coordinates
                   this.c.arc(
                       this.cX(pointData.pos.x),
                       this.cY(pointData.pos.y),
-                      debugRadius,
+                      scaledDebugRadius,
                       0, 2 * Math.PI
                   );
                   this.c.fill();
               }
           }
-          this.c.restore(); // Restore previous style state
+          this.c.restore();
       }
     }
   }
