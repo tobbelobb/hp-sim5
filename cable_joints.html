@@ -628,10 +628,10 @@
                   const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
                   // Calculate arc length between projected old point and new point, relative to current center
                   sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
-                  //debugPoints[`joint_${jointId}_prevA`] =
-                  //  { pos: projected_prevAttachA.clone(), color: '#FF00FF' };// Magenta
-                  //debugPoints[`joint_${jointId}_currA`] =
-                  //  { pos: attachmentA_current.clone(), color: '#00FFFF' }; // Cyan
+                  debugPoints[`joint_${jointId}_prevA`] =
+                    { pos: projected_prevAttachA.clone(), color: '#FFFFFF' };// white
+                  debugPoints[`joint_${jointId}_currA`] =
+                    { pos: attachmentA_current.clone(), color: '#000000' }; // Black
               } else {
                   sA = 0; // Not rolling, no arc length change on A
               }
@@ -768,7 +768,9 @@
                 newAttachmentPointBForJoint = initialPoints.b_circle;
                 console.log("New attachment A changes stored by: ", sA);
               } else if (linkTypeA === 'attachment') {
-                initialPoints2 = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
+                debugPoints[`posA`] =
+                  { pos: posA.clone(), color: '#FFFFFF' };// White
+                initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
                 newAttachmentPointBForJoint = initialPoints2.a_circle;
               } else {
@@ -1014,13 +1016,13 @@
       this.simHeight = simHeight; // Original sim height (usually 2.0)
 
       // --- Viewport Settings ---
-      this.viewScaleMultiplier = 2.0; // Zoom level (2.0 = 2x zoom)
+      this.viewScaleMultiplier = 6.0; // Zoom level (2.0 = 2x zoom)
       // Calculate the original full simulation width
       const originalSimWidth = this.canvas.width / this.baseCScale;
       // Set the horizontal offset in simulation units to center the middle half
-      this.viewOffsetX_sim = originalSimWidth / 4.0;
+      this.viewOffsetX_sim = originalSimWidth / 2.5;
       // Vertical offset (optional, keep 0 for now to center vertically at y=0)
-      this.viewOffsetY_sim = 0.0;
+      this.viewOffsetY_sim = 0.6;
       // --- End Viewport Settings ---
 
       // Calculate the effective scale used for drawing
