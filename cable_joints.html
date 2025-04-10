@@ -970,18 +970,10 @@
           totalCurrentLength += currentSegmentLength;
 
           // Add stored length for the link *after* this joint (if it exists)
-          if (i < path.stored.length -1 && path.linkTypes[i + 1] === 'rolling') {
-             totalCurrentLength += path.stored[i + 1];
+          if (path.linkTypes[i+1] === 'rolling') {
+             totalCurrentLength += path.stored[i+1];
           }
         }
-
-        // Add stored length for the link *before* the first joint (if it exists and is rolling)
-        // Note: This assumes stored[0] corresponds to the link before the first joint.
-        // Adjust if your stored array indexing is different.
-        if (path.stored.length > 0 && path.linkTypes[0] === 'rolling') {
-            totalCurrentLength += path.stored[0];
-        }
-
 
         let overallTension = 0.0;
         if (path.totalRestLength > epsilon) {
