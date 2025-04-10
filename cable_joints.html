@@ -480,6 +480,14 @@
               const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
               const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
               const cwB = path.cw[i+2];
+
+              // --- Debug: Before Merge ---
+              console.log(`  Before Merge: joint_i (${jointId_i}) restLength = ${joint_i.restLength.toFixed(4)}`);
+              console.log(`  Before Merge: joint_i+1 (${jointId_i_plus_1}) restLength = ${joint_i_plus_1.restLength.toFixed(4)}`);
+              console.log(`  Before Merge: Sum = ${(joint_i.restLength + joint_i_plus_1.restLength).toFixed(4)}`);
+              console.log(`  Before Merge: Stored length to add = ${path.stored[i + 1].toFixed(4)}`);
+              // --- End Debug ---
+
               joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
               joint_i.entityB = joint_i_plus_1.entityB;
               const isRollingA = path.linkTypes[i] === 'rolling';
@@ -515,6 +523,10 @@
                 joint_i.attachmentPointA_world = posA;
                 joint_i.attachmentPointB_world = posB;
               }
+
+              // --- Debug: After Merge Calculation ---
+              console.log(`  After Merge Calc: joint_i (${jointId_i}) new restLength = ${joint_i.restLength.toFixed(4)}`);
+              // --- End Debug ---
 
               path.jointEntities.splice(i+1, 1);
               path.stored.splice(i+1, 1);
