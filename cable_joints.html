@@ -980,6 +980,39 @@
           overallTension = totalCurrentLength / path.totalRestLength;
         }
 
+        // --- Calculate Total Inverse Mass for the Entire Path ---
+        let pathTotalInvMass = 0.0;
+        const uniqueEntities = new Set();
+        for (const jointId of path.jointEntities) {
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (!joint || !joint.isActive) continue;
+
+            const entityA = joint.entityA;
+            const entityB = joint.entityB;
+
+            if (!uniqueEntities.has(entityA)) {
+                uniqueEntities.add(entityA);
+                const massAComp = world.getComponent(entityA, MassComponent);
+                if (massAComp) {
+                    const massA = massAComp.mass;
+                    pathTotalInvMass += (massA > 0 ? 1.0 / massA : 0.0);
+                }
+            }
+            if (!uniqueEntities.has(entityB)) {
+                uniqueEntities.add(entityB);
+                const massBComp = world.getComponent(entityB, MassComponent);
+                if (massBComp) {
+                    const massB = massBComp.mass;
+                    pathTotalInvMass += (massB > 0 ? 1.0 / massB : 0.0);
+                }
+            }
+        }
+
+        // If the entire path is immovable, skip corrections for this path
+        if (pathTotalInvMass <= epsilon) {
+            continue;
+        }
+
         // --- 2. Iterate Through Joints and Apply Corrections ---
         for (const jointId of path.jointEntities) {
           const joint = world.getComponent(jointId, CableJointComponent);
@@ -1008,11 +1041,7 @@
 
           const invMassA = massA > 0 ? 1.0 / massA : 0.0;
           const invMassB = massB > 0 ? 1.0 / massB : 0.0;
-          const totalInvMass = invMassA + invMassB;
-
-          if (totalInvMass <= epsilon) {
-            continue; // Both objects immovable for this joint
-          }
+          // Note: We use pathTotalInvMass calculated above, not the local totalInvMass
 
           // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
           const pAttachA = joint.attachmentPointA_world;
@@ -1034,9 +1063,11 @@
           if (error > 0 && currentLength > epsilon) {
             dir.scale(1.0 / currentLength); // Normalize direction vector
 
-            const corr = error / totalInvMass;
+            // Use the path's total inverse mass for the correction magnitude
+            const corr = error / pathTotalInvMass;
 
             // Calculate displacement vectors (Standard PBD)
+            // Distribute correction based on individual inverse masses
             // Note: Sign convention depends on direction vector (pB - pA)
             const deltaA = dir.clone().scale(invMassA * corr);
             const deltaB = dir.clone().scale(-invMassB * corr);
