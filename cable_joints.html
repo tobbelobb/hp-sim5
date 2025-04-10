@@ -953,72 +953,116 @@
 
     update(world, dt) {
       const pathEntities = world.query([CablePathComponent]);
+      const epsilon = 1e-9; // Small value to avoid division by zero
+
       for (const pathId of pathEntities) {
         const path = world.getComponent(pathId, CablePathComponent);
-        if (!path) continue;
-        const jointEntities = path.jointEntities;
-        const jointA = world.getComponent(jointEntities[0], CableJointComponent);
-        const jointB = world.getComponent(jointEntities[jointEntities.length - 1], CableJointComponent);
-        const entityA = jointA.entityA;
-        const entityB = jointB.entityB;
-        const posA = world.getComponent(entityA, PositionComponent)?.pos;
-        const massA = world.getComponent(entityA, MassComponent)?.mass;
-        const velA = world.getComponent(entityA, VelocityComponent)?.vel
-        const posB = world.getComponent(entityB, PositionComponent)?.pos;
-        const massB = world.getComponent(entityB, MassComponent)?.mass;
-        const velB = world.getComponent(entityB, VelocityComponent)?.vel
+        if (!path || path.jointEntities.length === 0) continue;
 
-        if (!posA || !massA || !posB || !massB) {
-          console.warn(`CableJoint ${jointId} constraint skipped: Missing Pos/Mass on entities ${entityA} or ${entityB}`);
-          continue;
-        }
+        // --- 1. Calculate Total Current Length and Overall Tension ---
+        let totalCurrentLength = 0.0;
+        for (let i = 0; i < path.jointEntities.length; i++) {
+          const jointId = path.jointEntities[i];
+          const joint = world.getComponent(jointId, CableJointComponent);
+          if (!joint || !joint.isActive) continue;
 
-        const invMassA = massA > 0 ? 1.0 / massA : 0.0;
-        const invMassB = massB > 0 ? 1.0 / massB : 0.0;
-        const totalInvMass = invMassA + invMassB;
+          const currentSegmentLength = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+          totalCurrentLength += currentSegmentLength;
 
-        if (totalInvMass <= 0.0) {
-          continue; // Both objects immovable
-        }
-
-        // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
-        const pAttachA = jointA.attachmentPointA_world;
-        const pAttachB = jointB.attachmentPointB_world;
-
-        const dirA = new Vector2().subtractVectors(jointA.attachmentPointB_world, pAttachA);
-        const dirB = new Vector2().subtractVectors(pAttachB, jointB.attachmentPointA_world);
-        const currentDistA = dirA.length();
-        const currentDistB = dirB.length();
-        const restLengthA = jointA.restLength;
-        const restLengthB = jointB.restLength;
-
-        // Constraint: currentDist <= restLength
-        if (currentDistA > restLengthA || currentDistB > restLengthB) {
-          const errorA = currentDistA - restLengthA;
-          const errorB = currentDistB - restLengthB;
-          dirA.normalize();
-          dirB.normalize();
-          const corr = (errorA + errorB) / totalInvMass;
-
-          // Calculate the displacement vectors (Standard PBD)
-          const deltaA = dirA.clone().scale(invMassA * corr);
-          const deltaB = dirB.clone().scale(-invMassB * corr);
-
-          // Apply displacement to the entity positions.
-          // This assumes the attachment point moves rigidly with the center.
-          // A more correct PBD solver would handle angular effects.
-          posA.add(deltaA);
-          posB.add(deltaB);
-
-          // Resolve velocity
-          if (velA && invMassA > 0) {
-            velA.add(deltaA, 1.0 / dt); // v_new = v_old + delta_p / dt
-          }
-          if (velB && invMassB > 0) {
-            velB.add(deltaB, 1.0 / dt); // v_new = v_old + delta_p / dt
+          // Add stored length for the link *after* this joint (if it exists)
+          if (i < path.stored.length -1 && path.linkTypes[i + 1] === 'rolling') {
+             totalCurrentLength += path.stored[i + 1];
           }
         }
-      }
+
+        // Add stored length for the link *before* the first joint (if it exists and is rolling)
+        // Note: This assumes stored[0] corresponds to the link before the first joint.
+        // Adjust if your stored array indexing is different.
+        if (path.stored.length > 0 && path.linkTypes[0] === 'rolling') {
+            totalCurrentLength += path.stored[0];
+        }
+
+
+        let overallTension = 0.0;
+        if (path.totalRestLength > epsilon) {
+          overallTension = totalCurrentLength / path.totalRestLength;
+        }
+
+        // --- 2. Iterate Through Joints and Apply Corrections ---
+        for (const jointId of path.jointEntities) {
+          const joint = world.getComponent(jointId, CableJointComponent);
+          if (!joint || !joint.isActive) continue;
+
+          const entityA = joint.entityA;
+          const entityB = joint.entityB;
+          const posAComp = world.getComponent(entityA, PositionComponent);
+          const massAComp = world.getComponent(entityA, MassComponent);
+          const velAComp = world.getComponent(entityA, VelocityComponent);
+          const posBComp = world.getComponent(entityB, PositionComponent);
+          const massBComp = world.getComponent(entityB, MassComponent);
+          const velBComp = world.getComponent(entityB, VelocityComponent);
+
+          // Check if necessary components exist
+          if (!posAComp || !massAComp || !posBComp || !massBComp) {
+            console.warn(`PBDCableConstraintSolver skipped joint ${jointId}: Missing Pos/Mass on entities ${entityA} or ${entityB}`);
+            continue;
+          }
+          const posA = posAComp.pos;
+          const massA = massAComp.mass;
+          const velA = velAComp?.vel; // Velocity is optional for correction
+          const posB = posBComp.pos;
+          const massB = massBComp.mass;
+          const velB = velBComp?.vel; // Velocity is optional for correction
+
+          const invMassA = massA > 0 ? 1.0 / massA : 0.0;
+          const invMassB = massB > 0 ? 1.0 / massB : 0.0;
+          const totalInvMass = invMassA + invMassB;
+
+          if (totalInvMass <= epsilon) {
+            continue; // Both objects immovable for this joint
+          }
+
+          // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
+          const pAttachA = joint.attachmentPointA_world;
+          const pAttachB = joint.attachmentPointB_world;
+
+          const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
+          const currentLength = dir.length();
+
+          // Calculate target length based on overall tension
+          let targetRestLength = currentLength; // Default: no change if no tension
+          if (overallTension > epsilon) {
+              targetRestLength = currentLength / overallTension;
+          }
+
+          // Calculate error for this specific joint
+          const error = currentLength - targetRestLength;
+
+          // Apply correction only if the joint is currently longer than its target length
+          if (error > 0 && currentLength > epsilon) {
+            dir.scale(1.0 / currentLength); // Normalize direction vector
+
+            const corr = error / totalInvMass;
+
+            // Calculate displacement vectors (Standard PBD)
+            // Note: Sign convention depends on direction vector (pB - pA)
+            const deltaA = dir.clone().scale(invMassA * corr);
+            const deltaB = dir.clone().scale(-invMassB * corr);
+
+            // Apply displacement to the entity positions.
+            posA.add(deltaA);
+            posB.add(deltaB);
+
+            // Apply velocity correction (optional, but good for stability)
+            if (velA && invMassA > 0 && dt > epsilon) {
+              velA.add(deltaA, 1.0 / dt); // v_new = v_old + delta_p / dt
+            }
+            if (velB && invMassB > 0 && dt > epsilon) {
+              velB.add(deltaB, 1.0 / dt); // v_new = v_old + delta_p / dt
+            }
+          }
+        } // End loop through joints in path
+      } // End loop through paths
     }
   }
 
