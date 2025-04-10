@@ -482,13 +482,16 @@
               const cwB = path.cw[i+2];
 
               // --- Debug: Before Merge ---
+              console.log(`  Before Merge: path.stored = [${path.stored.map(s => s.toFixed(4)).join(', ')}]`);
               console.log(`  Before Merge: joint_i (${jointId_i}) restLength = ${joint_i.restLength.toFixed(4)}`);
               console.log(`  Before Merge: joint_i+1 (${jointId_i_plus_1}) restLength = ${joint_i_plus_1.restLength.toFixed(4)}`);
               console.log(`  Before Merge: Sum = ${(joint_i.restLength + joint_i_plus_1.restLength).toFixed(4)}`);
               console.log(`  Before Merge: Stored length to add = ${path.stored[i + 1].toFixed(4)}`);
               // --- End Debug ---
 
-              joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
+              const lengthToAdd = joint_i_plus_1.restLength + path.stored[i + 1];
+              console.log(`    Merge Step 1: Adding ${lengthToAdd.toFixed(4)} (joint_i+1.restLength + stored[i+1]) to joint_i.restLength`);
+              joint_i.restLength += lengthToAdd;
               joint_i.entityB = joint_i_plus_1.entityB;
               const isRollingA = path.linkTypes[i] === 'rolling';
               const isAttachmentA = path.linkTypes[i] === 'attachment';
@@ -498,16 +501,19 @@
                 const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
                 const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
                 path.stored[i] += sA;
-                joint.restLength -= sA;
+                console.log(`    Merge Step 2 (RollA-RollB): Subtracting sA=${sA.toFixed(4)} from joint_i.restLength`);
+                joint_i.restLength -= sA; // Corrected from joint.restLength
                 const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
                 path.stored[i+2] -= sB;
-                joint.restLength += sB;
+                console.log(`    Merge Step 3 (RollA-RollB): Adding sB=${sB.toFixed(4)} to joint_i.restLength`);
+                joint_i.restLength += sB; // Corrected from joint.restLength
                 joint_i.attachmentPointA_world = tangents.a_circle;
                 joint_i.attachmentPointB_world = tangents.b_circle;
               } else if (isRollingA && isAttachmentB) {
                 const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
-                const sA = signedArcLengthOnWheel(joint_1.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
+                const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA); // Corrected joint_1 typo
                 path.stored[i] += sA;
+                console.log(`    Merge Step 2 (RollA-AttachB): Subtracting sA=${sA.toFixed(4)} from joint_i.restLength`);
                 joint_i.restLength -= sA;
                 joint_i.attachmentPointA_world = tangents.a_circle;
                 joint_i.attachmentPointB_world = tangents.a_attach;
@@ -515,8 +521,8 @@
                 const tangents = tangentFromCircleToPoint(posA, posB, radiusB, cwB);
                 const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.a_circle, posB, radiusB, cwB);
                 path.stored[i+2] -= sB;
+                console.log(`    Merge Step 2 (AttachA-RollB): Adding sB=${sB.toFixed(4)} to joint_i.restLength`);
                 joint_i.restLength += sB;
-                //console.log(`sB merge: updated path.stored[${i+2}] by ${-sB}`);
                 joint_i.attachmentPointA_world = tangents.a_attach;
                 joint_i.attachmentPointB_world = tangents.a_circle;
               } else {
@@ -525,7 +531,8 @@
               }
 
               // --- Debug: After Merge Calculation ---
-              console.log(`  After Merge Calc: joint_i (${jointId_i}) new restLength = ${joint_i.restLength.toFixed(4)}`);
+              console.log(`  After Merge Calc: joint_i (${jointId_i}) final restLength = ${joint_i.restLength.toFixed(4)}`);
+              console.log(`  After Merge Calc: path.stored = [${path.stored.map(s => s.toFixed(4)).join(', ')}]`);
               // --- End Debug ---
 
               path.jointEntities.splice(i+1, 1);
