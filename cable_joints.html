@@ -356,12 +356,13 @@
 
   // Represents the entire cable path
   class CablePathComponent {
-    constructor(jointEntities = [], linkTypes = [], cw = [], attachmentPoints_local = []) {
+    constructor(jointEntities = [], linkTypes = [], cw = []) {
       this.totalRestLength = 0.0;
       this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
       this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
       this.cw = cw // Ordered. cw.length === linkTypes.length
       this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
+
       for (const jointId of jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
         this.totalRestLength += joint.restLength;
@@ -670,7 +671,7 @@
 
           // Debugging logs (optional)
           //if (sA !== 0 || sB !== 0) {
-              console.log(`Joint ${jointId}: sA=${sA.toFixed(4)}, sB=${sB.toFixed(4)} -> stored[A]=${path.stored[A].toFixed(4)}, stored[B]=${path.stored[B].toFixed(4)}, restLen=${joint.restLength.toFixed(4)}`);
+              //console.log(`Joint ${jointId}: sA=${sA.toFixed(4)}, sB=${sB.toFixed(4)} -> stored[A]=${path.stored[A].toFixed(4)}, stored[B]=${path.stored[B].toFixed(4)}, restLen=${joint.restLength.toFixed(4)}`);
           //}
 
 
@@ -772,7 +773,7 @@
                   { pos: posA.clone(), color: '#FFFFFF' };// White
                 debugPoints[`posSplitter`] =
                   { pos: posSplitter.clone(), color: '#FFFFFF' };// White
-                initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw);
+                initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw); // HERE
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
                 newAttachmentPointBForJoint = initialPoints2.a_circle;
               } else {
@@ -1046,13 +1047,13 @@
       this.simHeight = simHeight; // Original sim height (usually 2.0)
 
       // --- Viewport Settings ---
-      this.viewScaleMultiplier = 6.0; // Zoom level (2.0 = 2x zoom)
+      this.viewScaleMultiplier = 1.8; // Zoom level (2.0 = 2x zoom)
       // Calculate the original full simulation width
       const originalSimWidth = this.canvas.width / this.baseCScale;
       // Set the horizontal offset in simulation units to center the middle half
-      this.viewOffsetX_sim = originalSimWidth / 2.5;
+      this.viewOffsetX_sim = 0.6;
       // Vertical offset (optional, keep 0 for now to center vertically at y=0)
-      this.viewOffsetY_sim = 0.6;
+      this.viewOffsetY_sim = 1.0;
       // --- End Viewport Settings ---
 
       // Calculate the effective scale used for drawing
