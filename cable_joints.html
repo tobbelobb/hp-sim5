@@ -481,16 +481,7 @@
               const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
               const cwB = path.cw[i+2];
 
-              // --- Debug: Before Merge ---
-              console.log(`  Before Merge: path.stored = [${path.stored.map(s => s.toFixed(4)).join(', ')}]`);
-              console.log(`  Before Merge: joint_i (${jointId_i}) restLength = ${joint_i.restLength.toFixed(4)}`);
-              console.log(`  Before Merge: joint_i+1 (${jointId_i_plus_1}) restLength = ${joint_i_plus_1.restLength.toFixed(4)}`);
-              console.log(`  Before Merge: Sum = ${(joint_i.restLength + joint_i_plus_1.restLength).toFixed(4)}`);
-              console.log(`  Before Merge: Stored length to add = ${path.stored[i + 1].toFixed(4)}`);
-              // --- End Debug ---
-
               const lengthToAdd = joint_i_plus_1.restLength + path.stored[i + 1];
-              console.log(`    Merge Step 1: Adding ${lengthToAdd.toFixed(4)} (joint_i+1.restLength + stored[i+1]) to joint_i.restLength`);
               joint_i.restLength += lengthToAdd;
               joint_i.entityB = joint_i_plus_1.entityB;
               const isRollingA = path.linkTypes[i] === 'rolling';
@@ -501,11 +492,9 @@
                 const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
                 const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
                 path.stored[i] += sA;
-                console.log(`    Merge Step 2 (RollA-RollB): Subtracting sA=${sA.toFixed(4)} from joint_i.restLength`);
                 joint_i.restLength -= sA; // Corrected from joint.restLength
                 const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
                 path.stored[i+2] -= sB;
-                console.log(`    Merge Step 3 (RollA-RollB): Adding sB=${sB.toFixed(4)} to joint_i.restLength`);
                 joint_i.restLength += sB; // Corrected from joint.restLength
                 joint_i.attachmentPointA_world = tangents.a_circle;
                 joint_i.attachmentPointB_world = tangents.b_circle;
@@ -513,7 +502,6 @@
                 const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
                 const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA); // Corrected joint_1 typo
                 path.stored[i] += sA;
-                console.log(`    Merge Step 2 (RollA-AttachB): Subtracting sA=${sA.toFixed(4)} from joint_i.restLength`);
                 joint_i.restLength -= sA;
                 joint_i.attachmentPointA_world = tangents.a_circle;
                 joint_i.attachmentPointB_world = tangents.a_attach;
@@ -521,7 +509,6 @@
                 const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
                 const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.a_circle, posB, radiusB, cwB);
                 path.stored[i+2] -= sB;
-                console.log(`    Merge Step 2 (AttachA-RollB): Adding sB=${sB.toFixed(4)} to joint_i.restLength`);
                 joint_i.restLength += sB;
                 joint_i.attachmentPointA_world = tangents.a_attach;
                 joint_i.attachmentPointB_world = tangents.a_circle;
@@ -529,11 +516,6 @@
                 joint_i.attachmentPointA_world = posA;
                 joint_i.attachmentPointB_world = posB;
               }
-
-              // --- Debug: After Merge Calculation ---
-              console.log(`  After Merge Calc: joint_i (${jointId_i}) final restLength = ${joint_i.restLength.toFixed(4)}`);
-              console.log(`  After Merge Calc: path.stored = [${path.stored.map(s => s.toFixed(4)).join(', ')}]`);
-              // --- End Debug ---
 
               path.jointEntities.splice(i+1, 1);
               path.stored.splice(i+1, 1);
@@ -648,10 +630,6 @@
                   const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
                   // Calculate arc length between projected old point and new point, relative to current center
                   sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
-                  debugPoints[`joint_${jointId}_prevA`] =
-                    { pos: projected_prevAttachA.clone(), color: '#FFFFFF' };// white
-                  debugPoints[`joint_${jointId}_currA`] =
-                    { pos: attachmentA_current.clone(), color: '#000000' }; // Black
               } else {
                   sA = 0; // Not rolling, no arc length change on A
               }
@@ -662,10 +640,6 @@
                   const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
                   // Calculate arc length between projected old point and new point, relative to current center
                   sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
-                  debugPoints[`joint_${jointId}_prevB`] =
-                    { pos: projected_prevAttachB.clone(), color: '#FF00FF' };// Magenta
-                  debugPoints[`joint_${jointId}_currB`] =
-                    { pos: attachmentB_current.clone(), color: '#00FFFF' }; // Cyan
               } else {
                   sB = 0; // Not rolling, no arc length change on B
               }
@@ -788,10 +762,6 @@
                 newAttachmentPointBForJoint = initialPoints.b_circle;
                 console.log("New attachment A changes stored by: ", sA);
               } else if (linkTypeA === 'attachment') {
-                debugPoints[`posA`] =
-                  { pos: posA.clone(), color: '#FFFFFF' };// White
-                debugPoints[`posSplitter`] =
-                  { pos: posSplitter.clone(), color: '#FFFFFF' };// White
                 initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw); // HERE
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
                 newAttachmentPointBForJoint = initialPoints2.a_circle;
@@ -806,10 +776,6 @@
                   radiusSplitter,
                   cw
               );
-              debugPoints[`newAttachmentPointBForJoint`] =
-                { pos: newAttachmentPointBForJoint.clone(), color: '#FFFFFF' };// White
-              debugPoints[`attachmentPointAForNewJoint`] =
-                { pos: attachmentPointAForNewJoint.clone(), color: '#0FFFFF' }; // Cyan
               // The line is slightly stretched due to the intersection with the new link (the splitterId Entity).
               // Distributes the discrepancy (length_error) to both sides of the new link such that tension remains constant on both sides of the new link.
               // The paper states:
