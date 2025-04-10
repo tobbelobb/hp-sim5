@@ -500,7 +500,7 @@
             const angleThreshold = Math.PI / 180.0; // 1 degree
 
             // Merge if link has radius, stored length < radius, AND angle > threshold
-            if (radiusComp && storedLength < linkRadius && angle < angleThreshold) {
+            if (storedLength < 0.0 || (radiusComp && storedLength < linkRadius && angle < angleThreshold)) {
               console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)}°)`);
               const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
               const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius; // Nullish coalescing for safety
