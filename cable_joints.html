@@ -1050,14 +1050,8 @@
           const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
           const currentLength = dir.length();
 
-          // Calculate target length based on overall tension
-          let targetRestLength = currentLength; // Default: no change if no tension
-          if (overallTension > epsilon) {
-              targetRestLength = currentLength / overallTension;
-          }
-
           // Calculate error for this specific joint
-          const error = currentLength - targetRestLength;
+          const error = currentLength - joint.restLength;
 
           // Apply correction only if the joint is currently longer than its target length
           if (error > 0 && currentLength > epsilon) {
