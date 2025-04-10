@@ -472,7 +472,7 @@
           //console.log(`was stored: ${path.stored[i+1]}`);
           const isRolling = path.linkTypes[i + 1] === 'rolling';
           if (isRolling) {
-            if (path.stored[i + 1] < 0.01) {
+            if (path.stored[i + 1] < 0.005) {
               console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1}.`);
               const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
               const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
