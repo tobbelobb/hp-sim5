@@ -121,6 +121,80 @@
     world.addComponent(cablePath, new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
 
 
+    const offset_x = 0.3;
+
+    const ball3 = world.createEntity();
+    world.addComponent(ball3, new BallTagComponent());
+    world.addComponent(ball3, new PositionComponent(1.35 + offset_x, 0.6));
+    world.addComponent(ball3, new VelocityComponent(0.0, 0.0));
+    world.addComponent(ball3, new RadiusComponent(ballRadius));
+    world.addComponent(ball3, new MassComponent(0.1001));
+    world.addComponent(ball3, new RestitutionComponent(ballRestitution));
+    world.addComponent(ball3, new GravityAffectedComponent());
+    world.addComponent(ball3, new RenderableComponent('circle', '#FF0000'));
+
+    const ball4 = world.createEntity();
+    world.addComponent(ball4, new BallTagComponent());
+    world.addComponent(ball4, new PositionComponent(1.6 + offset_x, 0.4));
+    world.addComponent(ball4, new VelocityComponent(0.0, 0.0));
+    world.addComponent(ball4, new RadiusComponent(ballRadius));
+    world.addComponent(ball4, new MassComponent(0.1));
+    world.addComponent(ball4, new RestitutionComponent(ballRestitution));
+    world.addComponent(ball4, new GravityAffectedComponent());
+    world.addComponent(ball4, new RenderableComponent('circle', '#00FF00'));
+
+    // Obstacle Entities
+    const obs2 = world.createEntity();
+    world.addComponent(obs2, new ObstacleTagComponent());
+    world.addComponent(obs2, new PositionComponent(1.5 + offset_x, 1.5));
+    world.addComponent(obs2, new MassComponent(-1.0));
+    world.addComponent(obs2, new RadiusComponent(0.1));
+    world.addComponent(obs2, new RenderableComponent('circle', obsColor));
+
+
+    // --- Cable Setup ---
+    // Path: ball3 -> obs2 -> ball4
+    world.addComponent(obs2, new CableLinkComponent());
+    world.addComponent(ball3, new CableLinkComponent());
+    world.addComponent(ball4, new CableLinkComponent());
+
+    // --- Calculate Initial Cable State ---
+    // Need to compute initial attachment points and rest lengths
+    // Get relevant components
+    const pos_ball3 = world.getComponent(ball3, PositionComponent).pos;
+    const link_ball3 = world.getComponent(ball3, CableLinkComponent);
+    link_ball3.prevPos = pos_ball3.clone();
+    const pos_obs2 = world.getComponent(obs2, PositionComponent).pos;
+    const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
+    const cw_obs2 = true;
+    const link_obs2 = world.getComponent(obs2, CableLinkComponent);
+    link_obs2.prevPos = pos_obs2.clone();
+    const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
+    const link_ball4 = world.getComponent(ball4, CableLinkComponent);
+    link_ball4.prevPos = pos_ball4.clone();
+
+    // Calculate initial points for joint1 (ball3 attachment <-> obs2 rolling)
+    const initialPoints3 = tangentFromPointToCircle(pos_ball3, pos_obs2, radius_obs2, cw_obs2);
+    const initialPoints4 = tangentFromCircleToPoint(pos_ball4, pos_obs2, radius_obs2, cw_obs2);
+
+    // Create Cable Joint Entities with correct initial rest lengths
+    const joint3 = world.createEntity(); // ball3 <-> obs2
+    const initialDist3 = initialPoints3.a_attach.clone().subtract(initialPoints3.a_circle).length();
+    world.addComponent(joint3, new CableJointComponent(
+      ball3, obs2, initialDist3, initialPoints3.a_attach, initialPoints3.a_circle)); // Order matters
+    world.addComponent(joint3, new RenderableComponent('line', '#FF0000')); // Red line
+
+    const joint4 = world.createEntity(); // obs2 <-> ball4
+    const initialDist4 = initialPoints4.a_attach.clone().subtract(initialPoints4.a_circle).length();
+    world.addComponent(joint4, new CableJointComponent(
+      obs2, ball4, initialDist4, initialPoints4.a_circle, initialPoints4.a_attach)); // Order matters
+    world.addComponent(joint4, new RenderableComponent('line', '#FFFF00')); // Yellow line
+
+    const cablePath2 = world.createEntity();
+    world.addComponent(cablePath, new CablePathComponent(world, [joint3, joint4], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
+
+
+
     // --- Systems Registration (Order Matters!) ---
     if (world.systems.length === 0) { // Only register systems once
       world.registerSystem(new GravitySystem());      // Applies gravity acceleration
