@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cable Joints - Tests</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #333; font-family: sans-serif; color: white; }
+        canvas { border: 1px solid black; display: block; margin: 10px auto; background-color: #202020; }
+        #testResults { position: absolute; top: 10px; left: 10px; background-color: rgba(50,50,50,0.8); color: white; padding: 10px; border: 1px solid #ccc; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        #controls { padding: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        Select Test to Visualize:
+        <select id="testSelector">
+            <option value="testSimpleMerge">Simple Merge</option>
+            <option value="testSimpleSplit" selected>Simple Split</option>
+            <option value="testAttachmentUpdate">Attachment Update</option>
+            <!-- Add more test options here -->
+        </select>
+        <button id="runBtn">Run & Visualize</button>
+    </div>
+    <canvas id="testCanvas"></canvas>
+    <div id="testResults">
+        <h4>Test Results:</h4>
+        <ul id="testList"></ul>
+    </div>
+
+<script>
+
+
+  // --- Global Test Setup ---
+  const canvas = document.getElementById("testCanvas");
+  canvas.width = window.innerWidth * 0.8; // Adjust size as needed
+  canvas.height = window.innerHeight * 0.7;
+
+  const cScale = canvas.height / 2.0; // Base scale (pixels per sim unit)
+  const simWidth = canvas.width / cScale;
+  const simHeight = canvas.height / cScale;
+
+  // Make world accessible globally within this test file
+  window.testWorld = null;
+  let renderSystem = null; // Hold the render system instance
+
+  // --- Test Suite ---
+  const testResultsList = document.getElementById('testList');
+  let testsPassed = 0;
+  let testsFailed = 0;
+
+  function logTestResult(name, passed, message = '') {
+      const li = document.createElement('li');
+      li.style.color = passed ? 'lightgreen' : 'salmon';
+      li.textContent = `${passed ? 'PASS' : 'FAIL'} - ${name}${message ? ': ' + message : ''}`;
+      testResultsList.appendChild(li);
+      if (passed) testsPassed++; else testsFailed++;
+  }
+
+  function assertEquals(expected, actual, testName, valueName) {
+      if (expected !== actual) {
+          logTestResult(testName, false, `${valueName} expected ${expected}, got ${actual}`);
+          return false;
+      }
+      return true;
+  }
+
+  function assertNear(expected, actual, tolerance, testName, valueName) {
+      if (Math.abs(expected - actual) > tolerance) {
+          logTestResult(testName, false, `${valueName} expected near ${expected}, got ${actual}`);
+          return false;
+      }
+      return true;
+  }
+
+  function assertTrue(condition, testName, message) {
+      if (!condition) {
+          logTestResult(testName, false, message);
+          return false;
+      }
+      return true;
+  }
+
+  function assertFalse(condition, testName, message) {
+      if (condition) {
+          logTestResult(testName, false, message);
+          return false;
+      }
+      return true;
+  }
+
+  // --- Test Cases ---
+  const testCases = {
+      testSimpleMerge: function() {
+          const testName = "Simple Merge";
+          const world = new World();
+          window.testWorld = world; // Set global world for this test
+          world.setResource('dt', 0.01);
+          world.setResource('debugRenderPoints', {});
+          world.setResource('simWidth', simWidth);
+          world.setResource('simHeight', simHeight);
+
+          // Setup entities
+          const linkA = world.createEntity(); // Attachment point
+          world.addComponent(linkA, new PositionComponent(0, 0));
+          world.addComponent(linkA, new CableLinkComponent(0, 0));
+          world.addComponent(linkA, new MassComponent(-1));
+          world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA')); // Render fixed points
+
+          const linkB = world.createEntity(); // Rolling link
+          world.addComponent(linkB, new PositionComponent(1, -0.100001));
+          world.addComponent(linkB, new CableLinkComponent(1, -0.100001));
+          world.addComponent(linkB, new MassComponent(1));
+          world.addComponent(linkB, new RadiusComponent(0.1));
+          world.addComponent(linkB, new RenderableComponent('circle', '#CCCCCC'));
+
+          const linkC = world.createEntity(); // Attachment point
+          world.addComponent(linkC, new PositionComponent(2, 0));
+          world.addComponent(linkC, new CableLinkComponent(2, 0));
+          world.addComponent(linkC, new MassComponent(-1));
+          world.addComponent(linkC, new RenderableComponent('circle', '#AAAAAA'));
+
+          // Initial tangent points
+          const attachA = new Vector2(0, 0);
+          const attachB1 = new Vector2(1.0000001, 0);
+          const attachB2 = new Vector2(0.9999999, 0);
+          const attachC = new Vector2(2, 0);
+
+          // Create joints
+          const joint1Id = world.createEntity();
+          world.addComponent(joint1Id, new CableJointComponent(linkA, linkB, 1.0, attachA.clone(), attachB1.clone()));
+          world.addComponent(joint1Id, new RenderableComponent('line', '#FF8888'));
+          const joint2Id = world.createEntity();
+          world.addComponent(joint2Id, new CableJointComponent(linkB, linkC, 1.0, attachB2.clone(), attachC.clone()));
+          world.addComponent(joint2Id, new RenderableComponent('line', '#88FF88'));
+
+          // Create path
+          const pathId = world.createEntity();
+          const pathComp = new CablePathComponent([joint1Id, joint2Id], ['attachment', 'rolling', 'attachment'], [true, true, true]);
+          pathComp.stored[1] = -0.0000001;
+          pathComp.totalRestLength = 2.0;
+          world.addComponent(pathId, pathComp);
+
+          // --- Run the system ---
+          const system = new CableAttachmentUpdateSystem();
+          system.update(world, world.getResource('dt'));
+
+          // --- Assertions ---
+          const updatedPath = world.getComponent(pathId, CablePathComponent);
+          if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return world;
+
+          if (!assertEquals(1, updatedPath.jointEntities.length, testName, "Number of joints after merge")) return world;
+          const mergedJointId = updatedPath.jointEntities[0];
+          const mergedJoint = world.getComponent(mergedJointId, CableJointComponent);
+          if (!assertTrue(mergedJoint !== undefined, testName, "Merged joint exists")) return world;
+
+          assertEquals(linkA, mergedJoint.entityA, testName, "Merged joint entity A");
+          assertEquals(linkC, mergedJoint.entityB, testName, "Merged joint entity B");
+          assertNear(2.0, mergedJoint.restLength, 1e-6, testName, "Merged joint rest length");
+          assertEquals(2, updatedPath.linkTypes.length, testName, "Number of link types after merge");
+          assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after merge");
+          assertEquals('attachment', updatedPath.linkTypes[1], testName, "Link type 1 after merge");
+
+          const joint2Comp = world.getComponent(joint2Id, CableJointComponent);
+          assertFalse(joint2Comp && joint2Comp.isActive, testName, "Original joint 2 is inactive/destroyed");
+
+          logTestResult(testName, true);
+          return world; // Return world for rendering
+      },
+
+      testSimpleSplit: function() {
+          const testName = "Simple Split";
+          const world = new World();
+          window.testWorld = world; // Set global world
+          world.setResource('dt', 0.01);
+          world.setResource('debugRenderPoints', {});
+          world.setResource('simWidth', simWidth);
+          world.setResource('simHeight', simHeight);
+
+          // Setup entities
+          const linkA = world.createEntity(); // Attachment point
+          world.addComponent(linkA, new PositionComponent(0, 0));
+          world.addComponent(linkA, new CableLinkComponent(0, 0));
+          world.addComponent(linkA, new MassComponent(-1));
+          world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA'));
+
+          const linkB = world.createEntity(); // Attachment point
+          world.addComponent(linkB, new PositionComponent(2, 0));
+          world.addComponent(linkB, new CableLinkComponent(2, 0));
+          world.addComponent(linkB, new MassComponent(-1));
+          world.addComponent(linkB, new RenderableComponent('circle', '#AAAAAA'));
+
+          const splitterLink = world.createEntity(); // Rolling link that will cause the split
+          const splitterRadius = 0.1;
+          const splitterY = splitterRadius * 0.999999; // Slightly less than radius
+          world.addComponent(splitterLink, new PositionComponent(1, splitterY));
+          world.addComponent(splitterLink, new CableLinkComponent(1, splitterY));
+          world.addComponent(splitterLink, new MassComponent(1));
+          world.addComponent(splitterLink, new RadiusComponent(splitterRadius));
+          world.addComponent(splitterLink, new RenderableComponent('circle', '#CCCCCC'));
+
+          // Initial joint (A -> B)
+          const initialRestLength = 2.0;
+          const jointOrigId = world.createEntity();
+          world.addComponent(jointOrigId, new CableJointComponent(linkA, linkB, initialRestLength, new Vector2(0,0), new Vector2(2,0)));
+          world.addComponent(jointOrigId, new RenderableComponent('line', '#FFFFFF'));
+
+          // Create path
+          const pathId = world.createEntity();
+          const pathComp = new CablePathComponent([jointOrigId], ['attachment', 'attachment'], [true, true]);
+          pathComp.totalRestLength = initialRestLength;
+          world.addComponent(pathId, pathComp);
+
+          // --- Run the system ---
+          const system = new CableAttachmentUpdateSystem();
+          system.update(world, world.getResource('dt'));
+
+          // --- Assertions ---
+          const updatedPath = world.getComponent(pathId, CablePathComponent);
+          if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return world;
+
+          if (!assertEquals(2, updatedPath.jointEntities.length, testName, "Number of joints after split")) return world;
+
+          assertEquals(3, updatedPath.linkTypes.length, testName, "Number of link types after split");
+          assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after split");
+          assertEquals('rolling', updatedPath.linkTypes[1], testName, "Link type 1 after split (splitter)");
+          assertEquals('attachment', updatedPath.linkTypes[2], testName, "Link type 2 after split");
+          assertEquals(3, updatedPath.cw.length, testName, "Number of cw flags after split");
+          assertEquals(3, updatedPath.stored.length, testName, "Number of stored lengths after split");
+          assertNear(0.0, updatedPath.stored[1], 1e-4, testName, "Stored length on splitter link");
+
+          const joint1Id = updatedPath.jointEntities[0];
+          const joint2Id = updatedPath.jointEntities[1];
+          const joint1 = world.getComponent(joint1Id, CableJointComponent);
+          const joint2 = world.getComponent(joint2Id, CableJointComponent);
+
+          if (!assertTrue(joint1 !== undefined, testName, "Joint 1 (A->Splitter) exists")) return world;
+          if (!assertTrue(joint2 !== undefined, testName, "Joint 2 (Splitter->B) exists")) return world;
+
+          assertEquals(linkA, joint1.entityA, testName, "Joint 1 entity A");
+          assertEquals(splitterLink, joint1.entityB, testName, "Joint 1 entity B (splitter)");
+          assertEquals(splitterLink, joint2.entityA, testName, "Joint 2 entity A (splitter)");
+          assertEquals(linkB, joint2.entityB, testName, "Joint 2 entity B");
+
+          const expectedRestLength = (initialRestLength - updatedPath.stored[1]) / 2.0;
+          assertNear(expectedRestLength, joint1.restLength, 1e-6, testName, "Joint 1 rest length");
+          assertNear(expectedRestLength, joint2.restLength, 1e-6, testName, "Joint 2 rest length");
+
+          assertNear(pathComp.totalRestLength, joint1.restLength + joint2.restLength + updatedPath.stored[1], 1e-6, testName, "Total rest length conserved");
+
+          assertNear(0.0, joint1.attachmentPointA_world.x, 1e-6, testName, "Joint 1 attach A.x");
+          assertNear(0.0, joint1.attachmentPointA_world.y, 1e-6, testName, "Joint 1 attach A.y");
+          assertNear(1.0, joint1.attachmentPointB_world.x, 1e-4, testName, "Joint 1 attach B.x (on splitter)");
+          assertNear(1.0, joint2.attachmentPointA_world.x, 1e-4, testName, "Joint 2 attach A.x (on splitter)");
+          assertNear(2.0, joint2.attachmentPointB_world.x, 1e-6, testName, "Joint 2 attach B.x");
+          assertNear(0.0, joint2.attachmentPointB_world.y, 1e-6, testName, "Joint 2 attach B.y");
+
+          assertEquals(jointOrigId, joint1Id, testName, "Original joint ID reused for first segment");
+
+          logTestResult(testName, true);
+          return world; // Return world for rendering
+      },
+
+      testAttachmentUpdate: function() {
+          const testName = "Attachment Update (Placeholder)";
+          const world = new World();
+          window.testWorld = world; // Set global world
+          world.setResource('dt', 0.01);
+          world.setResource('debugRenderPoints', {});
+          world.setResource('simWidth', simWidth);
+          world.setResource('simHeight', simHeight);
+
+          // TODO: Set up a world state with rolling links
+          // TODO: Move the links slightly (or set prevPos differently)
+          // TODO: Run the system
+          // TODO: Assert that attachment points, rest lengths, and stored lengths are updated correctly
+
+          // Example Setup (Needs refinement)
+          const linkA = world.createEntity(); // Rolling
+          world.addComponent(linkA, new PositionComponent(0, 0));
+          world.addComponent(linkA, new CableLinkComponent(0, 0.01)); // Moved slightly
+          world.addComponent(linkA, new MassComponent(1));
+          world.addComponent(linkA, new RadiusComponent(0.1));
+          world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA'));
+
+          const linkB = world.createEntity(); // Attachment
+          world.addComponent(linkB, new PositionComponent(1, 0));
+          world.addComponent(linkB, new CableLinkComponent(1, 0));
+          world.addComponent(linkB, new MassComponent(-1));
+          world.addComponent(linkB, new RenderableComponent('circle', '#CCCCCC'));
+
+          // Initial points (approximate)
+          const attachA = new Vector2(0, 0.1); // Tangent on A
+          const attachB = new Vector2(1, 0);   // Point B
+
+          const jointId = world.createEntity();
+          world.addComponent(jointId, new CableJointComponent(linkA, linkB, 0.9, attachA.clone(), attachB.clone()));
+          world.addComponent(jointId, new RenderableComponent('line', '#FFFFFF'));
+
+          const pathId = world.createEntity();
+          const pathComp = new CablePathComponent([jointId], ['rolling', 'attachment'], [true, true]);
+          pathComp.stored[0] = 0.0; // Initial stored on A
+          pathComp.totalRestLength = 0.9;
+          world.addComponent(pathId, pathComp);
+
+          // --- Run the system ---
+          const system = new CableAttachmentUpdateSystem();
+          system.update(world, world.getResource('dt'));
+
+          // --- Assertions (Placeholder) ---
+          const updatedPath = world.getComponent(pathId, CablePathComponent);
+          const updatedJoint = world.getComponent(jointId, CableJointComponent);
+          // Assert changes in joint.restLength, path.stored[0], joint.attachmentPointA_world
+
+          logTestResult(testName, true, "Not fully implemented yet");
+          return world; // Return world for rendering
+      }
+  };
+
+  function runAndVisualizeTest(testName) {
+      console.log(`--- Running & Visualizing Test: ${testName} ---`);
+      testResultsList.innerHTML = ''; // Clear previous results
+      testsPassed = 0;
+      testsFailed = 0;
+
+      if (testCases[testName]) {
+          const world = testCases[testName](); // Run the test function
+
+          // Render the final state
+          if (world && canvas) {
+              if (!renderSystem) {
+                  renderSystem = new RenderSystem(canvas, cScale, simHeight);
+              }
+              renderSystem.update(world, 0); // Render the state
+              console.log("--- Render Complete ---");
+          } else {
+              console.warn("Test function did not return a world or canvas not found.");
+          }
+
+          // --- Final Report ---
+          const summary = document.createElement('li');
+          summary.style.fontWeight = 'bold';
+          summary.style.marginTop = '10px';
+          summary.textContent = `Finished ${testName}: ${testsPassed} passed, ${testsFailed} failed.`;
+          testResultsList.appendChild(summary);
+          console.log(`--- Test Run Complete: ${testsPassed} passed, ${testsFailed} failed ---`);
+
+      } else {
+          console.error(`Test case "${testName}" not found.`);
+          testResultsList.innerHTML = `<li>ERROR: Test case "${testName}" not found.</li>`;
+      }
+  }
+
+  // --- Event Listeners ---
+  const testSelector = document.getElementById('testSelector');
+  const runBtn = document.getElementById('runBtn');
+
+  runBtn.addEventListener('click', () => {
+      const selectedTest = testSelector.value;
+      runAndVisualizeTest(selectedTest);
+  });
+
+  // --- Initial Run ---
+  // Run the default selected test on load
+  runAndVisualizeTest(testSelector.value);
+
+</script>
+
+</body>
+</html>
