@@ -1154,31 +1154,24 @@ class RenderSystem {
     const baseLineWidth = 2;
     const baseDebugRadius = 3;
 
-    // Render Balls
-    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
-    for (const entityId of ballEntities) {
-      const posComp = world.getComponent(entityId, PositionComponent);
-      const radiusComp = world.getComponent(entityId, RadiusComponent);
-      const renderComp = world.getComponent(entityId, RenderableComponent);
+    // Render All Renderable Entities (Circles/Obstacles/Etc.)
+    const renderableEntities = world.query([PositionComponent, RenderableComponent]);
+    for (const entityId of renderableEntities) {
+        const posComp = world.getComponent(entityId, PositionComponent);
+        const renderComp = world.getComponent(entityId, RenderableComponent);
 
-      this.c.fillStyle = renderComp.color;
-      // Use drawDisc with simulation coordinates/radius (uses instance viewport settings)
-      this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+        if (renderComp.shape === 'circle') {
+            const radiusComp = world.getComponent(entityId, RadiusComponent); // Need radius for circles
+            if (posComp && radiusComp) {
+                this.c.fillStyle = renderComp.color;
+                this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+            }
+        }
+        // Add rendering for other shapes if needed (e.g., 'line' is handled below)
     }
 
-    // Render Obstacles
-    const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
-    for (const entityId of obstacleEntities) {
-      const posComp = world.getComponent(entityId, PositionComponent);
-      const radiusComp = world.getComponent(entityId, RadiusComponent);
-      const renderComp = world.getComponent(entityId, RenderableComponent);
 
-      this.c.fillStyle = renderComp.color;
-      // Use drawDisc with simulation coordinates/radius (uses instance viewport settings)
-      this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
-    }
-
-    // Render Cable Joints
+    // Render Cable Joints (Lines)
     const jointEntities = world.query([CableJointComponent, RenderableComponent]);
     // Scale line width by zoom using instance property
     this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
