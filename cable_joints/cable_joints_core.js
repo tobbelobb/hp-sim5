@@ -540,7 +540,6 @@ class CableAttachmentUpdateSystem {
           }
         }
       }
-      //console.log(`path.stored up here: ${path.stored}`);
     }
 
 
@@ -581,7 +580,6 @@ class CableAttachmentUpdateSystem {
         const attachmentLinkB = path.linkTypes[B] === 'attachment';
         const rollingLinkB = path.linkTypes[B] === 'rolling';
 
-        // --- Essential Checks ---
         if (!posA || !posB) {
           console.warn(`CableJoint ${jointId} missing PositionComponent on entities ${entityA} or ${entityB}. Skipping update.`);
           continue;
@@ -594,7 +592,6 @@ class CableAttachmentUpdateSystem {
            console.warn(`CableJoint ${jointId} entity ${entityB} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
            continue;
         }
-        // --- End Checks ---
 
 
         let attachmentA_current, attachmentB_current;
@@ -635,58 +632,35 @@ class CableAttachmentUpdateSystem {
           sB = 0;
         }
 
-        // --- Calculate Wrapping/Unwrapping (sA, sB) if tangents were calculated ---
-        // This section is skipped if tangents == null (e.g., circle-circle overlap fallback)
         if (tangents !== null) { // Check if tangents were successfully calculated or if it's point-to-point
             if (rollingLinkA) {
-                // Project the previous attachment point onto the current frame
                 const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(linkAComp.prevPos);
                 const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
-                // Calculate arc length between projected old point and new point, relative to current center
                 sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
             } else {
-                sA = 0; // Not rolling, no arc length change on A
+                sA = 0;
             }
 
             if (rollingLinkB) {
-                // Project the previous attachment point onto the current frame
                 const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(linkBComp.prevPos);
                 const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
-                // Calculate arc length between projected old point and new point, relative to current center
                 sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
             } else {
-                sB = 0; // Not rolling, no arc length change on B
+                sB = 0;
             }
         }
         // --- End Wrapping/Unwrapping Calculation ---
-
 
         // --- Update stored lengths and rest length based on calculated sA and sB ---
         // sA > 0 means cable wrapped onto A (in preferred direction) -> stored[A] increases, restLength decreases
         path.stored[A] += sA;
         joint.restLength -= sA;
-        //console.log(`Added rest length ${-sA}`);
+        path.stored[B] -= sB;
+        joint.restLength += sB;
 
-        // sB > 0 means cable wrapped onto B (in preferred direction) -> stored[B] increases, restLength decreases
-        // Correction from previous attempt: My interpretation of signedArcLength was reversed for the second point.
-        // If signedArcLength(prev, curr) is positive (meaning curr is 'ahead' of prev in the preferred direction),
-        // it means cable has *unwrapped* from the wheel between prev and curr.
-        // So, stored length should DECREASE, and free length (restLength) should INCREASE.
-        path.stored[B] -= sB; // Correct: Positive sB means unwrapped, so decrease stored
-        joint.restLength += sB; // Correct: Positive sB means unwrapped, so increase free length
-        //console.log(`Added rest length ${sA}`);
-
-        // Debugging logs (optional)
-        //if (sA !== 0 || sB !== 0) {
-            //console.log(`Joint ${jointId}: sA=${sA.toFixed(4)}, sB=${sB.toFixed(4)} -> stored[A]=${path.stored[A].toFixed(4)}, stored[B]=${path.stored[B].toFixed(4)}, restLen=${joint.restLength.toFixed(4)}`);
-        //}
-
-
-        // Ensure rest length doesn't go negative
         if (joint.restLength < 0) {
             // Simple clamping - might need refinement if issues arise
-            // console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}), clamping to 0.`);
-            // Optionally distribute deficit back to stored lengths if needed
+            console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}), clamping to 0.`);
             joint.restLength = 0;
         }
 
