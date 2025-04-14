@@ -190,7 +190,7 @@
 
           const splitterLink = world.createEntity(); // Rolling link that will cause the split
           const splitterRadius = 0.1;
-          const splitterY = splitterRadius * 0.999999; // Slightly less than radius
+          const splitterY = splitterRadius * -0.999999; // Slightly less than radius
           world.addComponent(splitterLink, new PositionComponent(1, splitterY));
           world.addComponent(splitterLink, new CableLinkComponent(1, splitterY));
           world.addComponent(splitterLink, new MassComponent(1));
