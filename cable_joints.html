@@ -1485,43 +1485,42 @@
           const testName = "Simple Merge";
           const world = new World();
           world.setResource('dt', 0.01); // Need dt for potential velocity updates if added later
-          world.setResource('debugRenderPoints', {}); // System expects this resource
 
           // Setup entities (similar to main setup but simplified)
           const linkA = world.createEntity(); // Attachment point
           world.addComponent(linkA, new PositionComponent(0, 0));
-          world.addComponent(linkA, new MassComponent(-1)); // Fixed
           world.addComponent(linkA, new CableLinkComponent(0, 0)); // prevPos needed
+          world.addComponent(linkA, new MassComponent(-1)); // Fixed
 
           const linkB = world.createEntity(); // Rolling link (will be merged over)
-          world.addComponent(linkB, new PositionComponent(1, 0));
+          world.addComponent(linkB, new PositionComponent(1, -0.100001));
+          world.addComponent(linkB, new CableLinkComponent(1, -0.100001)); // prevPos needed
           world.addComponent(linkB, new MassComponent(1));
           world.addComponent(linkB, new RadiusComponent(0.1));
-          world.addComponent(linkB, new CableLinkComponent(1, 0)); // prevPos needed
 
           const linkC = world.createEntity(); // Attachment point
           world.addComponent(linkC, new PositionComponent(2, 0));
-          world.addComponent(linkC, new MassComponent(-1)); // Fixed
           world.addComponent(linkC, new CableLinkComponent(2, 0)); // prevPos needed
+          world.addComponent(linkC, new MassComponent(-1)); // Fixed
 
           // Initial tangent points (assuming straight line for simplicity here)
           const attachA = new Vector2(0, 0);
-          const attachB1 = new Vector2(0.9, 0); // Point on circle B for joint 1
-          const attachB2 = new Vector2(1.1, 0); // Point on circle B for joint 2
+          const attachB1 = new Vector2(1.0000001, 0);
+          const attachB2 = new Vector2(0.9999999, 0);
           const attachC = new Vector2(2, 0);
 
           // Create joints
           const joint1Id = world.createEntity();
-          world.addComponent(joint1Id, new CableJointComponent(linkA, linkB, 0.9, attachA.clone(), attachB1.clone()));
+          world.addComponent(joint1Id, new CableJointComponent(linkA, linkB, 1.0, attachA.clone(), attachB1.clone()));
           const joint2Id = world.createEntity();
-          world.addComponent(joint2Id, new CableJointComponent(linkB, linkC, 0.9, attachB2.clone(), attachC.clone()));
+          world.addComponent(joint2Id, new CableJointComponent(linkB, linkC, 1.0, attachB2.clone(), attachC.clone()));
 
           // Create path
           const pathId = world.createEntity();
           // Path: A (attach) -> B (rolling) -> C (attach)
           const pathComp = new CablePathComponent([joint1Id, joint2Id], ['attachment', 'rolling', 'attachment'], [true, true, true]); // CW doesn't matter much here
-          pathComp.stored[1] = 0.0; // Start with zero stored length on link B
-          pathComp.totalRestLength = 1.8; // 0.9 + 0.9
+          pathComp.stored[1] = -0.0000001; // Start with zero stored length on link B
+          pathComp.totalRestLength = 2.0;
           world.addComponent(pathId, pathComp);
 
           // --- Run the system ---
@@ -1542,7 +1541,7 @@
           // Check merged joint properties
           assertEquals(linkA, mergedJoint.entityA, testName, "Merged joint entity A");
           assertEquals(linkC, mergedJoint.entityB, testName, "Merged joint entity B");
-          assertNear(1.8, mergedJoint.restLength, 1e-6, testName, "Merged joint rest length");
+          assertNear(2.0, mergedJoint.restLength, 1e-6, testName, "Merged joint rest length");
           assertEquals(1, updatedPath.linkTypes.length - 1, testName, "Number of links in path types matches joints"); // linkTypes = N+1
           assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after merge");
           assertEquals('attachment', updatedPath.linkTypes[1], testName, "Link type 1 after merge");
