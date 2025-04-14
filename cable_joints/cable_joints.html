@@ -134,7 +134,9 @@
       world.registerSystem(new PBDCableConstraintSolver());
 
       // Pass viewport settings to RenderSystem constructor
-      world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.5, 1.5, 1.0)); // Draws everything
+      const renderSystem = new RenderSystem(canvas, cScale, simHeight, 1.5, 1.5, 1.0); // Create instance
+      world.registerSystem(renderSystem); // Register it
+      world.setResource('renderSystem', renderSystem); // Store it as a resource
     }
 
     // Update button text based on initial pause state
@@ -191,6 +193,16 @@
 
   // --- Start ---
   setupScene();
+
+  // --- Add this block for initial render ---
+  const initialRenderSystem = world.getResource('renderSystem');
+  if (initialRenderSystem) {
+      // Call update directly. dt value doesn't matter much here as RenderSystem
+      // ignores it and runs even if paused. Pass 0 for clarity.
+      initialRenderSystem.update(world, 0);
+  }
+  // --- End of added block ---
+
   requestAnimationFrame(loop);
 
 </script>
