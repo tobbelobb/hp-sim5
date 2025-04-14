@@ -1183,17 +1183,14 @@ class RenderSystem {
 
       const pA = jointComp.attachmentPointA_world;
       const pB = jointComp.attachmentPointB_world;
-
-      if (pA.lengthSq() > 0 && pB.lengthSq() > 0) {
-        this.c.strokeStyle = renderComp.color;
-        this.c.beginPath();
-        // Use transformed coordinates using instance methods
-        this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-        this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-        this.c.stroke();
-      }
+      this.c.strokeStyle = renderComp.color;
+      this.c.beginPath();
+      // Use transformed coordinates using instance methods
+      this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+      this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+      this.c.stroke();
     }
-    this.c.lineWidth = 1; // Reset line width (or keep scaled?)
+    this.c.lineWidth = 1;
 
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');
