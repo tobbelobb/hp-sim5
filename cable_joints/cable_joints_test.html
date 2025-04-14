@@ -16,10 +16,10 @@
             <option value="testSimpleMerge">Simple Merge</option>
             <option value="testSimpleSplit">Simple Split</option>
             <option value="testAttachmentUpdate">Attachment Update</option>
-            <option value="testMainSceneSetup" selected>Main Scene Setup</option>
+            <option value="testLargeInitialWrap" selected>Large Initial Wrap</option>
             <!-- Add more test options here -->
         </select>
-        <button id="runBtn">Run & Visualize</button>
+        <button id="runBtn">Run &amp; Visualize</button>
     </div>
     <canvas id="testCanvas"></canvas>
     <div id="testResults">
@@ -326,20 +326,20 @@
           world.setResource('simHeight', simHeight);
           // Viewport settings are handled by the RenderSystem created later
 
-          const viewOffset = new Vector2(-0.5, -1.1);
+          const viewOffset = new Vector2(0.0, 0.0);
 
           // --- Entities and Components (Copied from cable_joints.html setupScene) ---
           // Ball Entities
           const ballRadius = 0.03;
 
           const ball1 = world.createEntity();
-          world.addComponent(ball1, new PositionComponent(2.5*0.61 + viewOffset.x, 1.2*0.5 + viewOffset.y)); // Use original positions
+          world.addComponent(ball1, new PositionComponent(1.025 + viewOffset.x, -0.5 + viewOffset.y)); // Use original positions
           world.addComponent(ball1, new RadiusComponent(ballRadius));
           world.addComponent(ball1, new MassComponent(1));
           world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
 
           const ball2 = world.createEntity();
-          world.addComponent(ball2, new PositionComponent(1.7*1.00 + viewOffset.x, 2*0.2 + viewOffset.y)); // Use original positions
+          world.addComponent(ball2, new PositionComponent(1.2 + viewOffset.x, -0.7 + viewOffset.y)); // Use original positions
           world.addComponent(ball2, new RadiusComponent(ballRadius));
           world.addComponent(ball2, new MassComponent(1));
           world.addComponent(ball2, new RenderableComponent('circle', '#00FF00'));
@@ -347,7 +347,7 @@
           // Obstacle Entity
           const obsColor = "#FF8000";
           const obs1 = world.createEntity();
-          world.addComponent(obs1, new PositionComponent(2*0.75 + viewOffset.x, 2*0.75 + viewOffset.y)); // Use original positions
+          world.addComponent(obs1, new PositionComponent(1.0 + viewOffset.x, 0.3 + viewOffset.y)); // Use original positions
           world.addComponent(obs1, new MassComponent(-1.0)); // Fixed obstacle
           const obsRadius = 0.1;
           world.addComponent(obs1, new RadiusComponent(obsRadius));

@@ -51,8 +51,8 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(2.5*0.61, 1.2*0.5));
-    world.addComponent(ball1, new VelocityComponent(1.0, 0.0));
+    world.addComponent(ball1, new PositionComponent(1.25, 0.6));
+    world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
     world.addComponent(ball1, new RestitutionComponent(ballRestitution));
@@ -61,8 +61,8 @@
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.2));
-    world.addComponent(ball2, new VelocityComponent(-0.7, 0.0));
+    world.addComponent(ball2, new PositionComponent(1.6, 0.4));
+    world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
     world.addComponent(ball2, new RestitutionComponent(ballRestitution));
@@ -73,7 +73,7 @@
     const obsColor = "#FF8000";
     const obs1 = world.createEntity();
     world.addComponent(obs1, new ObstacleTagComponent());
-    world.addComponent(obs1, new PositionComponent(2*0.75, 2*0.75));
+    world.addComponent(obs1, new PositionComponent(1.5, 1.5));
     world.addComponent(obs1, new MassComponent(-1.0));
     world.addComponent(obs1, new RadiusComponent(0.1));
     world.addComponent(obs1, new RenderableComponent('circle', obsColor));
