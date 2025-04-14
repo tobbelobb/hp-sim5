@@ -1120,7 +1120,8 @@ class RenderSystem {
   cX(simX) {
     // 1. Shift simulation coordinate relative to the view offset
     // 2. Scale by the effective scale
-    return (simX - this.viewOffsetX_sim) * this.effectiveCScale;
+    // 3. Add canvas center offset
+    return (simX - this.viewOffsetX_sim) * this.effectiveCScale + this.canvas.width / 2.0;
   }
   cY(simY) {
     // 1. Shift simulation coordinate relative to the view offset
