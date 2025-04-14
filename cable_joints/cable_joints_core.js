@@ -780,6 +780,22 @@ class CableAttachmentUpdateSystem {
                 // Skip this split if unsupported combination
                 continue; // Go to the next potential splitter
             }
+
+            // --- Debug Visualization for initialPoints2 ---
+            if (initialPoints2) {
+                if (initialPoints2.a_attach) {
+                    debugPoints[`split_${jointId}_init2_attach`] = { pos: initialPoints2.a_attach, color: '#FFA500' }; // Orange
+                }
+                if (initialPoints2.a_circle) {
+                    debugPoints[`split_${jointId}_init2_circleA`] = { pos: initialPoints2.a_circle, color: '#FF00FF' }; // Magenta
+                }
+                 if (initialPoints2.b_circle) { // For circle-circle case
+                    debugPoints[`split_${jointId}_init2_circleB`] = { pos: initialPoints2.b_circle, color: '#00FFFF' }; // Cyan
+                }
+            }
+            // --- End Debug Visualization ---
+
+
             joint.entityB = splitterId; // Original joint now connects A -> Splitter
 
             // Calculate stored length 's' on the new splitter link
