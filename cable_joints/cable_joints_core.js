@@ -195,6 +195,25 @@ function lineSegmentCircleIntersection(p1, p2, center, radius) {
   return closestPointOnLine.distanceTo(center) <= radius;
 }
 
+/**
+ * Determines if point x is to the left of the directed line segment from p0 to p1.
+ * Uses the 2D cross product.
+ * @param {Vector2} x - The point to test.
+ * @param {Vector2} p0 - The start point of the line segment.
+ * @param {Vector2} p1 - The end point of the line segment.
+ * @returns {boolean} True if x is strictly to the left, false otherwise (right or collinear).
+ */
+function rightOfLine(x, p0, p1) {
+  const v_x = p1.x - p0.x;
+  const v_y = p1.y - p0.y;
+  const w_x = x.x - p0.x;
+  const w_y = x.y - p0.y;
+  // Calculate the 2D cross product (determinant)
+  const crossProduct = v_x * w_y - v_y * w_x;
+  // Return true if the cross product is positive (indicating left)
+  return crossProduct < 0.0;
+}
+
 
 // --- ECS Core ---
 class World {
@@ -691,12 +710,14 @@ class CableAttachmentUpdateSystem {
             continue;
           }
           const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
+          const prevPosSplitter = world.getComponent(splitterId, CableLinkComponent).prevPos;
           const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
           if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
             console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
             const newJointId = world.createEntity();
 
-            const cw = true;
+            const cw = rightOfLine(prevPosSplitter, pA, pB);
+            console.log("rightOfLine: ", cw);
             const linkTypeB = path.linkTypes[jointIndex + 1];
             const entityB = joint.entityB;
             const entityA = joint.entityA;
@@ -740,8 +761,8 @@ class CableAttachmentUpdateSystem {
                 const cwA = path.cw[jointIndex];
                 initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-                newAttachmentPointAForJoint = initialPoints2.a_circle; // Corrected: Use initialPoints2
-                newAttachmentPointBForJoint = initialPoints2.b_circle; // Corrected: Use initialPoints2
+                newAttachmentPointAForJoint = initialPoints2.a_circle;
+                newAttachmentPointBForJoint = initialPoints2.b_circle;
                 const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                 path.stored[jointIndex] += sA;
