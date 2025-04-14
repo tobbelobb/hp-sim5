@@ -1106,46 +1106,31 @@ class RenderSystem {
     this.c = canvas.getContext("2d");
     this.baseCScale = cScale; // Original scale (pixels per sim unit at 1x zoom)
     this.simHeight = simHeight; // Original sim height (usually 2.0)
-
-    // --- Viewport Settings ---
-    this.viewScaleMultiplier = 1.6; // Zoom level (2.0 = 2x zoom)
-    // Calculate the original full simulation width
-    const originalSimWidth = this.canvas.width / this.baseCScale;
-    // Set the horizontal offset in simulation units to center the middle half
-    this.viewOffsetX_sim = 0.6;
-    // Vertical offset (optional, keep 0 for now to center vertically at y=0)
-    this.viewOffsetY_sim = 1.0;
-    // --- End Viewport Settings ---
-
-    // Calculate the effective scale used for drawing
-    this.effectiveCScale = this.baseCScale * this.viewScaleMultiplier;
+    // Viewport settings are now read from world resources
   }
 
-  // Coordinate transformation helpers
-  cX(simX) {
+  // Coordinate transformation helpers using world resources
+  cX(simX, viewOffsetX_sim, effectiveCScale) {
     // 1. Shift simulation coordinate relative to the view offset
     // 2. Scale by the effective scale
-    return (simX - this.viewOffsetX_sim) * this.effectiveCScale;
+    return (simX - viewOffsetX_sim) * effectiveCScale;
   }
-  cY(simY) {
+  cY(simY, viewOffsetY_sim, effectiveCScale) {
     // 1. Shift simulation coordinate relative to the view offset
     // 2. Scale by the effective scale
-    // 3. Flip Y and potentially adjust based on canvas height if needed (standard flip)
-    // Note: Simple vertical centering at y=0 is assumed here.
-    // For true vertical panning, this needs adjustment similar to cX.
-    const scaledY = (simY - this.viewOffsetY_sim) * this.effectiveCScale;
+    // 3. Flip Y and center vertically
+    const scaledY = (simY - viewOffsetY_sim) * effectiveCScale;
     // Center the view vertically. We map simY=viewOffsetY_sim to canvas.height/2
     return this.canvas.height / 2.0 - scaledY;
-     // Original simple flip: return this.canvas.height - scaledY;
   }
 
   // Use effective scale for radius
-  drawDisc(simX, simY, simRadius) {
+  drawDisc(simX, simY, simRadius, viewOffsetX_sim, viewOffsetY_sim, effectiveCScale) {
     this.c.beginPath();
     this.c.arc(
-      this.cX(simX),
-      this.cY(simY),
-      simRadius * this.effectiveCScale, // Scale radius by zoom
+      this.cX(simX, viewOffsetX_sim, effectiveCScale),
+      this.cY(simY, viewOffsetY_sim, effectiveCScale),
+      simRadius * effectiveCScale, // Scale radius by zoom
       0.0, 2.0 * Math.PI
     );
     this.c.closePath();
@@ -1153,6 +1138,14 @@ class RenderSystem {
   }
 
   update(world, dt) {
+    // --- Get Viewport Settings from World Resources (with defaults) ---
+    const viewScaleMultiplier = world.getResource('viewScaleMultiplier') ?? 1.0;
+    const viewOffsetX_sim = world.getResource('viewOffsetX_sim') ?? (this.canvas.width / this.baseCScale / 2.0); // Default center X
+    const viewOffsetY_sim = world.getResource('viewOffsetY_sim') ?? (this.canvas.height / this.baseCScale / 2.0); // Default center Y
+    const effectiveCScale = this.baseCScale * viewScaleMultiplier;
+    // --- End Viewport Settings ---
+
+
     this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Base line width and debug radius (adjust as needed)
@@ -1167,8 +1160,8 @@ class RenderSystem {
       const renderComp = world.getComponent(entityId, RenderableComponent);
 
       this.c.fillStyle = renderComp.color;
-      // Use drawDisc with simulation coordinates/radius
-      this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+      // Use drawDisc with simulation coordinates/radius and viewport settings
+      this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius, viewOffsetX_sim, viewOffsetY_sim, effectiveCScale);
     }
 
     // Render Obstacles
@@ -1179,14 +1172,14 @@ class RenderSystem {
       const renderComp = world.getComponent(entityId, RenderableComponent);
 
       this.c.fillStyle = renderComp.color;
-      // Use drawDisc with simulation coordinates/radius
-      this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+      // Use drawDisc with simulation coordinates/radius and viewport settings
+      this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius, viewOffsetX_sim, viewOffsetY_sim, effectiveCScale);
     }
 
     // Render Cable Joints
     const jointEntities = world.query([CableJointComponent, RenderableComponent]);
     // Scale line width by zoom
-    this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
+    this.c.lineWidth = baseLineWidth * viewScaleMultiplier;
     for (const entityId of jointEntities) {
       const jointComp = world.getComponent(entityId, CableJointComponent);
       const renderComp = world.getComponent(entityId, RenderableComponent);
@@ -1199,9 +1192,9 @@ class RenderSystem {
       if (pA.lengthSq() > 0 && pB.lengthSq() > 0) {
         this.c.strokeStyle = renderComp.color;
         this.c.beginPath();
-        // Use transformed coordinates
-        this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-        this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+        // Use transformed coordinates with viewport settings
+        this.c.moveTo(this.cX(pA.x, viewOffsetX_sim, effectiveCScale), this.cY(pA.y, viewOffsetY_sim, effectiveCScale));
+        this.c.lineTo(this.cX(pB.x, viewOffsetX_sim, effectiveCScale), this.cY(pB.y, viewOffsetY_sim, effectiveCScale));
         this.c.stroke();
       }
     }
@@ -1210,19 +1203,18 @@ class RenderSystem {
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');
     if (debugPoints) {
-        // Keep debug points a constant pixel size, or scale them?
-        const scaledDebugRadius = baseDebugRadius; // Option 1: Constant pixel size
-        // const scaledDebugRadius = baseDebugRadius * this.viewScaleMultiplier; // Option 2: Scale with zoom
+        // Keep debug points a constant pixel size
+        const scaledDebugRadius = baseDebugRadius;
         this.c.save();
         for (const key in debugPoints) {
             const pointData = debugPoints[key];
             if (pointData && pointData.pos) {
                 this.c.fillStyle = pointData.color;
                 this.c.beginPath();
-                // Use transformed coordinates
+                // Use transformed coordinates with viewport settings
                 this.c.arc(
-                    this.cX(pointData.pos.x),
-                    this.cY(pointData.pos.y),
+                    this.cX(pointData.pos.x, viewOffsetX_sim, effectiveCScale),
+                    this.cY(pointData.pos.y, viewOffsetY_sim, effectiveCScale),
                     scaledDebugRadius,
                     0, 2 * Math.PI
                 );

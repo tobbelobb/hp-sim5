@@ -36,9 +36,9 @@
   const simWidth = canvas.width / cScale;
   const simHeight = canvas.height / cScale;
 
-  // Make world accessible globally within this test file
+  // Make world accessible globally within this test file (for debugging)
   window.testWorld = null;
-  let renderSystem = null; // Hold the render system instance
+  // Remove global renderSystem, it will be created per test run
 
   // --- Test Suite ---
   const testResultsList = document.getElementById('testList');
@@ -95,6 +95,11 @@
           world.setResource('debugRenderPoints', {});
           world.setResource('simWidth', simWidth);
           world.setResource('simHeight', simHeight);
+          // --- Viewport Resources for testSimpleMerge ---
+          // Center view around x=1, y=0 with a bit of zoom out
+          world.setResource('viewScaleMultiplier', 1.5); // Adjust as needed
+          world.setResource('viewOffsetX_sim', 1.0);
+          world.setResource('viewOffsetY_sim', 0.0);
 
           // Setup entities
           const linkA = world.createEntity(); // Attachment point
@@ -172,6 +177,11 @@
           world.setResource('debugRenderPoints', {});
           world.setResource('simWidth', simWidth);
           world.setResource('simHeight', simHeight);
+          // --- Viewport Resources for testSimpleSplit ---
+          // Center view around x=1, y=0 with a bit of zoom out
+          world.setResource('viewScaleMultiplier', 1.5); // Adjust as needed
+          world.setResource('viewOffsetX_sim', 1.0);
+          world.setResource('viewOffsetY_sim', 0.0);
 
           // Setup entities
           const linkA = world.createEntity(); // Attachment point
@@ -265,6 +275,12 @@
           world.setResource('debugRenderPoints', {});
           world.setResource('simWidth', simWidth);
           world.setResource('simHeight', simHeight);
+          // --- Viewport Resources for testAttachmentUpdate ---
+          // Center view around x=0.5, y=0 with a bit of zoom out
+          world.setResource('viewScaleMultiplier', 1.5); // Adjust as needed
+          world.setResource('viewOffsetX_sim', 0.5);
+          world.setResource('viewOffsetY_sim', 0.0);
+
 
           // TODO: Set up a world state with rolling links
           // TODO: Move the links slightly (or set prevPos differently)
@@ -324,10 +340,10 @@
 
           // Render the final state
           if (world && canvas) {
-              if (!renderSystem) {
-                  renderSystem = new RenderSystem(canvas, cScale, simHeight);
-              }
-              renderSystem.update(world, 0); // Render the state
+              // Create a new RenderSystem instance for each test run
+              // This ensures it uses the current canvas dimensions and scale settings
+              const renderSystem = new RenderSystem(canvas, cScale, simHeight);
+              renderSystem.update(world, 0); // Render the state using the world's resources
               console.log("--- Render Complete ---");
           } else {
               console.warn("Test function did not return a world or canvas not found.");
