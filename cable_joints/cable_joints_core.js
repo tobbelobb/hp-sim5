@@ -134,7 +134,7 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
  * @param {boolean} clockwisePreference - If true, positive arc length means CW, else CCW
  * @returns {number} Signed arc length (positive = preferred direction)
  */
-function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwisePreference) {
+function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwisePreference, force_positive = false) {
   const toPrev = new Vector2().subtractVectors(prevPoint, center);
   const toCurr = new Vector2().subtractVectors(currPoint, center);
 
@@ -145,11 +145,15 @@ function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwiseP
   if (angle > Math.PI) angle -= 2 * Math.PI;
   if (angle < -Math.PI) angle += 2 * Math.PI;
 
-  // If wheel is clockwise, positive angle should represent CW → flip sign
   if (clockwisePreference) {
     angle *= -1;
   }
 
+  if (force_positive) {
+    while (angle < 0.0) {
+      angle += 2 * Math.PI;
+    }
+  }
   // Arc length = radius * angle (signed)
   return radius * angle;
 }
@@ -370,7 +374,8 @@ class CablePathComponent {
             joint_i_plus_1.attachmentPointA_world,
             center,
             radius,
-            isCw
+            isCw,
+            true
         );
         this.stored[i + 1] = initialStoredLength;
         this.totalRestLength += initialStoredLength;
