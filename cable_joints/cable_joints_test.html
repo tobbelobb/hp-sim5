@@ -267,7 +267,6 @@
           world.setResource('debugRenderPoints', {});
           world.setResource('simWidth', simWidth);
           world.setResource('simHeight', simHeight);
-          // Viewport settings moved to RenderSystem constructor
 
 
           // TODO: Set up a world state with rolling links
@@ -329,8 +328,7 @@
           // Render the final state
           if (world && canvas) {
               // Create a new RenderSystem instance for each test run
-              // Pass viewport settings from reference file (scale=1.6, offsetX=1.0, offsetY=0.0)
-              const renderSystem = new RenderSystem(canvas, cScale, simHeight, 1.6, 1.0, 0.0);
+              const renderSystem = new RenderSystem(canvas, cScale, simHeight, 1.3, 1.0, 0.0);
               renderSystem.update(world, 0); // Render the state using the instance's viewport settings
               console.log("--- Render Complete ---");
           } else {
