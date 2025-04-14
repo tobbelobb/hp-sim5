@@ -41,10 +41,7 @@
     // Create a component for pause state and store it as a resource for easy access
     world.setResource('pauseState', new PauseStateComponent(true));
     world.setResource('debugRenderPoints', {}); // Initialize empty object for debug points
-    // --- Viewport Resources ---
-    world.setResource('viewScaleMultiplier', 1.6);
-    world.setResource('viewOffsetX_sim', 0.6);
-    world.setResource('viewOffsetY_sim', 1.0);
+    // Viewport settings moved to RenderSystem constructor
 
 
     // --- Entities and Components ---
@@ -136,7 +133,8 @@
       world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
       world.registerSystem(new PBDCableConstraintSolver());
 
-      world.registerSystem(new RenderSystem(canvas, cScale, simHeight)); // Draws everything
+      // Pass viewport settings to RenderSystem constructor
+      world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.6, 0.6, 1.0)); // Draws everything
     }
 
     // Update button text based on initial pause state
