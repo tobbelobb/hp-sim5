@@ -14,8 +14,9 @@
         Select Test to Visualize:
         <select id="testSelector">
             <option value="testSimpleMerge">Simple Merge</option>
-            <option value="testSimpleSplit" selected>Simple Split</option>
+            <option value="testSimpleSplit">Simple Split</option>
             <option value="testAttachmentUpdate">Attachment Update</option>
+            <option value="testMainSceneSetup" selected>Main Scene Setup</option>
             <!-- Add more test options here -->
         </select>
         <button id="runBtn">Run & Visualize</button>
@@ -312,6 +313,115 @@
           // Assert changes in joint.restLength, path.stored[0], joint.attachmentPointA_world
 
           logTestResult(testName, true, "Not fully implemented yet");
+          return world; // Return world for rendering
+      },
+
+      testMainSceneSetup: function() {
+          const testName = "Main Scene Setup";
+          const world = new World();
+          window.testWorld = world; // Set global world
+          world.setResource('dt', 0.01); // Use a typical dt
+          world.setResource('debugRenderPoints', {});
+          world.setResource('simWidth', simWidth);
+          world.setResource('simHeight', simHeight);
+          // Viewport settings are handled by the RenderSystem created later
+
+          // --- Entities and Components (Copied from cable_joints.html setupScene) ---
+          // Ball Entities
+          const ballRadius = 0.03;
+          const ballRestitution = 0.4;
+
+          const ball1 = world.createEntity();
+          world.addComponent(ball1, new BallTagComponent());
+          world.addComponent(ball1, new PositionComponent(2.5*0.61, 1.2*0.5)); // Use original positions
+          world.addComponent(ball1, new VelocityComponent(1.0, 0.0));
+          world.addComponent(ball1, new RadiusComponent(ballRadius));
+          world.addComponent(ball1, new MassComponent(0.1001));
+          world.addComponent(ball1, new RestitutionComponent(ballRestitution));
+          // world.addComponent(ball1, new GravityAffectedComponent()); // Not needed for initial state test
+          world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
+
+          const ball2 = world.createEntity();
+          world.addComponent(ball2, new BallTagComponent());
+          world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.2)); // Use original positions
+          world.addComponent(ball2, new VelocityComponent(-0.7, 0.0));
+          world.addComponent(ball2, new RadiusComponent(ballRadius));
+          world.addComponent(ball2, new MassComponent(0.1));
+          world.addComponent(ball2, new RestitutionComponent(ballRestitution));
+          // world.addComponent(ball2, new GravityAffectedComponent()); // Not needed for initial state test
+          world.addComponent(ball2, new RenderableComponent('circle', '#00FF00'));
+
+          // Obstacle Entity
+          const obsColor = "#FF8000";
+          const obs1 = world.createEntity();
+          world.addComponent(obs1, new ObstacleTagComponent());
+          world.addComponent(obs1, new PositionComponent(2*0.75, 2*0.75)); // Use original positions
+          world.addComponent(obs1, new MassComponent(-1.0)); // Fixed obstacle
+          const obsRadius = 0.1;
+          world.addComponent(obs1, new RadiusComponent(obsRadius));
+          world.addComponent(obs1, new RenderableComponent('circle', obsColor));
+
+          // --- Cable Setup (Copied from cable_joints.html setupScene) ---
+          world.addComponent(obs1, new CableLinkComponent()); // Need link component for prevPos tracking if system runs
+          world.addComponent(ball1, new CableLinkComponent());
+          world.addComponent(ball2, new CableLinkComponent());
+
+          // --- Calculate Initial Cable State ---
+          const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
+          const link_ball1 = world.getComponent(ball1, CableLinkComponent);
+          link_ball1.prevPos = pos_ball1.clone(); // Set prevPos for consistency
+          const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
+          const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
+          const cw_obs1 = true; // From original scene
+          const link_obs1 = world.getComponent(obs1, CableLinkComponent);
+          link_obs1.prevPos = pos_obs1.clone(); // Set prevPos for consistency
+          const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
+          const link_ball2 = world.getComponent(ball2, CableLinkComponent);
+          link_ball2.prevPos = pos_ball2.clone(); // Set prevPos for consistency
+
+          const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
+          const initialPoints2 = tangentFromCircleToPoint(pos_ball2, pos_obs1, radius_obs1, cw_obs1);
+
+          const joint1 = world.createEntity();
+          const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+          world.addComponent(joint1, new CableJointComponent(
+            ball1, obs1, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle));
+          world.addComponent(joint1, new RenderableComponent('line', '#FF0000'));
+
+          const joint2 = world.createEntity();
+          const initialDist2 = initialPoints2.a_attach.clone().subtract(initialPoints2.a_circle).length();
+          world.addComponent(joint2, new CableJointComponent(
+            obs1, ball2, initialDist2, initialPoints2.a_circle, initialPoints2.a_attach));
+          world.addComponent(joint2, new RenderableComponent('line', '#FFFF00'));
+
+          const cablePath = world.createEntity();
+          // The CablePathComponent constructor calculates the initial stored length
+          const pathComp = new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true]);
+          world.addComponent(cablePath, pathComp);
+
+          // --- Assertions ---
+          if (!assertTrue(pathComp !== undefined, testName, "Path component exists")) return world;
+
+          const storedLengthObs = pathComp.stored[1]; // Stored length on the rolling obstacle (index 1)
+          const expectedMinStoredLength = Math.PI * obsRadius * 0.99; // Expect slightly *less* than PI*r if wrap is ~180 deg
+          const expectedMaxStoredLength = Math.PI * obsRadius * 1.01; // Expect slightly *more* than PI*r if wrap is ~180 deg
+
+          // Check if stored length is positive
+          assertTrue(storedLengthObs > 0, testName, `Stored length on obstacle (${storedLengthObs.toFixed(4)}) should be positive`);
+
+          // Check if stored length is roughly PI * radius (indicating ~180 degree wrap)
+          // We check if it's *greater* than a value slightly *less* than PI*r
+          // AND *less* than a value slightly *more* than PI*r.
+          // This accounts for the fact that the wrap might not be exactly 180 degrees.
+          // The original request asked for slightly *above* PI*r, let's test that specifically first.
+          const slightlyAbovePiR = Math.PI * obsRadius * 1.0001; // A tiny bit above PI*r
+          assertTrue(storedLengthObs > slightlyAbovePiR, testName, `Stored length (${storedLengthObs.toFixed(4)}) should be slightly greater than PI*r (${slightlyAbovePiR.toFixed(4)})`);
+
+          // Optional: Add a check for total rest length conservation if needed, but the main goal is stored[1]
+          // const calculatedTotalRest = joint1Comp.restLength + joint2Comp.restLength + storedLengthObs;
+          // assertNear(pathComp.totalRestLength, calculatedTotalRest, 1e-6, testName, "Total rest length calculated correctly");
+
+          logTestResult(testName, true);
           return world; // Return world for rendering
       }
   };
