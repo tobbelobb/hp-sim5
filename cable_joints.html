@@ -1553,13 +1553,104 @@
           logTestResult(testName, true); // If all assertions passed
       }
 
-      // --- Test Case 2: Simple Split Scenario (Placeholder) ---
+      // --- Test Case 2: Simple Split Scenario ---
       function testSimpleSplit() {
-          const testName = "Simple Split (Placeholder)";
-          // TODO: Set up a world state where a joint segment intersects a potential splitter
-          // TODO: Run the system
-          // TODO: Assert that the joint was split, check new joint properties, lengths, stored lengths etc.
-          logTestResult(testName, true, "Not implemented yet"); // Mark as passing until implemented
+          const testName = "Simple Split";
+          const world = new World();
+          world.setResource('dt', 0.01);
+          world.setResource('debugRenderPoints', {}); // System expects this resource
+
+          // Setup entities
+          const linkA = world.createEntity(); // Attachment point
+          world.addComponent(linkA, new PositionComponent(0, 0));
+          world.addComponent(linkA, new CableLinkComponent(0, 0)); // prevPos needed
+          world.addComponent(linkA, new MassComponent(-1)); // Fixed
+
+          const linkB = world.createEntity(); // Attachment point
+          world.addComponent(linkB, new PositionComponent(2, 0));
+          world.addComponent(linkB, new CableLinkComponent(2, 0)); // prevPos needed
+          world.addComponent(linkB, new MassComponent(-1)); // Fixed
+
+          const splitterLink = world.createEntity(); // Rolling link that will cause the split
+          const splitterRadius = 0.1;
+          const splitterY = splitterRadius * 0.9999; // Slightly less than radius to ensure intersection
+          world.addComponent(splitterLink, new PositionComponent(1, splitterY));
+          world.addComponent(splitterLink, new CableLinkComponent(1, splitterY)); // prevPos needed
+          world.addComponent(splitterLink, new MassComponent(1)); // Needs mass > 0
+          world.addComponent(splitterLink, new RadiusComponent(splitterRadius));
+          world.addComponent(splitterLink, new RenderableComponent('circle', '#CCCCCC')); // For potential visual debugging
+
+          // Initial joint (A -> B)
+          const initialRestLength = 2.0;
+          const jointOrigId = world.createEntity();
+          world.addComponent(jointOrigId, new CableJointComponent(linkA, linkB, initialRestLength, new Vector2(0,0), new Vector2(2,0)));
+          world.addComponent(jointOrigId, new RenderableComponent('line', '#FFFFFF')); // Original joint color
+
+          // Create path
+          const pathId = world.createEntity();
+          // Path: A (attach) -> B (attach)
+          const pathComp = new CablePathComponent([jointOrigId], ['attachment', 'attachment'], [true, true]); // CW doesn't matter much here
+          pathComp.totalRestLength = initialRestLength;
+          world.addComponent(pathId, pathComp);
+
+          // --- Run the system ---
+          const system = new CableAttachmentUpdateSystem();
+          system.update(world, world.getResource('dt'));
+
+          // --- Assertions ---
+          const updatedPath = world.getComponent(pathId, CablePathComponent);
+          if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return;
+
+          // Check if split happened
+          if (!assertEquals(2, updatedPath.jointEntities.length, testName, "Number of joints after split")) return;
+
+          // Check path properties
+          assertEquals(3, updatedPath.linkTypes.length, testName, "Number of link types after split");
+          assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after split");
+          assertEquals('rolling', updatedPath.linkTypes[1], testName, "Link type 1 after split (splitter)");
+          assertEquals('attachment', updatedPath.linkTypes[2], testName, "Link type 2 after split");
+          assertEquals(3, updatedPath.cw.length, testName, "Number of cw flags after split");
+          assertEquals(3, updatedPath.stored.length, testName, "Number of stored lengths after split");
+          // Stored length on splitter (s) should be near zero for this symmetric setup
+          assertNear(0.0, updatedPath.stored[1], 1e-4, testName, "Stored length on splitter link");
+
+          // Get the two new joints (original joint is modified, new one is created)
+          const joint1Id = updatedPath.jointEntities[0]; // Original joint ID, now A -> Splitter
+          const joint2Id = updatedPath.jointEntities[1]; // New joint ID, Splitter -> B
+          const joint1 = world.getComponent(joint1Id, CableJointComponent);
+          const joint2 = world.getComponent(joint2Id, CableJointComponent);
+
+          if (!assertTrue(joint1 !== undefined, testName, "Joint 1 (A->Splitter) exists")) return;
+          if (!assertTrue(joint2 !== undefined, testName, "Joint 2 (Splitter->B) exists")) return;
+
+          // Check joint entities
+          assertEquals(linkA, joint1.entityA, testName, "Joint 1 entity A");
+          assertEquals(splitterLink, joint1.entityB, testName, "Joint 1 entity B (splitter)");
+          assertEquals(splitterLink, joint2.entityA, testName, "Joint 2 entity A (splitter)");
+          assertEquals(linkB, joint2.entityB, testName, "Joint 2 entity B");
+
+          // Check rest lengths (should be distributed proportionally, approx 1.0 each here)
+          const expectedRestLength = (initialRestLength - updatedPath.stored[1]) / 2.0;
+          assertNear(expectedRestLength, joint1.restLength, 1e-6, testName, "Joint 1 rest length");
+          assertNear(expectedRestLength, joint2.restLength, 1e-6, testName, "Joint 2 rest length");
+
+          // Check total rest length conservation
+          assertNear(pathComp.totalRestLength, joint1.restLength + joint2.restLength + updatedPath.stored[1], 1e-6, testName, "Total rest length conserved");
+
+          // Check attachment points (approximate check is sufficient here)
+          // Joint 1: A -> Splitter
+          assertNear(0.0, joint1.attachmentPointA_world.x, 1e-6, testName, "Joint 1 attach A.x");
+          assertNear(0.0, joint1.attachmentPointA_world.y, 1e-6, testName, "Joint 1 attach A.y");
+          assertNear(1.0, joint1.attachmentPointB_world.x, 1e-4, testName, "Joint 1 attach B.x (on splitter)"); // Should be very close to (1, -sqrt(r^2 - y^2))
+          // Joint 2: Splitter -> B
+          assertNear(1.0, joint2.attachmentPointA_world.x, 1e-4, testName, "Joint 2 attach A.x (on splitter)"); // Should be very close to (1, -sqrt(r^2 - y^2))
+          assertNear(2.0, joint2.attachmentPointB_world.x, 1e-6, testName, "Joint 2 attach B.x");
+          assertNear(0.0, joint2.attachmentPointB_world.y, 1e-6, testName, "Joint 2 attach B.y");
+
+          // Check if the original joint entity ID is still used for the first segment
+          assertEquals(jointOrigId, joint1Id, testName, "Original joint ID reused for first segment");
+
+          logTestResult(testName, true); // If all assertions passed
       }
 
        // --- Test Case 3: Attachment Update (Placeholder) ---
