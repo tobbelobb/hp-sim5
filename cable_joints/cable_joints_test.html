@@ -132,7 +132,7 @@
 
           // Create path
           const pathId = world.createEntity();
-          const pathComp = new CablePathComponent([joint1Id, joint2Id], ['attachment', 'rolling', 'attachment'], [true, true, true]);
+          const pathComp = new CablePathComponent(world, [joint1Id, joint2Id], ['attachment', 'rolling', 'attachment'], [true, true, true]);
           pathComp.stored[1] = -0.0000001;
           pathComp.totalRestLength = 2.0;
           world.addComponent(pathId, pathComp);
@@ -203,7 +203,7 @@
 
           // Create path
           const pathId = world.createEntity();
-          const pathComp = new CablePathComponent([jointOrigId], ['attachment', 'attachment'], [true, true]);
+          const pathComp = new CablePathComponent(world, [jointOrigId], ['attachment', 'attachment'], [true, true]);
           pathComp.totalRestLength = initialRestLength;
           world.addComponent(pathId, pathComp);
 
@@ -294,7 +294,7 @@
           world.addComponent(jointId, new RenderableComponent('line', '#FFFFFF'));
 
           const pathId = world.createEntity();
-          const pathComp = new CablePathComponent([jointId], ['rolling', 'attachment'], [true, true]);
+          const pathComp = new CablePathComponent(world, [jointId], ['rolling', 'attachment'], [true, true]);
           pathComp.stored[0] = 0.0; // Initial stored on A
           pathComp.totalRestLength = 0.9;
           world.addComponent(pathId, pathComp);

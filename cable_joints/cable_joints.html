@@ -117,7 +117,7 @@
     world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
     const cablePath = world.createEntity();
-    world.addComponent(cablePath, new CablePathComponent([joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
+    world.addComponent(cablePath, new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
 
 
     // --- Systems Registration (Order Matters!) ---

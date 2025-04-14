@@ -335,7 +335,7 @@ class CableJointComponent {
 
 // Represents the entire cable path
 class CablePathComponent {
-  constructor(jointEntities = [], linkTypes = [], cw = []) {
+  constructor(world, jointEntities = [], linkTypes = [], cw = []) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
