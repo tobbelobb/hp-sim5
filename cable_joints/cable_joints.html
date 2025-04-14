@@ -51,7 +51,7 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.2*0.5));
+    world.addComponent(ball1, new PositionComponent(2.5*0.61, 1.2*0.5));
     world.addComponent(ball1, new VelocityComponent(1.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
@@ -180,7 +180,15 @@
     const pauseState = world.getResource('pauseState');
     if (pauseState) pauseState.paused = true;
     pauseBtn.textContent = "Resume";
-    doStep = true;
+
+    // --- Initial render ---
+    const initialRenderSystem = world.getResource('renderSystem');
+    if (initialRenderSystem) {
+        // Call update directly. dt value doesn't matter much here as RenderSystem
+        // ignores it and runs even if paused. Pass 0 for clarity.
+        initialRenderSystem.update(world, 0);
+    }
+    doStep = false;
   });
 
   stepBtn.addEventListener('click', (e) => {
@@ -194,14 +202,13 @@
   // --- Start ---
   setupScene();
 
-  // --- Add this block for initial render ---
+  // --- Initial render ---
   const initialRenderSystem = world.getResource('renderSystem');
   if (initialRenderSystem) {
       // Call update directly. dt value doesn't matter much here as RenderSystem
       // ignores it and runs even if paused. Pass 0 for clarity.
       initialRenderSystem.update(world, 0);
   }
-  // --- End of added block ---
 
   requestAnimationFrame(loop);
 
