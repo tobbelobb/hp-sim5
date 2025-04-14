@@ -86,15 +86,17 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
 
   const alpha = Math.atan2(dVec.y, dVec.x);
   const phi = Math.asin(r / d);
+  console.log("cwA: ", cwA);
+  console.log("cwB: ", cwB);
 
   let angleA, angleB;
   if (!cwA === cwB) {
     if (!cwA) {
-      angleA = alpha - Math.PI / 2 - phi;
-      angleB = alpha - Math.PI / 2 - phi;
-    } else {
-      angleA = alpha + Math.PI / 2 + phi;
+      angleA = alpha - Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
+    } else {
+      angleA = alpha + Math.PI / 2 - phi;
+      angleB = alpha - Math.PI / 2 - phi;
     }
   } else {
     if (!cwA) {

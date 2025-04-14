@@ -41,7 +41,6 @@
     // Create a component for pause state and store it as a resource for easy access
     world.setResource('pauseState', new PauseStateComponent(true));
     world.setResource('debugRenderPoints', {}); // Initialize empty object for debug points
-    // Viewport settings moved to RenderSystem constructor
 
 
     // --- Entities and Components ---
@@ -61,8 +60,8 @@
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.6, 0.4));
-    world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
+    world.addComponent(ball2, new PositionComponent(1.6, 0.55));
+    world.addComponent(ball2, new VelocityComponent(1.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
     world.addComponent(ball2, new RestitutionComponent(ballRestitution));
@@ -125,7 +124,7 @@
 
     const ball3 = world.createEntity();
     world.addComponent(ball3, new BallTagComponent());
-    world.addComponent(ball3, new PositionComponent(1.35 + offset_x, 0.6));
+    world.addComponent(ball3, new PositionComponent(1.35 + offset_x, 0.4));
     world.addComponent(ball3, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball3, new RadiusComponent(ballRadius));
     world.addComponent(ball3, new MassComponent(0.1001));
@@ -191,7 +190,7 @@
     world.addComponent(joint4, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
     const cablePath2 = world.createEntity();
-    world.addComponent(cablePath, new CablePathComponent(world, [joint3, joint4], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
+    world.addComponent(cablePath2, new CablePathComponent(world, [joint3, joint4], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
 
 
 
@@ -208,7 +207,7 @@
       world.registerSystem(new PBDCableConstraintSolver());
 
       // Pass viewport settings to RenderSystem constructor
-      const renderSystem = new RenderSystem(canvas, cScale, simHeight, 1.5, 1.5, 1.0); // Create instance
+      const renderSystem = new RenderSystem(canvas, cScale, simHeight, 1.0, 1.5, 0.7); // Create instance
       world.registerSystem(renderSystem); // Register it
       world.setResource('renderSystem', renderSystem); // Store it as a resource
     }
