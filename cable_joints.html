@@ -736,7 +736,6 @@
               console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
               const newJointId = world.createEntity();
 
-              //console.log(path.stored);
               const cw = true;
               const linkTypeB = path.linkTypes[jointIndex + 1];
               const entityB = joint.entityB;
@@ -775,8 +774,8 @@
               var newAttachmentPointAForJoint;
               var initialPoints2;
               var initialDist2;
-              if (linkTypeA === 'rolling' && linkTypeB === 'rolling') {
-                  // --- Case: Rolling -> Splitter -> Rolling ---
+              if (linkTypeA === 'rolling') {
+                  // --- Case: Rolling -> Splitter ---
                   const radiusA = world.getComponent(entityA, RadiusComponent).radius;
                   const cwA = path.cw[jointIndex];
                   initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
@@ -787,36 +786,16 @@
                   joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                   path.stored[jointIndex] += sA;
                   joint.restLength -= sA;
-              } else if (linkTypeA === 'attachment' && linkTypeB === 'rolling') {
-                  // --- Case: Attachment -> Splitter -> Rolling ---
+              } else if (linkTypeA === 'attachment') {
+                  // --- Case: Attachment -> Splitter ---
                   initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw);
                   initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
                   newAttachmentPointAForJoint = initialPoints2.a_attach; // Point A is the attachment
                   newAttachmentPointBForJoint = initialPoints2.a_circle; // Point B is on the splitter
                   // No sA calculation needed as link A is attachment
                   joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
-              } else if (linkTypeA === 'rolling' && linkTypeB === 'attachment') {
-                  // --- Case: Rolling -> Splitter -> Attachment ---
-                  const radiusA = world.getComponent(entityA, RadiusComponent).radius;
-                  const cwA = path.cw[jointIndex];
-                  initialPoints2 = tangentFromCircleToPoint(posSplitter, posA, radiusA, cwA); // Tangent from splitter circle TO point A circle
-                  initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length(); // a_circle is on A, a_attach is on splitter
-                  newAttachmentPointAForJoint = initialPoints2.a_circle; // Point A is on the rolling entity A
-                  newAttachmentPointBForJoint = initialPoints2.a_attach; // Point B is on the splitter circle
-                  const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
-                  joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
-                  path.stored[jointIndex] += sA;
-                  joint.restLength -= sA;
-              } else if (linkTypeA === 'attachment' && linkTypeB === 'attachment') {
-                  // --- Case: Attachment -> Splitter -> Attachment ---
-                  initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw); // Tangent from point A TO splitter circle
-                  initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length(); // a_attach is point A, a_circle is on splitter
-                  newAttachmentPointAForJoint = initialPoints2.a_attach; // Point A is the attachment
-                  newAttachmentPointBForJoint = initialPoints2.a_circle; // Point B is on the splitter
-                  // No sA calculation needed
-                  joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
               } else {
-                  console.warn(`Splitting cable joint combination (${linkTypeA} -> ${linkTypeB}) is not supported.`);
+                  console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
                   // Skip this split if unsupported combination
                   continue; // Go to the next potential splitter
               }
@@ -874,8 +853,6 @@
 
               console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
               path.stored.splice(jointIndex + 1, 0, s);
-
-              //console.log(path.stored);
             }
           }
         }
@@ -885,8 +862,6 @@
       for (const link of linkEntities) {
         const pos = world.getComponent(link, PositionComponent).pos;
         const prevPos = world.getComponent(link, CableLinkComponent).prevPos;
-        //console.log("Current pos: ", pos)
-        //console.log("Previous pos: ", prevPos)
         world.getComponent(link, CableLinkComponent).prevPos = pos.clone();
       }
 
@@ -910,7 +885,7 @@
         }
 
         const error = path.totalRestLength - totalCurrentRestLength;
-        console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+        //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
         //console.log(`stored: ${path.stored}`);
       }
     }
@@ -1311,8 +1286,8 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.1*0.5));
-    world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
+    world.addComponent(ball1, new PositionComponent(2.5*0.5, 1.2*0.5));
+    world.addComponent(ball1, new VelocityComponent(1.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
     world.addComponent(ball1, new RestitutionComponent(ballRestitution));
@@ -1321,7 +1296,7 @@
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.3));
+    world.addComponent(ball2, new PositionComponent(1.7*1.00, 2*0.2));
     world.addComponent(ball2, new VelocityComponent(-0.7, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
