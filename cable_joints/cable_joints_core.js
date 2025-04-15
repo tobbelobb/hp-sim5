@@ -110,17 +110,21 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
   let angleA, angleB;
   if (!cwA === cwB) {
     if (!cwA) {
+      // console.log("FT");
       angleA = alpha - Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     } else {
+      // console.log("TF");
       angleA = alpha + Math.PI / 2 - phi;
       angleB = alpha - Math.PI / 2 - phi;
     }
   } else {
     if (!cwA) {
-      angleA = alpha - Math.PI / 2 + phi;
+      // console.log("FF");
+      angleA = alpha - Math.PI / 2 - phi;
       angleB = alpha - Math.PI / 2 - phi;
     } else {
+      // console.log("TT");
       angleA = alpha + Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     }

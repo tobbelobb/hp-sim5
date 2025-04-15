@@ -574,7 +574,7 @@
         world.setResource('debugRenderPoints', {});
 
         const posA = new Vector2(0, 0); const rA = 1.0; const cwA = true;
-        const posB = new Vector2(3, 0); const rB = 1.0; const cwB = true;
+        const posB = new Vector2(3, 0); const rB = 0.5; const cwB = true;
 
         // Visualize circles
         const entityA = world.createEntity();
@@ -597,8 +597,9 @@
         world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF')); // White line
 
         // Expected: Top outer tangent
-        const expectedA = new Vector2(0, 1);
-        const expectedB = new Vector2(3, 1);
+
+        const expectedA = new Vector2(1/6, Math.sqrt(35)/6);
+        const expectedB = new Vector2(37/12, Math.sqrt(35)/12);
         const tol = 1e-6;
 
         let passed = true;
@@ -636,7 +637,7 @@
         // Expected: Internal tangent (top-left to bottom-right)
         const phi = Math.asin(2/3);
         const expectedA = new Vector2(Math.sin(phi), Math.cos(phi)); // (2/3, sqrt(5)/3)
-        const expectedB = new Vector2(3 + Math.sin(phi), -Math.cos(phi)); // (3 + 2/3, -sqrt(5)/3) = (11/3, -sqrt(5)/3)
+        const expectedB = new Vector2(3 - Math.sin(phi), -Math.cos(phi)); // (3 - 2/3, -sqrt(5)/3) = (7/3, -sqrt(5)/3)
         const tol = 1e-6;
 
         let passed = true;
@@ -694,7 +695,7 @@
         const testName = "Tangent Circle-Circle (cwA=F, cwB=F)";
         const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
         const posA = new Vector2(0, 0); const rA = 1.0; const cwA = false;
-        const posB = new Vector2(3, 0); const rB = 1.0; const cwB = false;
+        const posB = new Vector2(3, 0); const rB = 0.5; const cwB = false;
 
         const entityA = world.createEntity(); world.addComponent(entityA, new PositionComponent(posA.x, posA.y)); world.addComponent(entityA, new RadiusComponent(rA)); world.addComponent(entityA, new RenderableComponent('circle', '#AAAAAA'));
         const entityB = world.createEntity(); world.addComponent(entityB, new PositionComponent(posB.x, posB.y)); world.addComponent(entityB, new RadiusComponent(rB)); world.addComponent(entityB, new RenderableComponent('circle', '#CCCCCC'));
@@ -710,8 +711,8 @@
         world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
 
         // Expected: Bottom outer tangent
-        const expectedA = new Vector2(0, -1);
-        const expectedB = new Vector2(3, -1);
+        const expectedA = new Vector2(1/6, -Math.sqrt(35)/6);
+        const expectedB = new Vector2(37/12, -Math.sqrt(35)/12);
         const tol = 1e-6;
 
         let passed = true;
