@@ -16,21 +16,182 @@
         <button id="stepBtn">Step</button>
     </div>
     <canvas id="myCanvas"></canvas>
+    <div id="errorInfo" style="text-align: center; color: red; font-weight: bold; margin-top: 10px; display: none;">
+        An error occurred! Copy the state below to create a test case:
+    </div>
+    <textarea id="errorDumpOutput" readonly style="width: 90%; height: 200px; display: none; margin: 10px auto; font-family: monospace; background-color: #333; color: #eee; border: 1px solid #888;"></textarea>
 
 <script src="cable_joints_core.js"></script>
 <script>
   const canvas = document.getElementById("myCanvas");
+  const errorInfoDiv = document.getElementById("errorInfo"); // Get error elements
+  const errorDumpOutput = document.getElementById("errorDumpOutput");
 
   canvas.width = window.innerWidth - 20;
-  canvas.height = window.innerHeight - 100;
+  canvas.height = window.innerHeight - 120; // Adjust height slightly for error output
 
   const cScale = canvas.height/2;
   const simWidth = canvas.width / cScale;
   const simHeight = canvas.height / cScale;
 
   let world = new World();
+  let simulationStopped = false; // Flag to prevent further updates after error
+
+  // --- State Dumping Function ---
+  function dumpWorldState(world) {
+    let dump = `
+// --- Generated Error Test Case ---
+testGeneratedError: function() {
+    const testName = "Generated Error Case";
+    const world = new World();
+    window.testWorld = world; // Set global world
+    world.setResource('dt', ${world.getResource('dt')});
+    world.setResource('debugRenderPoints', {});
+    world.setResource('simWidth', ${world.getResource('simWidth')});
+    world.setResource('simHeight', ${world.getResource('simHeight')});
+    // Viewport settings moved to RenderSystem constructor in tests
+
+    // --- Resources ---
+`;
+    // Dump simple resources (add more as needed)
+    const gravity = world.getResource('gravity');
+    if (gravity) {
+        dump += `    world.setResource('gravity', new Vector2(${gravity.x}, ${gravity.y}));\n`;
+    }
+    // Note: pauseState is usually set by the test runner or UI
+    // Note: renderSystem is created by the test runner
+
+    dump += `
+    // --- Entities and Components ---
+`;
+    const entityVarMap = new Map(); // Map original entityId to generated variable name
+
+    // First pass: Create entities and map IDs
+    for (const entityId of world.entities.keys()) {
+        const varName = `entity${entityId}`;
+        entityVarMap.set(entityId, varName);
+        dump += `    const ${varName} = world.createEntity(); // Original ID: ${entityId}\n`;
+    }
+    dump += "\n"; // Add a newline for separation
+
+    // Second pass: Add components
+    for (const entityId of world.entities.keys()) {
+        const varName = entityVarMap.get(entityId);
+        const componentClasses = world.entities.get(entityId);
+        if (!componentClasses) continue;
+
+        for (const componentClass of componentClasses) {
+            const component = world.getComponent(entityId, componentClass);
+            if (!component) continue;
+
+            let addCompStr = `    world.addComponent(${varName}, new ${componentClass.name}(`;
+
+            // Serialize component data based on type
+            switch (componentClass.name) {
+                case 'PositionComponent':
+                    addCompStr += `${component.pos.x}, ${component.pos.y}`;
+                    break;
+                case 'VelocityComponent':
+                    addCompStr += `${component.vel.x}, ${component.vel.y}`;
+                    break;
+                case 'RadiusComponent':
+                    addCompStr += `${component.radius}`;
+                    break;
+                case 'MassComponent':
+                    addCompStr += `${component.mass}`;
+                    break;
+                case 'RestitutionComponent':
+                    addCompStr += `${component.restitution}`;
+                    break;
+                case 'RenderableComponent':
+                    addCompStr += `'${component.shape}', '${component.color}'`;
+                    break;
+                case 'CableLinkComponent':
+                    addCompStr += `${component.prevPos.x}, ${component.prevPos.y}`;
+                    break;
+                case 'CableJointComponent':
+                    const entityAVar = entityVarMap.get(component.entityA);
+                    const entityBVar = entityVarMap.get(component.entityB);
+                    if (!entityAVar || !entityBVar) {
+                        console.warn(`Could not find variable names for entities ${component.entityA} or ${component.entityB} in joint ${entityId}`);
+                        addCompStr = `    // Skipped CableJointComponent for ${varName} due to missing entity mapping\n`;
+                    } else {
+                        addCompStr += `${entityAVar}, ${entityBVar}, ${component.restLength}, `;
+                        addCompStr += `new Vector2(${component.attachmentPointA_world.x}, ${component.attachmentPointA_world.y}), `;
+                        addCompStr += `new Vector2(${component.attachmentPointB_world.x}, ${component.attachmentPointB_world.y})`;
+                    }
+                    break;
+                case 'CablePathComponent':
+                    const jointVars = component.jointEntities.map(id => entityVarMap.get(id)).filter(Boolean);
+                    if (jointVars.length !== component.jointEntities.length) {
+                         console.warn(`Could not find variable names for all joints in path ${entityId}`);
+                         addCompStr = `    // Skipped CablePathComponent for ${varName} due to missing joint mapping\n`;
+                    } else {
+                        addCompStr += `world, [${jointVars.join(', ')}], `;
+                        addCompStr += `[${component.linkTypes.map(t => `'${t}'`).join(', ')}], `;
+                        addCompStr += `[${component.cw.join(', ')}]`;
+                        // Need to manually set stored and totalRestLength after creation in the test
+                        addCompStr += `));\n`;
+                        addCompStr += `    const pathComp_${varName} = world.getComponent(${varName}, CablePathComponent);\n`;
+                        addCompStr += `    pathComp_${varName}.stored = [${component.stored.join(', ')}];\n`;
+                        addCompStr += `    pathComp_${varName}.totalRestLength = ${component.totalRestLength};\n`;
+                        addCompStr += `    // End CablePathComponent setup for ${varName}`; // Mark end to avoid double closing parenthesis
+                        dump += addCompStr;
+                        continue; // Skip the default closing parenthesis below
+                    }
+                    break;
+                // Add cases for other components if needed
+                // Tag components have no constructor arguments
+                case 'GravityAffectedComponent':
+                case 'BallTagComponent':
+                case 'ObstacleTagComponent':
+                case 'PauseStateComponent': // Usually a resource, but handle if added to entity
+                     if (componentClass.name === 'PauseStateComponent') {
+                         addCompStr += component.paused;
+                     }
+                    break;
+                default:
+                    console.warn(`Unhandled component type for serialization: ${componentClass.name}`);
+                    addCompStr = `    // Skipped unknown component ${componentClass.name} for ${varName}\n`;
+
+            }
+             if (!addCompStr.endsWith('\n')) { // Avoid adding extra parenthesis if skipped or handled above
+                addCompStr += '));\n';
+            }
+            dump += addCompStr;
+        }
+         dump += "\n"; // Add a newline between entities
+    }
+
+    dump += `
+    // --- Systems Registration (Copy from a working test or main file if needed) ---
+    // world.registerSystem(new CableAttachmentUpdateSystem());
+    // world.registerSystem(new PBDCableConstraintSolver());
+    // ... etc ...
+
+    // --- Run the system that caused the error (or the full update) ---
+    // const system = new SpecificSystem();
+    // system.update(world, world.getResource('dt'));
+    // OR
+    // world.update(world.getResource('dt')); // If the error happens during the full update cycle
+
+    // --- Assertions (Add assertions here to verify the error or expected state) ---
+    // assertTrue(..., testName, "Some condition");
+
+    logTestResult(testName, false, "Generated test case - needs verification and assertions");
+    return world; // Return world for rendering
+},
+`;
+    return dump;
+  }
+
 
   function setupScene() {
+    simulationStopped = false; // Reset error flag
+    errorInfoDiv.style.display = 'none'; // Hide error area
+    errorDumpOutput.style.display = 'none';
+    errorDumpOutput.value = ''; // Clear previous dump
+
     world.clear(); // Clear entities and components
 
     // --- Resources ---
@@ -79,6 +240,7 @@
 
 
     // --- Cable Setup ---
+    // --- Cable Setup ---
     // Path: ball1 -> obs1 -> ball2
     world.addComponent(obs1, new CableLinkComponent());
     world.addComponent(ball1, new CableLinkComponent());
@@ -117,7 +279,9 @@
     world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
     const cablePath = world.createEntity();
-    world.addComponent(cablePath, new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
+    // CablePathComponent constructor now calculates initial stored length and totalRestLength
+    const pathComp1 = new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true]); // Order matters
+    world.addComponent(cablePath, pathComp1);
 
 
     const offset_x = 0.3;
@@ -190,7 +354,9 @@
     world.addComponent(joint4, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
     const cablePath2 = world.createEntity();
-    world.addComponent(cablePath2, new CablePathComponent(world, [joint3, joint4], ['attachment', 'rolling', 'attachment'], [true, true, true])); // Order matters
+    // CablePathComponent constructor now calculates initial stored length and totalRestLength
+    const pathComp2 = new CablePathComponent(world, [joint3, joint4], ['attachment', 'rolling', 'attachment'], [true, true, true]); // Order matters
+    world.addComponent(cablePath2, pathComp2);
 
 
 
@@ -226,12 +392,39 @@
     const dt = world.getResource('dt');
     const pauseState = world.getResource('pauseState');
 
-    if (!pauseState.paused || doStep) {
-      if (doStep) pauseState.paused = false;
-      console.log("----------------------------------------------");
-      world.update(dt);
-      if (doStep) pauseState.paused = true;
-      doStep = false;
+    if (!simulationStopped && (!pauseState.paused || doStep)) {
+      if (doStep) pauseState.paused = false; // Temporarily unpause for step
+      try {
+          console.log("----------------------------------------------");
+          world.update(dt); // <<<--- Wrap update in try...catch
+      } catch (error) {
+          console.error("!!! Simulation Error Caught !!!", error);
+          simulationStopped = true; // Stop further updates
+          if (pauseState) pauseState.paused = true; // Ensure paused state
+          pauseBtn.textContent = "Resume (Error)";
+          pauseBtn.disabled = true; // Disable pause/resume after error
+          stepBtn.disabled = true; // Disable step after error
+
+          // Dump the world state
+          try {
+              const stateDump = dumpWorldState(world);
+              errorDumpOutput.value = stateDump;
+              errorInfoDiv.style.display = 'block';
+              errorDumpOutput.style.display = 'block';
+              console.log("--- World State Dumped (Copy from text area below canvas) ---");
+          } catch (dumpError) {
+              console.error("!!! Error during state dumping !!!", dumpError);
+              errorDumpOutput.value = `Error during state dumping: ${dumpError}\n\nOriginal error: ${error}`;
+              errorInfoDiv.style.display = 'block';
+              errorDumpOutput.style.display = 'block';
+          }
+      } finally {
+          if (doStep) {
+              if (pauseState) pauseState.paused = true; // Re-pause after step if it was a step and no error stopped it
+              if (!simulationStopped) pauseBtn.textContent = "Resume"; // Reset button text if no error occurred
+          }
+          doStep = false;
+      }
     }
 
     requestAnimationFrame(loop);
@@ -240,6 +433,7 @@
   // --- Event Listeners ---
   pauseBtn.addEventListener('click', (e) => {
     e.preventDefault();
+    if (simulationStopped) return; // Don't allow changes if stopped by error
     const pauseState = world.getResource('pauseState');
     if (pauseState) {
       pauseState.paused = !pauseState.paused;
@@ -249,10 +443,12 @@
 
   resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    setupScene();
+    setupScene(); // This now also hides the error area and resets the flag
     const pauseState = world.getResource('pauseState');
     if (pauseState) pauseState.paused = true;
     pauseBtn.textContent = "Resume";
+    pauseBtn.disabled = false; // Re-enable buttons on reset
+    stepBtn.disabled = false;
 
     // --- Initial render ---
     const initialRenderSystem = world.getResource('renderSystem');
@@ -266,6 +462,7 @@
 
   stepBtn.addEventListener('click', (e) => {
     e.preventDefault();
+    if (simulationStopped) return; // Don't allow changes if stopped by error
     const pauseState = world.getResource('pauseState');
     if (pauseState && pauseState.paused) {
       doStep = true;
