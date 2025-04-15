@@ -72,20 +72,54 @@ function tangentFromCircleToPoint(p_attach, p_circle, r_circle, cw) {
   return _tangentPointCircle(p_attach, p_circle, r_circle, cw, false);
 }
 
+function separateCircles(posA, radiusA, cwA, posB, radiusB, cwB) {
+  const dVec = new Vector2().subtractVectors(posB, posA);
+  const d = dVec.length();
+
+  // Determine the required minimum distance
+  const sameDirection = cwA === cwB;
+  const requiredDist = sameDirection
+    ? Math.abs(radiusB - radiusA)
+    : (radiusA + radiusB);
+
+  // If already far enough apart, no need to adjust
+  if (d >= requiredDist) return { newA: posA.clone(), newB: posB.clone() };
+
+  // Normalize the vector and calculate the amount to push
+  const pushAmount = (requiredDist - d) / 2;
+  const pushDir = dVec.clone().normalize();
+
+  const offset = pushDir.scale(pushAmount + 0.01);
+
+  const newA = posA.clone().add(offset.clone().scale(-1.0));
+  const newB = posB.clone().add(offset);
+
+  return {
+    newA,
+    newB
+  };
+}
+
 
 function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
-  const dVec = new Vector2().subtractVectors(posB, posA);
-  const dSq = dVec.lengthSq();
-  const d = Math.sqrt(dSq);
+
+  let dVec = new Vector2().subtractVectors(posB, posA);
+  let d = dVec.length();
 
   let r = (cwA === cwB) ? (radiusB - radiusA) : (radiusA + radiusB);
   if (d <= Math.abs(r)) {
-    console.warn("Cable tangent calculation: Circles are overlapping or too close.");
-    return null;
+    console.warn("Cable tangent calculation: Circles are overlapping or too close. Adjusting positions.");
+    const { newA: pA, newB: pB } = separateCircles(posA, radiusA, cwA, posB, radiusB, cwB);
+    posA = pA;
+    posB = pB;
+    dVec = new Vector2().subtractVectors(posB, posA);
+    d = dVec.length(); // recalculate distance after separation
   }
 
   const alpha = Math.atan2(dVec.y, dVec.x);
+  console.log("alpha: ", alpha);
   const phi = Math.asin(r / d);
+  console.log("phi: ", phi);
   console.log("cwA: ", cwA);
   console.log("cwB: ", cwB);
 
@@ -117,6 +151,8 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
     posB.y + radiusB * Math.sin(angleB)
   );
 
+  console.log("tangentA: ", tangentA);
+  console.log("tangentB: ", tangentB);
   return {
     a_circle: tangentA,
     b_circle: tangentB

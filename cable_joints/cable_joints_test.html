@@ -90,333 +90,333 @@
 
   // --- Test Cases ---
   const testCases = {
-      testSimpleMerge: {
-          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
-          run: function() {
-              const testName = "Simple Merge";
-              const world = new World();
-              window.testWorld = world; // Set global world for this test
-              world.setResource('dt', 0.01);
-              world.setResource('debugRenderPoints', {});
-              world.setResource('simWidth', simWidth);
-              world.setResource('simHeight', simHeight);
+    testSimpleMerge: {
+      viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+      run: function() {
+        const testName = "Simple Merge";
+        const world = new World();
+        window.testWorld = world; // Set global world for this test
+        world.setResource('dt', 0.01);
+        world.setResource('debugRenderPoints', {});
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
 
-          // Setup entities
-          const linkA = world.createEntity(); // Attachment point
-          world.addComponent(linkA, new PositionComponent(0, 0));
-          world.addComponent(linkA, new CableLinkComponent(0, 0));
-          world.addComponent(linkA, new MassComponent(-1));
-          world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA')); // Render fixed points
+        // Setup entities
+        const linkA = world.createEntity(); // Attachment point
+        world.addComponent(linkA, new PositionComponent(0, 0));
+        world.addComponent(linkA, new CableLinkComponent(0, 0));
+        world.addComponent(linkA, new MassComponent(-1));
+        world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA')); // Render fixed points
 
-          const linkB = world.createEntity(); // Rolling link
-          world.addComponent(linkB, new PositionComponent(1, -0.100001));
-          world.addComponent(linkB, new CableLinkComponent(1, -0.100001));
-          world.addComponent(linkB, new MassComponent(1));
-          world.addComponent(linkB, new RadiusComponent(0.1));
-          world.addComponent(linkB, new RenderableComponent('circle', '#CCCCCC'));
+        const linkB = world.createEntity(); // Rolling link
+        world.addComponent(linkB, new PositionComponent(1, -0.100001));
+        world.addComponent(linkB, new CableLinkComponent(1, -0.100001));
+        world.addComponent(linkB, new MassComponent(1));
+        world.addComponent(linkB, new RadiusComponent(0.1));
+        world.addComponent(linkB, new RenderableComponent('circle', '#CCCCCC'));
 
-          const linkC = world.createEntity(); // Attachment point
-          world.addComponent(linkC, new PositionComponent(2, 0));
-          world.addComponent(linkC, new CableLinkComponent(2, 0));
-          world.addComponent(linkC, new MassComponent(-1));
-          world.addComponent(linkC, new RenderableComponent('circle', '#AAAAAA'));
+        const linkC = world.createEntity(); // Attachment point
+        world.addComponent(linkC, new PositionComponent(2, 0));
+        world.addComponent(linkC, new CableLinkComponent(2, 0));
+        world.addComponent(linkC, new MassComponent(-1));
+        world.addComponent(linkC, new RenderableComponent('circle', '#AAAAAA'));
 
-          // Initial tangent points
-          const attachA = new Vector2(0, 0);
-          const attachB1 = new Vector2(1.0000001, 0);
-          const attachB2 = new Vector2(0.9999999, 0);
-          const attachC = new Vector2(2, 0);
+        // Initial tangent points
+        const attachA = new Vector2(0, 0);
+        const attachB1 = new Vector2(1.0000001, 0);
+        const attachB2 = new Vector2(0.9999999, 0);
+        const attachC = new Vector2(2, 0);
 
-          // Create joints
-          const joint1Id = world.createEntity();
-          world.addComponent(joint1Id, new CableJointComponent(linkA, linkB, 1.0, attachA.clone(), attachB1.clone()));
-          world.addComponent(joint1Id, new RenderableComponent('line', '#FF8888'));
-          const joint2Id = world.createEntity();
-          world.addComponent(joint2Id, new CableJointComponent(linkB, linkC, 1.0, attachB2.clone(), attachC.clone()));
-          world.addComponent(joint2Id, new RenderableComponent('line', '#88FF88'));
+        // Create joints
+        const joint1Id = world.createEntity();
+        world.addComponent(joint1Id, new CableJointComponent(linkA, linkB, 1.0, attachA.clone(), attachB1.clone()));
+        world.addComponent(joint1Id, new RenderableComponent('line', '#FF8888'));
+        const joint2Id = world.createEntity();
+        world.addComponent(joint2Id, new CableJointComponent(linkB, linkC, 1.0, attachB2.clone(), attachC.clone()));
+        world.addComponent(joint2Id, new RenderableComponent('line', '#88FF88'));
 
-          // Create path
-          const pathId = world.createEntity();
-          const pathComp = new CablePathComponent(world, [joint1Id, joint2Id], ['attachment', 'rolling', 'attachment'], [true, true, true]);
-          pathComp.stored[1] = -0.0000001;
-          pathComp.totalRestLength = 2.0;
-          world.addComponent(pathId, pathComp);
+        // Create path
+        const pathId = world.createEntity();
+        const pathComp = new CablePathComponent(world, [joint1Id, joint2Id], ['attachment', 'rolling', 'attachment'], [true, true, true]);
+        pathComp.stored[1] = -0.0000001;
+        pathComp.totalRestLength = 2.0;
+        world.addComponent(pathId, pathComp);
 
-          // --- Run the system ---
-          const system = new CableAttachmentUpdateSystem();
-          system.update(world, world.getResource('dt'));
+        // --- Run the system ---
+        const system = new CableAttachmentUpdateSystem();
+        system.update(world, world.getResource('dt'));
 
-          // --- Assertions ---
-          const updatedPath = world.getComponent(pathId, CablePathComponent);
-          if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return world;
+        // --- Assertions ---
+        const updatedPath = world.getComponent(pathId, CablePathComponent);
+        if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return world;
 
-          if (!assertEquals(1, updatedPath.jointEntities.length, testName, "Number of joints after merge")) return world;
-          const mergedJointId = updatedPath.jointEntities[0];
-          const mergedJoint = world.getComponent(mergedJointId, CableJointComponent);
-          if (!assertTrue(mergedJoint !== undefined, testName, "Merged joint exists")) return world;
+        if (!assertEquals(1, updatedPath.jointEntities.length, testName, "Number of joints after merge")) return world;
+        const mergedJointId = updatedPath.jointEntities[0];
+        const mergedJoint = world.getComponent(mergedJointId, CableJointComponent);
+        if (!assertTrue(mergedJoint !== undefined, testName, "Merged joint exists")) return world;
 
-          assertEquals(linkA, mergedJoint.entityA, testName, "Merged joint entity A");
-          assertEquals(linkC, mergedJoint.entityB, testName, "Merged joint entity B");
-          assertNear(2.0, mergedJoint.restLength, 1e-6, testName, "Merged joint rest length");
-          assertEquals(2, updatedPath.linkTypes.length, testName, "Number of link types after merge");
-          assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after merge");
-          assertEquals('attachment', updatedPath.linkTypes[1], testName, "Link type 1 after merge");
+        assertEquals(linkA, mergedJoint.entityA, testName, "Merged joint entity A");
+        assertEquals(linkC, mergedJoint.entityB, testName, "Merged joint entity B");
+        assertNear(2.0, mergedJoint.restLength, 1e-6, testName, "Merged joint rest length");
+        assertEquals(2, updatedPath.linkTypes.length, testName, "Number of link types after merge");
+        assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after merge");
+        assertEquals('attachment', updatedPath.linkTypes[1], testName, "Link type 1 after merge");
 
-          const joint2Comp = world.getComponent(joint2Id, CableJointComponent);
-          assertFalse(joint2Comp && joint2Comp.isActive, testName, "Original joint 2 is inactive/destroyed");
+        const joint2Comp = world.getComponent(joint2Id, CableJointComponent);
+        assertFalse(joint2Comp && joint2Comp.isActive, testName, "Original joint 2 is inactive/destroyed");
 
-          logTestResult(testName, true);
-          return world; // Return world for rendering
-          }
-      },
+        logTestResult(testName, true);
+        return world; // Return world for rendering
+      }
+    },
 
-      testSimpleSplit: {
-          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
-          run: function() {
-              const testName = "Simple Split";
-              const world = new World();
-              window.testWorld = world; // Set global world
-              world.setResource('dt', 0.01);
-              world.setResource('debugRenderPoints', {});
-              world.setResource('simWidth', simWidth);
-              world.setResource('simHeight', simHeight);
+    testSimpleSplit: {
+      viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+      run: function() {
+        const testName = "Simple Split";
+        const world = new World();
+        window.testWorld = world; // Set global world
+        world.setResource('dt', 0.01);
+        world.setResource('debugRenderPoints', {});
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
 
-          // Setup entities
-          const linkA = world.createEntity(); // Attachment point
-          world.addComponent(linkA, new PositionComponent(0, 0));
-          world.addComponent(linkA, new CableLinkComponent(0, 0));
-          world.addComponent(linkA, new MassComponent(-1));
-          world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA'));
+        // Setup entities
+        const linkA = world.createEntity(); // Attachment point
+        world.addComponent(linkA, new PositionComponent(0, 0));
+        world.addComponent(linkA, new CableLinkComponent(0, 0));
+        world.addComponent(linkA, new MassComponent(-1));
+        world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA'));
 
-          const linkB = world.createEntity(); // Attachment point
-          world.addComponent(linkB, new PositionComponent(2, 0));
-          world.addComponent(linkB, new CableLinkComponent(2, 0));
-          world.addComponent(linkB, new MassComponent(-1));
-          world.addComponent(linkB, new RenderableComponent('circle', '#AAAAAA'));
+        const linkB = world.createEntity(); // Attachment point
+        world.addComponent(linkB, new PositionComponent(2, 0));
+        world.addComponent(linkB, new CableLinkComponent(2, 0));
+        world.addComponent(linkB, new MassComponent(-1));
+        world.addComponent(linkB, new RenderableComponent('circle', '#AAAAAA'));
 
-          const splitterLink = world.createEntity(); // Rolling link that will cause the split
-          const splitterRadius = 0.1;
-          const splitterY = splitterRadius * -0.999999; // Slightly less than radius
-          world.addComponent(splitterLink, new PositionComponent(1, splitterY));
-          world.addComponent(splitterLink, new CableLinkComponent(1, splitterY));
-          world.addComponent(splitterLink, new MassComponent(1));
-          world.addComponent(splitterLink, new RadiusComponent(splitterRadius));
-          world.addComponent(splitterLink, new RenderableComponent('circle', '#CCCCCC'));
+        const splitterLink = world.createEntity(); // Rolling link that will cause the split
+        const splitterRadius = 0.1;
+        const splitterY = splitterRadius * -0.999999; // Slightly less than radius
+        world.addComponent(splitterLink, new PositionComponent(1, splitterY));
+        world.addComponent(splitterLink, new CableLinkComponent(1, splitterY));
+        world.addComponent(splitterLink, new MassComponent(1));
+        world.addComponent(splitterLink, new RadiusComponent(splitterRadius));
+        world.addComponent(splitterLink, new RenderableComponent('circle', '#CCCCCC'));
 
-          // Initial joint (A -> B)
-          const initialRestLength = 2.0;
-          const jointOrigId = world.createEntity();
-          world.addComponent(jointOrigId, new CableJointComponent(linkA, linkB, initialRestLength, new Vector2(0,0), new Vector2(2,0)));
-          world.addComponent(jointOrigId, new RenderableComponent('line', '#FFFFFF'));
+        // Initial joint (A -> B)
+        const initialRestLength = 2.0;
+        const jointOrigId = world.createEntity();
+        world.addComponent(jointOrigId, new CableJointComponent(linkA, linkB, initialRestLength, new Vector2(0,0), new Vector2(2,0)));
+        world.addComponent(jointOrigId, new RenderableComponent('line', '#FFFFFF'));
 
-          // Create path
-          const pathId = world.createEntity();
-          const pathComp = new CablePathComponent(world, [jointOrigId], ['attachment', 'attachment'], [true, true]);
-          pathComp.totalRestLength = initialRestLength;
-          world.addComponent(pathId, pathComp);
+        // Create path
+        const pathId = world.createEntity();
+        const pathComp = new CablePathComponent(world, [jointOrigId], ['attachment', 'attachment'], [true, true]);
+        pathComp.totalRestLength = initialRestLength;
+        world.addComponent(pathId, pathComp);
 
-          // --- Run the system ---
-          const system = new CableAttachmentUpdateSystem();
-          system.update(world, world.getResource('dt'));
+        // --- Run the system ---
+        const system = new CableAttachmentUpdateSystem();
+        system.update(world, world.getResource('dt'));
 
-          // --- Assertions ---
-          const updatedPath = world.getComponent(pathId, CablePathComponent);
-          if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return world;
+        // --- Assertions ---
+        const updatedPath = world.getComponent(pathId, CablePathComponent);
+        if (!assertTrue(updatedPath !== undefined, testName, "Path component exists")) return world;
 
-          if (!assertEquals(2, updatedPath.jointEntities.length, testName, "Number of joints after split")) return world;
+        if (!assertEquals(2, updatedPath.jointEntities.length, testName, "Number of joints after split")) return world;
 
-          assertEquals(3, updatedPath.linkTypes.length, testName, "Number of link types after split");
-          assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after split");
-          assertEquals('rolling', updatedPath.linkTypes[1], testName, "Link type 1 after split (splitter)");
-          assertEquals('attachment', updatedPath.linkTypes[2], testName, "Link type 2 after split");
-          assertEquals(3, updatedPath.cw.length, testName, "Number of cw flags after split");
-          assertEquals(3, updatedPath.stored.length, testName, "Number of stored lengths after split");
-          assertNear(0.0, updatedPath.stored[1], 1e-4, testName, "Stored length on splitter link");
+        assertEquals(3, updatedPath.linkTypes.length, testName, "Number of link types after split");
+        assertEquals('attachment', updatedPath.linkTypes[0], testName, "Link type 0 after split");
+        assertEquals('rolling', updatedPath.linkTypes[1], testName, "Link type 1 after split (splitter)");
+        assertEquals('attachment', updatedPath.linkTypes[2], testName, "Link type 2 after split");
+        assertEquals(3, updatedPath.cw.length, testName, "Number of cw flags after split");
+        assertEquals(3, updatedPath.stored.length, testName, "Number of stored lengths after split");
+        assertNear(0.0, updatedPath.stored[1], 1e-4, testName, "Stored length on splitter link");
 
-          const joint1Id = updatedPath.jointEntities[0];
-          const joint2Id = updatedPath.jointEntities[1];
-          const joint1 = world.getComponent(joint1Id, CableJointComponent);
-          const joint2 = world.getComponent(joint2Id, CableJointComponent);
+        const joint1Id = updatedPath.jointEntities[0];
+        const joint2Id = updatedPath.jointEntities[1];
+        const joint1 = world.getComponent(joint1Id, CableJointComponent);
+        const joint2 = world.getComponent(joint2Id, CableJointComponent);
 
-          if (!assertTrue(joint1 !== undefined, testName, "Joint 1 (A->Splitter) exists")) return world;
-          if (!assertTrue(joint2 !== undefined, testName, "Joint 2 (Splitter->B) exists")) return world;
+        if (!assertTrue(joint1 !== undefined, testName, "Joint 1 (A->Splitter) exists")) return world;
+        if (!assertTrue(joint2 !== undefined, testName, "Joint 2 (Splitter->B) exists")) return world;
 
-          assertEquals(linkA, joint1.entityA, testName, "Joint 1 entity A");
-          assertEquals(splitterLink, joint1.entityB, testName, "Joint 1 entity B (splitter)");
-          assertEquals(splitterLink, joint2.entityA, testName, "Joint 2 entity A (splitter)");
-          assertEquals(linkB, joint2.entityB, testName, "Joint 2 entity B");
+        assertEquals(linkA, joint1.entityA, testName, "Joint 1 entity A");
+        assertEquals(splitterLink, joint1.entityB, testName, "Joint 1 entity B (splitter)");
+        assertEquals(splitterLink, joint2.entityA, testName, "Joint 2 entity A (splitter)");
+        assertEquals(linkB, joint2.entityB, testName, "Joint 2 entity B");
 
-          const expectedRestLength = (initialRestLength - updatedPath.stored[1]) / 2.0;
-          assertNear(expectedRestLength, joint1.restLength, 1e-6, testName, "Joint 1 rest length");
-          assertNear(expectedRestLength, joint2.restLength, 1e-6, testName, "Joint 2 rest length");
+        const expectedRestLength = (initialRestLength - updatedPath.stored[1]) / 2.0;
+        assertNear(expectedRestLength, joint1.restLength, 1e-6, testName, "Joint 1 rest length");
+        assertNear(expectedRestLength, joint2.restLength, 1e-6, testName, "Joint 2 rest length");
 
-          assertNear(pathComp.totalRestLength, joint1.restLength + joint2.restLength + updatedPath.stored[1], 1e-6, testName, "Total rest length conserved");
+        assertNear(pathComp.totalRestLength, joint1.restLength + joint2.restLength + updatedPath.stored[1], 1e-6, testName, "Total rest length conserved");
 
-          assertNear(0.0, joint1.attachmentPointA_world.x, 1e-6, testName, "Joint 1 attach A.x");
-          assertNear(0.0, joint1.attachmentPointA_world.y, 1e-6, testName, "Joint 1 attach A.y");
-          assertNear(1.0, joint1.attachmentPointB_world.x, 1e-4, testName, "Joint 1 attach B.x (on splitter)");
-          assertNear(1.0, joint2.attachmentPointA_world.x, 1e-4, testName, "Joint 2 attach A.x (on splitter)");
-          assertNear(2.0, joint2.attachmentPointB_world.x, 1e-6, testName, "Joint 2 attach B.x");
-          assertNear(0.0, joint2.attachmentPointB_world.y, 1e-6, testName, "Joint 2 attach B.y");
+        assertNear(0.0, joint1.attachmentPointA_world.x, 1e-6, testName, "Joint 1 attach A.x");
+        assertNear(0.0, joint1.attachmentPointA_world.y, 1e-6, testName, "Joint 1 attach A.y");
+        assertNear(1.0, joint1.attachmentPointB_world.x, 1e-4, testName, "Joint 1 attach B.x (on splitter)");
+        assertNear(1.0, joint2.attachmentPointA_world.x, 1e-4, testName, "Joint 2 attach A.x (on splitter)");
+        assertNear(2.0, joint2.attachmentPointB_world.x, 1e-6, testName, "Joint 2 attach B.x");
+        assertNear(0.0, joint2.attachmentPointB_world.y, 1e-6, testName, "Joint 2 attach B.y");
 
-          assertEquals(jointOrigId, joint1Id, testName, "Original joint ID reused for first segment");
+        assertEquals(jointOrigId, joint1Id, testName, "Original joint ID reused for first segment");
 
-          logTestResult(testName, true);
-          return world; // Return world for rendering
-          }
-      },
+        logTestResult(testName, true);
+        return world; // Return world for rendering
+      }
+    },
 
-      testAttachmentUpdate: {
-          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
-          run: function() {
-              const testName = "Attachment Update (Placeholder)";
-              const world = new World();
-              window.testWorld = world; // Set global world
-              world.setResource('dt', 0.01);
-              world.setResource('debugRenderPoints', {});
-              world.setResource('simWidth', simWidth);
-              world.setResource('simHeight', simHeight);
+    testAttachmentUpdate: {
+      viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+      run: function() {
+        const testName = "Attachment Update (Placeholder)";
+        const world = new World();
+        window.testWorld = world; // Set global world
+        world.setResource('dt', 0.01);
+        world.setResource('debugRenderPoints', {});
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
 
 
-          // TODO: Set up a world state with rolling links
-          // TODO: Move the links slightly (or set prevPos differently)
-          // TODO: Run the system
-          // TODO: Assert that attachment points, rest lengths, and stored lengths are updated correctly
+        // TODO: Set up a world state with rolling links
+        // TODO: Move the links slightly (or set prevPos differently)
+        // TODO: Run the system
+        // TODO: Assert that attachment points, rest lengths, and stored lengths are updated correctly
 
-          // Example Setup (Needs refinement)
-          const linkA = world.createEntity(); // Rolling
-          world.addComponent(linkA, new PositionComponent(0, 0));
-          world.addComponent(linkA, new CableLinkComponent(0, 0.01)); // Moved slightly
-          world.addComponent(linkA, new MassComponent(1));
-          world.addComponent(linkA, new RadiusComponent(0.1));
-          world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA'));
+        // Example Setup (Needs refinement)
+        const linkA = world.createEntity(); // Rolling
+        world.addComponent(linkA, new PositionComponent(0, 0));
+        world.addComponent(linkA, new CableLinkComponent(0, 0.01)); // Moved slightly
+        world.addComponent(linkA, new MassComponent(1));
+        world.addComponent(linkA, new RadiusComponent(0.1));
+        world.addComponent(linkA, new RenderableComponent('circle', '#AAAAAA'));
 
-          const linkB = world.createEntity(); // Attachment
-          world.addComponent(linkB, new PositionComponent(1, 0));
-          world.addComponent(linkB, new CableLinkComponent(1, 0));
-          world.addComponent(linkB, new MassComponent(-1));
-          world.addComponent(linkB, new RenderableComponent('circle', '#CCCCCC'));
+        const linkB = world.createEntity(); // Attachment
+        world.addComponent(linkB, new PositionComponent(1, 0));
+        world.addComponent(linkB, new CableLinkComponent(1, 0));
+        world.addComponent(linkB, new MassComponent(-1));
+        world.addComponent(linkB, new RenderableComponent('circle', '#CCCCCC'));
 
-          // Initial points (approximate)
-          const attachA = new Vector2(0, 0.1); // Tangent on A
-          const attachB = new Vector2(1, 0);   // Point B
+        // Initial points (approximate)
+        const attachA = new Vector2(0, 0.1); // Tangent on A
+        const attachB = new Vector2(1, 0);   // Point B
 
-          const jointId = world.createEntity();
-          world.addComponent(jointId, new CableJointComponent(linkA, linkB, 0.9, attachA.clone(), attachB.clone()));
-          world.addComponent(jointId, new RenderableComponent('line', '#FFFFFF'));
+        const jointId = world.createEntity();
+        world.addComponent(jointId, new CableJointComponent(linkA, linkB, 0.9, attachA.clone(), attachB.clone()));
+        world.addComponent(jointId, new RenderableComponent('line', '#FFFFFF'));
 
-          const pathId = world.createEntity();
-          const pathComp = new CablePathComponent(world, [jointId], ['rolling', 'attachment'], [true, true]);
-          pathComp.stored[0] = 0.0; // Initial stored on A
-          pathComp.totalRestLength = 0.9;
-          world.addComponent(pathId, pathComp);
+        const pathId = world.createEntity();
+        const pathComp = new CablePathComponent(world, [jointId], ['rolling', 'attachment'], [true, true]);
+        pathComp.stored[0] = 0.0; // Initial stored on A
+        pathComp.totalRestLength = 0.9;
+        world.addComponent(pathId, pathComp);
 
-          // --- Run the system ---
-          const system = new CableAttachmentUpdateSystem();
-          system.update(world, world.getResource('dt'));
+        // --- Run the system ---
+        const system = new CableAttachmentUpdateSystem();
+        system.update(world, world.getResource('dt'));
 
-          // --- Assertions (Placeholder) ---
-          const updatedPath = world.getComponent(pathId, CablePathComponent);
-          const updatedJoint = world.getComponent(jointId, CableJointComponent);
-          // Assert changes in joint.restLength, path.stored[0], joint.attachmentPointA_world
+        // --- Assertions (Placeholder) ---
+        const updatedPath = world.getComponent(pathId, CablePathComponent);
+        const updatedJoint = world.getComponent(jointId, CableJointComponent);
+        // Assert changes in joint.restLength, path.stored[0], joint.attachmentPointA_world
 
-          logTestResult(testName, true, "Not fully implemented yet");
-          return world; // Return world for rendering
-          }
-      },
+        logTestResult(testName, true, "Not fully implemented yet");
+        return world; // Return world for rendering
+      }
+    },
 
-      testLargeInitialWrap: {
-          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
-          run: function() {
-              const testName = "Large initial wrap around obstacle";
-              const world = new World();
-              window.testWorld = world; // Set global world
-              world.setResource('dt', 0.01); // Use a typical dt
-              world.setResource('debugRenderPoints', {});
-              world.setResource('simWidth', simWidth);
-              world.setResource('simHeight', simHeight);
+    testLargeInitialWrap: {
+      viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+      run: function() {
+        const testName = "Large initial wrap around obstacle";
+        const world = new World();
+        window.testWorld = world; // Set global world
+        world.setResource('dt', 0.01); // Use a typical dt
+        world.setResource('debugRenderPoints', {});
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
 
-          const viewOffset = new Vector2(0.0, 0.0);
+        const viewOffset = new Vector2(0.0, 0.0);
 
-          // --- Entities and Components (Copied from cable_joints.html setupScene) ---
-          // Ball Entities
-          const ballRadius = 0.03;
+        // --- Entities and Components (Copied from cable_joints.html setupScene) ---
+        // Ball Entities
+        const ballRadius = 0.03;
 
-          const ball1 = world.createEntity();
-          world.addComponent(ball1, new PositionComponent(1.025 + viewOffset.x, -0.5 + viewOffset.y)); // Use original positions
-          world.addComponent(ball1, new RadiusComponent(ballRadius));
-          world.addComponent(ball1, new MassComponent(1));
-          world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
+        const ball1 = world.createEntity();
+        world.addComponent(ball1, new PositionComponent(1.025 + viewOffset.x, -0.5 + viewOffset.y)); // Use original positions
+        world.addComponent(ball1, new RadiusComponent(ballRadius));
+        world.addComponent(ball1, new MassComponent(1));
+        world.addComponent(ball1, new RenderableComponent('circle', '#FF0000'));
 
-          const ball2 = world.createEntity();
-          world.addComponent(ball2, new PositionComponent(1.2 + viewOffset.x, -0.7 + viewOffset.y)); // Use original positions
-          world.addComponent(ball2, new RadiusComponent(ballRadius));
-          world.addComponent(ball2, new MassComponent(1));
-          world.addComponent(ball2, new RenderableComponent('circle', '#00FF00'));
+        const ball2 = world.createEntity();
+        world.addComponent(ball2, new PositionComponent(1.2 + viewOffset.x, -0.7 + viewOffset.y)); // Use original positions
+        world.addComponent(ball2, new RadiusComponent(ballRadius));
+        world.addComponent(ball2, new MassComponent(1));
+        world.addComponent(ball2, new RenderableComponent('circle', '#00FF00'));
 
-          // Obstacle Entity
-          const obsColor = "#FF8000";
-          const obs1 = world.createEntity();
-          world.addComponent(obs1, new PositionComponent(1.0 + viewOffset.x, 0.3 + viewOffset.y)); // Use original positions
-          world.addComponent(obs1, new MassComponent(-1.0)); // Fixed obstacle
-          const obsRadius = 0.1;
-          world.addComponent(obs1, new RadiusComponent(obsRadius));
-          world.addComponent(obs1, new RenderableComponent('circle', obsColor));
+        // Obstacle Entity
+        const obsColor = "#FF8000";
+        const obs1 = world.createEntity();
+        world.addComponent(obs1, new PositionComponent(1.0 + viewOffset.x, 0.3 + viewOffset.y)); // Use original positions
+        world.addComponent(obs1, new MassComponent(-1.0)); // Fixed obstacle
+        const obsRadius = 0.1;
+        world.addComponent(obs1, new RadiusComponent(obsRadius));
+        world.addComponent(obs1, new RenderableComponent('circle', obsColor));
 
-          // --- Cable Setup (Copied from cable_joints.html setupScene) ---
-          world.addComponent(obs1, new CableLinkComponent());
-          world.addComponent(ball1, new CableLinkComponent());
-          world.addComponent(ball2, new CableLinkComponent());
+        // --- Cable Setup (Copied from cable_joints.html setupScene) ---
+        world.addComponent(obs1, new CableLinkComponent());
+        world.addComponent(ball1, new CableLinkComponent());
+        world.addComponent(ball2, new CableLinkComponent());
 
-          // --- Calculate Initial Cable State ---
-          const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
-          const link_ball1 = world.getComponent(ball1, CableLinkComponent);
-          link_ball1.prevPos = pos_ball1.clone(); // Set prevPos for consistency
-          const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
-          const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
-          const cw_obs1 = true;
-          const link_obs1 = world.getComponent(obs1, CableLinkComponent);
-          link_obs1.prevPos = pos_obs1.clone(); // Set prevPos for consistency
-          const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
-          const link_ball2 = world.getComponent(ball2, CableLinkComponent);
-          link_ball2.prevPos = pos_ball2.clone(); // Set prevPos for consistency
+        // --- Calculate Initial Cable State ---
+        const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
+        const link_ball1 = world.getComponent(ball1, CableLinkComponent);
+        link_ball1.prevPos = pos_ball1.clone(); // Set prevPos for consistency
+        const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
+        const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
+        const cw_obs1 = true;
+        const link_obs1 = world.getComponent(obs1, CableLinkComponent);
+        link_obs1.prevPos = pos_obs1.clone(); // Set prevPos for consistency
+        const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
+        const link_ball2 = world.getComponent(ball2, CableLinkComponent);
+        link_ball2.prevPos = pos_ball2.clone(); // Set prevPos for consistency
 
-          const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
-          const initialPoints2 = tangentFromCircleToPoint(pos_ball2, pos_obs1, radius_obs1, cw_obs1);
+        const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
+        const initialPoints2 = tangentFromCircleToPoint(pos_ball2, pos_obs1, radius_obs1, cw_obs1);
 
-          const joint1 = world.createEntity();
-          const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
-          world.addComponent(joint1, new CableJointComponent(
-            ball1, obs1, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle));
-          world.addComponent(joint1, new RenderableComponent('line', '#FF0000'));
+        const joint1 = world.createEntity();
+        const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+        world.addComponent(joint1, new CableJointComponent(
+          ball1, obs1, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle));
+        world.addComponent(joint1, new RenderableComponent('line', '#FF0000'));
 
-          const joint2 = world.createEntity();
-          const initialDist2 = initialPoints2.a_attach.clone().subtract(initialPoints2.a_circle).length();
-          world.addComponent(joint2, new CableJointComponent(
-            obs1, ball2, initialDist2, initialPoints2.a_circle, initialPoints2.a_attach));
-          world.addComponent(joint2, new RenderableComponent('line', '#FFFF00'));
+        const joint2 = world.createEntity();
+        const initialDist2 = initialPoints2.a_attach.clone().subtract(initialPoints2.a_circle).length();
+        world.addComponent(joint2, new CableJointComponent(
+          obs1, ball2, initialDist2, initialPoints2.a_circle, initialPoints2.a_attach));
+        world.addComponent(joint2, new RenderableComponent('line', '#FFFF00'));
 
-          const cablePath = world.createEntity();
-          // The CablePathComponent constructor calculates the initial stored length
-          const pathComp = new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true]);
-          world.addComponent(cablePath, pathComp);
+        const cablePath = world.createEntity();
+        // The CablePathComponent constructor calculates the initial stored length
+        const pathComp = new CablePathComponent(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [true, true, true]);
+        world.addComponent(cablePath, pathComp);
 
-          // --- Assertions ---
-          if (!assertTrue(pathComp !== undefined, testName, "Path component exists")) return world;
+        // --- Assertions ---
+        if (!assertTrue(pathComp !== undefined, testName, "Path component exists")) return world;
 
-          const storedLengthObs = pathComp.stored[1]; // Stored length on the rolling obstacle (index 1)
+        const storedLengthObs = pathComp.stored[1]; // Stored length on the rolling obstacle (index 1)
 
-          // Check if stored length is positive
-          assertTrue(storedLengthObs > 0, testName, `Stored length on obstacle (${storedLengthObs.toFixed(4)}) should be positive`);
+        // Check if stored length is positive
+        assertTrue(storedLengthObs > 0, testName, `Stored length on obstacle (${storedLengthObs.toFixed(4)}) should be positive`);
 
-          // Check if stored length is above PI * radius (indicating >180 degree wrap)
-          const piR = Math.PI * obsRadius;
-          assertTrue(storedLengthObs > piR, testName, `Stored length (${storedLengthObs.toFixed(4)}) should be slightly greater than PI*r (${piR.toFixed(4)})`);
+        // Check if stored length is above PI * radius (indicating >180 degree wrap)
+        const piR = Math.PI * obsRadius;
+        assertTrue(storedLengthObs > piR, testName, `Stored length (${storedLengthObs.toFixed(4)}) should be slightly greater than PI*r (${piR.toFixed(4)})`);
 
-          logTestResult(testName, true);
-          return world; // Return world for rendering
-          }
-      },
+        logTestResult(testName, true);
+        return world; // Return world for rendering
+      }
+    },
 
     // --- Generated Error Test Case ---
     testGeneratedError1: {
@@ -439,6 +439,7 @@
         const entity1 = world.createEntity(); // Original ID: 1
         const entity2 = world.createEntity(); // Original ID: 2
         const entity3 = world.createEntity(); // Original ID: 3
+        const entity4 = world.createEntity(); // Original ID: 4
         const entity5 = world.createEntity(); // Original ID: 5
         const entity6 = world.createEntity(); // Original ID: 6
         const entity7 = world.createEntity(); // Original ID: 7
@@ -447,30 +448,26 @@
         const entity10 = world.createEntity(); // Original ID: 10
         const entity11 = world.createEntity(); // Original ID: 11
         const entity18 = world.createEntity(); // Original ID: 18
-        const entity20 = world.createEntity(); // Original ID: 20
-        const entity21 = world.createEntity(); // Original ID: 21
-        const entity22 = world.createEntity(); // Original ID: 22
-        const entity23 = world.createEntity(); // Original ID: 23
 
         world.addComponent(entity0, new BallTagComponent());
-        world.addComponent(entity0, new PositionComponent(1.8128870151909073, 0.9833760822725517));
-        world.addComponent(entity0, new VelocityComponent(0.13729446175055282, -3.8437545717029846));
+        world.addComponent(entity0, new PositionComponent(1.3850779315305588, -0.2511048757852874));
+        world.addComponent(entity0, new VelocityComponent(0.8281714619644637, 0.28111919458297885));
         world.addComponent(entity0, new RadiusComponent(0.03));
         world.addComponent(entity0, new MassComponent(0.1001));
         world.addComponent(entity0, new RestitutionComponent(0.4));
         world.addComponent(entity0, new GravityAffectedComponent());
         world.addComponent(entity0, new RenderableComponent('circle', '#FF0000'));
-        world.addComponent(entity0, new CableLinkComponent(1.8115140705734019, 1.0218136279895815));
+        world.addComponent(entity0, new CableLinkComponent(1.3767747769859724, -0.25553726910704416));
 
         world.addComponent(entity1, new BallTagComponent());
-        world.addComponent(entity1, new PositionComponent(1.7536558054766564, 0.8619309156548066));
-        world.addComponent(entity1, new VelocityComponent(0.007306027979681455, -3.3868331144790362));
+        world.addComponent(entity1, new PositionComponent(1.6949039044287488, 1.423483265257341));
+        world.addComponent(entity1, new VelocityComponent(-1.3004676168268352, -1.6117510956187493));
         world.addComponent(entity1, new RadiusComponent(0.03));
         world.addComponent(entity1, new MassComponent(0.1));
         world.addComponent(entity1, new RestitutionComponent(0.4));
         world.addComponent(entity1, new GravityAffectedComponent());
         world.addComponent(entity1, new RenderableComponent('circle', '#00FF00'));
-        world.addComponent(entity1, new CableLinkComponent(1.036126469880471, -0.9875169273213809));
+        world.addComponent(entity1, new CableLinkComponent(1.682170255155346, 1.418854076314796));
 
         world.addComponent(entity2, new ObstacleTagComponent());
         world.addComponent(entity2, new PositionComponent(1.5, 1.5));
@@ -479,30 +476,33 @@
         world.addComponent(entity2, new RenderableComponent('circle', '#FF8000'));
         world.addComponent(entity2, new CableLinkComponent(1.5, 1.5));
 
-        world.addComponent(entity3, new CableJointComponent(entity0, entity7, 0.13675700762700627, new Vector2(1.8128870151909073, 0.9833760822725517), new Vector2(1.7536558054766564, 0.8619309156548066)));
+        world.addComponent(entity3, new CableJointComponent(entity0, entity2, 0.9131923308749382, new Vector2(1.3850779315305588, -0.2511048757852874), new Vector2(1.4000036288485527, 1.5008519134592058)));
         world.addComponent(entity3, new RenderableComponent('line', '#FF0000'));
+
+        world.addComponent(entity4, new CableJointComponent(entity2, entity1, 1.0198789798585626, new Vector2(1.5765621260161375, 1.5643291602610283), new Vector2(1.6949039044287488, 1.423483265257341)));
+        world.addComponent(entity4, new RenderableComponent('line', '#FFFF00'));
 
         // Skipped unknown component CablePathComponent for entity5
 
         world.addComponent(entity6, new BallTagComponent());
-        world.addComponent(entity6, new PositionComponent(1.5075479472982132, 0.09720151355932802));
-        world.addComponent(entity6, new VelocityComponent(-0.3518826464556719, 0.6599026056250654));
+        world.addComponent(entity6, new PositionComponent(2.0226661911107535, -0.298305031843515));
+        world.addComponent(entity6, new VelocityComponent(-0.530422491091552, 0.7622093453276682));
         world.addComponent(entity6, new RadiusComponent(0.03));
         world.addComponent(entity6, new MassComponent(0.1001));
         world.addComponent(entity6, new RestitutionComponent(0.4));
         world.addComponent(entity6, new GravityAffectedComponent());
         world.addComponent(entity6, new RenderableComponent('circle', '#FF0000'));
-        world.addComponent(entity6, new CableLinkComponent(1.5110667737627699, 0.09060248750307737));
+        world.addComponent(entity6, new CableLinkComponent(2.0281416796256835, -0.3068654398648548));
 
         world.addComponent(entity7, new BallTagComponent());
-        world.addComponent(entity7, new PositionComponent(1.7806197629618514, 0.8487800602934014));
-        world.addComponent(entity7, new VelocityComponent(0.004478659505478821, 1.2879395688518893));
+        world.addComponent(entity7, new PositionComponent(2.0585555387359573, 1.1577745522431606));
+        world.addComponent(entity7, new VelocityComponent(0.42039450065147665, -0.9463297282840478));
         world.addComponent(entity7, new RadiusComponent(0.03));
         world.addComponent(entity7, new MassComponent(0.1));
         world.addComponent(entity7, new RestitutionComponent(0.4));
         world.addComponent(entity7, new GravityAffectedComponent());
         world.addComponent(entity7, new RenderableComponent('circle', '#00FF00'));
-        world.addComponent(entity7, new CableLinkComponent(1.7805749763667966, 0.8359006646048824));
+        world.addComponent(entity7, new CableLinkComponent(2.0547335280625636, 1.1663627997808153));
 
         world.addComponent(entity8, new ObstacleTagComponent());
         world.addComponent(entity8, new PositionComponent(1.8, 1.5));
@@ -511,34 +511,23 @@
         world.addComponent(entity8, new RenderableComponent('circle', '#FF8000'));
         world.addComponent(entity8, new CableLinkComponent(1.8, 1.5));
 
-        world.addComponent(entity9, new CableJointComponent(entity6, entity7, 0.7577416640814515, new Vector2(1.5075479472982132, 0.09720151355932802), new Vector2(1.752058702011267, 0.8579597006663683)));
+        world.addComponent(entity9, new CableJointComponent(entity6, entity8, 1.0832934652807662, new Vector2(2.0226661911107535, -0.298305031843515), new Vector2(1.701587245907534, 1.4822537375220637)));
         world.addComponent(entity9, new RenderableComponent('line', '#FF0000'));
 
-        world.addComponent(entity10, new CableJointComponent(entity8, entity0, 0.6650375478642098, new Vector2(1.8987097894167102, 1.5160117916957698), new Vector2(1.8427026187476248, 0.9800549703279365)));
+        world.addComponent(entity10, new CableJointComponent(entity8, entity7, 1.1411708380436034, new Vector2(1.891643850843284, 1.5400175536810274), new Vector2(2.0585555387359573, 1.1577745522431606)));
         world.addComponent(entity10, new RenderableComponent('line', '#FFFF00'));
 
         // Skipped unknown component CablePathComponent for entity11
 
-        world.addComponent(entity18, new CableJointComponent(entity0, entity8, 0.03724635090389922, new Vector2(1.8417250819206377, 0.9916444501460577), new Vector2(1.7038731109008993, 1.47243877375498)));
-        world.addComponent(entity18, new RenderableComponent('line', '#0000FF'));
-
-        world.addComponent(entity20, new CableJointComponent(entity0, entity7, 0.4407581386104216, new Vector2(1.8398509726761023, 0.9702252269111464), new Vector2(1.7806197629618514, 0.8487800602934014)));
-        world.addComponent(entity20, new RenderableComponent('line', '#0000FF'));
-
-        world.addComponent(entity21, new CableJointComponent(entity7, entity0, 0.21680421393149107, new Vector2(1.7573618073551278, 0.8677291368143213), new Vector2(1.836144970797631, 0.9644270057516318)));
-        world.addComponent(entity21, new RenderableComponent('line', '#0000FF'));
-
-        world.addComponent(entity22, new CableJointComponent(entity7, entity1, 2.0370470089435413, new Vector2(1.7525845019576485, 0.859458268964626), new Vector2(1.036199530160268, -1.0213852584661711)));
-        world.addComponent(entity22, new RenderableComponent('line', '#0000FF'));
 
 
 
 
 
 
-        world.addComponent(entity5, new CablePathComponent(world, [entity3, entity22], ['attachment', 'rolling', 'attachment'], [true, false, true]));
+        world.addComponent(entity5, new CablePathComponent(world, [entity3, entity4], ['attachment', 'rolling', 'attachment'], [true, true, true]));
         const pathComp_entity5 = world.getComponent(entity5, CablePathComponent);
-        pathComp_entity5.stored = [0, 0.0026956558991297185, 0];
+        pathComp_entity5.stored = [0, 0.24342836173617954, 0];
         pathComp_entity5.totalRestLength = 2.176499672469678;
 
 
@@ -546,14 +535,10 @@
 
 
 
-        world.addComponent(entity11, new CablePathComponent(world, [entity9, entity21, entity18, entity10, entity20], ['attachment', 'rolling', 'rolling', 'rolling', 'rolling', 'attachment'], [true, true, false, true, true, true]));
+        world.addComponent(entity11, new CablePathComponent(world, [entity9, entity10], ['attachment', 'rolling', 'attachment'], [true, true, true]));
         const pathComp_entity11 = world.getComponent(entity11, CablePathComponent);
-        pathComp_entity11.stored = [0, 0.011180563572852114, 0.05023877016826639, 0.32600091193761377, 0.0102853245268795, 0];
+        pathComp_entity11.stored = [0, 0.29082918227271376, 0];
         pathComp_entity11.totalRestLength = 2.515293485597086;
-
-
-
-
 
 
 

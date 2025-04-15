@@ -138,6 +138,9 @@ testGeneratedError: {
                          addCompStr += component.paused;
                      }
                     break;
+                case 'CablePathComponent':
+                    // Handled separately
+                    break;
                 default:
                     console.warn(`Unhandled component type for serialization: ${componentClass.name}`);
                     addCompStr = `    // Skipped unknown component ${componentClass.name} for ${varName}\n`;
