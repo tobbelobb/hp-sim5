@@ -550,11 +550,11 @@ class CableAttachmentUpdateSystem {
             if (isRollingA && isRollingB) {
               const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
               const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
-              path.stored[i] += sA;
-              joint_i.restLength -= sA; // Corrected from joint.restLength
+              path.stored[i] -= sA;
+              joint_i.restLength += sA;
               const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
-              path.stored[i+2] -= sB;
-              joint_i.restLength += sB; // Corrected from joint.restLength
+              path.stored[i+2] += sB;
+              joint_i.restLength -= sB;
               joint_i.attachmentPointA_world.set(tangents.a_circle);
               joint_i.attachmentPointB_world.set(tangents.b_circle);
             } else if (isRollingA && isAttachmentB) {
@@ -704,7 +704,10 @@ class CableAttachmentUpdateSystem {
         joint.restLength += sB;
 
         if (joint.restLength < 0) {
-            console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}).`);
+          console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}). Clamping.`);
+          path.stored[A] += joint.restLength/2.0;
+          path.stored[B] += joint.restLength/2.0;
+          joint.restLength = 0.0;
         }
 
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
@@ -897,7 +900,7 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
       //console.log(`stored: ${path.stored}`);
     }
   }
