@@ -39,9 +39,17 @@
 
   // --- State Dumping Function ---
   function dumpWorldState(world) {
+    const renderSystem = world.getResource('renderSystem');
+    const viewportScale = renderSystem ? renderSystem.viewScaleMultiplier : 1.0;
+    const viewportOffsetX = renderSystem ? renderSystem.viewOffsetX_sim : 0.0;
+    const viewportOffsetY = renderSystem ? renderSystem.viewOffsetY_sim : 0.0;
+
     let dump = `
 // --- Generated Error Test Case ---
-testGeneratedError: function() {
+testGeneratedError: {
+  // Viewport settings from the time of the error
+  viewport: { scale: ${viewportScale}, offsetX: ${viewportOffsetX}, offsetY: ${viewportOffsetY} },
+  run: function() {
     const testName = "Generated Error Case";
     const world = new World();
     window.testWorld = world; // Set global world
@@ -49,7 +57,6 @@ testGeneratedError: function() {
     world.setResource('debugRenderPoints', {});
     world.setResource('simWidth', ${world.getResource('simWidth')});
     world.setResource('simHeight', ${world.getResource('simHeight')});
-    // Viewport settings moved to RenderSystem constructor in tests
 
     // --- Resources ---
 `;
@@ -180,6 +187,7 @@ testGeneratedError: function() {
 
     logTestResult(testName, false, "Generated test case - needs verification and assertions");
     return world; // Return world for rendering
+  }
 },
 `;
     return dump;

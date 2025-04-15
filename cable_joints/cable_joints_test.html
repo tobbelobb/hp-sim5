@@ -90,15 +90,16 @@
 
   // --- Test Cases ---
   const testCases = {
-      testSimpleMerge: function() {
-          const testName = "Simple Merge";
-          const world = new World();
-          window.testWorld = world; // Set global world for this test
-          world.setResource('dt', 0.01);
-          world.setResource('debugRenderPoints', {});
-          world.setResource('simWidth', simWidth);
-          world.setResource('simHeight', simHeight);
-          // Viewport settings moved to RenderSystem constructor
+      testSimpleMerge: {
+          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+          run: function() {
+              const testName = "Simple Merge";
+              const world = new World();
+              window.testWorld = world; // Set global world for this test
+              world.setResource('dt', 0.01);
+              world.setResource('debugRenderPoints', {});
+              world.setResource('simWidth', simWidth);
+              world.setResource('simHeight', simHeight);
 
           // Setup entities
           const linkA = world.createEntity(); // Attachment point
@@ -166,17 +167,19 @@
 
           logTestResult(testName, true);
           return world; // Return world for rendering
+          }
       },
 
-      testSimpleSplit: function() {
-          const testName = "Simple Split";
-          const world = new World();
-          window.testWorld = world; // Set global world
-          world.setResource('dt', 0.01);
-          world.setResource('debugRenderPoints', {});
-          world.setResource('simWidth', simWidth);
-          world.setResource('simHeight', simHeight);
-          // Viewport settings moved to RenderSystem constructor
+      testSimpleSplit: {
+          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+          run: function() {
+              const testName = "Simple Split";
+              const world = new World();
+              window.testWorld = world; // Set global world
+              world.setResource('dt', 0.01);
+              world.setResource('debugRenderPoints', {});
+              world.setResource('simWidth', simWidth);
+              world.setResource('simHeight', simHeight);
 
           // Setup entities
           const linkA = world.createEntity(); // Attachment point
@@ -260,16 +263,19 @@
 
           logTestResult(testName, true);
           return world; // Return world for rendering
+          }
       },
 
-      testAttachmentUpdate: function() {
-          const testName = "Attachment Update (Placeholder)";
-          const world = new World();
-          window.testWorld = world; // Set global world
-          world.setResource('dt', 0.01);
-          world.setResource('debugRenderPoints', {});
-          world.setResource('simWidth', simWidth);
-          world.setResource('simHeight', simHeight);
+      testAttachmentUpdate: {
+          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+          run: function() {
+              const testName = "Attachment Update (Placeholder)";
+              const world = new World();
+              window.testWorld = world; // Set global world
+              world.setResource('dt', 0.01);
+              world.setResource('debugRenderPoints', {});
+              world.setResource('simWidth', simWidth);
+              world.setResource('simHeight', simHeight);
 
 
           // TODO: Set up a world state with rolling links
@@ -316,16 +322,19 @@
 
           logTestResult(testName, true, "Not fully implemented yet");
           return world; // Return world for rendering
+          }
       },
 
-      testLargeInitialWrap: function() {
-          const testName = "Large initial wrap around obstacle";
-          const world = new World();
-          window.testWorld = world; // Set global world
-          world.setResource('dt', 0.01); // Use a typical dt
-          world.setResource('debugRenderPoints', {});
-          world.setResource('simWidth', simWidth);
-          world.setResource('simHeight', simHeight);
+      testLargeInitialWrap: {
+          viewport: { scale: 1.3, offsetX: 1.0, offsetY: 0.0 }, // Default viewport
+          run: function() {
+              const testName = "Large initial wrap around obstacle";
+              const world = new World();
+              window.testWorld = world; // Set global world
+              world.setResource('dt', 0.01); // Use a typical dt
+              world.setResource('debugRenderPoints', {});
+              world.setResource('simWidth', simWidth);
+              world.setResource('simHeight', simHeight);
 
           const viewOffset = new Vector2(0.0, 0.0);
 
@@ -406,21 +415,24 @@
 
           logTestResult(testName, true);
           return world; // Return world for rendering
+          }
       },
 
     // --- Generated Error Test Case ---
-    testGeneratedError: function() {
-      const testName = "Generated Error Case";
-      const world = new World();
-      window.testWorld = world; // Set global world
-      world.setResource('dt', 0.01);
-      world.setResource('debugRenderPoints', {});
-      world.setResource('simWidth', 2.6831683168316833);
-      world.setResource('simHeight', 2);
-      // Viewport settings moved to RenderSystem constructor in tests
+    testGeneratedError: {
+      // Viewport settings from the time of the error
+      viewport: { scale: 1.0, offsetX: 1.5, offsetY: 0.7 },
+      run: function() {
+        const testName = "Generated Error Case";
+        const world = new World();
+        window.testWorld = world; // Set global world
+        world.setResource('dt', 0.01);
+        world.setResource('debugRenderPoints', {});
+        world.setResource('simWidth', 2.6831683168316833);
+        world.setResource('simHeight', 2);
 
-      // --- Resources ---
-      world.setResource('gravity', new Vector2(0, -10));
+        // --- Resources ---
+        world.setResource('gravity', new Vector2(0, -10));
 
       // --- Entities and Components ---
       const entity0 = world.createEntity(); // Original ID: 0
@@ -543,6 +555,7 @@
 
       logTestResult(testName, false, "Generated test case - needs verification and assertions");
       return world; // Return world for rendering
+      }
     },
   };
 
@@ -552,13 +565,17 @@
       testsPassed = 0;
       testsFailed = 0;
 
-      if (testCases[testName]) {
-          const world = testCases[testName](); // Run the test function
+      const testCase = testCases[testName]; // Get the test case object
+
+      if (testCase) {
+          const world = testCase.run(); // Run the test function
 
           // Render the final state
           if (world && canvas) {
-              // Create a new RenderSystem instance for each test run
-              const renderSystem = new RenderSystem(canvas, cScale, simHeight, 1.3, 1.0, 0.0);
+              // Get viewport settings from the test case object
+              const vp = testCase.viewport;
+              // Create a new RenderSystem instance with test-specific viewport settings
+              const renderSystem = new RenderSystem(canvas, cScale, simHeight, vp.scale, vp.offsetX, vp.offsetY);
               renderSystem.update(world, 0); // Render the state using the instance's viewport settings
               console.log("--- Render Complete ---");
           } else {
