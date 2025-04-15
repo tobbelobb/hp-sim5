@@ -72,35 +72,6 @@ function tangentFromCircleToPoint(p_attach, p_circle, r_circle, cw) {
   return _tangentPointCircle(p_attach, p_circle, r_circle, cw, false);
 }
 
-function separateCircles(posA, radiusA, cwA, posB, radiusB, cwB) {
-  const dVec = new Vector2().subtractVectors(posB, posA);
-  const d = dVec.length();
-
-  // Determine the required minimum distance
-  const sameDirection = cwA === cwB;
-  const requiredDist = sameDirection
-    ? Math.abs(radiusB - radiusA)
-    : (radiusA + radiusB);
-
-  // If already far enough apart, no need to adjust
-  if (d >= requiredDist) return { newA: posA.clone(), newB: posB.clone() };
-
-  // Normalize the vector and calculate the amount to push
-  const pushAmount = (requiredDist - d) / 2;
-  const pushDir = dVec.clone().normalize();
-
-  const offset = pushDir.scale(pushAmount + 0.01);
-
-  const newA = posA.clone().add(offset.clone().scale(-1.0));
-  const newB = posB.clone().add(offset);
-
-  return {
-    newA,
-    newB
-  };
-}
-
-
 function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
   let dVec = new Vector2().subtractVectors(posB, posA);
   let d = dVec.length();
@@ -576,25 +547,25 @@ class CableAttachmentUpdateSystem {
               const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
               path.stored[i+2] -= sB;
               joint_i.restLength += sB; // Corrected from joint.restLength
-              joint_i.attachmentPointA_world = tangents.a_circle;
-              joint_i.attachmentPointB_world = tangents.b_circle;
+              joint_i.attachmentPointA_world.set(tangents.a_circle);
+              joint_i.attachmentPointB_world.set(tangents.b_circle);
             } else if (isRollingA && isAttachmentB) {
               const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
               const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA); // Corrected joint_1 typo
               path.stored[i] += sA;
               joint_i.restLength -= sA;
-              joint_i.attachmentPointA_world = tangents.a_circle;
-              joint_i.attachmentPointB_world = tangents.a_attach;
+              joint_i.attachmentPointA_world.set(tangents.a_circle);
+              joint_i.attachmentPointB_world.set(tangents.a_attach);
             } else if (isAttachmentA && isRollingB) {
               const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
               const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.a_circle, posB, radiusB, cwB);
               path.stored[i+2] -= sB;
               joint_i.restLength += sB;
-              joint_i.attachmentPointA_world = tangents.a_attach;
-              joint_i.attachmentPointB_world = tangents.a_circle;
+              joint_i.attachmentPointA_world.set(tangents.a_attach);
+              joint_i.attachmentPointB_world.set(tangents.a_circle);
             } else {
-              joint_i.attachmentPointA_world = posA.clone();
-              joint_i.attachmentPointB_world = posB.clone();
+              joint_i.attachmentPointA_world.set(posA.clone());
+              joint_i.attachmentPointB_world.set(posB.clone());
             }
 
             path.jointEntities.splice(i+1, 1);
@@ -729,8 +700,8 @@ class CableAttachmentUpdateSystem {
         }
 
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
-        joint.attachmentPointA_world.set(attachmentA_current.clone());
-        joint.attachmentPointB_world.set(attachmentB_current.clone());
+        joint.attachmentPointA_world.set(attachmentA_current);
+        joint.attachmentPointB_world.set(attachmentB_current);
 
       } // End loop through joints
     } // End loop through paths
@@ -808,7 +779,7 @@ class CableAttachmentUpdateSystem {
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
                 newAttachmentPointBForJoint = initialPoints2.b_circle;
                 const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
-                joint.attachmentPointA_world.set(newAttachmentPointAForJoint.clone());
+                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                 path.stored[jointIndex] += sA;
                 joint.restLength -= sA;
             } else if (linkTypeA === 'attachment') {
@@ -818,7 +789,7 @@ class CableAttachmentUpdateSystem {
                 newAttachmentPointAForJoint = initialPoints2.a_attach; // Point A is the attachment
                 newAttachmentPointBForJoint = initialPoints2.a_circle; // Point B is on the splitter
                 // No sA calculation needed as link A is attachment
-                joint.attachmentPointA_world.set(newAttachmentPointAForJoint.clone());
+                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
             } else {
                 console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
                 // Skip this split if unsupported combination
@@ -878,7 +849,7 @@ class CableAttachmentUpdateSystem {
 
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
-            joint.attachmentPointB_world.set(newAttachmentPointBForJoint.clone()); // Update endpoint
+            joint.attachmentPointB_world.set(newAttachmentPointBForJoint); // Update endpoint
 
             // Create the new joint (splitter -> entityB)
             world.addComponent(newJointId, new CableJointComponent(
@@ -895,7 +866,7 @@ class CableAttachmentUpdateSystem {
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const link of linkEntities) {
       const pos = world.getComponent(link, PositionComponent).pos;
-      world.getComponent(link, CableLinkComponent).prevPos = pos.clone();
+      world.getComponent(link, CableLinkComponent).prevPos.set(pos);
     }
 
     // Debugging/test loop 1
