@@ -591,6 +591,11 @@
         debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
         debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
 
+        // Visualize the tangent line
+        const tangentLineEntity = world.createEntity();
+        world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle)); // restLength doesn't matter for rendering
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF')); // White line
+
         // Expected: Top outer tangent
         const expectedA = new Vector2(0, 1);
         const expectedB = new Vector2(3, 1);
@@ -622,6 +627,11 @@
         const debugPoints = world.getResource('debugRenderPoints');
         debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
         debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
+
+        // Visualize the tangent line
+        const tangentLineEntity = world.createEntity();
+        world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
 
         // Expected: Internal tangent (top-left to bottom-right)
         const phi = Math.asin(2/3);
@@ -656,6 +666,11 @@
         debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
         debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
 
+        // Visualize the tangent line
+        const tangentLineEntity = world.createEntity();
+        world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+
         // Expected: Internal tangent (bottom-left to top-right)
         const phi = Math.asin(2/3);
         const expectedA = new Vector2(Math.sin(phi), -Math.cos(phi)); // (2/3, -sqrt(5)/3)
@@ -688,6 +703,11 @@
         const debugPoints = world.getResource('debugRenderPoints');
         debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
         debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
+
+        // Visualize the tangent line
+        const tangentLineEntity = world.createEntity();
+        world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
 
         // Expected: Bottom outer tangent
         const expectedA = new Vector2(0, -1);
