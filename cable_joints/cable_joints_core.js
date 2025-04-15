@@ -553,7 +553,7 @@ class CableAttachmentUpdateSystem {
 
           // Complex merge condition
           if (nothing_stored || little_stored_and_angle_minimal) {
-            console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)}°)`);
+            console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
             const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
             const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius; // Nullish coalescing for safety
             const cwA = path.cw[i];
@@ -593,8 +593,8 @@ class CableAttachmentUpdateSystem {
               joint_i.attachmentPointA_world = tangents.a_attach;
               joint_i.attachmentPointB_world = tangents.a_circle;
             } else {
-              joint_i.attachmentPointA_world = posA;
-              joint_i.attachmentPointB_world = posB;
+              joint_i.attachmentPointA_world = posA.clone();
+              joint_i.attachmentPointB_world = posB.clone();
             }
 
             path.jointEntities.splice(i+1, 1);
@@ -729,8 +729,8 @@ class CableAttachmentUpdateSystem {
         }
 
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
-        joint.attachmentPointA_world.set(attachmentA_current);
-        joint.attachmentPointB_world.set(attachmentB_current);
+        joint.attachmentPointA_world.set(attachmentA_current.clone());
+        joint.attachmentPointB_world.set(attachmentB_current.clone());
 
       } // End loop through joints
     } // End loop through paths
@@ -744,7 +744,6 @@ class CableAttachmentUpdateSystem {
       for (var jointIndex = 0; jointIndex < path.jointEntities.length; jointIndex++) {
         const jointId = path.jointEntities[jointIndex];
         const joint = world.getComponent(jointId, CableJointComponent);
-        const originalJointentityB = joint.entityB;
         if (!joint.isActive) {
           console.warn("An inactive joint seems to be part of a path right now.");
           continue;
@@ -802,7 +801,6 @@ class CableAttachmentUpdateSystem {
             var initialDist2;
             if (linkTypeA === 'rolling') {
                 // --- Case: Rolling -> Splitter ---
-                console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
                 const radiusA = world.getComponent(entityA, RadiusComponent).radius;
                 const cwA = path.cw[jointIndex];
                 initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
@@ -810,8 +808,7 @@ class CableAttachmentUpdateSystem {
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
                 newAttachmentPointBForJoint = initialPoints2.b_circle;
                 const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
-                console.log("sA: ", sA);
-                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
+                joint.attachmentPointA_world.set(newAttachmentPointAForJoint.clone());
                 path.stored[jointIndex] += sA;
                 joint.restLength -= sA;
             } else if (linkTypeA === 'attachment') {
@@ -821,14 +818,13 @@ class CableAttachmentUpdateSystem {
                 newAttachmentPointAForJoint = initialPoints2.a_attach; // Point A is the attachment
                 newAttachmentPointBForJoint = initialPoints2.a_circle; // Point B is on the splitter
                 // No sA calculation needed as link A is attachment
-                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
+                joint.attachmentPointA_world.set(newAttachmentPointAForJoint.clone());
             } else {
                 console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
                 // Skip this split if unsupported combination
                 continue; // Go to the next potential splitter
             }
 
-            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             // --- Debug Visualization for initialPoints2 ---
             if (initialPoints2) {
                 if (initialPoints2.a_attach) {
@@ -880,21 +876,14 @@ class CableAttachmentUpdateSystem {
                 console.warn("Split occurred with near-zero distance between new segments.");
             }
 
-            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
-            const prevBpos = world.getComponent(entityB, PositionComponent).pos.clone();
             joint.attachmentPointB_world.set(newAttachmentPointBForJoint.clone()); // Update endpoint
-            world.getComponent(entityB, PositionComponent).pos = prevBpos.clone();
 
-            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             // Create the new joint (splitter -> entityB)
             world.addComponent(newJointId, new CableJointComponent(
                 splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
-            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             world.addComponent(newJointId, new RenderableComponent('line', '#0000FF')); // Blue line for new joint
-            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
-            console.log("New joint's link positions: ", world.getComponent(splitterId, PositionComponent).pos, world.getComponent(entityB, PositionComponent).pos);
 
             console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
             path.stored.splice(jointIndex + 1, 0, s);
@@ -906,7 +895,6 @@ class CableAttachmentUpdateSystem {
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const link of linkEntities) {
       const pos = world.getComponent(link, PositionComponent).pos;
-      const prevPos = world.getComponent(link, CableLinkComponent).prevPos;
       world.getComponent(link, CableLinkComponent).prevPos = pos.clone();
     }
 
