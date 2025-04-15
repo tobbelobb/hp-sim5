@@ -17,6 +17,8 @@
             <option value="testSimpleSplit">Simple Split</option>
             <option value="testAttachmentUpdate">Attachment Update</option>
             <option value="testLargeInitialWrap" selected>Large Initial Wrap</option>
+            <option value="testGeneratedError" selected>Test Generated Error</option>
+
             <!-- Add more test options here -->
         </select>
         <button id="runBtn">Run &amp; Visualize</button>
@@ -324,7 +326,6 @@
           world.setResource('debugRenderPoints', {});
           world.setResource('simWidth', simWidth);
           world.setResource('simHeight', simHeight);
-          // Viewport settings are handled by the RenderSystem created later
 
           const viewOffset = new Vector2(0.0, 0.0);
 
@@ -405,7 +406,144 @@
 
           logTestResult(testName, true);
           return world; // Return world for rendering
-      }
+      },
+
+    // --- Generated Error Test Case ---
+    testGeneratedError: function() {
+      const testName = "Generated Error Case";
+      const world = new World();
+      window.testWorld = world; // Set global world
+      world.setResource('dt', 0.01);
+      world.setResource('debugRenderPoints', {});
+      world.setResource('simWidth', 2.6831683168316833);
+      world.setResource('simHeight', 2);
+      // Viewport settings moved to RenderSystem constructor in tests
+
+      // --- Resources ---
+      world.setResource('gravity', new Vector2(0, -10));
+
+      // --- Entities and Components ---
+      const entity0 = world.createEntity(); // Original ID: 0
+      const entity1 = world.createEntity(); // Original ID: 1
+      const entity2 = world.createEntity(); // Original ID: 2
+      const entity3 = world.createEntity(); // Original ID: 3
+      const entity5 = world.createEntity(); // Original ID: 5
+      const entity6 = world.createEntity(); // Original ID: 6
+      const entity7 = world.createEntity(); // Original ID: 7
+      const entity8 = world.createEntity(); // Original ID: 8
+      const entity9 = world.createEntity(); // Original ID: 9
+      const entity10 = world.createEntity(); // Original ID: 10
+      const entity11 = world.createEntity(); // Original ID: 11
+      const entity18 = world.createEntity(); // Original ID: 18
+      const entity20 = world.createEntity(); // Original ID: 20
+      const entity21 = world.createEntity(); // Original ID: 21
+      const entity22 = world.createEntity(); // Original ID: 22
+      const entity23 = world.createEntity(); // Original ID: 23
+
+      world.addComponent(entity0, new BallTagComponent());
+      world.addComponent(entity0, new PositionComponent(1.8128870151909073, 0.9833760822725517));
+      world.addComponent(entity0, new VelocityComponent(0.13729446175055282, -3.8437545717029846));
+      world.addComponent(entity0, new RadiusComponent(0.03));
+      world.addComponent(entity0, new MassComponent(0.1001));
+      world.addComponent(entity0, new RestitutionComponent(0.4));
+      world.addComponent(entity0, new GravityAffectedComponent());
+      world.addComponent(entity0, new RenderableComponent('circle', '#FF0000'));
+      world.addComponent(entity0, new CableLinkComponent(1.8115140705734019, 1.0218136279895815));
+
+      world.addComponent(entity1, new BallTagComponent());
+      world.addComponent(entity1, new PositionComponent(1.7536558054766564, 0.8619309156548066));
+      world.addComponent(entity1, new VelocityComponent(0.007306027979681455, -3.3868331144790362));
+      world.addComponent(entity1, new RadiusComponent(0.03));
+      world.addComponent(entity1, new MassComponent(0.1));
+      world.addComponent(entity1, new RestitutionComponent(0.4));
+      world.addComponent(entity1, new GravityAffectedComponent());
+      world.addComponent(entity1, new RenderableComponent('circle', '#00FF00'));
+      world.addComponent(entity1, new CableLinkComponent(1.036126469880471, -0.9875169273213809));
+
+      world.addComponent(entity2, new ObstacleTagComponent());
+      world.addComponent(entity2, new PositionComponent(1.5, 1.5));
+      world.addComponent(entity2, new MassComponent(-1));
+      world.addComponent(entity2, new RadiusComponent(0.1));
+      world.addComponent(entity2, new RenderableComponent('circle', '#FF8000'));
+      world.addComponent(entity2, new CableLinkComponent(1.5, 1.5));
+
+      world.addComponent(entity3, new CableJointComponent(entity0, entity7, 0.13675700762700627, new Vector2(1.8128870151909073, 0.9833760822725517), new Vector2(1.7536558054766564, 0.8619309156548066)));
+      world.addComponent(entity3, new RenderableComponent('line', '#FF0000'));
+
+      world.addComponent(entity5, new CablePathComponent(world, [entity3, entity22], ['attachment', 'rolling', 'attachment'], [true, false, true]));
+      const pathComp_entity5 = world.getComponent(entity5, CablePathComponent);
+      pathComp_entity5.stored = [0, 0.0026956558991297185, 0];
+      pathComp_entity5.totalRestLength = 2.176499672469678;
+      // End CablePathComponent setup for entity5
+      world.addComponent(entity6, new BallTagComponent());
+      world.addComponent(entity6, new PositionComponent(1.5075479472982132, 0.09720151355932802));
+      world.addComponent(entity6, new VelocityComponent(-0.3518826464556719, 0.6599026056250654));
+      world.addComponent(entity6, new RadiusComponent(0.03));
+      world.addComponent(entity6, new MassComponent(0.1001));
+      world.addComponent(entity6, new RestitutionComponent(0.4));
+      world.addComponent(entity6, new GravityAffectedComponent());
+      world.addComponent(entity6, new RenderableComponent('circle', '#FF0000'));
+      world.addComponent(entity6, new CableLinkComponent(1.5110667737627699, 0.09060248750307737));
+
+      world.addComponent(entity7, new BallTagComponent());
+      world.addComponent(entity7, new PositionComponent(1.7806197629618514, 0.8487800602934014));
+      world.addComponent(entity7, new VelocityComponent(0.004478659505478821, 1.2879395688518893));
+      world.addComponent(entity7, new RadiusComponent(0.03));
+      world.addComponent(entity7, new MassComponent(0.1));
+      world.addComponent(entity7, new RestitutionComponent(0.4));
+      world.addComponent(entity7, new GravityAffectedComponent());
+      world.addComponent(entity7, new RenderableComponent('circle', '#00FF00'));
+      world.addComponent(entity7, new CableLinkComponent(1.7805749763667966, 0.8359006646048824));
+
+      world.addComponent(entity8, new ObstacleTagComponent());
+      world.addComponent(entity8, new PositionComponent(1.8, 1.5));
+      world.addComponent(entity8, new MassComponent(-1));
+      world.addComponent(entity8, new RadiusComponent(0.1));
+      world.addComponent(entity8, new RenderableComponent('circle', '#FF8000'));
+      world.addComponent(entity8, new CableLinkComponent(1.8, 1.5));
+
+      world.addComponent(entity9, new CableJointComponent(entity6, entity7, 0.7577416640814515, new Vector2(1.5075479472982132, 0.09720151355932802), new Vector2(1.752058702011267, 0.8579597006663683)));
+      world.addComponent(entity9, new RenderableComponent('line', '#FF0000'));
+
+      world.addComponent(entity10, new CableJointComponent(entity8, entity0, 0.6650375478642098, new Vector2(1.8987097894167102, 1.5160117916957698), new Vector2(1.8427026187476248, 0.9800549703279365)));
+      world.addComponent(entity10, new RenderableComponent('line', '#FFFF00'));
+
+      world.addComponent(entity11, new CablePathComponent(world, [entity9, entity21, entity18, entity10, entity20], ['attachment', 'rolling', 'rolling', 'rolling', 'rolling', 'attachment'], [true, true, false, true, true, true]));
+      const pathComp_entity11 = world.getComponent(entity11, CablePathComponent);
+      pathComp_entity11.stored = [0, 0.011180563572852114, 0.05023877016826639, 0.32600091193761377, 0.0102853245268795, 0];
+      pathComp_entity11.totalRestLength = 2.515293485597086;
+      // End CablePathComponent setup for entity11
+      world.addComponent(entity18, new CableJointComponent(entity0, entity8, 0.03724635090389922, new Vector2(1.8417250819206377, 0.9916444501460577), new Vector2(1.7038731109008993, 1.47243877375498)));
+      world.addComponent(entity18, new RenderableComponent('line', '#0000FF'));
+
+      world.addComponent(entity20, new CableJointComponent(entity0, entity7, 0.4407581386104216, new Vector2(1.8398509726761023, 0.9702252269111464), new Vector2(1.7806197629618514, 0.8487800602934014)));
+      world.addComponent(entity20, new RenderableComponent('line', '#0000FF'));
+
+      world.addComponent(entity21, new CableJointComponent(entity7, entity0, 0.21680421393149107, new Vector2(1.7573618073551278, 0.8677291368143213), new Vector2(1.836144970797631, 0.9644270057516318)));
+      world.addComponent(entity21, new RenderableComponent('line', '#0000FF'));
+
+      world.addComponent(entity22, new CableJointComponent(entity7, entity1, 2.0370470089435413, new Vector2(1.7525845019576485, 0.859458268964626), new Vector2(1.036199530160268, -1.0213852584661711)));
+      world.addComponent(entity22, new RenderableComponent('line', '#0000FF'));
+
+
+
+      // --- Systems Registration (Copy from a working test or main file if needed) ---
+      // world.registerSystem(new CableAttachmentUpdateSystem());
+      // world.registerSystem(new PBDCableConstraintSolver());
+      // ... etc ...
+
+      // --- Run the system that caused the error (or the full update) ---
+      // const system = new SpecificSystem();
+      // system.update(world, world.getResource('dt'));
+      // OR
+      // world.update(world.getResource('dt')); // If the error happens during the full update cycle
+
+      // --- Assertions (Add assertions here to verify the error or expected state) ---
+      // assertTrue(..., testName, "Some condition");
+
+      logTestResult(testName, false, "Generated test case - needs verification and assertions");
+      return world; // Return world for rendering
+    },
   };
 
   function runAndVisualizeTest(testName) {
