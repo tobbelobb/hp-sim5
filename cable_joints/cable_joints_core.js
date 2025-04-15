@@ -802,6 +802,7 @@ class CableAttachmentUpdateSystem {
             var initialDist2;
             if (linkTypeA === 'rolling') {
                 // --- Case: Rolling -> Splitter ---
+                console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
                 const radiusA = world.getComponent(entityA, RadiusComponent).radius;
                 const cwA = path.cw[jointIndex];
                 initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
@@ -827,6 +828,7 @@ class CableAttachmentUpdateSystem {
                 continue; // Go to the next potential splitter
             }
 
+            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             // --- Debug Visualization for initialPoints2 ---
             if (initialPoints2) {
                 if (initialPoints2.a_attach) {
@@ -866,6 +868,7 @@ class CableAttachmentUpdateSystem {
             let newRestLength1 = 0; // For new joint (splitter -> entityB)
             let newRestLength2 = 0; // For original joint (entityA -> splitter)
 
+
             if (totalDist > 1e-9) { // Avoid division by zero if distances are tiny
                 const availableRestLength = originalRestLength - s;
                 if (availableRestLength < 0) {
@@ -877,14 +880,21 @@ class CableAttachmentUpdateSystem {
                 console.warn("Split occurred with near-zero distance between new segments.");
             }
 
+            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
-            joint.attachmentPointB_world.set(newAttachmentPointBForJoint); // Update endpoint
+            const prevBpos = world.getComponent(entityB, PositionComponent).pos.clone();
+            joint.attachmentPointB_world.set(newAttachmentPointBForJoint.clone()); // Update endpoint
+            world.getComponent(entityB, PositionComponent).pos = prevBpos.clone();
 
+            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             // Create the new joint (splitter -> entityB)
             world.addComponent(newJointId, new CableJointComponent(
                 splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
+            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
             world.addComponent(newJointId, new RenderableComponent('line', '#0000FF')); // Blue line for new joint
+            console.log("Entity B position: ", world.getComponent(entityB, PositionComponent).pos);
+            console.log("New joint's link positions: ", world.getComponent(splitterId, PositionComponent).pos, world.getComponent(entityB, PositionComponent).pos);
 
             console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
             path.stored.splice(jointIndex + 1, 0, s);
