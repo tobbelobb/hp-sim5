@@ -810,6 +810,7 @@ class CableAttachmentUpdateSystem {
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
                 newAttachmentPointBForJoint = initialPoints2.b_circle;
                 const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
+                console.log("sA: ", sA);
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                 path.stored[jointIndex] += sA;
                 joint.restLength -= sA;
@@ -928,8 +929,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      console.log(`stored: ${path.stored}`);
+      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      //console.log(`stored: ${path.stored}`);
     }
   }
 }
