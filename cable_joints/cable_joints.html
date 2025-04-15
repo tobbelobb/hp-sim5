@@ -35,7 +35,7 @@
   const simHeight = canvas.height / cScale;
 
   let world = new World();
-  let simulationStopped = false; // Flag to prevent further updates after error
+  // let simulationStopped = false; // Flag removed, now managed by SimulationErrorStateComponent resource
 
   // --- State Dumping Function ---
   function dumpWorldState(world) {
@@ -64,6 +64,10 @@ testGeneratedError: {
     const gravity = world.getResource('gravity');
     if (gravity) {
         dump += `    world.setResource('gravity', new Vector2(${gravity.x}, ${gravity.y}));\n`;
+    }
+    const errorState = world.getResource('errorState');
+    if (errorState) {
+        dump += `    world.setResource('errorState', new SimulationErrorStateComponent(${errorState.hasError}));\n`;
     }
     // Note: pauseState is usually set by the test runner or UI
     // Note: renderSystem is created by the test runner
@@ -134,8 +138,11 @@ testGeneratedError: {
                 case 'BallTagComponent':
                 case 'ObstacleTagComponent':
                 case 'PauseStateComponent': // Usually a resource, but handle if added to entity
+                case 'SimulationErrorStateComponent': // Usually a resource, but handle if added to entity
                      if (componentClass.name === 'PauseStateComponent') {
                          addCompStr += component.paused;
+                     } else if (componentClass.name === 'SimulationErrorStateComponent') {
+                         addCompStr += component.hasError;
                      }
                     break;
                 case 'CablePathComponent':
@@ -215,7 +222,7 @@ testGeneratedError: {
 
 
   function setupScene() {
-    simulationStopped = false; // Reset error flag
+    // simulationStopped = false; // Reset error flag - Handled by setting resource below
     errorInfoDiv.style.display = 'none'; // Hide error area
     errorDumpOutput.style.display = 'none';
     errorDumpOutput.value = ''; // Clear previous dump
@@ -227,8 +234,9 @@ testGeneratedError: {
     world.setResource('dt', 1.0 / 100.0);
     world.setResource('simWidth', simWidth);
     world.setResource('simHeight', simHeight);
-    // Create a component for pause state and store it as a resource for easy access
+    // Create components for pause and error state and store them as resources
     world.setResource('pauseState', new PauseStateComponent(true));
+    world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state to false
     world.setResource('debugRenderPoints', {}); // Initialize empty object for debug points
 
 
@@ -419,15 +427,18 @@ testGeneratedError: {
   function loop(currentTime) {
     const dt = world.getResource('dt');
     const pauseState = world.getResource('pauseState');
+    const errorState = world.getResource('errorState'); // Get error state resource
 
-    if (!simulationStopped && (!pauseState.paused || doStep)) {
+    // Check error state from the resource
+    if (!errorState.hasError && (!pauseState.paused || doStep)) {
       if (doStep) pauseState.paused = false; // Temporarily unpause for step
       try {
           console.log("----------------------------------------------");
           world.update(dt); // <<<--- Wrap update in try...catch
       } catch (error) {
           console.error("!!! Simulation Error Caught !!!", error);
-          simulationStopped = true; // Stop further updates
+          // simulationStopped = true; // Stop further updates - Handled by setting resource below
+          if (errorState) errorState.hasError = true; // Set error state in the resource
           if (pauseState) pauseState.paused = true; // Ensure paused state
           pauseBtn.textContent = "Resume (Error)";
           pauseBtn.disabled = true; // Disable pause/resume after error
@@ -448,8 +459,9 @@ testGeneratedError: {
           }
       } finally {
           if (doStep) {
-              if (pauseState) pauseState.paused = true; // Re-pause after step if it was a step and no error stopped it
-              if (!simulationStopped) pauseBtn.textContent = "Resume"; // Reset button text if no error occurred
+              if (pauseState) pauseState.paused = true; // Re-pause after step if it was a step
+              // Reset button text only if no error occurred
+              if (errorState && !errorState.hasError) pauseBtn.textContent = "Resume";
           }
           doStep = false;
       }
@@ -461,7 +473,8 @@ testGeneratedError: {
   // --- Event Listeners ---
   pauseBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    if (simulationStopped) return; // Don't allow changes if stopped by error
+    const errorState = world.getResource('errorState');
+    if (errorState && errorState.hasError) return; // Don't allow changes if stopped by error
     const pauseState = world.getResource('pauseState');
     if (pauseState) {
       pauseState.paused = !pauseState.paused;
@@ -471,11 +484,11 @@ testGeneratedError: {
 
   resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    setupScene();
+    setupScene(); // This now resets the errorState resource
     const pauseState = world.getResource('pauseState');
     if (pauseState) pauseState.paused = true;
     pauseBtn.textContent = "Start";
-    pauseBtn.disabled = false;
+    pauseBtn.disabled = false; // Re-enable buttons
     stepBtn.disabled = false;
 
     const initialRenderSystem = world.getResource('renderSystem');
@@ -487,7 +500,8 @@ testGeneratedError: {
 
   stepBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    if (simulationStopped) return; // Don't allow changes if stopped by error
+    const errorState = world.getResource('errorState');
+    if (errorState && errorState.hasError) return; // Don't allow changes if stopped by error
     const pauseState = world.getResource('pauseState');
     if (pauseState && pauseState.paused) {
       doStep = true;

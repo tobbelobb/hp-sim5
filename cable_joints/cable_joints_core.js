@@ -360,6 +360,7 @@ class GravityAffectedComponent { /* Tag component */ }
 class BallTagComponent { /* Tag component */ }
 class ObstacleTagComponent { /* Tag component */ }
 class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
+class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } } // New component for error state
 class CableLinkComponent { constructor(x = 0, y = 0) { this.prevPos = new Vector2(x, y); } }
 
 // Represents a single segment constraint between two entities
