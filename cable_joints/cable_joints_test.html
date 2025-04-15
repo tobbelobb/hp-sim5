@@ -16,9 +16,12 @@
             <option value="testSimpleMerge">Simple Merge</option>
             <option value="testSimpleSplit">Simple Split</option>
             <option value="testAttachmentUpdate">Attachment Update</option>
-            <option value="testLargeInitialWrap" selected>Large Initial Wrap</option>
-            <option value="testGeneratedError1" selected>Test Generated Error 1</option>
-
+            <option value="testLargeInitialWrap">Large Initial Wrap</option>
+            <option value="testGeneratedError1">Test Generated Error 1</option>
+            <option value="testTangentCircleCircle_TT">Tangent Circle-Circle (T, T)</option>
+            <option value="testTangentCircleCircle_TF">Tangent Circle-Circle (T, F)</option>
+            <option value="testTangentCircleCircle_FT">Tangent Circle-Circle (F, T)</option>
+            <option value="testTangentCircleCircle_FF" selected>Tangent Circle-Circle (F, F)</option>
             <!-- Add more test options here -->
         </select>
         <button id="runBtn">Run &amp; Visualize</button>
@@ -558,6 +561,147 @@
 
         logTestResult(testName, false, "Generated test case - needs verification and assertions");
         return world; // Return world for rendering
+      }
+    },
+
+    // --- Tangent Calculation Tests ---
+    testTangentCircleCircle_TT: {
+      viewport: { scale: 0.5, offsetX: 1.5, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Circle-Circle (cwA=T, cwB=T)";
+        const world = new World(); // Minimal world for visualization
+        window.testWorld = world;
+        world.setResource('debugRenderPoints', {});
+
+        const posA = new Vector2(0, 0); const rA = 1.0; const cwA = true;
+        const posB = new Vector2(3, 0); const rB = 1.0; const cwB = true;
+
+        // Visualize circles
+        const entityA = world.createEntity();
+        world.addComponent(entityA, new PositionComponent(posA.x, posA.y));
+        world.addComponent(entityA, new RadiusComponent(rA));
+        world.addComponent(entityA, new RenderableComponent('circle', '#AAAAAA'));
+        const entityB = world.createEntity();
+        world.addComponent(entityB, new PositionComponent(posB.x, posB.y));
+        world.addComponent(entityB, new RadiusComponent(rB));
+        world.addComponent(entityB, new RenderableComponent('circle', '#CCCCCC'));
+
+        const tangents = tangentFromCircleToCircle(posA, rA, cwA, posB, rB, cwB);
+        const debugPoints = world.getResource('debugRenderPoints');
+        debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
+        debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
+
+        // Expected: Top outer tangent
+        const expectedA = new Vector2(0, 1);
+        const expectedB = new Vector2(3, 1);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(expectedA.x, tangents.a_circle.x, tol, testName, "Tangent A.x");
+        passed &= assertNear(expectedA.y, tangents.a_circle.y, tol, testName, "Tangent A.y");
+        passed &= assertNear(expectedB.x, tangents.b_circle.x, tol, testName, "Tangent B.x");
+        passed &= assertNear(expectedB.y, tangents.b_circle.y, tol, testName, "Tangent B.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentCircleCircle_TF: {
+      viewport: { scale: 0.5, offsetX: 1.5, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Circle-Circle (cwA=T, cwB=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const posA = new Vector2(0, 0); const rA = 1.0; const cwA = true;
+        const posB = new Vector2(3, 0); const rB = 1.0; const cwB = false;
+
+        const entityA = world.createEntity(); world.addComponent(entityA, new PositionComponent(posA.x, posA.y)); world.addComponent(entityA, new RadiusComponent(rA)); world.addComponent(entityA, new RenderableComponent('circle', '#AAAAAA'));
+        const entityB = world.createEntity(); world.addComponent(entityB, new PositionComponent(posB.x, posB.y)); world.addComponent(entityB, new RadiusComponent(rB)); world.addComponent(entityB, new RenderableComponent('circle', '#CCCCCC'));
+
+        const tangents = tangentFromCircleToCircle(posA, rA, cwA, posB, rB, cwB);
+        const debugPoints = world.getResource('debugRenderPoints');
+        debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
+        debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
+
+        // Expected: Internal tangent (top-left to bottom-right)
+        const phi = Math.asin(2/3);
+        const expectedA = new Vector2(Math.sin(phi), Math.cos(phi)); // (2/3, sqrt(5)/3)
+        const expectedB = new Vector2(3 + Math.sin(phi), -Math.cos(phi)); // (3 + 2/3, -sqrt(5)/3) = (11/3, -sqrt(5)/3)
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(expectedA.x, tangents.a_circle.x, tol, testName, "Tangent A.x");
+        passed &= assertNear(expectedA.y, tangents.a_circle.y, tol, testName, "Tangent A.y");
+        passed &= assertNear(expectedB.x, tangents.b_circle.x, tol, testName, "Tangent B.x");
+        passed &= assertNear(expectedB.y, tangents.b_circle.y, tol, testName, "Tangent B.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentCircleCircle_FT: {
+      viewport: { scale: 0.5, offsetX: 1.5, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Circle-Circle (cwA=F, cwB=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const posA = new Vector2(0, 0); const rA = 1.0; const cwA = false;
+        const posB = new Vector2(3, 0); const rB = 1.0; const cwB = true;
+
+        const entityA = world.createEntity(); world.addComponent(entityA, new PositionComponent(posA.x, posA.y)); world.addComponent(entityA, new RadiusComponent(rA)); world.addComponent(entityA, new RenderableComponent('circle', '#AAAAAA'));
+        const entityB = world.createEntity(); world.addComponent(entityB, new PositionComponent(posB.x, posB.y)); world.addComponent(entityB, new RadiusComponent(rB)); world.addComponent(entityB, new RenderableComponent('circle', '#CCCCCC'));
+
+        const tangents = tangentFromCircleToCircle(posA, rA, cwA, posB, rB, cwB);
+        const debugPoints = world.getResource('debugRenderPoints');
+        debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
+        debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
+
+        // Expected: Internal tangent (bottom-left to top-right)
+        const phi = Math.asin(2/3);
+        const expectedA = new Vector2(Math.sin(phi), -Math.cos(phi)); // (2/3, -sqrt(5)/3)
+        const expectedB = new Vector2(3 - Math.sin(phi), Math.cos(phi)); // (3 - 2/3, sqrt(5)/3) = (7/3, sqrt(5)/3)
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(expectedA.x, tangents.a_circle.x, tol, testName, "Tangent A.x");
+        passed &= assertNear(expectedA.y, tangents.a_circle.y, tol, testName, "Tangent A.y");
+        passed &= assertNear(expectedB.x, tangents.b_circle.x, tol, testName, "Tangent B.x");
+        passed &= assertNear(expectedB.y, tangents.b_circle.y, tol, testName, "Tangent B.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentCircleCircle_FF: {
+      viewport: { scale: 0.5, offsetX: 1.5, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Circle-Circle (cwA=F, cwB=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const posA = new Vector2(0, 0); const rA = 1.0; const cwA = false;
+        const posB = new Vector2(3, 0); const rB = 1.0; const cwB = false;
+
+        const entityA = world.createEntity(); world.addComponent(entityA, new PositionComponent(posA.x, posA.y)); world.addComponent(entityA, new RadiusComponent(rA)); world.addComponent(entityA, new RenderableComponent('circle', '#AAAAAA'));
+        const entityB = world.createEntity(); world.addComponent(entityB, new PositionComponent(posB.x, posB.y)); world.addComponent(entityB, new RadiusComponent(rB)); world.addComponent(entityB, new RenderableComponent('circle', '#CCCCCC'));
+
+        const tangents = tangentFromCircleToCircle(posA, rA, cwA, posB, rB, cwB);
+        const debugPoints = world.getResource('debugRenderPoints');
+        debugPoints['tangentA'] = { pos: tangents.a_circle, color: 'red' };
+        debugPoints['tangentB'] = { pos: tangents.b_circle, color: 'lime' };
+
+        // Expected: Bottom outer tangent
+        const expectedA = new Vector2(0, -1);
+        const expectedB = new Vector2(3, -1);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(expectedA.x, tangents.a_circle.x, tol, testName, "Tangent A.x");
+        passed &= assertNear(expectedA.y, tangents.a_circle.y, tol, testName, "Tangent A.y");
+        passed &= assertNear(expectedB.x, tangents.b_circle.x, tol, testName, "Tangent B.x");
+        passed &= assertNear(expectedB.y, tangents.b_circle.y, tol, testName, "Tangent B.y");
+
+        logTestResult(testName, passed);
+        return world;
       }
     },
   };
