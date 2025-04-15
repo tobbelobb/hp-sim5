@@ -103,7 +103,7 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
       angleA = alpha - Math.PI / 2 + phi;
       angleB = alpha - Math.PI / 2 - phi;
     } else {
-      angleA = alpha + Math.PI / 2 - phi;
+      angleA = alpha + Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     }
   }
