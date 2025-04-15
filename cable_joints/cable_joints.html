@@ -3,7 +3,7 @@
 <head>
     <title>Cable Joints</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #202020; font-family: sans-serif; }
+        body { margin: 0; overflow-y: auto; background-color: #202020; font-family: sans-serif; }
         canvas { border: 1px solid black; display: block; margin: 10px auto; }
         #controls { text-align: center; margin-bottom: 10px; }
     </style>
@@ -19,7 +19,7 @@
     <div id="errorInfo" style="text-align: center; color: red; font-weight: bold; margin-top: 10px; display: none;">
         An error occurred! Copy the state below to create a test case:
     </div>
-    <textarea id="errorDumpOutput" readonly style="width: 90%; height: 200px; display: none; margin: 10px auto; font-family: monospace; background-color: #333; color: #eee; border: 1px solid #888;"></textarea>
+    <textarea id="errorDumpOutput" readonly style="width: 90%; height: 100vh; display: none; margin: 10px auto; font-family: monospace; background-color: #333; color: #eee; border: 1px solid #888;"></textarea>
 
 <script src="cable_joints_core.js"></script>
 <script>
@@ -128,25 +128,6 @@ testGeneratedError: {
                         addCompStr += `new Vector2(${component.attachmentPointB_world.x}, ${component.attachmentPointB_world.y})`;
                     }
                     break;
-                case 'CablePathComponent':
-                    const jointVars = component.jointEntities.map(id => entityVarMap.get(id)).filter(Boolean);
-                    if (jointVars.length !== component.jointEntities.length) {
-                         console.warn(`Could not find variable names for all joints in path ${entityId}`);
-                         addCompStr = `    // Skipped CablePathComponent for ${varName} due to missing joint mapping\n`;
-                    } else {
-                        addCompStr += `world, [${jointVars.join(', ')}], `;
-                        addCompStr += `[${component.linkTypes.map(t => `'${t}'`).join(', ')}], `;
-                        addCompStr += `[${component.cw.join(', ')}]`;
-                        // Need to manually set stored and totalRestLength after creation in the test
-                        addCompStr += `));\n`;
-                        addCompStr += `    const pathComp_${varName} = world.getComponent(${varName}, CablePathComponent);\n`;
-                        addCompStr += `    pathComp_${varName}.stored = [${component.stored.join(', ')}];\n`;
-                        addCompStr += `    pathComp_${varName}.totalRestLength = ${component.totalRestLength};\n`;
-                        addCompStr += `    // End CablePathComponent setup for ${varName}`; // Mark end to avoid double closing parenthesis
-                        dump += addCompStr;
-                        continue; // Skip the default closing parenthesis below
-                    }
-                    break;
                 // Add cases for other components if needed
                 // Tag components have no constructor arguments
                 case 'GravityAffectedComponent':
@@ -168,6 +149,42 @@ testGeneratedError: {
             dump += addCompStr;
         }
          dump += "\n"; // Add a newline between entities
+    }
+    for (const entityId of world.entities.keys()) {
+        const varName = entityVarMap.get(entityId);
+        const componentClasses = world.entities.get(entityId);
+        if (!componentClasses) continue;
+
+        for (const componentClass of componentClasses) {
+            const component = world.getComponent(entityId, componentClass);
+            if (!component) continue;
+            let addCompStr = "";
+            // Register paths last. They depend on everything else being defined first
+            if (componentClass.name === 'CablePathComponent') {
+                addCompStr += `    world.addComponent(${varName}, new ${componentClass.name}(`;
+                const jointVars = component.jointEntities.map(id => entityVarMap.get(id)).filter(Boolean);
+                if (jointVars.length !== component.jointEntities.length) {
+                     console.warn(`Could not find variable names for all joints in path ${entityId}`);
+                     addCompStr = `    // Skipped CablePathComponent for ${varName} due to missing joint mapping\n`;
+                } else {
+                    addCompStr += `world, [${jointVars.join(', ')}], `;
+                    addCompStr += `[${component.linkTypes.map(t => `'${t}'`).join(', ')}], `;
+                    addCompStr += `[${component.cw.join(', ')}]`;
+                    // Need to manually set stored and totalRestLength after creation in the test
+                    addCompStr += `));\n`;
+                    addCompStr += `    const pathComp_${varName} = world.getComponent(${varName}, CablePathComponent);\n`;
+                    addCompStr += `    pathComp_${varName}.stored = [${component.stored.join(', ')}];\n`;
+                    addCompStr += `    pathComp_${varName}.totalRestLength = ${component.totalRestLength};\n`;
+                    dump += addCompStr;
+                    continue; // Skip the default closing parenthesis below
+                }
+            }
+            if (!addCompStr.endsWith('\n') && addCompStr !== "") { // Avoid adding extra parenthesis if skipped or handled above
+                addCompStr += '));\n';
+            }
+            dump += addCompStr;
+        }
+        dump += "\n"; // Add a newline between entities
     }
 
     dump += `
