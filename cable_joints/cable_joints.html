@@ -408,7 +408,7 @@ testGeneratedError: {
 
     // Update button text based on initial pause state
     const pauseState = world.getResource('pauseState');
-    pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+    pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
   }
 
 
@@ -471,18 +471,15 @@ testGeneratedError: {
 
   resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    setupScene(); // This now also hides the error area and resets the flag
+    setupScene();
     const pauseState = world.getResource('pauseState');
     if (pauseState) pauseState.paused = true;
-    pauseBtn.textContent = "Resume";
-    pauseBtn.disabled = false; // Re-enable buttons on reset
+    pauseBtn.textContent = "Start";
+    pauseBtn.disabled = false;
     stepBtn.disabled = false;
 
-    // --- Initial render ---
     const initialRenderSystem = world.getResource('renderSystem');
     if (initialRenderSystem) {
-        // Call update directly. dt value doesn't matter much here as RenderSystem
-        // ignores it and runs even if paused. Pass 0 for clarity.
         initialRenderSystem.update(world, 0);
     }
     doStep = false;
@@ -499,15 +496,7 @@ testGeneratedError: {
 
   // --- Start ---
   setupScene();
-
-  // --- Initial render ---
-  const initialRenderSystem = world.getResource('renderSystem');
-  if (initialRenderSystem) {
-      // Call update directly. dt value doesn't matter much here as RenderSystem
-      // ignores it and runs even if paused. Pass 0 for clarity.
-      initialRenderSystem.update(world, 0);
-  }
-
+  world.getResource('renderSystem').update(world, 0);
   requestAnimationFrame(loop);
 
 </script>
