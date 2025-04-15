@@ -335,11 +335,14 @@ class World {
 
   update(dt) {
     const pauseState = this.getResource('pauseState');
+    const errorState = this.getResource('errorState'); // Get error state resource
     const isPaused = pauseState ? pauseState.paused : false;
+    const hasError = errorState ? errorState.hasError : false; // Check error state
 
     for (const system of this.systems) {
-      if (system.update && (!system.runInPause && isPaused)) {
-        continue; // Skip non-pause systems if paused
+      // Skip systems if paused (and system doesn't run in pause) OR if there's an error
+      if (system.update && ((!system.runInPause && isPaused) || hasError)) {
+        continue; // Skip systems if paused or error occurred
       }
       if (system.update) {
         system.update(this, dt);
