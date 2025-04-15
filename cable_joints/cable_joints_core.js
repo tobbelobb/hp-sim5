@@ -725,9 +725,7 @@ class CableAttachmentUpdateSystem {
         joint.restLength += sB;
 
         if (joint.restLength < 0) {
-            // Simple clamping - might need refinement if issues arise
-            console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}), clamping to 0.`);
-            joint.restLength = 0;
+            console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}).`);
         }
 
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
@@ -746,6 +744,7 @@ class CableAttachmentUpdateSystem {
       for (var jointIndex = 0; jointIndex < path.jointEntities.length; jointIndex++) {
         const jointId = path.jointEntities[jointIndex];
         const joint = world.getComponent(jointId, CableJointComponent);
+        const originalJointentityB = joint.entityB;
         if (!joint.isActive) {
           console.warn("An inactive joint seems to be part of a path right now.");
           continue;
@@ -870,25 +869,16 @@ class CableAttachmentUpdateSystem {
             if (totalDist > 1e-9) { // Avoid division by zero if distances are tiny
                 const availableRestLength = originalRestLength - s;
                 if (availableRestLength < 0) {
-                    console.warn(`Split resulted in negative available rest length (${availableRestLength.toFixed(4)}). Clamping.`);
-                    // This might happen if s is large due to tight wrapping.
-                    // Simple clamp for now, might need better handling.
-                    newRestLength1 = 0;
-                    newRestLength2 = 0;
-                } else {
-                    newRestLength1 = availableRestLength * initialDist1 / totalDist;
-                    newRestLength2 = availableRestLength * initialDist2 / totalDist;
+                    console.warn(`Split resulted in negative available rest length (${availableRestLength.toFixed(4)}).`);
                 }
+                newRestLength1 = availableRestLength * initialDist1 / totalDist;
+                newRestLength2 = availableRestLength * initialDist2 / totalDist;
             } else {
                 console.warn("Split occurred with near-zero distance between new segments.");
-                // Assign zero rest lengths if distances are negligible
-                newRestLength1 = 0;
-                newRestLength2 = 0;
             }
 
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
-            console.log(`DEBUG SPLIT: Updating original joint ${jointId} (A=${joint.entityA}, B=${joint.entityB} -> ${splitterId}) attachment B to:`, newAttachmentPointBForJoint.clone()); // Added Debug
             joint.attachmentPointB_world.set(newAttachmentPointBForJoint); // Update endpoint
 
             // Create the new joint (splitter -> entityB)
