@@ -764,7 +764,6 @@ class CableAttachmentUpdateSystem {
             const newJointId = world.createEntity();
 
             const cw = rightOfLine(prevPosSplitter, pA, pB);
-            console.log("rightOfLine: ", cw);
             const linkTypeB = path.linkTypes[jointIndex + 1];
             const entityB = joint.entityB;
             const entityA = joint.entityA;
@@ -929,8 +928,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      //console.log(`stored: ${path.stored}`);
+      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      console.log(`stored: ${path.stored}`);
     }
   }
 }
