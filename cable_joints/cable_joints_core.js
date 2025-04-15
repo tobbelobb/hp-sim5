@@ -888,6 +888,7 @@ class CableAttachmentUpdateSystem {
 
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
+            console.log(`DEBUG SPLIT: Updating original joint ${jointId} (A=${joint.entityA}, B=${joint.entityB} -> ${splitterId}) attachment B to:`, newAttachmentPointBForJoint.clone()); // Added Debug
             joint.attachmentPointB_world.set(newAttachmentPointBForJoint); // Update endpoint
 
             // Create the new joint (splitter -> entityB)
