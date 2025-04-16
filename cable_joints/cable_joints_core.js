@@ -920,12 +920,12 @@ class CableAttachmentUpdateSystem {
         const tension_i = d_i/joint_i.restLength;
         const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
         //if (tension_i > 1.0 || tension_i_plus_1 > 1.0) {
-          //joint_i.restLength = availableRestLength * d_i/totalDist;
-          //joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
+        joint_i.restLength = availableRestLength * d_i/totalDist;
+        joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
           //joint_i.restLength = 0.5*availableRestLength * (d_i/totalDist + l_i/availableRestLength);
           //joint_i_plus_1.restLength = 0.5*availableRestLength * (d_i_plus_1/totalDist + l_i_plus_1/availableRestLength);
         //}
-        console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
+        //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
       }
     }
 
