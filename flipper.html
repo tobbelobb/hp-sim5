@@ -14,13 +14,22 @@
             justify-content: center;
             flex-direction: column;
         }
-        #gameContainer { display: flex; flex-direction: column; align-items: center; }
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90vw; /* Use viewport width */
+            max-width: 600px; /* Max width for larger screens */
+        }
         canvas {
             border: 1px solid black;
-            display: block;
-            margin: 10px auto; /* Center horizontally, keep vertical margin */
+            width: 100%; /* Fill container width */
+            aspect-ratio: 1 / 1.7; /* Maintain aspect ratio (simWidth ~1.0 / simHeight 1.7) */
+            max-height: calc(100vh - 120px); /* Prevent excessive height, leave space for controls */
+            /* display: block; and margin: auto; are no longer needed */
         }
         #controls {
+            width: 100%; /* Ensure controls take full width of container */
             text-align: center;
             margin-bottom: 10px;
             color: white;
@@ -590,26 +599,35 @@
     const resetBtn = document.getElementById("resetBtn");
     const stepBtn = document.getElementById("stepBtn");
 
-    canvas.width = window.innerWidth - 20;
-    canvas.height = window.innerHeight - 100;
-
-    const flipperHeight = 1.7; // Target simulation height for scaling
-    const cScale = canvas.height / flipperHeight;
-    const simWidth = canvas.width / cScale;
-    const simHeight = canvas.height / cScale;
-
+    // --- Global World ---
     let world = new World();
+    let renderSystemInstance = null; // Hold reference to render system
 
+    // --- Scene Setup ---
     function setupScene() {
-         world.clear(); // Clear entities and components
+        world.clear(); // Clear entities and components
+
+        // --- Set Canvas Size from CSS ---
+        // Match drawing buffer size to the CSS display size
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        // --- Calculate Simulation Dimensions & Scale ---
+        const simHeight = 1.7; // Target simulation height remains fixed
+        const cScale = canvas.height / simHeight; // Calculate scale based on actual height
+        const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
+
+        console.log(`Canvas: ${canvas.width}x${canvas.height}, Sim: ${simWidth.toFixed(2)}x${simHeight.toFixed(2)}, Scale: ${cScale.toFixed(2)}`);
+
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -3.0));
         world.setResource('dt', 1.0 / 200.0);
         world.setResource('simWidth', simWidth);
-        world.setResource('simHeight', simHeight);
-        // Create a component for pause state and store it as a resource for easy access
+        world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
+        world.setResource('debugRenderPoints', {}); // Initialize debug points resource
+        world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
 
 
         // --- Entities and Components ---
@@ -795,15 +813,26 @@
              world.registerSystem(new CableAttachmentUpdateSystem());
              world.registerSystem(new PBDCableConstraintSolver());
 
-             // --- Scoring and Rendering ---
-             world.registerSystem(new ScoreSystem());
-             world.registerSystem(new ScoreDisplaySystem('score'));
-             const renderSystem = new RenderSystem2(canvas, cScale, simHeight);
-             world.registerSystem(renderSystem);
-             world.setResource('renderSystem', renderSystem);
-        }
+            // --- Scoring and Rendering ---
+            world.registerSystem(new ScoreSystem());
+            world.registerSystem(new ScoreDisplaySystem('score'));
 
-         // Update button text based on initial pause state
+            // Create or update RenderSystem
+            if (!renderSystemInstance) {
+                renderSystemInstance = new RenderSystem2(canvas, cScale, simHeight);
+                world.registerSystem(renderSystemInstance);
+                world.setResource('renderSystem', renderSystemInstance); // Store for potential access elsewhere
+            } else {
+                // Update existing render system instance with new scale/dimensions if needed
+                renderSystemInstance.cScale = cScale;
+                renderSystemInstance.simHeight = simHeight;
+                // Ensure canvas reference is still correct (should be)
+                // renderSystemInstance.canvas = canvas;
+                // renderSystemInstance.c = canvas.getContext("2d");
+            }
+       }
+
+        // Update button text based on initial pause state
          const pauseState = world.getResource('pauseState');
          pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
     }
