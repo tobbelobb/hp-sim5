@@ -503,6 +503,9 @@ class CableAttachmentUpdateSystem {
         if (linkId !== linkId2) {
           log.warn("Merge loop saw disconnected cable path");
         }
+        if (joint_i.entityA === joint_i_plus_1.entityB) {
+          continue;
+        }
         const isRolling = path.linkTypes[i + 1] === 'rolling';
         if (isRolling) {
           // --- New Merge Condition ---
@@ -716,7 +719,21 @@ class CableAttachmentUpdateSystem {
         joint.restLength += sB;
 
         if (joint.restLength < 0) {
-          console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}).`);
+          console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)})`);
+          if (rollingLinkA && rollingLinkB) {
+            console.warn("Clamping");
+            path.stored[A] = joint.restLength/2.0;
+            path.stored[B] = joint.restLength/2.0;
+            joint.restLength = 0.0;
+          } else if (rollingLinkA) {
+            console.warn("Clamping");
+            path.stored[A] = joint.restLength;
+            joint.restLength = 0.0;
+          } else if (rollingLinkB) {
+            console.warn("Clamping");
+            path.stored[B] = joint.restLength;
+            joint.restLength = 0.0;
+          }
         }
 
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---

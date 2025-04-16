@@ -18,16 +18,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 90vw; /* Use viewport width */
-            max-width: calc(90vh/1.7); /* Max width for larger screens */
+            width: 90vw;
+            max-width: calc(90vh/1.7);
         }
         canvas {
             border: none;
-            width: 100%; /* Fill container width */
+            width: 100%;
             aspect-ratio: 1 / 1.7; /* Maintain aspect ratio (simWidth ~1.0 / simHeight 1.7) */
-            max-height: calc(100vh - 120px); /* Prevent excessive height, leave space for controls */
+            max-height: calc(100vh - 120px);
             margin: auto;
-            /* display: block; and margin: auto; are no longer needed */
         }
         #controls {
             width: 100%; /* Ensure controls take full width of container */
@@ -213,37 +212,6 @@
                 }
                 // Avoid division by zero if dt is tiny
                 state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
-            }
-        }
-    }
-
-    // --- System: Movement ---
-    class MovementSystem2 {
-        runInPause = false;
-        update(world, dt) {
-            // Update linear position
-            const linearEntities = world.query([PositionComponent, VelocityComponent]);
-            for (const entityId of linearEntities) {
-                const posComp = world.getComponent(entityId, PositionComponent);
-                const velComp = world.getComponent(entityId, VelocityComponent);
-                posComp.pos.add(velComp.vel, dt);
-            }
-
-            // Update angular position (orientation)
-            const angularEntities = world.query([OrientationComponent, AngularVelocityComponent]);
-            for (const entityId of angularEntities) {
-                const orientComp = world.getComponent(entityId, OrientationComponent);
-                const angVelComp = world.getComponent(entityId, AngularVelocityComponent);
-
-                // Store previous angle before updating
-                orientComp.prevAngle = orientComp.angle;
-
-                // Update current angle
-                orientComp.angle += angVelComp.angVel * dt;
-
-                // Optional: Normalize angle (e.g., to [0, 2*PI] or [-PI, PI])
-                // orientComp.angle = orientComp.angle % (2 * Math.PI);
-                // if (orientComp.angle < 0) orientComp.angle += 2 * Math.PI;
             }
         }
     }
@@ -623,7 +591,7 @@
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -3.0));
-        world.setResource('dt', 1.0 / 200.0);
+        world.setResource('dt', 1.0 / 150.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -677,7 +645,8 @@
         world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
 
         // Obstacle Entities
-        const obsColor = "#FF8000";
+        const obsColor1 = "#FF8000";
+        const obsColor2 = "#0F7090";
         const obsPush = 2.0;
 
         const obs1 = world.createEntity();
@@ -686,7 +655,7 @@
         world.addComponent(obs1, new MassComponent(-1.0));
         world.addComponent(obs1, new RadiusComponent(0.1));
         world.addComponent(obs1, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs1, new RenderableComponent('circle', obsColor));
+        world.addComponent(obs1, new RenderableComponent('circle', obsColor2));
 
         const obs2 = world.createEntity();
         world.addComponent(obs2, new ObstacleTagComponent());
@@ -694,7 +663,7 @@
         world.addComponent(obs2, new MassComponent(-1.0));
         world.addComponent(obs2, new RadiusComponent(0.1));
         world.addComponent(obs2, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs2, new RenderableComponent('circle', obsColor));
+        world.addComponent(obs2, new RenderableComponent('circle', obsColor2));
 
         const obs3 = world.createEntity();
         world.addComponent(obs3, new ObstacleTagComponent());
@@ -702,7 +671,7 @@
         world.addComponent(obs3, new MassComponent(-1.0));
         world.addComponent(obs3, new RadiusComponent(0.12));
         world.addComponent(obs3, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs3, new RenderableComponent('circle', obsColor));
+        world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
 
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
@@ -710,7 +679,7 @@
         world.addComponent(obs4, new MassComponent(-1.0));
         world.addComponent(obs4, new RadiusComponent(0.1));
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs4, new RenderableComponent('circle', obsColor));
+        world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
 
 
         // Flipper Entities
@@ -747,10 +716,10 @@
         // Connect: ball2 -> obs4 -> obs3 -> ball1
 
         // Add necessary components to obstacles (assuming they act as wheels)
-        world.addComponent(obs4, new OrientationComponent());
         world.addComponent(obs4, new CableLinkComponent());
-        world.addComponent(obs3, new OrientationComponent());
         world.addComponent(obs3, new CableLinkComponent());
+        //world.addComponent(obs2, new CableLinkComponent());
+        //world.addComponent(obs1, new CableLinkComponent());
         world.addComponent(ball1, new CableLinkComponent());
         world.addComponent(ball2, new CableLinkComponent());
 
@@ -806,7 +775,7 @@
              world.registerSystem(new InputSystem(canvas));
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
              world.registerSystem(new GravitySystem());      // Applies gravity acceleration
-             world.registerSystem(new MovementSystem2());     // Updates position based on velocity
+             world.registerSystem(new MovementSystem());     // Updates position based on velocity
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
