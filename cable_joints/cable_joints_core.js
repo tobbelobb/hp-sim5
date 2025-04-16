@@ -618,9 +618,9 @@ class CableAttachmentUpdateSystem {
         // Get components for Entity A using CURRENT positions
         const posAComp = world.getComponent(entityA, PositionComponent);
         const radiusAComp = world.getComponent(entityA, RadiusComponent);
-        // CableLinkComponent is now just a tag, prevPos is in PositionComponent
+        const linkAComp = world.getComponent(entityA, CableLinkComponent);
         const posA = posAComp?.pos;
-        const prevPosA = posAComp?.prevPos; // Get prevPos from PositionComponent
+        const prevPosA = posAComp?.prevPos;
         const radiusA = radiusAComp?.radius;
         const cwA = path.cw[A];
         const attachmentLinkA = path.linkTypes[A] === 'attachment';
@@ -629,9 +629,9 @@ class CableAttachmentUpdateSystem {
         // Get components for Entity B using CURRENT positions
         const posBComp = world.getComponent(entityB, PositionComponent);
         const radiusBComp = world.getComponent(entityB, RadiusComponent);
-        // CableLinkComponent is now just a tag, prevPos is in PositionComponent
+        const linkBComp = world.getComponent(entityB, CableLinkComponent);
         const posB = posBComp?.pos;
-        const prevPosB = posBComp?.prevPos; // Get prevPos from PositionComponent
+        const prevPosB = posBComp?.prevPos;
         const radiusB = radiusBComp?.radius;
         const cwB = path.cw[B];
         const attachmentLinkB = path.linkTypes[B] === 'attachment';
@@ -691,7 +691,7 @@ class CableAttachmentUpdateSystem {
 
         if (tangents !== null) { // Check if tangents were successfully calculated or if it's point-to-point
             if (rollingLinkA) {
-                const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(linkAComp.prevPos);
+                const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(prevPosA);
                 const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
                 sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
             } else {
@@ -699,7 +699,7 @@ class CableAttachmentUpdateSystem {
             }
 
             if (rollingLinkB) {
-                const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(linkBComp.prevPos);
+                const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(prevPosB);
                 const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
                 sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
             } else {
@@ -749,7 +749,7 @@ class CableAttachmentUpdateSystem {
             continue;
           }
           const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
-          const prevPosSplitter = world.getComponent(splitterId, CableLinkComponent).prevPos;
+          const prevPosSplitter = world.getComponent(splitterId, PositionComponent).prevPos;
           const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
           if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
             console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
@@ -937,9 +937,9 @@ class CableAttachmentUpdateSystem {
 
 
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
-    for (const link of linkEntities) {
-      const pos = world.getComponent(link, PositionComponent).pos;
-      world.getComponent(link, CableLinkComponent).prevPos.set(pos);
+    for (const linkId of linkEntities) {
+      const pos = world.getComponent(linkId, PositionComponent).pos;
+      world.getComponent(linkId, PositionComponent).prevPos.set(pos);
     }
 
     // Debugging/test loop 1

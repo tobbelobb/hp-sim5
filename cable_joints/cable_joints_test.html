@@ -374,15 +374,12 @@
         // --- Calculate Initial Cable State ---
         const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
         const link_ball1 = world.getComponent(ball1, CableLinkComponent);
-        link_ball1.prevPos = pos_ball1.clone(); // Set prevPos for consistency
         const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
         const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
         const cw_obs1 = true;
         const link_obs1 = world.getComponent(obs1, CableLinkComponent);
-        link_obs1.prevPos = pos_obs1.clone(); // Set prevPos for consistency
         const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
         const link_ball2 = world.getComponent(ball2, CableLinkComponent);
-        link_ball2.prevPos = pos_ball2.clone(); // Set prevPos for consistency
 
         const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
         const initialPoints2 = tangentFromCircleToPoint(pos_ball2, pos_obs1, radius_obs1, cw_obs1);
