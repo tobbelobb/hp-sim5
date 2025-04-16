@@ -358,7 +358,12 @@ class World {
 
 // --- Components (Plain Data) ---
 
-class PositionComponent { constructor(x = 0, y = 0) { this.pos = new Vector2(x, y); } }
+class PositionComponent {
+  constructor(x = 0, y = 0) {
+    this.pos = new Vector2(x, y);
+    this.prevPos = new Vector2(x, y); // Store previous position here
+  }
+}
 class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
 class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
 class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
@@ -368,7 +373,7 @@ class BallTagComponent { /* Tag component */ }
 class ObstacleTagComponent { /* Tag component */ }
 class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } } // New component for error state
-class CableLinkComponent { constructor(x = 0, y = 0) { this.prevPos = new Vector2(x, y); } }
+class CableLinkComponent { /* Tag component to identify entities that are part of a cable path and can interact */ }
 
 // Represents a single segment constraint between two entities
 class CableJointComponent {
@@ -613,8 +618,9 @@ class CableAttachmentUpdateSystem {
         // Get components for Entity A using CURRENT positions
         const posAComp = world.getComponent(entityA, PositionComponent);
         const radiusAComp = world.getComponent(entityA, RadiusComponent);
-        const linkAComp = world.getComponent(entityA, CableLinkComponent); // Needed for prevPos if rolling
+        // CableLinkComponent is now just a tag, prevPos is in PositionComponent
         const posA = posAComp?.pos;
+        const prevPosA = posAComp?.prevPos; // Get prevPos from PositionComponent
         const radiusA = radiusAComp?.radius;
         const cwA = path.cw[A];
         const attachmentLinkA = path.linkTypes[A] === 'attachment';
@@ -623,8 +629,9 @@ class CableAttachmentUpdateSystem {
         // Get components for Entity B using CURRENT positions
         const posBComp = world.getComponent(entityB, PositionComponent);
         const radiusBComp = world.getComponent(entityB, RadiusComponent);
-        const linkBComp = world.getComponent(entityB, CableLinkComponent); // Needed for prevPos if rolling
+        // CableLinkComponent is now just a tag, prevPos is in PositionComponent
         const posB = posBComp?.pos;
+        const prevPosB = posBComp?.prevPos; // Get prevPos from PositionComponent
         const radiusB = radiusBComp?.radius;
         const cwB = path.cw[B];
         const attachmentLinkB = path.linkTypes[B] === 'attachment';
