@@ -498,7 +498,6 @@ class CableAttachmentUpdateSystem {
         if (linkId !== linkId2) {
           log.warn("Merge loop saw disconnected cable path");
         }
-        //console.log(`was stored: ${path.stored[i+1]}`);
         const isRolling = path.linkTypes[i + 1] === 'rolling';
         if (isRolling) {
           // --- New Merge Condition ---
@@ -531,7 +530,7 @@ class CableAttachmentUpdateSystem {
           const little_stored_and_angle_minimal = radiusComp && storedLength < linkRadius && angle < angleThreshold;
 
           // Complex merge condition
-          if (nothing_stored || little_stored_and_angle_minimal) {
+          if (nothing_stored) {
             console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
             if (angle > 10.0 * Math.PI/180.0) {
               console.warn("angle > 10.0 degrees");
@@ -956,8 +955,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      //console.log(`stored: ${path.stored}`);
+      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      console.log(`stored: ${path.stored}`);
     }
   }
 }
