@@ -716,10 +716,7 @@ class CableAttachmentUpdateSystem {
         joint.restLength += sB;
 
         if (joint.restLength < 0) {
-          console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}). Clamping.`);
-          path.stored[A] += joint.restLength/2.0;
-          path.stored[B] += joint.restLength/2.0;
-          joint.restLength = 0.0;
+          console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)}).`);
         }
 
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
