@@ -19,13 +19,14 @@
             flex-direction: column;
             align-items: center;
             width: 90vw; /* Use viewport width */
-            max-width: 600px; /* Max width for larger screens */
+            max-width: calc(90vh/1.7); /* Max width for larger screens */
         }
         canvas {
-            border: 1px solid black;
+            border: none;
             width: 100%; /* Fill container width */
             aspect-ratio: 1 / 1.7; /* Maintain aspect ratio (simWidth ~1.0 / simHeight 1.7) */
             max-height: calc(100vh - 120px); /* Prevent excessive height, leave space for controls */
+            margin: auto;
             /* display: block; and margin: auto; are no longer needed */
         }
         #controls {
@@ -640,8 +641,8 @@
              new Vector2(0.74, 0.0),
              new Vector2(0.74, 0.25),
              new Vector2(1.0 - offset, 0.4),
-             new Vector2(1.0 - offset, flipperHeight - offset),
-             new Vector2(offset, flipperHeight - offset),
+             new Vector2(1.0 - offset, simHeight - offset),
+             new Vector2(offset, simHeight - offset),
              new Vector2(offset, 0.4),
              new Vector2(0.26, 0.25),
              new Vector2(0.26, 0.0)
