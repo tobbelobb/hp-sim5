@@ -817,7 +817,7 @@ class CableAttachmentUpdateSystem {
             }
 
             // --- Debug Visualization for initialPoints2 ---
-            if (initialPoints2) {
+            if (initialPoints2 && debugPoints) {
                 if (initialPoints2.a_attach) {
                     debugPoints[`split_${jointId}_init2_attach`] = { pos: initialPoints2.a_attach, color: '#FFA500' }; // Orange
                 }

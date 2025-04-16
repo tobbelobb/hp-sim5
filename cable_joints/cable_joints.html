@@ -284,13 +284,10 @@ testGeneratedError: {
     // Need to compute initial attachment points and rest lengths
     // Get relevant components
     const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
-    const link_ball1 = world.getComponent(ball1, CableLinkComponent);
     const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
     const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
     const cw_obs1 = true;
-    const link_obs1 = world.getComponent(obs1, CableLinkComponent);
     const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
-    const link_ball2 = world.getComponent(ball2, CableLinkComponent);
 
     // Calculate initial points for joint1 (ball1 attachment <-> obs1 rolling)
     const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
@@ -356,13 +353,10 @@ testGeneratedError: {
     // Need to compute initial attachment points and rest lengths
     // Get relevant components
     const pos_ball3 = world.getComponent(ball3, PositionComponent).pos;
-    const link_ball3 = world.getComponent(ball3, CableLinkComponent);
     const pos_obs2 = world.getComponent(obs2, PositionComponent).pos;
     const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
     const cw_obs2 = true;
-    const link_obs2 = world.getComponent(obs2, CableLinkComponent);
     const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
-    const link_ball4 = world.getComponent(ball4, CableLinkComponent);
 
     // Calculate initial points for joint1 (ball3 attachment <-> obs2 rolling)
     const initialPoints3 = tangentFromPointToCircle(pos_ball3, pos_obs2, radius_obs2, cw_obs2);

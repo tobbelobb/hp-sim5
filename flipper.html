@@ -3,225 +3,52 @@
 <head>
     <title>ECS Pinball</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #202020; font-family: sans-serif; }
-        canvas { border: 1px solid black; display: block; margin: 10px auto; }
-        #controls { text-align: center; margin-bottom: 10px; }
+        body {
+            margin: 0;
+            overflow-y: auto;
+            background-color: #303030;
+            font-family: sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #gameContainer { display: flex; flex-direction: column; align-items: center; }
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 10px 0;
+        }
+        #controls {
+            text-align: center;
+            margin-bottom: 10px;
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <div id="controls">
-        Score: <span id="score">0</span> |
-        <button id="pauseBtn" tabindex="-1">Pause</button>
-        <button id="resetBtn" tabindex="-1">Reset</button>
-        <button id="stepBtn">Step</button>
+    <div id="gameContainer">
+        <div id="controls">
+            Score: <span id="score">0</span> |
+            <button id="pauseBtn" tabindex="-1">Pause</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+        </div>
+        <canvas id="myCanvas"></canvas>
     </div>
-    <canvas id="myCanvas"></canvas>
-
+<script src="cable_joints/cable_joints_core.js"></script>
 <script>
-
-    // --- Utility: Vector2 ---
-    // (Same as before, keep it separate as it's a fundamental data type)
-    class Vector2 {
-        constructor(x = 0.0, y = 0.0) { this.x = x; this.y = y; }
-        set(v) { this.x = v.x; this.y = v.y; }
-        clone() { return new Vector2(this.x, this.y); }
-        add(v, s = 1.0) { this.x += v.x * s; this.y += v.y * s; return this; }
-        addVectors(a, b) { this.x = a.x + b.x; this.y = a.y + b.y; return this; }
-        subtract(v, s = 1.0) { this.x -= v.x * s; this.y -= v.y * s; return this; }
-        subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
-        length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
-        lengthSq() { return this.x * this.x + this.y * this.y; } // Optimization
-        scale(s) { this.x *= s; this.y *= s; return this; }
-        dot(v) { return this.x * v.x + this.y * v.y; }
-        perp() { return new Vector2(-this.y, this.x); }
-        normalize() { const l = this.length(); if (l > 0) this.scale(1.0 / l); return this; }
-    }
-
-    // --- Utility: Geometry ---
-    function closestPointOnSegment(p, a, b) {
-        const ab = new Vector2().subtractVectors(b, a);
-        const ap = new Vector2().subtractVectors(p, a);
-        let t = ap.dot(ab);
-        if (t <= 0.0) return a.clone();
-        const denom = ab.dot(ab);
-        if (t >= denom) return b.clone();
-        t = t / denom;
-        return a.clone().add(ab, t);
-    }
-
-    // --- ECS Core ---
-    class World {
-        constructor() {
-            this.entities = new Map(); // entityId -> Set<ComponentClass>
-            this.components = new Map(); // ComponentClass -> Map<entityId, ComponentInstance>
-            this.nextEntityId = 0;
-            this.systems = [];
-            this.resources = {}; // Global data like gravity, dt
-        }
-
-        createEntity() {
-            const id = this.nextEntityId++;
-            this.entities.set(id, new Set());
-            return id;
-        }
-
-        addComponent(entityId, component) {
-            const componentClass = component.constructor;
-            if (!this.components.has(componentClass)) {
-                this.components.set(componentClass, new Map());
-            }
-            this.components.get(componentClass).set(entityId, component);
-            if (this.entities.has(entityId)) {
-                this.entities.get(entityId).add(componentClass);
-            } else {
-                 console.warn(`Entity ${entityId} does not exist when adding ${componentClass.name}`);
-            }
-        }
-
-        getComponent(entityId, componentClass) {
-            const componentMap = this.components.get(componentClass);
-            return componentMap ? componentMap.get(entityId) : undefined;
-        }
-
-        hasComponent(entityId, componentClass) {
-             const componentMap = this.components.get(componentClass);
-             return componentMap ? componentMap.has(entityId) : false;
-        }
-
-        removeComponent(entityId, componentClass) {
-             const componentMap = this.components.get(componentClass);
-             if (componentMap) {
-                 componentMap.delete(entityId);
-             }
-             const entityComponents = this.entities.get(entityId);
-             if (entityComponents) {
-                 entityComponents.delete(componentClass);
-             }
-        }
-
-        destroyEntity(entityId) {
-            if (!this.entities.has(entityId)) return;
-            for (const componentClass of this.entities.get(entityId)) {
-                this.removeComponent(entityId, componentClass);
-            }
-            this.entities.delete(entityId);
-        }
-
-        query(componentClasses) {
-            const entities = [];
-            if (componentClasses.length === 0) return [];
-
-            // Start with entities having the first component
-            const firstComponentMap = this.components.get(componentClasses[0]);
-            if (!firstComponentMap) return [];
-
-            for (const entityId of firstComponentMap.keys()) {
-                let hasAll = true;
-                for (let i = 1; i < componentClasses.length; i++) {
-                    if (!this.hasComponent(entityId, componentClasses[i])) {
-                        hasAll = false;
-                        break;
-                    }
-                }
-                if (hasAll) {
-                    entities.push(entityId);
-                }
-            }
-            return entities;
-        }
-
-        registerSystem(system) {
-            this.systems.push(system);
-        }
-
-        setResource(name, value) {
-            this.resources[name] = value;
-        }
-
-        getResource(name) {
-            return this.resources[name];
-        }
-
-        clear() {
-             this.entities.clear();
-             this.components.clear();
-             this.nextEntityId = 0;
-             // Keep systems and resources usually
-        }
-
-        update(dt) {
-            const pauseState = this.getResource('pauseState');
-            const isPaused = pauseState ? pauseState.paused : false;
-
-            for (const system of this.systems) {
-                if (system.update && (!system.runInPause && isPaused)) {
-                    continue; // Skip non-pause systems if paused
-                }
-                 if (system.update) {
-                    system.update(this, dt);
-                 }
-            }
-            canvas.focus();
-        }
-    }
-
-    // --- Components (Plain Data) ---
-
-    class PositionComponent { constructor(x = 0, y = 0) { this.pos = new Vector2(x, y); } }
-    class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
-    class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
-    class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
-    class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
-    class GravityAffectedComponent { /* Tag component */ }
-    class BallTagComponent { /* Tag component */ }
-    class ScoredTagComponent { /* Tag component */ }
-    class ObstacleTagComponent { /* Tag component */ }
-    class FlipperTagComponent { /* Tag component */ }
-    class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
-    class ScoreComponent { constructor(score = 0) { this.value = score; } }
-    class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
     class OrientationComponent {
         constructor(angle = 0.0) {
             this.angle = angle; // Current angle in radians
             this.prevAngle = angle; // Angle at the start of the timestep
         }
     }
-    class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
-    class InertiaComponent { constructor(inertia = Infinity) { this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0; } } // Store inverse inertia
-    class WheelOrientationComponent { constructor(clockwisePreference = true) { this.clockwisePreference = clockwisePreference; } } // For tangent selection (Fig 3/4)
-
-    // Defines how a cable interacts with this entity at a specific point
-    class CableLinkComponent {
-        constructor(type = 'attachment', spoolLength = 0.0) {
-            this.type = type; // 'rolling', 'attachment', 'pinhole', 'hybrid'
-            this.spoolLength = spoolLength; // Remaining length for hybrid/spool types
-            // Cache previous world attachment point to calculate surface distance travelled (s1/s2)
-            this.prevAttachmentPointWorld = new Vector2();
-            this.currentAttachmentPointLocal = new Vector2(); // Updated by CableAttachmentUpdateSystem
-        }
-    }
-
-    // Represents a single segment constraint between two entities
-    class CableJointComponent {
-        constructor(entityA, entityB, restLength = 1.0) {
-            this.entityA = entityA;
-            this.entityB = entityB;
-            this.restLength = restLength; // dn - the dynamic maximum length
-            this.isActive = true; // For merge/split logic
-            // Cache world attachment points calculated by CableAttachmentUpdateSystem
-            this.attachmentPointA_world = new Vector2();
-            this.attachmentPointB_world = new Vector2();
-        }
-    }
-
-    // Represents the entire cable path
-    class CablePathComponent {
-        constructor(jointEntities = []) {
-            this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
-        }
-    }
-
-
+    class ScoreComponent { constructor(score = 0) { this.value = score; } }
+    class FlipperTagComponent { }
+    class ScoredTagComponent { }
+    class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
     class FlipperStateComponent {
         constructor(length, restAngle, maxRotation, angularVelocity) {
             this.length = length;
@@ -235,19 +62,9 @@
             this.pressed = false; // Was it activated?
         }
     }
-
+    class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 
-
-    // Render-specific component (could be more complex)
-    class RenderableComponent {
-        constructor(shape = 'circle', color = '#888888') {
-            this.shape = shape; // 'circle', 'flipper', 'border'
-            this.color = color;
-        }
-    }
-
-    // --- Systems (Logic) ---
 
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
@@ -390,23 +207,8 @@
         }
     }
 
-    // --- System: Gravity ---
-    class GravitySystem {
-        runInPause = false;
-        update(world, dt) {
-            const gravity = world.getResource('gravity');
-            if (!gravity) return;
-
-            const entities = world.query([VelocityComponent, GravityAffectedComponent]);
-            for (const entityId of entities) {
-                const velComp = world.getComponent(entityId, VelocityComponent);
-                velComp.vel.add(gravity, dt);
-            }
-        }
-    }
-
     // --- System: Movement ---
-    class MovementSystem {
+    class MovementSystem2 {
         runInPause = false;
         update(world, dt) {
             // Update linear position
@@ -435,647 +237,6 @@
             }
         }
     }
-
-
-    // --- System: Cable Attachment Update ---
-    // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
-    class CableAttachmentUpdateSystem {
-        runInPause = false; // Physics system
-
-        // Helper: Calculate tangent points between two circles (Algorithm 4 from paper)
-        _tangentCircleCircle(p1, r1, wheelOrientation1, p2, r2, wheelOrientation2) {
-            const dVec = new Vector2().subtractVectors(p2, p1);
-            const dSq = dVec.lengthSq();
-            const d = Math.sqrt(dSq);
-
-            // Determine effective radii based on orientation matching
-            let r, r_eff1, r_eff2;
-            const orientationsEqual = wheelOrientation1.clockwisePreference === wheelOrientation2.clockwisePreference;
-            if (orientationsEqual) {
-                r = Math.abs(r2 - r1); // Difference for same winding
-                r_eff1 = r1;
-                r_eff2 = r2;
-            } else {
-                r = r1 + r2; // Sum for opposite winding
-                r_eff1 = r1;
-                r_eff2 = -r2; // Effectively flips the second radius sign for calculation
-            }
-
-            if (d <= r + 1e-6) { // Add tolerance for floating point
-                 // Circles overlapping or tangent internally/externally in a way that doesn't allow the desired tangent
-                 console.warn("Cable tangent calculation: Circles too close or overlapping. d=", d, "r=", r);
-                 const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0); // Avoid normalizing zero vector
-                 return {
-                     a1: p1.clone().add(dir, r1),
-                     a2: p2.clone().add(dir, -r2) // Move p2's point back along the center line
-                 };
-            }
-
-
-            // Angle of the line connecting centers
-            let alpha = Math.atan2(dVec.y, dVec.x);
-            // Angle offset due to radii difference/sum
-            const phi = Math.acos(r / d); // Use acos as per paper's geometry implied by Fig 3/4 logic
-
-            let alpha1, alpha2;
-
-            // Calculate angles based on relative orientations (Paper Appendix Alg 4 logic)
-            if (orientationsEqual) {
-                if (wheelOrientation1.clockwisePreference) {
-                    alpha1 = alpha + phi;
-                    alpha2 = alpha - phi + Math.PI;
-                } else {
-                    alpha1 = alpha + phi;
-                    alpha2 = alpha + phi;
-                }
-            } else {
-                 if (wheelOrientation1.clockwisePreference) { // C1 CW, C2 CCW
-                    alpha1 = alpha + phi;
-                    alpha2 = alpha - phi;
-                } else { // C1 CCW, C2 CW
-                    alpha1 = alpha - phi;
-                    alpha2 = alpha - phi + Math.PI;
-                }
-            }
-
-
-            // Calculate attachment points using the angles
-            const a1 = new Vector2(p1.x + r1 * Math.cos(alpha1), p1.y + r1 * Math.sin(alpha1));
-            const a2 = new Vector2(p2.x + r2 * Math.cos(alpha2), p2.y + r2 * Math.sin(alpha2)); // Use original r2
-
-            return { a1, a2 };
-        }
-
-        // Helper: Calculate tangent points between a point and a circle (Algorithm 3 from paper)
-        _tangentPointCircle(p_attach, p_circle, r_circle, wheelOrientation) {
-            const dVec = new Vector2().subtractVectors(p_circle, p_attach);
-            const dSq = dVec.lengthSq();
-
-            if (dSq <= r_circle * r_circle + 1e-9) {
-                console.warn("Cable tangent calculation: Attachment point inside or on rolling circle.");
-                const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0);
-                return {
-                    a_attach: p_attach.clone(),
-                    a_circle: p_circle.clone().add(dir, r_circle)
-                };
-            }
-
-            const d = Math.sqrt(dSq);
-            const alpha = Math.atan2(dVec.y, dVec.x);
-            const phi = Math.asin(r_circle / d);
-
-            let tangent_point_angle_on_circle;
-            if (wheelOrientation.clockwisePreference) { // Prefers CW wrapping
-                 tangent_point_angle_on_circle = alpha + phi + Math.PI/2;
-            } else {
-                 tangent_point_angle_on_circle = alpha - phi - Math.PI/2;
-            }
-
-            const a_circle = new Vector2(
-                p_circle.x + r_circle * Math.cos(tangent_point_angle_on_circle),
-                p_circle.y + r_circle * Math.sin(tangent_point_angle_on_circle)
-            );
-
-            return {
-                a_attach: p_attach.clone(), // Attachment point doesn't change
-                a_circle: a_circle          // Calculated tangent point on the circle
-            };
-        }
-
-
-        _signedArcLength(radius, deltaAngle) {
-             return radius * deltaAngle;
-        }
-
-
-        update(world, dt) {
-            const jointEntities = world.query([CableJointComponent]);
-
-            for (const jointId of jointEntities) {
-                const joint = world.getComponent(jointId, CableJointComponent);
-                if (!joint.isActive) continue;
-
-                const entityA = joint.entityA;
-                const entityB = joint.entityB;
-
-                // Get components for Entity A
-                const posA = world.getComponent(entityA, PositionComponent)?.pos;
-                const orientCompA = world.getComponent(entityA, OrientationComponent); // Needed for s1 calc
-                const radiusA = world.getComponent(entityA, RadiusComponent)?.radius; // Assume circle for now
-                const wheelOrientA = world.getComponent(entityA, WheelOrientationComponent); // Assume exists if rolling
-                const linkA = world.getComponent(entityA, CableLinkComponent);
-
-                // Get components for Entity B
-                const posB = world.getComponent(entityB, PositionComponent)?.pos;
-                const orientCompB = world.getComponent(entityB, OrientationComponent); // Needed for s2 calc
-                const radiusB = world.getComponent(entityB, RadiusComponent)?.radius; // Assume circle for now
-                const wheelOrientB = world.getComponent(entityB, WheelOrientationComponent); // Assume exists if rolling
-                const linkB = world.getComponent(entityB, CableLinkComponent);
-
-                if (!posA || !linkA || !posB || !linkB) {
-                    console.warn(`CableJoint ${jointId} missing required components on entities ${entityA} or ${entityB}`);
-                    continue;
-                }
-
-                const prevAttachA_world = linkA.prevAttachmentPointWorld.clone();
-                const prevAttachB_world = linkB.prevAttachmentPointWorld.clone();
-
-                let attachmentA_current, attachmentB_current;
-                let s1 = 0.0; // Signed distance travelled on surface A (+ve CCW, -ve CW)
-                let s2 = 0.0; // Signed distance travelled on surface B (+ve CCW, -ve CW)
-
-                // --- Calculate Current Attachment Points ---
-                if (linkA.type === 'rolling' && linkB.type === 'rolling' && radiusA && wheelOrientA && radiusB && wheelOrientB) {
-                    // --- Rolling <-> Rolling (Circle-Circle Tangent) ---
-                    const tangents = this._tangentCircleCircle(posA, radiusA, wheelOrientA, posB, radiusB, wheelOrientB);
-                    attachmentA_current = tangents.a1;
-                    attachmentB_current = tangents.a2;
-
-                    if (orientCompA) {
-                        let deltaAngleA = orientCompA.angle - orientCompA.prevAngle;
-                        s1 = this._signedArcLength(radiusA, deltaAngleA); // Signed arc length based on body rotation
-                    } else { s1 = 0; } // No orientation component, no rotation contribution
-
-                     if (orientCompB) {
-                        let deltaAngleB = orientCompB.angle - orientCompB.prevAngle;
-                        s2 = this._signedArcLength(radiusB, deltaAngleB); // Signed arc length based on body rotation
-                    } else { s2 = 0; }
-                } else if (linkA.type === 'attachment' && linkB.type === 'rolling' && radiusB && wheelOrientB && orientCompB) {
-                    // --- Attachment <-> Rolling ---
-                    const tangents = this._tangentPointCircle(posA, posB, radiusB, wheelOrientB);
-                    attachmentA_current = tangents.a_attach; // This is just posA
-                    attachmentB_current = tangents.a_circle;
-                    s1 = 0; // No surface travel on attachment point A
-
-                    if (orientCompB) {
-                        let deltaAngleB = orientCompB.angle - orientCompB.prevAngle;
-                        s2 = this._signedArcLength(radiusB, deltaAngleB);
-                    } else {
-                        s2 = 0;
-                    }
-
-                } else if (linkA.type === 'rolling' && linkB.type === 'attachment' && radiusA && wheelOrientA && orientCompA) {
-                     // --- Rolling <-> Attachment ---
-                     const tangents = this._tangentPointCircle(posB, posA, radiusA, !wheelOrientA); // Note order swap
-                     attachmentA_current = tangents.a_circle; // Tangent on circle A
-                     attachmentB_current = tangents.a_attach; // This is just posB
-                     s2 = 0; // No surface travel on attachment point B
-
-                     if (orientCompA) {
-                        let deltaAngleA = orientCompA.angle - orientCompA.prevAngle;
-                        s1 = this._signedArcLength(radiusA, deltaAngleA);
-                    } else {
-                        s1 = 0;
-                    }
-                } else if (linkA.type === 'attachment' && linkB.type === 'attachment') {
-                    // --- Attachment <-> Attachment ---
-                    attachmentA_current = posA.clone(); // Attach at center
-                    attachmentB_current = posB.clone();
-                    s1 = 0;
-                    s2 = 0;
-
-                } else {
-                    // --- Other combinations (Pinhole, Hybrid, General Shapes) ---
-                    console.warn(`CableAttachmentUpdateSystem: Unsupported link type combination for joint ${jointId}`);
-                    attachmentA_current = posA.clone(); // Fallback
-                    attachmentB_current = posB.clone(); // Fallback
-                    s1 = 0;
-                    s2 = 0;
-                }
-
-                let s1_effect = 0;
-                let s2_effect = 0;
-
-                if (linkA.type === 'rolling' && wheelOrientA) {
-                    s1_effect = s1 * (wheelOrientA.clockwisePreference ? -1.0 : 1.0);
-                }
-
-                if (linkB.type === 'rolling' && wheelOrientB) {
-                     s2_effect = s2 * (wheelOrientB.clockwisePreference ? 1.0 : -1.0);
-                     const orientationsEqual = wheelOrientA && wheelOrientB && (wheelOrientA.clockwisePreference === wheelOrientB.clockwisePreference);
-                     if (linkA.type === 'rolling' && linkB.type === 'rolling') {
-                         if (!orientationsEqual) {
-                             s2_effect *= -1.0; // Flip effect for internal tangents relative to s1
-                         }
-                     } else if (linkA.type === 'attachment') {
-                         s1_effect = 0; // No change from attachment
-                     } else if (linkB.type === 'attachment') {
-                         s2_effect = 0; // No change from attachment
-                     }
-                }
-
-                joint.restLength += s1_effect + s2_effect;
-
-                // Ensure rest length doesn't go negative (unless intended for spools)
-                if (joint.restLength < 0) joint.restLength = 0;
-
-
-                // Store calculated world attachment points in the joint component for the solver
-                joint.attachmentPointA_world.set(attachmentA_current);
-                joint.attachmentPointB_world.set(attachmentB_current);
-
-                // Initialize prevAttachmentPointWorld on first run *after* calculating current points
-                if (prevAttachA_world.lengthSq() === 0) {
-                    linkA.prevAttachmentPointWorld.set(attachmentA_current);
-                } else {
-                    // Store current points for next frame (only if not first run)
-                    linkA.prevAttachmentPointWorld.set(attachmentA_current);
-                }
-                 if (prevAttachB_world.lengthSq() === 0) {
-                    linkB.prevAttachmentPointWorld.set(attachmentB_current);
-                } else {
-                     linkB.prevAttachmentPointWorld.set(attachmentB_current);
-                }
-            }
-        }
-    }
-
-
-    // --- System: Cable Pinhole System ---
-    // Balances rest lengths across pinholes (Algorithm 1, lines 9-15)
-    class CablePinholeSystem {
-         runInPause = false;
-
-         update(world, dt) {
-             // Query for pinhole links. Need CablePathComponent to easily find adjacent joints.
-             const cablePaths = world.query([CablePathComponent]);
-             if (cablePaths.length === 0) return; // No paths defined
-
-             // Iterate through all defined cable paths
-             for (const pathId of cablePaths) {
-                 const pathComp = world.getComponent(pathId, CablePathComponent);
-                 const joints = pathComp.jointEntities;
-
-                 // Iterate through the path looking for pinholes by checking link types at connection points
-                 for (let i = 0; i < joints.length - 1; i++) {
-                     const jointLeftId = joints[i];
-                     const jointRightId = joints[i+1];
-
-                     const jointLeft = world.getComponent(jointLeftId, CableJointComponent);
-                     const jointRight = world.getComponent(jointRightId, CableJointComponent);
-
-                     if (!jointLeft || !jointRight || !jointLeft.isActive || !jointRight.isActive) continue;
-
-                     // The entity connecting these two joints is the potential pinhole
-                     const potentialPinholeEntity = jointLeft.entityB; // Assumes joint connects A->B, B->C
-                     if (potentialPinholeEntity !== jointRight.entityA) {
-                          console.warn("Cable path inconsistency detected near joint", jointLeftId);
-                          continue; // Skip if joints aren't connected as expected
-                     }
-
-                     const pinholeLink = world.getComponent(potentialPinholeEntity, CableLinkComponent);
-                     if (!pinholeLink || pinholeLink.type !== 'pinhole') continue; // Not a pinhole connection
-
-                     // --- Found a Pinhole: Apply Algorithm 1 logic ---
-
-                     // Get current distances (d) - calculated using current attachment points from previous system
-                     // Ensure attachment points are valid before calculating length
-                     if (jointLeft.attachmentPointA_world.lengthSq() === 0 || jointLeft.attachmentPointB_world.lengthSq() === 0 ||
-                         jointRight.attachmentPointA_world.lengthSq() === 0 || jointRight.attachmentPointB_world.lengthSq() === 0) {
-                         console.warn(`Pinhole ${potentialPinholeEntity}: Skipping due to uninitialized attachment points on joints ${jointLeftId} or ${jointRightId}`);
-                         continue;
-                     }
-
-                     const d_left = jointLeft.attachmentPointB_world.clone().subtract(jointLeft.attachmentPointA_world).length();
-                     const d_right = jointRight.attachmentPointB_world.clone().subtract(jointRight.attachmentPointA_world).length();
-
-                     // Get rest lengths (dn)
-                     const dn_left = jointLeft.restLength;
-                     const dn_right = jointRight.restLength;
-
-                     // Algorithm 1, lines 11 & 13 logic: Transfer overstretch
-                     const overstretch_left = d_left - dn_left;
-                     const overstretch_right = d_right - dn_right;
-
-                     let adjustment = 0;
-                     const tolerance = 1e-6; // Tolerance for floating point comparisons
-
-                     // If left side is tight (overstretched) and right has slack (or less overstretched)
-                     if (overstretch_left > tolerance) {
-                         // Amount to potentially transfer from right's slack or length
-                         // Transfer amount is the overstretch, but capped by the available length on the other side
-                         const transferAmount = Math.min(overstretch_left, Math.max(0, dn_right)); // Don't make dn_right negative
-                         adjustment = transferAmount;
-                     }
-                     // If right side is tight (overstretched) and left has slack (or less overstretched)
-                     else if (overstretch_right > tolerance) {
-                          // Amount to potentially transfer from left's slack or length
-                          const transferAmount = Math.min(overstretch_right, Math.max(0, dn_left)); // Don't make dn_left negative
-                          adjustment = -transferAmount; // Negative because we transfer from left to right
-                     }
-
-                     // Apply the adjustment atomically if significant
-                     if (Math.abs(adjustment) > 1e-9) {
-                        jointLeft.restLength += adjustment;
-                        jointRight.restLength -= adjustment;
-                        // Clamp rest lengths to avoid negative values due to floating point errors
-                        if (jointLeft.restLength < 0) jointLeft.restLength = 0;
-                        if (jointRight.restLength < 0) jointRight.restLength = 0;
-                     }
-                 }
-             }
-         }
-    }
-
-
-    // --- System: PBD Constraint Solver ---
-    // Handles both Collisions and Cable Joint constraints using PBD
-    class PBDConstraintSolverSystem {
-        runInPause = false;
-
-        // --- Helper Functions (Keep existing ones) ---
-        _getFlipperTip(flipperPos, flipperState) {
-             const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
-             const dir = new Vector2(Math.cos(angle), Math.sin(angle));
-             return flipperPos.clone().add(dir, flipperState.length);
-        }
-
-        update(world, dt) {
-            const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
-            const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
-            const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
-            const borderEntities = world.query([BorderComponent]); // Should be only one
-
-            // --- Ball-Ball Collisions ---
-            for (let i = 0; i < ballEntities.length; i++) {
-                for (let j = i + 1; j < ballEntities.length; j++) {
-                    const e1 = ballEntities[i];
-                    const e2 = ballEntities[j];
-
-                    const p1 = world.getComponent(e1, PositionComponent).pos;
-                    const v1 = world.getComponent(e1, VelocityComponent).vel;
-                    const r1 = world.getComponent(e1, RadiusComponent).radius;
-                    const m1 = world.getComponent(e1, MassComponent).mass;
-                    const res1 = world.getComponent(e1, RestitutionComponent).restitution;
-
-                    const p2 = world.getComponent(e2, PositionComponent).pos;
-                    const v2 = world.getComponent(e2, VelocityComponent).vel;
-                    const r2 = world.getComponent(e2, RadiusComponent).radius;
-                    const m2 = world.getComponent(e2, MassComponent).mass;
-                    const res2 = world.getComponent(e2, RestitutionComponent).restitution;
-
-                    const restitution = Math.min(res1, res2);
-                    const dir = new Vector2().subtractVectors(p2, p1);
-                    const dSq = dir.lengthSq();
-                    const rSum = r1 + r2;
-
-                    if (dSq == 0.0 || dSq > rSum * rSum) continue;
-
-                    const d = Math.sqrt(dSq);
-                    dir.scale(1.0 / d); // Normalize
-
-                    // Resolve penetration
-                    const corr = (rSum - d) / 2.0;
-                    p1.add(dir, -corr);
-                    p2.add(dir, corr);
-
-                    // Resolve velocity
-                    const vel1_dot = v1.dot(dir);
-                    const vel2_dot = v2.dot(dir);
-
-                    const newV1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2);
-                    const newV2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2);
-
-                    v1.add(dir, newV1_dot - vel1_dot);
-                    v2.add(dir, newV2_dot - vel2_dot);
-                }
-            }
-
-            // --- Ball-Obstacle Collisions ---
-             for (const ballId of ballEntities) {
-                const p1 = world.getComponent(ballId, PositionComponent).pos;
-                const v1 = world.getComponent(ballId, VelocityComponent).vel;
-                const r1 = world.getComponent(ballId, RadiusComponent).radius;
-
-                 for (const obsId of obstacleEntities) {
-                     const p2 = world.getComponent(obsId, PositionComponent).pos;
-                     const r2 = world.getComponent(obsId, RadiusComponent).radius;
-                     const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
-
-                     const dir = new Vector2().subtractVectors(p1, p2);
-                     const dSq = dir.lengthSq();
-                     const rSum = r1 + r2;
-
-                     if (dSq == 0.0 || dSq > rSum * rSum) continue;
-
-                     const d = Math.sqrt(dSq);
-                     dir.scale(1.0 / d); // Normalize
-
-                     // Resolve penetration
-                     const corr = rSum - d;
-                     p1.add(dir, corr);
-
-                     // Resolve velocity (simple push)
-                     const v_dot = v1.dot(dir);
-                     v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
-
-                     // Add ScoredTagComponent to the ball that scored
-                     world.addComponent(ballId, new ScoredTagComponent());
-                 }
-             }
-
-
-             // --- Ball-Flipper Collisions ---
-            for (const ballId of ballEntities) {
-                const p1 = world.getComponent(ballId, PositionComponent).pos;
-                const v1 = world.getComponent(ballId, VelocityComponent).vel;
-                const r1 = world.getComponent(ballId, RadiusComponent).radius;
-                // Ball restitution handled in border/ball-ball
-
-                 for (const flipId of flipperEntities) {
-                     const fp = world.getComponent(flipId, PositionComponent).pos;
-                     const fr = world.getComponent(flipId, RadiusComponent).radius; // Flipper thickness/radius
-                     const fs = world.getComponent(flipId, FlipperStateComponent);
-                     // Note: Flipper restitution isn't used in the original logic this way,
-                     // it simply imparts surface velocity. We'll stick to that.
-
-                     const tip = this._getFlipperTip(fp, fs);
-                     const closest = closestPointOnSegment(p1, fp, tip);
-
-                     const dir = new Vector2().subtractVectors(p1, closest);
-                     const dSq = dir.lengthSq();
-                     const rSum = r1 + fr;
-
-                     if (dSq == 0.0 || dSq > rSum * rSum) continue;
-
-                     const d = Math.sqrt(dSq);
-                     dir.scale(1.0 / d); // Normalize
-
-                     // Resolve penetration
-                     const corr = rSum - d;
-                     p1.add(dir, corr);
-
-                     // Resolve velocity - Calculate surface velocity at contact point
-                     const radiusVec = closest.clone().subtract(fp); // Vector from pivot to contact point
-                     // Add the penetration correction offset relative to the pivot
-                     const contactPointOnFlipperSurface = fp.clone().add(radiusVec).add(dir, -fr); // Approx point on flipper surface
-                     const radiusToSurface = contactPointOnFlipperSurface.subtract(fp);
-
-
-                     // Velocity of the flipper surface at the contact point = w x r (angular velocity cross radius vector)
-                     // In 2D, (0,0,w) x (rx, ry, 0) = (-w*ry, w*rx, 0)
-                     const surfaceVel = new Vector2(-fs.currentAngularVelocity * radiusToSurface.y, fs.currentAngularVelocity * radiusToSurface.x);
-
-                     // Project ball velocity and surface velocity onto the collision normal
-                     const v_dot = v1.dot(dir);
-                     const surfVel_dot = surfaceVel.dot(dir);
-
-                     // Simple model: Make the ball's normal velocity match the flipper's surface normal velocity
-                     // This effectively means v_new_dot = surfVel_dot
-                     // More physically plausible might involve restitution e = (v_new_dot - surfVel_dot) / (surfVel_dot - v_dot)
-                     // But sticking to original logic:
-                     v1.add(dir, surfVel_dot - v_dot);
-
-                 }
-            }
-
-            // --- Ball-Border Collisions ---
-             if (borderEntities.length > 0) {
-                 const borderId = borderEntities[0]; // Assume only one border
-                 const borderComp = world.getComponent(borderId, BorderComponent);
-                 const borderPoints = borderComp.points;
-
-                 if (borderPoints.length >= 3) {
-                     for (const ballId of ballEntities) {
-                         const p1 = world.getComponent(ballId, PositionComponent).pos;
-                         const v1 = world.getComponent(ballId, VelocityComponent).vel;
-                         const r1 = world.getComponent(ballId, RadiusComponent).radius;
-                         const res1 = world.getComponent(ballId, RestitutionComponent).restitution;
-
-                         let minDistSq = Infinity;
-                         let closestSegPoint = new Vector2();
-                         let edgeNormal = new Vector2();
-                         let edgeStart = null;
-                         let edgeEnd = null;
-
-                         // Find closest point on the entire border polygon
-                         for (let i = 0; i < borderPoints.length; i++) {
-                             const a = borderPoints[i];
-                             const b = borderPoints[(i + 1) % borderPoints.length];
-                             const closestPtOnSeg = closestPointOnSegment(p1, a, b);
-                             const distSq = p1.clone().subtract(closestPtOnSeg).lengthSq();
-
-                             if (distSq < minDistSq) {
-                                 minDistSq = distSq;
-                                 closestSegPoint.set(closestPtOnSeg);
-                                 edgeStart = a;
-                                 edgeEnd = b;
-                             }
-                         }
-
-                         if (minDistSq > r1 * r1) continue; // Not colliding
-
-                         // Calculate normal (outward-pointing assuming clockwise vertices)
-                         const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
-                         const normal = edgeVec.perp().normalize(); // Points outwards for CW polygon
-
-                         // Check if the ball center is outside the border (it should be!)
-                         // If the closest point is a vertex, the normal needs careful handling,
-                         // but for simple penetration resolution, using the segment normal is often okay.
-                         const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
-                         let collisionNormal = ballToClosest.clone();
-                         if (collisionNormal.lengthSq() < 1e-9) {
-                             // Ball center is exactly on the border segment, use edge normal
-                             collisionNormal.set(normal);
-                         } else {
-                              collisionNormal.normalize();
-                         }
-
-
-                         // Ensure normal points from border towards ball
-                         // Check if ball is roughly 'inside' the normal direction from the closest point
-                         if (ballToClosest.dot(normal) < 0) {
-                            // Ball might be inside corner, use segment normal but check distance
-                            collisionNormal.set(normal); // Use segment normal for resolution
-                         }
-
-
-                         const dist = Math.sqrt(minDistSq);
-
-                         // Resolve penetration
-                         const penetration = r1 - dist;
-                         if (penetration > 0) {
-                             p1.add(collisionNormal, penetration);
-                         }
-
-                         // Resolve velocity
-                         const v_dot = v1.dot(collisionNormal);
-                         if (v_dot < 0) { // Only apply restitution if moving towards the wall
-                             const v_new_dot = -v_dot * res1; // Reflect velocity component
-                             v1.add(collisionNormal, v_new_dot - v_dot);
-                         }
-                     }
-                 }
-            } // end Ball-Border Collisions
-
-
-            // --- Cable Joint Constraints ---
-            const jointEntities = world.query([CableJointComponent]);
-            for (const jointId of jointEntities) {
-                const joint = world.getComponent(jointId, CableJointComponent);
-                if (!joint.isActive) continue;
-
-                const entityA = joint.entityA;
-                const entityB = joint.entityB;
-
-                // Get components (Position, Mass are essential for PBD)
-                const posA = world.getComponent(entityA, PositionComponent)?.pos;
-                const massA = world.getComponent(entityA, MassComponent)?.mass;
-                const posB = world.getComponent(entityB, PositionComponent)?.pos;
-                const massB = world.getComponent(entityB, MassComponent)?.mass;
-
-                if (!posA || !massA || !posB || !massB) {
-                    console.warn(`CableJoint ${jointId} constraint skipped: Missing Pos/Mass on entities ${entityA} or ${entityB}`);
-                    continue;
-                }
-
-                const invMassA = massA > 0 ? 1.0 / massA : 0.0;
-                const invMassB = massB > 0 ? 1.0 / massB : 0.0;
-                const totalInvMass = invMassA + invMassB;
-
-                if (totalInvMass <= 0.0) {
-                  continue; // Both objects immovable
-                }
-
-                // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
-                const pAttachA = joint.attachmentPointA_world;
-                const pAttachB = joint.attachmentPointB_world;
-
-                const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
-                const currentDist = dir.length();
-                const restLength = joint.restLength; // dn
-
-                // Constraint: currentDist <= restLength
-                if (currentDist > restLength) {
-                    const error = currentDist - restLength;
-                    console.log(error);
-                    dir.normalize(); // Normalize direction vector
-                    const correction = dir.scale(error / totalInvMass);
-
-                    // Calculate the displacement vectors (Standard PBD)
-                    const deltaA = dir.clone().scale((invMassA / totalInvMass) * error);
-                    const deltaB = dir.clone().scale(-(invMassB / totalInvMass) * error);
-
-                    // Apply displacement to the entity positions.
-                    // This assumes the attachment point moves rigidly with the center.
-                    // A more correct PBD solver would handle angular effects.
-                    posA.add(deltaA);
-                    posB.add(deltaB);
-
-
-                    // If handling rotation, the correction needs to be applied differently:
-                    // deltaPosA = invMassA * correction_impulse
-                    // deltaPosB = -invMassB * correction
-                    // deltaRotA = invInertiaA * cross(radiusVecA, correction)
-                    // deltaRotB = -invInertiaB * cross(radiusVecB, correction)
-                    // This requires InertiaComponent and OrientationComponent updates.
-                }
-            } // end Cable Joint Constraints
-
-
-        } // end update
-    }
-
 
     class ScoreSystem {
         runInPause = false;
@@ -1110,8 +271,194 @@
         }
     }
 
+    class PBDBallFlipperCollisions {
+      _getFlipperTip(flipperPos, flipperState) {
+        const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+        const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+        return flipperPos.clone().add(dir, flipperState.length);
+      }
+
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
+        for (const ballId of ballEntities) {
+          const p1 = world.getComponent(ballId, PositionComponent).pos;
+          const v1 = world.getComponent(ballId, VelocityComponent).vel;
+          const r1 = world.getComponent(ballId, RadiusComponent).radius;
+          // Ball restitution handled in border/ball-ball
+
+          for (const flipId of flipperEntities) {
+            const fp = world.getComponent(flipId, PositionComponent).pos;
+            const fr = world.getComponent(flipId, RadiusComponent).radius; // Flipper thickness/radius
+            const fs = world.getComponent(flipId, FlipperStateComponent);
+
+            const tip = this._getFlipperTip(fp, fs);
+            const closest = closestPointOnSegment(p1, fp, tip);
+
+            const dir = new Vector2().subtractVectors(p1, closest);
+            const dSq = dir.lengthSq();
+            const rSum = r1 + fr;
+
+            if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+            const d = Math.sqrt(dSq);
+            dir.scale(1.0 / d); // Normalize
+
+            // Resolve penetration
+            const corr = rSum - d;
+            p1.add(dir, corr);
+
+            // Resolve velocity - Calculate surface velocity at contact point
+            const radiusVec = closest.clone().subtract(fp); // Vector from pivot to contact point
+            // Add the penetration correction offset relative to the pivot
+            const contactPointOnFlipperSurface = fp.clone().add(radiusVec).add(dir, -fr); // Approx point on flipper surface
+            const radiusToSurface = contactPointOnFlipperSurface.subtract(fp);
+
+
+            // Velocity of the flipper surface at the contact point = w x r (angular velocity cross radius vector)
+            // In 2D, (0,0,w) x (rx, ry, 0) = (-w*ry, w*rx, 0)
+            const surfaceVel = new Vector2(-fs.currentAngularVelocity * radiusToSurface.y, fs.currentAngularVelocity * radiusToSurface.x);
+
+            // Project ball velocity and surface velocity onto the collision normal
+            const v_dot = v1.dot(dir);
+            const surfVel_dot = surfaceVel.dot(dir);
+
+            // Simple model: Make the ball's normal velocity match the flipper's surface normal velocity
+            // This effectively means v_new_dot = surfVel_dot
+            // More physically plausible might involve restitution e = (v_new_dot - surfVel_dot) / (surfVel_dot - v_dot)
+            // But sticking to original logic:
+            v1.add(dir, surfVel_dot - v_dot);
+
+          }
+        }
+      }
+    }
+
+    class PBDBallBorderCollisions {
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const borderEntities = world.query([BorderComponent]);
+        if (borderEntities.length > 0) {
+          const borderId = borderEntities[0]; // Assume only one border
+          const borderComp = world.getComponent(borderId, BorderComponent);
+          const borderPoints = borderComp.points;
+
+          if (borderPoints.length >= 3) {
+            for (const ballId of ballEntities) {
+              const p1 = world.getComponent(ballId, PositionComponent).pos;
+              const v1 = world.getComponent(ballId, VelocityComponent).vel;
+              const r1 = world.getComponent(ballId, RadiusComponent).radius;
+              const res1 = world.getComponent(ballId, RestitutionComponent).restitution;
+
+              let minDistSq = Infinity;
+              let closestSegPoint = new Vector2();
+              let edgeNormal = new Vector2();
+              let edgeStart = null;
+              let edgeEnd = null;
+
+              // Find closest point on the entire border polygon
+              for (let i = 0; i < borderPoints.length; i++) {
+                const a = borderPoints[i];
+                const b = borderPoints[(i + 1) % borderPoints.length];
+                const closestPtOnSeg = closestPointOnSegment(p1, a, b);
+                const distSq = p1.clone().subtract(closestPtOnSeg).lengthSq();
+
+                if (distSq < minDistSq) {
+                  minDistSq = distSq;
+                  closestSegPoint.set(closestPtOnSeg);
+                  edgeStart = a;
+                  edgeEnd = b;
+                }
+              }
+
+              if (minDistSq > r1 * r1) continue; // Not colliding
+
+              // Calculate normal (outward-pointing assuming clockwise vertices)
+              const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
+              const normal = edgeVec.perp().normalize(); // Points outwards for CW polygon
+
+              // Check if the ball center is outside the border (it should be!)
+              // If the closest point is a vertex, the normal needs careful handling,
+              // but for simple penetration resolution, using the segment normal is often okay.
+              const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
+              let collisionNormal = ballToClosest.clone();
+              if (collisionNormal.lengthSq() < 1e-9) {
+                // Ball center is exactly on the border segment, use edge normal
+                collisionNormal.set(normal);
+              } else {
+                collisionNormal.normalize();
+              }
+
+
+              // Ensure normal points from border towards ball
+              // Check if ball is roughly 'inside' the normal direction from the closest point
+              if (ballToClosest.dot(normal) < 0) {
+                // Ball might be inside corner, use segment normal but check distance
+                collisionNormal.set(normal); // Use segment normal for resolution
+              }
+
+
+              const dist = Math.sqrt(minDistSq);
+
+              // Resolve penetration
+              const penetration = r1 - dist;
+              if (penetration > 0) {
+                p1.add(collisionNormal, penetration);
+              }
+
+              // Resolve velocity
+              const v_dot = v1.dot(collisionNormal);
+              if (v_dot < 0) { // Only apply restitution if moving towards the wall
+                const v_new_dot = -v_dot * res1; // Reflect velocity component
+                v1.add(collisionNormal, v_new_dot - v_dot);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    class PBDBallObstacleCollisions2 {
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+        for (const ballId of ballEntities) {
+          const p1 = world.getComponent(ballId, PositionComponent).pos;
+          const v1 = world.getComponent(ballId, VelocityComponent).vel;
+          const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+          for (const obsId of obstacleEntities) {
+            const p2 = world.getComponent(obsId, PositionComponent).pos;
+            const r2 = world.getComponent(obsId, RadiusComponent).radius;
+            const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
+
+            const dir = new Vector2().subtractVectors(p1, p2);
+            const dSq = dir.lengthSq();
+            const rSum = r1 + r2;
+
+            if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+            const d = Math.sqrt(dSq);
+            dir.scale(1.0 / d); // Normalize
+
+            // Resolve penetration
+            const corr = rSum - d;
+            p1.add(dir, corr);
+
+            // Resolve velocity (simple push)
+            const v_dot = v1.dot(dir);
+            v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
+
+            // Add ScoredTagComponent to the ball that scored
+            world.addComponent(ballId, new ScoredTagComponent());
+          }
+        }
+      }
+    }
+
+
     // --- System: Rendering ---
-    class RenderSystem {
+    class RenderSystem2 {
         runInPause = true; // Always render
         constructor(canvas, cScale, simHeight) {
             this.canvas = canvas;
@@ -1237,7 +584,6 @@
         }
     }
 
-
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -1259,7 +605,7 @@
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -3.0));
-        world.setResource('dt', 1.0 / 60.0);
+        world.setResource('dt', 1.0 / 200.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight);
         // Create a component for pause state and store it as a resource for easy access
@@ -1380,77 +726,60 @@
 
         // --- Cable Setup ---
         // Connect: ball2 -> obs4 -> obs3 -> ball1
-        // Entities involved: ball2, obs4, obs3, ball1
-        // Obstacles need WheelOrientation and CableLink (rolling)
-        // Balls need CableLink (attachment or rolling?) Let's use attachment for simplicity.
 
         // Add necessary components to obstacles (assuming they act as wheels)
-        world.addComponent(obs4, new WheelOrientationComponent(true));
         world.addComponent(obs4, new OrientationComponent());
-        world.addComponent(obs4, new CableLinkComponent('rolling'));
-        world.addComponent(obs3, new WheelOrientationComponent(true));
+        world.addComponent(obs4, new CableLinkComponent());
         world.addComponent(obs3, new OrientationComponent());
-        world.addComponent(obs3, new CableLinkComponent('rolling'));
-        // Add CableLink to balls (as attachment points)
-        world.addComponent(ball1, new CableLinkComponent('attachment'));
-        world.addComponent(ball2, new CableLinkComponent('attachment'));
+        world.addComponent(obs3, new CableLinkComponent());
+        world.addComponent(ball1, new CableLinkComponent());
+        world.addComponent(ball2, new CableLinkComponent());
 
         // --- Calculate Initial Cable State ---
         // Need to compute initial attachment points and rest lengths
         // Get relevant components
         const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
-        const link_ball1 = world.getComponent(ball1, CableLinkComponent);
         const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
-        const link_ball2 = world.getComponent(ball2, CableLinkComponent);
         const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
         const radius_obs3 = world.getComponent(obs3, RadiusComponent).radius;
-        const wheel_obs3 = world.getComponent(obs3, WheelOrientationComponent);
-        const link_obs3 = world.getComponent(obs3, CableLinkComponent);
         const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
         const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
-        const wheel_obs4 = world.getComponent(obs4, WheelOrientationComponent);
-        const link_obs4 = world.getComponent(obs4, CableLinkComponent);
-
-        // Create a temporary calculator instance (or duplicate logic)
-        const attachmentCalculator = new CableAttachmentUpdateSystem(); // Use its helpers
 
         // Calculate initial points for joint1 (ball2 attachment <-> obs4 rolling)
-        const initialPoints1 = attachmentCalculator._tangentPointCircle(pos_ball2, pos_obs4, radius_obs4, wheel_obs4);
+        const joint1 = world.createEntity();
+        const initialPoints1 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
         const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
-        link_ball2.prevAttachmentPointWorld.set(initialPoints1.a_attach); // Initialize prev point
-        link_obs4.prevAttachmentPointWorld.set(initialPoints1.a_circle);  // Initialize prev point
-
-        // Calculate initial points for joint2 (obs4 rolling <-> obs3 rolling)
-        const initialPoints2 = attachmentCalculator._tangentCircleCircle(pos_obs4, radius_obs4, wheel_obs4, pos_obs3, radius_obs3, wheel_obs3);
-        const initialDist2 = initialPoints2.a1.clone().subtract(initialPoints2.a2).length();
-        // link_obs4 already initialized by joint1, check if consistent? For now, overwrite is fine for init.
-        link_obs4.prevAttachmentPointWorld.set(initialPoints2.a1);
-        link_obs3.prevAttachmentPointWorld.set(initialPoints2.a2); // Initialize prev point
-
-        // Calculate initial points for joint3 (obs3 rolling <-> ball1 attachment)
-        const initialPoints3 = attachmentCalculator._tangentPointCircle(pos_ball1, pos_obs3, radius_obs3, wheel_obs3);
-        const initialDist3 = initialPoints3.a_attach.clone().subtract(initialPoints3.a_circle).length();
-        // link_obs3 already initialized by joint2.
-        link_obs3.prevAttachmentPointWorld.set(initialPoints3.a_circle);
-        link_ball1.prevAttachmentPointWorld.set(initialPoints3.a_attach); // Initialize prev point
-
-
-        // Create Cable Joint Entities with correct initial rest lengths
-        const joint1 = world.createEntity(); // ball2 <-> obs4
-        world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialDist1));
+        world.addComponent(joint1, new CableJointComponent(
+          ball2, obs4, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle)); // Order matters
         world.addComponent(joint1, new RenderableComponent('line', '#FF0000')); // Red line
 
-        const joint2 = world.createEntity(); // obs4 <-> obs3
-        world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialDist2));
+
+        // Calculate initial points for joint2 (obs4 rolling <-> obs3 rolling)
+        const joint2 = world.createEntity();
+        const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
+        const initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
+        world.addComponent(joint2, new CableJointComponent(
+          obs4, obs3, initialDist2, initialPoints2.a_circle, initialPoints2.b_circle)); // Order matters
         world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
-        const joint3 = world.createEntity(); // obs3 <-> ball1
-        world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialDist3));
+        // Calculate initial points for joint3 (obs3 rolling <-> ball1 attachment)
+        const joint3 = world.createEntity();
+        const initialPoints3 = tangentFromCircleToPoint(pos_ball1, pos_obs3, radius_obs3, true);
+        const initialDist3 = initialPoints3.a_attach.clone().subtract(initialPoints3.a_circle).length();
+        world.addComponent(joint3, new CableJointComponent(
+          obs3, ball1, initialDist3, initialPoints3.a_circle, initialPoints3.a_attach)); // Order matters
         world.addComponent(joint3, new RenderableComponent('line', '#00FF00')); // Green line
 
-        // Optional: Create Cable Path Entity
+        // Create Cable Path Entity
         const cablePath = world.createEntity();
-        world.addComponent(cablePath, new CablePathComponent([joint1, joint2, joint3]));
+        // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        const pathComp = new CablePathComponent(
+          world,
+          [joint1, joint2, joint3],
+          ['attachment', 'rolling', 'rolling', 'attachment'],
+          [true, true, true, true]
+        );
+        world.addComponent(cablePath, pathComp);
 
 
         // --- Systems Registration (Order Matters!) ---
@@ -1458,19 +787,20 @@
              world.registerSystem(new InputSystem(canvas));
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
              world.registerSystem(new GravitySystem());      // Applies gravity acceleration
-             world.registerSystem(new MovementSystem());     // Updates position based on velocity
-
-             // --- Cable Systems (Run BEFORE constraint solving) ---
-             world.registerSystem(new CableAttachmentUpdateSystem()); // Updates attachment points and rest lengths
-             world.registerSystem(new CablePinholeSystem());        // Balances rest lengths across pinholes (if any)
-
-             // --- Constraint Solver (Handles collisions AND cable joints) ---
-             world.registerSystem(new PBDConstraintSolverSystem()); // Resolves penetrations and cable length violations
+             world.registerSystem(new MovementSystem2());     // Updates position based on velocity
+             world.registerSystem(new PBDBallBallCollisions());
+             world.registerSystem(new PBDBallObstacleCollisions2());
+             world.registerSystem(new PBDBallFlipperCollisions());
+             world.registerSystem(new PBDBallBorderCollisions());
+             world.registerSystem(new CableAttachmentUpdateSystem());
+             world.registerSystem(new PBDCableConstraintSolver());
 
              // --- Scoring and Rendering ---
-             world.registerSystem(new ScoreSystem());             // Updates score based on tags
-             world.registerSystem(new ScoreDisplaySystem('score')); // Displays score
-             world.registerSystem(new RenderSystem(canvas, cScale, simHeight)); // Draws everything
+             world.registerSystem(new ScoreSystem());
+             world.registerSystem(new ScoreDisplaySystem('score'));
+             const renderSystem = new RenderSystem2(canvas, cScale, simHeight);
+             world.registerSystem(renderSystem);
+             world.setResource('renderSystem', renderSystem);
         }
 
          // Update button text based on initial pause state
