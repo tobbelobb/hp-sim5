@@ -550,16 +550,16 @@ class CableAttachmentUpdateSystem {
             if (isRollingA && isRollingB) {
               const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
               const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
-              path.stored[i] -= sA;
-              joint_i.restLength += sA;
+              path.stored[i] += sA;
+              joint_i.restLength -= sA;
               const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
-              path.stored[i+2] += sB;
-              joint_i.restLength -= sB;
+              path.stored[i+2] -= sB;
+              joint_i.restLength += sB;
               joint_i.attachmentPointA_world.set(tangents.a_circle);
               joint_i.attachmentPointB_world.set(tangents.b_circle);
             } else if (isRollingA && isAttachmentB) {
               const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
-              const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA); // Corrected joint_1 typo
+              const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
               path.stored[i] += sA;
               joint_i.restLength -= sA;
               joint_i.attachmentPointA_world.set(tangents.a_circle);
@@ -866,13 +866,65 @@ class CableAttachmentUpdateSystem {
             world.addComponent(newJointId, new CableJointComponent(
                 splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
             world.addComponent(newJointId, new RenderableComponent('line', '#0000FF')); // Blue line for new joint
+            const discrepancy = originalRestLength - s - newRestLength1 - newRestLength2;
+            const tension1 = initialDist1/newRestLength1;
+            const tension2 = initialDist2/newRestLength2;
+
 
             console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
+            console.log(`Split stats: discrepancy=${discrepancy.toFixed(4)}, tension1=${tension1.toFixed(4)}, tension2=${tension2.toFixed(4)}`);
+            if (discrepancy > 1.0) {
+              console.warn("discrepancy > 1.0");
+            }
+            if (tension1 > 1.5) {
+              console.warn("tension1 > 1.5");
+            }
+            if (Number.isNaN(tension1)) {
+              console.warn("tension1 is NaN");
+            }
+            if (tension2 > 1.5) {
+              console.warn("tension2 > 1.5");
+            }
+            if (Number.isNaN(tension2)) {
+              console.warn("tension2 is NaN");
+            }
             path.stored.splice(jointIndex + 1, 0, s);
           }
         }
       }
     }
+
+    // Even out tension
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || path.jointEntities.length < 2) continue;
+      for (var jointIndex = 0; jointIndex < path.jointEntities.length - 1; jointIndex++) {
+        const jointId_i = path.jointEntities[jointIndex];
+        const jointId_i_plus_1 = path.jointEntities[jointIndex + 1];
+        const joint_i = world.getComponent(jointId_i, CableJointComponent);
+        const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+        if (!joint_i.isActive || !joint_i_plus_1.isActive) {
+          console.warn("An inactive joint seems to be part of a path right now.");
+          continue;
+        }
+        const pA = joint_i.attachmentPointA_world;
+        const pB = joint_i.attachmentPointB_world;
+        const pC = joint_i_plus_1.attachmentPointA_world;
+        const pD = joint_i_plus_1.attachmentPointB_world;
+        const l_i = joint_i.restLength;
+        const l_i_plus_1 = joint_i_plus_1.restLength;
+        const availableRestLength = l_i + l_i_plus_1;
+        const d_i = new Vector2().subtractVectors(pA, pB).length();
+        const d_i_plus_1 = new Vector2().subtractVectors(pC, pD).length();
+        const totalDist = d_i + d_i_plus_1;
+        joint_i.restLength = availableRestLength * d_i/totalDist;
+        joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
+        //const tension_i = d_i/joint_i.restLength;
+        //const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
+        //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
+      }
+    }
+
 
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const link of linkEntities) {
@@ -900,7 +952,7 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
       //console.log(`stored: ${path.stored}`);
     }
   }
