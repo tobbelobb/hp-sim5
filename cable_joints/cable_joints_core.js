@@ -543,10 +543,10 @@ class CableAttachmentUpdateSystem {
             if (angle < 0.0) {
               console.warn("angle < 0.0");
             }
-            const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
+            const posA = world.getComponent(joint_i.entityA, PositionComponent).prevPos;
             const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
             const cwA = path.cw[i];
-            const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
+            const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).prevPos;
             const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
             const cwB = path.cw[i+2];
 
@@ -962,8 +962,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      console.log(`stored: ${path.stored}`);
+      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      //console.log(`stored: ${path.stored}`);
     }
   }
 }
