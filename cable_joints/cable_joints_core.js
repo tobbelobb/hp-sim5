@@ -533,8 +533,14 @@ class CableAttachmentUpdateSystem {
           // Complex merge condition
           if (nothing_stored || little_stored_and_angle_minimal) {
             console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
+            if (angle > 10.0 * Math.PI/180.0) {
+              console.warn("angle > 10.0 degrees");
+            }
+            if (angle < 0.0) {
+              console.warn("angle < 0.0");
+            }
             const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
-            const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius; // Nullish coalescing for safety
+            const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
             const cwA = path.cw[i];
             const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
             const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
@@ -879,14 +885,8 @@ class CableAttachmentUpdateSystem {
             if (tension1 > 1.5) {
               console.warn("tension1 > 1.5");
             }
-            if (Number.isNaN(tension1)) {
-              console.warn("tension1 is NaN");
-            }
             if (tension2 > 1.5) {
               console.warn("tension2 > 1.5");
-            }
-            if (Number.isNaN(tension2)) {
-              console.warn("tension2 is NaN");
             }
             path.stored.splice(jointIndex + 1, 0, s);
           }
@@ -917,11 +917,15 @@ class CableAttachmentUpdateSystem {
         const d_i = new Vector2().subtractVectors(pA, pB).length();
         const d_i_plus_1 = new Vector2().subtractVectors(pC, pD).length();
         const totalDist = d_i + d_i_plus_1;
-        joint_i.restLength = availableRestLength * d_i/totalDist;
-        joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
-        //const tension_i = d_i/joint_i.restLength;
-        //const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
-        //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
+        const tension_i = d_i/joint_i.restLength;
+        const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
+        //if (tension_i > 1.0 || tension_i_plus_1 > 1.0) {
+          //joint_i.restLength = availableRestLength * d_i/totalDist;
+          //joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
+          //joint_i.restLength = 0.5*availableRestLength * (d_i/totalDist + l_i/availableRestLength);
+          //joint_i_plus_1.restLength = 0.5*availableRestLength * (d_i_plus_1/totalDist + l_i_plus_1/availableRestLength);
+        //}
+        console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
       }
     }
 
