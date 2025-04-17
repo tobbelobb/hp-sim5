@@ -1403,14 +1403,20 @@ testGeneratedError: {
         case 'MassComponent':
           addCompStr += `${component.mass}`;
           break;
+        case 'ObstaclePushComponent':
+          addCompStr += `${component.pushVel}`;
+          break;
+        case 'ScoreComponent':
+          addCompStr += `${component.value}`;
+          break;
         case 'RestitutionComponent':
           addCompStr += `${component.restitution}`;
           break;
         case 'RenderableComponent':
           addCompStr += `'${component.shape}', '${component.color}'`;
           break;
-        case 'CableLinkComponent':
-          addCompStr += `${component.prevPos.x}, ${component.prevPos.y}`;
+        case 'FlipperStateComponent':
+          addCompStr += `${component.length}, ${component.restAngle},  ${component.maxRotation}, ${component.angularVelocity}`;
           break;
         case 'CableJointComponent':
           const entityAVar = entityVarMap.get(component.entityA);
@@ -1424,25 +1430,23 @@ testGeneratedError: {
             addCompStr += `new Vector2(${component.attachmentPointB_world.x}, ${component.attachmentPointB_world.y})`;
           }
           break;
-          // Add cases for other components if needed
-          // Tag components have no constructor arguments
-        case 'GravityAffectedComponent':
-        case 'BallTagComponent':
-        case 'ObstacleTagComponent':
         case 'PauseStateComponent': // Usually a resource, but handle if added to entity
-        case 'SimulationErrorStateComponent': // Usually a resource, but handle if added to entity
-          if (componentClass.name === 'PauseStateComponent') {
-            addCompStr += component.paused;
-          } else if (componentClass.name === 'SimulationErrorStateComponent') {
-            addCompStr += component.hasError;
-          }
+          addCompStr += component.paused;
           break;
-        case 'CablePathComponent':
-          // Handled separately below
+        case 'SimulationErrorStateComponent': // Usually a resource, but handle if added to entity
+          addCompStr += component.hasError;
           break;
         case 'BorderComponent':
           const pointsStr = component.points.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
           addCompStr += `[${pointsStr}]`;
+          break;
+        case 'CablePathComponent': // Handled separately below
+          break;
+        case 'GravityAffectedComponent':
+        case 'CableLinkComponent':
+        case 'BallTagComponent':
+        case 'FlipperTagComponent':
+        case 'ObstacleTagComponent':
           break;
         default:
           console.warn(`Unhandled component type for serialization: ${componentClass.name}`);
@@ -1490,8 +1494,8 @@ testGeneratedError: {
       }
       dump += addCompStr;
     }
-    dump += "\n"; // Add a newline between entities
   }
+  dump += "\n"; // Add a newline between entities
 
   dump += `
     // --- Systems Registration (Copy from a working test or main file if needed) ---

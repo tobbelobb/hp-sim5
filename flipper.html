@@ -179,13 +179,13 @@
          }
 
          update(world, dt) {
-             this.frame++;
              // snapshot and clear inputs each frame
              const clicksFrame = this.clicks.slice();
              const releasesFrame = this.releases.slice();
              if (clicksFrame.length > 0 || releasesFrame.length > 0) {
                  this.eventLog.push({ frame: this.frame, clicks: clicksFrame, releases: releasesFrame });
              }
+             this.frame++;
 
              if (clicksFrame.length > 0) {
                  const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
@@ -855,20 +855,6 @@
         }
 
         requestAnimationFrame(gameLoop);
-
-        // Dump World State function for Flipper Game
-        function dumpWorldState(world) {
-            console.log('DUMP_WORLD_STATE', JSON.stringify(world, (key, value) => {
-                if (value instanceof Vector2) {
-                    return `new Vector2(${value.x}, ${value.y})`;
-                }
-                if (value instanceof BorderComponent) {
-                    const pts = value.points.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
-                    return `new BorderComponent([${pts}])`;
-                }
-                return value;
-            }, 2));
-        }
     }
 
     // --- Event Listeners ---
@@ -901,7 +887,7 @@
     const dumpBtn = document.getElementById('dumpBtn');
     dumpBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        dumpWorldState(world);
+        console.log(dumpWorldState(world));
     });
 
     // --- Start ---
