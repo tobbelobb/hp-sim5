@@ -1322,8 +1322,8 @@ class RenderSystem {
       this.c.rotate(-angle); // Rotate Coordinate System (negative because canvas y is down)
 
       // Draw the flipper rectangle and circles
-      const flipperDrawLength = stateComp.length * this.cScale;
-      const flipperDrawRadius = radiusComp.radius * this.cScale;
+      const flipperDrawLength = stateComp.length * this.effectiveCScale;
+      const flipperDrawRadius = radiusComp.radius * this.effectiveCScale;
 
       this.c.fillRect(0.0, -flipperDrawRadius, flipperDrawLength, 2.0 * flipperDrawRadius);
       this.drawDisc(0, 0, flipperDrawRadius); // At pivot
