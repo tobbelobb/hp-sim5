@@ -1349,7 +1349,8 @@ if (typeof module !== 'undefined' && module.exports) {
     CablePathComponent,
     VelocityComponent,
     GravityAffectedComponent,
-    GravitySystem
+    GravitySystem,
+    MovementSystem
   };
 }
 
