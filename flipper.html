@@ -862,6 +862,10 @@
                 if (value instanceof Vector2) {
                     return `new Vector2(${value.x}, ${value.y})`;
                 }
+                if (value instanceof BorderComponent) {
+                    const pts = value.points.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
+                    return `new BorderComponent([${pts}])`;
+                }
                 return value;
             }, 2));
         }
