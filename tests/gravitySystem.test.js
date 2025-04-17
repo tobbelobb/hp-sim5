@@ -34,6 +34,17 @@ describe('GravitySystem', () => {
     expect(velComp.vel.y).toBeCloseTo(1);
   });
 
+  test('does not crash if no VelocityComponent', () => {
+    const world = new World();
+    const e = world.createEntity();
+    world.addComponent(e, new GravityAffectedComponent());
+    const gravity = new Vector2(0, -9.8);
+    world.setResource('gravity', gravity);
+    const dt = 1.0;
+    const system = new GravitySystem();
+    system.update(world, dt);
+  });
+
   test('does nothing if gravity resource undefined', () => {
     const world = new World();
     const e = world.createEntity();
