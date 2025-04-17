@@ -978,7 +978,7 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
       //console.log(`stored: ${path.stored}`);
     }
   }
@@ -1249,6 +1249,42 @@ class RenderSystem {
     this.c.fill();
   }
 
+  // Draw catenary curve for slack cable segment between pA and pB with given length
+  _drawCatenary(pA, pB, length, segments = 20) {
+    const ctx = this.c;
+    const dx = pB.x - pA.x;
+    const dy = pB.y - pA.y;
+    const D = Math.sqrt(dx*dx + dy*dy);
+    if (D <= 0) {
+      console.log("D: ", D);
+      return;
+    }
+    // Solve for parameter a: 2a sinh(D/(2a)) = length
+    let a_low = 0.0001, a_high = length, a;
+    for (let i = 0; i < 20; i++) {
+      const a_mid = 0.5 * (a_low + a_high);
+      const f = 2 * a_mid * Math.sinh(D / (2 * a_mid));
+      if (f > length) a_high = a_mid;
+      else a_low = a_mid;
+    }
+    a = 0.5 * (a_low + a_high);
+    const y0 = a * Math.cosh(-D/(2*a)) - a;
+    ctx.beginPath();
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const x = -D/2 + D * t;
+      const y = a * Math.cosh(x / a) - a - y0;
+      // Rotate and translate to world coordinates
+      const wx = pA.x + ((x + D/2) * dx - y * dy) / D;
+      const wy = pA.y + ((x + D/2) * dy + y * dx) / D;
+      const cx = this.cX(wx);
+      const cy = this.cY(wy);
+      if (i === 0) ctx.moveTo(cx, cy);
+      else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+  }
+
   update(world, dt) {
     // Viewport settings are now instance properties (this.viewScaleMultiplier, etc.)
     // effectiveCScale is also an instance property (this.effectiveCScale)
@@ -1328,40 +1364,8 @@ class RenderSystem {
     }
   }
 }
-  
-// Draw catenary curve for slack cable segment between pA and pB with given length
-_drawCatenary(pA, pB, length, segments = 20) {
-  const ctx = this.c;
-  const dx = pB.x - pA.x;
-  const dy = pB.y - pA.y;
-  const D = Math.sqrt(dx*dx + dy*dy);
-  if (D <= 0) return;
-  // Solve for parameter a: 2a sinh(D/(2a)) = length
-  let a_low = 0.0001, a_high = length, a;
-  for (let i = 0; i < 20; i++) {
-    const a_mid = 0.5 * (a_low + a_high);
-    const f = 2 * a_mid * Math.sinh(D / (2 * a_mid));
-    if (f > length) a_high = a_mid;
-    else a_low = a_mid;
-  }
-  a = 0.5 * (a_low + a_high);
-  const y0 = a * Math.cosh(-D/(2*a)) - a;
-  ctx.beginPath();
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const x = -D/2 + D * t;
-    const y = a * Math.cosh(x / a) - a - y0;
-    // Rotate and translate to world coordinates
-    const wx = pA.x + ((x + D/2) * dx - y * dy) / D;
-    const wy = pA.y + ((x + D/2) * dy + y * dx) / D;
-    const cx = this.cX(wx);
-    const cy = this.cY(wy);
-    if (i === 0) ctx.moveTo(cx, cy);
-    else ctx.lineTo(cx, cy);
-  }
-  ctx.stroke();
-}
-  
+
+
 // --- State Dumping Function ---
 function dumpWorldState(world) {
   const renderSystem = world.getResource('renderSystem');
