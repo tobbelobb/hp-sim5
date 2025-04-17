@@ -13,8 +13,9 @@ const {
 } = require('../cable_joints/cable_joints_core');
 
 describe('CableAttachmentUpdateSystem', () => {
-  test('initial stored length matches signedArcLength between tangent points for rolling link', () => {
+  test('merges joints when positions opposite vertically, conserving rest length', () => {
     const world = new World();
+    const dt = 1.0; // dt not used for merge
     const center = new Vector2(0, 0);
     const radius = 1;
     const cw = false;
@@ -29,8 +30,8 @@ describe('CableAttachmentUpdateSystem', () => {
     world.addComponent(wheel, new CableLinkComponent());
     world.addComponent(ball2, new CableLinkComponent());
     world.addComponent(wheel, new PositionComponent(0, 0));
-    world.addComponent(ball1, new PositionComponent(1, 0));
-    world.addComponent(ball2, new PositionComponent(0, 1));
+    world.addComponent(ball1, new PositionComponent(1.000001, 2));
+    world.addComponent(ball2, new PositionComponent(1.0, -2));
     world.addComponent(wheel, new RadiusComponent(radius));
 
     // Initial tangents on the rolling link (wheel)
@@ -81,16 +82,20 @@ describe('CableAttachmentUpdateSystem', () => {
     );
     world.addComponent(cablePath, pathComp);
 
-    // Expected stored arc length on wheel
-    const expected = signedArcLengthOnWheel(
-      tp1.a_circle,
-      tp2.a_circle,
-      center,
-      radius,
-      cw,
-      true
-    );
+    // Record initial total rest length and joint count
+    const initialTotalRest = pathComp.totalRestLength;
+    expect(pathComp.jointEntities).toHaveLength(2);
+    expect(pathComp.linkTypes).toHaveLength(3);
 
-    expect(pathComp.stored[1]).toBeCloseTo(expected);
+    // Run the attachment update to trigger merge
+    const system = new CableAttachmentUpdateSystem();
+    world.setResource('debugRenderPoints', {});
+    system.update(world, dt);
+
+    // After merge, one joint should be removed
+    expect(pathComp.jointEntities).toHaveLength(1);
+    expect(pathComp.linkTypes).toHaveLength(2);
+    // Total rest length should remain unchanged
+    expect(pathComp.totalRestLength).toBeCloseTo(initialTotalRest);
   });
 });
