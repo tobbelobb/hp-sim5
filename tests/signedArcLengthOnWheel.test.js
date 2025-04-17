@@ -77,5 +77,6 @@ describe('signedArcLengthOnWheel', () => {
     const wrapLength = signedArcLengthOnWheel(ip1.a_circle, ip2.a_circle, posObs, obsRadius, cw, true);
     expect(wrapLength).toBeGreaterThan(0);
     expect(wrapLength).toBeGreaterThan(Math.PI * obsRadius);
+    expect(wrapLength).toBeLessThan(Math.PI * 1.1 * obsRadius);
   });
 });
