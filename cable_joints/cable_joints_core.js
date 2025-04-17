@@ -1346,7 +1346,10 @@ if (typeof module !== 'undefined' && module.exports) {
     PositionComponent,
     RadiusComponent,
     CableJointComponent,
-    CablePathComponent
+    CablePathComponent,
+    VelocityComponent,
+    GravityAffectedComponent,
+    GravitySystem
   };
 }
 
