@@ -722,16 +722,16 @@ class CableAttachmentUpdateSystem {
           console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)})`);
           if (rollingLinkA && rollingLinkB) {
             console.warn("Clamping both");
-            path.stored[A] = joint.restLength/2.0;
-            path.stored[B] = joint.restLength/2.0;
+            path.stored[A] += joint.restLength/2.0;
+            path.stored[B] += joint.restLength/2.0;
             joint.restLength = 0.0;
           } else if (rollingLinkA) {
             console.warn("Clamping left");
-            path.stored[A] = joint.restLength;
+            path.stored[A] += joint.restLength;
             joint.restLength = 0.0;
           } else if (rollingLinkB) {
             console.warn("Clamping right");
-            path.stored[B] = joint.restLength;
+            path.stored[B] += joint.restLength;
             joint.restLength = 0.0;
           } else {
             console.warn("No Clamp");
@@ -954,8 +954,8 @@ class CableAttachmentUpdateSystem {
 
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const linkId of linkEntities) {
-      const pos = world.getComponent(linkId, PositionComponent).pos;
-      world.getComponent(linkId, PositionComponent).prevPos.set(pos);
+      const posComp = world.getComponent(linkId, PositionComponent)
+      posComp.prevPos.set(posComp.pos);
     }
 
     // Debugging/test loop 1

@@ -805,7 +805,7 @@
              const inputSystemInstance = new InputSystem(canvas);
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(
-               [],
+               [{ "frame": 355, "clicks": [new Vector2(0.74, 0.22)], "releases": [] }, { "frame": 374, "clicks": [], "releases": [new Vector2(0.74, 0.22)] }, { "frame": 1731, "clicks": [new Vector2(0.74, 0.22)], "releases": [] }, { "frame": 1758, "clicks": [], "releases": [new Vector2(0.74, 0.22)] }],
              inputSystemInstance));
              world.registerSystem(new InputSystem(canvas));
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
