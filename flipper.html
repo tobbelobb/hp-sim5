@@ -101,9 +101,9 @@
             const logEntries = this.eventLog.map(frame => {
                 const clicksStr = frame.clicks.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
                 const releasesStr = frame.releases.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
-                return `{ frame: ${frame.frame}, clicks: [${clicksStr}], releases: [${releasesStr}] }`;
+                return `{ "frame": ${frame.frame}, "clicks": [${clicksStr}], "releases": [${releasesStr}] }`;
             }).join(', ');
-            console.log('DEBUG_SCENARIO_DUMP', `{ resources: ${resStr}, inputLog: [${logEntries}] }`);
+            console.log('DEBUG_SCENARIO_DUMP', `{ "resources": ${resStr}, "inputLog": [${logEntries}] }`);
         }
 
          handleKeyup(event) {
