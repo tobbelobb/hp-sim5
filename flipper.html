@@ -53,15 +53,6 @@
             this.angle = angle; // Current angle in radians
             this.prevAngle = angle; // Angle at the start of the timestep
         }
-
-        // on Space → emit minimal debug dump
-        dumpDebugScenario() {
-            const state = {
-                resources: window.world.resources,
-                inputLog: this.eventLog
-            };
-            console.log('DEBUG_SCENARIO_DUMP', JSON.stringify(state));
-        }
     }
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class FlipperTagComponent { }
@@ -102,6 +93,15 @@
              this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
              this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
          }
+
+        // on Space → emit minimal debug dump
+        dumpDebugScenario() {
+            const state = {
+                resources: world.resources,
+                inputLog: this.eventLog
+            };
+            console.log('DEBUG_SCENARIO_DUMP', JSON.stringify(state));
+        }
 
          handleKeyup(event) {
              if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
@@ -180,8 +180,6 @@
              const clicksFrame = this.clicks.slice();
              const releasesFrame = this.releases.slice();
              this.eventLog.push({ frame: this.frame, clicks: clicksFrame, releases: releasesFrame });
-             this.clicks = [];
-             this.releases = [];
 
              if (clicksFrame.length > 0) {
                  const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
