@@ -894,6 +894,11 @@
             doStep = true;
         }
     });
+    const dumpBtn = document.getElementById('dumpBtn');
+    dumpBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        dumpWorldState(world);
+    });
 
     // --- Start ---
     setupScene();
