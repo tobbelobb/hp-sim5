@@ -1281,6 +1281,57 @@ class RenderSystem {
     const baseLineWidth = 2;
     const baseDebugRadius = 3;
 
+    // Render Border
+    const borderEntities = world.query([BorderComponent, RenderableComponent]);
+    if (borderEntities.length > 0) {
+      const borderComp = world.getComponent(borderEntities[0], BorderComponent);
+      const renderComp = world.getComponent(borderEntities[0], RenderableComponent);
+      const points = borderComp.points;
+      if (points.length >= 2) {
+        this.c.strokeStyle = renderComp.color;
+        this.c.lineWidth = 5; // Make this a component property?
+        this.c.beginPath();
+        let v = points[0];
+        this.c.moveTo(this.cX(v.x), this.cY(v.y));
+        for (let i = 1; i < points.length + 1; i++) {
+          v = points[i % points.length];
+          this.c.lineTo(this.cX(v.x), this.cY(v.y));
+        }
+        this.c.stroke();
+        this.c.lineWidth = 1;
+      }
+    }
+
+    // Render Flippers
+    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RenderableComponent]);
+    for (const entityId of flipperEntities) {
+      console.log("Rendering flipper: ", entityId);
+      const posComp = world.getComponent(entityId, PositionComponent);
+      const radiusComp = world.getComponent(entityId, RadiusComponent); // Flipper thickness
+      const stateComp = world.getComponent(entityId, FlipperStateComponent);
+      const renderComp = world.getComponent(entityId, RenderableComponent);
+
+      this.c.fillStyle = renderComp.color;
+
+      const pivotX = this.cX(posComp.pos.x);
+      const pivotY = this.cY(posComp.pos.y);
+      const angle = stateComp.restAngle + stateComp.sign * stateComp.rotation;
+
+      this.c.save(); // Save context state
+      this.c.translate(pivotX, pivotY);
+      this.c.rotate(-angle); // Rotate Coordinate System (negative because canvas y is down)
+
+      // Draw the flipper rectangle and circles
+      const flipperDrawLength = stateComp.length * this.cScale;
+      const flipperDrawRadius = radiusComp.radius * this.cScale;
+
+      this.c.fillRect(0.0, -flipperDrawRadius, flipperDrawLength, 2.0 * flipperDrawRadius);
+      this.drawDisc(0, 0, flipperDrawRadius); // At pivot
+      this.drawDisc(flipperDrawLength, 0, flipperDrawRadius); // At tip
+
+      this.c.restore(); // Restore context state
+    }
+
     // Render All Renderable Entities (Circles/Obstacles/Etc.)
     const renderableEntities = world.query([PositionComponent, RenderableComponent]);
     for (const entityId of renderableEntities) {

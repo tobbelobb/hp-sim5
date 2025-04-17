@@ -818,7 +818,7 @@
 
             // Create or update RenderSystem
             if (!renderSystemInstance) {
-                const renderSystemInstance = new RenderSystem2(canvas, cScale, simHeight);
+                const renderSystemInstance = new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85);
                 world.registerSystem(renderSystemInstance);
                 world.setResource('renderSystem', renderSystemInstance); // Store for potential access elsewhere
             } else {
