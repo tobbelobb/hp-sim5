@@ -1,4 +1,4 @@
-const { Vector2, signedArcLengthOnWheel } = require('../cable_joints/cable_joints_core');
+const { Vector2, signedArcLengthOnWheel, tangentFromPointToCircle, tangentFromCircleToPoint } = require('../cable_joints/cable_joints_core');
 
 describe('signedArcLengthOnWheel', () => {
   const center = new Vector2(0, 0);
@@ -63,5 +63,19 @@ describe('signedArcLengthOnWheel', () => {
     // angle π/2 * 1 = π/2
     const length = signedArcLengthOnWheel(prevPoint, currPoint, center, radius, false);
     expect(length).toBeCloseTo(Math.PI / 2);
+  });
+
+  test('large initial wrap around obstacle', () => {
+    const cw = true;
+    const obsRadius = 0.1;
+    const posObs = new Vector2(1.0, 0.3);
+    const pBall1 = new Vector2(1.025, -0.5);
+    const pBall2 = new Vector2(1.2, -0.7);
+    // initial tangent points
+    const ip1 = tangentFromPointToCircle(pBall1, posObs, obsRadius, cw);
+    const ip2 = tangentFromCircleToPoint(pBall2, posObs, obsRadius, cw);
+    const wrapLength = signedArcLengthOnWheel(ip1.a_circle, ip2.a_circle, posObs, obsRadius, cw, true);
+    expect(wrapLength).toBeGreaterThan(0);
+    expect(wrapLength).toBeGreaterThan(Math.PI * obsRadius);
   });
 });
