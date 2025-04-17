@@ -1440,6 +1440,9 @@ testGeneratedError: {
         case 'CablePathComponent':
           // Handled separately
           break;
+        case 'BorderComponent':
+          // TODO: implement
+          break;
         default:
           console.warn(`Unhandled component type for serialization: ${componentClass.name}`);
           addCompStr = `    // Skipped unknown component ${componentClass.name} for ${varName}\n`;
