@@ -1438,10 +1438,11 @@ testGeneratedError: {
           }
           break;
         case 'CablePathComponent':
-          // Handled separately
+          // Handled separately below
           break;
         case 'BorderComponent':
-          // TODO: implement
+          const pointsStr = component.points.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
+          addCompStr += `[${pointsStr}]`;
           break;
         default:
           console.warn(`Unhandled component type for serialization: ${componentClass.name}`);
