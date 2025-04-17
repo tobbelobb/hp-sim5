@@ -1140,73 +1140,64 @@ class PBDCableConstraintSolver {
       const totalPathError = totalCurrentLength - path.totalRestLength;
 
 
-      // --- 2. Iterate Through Joints and Apply Corrections ---
+      // --- 2. Apply PBD distance constraint using proper gradient sums ---
       // Apply correction only if the entire path is longer than its rest length
       if (totalPathError > epsilon) {
+        // Build per-entity gradients: ∂C/∂x
+        const grads = new Map(); // entityId -> Vector2
+        // Initialize gradients for each entity in the path
         for (const jointId of path.jointEntities) {
           const joint = world.getComponent(jointId, CableJointComponent);
           if (!joint || !joint.isActive) continue;
-
-          const entityA = joint.entityA;
-          const entityB = joint.entityB;
-          const posAComp = world.getComponent(entityA, PositionComponent);
-          const massAComp = world.getComponent(entityA, MassComponent);
-          const velAComp = world.getComponent(entityA, VelocityComponent);
-          const posBComp = world.getComponent(entityB, PositionComponent);
-          const massBComp = world.getComponent(entityB, MassComponent);
-          const velBComp = world.getComponent(entityB, VelocityComponent);
-
-          // Check if necessary components exist
-          if (!posAComp || !massAComp || !posBComp || !massBComp) {
-            console.warn(`PBDCableConstraintSolver skipped joint ${jointId}: Missing Pos/Mass on entities ${entityA} or ${entityB}`);
-            continue;
+          for (const e of [joint.entityA, joint.entityB]) {
+            if (!grads.has(e)) {
+              grads.set(e, new Vector2(0, 0));
+            }
           }
-          const posA = posAComp.pos;
-          const massA = massAComp.mass;
-          const velA = velAComp?.vel; // Velocity is optional for correction
-          const posB = posBComp.pos;
-          const massB = massBComp.mass;
-          const velB = velBComp?.vel; // Velocity is optional for correction
-
-          const invMassA = massA > 0 ? 1.0 / massA : 0.0;
-          const invMassB = massB > 0 ? 1.0 / massB : 0.0;
-          // Note: We use pathTotalInvMass calculated above, not the local totalInvMass
-
-          // Use the attachment points calculated and cached by CableAttachmentUpdateSystem
-          const pAttachA = joint.attachmentPointA_world;
-          const pAttachB = joint.attachmentPointB_world;
-
-          const dir = new Vector2().subtractVectors(pAttachB, pAttachA);
-          const currentLength = dir.length();
-
-          // We use the totalPathError calculated earlier, not individual joint error.
-          // Apply correction if the joint has non-zero length (to avoid NaN with normalization)
-          if (currentLength > epsilon) {
-            dir.scale(1.0 / currentLength); // Normalize direction vector
-
-            // Use the path's total error and total inverse mass for the correction magnitude
-            const corr = totalPathError / pathTotalInvMass;
-
-            // Calculate displacement vectors (Standard PBD)
-            // Distribute correction based on individual inverse masses
-            // Note: Sign convention depends on direction vector (pB - pA)
-            const deltaA = dir.clone().scale(invMassA * corr);
-            const deltaB = dir.clone().scale(-invMassB * corr);
-
-            // Apply displacement to the entity positions.
-            posA.add(deltaA);
-            posB.add(deltaB);
-
-            // Apply velocity correction (optional, but good for stability)
-            if (velA && invMassA > 0 && dt > epsilon) {
-              velA.add(deltaA, 1.0 / dt); // v_new = v_old + delta_p / dt
+        }
+        // Accumulate gradients for each segment
+        for (const jointId of path.jointEntities) {
+          const joint = world.getComponent(jointId, CableJointComponent);
+          if (!joint || !joint.isActive) continue;
+          const pA = joint.attachmentPointA_world;
+          const pB = joint.attachmentPointB_world;
+          const diff = new Vector2().subtractVectors(pB, pA);
+          const len = diff.length();
+          if (len <= epsilon) continue;
+          const dir = diff.clone().scale(1.0 / len);
+          grads.get(joint.entityA).add(dir);
+          grads.get(joint.entityB).add(dir.clone().scale(-1.0));
+        }
+        // Compute denominator D = Σ invMass_i * |grad_i|²
+        let denom = 0.0;
+        const invMassMap = new Map();
+        for (const [entityId, grad] of grads.entries()) {
+          const massComp = world.getComponent(entityId, MassComponent);
+          const invM = massComp && massComp.mass > 0 ? 1.0 / massComp.mass : 0.0;
+          invMassMap.set(entityId, invM);
+          denom += invM * grad.lengthSq();
+        }
+        if (denom <= epsilon) {
+          console.warn("PBDCableConstraintSolver: zero denominator in constraint correction");
+        } else {
+          // Correction magnitude λ = -C/D
+          const lambda = -totalPathError / denom;
+          // Apply corrections per entity
+          for (const [entityId, grad] of grads.entries()) {
+            const invM = invMassMap.get(entityId);
+            if (invM <= 0) continue;
+            const delta = grad.clone().scale(invM * lambda);
+            const posComp = world.getComponent(entityId, PositionComponent);
+            if (posComp) {
+              posComp.pos.add(delta);
             }
-            if (velB && invMassB > 0 && dt > epsilon) {
-              velB.add(deltaB, 1.0 / dt); // v_new = v_old + delta_p / dt
+            const velComp = world.getComponent(entityId, VelocityComponent);
+            if (velComp && dt > epsilon) {
+              velComp.vel.add(delta, 1.0 / dt);
             }
-          } // End if currentLength > epsilon
-        } // End loop through joints in path
-      }  // End if totalPathError > epsilon
+          }
+        }
+      }
     } // End loop through paths
   } // end update
 } // end PBDCableConstraintSolver
