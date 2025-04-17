@@ -1305,31 +1305,38 @@ class RenderSystem {
     // Render Flippers
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RenderableComponent]);
     for (const entityId of flipperEntities) {
-      console.log("Rendering flipper: ", entityId);
       const posComp = world.getComponent(entityId, PositionComponent);
-      const radiusComp = world.getComponent(entityId, RadiusComponent); // Flipper thickness
+      const radiusComp = world.getComponent(entityId, RadiusComponent);
       const stateComp = world.getComponent(entityId, FlipperStateComponent);
       const renderComp = world.getComponent(entityId, RenderableComponent);
 
       this.c.fillStyle = renderComp.color;
 
-      const pivotX = this.cX(posComp.pos.x);
-      const pivotY = this.cY(posComp.pos.y);
+      // Simulation-space coordinates and scale
+      const simX = posComp.pos.x;
+      const simY = posComp.pos.y;
       const angle = stateComp.restAngle + stateComp.sign * stateComp.rotation;
 
-      this.c.save(); // Save context state
+      // Convert to canvas pixels
+      const pivotX = this.cX(simX);
+      const pivotY = this.cY(simY);
+      const Lp = stateComp.length * this.effectiveCScale;
+      const Rp = radiusComp.radius * this.effectiveCScale;
+
+      this.c.save();
       this.c.translate(pivotX, pivotY);
-      this.c.rotate(-angle); // Rotate Coordinate System (negative because canvas y is down)
+      this.c.rotate(-angle);
+      this.c.fillRect(0, -Rp, Lp, 2 * Rp);
+      this.c.restore();
 
-      // Draw the flipper rectangle and circles
-      const flipperDrawLength = stateComp.length * this.effectiveCScale;
-      const flipperDrawRadius = radiusComp.radius * this.effectiveCScale;
-
-      this.c.fillRect(0.0, -flipperDrawRadius, flipperDrawLength, 2.0 * flipperDrawRadius);
-      this.drawDisc(0, 0, flipperDrawRadius); // At pivot
-      this.drawDisc(flipperDrawLength, 0, flipperDrawRadius); // At tip
-
-      this.c.restore(); // Restore context state
+      // Draw end caps in simulation space
+      this.c.fillStyle = renderComp.color;
+      // Pivot disc
+      this.drawDisc(simX, simY, radiusComp.radius);
+      // Tip disc
+      const tipSimX = simX + stateComp.length * Math.cos(angle);
+      const tipSimY = simY + stateComp.length * Math.sin(angle);
+      this.drawDisc(tipSimX, tipSimY, radiusComp.radius);
     }
 
     // Render All Renderable Entities (Circles/Obstacles/Etc.)
