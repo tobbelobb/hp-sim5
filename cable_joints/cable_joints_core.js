@@ -9,7 +9,7 @@ class Vector2 {
   subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
   distanceTo(b) { return Math.sqrt((this.x - b.x)*(this.x - b.x) + (this.y - b.y)*(this.y - b.y)); }
   length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
-  lengthSq() { return this.x * this.x + this.y * this.y; } // Optimization
+  lengthSq() { return this.x * this.x + this.y * this.y; }
   scale(s) { this.x *= s; this.y *= s; return this; }
   dot(v) { return this.x * v.x + this.y * v.y; }
   perp() { return new Vector2(-this.y, this.x); }
