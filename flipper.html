@@ -43,6 +43,7 @@
             <button id="pauseBtn" tabindex="-1">Pause</button>
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button>
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
@@ -854,6 +855,16 @@
         }
 
         requestAnimationFrame(gameLoop);
+
+        // Dump World State function for Flipper Game
+        function dumpWorldState(world) {
+            console.log('DUMP_WORLD_STATE', JSON.stringify(world, (key, value) => {
+                if (value instanceof Vector2) {
+                    return `new Vector2(${value.x}, ${value.y})`;
+                }
+                return value;
+            }, 2));
+        }
     }
 
     // --- Event Listeners ---
