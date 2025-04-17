@@ -1,0 +1,11 @@
+{
+  "name": "cable_joints",
+  "version": "1.0.0",
+  "main": "cable_joints_core.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
