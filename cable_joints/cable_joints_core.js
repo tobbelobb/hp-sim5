@@ -1139,6 +1139,7 @@ class PBDCableConstraintSolver {
       // --- Calculate Total Path Error ---
       const totalPathError = totalCurrentLength - path.totalRestLength;
 
+
       // --- 2. Iterate Through Joints and Apply Corrections ---
       // Apply correction only if the entire path is longer than its rest length
       if (totalPathError > epsilon) {
