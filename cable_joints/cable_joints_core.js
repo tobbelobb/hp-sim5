@@ -501,7 +501,7 @@ class CableAttachmentUpdateSystem {
         const linkId = joint_i.entityB;
         const linkId2 = joint_i_plus_1.entityA;
         if (linkId !== linkId2) {
-          log.warn("Merge loop saw disconnected cable path");
+          console.warn("Merge loop saw disconnected cable path");
         }
         if (joint_i.entityA === joint_i_plus_1.entityB) {
           continue;
@@ -881,7 +881,7 @@ class CableAttachmentUpdateSystem {
                 newRestLength1 = availableRestLength * initialDist1 / totalDist;
                 newRestLength2 = availableRestLength * initialDist2 / totalDist;
             } else {
-                console.warn("Split occurred with near-zero distance between new segments.");
+                console.warn("Split occurred with near-zero distance between new segments:", totalDist);
             }
 
             // Update original joint (now entityA -> splitter)
@@ -1346,6 +1346,7 @@ if (typeof module !== 'undefined' && module.exports) {
     PositionComponent,
     RadiusComponent,
     CableJointComponent,
+    CableLinkComponent,
     CablePathComponent,
     VelocityComponent,
     BallTagComponent,
@@ -1354,7 +1355,8 @@ if (typeof module !== 'undefined' && module.exports) {
     GravityAffectedComponent,
     GravitySystem,
     MovementSystem,
-    PBDBallBallCollisions
+    PBDBallBallCollisions,
+    CableAttachmentUpdateSystem
   };
 }
 

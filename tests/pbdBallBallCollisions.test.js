@@ -223,5 +223,7 @@ describe('PBDBallBallCollisions', () => {
     const v2_r = world.getComponent(ball2, VelocityComponent).vel;
     expect(v1_r.x).toBeCloseTo(-0.26666667);
     expect(v2_r.x).toBeCloseTo(1.53333333);
+    expect(v1_r.y).toBeCloseTo(0.0);
+    expect(v2_r.y).toBeCloseTo(0.0);
   });
 });

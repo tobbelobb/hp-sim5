@@ -18,7 +18,7 @@ describe('CableAttachmentUpdateSystem', () => {
     const dt = 1.0; // dt not used for merge
     const center = new Vector2(0, 0);
     const radius = 1;
-    const cw = false;
+    const cw = true;
 
     // Create entities
     const ball1 = world.createEntity();
@@ -30,7 +30,7 @@ describe('CableAttachmentUpdateSystem', () => {
     world.addComponent(wheel, new CableLinkComponent());
     world.addComponent(ball2, new CableLinkComponent());
     world.addComponent(wheel, new PositionComponent(0, 0));
-    world.addComponent(ball1, new PositionComponent(1.000001, 2));
+    world.addComponent(ball1, new PositionComponent(0.9999, 2));
     world.addComponent(ball2, new PositionComponent(1.0, -2));
     world.addComponent(wheel, new RadiusComponent(radius));
 
@@ -86,6 +86,13 @@ describe('CableAttachmentUpdateSystem', () => {
     const initialTotalRest = pathComp.totalRestLength;
     expect(pathComp.jointEntities).toHaveLength(2);
     expect(pathComp.linkTypes).toHaveLength(3);
+    expect(pathComp.stored[1]).toBeLessThan(radius);
+    expect(pathComp.stored[1]).toBeGreaterThan(0.0);
+
+    // Let ball1 travel to the right
+    world.getComponent(ball1, PositionComponent).prevPos = new Vector2(1.001, 2);
+    world.getComponent(ball1, PositionComponent).pos = new Vector2(1.001, 2);
+    pathComp.stored[1] = -0.000001;
 
     // Run the attachment update to trigger merge
     const system = new CableAttachmentUpdateSystem();
