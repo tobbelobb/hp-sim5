@@ -358,7 +358,7 @@ class World {
 
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Vector2, closestPointOnSegment, _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle };
+  module.exports = { Vector2, closestPointOnSegment, _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle, signedArcLengthOnWheel };
 }
 
 // --- Components (Plain Data) ---
