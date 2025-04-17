@@ -467,7 +467,6 @@
         this.c = canvas.getContext("2d");
         this.cScale = cScale;
         this.simHeight = simHeight; // Needed for y-flipping
-        this.skip = 1;
       }
 
       // Coordinate transformation helpers
@@ -482,11 +481,6 @@
       }
 
       update(world, dt) {
-        if (this.skip == 0) {
-          this.skip = 1;
-          return;
-        }
-        this.skip--;
         this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Render Border

@@ -1186,7 +1186,7 @@ class PBDCableConstraintSolver {
           for (const [entityId, grad] of grads.entries()) {
             const invM = invMassMap.get(entityId);
             if (invM <= 0) continue;
-            const delta = grad.clone().scale(invM * lambda);
+            const delta = grad.clone().scale(-invM * lambda);
             const posComp = world.getComponent(entityId, PositionComponent);
             if (posComp) {
               posComp.pos.add(delta);
