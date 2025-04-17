@@ -53,6 +53,15 @@
             this.angle = angle; // Current angle in radians
             this.prevAngle = angle; // Angle at the start of the timestep
         }
+
+        // on Space → emit minimal debug dump
+        dumpDebugScenario() {
+            const state = {
+                resources: window.world.resources,
+                inputLog: this.eventLog
+            };
+            console.log('DEBUG_SCENARIO_DUMP', JSON.stringify(state));
+        }
     }
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class FlipperTagComponent { }
@@ -83,6 +92,8 @@
              this.canvas = canvas;
              this.clicks = [];
              this.releases = [];
+             this.eventLog = [];     // ← record inputs per frame
+             this.frame = 0;         // ← frame counter
              this.canvas.setAttribute('tabindex', '0');
              this.canvas.style.outline = 'none';
              this.canvas.focus();
@@ -119,6 +130,9 @@
          }
 
          handleKeydown(event) {
+             if (event.code === 'Space') {
+                 this.dumpDebugScenario();
+             }
              if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
                  const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
                  if (flipperEntities.length < 2) {
@@ -161,9 +175,15 @@
          }
 
          update(world, dt) {
-             if (this.clicks.length === 0 && this.releases.length == 0) return;
+             this.frame++;
+             // snapshot and clear inputs each frame
+             const clicksFrame = this.clicks.slice();
+             const releasesFrame = this.releases.slice();
+             this.eventLog.push({ frame: this.frame, clicks: clicksFrame, releases: releasesFrame });
+             this.clicks = [];
+             this.releases = [];
 
-             if (this.clicks.length > 0) {
+             if (clicksFrame.length > 0) {
                  const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
                  // Find flippers and check if clicked near pivot
                  const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
