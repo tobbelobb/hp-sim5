@@ -1266,6 +1266,7 @@ class RenderSystem {
 
       ctx.beginPath();
       let prev_cx = -1, prev_cy = -1; // Store previous canvas point
+      const IGNORE_OBSTACLES_FOR_FIRST_SEGMENTS = 2; // Skip obstacle checks for the first N segments (points 0, 1, ..., N)
 
       for (let i = 0; i <= segments; i++) {
           const t = i / segments;
@@ -1277,26 +1278,28 @@ class RenderSystem {
               pA.y + dy * t - perpVec.y * sagOffset
           );
 
-          // 2. Check for collisions and adjust the point
+          // 2. Check for collisions and adjust the point (skip for the first few segments)
           let current_draw_point_sim = ideal_w.clone(); // Start with the ideal point
-          for (const obs of obstacles) {
-              const vecToObstacle = current_draw_point_sim.clone().subtract(obs.pos);
-              const distSq = vecToObstacle.lengthSq();
-              const radiusSq = obs.radius * obs.radius;
+          if (i > IGNORE_OBSTACLES_FOR_FIRST_SEGMENTS) {
+              for (const obs of obstacles) {
+                  const vecToObstacle = current_draw_point_sim.clone().subtract(obs.pos);
+                  const distSq = vecToObstacle.lengthSq();
+                  const radiusSq = obs.radius * obs.radius;
 
-              if (distSq < radiusSq) {
-                  // Point is inside this obstacle, push it to the surface
-                  const dist = Math.sqrt(distSq);
-                  const pushAmount = obs.radius - dist;
-                  if (dist > 1e-9) { // Avoid division by zero if point is exactly at center
-                      vecToObstacle.normalize();
-                      current_draw_point_sim.add(vecToObstacle, pushAmount);
-                  } else {
-                      // Point is at the center, push it out in an arbitrary direction (e.g., up)
-                      current_draw_point_sim = obs.pos.clone().add(new Vector2(0, obs.radius));
+                  if (distSq < radiusSq) {
+                      // Point is inside this obstacle, push it to the surface
+                      const dist = Math.sqrt(distSq);
+                      const pushAmount = obs.radius - dist;
+                      if (dist > 1e-9) { // Avoid division by zero if point is exactly at center
+                          vecToObstacle.normalize();
+                          current_draw_point_sim.add(vecToObstacle, pushAmount);
+                      } else {
+                          // Point is at the center, push it out in an arbitrary direction (e.g., up)
+                          current_draw_point_sim = obs.pos.clone().add(new Vector2(0, obs.radius));
+                      }
+                      // Optimization: If we only want to avoid one obstacle per point, break here.
+                      // For multiple overlapping obstacles, continuing might be better.
                   }
-                  // Optimization: If we only want to avoid one obstacle per point, break here.
-                  // For multiple overlapping obstacles, continuing might be better.
               }
           }
 
