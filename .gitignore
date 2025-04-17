@@ -2,3 +2,5 @@
 .env
 tags
 attic/
+node_modules/
+package-lock.json
