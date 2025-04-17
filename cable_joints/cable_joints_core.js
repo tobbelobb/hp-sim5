@@ -1350,7 +1350,8 @@ if (typeof module !== 'undefined' && module.exports) {
     VelocityComponent,
     GravityAffectedComponent,
     GravitySystem,
-    MovementSystem
+    MovementSystem,
+    PBDBallBallCollisions
   };
 }
 
