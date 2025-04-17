@@ -1514,6 +1514,28 @@ testGeneratedError: {
 
 
 
+  
+// --- System: Input Replay ---
+// Replays recorded inputLog into the InputSystem each frame
+class InputReplaySystem {
+  runInPause = true;
+  constructor(inputLog) {
+    this.inputLog = inputLog;
+    this.currentIndex = 0;
+  }
+  update(world, dt) {
+    // Find the InputSystem instance by its recorded eventLog
+    const inputSys = world.systems.find(s =>
+      Array.isArray(s.eventLog) && Array.isArray(s.clicks)
+    );
+    if (!inputSys) return;
+    if (this.currentIndex >= this.inputLog.length) return;
+    const entry = this.inputLog[this.currentIndex++];
+    inputSys.clicks = entry.clicks.slice();
+    inputSys.releases = entry.releases.slice();
+  }
+}
+
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -1540,7 +1562,8 @@ if (typeof module !== 'undefined' && module.exports) {
     GravitySystem,
     MovementSystem,
     PBDBallBallCollisions,
-    CableAttachmentUpdateSystem
+    CableAttachmentUpdateSystem,
+    InputReplaySystem
   };
 }
 
