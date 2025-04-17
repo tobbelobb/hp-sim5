@@ -1440,6 +1440,9 @@ class RenderSystem {
       const straightDist = pA.distanceTo(pB);
       if (jointComp.restLength > straightDist + 1e-6) {
         // Pass the queried obstacles to the drawing function
+        const filteredObstacles = this.cableLinkObstacles.filter(
+          entity => entity !== jointComp.entityA && entity !== jointComp.entityB
+        );
         this._drawCatenary(pA, pB, jointComp.restLength, this.cableLinkObstacles);
       } else {
         // Draw straight line if taut
