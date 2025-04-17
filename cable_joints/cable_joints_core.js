@@ -721,18 +721,20 @@ class CableAttachmentUpdateSystem {
         if (joint.restLength < 0) {
           console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)})`);
           if (rollingLinkA && rollingLinkB) {
-            console.warn("Clamping");
+            console.warn("Clamping both");
             path.stored[A] = joint.restLength/2.0;
             path.stored[B] = joint.restLength/2.0;
             joint.restLength = 0.0;
           } else if (rollingLinkA) {
-            console.warn("Clamping");
+            console.warn("Clamping left");
             path.stored[A] = joint.restLength;
             joint.restLength = 0.0;
           } else if (rollingLinkB) {
-            console.warn("Clamping");
+            console.warn("Clamping right");
             path.stored[B] = joint.restLength;
             joint.restLength = 0.0;
+          } else {
+            console.warn("No Clamp");
           }
         }
 
@@ -976,7 +978,7 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
       //console.log(`stored: ${path.stored}`);
     }
   }
