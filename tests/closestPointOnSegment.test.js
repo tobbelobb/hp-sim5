@@ -27,4 +27,22 @@ describe('closestPointOnSegment', () => {
     expect(cp.x).toBeCloseTo(10);
     expect(cp.y).toBeCloseTo(0);
   });
+
+  test('zero segment', () => {
+    const a = new Vector2(0, 0);
+    const b = new Vector2(0, 0);
+    const p = new Vector2(15, -5);
+    const cp = closestPointOnSegment(p, a, b);
+    expect(cp.x).toBeCloseTo(0);
+    expect(cp.y).toBeCloseTo(0);
+  });
+
+  test('point projects on segment', () => {
+    const a = new Vector2(0, 10);
+    const b = new Vector2(0, 0);
+    const p = new Vector2(0, 5);
+    const cp = closestPointOnSegment(p, a, b);
+    expect(cp.x).toBeCloseTo(0);
+    expect(cp.y).toBeCloseTo(5);
+  });
 });
