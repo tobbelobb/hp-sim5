@@ -1255,28 +1255,14 @@ class RenderSystem {
     const dx = pB.x - pA.x;
     const dy = pB.y - pA.y;
     const D = Math.sqrt(dx*dx + dy*dy);
-    if (D <= 0) {
-      console.log("D: ", D);
-      return;
-    }
-    // Solve for parameter a: 2a sinh(D/(2a)) = length
-    let a_low = 0.0001, a_high = length, a;
-    for (let i = 0; i < 20; i++) {
-      const a_mid = 0.5 * (a_low + a_high);
-      const f = 2 * a_mid * Math.sinh(D / (2 * a_mid));
-      if (f > length) a_high = a_mid;
-      else a_low = a_mid;
-    }
-    a = 0.5 * (a_low + a_high);
-    const y0 = a * Math.cosh(-D/(2*a)) - a;
+    if (D <= 1e-6) return;
+    // Parabolic approximation sag downward only
+    const sag = Math.max(length - D, 0) * 0.5;
     ctx.beginPath();
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
-      const x = -D/2 + D * t;
-      const y = a * Math.cosh(x / a) - a - y0;
-      // Rotate and translate to world coordinates
-      const wx = pA.x + ((x + D/2) * dx - y * dy) / D;
-      const wy = pA.y + ((x + D/2) * dy + y * dx) / D;
+      const wx = pA.x + dx * t;
+      const wy = pA.y + dy * t - sag * 4 * t * (1 - t);
       const cx = this.cX(wx);
       const cy = this.cY(wy);
       if (i === 0) ctx.moveTo(cx, cy);
