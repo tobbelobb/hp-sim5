@@ -358,7 +358,22 @@ class World {
 
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Vector2, closestPointOnSegment, _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle, signedArcLengthOnWheel, lineSegmentCircleIntersection, rightOfLine };
+  module.exports = {
+    Vector2,
+    closestPointOnSegment,
+    _tangentPointCircle,
+    tangentFromPointToCircle,
+    tangentFromCircleToPoint,
+    tangentFromCircleToCircle,
+    signedArcLengthOnWheel,
+    lineSegmentCircleIntersection,
+    rightOfLine,
+    World,
+    PositionComponent,
+    RadiusComponent,
+    CableJointComponent,
+    CablePathComponent
+  };
 }
 
 // --- Components (Plain Data) ---
