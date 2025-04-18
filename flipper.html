@@ -228,6 +228,11 @@ canvas {
                  // record old pos for velocity
                  this.grabStartPrevPos = pos.clone();
                  world.setResource('grabbedBall', b);
+
+                 // Potentially unpause
+                 const pauseState = world.getResource('pauseState');
+                 pauseState.paused = false;
+                 pauseBtn.textContent = "Pause";
                  return;       // now we’re in grab mode
                }
              }
@@ -381,11 +386,9 @@ canvas {
       }
 
       update(world, dt) {
-        const grabbed = world.getResource('grabbedBall');
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
         for (const ballId of ballEntities) {
-          if (ballId === grabbed) continue;
           const p1 = world.getComponent(ballId, PositionComponent).pos;
           const v1 = world.getComponent(ballId, VelocityComponent).vel;
           const r1 = world.getComponent(ballId, RadiusComponent).radius;
@@ -440,7 +443,6 @@ canvas {
 
     class PBDBallBorderCollisions {
       update(world, dt) {
-        const grabbed = world.getResource('grabbedBall');
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const borderEntities = world.query([BorderComponent]);
         if (borderEntities.length > 0) {
@@ -450,7 +452,6 @@ canvas {
 
           if (borderPoints.length >= 3) {
             for (const ballId of ballEntities) {
-              if (ballId === grabbed) continue;
               const p1 = world.getComponent(ballId, PositionComponent).pos;
               const v1 = world.getComponent(ballId, VelocityComponent).vel;
               const r1 = world.getComponent(ballId, RadiusComponent).radius;
@@ -526,7 +527,6 @@ canvas {
 
     class PBDBallObstacleCollisions2 {
       update(world, dt) {
-        const grabbed = world.getResource('grabbedBall');
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
         for (const ballId of ballEntities) {
@@ -557,7 +557,10 @@ canvas {
             v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
 
             // Add ScoredTagComponent to the ball that scored
-            world.addComponent(ballId, new ScoredTagComponent());
+            const grabbed = world.getResource('grabbedBall');
+            if (ballId !== grabbed) {
+              world.addComponent(ballId, new ScoredTagComponent());
+            }
           }
         }
       }
@@ -958,7 +961,7 @@ canvas {
       // first frame init
       if (lastTime === 0) lastTime = currentTime;
 
-      let frameSec = 0.1*(currentTime - lastTime) / 1000;
+      let frameSec = 0.7*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches

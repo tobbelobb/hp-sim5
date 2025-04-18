@@ -1014,7 +1014,6 @@ class CableAttachmentUpdateSystem {
 class PBDBallBallCollisions {
   runInPause = false;
   update(world, dt) {
-    const grabbed = world.getResource('grabbedBall');
     const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
     for (let i = 0; i < ballEntities.length; i++) {
       for (let j = i + 1; j < ballEntities.length; j++) {
