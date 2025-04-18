@@ -1236,6 +1236,8 @@ class RenderSystem {
 
     // Store potential obstacles for catenary drawing
     this.cableLinkObstacles = [];
+    // cache per jointId → { positions: Vector2[segments+1], pushDirs: Vector2[segments+1] }
+    this._catenaryCache = new Map();
   }
 
   // Coordinate transformation helpers using instance properties
@@ -1269,69 +1271,75 @@ class RenderSystem {
 
   // Draw catenary curve for slack cable segment between pA and pB with given length,
   // avoiding obstacles.  New: sagDir (unit Vector2) says which way to sag.
-  _drawCatenary(pA, pB, length, obstacles, sagDir = new Vector2(0, -1), segments = 20) {
+  _drawCatenary(jointId, pA, pB, length, obstacles, sagDir = new Vector2(0, -1), segments = 20) {
       const ctx = this.c;
-      const dx = pB.x - pA.x;
-      const dy = pB.y - pA.y;
-      const D = Math.sqrt(dx * dx + dy * dy);
-      if (D <= 1e-6) return; // Avoid division by zero or tiny segments
+      const dx = pB.x - pA.x, dy = pB.y - pA.y;
+      const D  = Math.hypot(dx, dy);
+      if (D <= 1e-6) return;
 
-      // Parabolic approximation sag (magnitude only)
+      // parabolic sag magnitude
       const sag = Math.max(length - D, 0) * 0.5;
-      // force sagDir to unit length
       sagDir = sagDir.clone().normalize();
 
+      // fetch or initialize this joint's cache
+      let cache = this._catenaryCache.get(jointId);
+      if (!cache) {
+        cache = {
+          positions: new Array(segments+1),
+          pushDirs:  new Array(segments+1)
+        };
+        this._catenaryCache.set(jointId, cache);
+      }
+
       ctx.beginPath();
-      let prev_cx = -1, prev_cy = -1; // Store previous canvas point
+      let prev_cx = -1, prev_cy = -1;
 
       for (let i = 0; i <= segments; i++) {
-          const t = i / segments;
+        const t = i / segments;
+        // 1) ideal point along straight+parabola
+        const sagOff = sag * 4 * t * (1 - t);
+        let pt = new Vector2(pA.x + dx*t, pA.y + dy*t)
+                     .add(sagDir, sagOff);
 
-          // 1. Calculate point on the ideal parabolic curve (simulation space)
-          const sagOffset = sag * 4 * t * (1 - t);
-          // move along the straight line, then offset by sagDir * sagOffset
-          const ideal_w = new Vector2(pA.x + dx * t, pA.y + dy * t)
-                               .add(sagDir, sagOffset);
+        // we'll record the direction we actually pushed this segment
+        let appliedPushDir = null;
 
-          // 2. Check for collisions and adjust the point
-          let current_draw_point_sim = ideal_w.clone();
-          for (const obs of obstacles) {
-              const vecToObstacle = current_draw_point_sim.clone().subtract(obs.pos);
-              const distSq        = vecToObstacle.lengthSq();
-              const radiusSq      = obs.radius * obs.radius;
-
-              if (distSq < radiusSq) {
-                  const dist       = Math.sqrt(distSq);
-                  const pushAmount = obs.radius - dist;
-                  if (dist > 1e-9) {
-                     vecToObstacle.normalize();
-                     // only push outward if that push is upward (vec.y<=0)
-                     if (vecToObstacle.y >= 0) {
-                       current_draw_point_sim.add(vecToObstacle, pushAmount);
-                     }
-                  } else {
-                     // if exactly at center, push straight down to the bottom of the circle
-                     current_draw_point_sim = obs.pos.clone().add(new Vector2(0, -obs.radius));
-                  }
+        // 2) obstacle‐avoidance
+        for (const obs of obstacles) {
+          const v = pt.clone().subtract(obs.pos);
+          const d2 = v.lengthSq(), r2 = obs.radius * obs.radius;
+          if (d2 < r2) {
+            const d = Math.sqrt(d2), push = obs.radius - d;
+            if (d > 1e-9) {
+              const pd = v.clone().normalize();
+              // only downward pushes; require same sign as last frame
+              if (pd.y <= 0) {
+                const prev = cache.pushDirs[i];
+                if (!prev || pd.dot(prev) >= 0) {
+                  pt.add(pd, push);
+                  appliedPushDir = pd;
+                }
               }
+            } else {
+              // exactly at center → force straight‐down
+              pt = obs.pos.clone().add(new Vector2(0, -obs.radius));
+              appliedPushDir = new Vector2(0, -1);
+            }
           }
+        }
 
-          // 3. Convert the (potentially adjusted) simulation point to canvas coordinates
-          const cx = this.cX(current_draw_point_sim.x);
-          const cy = this.cY(current_draw_point_sim.y);
+        // stash this segment's final pos/dir for next frame
+        cache.positions[i] = pt.clone();
+        cache.pushDirs[i] = appliedPushDir;
 
-          // 4. Draw the segment
-          if (i === 0) {
-              ctx.moveTo(cx, cy);
-          } else {
-              // Optional: Check if the straight line segment (prev_cx, prev_cy) to (cx, cy)
-              // itself intersects an obstacle in *canvas space*. This is more complex.
-              // For now, we just draw to the adjusted point.
-              ctx.lineTo(cx, cy);
-          }
-          prev_cx = cx;
-          prev_cy = cy;
+        // 3) draw
+        const cx = this.cX(pt.x), cy = this.cY(pt.y);
+        if (i === 0) ctx.moveTo(cx, cy);
+        else         ctx.lineTo(cx, cy);
+
+        prev_cx = cx; prev_cy = cy;
       }
+
       ctx.stroke();
   }
 
@@ -1454,7 +1462,7 @@ class RenderSystem {
       // Draw catenary if slack, otherwise straight
       const straightDist = pA.distanceTo(pB);
       if (jointComp.restLength > straightDist + 1e-6) {
-        this._drawCatenary(pA, pB, jointComp.restLength, this.cableLinkObstacles);
+        this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
       } else {
         this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
         this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
