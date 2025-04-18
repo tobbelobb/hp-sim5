@@ -138,8 +138,9 @@ canvas {
              this.canvas.setAttribute('tabindex', '0');
              this.canvas.style.outline = 'none';
              this.canvas.focus();
-             this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this)); // works for mouse and touch
-             this.canvas.addEventListener('pointerup', this.handlePointerUp.bind(this));
+             // listen globally so ups/downs outside the canvas still fire
+             document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+             document.addEventListener('pointerup', this.handlePointerUp.bind(this));
              this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
              this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
              this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
@@ -214,7 +215,10 @@ canvas {
 
          handlePointerDown(event) {
              event.preventDefault();
-             this.canvas.setPointerCapture(event.pointerId);
+             // only capture if the down was on our canvas
+             if (event.target === this.canvas) {
+               this.canvas.setPointerCapture(event.pointerId);
+             }
              const rect = this.canvas.getBoundingClientRect();
              const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
              const simX = (event.clientX - rect.left) / scale;
