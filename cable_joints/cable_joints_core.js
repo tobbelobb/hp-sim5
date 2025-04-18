@@ -1,3 +1,4 @@
+const linecolor1 = '#FFFF00'
 // --- Utility: Vector2 ---
 class Vector2 {
   constructor(x = 0.0, y = 0.0) { this.x = x; this.y = y; }
@@ -851,17 +852,17 @@ class CableAttachmentUpdateSystem {
             }
 
             // --- Debug Visualization for initialPoints2 ---
-            if (initialPoints2 && debugPoints) {
-                if (initialPoints2.a_attach) {
-                    debugPoints[`split_${jointId}_init2_attach`] = { pos: initialPoints2.a_attach, color: '#FFA500' }; // Orange
-                }
-                if (initialPoints2.a_circle) {
-                    debugPoints[`split_${jointId}_init2_circleA`] = { pos: initialPoints2.a_circle, color: '#FF00FF' }; // Magenta
-                }
-                 if (initialPoints2.b_circle) { // For circle-circle case
-                    debugPoints[`split_${jointId}_init2_circleB`] = { pos: initialPoints2.b_circle, color: '#00FFFF' }; // Cyan
-                }
-            }
+            //if (initialPoints2 && debugPoints) {
+            //    if (initialPoints2.a_attach) {
+            //        debugPoints[`split_${jointId}_init2_attach`] = { pos: initialPoints2.a_attach, color: '#FFA500' }; // Orange
+            //    }
+            //    if (initialPoints2.a_circle) {
+            //        debugPoints[`split_${jointId}_init2_circleA`] = { pos: initialPoints2.a_circle, color: '#FF00FF' }; // Magenta
+            //    }
+            //     if (initialPoints2.b_circle) { // For circle-circle case
+            //        debugPoints[`split_${jointId}_init2_circleB`] = { pos: initialPoints2.b_circle, color: '#00FFFF' }; // Cyan
+            //    }
+            //}
             // --- End Debug Visualization ---
 
 
@@ -908,7 +909,7 @@ class CableAttachmentUpdateSystem {
             // Create the new joint (splitter -> entityB)
             world.addComponent(newJointId, new CableJointComponent(
                 splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
-            world.addComponent(newJointId, new RenderableComponent('line', '#0000FF')); // Blue line for new joint
+            world.addComponent(newJointId, new RenderableComponent('line', linecolor1));
             const discrepancy = originalRestLength - s - newRestLength1 - newRestLength2;
             const tension1 = initialDist1/newRestLength1;
             const tension2 = initialDist2/newRestLength2;
@@ -1312,13 +1313,11 @@ class RenderSystem {
             const d = Math.sqrt(d2), push = obs.radius - d;
             if (d > 1e-9) {
               const pd = v.clone().normalize();
-              // only downward pushes; require same sign as last frame
-              if (pd.y <= 0) {
-                const prev = cache.pushDirs[i];
-                if (!prev || pd.dot(prev) >= 0) {
-                  pt.add(pd, push);
-                  appliedPushDir = pd;
-                }
+              // require same sign as last frame
+              const prev = cache.pushDirs[i];
+              if (!prev || pd.dot(prev) >= 0) {
+                pt.add(pd, push);
+                appliedPushDir = pd;
               }
             } else {
               // exactly at center → force straight‐down
@@ -1428,21 +1427,6 @@ class RenderSystem {
       this.drawDisc(tipSimX, tipSimY, radiusComp.radius);
     }
 
-    // Render All Renderable Entities (Circles/Obstacles/Etc.)
-    const renderableEntities = world.query([PositionComponent, RenderableComponent]);
-    for (const entityId of renderableEntities) {
-        const posComp = world.getComponent(entityId, PositionComponent);
-        const renderComp = world.getComponent(entityId, RenderableComponent);
-
-        if (renderComp.shape === 'circle') {
-            const radiusComp = world.getComponent(entityId, RadiusComponent); // Need radius for circles
-            if (posComp && radiusComp) {
-                this.c.fillStyle = renderComp.color;
-                this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
-            }
-        }
-        // Add rendering for other shapes if needed (e.g., 'line' is handled below)
-    }
 
 
     // Render Cable Joints (Lines)
@@ -1470,6 +1454,22 @@ class RenderSystem {
       }
     }
     this.c.lineWidth = 1;
+
+    // Render All Renderable Entities (Circles/Obstacles/Etc.)
+    const renderableEntities = world.query([PositionComponent, RenderableComponent]);
+    for (const entityId of renderableEntities) {
+        const posComp = world.getComponent(entityId, PositionComponent);
+        const renderComp = world.getComponent(entityId, RenderableComponent);
+
+        if (renderComp.shape === 'circle') {
+            const radiusComp = world.getComponent(entityId, RadiusComponent); // Need radius for circles
+            if (posComp && radiusComp) {
+                this.c.fillStyle = renderComp.color;
+                this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+            }
+        }
+        // Add rendering for other shapes if needed (e.g., 'line' is handled below)
+    }
 
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');

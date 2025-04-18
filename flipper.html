@@ -604,7 +604,7 @@ canvas {
 
         // Render Cable Joints
         const jointEntities = world.query([CableJointComponent, RenderableComponent]);
-        this.c.strokeStyle = '#FFFF00'; // Default yellow, could use component color
+        this.c.strokeStyle = linecolor1; // Default yellow, could use component color
         this.c.lineWidth = 2;
         for (const entityId of jointEntities) {
           const jointComp = world.getComponent(entityId, CableJointComponent);
@@ -808,7 +808,7 @@ canvas {
         const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
         world.addComponent(joint1, new CableJointComponent(
           ball2, obs4, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle)); // Order matters
-        world.addComponent(joint1, new RenderableComponent('line', '#FF0000')); // Red line
+        world.addComponent(joint1, new RenderableComponent('line', linecolor1));
 
 
         // Calculate initial points for joint2 (obs4 rolling <-> obs3 rolling)
@@ -817,7 +817,7 @@ canvas {
         const initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
         world.addComponent(joint2, new CableJointComponent(
           obs4, obs3, initialDist2, initialPoints2.a_circle, initialPoints2.b_circle)); // Order matters
-        world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
+        world.addComponent(joint2, new RenderableComponent('line', linecolor1));
 
         // Calculate initial points for joint3 (obs3 rolling <-> ball1 attachment)
         const joint3 = world.createEntity();
@@ -825,7 +825,7 @@ canvas {
         const initialDist3 = initialPoints3.a_attach.clone().subtract(initialPoints3.a_circle).length();
         world.addComponent(joint3, new CableJointComponent(
           obs3, ball1, initialDist3, initialPoints3.a_circle, initialPoints3.a_attach)); // Order matters
-        world.addComponent(joint3, new RenderableComponent('line', '#00FF00')); // Green line
+        world.addComponent(joint3, new RenderableComponent('line', linecolor1));
 
         // Create Cable Path Entity
         const cablePath = world.createEntity();
