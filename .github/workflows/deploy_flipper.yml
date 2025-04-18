@@ -19,10 +19,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v2
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v2
         with:
           # Include the Flipper demo and its dependencies
           path: |
