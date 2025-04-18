@@ -845,6 +845,8 @@ canvas {
         world.addComponent(flipper1, new FlipperStateComponent(flipLength, -flipRestAngle, flipMaxRotation, flipAngularVelocity));
         world.addComponent(flipper1, new RestitutionComponent(flipRestitution));
         world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
+        // make the pivot (and tip) act as a cable‐link
+        world.addComponent(flipper1, new CableLinkComponent());
 
         const flipper2 = world.createEntity();
         world.addComponent(flipper2, new FlipperTagComponent());
@@ -853,6 +855,8 @@ canvas {
         world.addComponent(flipper2, new FlipperStateComponent(flipLength, Math.PI + flipRestAngle, -flipMaxRotation, flipAngularVelocity));
         world.addComponent(flipper2, new RestitutionComponent(flipRestitution));
         world.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
+        // also make this flipper a cable link
+        world.addComponent(flipper2, new CableLinkComponent());
 
         // Score Entity
         const scoreEntity = world.createEntity();
