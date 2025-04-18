@@ -288,64 +288,54 @@ canvas {
 
              if (clicksFrame.length > 0) {
                  const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
-// --- find all flippers ---
-const flipperEntities = world.query([
-  FlipperTagComponent,
-  PositionComponent,
-  FlipperStateComponent
-]);
-// get world bounds
-const simWidth  = world.getResource('simWidth');
-const simHeight = world.getResource('simHeight');
+               // --- find all flippers ---
+               const flipperEntities = world.query([
+                 FlipperTagComponent,
+                 PositionComponent,
+                 FlipperStateComponent
+               ]);
+               // get world bounds
+               const simWidth  = world.getResource('simWidth');
+               const simHeight = world.getResource('simHeight');
 
-// test if click is in‐canvas but outside the border polygon
-let outsideBorder = false;
-if (
-  clickPos.x >= 0 && clickPos.x <= simWidth &&
-  clickPos.y >= 0 && clickPos.y <= simHeight
-) {
-  const borderEnts = world.query([BorderComponent]);
-  if (borderEnts.length > 0) {
-    const pts = world
-      .getComponent(borderEnts[0], BorderComponent)
-      .points;
-    let inside = true;
-    for (let i = 0; i < pts.length; i++) {
-      const a = pts[i], b = pts[(i + 1) % pts.length];
-      if (!rightOfLine(clickPos, a, b)) {
-        inside = false;
-        break;
-      }
-    }
-    outsideBorder = !inside;
-  }
-}
-
-if (outsideBorder) {
-  // click outside the walls → press only the nearest flipper
-  let closestId = null;
-  let bestDist = Infinity;
-  for (const id of flipperEntities) {
-    const pos   = world.getComponent(id, PositionComponent).pos;
-    const d2    = clickPos.clone().subtract(pos).lengthSq();
-    if (d2 < bestDist) {
-      bestDist = d2;
-      closestId = id;
-    }
-  }
-  if (closestId !== null) {
-    world.getComponent(closestId, FlipperStateComponent).pressed = true;
-  }
-} else {
-  // click inside play‐area → original pivot‐radius test
-  for (const id of flipperEntities) {
-    const pos   = world.getComponent(id, PositionComponent).pos;
-    const state = world.getComponent(id, FlipperStateComponent);
-    if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) {
-      state.pressed = true;
-    }
-  }
-}
+               // test if click is in‐canvas but outside the border polygon
+               let outsideBorder = false;
+               const borderEnts = world.query([BorderComponent]);
+               const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
+               const rightClick =
+                 rightOfLine(clickPos, borderPoints[0], borderPoints[1]) &&
+                 rightOfLine(clickPos, borderPoints[1], borderPoints[2]);
+               const leftClick =
+                 rightOfLine(clickPos, borderPoints[5], borderPoints[6]) &&
+                 rightOfLine(clickPos, borderPoints[6], borderPoints[7]);
+               if (rightClick) {
+                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
+                 const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
+                 const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
+                 if (flipperPos0.x > flipperPos1.x) {
+                   world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
+                 } else {
+                   world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
+                 }
+               } else if (leftClick) {
+                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
+                 const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
+                 const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
+                 if (flipperPos0.x < flipperPos1.x) {
+                   world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
+                 } else {
+                   world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
+                 }
+               } else {
+                 // click inside play‐area → original pivot‐radius test
+                 for (const id of flipperEntities) {
+                   const pos   = world.getComponent(id, PositionComponent).pos;
+                   const state = world.getComponent(id, FlipperStateComponent);
+                   if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) {
+                     state.pressed = true;
+                   }
+                 }
+               }
              }
 
              if (this.releases.length > 0) {
@@ -631,134 +621,6 @@ if (outsideBorder) {
             }
           }
         }
-      }
-    }
-
-
-    // --- System: Rendering ---
-    class RenderSystem2 {
-      runInPause = true; // Always render
-      constructor(canvas, cScale, simHeight) {
-        this.canvas = canvas;
-        this.c = canvas.getContext("2d");
-        this.cScale = cScale;
-        this.simHeight = simHeight; // Needed for y-flipping
-      }
-
-      // Coordinate transformation helpers
-      cX(x) { return x * this.cScale; }
-      cY(y) { return this.canvas.height - y * this.cScale; }
-
-      drawDisc(x, y, radius) {
-        this.c.beginPath();
-        this.c.arc(x, y, radius, 0.0, 2.0 * Math.PI);
-        this.c.closePath();
-        this.c.fill();
-      }
-
-      update(world, dt) {
-        this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Render Border
-        const borderEntities = world.query([BorderComponent, RenderableComponent]);
-        if (borderEntities.length > 0) {
-          const borderComp = world.getComponent(borderEntities[0], BorderComponent);
-          const renderComp = world.getComponent(borderEntities[0], RenderableComponent);
-          const points = borderComp.points;
-          if (points.length >= 2) {
-            this.c.strokeStyle = renderComp.color;
-            this.c.lineWidth = 5; // Make this a component property?
-            this.c.beginPath();
-            let v = points[0];
-            this.c.moveTo(this.cX(v.x), this.cY(v.y));
-            for (let i = 1; i < points.length + 1; i++) {
-              v = points[i % points.length];
-              this.c.lineTo(this.cX(v.x), this.cY(v.y));
-            }
-            this.c.stroke();
-            this.c.lineWidth = 1;
-          }
-        }
-
-
-        // Render Balls
-        const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
-        for (const entityId of ballEntities) {
-          const posComp = world.getComponent(entityId, PositionComponent);
-          const radiusComp = world.getComponent(entityId, RadiusComponent);
-          const renderComp = world.getComponent(entityId, RenderableComponent);
-
-          this.c.fillStyle = renderComp.color;
-          this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
-        }
-
-        // Render Obstacles
-        const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, RenderableComponent]);
-        for (const entityId of obstacleEntities) {
-          const posComp = world.getComponent(entityId, PositionComponent);
-          const radiusComp = world.getComponent(entityId, RadiusComponent);
-          const renderComp = world.getComponent(entityId, RenderableComponent);
-
-          this.c.fillStyle = renderComp.color;
-          this.drawDisc(this.cX(posComp.pos.x), this.cY(posComp.pos.y), radiusComp.radius * this.cScale);
-        }
-
-
-        // Render Flippers
-        const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RenderableComponent]);
-        for (const entityId of flipperEntities) {
-          const posComp = world.getComponent(entityId, PositionComponent);
-          const radiusComp = world.getComponent(entityId, RadiusComponent); // Flipper thickness
-          const stateComp = world.getComponent(entityId, FlipperStateComponent);
-          const renderComp = world.getComponent(entityId, RenderableComponent);
-
-          this.c.fillStyle = renderComp.color;
-
-          const pivotX = this.cX(posComp.pos.x);
-          const pivotY = this.cY(posComp.pos.y);
-          const angle = stateComp.restAngle + stateComp.sign * stateComp.rotation;
-
-          this.c.save(); // Save context state
-          this.c.translate(pivotX, pivotY);
-          this.c.rotate(-angle); // Rotate Coordinate System (negative because canvas y is down)
-
-          // Draw the flipper rectangle and circles
-          const flipperDrawLength = stateComp.length * this.cScale;
-          const flipperDrawRadius = radiusComp.radius * this.cScale;
-
-          this.c.fillRect(0.0, -flipperDrawRadius, flipperDrawLength, 2.0 * flipperDrawRadius);
-          this.drawDisc(0, 0, flipperDrawRadius); // At pivot
-          this.drawDisc(flipperDrawLength, 0, flipperDrawRadius); // At tip
-
-          this.c.restore(); // Restore context state
-        }
-
-        // Render Cable Joints
-        const jointEntities = world.query([CableJointComponent, RenderableComponent]);
-        this.c.strokeStyle = linecolor1; // Default yellow, could use component color
-        this.c.lineWidth = 2;
-        for (const entityId of jointEntities) {
-          const jointComp = world.getComponent(entityId, CableJointComponent);
-          const renderComp = world.getComponent(entityId, RenderableComponent); // Get render comp for color/shape check
-
-          if (!jointComp.isActive || renderComp.shape !== 'line') continue; // Skip inactive or non-line joints
-
-          // Use cached world attachment points
-          const pA = jointComp.attachmentPointA_world;
-          const pB = jointComp.attachmentPointB_world;
-
-          // Check if points are valid (initialized)
-          if (pA.lengthSq() > 0 && pB.lengthSq() > 0) {
-            this.c.strokeStyle = renderComp.color; // Use component's color
-            this.c.beginPath();
-            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-            this.c.stroke();
-          }
-        }
-        this.c.lineWidth = 1; // Reset line width
-
-
       }
     }
 
