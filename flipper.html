@@ -35,7 +35,7 @@ html, body {
   color: var(--text-main);
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
-  touch-action: manipulation;     /* **stops double‑tap zoom in most browsers**   */
+  touch-action: none;     /* **stops double‑tap zoom in most browsers**   */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -87,7 +87,7 @@ canvas {
   width: 100%;
   aspect-ratio: 1 / 1.7;          /* keeps exact sim ratio */
   border-radius: var(--radius);
-  touch-action: none;    /* ← turn off browser panning/zoom so pointermove/up always fire */
+  touch-action: manipulation;    /* ← turn off browser panning/zoom so pointermove/up always fire */
 }
 
 /* =========  SMALL‑SCREEN TWEAKS  ========= */
