@@ -1267,17 +1267,19 @@ class RenderSystem {
     this.c.fill();
   }
 
-  // Draw catenary curve for slack cable segment between pA and pB with given length, avoiding obstacles
-  _drawCatenary(pA, pB, length, obstacles, segments = 20) {
+  // Draw catenary curve for slack cable segment between pA and pB with given length,
+  // avoiding obstacles.  New: sagDir (unit Vector2) says which way to sag.
+  _drawCatenary(pA, pB, length, obstacles, sagDir = new Vector2(0, -1), segments = 20) {
       const ctx = this.c;
       const dx = pB.x - pA.x;
       const dy = pB.y - pA.y;
       const D = Math.sqrt(dx * dx + dy * dy);
       if (D <= 1e-6) return; // Avoid division by zero or tiny segments
 
-      // Parabolic approximation sag (downward relative to the line between pA and pB)
+      // Parabolic approximation sag (magnitude only)
       const sag = Math.max(length - D, 0) * 0.5;
-      const perpVec = new Vector2(-dy, dx).normalize(); // Perpendicular vector for sag direction
+      // force sagDir to unit length
+      sagDir = sagDir.clone().normalize();
 
       ctx.beginPath();
       let prev_cx = -1, prev_cy = -1; // Store previous canvas point
@@ -1287,13 +1289,12 @@ class RenderSystem {
 
           // 1. Calculate point on the ideal parabolic curve (simulation space)
           const sagOffset = sag * 4 * t * (1 - t);
-          const ideal_w = new Vector2(
-              pA.x + dx * t - perpVec.x * sagOffset, // Apply sag perpendicularly downwards (relative)
-              pA.y + dy * t - perpVec.y * sagOffset
-          );
+          // move along the straight line, then offset by sagDir * sagOffset
+          const ideal_w = new Vector2(pA.x + dx * t, pA.y + dy * t)
+                               .add(sagDir, sagOffset);
 
           // 2. Check for collisions and adjust the point
-          let current_draw_point_sim = ideal_w.clone(); // Start with the ideal point
+          let current_draw_point_sim = ideal_w.clone();
           for (const obs of obstacles) {
               const vecToObstacle = current_draw_point_sim.clone().subtract(obs.pos);
               const distSq = vecToObstacle.lengthSq();
