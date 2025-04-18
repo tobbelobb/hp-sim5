@@ -250,7 +250,8 @@ canvas {
                // new vel = delta position since grab start
                const prev   = this.grabStartPrevPos;
                const vel    = world.getComponent(b, VelocityComponent).vel;
-               vel.set(newPos.x - prev.x, newPos.y - prev.y);
+               const dt = world.getResource('dt');
+               vel.set(new Vector2((newPos.x - prev.x)/dt, (newPos.y - prev.y)/dt));
                // clear grab
                this.grabbedBall = null;
                world.setResource('grabbedBall', null);
@@ -294,6 +295,12 @@ canvas {
                           state.pressed = false;
                      }
                  }
+             }
+
+             const grabbedBall = world.getResource('grabbedBall');
+             if (grabbedBall) {
+                const pos = world.getComponent(grabbedBall, PositionComponent).pos;
+                this.grabStartPrevPos = pos.clone();
              }
 
              // Could add logic here to interact with pause button entity if it existed
@@ -952,7 +959,7 @@ canvas {
       // first frame init
       if (lastTime === 0) lastTime = currentTime;
 
-      let frameSec = 0.6*(currentTime - lastTime) / 1000;
+      let frameSec = 0.1*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches
