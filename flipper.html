@@ -87,6 +87,7 @@ canvas {
   width: 100%;
   aspect-ratio: 1 / 1.7;          /* keeps exact sim ratio */
   border-radius: var(--radius);
+  touch-action: none;    /* ← turn off browser panning/zoom so pointermove/up always fire */
 }
 
 /* =========  SMALL‑SCREEN TWEAKS  ========= */
@@ -212,6 +213,8 @@ canvas {
          }
 
          handlePointerDown(event) {
+             event.preventDefault();
+             this.canvas.setPointerCapture(event.pointerId);
              const rect = this.canvas.getBoundingClientRect();
              const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
              const simX = (event.clientX - rect.left) / scale;
@@ -240,6 +243,8 @@ canvas {
          }
 
          handlePointerUp(event) {
+             event.preventDefault();
+             this.canvas.releasePointerCapture(event.pointerId);
              const rect = this.canvas.getBoundingClientRect();
              const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
              const simX = (event.clientX - rect.left) / scale;
@@ -312,6 +317,7 @@ canvas {
          }
 
          handlePointerMove(event) {
+           event.preventDefault();
            if (!this.grabbedBall) return;
            const rect = this.canvas.getBoundingClientRect();
            const scale = this.canvas.height / world.getResource('simHeight');
