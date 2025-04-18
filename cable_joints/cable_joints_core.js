@@ -1237,8 +1237,6 @@ class RenderSystem {
 
     // Store potential obstacles for catenary drawing
     this.cableLinkObstacles = [];
-    // cache per jointId → { positions: Vector2[segments+1], pushDirs: Vector2[segments+1] }
-    this._catenaryCache = new Map();
   }
 
   // Coordinate transformation helpers using instance properties
@@ -1279,18 +1277,8 @@ class RenderSystem {
       if (D <= 1e-6) return;
 
       // parabolic sag magnitude
-      const sag = Math.max(length - D, 0) * 0.5;
+      const sag = Math.max(length - D, 0) * 0.1;
       sagDir = sagDir.clone().normalize();
-
-      // fetch or initialize this joint's cache
-      let cache = this._catenaryCache.get(jointId);
-      if (!cache) {
-        cache = {
-          positions: new Array(segments+1),
-          pushDirs:  new Array(segments+1)
-        };
-        this._catenaryCache.set(jointId, cache);
-      }
 
       ctx.beginPath();
       let prev_cx = -1, prev_cy = -1;
@@ -1302,9 +1290,6 @@ class RenderSystem {
         let pt = new Vector2(pA.x + dx*t, pA.y + dy*t)
                      .add(sagDir, sagOff);
 
-        // we'll record the direction we actually pushed this segment
-        let appliedPushDir = null;
-
         // 2) obstacle‐avoidance
         for (const obs of obstacles) {
           const v = pt.clone().subtract(obs.pos);
@@ -1314,22 +1299,13 @@ class RenderSystem {
             if (d > 1e-9) {
               const pd = v.clone().normalize();
               // require same sign as last frame
-              const prev = cache.pushDirs[i];
-              if (!prev || pd.dot(prev) >= 0) {
-                pt.add(pd, push);
-                appliedPushDir = pd;
-              }
+              pt.add(pd, push);
             } else {
               // exactly at center → force straight‐down
               pt = obs.pos.clone().add(new Vector2(0, -obs.radius));
-              appliedPushDir = new Vector2(0, -1);
             }
           }
         }
-
-        // stash this segment's final pos/dir for next frame
-        cache.positions[i] = pt.clone();
-        cache.pushDirs[i] = appliedPushDir;
 
         // 3) draw
         const cx = this.cX(pt.x), cy = this.cY(pt.y);
