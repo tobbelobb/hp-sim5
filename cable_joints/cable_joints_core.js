@@ -1451,20 +1451,11 @@ class RenderSystem {
       const pB = jointComp.attachmentPointB_world;
       this.c.strokeStyle = renderComp.color;
       this.c.beginPath();
-      // Draw catenary if segment is slack
+      // Draw catenary if slack, otherwise straight
       const straightDist = pA.distanceTo(pB);
       if (jointComp.restLength > straightDist + 1e-6) {
-        // choose sag direction: always downward, or opposite endpoint‐velocities
-        let sagDir = new Vector2(0, -1);
-        const velA = world.getComponent(jointComp.entityA, VelocityComponent)?.vel;
-        const velB = world.getComponent(jointComp.entityB, VelocityComponent)?.vel;
-        if (velA && velB) {
-          const avg = velA.clone().add(velB).scale(0.5);
-          if (avg.lengthSq() > 1e-9) sagDir = avg.clone().scale(-1);
-        }
-        this._drawCatenary(pA, pB, jointComp.restLength, this.cableLinkObstacles, sagDir);
+        this._drawCatenary(pA, pB, jointComp.restLength, this.cableLinkObstacles);
       } else {
-        // Draw straight line if taut
         this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
         this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
         this.c.stroke();
