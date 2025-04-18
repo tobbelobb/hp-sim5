@@ -1297,22 +1297,22 @@ class RenderSystem {
           let current_draw_point_sim = ideal_w.clone();
           for (const obs of obstacles) {
               const vecToObstacle = current_draw_point_sim.clone().subtract(obs.pos);
-              const distSq = vecToObstacle.lengthSq();
-              const radiusSq = obs.radius * obs.radius;
+              const distSq        = vecToObstacle.lengthSq();
+              const radiusSq      = obs.radius * obs.radius;
 
               if (distSq < radiusSq) {
-                  // Point is inside this obstacle, push it to the surface
-                  const dist = Math.sqrt(distSq);
+                  const dist       = Math.sqrt(distSq);
                   const pushAmount = obs.radius - dist;
-                  if (dist > 1e-9) { // Avoid division by zero if point is exactly at center
-                      vecToObstacle.normalize();
-                      current_draw_point_sim.add(vecToObstacle, pushAmount);
+                  if (dist > 1e-9) {
+                     vecToObstacle.normalize();
+                     // only push outward if that push is downward (vec.y<=0)
+                     if (vecToObstacle.y <= 0) {
+                       current_draw_point_sim.add(vecToObstacle, pushAmount);
+                     }
                   } else {
-                      // Point is at the center, push it out in an arbitrary direction (e.g., up)
-                      current_draw_point_sim = obs.pos.clone().add(new Vector2(0, obs.radius));
+                     // if exactly at center, push straight down to the bottom of the circle
+                     current_draw_point_sim = obs.pos.clone().add(new Vector2(0, -obs.radius));
                   }
-                  // Optimization: If we only want to avoid one obstacle per point, break here.
-                  // For multiple overlapping obstacles, continuing might be better.
               }
           }
 
