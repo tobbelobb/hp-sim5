@@ -1020,7 +1020,6 @@ class PBDBallBallCollisions {
       for (let j = i + 1; j < ballEntities.length; j++) {
         const e1 = ballEntities[i];
         const e2 = ballEntities[j];
-        if (e1 === grabbed || e2 === grabbed) continue;
 
         const p1 = world.getComponent(e1, PositionComponent).pos;
         const v1 = world.getComponent(e1, VelocityComponent).vel;
