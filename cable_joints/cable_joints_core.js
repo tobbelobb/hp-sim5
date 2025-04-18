@@ -1445,6 +1445,45 @@ class RenderSystem {
         }
       }
     }
+
+    // ——— NEW: draw the wrap‐around arc on every rolling link ———
+    for (const pathId of pathEntities) {
+      const path   = world.getComponent(pathId, CablePathComponent);
+      if (!path || path.jointEntities.length < 1) continue;
+      const joints = path.jointEntities;
+      // linkTypes[ i ] === 'rolling' means the cable wraps on that entity
+      for (let i = 1; i < path.linkTypes.length - 1; i++) {
+        if (path.linkTypes[i] !== 'rolling') continue;
+        // corner joint before & after this roller
+        const jPrev = world.getComponent(joints[i - 1], CableJointComponent);
+        const jNext = world.getComponent(joints[i    ], CableJointComponent);
+        // roller is the shared entityB of the previous joint
+        const rollerId   = jPrev.entityB;
+        const centerComp = world.getComponent(rollerId, PositionComponent);
+        const radiusComp = world.getComponent(rollerId, RadiusComponent);
+        if (!centerComp || !radiusComp) continue;
+        const C    = centerComp.pos;
+        const R    = radiusComp.radius;
+        const P1   = jPrev.attachmentPointB_world;
+        const P2   = jNext.attachmentPointA_world;
+        // angles in sim coords
+        const a1 = Math.atan2(P1.y - C.y, P1.x - C.x);
+        const a2 = Math.atan2(P2.y - C.y, P2.x - C.x);
+        // cw‐flag stored in path.cw[i]
+        const anticlockwise = !path.cw[i];
+        this.c.beginPath();
+        this.c.strokeStyle = linecolor1;               // or pick your cable colour
+        this.c.arc(
+          this.cX(C.x), 
+          this.cY(C.y), 
+          R * this.effectiveCScale,
+          -a1,                                  // negate for canvas’ flipped y‐axis
+          -a2,
+          anticlockwise
+        );
+        this.c.stroke();
+      }
+    }
     this.c.lineWidth = 1;
 
     // Render All Renderable Entities (Circles/Obstacles/Etc.)
