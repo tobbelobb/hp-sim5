@@ -391,6 +391,13 @@ class PauseStateComponent { constructor(paused = true) { this.paused = paused; }
 class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } } // New component for error state
 class CableLinkComponent { /* Tag component to identify entities that are part of a cable path and can interact */ }
 
+// --- new component: tag an entity as being grabbed by the mouse ---
+class GrabComponent {
+  constructor(offsetX = 0.0, offsetY = 0.0) {
+    this.offset = new Vector2(offsetX, offsetY);
+  }
+}
+
 // Represents a single segment constraint between two entities
 class CableJointComponent {
   constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -465,11 +472,13 @@ class RenderableComponent {
 class GravitySystem {
   runInPause = false;
   update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
     const gravity = world.getResource('gravity');
     if (!gravity) return;
 
     const entities = world.query([VelocityComponent, GravityAffectedComponent]);
     for (const entityId of entities) {
+      if (entityId === grabbed) continue;
       const velComp = world.getComponent(entityId, VelocityComponent);
       velComp.vel.add(gravity, dt);
     }
@@ -480,9 +489,11 @@ class GravitySystem {
 class MovementSystem {
   runInPause = false;
   update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
     // Update linear position
     const linearEntities = world.query([PositionComponent, VelocityComponent]);
     for (const entityId of linearEntities) {
+      if (entityId === grabbed) continue;
       const posComp = world.getComponent(entityId, PositionComponent);
       const velComp = world.getComponent(entityId, VelocityComponent);
       posComp.pos.add(velComp.vel, dt);
@@ -1003,11 +1014,13 @@ class CableAttachmentUpdateSystem {
 class PBDBallBallCollisions {
   runInPause = false;
   update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
     const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
     for (let i = 0; i < ballEntities.length; i++) {
       for (let j = i + 1; j < ballEntities.length; j++) {
         const e1 = ballEntities[i];
         const e2 = ballEntities[j];
+        if (e1 === grabbed || e2 === grabbed) continue;
 
         const p1 = world.getComponent(e1, PositionComponent).pos;
         const v1 = world.getComponent(e1, VelocityComponent).vel;
@@ -1719,7 +1732,8 @@ if (typeof module !== 'undefined' && module.exports) {
     MovementSystem,
     PBDBallBallCollisions,
     CableAttachmentUpdateSystem,
-    InputReplaySystem
+    InputReplaySystem,
+    GrabComponent
   };
 }
 

@@ -131,11 +131,15 @@ canvas {
              this.releases = [];
              this.eventLog = [];     // ← record inputs per frame
              this.frame = 0;         // ← frame counter
+             this.grabbedBall = null;
+             this.grabOffset = new Vector2();
+             this.grabStartPrevPos = new Vector2();
              this.canvas.setAttribute('tabindex', '0');
              this.canvas.style.outline = 'none';
              this.canvas.focus();
              this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this)); // works for mouse and touch
              this.canvas.addEventListener('pointerup', this.handlePointerUp.bind(this));
+             this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
              this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
              this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
          }
@@ -212,6 +216,21 @@ canvas {
              const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
              const simX = (event.clientX - rect.left) / scale;
              const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+
+             // 1) see if we hit a ball
+             const clickVec = new Vector2(simX, simY);
+             for (const b of world.query([BallTagComponent,PositionComponent,RadiusComponent])) {
+               const pos = world.getComponent(b,PositionComponent).pos;
+               const r   = world.getComponent(b,RadiusComponent).radius;
+               if (clickVec.clone().subtract(pos).lengthSq() <= r*r) {
+                 this.grabbedBall = b;
+                 this.grabOffset = pos.clone().subtract(clickVec);
+                 // record old pos for velocity
+                 this.grabStartPrevPos = pos.clone();
+                 world.setResource('grabbedBall', b);
+                 return;       // now we’re in grab mode
+               }
+             }
              this.clicks.push(new Vector2(simX, simY));
          }
 
@@ -220,6 +239,23 @@ canvas {
              const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
              const simX = (event.clientX - rect.left) / scale;
              const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+
+             // if we were grabbing a ball, drop it and set its velocity
+             if (this.grabbedBall) {
+               const b = this.grabbedBall;
+               const newPos = new Vector2(simX, simY).add(this.grabOffset);
+               const posComp = world.getComponent(b, PositionComponent);
+               // move it to the release point
+               posComp.pos.set(newPos);
+               // new vel = delta position since grab start
+               const prev   = this.grabStartPrevPos;
+               const vel    = world.getComponent(b, VelocityComponent).vel;
+               vel.set(newPos.x - prev.x, newPos.y - prev.y);
+               // clear grab
+               this.grabbedBall = null;
+               world.setResource('grabbedBall', null);
+               return;
+             }
              this.releases.push(new Vector2(simX, simY));
          }
 
@@ -261,6 +297,18 @@ canvas {
              }
 
              // Could add logic here to interact with pause button entity if it existed
+         }
+
+         handlePointerMove(event) {
+           if (!this.grabbedBall) return;
+           const rect = this.canvas.getBoundingClientRect();
+           const scale = this.canvas.height / world.getResource('simHeight');
+           const simX = (event.clientX - rect.left) / scale;
+           const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+           // ball center = pointer + saved offset
+           const newPos = new Vector2(simX, simY).add(this.grabOffset);
+           world.getComponent(this.grabbedBall, PositionComponent)
+                .pos.set(newPos);
          }
     }
 
@@ -326,9 +374,11 @@ canvas {
       }
 
       update(world, dt) {
+        const grabbed = world.getResource('grabbedBall');
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
         for (const ballId of ballEntities) {
+          if (ballId === grabbed) continue;
           const p1 = world.getComponent(ballId, PositionComponent).pos;
           const v1 = world.getComponent(ballId, VelocityComponent).vel;
           const r1 = world.getComponent(ballId, RadiusComponent).radius;
@@ -383,6 +433,7 @@ canvas {
 
     class PBDBallBorderCollisions {
       update(world, dt) {
+        const grabbed = world.getResource('grabbedBall');
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const borderEntities = world.query([BorderComponent]);
         if (borderEntities.length > 0) {
@@ -392,6 +443,7 @@ canvas {
 
           if (borderPoints.length >= 3) {
             for (const ballId of ballEntities) {
+              if (ballId === grabbed) continue;
               const p1 = world.getComponent(ballId, PositionComponent).pos;
               const v1 = world.getComponent(ballId, VelocityComponent).vel;
               const r1 = world.getComponent(ballId, RadiusComponent).radius;
@@ -467,9 +519,11 @@ canvas {
 
     class PBDBallObstacleCollisions2 {
       update(world, dt) {
+        const grabbed = world.getResource('grabbedBall');
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
         for (const ballId of ballEntities) {
+          if (ballId === grabbed) continue;
           const p1 = world.getComponent(ballId, PositionComponent).pos;
           const v1 = world.getComponent(ballId, VelocityComponent).vel;
           const r1 = world.getComponent(ballId, RadiusComponent).radius;
@@ -666,6 +720,8 @@ canvas {
         world.setResource('pauseState', new PauseStateComponent(true));
         world.setResource('debugRenderPoints', {}); // Initialize debug points resource
         world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
+        // reset any grab
+        world.setResource('grabbedBall', null);
 
 
         // --- Entities and Components ---
