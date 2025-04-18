@@ -288,16 +288,64 @@ canvas {
 
              if (clicksFrame.length > 0) {
                  const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
-                 // Find flippers and check if clicked near pivot
-                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
-                 for (const entityId of flipperEntities) {
-                     const pos = world.getComponent(entityId, PositionComponent).pos;
-                     const state = world.getComponent(entityId, FlipperStateComponent);
-                     // Simple distance check to pivot
-                     if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) { // Click near pivot activates
-                          state.pressed = true;
-                     }
-                 }
+// --- find all flippers ---
+const flipperEntities = world.query([
+  FlipperTagComponent,
+  PositionComponent,
+  FlipperStateComponent
+]);
+// get world bounds
+const simWidth  = world.getResource('simWidth');
+const simHeight = world.getResource('simHeight');
+
+// test if click is in‐canvas but outside the border polygon
+let outsideBorder = false;
+if (
+  clickPos.x >= 0 && clickPos.x <= simWidth &&
+  clickPos.y >= 0 && clickPos.y <= simHeight
+) {
+  const borderEnts = world.query([BorderComponent]);
+  if (borderEnts.length > 0) {
+    const pts = world
+      .getComponent(borderEnts[0], BorderComponent)
+      .points;
+    let inside = true;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      if (!rightOfLine(clickPos, a, b)) {
+        inside = false;
+        break;
+      }
+    }
+    outsideBorder = !inside;
+  }
+}
+
+if (outsideBorder) {
+  // click outside the walls → press only the nearest flipper
+  let closestId = null;
+  let bestDist = Infinity;
+  for (const id of flipperEntities) {
+    const pos   = world.getComponent(id, PositionComponent).pos;
+    const d2    = clickPos.clone().subtract(pos).lengthSq();
+    if (d2 < bestDist) {
+      bestDist = d2;
+      closestId = id;
+    }
+  }
+  if (closestId !== null) {
+    world.getComponent(closestId, FlipperStateComponent).pressed = true;
+  }
+} else {
+  // click inside play‐area → original pivot‐radius test
+  for (const id of flipperEntities) {
+    const pos   = world.getComponent(id, PositionComponent).pos;
+    const state = world.getComponent(id, FlipperStateComponent);
+    if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) {
+      state.pressed = true;
+    }
+  }
+}
              }
 
              if (this.releases.length > 0) {
