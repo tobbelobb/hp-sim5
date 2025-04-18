@@ -1406,27 +1406,32 @@ class RenderSystem {
 
 
     // Render Cable Joints (Lines)
-    const jointEntities = world.query([CableJointComponent, RenderableComponent]);
-    // Scale line width by zoom using instance property
-    this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
-    for (const entityId of jointEntities) {
-      const jointComp = world.getComponent(entityId, CableJointComponent);
-      const renderComp = world.getComponent(entityId, RenderableComponent);
+    const pathEntities = world.query([CablePathComponent]);
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || path.jointEntities.length < 1) continue;
+      const jointEntities = path.jointEntities;
+      // Scale line width by zoom using instance property
+      this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
+      for (const entityId of jointEntities) {
+        const jointComp = world.getComponent(entityId, CableJointComponent);
+        const renderComp = world.getComponent(entityId, RenderableComponent);
 
-      if (!jointComp.isActive || renderComp.shape !== 'line') continue;
+        if (!jointComp.isActive || renderComp.shape !== 'line') continue;
 
-      const pA = jointComp.attachmentPointA_world;
-      const pB = jointComp.attachmentPointB_world;
-      this.c.strokeStyle = renderComp.color;
-      this.c.beginPath();
-      // Draw catenary if slack, otherwise straight
-      const straightDist = pA.distanceTo(pB);
-      if (jointComp.restLength > straightDist + 1e-6) {
-        this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
-      } else {
-        this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-        this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-        this.c.stroke();
+        const pA = jointComp.attachmentPointA_world;
+        const pB = jointComp.attachmentPointB_world;
+        this.c.strokeStyle = renderComp.color;
+        this.c.beginPath();
+        // Draw catenary if slack, otherwise straight
+        const straightDist = pA.distanceTo(pB);
+        if (jointComp.restLength > straightDist + 1e-6) {
+          this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
+        } else {
+          this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+          this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+          this.c.stroke();
+        }
       }
     }
     this.c.lineWidth = 1;
