@@ -659,8 +659,8 @@ canvas {
 
 
         // --- Resources ---
-        world.setResource('gravity', new Vector2(0.0, -3.0));
-        world.setResource('dt', 1.0 / 150.0);
+        world.setResource('gravity', new Vector2(0.0, -2.0));
+        world.setResource('dt', 1.0 / 200.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -716,7 +716,7 @@ canvas {
         // Obstacle Entities
         const obsColor1 = "#FF8000";
         const obsColor2 = "#0F7090";
-        const obsPush = 2.0;
+        const obsPush = 1.7;
 
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
@@ -896,25 +896,24 @@ canvas {
       // first frame init
       if (lastTime === 0) lastTime = currentTime;
 
-      // accumulate real time (convert ms→s)
-      let frameSec = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
-
-      // optional clamp to avoid spiral‑of‑death if caller hitches
-      const maxAccum = dt * 5;
-      accumulator = Math.min(accumulator + frameSec, maxAccum);
-
-      // consume as many fixed‐dt steps as we can
-      while (accumulator >= dt) {
-        if (!pauseState.paused || doStep) {
-          if (doStep) pauseState.paused = false;
-          world.update(dt);
-          if (doStep) {
-            pauseState.paused = true;
-            doStep = false;
+      let frameSec = 0.6*(currentTime - lastTime) / 1000;
+      if (frameSec >= dt) {
+        lastTime = currentTime;
+        // optional clamp to avoid spiral‑of‑death if caller hitches
+        const maxAccum = dt * 5;
+        accumulator = Math.min(accumulator + frameSec, maxAccum);
+        // consume as many fixed‐dt steps as we can
+        while (accumulator >= dt) {
+          if (!pauseState.paused || doStep) {
+            if (doStep) pauseState.paused = false;
+            world.update(dt);
+            if (doStep) {
+              pauseState.paused = true;
+              doStep = false;
+            }
           }
+          accumulator -= dt;
         }
-        accumulator -= dt;
       }
 
       // schedule next frame
