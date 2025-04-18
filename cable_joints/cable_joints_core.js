@@ -1305,8 +1305,8 @@ class RenderSystem {
                   const pushAmount = obs.radius - dist;
                   if (dist > 1e-9) {
                      vecToObstacle.normalize();
-                     // only push outward if that push is downward (vec.y<=0)
-                     if (vecToObstacle.y <= 0) {
+                     // only push outward if that push is upward (vec.y<=0)
+                     if (vecToObstacle.y >= 0) {
                        current_draw_point_sim.add(vecToObstacle, pushAmount);
                      }
                   } else {
