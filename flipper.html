@@ -530,7 +530,6 @@ canvas {
         const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
         const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
         for (const ballId of ballEntities) {
-          if (ballId === grabbed) continue;
           const p1 = world.getComponent(ballId, PositionComponent).pos;
           const v1 = world.getComponent(ballId, VelocityComponent).vel;
           const r1 = world.getComponent(ballId, RadiusComponent).radius;
