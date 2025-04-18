@@ -4,69 +4,106 @@
     <title>ECS Pinball</title>
     <!-- Simple favicon: 1x1 transparent icon -->
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A" />
+
+    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Nice free Google font – optional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
     <style>
-        body {
-            margin: 0;
-            overflow-y: auto;
-            background-color: #303030;
-            font-family: sans-serif;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-        #gameContainer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 90vw;
-            max-width: calc(90vh/1.7);
-        }
-        canvas {
-            border: none;
-            width: 100%;
-            aspect-ratio: 1 / 1.7; /* Maintain aspect ratio (simWidth ~1.0 / simHeight 1.7) */
-            max-height: calc(100vh - 120px);
-            margin: auto;
-        }
-        #controls {
-            width: 100%; /* Ensure controls take full width of container */
-            text-align: center;
-            margin-bottom: 10px;
-            color: white;
-        }
-        /* Buttons with fixed static size for consistent touch targets */
-        #controls button {
-            font-size: 16px;
-            padding: 10px 16px;
-            margin: 0 6px;
-            border-radius: 4px;
-        }
-        /* Mobile adjustments: push controls toward top */
-        @media (max-width: 600px) {
-            body {
-                align-items: flex-start;
-                padding-top: 8px;
-            }
-            #gameContainer {
-                width: 100vw;
-                max-width: none;
-            }
-            #controls {
-                margin-bottom: 6px;
-            }
-        }
+/* =========  BASIC COLOUR THEME  ========= */
+:root {
+  --bg-1: #2d2d2d;        /* page background */
+  --accent-1: #ff452a;    /* flipper + button gradient start */
+  --accent-2: #ffb347;    /* flipper + button gradient end   */
+  --text-main: #fafafa;
+  --text-dim:  #c0c0c0;
+  --radius: 4px;
+}
+
+/* =========  PAGE LAYOUT  ========= */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
+  overflow: hidden;               /* **kills the vertical / horizontal scroll**   */
+  background: radial-gradient(circle at 50% 20%, #3a3a3a 0%, var(--bg-1) 100%);
+  color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
+  touch-action: manipulation;     /* **stops double‑tap zoom in most browsers**   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* =========  CONTAINER  ========= */
+#gameContainer {
+  width: min(90vw, 460px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* =========  CONTROL BAR  ========= */
+#controls {
+  width: 100%;
+  text-align: center;
+  margin-block: 12px 8px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+#controls button {
+  all: unset;                      /* wipe default button styles */
+  cursor: pointer;
+  display: inline-block;
+  margin: 6px auto;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+#controls button:hover,
+#controls button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active {
+  transform: scale(.97);
+}
+
+/* =========  CANVAS  ========= */
+canvas {
+  width: 100%;
+  aspect-ratio: 1 / 1.7;          /* keeps exact sim ratio */
+  border-radius: var(--radius);
+}
+
+/* =========  SMALL‑SCREEN TWEAKS  ========= */
+#controls button {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <div id="controls">
-            Score: <span id="score">0</span> |
             <button id="pauseBtn" tabindex="-1">Pause</button>
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
-            <button id="dumpBtn" tabindex="-1">Dump State</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+          Score: <span id="score">0</span>
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
