@@ -121,6 +121,13 @@ canvas {
     class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 
+    // helper to remember which flipper this tip belongs to
+    class FlipperTipComponent {
+      constructor(flipperEntityId) {
+        this.flipperEntityId = flipperEntityId;
+      }
+    }
+
 
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
@@ -847,6 +854,12 @@ canvas {
         world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
         // make the pivot (and tip) act as a cable‐link
         world.addComponent(flipper1, new CableLinkComponent());
+        // Flipper 1 tip entity
+        const flipper1Tip = world.createEntity();
+        world.addComponent(flipper1Tip, new PositionComponent());
+        world.addComponent(flipper1Tip, new RadiusComponent(flipRadius));
+        world.addComponent(flipper1Tip, new CableLinkComponent());
+        world.addComponent(flipper1Tip, new FlipperTipComponent(flipper1));
 
         const flipper2 = world.createEntity();
         world.addComponent(flipper2, new FlipperTagComponent());
@@ -857,6 +870,12 @@ canvas {
         world.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
         // also make this flipper a cable link
         world.addComponent(flipper2, new CableLinkComponent());
+        // Flipper 2 tip entity
+        const flipper2Tip = world.createEntity();
+        world.addComponent(flipper2Tip, new PositionComponent());
+        world.addComponent(flipper2Tip, new RadiusComponent(flipRadius));
+        world.addComponent(flipper2Tip, new CableLinkComponent());
+        world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
 
         // Score Entity
         const scoreEntity = world.createEntity();
@@ -935,6 +954,27 @@ canvas {
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
+
+             // Register FlipperTipLinkSystem BEFORE CableAttachmentUpdateSystem
+             class FlipperTipLinkSystem {
+               runInPause = false;
+               update(world, dt) {
+                 // for each tip‐entity, compute its current position
+                 for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
+                   const tipComp   = world.getComponent(tipId, FlipperTipComponent);
+                   const flipId    = tipComp.flipperEntityId;
+                   const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
+                   const state     = world.getComponent(flipId, FlipperStateComponent);
+                   // same math you use elsewhere to find the tip
+                   const angle = state.restAngle + state.sign * state.rotation;
+                   const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
+                   const tipPos = pivotPos.clone().add(dir, state.length);
+                   // write it into the tip entity’s PositionComponent
+                   world.getComponent(tipId, PositionComponent).pos.set(tipPos);
+                 }
+               }
+             }
+             world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new PBDBallBorderCollisions());
              world.registerSystem(new CableAttachmentUpdateSystem());
              world.registerSystem(new PBDCableConstraintSolver());
