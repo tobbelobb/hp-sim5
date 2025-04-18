@@ -116,22 +116,7 @@ canvas {
         }
     }
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
-    class FlipperTagComponent { }
     class ScoredTagComponent { }
-    class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
-    class FlipperStateComponent {
-        constructor(length, restAngle, maxRotation, angularVelocity) {
-            this.length = length;
-            this.restAngle = restAngle;
-            this.maxRotation = Math.abs(maxRotation);
-            this.sign = Math.sign(maxRotation); // Direction it rotates
-            this.angularVelocity = angularVelocity;
-            // Dynamic state
-            this.rotation = 0.0; // Current rotation from restAngle
-            this.currentAngularVelocity = 0.0; // Velocity in the last frame
-            this.pressed = false; // Was it activated?
-        }
-    }
     class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 

@@ -370,6 +370,21 @@ class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
 class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
 class GravityAffectedComponent { /* Tag component */ }
 class BallTagComponent { /* Tag component */ }
+class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
+class FlipperTagComponent { }
+class FlipperStateComponent {
+  constructor(length, restAngle, maxRotation, angularVelocity) {
+    this.length = length;
+    this.restAngle = restAngle;
+    this.maxRotation = Math.abs(maxRotation);
+    this.sign = Math.sign(maxRotation); // Direction it rotates
+    this.angularVelocity = angularVelocity;
+    // Dynamic state
+    this.rotation = 0.0; // Current rotation from restAngle
+    this.currentAngularVelocity = 0.0; // Velocity in the last frame
+    this.pressed = false; // Was it activated?
+  }
+}
 class ObstacleTagComponent { /* Tag component */ }
 class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } } // New component for error state
