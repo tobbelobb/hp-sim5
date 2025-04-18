@@ -885,22 +885,44 @@ canvas {
 
 
     // --- Main Loop ---
-    let lastTime = 0;
+    let lastTime = 0;           // in ms
+    let accumulator = 0.0;      // in seconds
     let doStep = true; // Whether to do a single step when paused
 
     function gameLoop(currentTime) {
-        const dt = world.getResource('dt');
-        const pauseState = world.getResource('pauseState');
+      const dt = world.getResource('dt');           // e.g. 1/150
+      const pauseState = world.getResource('pauseState');
 
+      // first frame init
+      if (lastTime === 0) lastTime = currentTime;
+
+      // accumulate real time (convert ms→s)
+      let frameSec = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+
+      // optional clamp to avoid spiral‑of‑death if caller hitches
+      const maxAccum = dt * 5;
+      accumulator = Math.min(accumulator + frameSec, maxAccum);
+
+      // consume as many fixed‐dt steps as we can
+      while (accumulator >= dt) {
         if (!pauseState.paused || doStep) {
-            if (doStep) pauseState.paused = false;
-            world.update(dt);
-            if (doStep) pauseState.paused = true;
-            doStep = false; // Reset step flag after executing one step
+          if (doStep) pauseState.paused = false;
+          world.update(dt);
+          if (doStep) {
+            pauseState.paused = true;
+            doStep = false;
+          }
         }
+        accumulator -= dt;
+      }
 
-        requestAnimationFrame(gameLoop);
+      // schedule next frame
+      requestAnimationFrame(gameLoop);
     }
+
+    // kick it off
+    requestAnimationFrame(gameLoop);
 
     // --- Event Listeners ---
     pauseBtn.addEventListener('click', (e) => {
