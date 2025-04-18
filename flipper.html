@@ -215,10 +215,6 @@ canvas {
 
          handlePointerDown(event) {
              event.preventDefault();
-             // only capture if the down was on our canvas
-             if (event.target === this.canvas) {
-               this.canvas.setPointerCapture(event.pointerId);
-             }
              const rect = this.canvas.getBoundingClientRect();
              const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
              const simX = (event.clientX - rect.left) / scale;
@@ -308,8 +304,7 @@ canvas {
                      if (!state.pressed) continue;
                      const pos = world.getComponent(id, PositionComponent).pos;
                      const d2 = releasePos.clone().subtract(pos).lengthSq();
-                     const thresh2 = state.length * state.length;
-                     if (d2 < thresh2 && d2 < minDistSq) {
+                     if (d2 < minDistSq) {
                          minDistSq = d2;
                          closestId = id;
                      }
@@ -736,7 +731,7 @@ canvas {
         const cScale = canvas.height / simHeight; // Calculate scale based on actual height
         const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
 
-        console.log(`Canvas: ${canvas.width}x${canvas.height}, Sim: ${simWidth.toFixed(2)}x${simHeight.toFixed(2)}, Scale: ${cScale.toFixed(2)}`);
+        // console.log(`Canvas: ${canvas.width}x${canvas.height}, Sim: ${simWidth.toFixed(2)}x${simHeight.toFixed(2)}, Scale: ${cScale.toFixed(2)}`);
 
 
         // --- Resources ---

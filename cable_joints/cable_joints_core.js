@@ -566,7 +566,7 @@ class CableAttachmentUpdateSystem {
 
           // Complex merge condition
           if (nothing_stored) {
-            console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
+            // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
             if (angle > 10.0 * Math.PI/180.0) {
               console.warn("angle > 10.0 degrees");
             }
@@ -795,7 +795,7 @@ class CableAttachmentUpdateSystem {
           const prevPosSplitter = world.getComponent(splitterId, PositionComponent).prevPos;
           const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
           if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
-            console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
+            // console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
             const newJointId = world.createEntity();
 
             const cw = rightOfLine(prevPosSplitter, pA, pB);
@@ -926,8 +926,8 @@ class CableAttachmentUpdateSystem {
             const tension2 = initialDist2/newRestLength2;
 
 
-            console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
-            console.log(`Split stats: discrepancy=${discrepancy.toFixed(4)}, tension1=${tension1.toFixed(4)}, tension2=${tension2.toFixed(4)}`);
+            // console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
+            // console.log(`Split stats: discrepancy=${discrepancy.toFixed(4)}, tension1=${tension1.toFixed(4)}, tension2=${tension2.toFixed(4)}`);
             if (discrepancy > 1.0) {
               console.warn("discrepancy > 1.0");
             }
@@ -1474,8 +1474,8 @@ class RenderSystem {
         this.c.beginPath();
         this.c.strokeStyle = linecolor1;               // or pick your cable colour
         this.c.arc(
-          this.cX(C.x), 
-          this.cY(C.y), 
+          this.cX(C.x),
+          this.cY(C.y),
           R * this.effectiveCScale,
           -a1,                                  // negate for canvas’ flipped y‐axis
           -a2,
