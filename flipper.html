@@ -36,15 +36,15 @@
             margin-bottom: 10px;
             color: white;
         }
-        /* Make buttons larger for better touch targets */
-        #controls button {
-            font-size: 1.1rem;
-            padding: 10px 16px;
-            margin: 0 6px;
-            border-radius: 4px;
-        }
         /* Mobile adjustments: push controls toward top and enlarge buttons */
-        @media (max-width: 600px) {
+        @media screen and (max-width: 450px) {
+            /* Make buttons larger for better touch targets */
+            #controls button {
+                font-size: 1.1rem;
+                padding: 10px 16px;
+                margin: 0 6px;
+                border-radius: 4px;
+            }
             body {
                 align-items: flex-start;
                 padding-top: 8px;
