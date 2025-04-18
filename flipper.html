@@ -295,15 +295,23 @@ canvas {
 
              if (this.releases.length > 0) {
                  const releasePos = this.releases.shift();
-                 // Find flippers and check if released near pivot
                  const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
-                 for (const entityId of flipperEntities) {
-                     const pos = world.getComponent(entityId, PositionComponent).pos;
-                     const state = world.getComponent(entityId, FlipperStateComponent);
-                     // Simple distance check to pivot
-                     if (releasePos.clone().subtract(pos).lengthSq() < state.length ** 2) { // release near pivot activates
-                          state.pressed = false;
+                 let closestId = null;
+                 let minDistSq = Infinity;
+                 // only consider flippers that are currently pressed
+                 for (const id of flipperEntities) {
+                     const state = world.getComponent(id, FlipperStateComponent);
+                     if (!state.pressed) continue;
+                     const pos = world.getComponent(id, PositionComponent).pos;
+                     const d2 = releasePos.clone().subtract(pos).lengthSq();
+                     const thresh2 = state.length * state.length;
+                     if (d2 < thresh2 && d2 < minDistSq) {
+                         minDistSq = d2;
+                         closestId = id;
                      }
+                 }
+                 if (closestId !== null) {
+                     world.getComponent(closestId, FlipperStateComponent).pressed = false;
                  }
              }
 
