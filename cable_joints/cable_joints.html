@@ -97,10 +97,10 @@
     world.addComponent(obs1, new FlipperTagComponent());
 
 
+    world.addComponent(obs1, new CableLinkComponent());
     // --- Cable Setup ---
     // --- Cable Setup ---
     // Path: ball1 -> obs1 -> ball2
-    world.addComponent(obs1, new CableLinkComponent());
     world.addComponent(ball1, new CableLinkComponent());
     world.addComponent(ball2, new CableLinkComponent());
 
