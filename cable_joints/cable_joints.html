@@ -112,21 +112,47 @@
     const cw_obs1 = true;
     const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
 
-    // Calculate initial points for joint1 (ball1 attachment <-> obs1 rolling)
-    const initialPoints1 = tangentFromPointToCircle(pos_ball1, pos_obs1, radius_obs1, cw_obs1);
-    const initialPoints2 = tangentFromCircleToPoint(pos_ball2, pos_obs1, radius_obs1, cw_obs1);
+    // --- capsule‐based initial tangents for our “flipper” obstacle ---
+    const fs1    = world.getComponent(obs1, FlipperStateComponent);
+    const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;
+    const pivot1 = pos_obs1;
+    const tip1   = pivot1.clone().add(
+                      new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                      fs1.length
+                   );
+    const initialPoints1 = tangentFromPointToCapsule(
+                             pos_ball1, pivot1, tip1,
+                             radius_obs1, cw_obs1
+                           );
+    const initialPoints2 = tangentFromCapsuleToPoint(
+                             pivot1, tip1, radius_obs1,
+                             pos_ball2, cw_obs1
+                           );
 
-    // Create Cable Joint Entities with correct initial rest lengths
-    const joint1 = world.createEntity(); // ball1 <-> obs1
-    const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+    // Joint 1 (ball1 → obs1)
+    const joint1 = world.createEntity();
+    const initialDist1 = initialPoints1.a_attach
+                           .clone()
+                           .subtract(initialPoints1.a_capsule)
+                           .length();
     world.addComponent(joint1, new CableJointComponent(
-      ball1, obs1, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle)); // Order matters
+      ball1, obs1, initialDist1,
+      initialPoints1.a_attach,
+      initialPoints1.a_capsule
+    ));
     world.addComponent(joint1, new RenderableComponent('line', '#FF0000')); // Red line
 
-    const joint2 = world.createEntity(); // obs1 <-> ball2
-    const initialDist2 = initialPoints2.a_attach.clone().subtract(initialPoints2.a_circle).length();
+    // Joint 2 (obs1 → ball2)
+    const joint2 = world.createEntity();
+    const initialDist2 = initialPoints2.a_capsule
+                           .clone()
+                           .subtract(initialPoints2.a_attach)
+                           .length();
     world.addComponent(joint2, new CableJointComponent(
-      obs1, ball2, initialDist2, initialPoints2.a_circle, initialPoints2.a_attach)); // Order matters
+      obs1, ball2, initialDist2,
+      initialPoints2.a_capsule,
+      initialPoints2.a_attach
+    ));
     world.addComponent(joint2, new RenderableComponent('line', '#FFFF00')); // Yellow line
 
     const cablePath = world.createEntity();
