@@ -82,7 +82,7 @@
     const obsColor = "#FF8000";
     const obs1 = world.createEntity();
     world.addComponent(obs1, new ObstacleTagComponent());
-    world.addComponent(obs1, new PositionComponent(1.5, 1.5));
+    world.addComponent(obs1, new PositionComponent(0.3, 1.5));
     world.addComponent(obs1, new MassComponent(-1.0));
     world.addComponent(obs1, new RadiusComponent(0.1));
     world.addComponent(obs1, new RenderableComponent('circle', obsColor));
@@ -97,10 +97,9 @@
     world.addComponent(obs1, new FlipperTagComponent());
 
 
-    world.addComponent(obs1, new CableLinkComponent());
-    // --- Cable Setup ---
     // --- Cable Setup ---
     // Path: ball1 -> obs1 -> ball2
+    world.addComponent(obs1, new CableLinkComponent());
     world.addComponent(ball1, new CableLinkComponent());
     world.addComponent(ball2, new CableLinkComponent());
 
