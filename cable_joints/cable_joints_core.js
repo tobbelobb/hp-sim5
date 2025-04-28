@@ -1829,6 +1829,7 @@ if (typeof module !== 'undefined' && module.exports) {
     tangentFromPointToCircle,
     tangentFromCircleToPoint,
     tangentFromCircleToCircle,
+    tangentFromPointToCapsule,
     signedArcLengthOnWheel,
     lineSegmentCircleIntersection,
     rightOfLine,
