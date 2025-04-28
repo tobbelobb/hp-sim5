@@ -109,7 +109,7 @@
     const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
     const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
     const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
-    const cw_obs1 = true;
+    const cw_obs1 = false;
     const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
 
     // --- capsule‐based initial tangents for our “flipper” obstacle ---
@@ -213,7 +213,7 @@
     const pos_ball3 = world.getComponent(ball3, PositionComponent).pos;
     const pos_obs2 = world.getComponent(obs2, PositionComponent).pos;
     const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
-    const cw_obs2 = true;
+    const cw_obs2 = false;
     const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
 
     // Calculate initial points for joint1 (ball3 attachment <-> obs2 rolling)
