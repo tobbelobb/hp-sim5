@@ -48,10 +48,11 @@ function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
   const phi = Math.asin(r_circle / d);
 
   let tangent_point_angle_on_circle;
+  // choose the “other” branch so that cw=true gives the left‐hand solution when pointIsFirst===true
   if ((cw && pointIsFirst) || (!cw && !pointIsFirst)) {
-    tangent_point_angle_on_circle = alpha + phi + Math.PI/2;
-  } else {
     tangent_point_angle_on_circle = alpha - phi - Math.PI/2;
+  } else {
+    tangent_point_angle_on_circle = alpha + phi + Math.PI/2;
   }
 
   const a_circle = new Vector2(
@@ -152,8 +153,12 @@ function tangentFromPointToCapsule(p_attach, pA, pB, r, cw) {
   const axis = new Vector2().subtractVectors(pB, pA);
   const L = axis.length();
   if (L < 1e-9) {
-    // degenerate, fall back to circle
-    return tangentFromPointToCircle(p_attach, pA, r, cw);
+    // degenerate capsule → circle at pA, remap field names
+    const circleT = tangentFromPointToCircle(p_attach, pA, r, cw);
+    return {
+      a_attach: circleT.a_attach,
+      a_capsule: circleT.a_circle
+    };
   }
   axis.scale(1.0 / L);                    // unit axis
   // perpendicular normal
@@ -174,8 +179,8 @@ function tangentFromPointToCapsule(p_attach, pA, pB, r, cw) {
 }
 
 function tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw) {
-  // just swap arguments and rename
-  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, !cw);
+  // invert the mapping but use the same cw
+  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, cw);
   return {
     a_attach: tmp.a_capsule,
     a_capsule:  tmp.a_attach
@@ -1830,6 +1835,7 @@ if (typeof module !== 'undefined' && module.exports) {
     tangentFromCircleToPoint,
     tangentFromCircleToCircle,
     tangentFromPointToCapsule,
+    tangentFromCapsuleToPoint,
     signedArcLengthOnWheel,
     lineSegmentCircleIntersection,
     rightOfLine,
