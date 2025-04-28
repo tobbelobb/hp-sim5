@@ -50,9 +50,9 @@ function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
   let tangent_point_angle_on_circle;
   // choose the “other” branch so that cw=true gives the left‐hand solution when pointIsFirst===true
   if ((cw && pointIsFirst) || (!cw && !pointIsFirst)) {
-    tangent_point_angle_on_circle = alpha - phi - Math.PI/2;
-  } else {
     tangent_point_angle_on_circle = alpha + phi + Math.PI/2;
+  } else {
+    tangent_point_angle_on_circle = alpha - phi - Math.PI/2;
   }
 
   const a_circle = new Vector2(

@@ -7,7 +7,7 @@ const {
   tangentFromCircleToPoint,
   tangentFromPointToCapsule,
   tangentFromCapsuleToPoint
-} = require('../cable_joints_core');
+} = require('../cable_joints/cable_joints_core');
 
 const EPS = 1e-6;
 
