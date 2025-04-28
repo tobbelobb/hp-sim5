@@ -87,6 +87,15 @@
     world.addComponent(obs1, new RadiusComponent(0.1));
     world.addComponent(obs1, new RenderableComponent('circle', obsColor));
 
+    // ← add these two lines:
+    world.addComponent(obs1, new FlipperStateComponent(
+       /* length= */ 0.5,
+       /* restAngle= */ 0.0,
+       /* maxRotation= */ 0.0,
+       /* angularVelocity= */ 0.0
+    ));
+    world.addComponent(obs1, new FlipperTagComponent());
+
 
     // --- Cable Setup ---
     // --- Cable Setup ---
