@@ -146,6 +146,42 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
   };
 }
 
+// --- NEW helpers: tangent from a point to an oriented capsule and vice-versa ---
+function tangentFromPointToCapsule(p_attach, pA, pB, r, cw) {
+  // pA → pB defines our capsule axis, radius = r
+  const axis = new Vector2().subtractVectors(pB, pA);
+  const L = axis.length();
+  if (L < 1e-9) {
+    // degenerate, fall back to circle
+    return tangentFromPointToCircle(p_attach, pA, r, cw);
+  }
+  axis.scale(1.0 / L);                    // unit axis
+  // perpendicular normal
+  const normal = new Vector2(-axis.y, axis.x);
+
+  // project attach onto axis, clamped to segment
+  let t = new Vector2().subtractVectors(p_attach, pA).dot(axis);
+  t = Math.max(0, Math.min(L, t));
+  const proj = pA.clone().add(axis, t);
+
+  // now just a circle of radius r centered at proj
+  const result = tangentFromPointToCircle(p_attach, proj, r, cw);
+  // rename to match capsule nomenclature
+  return {
+    a_attach: result.a_attach,
+    a_capsule: result.a_circle
+  };
+}
+
+function tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw) {
+  // just swap arguments and rename
+  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, !cw);
+  return {
+    a_attach: tmp.a_capsule,
+    a_capsule:  tmp.a_attach
+  };
+}
+
 
 /**
  * Calculates signed arc length between two world-space points on the circumference of a wheel.
@@ -687,31 +723,73 @@ class CableAttachmentUpdateSystem {
 
         // --- Calculate Ideal Current Attachment Points based on CURRENT entity positions ---
         let tangents; // Declare tangents variable outside specific cases
+
+        // ---- point → rolling link B ----
         if (attachmentLinkA && rollingLinkB) {
-          tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
-          attachmentA_current = tangents.a_attach; // This is just posA
-          attachmentB_current = tangents.a_circle; // Tangent on circle B
-        } else if (rollingLinkA && attachmentLinkB) {
-          tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
-          attachmentA_current = tangents.a_circle; // Tangent on circle A
-          attachmentB_current = tangents.a_attach; // This is just posB
-        } else if (rollingLinkA && rollingLinkB) {
-          tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-          if (tangents) {
-              attachmentA_current = tangents.a_circle;
-              attachmentB_current = tangents.b_circle;
+          if (world.hasComponent(entityB, FlipperStateComponent)) {
+            // flipper is a capsule from pivot to tip
+            const fs    = world.getComponent(entityB, FlipperStateComponent);
+            const angle = fs.restAngle + fs.sign * fs.rotation;
+            const pivot = posB;
+            const tip   = pivot.clone().add(new Vector2(Math.cos(angle), Math.sin(angle)), fs.length);
+            const tang = tangentFromPointToCapsule(posA, pivot, tip, radiusB, cwB);
+            attachmentA_current = tang.a_attach;
+            attachmentB_current = tang.a_capsule;
           } else {
-              // Fallback if tangent calculation fails (e.g., overlap)
-              console.warn(`Could not calculate tangents between rolling ${entityA} and ${entityB}. Using previous points.`);
-              // Keep previous points to avoid NaN issues, but lengths won't update correctly this frame
-              attachmentA_current = joint.attachmentPointA_world.clone();
-              attachmentB_current = joint.attachmentPointB_world.clone();
-              // Set sA and sB to 0 because we couldn't calculate the change
-              sA = 0;
-              sB = 0;
-              // Skip the arc length calculation below for this case
-              // We will jump directly to updating the joint's points at the end
+            const tang = tangentFromPointToCircle(posA, posB, radiusB, cwB);
+            attachmentA_current = tang.a_attach;
+            attachmentB_current = tang.a_circle;
           }
+
+        // ---- rolling link A → point ----
+        } else if (rollingLinkA && attachmentLinkB) {
+          if (world.hasComponent(entityA, FlipperStateComponent)) {
+            const fs    = world.getComponent(entityA, FlipperStateComponent);
+            const angle = fs.restAngle + fs.sign * fs.rotation;
+            const pivot = posA;
+            const tip   = pivot.clone().add(new Vector2(Math.cos(angle), Math.sin(angle)), fs.length);
+            const tang = tangentFromCapsuleToPoint(pivot, tip, radiusA, posB, cwA);
+            attachmentA_current = tang.a_attach;
+            attachmentB_current = tang.a_capsule;
+          } else {
+            const tang = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
+            attachmentA_current = tang.a_circle;
+            attachmentB_current = tang.a_attach;
+          }
+
+        // ---- rolling link A → rolling link B ----
+        } else if (rollingLinkA && rollingLinkB) {
+          const isFlipperA = world.hasComponent(entityA, FlipperStateComponent);
+          const isFlipperB = world.hasComponent(entityB, FlipperStateComponent);
+          if (isFlipperA || isFlipperB) {
+            // compute endpoints for each if they are flippers
+            let capA, capB;
+            if (isFlipperA) {
+              const fs = world.getComponent(entityA, FlipperStateComponent);
+              const ang = fs.restAngle + fs.sign * fs.rotation;
+              const piv = posA;
+              capA = { start: piv, end: piv.clone().add(new Vector2(Math.cos(ang), Math.sin(ang)), fs.length), radius: radiusA };
+            } else {
+              capA = { start: posA, end: posA, radius: radiusA };
+            }
+            if (isFlipperB) {
+              const fs = world.getComponent(entityB, FlipperStateComponent);
+              const ang = fs.restAngle + fs.sign * fs.rotation;
+              const piv = posB;
+              capB = { start: piv, end: piv.clone().add(new Vector2(Math.cos(ang), Math.sin(ang)), fs.length), radius: radiusB };
+            } else {
+              capB = { start: posB, end: posB, radius: radiusB };
+            }
+            // you can now call a capsule–capsule routine or fall back to circle–circle
+            tangents = tangentFromCircleToCircle(
+              capA.start, capA.radius, cwA,
+              capB.start, capB.radius, cwB
+            );
+          } else {
+            tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+          }
+          attachmentA_current = tangents.a_circle;
+          attachmentB_current = tangents.b_circle;
         } else { // attachmentLinkA && attachmentLinkB
           attachmentA_current = posA.clone();
           attachmentB_current = posB.clone();
