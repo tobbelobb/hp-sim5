@@ -215,61 +215,75 @@ function tangentFromPointToCapsule(p_attach, pA, pB, r, cw) {
 
   // Determine the correct tangent based on the region of p_attach
   if (t < -EPS_CAPSULE) {
-    // Region A (beyond pA): Tangent must be to circle A
+    // Region A (beyond pA): Tangent must be to circle A.
     return { a_attach: resA.a_attach, a_capsule: resA.a_circle };
   } else if (t > L + EPS_CAPSULE) {
-    // Region B (beyond pB): Tangent must be to circle B
-     return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
+    // Region B (beyond pB): Tangent must be to circle B.
+    return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
   } else {
-    // Region S (alongside the segment)
-    if (isValidA) {
-      // If the tangent to A is valid (points away from B), use it.
-       return { a_attach: resA.a_attach, a_capsule: resA.a_circle };
-    } else if (isValidB) {
-      // If the tangent to B is valid (points away from A), use it.
-       return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
+    // Region S (alongside the segment, 0 <= t <= L)
+    // Calculate the potential parallel tangent point first.
+    const normal = new Vector2(-axis_norm.y, axis_norm.x); // Normal pointing "left" of axis A->B
+    const dot_with_normal = perp_vec.dot(normal);
+    // Determine which normal direction corresponds to the 'cw' flag from p_attach's perspective.
+    // If point is left (dot > 0) and cw=true (left tangent), use -normal.
+    // If point is right (dot < 0) and cw=true (left tangent), use +normal.
+    const use_positive_normal = (cw && dot_with_normal < 0) || (!cw && dot_with_normal > 0);
+    const chosen_normal = use_positive_normal ? normal : normal.clone().scale(-1);
+    const a_capsule_parallel = proj_line.clone().add(chosen_normal, r);
+
+    // Check if the segment from p_attach to the parallel point intersects the end caps.
+    // We use a slightly reduced radius for intersection checks to avoid issues at the exact tangent point.
+    const intersectionRadius = r * 0.99;
+    const intersectsCapA = lineSegmentCircleIntersection(p_attach, a_capsule_parallel, pA, intersectionRadius);
+    const intersectsCapB = lineSegmentCircleIntersection(p_attach, a_capsule_parallel, pB, intersectionRadius);
+
+    if (intersectsCapA && !intersectsCapB) {
+      // If it intersects Cap A, the true tangent must be to Cap A.
+      // Use the pre-calculated resA, assuming it's the correct tangent point on circle A.
+      // The isValidA check could be added here for extra safety, but intersection implies it should be the target.
+      // if (!isValidA) console.warn("Capsule tangent: Parallel intersects A, but resA invalid. Using resA.");
+      return { a_attach: resA.a_attach, a_capsule: resA.a_circle };
+
+    } else if (intersectsCapB && !intersectsCapA) {
+      // If it intersects Cap B, the true tangent must be to Cap B.
+      // Use the pre-calculated resB.
+      // if (!isValidB) console.warn("Capsule tangent: Parallel intersects B, but resB invalid. Using resB.");
+      return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
+
+    } else if (intersectsCapA && intersectsCapB) {
+      // Intersects both caps? This is geometrically unlikely for well-separated caps and points outside.
+      // Could happen if p_attach is very close or caps overlap. Default to parallel as a fallback.
+      console.warn("Capsule tangent: Parallel segment intersects both caps. Using parallel tangent as fallback.");
+      // As a fallback, return the parallel point, potentially clamped.
+      const t_check_parallel = (a_capsule_parallel.clone().subtract(pA)).dot(axis_norm);
+      let final_parallel_point_fallback = a_capsule_parallel.clone();
+      if (t_check_parallel < -EPS_CAPSULE) final_parallel_point_fallback.set(pA.clone().add(chosen_normal, r));
+      else if (t_check_parallel > L + EPS_CAPSULE) final_parallel_point_fallback.set(pB.clone().add(chosen_normal, r));
+      return { a_attach: p_attach.clone(), a_capsule: final_parallel_point_fallback };
+
     } else {
-      // Neither end cap tangent is valid -> tangent must be parallel to the axis
-      const normal = new Vector2(-axis_norm.y, axis_norm.x); // Normal pointing "left" of axis A->B
-      // Determine which side p_attach is on relative to directed axis A->B
-      // perp_vec points from axis to p_attach
-      const dot_with_normal = perp_vec.dot(normal); // If positive, p_attach is to the "left"
-
-      // cw=true means "left" tangent when looking from attach point.
-      // If point is left (dot_with_normal > 0) and cw=true, tangent uses -normal direction.
-      // If point is right (dot_with_normal < 0) and cw=true, tangent uses +normal direction.
-      const use_positive_normal = (cw && dot_with_normal < 0) || (!cw && dot_with_normal > 0);
-
-      const chosen_normal = use_positive_normal ? normal : normal.clone().scale(-1);
-
-      // The tangent point lies on the straight segment part of the capsule boundary
-      // It's offset from the projection onto the axis line by the chosen normal * radius
-      const a_capsule = proj_line.clone().add(chosen_normal, r);
-
-      // Safeguard: Ensure the calculated tangent point lies on the segment part, not beyond the caps.
-      // This should ideally not be needed if region logic is correct.
-      const t_check = (a_capsule.clone().subtract(pA)).dot(axis_norm);
+      // Intersects neither cap: The parallel tangent is the correct one.
+      // Apply safeguard clamp to ensure the point lies on the segment part.
+      const t_check = (a_capsule_parallel.clone().subtract(pA)).dot(axis_norm);
+      let final_parallel_point = a_capsule_parallel.clone();
       if (t_check < -EPS_CAPSULE) {
           // console.warn("Capsule tangent clamp: parallel tangent point projected before pA.");
-          a_capsule.set(pA.clone().add(chosen_normal, r));
+          final_parallel_point.set(pA.clone().add(chosen_normal, r));
       } else if (t_check > L + EPS_CAPSULE) {
           // console.warn("Capsule tangent clamp: parallel tangent point projected after pB.");
-           a_capsule.set(pB.clone().add(chosen_normal, r));
+          final_parallel_point.set(pB.clone().add(chosen_normal, r));
       }
-
-      return {
-        a_attach: p_attach.clone(),
-        a_capsule: a_capsule
-      };
+      return { a_attach: p_attach.clone(), a_capsule: final_parallel_point };
     }
   }
 }
 
 
 function tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw) {
-  // invert the mapping but use the same cw
+  // invert the mapping but use the OPPOSITE cw flag
   // Calculate tangent from point to capsule using the corrected function
-  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, !cw);
+  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, !cw); // Preserving user's fix here
   // Swap the roles of the attachment points for the inverse function
   return {
     a_attach: tmp.a_capsule,
