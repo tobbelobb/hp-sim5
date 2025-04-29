@@ -60,7 +60,7 @@
 
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(1.25, 0.6));
+    world.addComponent(ball1, new PositionComponent(0.3, 0.6));
     world.addComponent(ball1, new VelocityComponent(2.40, 10.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
@@ -70,7 +70,7 @@
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.6, 0.55));
+    world.addComponent(ball2, new PositionComponent(0.85, 0.55));
     world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball2, new RadiusComponent(ballRadius));
     world.addComponent(ball2, new MassComponent(0.1));
@@ -82,11 +82,10 @@
     const obsColor = "#FF8000";
     const obs1 = world.createEntity();
     world.addComponent(obs1, new ObstacleTagComponent());
-    world.addComponent(obs1, new PositionComponent(0.3, 1.5));
+    world.addComponent(obs1, new PositionComponent(0.4, 1.5));
     world.addComponent(obs1, new MassComponent(-1.0));
     world.addComponent(obs1, new RadiusComponent(0.1));
 
-    // ← add these two lines:
     world.addComponent(obs1, new FlipperStateComponent(
        /* length= */ 0.4,
        /* restAngle= */ 0.0,
@@ -109,7 +108,7 @@
     const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
     const pos_obs1 = world.getComponent(obs1, PositionComponent).pos;
     const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
-    const cw_obs1 = false;
+    const cw_obs1 = true;
     const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
 
     // --- capsule‐based initial tangents for our “flipper” obstacle ---
@@ -213,7 +212,7 @@
     const pos_ball3 = world.getComponent(ball3, PositionComponent).pos;
     const pos_obs2 = world.getComponent(obs2, PositionComponent).pos;
     const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
-    const cw_obs2 = false;
+    const cw_obs2 = true;
     const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
 
     // Calculate initial points for joint1 (ball3 attachment <-> obs2 rolling)

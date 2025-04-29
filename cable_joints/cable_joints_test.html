@@ -21,8 +21,19 @@
             <option value="testTangentCircleCircle_TT">Tangent Circle-Circle (T, T)</option>
             <option value="testTangentCircleCircle_TF">Tangent Circle-Circle (T, F)</option>
             <option value="testTangentCircleCircle_FT">Tangent Circle-Circle (F, T)</option>
-            <option value="testTangentCircleCircle_FF" selected>Tangent Circle-Circle (F, F)</option>
-            <!-- Add more test options here -->
+            <option value="testTangentCircleCircle_FF">Tangent Circle-Circle (F, F)</option>
+            <option value="testTangentPointCapsule_leftCw">Tangent Point-Capsule (left, cw)</option>
+            <option value="testTangentPointCapsule_leftCCw">Tangent Point-Capsule (left, ccw)</option>
+            <option value="testTangentPointCapsule_rightCw">Tangent Point-Capsule (right, cw)</option>
+            <option value="testTangentPointCapsule_rightCCw">Tangent Point-Capsule (right, ccw)</option>
+            <option value="testTangentPointCapsule_inlineRightCw">Tangent Point-Capsule (inline right, cw)</option>
+            <option value="testTangentPointCapsule_inlineRightCCw">Tangent Point-Capsule (inline right, ccw)</option>
+            <option value="testTangentPointCapsule_inlineRightCw2">Tangent Point-Capsule (inline2 right, cw)</option>
+            <option value="testTangentPointCapsule_inlineRightCCw2">Tangent Point-Capsule (inline2 right, ccw)</option>
+            <option value="testTangentPointCapsule_inlineLeftCw">Tangent Point-Capsule (inline left, cw)</option>
+            <option value="testTangentPointCapsule_inlineLeftCCw">Tangent Point-Capsule (inline left, ccw)</option>
+            <option value="testTangentPointCapsule_inlineLeftCw2">Tangent Point-Capsule (inline2 left, cw)</option>
+            <option value="testTangentPointCapsule_inlineLeftCCw2" selected>Tangent Point-Capsule (inline2 left, ccw)</option>
         </select>
         <button id="runBtn">Run &amp; Visualize</button>
     </div>
@@ -592,6 +603,8 @@
         const tangentLineEntity = world.createEntity();
         world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle)); // restLength doesn't matter for rendering
         world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF')); // White line
+        // We need the cablepath for rendering
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cwA, cwB]));
 
         // Expected: Top outer tangent
 
@@ -630,6 +643,8 @@
         const tangentLineEntity = world.createEntity();
         world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle));
         world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        // We need the cablepath for rendering
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cwA, cwB]));
 
         // Expected: Internal tangent (top-left to bottom-right)
         const phi = Math.asin(2/3);
@@ -668,6 +683,8 @@
         const tangentLineEntity = world.createEntity();
         world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle));
         world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        // We need the cablepath for rendering
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cwA, cwB]));
 
         // Expected: Internal tangent (bottom-left to top-right)
         const phi = Math.asin(2/3);
@@ -706,6 +723,8 @@
         const tangentLineEntity = world.createEntity();
         world.addComponent(tangentLineEntity, new CableJointComponent(entityA, entityB, 0, tangents.a_circle, tangents.b_circle));
         world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        // We need the cablepath for rendering
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cwA, cwB]));
 
         // Expected: Bottom outer tangent
         const expectedA = new Vector2(1/6, -Math.sqrt(35)/6);
@@ -722,6 +741,655 @@
         return world;
       }
     },
+
+    testTangentPointCapsule_leftCw: {
+      viewport: { scale: 0.45, offsetX: 1.0, offsetY: 1.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (left, cw=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = true;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(1.0, 3.0);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = 2.0*Math.atan(1/3);
+        const expect_x = 2.0 + Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_leftCCw: {
+      viewport: { scale: 0.45, offsetX: 1.0, offsetY: 1.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (left, cw=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = false;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(1.0, 3.0);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.PI - 2.0*Math.atan(1/3);
+        const expect_x = Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_rightCw: {
+      viewport: { scale: 0.45, offsetX: 1.0, offsetY: -1.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (right, cw=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = true;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(1.0, -3.0);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.PI + 2.0*Math.atan(1/3);
+        const expect_x = Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_rightCCw: {
+      viewport: { scale: 0.45, offsetX: 1.0, offsetY: -1.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (right, cw=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = false;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(1.0, -3.0);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = - 2.0*Math.atan(1/3);
+        const expect_x = 2.0 + Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineRightCw: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline right, cw=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = true;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(4.0, -0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = - Math.atan(0.1/2.0) - Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = 2.0 + Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineRightCCw: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline right, cw=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = false;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(4.0, -0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = - Math.atan(0.1/2.0) + Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = 2.0 + Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineRightCw2: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline right, cw=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = true;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(4.0, 0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.atan(0.1/2.0) - Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = 2.0 + Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineRightCCw2: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline right, cw=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = false;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(4.0, 0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.atan(0.1/2.0) + Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = 2.0 + Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineLeftCw: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline left, cw=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = true;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(-2.0, -0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.PI + Math.atan(0.1/2.0) - Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineLeftCCw: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline left, cw=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = false;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(-2.0, -0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.PI + Math.atan(0.1/2.0) + Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineLeftCw2: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline left, cw=T)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = true;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(-2.0, 0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.PI - Math.atan(0.1/2.0) - Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
+    testTangentPointCapsule_inlineLeftCCw2: {
+      viewport: { scale: 0.30, offsetX: 1.0, offsetY: 0.0 },
+      run: function() {
+        const testName = "Tangent Point-Capsule (inline left, cw=F)";
+        const world = new World(); window.testWorld = world; world.setResource('debugRenderPoints', {});
+        const r = 1.0;
+        const cw = false;
+        const pos_cap1 = new Vector2(0.0, 0.0);
+        const capsule = world.createEntity();
+        world.addComponent(capsule, new PositionComponent(pos_cap1.x, pos_cap1.y));
+        world.addComponent(capsule, new RadiusComponent(r));
+        world.addComponent(capsule, new FlipperStateComponent(
+           /* length= */ 2.0,
+           /* restAngle= */ 0.0,
+           /* maxRotation= */ 0.0,
+           /* angularVelocity= */ 0.0
+        ));
+        world.addComponent(capsule, new FlipperTagComponent());
+        world.addComponent(capsule, new RenderableComponent('capsule', '#AAAAAA'));
+        const fs1    = world.getComponent(capsule, FlipperStateComponent);
+        const angle1 = fs1.restAngle + fs1.sign * fs1.rotation;;
+        const tip1   = pos_cap1.clone().add(
+                          new Vector2(Math.cos(angle1), Math.sin(angle1)),
+                          fs1.length
+                       );
+        const pointId = world.createEntity();
+        const point = new Vector2(-2.0, 0.1);
+        const tangents = tangentFromPointToCapsule(point, pos_cap1, tip1, r, cw);
+        const tangentLineEntity = world.createEntity();
+
+        world.addComponent(tangentLineEntity, new CableJointComponent(
+          pointId, capsule, 0,
+          tangents.a_attach,
+          tangents.a_capsule
+        ));
+        world.addComponent(tangentLineEntity, new RenderableComponent('line', '#FFFFFF'));
+        world.addComponent(world.createEntity(), new CablePathComponent(world, [tangentLineEntity], ['attachment', 'attachment'], [cw, cw]));
+
+        const ang = Math.PI - Math.atan(0.1/2.0) + Math.acos(1.0/Math.sqrt(4.01));
+        const expect_x = Math.cos(ang);
+        const expect_y = Math.sin(ang);
+        const tol = 1e-6;
+
+        let passed = true;
+        passed &= assertNear(point.x, tangents.a_attach.x, tol, testName, "Tangent point.x");
+        passed &= assertNear(point.y, tangents.a_attach.y, tol, testName, "Tangent point.y");
+        passed &= assertNear(expect_x, tangents.a_capsule.x, tol, testName, "Tangent capsule.x");
+        passed &= assertNear(expect_y, tangents.a_capsule.y, tol, testName, "Tangent capsule.y");
+
+        logTestResult(testName, passed);
+        return world;
+      }
+    },
+
   };
 
   function runAndVisualizeTest(testName) {
