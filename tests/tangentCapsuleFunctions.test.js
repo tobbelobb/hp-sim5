@@ -280,6 +280,76 @@ describe('tangentFromCapsuleToPoint', () => {
     expect(out.a_capsule.y).toBeCloseTo(expect_y, 6);
   });
 
-  // Add more derived tests for inline cases if needed...
+  // --- Specific tests for tangentFromCapsuleToPoint ---
+
+  it('tangent point on top straight segment (cw=true)', () => {
+    const pA = new Vector2(0, 0);
+    const pB = new Vector2(2, 0);
+    const r = 0.5;
+    const p_attach = new Vector2(1, 2); // Point above the middle
+    const cw = true; // Capsule -> Point CW
+
+    const out = tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw);
+
+    // Expected tangent point on capsule should be (p_attach.x, r)
+    expect(out.a_capsule.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_capsule.y).toBeCloseTo(r, 6);
+    // Attachment point should be the original point
+    expect(out.a_attach.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_attach.y).toBeCloseTo(p_attach.y, 6);
+  });
+
+  it('tangent point on top straight segment (cw=false)', () => {
+    const pA = new Vector2(0, 0);
+    const pB = new Vector2(2, 0);
+    const r = 0.5;
+    const p_attach = new Vector2(1, 2); // Point above the middle
+    const cw = false; // Capsule -> Point CCW
+
+    const out = tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw);
+
+    // Expected tangent point on capsule should be (p_attach.x, r)
+    // Note: For a point directly above the straight segment, CW and CCW tangents from the capsule *to the point* should land on the same capsule point (the closest point on the boundary).
+    // The difference lies in which *direction* the tangent line goes.
+    expect(out.a_capsule.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_capsule.y).toBeCloseTo(r, 6);
+    // Attachment point should be the original point
+    expect(out.a_attach.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_attach.y).toBeCloseTo(p_attach.y, 6);
+  });
+
+  it('tangent point on bottom straight segment (cw=true)', () => {
+    const pA = new Vector2(0, 0);
+    const pB = new Vector2(2, 0);
+    const r = 0.5;
+    const p_attach = new Vector2(1, -2); // Point below the middle
+    const cw = true; // Capsule -> Point CW
+
+    const out = tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw);
+
+    // Expected tangent point on capsule should be (p_attach.x, -r)
+    expect(out.a_capsule.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_capsule.y).toBeCloseTo(-r, 6);
+    // Attachment point should be the original point
+    expect(out.a_attach.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_attach.y).toBeCloseTo(p_attach.y, 6);
+  });
+
+    it('tangent point on bottom straight segment (cw=false)', () => {
+    const pA = new Vector2(0, 0);
+    const pB = new Vector2(2, 0);
+    const r = 0.5;
+    const p_attach = new Vector2(1, -2); // Point below the middle
+    const cw = false; // Capsule -> Point CCW
+
+    const out = tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw);
+
+    // Expected tangent point on capsule should be (p_attach.x, -r)
+    expect(out.a_capsule.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_capsule.y).toBeCloseTo(-r, 6);
+    // Attachment point should be the original point
+    expect(out.a_attach.x).toBeCloseTo(p_attach.x, 6);
+    expect(out.a_attach.y).toBeCloseTo(p_attach.y, 6);
+  });
 
 });
