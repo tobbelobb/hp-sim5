@@ -1546,8 +1546,7 @@ class RenderSystem {
     if (L < 1e-9) return;
     const u = delta.clone().scale(1 / L);
     const v = new Vector2(-u.y, u.x);
-    const sideDir = cw ? v.clone().scale(-1) : v.clone();
-    const sideDir2 = !cw ? v.clone().scale(-1) : v.clone();
+    const sideDir = cw ? v.clone() : v.clone().scale(-1);
 
     // Which cap each point is on
     const onPivot1 = Math.abs(P1.distanceTo(Cp) - R) < 1e-5 * R;
@@ -1555,14 +1554,12 @@ class RenderSystem {
 
     // Canvas arc helper
     const arc = (C, A, B, anticw) => {
-      // angles dans l’espace simulation
       const a0 = Math.atan2(A.y - C.y, A.x - C.x);
       const a1 = Math.atan2(B.y - C.y, B.x - C.x);
-      // ⇩  on passe les angles inversés au canvas (axe Y inversé)
       this.c.arc(
         this.cX(C.x), this.cY(C.y),
         R * this.effectiveCScale,
-        -a0, -a1, anticw      //  << inversion ajoutée (-a0, -a1)
+        -a0, -a1, !anticw
       );
     };
 
@@ -1583,12 +1580,11 @@ class RenderSystem {
     // Compute true hinge points from geometry (always tangent to both ends)
     const pivotHinge = Cp.clone().add(sideDir.clone().scale(R));
     const tipHinge   = Ct.clone().add(sideDir.clone().scale(R));
-    const tipHinge2   = Ct.clone().add(sideDir2.clone().scale(R));
 
     // Entry on pivot, exit on tip
     if (onPivot1) {
       arc(Cp, P1, pivotHinge, cw);
-      this.c.lineTo(this.cX(tipHinge.x), this.cY(tipHinge2.y));
+      this.c.lineTo(this.cX(tipHinge.x), this.cY(tipHinge.y));
       arc(Ct, tipHinge, P2, cw);
     } else {
       arc(Ct, P1, tipHinge, cw);
