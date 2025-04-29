@@ -1539,6 +1539,69 @@ class PBDCableConstraintSolver {
 // --- System: Rendering ---
 class RenderSystem {
   runInPause = true; // Always render
+
+  // ---------------------------------------------------------------------
+  //  util: dessine le trajet de câble autour d’un flipper (capsule)
+  // ---------------------------------------------------------------------
+  _drawCapsuleWrap(Cp, Ct, R, P1, P2, cw) {
+    // Cp = pivot centre, Ct = tip centre, R = rayon commun
+    // P1 et P2 = points d’attache (dans l’ordre du câble : entrée puis sortie)
+    // cw = sens horaire préféré (même sémantique que path.cw)
+
+    // 1) vecteurs d’axe et de côté externe
+    const u = new Vector2().subtractVectors(Ct, Cp);
+    const L = u.length();
+    if (L < 1e-9) return;                 // capsule dégénérée
+    u.scale(1/L);
+    const v = new Vector2(-u.y, u.x);     // côté + (side1)
+    const sideDir = cw ? v.clone().scale(-1) : v.clone();   // externe = side2 si cw, sinon side1
+
+    // 2) points “charnières” où la trajectoire quitte la demi-cercle pour la partie droite
+    const pivotSide   = Cp.clone().add(sideDir, R);
+    const tipSide     = Ct.clone().add(sideDir, R);
+
+    // 3) détermine sur quel end-cap se trouve chaque attache
+    const onPivot1 = Math.abs(P1.distanceTo(Cp) - R) < 1e-5 * R;
+    const onPivot2 = Math.abs(P2.distanceTo(Cp) - R) < 1e-5 * R;
+
+    // 4) petit helper pour dessiner un arc simple
+    const arc = (C, A, B, anticw) => {
+      const a0 = Math.atan2(A.y - C.y, A.x - C.x);
+      const a1 = Math.atan2(B.y - C.y, B.x - C.x);
+      this.c.arc(this.cX(C.x), this.cY(C.y),
+                 R * this.effectiveCScale,
+                 -a0, -a1, anticw);       // ‘-’ car axe Y canvas inversé
+    };
+
+    this.c.beginPath();
+    this.c.strokeStyle = linecolor1;
+
+    // --- Cas 1 : les deux points sur le même end-cap -----------
+    if ( onPivot1 && onPivot2 ) {
+      arc(Cp, P1, P2, !cw);
+      this.c.stroke();
+      return;
+    }
+    if ( !onPivot1 && !onPivot2 ) {       // tous deux sur tip
+      arc(Ct, P1, P2, !cw);
+      this.c.stroke();
+      return;
+    }
+
+    // --- Cas 2 : points sur des end-caps différents -------------
+    //   arc sur l’end-cap d’entrée  → segment droit → arc de sortie
+    if (onPivot1) {
+      arc(Cp, P1, pivotSide, !cw);
+      this.c.lineTo(this.cX(tipSide.x), this.cY(tipSide.y));
+      arc(Ct, tipSide, P2, !cw);
+    } else {  // entrée sur tip, sortie sur pivot
+      arc(Ct, P1, tipSide, !cw);
+      this.c.lineTo(this.cX(pivotSide.x), this.cY(pivotSide.y));
+      arc(Cp, pivotSide, P2, !cw);
+    }
+    this.c.stroke();
+  }
+
   constructor(canvas, cScale, simHeight, viewScaleMultiplier = 1.0, viewOffsetX_sim = 0.0, viewOffsetY_sim = 0.0) {
     this.canvas = canvas;
     this.c = canvas.getContext("2d");
@@ -1753,38 +1816,50 @@ class RenderSystem {
       }
     }
 
-    // ——— NEW: draw the wrap‐around arc on every rolling link ———
+    // ——— draw the wrap‐around arc on every rolling link (support capsules) ———
     for (const pathId of pathEntities) {
-      const path   = world.getComponent(pathId, CablePathComponent);
+      const path = world.getComponent(pathId, CablePathComponent);
       if (!path || path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
-      // linkTypes[ i ] === 'rolling' means the cable wraps on that entity
+
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
         if (path.linkTypes[i] !== 'rolling') continue;
-        // corner joint before & after this roller
+
         const jPrev = world.getComponent(joints[i - 1], CableJointComponent);
         const jNext = world.getComponent(joints[i    ], CableJointComponent);
-        // roller is the shared entityB of the previous joint
-        const rollerId   = jPrev.entityB;
-        const centerComp = world.getComponent(rollerId, PositionComponent);
-        const radiusComp = world.getComponent(rollerId, RadiusComponent);
+        const rollerId = jPrev.entityB;
+
+        const centerComp  = world.getComponent(rollerId, PositionComponent);
+        const radiusComp  = world.getComponent(rollerId, RadiusComponent);
         if (!centerComp || !radiusComp) continue;
-        const C    = centerComp.pos;
-        const R    = radiusComp.radius;
-        const P1   = jPrev.attachmentPointB_world;
-        const P2   = jNext.attachmentPointA_world;
-        // angles in sim coords
+        const R = radiusComp.radius;
+
+        const P1 = jPrev.attachmentPointB_world;
+        const P2 = jNext.attachmentPointA_world;
+
+        // ——  cas spécial : le roller est un flipper (capsule) ——
+        if (world.hasComponent(rollerId, FlipperStateComponent)) {
+          const fs     = world.getComponent(rollerId, FlipperStateComponent);
+          const angle  = fs.restAngle + fs.sign * fs.rotation;
+          const Cp     = centerComp.pos;                                        // pivot
+          const Ct     = Cp.clone().add(new Vector2(Math.cos(angle), Math.sin(angle)),
+                                        fs.length);                             // tip
+          this._drawCapsuleWrap(Cp, Ct, R, P1, P2, path.cw[i]);
+          continue;
+        }
+
+        // ——  cas original (roue circulaire) ——
+        const C  = centerComp.pos;
         const a1 = Math.atan2(P1.y - C.y, P1.x - C.x);
         const a2 = Math.atan2(P2.y - C.y, P2.x - C.x);
-        // cw‐flag stored in path.cw[i]
         const anticlockwise = !path.cw[i];
         this.c.beginPath();
-        this.c.strokeStyle = linecolor1;               // or pick your cable colour
+        this.c.strokeStyle = linecolor1;
         this.c.arc(
           this.cX(C.x),
           this.cY(C.y),
           R * this.effectiveCScale,
-          -a1,                                  // negate for canvas’ flipped y‐axis
+          -a1,
           -a2,
           anticlockwise
         );
