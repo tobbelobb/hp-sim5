@@ -2049,7 +2049,9 @@ if (typeof module !== 'undefined' && module.exports) {
     PBDBallBallCollisions,
     CableAttachmentUpdateSystem,
     InputReplaySystem,
-    GrabComponent
+    GrabComponent,
+    FlipperStateComponent,
+    PBDBallObstacleCollisions,
   };
 }
 
