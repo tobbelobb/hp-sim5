@@ -256,6 +256,7 @@ function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwiseP
   return radius * angle;
 }
 
+/*
 // --- helper: arc length on a capsule end-cap (pivot or tip) ---
 function capsuleEndcapArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false) {
   // Decide which end-cap both points lie on.
@@ -273,6 +274,84 @@ function capsuleEndcapArcLength(pA, pB, pivot, tip, radius, cw, force_positive =
   const center = onPivot ? pivot : tip;
   // Positive, signed arc length exactly like circles
   return Math.abs(signedArcLengthOnWheel(pA, pB, center, radius, cw, force_positive));
+}
+*/
+
+// --- helper: general signed arc length on a capsule perimeter (pivot-to-tip) ---
+function capsuleArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false) {
+  // Treat degenerate (circle) case
+  const axis = new Vector2().subtractVectors(tip, pivot);
+  const L = axis.length();
+  if (L < 1e-9) {
+    return signedArcLengthOnWheel(pA, pB, pivot, radius, cw, force_positive);
+  }
+
+  // Local frame
+  const u = axis.clone().scale(1 / L);           // +y  (pivot→tip)
+  const v = new Vector2(-u.y, u.x);              // +x  (points to “side 1”;  side 2 is −v)
+
+  const halfCirc = Math.PI * radius;
+  const perimeter = 2 * (halfCirc + L);          // full capsule perimeter
+
+  // --- project an arbitrary point onto the *external* perimeter -------------
+  function project(pt) {
+    const d = new Vector2().subtractVectors(pt, pivot);
+    const t = d.dot(u);          // axial coordinate  (0 at pivot, L at tip)
+    const x = d.dot(v);          // lateral coordinate (+ on side1, − on side2)
+
+    // PIVOT CIRCLE  (external = bottom half → sinφ ≤ 0 )
+    if (t < 0) {
+      let phi = Math.atan2(t, x);                // range (-π, π]
+      if (phi > 0) phi = -phi;                   // clamp to bottom half (-π…0)
+      const pos = pivot.clone()
+                        .add(v, radius * Math.cos(phi))
+                        .add(u, radius * Math.sin(phi));
+      return { comp: 'pivot',  phi,  pos };
+    }
+
+    // TIP CIRCLE  (external = top half → sinφ ≥ 0 )
+    if (t > L) {
+      const dTip = new Vector2().subtractVectors(pt, tip);
+      let phi = Math.atan2(dTip.dot(u), dTip.dot(v)); // (-π, π]
+      if (phi < 0) phi = -phi;                        // clamp to top half (0…π)
+      const pos = tip.clone()
+                      .add(v, radius * Math.cos(phi))
+                      .add(u, radius * Math.sin(phi));
+      return { comp: 'tip',    phi,  pos };
+    }
+
+    // SIDE SEGMENTS (t in [0, L])
+    const sign = (x >= 0 ? 1 : -1); // +1 → side1 ( +v ),  -1 → side2 (-v)
+    const pos  = pivot.clone().add(u, t).add(v, sign * radius);
+    return { comp: sign > 0 ? 'side1' : 'side2',  t,  pos };
+  }
+
+  // --- convert projected point to curvilinear abscissa s --------------------
+  function sParam(proj) {
+    switch (proj.comp) {
+      case 'pivot':  // φ ∈ [-π, 0]   (cw direction = decreasing φ)
+        return (-proj.phi) * radius;                        // 0 … πr
+      case 'side2':  // travels *upwards*
+        return halfCirc + proj.t;                           // πr … πr+L
+      case 'tip':    // φ ∈ [0, π]   (cw = decreasing φ)
+        return halfCirc + L + (Math.PI - proj.phi) * radius;// … +πr
+      case 'side1':  // travels *downwards*
+        return halfCirc + L + halfCirc + (L - proj.t);      // … +L
+    }
+  }
+
+  const A = project(pA);
+  const B = project(pB);
+  const sA = sParam(A);
+  const sB = sParam(B);
+
+  // Signed distance along preferred direction (“cw” = +)
+  let delta = sB - sA;
+  if (!cw) delta = -delta;            // flip sign for CCW preference
+  if (force_positive)                 // make strictly ≥0 if requested
+    while (delta < 0) delta += perimeter;
+
+  return delta;
 }
 
 /**
@@ -548,7 +627,7 @@ class CablePathComponent {
                            fs.length
                          );
 
-          initialStoredLength = capsuleEndcapArcLength(
+          initialStoredLength = capsuleArcLength(
               joint_i.attachmentPointB_world,
               joint_i_plus_1.attachmentPointA_world,
               center,           // pivot end-cap centre
