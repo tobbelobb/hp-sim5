@@ -1653,7 +1653,7 @@ class RenderSystem {
     }
 
     // Render Flippers
-    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RenderableComponent]);
+    const flipperEntities = world.query([PositionComponent, RadiusComponent, FlipperStateComponent, RenderableComponent]);
     for (const entityId of flipperEntities) {
       const posComp = world.getComponent(entityId, PositionComponent);
       const radiusComp = world.getComponent(entityId, RadiusComponent);
