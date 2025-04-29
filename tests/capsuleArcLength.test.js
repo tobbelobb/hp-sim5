@@ -8,17 +8,17 @@ describe('capsuleArcLength', () => {
   const tip   = new Vector2(0, 2);
   const radius = 1;
 
-  test('quarter arc on pivot end-cap (CCW default)', () => {
+  test('quarter arc on pivot end-cap (CW default)', () => {
     const prev = new Vector2(1,  0);   // angle 0
     const curr = new Vector2(0, -1);   // angle –π/2  (external bottom)
-    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, false);
+    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, true);
     expect(len).toBeCloseTo(Math.PI / 2);
   });
 
-  test('clockwise preference flips sign', () => {
+  test('Counter-clockwise preference flips sign', () => {
     const prev = new Vector2(1,  0);
     const curr = new Vector2(0, -1);
-    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, true);
+    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, false);
     expect(len).toBeCloseTo(-Math.PI / 2);
   });
 
@@ -27,7 +27,7 @@ describe('capsuleArcLength', () => {
     const curr = new Vector2(0, -1);
     // perimeter = 2*(π*r + L) = 2*(π + 2)  (here r=1, L=2)
     const expected = (3 * Math.PI) / 2 + 4; // = perimeter – π/2
-    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, true, true);
+    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, false, true);
     expect(len).toBeCloseTo(expected);
   });
 
@@ -35,7 +35,7 @@ describe('capsuleArcLength', () => {
     // along left side (side1) from tip to pivot (cw direction)
     const prev = new Vector2(-1, 2);   // t = L
     const curr = new Vector2(-1, 0);   // t = 0
-    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, true);
+    const len  = capsuleArcLength(prev, curr, pivot, tip, radius, false);
     expect(len).toBeCloseTo(2);        // L = 2
   });
 

@@ -346,7 +346,7 @@ function capsuleArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false
   const sB = sParam(B);
 
   // Signed distance along preferred direction (“cw” = +)
-  let delta = sB - sA;
+  let delta = sA - sB;
   if (!cw) delta = -delta;            // flip sign for CCW preference
   if (force_positive)                 // make strictly ≥0 if requested
     while (delta < 0) delta += perimeter;
@@ -941,8 +941,8 @@ class CableAttachmentUpdateSystem {
             const pivot = posA;
             const tip   = pivot.clone().add(new Vector2(Math.cos(angle), Math.sin(angle)), fs.length);
             const tang = tangentFromCapsuleToPoint(pivot, tip, radiusA, posB, cwA);
-            attachmentA_current = tang.a_attach;
-            attachmentB_current = tang.a_capsule;
+            attachmentA_current = tang.a_capsule;
+            attachmentB_current = tang.a_attach;
           } else {
             const tang = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
             attachmentA_current = tang.a_circle;
