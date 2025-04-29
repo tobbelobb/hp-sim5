@@ -256,6 +256,25 @@ function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwiseP
   return radius * angle;
 }
 
+// --- helper: arc length on a capsule end-cap (pivot or tip) ---
+function capsuleEndcapArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false) {
+  // Decide which end-cap both points lie on.
+  const tol   = radius * 1e-3;
+  const onPivot = Math.abs(pA.distanceTo(pivot) - radius) < tol &&
+                  Math.abs(pB.distanceTo(pivot) - radius) < tol;
+  const onTip   = Math.abs(pA.distanceTo(tip)   - radius) < tol &&
+                  Math.abs(pB.distanceTo(tip)   - radius) < tol;
+
+  if (!onPivot && !onTip) {
+    // Points belong to different parts of the capsule – ignore wrap here.
+    return 0.0;
+  }
+
+  const center = onPivot ? pivot : tip;
+  // Positive, signed arc length exactly like circles
+  return Math.abs(signedArcLengthOnWheel(pA, pB, center, radius, cw, force_positive));
+}
+
 /**
  * Checks if a line segment intersects a circle.
  * @param {Vector2} p1 - Start point of the segment
@@ -515,17 +534,42 @@ class CablePathComponent {
         const rolling_link = world.getComponent(linkId, CableLinkComponent);
         const center = world.getComponent(linkId, PositionComponent).pos;
         const radius = world.getComponent(linkId, RadiusComponent).radius;
-        const isCw = cw[i + 1];
+        const isCw   = cw[i + 1];
 
-        const initialStoredLength = signedArcLengthOnWheel(
-            joint_i.attachmentPointB_world,
-            joint_i_plus_1.attachmentPointA_world,
-            center,
-            radius,
-            isCw,
-            true
-        );
-        this.stored[i + 1] = initialStoredLength;
+        let initialStoredLength;
+
+        // If the rolling link is a flipper (capsule) we must inspect both end-caps
+        // (pivot and tip) instead of assuming everything sits on the pivot circle.
+        if (world.hasComponent(linkId, FlipperStateComponent)) {
+          const fs     = world.getComponent(linkId, FlipperStateComponent);
+          const angle  = fs.restAngle + fs.sign * fs.rotation;
+          const tipPos = center.clone().add(
+                           new Vector2(Math.cos(angle), Math.sin(angle)),
+                           fs.length
+                         );
+
+          initialStoredLength = capsuleEndcapArcLength(
+              joint_i.attachmentPointB_world,
+              joint_i_plus_1.attachmentPointA_world,
+              center,           // pivot end-cap centre
+              tipPos,           // tip   end-cap centre
+              radius,
+              isCw,
+              true              // force positive
+          );
+        } else {
+          // regular (circular) roller – keep previous behaviour
+          initialStoredLength = signedArcLengthOnWheel(
+              joint_i.attachmentPointB_world,
+              joint_i_plus_1.attachmentPointA_world,
+              center,
+              radius,
+              isCw,
+              true
+          );
+        }
+
+        this.stored[i + 1]  = initialStoredLength;
         this.totalRestLength += initialStoredLength;
       }
     }
