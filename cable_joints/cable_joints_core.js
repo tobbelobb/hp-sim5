@@ -1570,12 +1570,12 @@ class RenderSystem {
     this.c.strokeStyle = linecolor1;
 
     if (onPivot1 && onPivot2) {
-      arc(Cp, P1, P2, !cw);
+      arc(Cp, P1, P2, cw);
       this.c.stroke();
       return;
     }
     if (!onPivot1 && !onPivot2) {
-      arc(Ct, P1, P2, !cw);
+      arc(Ct, P1, P2, cw);
       this.c.stroke();
       return;
     }
@@ -1587,13 +1587,13 @@ class RenderSystem {
 
     // Entry on pivot, exit on tip
     if (onPivot1) {
-      arc(Cp, P1, pivotHinge, !cw);
+      arc(Cp, P1, pivotHinge, cw);
       this.c.lineTo(this.cX(tipHinge.x), this.cY(tipHinge2.y));
-      arc(Ct, tipHinge, P2, !cw);
+      arc(Ct, tipHinge, P2, cw);
     } else {
-      arc(Ct, P1, tipHinge, !cw);
+      arc(Ct, P1, tipHinge, cw);
       this.c.lineTo(this.cX(pivotHinge.x), this.cY(pivotHinge.y));
-      arc(Cp, pivotHinge, P2, !cw);
+      arc(Cp, pivotHinge, P2, cw);
     }
 
     this.c.stroke();
