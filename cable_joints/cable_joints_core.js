@@ -148,39 +148,129 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
 }
 
 // --- NEW helpers: tangent from a point to an oriented capsule and vice-versa ---
+
+const EPS_CAPSULE = 1e-9; // Small epsilon for floating point comparisons in capsule logic
+
 function tangentFromPointToCapsule(p_attach, pA, pB, r, cw) {
   // pA → pB defines our capsule axis, radius = r
   const axis = new Vector2().subtractVectors(pB, pA);
   const L = axis.length();
-  if (L < 1e-9) {
-    // degenerate capsule → circle at pA, remap field names
+
+  // --- 1. Handle Degenerate Case (Capsule is effectively a circle) ---
+  if (L < EPS_CAPSULE) {
     const circleT = tangentFromPointToCircle(p_attach, pA, r, cw);
     return {
       a_attach: circleT.a_attach,
       a_capsule: circleT.a_circle
     };
   }
-  axis.scale(1.0 / L);                    // unit axis
-  // perpendicular normal
-  const normal = new Vector2(-axis.y, axis.x);
+  const axis_norm = axis.clone().scale(1.0 / L);
 
-  // project attach onto axis, clamped to segment
-  let t = new Vector2().subtractVectors(p_attach, pA).dot(axis);
-  t = Math.max(0, Math.min(L, t));
-  const proj = pA.clone().add(axis, t);
+  // --- 2. Project p_attach onto the infinite line defined by the axis ---
+  const vec_A_to_attach = new Vector2().subtractVectors(p_attach, pA);
+  const t = vec_A_to_attach.dot(axis_norm); // Projection parameter along axis_norm starting from pA
+  const proj_line = pA.clone().add(axis_norm, t); // Closest point on the infinite line to p_attach
 
-  // now just a circle of radius r centered at proj
-  const result = tangentFromPointToCircle(p_attach, proj, r, cw);
-  // rename to match capsule nomenclature
-  return {
-    a_attach: result.a_attach,
-    a_capsule: result.a_circle
-  };
+  // --- 3. Check if p_attach is inside the capsule's infinite slab ---
+  const perp_vec = new Vector2().subtractVectors(p_attach, proj_line);
+  const dist_to_line_sq = perp_vec.lengthSq();
+
+  if (dist_to_line_sq <= r * r + EPS_CAPSULE) {
+    // Point is inside or on the boundary of the infinite slab
+    if (t < -EPS_CAPSULE) {
+      // Near cap A: Fallback to point-circle tangent (handles inside/on circle)
+      const resA = tangentFromPointToCircle(p_attach, pA, r, cw);
+       return { a_attach: resA.a_attach, a_capsule: resA.a_circle };
+    } else if (t > L + EPS_CAPSULE) {
+      // Near cap B: Fallback to point-circle tangent
+       const resB = tangentFromPointToCircle(p_attach, pB, r, cw);
+       return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
+    } else {
+      // Inside the main cylindrical body or on its boundary
+      // The "tangent" point is the closest point on the boundary.
+      if (dist_to_line_sq < EPS_CAPSULE) { // Point is exactly on the axis segment
+          // Find *a* point on the boundary, e.g., straight "up" relative to axis
+          const normal = new Vector2(-axis_norm.y, axis_norm.x);
+          const boundary_pt = proj_line.clone().add(normal, r);
+           return { a_attach: p_attach.clone(), a_capsule: boundary_pt };
+      } else {
+          const boundary_pt = proj_line.clone().add(perp_vec.normalize(), r);
+           return { a_attach: p_attach.clone(), a_capsule: boundary_pt };
+      }
+    }
+  }
+
+  // --- 4. Point is outside the capsule ---
+  // Calculate potential tangents to the end caps using the same cw flag
+  const resA = tangentFromPointToCircle(p_attach, pA, r, cw);
+  const resB = tangentFromPointToCircle(p_attach, pB, r, cw);
+  const tA = resA.a_circle;
+  const tB = resB.a_circle;
+
+  // Check validity of these tangents with respect to the capsule segment
+  // Valid tangent on cap A must point away from B: (tA - pA) dot axis <= 0
+  const isValidA = (tA.clone().subtract(pA)).dot(axis_norm) <= EPS_CAPSULE;
+  // Valid tangent on cap B must point away from A: (tB - pB) dot axis >= 0
+  const isValidB = (tB.clone().subtract(pB)).dot(axis_norm) >= -EPS_CAPSULE;
+
+  // Determine the correct tangent based on the region of p_attach
+  if (t < -EPS_CAPSULE) {
+    // Region A (beyond pA): Tangent must be to circle A
+    return { a_attach: resA.a_attach, a_capsule: resA.a_circle };
+  } else if (t > L + EPS_CAPSULE) {
+    // Region B (beyond pB): Tangent must be to circle B
+     return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
+  } else {
+    // Region S (alongside the segment)
+    if (isValidA) {
+      // If the tangent to A is valid (points away from B), use it.
+       return { a_attach: resA.a_attach, a_capsule: resA.a_circle };
+    } else if (isValidB) {
+      // If the tangent to B is valid (points away from A), use it.
+       return { a_attach: resB.a_attach, a_capsule: resB.a_circle };
+    } else {
+      // Neither end cap tangent is valid -> tangent must be parallel to the axis
+      const normal = new Vector2(-axis_norm.y, axis_norm.x); // Normal pointing "left" of axis A->B
+      // Determine which side p_attach is on relative to directed axis A->B
+      // perp_vec points from axis to p_attach
+      const dot_with_normal = perp_vec.dot(normal); // If positive, p_attach is to the "left"
+
+      // cw=true means "left" tangent when looking from attach point.
+      // If point is left (dot_with_normal > 0) and cw=true, tangent uses -normal direction.
+      // If point is right (dot_with_normal < 0) and cw=true, tangent uses +normal direction.
+      const use_positive_normal = (cw && dot_with_normal < 0) || (!cw && dot_with_normal > 0);
+
+      const chosen_normal = use_positive_normal ? normal : normal.clone().scale(-1);
+
+      // The tangent point lies on the straight segment part of the capsule boundary
+      // It's offset from the projection onto the axis line by the chosen normal * radius
+      const a_capsule = proj_line.clone().add(chosen_normal, r);
+
+      // Safeguard: Ensure the calculated tangent point lies on the segment part, not beyond the caps.
+      // This should ideally not be needed if region logic is correct.
+      const t_check = (a_capsule.clone().subtract(pA)).dot(axis_norm);
+      if (t_check < -EPS_CAPSULE) {
+          // console.warn("Capsule tangent clamp: parallel tangent point projected before pA.");
+          a_capsule.set(pA.clone().add(chosen_normal, r));
+      } else if (t_check > L + EPS_CAPSULE) {
+          // console.warn("Capsule tangent clamp: parallel tangent point projected after pB.");
+           a_capsule.set(pB.clone().add(chosen_normal, r));
+      }
+
+      return {
+        a_attach: p_attach.clone(),
+        a_capsule: a_capsule
+      };
+    }
+  }
 }
+
 
 function tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw) {
   // invert the mapping but use the same cw
+  // Calculate tangent from point to capsule using the corrected function
   const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, cw);
+  // Swap the roles of the attachment points for the inverse function
   return {
     a_attach: tmp.a_capsule,
     a_capsule:  tmp.a_attach
