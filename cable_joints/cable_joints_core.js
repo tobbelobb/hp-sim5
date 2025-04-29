@@ -269,7 +269,7 @@ function tangentFromPointToCapsule(p_attach, pA, pB, r, cw) {
 function tangentFromCapsuleToPoint(pA, pB, r, p_attach, cw) {
   // invert the mapping but use the same cw
   // Calculate tangent from point to capsule using the corrected function
-  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, cw);
+  const tmp = tangentFromPointToCapsule(p_attach, pA, pB, r, !cw);
   // Swap the roles of the attachment points for the inverse function
   return {
     a_attach: tmp.a_capsule,
