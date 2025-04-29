@@ -131,11 +131,11 @@
     // ── DEBUG: show where the two capsule‐tangent points landed ──
     const debug = world.getResource('debugRenderPoints');
     // joint1
-    debug.init1_attach  = { pos: initialPoints1.a_attach.clone(), color: '#FF00FF' };
-    debug.init1_capsule = { pos: initialPoints1.a_capsule.clone(), color: '#00FFFF' };
+    debug.init1_attach  = { pos: initialPoints1.a_attach.clone(), color: '#FFFF00' };
+    debug.init1_capsule = { pos: initialPoints1.a_capsule.clone(), color: '#0000FF' };
     // joint2
-    debug.init2_attach  = { pos: initialPoints2.a_attach.clone(), color: '#FF00FF' };
-    debug.init2_capsule = { pos: initialPoints2.a_capsule.clone(), color: '#00FFFF' };
+    debug.init2_attach  = { pos: initialPoints2.a_attach.clone(), color: '#FFFF00' };
+    debug.init2_capsule = { pos: initialPoints2.a_capsule.clone(), color: '#0000FF' };
 
     // Joint 1 (ball1 → obs1)
     const joint1 = world.createEntity();
