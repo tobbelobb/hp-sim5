@@ -1994,6 +1994,7 @@ if (typeof module !== 'undefined' && module.exports) {
     tangentFromPointToCapsule,
     tangentFromCapsuleToPoint,
     signedArcLengthOnWheel,
+    capsuleArcLength,
     lineSegmentCircleIntersection,
     rightOfLine,
     World,
