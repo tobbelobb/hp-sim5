@@ -1352,22 +1352,54 @@ class PBDBallObstacleCollisions {
         const r2 = world.getComponent(obsId, RadiusComponent).radius;
         const pushVel = 2.0;
 
-        const dir = new Vector2().subtractVectors(p1, p2);
-        const dSq = dir.lengthSq();
-        const rSum = r1 + r2;
+        const flipperComp = world.getComponent(obsId, FlipperStateComponent);
 
-        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+        if (flipperComp) {
+          // ---------- capsule (obstacle = flipper) ----------
+          const pivot   = p2;                      // PositionComponent of obstacle
+          const angle   = flipperComp.restAngle + flipperComp.sign * flipperComp.rotation;
+          const tip     = pivot.clone()
+                                .add(new Vector2(Math.cos(angle), Math.sin(angle)),
+                                     flipperComp.length);
+          const radiusC = r2;                      // same RadiusComponent for both end-caps
 
-        const d = Math.sqrt(dSq);
-        dir.scale(1.0 / d); // Normalize
+          // closest point on the segment [pivot, tip]
+          const closest = closestPointOnSegment(p1, pivot, tip);
+          const dir     = new Vector2().subtractVectors(p1, closest);
+          const dSq     = dir.lengthSq();
+          const rSum    = r1 + radiusC;
 
-        // Resolve penetration
-        const corr = rSum - d;
-        p1.add(dir, corr);
+          if (dSq === 0.0 || dSq > rSum * rSum) continue; // no intersection
 
-        // Resolve velocity (simple push)
-        const v_dot = v1.dot(dir);
-        v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
+          const d = Math.sqrt(dSq);
+          dir.scale(1.0 / d);                   // normalised push direction
+
+          // --- position correction ---
+          const corr = rSum - d;
+          p1.add(dir, corr);
+
+          // --- velocity correction (simple push) ---
+          const v_dot = v1.dot(dir);
+          v1.add(dir, pushVel - v_dot);
+        } else {
+          // ---------- original circle obstacle handling ----------
+          const dir = new Vector2().subtractVectors(p1, p2);
+          const dSq = dir.lengthSq();
+          const rSum = r1 + r2;
+
+          if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+          const d = Math.sqrt(dSq);
+          dir.scale(1.0 / d); // Normalize
+
+          // Resolve penetration
+          const corr = rSum - d;
+          p1.add(dir, corr);
+
+          // Resolve velocity (simple push)
+          const v_dot = v1.dot(dir);
+          v1.add(dir, pushVel - v_dot);
+        }
       }
     }
   }
