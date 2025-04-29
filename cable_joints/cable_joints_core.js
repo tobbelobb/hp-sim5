@@ -354,6 +354,24 @@ function capsuleArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false
   return delta;
 }
 
+// --- helper: signed arc length on a *rolling* link that may be a capsule ---
+function arcLengthOnLink(prevPt, currPt, linkId, world, cw, force_positive = false) {
+  // Capsule (flipper) ?
+  if (world.hasComponent(linkId, FlipperStateComponent)) {
+    const pivot   = world.getComponent(linkId, PositionComponent).pos;
+    const fs      = world.getComponent(linkId, FlipperStateComponent);
+    const angle   = fs.restAngle + fs.sign * fs.rotation;
+    const tip     = pivot.clone().add(new Vector2(Math.cos(angle), Math.sin(angle)), fs.length);
+    const radius  = world.getComponent(linkId, RadiusComponent).radius;
+
+    return capsuleArcLength(prevPt, currPt, pivot, tip, radius, cw, force_positive);
+  }
+  // Ordinary circular roller
+  const center  = world.getComponent(linkId, PositionComponent).pos;
+  const radius  = world.getComponent(linkId, RadiusComponent).radius;
+  return signedArcLengthOnWheel(prevPt, currPt, center, radius, cw, force_positive);
+}
+
 /**
  * Checks if a line segment intersects a circle.
  * @param {Vector2} p1 - Start point of the segment
@@ -787,24 +805,36 @@ class CableAttachmentUpdateSystem {
             const isAttachmentB = path.linkTypes[i+2] === 'attachment';
             if (isRollingA && isRollingB) {
               const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-              const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
+              const sA = arcLengthOnLink(
+                joint_i.attachmentPointA_world, tangents.a_circle,
+                joint_i.entityA, world, cwA
+              );
               path.stored[i] += sA;
               joint_i.restLength -= sA;
-              const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.b_circle, posB, radiusB, cwB);
+              const sB = arcLengthOnLink(
+                joint_i_plus_1.attachmentPointB_world, tangents.b_circle,
+                joint_i_plus_1.entityB, world, cwB
+              );
               path.stored[i+2] -= sB;
               joint_i.restLength += sB;
               joint_i.attachmentPointA_world.set(tangents.a_circle);
               joint_i.attachmentPointB_world.set(tangents.b_circle);
             } else if (isRollingA && isAttachmentB) {
               const tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
-              const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
+              const sA = arcLengthOnLink(
+                joint_i.attachmentPointA_world, tangents.a_circle,
+                joint_i.entityA, world, cwA
+              );
               path.stored[i] += sA;
               joint_i.restLength -= sA;
               joint_i.attachmentPointA_world.set(tangents.a_circle);
               joint_i.attachmentPointB_world.set(tangents.a_attach);
             } else if (isAttachmentA && isRollingB) {
               const tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
-              const sB = signedArcLengthOnWheel(joint_i_plus_1.attachmentPointB_world, tangents.a_circle, posB, radiusB, cwB);
+              const sB = arcLengthOnLink(
+                joint_i_plus_1.attachmentPointB_world, tangents.a_circle,
+                joint_i_plus_1.entityB, world, cwB
+              );
               path.stored[i+2] -= sB;
               joint_i.restLength += sB;
               joint_i.attachmentPointA_world.set(tangents.a_attach);
@@ -963,7 +993,9 @@ class CableAttachmentUpdateSystem {
             if (rollingLinkA) {
                 const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(prevPosA);
                 const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
-                sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
+                sA = arcLengthOnLink(
+                        projected_prevAttachA, attachmentA_current,
+                        entityA, world, cwA);
             } else {
                 sA = 0;
             }
@@ -971,7 +1003,9 @@ class CableAttachmentUpdateSystem {
             if (rollingLinkB) {
                 const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(prevPosB);
                 const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
-                sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
+                sB = arcLengthOnLink(
+                        projected_prevAttachB, attachmentB_current,
+                        entityB, world, cwB);
             } else {
                 sB = 0;
             }
@@ -1054,7 +1088,9 @@ class CableAttachmentUpdateSystem {
               initialDist1 = initialPoints.a_circle.clone().subtract(initialPoints.b_circle).length();
               attachmentPointAForNewJoint = initialPoints.a_circle;
               attachmentPointBForNewJoint = initialPoints.b_circle;
-              const sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
+              const sB = arcLengthOnLink(
+                pB, attachmentPointBForNewJoint,
+                entityB, world, cwB);
               path.stored[jointIndex + 1] -= sB;
               joint.restLength += sB;
             } else if (linkTypeB === 'attachment') {
@@ -1084,7 +1120,9 @@ class CableAttachmentUpdateSystem {
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
                 newAttachmentPointBForJoint = initialPoints2.b_circle;
-                const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
+                const sA = arcLengthOnLink(
+                  pA, newAttachmentPointAForJoint,
+                  entityA, world, cwA);
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                 path.stored[jointIndex] += sA;
                 joint.restLength -= sA;
@@ -1994,6 +2032,7 @@ if (typeof module !== 'undefined' && module.exports) {
     tangentFromPointToCapsule,
     tangentFromCapsuleToPoint,
     signedArcLengthOnWheel,
+    arcLengthOnLink,
     capsuleArcLength,
     lineSegmentCircleIntersection,
     rightOfLine,
