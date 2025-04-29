@@ -1555,11 +1555,15 @@ class RenderSystem {
 
     // Canvas arc helper
     const arc = (C, A, B, anticw) => {
+      // angles dans l’espace simulation
       const a0 = Math.atan2(A.y - C.y, A.x - C.x);
       const a1 = Math.atan2(B.y - C.y, B.x - C.x);
-      this.c.arc(this.cX(C.x), this.cY(C.y),
-                 R * this.effectiveCScale,
-                 a0, a1, anticw);
+      // ⇩  on passe les angles inversés au canvas (axe Y inversé)
+      this.c.arc(
+        this.cX(C.x), this.cY(C.y),
+        R * this.effectiveCScale,
+        -a0, -a1, anticw      //  << inversion ajoutée (-a0, -a1)
+      );
     };
 
     this.c.beginPath();
