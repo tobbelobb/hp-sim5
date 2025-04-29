@@ -112,21 +112,17 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
   let angleA, angleB;
   if (!cwA === cwB) {
     if (!cwA) {
-      // console.log("FT");
       angleA = alpha - Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     } else {
-      // console.log("TF");
       angleA = alpha + Math.PI / 2 - phi;
       angleB = alpha - Math.PI / 2 - phi;
     }
   } else {
     if (!cwA) {
-      // console.log("FF");
       angleA = alpha - Math.PI / 2 - phi;
       angleB = alpha - Math.PI / 2 - phi;
     } else {
-      // console.log("TT");
       angleA = alpha + Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     }
@@ -1280,9 +1276,10 @@ class CableAttachmentUpdateSystem {
         const currentDist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
         totalCurrentDist += currentDist + path.stored[jointIdx + 1];
         totalCurrentRestLength += joint.restLength + path.stored[jointIdx + 1];
+        //console.log(`joint.restLength=${joint.restLength}`);
       }
 
-      const error = path.totalRestLength - totalCurrentRestLength;
+      //const error = path.totalRestLength - totalCurrentRestLength;
       //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
       //console.log(`stored: ${path.stored}`);
     }

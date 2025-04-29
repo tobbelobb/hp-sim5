@@ -61,7 +61,7 @@
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
     world.addComponent(ball1, new PositionComponent(0.3, 0.6));
-    world.addComponent(ball1, new VelocityComponent(2.40, 10.0));
+    world.addComponent(ball1, new VelocityComponent(0.0, -1.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     world.addComponent(ball1, new MassComponent(0.1001));
     world.addComponent(ball1, new RestitutionComponent(ballRestitution));
