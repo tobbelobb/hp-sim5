@@ -289,7 +289,7 @@ canvas {
         world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
         // Add rotation components
         world.addComponent(spoolA, new OrientationComponent(0.0)); // Start angle 0
-        world.addComponent(spoolA, new AngularVelocityComponent(0.0)); // Start not spinning
+        world.addComponent(spoolA, new AngularVelocityComponent(3.1)); // Start spinning
         const spoolInertia = 0.5 * spoolMass * spoolRadius * spoolRadius;
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
 
@@ -331,7 +331,8 @@ canvas {
           [true, true]
         );
         // Set initial stored length for the hybrid link
-        cableCompA.stored[1] = 1.5; // Start with some stored length
+        cableCompA.stored[1] = 0.5; // Start with some stored length
+        cableCompA.totalRestLength += 0.5;
         world.addComponent(cableA, cableCompA);
 
         // --- Systems Registration (Order Matters!) ---
