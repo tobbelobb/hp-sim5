@@ -521,6 +521,23 @@ class MovementSystem {
   }
 }
 
+// --- System: Angular Movement ---
+class AngularMovementSystem {
+    runInPause = false;
+    update(world, dt) {
+        const entities = world.query([OrientationComponent, AngularVelocityComponent]);
+        for (const entityId of entities) {
+            const orientation = world.getComponent(entityId, OrientationComponent);
+            const angularVel = world.getComponent(entityId, AngularVelocityComponent);
+
+            orientation.prevAngle = orientation.angle; // Store angle before update
+            orientation.angle += angularVel.angularVelocity * dt;
+
+            // Optional: Keep angle in a specific range, e.g., 0 to 2*PI
+            // orientation.angle = (orientation.angle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        }
+    }
+}
 
 // --- System: Cable Attachment Update ---
 // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
@@ -764,7 +781,10 @@ class CableAttachmentUpdateSystem {
         delete debugPoints[key];
     }
 
-    // Process hybrid link state changes
+    // Update fixed attachment points for hybrid-attachment links FIRST
+    this._updateHybridAttachmentPoints(world);
+
+    // Process hybrid link state changes (switching between hybrid and hybrid-attachment)
     this._updateHybridLinkStates(world);
 
     const pathEntities = world.query([CablePathComponent]);
@@ -904,9 +924,13 @@ class CableAttachmentUpdateSystem {
         const posAComp = world.getComponent(entityA, PositionComponent);
         const radiusAComp = world.getComponent(entityA, RadiusComponent);
         const linkAComp = world.getComponent(entityA, CableLinkComponent);
+        const orientationAComp = world.getComponent(entityA, OrientationComponent); // Get orientation
         const posA = posAComp?.pos;
         const prevPosA = posAComp?.prevPos;
         const radiusA = radiusAComp?.radius;
+        const angleA = orientationAComp?.angle ?? 0.0;
+        const prevAngleA = orientationAComp?.prevAngle ?? 0.0;
+        const deltaAngleA = angleA - prevAngleA;
         const cwA = path.cw[A];
         // Handle regular and hybrid link types
         const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
@@ -917,9 +941,13 @@ class CableAttachmentUpdateSystem {
         const posBComp = world.getComponent(entityB, PositionComponent);
         const radiusBComp = world.getComponent(entityB, RadiusComponent);
         const linkBComp = world.getComponent(entityB, CableLinkComponent);
+        const orientationBComp = world.getComponent(entityB, OrientationComponent); // Get orientation
         const posB = posBComp?.pos;
         const prevPosB = posBComp?.prevPos;
         const radiusB = radiusBComp?.radius;
+        const angleB = orientationBComp?.angle ?? 0.0;
+        const prevAngleB = orientationBComp?.prevAngle ?? 0.0;
+        const deltaAngleB = angleB - prevAngleB;
         const cwB = path.cw[B];
         const attachmentLinkB = path.linkTypes[B] === 'attachment' || path.linkTypes[B] === 'hybrid-attachment';
         const rollingLinkB = path.linkTypes[B] === 'rolling' || path.linkTypes[B] === 'hybrid';
@@ -979,8 +1007,21 @@ class CableAttachmentUpdateSystem {
 
         if (tangents !== null) { // Check if tangents were successfully calculated or if it's point-to-point
             if (rollingLinkA) {
-                const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(prevPosA);
-                const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
+                let projected_prevAttachA;
+                if (isHybridA) {
+                    // Rotation-aware calculation for hybrid links
+                    const vec_prevCenter_to_prevAttachA_world = joint.attachmentPointA_world.clone().subtract(prevPosA);
+                    const cosA = Math.cos(deltaAngleA);
+                    const sinA = Math.sin(deltaAngleA);
+                    const rotated_x = vec_prevCenter_to_prevAttachA_world.x * cosA - vec_prevCenter_to_prevAttachA_world.y * sinA;
+                    const rotated_y = vec_prevCenter_to_prevAttachA_world.x * sinA + vec_prevCenter_to_prevAttachA_world.y * cosA;
+                    const vec_rotated = new Vector2(rotated_x, rotated_y);
+                    projected_prevAttachA = posA.clone().add(vec_rotated); // Predicted position after rotation + translation
+                } else {
+                    // Original calculation for non-hybrid rolling links
+                    const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(prevPosA);
+                    projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
+                }
                 sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
 
                 // For hybrid links, check if they would run out of stored cable
@@ -995,8 +1036,21 @@ class CableAttachmentUpdateSystem {
             }
 
             if (rollingLinkB) {
-                const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(prevPosB);
-                const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
+                 let projected_prevAttachB;
+                 if (isHybridB) {
+                    // Rotation-aware calculation for hybrid links
+                    const vec_prevCenter_to_prevAttachB_world = joint.attachmentPointB_world.clone().subtract(prevPosB);
+                    const cosB = Math.cos(deltaAngleB);
+                    const sinB = Math.sin(deltaAngleB);
+                    const rotated_x = vec_prevCenter_to_prevAttachB_world.x * cosB - vec_prevCenter_to_prevAttachB_world.y * sinB;
+                    const rotated_y = vec_prevCenter_to_prevAttachB_world.x * sinB + vec_prevCenter_to_prevAttachB_world.y * cosB;
+                    const vec_rotated = new Vector2(rotated_x, rotated_y);
+                    projected_prevAttachB = posB.clone().add(vec_rotated); // Predicted position after rotation + translation
+                 } else {
+                    // Original calculation for non-hybrid rolling links
+                    const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(prevPosB);
+                    projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
+                 }
                 sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
 
                 // For hybrid links, check if they would run out of stored cable
@@ -1786,21 +1840,52 @@ class RenderSystem {
     }
     this.c.lineWidth = 1;
 
-    // Render All Renderable Entities (Circles/Obstacles/Etc.)
+    // Render All Renderable Entities (Circles/Obstacles/Etc.) considering rotation
     const renderableEntities = world.query([PositionComponent, RenderableComponent]);
     for (const entityId of renderableEntities) {
         const posComp = world.getComponent(entityId, PositionComponent);
         const renderComp = world.getComponent(entityId, RenderableComponent);
+        const orientationComp = world.getComponent(entityId, OrientationComponent); // Get orientation
 
         if (renderComp.shape === 'circle') {
-            const radiusComp = world.getComponent(entityId, RadiusComponent); // Need radius for circles
+            const radiusComp = world.getComponent(entityId, RadiusComponent);
             if (posComp && radiusComp) {
+                const simX = posComp.pos.x;
+                const simY = posComp.pos.y;
+                const simRadius = radiusComp.radius;
+                const angle = orientationComp ? orientationComp.angle : 0.0; // Use 0 if no orientation
+
+                const cx = this.cX(simX);
+                const cy = this.cY(simY);
+                const cr = simRadius * this.effectiveCScale;
+
+                this.c.save(); // Save context state
+                this.c.translate(cx, cy); // Move origin to circle center
+                this.c.rotate(-angle); // Rotate (negative for canvas Y-down)
+
+                // Draw the circle centered at the new (0,0)
                 this.c.fillStyle = renderComp.color;
-                this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+                this.c.beginPath();
+                this.c.arc(0, 0, cr, 0, 2 * Math.PI);
+                this.c.closePath();
+                this.c.fill();
+
+                // Draw a line indicating orientation (e.g., from center to top edge)
+                if (orientationComp) { // Only draw if it can rotate
+                    this.c.strokeStyle = '#000000'; // Black line
+                    this.c.lineWidth = 1 * this.viewScaleMultiplier;
+                    this.c.beginPath();
+                    this.c.moveTo(0, 0); // Center
+                    this.c.lineTo(0, -cr); // To top edge in local rotated coords
+                    this.c.stroke();
+                }
+
+                this.c.restore(); // Restore context state
             }
         }
-        // Add rendering for other shapes if needed (e.g., 'line' is handled below)
+        // Add rendering for other shapes if needed
     }
+
 
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');
