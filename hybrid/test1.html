@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Hybrid Link</title>
+    <!-- Simple favicon: 1x1 transparent icon -->
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A" />
+
+    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Nice free Google font – optional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
+    <style>
+/* =========  BASIC COLOUR THEME  ========= */
+:root {
+  --bg-1: #2d2d2d;        /* page background */
+  --accent-1: #ff452a;    /* flipper + button gradient start */
+  --accent-2: #ffb347;    /* flipper + button gradient end   */
+  --text-main: #fafafa;
+  --text-dim:  #c0c0c0;
+  --radius: 4px;
+}
+
+/* =========  PAGE LAYOUT  ========= */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
+  width: 100dvw;
+  overflow: hidden;               /* **kills the vertical / horizontal scroll**   */
+  background: var(--bg-1);
+  color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
+  touch-action: none;     /* **stops double‑tap zoom in most browsers**   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* =========  CONTAINER  ========= */
+#gameContainer {
+  width: 100%;            /* fill full page width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;                /* expand to fill remaining vertical space */
+}
+
+/* =========  CONTROL BAR  ========= */
+#controls {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  margin-block: 0 8px;    /* remove top margin, keep bottom spacing */
+  padding-block: 12px 0;  /* add vertical padding */
+  background: var(--bg-1); /* ensure background covers underlying content */
+  z-index: 1;             /* stay above canvas */
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+#controls button {
+  all: unset;                      /* wipe default button styles */
+  cursor: pointer;
+  display: inline-block;
+  margin: 6px auto;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+#controls button:hover,
+#controls button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active {
+  transform: scale(.97);
+}
+
+/* =========  CANVAS  ========= */
+canvas {
+  width: 100%;
+  /* removed fixed aspect ratio to fill available screen height */
+  flex: 1;                         /* grow to fill vertical space */
+  display: block;
+  border-radius: var(--radius);
+  touch-action: manipulation;      /* turn off browser panning/zoom so pointermove/up always fire */
+}
+
+/* =========  SMALL‑SCREEN TWEAKS  ========= */
+#controls button {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="controls">
+            <button id="pauseBtn" tabindex="-1">Pause</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+        </div>
+        <canvas id="myCanvas"></canvas>
+    </div>
+<script src="../cable_joints/cable_joints_core.js"></script>
+<script>
+    // --- System: Input --- (Simplified Click Handling)
+    class InputSystem {
+         runInPause = true; // Input should work even when paused to unpause/interact
+
+         constructor(canvas) {
+             this.canvas = canvas;
+             this.clicks = [];
+             this.releases = [];
+             this.eventLog = [];     // ← record inputs per frame
+             this.frame = 0;         // ← frame counter
+             this.grabbedBall = null;
+             this.grabOffset = new Vector2();
+             this.grabStartPrevPos = new Vector2();
+             // Viewport parameters (to be set from setupScene)
+             this.scaleMultiplier = 1.0;
+             this.viewOffsetX = 0.0;
+             this.viewOffsetY = 0.0;
+             this.canvas.setAttribute('tabindex', '0');
+             this.canvas.style.outline = 'none';
+             this.canvas.focus();
+             // listen globally so ups/downs outside the canvas still fire
+             document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+             document.addEventListener('pointerup', this.handlePointerUp.bind(this));
+             this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
+         }
+
+         dumpDebugScenario() {
+             // Custom stringification to serialize Vector2 instances
+             const resStr = JSON.stringify(world.resources);
+             const logEntries = this.eventLog.map(frame => {
+                 const clicksStr = frame.clicks.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
+                 const releasesStr = frame.releases.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
+                 return `{ "frame": ${frame.frame}, "clicks": [${clicksStr}], "releases": [${releasesStr}] }`;
+             }).join(', ');
+             console.log('DEBUG_SCENARIO_DUMP', `{ "resources": ${resStr}, "inputLog": [${logEntries}] }`);
+         }
+
+         handlePointerDown(event) {
+             event.preventDefault();
+            // Map pointer to simulation coords (account for view scale and offset)
+            const rect = this.canvas.getBoundingClientRect();
+            const baseScale = this.canvas.height / world.getResource('simHeight');
+            const scale = baseScale * this.scaleMultiplier;
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+            const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+
+             // 1) see if we hit a spool
+             const clickVec = new Vector2(simX, simY);
+             for (const b of world.query([SpoolTagComponent,PositionComponent,RadiusComponent])) {
+               const pos = world.getComponent(b,PositionComponent).pos;
+               const r   = world.getComponent(b,RadiusComponent).radius;
+               if (clickVec.clone().subtract(pos).lengthSq() <= r*r) {
+                 this.grabbedBall = b;
+                 this.grabOffset = pos.clone().subtract(clickVec);
+                 // record old pos for velocity
+                 this.grabStartPrevPos = pos.clone();
+                 world.setResource('grabbedBall', b);
+
+                 // Potentially unpause
+                 const pauseState = world.getResource('pauseState');
+                 pauseState.paused = false;
+                 pauseBtn.textContent = "Pause";
+                 return;       // now we’re in grab mode
+               }
+             }
+             this.clicks.push(new Vector2(simX, simY));
+         }
+
+         handlePointerUp(event) {
+             event.preventDefault();
+             this.canvas.releasePointerCapture(event.pointerId);
+            // Map pointer to simulation coords (account for view scale and offset)
+            const rect = this.canvas.getBoundingClientRect();
+            const baseScale = this.canvas.height / world.getResource('simHeight');
+            const scale = baseScale * this.scaleMultiplier;
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+            const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+
+             // if we were grabbing a spool, drop it and set its velocity
+             if (this.grabbedBall != null) {
+               const b = this.grabbedBall;
+               const newPos = new Vector2(simX, simY).add(this.grabOffset);
+               const posComp = world.getComponent(b, PositionComponent);
+               // move it to the release point
+               posComp.pos.set(newPos);
+               // new vel = delta position since grab start
+               const prev   = this.grabStartPrevPos;
+               const vel    = world.getComponent(b, VelocityComponent).vel;
+               const dt = world.getResource('dt');
+               vel.set(new Vector2((newPos.x - prev.x)/dt, (newPos.y - prev.y)/dt));
+               // clear grab
+               this.grabbedBall = null;
+               world.setResource('grabbedBall', null);
+               return;
+             }
+             this.releases.push(new Vector2(simX, simY));
+         }
+
+         update(world, dt) {
+           const grabbedBall = world.getResource('grabbedBall');
+           if (grabbedBall != null) {
+              const pos = world.getComponent(grabbedBall, PositionComponent).pos;
+              this.grabStartPrevPos = pos.clone();
+           }
+         }
+
+         handlePointerMove(event) {
+           event.preventDefault();
+           if (this.grabbedBall === null) return;
+           // Map pointer to simulation coords (account for view scale and offset)
+           const rect = this.canvas.getBoundingClientRect();
+           const baseScale = this.canvas.height / world.getResource('simHeight');
+           const scale = baseScale * this.scaleMultiplier;
+           const pixelX = event.clientX - rect.left;
+           const pixelY = event.clientY - rect.top;
+           const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+           const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+           // spool center = pointer + saved offset
+           const newPos = new Vector2(simX, simY).add(this.grabOffset);
+           world.getComponent(this.grabbedBall, PositionComponent)
+                .pos.set(newPos);
+         }
+    }
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const stepBtn = document.getElementById("stepBtn");
+
+    let world = new World();
+
+    function setupScene() {
+        world.clear(); // Clear entities and components
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        // --- Calculate Simulation Dimensions & Scale ---
+        const simHeight = 1.7; // Target simulation height remains fixed
+        const cScale = canvas.height / simHeight; // Calculate scale based on actual height
+        const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
+
+        // --- Resources ---
+        world.setResource('gravity', new Vector2(0.0, -10.0));
+        world.setResource('dt', 1.0 / 200.0);
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight); // Store the reference simHeight
+        world.setResource('pauseState', new PauseStateComponent(true));
+        world.setResource('debugRenderPoints', {}); // Initialize debug points resource
+        world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
+        // reset any grab
+        world.setResource('grabbedBall', null);
+
+        // --- Entities and Components ---
+        // Spool Entities
+        const spoolRadius = 0.03;
+        const spoolMass = 0.005;
+
+        const spoolA = world.createEntity();
+        world.addComponent(spoolA, new SpoolTagComponent());
+        world.addComponent(spoolA, new PositionComponent(0.00, -0.5));
+        world.addComponent(spoolA, new VelocityComponent(0.0, 0.0));
+        world.addComponent(spoolA, new RadiusComponent(spoolRadius));
+        world.addComponent(spoolA, new MassComponent(spoolMass));
+        world.addComponent(spoolA, new GravityAffectedComponent());
+        world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
+
+
+        const anchorA = world.createEntity();
+        world.addComponent(anchorA, new SpoolTagComponent());
+        world.addComponent(anchorA, new PositionComponent(0.00, 0.5));
+        world.addComponent(anchorA, new VelocityComponent(0.0, 0.0));
+        world.addComponent(anchorA, new RadiusComponent(0.01));
+        world.addComponent(anchorA, new MassComponent(-1.0)); // Immovible
+        world.addComponent(anchorA, new RenderableComponent('circle', '#aaaaaa'));
+
+
+        // --- Cable Setup ---
+        // Connect: anchorA -> spoolA
+
+        world.addComponent(spoolA, new CableLinkComponent());
+        world.addComponent(anchorA, new CableLinkComponent());
+
+        // --- Calculate Initial Cable State ---
+        // Need to compute initial attachment points and rest lengths
+        // Get relevant components
+        const pos_spoolA = world.getComponent(spoolA, PositionComponent).pos;
+        const pos_anchorA = world.getComponent(anchorA, PositionComponent).pos;
+
+        const jointA = world.createEntity();
+        const tangA = tangentFromPointToCircle(pos_anchorA, pos_spoolA, spoolRadius, true);
+        const initialDistA = tangA.a_attach.clone().subtract(tangA.a_circle).length();
+        world.addComponent(jointA, new CableJointComponent(
+          anchorA, spoolA, initialDistA, tangA.a_attach, tangA.a_circle)); // Order matters
+        world.addComponent(jointA, new RenderableComponent('line', '#AA3311'));
+
+        const cableA = world.createEntity();
+        // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        const cableCompA = new CablePathComponent(
+          world,
+          [jointA],
+          ['attachment', 'hybrid'],
+          [true, true]
+        );
+        // Set initial stored length for the hybrid link
+        cableCompA.stored[1] = 1.5; // Start with some stored length
+        world.addComponent(cableA, cableCompA);
+
+        // --- Systems Registration (Order Matters!) ---
+        if (world.systems.length === 0) { // Only register systems once
+          // Initialize input system with view parameters matching RenderSystem
+          const inputSys = new InputSystem(canvas);
+          inputSys.scaleMultiplier = 0.6;
+          inputSys.viewOffsetX = 0.0;
+          inputSys.viewOffsetY = -0.3;
+          world.registerSystem(inputSys);
+          world.registerSystem(new GravitySystem());      // Applies gravity acceleration
+          world.registerSystem(new MovementSystem());     // Updates position based on velocity
+          world.registerSystem(new CableAttachmentUpdateSystem());
+          world.registerSystem(new PBDCableConstraintSolver());
+          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY));
+        }
+
+        // Update button text based on initial pause state
+         const pauseState = world.getResource('pauseState');
+         pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
+    }
+
+
+    // --- Main Loop ---
+    let lastTime = 0;           // in ms
+    let accumulator = 0.0;      // in seconds
+    let doStep = true; // Whether to do a single step when paused
+
+    function loop(currentTime) {
+      const dt = world.getResource('dt');           // e.g. 1/150
+      const pauseState = world.getResource('pauseState');
+
+      // first frame init
+      if (lastTime === 0) lastTime = currentTime;
+
+      let frameSec = (currentTime - lastTime) / 1000;
+      if (frameSec >= dt) {
+        lastTime = currentTime;
+        const maxAccum = dt * 5;
+        accumulator = Math.min(accumulator + frameSec, maxAccum);
+        while (accumulator >= dt) {
+          if (!pauseState.paused || doStep) {
+            if (doStep) pauseState.paused = false;
+            world.update(dt);
+            if (doStep) {
+              pauseState.paused = true;
+              doStep = false;
+            }
+          }
+          accumulator -= dt;
+        }
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+
+    // --- Event Listeners ---
+    pauseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) {
+            pauseState.paused = !pauseState.paused;
+            pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+        }
+    });
+
+    resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setupScene(); // Re-initialize the world state
+        // Ensure pause state resource is reset if needed
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) pauseState.paused = true; // Start paused after reset
+        pauseBtn.textContent = "Resume";
+        doStep = true;
+    });
+
+    stepBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState && pauseState.paused) {
+            doStep = true;
+        }
+    });
+    const dumpBtn = document.getElementById('dumpBtn');
+    dumpBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log(dumpWorldState(world));
+    });
+
+    // --- Start ---
+    setupScene();
+    requestAnimationFrame(loop);
+
+</script>
+
+</body>
+</html>
