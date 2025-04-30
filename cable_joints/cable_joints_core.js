@@ -392,6 +392,25 @@ class PauseStateComponent { constructor(paused = true) { this.paused = paused; }
 class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } } // New component for error state
 class CableLinkComponent { /* Tag component to identify entities that are part of a cable path and can interact */ }
 
+// --- Rotation Components ---
+class OrientationComponent {
+    constructor(angle = 0.0) {
+        this.angle = angle; // Current angle in radians
+        this.prevAngle = angle; // Angle at the start of the frame
+    }
+}
+class AngularVelocityComponent {
+    constructor(velocity = 0.0) {
+        this.angularVelocity = velocity; // Radians per second
+    }
+}
+class MomentOfInertiaComponent {
+    constructor(inertia = 1.0) {
+        this.inertia = inertia; // kg * m^2 (approximate for 2D)
+        this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0;
+    }
+}
+
 // --- new component: tag an entity as being grabbed by the mouse ---
 class GrabComponent {
   constructor(offsetX = 0.0, offsetY = 0.0) {
