@@ -45,18 +45,25 @@ html, body {
 
 /* =========  CONTAINER  ========= */
 #gameContainer {
-  width: 40vw;
+  width: 100%;            /* fill full page width */
   max-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-y: auto;       /* allow internal scrolling when content exceeds viewport */
+  padding-top: 12px;      /* spacing for sticky controls */
 }
 
 /* =========  CONTROL BAR  ========= */
 #controls {
+  position: sticky;
+  top: 0;
   width: 100%;
   text-align: center;
-  margin-block: 12px 8px;
+  margin-block: 0 8px;    /* remove top margin, keep bottom spacing */
+  padding-block: 12px 0;  /* add vertical padding */
+  background: var(--bg-1); /* ensure background covers underlying content */
+  z-index: 1;             /* stay above canvas */
   font-size: 0.9rem;
   color: var(--text-dim);
 }
