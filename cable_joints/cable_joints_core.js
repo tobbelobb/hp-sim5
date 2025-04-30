@@ -1724,7 +1724,6 @@ class RenderSystem {
       }
     }
 
-    // ——— NEW: draw the wrap‐around arc on every rolling link ———
     for (const pathId of pathEntities) {
       const path   = world.getComponent(pathId, CablePathComponent);
       if (!path || path.jointEntities.length < 1) continue;
@@ -1796,7 +1795,7 @@ class RenderSystem {
       for (let i = 0; i < path.linkTypes.length; i++) {
         if (path.linkTypes[i] === 'hybrid' || path.linkTypes[i] === 'hybrid-attachment') {
           // Find the entity for this link
-          let entityId;
+          let entityId = null;
           if (i === 0) {
             // First link is entityA of first joint
             const jointId = path.jointEntities[0];
@@ -1814,7 +1813,7 @@ class RenderSystem {
             if (joint) entityId = joint.entityB;
           }
 
-          if (entityId) {
+          if (entityId != null) {
             const posComp = world.getComponent(entityId, PositionComponent);
             const radiusComp = world.getComponent(entityId, RadiusComponent);
 
