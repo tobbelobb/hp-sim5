@@ -1768,7 +1768,26 @@ class RenderSystem {
     }
     this.c.lineWidth = 1;
 
-    // Draw special markers for hybrid links
+    // Render All Renderable Entities (Circles/Obstacles/Etc.)
+    const renderableEntities = world.query([PositionComponent, RenderableComponent]);
+    for (const entityId of renderableEntities) {
+        const posComp = world.getComponent(entityId, PositionComponent);
+        const renderComp = world.getComponent(entityId, RenderableComponent);
+
+        if (renderComp.shape === 'circle') {
+            const radiusComp = world.getComponent(entityId, RadiusComponent); // Need radius for circles
+            if (posComp && radiusComp) {
+                this.c.fillStyle = renderComp.color;
+                this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
+            }
+        }
+        // Add rendering for other shapes if needed (e.g., 'line' is handled below)
+    }
+
+    // Render Debug Points
+    const debugPoints = world.getResource('debugRenderPoints');
+
+    // Draw special markers for hybrid links AFTER debugPoints is defined
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (!path) continue;
@@ -1806,19 +1825,21 @@ class RenderSystem {
 
               this.c.beginPath();
               // Use different colors for different modes
-              this.c.fillStyle = path.linkTypes[i] === 'hybrid' ? '#00FF00' : '#FF0000';
+              this.c.fillStyle = path.linkTypes[i] === 'hybrid' ? '#00FF00' : '#FF0000'; // Green for rolling, Red for attachment
 
               // Draw a small marker at the top of the circle
               const markerX = this.cX(pos.x);
-              const markerY = this.cY(pos.y + radius);
-              this.c.arc(markerX, markerY, 5, 0, 2 * Math.PI);
+              const markerY = this.cY(pos.y + radius); // Top in sim coords is higher Y
+              this.c.arc(markerX, markerY, 5, 0, 2 * Math.PI); // 5 pixel radius marker
               this.c.fill();
 
-              // Optionally show stored length
-              if (typeof debugPoints !== 'undefined' && debugPoints) {
-                this.c.fillStyle = '#FFFFFF';
+              // Optionally show stored length using debugPoints
+              if (debugPoints) { // Check if debugPoints exists (it should now)
+                this.c.fillStyle = '#FFFFFF'; // White text
                 this.c.font = '10px Arial';
-                this.c.fillText(path.stored[i].toFixed(1), markerX + 7, markerY);
+                this.c.textAlign = 'left';
+                this.c.textBaseline = 'middle';
+                this.c.fillText(path.stored[i].toFixed(1), markerX + 7, markerY); // Display next to marker
               }
             }
           }
@@ -1826,24 +1847,7 @@ class RenderSystem {
       }
     }
 
-    // Render All Renderable Entities (Circles/Obstacles/Etc.)
-    const renderableEntities = world.query([PositionComponent, RenderableComponent]);
-    for (const entityId of renderableEntities) {
-        const posComp = world.getComponent(entityId, PositionComponent);
-        const renderComp = world.getComponent(entityId, RenderableComponent);
 
-        if (renderComp.shape === 'circle') {
-            const radiusComp = world.getComponent(entityId, RadiusComponent); // Need radius for circles
-            if (posComp && radiusComp) {
-                this.c.fillStyle = renderComp.color;
-                this.drawDisc(posComp.pos.x, posComp.pos.y, radiusComp.radius);
-            }
-        }
-        // Add rendering for other shapes if needed (e.g., 'line' is handled below)
-    }
-
-    // Render Debug Points
-    const debugPoints = world.getResource('debugRenderPoints');
     if (debugPoints) {
         // Keep debug points a constant pixel size
         const scaledDebugRadius = baseDebugRadius;
