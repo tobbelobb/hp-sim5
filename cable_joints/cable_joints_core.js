@@ -371,6 +371,7 @@ class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
 class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
 class GravityAffectedComponent { /* Tag component */ }
 class BallTagComponent { /* Tag component */ }
+class SpoolTagComponent { /* Tag component */ }
 class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
 class FlipperTagComponent { }
 class FlipperStateComponent {
