@@ -642,6 +642,73 @@ class CableAttachmentUpdateSystem {
     return (cw && cross < 0) || (!cw && cross > 0);
   }
 
+  // Update fixed attachment points for hybrid links in attachment mode based on entity rotation/translation
+  _updateHybridAttachmentPoints(world) {
+    const pathEntities = world.query([CablePathComponent]);
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path) continue;
+
+      for (let i = 0; i < path.linkTypes.length; i++) {
+        if (path.linkTypes[i] === 'hybrid-attachment') {
+          let jointId = null;
+          let isSideA = false; // Is this the A side of the relevant joint?
+          let entityId = null;
+
+          // Determine which joint and entity this link corresponds to
+          if (i === 0) { // First link
+            jointId = path.jointEntities[0];
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (joint) { entityId = joint.entityA; isSideA = true; }
+          } else if (i === path.linkTypes.length - 1) { // Last link
+            jointId = path.jointEntities[path.jointEntities.length - 1];
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (joint) { entityId = joint.entityB; isSideA = false; }
+          } else { // Middle link - Assume it's entityB of the left joint
+            jointId = path.jointEntities[i - 1];
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (joint) { entityId = joint.entityB; isSideA = false; }
+            // Note: Need consistent definition if middle link could be A of right joint
+          }
+
+          if (jointId && entityId) {
+            const joint = world.getComponent(jointId, CableJointComponent);
+            const posComp = world.getComponent(entityId, PositionComponent);
+            const orientationComp = world.getComponent(entityId, OrientationComponent); // Get orientation
+
+            if (joint && posComp && orientationComp) {
+              const currentPos = posComp.pos;
+              const prevPos = posComp.prevPos; // Position at start of frame
+              const currentAngle = orientationComp.angle;
+              const prevAngle = orientationComp.prevAngle; // Angle at start of frame
+
+              const deltaPos = currentPos.clone().subtract(prevPos);
+              const deltaAngle = currentAngle - prevAngle;
+
+              const attachmentPoint = isSideA ? joint.attachmentPointA_world : joint.attachmentPointB_world;
+
+              // 1. Translate the point with the body's center movement
+              attachmentPoint.add(deltaPos);
+
+              // 2. Rotate the point around the *new* center by deltaAngle
+              // Vector from the new center to the translated attachment point
+              const vecCenterToAttach = attachmentPoint.clone().subtract(currentPos);
+              const cos = Math.cos(deltaAngle);
+              const sin = Math.sin(deltaAngle);
+              const rotated_x = vecCenterToAttach.x * cos - vecCenterToAttach.y * sin;
+              const rotated_y = vecCenterToAttach.x * sin + vecCenterToAttach.y * cos;
+
+              // Update the attachment point to the new rotated position
+              attachmentPoint.x = currentPos.x + rotated_x;
+              attachmentPoint.y = currentPos.y + rotated_y;
+            }
+          }
+        }
+      }
+    }
+  }
+
+
   // Process hybrid link states - checks if hybrid links need to switch between rolling and attachment behavior
   _updateHybridLinkStates(world) {
     const debugPoints = world.getResource('debugRenderPoints');
