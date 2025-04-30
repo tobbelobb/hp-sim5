@@ -1,0 +1,989 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Cable Joints",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          257.5899658203125,
+          115.32275390625
+        ],
+        [
+          351.546875,
+          115.32275390625
+        ],
+        [
+          351.546875,
+          134.79827880859375
+        ],
+        [
+          257.5899658203125,
+          134.79827880859375
+        ]
+      ]
+    },
+    {
+      "title": "Abstract",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          75.30029296875,
+          436.623046875
+        ],
+        [
+          109.93115234375,
+          436.623046875
+        ],
+        [
+          109.93115234375,
+          445.60650634765625
+        ],
+        [
+          75.30029296875,
+          445.60650634765625
+        ]
+      ]
+    },
+    {
+      "title": "CCS Concepts",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          51.182373046875,
+          601.4873046875
+        ],
+        [
+          108.6943359375,
+          601.4873046875
+        ],
+        [
+          108.6943359375,
+          610.9865264892578
+        ],
+        [
+          51.182373046875,
+          610.9865264892578
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          51.909912109375,
+          657.8941345214844
+        ],
+        [
+          112.623046875,
+          657.8941345214844
+        ],
+        [
+          112.623046875,
+          666.8605346679688
+        ],
+        [
+          51.909912109375,
+          666.8605346679688
+        ]
+      ]
+    },
+    {
+      "title": "2. Related Work",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          51.3642578125,
+          83.9224853515625
+        ],
+        [
+          116.65100860595703,
+          83.9224853515625
+        ],
+        [
+          116.65100860595703,
+          93.12353515625
+        ],
+        [
+          51.3642578125,
+          93.12353515625
+        ]
+      ]
+    },
+    {
+      "title": "3. The Basic Algorithm",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          314.296875,
+          370.01953125
+        ],
+        [
+          406.2578125,
+          370.01953125
+        ],
+        [
+          406.2578125,
+          379.6117248535156
+        ],
+        [
+          314.296875,
+          379.6117248535156
+        ]
+      ]
+    },
+    {
+      "title": "3.1. Cable Joints Connecting Wheels",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          315.0879821777344,
+          681.2091217041016
+        ],
+        [
+          457.4765625,
+          681.2091217041016
+        ],
+        [
+          457.4765625,
+          690.1755218505859
+        ],
+        [
+          315.0879821777344,
+          690.1755218505859
+        ]
+      ]
+    },
+    {
+      "title": "3.2. General Polygonal Shapes",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          315.0879821777344,
+          582.9899597167969
+        ],
+        [
+          432.97821044921875,
+          582.9899597167969
+        ],
+        [
+          432.97821044921875,
+          592.03125
+        ],
+        [
+          315.0879821777344,
+          592.03125
+        ]
+      ]
+    },
+    {
+      "title": "M. M\u00fcller et al. / Cable Joints",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          254.7841796875,
+          64.8048095703125
+        ],
+        [
+          351.2966613769531,
+          64.8048095703125
+        ],
+        [
+          351.2966613769531,
+          73.2330322265625
+        ],
+        [
+          254.7841796875,
+          73.2330322265625
+        ]
+      ]
+    },
+    {
+      "title": "3.3. Attachments and Pinholes",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          51.837158203125,
+          593.67578125
+        ],
+        [
+          170.13558959960938,
+          593.67578125
+        ],
+        [
+          170.13558959960938,
+          602.720703125
+        ],
+        [
+          51.837158203125,
+          602.720703125
+        ]
+      ]
+    },
+    {
+      "title": "3.4. Cable Joints in 3D",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          314.87890625,
+          544.33984375
+        ],
+        [
+          404.51171875,
+          544.33984375
+        ],
+        [
+          404.51171875,
+          553.384765625
+        ],
+        [
+          314.87890625,
+          553.384765625
+        ]
+      ]
+    },
+    {
+      "title": "4. Extensions",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          51.9462890625,
+          442.37890625
+        ],
+        [
+          104.765625,
+          442.37890625
+        ],
+        [
+          104.765625,
+          451.622314453125
+        ],
+        [
+          51.9462890625,
+          451.622314453125
+        ]
+      ]
+    },
+    {
+      "title": "4.1. Hybrid Links",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          51.80078125,
+          561.1962890625
+        ],
+        [
+          122.3720703125,
+          561.1962890625
+        ],
+        [
+          122.3720703125,
+          570.4722595214844
+        ],
+        [
+          51.80078125,
+          570.4722595214844
+        ]
+      ]
+    },
+    {
+      "title": "M. M\u00fcller et al. / Cable Joints",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          254.34765625,
+          64.9075927734375
+        ],
+        [
+          351.2966613769531,
+          64.9075927734375
+        ],
+        [
+          351.2966613769531,
+          73.3358154296875
+        ],
+        [
+          254.34765625,
+          73.3358154296875
+        ]
+      ]
+    },
+    {
+      "title": "4.2. Merges and Splits",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          51.509765625,
+          291.08203125
+        ],
+        [
+          138.6635284423828,
+          291.08203125
+        ],
+        [
+          138.6635284423828,
+          300.77947998046875
+        ],
+        [
+          51.509765625,
+          300.77947998046875
+        ]
+      ]
+    },
+    {
+      "title": "5. Results",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          51.509765625,
+          578.875
+        ],
+        [
+          91.9609375,
+          578.875
+        ],
+        [
+          91.9609375,
+          588.3402709960938
+        ],
+        [
+          51.509765625,
+          588.3402709960938
+        ]
+      ]
+    },
+    {
+      "title": "M. M\u00fcller et al. / Cable Joints",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          255.9669952392578,
+          64.5992431640625
+        ],
+        [
+          352.29364013671875,
+          64.5992431640625
+        ],
+        [
+          352.29364013671875,
+          73.1302490234375
+        ],
+        [
+          255.9669952392578,
+          73.1302490234375
+        ]
+      ]
+    },
+    {
+      "title": "6. Conclusion and Future Work",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          51.14599609375,
+          681.8799438476562
+        ],
+        [
+          175.291259765625,
+          681.8799438476562
+        ],
+        [
+          175.291259765625,
+          691.1142578125
+        ],
+        [
+          51.14599609375,
+          691.1142578125
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          315.0879821777344,
+          676.7389984130859
+        ],
+        [
+          357.076171875,
+          676.7389984130859
+        ],
+        [
+          357.076171875,
+          686.591796875
+        ],
+        [
+          315.0879821777344,
+          686.591796875
+        ]
+      ]
+    },
+    {
+      "title": "Appendix A: Wheel Tangents",
+      "heading_level": null,
+      "page_id": 9,
+      "polygon": [
+        [
+          314.296875,
+          226.12518310546875
+        ],
+        [
+          426.21746826171875,
+          226.12518310546875
+        ],
+        [
+          426.21746826171875,
+          235.37353515625
+        ],
+        [
+          314.296875,
+          235.37353515625
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          105
+        ],
+        [
+          "Line",
+          41
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          327
+        ],
+        [
+          "Line",
+          104
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "ListItem",
+          7
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 4,
+        "llm_error_count": 0,
+        "llm_tokens_used": 12361
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          535
+        ],
+        [
+          "Line",
+          140
+        ],
+        [
+          "TableCell",
+          60
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Reference",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 3,
+        "llm_error_count": 0,
+        "llm_tokens_used": 8498
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          335
+        ],
+        [
+          "Line",
+          90
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "Reference",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 5,
+        "llm_error_count": 0,
+        "llm_tokens_used": 15620
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          186
+        ],
+        [
+          "Line",
+          61
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Figure",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Reference",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 2,
+        "llm_error_count": 0,
+        "llm_tokens_used": 5666
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          489
+        ],
+        [
+          "TableCell",
+          123
+        ],
+        [
+          "Line",
+          95
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Reference",
+          3
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 16,
+        "llm_error_count": 1,
+        "llm_tokens_used": 41147
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          277
+        ],
+        [
+          "Line",
+          62
+        ],
+        [
+          "TableCell",
+          32
+        ],
+        [
+          "Figure",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Reference",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 5,
+        "llm_error_count": 0,
+        "llm_tokens_used": 15369
+      }
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          152
+        ],
+        [
+          "Line",
+          50
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "Reference",
+          5
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Picture",
+          3
+        ],
+        [
+          "PictureGroup",
+          3
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 3,
+        "llm_error_count": 0,
+        "llm_tokens_used": 8594
+      }
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          144
+        ],
+        [
+          "Line",
+          50
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "Reference",
+          5
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "ListItem",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 2939
+      }
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1049
+        ],
+        [
+          "Line",
+          144
+        ],
+        [
+          "TableCell",
+          115
+        ],
+        [
+          "Reference",
+          26
+        ],
+        [
+          "ListItem",
+          24
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 2,
+        "llm_error_count": 0,
+        "llm_tokens_used": 6445
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/cableJoints"
+}
