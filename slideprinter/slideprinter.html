@@ -127,9 +127,13 @@ canvas {
              this.releases = [];
              this.eventLog = [];     // ← record inputs per frame
              this.frame = 0;         // ← frame counter
-             this.grabbedSpool = null;
+             this.grabbedBall = null;
              this.grabOffset = new Vector2();
              this.grabStartPrevPos = new Vector2();
+             // Viewport parameters (to be set from setupScene)
+             this.scaleMultiplier = 1.0;
+             this.viewOffsetX = 0.0;
+             this.viewOffsetY = 0.0;
              this.canvas.setAttribute('tabindex', '0');
              this.canvas.style.outline = 'none';
              this.canvas.focus();
@@ -153,10 +157,14 @@ canvas {
 
          handlePointerDown(event) {
              event.preventDefault();
-             const rect = this.canvas.getBoundingClientRect();
-             const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
-             const simX = (event.clientX - rect.left) / scale;
-             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+            // Map pointer to simulation coords (account for view scale and offset)
+            const rect = this.canvas.getBoundingClientRect();
+            const baseScale = this.canvas.height / world.getResource('simHeight');
+            const scale = baseScale * this.scaleMultiplier;
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+            const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
 
              // 1) see if we hit a spool
              const clickVec = new Vector2(simX, simY);
@@ -164,11 +172,11 @@ canvas {
                const pos = world.getComponent(b,PositionComponent).pos;
                const r   = world.getComponent(b,RadiusComponent).radius;
                if (clickVec.clone().subtract(pos).lengthSq() <= r*r) {
-                 this.grabbedSpool = b;
+                 this.grabbedBall = b;
                  this.grabOffset = pos.clone().subtract(clickVec);
                  // record old pos for velocity
                  this.grabStartPrevPos = pos.clone();
-                 world.setResource('grabbedSpool', b);
+                 world.setResource('grabbedBall', b);
 
                  // Potentially unpause
                  const pauseState = world.getResource('pauseState');
@@ -183,14 +191,18 @@ canvas {
          handlePointerUp(event) {
              event.preventDefault();
              this.canvas.releasePointerCapture(event.pointerId);
-             const rect = this.canvas.getBoundingClientRect();
-             const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
-             const simX = (event.clientX - rect.left) / scale;
-             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+            // Map pointer to simulation coords (account for view scale and offset)
+            const rect = this.canvas.getBoundingClientRect();
+            const baseScale = this.canvas.height / world.getResource('simHeight');
+            const scale = baseScale * this.scaleMultiplier;
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+            const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
 
              // if we were grabbing a spool, drop it and set its velocity
-             if (this.grabbedSpool) {
-               const b = this.grabbedSpool;
+             if (this.grabbedBall != null) {
+               const b = this.grabbedBall;
                const newPos = new Vector2(simX, simY).add(this.grabOffset);
                const posComp = world.getComponent(b, PositionComponent);
                // move it to the release point
@@ -201,26 +213,35 @@ canvas {
                const dt = world.getResource('dt');
                vel.set(new Vector2((newPos.x - prev.x)/dt, (newPos.y - prev.y)/dt));
                // clear grab
-               this.grabbedSpool = null;
-               world.setResource('grabbedSpool', null);
+               this.grabbedBall = null;
+               world.setResource('grabbedBall', null);
                return;
              }
              this.releases.push(new Vector2(simX, simY));
          }
 
          update(world, dt) {
+           const grabbedBall = world.getResource('grabbedBall');
+           if (grabbedBall != null) {
+              const pos = world.getComponent(grabbedBall, PositionComponent).pos;
+              this.grabStartPrevPos = pos.clone();
+           }
          }
 
          handlePointerMove(event) {
            event.preventDefault();
-           if (!this.grabbedSpool) return;
+           if (this.grabbedBall === null) return;
+           // Map pointer to simulation coords (account for view scale and offset)
            const rect = this.canvas.getBoundingClientRect();
-           const scale = this.canvas.height / world.getResource('simHeight');
-           const simX = (event.clientX - rect.left) / scale;
-           const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+           const baseScale = this.canvas.height / world.getResource('simHeight');
+           const scale = baseScale * this.scaleMultiplier;
+           const pixelX = event.clientX - rect.left;
+           const pixelY = event.clientY - rect.top;
+           const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+           const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
            // spool center = pointer + saved offset
            const newPos = new Vector2(simX, simY).add(this.grabOffset);
-           world.getComponent(this.grabbedSpool, PositionComponent)
+           world.getComponent(this.grabbedBall, PositionComponent)
                 .pos.set(newPos);
          }
     }
@@ -252,7 +273,7 @@ canvas {
         world.setResource('debugRenderPoints', {}); // Initialize debug points resource
         world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
         // reset any grab
-        world.setResource('grabbedSpool', null);
+        world.setResource('grabbedBall', null);
 
         // --- Entities and Components ---
         // Spool Entities
@@ -290,7 +311,7 @@ canvas {
         world.addComponent(anchorA, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorA, new RadiusComponent(0.01));
         world.addComponent(anchorA, new MassComponent(-1.0)); // Immovible
-        world.addComponent(anchorA, new RenderableComponent('circle', '#333333'));
+        world.addComponent(anchorA, new RenderableComponent('circle', '#aaaaaa'));
 
         const anchorB = world.createEntity();
         world.addComponent(anchorB, new SpoolTagComponent());
@@ -298,7 +319,7 @@ canvas {
         world.addComponent(anchorB, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorB, new RadiusComponent(0.01));
         world.addComponent(anchorB, new MassComponent(-1.0)); // Immovible
-        world.addComponent(anchorB, new RenderableComponent('circle', '#333333'));
+        world.addComponent(anchorB, new RenderableComponent('circle', '#aaaaaa'));
 
         const anchorC = world.createEntity();
         world.addComponent(anchorC, new SpoolTagComponent());
@@ -306,7 +327,7 @@ canvas {
         world.addComponent(anchorC, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorC, new RadiusComponent(0.01));
         world.addComponent(anchorC, new MassComponent(-1.0)); // Immovible
-        world.addComponent(anchorC, new RenderableComponent('circle', '#333333'));
+        world.addComponent(anchorC, new RenderableComponent('circle', '#aaaaaa'));
 
         // --- Cable Setup ---
         // Connect: anchorA -> spoolA
@@ -384,11 +405,16 @@ canvas {
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
-          world.registerSystem(new InputSystem(canvas));
+          // Initialize input system with view parameters matching RenderSystem
+          const inputSys = new InputSystem(canvas);
+          inputSys.scaleMultiplier = 0.6;
+          inputSys.viewOffsetX = 0.0;
+          inputSys.viewOffsetY = -0.3;
+          world.registerSystem(inputSys);
           world.registerSystem(new MovementSystem());     // Updates position based on velocity
           world.registerSystem(new CableAttachmentUpdateSystem());
           world.registerSystem(new PBDCableConstraintSolver());
-          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 0.6, 0.0, -0.3));
+          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY));
         }
 
         // Update button text based on initial pause state
