@@ -110,15 +110,8 @@ canvas {
     </div>
 <script src="cable_joints/cable_joints_core.js"></script>
 <script>
-    class OrientationComponent {
-        constructor(angle = 0.0) {
-            this.angle = angle; // Current angle in radians
-            this.prevAngle = angle; // Angle at the start of the timestep
-        }
-    }
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class ScoredTagComponent { }
-    class AngularVelocityComponent { constructor(velocity = 0.0) { this.angVel = velocity; } } // Radians per second
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 
     // helper to remember which flipper this tip belongs to

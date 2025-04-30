@@ -1538,7 +1538,7 @@ class PBDCableConstraintSolver {
         totalCurrentLength += currentSegmentLength;
 
         // Add stored length for the link *after* this joint (if it exists)
-        if (path.linkTypes[i+1] === 'rolling') {
+        if (path.linkTypes[i+1] === 'rolling' || path.linkTypes[i+1] === 'hybrid') {
            totalCurrentLength += path.stored[i+1];
         }
       }
