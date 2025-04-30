@@ -363,9 +363,11 @@ canvas {
         const cableCompA = new CablePathComponent(
           world,
           [jointA],
-          ['attachment', 'rolling'],
+          ['attachment', 'hybrid'],
           [true, true]
         );
+        // Set initial stored length for the hybrid link
+        cableCompA.stored[1] = 0.5; // Start with some stored length
         world.addComponent(cableA, cableCompA);
 
         const jointB = world.createEntity();
@@ -380,9 +382,11 @@ canvas {
         const cableCompB = new CablePathComponent(
           world,
           [jointB],
-          ['attachment', 'rolling'],
+          ['attachment', 'hybrid'],
           [true, true]
         );
+        // Set initial stored length for the hybrid link
+        cableCompB.stored[1] = 0.2; // Less stored length than cableA
         world.addComponent(cableB, cableCompB);
 
         const jointC = world.createEntity();
@@ -397,9 +401,11 @@ canvas {
         const cableCompC = new CablePathComponent(
           world,
           [jointC],
-          ['attachment', 'rolling'],
+          ['attachment', 'hybrid'],
           [true, true]
         );
+        // Set initial stored length for the hybrid link
+        cableCompC.stored[1] = 0.1; // Even less stored length than cableB
         world.addComponent(cableC, cableCompC);
 
 

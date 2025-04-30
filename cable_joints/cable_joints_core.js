@@ -508,12 +508,245 @@ class MovementSystem {
 class CableAttachmentUpdateSystem {
   runInPause = false; // Physics system
 
+  // Calculate tangent points for a hybrid link in attachment mode
+  _calculateHybridTangents(world, pathId, path, linkIndex, isDraining) {
+    const debugPoints = world.getResource('debugRenderPoints');
+
+    // Get required entities and components
+    let entityId, neighborEntityId, jointId;
+    let isLeft = false;
+
+    if (linkIndex === 0) {
+      // First link in path
+      jointId = path.jointEntities[0];
+      const joint = world.getComponent(jointId, CableJointComponent);
+      entityId = joint.entityA;
+      neighborEntityId = joint.entityB;
+      isLeft = true;
+    } else if (linkIndex === path.linkTypes.length - 1) {
+      // Last link in path
+      jointId = path.jointEntities[path.jointEntities.length - 1];
+      const joint = world.getComponent(jointId, CableJointComponent);
+      entityId = joint.entityB;
+      neighborEntityId = joint.entityA;
+      isLeft = false;
+    } else {
+      // Middle link
+      const leftJointId = path.jointEntities[linkIndex - 1];
+      const rightJointId = path.jointEntities[linkIndex];
+      const leftJoint = world.getComponent(leftJointId, CableJointComponent);
+      const rightJoint = world.getComponent(rightJointId, CableJointComponent);
+
+      if (leftJoint.entityB === rightJoint.entityA) {
+        entityId = leftJoint.entityB; // or rightJoint.entityA
+        neighborEntityId = isDraining ? leftJoint.entityA : rightJoint.entityB;
+        isLeft = !isDraining;
+      } else {
+        console.warn(`Inconsistent joints at link ${linkIndex}`);
+        return null;
+      }
+    }
+
+    // Get position and radius components
+    const posComp = world.getComponent(entityId, PositionComponent);
+    const radiusComp = world.getComponent(entityId, RadiusComponent);
+    const neighborPosComp = world.getComponent(neighborEntityId, PositionComponent);
+
+    if (!posComp || !radiusComp || !neighborPosComp) {
+      console.warn(`Missing components for hybrid tangent calculation at link ${linkIndex}`);
+      return null;
+    }
+
+    const pos = posComp.pos;
+    const radius = radiusComp.radius;
+    const neighborPos = neighborPosComp.pos;
+    const cw = path.cw[linkIndex];
+
+    // Calculate potential tangent points
+    let tangents;
+    if (isLeft) {
+      tangents = tangentFromCircleToPoint(neighborPos, pos, radius, cw);
+
+      // For visualization
+      if (debugPoints) {
+        debugPoints[`hybrid_tangent_${pathId}_${linkIndex}`] = {
+          pos: tangents.a_circle.clone(),
+          color: '#FFAA00'
+        };
+      }
+
+      return tangents.a_circle;
+    } else {
+      tangents = tangentFromPointToCircle(neighborPos, pos, radius, cw);
+
+      // For visualization
+      if (debugPoints) {
+        debugPoints[`hybrid_tangent_${pathId}_${linkIndex}`] = {
+          pos: tangents.a_circle.clone(),
+          color: '#FFAA00'
+        };
+      }
+
+      return tangents.a_circle;
+    }
+  }
+
+  // Check if an attachment point has passed a tangent point
+  _hasPassedTangentPoint(attachmentPoint, tangentPoint, center, cw) {
+    // Vector from center to attachment point
+    const toAttach = attachmentPoint.clone().subtract(center);
+    // Vector from center to tangent point
+    const toTangent = tangentPoint.clone().subtract(center);
+
+    // Calculate the angle between these vectors
+    // Cross product determines the direction (clockwise or counterclockwise)
+    const cross = toAttach.x * toTangent.y - toAttach.y * toTangent.x;
+
+    // Check if we're past the tangent point based on winding direction
+    return (cw && cross < 0) || (!cw && cross > 0);
+  }
+
+  // Process hybrid link states - checks if hybrid links need to switch between rolling and attachment behavior
+  _updateHybridLinkStates(world) {
+    const debugPoints = world.getResource('debugRenderPoints');
+    const pathEntities = world.query([CablePathComponent]);
+
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path) continue;
+
+      // Check each link in the path
+      for (let i = 0; i < path.linkTypes.length; i++) {
+        // Process hybrid links in rolling mode
+        if (path.linkTypes[i] === 'hybrid') {
+          const stored = path.stored[i];
+
+          // If the stored cable length becomes negative, switch to attachment behavior
+          if (stored < 0) {
+            // Mark this hybrid link as in attachment mode
+            path.linkTypes[i] = 'hybrid-attachment';
+
+            // Reset stored length to 0 since we've "used up" all cable on this link
+            path.stored[i] = 0;
+
+            if (debugPoints) {
+              // Mark this link as having switched to attachment mode
+              const idx = i === 0 ? 0 : i - 1;
+              const jointId = i === 0 || i === path.jointEntities.length ? null : path.jointEntities[idx];
+              if (jointId) {
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (joint) {
+                  const pos = i === 0 ? joint.attachmentPointA_world : joint.attachmentPointB_world;
+                  debugPoints[`hybrid_to_attachment_${pathId}_${i}`] = {
+                    pos: pos.clone(),
+                    color: '#0000FF'
+                  };
+                }
+              }
+            }
+          }
+        }
+        // Process hybrid links in attachment mode
+        else if (path.linkTypes[i] === 'hybrid-attachment') {
+          // Only consider switching back if we have some stored cable length
+          if (path.stored[i] > 0) {
+            let entityId, attachmentPoint, center, cw;
+            let shouldSwitch = false;
+
+            // Find the entity and joint for this link
+            if (i === 0) {
+              // First link
+              const jointId = path.jointEntities[0];
+              const joint = world.getComponent(jointId, CableJointComponent);
+              if (joint) {
+                entityId = joint.entityA;
+                attachmentPoint = joint.attachmentPointA_world;
+              }
+            } else if (i === path.linkTypes.length - 1) {
+              // Last link
+              const jointId = path.jointEntities[path.jointEntities.length - 1];
+              const joint = world.getComponent(jointId, CableJointComponent);
+              if (joint) {
+                entityId = joint.entityB;
+                attachmentPoint = joint.attachmentPointB_world;
+              }
+            } else {
+              // Middle link
+              const leftJointId = path.jointEntities[i - 1];
+              const rightJointId = path.jointEntities[i];
+              const leftJoint = world.getComponent(leftJointId, CableJointComponent);
+              const rightJoint = world.getComponent(rightJointId, CableJointComponent);
+
+              if (leftJoint && rightJoint && leftJoint.entityB === rightJoint.entityA) {
+                entityId = leftJoint.entityB; // Same as rightJoint.entityA
+
+                // Check which side of the entity is currently "pulling"
+                const leftPos = world.getComponent(leftJoint.entityA, PositionComponent)?.pos;
+                const rightPos = world.getComponent(rightJoint.entityB, PositionComponent)?.pos;
+                const entityPos = world.getComponent(entityId, PositionComponent)?.pos;
+
+                if (leftPos && rightPos && entityPos) {
+                  const toLeft = leftPos.clone().subtract(entityPos);
+                  const toRight = rightPos.clone().subtract(entityPos);
+
+                  // Calculate which side is pulling more (greater tension)
+                  const leftDist = leftJoint.attachmentPointA_world.distanceTo(leftJoint.attachmentPointB_world);
+                  const rightDist = rightJoint.attachmentPointA_world.distanceTo(rightJoint.attachmentPointB_world);
+                  const leftTension = leftDist / leftJoint.restLength;
+                  const rightTension = rightDist / rightJoint.restLength;
+
+                  if (leftTension > rightTension) {
+                    // Left side pulling more
+                    attachmentPoint = leftJoint.attachmentPointB_world;
+                  } else {
+                    // Right side pulling more
+                    attachmentPoint = rightJoint.attachmentPointA_world;
+                  }
+                }
+              }
+            }
+
+            if (entityId && attachmentPoint) {
+              center = world.getComponent(entityId, PositionComponent)?.pos;
+              cw = path.cw[i];
+
+              if (center) {
+                // Calculate the tangent point for this hybrid link
+                const tangentPoint = this._calculateHybridTangents(world, pathId, path, i, false);
+
+                if (tangentPoint) {
+                  // Check if the attachment point has passed the tangent point
+                  shouldSwitch = this._hasPassedTangentPoint(attachmentPoint, tangentPoint, center, cw);
+
+                  if (shouldSwitch) {
+                    // Switch back to rolling mode
+                    path.linkTypes[i] = 'hybrid';
+
+                    if (debugPoints) {
+                      debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
+                        pos: tangentPoint.clone(),
+                        color: '#00FF00'
+                      };
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   update(world, dt) {
     const debugPoints = world.getResource('debugRenderPoints');
     // Clear points from the previous frame
     for (const key in debugPoints) {
         delete debugPoints[key];
     }
+
+    // Process hybrid link state changes
+    this._updateHybridLinkStates(world);
 
     const pathEntities = world.query([CablePathComponent]);
     //// Merge joints
@@ -534,7 +767,7 @@ class CableAttachmentUpdateSystem {
         if (joint_i.entityA === joint_i_plus_1.entityB) {
           continue;
         }
-        const isRolling = path.linkTypes[i + 1] === 'rolling';
+        const isRolling = path.linkTypes[i + 1] === 'rolling' || path.linkTypes[i + 1] === 'hybrid';
         if (isRolling) {
           // --- New Merge Condition ---
           const linkId = joint_i.entityB; // Shared rolling link
@@ -584,10 +817,12 @@ class CableAttachmentUpdateSystem {
             const lengthToAdd = joint_i_plus_1.restLength + path.stored[i + 1];
             joint_i.restLength += lengthToAdd;
             joint_i.entityB = joint_i_plus_1.entityB;
-            const isRollingA = path.linkTypes[i] === 'rolling';
-            const isAttachmentA = path.linkTypes[i] === 'attachment';
-            const isRollingB = path.linkTypes[i+2] === 'rolling';
-            const isAttachmentB = path.linkTypes[i+2] === 'attachment';
+            const isRollingA = path.linkTypes[i] === 'rolling' || path.linkTypes[i] === 'hybrid';
+            const isAttachmentA = path.linkTypes[i] === 'attachment' || path.linkTypes[i] === 'hybrid-attachment';
+            const isRollingB = path.linkTypes[i+2] === 'rolling' || path.linkTypes[i+2] === 'hybrid';
+            const isAttachmentB = path.linkTypes[i+2] === 'attachment' || path.linkTypes[i+2] === 'hybrid-attachment';
+            const isHybridA = path.linkTypes[i] === 'hybrid' || path.linkTypes[i] === 'hybrid-attachment';
+            const isHybridB = path.linkTypes[i+2] === 'hybrid' || path.linkTypes[i+2] === 'hybrid-attachment';
             if (isRollingA && isRollingB) {
               const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
               const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
@@ -654,8 +889,10 @@ class CableAttachmentUpdateSystem {
         const prevPosA = posAComp?.prevPos;
         const radiusA = radiusAComp?.radius;
         const cwA = path.cw[A];
-        const attachmentLinkA = path.linkTypes[A] === 'attachment';
-        const rollingLinkA = path.linkTypes[A] === 'rolling';
+        // Handle regular and hybrid link types
+        const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
+        const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
+        const isHybridA = path.linkTypes[A] === 'hybrid' || path.linkTypes[A] === 'hybrid-attachment';
 
         // Get components for Entity B using CURRENT positions
         const posBComp = world.getComponent(entityB, PositionComponent);
@@ -665,8 +902,9 @@ class CableAttachmentUpdateSystem {
         const prevPosB = posBComp?.prevPos;
         const radiusB = radiusBComp?.radius;
         const cwB = path.cw[B];
-        const attachmentLinkB = path.linkTypes[B] === 'attachment';
-        const rollingLinkB = path.linkTypes[B] === 'rolling';
+        const attachmentLinkB = path.linkTypes[B] === 'attachment' || path.linkTypes[B] === 'hybrid-attachment';
+        const rollingLinkB = path.linkTypes[B] === 'rolling' || path.linkTypes[B] === 'hybrid';
+        const isHybridB = path.linkTypes[B] === 'hybrid' || path.linkTypes[B] === 'hybrid-attachment';
 
         if (!posA || !posB) {
           console.warn(`CableJoint ${jointId} missing PositionComponent on entities ${entityA} or ${entityB}. Skipping update.`);
@@ -725,6 +963,14 @@ class CableAttachmentUpdateSystem {
                 const vec_prevCenter_to_prevAttachA = joint.attachmentPointA_world.clone().subtract(prevPosA);
                 const projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
                 sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
+
+                // For hybrid links, check if they would run out of stored cable
+                if (isHybridA && path.stored[A] + sA < 0) {
+                    // Not enough stored cable, clamp to available amount
+                    sA = -path.stored[A];
+                    console.warn(`Hybrid link ${A} running out of cable. Clamping sA to ${sA.toFixed(4)}`);
+                    // This will trigger the link to switch to attachment mode in _updateHybridLinkStates
+                }
             } else {
                 sA = 0;
             }
@@ -733,6 +979,14 @@ class CableAttachmentUpdateSystem {
                 const vec_prevCenter_to_prevAttachB = joint.attachmentPointB_world.clone().subtract(prevPosB);
                 const projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
                 sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
+
+                // For hybrid links, check if they would run out of stored cable
+                if (isHybridB && path.stored[B] - sB < 0) {
+                    // Not enough stored cable, clamp to available amount
+                    sB = path.stored[B];
+                    console.warn(`Hybrid link ${B} running out of cable. Clamping sB to ${sB.toFixed(4)}`);
+                    // This will trigger the link to switch to attachment mode in _updateHybridLinkStates
+                }
             } else {
                 sB = 0;
             }
@@ -818,11 +1072,22 @@ class CableAttachmentUpdateSystem {
               const sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
               path.stored[jointIndex + 1] -= sB;
               joint.restLength += sB;
-            } else if (linkTypeB === 'attachment') {
+            } else if (linkTypeB === 'attachment' || linkTypeB === 'hybrid-attachment') {
               initialPoints = tangentFromCircleToPoint(posB, posSplitter, radiusSplitter, cw);
               initialDist1 = initialPoints.a_attach.clone().subtract(initialPoints.a_circle).length();
               attachmentPointAForNewJoint = initialPoints.a_circle;
               attachmentPointBForNewJoint = initialPoints.a_attach;
+            } else if (linkTypeB === 'hybrid') {
+              // Handle hybrid link in rolling mode same as rolling
+              const radiusB = world.getComponent(entityB, RadiusComponent).radius;
+              const cwB = path.cw[jointIndex + 1];
+              initialPoints = tangentFromCircleToCircle(posSplitter, radiusSplitter, cw, posB, radiusB, cwB);
+              initialDist1 = initialPoints.a_circle.clone().subtract(initialPoints.b_circle).length();
+              attachmentPointAForNewJoint = initialPoints.a_circle;
+              attachmentPointBForNewJoint = initialPoints.b_circle;
+              const sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
+              path.stored[jointIndex + 1] -= sB;
+              joint.restLength += sB;
             } else {
               console.warn(`Splitting cable joint attached to ${linkTypeB} is not supported.`);
             }
@@ -849,7 +1114,7 @@ class CableAttachmentUpdateSystem {
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
                 path.stored[jointIndex] += sA;
                 joint.restLength -= sA;
-            } else if (linkTypeA === 'attachment') {
+            } else if (linkTypeA === 'attachment' || linkTypeA === 'hybrid-attachment') {
                 // --- Case: Attachment -> Splitter ---
                 initialPoints2 = tangentFromPointToCircle(posA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
@@ -857,6 +1122,18 @@ class CableAttachmentUpdateSystem {
                 newAttachmentPointBForJoint = initialPoints2.a_circle; // Point B is on the splitter
                 // No sA calculation needed as link A is attachment
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
+            } else if (linkTypeA === 'hybrid') {
+                // --- Case: Hybrid (in rolling mode) -> Splitter ---
+                const radiusA = world.getComponent(entityA, RadiusComponent).radius;
+                const cwA = path.cw[jointIndex];
+                initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
+                initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
+                newAttachmentPointAForJoint = initialPoints2.a_circle;
+                newAttachmentPointBForJoint = initialPoints2.b_circle;
+                const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
+                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
+                path.stored[jointIndex] += sA;
+                joint.restLength -= sA;
             } else {
                 console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
                 // Skip this split if unsupported combination
@@ -1452,9 +1729,13 @@ class RenderSystem {
       const path   = world.getComponent(pathId, CablePathComponent);
       if (!path || path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
-      // linkTypes[ i ] === 'rolling' means the cable wraps on that entity
+      // rolling or hybrid link types mean the cable can wrap on that entity
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
-        if (path.linkTypes[i] !== 'rolling') continue;
+        // Only draw wrap-around arc for rolling and hybrid links (when in rolling mode)
+        if (path.linkTypes[i] !== 'rolling' && path.linkTypes[i] !== 'hybrid') continue;
+
+        // For hybrid links in attachment mode, we don't draw the wrap-around arc
+        if (path.linkTypes[i] === 'hybrid-attachment') continue;
         // corner joint before & after this roller
         const jPrev = world.getComponent(joints[i - 1], CableJointComponent);
         const jNext = world.getComponent(joints[i    ], CableJointComponent);
@@ -1486,6 +1767,64 @@ class RenderSystem {
       }
     }
     this.c.lineWidth = 1;
+
+    // Draw special markers for hybrid links
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path) continue;
+
+      // Draw markers for hybrid links
+      for (let i = 0; i < path.linkTypes.length; i++) {
+        if (path.linkTypes[i] === 'hybrid' || path.linkTypes[i] === 'hybrid-attachment') {
+          // Find the entity for this link
+          let entityId;
+          if (i === 0) {
+            // First link is entityA of first joint
+            const jointId = path.jointEntities[0];
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (joint) entityId = joint.entityA;
+          } else if (i === path.linkTypes.length - 1) {
+            // Last link is entityB of last joint
+            const jointId = path.jointEntities[path.jointEntities.length - 1];
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (joint) entityId = joint.entityB;
+          } else {
+            // Middle links are entityB of previous joint (or entityA of next joint)
+            const jointId = path.jointEntities[i - 1];
+            const joint = world.getComponent(jointId, CableJointComponent);
+            if (joint) entityId = joint.entityB;
+          }
+
+          if (entityId) {
+            const posComp = world.getComponent(entityId, PositionComponent);
+            const radiusComp = world.getComponent(entityId, RadiusComponent);
+
+            if (posComp && radiusComp) {
+              // Draw a small marker on the edge of the entity to indicate hybrid link
+              const pos = posComp.pos;
+              const radius = radiusComp.radius;
+
+              this.c.beginPath();
+              // Use different colors for different modes
+              this.c.fillStyle = path.linkTypes[i] === 'hybrid' ? '#00FF00' : '#FF0000';
+
+              // Draw a small marker at the top of the circle
+              const markerX = this.cX(pos.x);
+              const markerY = this.cY(pos.y + radius);
+              this.c.arc(markerX, markerY, 5, 0, 2 * Math.PI);
+              this.c.fill();
+
+              // Optionally show stored length
+              if (typeof debugPoints !== 'undefined' && debugPoints) {
+                this.c.fillStyle = '#FFFFFF';
+                this.c.font = '10px Arial';
+                this.c.fillText(path.stored[i].toFixed(1), markerX + 7, markerY);
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Render All Renderable Entities (Circles/Obstacles/Etc.)
     const renderableEntities = world.query([PositionComponent, RenderableComponent]);
