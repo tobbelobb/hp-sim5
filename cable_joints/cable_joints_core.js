@@ -786,7 +786,7 @@ class CableAttachmentUpdateSystem {
               }
             }
 
-            if (entityId =! null && attachmentPoint != null) {
+            if (entityId != null && attachmentPoint != null) {
               center = world.getComponent(entityId, PositionComponent)?.pos;
               cw = path.cw[i];
 
