@@ -721,11 +721,11 @@ class CableAttachmentUpdateSystem {
       // Check first and last link in the path
       for (const i of [0, path.linkTypes.length - 1]) {
         // Process hybrid links in rolling mode
+        const epsilon = 1e-9;
         if (path.linkTypes[i] === 'hybrid') {
           const stored = path.stored[i];
 
           // If the stored cable length becomes negative, switch to attachment behavior
-          const epsilon = 1e-9;
           if (stored <= epsilon) {
             console.log(`Switching joint ${i} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
@@ -744,7 +744,7 @@ class CableAttachmentUpdateSystem {
               // Mark this link as having switched to attachment mode
               const idx = i === 0 ? 0 : i - 1;
               const jointId = i === 0 || i === path.jointEntities.length ? null : path.jointEntities[idx];
-              if (jointId) {
+              if (jointId != null) {
                 const joint = world.getComponent(jointId, CableJointComponent);
                 if (joint) {
                   const pos = i === 0 ? joint.attachmentPointA_world : joint.attachmentPointB_world;
@@ -760,8 +760,11 @@ class CableAttachmentUpdateSystem {
         // Process hybrid links in attachment mode
         else if (path.linkTypes[i] === 'hybrid-attachment') {
           // Only consider switching back if we have some stored cable length
-          if (path.stored[i] > 0) {
-            let entityId, attachmentPoint, center, cw;
+          if (path.stored[i] > epsilon) {
+            let entityId = null
+            let attachmentPoint = null
+            let center = null
+            let cw = null;
             let shouldSwitch = false;
 
             // Find the entity and joint for this link
@@ -781,51 +784,17 @@ class CableAttachmentUpdateSystem {
                 entityId = joint.entityB;
                 attachmentPoint = joint.attachmentPointB_world;
               }
-            } else {
-              // Middle link
-              const leftJointId = path.jointEntities[i - 1];
-              const rightJointId = path.jointEntities[i];
-              const leftJoint = world.getComponent(leftJointId, CableJointComponent);
-              const rightJoint = world.getComponent(rightJointId, CableJointComponent);
-
-              if (leftJoint && rightJoint && leftJoint.entityB === rightJoint.entityA) {
-                entityId = leftJoint.entityB; // Same as rightJoint.entityA
-
-                // Check which side of the entity is currently "pulling"
-                const leftPos = world.getComponent(leftJoint.entityA, PositionComponent)?.pos;
-                const rightPos = world.getComponent(rightJoint.entityB, PositionComponent)?.pos;
-                const entityPos = world.getComponent(entityId, PositionComponent)?.pos;
-
-                if (leftPos && rightPos && entityPos) {
-                  const toLeft = leftPos.clone().subtract(entityPos);
-                  const toRight = rightPos.clone().subtract(entityPos);
-
-                  // Calculate which side is pulling more (greater tension)
-                  const leftDist = leftJoint.attachmentPointA_world.distanceTo(leftJoint.attachmentPointB_world);
-                  const rightDist = rightJoint.attachmentPointA_world.distanceTo(rightJoint.attachmentPointB_world);
-                  const leftTension = leftDist / leftJoint.restLength;
-                  const rightTension = rightDist / rightJoint.restLength;
-
-                  if (leftTension > rightTension) {
-                    // Left side pulling more
-                    attachmentPoint = leftJoint.attachmentPointB_world;
-                  } else {
-                    // Right side pulling more
-                    attachmentPoint = rightJoint.attachmentPointA_world;
-                  }
-                }
-              }
             }
 
-            if (entityId && attachmentPoint) {
+            if (entityId =! null && attachmentPoint != null) {
               center = world.getComponent(entityId, PositionComponent)?.pos;
               cw = path.cw[i];
 
-              if (center) {
+              if (center != null) {
                 // Calculate the tangent point for this hybrid link
                 const tangentPoint = this._calculateHybridTangents(world, pathId, path, i, false);
 
-                if (tangentPoint) {
+                if (tangentPoint != null) {
                   // Check if the attachment point has passed the tangent point
                   shouldSwitch = this._hasPassedTangentPoint(attachmentPoint, tangentPoint, center, cw);
 
@@ -881,40 +850,35 @@ class CableAttachmentUpdateSystem {
         if (joint_i.entityA === joint_i_plus_1.entityB) {
           continue;
         }
-        const isRolling = path.linkTypes[i + 1] === 'rolling' || path.linkTypes[i + 1] === 'hybrid';
+        const isRolling = path.linkTypes[i + 1] === 'rolling';
         if (isRolling) {
-          // --- New Merge Condition ---
-          const linkId = joint_i.entityB; // Shared rolling link
-          const radiusComp = world.getComponent(linkId, RadiusComponent);
-          const linkRadius = radiusComp ? radiusComp.radius : 0;
 
-          // Calculate angle between the two segments
-          const pA1 = joint_i.attachmentPointA_world;
-          const pB1 = joint_i.attachmentPointB_world;
-          const pA2 = joint_i_plus_1.attachmentPointA_world;
-          const pB2 = joint_i_plus_1.attachmentPointB_world;
-
-          const vec1 = pB1.clone().subtract(pA1);
-          const vec2 = pB2.clone().subtract(pA2);
-          const len1Sq = vec1.lengthSq();
-          const len2Sq = vec2.lengthSq();
-          let angle = 0; // Default to 0 (straight) if segments are too short
-
-          if (len1Sq > 1e-9 && len2Sq > 1e-9) {
-              vec1.normalize();
-              vec2.normalize();
-              const dot = vec1.dot(vec2);
-              angle = Math.acos(Math.max(-1.0, Math.min(1.0, dot))); // Angle between 0 and PI
-          }
 
           const storedLength = path.stored[i + 1];
-          const angleThreshold = Math.PI / 180.0; // 1 degree
           const nothing_stored = storedLength < 0.0;
-          const little_stored_and_angle_minimal = radiusComp && storedLength < linkRadius && angle < angleThreshold;
 
-          // Complex merge condition
           if (nothing_stored) {
             // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
+
+            // Calculate angle between the two segments, just for debug
+            const linkId = joint_i.entityB; // Shared rolling link
+            const radiusComp = world.getComponent(linkId, RadiusComponent);
+            const linkRadius = radiusComp ? radiusComp.radius : 0;
+            const pA1 = joint_i.attachmentPointA_world;
+            const pB1 = joint_i.attachmentPointB_world;
+            const pA2 = joint_i_plus_1.attachmentPointA_world;
+            const pB2 = joint_i_plus_1.attachmentPointB_world;
+            const vec1 = pB1.clone().subtract(pA1);
+            const vec2 = pB2.clone().subtract(pA2);
+            const len1Sq = vec1.lengthSq();
+            const len2Sq = vec2.lengthSq();
+            let angle = 0; // Default to 0 (straight) if segments are too short
+            if (len1Sq > 1e-9 && len2Sq > 1e-9) {
+                vec1.normalize();
+                vec2.normalize();
+                const dot = vec1.dot(vec2);
+                angle = Math.acos(Math.max(-1.0, Math.min(1.0, dot))); // Angle between 0 and PI
+            }
             if (angle > 10.0 * Math.PI/180.0) {
               console.warn("angle > 10.0 degrees");
             }
@@ -935,8 +899,6 @@ class CableAttachmentUpdateSystem {
             const isAttachmentA = path.linkTypes[i] === 'attachment' || path.linkTypes[i] === 'hybrid-attachment';
             const isRollingB = path.linkTypes[i+2] === 'rolling' || path.linkTypes[i+2] === 'hybrid';
             const isAttachmentB = path.linkTypes[i+2] === 'attachment' || path.linkTypes[i+2] === 'hybrid-attachment';
-            const isHybridA = path.linkTypes[i] === 'hybrid' || path.linkTypes[i] === 'hybrid-attachment';
-            const isHybridB = path.linkTypes[i+2] === 'hybrid' || path.linkTypes[i+2] === 'hybrid-attachment';
             if (isRollingA && isRollingB) {
               const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
               const sA = signedArcLengthOnWheel(joint_i.attachmentPointA_world, tangents.a_circle, posA, radiusA, cwA);
