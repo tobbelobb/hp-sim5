@@ -1009,15 +1009,37 @@ class CableAttachmentUpdateSystem {
         let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
 
         // --- Calculate Ideal Current Attachment Points based on CURRENT entity positions ---
-        let tangents; // Declare tangents variable outside specific cases
+        let tangents = null; // Declare tangents variable outside specific cases
         if (attachmentLinkA && rollingLinkB) {
           tangents = tangentFromPointToCircle(posA, posB, radiusB, cwB);
-          attachmentA_current = tangents.a_attach; // This is just posA
+          // Calculate attachmentA_current based on whether it's hybrid-attachment or regular attachment
+          if (path.linkTypes[A] === 'hybrid-attachment') {
+              // Rotate previous attachment point A
+              const vec_prevCenter_to_prevAttachA_world = joint.attachmentPointA_world.clone().subtract(prevPosA);
+              const cosA = Math.cos(deltaAngleA);
+              const sinA = Math.sin(deltaAngleA);
+              const rotated_x = vec_prevCenter_to_prevAttachA_world.x * cosA - vec_prevCenter_to_prevAttachA_world.y * sinA;
+              const rotated_y = vec_prevCenter_to_prevAttachA_world.x * sinA + vec_prevCenter_to_prevAttachA_world.y * cosA;
+              attachmentA_current = posA.clone().add(new Vector2(rotated_x, rotated_y));
+          } else { // Regular attachment A
+              attachmentA_current = posA.clone(); // Use current center
+          }
           attachmentB_current = tangents.a_circle; // Tangent on circle B
         } else if (rollingLinkA && attachmentLinkB) {
           tangents = tangentFromCircleToPoint(posB, posA, radiusA, cwA);
           attachmentA_current = tangents.a_circle; // Tangent on circle A
-          attachmentB_current = tangents.a_attach; // This is just posB
+          // Calculate attachmentB_current based on whether it's hybrid-attachment or regular attachment
+          if (path.linkTypes[B] === 'hybrid-attachment') {
+              // Rotate previous attachment point B
+              const vec_prevCenter_to_prevAttachB_world = joint.attachmentPointB_world.clone().subtract(prevPosB);
+              const cosB = Math.cos(deltaAngleB);
+              const sinB = Math.sin(deltaAngleB);
+              const rotated_x = vec_prevCenter_to_prevAttachB_world.x * cosB - vec_prevCenter_to_prevAttachB_world.y * sinB;
+              const rotated_y = vec_prevCenter_to_prevAttachB_world.x * sinB + vec_prevCenter_to_prevAttachB_world.y * cosB;
+              attachmentB_current = posB.clone().add(new Vector2(rotated_x, rotated_y));
+          } else { // Regular attachment B
+              attachmentB_current = posB.clone(); // Use current center
+          }
         } else if (rollingLinkA && rollingLinkB) {
           tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
           if (tangents) {
@@ -1036,15 +1058,41 @@ class CableAttachmentUpdateSystem {
               // We will jump directly to updating the joint's points at the end
           }
         } else { // attachmentLinkA && attachmentLinkB
-          attachmentA_current = posA.clone();
-          attachmentB_current = posB.clone();
-          sA = 0; // No arc length change for point-to-point
+          // Calculate attachmentA_current
+          if (path.linkTypes[A] === 'hybrid-attachment') {
+              const vec_prevCenter_to_prevAttachA_world = joint.attachmentPointA_world.clone().subtract(prevPosA);
+              const cosA = Math.cos(deltaAngleA);
+              const sinA = Math.sin(deltaAngleA);
+              const rotated_x = vec_prevCenter_to_prevAttachA_world.x * cosA - vec_prevCenter_to_prevAttachA_world.y * sinA;
+              const rotated_y = vec_prevCenter_to_prevAttachA_world.x * sinA + vec_prevCenter_to_prevAttachA_world.y * cosA;
+              attachmentA_current = posA.clone().add(new Vector2(rotated_x, rotated_y));
+          } else { // Regular attachment A
+              attachmentA_current = posA.clone();
+          }
+          // Calculate attachmentB_current
+          if (path.linkTypes[B] === 'hybrid-attachment') {
+              const vec_prevCenter_to_prevAttachB_world = joint.attachmentPointB_world.clone().subtract(prevPosB);
+              const cosB = Math.cos(deltaAngleB);
+              const sinB = Math.sin(deltaAngleB);
+              const rotated_x = vec_prevCenter_to_prevAttachB_world.x * cosB - vec_prevCenter_to_prevAttachB_world.y * sinB;
+              const rotated_y = vec_prevCenter_to_prevAttachB_world.x * sinB + vec_prevCenter_to_prevAttachB_world.y * cosB;
+              attachmentB_current = posB.clone().add(new Vector2(rotated_x, rotated_y));
+          } else { // Regular attachment B
+              attachmentB_current = posB.clone();
+          }
+          sA = 0; // No arc length change for attachment or hybrid-attachment
           sB = 0;
         }
 
-        if (tangents !== null) { // Check if tangents were successfully calculated or if it's point-to-point
-            if (rollingLinkA) {
+        // --- Calculate Wrapping/Unwrapping Arc Lengths (sA, sB) ---
+        // This section only runs if tangents were calculated (i.e., not attachment-attachment)
+        // and only calculates sA/sB if the corresponding link is rolling/hybrid.
+        // hybrid-attachment links will correctly result in sA=0 or sB=0 here.
+        if (tangents !== null || (rollingLinkA || rollingLinkB)) {
+            if (rollingLinkA) { // Includes 'rolling' and 'hybrid'
                 let projected_prevAttachA;
+                // Note: isHybridA includes 'hybrid' and 'hybrid-attachment', but this block
+                // is only entered if rollingLinkA is true, so isHybridA effectively means 'hybrid' here.
                 if (isHybridA) {
                     // Rotation-aware calculation for hybrid links
                     const vec_prevCenter_to_prevAttachA_world = joint.attachmentPointA_world.clone().subtract(prevPosA);
