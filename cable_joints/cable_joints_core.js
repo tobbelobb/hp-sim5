@@ -718,18 +718,26 @@ class CableAttachmentUpdateSystem {
       const path = world.getComponent(pathId, CablePathComponent);
       if (!path) continue;
 
-      // Check each link in the path
-      for (let i = 0; i < path.linkTypes.length; i++) {
+      // Check first and last link in the path
+      for (const i of [0, path.linkTypes.length - 1]) {
         // Process hybrid links in rolling mode
         if (path.linkTypes[i] === 'hybrid') {
           const stored = path.stored[i];
 
           // If the stored cable length becomes negative, switch to attachment behavior
-          if (stored < 0) {
+          const epsilon = 1e-9;
+          if (stored <= epsilon) {
+            console.log(`Switching joint ${i} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
 
             // Reset stored length to 0 since we've "used up" all cable on this link
+            if (i == 0) {
+              world.getComponent(path.jointEntities[0], CableJointComponent).restLength += path.stored[i];
+            }
+            if (i == (path.linkTypes.length - 1)) {
+              world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent).restLength += path.stored[i];
+            }
             path.stored[i] = 0;
 
             if (debugPoints) {
@@ -1538,9 +1546,15 @@ class PBDCableConstraintSolver {
         totalCurrentLength += currentSegmentLength;
 
         // Add stored length for the link *after* this joint (if it exists)
-        if (path.linkTypes[i+1] === 'rolling' || path.linkTypes[i+1] === 'hybrid') {
+        if (path.linkTypes[i+1] === 'rolling') {
            totalCurrentLength += path.stored[i+1];
         }
+      }
+      if (path.linkTypes[0] === 'hybrid') {
+        totalCurrentLength += path.stored[0];
+      }
+      if (path.linkTypes[path.linkTypes.length -1] === 'hybrid') {
+        totalCurrentLength += path.stored[path.stored.length - 1];
       }
 
       let overallTension = 0.0;

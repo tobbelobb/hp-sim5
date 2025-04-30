@@ -331,15 +331,15 @@ canvas {
           [true, true]
         );
         // Set initial stored length for the hybrid link
-        cableCompA.stored[1] = 0.5; // Start with some stored length
-        cableCompA.totalRestLength += 0.5;
+        cableCompA.stored[1] = 0.2; // Start with some stored length
+        cableCompA.totalRestLength += 0.2;
         world.addComponent(cableA, cableCompA);
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
-          inputSys.scaleMultiplier = 0.6;
+          inputSys.scaleMultiplier = 1.0;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.3;
           world.registerSystem(inputSys);
