@@ -47,4 +47,54 @@ describe('capsuleArcLength', () => {
     const capsuleLen = capsuleArcLength      (prev, curr, center, center, radius, false);
     expect(capsuleLen).toBeCloseTo(circleLen); // should be π/2
   });
+
+  test('arc length along straight segment', () => {
+    const prev   = new Vector2(-1, 2);
+    const curr   = new Vector2(-1, 0);
+    const capsuleLen = capsuleArcLength(prev, curr, pivot, tip, radius, false);
+    expect(capsuleLen).toBeCloseTo(2.0);
+  });
+  test('arc length along straight segment 2', () => {
+    const prev   = new Vector2(-1, 0);
+    const curr   = new Vector2(-1, 2);
+    const capsuleLen = capsuleArcLength(prev, curr, pivot, tip, radius, false);
+    expect(capsuleLen).toBeCloseTo(-2.0);
+  });
+  test('arc length along straight segment 3', () => {
+    const prev   = new Vector2(1, 0);
+    const curr   = new Vector2(1, 2);
+    const capsuleLen = capsuleArcLength(prev, curr, pivot, tip, radius, false);
+    expect(capsuleLen).toBeCloseTo(2.0);
+  });
+  test('arc length along straight segment 4', () => {
+    const prev   = new Vector2(1, 0);
+    const curr   = new Vector2(1, 2);
+    const capsuleLen = capsuleArcLength(prev, curr, pivot, tip, radius, true);
+    expect(capsuleLen).toBeCloseTo(-2.0);
+  });
+  test('arc length along straight segment then quarter circle', () => {
+    const prev   = new Vector2(1, 0);
+    const curr   = new Vector2(0, 3);
+    const capsuleLen = capsuleArcLength(prev, curr, pivot, tip, radius, true);
+    expect(capsuleLen).toBeCloseTo(-2.0 - Math.PI/2);
+  });
+  test('arc length along quarter circle then straight segment then quarter circle', () => {
+    const prev   = new Vector2(0, -1);
+    const curr   = new Vector2(0, 3);
+    const capsuleLen = capsuleArcLength(prev, curr, pivot, tip, radius, true);
+    expect(capsuleLen).toBeCloseTo(-2.0 - Math.PI);
+  });
+
+  test('arc length tricky', () => {
+    const prev   = new Vector2(0.8025903432334877, 1.5999664449799669);
+    const curr   = new Vector2(0.3994033218808879, 1.5999982198602665);
+    const capsuleLen = capsuleArcLength(
+      prev,
+      curr,
+      new Vector2(0.4, 1.5),
+      new Vector2(0.8, 1.5),
+      0.1, true, false
+    );
+    expect(capsuleLen).toBeCloseTo(0.4031, 3);
+  });
 });

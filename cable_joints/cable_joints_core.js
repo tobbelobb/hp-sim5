@@ -275,6 +275,7 @@ function capsuleEndcapArcLength(pA, pB, pivot, tip, radius, cw, force_positive =
 
 // --- helper: general signed arc length on a capsule perimeter (pivot-to-tip) ---
 function capsuleArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false) {
+  //console.log(`capsuleArcLength((${pA.x}, ${pA.y}), (${pB.x}, ${pB.y}), (${pivot.x}, ${pivot.y}), (${tip.x}, ${tip.y}), ${radius}, ${cw}, ${force_positive})`);
   // Treat degenerate (circle) case
   const axis = new Vector2().subtractVectors(tip, pivot);
   const L = axis.length();
@@ -343,10 +344,18 @@ function capsuleArcLength(pA, pB, pivot, tip, radius, cw, force_positive = false
 
   // Signed distance along preferred direction (“cw” = +)
   let delta = sA - sB;
-  if (!cw) delta = -delta;            // flip sign for CCW preference
-  if (force_positive)                 // make strictly ≥0 if requested
+  if (!cw) delta = -delta;
+  if (!force_positive) {
+    // choose the shorter arc (may wrap around)
+    const halfP = 0.5 * perimeter;
+    if (Math.abs(delta) > halfP) {
+      // wrap to shorter path, preserving sign
+      delta = Math.sign(delta) * (perimeter - Math.abs(delta));
+    }
+  } else {
+    // make non-negative by wrapping full perimeter
     while (delta < 0) delta += perimeter;
-
+  }
   return delta;
 }
 
@@ -992,6 +1001,15 @@ class CableAttachmentUpdateSystem {
                 sA = arcLengthOnLink(
                         projected_prevAttachA, attachmentA_current,
                         entityA, world, cwA);
+                if (Math.abs(sA) > 0.0) {
+                  // DEBUG: show where the two capsule‐tangent points landed
+                  const debug = world.getResource('debugRenderPoints');
+                  // joint1
+                  debug.projected_prevAttachA  = { pos: projected_prevAttachA.clone(), color: '#FFF000' };
+                  debug.attachmentA_current = { pos: attachmentA_current.clone(), color: '#00FFFF' };
+                  console.log(projected_prevAttachA.clone().subtract(attachmentA_current).length());
+                }
+                console.log(`sA=${sA}`);
             } else {
                 sA = 0;
             }
@@ -1279,9 +1297,9 @@ class CableAttachmentUpdateSystem {
         //console.log(`joint.restLength=${joint.restLength}`);
       }
 
-      //const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      //console.log(`stored: ${path.stored}`);
+      const error = path.totalRestLength - totalCurrentRestLength;
+      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      console.log(`stored: ${path.stored}`);
     }
   }
 }
