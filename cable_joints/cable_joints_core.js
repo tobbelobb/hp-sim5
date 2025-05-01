@@ -639,7 +639,10 @@ class CableAttachmentUpdateSystem {
     const cross = toAttach.x * toTangent.y - toAttach.y * toTangent.x;
 
     // Check if we're past the tangent point based on winding direction
-    return (cw && cross < 0) || (!cw && cross > 0);
+    return [
+      (cw && cross < 0) || (!cw && cross > 0),
+      Math.abs(cross)
+    ];
   }
 
   // Update fixed attachment points for hybrid links in attachment mode based on entity rotation/translation
@@ -784,12 +787,16 @@ class CableAttachmentUpdateSystem {
           const crossedCCW = this._hasPassedTangentPoint(attachmentPoint, tanCCW, C, false);
 
           let newCW = null, crossingTangent = null;
-          if (crossedCCW) {
+          if (crossedCCW[0]) {
             console.log("passed CCW");
+            console.log(crossedCCW[0], crossedCW[0]);
+            console.log(crossedCCW[1], crossedCW[1]);
             newCW = true;
             crossingTangent = tanCCW;
-          } else if (crossedCW) {
+          } else if (crossedCW[0]) {
             console.log("passed CW");
+            console.log(crossedCCW[0], crossedCW[0]);
+            console.log(crossedCCW[1], crossedCW[1]);
             newCW = false;
             crossingTangent = tanCW;
           }
