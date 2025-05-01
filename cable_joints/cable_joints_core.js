@@ -727,7 +727,7 @@ class CableAttachmentUpdateSystem {
 
           // If the stored cable length becomes negative, switch to attachment behavior
           if (stored <= epsilon) {
-            console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
+            // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
 
@@ -740,21 +740,6 @@ class CableAttachmentUpdateSystem {
             }
             path.stored[i] = 0;
 
-            if (debugPoints) {
-              // Mark this link as having switched to attachment mode
-              const idx = i === 0 ? 0 : i - 1;
-              const jointId = i === 0 || i === path.jointEntities.length ? null : path.jointEntities[idx];
-              if (jointId != null) {
-                const joint = world.getComponent(jointId, CableJointComponent);
-                if (joint) {
-                  const pos = i === 0 ? joint.attachmentPointA_world : joint.attachmentPointB_world;
-                  debugPoints[`hybrid_to_attachment_${pathId}_${i}`] = {
-                    pos: pos.clone(),
-                    color: '#0000FF'
-                  };
-                }
-              }
-            }
           }
         }
         // Process hybrid links in attachment mode
@@ -800,18 +785,20 @@ class CableAttachmentUpdateSystem {
 
           let newCW = null, crossingTangent = null;
           if (crossedCCW) {
+            console.log("passed CCW");
             newCW = true;
-            crossingTangent = tanCW;
-          } else if (crossedCW) {
-            newCW = false;
             crossingTangent = tanCCW;
+          } else if (crossedCW) {
+            console.log("passed CW");
+            newCW = false;
+            crossingTangent = tanCW;
           }
 
           // --- if we crossed one, switch back to rolling ---
           if (newCW !== null) {
-            console.log(`Switching joint ${jointId} to hybrid`);
+            // console.log(`Switching joint ${jointId} to hybrid`);
             path.linkTypes[i] = 'hybrid';
-            path.cw[i]        = newCW * !path.cw[i];
+            path.cw[i]        = newCW;
 
             if (debugPoints) {
               debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
