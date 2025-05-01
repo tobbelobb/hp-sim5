@@ -1442,7 +1442,7 @@ class CableAttachmentUpdateSystem {
 
       const error = path.totalRestLength - totalCurrentRestLength;
       //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      //console.log(`stored: ${path.stored}`);
+      console.log(`stored: ${path.stored}`);
     }
   }
 }
