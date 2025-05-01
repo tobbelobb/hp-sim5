@@ -960,7 +960,7 @@ class CableAttachmentUpdateSystem {
         const angleA = orientationAComp?.angle ?? 0.0;
         const prevAngleA = orientationAComp?.prevAngle ?? 0.0;
         const deltaAngleA = angleA - prevAngleA;
-        const cwA = !path.cw[A];
+        const cwA = path.cw[A];
         // Handle regular and hybrid link types
         const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
         const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
@@ -1929,7 +1929,7 @@ class RenderSystem {
           const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
           const s      = path.stored[0];
           const Δθ     = s / rA;
-          const cw0    = path.cw[0];
+          const cw0    = !path.cw[0];
           const anticw = !cw0;
           const a2     = cw0 ? a1 - Δθ : a1 + Δθ;
           this.c.beginPath();
