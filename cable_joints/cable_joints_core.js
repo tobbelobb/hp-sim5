@@ -1903,8 +1903,6 @@ class RenderSystem {
         // Only draw wrap-around arc for rolling and hybrid links (when in rolling mode)
         if (path.linkTypes[i] !== 'rolling' && path.linkTypes[i] !== 'hybrid') continue;
 
-        // For hybrid links in attachment mode, we don't draw the wrap-around arc
-        if (path.linkTypes[i] === 'hybrid-attachment') continue;
         // corner joint before & after this roller
         const jPrev = world.getComponent(joints[i - 1], CableJointComponent);
         const jNext = world.getComponent(joints[i    ], CableJointComponent);
