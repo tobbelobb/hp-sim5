@@ -719,7 +719,7 @@ class CableAttachmentUpdateSystem {
 
           // If the stored cable length becomes negative, switch to attachment behavior
           if (stored <= epsilon) {
-            // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
+            console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
 
@@ -788,7 +788,7 @@ class CableAttachmentUpdateSystem {
 
           // --- if we crossed one, switch back to rolling ---
           if (newCW !== null) {
-            // console.log(`Switching joint ${jointId} to hybrid`);
+            console.log(`Switching joint ${jointId} to hybrid`);
             path.linkTypes[i] = 'hybrid';
             path.cw[i]        = newCW;
 
@@ -1367,8 +1367,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      console.log(`stored: ${path.stored}`);
+      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      //console.log(`stored: ${path.stored}`);
     }
   }
 }
