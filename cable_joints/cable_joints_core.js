@@ -9,6 +9,7 @@ class Vector2 {
   subtract(v, s = 1.0) { this.x -= v.x * s; this.y -= v.y * s; return this; }
   subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
   distanceTo(b) { return Math.sqrt((this.x - b.x)*(this.x - b.x) + (this.y - b.y)*(this.y - b.y)); }
+  distanceToSq(b) { return (this.x - b.x)*(this.x - b.x) + (this.y - b.y)*(this.y - b.y); }
   length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
   lengthSq() { return this.x * this.x + this.y * this.y; }
   scale(s) { this.x *= s; this.y *= s; return this; }
@@ -639,10 +640,7 @@ class CableAttachmentUpdateSystem {
     const cross = toAttach.x * toTangent.y - toAttach.y * toTangent.x;
 
     // Check if we're past the tangent point based on winding direction
-    return [
-      (cw && cross < 0) || (!cw && cross > 0),
-      Math.abs(cross)
-    ];
+    return (cw && cross < 0) || (!cw && cross > 0);
   }
 
   // Update fixed attachment points for hybrid links in attachment mode based on entity rotation/translation
@@ -785,18 +783,14 @@ class CableAttachmentUpdateSystem {
           // --- test whether we've passed either tangent ---
           const crossedCW  = this._hasPassedTangentPoint(attachmentPoint, tanCW,  C, true);
           const crossedCCW = this._hasPassedTangentPoint(attachmentPoint, tanCCW, C, false);
+          const distSqCW = attachmentPoint.distanceToSq(tanCW);
+          const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
           let newCW = null, crossingTangent = null;
-          if (crossedCCW[0]) {
-            console.log("passed CCW");
-            console.log(crossedCCW[0], crossedCW[0]);
-            console.log(crossedCCW[1], crossedCW[1]);
+          if (crossedCCW && distSqCCW < distSqCW) {
             newCW = true;
             crossingTangent = tanCCW;
-          } else if (crossedCW[0]) {
-            console.log("passed CW");
-            console.log(crossedCCW[0], crossedCW[0]);
-            console.log(crossedCCW[1], crossedCW[1]);
+          } else if (crossedCW && distSqCW < distSqCCW) {
             newCW = false;
             crossingTangent = tanCW;
           }
