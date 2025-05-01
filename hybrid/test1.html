@@ -287,9 +287,8 @@ canvas {
         world.addComponent(spoolA, new MassComponent(spoolMass));
         world.addComponent(spoolA, new GravityAffectedComponent());
         world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
-        // Add rotation components
-        world.addComponent(spoolA, new OrientationComponent(0.0)); // Start angle 0
-        world.addComponent(spoolA, new AngularVelocityComponent(0.0)); // Start spinning
+        world.addComponent(spoolA, new OrientationComponent(0.0));
+        world.addComponent(spoolA, new AngularVelocityComponent(0.0));
         const spoolInertia = 10.0 * 0.5 * spoolMass * spoolRadius * spoolRadius;
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
 
