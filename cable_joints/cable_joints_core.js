@@ -759,58 +759,74 @@ class CableAttachmentUpdateSystem {
         }
         // Process hybrid links in attachment mode
         else if (path.linkTypes[i] === 'hybrid-attachment') {
-          // Only consider switching back if we have some stored cable length
-          if (path.stored[i] > epsilon) {
-            let entityId = null
-            let attachmentPoint = null
-            let center = null
-            let cw = null;
-            let shouldSwitch = false;
+          // --- locate joint, the circle‐body, its attachment point & neighbor ---
+          let jointId, joint, entityId, attachmentPoint, neighborId;
+          if (i === 0) {
+            jointId = path.jointEntities[0];
+            joint   = world.getComponent(jointId, CableJointComponent);
+            if (!joint) continue;
+            entityId        = joint.entityA;
+            attachmentPoint = joint.attachmentPointA_world;
+            neighborId      = joint.entityB;
+          }
+          else if (i === path.linkTypes.length - 1) {
+            jointId = path.jointEntities[path.jointEntities.length - 1];
+            joint   = world.getComponent(jointId, CableJointComponent);
+            if (!joint) continue;
+            entityId        = joint.entityB;
+            attachmentPoint = joint.attachmentPointB_world;
+            neighborId      = joint.entityA;
+          }
+          else {
+            continue; // we only handle first/last for hybrid‐attachment
+          }
 
-            // Find the entity and joint for this link
-            if (i === 0) {
-              // First link
-              const jointId = path.jointEntities[0];
-              const joint = world.getComponent(jointId, CableJointComponent);
-              if (joint) {
-                entityId = joint.entityA;
-                attachmentPoint = joint.attachmentPointA_world;
-              }
-            } else if (i === path.linkTypes.length - 1) {
-              // Last link
-              const jointId = path.jointEntities[path.jointEntities.length - 1];
-              const joint = world.getComponent(jointId, CableJointComponent);
-              if (joint) {
-                entityId = joint.entityB;
-                attachmentPoint = joint.attachmentPointB_world;
-              }
+          const centerComp   = world.getComponent(entityId, PositionComponent);
+          const radiusComp   = world.getComponent(entityId, RadiusComponent);
+          const neighborComp = world.getComponent(neighborId, PositionComponent);
+          if (!centerComp || !radiusComp || !neighborComp) continue;
+
+          const C = centerComp.pos;
+          const P = neighborComp.pos;
+          const R = radiusComp.radius;
+
+          // --- compute both cw and ccw tangents on this “circle” ---
+          const tanCW  = tangentFromCircleToPoint(P, C, R, true ).a_circle;
+          const tanCCW = tangentFromCircleToPoint(P, C, R, false).a_circle;
+
+          // --- test whether we've passed either tangent ---
+          const crossedCW  = this._hasPassedTangentPoint(attachmentPoint, tanCW,  C, true);
+          const crossedCCW = this._hasPassedTangentPoint(attachmentPoint, tanCCW, C, false);
+
+          let newCW = null, crossingTangent = null;
+          if (crossedCW) {
+            newCW = true;
+            crossingTangent = tanCW;
+          } else if (crossedCCW) {
+            newCW = false;
+            crossingTangent = tanCCW;
+          }
+
+          // --- if we crossed one, switch back to rolling ---
+          if (newCW !== null) {
+            path.linkTypes[i] = 'hybrid';
+            path.cw[i]        = newCW;
+
+            // Optional: align the body’s orientation so we pick the same tangent next time
+            const orient = world.getComponent(entityId, OrientationComponent);
+            if (orient) {
+              // set angle so that the world‐space zero‐angle points toward the crossing tangent
+              orient.angle = Math.atan2(
+                crossingTangent.y - C.y,
+                crossingTangent.x - C.x
+              );
             }
 
-            if (entityId != null && attachmentPoint != null) {
-              center = world.getComponent(entityId, PositionComponent)?.pos;
-              cw = path.cw[i];
-
-              if (center != null) {
-                // Calculate the tangent point for this hybrid link
-                const tangentPoint = this._calculateHybridTangents(world, pathId, path, i, false);
-
-                if (tangentPoint != null) {
-                  // Check if the attachment point has passed the tangent point
-                  shouldSwitch = this._hasPassedTangentPoint(attachmentPoint, tangentPoint, center, cw);
-
-                  if (shouldSwitch) {
-                    // Switch back to rolling mode
-                    path.linkTypes[i] = 'hybrid';
-
-                    if (debugPoints) {
-                      debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
-                        pos: tangentPoint.clone(),
-                        color: '#00FF00'
-                      };
-                    }
-                  }
-                }
-              }
+            if (debugPoints) {
+              debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
+                pos:   crossingTangent.clone(),
+                color: '#00FF00'
+              };
             }
           }
         }
