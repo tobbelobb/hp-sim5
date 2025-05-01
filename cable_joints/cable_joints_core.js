@@ -1404,8 +1404,8 @@ class CableAttachmentUpdateSystem {
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (!path || path.jointEntities.length < 1) continue;
-      var totalCurrentDist = 0.0;
-      var totalCurrentRestLength = 0.0;
+      var totalCurrentDist = path.stored[0];
+      var totalCurrentRestLength = path.stored[0];
       for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
         const jointId = path.jointEntities[jointIdx];
         const joint = world.getComponent(jointId, CableJointComponent);
