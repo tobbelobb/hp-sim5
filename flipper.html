@@ -690,6 +690,10 @@ canvas {
         world.addComponent(ball1, new RestitutionComponent(ballRestitution));
         world.addComponent(ball1, new GravityAffectedComponent());
         world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(ball1, new OrientationComponent(0.0));
+        world.addComponent(ball1, new AngularVelocityComponent(0.0));
+        const ball1Inertia = 10.0 * 0.5 * ballMass * ballRadius * ballRadius;
+        world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
 
         const ball2 = world.createEntity();
         world.addComponent(ball2, new BallTagComponent());
@@ -700,6 +704,10 @@ canvas {
         world.addComponent(ball2, new RestitutionComponent(ballRestitution));
         world.addComponent(ball2, new GravityAffectedComponent());
         world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(ball2, new OrientationComponent(0.0));
+        world.addComponent(ball2, new AngularVelocityComponent(0.0));
+        const ball2Inertia = 10.0 * 0.5 * ballMass * ballRadius * ballRadius;
+        world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
 
         // Obstacle Entities
         const obsColor1 = "#FF8000";
@@ -806,12 +814,17 @@ canvas {
         const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
         const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
 
-        // Calculate initial points for joint1 (ball2 attachment <-> obs4 rolling)
+        // Calculate initial points for joint1 (ball2 perimeter attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
-        const initialPoints1 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
-        const initialDist1 = initialPoints1.a_attach.clone().subtract(initialPoints1.a_circle).length();
+        // Attach to obstacle at its tangent point
+        const tangentObs4 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
+        const attachObs4 = tangentObs4.a_circle;
+        // Attach to ball at closest perimeter point toward obstacle
+        const dir1 = attachObs4.clone().subtract(pos_ball2).normalize();
+        const attachBall2 = pos_ball2.clone().add(dir1.scale(ballRadius));
+        const initialDist1 = attachBall2.clone().subtract(attachObs4).length();
         world.addComponent(joint1, new CableJointComponent(
-          ball2, obs4, initialDist1, initialPoints1.a_attach, initialPoints1.a_circle)); // Order matters
+          ball2, obs4, initialDist1, attachBall2, attachObs4)); // Order matters
         world.addComponent(joint1, new RenderableComponent('line', linecolor1));
 
 
@@ -823,21 +836,27 @@ canvas {
           obs4, obs3, initialDist2, initialPoints2.a_circle, initialPoints2.b_circle)); // Order matters
         world.addComponent(joint2, new RenderableComponent('line', linecolor1));
 
-        // Calculate initial points for joint3 (obs3 rolling <-> ball1 attachment)
+        // Calculate initial points for joint3 (obs3 rolling <-> ball1 perimeter attachment)
         const joint3 = world.createEntity();
-        const initialPoints3 = tangentFromCircleToPoint(pos_ball1, pos_obs3, radius_obs3, true);
-        const initialDist3 = initialPoints3.a_attach.clone().subtract(initialPoints3.a_circle).length();
+        // Attach to obstacle at its tangent point
+        const tangentObs3 = tangentFromPointToCircle(pos_ball1, pos_obs3, radius_obs3, false);
+        const attachObs3 = tangentObs3.a_circle;
+        // Attach to ball at closest perimeter point toward obstacle
+        const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
+        const attachBall1 = pos_ball1.clone().add(dir3.scale(ballRadius));
+        const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
         world.addComponent(joint3, new CableJointComponent(
-          obs3, ball1, initialDist3, initialPoints3.a_circle, initialPoints3.a_attach)); // Order matters
+          obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
         world.addComponent(joint3, new RenderableComponent('line', linecolor1));
 
         // Create Cable Path Entity
         const cablePath = world.createEntity();
         // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        // Use hybrid links at ball attachments to attach at perimeter
         const pathComp = new CablePathComponent(
           world,
           [joint1, joint2, joint3],
-          ['attachment', 'rolling', 'rolling', 'attachment'],
+          ['hybrid', 'rolling', 'rolling', 'hybrid'],
           [true, true, true, true]
         );
         world.addComponent(cablePath, pathComp);
@@ -854,6 +873,7 @@ canvas {
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
              world.registerSystem(new GravitySystem());      // Applies gravity acceleration
              world.registerSystem(new MovementSystem());     // Updates position based on velocity
+             world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
