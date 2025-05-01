@@ -1,0 +1,712 @@
+{
+  "table_of_contents": [
+    {
+      "title": "XPBD: Position-Based Simulation of Compliant Constrained Dynamics",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          84.26953125,
+          52.6904296875
+        ],
+        [
+          527.0850830078125,
+          52.6904296875
+        ],
+        [
+          527.0850830078125,
+          66.830078125
+        ],
+        [
+          84.26953125,
+          66.830078125
+        ]
+      ]
+    },
+    {
+      "title": "Abstract",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          53.56494140625,
+          296.2265625
+        ],
+        [
+          100.03271484375,
+          296.2265625
+        ],
+        [
+          100.03271484375,
+          307.828125
+        ],
+        [
+          53.56494140625,
+          307.828125
+        ]
+      ]
+    },
+    {
+      "title": "1 Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          53.86376953125,
+          489.19921875
+        ],
+        [
+          135.59326171875,
+          489.19921875
+        ],
+        [
+          135.59326171875,
+          501.63079833984375
+        ],
+        [
+          53.86376953125,
+          501.63079833984375
+        ]
+      ]
+    },
+    {
+      "title": "2 Related Work",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          52.780517578125,
+          55.15576171875
+        ],
+        [
+          140.7357635498047,
+          55.15576171875
+        ],
+        [
+          140.7357635498047,
+          66.50469970703125
+        ],
+        [
+          52.780517578125,
+          66.50469970703125
+        ]
+      ]
+    },
+    {
+      "title": "3 Background",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          316.458984375,
+          55.107421875
+        ],
+        [
+          399.533203125,
+          55.107421875
+        ],
+        [
+          399.533203125,
+          66.50469970703125
+        ],
+        [
+          316.458984375,
+          66.50469970703125
+        ]
+      ]
+    },
+    {
+      "title": "4 Our Method",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          316.458984375,
+          615.65625
+        ],
+        [
+          396.7826843261719,
+          615.65625
+        ],
+        [
+          396.7826843261719,
+          627.9157562255859
+        ],
+        [
+          316.458984375,
+          627.9157562255859
+        ]
+      ]
+    },
+    {
+      "title": "4.1 A Gauss-Seidel Update",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          317.654296875,
+          628.7965393066406
+        ],
+        [
+          441.369140625,
+          628.7965393066406
+        ],
+        [
+          441.369140625,
+          638.0859375
+        ],
+        [
+          317.654296875,
+          638.0859375
+        ]
+      ]
+    },
+    {
+      "title": "5 Damping",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          54.000003814697266,
+          292.0740661621094
+        ],
+        [
+          118.16641998291016,
+          292.0740661621094
+        ],
+        [
+          118.16641998291016,
+          303.1875
+        ],
+        [
+          54.000003814697266,
+          303.1875
+        ]
+      ]
+    },
+    {
+      "title": "6 Results",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          317.35546875,
+          295.7540588378906
+        ],
+        [
+          374.7962646484375,
+          295.7540588378906
+        ],
+        [
+          374.7962646484375,
+          306.7527770996094
+        ],
+        [
+          317.35546875,
+          306.7527770996094
+        ]
+      ]
+    },
+    {
+      "title": "6.1 Spring",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          317.35546875,
+          643.0915374755859
+        ],
+        [
+          368.88824462890625,
+          643.0915374755859
+        ],
+        [
+          368.88824462890625,
+          652.78125
+        ],
+        [
+          317.35546875,
+          652.78125
+        ]
+      ]
+    },
+    {
+      "title": "6.2 Chain",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          53.19140625,
+          315.5625
+        ],
+        [
+          101.3678207397461,
+          315.5625
+        ],
+        [
+          101.3678207397461,
+          324.8760986328125
+        ],
+        [
+          53.19140625,
+          324.8760986328125
+        ]
+      ]
+    },
+    {
+      "title": "6.3 Cantilever Beam",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          53.6396484375,
+          602.5078125
+        ],
+        [
+          147.5899658203125,
+          602.5078125
+        ],
+        [
+          147.5899658203125,
+          611.7890625
+        ],
+        [
+          53.6396484375,
+          611.7890625
+        ]
+      ]
+    },
+    {
+      "title": "6.4 Cloth",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          316.7578125,
+          429.64453125
+        ],
+        [
+          363.375,
+          429.64453125
+        ],
+        [
+          363.375,
+          438.8351135253906
+        ],
+        [
+          316.7578125,
+          438.8351135253906
+        ]
+      ]
+    },
+    {
+      "title": "6.5 Inflatable Balloon",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          53.602294921875,
+          265.67578125
+        ],
+        [
+          152.20941162109375,
+          265.67578125
+        ],
+        [
+          152.20941162109375,
+          275.773193359375
+        ],
+        [
+          53.602294921875,
+          275.773193359375
+        ]
+      ]
+    },
+    {
+      "title": "7 Limitations and Future Work",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          53.490234375,
+          390.005859375
+        ],
+        [
+          219.5634307861328,
+          390.005859375
+        ],
+        [
+          219.5634307861328,
+          402.0447998046875
+        ],
+        [
+          53.490234375,
+          402.0447998046875
+        ]
+      ]
+    },
+    {
+      "title": "8 Conclusion",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          53.7890625,
+          609.85546875
+        ],
+        [
+          131.9326171875,
+          609.85546875
+        ],
+        [
+          131.9326171875,
+          622.23046875
+        ],
+        [
+          53.7890625,
+          622.23046875
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          316.7578125,
+          89.33203125
+        ],
+        [
+          377.71875,
+          89.33203125
+        ],
+        [
+          377.71875,
+          100.4501953125
+        ],
+        [
+          316.7578125,
+          100.4501953125
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          193
+        ],
+        [
+          "Line",
+          81
+        ],
+        [
+          "Text",
+          16
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "ListItem",
+          3
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 2,
+        "llm_error_count": 0,
+        "llm_tokens_used": 5553
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          549
+        ],
+        [
+          "Line",
+          130
+        ],
+        [
+          "TableCell",
+          66
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Reference",
+          6
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "TextInlineMath",
+          2
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 8,
+        "llm_error_count": 2,
+        "llm_tokens_used": 28031
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          934
+        ],
+        [
+          "Line",
+          146
+        ],
+        [
+          "Equation",
+          15
+        ],
+        [
+          "Text",
+          12
+        ],
+        [
+          "Reference",
+          11
+        ],
+        [
+          "TextInlineMath",
+          7
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 47,
+        "llm_error_count": 10,
+        "llm_tokens_used": 163886
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          768
+        ],
+        [
+          "Line",
+          129
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Equation",
+          8
+        ],
+        [
+          "TextInlineMath",
+          5
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Reference",
+          3
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 39,
+        "llm_error_count": 4,
+        "llm_tokens_used": 118550
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          425
+        ],
+        [
+          "Line",
+          119
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Reference",
+          5
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Figure",
+          3
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "TextInlineMath",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 6,
+        "llm_error_count": 2,
+        "llm_tokens_used": 16180
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          494
+        ],
+        [
+          "Line",
+          108
+        ],
+        [
+          "Reference",
+          16
+        ],
+        [
+          "ListItem",
+          15
+        ],
+        [
+          "TableCell",
+          15
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 4,
+        "llm_error_count": 0,
+        "llm_tokens_used": 10333
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/XPBD"
+}
