@@ -290,7 +290,7 @@ canvas {
         // Add rotation components
         world.addComponent(spoolA, new OrientationComponent(0.0)); // Start angle 0
         world.addComponent(spoolA, new AngularVelocityComponent(0.0)); // Start spinning
-        const spoolInertia = 0.5 * spoolMass * spoolRadius * spoolRadius;
+        const spoolInertia = 10.0 * 0.5 * spoolMass * spoolRadius * spoolRadius;
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
 
 

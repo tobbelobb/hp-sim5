@@ -727,7 +727,7 @@ class CableAttachmentUpdateSystem {
 
           // If the stored cable length becomes negative, switch to attachment behavior
           if (stored <= epsilon) {
-            console.log(`Switching joint ${i} to hybrid-attachment`);
+            console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
 
@@ -809,8 +809,9 @@ class CableAttachmentUpdateSystem {
 
           // --- if we crossed one, switch back to rolling ---
           if (newCW !== null) {
+            console.log(`Switching joint ${jointId} to hybrid`);
             path.linkTypes[i] = 'hybrid';
-            path.cw[i]        = newCW;
+            path.cw[i]        = newCW * !path.cw[i];
 
             if (debugPoints) {
               debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
@@ -1618,15 +1619,24 @@ class PBDCableConstraintSolver {
       // --- 2. Apply PBD distance constraint using proper gradient sums ---
       // Apply correction only if the entire path is longer than its rest length
       if (totalPathError > epsilon) {
-        // Build per-entity gradients: ∂C/∂x
-        const grads = new Map(); // entityId -> Vector2
-        // Initialize gradients for each entity in the path
+        // Build per-entity gradient data including translation and rotation
+        const gradData = new Map(); // entityId -> {gradPos, gradAng, invMass, invInertia}
+        // Initialize gradient data for each unique entity in the path
         for (const jointId of path.jointEntities) {
           const joint = world.getComponent(jointId, CableJointComponent);
           if (!joint || !joint.isActive) continue;
           for (const e of [joint.entityA, joint.entityB]) {
-            if (!grads.has(e)) {
-              grads.set(e, new Vector2(0, 0));
+            if (!gradData.has(e)) {
+              const massComp = world.getComponent(e, MassComponent);
+              const invMass = massComp && massComp.mass > 0 ? 1.0 / massComp.mass : 0.0;
+              const moiComp = world.getComponent(e, MomentOfInertiaComponent);
+              const invInertia = moiComp ? moiComp.invInertia : 0.0;
+              gradData.set(e, {
+                gradPos: new Vector2(0, 0),
+                gradAng: 0.0,
+                invMass: invMass,
+                invInertia: invInertia
+              });
             }
           }
         }
@@ -1640,35 +1650,55 @@ class PBDCableConstraintSolver {
           const len = diff.length();
           if (len <= epsilon) continue;
           const dir = diff.clone().scale(1.0 / len);
-          grads.get(joint.entityA).add(dir);
-          grads.get(joint.entityB).add(dir.clone().scale(-1.0));
+          // Entity A translation and rotation gradients
+          const dataA = gradData.get(joint.entityA);
+          dataA.gradPos.add(dir);
+          const posAC = world.getComponent(joint.entityA, PositionComponent).pos;
+          const rA = new Vector2().subtractVectors(pA, posAC);
+          dataA.gradAng += (rA.x * dir.y - rA.y * dir.x);
+          // Entity B translation and rotation gradients
+          const dataB = gradData.get(joint.entityB);
+          dataB.gradPos.add(dir.clone().scale(-1.0));
+          const posBC = world.getComponent(joint.entityB, PositionComponent).pos;
+          const rB = new Vector2().subtractVectors(pB, posBC);
+          dataB.gradAng += (-(rB.x * dir.y - rB.y * dir.x));
         }
-        // Compute denominator D = Σ invMass_i * |grad_i|²
+        // Compute denominator: Σ invMass * |gradPos|² + invInertia * gradAng²
         let denom = 0.0;
-        const invMassMap = new Map();
-        for (const [entityId, grad] of grads.entries()) {
-          const massComp = world.getComponent(entityId, MassComponent);
-          const invM = massComp && massComp.mass > 0 ? 1.0 / massComp.mass : 0.0;
-          invMassMap.set(entityId, invM);
-          denom += invM * grad.lengthSq();
+        for (const data of gradData.values()) {
+          denom += data.invMass * data.gradPos.lengthSq();
+          denom += data.invInertia * data.gradAng * data.gradAng;
         }
         if (denom <= epsilon) {
           console.warn("PBDCableConstraintSolver: zero denominator in constraint correction");
         } else {
           // Correction magnitude λ = -C/D
           const lambda = -totalPathError / denom;
-          // Apply corrections per entity
-          for (const [entityId, grad] of grads.entries()) {
-            const invM = invMassMap.get(entityId);
-            if (invM <= 0) continue;
-            const delta = grad.clone().scale(-invM * lambda);
-            const posComp = world.getComponent(entityId, PositionComponent);
-            if (posComp) {
-              posComp.pos.add(delta);
+          // Apply corrections to translation and rotation
+          for (const [entityId, data] of gradData.entries()) {
+            // Translation correction
+            if (data.invMass > 0.0) {
+              const deltaPos = data.gradPos.clone().scale(-data.invMass * lambda);
+              const posComp = world.getComponent(entityId, PositionComponent);
+              if (posComp) {
+                posComp.pos.add(deltaPos);
+              }
+              const velComp = world.getComponent(entityId, VelocityComponent);
+              if (velComp && dt > epsilon) {
+                velComp.vel.add(deltaPos, 1.0 / dt);
+              }
             }
-            const velComp = world.getComponent(entityId, VelocityComponent);
-            if (velComp && dt > epsilon) {
-              velComp.vel.add(delta, 1.0 / dt);
+            // Rotation correction
+            if (data.invInertia > 0.0) {
+              const deltaAng = -data.invInertia * lambda * data.gradAng;
+              const orientationComp = world.getComponent(entityId, OrientationComponent);
+              if (orientationComp) {
+                orientationComp.angle += deltaAng;
+              }
+              const angVelComp = world.getComponent(entityId, AngularVelocityComponent);
+              if (angVelComp && dt > epsilon) {
+                angVelComp.angularVelocity += deltaAng / dt;
+              }
             }
           }
         }
