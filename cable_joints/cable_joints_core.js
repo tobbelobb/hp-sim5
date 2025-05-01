@@ -1932,6 +1932,61 @@ class RenderSystem {
         );
         this.c.stroke();
       }
+
+      // now draw wrap‐arcs at the two ends (i=0 and i=last)
+      const nLinks = path.linkTypes.length;
+
+      // Front end (link index 0)
+      if (path.linkTypes[0] === 'rolling' || path.linkTypes[0] === 'hybrid') {
+        // joint 0 ties into link 0 on its A side
+        const joint0 = world.getComponent(joints[0], CableJointComponent);
+        const rollerA = joint0.entityA;
+        const cA    = world.getComponent(rollerA, PositionComponent)?.pos;
+        const rA    = world.getComponent(rollerA, RadiusComponent)?.radius;
+        const P0    = joint0.attachmentPointA_world;
+        if (cA && rA != null) {
+          const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
+          const s      = path.stored[0];
+          const Δθ     = s / rA;
+          const cw0    = path.cw[0];
+          const anticw = !cw0;
+          const a2     = cw0 ? a1 - Δθ : a1 + Δθ;
+          this.c.beginPath();
+          this.c.strokeStyle = linecolor1;
+          this.c.arc(
+            this.cX(cA.x), this.cY(cA.y),
+            rA * this.effectiveCScale,
+            -a1, -a2, anticw
+          );
+          this.c.stroke();
+        }
+      }
+
+      // Back end (link index = nLinks–1)
+      if (path.linkTypes[nLinks - 1] === 'rolling' || path.linkTypes[nLinks - 1] === 'hybrid') {
+        // joint nLinks–2 ties into link nLinks–1 on its B side
+        const jointN = world.getComponent(joints[nLinks - 2], CableJointComponent);
+        const rollerB = jointN.entityB;
+        const cB    = world.getComponent(rollerB, PositionComponent)?.pos;
+        const rB    = world.getComponent(rollerB, RadiusComponent)?.radius;
+        const P1    = jointN.attachmentPointB_world;
+        if (cB && rB != null) {
+          const a1     = Math.atan2(P1.y - cB.y, P1.x - cB.x);
+          const s      = path.stored[nLinks - 1];
+          const Δθ     = s / rB;
+          const cw1    = path.cw[nLinks - 1];
+          const anticw = !cw1;
+          const a2     = cw1 ? a1 - Δθ : a1 + Δθ;
+          this.c.beginPath();
+          this.c.strokeStyle = linecolor1;
+          this.c.arc(
+            this.cX(cB.x), this.cY(cB.y),
+            rB * this.effectiveCScale,
+            -a1, -a2, anticw
+          );
+          this.c.stroke();
+        }
+      }
     }
     this.c.lineWidth = 1;
 
