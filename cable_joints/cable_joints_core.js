@@ -547,10 +547,9 @@ class CableAttachmentUpdateSystem {
 
   // Returnerar det cw-värde som gäller när kabeln lämnar (true)
   // respektive anländer till (false) en länk.
+  //
   _effectiveCW(path, linkIndex, travellingFromCircle) {
     if (linkIndex === 0 && travellingFromCircle)                     // första länken
-      return !path.cw[linkIndex];
-    if (linkIndex === path.linkTypes.length - 1 && travellingFromCircle) // sista länken
       return !path.cw[linkIndex];
     return path.cw[linkIndex];                                       // inre länkar oförändrat
   }
@@ -578,20 +577,7 @@ class CableAttachmentUpdateSystem {
       neighborEntityId = joint.entityA;
       isLeft = false;
     } else {
-      // Middle link
-      const leftJointId = path.jointEntities[linkIndex - 1];
-      const rightJointId = path.jointEntities[linkIndex];
-      const leftJoint = world.getComponent(leftJointId, CableJointComponent);
-      const rightJoint = world.getComponent(rightJointId, CableJointComponent);
-
-      if (leftJoint.entityB === rightJoint.entityA) {
-        entityId = leftJoint.entityB; // or rightJoint.entityA
-        neighborEntityId = isDraining ? leftJoint.entityA : rightJoint.entityB;
-        isLeft = !isDraining;
-      } else {
-        console.warn(`Inconsistent joints at link ${linkIndex}`);
-        return null;
-      }
+      console.warn(`Hybrid link in middle: ${linkIndex}`);
     }
 
     // Get position and radius components
@@ -675,14 +661,9 @@ class CableAttachmentUpdateSystem {
             jointId = path.jointEntities[path.jointEntities.length - 1];
             const joint = world.getComponent(jointId, CableJointComponent);
             if (joint) { entityId = joint.entityB; isSideA = false; }
-          } else { // Middle link - Assume it's entityB of the left joint
-            jointId = path.jointEntities[i - 1];
-            const joint = world.getComponent(jointId, CableJointComponent);
-            if (joint) { entityId = joint.entityB; isSideA = false; }
-            // Note: Need consistent definition if middle link could be A of right joint
           }
 
-          if (jointId && entityId) {
+          if (jointId !== null && entityId !== null) {
             const joint = world.getComponent(jointId, CableJointComponent);
             const posComp = world.getComponent(entityId, PositionComponent);
             const orientationComp = world.getComponent(entityId, OrientationComponent); // Get orientation
@@ -1914,7 +1895,7 @@ class RenderSystem {
         const cA    = world.getComponent(rollerA, PositionComponent)?.pos;
         const rA    = world.getComponent(rollerA, RadiusComponent)?.radius;
         const P0    = joint0.attachmentPointA_world;
-        if (cA && rA != null) {
+        if (cA && rA !== null) {
           const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
           const s      = path.stored[0];
           const Δθ     = s / rA;
@@ -1941,7 +1922,7 @@ class RenderSystem {
         const cB    = world.getComponent(rollerB, PositionComponent)?.pos;
         const rB    = world.getComponent(rollerB, RadiusComponent)?.radius;
         const P1    = jointN.attachmentPointB_world;
-        if (cB && rB != null) {
+        if (cB && rB !== null) {
           const a1     = Math.atan2(P1.y - cB.y, P1.x - cB.x);
           const s      = path.stored[nLinks - 1];
           const Δθ     = s / rB;
@@ -2038,7 +2019,7 @@ class RenderSystem {
             if (joint) entityId = joint.entityB;
           }
 
-          if (entityId != null) {
+          if (entityId !== null) {
             const posComp = world.getComponent(entityId, PositionComponent);
             const radiusComp = world.getComponent(entityId, RadiusComponent);
 
@@ -2063,7 +2044,7 @@ class RenderSystem {
                 this.c.font = '10px Arial';
                 this.c.textAlign = 'left';
                 this.c.textBaseline = 'middle';
-                this.c.fillText(path.stored[i].toFixed(1), markerX + 7, markerY); // Display next to marker
+                this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY); // Display next to marker
               }
             }
           }
