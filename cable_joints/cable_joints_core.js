@@ -1910,6 +1910,7 @@ class RenderSystem {
         const rollerId   = jPrev.entityB;
         const centerComp = world.getComponent(rollerId, PositionComponent);
         const radiusComp = world.getComponent(rollerId, RadiusComponent);
+        const renderComp = world.getComponent(joints[i], RenderableComponent);
         if (!centerComp || !radiusComp) continue;
         const C    = centerComp.pos;
         const R    = radiusComp.radius;
@@ -1921,7 +1922,7 @@ class RenderSystem {
         // cw‐flag stored in path.cw[i]
         const anticlockwise = !path.cw[i];
         this.c.beginPath();
-        this.c.strokeStyle = linecolor1;               // or pick your cable colour
+        this.c.strokeStyle = renderComp.color;               // or pick your cable colour
         this.c.arc(
           this.cX(C.x),
           this.cY(C.y),
@@ -1940,6 +1941,7 @@ class RenderSystem {
       if (path.linkTypes[0] === 'rolling' || path.linkTypes[0] === 'hybrid') {
         // joint 0 ties into link 0 on its A side
         const joint0 = world.getComponent(joints[0], CableJointComponent);
+        const renderComp = world.getComponent(joints[0], RenderableComponent);
         const rollerA = joint0.entityA;
         const cA    = world.getComponent(rollerA, PositionComponent)?.pos;
         const rA    = world.getComponent(rollerA, RadiusComponent)?.radius;
@@ -1952,7 +1954,7 @@ class RenderSystem {
           const anticw = !cw0;
           const a2     = cw0 ? a1 - Δθ : a1 + Δθ;
           this.c.beginPath();
-          this.c.strokeStyle = linecolor1;
+          this.c.strokeStyle = renderComp.color;
           this.c.arc(
             this.cX(cA.x), this.cY(cA.y),
             rA * this.effectiveCScale,
@@ -1966,6 +1968,7 @@ class RenderSystem {
       if (path.linkTypes[nLinks - 1] === 'rolling' || path.linkTypes[nLinks - 1] === 'hybrid') {
         // joint nLinks–2 ties into link nLinks–1 on its B side
         const jointN = world.getComponent(joints[nLinks - 2], CableJointComponent);
+        const renderComp = world.getComponent(joints[nLinks - 2], RenderableComponent);
         const rollerB = jointN.entityB;
         const cB    = world.getComponent(rollerB, PositionComponent)?.pos;
         const rB    = world.getComponent(rollerB, RadiusComponent)?.radius;
@@ -1978,7 +1981,7 @@ class RenderSystem {
           const anticw = !cw1;
           const a2     = cw1 ? a1 - Δθ : a1 + Δθ;
           this.c.beginPath();
-          this.c.strokeStyle = linecolor1;
+          this.c.strokeStyle = renderComp.color;
           this.c.arc(
             this.cX(cB.x), this.cY(cB.y),
             rB * this.effectiveCScale,
