@@ -2022,26 +2022,39 @@ class RenderSystem {
 
             if (posComp && radiusComp) {
               // Draw a small marker on the edge of the entity to indicate hybrid link
-              const pos = posComp.pos;
-              const radius = radiusComp.radius;
+              // Determine the correct attachment point for the marker
+              let attachmentPoint = null;
+              if (i === 0) {
+                const jointId = path.jointEntities[0];
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (joint) attachmentPoint = joint.attachmentPointA_world;
+              } else if (i === path.linkTypes.length - 1) {
+                const jointId = path.jointEntities[path.jointEntities.length - 1];
+                const joint = world.getComponent(jointId, CableJointComponent);
+                if (joint) attachmentPoint = joint.attachmentPointB_world;
+              }
+              // Note: Middle hybrid links are not typically expected in 'attachment' mode,
+              // but if they were, we'd need logic here.
 
-              this.c.beginPath();
-              // Use different colors for different modes
-              this.c.fillStyle = path.linkTypes[i] === 'hybrid' ? '#00FF00' : '#FF0000'; // Green for rolling, Red for attachment
+              if (attachmentPoint) {
+                  this.c.beginPath();
+                  // Use different colors for different modes
+                  this.c.fillStyle = path.linkTypes[i] === 'hybrid' ? '#00FF00' : '#FF0000'; // Green for rolling, Red for attachment
 
-              // Draw a small marker at the top of the circle
-              const markerX = this.cX(pos.x);
-              const markerY = this.cY(pos.y + radius); // Top in sim coords is higher Y
-              this.c.arc(markerX, markerY, 5, 0, 2 * Math.PI); // 5 pixel radius marker
-              this.c.fill();
+                  // Draw a small marker at the actual attachment point
+                  const markerX = this.cX(attachmentPoint.x);
+                  const markerY = this.cY(attachmentPoint.y);
+                  this.c.arc(markerX, markerY, 5, 0, 2 * Math.PI); // 5 pixel radius marker
+                  this.c.fill();
 
-              // Optionally show stored length using debugPoints
-              if (debugPoints) { // Check if debugPoints exists (it should now)
-                this.c.fillStyle = '#FFFFFF'; // White text
-                this.c.font = '10px Arial';
-                this.c.textAlign = 'left';
-                this.c.textBaseline = 'middle';
-                this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY); // Display next to marker
+                  // Optionally show stored length using debugPoints
+                  if (debugPoints) { // Check if debugPoints exists
+                    this.c.fillStyle = '#FFFFFF'; // White text
+                    this.c.font = '10px Arial';
+                    this.c.textAlign = 'left';
+                    this.c.textBaseline = 'middle';
+                    this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY); // Display next to marker
+                  }
               }
             }
           }
