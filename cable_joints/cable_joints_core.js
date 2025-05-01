@@ -847,11 +847,8 @@ class CableAttachmentUpdateSystem {
         }
         const isRolling = path.linkTypes[i + 1] === 'rolling';
         if (isRolling) {
-
-
           const storedLength = path.stored[i + 1];
           const nothing_stored = storedLength < 0.0;
-
           if (nothing_stored) {
             // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
 
@@ -963,7 +960,7 @@ class CableAttachmentUpdateSystem {
         const angleA = orientationAComp?.angle ?? 0.0;
         const prevAngleA = orientationAComp?.prevAngle ?? 0.0;
         const deltaAngleA = angleA - prevAngleA;
-        const cwA = path.cw[A];
+        const cwA = !path.cw[A];
         // Handle regular and hybrid link types
         const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
         const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
@@ -1276,22 +1273,6 @@ class CableAttachmentUpdateSystem {
                 // Skip this split if unsupported combination
                 continue; // Go to the next potential splitter
             }
-
-            // --- Debug Visualization for initialPoints2 ---
-            //if (initialPoints2 && debugPoints) {
-            //    if (initialPoints2.a_attach) {
-            //        debugPoints[`split_${jointId}_init2_attach`] = { pos: initialPoints2.a_attach, color: '#FFA500' }; // Orange
-            //    }
-            //    if (initialPoints2.a_circle) {
-            //        debugPoints[`split_${jointId}_init2_circleA`] = { pos: initialPoints2.a_circle, color: '#FF00FF' }; // Magenta
-            //    }
-            //     if (initialPoints2.b_circle) { // For circle-circle case
-            //        debugPoints[`split_${jointId}_init2_circleB`] = { pos: initialPoints2.b_circle, color: '#00FFFF' }; // Cyan
-            //    }
-            //}
-            // --- End Debug Visualization ---
-
-
             joint.entityB = splitterId; // Original joint now connects A -> Splitter
 
             // Calculate stored length 's' on the new splitter link
@@ -1383,12 +1364,8 @@ class CableAttachmentUpdateSystem {
         const totalDist = d_i + d_i_plus_1;
         const tension_i = d_i/joint_i.restLength;
         const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
-        //if (tension_i > 1.0 || tension_i_plus_1 > 1.0) {
         joint_i.restLength = availableRestLength * d_i/totalDist;
         joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
-          //joint_i.restLength = 0.5*availableRestLength * (d_i/totalDist + l_i/availableRestLength);
-          //joint_i_plus_1.restLength = 0.5*availableRestLength * (d_i_plus_1/totalDist + l_i_plus_1/availableRestLength);
-        //}
         //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
       }
     }
@@ -1420,8 +1397,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      //console.log(`stored: ${path.stored}`);
+      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      console.log(`stored: ${path.stored}`);
     }
   }
 }
@@ -1542,8 +1519,8 @@ class PBDCableConstraintSolver {
       if (path.linkTypes[0] === 'hybrid') {
         totalCurrentLength += path.stored[0];
       }
-      if (path.linkTypes[path.linkTypes.length -1] === 'hybrid') {
-        totalCurrentLength += path.stored[path.stored.length - 1];
+      if (path.linkTypes[path.linkTypes.length - 1] === 'hybrid') {
+        totalCurrentLength += path.stored[path.linkTypes.length - 1];
       }
 
       let overallTension = 0.0;
@@ -1886,7 +1863,7 @@ class RenderSystem {
         this.c.beginPath();
         // Draw catenary if slack, otherwise straight
         const straightDist = pA.distanceTo(pB);
-        if (jointComp.restLength > straightDist + 1e-6) {
+        if (false && jointComp.restLength > straightDist + 1e-6) {
           this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
         } else {
           this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
@@ -1952,7 +1929,7 @@ class RenderSystem {
           const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
           const s      = path.stored[0];
           const Δθ     = s / rA;
-          const cw0    = !path.cw[0];
+          const cw0    = path.cw[0];
           const anticw = !cw0;
           const a2     = cw0 ? a1 - Δθ : a1 + Δθ;
           this.c.beginPath();
