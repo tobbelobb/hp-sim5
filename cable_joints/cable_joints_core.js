@@ -718,7 +718,7 @@ class CableAttachmentUpdateSystem {
           const stored = path.stored[i];
 
           // If the stored cable length becomes negative, switch to attachment behavior
-          if (stored < epsilon) {
+          if (stored < 0.0) {
             console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
@@ -811,10 +811,7 @@ class CableAttachmentUpdateSystem {
         delete debugPoints[key];
     }
 
-    // Update fixed attachment points for hybrid-attachment links FIRST
     this._updateHybridAttachmentPoints(world);
-
-    // Process hybrid link state changes (switching between hybrid and hybrid-attachment)
     this._updateHybridLinkStates(world);
 
     const pathEntities = world.query([CablePathComponent]);
