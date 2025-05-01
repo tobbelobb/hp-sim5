@@ -278,10 +278,11 @@ canvas {
         // Spool Entities
         const spoolRadius = 0.03;
         const spoolMass = 0.005;
+        const spoolInertia = 10.0 * 0.5 * spoolMass * spoolRadius * spoolRadius;
 
         const spoolA = world.createEntity();
         world.addComponent(spoolA, new SpoolTagComponent());
-        world.addComponent(spoolA, new PositionComponent(0.50, -0.5));
+        world.addComponent(spoolA, new PositionComponent(-0.25, -0.5));
         world.addComponent(spoolA, new VelocityComponent(0.0, 0.0));
         world.addComponent(spoolA, new RadiusComponent(spoolRadius));
         world.addComponent(spoolA, new MassComponent(spoolMass));
@@ -289,13 +290,12 @@ canvas {
         world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(spoolA, new OrientationComponent(0.0));
         world.addComponent(spoolA, new AngularVelocityComponent(0.0));
-        const spoolInertia = 10.0 * 0.5 * spoolMass * spoolRadius * spoolRadius;
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
 
 
         const anchorA = world.createEntity();
         world.addComponent(anchorA, new SpoolTagComponent());
-        world.addComponent(anchorA, new PositionComponent(0.00, 0.5));
+        world.addComponent(anchorA, new PositionComponent(-0.25, 0.5));
         world.addComponent(anchorA, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorA, new RadiusComponent(0.01));
         world.addComponent(anchorA, new MassComponent(-1.0)); // Immovible
@@ -334,11 +334,65 @@ canvas {
         cableCompA.totalRestLength += 0.2;
         world.addComponent(cableA, cableCompA);
 
+        const spoolB = world.createEntity();
+        world.addComponent(spoolB, new SpoolTagComponent());
+        world.addComponent(spoolB, new PositionComponent(0.25, -0.5));
+        world.addComponent(spoolB, new VelocityComponent(0.0, 0.0));
+        world.addComponent(spoolB, new RadiusComponent(spoolRadius));
+        world.addComponent(spoolB, new MassComponent(spoolMass));
+        world.addComponent(spoolB, new GravityAffectedComponent());
+        world.addComponent(spoolB, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(spoolB, new OrientationComponent(0.0));
+        world.addComponent(spoolB, new AngularVelocityComponent(0.0));
+        world.addComponent(spoolB, new MomentOfInertiaComponent(spoolInertia));
+
+
+        const anchorB = world.createEntity();
+        world.addComponent(anchorB, new SpoolTagComponent());
+        world.addComponent(anchorB, new PositionComponent(0.25, 0.5));
+        world.addComponent(anchorB, new VelocityComponent(0.0, 0.0));
+        world.addComponent(anchorB, new RadiusComponent(0.01));
+        world.addComponent(anchorB, new MassComponent(-1.0)); // Immovible
+        world.addComponent(anchorB, new RenderableComponent('circle', '#FFFFF'));
+
+
+        // --- Cable Setup ---
+        // Connect: spoolB -> anchorB
+
+        world.addComponent(spoolB, new CableLinkComponent());
+        world.addComponent(anchorB, new CableLinkComponent());
+
+        // --- Calculate Initial Cable State ---
+        // Need to compute initial attachment points and rest lengths
+        // Get relevant components
+        const pos_spoolB = world.getComponent(spoolB, PositionComponent).pos;
+        const pos_anchorB = world.getComponent(anchorB, PositionComponent).pos;
+
+        const jointB = world.createEntity();
+        const tangB = tangentFromPointToCircle(pos_anchorB, pos_spoolB, spoolRadius, false);
+        const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
+        world.addComponent(jointB, new CableJointComponent(
+          spoolB, anchorB, initialDistB, tangB.a_circle, tangB.a_attach)); // Order matters
+        world.addComponent(jointB, new RenderableComponent('line', '#AA3311'));
+
+        const cableB = world.createEntity();
+        // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        const cableCompB = new CablePathComponent(
+          world,
+          [jointB],
+          ['hybrid', 'attachment'],
+          [false, true]
+        );
+        // Set initial stored length for the hybrid link
+        cableCompB.stored[0] = 0.2; // Start with some stored length
+        cableCompB.totalRestLength += 0.2;
+        world.addComponent(cableB, cableCompB);
+
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
-          inputSys.scaleMultiplier = 1.0;
+          inputSys.scaleMultiplier = 1.5;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.3;
           world.registerSystem(inputSys);
