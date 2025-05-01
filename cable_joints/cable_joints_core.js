@@ -545,6 +545,16 @@ class AngularMovementSystem {
 class CableAttachmentUpdateSystem {
   runInPause = false; // Physics system
 
+  // Returnerar det cw-värde som gäller när kabeln lämnar (true)
+  // respektive anländer till (false) en länk.
+  _effectiveCW(path, linkIndex, travellingFromCircle) {
+    if (linkIndex === 0 && travellingFromCircle)                     // första länken
+      return !path.cw[linkIndex];
+    if (linkIndex === path.linkTypes.length - 1 && !travellingFromCircle) // sista länken
+      return !path.cw[linkIndex];
+    return path.cw[linkIndex];                                       // inre länkar oförändrat
+  }
+
   // Calculate tangent points for a hybrid link in attachment mode
   _calculateHybridTangents(world, pathId, path, linkIndex, isDraining) {
     const debugPoints = world.getResource('debugRenderPoints');
@@ -960,7 +970,7 @@ class CableAttachmentUpdateSystem {
         const angleA = orientationAComp?.angle ?? 0.0;
         const prevAngleA = orientationAComp?.prevAngle ?? 0.0;
         const deltaAngleA = angleA - prevAngleA;
-        const cwA = path.cw[A];
+        const cwA = this._effectiveCW(path, A,  true);   // vi startar på cirkel A
         // Handle regular and hybrid link types
         const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
         const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
@@ -977,7 +987,7 @@ class CableAttachmentUpdateSystem {
         const angleB = orientationBComp?.angle ?? 0.0;
         const prevAngleB = orientationBComp?.prevAngle ?? 0.0;
         const deltaAngleB = angleB - prevAngleB;
-        const cwB = path.cw[B];
+        const cwB = this._effectiveCW(path, B,  false);  // vi anländer till cirkel B
         const attachmentLinkB = path.linkTypes[B] === 'attachment' || path.linkTypes[B] === 'hybrid-attachment';
         const rollingLinkB = path.linkTypes[B] === 'rolling' || path.linkTypes[B] === 'hybrid';
         const isHybridB = path.linkTypes[B] === 'hybrid' || path.linkTypes[B] === 'hybrid-attachment';
