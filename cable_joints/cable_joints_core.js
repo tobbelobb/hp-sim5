@@ -2033,28 +2033,82 @@ class RenderSystem {
                 const joint = world.getComponent(jointId, CableJointComponent);
                 if (joint) attachmentPoint = joint.attachmentPointB_world;
               }
-              // Note: Middle hybrid links are not typically expected in 'attachment' mode,
-              // but if they were, we'd need logic here.
+              // Note: Middle hybrid links are not typically expected.
 
-              if (attachmentPoint) {
+              const markerRadius = 4; // New smaller radius
+
+              if (path.linkTypes[i] === 'hybrid-attachment') {
+                // Draw RED dot at the fixed attachment point
+                if (attachmentPoint) {
                   this.c.beginPath();
-                  // Use different colors for different modes
-                  this.c.fillStyle = path.linkTypes[i] === 'hybrid' ? '#00FF00' : '#FF0000'; // Green for rolling, Red for attachment
-
-                  // Draw a small marker at the actual attachment point
+                  this.c.fillStyle = '#FF0000'; // Red for attachment
                   const markerX = this.cX(attachmentPoint.x);
                   const markerY = this.cY(attachmentPoint.y);
-                  this.c.arc(markerX, markerY, 5, 0, 2 * Math.PI); // 5 pixel radius marker
+                  this.c.arc(markerX, markerY, markerRadius, 0, 2 * Math.PI);
                   this.c.fill();
 
-                  // Optionally show stored length using debugPoints
-                  if (debugPoints) { // Check if debugPoints exists
-                    this.c.fillStyle = '#FFFFFF'; // White text
+                  // Show stored length (should be 0)
+                  if (debugPoints) {
+                    this.c.fillStyle = '#FFFFFF';
                     this.c.font = '10px Arial';
                     this.c.textAlign = 'left';
                     this.c.textBaseline = 'middle';
-                    this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY); // Display next to marker
+                    this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY);
                   }
+                }
+              } else if (path.linkTypes[i] === 'hybrid') {
+                // Draw RED dot at the current TANGENT point
+                let tangentPoint = null;
+                if (i === 0) {
+                  const joint = world.getComponent(path.jointEntities[0], CableJointComponent);
+                  if (joint) tangentPoint = joint.attachmentPointA_world;
+                } else if (i === path.linkTypes.length - 1) {
+                  const joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+                  if (joint) tangentPoint = joint.attachmentPointB_world;
+                }
+
+                if (tangentPoint) {
+                  this.c.beginPath();
+                  this.c.fillStyle = '#FF0000'; // Red for tangent point
+                  const tangentMarkerX = this.cX(tangentPoint.x);
+                  const tangentMarkerY = this.cY(tangentPoint.y);
+                  this.c.arc(tangentMarkerX, tangentMarkerY, markerRadius, 0, 2 * Math.PI);
+                  this.c.fill();
+
+                  // Calculate and draw GREEN dot at the end of the stored arc
+                  const center = posComp.pos;
+                  const radius = radiusComp.radius;
+                  const storedLength = path.stored[i];
+                  const cw = path.cw[i];
+
+                  if (radius > 1e-9) {
+                    const toTangent = tangentPoint.clone().subtract(center);
+                    const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
+                    const deltaAngle = storedLength / radius;
+                    const endAngle = cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
+
+                    const endOfArcPoint = new Vector2(
+                      center.x + radius * Math.cos(endAngle),
+                      center.y + radius * Math.sin(endAngle)
+                    );
+
+                    this.c.beginPath();
+                    this.c.fillStyle = '#00FF00'; // Green for end of arc
+                    const endMarkerX = this.cX(endOfArcPoint.x);
+                    const endMarkerY = this.cY(endOfArcPoint.y);
+                    this.c.arc(endMarkerX, endMarkerY, markerRadius, 0, 2 * Math.PI);
+                    this.c.fill();
+
+                    // Show stored length next to the GREEN marker
+                    if (debugPoints) {
+                      this.c.fillStyle = '#FFFFFF';
+                      this.c.font = '10px Arial';
+                      this.c.textAlign = 'left';
+                      this.c.textBaseline = 'middle';
+                      this.c.fillText(storedLength.toFixed(2), endMarkerX + 7, endMarkerY);
+                    }
+                  }
+                }
               }
             }
           }
