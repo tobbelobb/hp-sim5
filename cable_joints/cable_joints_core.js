@@ -1968,7 +1968,7 @@ class RenderSystem {
           const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
           const s      = path.stored[0];
           const Δθ     = s / rA;
-          const cw0    = path.cw[0];
+          const cw0    = !path.cw[0];
           const anticw = !cw0;
           const a2     = cw0 ? a1 - Δθ : a1 + Δθ;
           this.c.beginPath();
