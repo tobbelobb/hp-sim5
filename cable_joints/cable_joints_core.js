@@ -1103,14 +1103,6 @@ class CableAttachmentUpdateSystem {
                     projected_prevAttachA = posA.clone().add(vec_prevCenter_to_prevAttachA);
                 }
                 sA = signedArcLengthOnWheel(projected_prevAttachA, attachmentA_current, posA, radiusA, cwA);
-
-                // For hybrid links, check if they would run out of stored cable
-                if (isHybridA && path.stored[A] + sA < 0) {
-                    // Not enough stored cable, clamp to available amount
-                    sA = -path.stored[A];
-                    console.warn(`Hybrid link ${A} running out of cable. Clamping sA to ${sA.toFixed(4)}`);
-                    // This will trigger the link to switch to attachment mode in _updateHybridLinkStates
-                }
             } else {
                 sA = 0;
             }
@@ -1132,14 +1124,6 @@ class CableAttachmentUpdateSystem {
                     projected_prevAttachB = posB.clone().add(vec_prevCenter_to_prevAttachB);
                  }
                 sB = signedArcLengthOnWheel(projected_prevAttachB, attachmentB_current, posB, radiusB, cwB);
-
-                // For hybrid links, check if they would run out of stored cable
-                if (isHybridB && path.stored[B] - sB < 0) {
-                    // Not enough stored cable, clamp to available amount
-                    sB = path.stored[B];
-                    console.warn(`Hybrid link ${B} running out of cable. Clamping sB to ${sB.toFixed(4)}`);
-                    // This will trigger the link to switch to attachment mode in _updateHybridLinkStates
-                }
             } else {
                 sB = 0;
             }
