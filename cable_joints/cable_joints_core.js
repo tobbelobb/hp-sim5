@@ -799,10 +799,10 @@ class CableAttachmentUpdateSystem {
           const crossedCCW = this._hasPassedTangentPoint(attachmentPoint, tanCCW, C, false);
 
           let newCW = null, crossingTangent = null;
-          if (crossedCW) {
+          if (crossedCCW) {
             newCW = true;
             crossingTangent = tanCW;
-          } else if (crossedCCW) {
+          } else if (crossedCW) {
             newCW = false;
             crossingTangent = tanCCW;
           }
@@ -811,16 +811,6 @@ class CableAttachmentUpdateSystem {
           if (newCW !== null) {
             path.linkTypes[i] = 'hybrid';
             path.cw[i]        = newCW;
-
-            // Optional: align the body’s orientation so we pick the same tangent next time
-            const orient = world.getComponent(entityId, OrientationComponent);
-            if (orient) {
-              // set angle so that the world‐space zero‐angle points toward the crossing tangent
-              orient.angle = Math.atan2(
-                crossingTangent.y - C.y,
-                crossingTangent.x - C.x
-              );
-            }
 
             if (debugPoints) {
               debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
@@ -1458,7 +1448,7 @@ class CableAttachmentUpdateSystem {
 
       const error = path.totalRestLength - totalCurrentRestLength;
       //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      console.log(`stored: ${path.stored}`);
+      //console.log(`stored: ${path.stored}`);
     }
   }
 }
