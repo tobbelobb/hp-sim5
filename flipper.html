@@ -856,7 +856,7 @@ canvas {
         const pathComp = new CablePathComponent(
           world,
           [joint1, joint2, joint3],
-          ['hybrid', 'rolling', 'rolling', 'hybrid'],
+          ['hybrid-attachment', 'rolling', 'rolling', 'hybrid-attachment'],
           [true, true, true, true]
         );
         world.addComponent(cablePath, pathComp);
@@ -941,7 +941,7 @@ canvas {
       // first frame init
       if (lastTime === 0) lastTime = currentTime;
 
-      let frameSec = 0.7*(currentTime - lastTime) / 1000;
+      let frameSec = 0.2*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches

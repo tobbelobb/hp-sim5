@@ -766,24 +766,50 @@ class CableAttachmentUpdateSystem {
           const C = centerComp.pos;
           const P = neighborComp.pos;
           const R = radiusComp.radius;
+          console.log(path.linkTypes);
+          const neighborIsRolling = ((i === 0) ? (path.linkTypes[1] === 'rolling') : (path.linkTypes[path.linkTypes.length - 2] === 'rolling'));
 
-          // --- compute both cw and ccw tangents on this “circle” ---
-          const tanCW  = tangentFromCircleToPoint(P, C, R, true ).a_circle;
-          const tanCCW = tangentFromCircleToPoint(P, C, R, false).a_circle;
+          let tanCW, tanCCW;
 
-          // --- test whether we've passed either tangent ---
+          // --- compute both potential tangent points ON THIS hybrid circle (C) ---
+          if (neighborIsRolling) {
+              let hybridCW, neighborCW;
+              const neighborRadius = world.getComponent(neighborId, RadiusComponent).radius;
+              if (i === 0) { // Hybrid is A (link 0), Neighbor is B (link 1)
+                  hybridCW = path.cw[0]; // Winding for link 0 (around A)
+                  neighborCW = path.cw[1]; // Winding for link 1 (around B)
+                  // Calculate tangents ON circle C (entity A)
+                  tanCW  = tangentFromCircleToCircle(C, R, true, P, neighborRadius, neighborCW).a_circle;
+                  tanCCW = tangentFromCircleToCircle(C, R, false, P, neighborRadius, neighborCW).a_circle;
+              } else { // Hybrid is B (link last), Neighbor is A (link last-1)
+                  hybridCW = path.cw[i]; // Winding for link i (around B)
+                  neighborCW = path.cw[i - 1]; // Winding for link i-1 (around A)
+                  // Calculate tangents ON circle C (entity B)
+                  tanCW  = tangentFromCircleToCircle(P, neighborRadius, neighborCW, C, R, true).b_circle;
+                  tanCCW = tangentFromCircleToCircle(P, neighborRadius, neighborCW, C, R, false).b_circle;
+              }
+          } else {
+              // Neighbor is a point (or treated as such)
+              tanCW  = tangentFromCircleToPoint(P, C, R, true).a_circle;
+              tanCCW = tangentFromCircleToPoint(P, C, R, false).a_circle;
+          }
+
+
+          // --- test whether the attachment point has passed either tangent ---
+          // Note: _hasPassedTangentPoint expects the tangent point ON the circle C
           const crossedCW  = this._hasPassedTangentPoint(attachmentPoint, tanCW,  C, true);
           const crossedCCW = this._hasPassedTangentPoint(attachmentPoint, tanCCW, C, false);
           const distSqCW = attachmentPoint.distanceToSq(tanCW);
           const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
           let newCW = null, crossingTangent = null;
+          // Determine which tangent was crossed first (closest one)
           if (crossedCCW && distSqCCW < distSqCW) {
-            newCW = true;
-            crossingTangent = tanCCW;
+              newCW = false; // Crossed the CCW tangent, so new winding is CCW (false)
+              crossingTangent = tanCCW;
           } else if (crossedCW && distSqCW < distSqCCW) {
-            newCW = false;
-            crossingTangent = tanCW;
+              newCW = true; // Crossed the CW tangent, so new winding is CW (true)
+              crossingTangent = tanCW;
           }
 
           // --- if we crossed one, switch back to rolling ---
@@ -1364,8 +1390,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      console.log(`stored: ${path.stored}`);
+      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      //console.log(`stored: ${path.stored}`);
     }
   }
 }
