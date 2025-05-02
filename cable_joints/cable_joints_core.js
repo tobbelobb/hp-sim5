@@ -2044,7 +2044,7 @@ class RenderSystem {
                   this.c.fillStyle = '#FF0000'; // Red for attachment
                   const markerX = this.cX(attachmentPoint.x);
                   const markerY = this.cY(attachmentPoint.y);
-                  this.c.arc(markerX, markerY, markerRadius, 0, 2 * Math.PI);
+                  this.c.arc(markerX, markerY, markerRadius, 0, 1.5 * Math.PI);
                   this.c.fill();
 
                   // Show stored length (should be 0)
@@ -2057,7 +2057,7 @@ class RenderSystem {
                   }
                 }
               } else if (path.linkTypes[i] === 'hybrid') {
-                // Draw RED dot at the current TANGENT point
+                // Draw yellow dot at the current TANGENT point
                 let tangentPoint = null;
                 if (i === 0) {
                   const joint = world.getComponent(path.jointEntities[0], CableJointComponent);
@@ -2069,7 +2069,7 @@ class RenderSystem {
 
                 if (tangentPoint) {
                   this.c.beginPath();
-                  this.c.fillStyle = '#FF0000'; // Red for tangent point
+                  this.c.fillStyle = '#FFFF00'; // yellow
                   const tangentMarkerX = this.cX(tangentPoint.x);
                   const tangentMarkerY = this.cY(tangentPoint.y);
                   this.c.arc(tangentMarkerX, tangentMarkerY, markerRadius, 0, 2 * Math.PI);
