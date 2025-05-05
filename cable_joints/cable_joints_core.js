@@ -810,7 +810,7 @@ class CableAttachmentUpdateSystem {
             const isAttachmentB = path.linkTypes[i+2] === 'attachment' || path.linkTypes[i+2] === 'hybrid-attachment';
             if (isRollingA && isRollingB) {
               const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-              const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, cwA);
+              const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, this._effectiveCW(path, i, cwA));
               path.stored[i] += sA;
               joint_i.restLength -= sA;
               const sB = signedArcLengthOnWheel(pB2, tangents.b_circle, posB, radiusB, cwB);
@@ -820,7 +820,7 @@ class CableAttachmentUpdateSystem {
               joint_i.attachmentPointB_world.set(tangents.b_circle);
             } else if (isRollingA && isAttachmentB) {
               const tangents = tangentFromCircleToPoint(pB2, posA, radiusA, cwA);
-              const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, cwA);
+              const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, this._effectiveCW(path, i, cwA));
               path.stored[i] += sA;
               joint_i.restLength -= sA;
               joint_i.attachmentPointA_world.set(tangents.a_circle);
