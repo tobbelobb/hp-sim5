@@ -742,7 +742,6 @@ class CableAttachmentUpdateSystem {
     }
 
     this._updateHybridAttachmentPoints(world);
-    this._updateHybridLinkStates(world);
 
     const pathEntities = world.query([CablePathComponent]);
     //// Merge joints
@@ -1035,6 +1034,8 @@ class CableAttachmentUpdateSystem {
       } // End loop through joints
     } // End loop through paths
 
+    this._updateHybridLinkStates(world);
+
     // Split joints
     // Entities that can cause a split
     const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
@@ -1102,7 +1103,10 @@ class CableAttachmentUpdateSystem {
             if (linkTypeA === 'rolling'  || linkTypeA === 'hybrid') {
                 // --- Case: Rolling -> Splitter ---
                 const radiusA = world.getComponent(entityA, RadiusComponent).radius;
-                const cwA = path.cw[jointIndex];
+                let cwA = path.cw[jointIndex];
+                if (jointIndex === 0 && linkTypeA === 'hybrid') {
+                  cwA = !cwA;
+                }
                 initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
@@ -1917,7 +1921,7 @@ class RenderSystem {
               }
               // Note: Middle hybrid links are not typically expected.
 
-              const markerRadius = 4; // New smaller radius
+              const markerRadius = 4;
 
               if (path.linkTypes[i] === 'hybrid-attachment') {
                 // Draw RED dot at the fixed attachment point
