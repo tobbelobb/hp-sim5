@@ -554,76 +554,6 @@ class CableAttachmentUpdateSystem {
     return path.cw[linkIndex];
   }
 
-  // Calculate tangent points for a hybrid link in attachment mode
-  _calculateHybridTangents(world, pathId, path, linkIndex, isDraining) {
-    const debugPoints = world.getResource('debugRenderPoints');
-
-    // Get required entities and components
-    let entityId, neighborEntityId, jointId;
-    let isLeft = false;
-
-    if (linkIndex === 0) {
-      // First link in path
-      jointId = path.jointEntities[0];
-      const joint = world.getComponent(jointId, CableJointComponent);
-      entityId = joint.entityA;
-      neighborEntityId = joint.entityB;
-      isLeft = true;
-    } else if (linkIndex === path.linkTypes.length - 1) {
-      // Last link in path
-      jointId = path.jointEntities[path.jointEntities.length - 1];
-      const joint = world.getComponent(jointId, CableJointComponent);
-      entityId = joint.entityB;
-      neighborEntityId = joint.entityA;
-      isLeft = false;
-    } else {
-      console.warn(`Hybrid link in middle: ${linkIndex}`);
-    }
-
-    // Get position and radius components
-    const posComp = world.getComponent(entityId, PositionComponent);
-    const radiusComp = world.getComponent(entityId, RadiusComponent);
-    const neighborPosComp = world.getComponent(neighborEntityId, PositionComponent);
-
-    if (!posComp || !radiusComp || !neighborPosComp) {
-      console.warn(`Missing components for hybrid tangent calculation at link ${linkIndex}`);
-      return null;
-    }
-
-    const pos = posComp.pos;
-    const radius = radiusComp.radius;
-    const neighborPos = neighborPosComp.pos;
-    const cw = path.cw[linkIndex];
-
-    // Calculate potential tangent points
-    let tangents;
-    if (isLeft) {
-      tangents = tangentFromCircleToPoint(neighborPos, pos, radius, cw);
-
-      // For visualization
-      if (debugPoints) {
-        debugPoints[`hybrid_tangent_${pathId}_${linkIndex}`] = {
-          pos: tangents.a_circle.clone(),
-          color: '#FFAA00'
-        };
-      }
-
-      return tangents.a_circle;
-    } else {
-      tangents = tangentFromPointToCircle(neighborPos, pos, radius, cw);
-
-      // For visualization
-      if (debugPoints) {
-        debugPoints[`hybrid_tangent_${pathId}_${linkIndex}`] = {
-          pos: tangents.a_circle.clone(),
-          color: '#FFAA00'
-        };
-      }
-
-      return tangents.a_circle;
-    }
-  }
-
   // Check if an attachment point has passed a tangent point
   _hasPassedTangentPoint(attachmentPoint, tangentPoint, center, cw) {
     // Vector from center to attachment point
@@ -772,16 +702,16 @@ class CableAttachmentUpdateSystem {
           const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
           const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;
 
-          const crossedCW  = this._hasPassedTangentPoint(attachmentPoint, tanCW,  C, true);
-          const crossedCCW = this._hasPassedTangentPoint(attachmentPoint, tanCCW, C, false);
+          const crossedCW  = signedArcLengthOnWheel(attachmentPoint, tanCW,  C, R, true);
+          const crossedCCW  = signedArcLengthOnWheel(attachmentPoint, tanCCW,  C, R, false);
           const distSqCW = attachmentPoint.distanceToSq(tanCW);
           const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
           let newCW = null, crossingTangent = null;
-          if (crossedCCW && distSqCCW < distSqCW) {
+          if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
               newCW = true;
               crossingTangent = tanCCW;
-          } else if (crossedCW && distSqCW < distSqCCW) {
+          } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
               newCW = false;
               crossingTangent = tanCW;
           }
