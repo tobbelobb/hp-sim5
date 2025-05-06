@@ -16,6 +16,20 @@ class Vector2 {
   dot(v) { return this.x * v.x + this.y * v.y; }
   perp() { return new Vector2(-this.y, this.x); }
   normalize() { const l = this.length(); if (l > 0) this.scale(1.0 / l); return this; }
+  rotate(ang, center, cw) {
+    if (!cw) {
+      ang = -ang;
+    }
+    const cos = Math.cos(ang);
+    const sin = Math.sin(ang);
+    this.subtract(center);
+    const tmpX = this.x;
+    const tmpY = this.y;
+    this.x = tmpX*cos - tmpY*sin;
+    this.y = tmpX*sin + tmpY*cos;
+    this.add(center);
+    return this;
+  }
 }
 
 // --- Utility: Geometry ---
@@ -568,19 +582,24 @@ class CableAttachmentUpdateSystem {
 
           // If the stored cable length becomes negative, switch to attachment behavior
           if (stored < 0.0) {
-            console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
+            // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
             // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
+            const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
+            const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
+            const radius = world.getComponent(linkEntity, RadiusComponent).radius;
+            const pos = world.getComponent(linkEntity, PositionComponent).pos;
 
-            // Reset stored length to 0 since we've "used up" all cable on this link
-            if (i == 0) {
-              world.getComponent(path.jointEntities[0], CableJointComponent).restLength += path.stored[i];
-            }
-            if (i == (path.linkTypes.length - 1)) {
-              world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent).restLength += path.stored[i];
-            }
+            // We have not "fed out negative line"
+            joint.restLength += stored;
             path.stored[i] = 0;
-
+            // Also, move the attachment point path.stored[i] along the perimeter.
+            const rotAng = -stored/radius;
+            if (i === 0) {
+              joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
+            } else if (i === path.linkTypes.length - 1) {
+              joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
+            }
           }
         }
         // Process hybrid links in attachment mode
@@ -631,15 +650,17 @@ class CableAttachmentUpdateSystem {
               newCW = true;
               crossingTangent = tanCCW;
               path.stored[i] = crossedCCW;
+              joint.restLength -= crossedCCW;
           } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
               newCW = false;
               crossingTangent = tanCW;
               path.stored[i] = crossedCW;
+              joint.restLength -= crossedCW;
           }
 
           // --- if we crossed one, switch back to rolling ---
           if (newCW !== null) {
-            console.log(`Switching joint ${jointId} to hybrid`);
+            // console.log(`Switching joint ${jointId} to hybrid`);
             path.linkTypes[i] = 'hybrid';
             path.cw[i]        = newCW;
             attachmentPoint.set(crossingTangent);
@@ -687,7 +708,7 @@ class CableAttachmentUpdateSystem {
           const storedLength = path.stored[i + 1];
           const nothing_stored = storedLength < 0.0;
           if (nothing_stored) {
-            console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
+            // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
 
             // Calculate angle between the two segments, just for debug
             const linkId = joint_i.entityB; // Shared rolling link
@@ -716,7 +737,7 @@ class CableAttachmentUpdateSystem {
             }
             const posA = world.getComponent(joint_i.entityA, PositionComponent).prevPos;
             const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
-            const cwA = this._effectiveCW(path, i, path.cw[i]);
+            const cwA = this._effectiveCW(path, i, true);
             const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).prevPos;
             const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
             const cwB = path.cw[i+2];
@@ -854,7 +875,7 @@ class CableAttachmentUpdateSystem {
         let tangents = null; // Declare tangents variable outside specific cases
         if (attachmentLinkA && rollingLinkB) {
           if (isHybridA) {
-            attachmentA_current = attachmentA_previous.clone() + pADiffFromTranslation + pADiffFromRotation;
+            attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
           } else {
             attachmentA_current = posA;
           }
@@ -862,7 +883,7 @@ class CableAttachmentUpdateSystem {
           attachmentB_current = tangents.a_circle;
         } else if (rollingLinkA && attachmentLinkB) {
           if (isHybridB) {
-            attachmentB_current = attachmentB_previous.clone() + pBDiffFromTranslation + pBDiffFromRotation;
+            attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
           } else {
             attachmentB_current = posB;
           }
@@ -874,12 +895,12 @@ class CableAttachmentUpdateSystem {
           attachmentB_current = tangents.b_circle;
         } else { // attachmentLinkA && attachmentLinkB
           if (isHybridA) {
-            attachmentA_current = attachmentA_previous.clone() + pADiffFromTranslation + pADiffFromRotation;
+            attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
           } else {
             attachmentA_current = posA;
           }
           if (isHybridB) {
-            attachmentB_current = attachmentB_previous.clone() + pBDiffFromTranslation + pBDiffFromRotation;
+            attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
           } else {
             attachmentB_current = posB;
           }
@@ -889,10 +910,16 @@ class CableAttachmentUpdateSystem {
 
         // --- Calculate Wrapping/Unwrapping Arc Lengths (sA, sB) ---
         if (rollingLinkA) {
-            sA = signedArcLengthOnWheel(attachmentA_previous, attachmentA_current, posA, radiusA, cwA);
+            sA = signedArcLengthOnWheel(attachmentA_previous.clone().subtract(prevPosA), attachmentA_current.clone().subtract(posA), new Vector2(0.0, 0.0), radiusA, cwA);
+            if (isHybridA) {
+              sA += (cwA ? deltaAngleA*radiusA : -deltaAngleA*radiusA);
+            }
         }
         if (rollingLinkB) {
-            sB = signedArcLengthOnWheel(attachmentB_previous, attachmentB_current, posB, radiusB, cwB);
+            sB = signedArcLengthOnWheel(attachmentB_previous.clone().subtract(prevPosB), attachmentB_current.clone().subtract(posB), new Vector2(0.0, 0.0), radiusB, cwB);
+            if (isHybridB) {
+              sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
+            }
         }
         // --- End Wrapping/Unwrapping Calculation ---
 
@@ -999,10 +1026,7 @@ class CableAttachmentUpdateSystem {
             if (linkTypeA === 'rolling'  || linkTypeA === 'hybrid') {
                 // --- Case: Rolling -> Splitter ---
                 const radiusA = world.getComponent(entityA, RadiusComponent).radius;
-                let cwA = path.cw[jointIndex];
-                if (jointIndex === 0 && linkTypeA === 'hybrid') {
-                  cwA = !cwA;
-                }
+                const cwA = this._effectiveCW(path, jointIndex, true);
                 initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
@@ -1146,8 +1170,8 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      //console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      //console.log(`stored: ${path.stored}`);
+      // console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+      // console.log(`stored: ${path.stored}`);
     }
   }
 }
