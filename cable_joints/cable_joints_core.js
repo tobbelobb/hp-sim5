@@ -545,9 +545,6 @@ class AngularMovementSystem {
 class CableAttachmentUpdateSystem {
   runInPause = false; // Physics system
 
-  // Returnerar det cw-värde som gäller när kabeln lämnar (true)
-  // respektive anländer till (false) en länk.
-  //
   _effectiveCW(path, linkIndex, travellingFromCircle) {
     if (linkIndex === 0 && travellingFromCircle)
       return !path.cw[linkIndex];
@@ -561,7 +558,6 @@ class CableAttachmentUpdateSystem {
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path) continue;
 
       // Check first and last link in the path
       for (const i of [0, path.linkTypes.length - 1]) {
@@ -634,9 +630,11 @@ class CableAttachmentUpdateSystem {
           if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
               newCW = true;
               crossingTangent = tanCCW;
+              path.stored[i] = crossedCCW;
           } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
               newCW = false;
               crossingTangent = tanCW;
+              path.stored[i] = crossedCW;
           }
 
           // --- if we crossed one, switch back to rolling ---
@@ -644,6 +642,7 @@ class CableAttachmentUpdateSystem {
             console.log(`Switching joint ${jointId} to hybrid`);
             path.linkTypes[i] = 'hybrid';
             path.cw[i]        = newCW;
+            attachmentPoint.set(crossingTangent);
 
             if (debugPoints) {
               debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
@@ -663,8 +662,6 @@ class CableAttachmentUpdateSystem {
     for (const key in debugPoints) {
         delete debugPoints[key];
     }
-
-    this._updateHybridAttachmentPoints(world);
 
     const pathEntities = world.query([CablePathComponent]);
     //// Merge joints
@@ -690,7 +687,7 @@ class CableAttachmentUpdateSystem {
           const storedLength = path.stored[i + 1];
           const nothing_stored = storedLength < 0.0;
           if (nothing_stored) {
-            // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
+            console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)}, radius: ${linkRadius.toFixed(4)}, angle: ${(angle * 180/Math.PI).toFixed(2)} degrees)`);
 
             // Calculate angle between the two segments, just for debug
             const linkId = joint_i.entityB; // Shared rolling link
@@ -769,7 +766,6 @@ class CableAttachmentUpdateSystem {
       }
     }
 
-
     // -- New attachment points --
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
@@ -804,7 +800,14 @@ class CableAttachmentUpdateSystem {
         const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
         const isHybridA = path.linkTypes[A] === 'hybrid' || path.linkTypes[A] === 'hybrid-attachment';
         const pADiffFromTranslation = posA.clone().subtract(prevPosA)
-        const pADiffFromRotation = new Vector2(radiusA*cos(angleA), radiusA*sin(angleA)).subtract(new Vector2(radiusA*cos(prevAngleA), radiusA*sin(prevAngleA)));
+        const attachmentA_previous_local = attachmentA_previous.clone().subtract(prevPosA);
+        const cosA = Math.cos(deltaAngleA);
+        const sinA = Math.sin(deltaAngleA);
+        const rotA_local = new Vector2(attachmentA_previous_local.x * cosA - attachmentA_previous_local.y * sinA,
+                                       attachmentA_previous_local.x * sinA + attachmentA_previous_local.y * cosA);
+        const pADiffFromRotation = rotA_local.clone().subtract(attachmentA_previous_local);
+
+
 
         // Get components for Entity B using CURRENT positions
         const posBComp = world.getComponent(entityB, PositionComponent);
@@ -823,7 +826,12 @@ class CableAttachmentUpdateSystem {
         const rollingLinkB = path.linkTypes[B] === 'rolling' || path.linkTypes[B] === 'hybrid';
         const isHybridB = path.linkTypes[B] === 'hybrid' || path.linkTypes[B] === 'hybrid-attachment';
         const pBDiffFromTranslation = posB.clone().subtract(prevPosB)
-        const pBDiffFromRotation = new Vector2(radiusB*cos(angleB), radiusB*sin(angleB)).subtract(new Vector2(radiusB*cos(prevAngleB), radiusB*sin(prevAngleB)));
+        const attachmentB_previous_local = attachmentB_previous.clone().subtract(prevPosB);
+        const cosB = Math.cos(deltaAngleB);
+        const sinB = Math.sin(deltaAngleB);
+        const rotB_local = new Vector2(attachmentB_previous_local.x * cosB - attachmentB_previous_local.y * sinB,
+                                       attachmentB_previous_local.x * sinB + attachmentB_previous_local.y * cosB);
+        const pBDiffFromRotation = rotB_local.clone().subtract(attachmentB_previous_local);
 
         if (!posA || !posB) {
           console.warn(`CableJoint ${jointId} missing PositionComponent on entities ${entityA} or ${entityB}. Skipping update.`);
@@ -837,7 +845,6 @@ class CableAttachmentUpdateSystem {
            console.warn(`CableJoint ${jointId} entity ${entityB} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
            continue;
         }
-
 
         let attachmentA_current, attachmentB_current;
         let sA = 0; // Change in stored length on side A due to wrapping/unwrapping this frame
@@ -921,7 +928,7 @@ class CableAttachmentUpdateSystem {
         joint.attachmentPointB_world.set(attachmentB_current);
 
       } // End loop through joints
-    } // End loop through paths
+    } // End New Attachment Points
 
     this._updateHybridLinkStates(world);
 
@@ -1008,8 +1015,8 @@ class CableAttachmentUpdateSystem {
                 // --- Case: Attachment -> Splitter ---
                 initialPoints2 = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
-                newAttachmentPointAForJoint = initialPoints2.a_attach; // Point A is the attachment
-                newAttachmentPointBForJoint = initialPoints2.a_circle; // Point B is on the splitter
+                newAttachmentPointAForJoint = initialPoints2.a_attach;
+                newAttachmentPointBForJoint = initialPoints2.a_circle;
                 joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
             } else {
                 console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
