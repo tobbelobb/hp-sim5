@@ -665,12 +665,12 @@ class CableAttachmentUpdateSystem {
             path.cw[i]        = newCW;
             attachmentPoint.set(crossingTangent);
 
-            if (debugPoints) {
-              debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
-                pos:   crossingTangent.clone(),
-                color: '#00FF00'
-              };
-            }
+            //if (debugPoints) {
+            //  debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
+            //    pos:   crossingTangent.clone(),
+            //    color: '#00FF00'
+            //  };
+            //}
           }
         }
       }
@@ -1636,7 +1636,7 @@ class RenderSystem {
         this.c.beginPath();
         // Draw catenary if slack, otherwise straight
         const straightDist = pA.distanceTo(pB);
-        if (false && jointComp.restLength > straightDist + 1e-6) {
+        if (jointComp.restLength > straightDist + 1e-6) {
           this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
         } else {
           this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
@@ -1854,13 +1854,13 @@ class RenderSystem {
                   this.c.fill();
 
                   // Show stored length (should be 0)
-                  if (debugPoints) {
-                    this.c.fillStyle = '#FFFFFF';
-                    this.c.font = '10px Arial';
-                    this.c.textAlign = 'left';
-                    this.c.textBaseline = 'middle';
-                    this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY);
-                  }
+                  //if (debugPoints) {
+                  //  this.c.fillStyle = '#FFFFFF';
+                  //  this.c.font = '10px Arial';
+                  //  this.c.textAlign = 'left';
+                  //  this.c.textBaseline = 'middle';
+                  //  this.c.fillText(path.stored[i].toFixed(2), markerX + 7, markerY);
+                  //}
                 }
               } else if (path.linkTypes[i] === 'hybrid') {
                 // Draw yellow dot at the current TANGENT point
@@ -1874,12 +1874,12 @@ class RenderSystem {
                 }
 
                 if (tangentPoint) {
-                  this.c.beginPath();
-                  this.c.fillStyle = '#FFFF00'; // yellow
-                  const tangentMarkerX = this.cX(tangentPoint.x);
-                  const tangentMarkerY = this.cY(tangentPoint.y);
-                  this.c.arc(tangentMarkerX, tangentMarkerY, markerRadius, 0, 2 * Math.PI);
-                  this.c.fill();
+                  //this.c.beginPath();
+                  //this.c.fillStyle = '#FFFF00'; // yellow
+                  //const tangentMarkerX = this.cX(tangentPoint.x);
+                  //const tangentMarkerY = this.cY(tangentPoint.y);
+                  //this.c.arc(tangentMarkerX, tangentMarkerY, markerRadius, 0, 2 * Math.PI);
+                  //this.c.fill();
 
                   // Calculate and draw GREEN dot at the end of the stored arc
                   const center = posComp.pos;
@@ -1899,20 +1899,20 @@ class RenderSystem {
                     );
 
                     this.c.beginPath();
-                    this.c.fillStyle = '#00FF00'; // Green for end of arc
+                    this.c.fillStyle = '#FF0000';
                     const endMarkerX = this.cX(endOfArcPoint.x);
                     const endMarkerY = this.cY(endOfArcPoint.y);
                     this.c.arc(endMarkerX, endMarkerY, markerRadius, 0, 2 * Math.PI);
                     this.c.fill();
 
                     // Show stored length next to the GREEN marker
-                    if (debugPoints) {
-                      this.c.fillStyle = '#FFFFFF';
-                      this.c.font = '10px Arial';
-                      this.c.textAlign = 'left';
-                      this.c.textBaseline = 'middle';
-                      this.c.fillText(storedLength.toFixed(2), endMarkerX + 7, endMarkerY);
-                    }
+                    //if (debugPoints) {
+                    //  this.c.fillStyle = '#FFFFFF';
+                    //  this.c.font = '10px Arial';
+                    //  this.c.textAlign = 'left';
+                    //  this.c.textBaseline = 'middle';
+                    //  this.c.fillText(storedLength.toFixed(2), endMarkerX + 7, endMarkerY);
+                    //}
                   }
                 }
               }
