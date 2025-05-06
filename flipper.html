@@ -941,7 +941,7 @@ canvas {
       // first frame init
       if (lastTime === 0) lastTime = currentTime;
 
-      let frameSec = 0.2*(currentTime - lastTime) / 1000;
+      let frameSec = 0.4*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches
