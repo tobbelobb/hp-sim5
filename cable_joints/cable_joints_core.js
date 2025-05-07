@@ -416,11 +416,12 @@ class CableJointComponent {
 
 // Represents the entire cable path
 class CablePathComponent {
-  constructor(world, jointEntities = [], linkTypes = [], cw = []) {
+  constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
     this.cw = cw // Ordered. cw.length === linkTypes.length
+    this.spring_constant = spring_constant;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
 
     for (const jointId of jointEntities) {
@@ -1349,9 +1350,11 @@ class PBDCableConstraintSolver {
         }
         // Compute denominator: Σ invMass * |gradPos|² + invInertia * gradAng²
         let denom = 0.0;
+        const compliance = 1.0/path.spring_constant;
         for (const data of gradData.values()) {
           denom += data.invMass * data.gradPos.lengthSq();
           denom += data.invInertia * data.gradAng * data.gradAng;
+          denom += compliance / (dt*dt);
         }
         if (denom <= epsilon) {
           console.warn("PBDCableConstraintSolver: zero denominator in constraint correction");
@@ -2066,6 +2069,7 @@ testGeneratedError: {
           addCompStr += `    const pathComp_${varName} = world.getComponent(${varName}, CablePathComponent);\n`;
           addCompStr += `    pathComp_${varName}.stored = [${component.stored.join(', ')}];\n`;
           addCompStr += `    pathComp_${varName}.totalRestLength = ${component.totalRestLength};\n`;
+          addCompStr += `    pathComp_${varName}.spring_constant = ${component.spring_constant};\n`;
           dump += addCompStr;
           continue; // Skip the default closing parenthesis below
         }

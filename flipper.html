@@ -646,7 +646,7 @@ canvas {
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -2.0));
-        world.setResource('dt', 1.0 / 300.0);
+        world.setResource('dt', 1.0 / 200.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -857,7 +857,8 @@ canvas {
           world,
           [joint1, joint2, joint3],
           ['hybrid-attachment', 'rolling', 'rolling', 'hybrid-attachment'],
-          [true, true, true, true]
+          [true, true, true, true],
+          20000.0 // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
         );
         world.addComponent(cablePath, pathComp);
 
