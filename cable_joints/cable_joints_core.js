@@ -92,55 +92,24 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
   let dVec = new Vector2().subtractVectors(posB, posA);
   let d = dVec.length();
 
-  let r = (cwA === cwB) ? (radiusB - radiusA) : (radiusA + radiusB);
-  if (d <= Math.abs(r)) {
-    console.warn("tangentFromCircleToCircle: Circles too close. Returning closest contact point as both \"tangent points\".");
-
-    // Direction to push along
-    const pushDir = dVec.length() === 0
-      ? new Vector2(1, 0) // fallback direction if centers coincide
-      : dVec.clone().normalize();
-
-    // Desired distance: just touching
-    const requiredDist = Math.abs(r);
-    const midPoint = posA.clone().add(posB).scale(0.5);
-
-    const offset = pushDir.scale(requiredDist / 2.0);
-    const newA = midPoint.clone().add(offset.clone().scale(-1.0));
-    const newB = midPoint.clone().add(offset);
-
-    // Contact point is on the line between the centers, offset from either by their radius
-    const contactPoint = newA.clone().add(pushDir.clone().scale(radiusA));
-
-    return {
-      a_circle: contactPoint.clone(),
-      b_circle: contactPoint.clone()
-    };
-  }
-
-  // Normal tangent calculation
-  r = (cwA === cwB) ? (radiusB - radiusA) : (radiusA + radiusB);
+  const r = (cwA === cwB) ? (radiusB - radiusA) : (radiusA + radiusB);
   const alpha = Math.atan2(dVec.y, dVec.x);
   const phi = Math.asin(Math.max(-1, Math.min(1, r / d)));
 
   let angleA, angleB;
   if (!cwA === cwB) {
     if (!cwA) {
-      // console.log("FT");
       angleA = alpha - Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     } else {
-      // console.log("TF");
       angleA = alpha + Math.PI / 2 - phi;
       angleB = alpha - Math.PI / 2 - phi;
     }
   } else {
     if (!cwA) {
-      // console.log("FF");
       angleA = alpha - Math.PI / 2 - phi;
       angleB = alpha - Math.PI / 2 - phi;
     } else {
-      // console.log("TT");
       angleA = alpha + Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
     }
@@ -829,46 +798,6 @@ class CableAttachmentUpdateSystem {
         path.stored[B] -= sB;
         joint.restLength += sB;
 
-        if (joint.restLength < 0) {
-          console.warn(`Joint ${jointId} restLength became negative (${joint.restLength.toFixed(4)})`);
-          if (rollingLinkA && rollingLinkB) {
-            console.warn("Clamping both");
-            path.stored[A] += joint.restLength/2.0;
-            path.stored[B] += joint.restLength/2.0;
-            const rotAngA = -(joint.restLength/2.0)/radiusA;
-            const rotAngB = -(joint.restLength/2.0)/radiusB;
-            joint.attachmentPointA_world.rotate(rotAngA, posA, path.cw[A]);
-            joint.attachmentPointB_world.rotate(rotAngB, posB, path.cw[B]);
-            if (orientationAComp) {
-              orientationAComp.angle +=  (path.cw[A] ? rotAngA : -rotAngA);
-            }
-            if (orientationBComp) {
-              orientationBComp.angle +=  (path.cw[B] ? rotAngB : -rotAngB);
-            }
-            joint.restLength = 0.0;
-          } else if (rollingLinkA) {
-            console.warn("Clamping left");
-            path.stored[A] += joint.restLength;
-            const rotAngA = -joint.restLength/radiusA;
-            joint.attachmentPointA_world.rotate(rotAngA, posA, path.cw[A]);
-            if (orientationAComp) {
-              orientationAComp.angle +=  (path.cw[A] ? rotAngA : -rotAngA);
-            }
-            joint.restLength = 0.0;
-          } else if (rollingLinkB) {
-            console.warn("Clamping right");
-            path.stored[B] += joint.restLength;
-            const rotAngB = -joint.restLength/radiusB;
-            joint.attachmentPointB_world.rotate(rotAngB, posB, path.cw[B]);
-            if (orientationBComp) {
-              orientationBComp.angle +=  (path.cw[B] ? rotAngB : -rotAngB);
-            }
-            joint.restLength = 0.0;
-          } else {
-            console.warn("No Clamp");
-          }
-        }
-
         // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
         joint.attachmentPointA_world.set(attachmentA_current);
         joint.attachmentPointB_world.set(attachmentB_current);
@@ -1015,6 +944,7 @@ class CableAttachmentUpdateSystem {
             var initialDist1;
             var attachmentPointAForNewJoint;
             var attachmentPointBForNewJoint;
+            let sB = 0.0;
             const posB = world.getComponent(entityB, PositionComponent).pos;
             if (linkTypeB === 'rolling' || linkTypeB === 'hybrid') {
               const radiusB = world.getComponent(entityB, RadiusComponent).radius;
@@ -1023,9 +953,7 @@ class CableAttachmentUpdateSystem {
               initialDist1 = initialPoints.a_circle.clone().subtract(initialPoints.b_circle).length();
               attachmentPointAForNewJoint = initialPoints.a_circle;
               attachmentPointBForNewJoint = initialPoints.b_circle;
-              const sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
-              path.stored[jointIndex + 1] -= sB;
-              joint.restLength += sB;
+              sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
             } else if (linkTypeB === 'attachment' || linkTypeB === 'hybrid-attachment') {
               initialPoints = tangentFromCircleToPoint(pB, posSplitter, radiusSplitter, cw);
               initialDist1 = initialPoints.a_attach.clone().subtract(initialPoints.a_circle).length();
@@ -1035,16 +963,13 @@ class CableAttachmentUpdateSystem {
               console.warn(`Splitting cable joint attached to ${linkTypeB} is not supported.`);
             }
 
-            path.jointEntities.splice(jointIndex + 1, 0, newJointId);
-            path.cw.splice(jointIndex + 1, 0, cw);
-            path.linkTypes.splice(jointIndex + 1, 0, 'rolling');
-
             const linkTypeA = path.linkTypes[jointIndex];
             const posA = world.getComponent(entityA, PositionComponent).pos;
             var newAttachmentPointBForJoint;
             var newAttachmentPointAForJoint;
             var initialPoints2;
             var initialDist2;
+            let sA = 0.0;
             if (linkTypeA === 'rolling'  || linkTypeA === 'hybrid') {
                 // --- Case: Rolling -> Splitter ---
                 const radiusA = world.getComponent(entityA, RadiusComponent).radius;
@@ -1053,22 +978,17 @@ class CableAttachmentUpdateSystem {
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
                 newAttachmentPointAForJoint = initialPoints2.a_circle;
                 newAttachmentPointBForJoint = initialPoints2.b_circle;
-                const sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
-                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
-                path.stored[jointIndex] += sA;
-                joint.restLength -= sA;
+                sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
             } else if (linkTypeA === 'attachment' || linkTypeA === 'hybrid-attachment') {
                 // --- Case: Attachment -> Splitter ---
                 initialPoints2 = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
                 initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
                 newAttachmentPointAForJoint = initialPoints2.a_attach;
                 newAttachmentPointBForJoint = initialPoints2.a_circle;
-                joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
             } else {
                 console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
                 continue;
             }
-            joint.entityB = splitterId; // Original joint now connects A -> Splitter
 
             // Calculate stored length 's' on the new splitter link
             const s = signedArcLengthOnWheel(
@@ -1087,7 +1007,7 @@ class CableAttachmentUpdateSystem {
             // "tension (the current length divided by the rest length)"
             // Distribute original rest length (minus new stored length s)
             // between the two new segments to maintain equal tension.
-            const originalRestLength = joint.restLength; // Store before modifying
+            const originalRestLength = joint.restLength + sB - sA; // Store before modifying
             const totalDist = initialDist1 + initialDist2;
             let newRestLength1 = 0; // For new joint (splitter -> entityB)
             let newRestLength2 = 0; // For original joint (entityA -> splitter)
@@ -1095,14 +1015,32 @@ class CableAttachmentUpdateSystem {
 
             if (totalDist > 1e-9) { // Avoid division by zero if distances are tiny
                 const availableRestLength = originalRestLength - s;
-                if (availableRestLength < 0) {
-                    console.warn(`Split resulted in negative available rest length (${availableRestLength.toFixed(4)}).`);
+                if (availableRestLength < 1e-9) {
+                    console.warn(`Split resulted in < 1e-9 available rest length (${availableRestLength.toFixed(4)}). Aborting split.`);
+                    continue;
+                }
+                if ( (s + 1e-9) >= 2.0*Math.PI * radiusSplitter) {
+                    console.warn(`Split resulted a full wrap around splitter. Aborting split.`);
+                    continue;
+                }
+                if ( s <= 0.0) {
+                    console.warn(`Nothing wraps around splitter. Aborting split.`);
+                    continue;
                 }
                 newRestLength1 = availableRestLength * initialDist1 / totalDist;
                 newRestLength2 = availableRestLength * initialDist2 / totalDist;
             } else {
                 console.warn("Split occurred with near-zero distance between new segments:", totalDist);
             }
+            path.stored[jointIndex + 1] -= sB;
+            joint.restLength += sB;
+            path.jointEntities.splice(jointIndex + 1, 0, newJointId);
+            path.cw.splice(jointIndex + 1, 0, cw);
+            path.linkTypes.splice(jointIndex + 1, 0, 'rolling');
+            joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
+            path.stored[jointIndex] += sA;
+            joint.restLength -= sA;
+            joint.entityB = splitterId; // Original joint now connects A -> Splitter
 
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
@@ -1192,7 +1130,7 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      if (error > 1e-9) {
+      if (error > 1e-9 || path.stored.some(x => x < 0)) {
         console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
         console.log(`stored: ${path.stored}`);
       }

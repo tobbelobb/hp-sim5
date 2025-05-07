@@ -646,7 +646,7 @@ canvas {
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -2.0));
-        world.setResource('dt', 1.0 / 400.0);
+        world.setResource('dt', 1.0 / 300.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -941,7 +941,7 @@ canvas {
       // first frame init
       if (lastTime === 0) lastTime = currentTime;
 
-      let frameSec = 0.7*(currentTime - lastTime) / 1000;
+      let frameSec = 0.6*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches
