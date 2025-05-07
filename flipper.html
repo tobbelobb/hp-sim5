@@ -254,7 +254,7 @@ canvas {
                  new CableJointComponent(
                    closestBall,  // entityA
                    ptrE,         // entityB
-                   0.0,          // restLength
+                   0.1,          // restLength
                    ballPos,      // attachmentA_world
                    ptrPos        // attachmentB_world
                  )
@@ -266,15 +266,20 @@ canvas {
                const pathComp = new CablePathComponent(
                  world,
                  [ jointE ],               // one joint
-                 ['spring'],               // one linkType
+                 ['attachment', 'attachment'], // one linkType
                  [ true ],                 // cw flag (arbitrary)
-                 100.0                     // spring_constant
+                 10.0                     // spring_constant
                );
                world.addComponent(pathE, pathComp);
 
                // 4) store for move/release
                this.grabSpring = { ptrE, jointE, pathE, ballE: closestBall };
                world.setResource('grabbedBall', closestBall);
+
+               const pauseState = world.getResource('pauseState');
+               pauseState.paused = false;
+               pauseBtn.textContent = "Pause";
+
                return;
              }
 
