@@ -299,8 +299,11 @@ canvas {
                const { ptrE, jointE, pathE, ballE } = this.grabSpring;
                // On release, reset ball velocity to zero to avoid slingshot
                const velComp = world.getComponent(ballE, VelocityComponent);
+               const posComp = world.getComponent(ballE, PositionComponent);
+
+               const dt = world.getResource('dt');
                if (velComp) {
-                 velComp.vel.set(new Vector2(0, 0));
+                 velComp.vel.set(posComp.pos.clone().subtract(posComp.prevPos).scale(1.0/dt));
                }
                world.destroyEntity(pathE);
                world.destroyEntity(jointE);
