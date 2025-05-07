@@ -94,7 +94,7 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
 
   let r = (cwA === cwB) ? (radiusB - radiusA) : (radiusA + radiusB);
   if (d <= Math.abs(r)) {
-    console.warn("Circles too close. Returning closest contact point as both \"tangent points\".");
+    console.warn("tangentFromCircleToCircle: Circles too close. Returning closest contact point as both \"tangent points\".");
 
     // Direction to push along
     const pushDir = dVec.length() === 0
@@ -835,14 +835,34 @@ class CableAttachmentUpdateSystem {
             console.warn("Clamping both");
             path.stored[A] += joint.restLength/2.0;
             path.stored[B] += joint.restLength/2.0;
+            const rotAngA = -(joint.restLength/2.0)/radiusA;
+            const rotAngB = -(joint.restLength/2.0)/radiusB;
+            joint.attachmentPointA_world.rotate(rotAngA, posA, path.cw[A]);
+            joint.attachmentPointB_world.rotate(rotAngB, posB, path.cw[B]);
+            if (orientationAComp) {
+              orientationAComp.angle +=  (path.cw[A] ? rotAngA : -rotAngA);
+            }
+            if (orientationBComp) {
+              orientationBComp.angle +=  (path.cw[B] ? rotAngB : -rotAngB);
+            }
             joint.restLength = 0.0;
           } else if (rollingLinkA) {
             console.warn("Clamping left");
             path.stored[A] += joint.restLength;
+            const rotAngA = -joint.restLength/radiusA;
+            joint.attachmentPointA_world.rotate(rotAngA, posA, path.cw[A]);
+            if (orientationAComp) {
+              orientationAComp.angle +=  (path.cw[A] ? rotAngA : -rotAngA);
+            }
             joint.restLength = 0.0;
           } else if (rollingLinkB) {
             console.warn("Clamping right");
             path.stored[B] += joint.restLength;
+            const rotAngB = -joint.restLength/radiusB;
+            joint.attachmentPointB_world.rotate(rotAngB, posB, path.cw[B]);
+            if (orientationBComp) {
+              orientationBComp.angle +=  (path.cw[B] ? rotAngB : -rotAngB);
+            }
             joint.restLength = 0.0;
           } else {
             console.warn("No Clamp");
@@ -879,7 +899,7 @@ class CableAttachmentUpdateSystem {
           const storedLength = path.stored[i + 1];
           const nothing_stored = storedLength < 0.0;
           if (nothing_stored) {
-            console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
+            // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
 
             // Calculate angle between the two segments, just for debug
             const linkId = joint_i.entityB; // Shared rolling link
@@ -901,10 +921,10 @@ class CableAttachmentUpdateSystem {
                 angle = Math.acos(Math.max(-1.0, Math.min(1.0, dot))); // Angle between 0 and PI
             }
             if (angle > 10.0 * Math.PI/180.0) {
-              console.warn("angle > 10.0 degrees");
+              console.warn("merge: angle > 10.0 degrees");
             }
             if (angle < 0.0) {
-              console.warn("angle < 0.0");
+              console.warn("merge: angle < 0.0");
             }
             const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
             const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
@@ -1172,8 +1192,10 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      // console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
-      // console.log(`stored: ${path.stored}`);
+      if (error > 1e-9) {
+        console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+        console.log(`stored: ${path.stored}`);
+      }
     }
   }
 }
