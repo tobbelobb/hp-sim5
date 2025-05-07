@@ -220,25 +220,40 @@ canvas {
              const simX = (event.clientX - rect.left) / scale;
              const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
 
+             const cmOnScreen = 0.5; // Desired clickable radius increase in physical cm
+             const dpi = 96; // Approximate screen DPI; adjust or measure if needed
+             const pixelsPerCm = dpi / 2.54;
+             const extraPixels = cmOnScreen * pixelsPerCm;
+             const extraClickableRadius = extraPixels / scale;
+
              // 1) see if we hit a ball
              const clickVec = new Vector2(simX, simY);
-             for (const b of world.query([BallTagComponent,PositionComponent,RadiusComponent])) {
-               const pos = world.getComponent(b,PositionComponent).pos;
-               const r   = world.getComponent(b,RadiusComponent).radius;
-               if (clickVec.clone().subtract(pos).lengthSq() <= r*r) {
-                 this.grabbedBall = b;
-                 this.grabOffset = pos.clone().subtract(clickVec);
-                 // record old pos for velocity
-                 this.grabStartPrevPos = pos.clone();
-                 world.setResource('grabbedBall', b);
 
-                 // Potentially unpause
-                 const pauseState = world.getResource('pauseState');
-                 pauseState.paused = false;
-                 pauseBtn.textContent = "Pause";
-                 return;       // now we’re in grab mode
+             let closestBall = null;
+             let closestDistSq = Infinity;
+             for (const b of world.query([BallTagComponent, PositionComponent, RadiusComponent])) {
+               const pos = world.getComponent(b, PositionComponent).pos;
+               const r = world.getComponent(b, RadiusComponent).radius + extraClickableRadius;
+               const distSq = clickVec.clone().subtract(pos).lengthSq();
+               if (distSq <= r * r && distSq < closestDistSq) {
+                 closestBall = b;
+                 closestDistSq = distSq;
                }
              }
+
+             if (closestBall !== null) {
+               const pos = world.getComponent(closestBall, PositionComponent).pos;
+               this.grabbedBall = closestBall;
+               this.grabOffset = pos.clone().subtract(clickVec);
+               this.grabStartPrevPos = pos.clone();
+               world.setResource('grabbedBall', closestBall);
+
+               const pauseState = world.getResource('pauseState');
+               pauseState.paused = false;
+               pauseBtn.textContent = "Pause";
+               return;
+             }
+
              this.clicks.push(new Vector2(simX, simY));
          }
 
