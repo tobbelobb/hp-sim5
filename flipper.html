@@ -296,7 +296,12 @@ canvas {
 
              // if we were grabbing with a spring, tear it down
              if (this.grabSpring) {
-               const { ptrE, jointE, pathE } = this.grabSpring;
+               const { ptrE, jointE, pathE, ballE } = this.grabSpring;
+               // On release, reset ball velocity to zero to avoid slingshot
+               const velComp = world.getComponent(ballE, VelocityComponent);
+               if (velComp) {
+                 velComp.vel.set(new Vector2(0, 0));
+               }
                world.destroyEntity(pathE);
                world.destroyEntity(jointE);
                world.destroyEntity(ptrE);
