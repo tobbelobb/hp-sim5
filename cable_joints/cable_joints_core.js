@@ -856,98 +856,122 @@ class CableAttachmentUpdateSystem {
       const path = world.getComponent(pathId, CablePathComponent);
       if (!path || path.jointEntities.length < 2) continue;
       const jointsInPath = path.jointEntities;
-      for (let i = 0; i < path.jointEntities.length - 1; i++) { // Iterate over adjacent pairs
-        const jointId_i = path.jointEntities[i];
-        const jointId_i_plus_1 = path.jointEntities[i + 1];
-        const joint_i = world.getComponent(jointId_i, CableJointComponent);
-        const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-        const linkId = joint_i.entityB;
-        const linkId2 = joint_i_plus_1.entityA;
-        if (linkId !== linkId2) {
-          console.warn("Merge loop saw disconnected cable path");
-        }
-        if (joint_i.entityA === joint_i_plus_1.entityB) {
-          continue;
-        }
-        const isRolling = path.linkTypes[i + 1] === 'rolling';
-        if (isRolling) {
-          const storedLength = path.stored[i + 1];
-          const nothing_stored = storedLength < 0.0;
-          if (nothing_stored) {
-            // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
+      // A merge operation in itself might move attachment points in such a way
+      // that an additional merge operation is required, or a single joint might
+      // require a merge of both of its ends at the same time step. We re run merge
+      // until all such cases are resolved for a given time step.
+      let reRunMerge = true;
+      while (reRunMerge) {
+        reRunMerge = false;
+        for (let i = 0; i < path.jointEntities.length - 1; i++) { // Iterate over adjacent pairs
+          const jointId_i = path.jointEntities[i];
+          const jointId_i_plus_1 = path.jointEntities[i + 1];
+          const joint_i = world.getComponent(jointId_i, CableJointComponent);
+          const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+          const linkId = joint_i.entityB;
+          const linkId2 = joint_i_plus_1.entityA;
+          if (linkId !== linkId2) {
+            console.warn("Merge loop saw disconnected cable path");
+          }
+          if (joint_i.entityA === joint_i_plus_1.entityB) {
+            continue;
+          }
+          const isRolling = path.linkTypes[i + 1] === 'rolling';
+          if (isRolling) {
+            const storedLength = path.stored[i + 1];
+            const nothing_stored = storedLength < 0.0;
+            if (nothing_stored) {
+              console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
 
-            // Calculate angle between the two segments, just for debug
-            const linkId = joint_i.entityB; // Shared rolling link
-            const radiusComp = world.getComponent(linkId, RadiusComponent);
-            const linkRadius = radiusComp ? radiusComp.radius : 0;
-            const pA1 = joint_i.attachmentPointA_world;
-            const pB1 = joint_i.attachmentPointB_world;
-            const pA2 = joint_i_plus_1.attachmentPointA_world;
-            const pB2 = joint_i_plus_1.attachmentPointB_world;
-            const vec1 = pB1.clone().subtract(pA1);
-            const vec2 = pB2.clone().subtract(pA2);
-            const len1Sq = vec1.lengthSq();
-            const len2Sq = vec2.lengthSq();
-            let angle = 0; // Default to 0 (straight) if segments are too short
-            if (len1Sq > 1e-9 && len2Sq > 1e-9) {
-                vec1.normalize();
-                vec2.normalize();
-                const dot = vec1.dot(vec2);
-                angle = Math.acos(Math.max(-1.0, Math.min(1.0, dot))); // Angle between 0 and PI
-            }
-            if (angle > 10.0 * Math.PI/180.0) {
-              console.warn("merge: angle > 10.0 degrees");
-            }
-            if (angle < 0.0) {
-              console.warn("merge: angle < 0.0");
-            }
-            const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
-            const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
-            const cwA = this._effectiveCW(path, i, true);
-            const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
-            const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
-            const cwB = path.cw[i+2];
+              // Calculate angle between the two segments, just for debug
+              const linkId = joint_i.entityB; // Shared rolling link
+              const radiusComp = world.getComponent(linkId, RadiusComponent);
+              const linkRadius = radiusComp ? radiusComp.radius : 0;
+              const pA1 = joint_i.attachmentPointA_world;
+              const pB1 = joint_i.attachmentPointB_world;
+              const pA2 = joint_i_plus_1.attachmentPointA_world;
+              const pB2 = joint_i_plus_1.attachmentPointB_world;
+              const vec1 = pB1.clone().subtract(pA1);
+              const vec2 = pB2.clone().subtract(pA2);
+              const len1Sq = vec1.lengthSq();
+              const len2Sq = vec2.lengthSq();
+              let angle = 0; // Default to 0 (straight) if segments are too short
+              if (len1Sq > 1e-9 && len2Sq > 1e-9) {
+                  vec1.normalize();
+                  vec2.normalize();
+                  const dot = vec1.dot(vec2);
+                  angle = Math.acos(Math.max(-1.0, Math.min(1.0, dot))); // Angle between 0 and PI
+              }
+              if (angle > 10.0 * Math.PI/180.0) {
+                console.warn("merge: angle > 10.0 degrees");
+              }
+              if (angle < 0.0) {
+                console.warn("merge: angle < 0.0");
+              }
+              const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
+              const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
+              const cwA = this._effectiveCW(path, i, true);
+              const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
+              const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
+              const cwB = path.cw[i+2];
 
-            const lengthToAdd = joint_i_plus_1.restLength + path.stored[i + 1];
-            joint_i.restLength += lengthToAdd;
-            joint_i.entityB = joint_i_plus_1.entityB;
-            const isRollingA = path.linkTypes[i] === 'rolling' || path.linkTypes[i] === 'hybrid';
-            const isAttachmentA = path.linkTypes[i] === 'attachment' || path.linkTypes[i] === 'hybrid-attachment';
-            const isRollingB = path.linkTypes[i+2] === 'rolling' || path.linkTypes[i+2] === 'hybrid';
-            const isAttachmentB = path.linkTypes[i+2] === 'attachment' || path.linkTypes[i+2] === 'hybrid-attachment';
-            if (isRollingA && isRollingB) {
-              const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-              const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, cwA);
-              path.stored[i] += sA;
-              joint_i.restLength -= sA;
-              const sB = signedArcLengthOnWheel(pB2, tangents.b_circle, posB, radiusB, cwB);
-              path.stored[i+2] -= sB;
-              joint_i.restLength += sB;
-              joint_i.attachmentPointA_world.set(tangents.a_circle);
-              joint_i.attachmentPointB_world.set(tangents.b_circle);
-            } else if (isRollingA && isAttachmentB) {
-              const tangents = tangentFromCircleToPoint(pB2, posA, radiusA, cwA);
-              const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, cwA);
-              path.stored[i] += sA;
-              joint_i.restLength -= sA;
-              joint_i.attachmentPointA_world.set(tangents.a_circle);
-              joint_i.attachmentPointB_world.set(pB2);
-            } else if (isAttachmentA && isRollingB) {
-              const tangents = tangentFromPointToCircle(pA1, posB, radiusB, cwB);
-              const sB = signedArcLengthOnWheel(pB2, tangents.a_circle, posB, radiusB, cwB);
-              path.stored[i+2] -= sB;
-              joint_i.restLength += sB;
-              joint_i.attachmentPointB_world.set(tangents.a_circle);
-            } else { // Two attachments might happen because hybrid-attachment points move around
-              joint_i.attachmentPointB_world.set(pB2);
-            }
+              const lengthToAdd = joint_i_plus_1.restLength + path.stored[i + 1];
+              joint_i.restLength += lengthToAdd;
+              joint_i.entityB = joint_i_plus_1.entityB;
+              const isRollingA = path.linkTypes[i] === 'rolling' || path.linkTypes[i] === 'hybrid';
+              const isAttachmentA = path.linkTypes[i] === 'attachment' || path.linkTypes[i] === 'hybrid-attachment';
+              const isRollingB = path.linkTypes[i+2] === 'rolling' || path.linkTypes[i+2] === 'hybrid';
+              const isAttachmentB = path.linkTypes[i+2] === 'attachment' || path.linkTypes[i+2] === 'hybrid-attachment';
+              if (isRollingA && isRollingB) {
+                const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+                const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, cwA);
+                path.stored[i] += sA;
+                if (path.stored[i] < 0.0) {
+                  //console.log(`Merge (isRollingA && isRollingB) set path.stored[i]=${path.stored[i]}, sA=${sA}`);
+                  reRunMerge = true;
+                }
+                joint_i.restLength -= sA;
+                const sB = signedArcLengthOnWheel(pB2, tangents.b_circle, posB, radiusB, cwB);
+                path.stored[i+2] -= sB;
+                if (path.stored[i+2] < 0.0) {
+                  //console.log(`Merge (isRollingA && isRollingB) set path.stored[i+2]=${path.stored[i+2]}, sB=${sB}.`);
+                  reRunMerge = true;
+                }
+                joint_i.restLength += sB;
+                joint_i.attachmentPointA_world.set(tangents.a_circle);
+                joint_i.attachmentPointB_world.set(tangents.b_circle);
+              } else if (isRollingA && isAttachmentB) {
+                const tangents = tangentFromCircleToPoint(pB2, posA, radiusA, cwA);
+                const sA = signedArcLengthOnWheel(pA1, tangents.a_circle, posA, radiusA, cwA);
+                path.stored[i] += sA;
+                if (path.stored[i] < 0.0) {
+                  //console.log(`Merge (isRollingA && isAttachmentB) set path.stored[i]=${path.stored[i]}`);
+                  reRunMerge = true;
+                }
+                joint_i.restLength -= sA;
+                joint_i.attachmentPointA_world.set(tangents.a_circle);
+                joint_i.attachmentPointB_world.set(pB2);
+              } else if (isAttachmentA && isRollingB) {
+                const tangents = tangentFromPointToCircle(pA1, posB, radiusB, cwB);
+                const sB = signedArcLengthOnWheel(pB2, tangents.a_circle, posB, radiusB, cwB);
+                path.stored[i+2] -= sB;
+                if (path.stored[i+2] < 0.0) {
+                  //console.log(`Merge (isAttachmentA && isRollingB) set path.stored[i+2]=${path.stored[i+2]}`);
+                  reRunMerge = true;
+                }
+                joint_i.restLength += sB;
+                joint_i.attachmentPointB_world.set(tangents.a_circle);
+              } else { // Two attachments might happen because hybrid-attachment points move around
+                joint_i.attachmentPointB_world.set(pB2);
+              }
 
-            path.jointEntities.splice(i+1, 1);
-            path.stored.splice(i+1, 1);
-            path.cw.splice(i+1, 1);
-            path.linkTypes.splice(i+1, 1);
-            joint_i_plus_1.isActive = false;
-            world.destroyEntity(jointId_i_plus_1);
+              path.jointEntities.splice(i+1, 1);
+              path.stored.splice(i+1, 1);
+              path.cw.splice(i+1, 1);
+              path.linkTypes.splice(i+1, 1);
+              joint_i_plus_1.isActive = false;
+              world.destroyEntity(jointId_i_plus_1);
+            }
           }
         }
       }
@@ -1176,9 +1200,11 @@ class CableAttachmentUpdateSystem {
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
-      if (error > 1e-9 || path.stored.some(x => x < 0)) {
-        console.log(`error path ${pathId}: ${error}`); // rest length error should be very close to zero
-        console.log(`stored: ${path.stored}`);
+      if (error > 1e-9) {
+        console.warn(`Nonzero error path ${pathId}: ${error}`);
+      }
+      if (path.stored.some(x => x < 0)) {
+        console.warn(`Negative stored: ${path.stored}`);
       }
     }
   }
