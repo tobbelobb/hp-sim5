@@ -15,34 +15,33 @@ const {
 describe('CableAttachmentUpdateSystem', () => {
   test('merges joints when positions opposite vertically, conserving rest length', () => {
     const world = new World();
-    const dt = 1.0; // dt not used for merge
     const center = new Vector2(0, 0);
     const radius = 1;
     const cw = true;
 
     // Create entities
-    const ball1 = world.createEntity();
+    const point1 = world.createEntity();
     const wheel = world.createEntity();
-    const ball2 = world.createEntity();
+    const point2 = world.createEntity();
 
     // Components: links and positions
-    world.addComponent(ball1, new CableLinkComponent());
+    world.addComponent(point1, new CableLinkComponent());
     world.addComponent(wheel, new CableLinkComponent());
-    world.addComponent(ball2, new CableLinkComponent());
+    world.addComponent(point2, new CableLinkComponent());
     world.addComponent(wheel, new PositionComponent(0, 0));
-    world.addComponent(ball1, new PositionComponent(0.9999, 2));
-    world.addComponent(ball2, new PositionComponent(1.0, -2));
+    world.addComponent(point1, new PositionComponent(0.9999, 2));
+    world.addComponent(point2, new PositionComponent(1.0, -2));
     world.addComponent(wheel, new RadiusComponent(radius));
 
     // Initial tangents on the rolling link (wheel)
     const tp1 = tangentFromPointToCircle(
-      world.getComponent(ball1, PositionComponent).pos,
+      world.getComponent(point1, PositionComponent).pos,
       center,
       radius,
       cw
     );
     const tp2 = tangentFromCircleToPoint(
-      world.getComponent(ball2, PositionComponent).pos,
+      world.getComponent(point2, PositionComponent).pos,
       center,
       radius,
       cw
@@ -53,7 +52,7 @@ describe('CableAttachmentUpdateSystem', () => {
     world.addComponent(
       joint1,
       new CableJointComponent(
-        ball1,
+        point1,
         wheel,
         tp1.a_attach.clone().subtract(tp1.a_circle).length(),
         tp1.a_attach,
@@ -65,7 +64,7 @@ describe('CableAttachmentUpdateSystem', () => {
       joint2,
       new CableJointComponent(
         wheel,
-        ball2,
+        point2,
         tp2.a_attach.clone().subtract(tp2.a_circle).length(),
         tp2.a_circle,
         tp2.a_attach
@@ -89,15 +88,14 @@ describe('CableAttachmentUpdateSystem', () => {
     expect(pathComp.stored[1]).toBeLessThan(radius);
     expect(pathComp.stored[1]).toBeGreaterThan(0.0);
 
-    // Let ball1 travel to the right
-    world.getComponent(ball1, PositionComponent).prevPos = new Vector2(1.001, 2);
-    world.getComponent(ball1, PositionComponent).pos = new Vector2(1.001, 2);
-    pathComp.stored[1] = -0.000001;
+    // Let point1 travel to the right
+    world.getComponent(point1, PositionComponent).prevPos = new Vector2(1.001, 2);
+    world.getComponent(point1, PositionComponent).pos = new Vector2(1.001, 2);
 
     // Run the attachment update to trigger merge
     const system = new CableAttachmentUpdateSystem();
     world.setResource('debugRenderPoints', {});
-    system.update(world, dt);
+    system.update(world, 1.0); // dt=1.0 not used for merge
 
     // After merge, one joint should be removed
     expect(pathComp.jointEntities).toHaveLength(1);
