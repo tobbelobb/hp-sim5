@@ -2,21 +2,16 @@
 
 Extended Position Based Dynamics (XPBD) time stepping/physics simulation framework.
 We will use substepping as our main method for reducing errors and enhancing stability.
-This will probably be part of warp.sim.
-We'll probably use warp.sim.
 
-Cable Joints, Matthias Müller et al
-We'll have to home-roll this.
+Cable Joints, Matthias Müller et al contains the logic we want to use for simulating cables.
+We have a home-rolled version of this logic, including merge/split and hybrid features, implemented in javascript.
 
-Probably home-rolled extension to Universal Scene Description (USD) language,
-to get the home-rolled Cable Joints in there.
+We might want a home-rolled extension to Universal Scene Description (USD) language,
+to get be able to express Cable Joints in some language as close to USD as possible.
+
+We ultimately want to express the and logic of the Hangprinter Roboti in USD.
 
 # Software Architecture
-
-Simulations often have many global magic numbers and tuning parameters.
-All of those are really just search problems.
-We want to avoid manually searching through parameter space.
-We want to be able to set a range for each parameter and fire off an automatic search.
 
 ## Entity Component System (ECS)
 
