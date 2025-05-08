@@ -401,7 +401,6 @@ class CableJointComponent {
     this.entityA = entityA;
     this.entityB = entityB;
     this.restLength = restLength; // dn - the dynamic maximum length
-    this.isActive = true; // For merge/split logic
     this.attachmentPointA_world = attachmentPointA_world.clone();
     this.attachmentPointB_world = attachmentPointB_world.clone();
   }
@@ -537,8 +536,7 @@ class AngularMovementSystem {
 //  - Each feature is responsible for leaving ABRS in a physically consistent state. No new line is allowed to be removed or created.
 //
 //  ## Merge Feature
-//  - The merge feature updates ABRS. It also destroys one element from `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`. Then it sets
-//    joint_i_plus_1.isActive to false and destroys the whole joint object.
+//  - The merge feature updates ABRS. It also destroys one element from `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`. Then it destroys the whole joint object.
 //
 //  ## Hybrid Features
 //  - The hybrid/hybrid-attachment features are currently both handled by one function which is called `_updateHybridLinkStates`.
@@ -664,12 +662,10 @@ class CableAttachmentUpdateSystem {
     // -- New attachment points --
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path) continue; // Ensure path exists
 
       for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
         const jointId = path.jointEntities[jointIdx];
         const joint = world.getComponent(jointId, CableJointComponent);
-        if (!joint || !joint.isActive) continue;
 
         const A = jointIdx; // Index for link/cw/stored related to entity A side
         const B = jointIdx + 1; // Index for link/cw/stored related to entity B side
@@ -714,19 +710,6 @@ class CableAttachmentUpdateSystem {
         const isHybridB = path.linkTypes[B] === 'hybrid' || path.linkTypes[B] === 'hybrid-attachment';
         const pBDiffFromTranslation = posB.clone().subtract(prevPosB)
         const pBDiffFromRotation = attachmentB_previous.clone().rotate(deltaAngleB, prevPosB, true).subtract(attachmentB_previous);
-
-        if (!posA || !posB) {
-          console.warn(`CableJoint ${jointId} missing PositionComponent on entities ${entityA} or ${entityB}. Skipping update.`);
-          continue;
-        }
-        if (rollingLinkA && (!radiusAComp || !linkAComp)) {
-          console.warn(`CableJoint ${jointId} entity ${entityA} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
-          continue;
-        }
-         if (rollingLinkB && (!radiusBComp || !linkBComp)) {
-          console.warn(`CableJoint ${jointId} entity ${entityB} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
-          continue;
-        }
 
         // --- Calculate  Attachment Points based on this frame's positions and rotations ---
         let attachmentA_current = posA
@@ -782,7 +765,7 @@ class CableAttachmentUpdateSystem {
     //// Merge joints
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 2) continue;
+      if (path.jointEntities.length < 2) continue;
       const jointsInPath = path.jointEntities;
       // A merge operation in itself might move attachment points in such a way
       // that an additional merge operation is required, or a single joint might
@@ -865,7 +848,6 @@ class CableAttachmentUpdateSystem {
             path.stored.splice(i+1, 1);
             path.cw.splice(i+1, 1);
             path.linkTypes.splice(i+1, 1);
-            joint_i_plus_1.isActive = false;
             world.destroyEntity(jointId_i_plus_1);
           }
         }
@@ -877,16 +859,12 @@ class CableAttachmentUpdateSystem {
     // Even out tension
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 2) continue;
+      if (path.jointEntities.length < 2) continue;
       for (var jointIndex = 0; jointIndex < path.jointEntities.length - 1; jointIndex++) {
         const jointId_i = path.jointEntities[jointIndex];
         const jointId_i_plus_1 = path.jointEntities[jointIndex + 1];
         const joint_i = world.getComponent(jointId_i, CableJointComponent);
         const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-        if (!joint_i.isActive || !joint_i_plus_1.isActive) {
-          console.warn("tension distributor: An inactive joint seems to be part of a path right now.");
-          continue;
-        }
         const pA = joint_i.attachmentPointA_world;
         const pB = joint_i.attachmentPointB_world;
         const pC = joint_i_plus_1.attachmentPointA_world;
@@ -912,14 +890,11 @@ class CableAttachmentUpdateSystem {
     const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 1) continue;
+      if (path.jointEntities.length < 1) continue;
       for (var jointIndex = 0; jointIndex < path.jointEntities.length; jointIndex++) {
         const jointId = path.jointEntities[jointIndex];
         const joint = world.getComponent(jointId, CableJointComponent);
-        if (!joint.isActive) {
-          console.warn("split: An inactive joint seems to be part of a path right now.");
-          continue;
-        }
+
         const pA = joint.attachmentPointA_world;
         const pB = joint.attachmentPointB_world;
         for (const splitterId of potentialSplitters) {
@@ -1078,15 +1053,12 @@ class CableAttachmentUpdateSystem {
     // Debugging/test loop 1
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 1) continue;
+      if (path.jointEntities.length < 1) continue;
       var totalCurrentDist = path.stored[0];
       var totalCurrentRestLength = path.stored[0];
       for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
         const jointId = path.jointEntities[jointIdx];
         const joint = world.getComponent(jointId, CableJointComponent);
-
-        // Ensure joint exist and is active
-        if (!joint || !joint.isActive) continue;
 
         // Calculate current lengths using the attachment points updated in Pass A
         const currentDist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
@@ -1201,14 +1173,13 @@ class PBDCableConstraintSolver {
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length === 0) continue;
+      if (path.jointEntities.length < 1) continue;
 
       // --- 1. Calculate Total Current Length and Overall Tension ---
       let totalCurrentLength = 0.0;
       for (let i = 0; i < path.jointEntities.length; i++) {
         const jointId = path.jointEntities[i];
         const joint = world.getComponent(jointId, CableJointComponent);
-        if (!joint || !joint.isActive) continue;
 
         const currentSegmentLength = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
         totalCurrentLength += currentSegmentLength;
@@ -1235,7 +1206,6 @@ class PBDCableConstraintSolver {
       const uniqueEntities = new Set();
       for (const jointId of path.jointEntities) {
           const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint || !joint.isActive) continue;
 
           const entityA = joint.entityA;
           const entityB = joint.entityB;
@@ -1275,7 +1245,6 @@ class PBDCableConstraintSolver {
         // Initialize gradient data for each unique entity in the path
         for (const jointId of path.jointEntities) {
           const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint || !joint.isActive) continue;
           for (const e of [joint.entityA, joint.entityB]) {
             if (!gradData.has(e)) {
               const massComp = world.getComponent(e, MassComponent);
@@ -1294,7 +1263,6 @@ class PBDCableConstraintSolver {
         // Accumulate gradients for each segment
         for (const jointId of path.jointEntities) {
           const joint = world.getComponent(jointId, CableJointComponent);
-          if (!joint || !joint.isActive) continue;
           const pA = joint.attachmentPointA_world;
           const pB = joint.attachmentPointB_world;
           const diff = new Vector2().subtractVectors(pB, pA);
@@ -1550,7 +1518,7 @@ class RenderSystem {
     const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 1) continue;
+      if (path.jointEntities.length < 1) continue;
       const jointEntities = path.jointEntities;
       // Scale line width by zoom using instance property
       this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
@@ -1558,7 +1526,7 @@ class RenderSystem {
         const jointComp = world.getComponent(entityId, CableJointComponent);
         const renderComp = world.getComponent(entityId, RenderableComponent);
 
-        if (!jointComp.isActive || renderComp.shape !== 'line') continue;
+        if (renderComp.shape !== 'line') continue;
 
         const pA = jointComp.attachmentPointA_world;
         const pB = jointComp.attachmentPointB_world;
@@ -1578,7 +1546,7 @@ class RenderSystem {
 
     for (const pathId of pathEntities) {
       const path   = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 1) continue;
+      if (path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
       // rolling or hybrid link types mean the cable can wrap on that entity
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
@@ -1728,7 +1696,6 @@ class RenderSystem {
     // Draw special markers for hybrid links AFTER debugPoints is defined
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-      if (!path) continue;
 
       // Draw markers for hybrid links
       for (let i = 0; i < path.linkTypes.length; i++) {
