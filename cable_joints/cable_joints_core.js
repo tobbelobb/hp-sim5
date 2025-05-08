@@ -703,12 +703,7 @@ class CableAttachmentUpdateSystem {
         const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
         const isHybridA = path.linkTypes[A] === 'hybrid' || path.linkTypes[A] === 'hybrid-attachment';
         const pADiffFromTranslation = posA.clone().subtract(prevPosA)
-        const attachmentA_previous_local = attachmentA_previous.clone().subtract(prevPosA);
-        const cosA = Math.cos(deltaAngleA);
-        const sinA = Math.sin(deltaAngleA);
-        const rotA_local = new Vector2(attachmentA_previous_local.x * cosA - attachmentA_previous_local.y * sinA,
-                                       attachmentA_previous_local.x * sinA + attachmentA_previous_local.y * cosA);
-        const pADiffFromRotation = rotA_local.clone().subtract(attachmentA_previous_local);
+        const pADiffFromRotation = attachmentA_previous.clone().rotate(deltaAngleA, prevPosA, true).subtract(attachmentA_previous);
 
         // Get components for Entity B
         const posBComp = world.getComponent(entityB, PositionComponent);
@@ -727,12 +722,7 @@ class CableAttachmentUpdateSystem {
         const rollingLinkB = path.linkTypes[B] === 'rolling' || path.linkTypes[B] === 'hybrid';
         const isHybridB = path.linkTypes[B] === 'hybrid' || path.linkTypes[B] === 'hybrid-attachment';
         const pBDiffFromTranslation = posB.clone().subtract(prevPosB)
-        const attachmentB_previous_local = attachmentB_previous.clone().subtract(prevPosB);
-        const cosB = Math.cos(deltaAngleB);
-        const sinB = Math.sin(deltaAngleB);
-        const rotB_local = new Vector2(attachmentB_previous_local.x * cosB - attachmentB_previous_local.y * sinB,
-                                       attachmentB_previous_local.x * sinB + attachmentB_previous_local.y * cosB);
-        const pBDiffFromRotation = rotB_local.clone().subtract(attachmentB_previous_local);
+        const pBDiffFromRotation = attachmentB_previous.clone().rotate(deltaAngleB, prevPosB, true).subtract(attachmentB_previous);
 
         if (!posA || !posB) {
           console.warn(`CableJoint ${jointId} missing PositionComponent on entities ${entityA} or ${entityB}. Skipping update.`);
