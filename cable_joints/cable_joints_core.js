@@ -526,6 +526,50 @@ class AngularMovementSystem {
 
 // --- System: Cable Attachment Update ---
 // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
+//  # Core Purpose: ABRS Updates
+//  - CableAttachmentUpdateSystem's main job is to update `joint.attachmentPointA_world` and `joint.attachmentPointB_world`
+//    so that they remain on top of or tangent to whatever points they're connected to.
+//  - A change of these two must balance out with an update of `joint.restLength` and `path[i].stored`
+//    so that no amount of line vanishes or is created.
+//  - Let's call those four variables the ABRS-variables or just "ABRS".
+//  - Updates to ABRS are based on new PositionComponent pos and OrientationComponent angles that were calculated
+//    during the previous time step (possibly modified by earlier systems in the current time step).
+//  - The update and book keeping of ABRS is handled by logic called `// -- New attachment points --`.
+//  - `ABRS update` would have been a better name for the core purpose logic.
+//
+//  # Features
+//  - CableAttachmentUpdateSystem also handles how joints might be merged or split do to intersections or non-intersections with objects
+//    that interact with cables (objects with CableLinkComponent). That's two features: split and merge.
+//  - And CableAttachmentUpdateSystem also handles something called "hybrid links" which is a pair of features that let cables attach to the perimeter of
+//    rolling links, effectively impementing the behaviour of a spool in a cable system. A spool has to modes of operation: "line left" which is modelled with a rolling
+//    (hybrid) link, and "no line left" which is modelled with a moving attachment point at the spool's perimeter (a "hybrid-attachment").
+//  - Switching from hybrid to hybrid-attachment is one feature, switching back is another feature.
+//  - All these four features run their logic _after_  an initial round of ABRS updates.
+//  - Each feature is responsible for leaving ABRS in a physically consistent state. No new line is allowed to be removed or created.
+//
+//  ## Merge Feature
+//  - The merge feature updates ABRS. It also destroys one element from `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`. Then it sets
+//    joint_i_plus_1.isActive to false and destroys the whole joint object.
+//
+//  ## Hybrid Features
+//  - The hybrid/hybrid-attachment features are currently both handled by one function which is called `_updateHybridLinkStates`.
+//  - The hybrid->hybrid-attachment logic updates ABRS, and `path.linkTypes[i]`.
+//  - The hybrid-attachment->hybrid logic updates ABRS, `path.linkTypes[i]`, and `path.cw[i]`.
+//
+//  ## Split Feature
+//  - The split feature updates ABRS. It also updates joint.entityB and it creates a whole new joint with `entityA`, `entityB`, `restLength`, `attachmentPointA_world`, and `attachmentPointB_world` all set.
+//    It also creates an element in `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`.
+//  - The split feature distributes the available restLength so that tension becomes equal on both sides of the new link.
+//  - There's a separate feature at the end of CableAttachmentUpdateSystem update that tries to even out tension across links.
+//    It _only_ changes pairs of `joint.restLength`. It does not change `joint.attachmentPointA_world`, `joint.attachmentPointB_world`, or `path.stored[i]`.
+//
+//  ## Tension Distribution Feature
+//  - Then at the very end of CableAttachmentUpdateSystem there's a feature that probably should reside somewhere else. It updates PositionComponent.prevPos for all links
+//    so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
+//
+//  ## Memory Feature
+//  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
+//    `path[i].linkTypes` and any other variable it touches in a way that makes sense physically and doesn't break the simulation.
 class CableAttachmentUpdateSystem {
   runInPause = false; // Physics system
 
@@ -921,7 +965,7 @@ class CableAttachmentUpdateSystem {
         const jointId = path.jointEntities[jointIndex];
         const joint = world.getComponent(jointId, CableJointComponent);
         if (!joint.isActive) {
-          console.warn("An inactive joint seems to be part of a path right now.");
+          console.warn("split: An inactive joint seems to be part of a path right now.");
           continue;
         }
         const pA = joint.attachmentPointA_world;
@@ -1014,7 +1058,7 @@ class CableAttachmentUpdateSystem {
             let newRestLength2 = 0; // For original joint (entityA -> splitter)
 
 
-            if (totalDist > 1e-9) { // Avoid division by zero if distances are tiny
+            if (totalDist > 1e-9) {
                 const availableRestLength = originalRestLength - s;
                 if (availableRestLength < 1e-9) {
                     console.warn(`Split resulted in < 1e-9 available rest length (${availableRestLength.toFixed(4)}). Aborting split.`);
@@ -1042,6 +1086,7 @@ class CableAttachmentUpdateSystem {
             path.stored[jointIndex] += sA;
             joint.restLength -= sA;
             joint.entityB = splitterId; // Original joint now connects A -> Splitter
+            path.stored.splice(jointIndex + 1, 0, s);
 
             // Update original joint (now entityA -> splitter)
             joint.restLength = newRestLength2;
@@ -1051,11 +1096,11 @@ class CableAttachmentUpdateSystem {
             world.addComponent(newJointId, new CableJointComponent(
                 splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
             world.addComponent(newJointId, new RenderableComponent('line', linecolor1));
+
+            // Some final debug logging
             const discrepancy = originalRestLength - s - newRestLength1 - newRestLength2;
             const tension1 = initialDist1/newRestLength1;
             const tension2 = initialDist2/newRestLength2;
-
-
             // console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
             // console.log(`Split stats: discrepancy=${discrepancy.toFixed(4)}, tension1=${tension1.toFixed(4)}, tension2=${tension2.toFixed(4)}`);
             if (discrepancy > 1.0) {
@@ -1067,7 +1112,6 @@ class CableAttachmentUpdateSystem {
             if (tension2 > 1.5) {
               console.warn("tension2 > 1.5");
             }
-            path.stored.splice(jointIndex + 1, 0, s);
           }
         }
       }
@@ -1083,7 +1127,7 @@ class CableAttachmentUpdateSystem {
         const joint_i = world.getComponent(jointId_i, CableJointComponent);
         const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
         if (!joint_i.isActive || !joint_i_plus_1.isActive) {
-          console.warn("An inactive joint seems to be part of a path right now.");
+          console.warn("tension distributor: An inactive joint seems to be part of a path right now.");
           continue;
         }
         const pA = joint_i.attachmentPointA_world;
@@ -1132,7 +1176,7 @@ class CableAttachmentUpdateSystem {
 
       const error = path.totalRestLength - totalCurrentRestLength;
       if (error > 1e-9 || path.stored.some(x => x < 0)) {
-        console.log(`error path ${pathId}: ${error}`); // rest length error is and should be very close to zero
+        console.log(`error path ${pathId}: ${error}`); // rest length error should be very close to zero
         console.log(`stored: ${path.stored}`);
       }
     }
