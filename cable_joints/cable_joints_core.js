@@ -579,8 +579,7 @@ class CableAttachmentUpdateSystem {
       for (const i of [0, path.linkTypes.length - 1]) {
         const epsilon = 1e-9;
         if (path.linkTypes[i] === 'hybrid') {
-          const stored = path.stored[i];
-          if (stored < 0.0) {
+          if (path.stored[i] < 0.0) {
             // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
             path.linkTypes[i] = 'hybrid-attachment';
             const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
@@ -588,15 +587,14 @@ class CableAttachmentUpdateSystem {
             const radius = world.getComponent(linkEntity, RadiusComponent).radius;
             const pos = world.getComponent(linkEntity, PositionComponent).pos;
             // We have "fed out negative line", undo that
-            joint.restLength += stored;
-            path.stored[i] = 0;
-            // Also, move the attachment point path.stored[i] along the perimeter.
-            const rotAng = -stored/radius;
+            joint.restLength += path.stored[i];
+            const rotAng = -path.stored[i]/radius;
             if (i === 0) {
               joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
             } else if (i === path.linkTypes.length - 1) {
               joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
             }
+            path.stored[i] = 0;
           }
         }
         else if (path.linkTypes[i] === 'hybrid-attachment') {
@@ -604,7 +602,6 @@ class CableAttachmentUpdateSystem {
           if (i === 0) {
             jointId = path.jointEntities[0];
             joint   = world.getComponent(jointId, CableJointComponent);
-            if (!joint) continue;
             entityId        = joint.entityA;
             attachmentPoint = joint.attachmentPointA_world;
             neighborId      = joint.entityB;
@@ -613,21 +610,15 @@ class CableAttachmentUpdateSystem {
           else if (i === path.linkTypes.length - 1) {
             jointId = path.jointEntities[path.jointEntities.length - 1];
             joint   = world.getComponent(jointId, CableJointComponent);
-            if (!joint) continue;
             entityId        = joint.entityB;
             attachmentPoint = joint.attachmentPointB_world;
             neighborId      = joint.entityA;
             neighborAttachmentPoint = joint.attachmentPointA_world;
           }
 
-          const centerComp   = world.getComponent(entityId, PositionComponent);
-          const radiusComp   = world.getComponent(entityId, RadiusComponent);
-          const neighborComp = world.getComponent(neighborId, PositionComponent);
-          if (!centerComp || !radiusComp || !neighborComp) continue;
-
-          const C = centerComp.pos;
-          const P = neighborComp.pos;
-          const R = radiusComp.radius;
+          const C = world.getComponent(entityId, PositionComponent).pos;
+          const P = world.getComponent(neighborId, PositionComponent).pos;
+          const R = world.getComponent(entityId, RadiusComponent).radius;
 
           const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
           const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;
