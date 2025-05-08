@@ -1,4 +1,5 @@
 const linecolor1 = '#FFFF00'
+
 // --- Utility: Vector2 ---
 class Vector2 {
   constructor(x = 0.0, y = 0.0) { this.x = x; this.y = y; }
@@ -161,7 +162,6 @@ function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwiseP
       angle += 2 * Math.PI;
     }
   }
-  // Arc length = radius * angle (signed)
   return radius * angle;
 }
 
@@ -346,16 +346,16 @@ class World {
 class PositionComponent {
   constructor(x = 0, y = 0) {
     this.pos = new Vector2(x, y);
-    this.prevPos = new Vector2(x, y); // Store previous position here
+    this.prevPos = new Vector2(x, y);
   }
 }
 class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
 class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
 class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
 class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
-class GravityAffectedComponent { /* Tag component */ }
-class BallTagComponent { /* Tag component */ }
-class SpoolTagComponent { /* Tag component */ }
+class GravityAffectedComponent { }
+class BallTagComponent { }
+class SpoolTagComponent { }
 class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
 class FlipperTagComponent { }
 class FlipperStateComponent {
@@ -371,16 +371,16 @@ class FlipperStateComponent {
     this.pressed = false; // Was it activated?
   }
 }
-class ObstacleTagComponent { /* Tag component */ }
+class ObstacleTagComponent { }
 class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
-class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } } // New component for error state
-class CableLinkComponent { /* Tag component to identify entities that are part of a cable path and can interact */ }
+class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
+class CableLinkComponent { /* Tag component to identify entities that can interact with cables */ }
 
 // --- Rotation Components ---
 class OrientationComponent {
     constructor(angle = 0.0) {
-        this.angle = angle; // Current angle in radians
-        this.prevAngle = angle; // Angle at the start of the frame
+        this.angle = angle; // Radians
+        this.prevAngle = angle;
     }
 }
 class AngularVelocityComponent {
@@ -407,7 +407,7 @@ class CableJointComponent {
   }
 }
 
-// Represents the entire cable path
+// Connects individual cable joints into a cable path
 class CablePathComponent {
   constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6) {
     this.totalRestLength = 0.0;
@@ -415,6 +415,7 @@ class CablePathComponent {
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
     this.cw = cw // Ordered. cw.length === linkTypes.length
     this.spring_constant = spring_constant;
+    this.compliance = 1.0/spring_constant;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
 
     for (const jointId of jointEntities) {
@@ -429,7 +430,7 @@ class CablePathComponent {
       const linkId = joint_i.entityB;
       const linkId2 = joint_i_plus_1.entityA;
       if (linkId !== linkId2) {
-        console.warn("Links don't match up. There's something wrong with this cable path.");
+        console.warn("CablePathComponent constructor: Links don't match up. There's something wrong with this cable path.");
         return;
       }
       const isRolling = linkTypes[i + 1] === 'rolling';
@@ -456,7 +457,6 @@ class CablePathComponent {
 }
 
 
-// Render-specific component (could be more complex)
 class RenderableComponent {
   constructor(shape = 'circle', color = '#888888') {
     this.shape = shape; // 'circle', 'flipper', 'border'
@@ -465,7 +465,6 @@ class RenderableComponent {
 }
 
 // --- Systems (Logic) ---
-
 // --- System: Gravity ---
 class GravitySystem {
   runInPause = false;
@@ -510,9 +509,6 @@ class AngularMovementSystem {
 
             orientation.prevAngle = orientation.angle; // Store angle before update
             orientation.angle += angularVel.angularVelocity * dt;
-
-            // Optional: Keep angle in a specific range, e.g., 0 to 2*PI
-            // orientation.angle = (orientation.angle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
         }
     }
 }
@@ -565,7 +561,7 @@ class AngularMovementSystem {
 //  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
 //    `path[i].linkTypes` and any other variable it touches in a way that makes sense physically and doesn't break the simulation.
 class CableAttachmentUpdateSystem {
-  runInPause = false; // Physics system
+  runInPause = false;
 
   _effectiveCW(path, linkIndex, travellingFromCircle) {
     if (linkIndex === 0 && travellingFromCircle)
@@ -580,25 +576,18 @@ class CableAttachmentUpdateSystem {
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
-
-      // Check first and last link in the path
       for (const i of [0, path.linkTypes.length - 1]) {
-        // Process hybrid links in rolling mode
         const epsilon = 1e-9;
         if (path.linkTypes[i] === 'hybrid') {
           const stored = path.stored[i];
-
-          // If the stored cable length becomes negative, switch to attachment behavior
           if (stored < 0.0) {
             // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
-            // Mark this hybrid link as in attachment mode
             path.linkTypes[i] = 'hybrid-attachment';
             const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
             const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
             const radius = world.getComponent(linkEntity, RadiusComponent).radius;
             const pos = world.getComponent(linkEntity, PositionComponent).pos;
-
-            // We have not "fed out negative line"
+            // We have "fed out negative line", undo that
             joint.restLength += stored;
             path.stored[i] = 0;
             // Also, move the attachment point path.stored[i] along the perimeter.
@@ -610,9 +599,7 @@ class CableAttachmentUpdateSystem {
             }
           }
         }
-        // Process hybrid links in attachment mode
         else if (path.linkTypes[i] === 'hybrid-attachment') {
-          // --- locate joint, the circle‐body, its attachment point & neighbor ---
           let jointId, joint, entityId, attachmentPoint, neighborId, neighborAttachmentPoint;
           if (i === 0) {
             jointId = path.jointEntities[0];
@@ -631,9 +618,6 @@ class CableAttachmentUpdateSystem {
             attachmentPoint = joint.attachmentPointB_world;
             neighborId      = joint.entityA;
             neighborAttachmentPoint = joint.attachmentPointA_world;
-          }
-          else {
-            continue; // we only handle first/last for hybrid‐attachment
           }
 
           const centerComp   = world.getComponent(entityId, PositionComponent);
@@ -666,19 +650,11 @@ class CableAttachmentUpdateSystem {
               joint.restLength -= crossedCW;
           }
 
-          // --- if we crossed one, switch back to rolling ---
           if (newCW !== null) {
             // console.log(`Switching joint ${jointId} to hybrid`);
             path.linkTypes[i] = 'hybrid';
             path.cw[i]        = newCW;
             attachmentPoint.set(crossingTangent);
-
-            //if (debugPoints) {
-            //  debugPoints[`hybrid_to_rolling_${pathId}_${i}`] = {
-            //    pos:   crossingTangent.clone(),
-            //    color: '#00FF00'
-            //  };
-            //}
           }
         }
       }
@@ -693,17 +669,16 @@ class CableAttachmentUpdateSystem {
     }
 
     const pathEntities = world.query([CablePathComponent]);
-    //
+
     // -- New attachment points --
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (!path) continue; // Ensure path exists
 
-      // Iterate through joints to calculate NEW tangent points and update lengths
       for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
         const jointId = path.jointEntities[jointIdx];
         const joint = world.getComponent(jointId, CableJointComponent);
-        if (!joint || !joint.isActive) continue; // Check joint validity
+        if (!joint || !joint.isActive) continue;
 
         const A = jointIdx; // Index for link/cw/stored related to entity A side
         const B = jointIdx + 1; // Index for link/cw/stored related to entity B side
@@ -711,7 +686,7 @@ class CableAttachmentUpdateSystem {
         const entityA = joint.entityA;
         const entityB = joint.entityB;
 
-        // Get components for Entity A using CURRENT positions
+        // Get components for Entity A
         const posAComp = world.getComponent(entityA, PositionComponent);
         const radiusAComp = world.getComponent(entityA, RadiusComponent);
         const linkAComp = world.getComponent(entityA, CableLinkComponent);
@@ -735,9 +710,7 @@ class CableAttachmentUpdateSystem {
                                        attachmentA_previous_local.x * sinA + attachmentA_previous_local.y * cosA);
         const pADiffFromRotation = rotA_local.clone().subtract(attachmentA_previous_local);
 
-
-
-        // Get components for Entity B using CURRENT positions
+        // Get components for Entity B
         const posBComp = world.getComponent(entityB, PositionComponent);
         const radiusBComp = world.getComponent(entityB, RadiusComponent);
         const linkBComp = world.getComponent(entityB, CableLinkComponent);
@@ -766,20 +739,20 @@ class CableAttachmentUpdateSystem {
           continue;
         }
         if (rollingLinkA && (!radiusAComp || !linkAComp)) {
-           console.warn(`CableJoint ${jointId} entity ${entityA} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
-           continue;
+          console.warn(`CableJoint ${jointId} entity ${entityA} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
+          continue;
         }
          if (rollingLinkB && (!radiusBComp || !linkBComp)) {
-           console.warn(`CableJoint ${jointId} entity ${entityB} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
-           continue;
+          console.warn(`CableJoint ${jointId} entity ${entityB} is 'rolling' but missing RadiusComponent or CableLinkComponent. Skipping update.`);
+          continue;
         }
 
         let attachmentA_current, attachmentB_current;
         let sA = 0; // Change in stored length on side A due to wrapping/unwrapping this frame
         let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
 
-        // --- Calculate Ideal Current Attachment Points based on CURRENT entity positions ---
-        let tangents = null; // Declare tangents variable outside specific cases
+        // --- Calculate Ideal Current Attachment Points based on current entity positions ---
+        let tangents = null;
         if (attachmentLinkA && rollingLinkB) {
           if (isHybridA) {
             attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
@@ -1414,11 +1387,10 @@ class PBDCableConstraintSolver {
         }
         // Compute denominator: Σ invMass * |gradPos|² + invInertia * gradAng²
         let denom = 0.0;
-        const compliance = 1.0/path.spring_constant;
         for (const data of gradData.values()) {
           denom += data.invMass * data.gradPos.lengthSq();
           denom += data.invInertia * data.gradAng * data.gradAng;
-          denom += compliance / (dt*dt);
+          denom += path.compliance / (dt*dt);
         }
         if (denom <= epsilon) {
           console.warn("PBDCableConstraintSolver: zero denominator in constraint correction");
@@ -1903,13 +1875,6 @@ class RenderSystem {
                 }
 
                 if (tangentPoint) {
-                  //this.c.beginPath();
-                  //this.c.fillStyle = '#FFFF00'; // yellow
-                  //const tangentMarkerX = this.cX(tangentPoint.x);
-                  //const tangentMarkerY = this.cY(tangentPoint.y);
-                  //this.c.arc(tangentMarkerX, tangentMarkerY, markerRadius, 0, 2 * Math.PI);
-                  //this.c.fill();
-
                   // Calculate and draw GREEN dot at the end of the stored arc
                   const center = posComp.pos;
                   const radius = radiusComp.radius;
@@ -1933,15 +1898,6 @@ class RenderSystem {
                     const endMarkerY = this.cY(endOfArcPoint.y);
                     this.c.arc(endMarkerX, endMarkerY, markerRadius, 0, 2 * Math.PI);
                     this.c.fill();
-
-                    // Show stored length next to the GREEN marker
-                    //if (debugPoints) {
-                    //  this.c.fillStyle = '#FFFFFF';
-                    //  this.c.font = '10px Arial';
-                    //  this.c.textAlign = 'left';
-                    //  this.c.textBaseline = 'middle';
-                    //  this.c.fillText(storedLength.toFixed(2), endMarkerX + 7, endMarkerY);
-                    //}
                   }
                 }
               }
