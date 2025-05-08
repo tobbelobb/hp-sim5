@@ -737,48 +737,35 @@ class CableAttachmentUpdateSystem {
           continue;
         }
 
-        let attachmentA_current, attachmentB_current;
-        let sA = 0; // Change in stored length on side A due to wrapping/unwrapping this frame
-        let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
-
+        let attachmentA_current = posA
+        let attachmentB_current = posB;
         // --- Calculate Ideal Current Attachment Points based on current entity positions ---
-        let tangents = null;
         if (attachmentLinkA && rollingLinkB) {
           if (isHybridA) {
             attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-          } else {
-            attachmentA_current = posA;
           }
-          tangents = tangentFromPointToCircle(attachmentA_current, posB, radiusB, cwB);
-          attachmentB_current = tangents.a_circle;
+          attachmentB_current = tangentFromPointToCircle(attachmentA_current, posB, radiusB, cwB).a_circle;
         } else if (rollingLinkA && attachmentLinkB) {
           if (isHybridB) {
             attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
-          } else {
-            attachmentB_current = posB;
           }
-          tangents = tangentFromCircleToPoint(attachmentB_current, posA, radiusA, cwA);
-          attachmentA_current = tangents.a_circle;
+          attachmentA_current = tangentFromCircleToPoint(attachmentB_current, posA, radiusA, cwA).a_circle;
         } else if (rollingLinkA && rollingLinkB) {
-          tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+          const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
           attachmentA_current = tangents.a_circle;
           attachmentB_current = tangents.b_circle;
         } else { // attachmentLinkA && attachmentLinkB
           if (isHybridA) {
             attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-          } else {
-            attachmentA_current = posA;
           }
           if (isHybridB) {
             attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
-          } else {
-            attachmentB_current = posB;
           }
-          sA = 0; // No arc length change for attachment or hybrid-attachment
-          sB = 0;
         }
 
         // --- Calculate Wrapping/Unwrapping Arc Lengths (sA, sB) ---
+        let sA = 0; // Change in stored length on side A due to wrapping/unwrapping this frame
+        let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
         if (rollingLinkA) {
             sA = signedArcLengthOnWheel(attachmentA_previous.clone().subtract(prevPosA), attachmentA_current.clone().subtract(posA), new Vector2(0.0, 0.0), radiusA, cwA);
             if (isHybridA) {
@@ -791,20 +778,14 @@ class CableAttachmentUpdateSystem {
               sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
             }
         }
-        // --- End Wrapping/Unwrapping Calculation ---
-
-        // --- Update stored lengths and rest length based on calculated sA and sB ---
-        // sA > 0 means cable wrapped onto A (in preferred direction) -> stored[A] increases, restLength decreases
         path.stored[A] += sA;
         joint.restLength -= sA;
         path.stored[B] -= sB;
         joint.restLength += sB;
 
-        // --- Update the joint's stored attachment points for the NEXT frame's comparison ---
         joint.attachmentPointA_world.set(attachmentA_current);
         joint.attachmentPointB_world.set(attachmentB_current);
-
-      } // End loop through joints
+      }
     } // End New Attachment Points
 
     //// Merge joints
