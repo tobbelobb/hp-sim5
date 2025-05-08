@@ -54,7 +54,7 @@ function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
     const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0);
     return {
       a_attach: p_attach.clone(),
-      a_circle: p_circle.clone().add(dir, r_circle)
+      a_circle: p_circle.clone().subtract(dir, r_circle)
     };
   }
 
