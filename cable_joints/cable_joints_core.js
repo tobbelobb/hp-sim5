@@ -395,13 +395,6 @@ class MomentOfInertiaComponent {
     }
 }
 
-// --- new component: tag an entity as being grabbed by the mouse ---
-class GrabComponent {
-  constructor(offsetX = 0.0, offsetY = 0.0) {
-    this.offset = new Vector2(offsetX, offsetY);
-  }
-}
-
 // Represents a single segment constraint between two entities
 class CableJointComponent {
   constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -2226,7 +2219,6 @@ if (typeof module !== 'undefined' && module.exports) {
     PBDBallBallCollisions,
     CableAttachmentUpdateSystem,
     InputReplaySystem,
-    GrabComponent
   };
 }
 
