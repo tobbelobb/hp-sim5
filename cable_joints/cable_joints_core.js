@@ -881,7 +881,7 @@ class CableAttachmentUpdateSystem {
             const storedLength = path.stored[i + 1];
             const nothing_stored = storedLength < 0.0;
             if (nothing_stored) {
-              console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
+              // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${storedLength.toFixed(4)})`);
 
               // Calculate angle between the two segments, just for debug
               const linkId = joint_i.entityB; // Shared rolling link
