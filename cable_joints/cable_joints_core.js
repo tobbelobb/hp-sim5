@@ -566,6 +566,7 @@ class AngularMovementSystem {
 //  ## Tension Distribution Feature
 //  - Then at the very end of CableAttachmentUpdateSystem there's a feature that probably should reside somewhere else. It updates PositionComponent.prevPos for all links
 //    so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
+//  - This logic is called "// Even out tension" in the code and currently has no separate function.
 //
 //  ## Memory Feature
 //  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
@@ -952,8 +953,40 @@ class CableAttachmentUpdateSystem {
       }
     }
 
-
     this._updateHybridLinkStates(world);
+
+    // Even out tension
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || path.jointEntities.length < 2) continue;
+      for (var jointIndex = 0; jointIndex < path.jointEntities.length - 1; jointIndex++) {
+        const jointId_i = path.jointEntities[jointIndex];
+        const jointId_i_plus_1 = path.jointEntities[jointIndex + 1];
+        const joint_i = world.getComponent(jointId_i, CableJointComponent);
+        const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
+        if (!joint_i.isActive || !joint_i_plus_1.isActive) {
+          console.warn("tension distributor: An inactive joint seems to be part of a path right now.");
+          continue;
+        }
+        const pA = joint_i.attachmentPointA_world;
+        const pB = joint_i.attachmentPointB_world;
+        const pC = joint_i_plus_1.attachmentPointA_world;
+        const pD = joint_i_plus_1.attachmentPointB_world;
+        const l_i = joint_i.restLength;
+        const l_i_plus_1 = joint_i_plus_1.restLength;
+        const availableRestLength = l_i + l_i_plus_1;
+        const d_i = new Vector2().subtractVectors(pA, pB).length();
+        const d_i_plus_1 = new Vector2().subtractVectors(pC, pD).length();
+        const totalDist = d_i + d_i_plus_1;
+        const tension_i = d_i/joint_i.restLength;
+        const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
+        joint_i.restLength = availableRestLength * d_i/totalDist;
+        joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
+        //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
+      }
+    }
+
+
 
     // Split joints
     // Entities that can cause a split
@@ -1116,38 +1149,6 @@ class CableAttachmentUpdateSystem {
         }
       }
     }
-
-    // Even out tension
-    for (const pathId of pathEntities) {
-      const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || path.jointEntities.length < 2) continue;
-      for (var jointIndex = 0; jointIndex < path.jointEntities.length - 1; jointIndex++) {
-        const jointId_i = path.jointEntities[jointIndex];
-        const jointId_i_plus_1 = path.jointEntities[jointIndex + 1];
-        const joint_i = world.getComponent(jointId_i, CableJointComponent);
-        const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
-        if (!joint_i.isActive || !joint_i_plus_1.isActive) {
-          console.warn("tension distributor: An inactive joint seems to be part of a path right now.");
-          continue;
-        }
-        const pA = joint_i.attachmentPointA_world;
-        const pB = joint_i.attachmentPointB_world;
-        const pC = joint_i_plus_1.attachmentPointA_world;
-        const pD = joint_i_plus_1.attachmentPointB_world;
-        const l_i = joint_i.restLength;
-        const l_i_plus_1 = joint_i_plus_1.restLength;
-        const availableRestLength = l_i + l_i_plus_1;
-        const d_i = new Vector2().subtractVectors(pA, pB).length();
-        const d_i_plus_1 = new Vector2().subtractVectors(pC, pD).length();
-        const totalDist = d_i + d_i_plus_1;
-        const tension_i = d_i/joint_i.restLength;
-        const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
-        joint_i.restLength = availableRestLength * d_i/totalDist;
-        joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
-        //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
-      }
-    }
-
 
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const linkId of linkEntities) {
