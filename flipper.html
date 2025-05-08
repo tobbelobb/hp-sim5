@@ -909,7 +909,6 @@ canvas {
              world.registerSystem(new InputReplaySystem(
                [],
              inputSystemInstance));
-             world.registerSystem(new InputSystem(canvas));
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
              world.registerSystem(new GravitySystem());      // Applies gravity acceleration
              world.registerSystem(new MovementSystem());     // Updates position based on velocity
