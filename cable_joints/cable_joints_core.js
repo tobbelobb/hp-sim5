@@ -883,16 +883,13 @@ class CableAttachmentUpdateSystem {
       }
     }
 
-
-
     // Split joints
-    // Entities that can cause a split
     const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
-      for (var jointIndex = 0; jointIndex < path.jointEntities.length; jointIndex++) {
-        const jointId = path.jointEntities[jointIndex];
+      for (let i = 0; i < path.jointEntities.length; i++) {
+        const jointId = path.jointEntities[i];
         const joint = world.getComponent(jointId, CableJointComponent);
 
         const pA = joint.attachmentPointA_world;
@@ -902,64 +899,73 @@ class CableAttachmentUpdateSystem {
             continue;
           }
           const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
-          const prevPosSplitter = world.getComponent(splitterId, PositionComponent).prevPos;
           const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
           if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
             // console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
+            const entityA = joint.entityA;
+            const entityB = joint.entityB;
             const newJointId = world.createEntity();
 
-            const cw = rightOfLine(prevPosSplitter, pA, pB);
-            const linkTypeB = path.linkTypes[jointIndex + 1];
-            const entityB = joint.entityB;
-            const entityA = joint.entityA;
-            var initialPoints;
-            var initialDist1;
-            var attachmentPointAForNewJoint;
-            var attachmentPointBForNewJoint;
-            let sB = 0.0;
+            // Get components for Entity A
+            const posA = world.getComponent(entityA, PositionComponent).pos;
+            const linkTypeA = path.linkTypes[i];
+            const isRollingA = linkTypeA === 'rolling' || linkTypeA === 'hybrid';
+            const isAttachmentA = linkTypeA === 'attachment' || linkTypeA === 'hybrid-attachment';
+            const radiusA = world.getComponent(entityA, RadiusComponent).radius;
+            const cwA = this._effectiveCW(path, i, true);
+
+            // Get components for Entity B
             const posB = world.getComponent(entityB, PositionComponent).pos;
-            if (linkTypeB === 'rolling' || linkTypeB === 'hybrid') {
-              const radiusB = world.getComponent(entityB, RadiusComponent).radius;
-              const cwB = path.cw[jointIndex + 1];
-              initialPoints = tangentFromCircleToCircle(posSplitter, radiusSplitter, cw, posB, radiusB, cwB);
-              initialDist1 = initialPoints.a_circle.clone().subtract(initialPoints.b_circle).length();
-              attachmentPointAForNewJoint = initialPoints.a_circle;
-              attachmentPointBForNewJoint = initialPoints.b_circle;
-              sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
-            } else if (linkTypeB === 'attachment' || linkTypeB === 'hybrid-attachment') {
-              initialPoints = tangentFromCircleToPoint(pB, posSplitter, radiusSplitter, cw);
-              initialDist1 = initialPoints.a_attach.clone().subtract(initialPoints.a_circle).length();
-              attachmentPointAForNewJoint = initialPoints.a_circle;
-              attachmentPointBForNewJoint = initialPoints.a_attach;
+            const linkTypeB = path.linkTypes[i + 1];
+            const isRollingB = linkTypeB === 'rolling' || linkTypeB === 'hybrid';
+            const isAttachmentB = linkTypeB === 'attachment' || linkTypeB === 'hybrid-attachment';
+            const radiusB = world.getComponent(entityB, RadiusComponent).radius;
+            const cwB = path.cw[i + 1];
+
+            // Calculate components for new joint
+            const prevPosSplitter = world.getComponent(splitterId, PositionComponent).prevPos;
+            const cw = rightOfLine(prevPosSplitter, pA, pB);
+
+            let newAttachmentPointAForJoint = null;
+            let newAttachmentPointBForJoint = null;
+            if (isRollingA) {
+              // Rolling -> Splitter
+              const tangentAS = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
+              newAttachmentPointAForJoint = tangentAS.a_circle;
+              newAttachmentPointBForJoint = tangentAS.b_circle;
+            } else if (isAttachmentA) {
+              // Attachment -> Splitter
+              const tangentAS = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
+              newAttachmentPointAForJoint = tangentAS.a_attach;
+              newAttachmentPointBForJoint = tangentAS.a_circle;
+            } else {
+              console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
+              continue;
+            }
+
+            let attachmentPointAForNewJoint = null;
+            let attachmentPointBForNewJoint = null;
+            if (isRollingB) {
+              // Splitter -> Rolling
+              const tangentSB = tangentFromCircleToCircle(posSplitter, radiusSplitter, cw, posB, radiusB, cwB);
+              attachmentPointAForNewJoint = tangentSB.a_circle;
+              attachmentPointBForNewJoint = tangentSB.b_circle;
+            } else if (isAttachmentB) {
+              // Splitter -> Attachment
+              const tangentSB = tangentFromCircleToPoint(pB, posSplitter, radiusSplitter, cw);
+              attachmentPointAForNewJoint = tangentSB.a_circle;
+              attachmentPointBForNewJoint = tangentSB.a_attach;
             } else {
               console.warn(`Splitting cable joint attached to ${linkTypeB} is not supported.`);
             }
 
-            const linkTypeA = path.linkTypes[jointIndex];
-            const posA = world.getComponent(entityA, PositionComponent).pos;
-            var newAttachmentPointBForJoint;
-            var newAttachmentPointAForJoint;
-            var initialPoints2;
-            var initialDist2;
             let sA = 0.0;
-            if (linkTypeA === 'rolling'  || linkTypeA === 'hybrid') {
-                // --- Case: Rolling -> Splitter ---
-                const radiusA = world.getComponent(entityA, RadiusComponent).radius;
-                const cwA = this._effectiveCW(path, jointIndex, true);
-                initialPoints2 = tangentFromCircleToCircle(posA, radiusA, cwA, posSplitter, radiusSplitter, cw);
-                initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-                newAttachmentPointAForJoint = initialPoints2.a_circle;
-                newAttachmentPointBForJoint = initialPoints2.b_circle;
-                sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
-            } else if (linkTypeA === 'attachment' || linkTypeA === 'hybrid-attachment') {
-                // --- Case: Attachment -> Splitter ---
-                initialPoints2 = tangentFromPointToCircle(pA, posSplitter, radiusSplitter, cw);
-                initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.a_attach).length();
-                newAttachmentPointAForJoint = initialPoints2.a_attach;
-                newAttachmentPointBForJoint = initialPoints2.a_circle;
-            } else {
-                console.warn(`Splitting cable joint coming from link type ${linkTypeA} is not supported.`);
-                continue;
+            let sB = 0.0;
+            if (isRollingA) {
+              sA = signedArcLengthOnWheel(pA, newAttachmentPointAForJoint, posA, radiusA, cwA);
+            }
+            if (isRollingB) {
+              sB = signedArcLengthOnWheel(pB, attachmentPointBForNewJoint, posB, radiusB, cwB);
             }
 
             // Calculate stored length 's' on the new splitter link
@@ -970,6 +976,14 @@ class CableAttachmentUpdateSystem {
                 radiusSplitter,
                 cw
             );
+            if (s <= 0.0) {
+                console.warn(`Nothing wraps around splitter. Aborting split.`);
+                continue;
+            }
+            if ((s + 1e-9) >= 2.0*Math.PI * radiusSplitter) {
+                console.warn(`Split resulted a full wrap around splitter. Aborting split.`);
+                continue;
+            }
 
             // The line is slightly stretched due to the intersection with the new link (the splitterId Entity).
             // Distributes the discrepancy (length_error) to both sides of the new link such that tension remains constant on both sides of the new link.
@@ -979,65 +993,58 @@ class CableAttachmentUpdateSystem {
             // "tension (the current length divided by the rest length)"
             // Distribute original rest length (minus new stored length s)
             // between the two new segments to maintain equal tension.
+            const dAS = newAttachmentPointAForJoint.clone().subtract(newAttachmentPointBForJoint).length();
+            const dSB = attachmentPointAForNewJoint.clone().subtract(attachmentPointBForNewJoint).length();
             const originalRestLength = joint.restLength + sB - sA; // Store before modifying
-            const totalDist = initialDist1 + initialDist2;
-            let newRestLength1 = 0; // For new joint (splitter -> entityB)
-            let newRestLength2 = 0; // For original joint (entityA -> splitter)
+            const totalDist = dAS + dSB;
 
-
+            let newRestLengthAS = 0; // For original joint (entityA -> splitter)
+            let newRestLengthSB = 0; // For new joint (splitter -> entityB)
             if (totalDist > 1e-9) {
                 const availableRestLength = originalRestLength - s;
                 if (availableRestLength < 1e-9) {
                     console.warn(`Split resulted in < 1e-9 available rest length (${availableRestLength.toFixed(4)}). Aborting split.`);
                     continue;
                 }
-                if ( (s + 1e-9) >= 2.0*Math.PI * radiusSplitter) {
-                    console.warn(`Split resulted a full wrap around splitter. Aborting split.`);
-                    continue;
-                }
-                if ( s <= 0.0) {
-                    console.warn(`Nothing wraps around splitter. Aborting split.`);
-                    continue;
-                }
-                newRestLength1 = availableRestLength * initialDist1 / totalDist;
-                newRestLength2 = availableRestLength * initialDist2 / totalDist;
+                newRestLengthAS = availableRestLength * dAS / totalDist;
+                newRestLengthSB = availableRestLength * dSB / totalDist;
             } else {
                 console.warn("Split occurred with near-zero distance between new segments:", totalDist);
             }
-            path.stored[jointIndex + 1] -= sB;
+            path.stored[i + 1] -= sB;
             joint.restLength += sB;
-            path.jointEntities.splice(jointIndex + 1, 0, newJointId);
-            path.cw.splice(jointIndex + 1, 0, cw);
-            path.linkTypes.splice(jointIndex + 1, 0, 'rolling');
+            path.jointEntities.splice(i + 1, 0, newJointId);
+            path.cw.splice(i + 1, 0, cw);
+            path.linkTypes.splice(i + 1, 0, 'rolling');
             joint.attachmentPointA_world.set(newAttachmentPointAForJoint);
-            path.stored[jointIndex] += sA;
+            path.stored[i] += sA;
             joint.restLength -= sA;
             joint.entityB = splitterId; // Original joint now connects A -> Splitter
-            path.stored.splice(jointIndex + 1, 0, s);
+            path.stored.splice(i + 1, 0, s);
 
             // Update original joint (now entityA -> splitter)
-            joint.restLength = newRestLength2;
+            joint.restLength = newRestLengthAS;
             joint.attachmentPointB_world.set(newAttachmentPointBForJoint); // Update endpoint
 
             // Create the new joint (splitter -> entityB)
             world.addComponent(newJointId, new CableJointComponent(
-                splitterId, entityB, newRestLength1, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
+                splitterId, entityB, newRestLengthSB, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
             world.addComponent(newJointId, new RenderableComponent('line', linecolor1));
 
             // Some final debug logging
-            const discrepancy = originalRestLength - s - newRestLength1 - newRestLength2;
-            const tension1 = initialDist1/newRestLength1;
-            const tension2 = initialDist2/newRestLength2;
-            // console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L1=${newRestLength1.toFixed(4)} (d1=${initialDist1.toFixed(4)}), L2=${newRestLength2.toFixed(4)} (d2=${initialDist2.toFixed(4)})`);
-            // console.log(`Split stats: discrepancy=${discrepancy.toFixed(4)}, tension1=${tension1.toFixed(4)}, tension2=${tension2.toFixed(4)}`);
+            const discrepancy = originalRestLength - s - newRestLengthAS - newRestLengthSB;
+            const tensionAS = dAS/newRestLengthAS;
+            const tensionSB = dSB/newRestLengthSB;
+            // console.log(`Split: L_orig=${originalRestLength.toFixed(4)}, s=${s.toFixed(4)} -> L_AS=${newRestLengthAS.toFixed(4)} (d_AS=${dAS.toFixed(4)}), L_SB=${newRestLengthSB.toFixed(4)} (d_SB=${initialDistSB.toFixed(4)})`);
+            // console.log(`Split stats: discrepancy=${discrepancy.toFixed(4)}, tensionAS=${tensionAS.toFixed(4)}, tensionSB=${tensionSB.toFixed(4)}`);
             if (discrepancy > 1.0) {
               console.warn("discrepancy > 1.0");
             }
-            if (tension1 > 1.5) {
-              console.warn("tension1 > 1.5");
+            if (tensionAS > 1.5) {
+              console.warn("tensionAS > 1.5");
             }
-            if (tension2 > 1.5) {
-              console.warn("tension2 > 1.5");
+            if (tensionSB > 1.5) {
+              console.warn("tensionSB > 1.5");
             }
           }
         }
@@ -1054,16 +1061,16 @@ class CableAttachmentUpdateSystem {
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
-      var totalCurrentDist = path.stored[0];
-      var totalCurrentRestLength = path.stored[0];
-      for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
-        const jointId = path.jointEntities[jointIdx];
+      let totalCurrentDist = path.stored[0];
+      let totalCurrentRestLength = path.stored[0];
+      for (let i = 0; i < path.jointEntities.length; i++) {
+        const jointId = path.jointEntities[i];
         const joint = world.getComponent(jointId, CableJointComponent);
 
         // Calculate current lengths using the attachment points updated in Pass A
         const currentDist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
-        totalCurrentDist += currentDist + path.stored[jointIdx + 1];
-        totalCurrentRestLength += joint.restLength + path.stored[jointIdx + 1];
+        totalCurrentDist += currentDist + path.stored[i + 1];
+        totalCurrentRestLength += joint.restLength + path.stored[i + 1];
       }
 
       const error = path.totalRestLength - totalCurrentRestLength;
