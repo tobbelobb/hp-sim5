@@ -52,15 +52,9 @@ That is Omniverse Kit, Isaac Sim via extensions, and Isaac Lab for Reinforcement
 We will not accept a >10s slow read-evaluate-print cycle, just to get Omniverse during development though.
 Find something more light weight initially.
 
-
-# Tools
-
-Google Code looks like exactly what I want. If it's available?
-
 # Tasks
-
-Copy bead-on-a-wire example.
-Make it ECS.
-Make it Python.
-Implement Cable Joints.
-Spilt into separate feature-focused files/directories (Vertical slice architecture).
+ - Refactor to just look much nicer and be more testable
+ - Test much more
+ - Build a working Slideprinter
+ - Translate into Python
+ - Translate into Python with Warp
