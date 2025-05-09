@@ -346,8 +346,6 @@ class World {
 class PositionComponent {
   constructor(x = 0, y = 0) {
     this.pos = new Vector2(x, y);
-    this.prevPos = new Vector2(x, y);
-    this.pprevPos = new Vector2(x, y);
   }
 }
 class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
@@ -375,13 +373,14 @@ class FlipperStateComponent {
 class ObstacleTagComponent { }
 class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
-class CableLinkComponent { /* Tag component to identify entities that can interact with cables */ }
+class CableLinkComponent { constructor(x = 0, y = 0) { this.prevCableAttachmentTimePos = new Vector2(x, y); } }
+
 
 // --- Rotation Components ---
 class OrientationComponent {
     constructor(angle = 0.0) {
         this.angle = angle; // Radians
-        this.prevAngle = angle;
+        this.prevFinalAngle = angle;
     }
 }
 class AngularVelocityComponent {
@@ -510,19 +509,15 @@ class AngularMovementSystem {
     }
 }
 
-class PrevStateSystem {
-  runInPause = false;           // snapshot only while simulating
-  update(world /*, dt */) {
-    // copy current pose → “previous” pose for coming step
-    for (const id of world.query([PositionComponent])) {
-      const pc = world.getComponent(id, PositionComponent);
-      pc.pprevPos.set(pc.pos);
+class PrevFinalAngleSystem {
+    runInPause = false;
+    update(world, dt) {
+        const entities = world.query([OrientationComponent, AngularVelocityComponent]);
+        for (const entityId of entities) {
+            const orientation = world.getComponent(entityId, OrientationComponent);
+            orientation.prevFinalAngle = orientation.angle;
+        }
     }
-    for (const id of world.query([OrientationComponent])) {
-      const oc = world.getComponent(id, OrientationComponent);
-      oc.prevAngle = oc.angle;
-    }
-  }
 }
 
 // --- System: Cable Attachment Update ---
@@ -564,11 +559,15 @@ class PrevStateSystem {
 //    It _only_ changes pairs of `joint.restLength`. It does not change `joint.attachmentPointA_world`, `joint.attachmentPointB_world`, or `path.stored[i]`.
 //
 //  ## Tension Distribution Feature
-//  - Then at the very end of CableAttachmentUpdateSystem there's a feature that probably should reside somewhere else. It updates PositionComponent.prevPos for all links
-//    so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
 //  - This logic is called "// Even out tension" in the code and currently has no separate function.
 //
 //  ## Memory Feature
+//  - At the very end of CableAttachmentUpdateSystem there's a feature that updates CableLinkComponent.prevCableAttachmentTimePos for all links with a PositionComponent
+//    so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
+//    There's a subtle point to why it stores this timestep's intermediate position but not the corresponding intermediate angle. It actually uses the finalized angle for
+//    each time step, not the intermediate one. This is because translation affects tangent points, which affects ABRS variables in one way that we need to control fully.
+//    Pure rotations don't affect tangent points so they only affect "RS" (restLength and stored values), not "AB" (attachmentPointA/B_world).
+//    Therefore we can account for rotations by simply calculating arc length diffs, who affect RS, purely based on the link's shape and (full-time-step version of) orientation delta.
 //  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
 //    `path[i].linkTypes` and any other variable it touches in a way that makes sense physically and doesn't break the simulation.
 class CableAttachmentUpdateSystem {
@@ -693,10 +692,10 @@ class CableAttachmentUpdateSystem {
         const orientationAComp = world.getComponent(entityA, OrientationComponent);
         const posA = posAComp?.pos;
         const attachmentA_previous = joint.attachmentPointA_world;
-        const prevPosA = posAComp?.prevPos;
+        const prevPosA = linkAComp?.prevCableAttachmentTimePos;
         const radiusA = radiusAComp?.radius;
         const angleA = orientationAComp?.angle ?? 0.0;
-        const prevAngleA = orientationAComp?.prevAngle ?? 0.0;
+        const prevAngleA = orientationAComp?.prevFinalAngle ?? 0.0;
         const deltaAngleA = angleA - prevAngleA;
         const cwA = this._effectiveCW(path, A,  true);
         const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
@@ -712,10 +711,10 @@ class CableAttachmentUpdateSystem {
         const orientationBComp = world.getComponent(entityB, OrientationComponent);
         const posB = posBComp?.pos;
         const attachmentB_previous = joint.attachmentPointB_world;
-        const prevPosB = posBComp?.prevPos;
+        const prevPosB = linkBComp?.prevCableAttachmentTimePos;
         const radiusB = radiusBComp?.radius;
         const angleB = orientationBComp?.angle ?? 0.0;
-        const prevAngleB = orientationBComp?.prevAngle ?? 0.0;
+        const prevAngleB = orientationBComp?.prevFinalAngle ?? 0.0;
         const deltaAngleB = angleB - prevAngleB;
         const cwB = this._effectiveCW(path, B,  false);
         const attachmentLinkB = path.linkTypes[B] === 'attachment' || path.linkTypes[B] === 'hybrid-attachment';
@@ -936,7 +935,7 @@ class CableAttachmentUpdateSystem {
             const cwB = path.cw[i + 1];
 
             // Calculate components for new joint
-            const prevPosSplitter = world.getComponent(splitterId, PositionComponent).prevPos;
+            const prevPosSplitter = world.getComponent(splitterId, CableLinkComponent).prevCableAttachmentTimePos;
             const cw = rightOfLine(prevPosSplitter, pA, pB);
 
             let newAttachmentPointAForJoint = null;
@@ -1067,7 +1066,8 @@ class CableAttachmentUpdateSystem {
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const linkId of linkEntities) {
       const posComp = world.getComponent(linkId, PositionComponent)
-      posComp.prevPos.set(posComp.pos);
+      const linkComp = world.getComponent(linkId, CableLinkComponent)
+      linkComp.prevCableAttachmentTimePos.set(posComp.pos);
     }
 
     // Debugging/test loop 1

@@ -302,17 +302,13 @@ canvas {
         world.addComponent(anchorA, new RenderableComponent('circle', '#aaaaaa'));
 
 
-        // --- Cable Setup ---
-        // Connect: anchorA -> spoolA
-
-        world.addComponent(spoolA, new CableLinkComponent());
-        world.addComponent(anchorA, new CableLinkComponent());
-
         // --- Calculate Initial Cable State ---
         // Need to compute initial attachment points and rest lengths
         // Get relevant components
         const pos_spoolA = world.getComponent(spoolA, PositionComponent).pos;
         const pos_anchorA = world.getComponent(anchorA, PositionComponent).pos;
+        world.addComponent(spoolA, new CableLinkComponent(pos_spoolA.x, pos_spoolA.y));
+        world.addComponent(anchorA, new CableLinkComponent(pos_anchorA.x, pos_anchorA.y));
 
         const jointA = world.createEntity();
         const tangA = tangentFromPointToCircle(pos_anchorA, pos_spoolA, spoolRadius, true);
@@ -356,17 +352,13 @@ canvas {
         world.addComponent(anchorB, new RenderableComponent('circle', '#FFFFF'));
 
 
-        // --- Cable Setup ---
-        // Connect: spoolB -> anchorB
-
-        world.addComponent(spoolB, new CableLinkComponent());
-        world.addComponent(anchorB, new CableLinkComponent());
-
         // --- Calculate Initial Cable State ---
         // Need to compute initial attachment points and rest lengths
         // Get relevant components
         const pos_spoolB = world.getComponent(spoolB, PositionComponent).pos;
         const pos_anchorB = world.getComponent(anchorB, PositionComponent).pos;
+        world.addComponent(spoolB, new CableLinkComponent(pos_spoolB.x, pos_spoolB.y));
+        world.addComponent(anchorB, new CableLinkComponent(pos_anchorB.x, pos_anchorB.y));
 
         const jointB = world.createEntity();
         const tangB = tangentFromPointToCircle(pos_anchorB, pos_spoolB, spoolRadius, false);
@@ -390,6 +382,7 @@ canvas {
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
+          world.registerSystem(new PrevFinalAngleSystem());
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
           inputSys.scaleMultiplier = 1.5;

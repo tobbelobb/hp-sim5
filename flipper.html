@@ -122,6 +122,27 @@ canvas {
     }
 
 
+    // Register FlipperTipLinkSystem BEFORE CableAttachmentUpdateSystem
+    class FlipperTipLinkSystem {
+      runInPause = false;
+      update(world, dt) {
+        // for each tip‐entity, compute its current position
+        for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
+          const tipComp   = world.getComponent(tipId, FlipperTipComponent);
+          const flipId    = tipComp.flipperEntityId;
+          const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
+          const state     = world.getComponent(flipId, FlipperStateComponent);
+          // same math you use elsewhere to find the tip
+          const angle = state.restAngle + state.sign * state.rotation;
+          const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
+          const tipPos = pivotPos.clone().add(dir, state.length);
+          // write it into the tip entity’s PositionComponent
+          world.getComponent(tipId, PositionComponent).pos.set(tipPos);
+        }
+      }
+    }
+
+
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
          runInPause = true; // Input should work even when paused to unpause/interact
@@ -243,7 +264,7 @@ canvas {
                // 1) create a pointer‐link entity at the mouse
                const ptrE = world.createEntity();
                world.addComponent(ptrE, new PositionComponent(simX, simY));
-               world.addComponent(ptrE, new CableLinkComponent());
+               world.addComponent(ptrE, new CableLinkComponent(simX, simY));
 
                // 2) create a joint between ball and pointer
                //    restLength = 0 so it's a pure spring
@@ -803,13 +824,13 @@ canvas {
         world.addComponent(flipper1, new RestitutionComponent(flipRestitution));
         world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
         // make the pivot (and tip) act as a cable‐link
-        world.addComponent(flipper1, new CableLinkComponent());
+        world.addComponent(flipper1, new CableLinkComponent(0.26, 0.22));
         // Flipper 1 tip entity
         const flipper1Tip = world.createEntity();
         world.addComponent(flipper1Tip, new PositionComponent());
         world.addComponent(flipper1Tip, new RadiusComponent(flipRadius));
-        world.addComponent(flipper1Tip, new CableLinkComponent());
         world.addComponent(flipper1Tip, new FlipperTipComponent(flipper1));
+        world.addComponent(flipper1Tip, new CableLinkComponent());
 
         const flipper2 = world.createEntity();
         world.addComponent(flipper2, new FlipperTagComponent());
@@ -835,14 +856,6 @@ canvas {
         // --- Cable Setup ---
         // Connect: ball2 -> obs4 -> obs3 -> ball1
 
-        // Add necessary components to obstacles (assuming they act as wheels)
-        world.addComponent(obs4, new CableLinkComponent());
-        world.addComponent(obs3, new CableLinkComponent());
-        //world.addComponent(obs2, new CableLinkComponent());
-        //world.addComponent(obs1, new CableLinkComponent());
-        world.addComponent(ball1, new CableLinkComponent());
-        world.addComponent(ball2, new CableLinkComponent());
-
         // --- Calculate Initial Cable State ---
         // Need to compute initial attachment points and rest lengths
         // Get relevant components
@@ -852,6 +865,14 @@ canvas {
         const radius_obs3 = world.getComponent(obs3, RadiusComponent).radius;
         const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
         const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
+
+        // Add necessary components to obstacles (assuming they act as wheels)
+        world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
+        world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
+        //world.addComponent(obs2, new CableLinkComponent());
+        //world.addComponent(obs1, new CableLinkComponent());
+        world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
+        world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
 
         // Calculate initial points for joint1 (ball2 perimeter attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
@@ -905,7 +926,7 @@ canvas {
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
              const inputSystemInstance = new InputSystem(canvas);
-             world.registerSystem(new PrevStateSystem());
+             world.registerSystem(new PrevFinalAngleSystem());
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(
                [],
@@ -917,26 +938,6 @@ canvas {
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
-
-             // Register FlipperTipLinkSystem BEFORE CableAttachmentUpdateSystem
-             class FlipperTipLinkSystem {
-               runInPause = false;
-               update(world, dt) {
-                 // for each tip‐entity, compute its current position
-                 for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
-                   const tipComp   = world.getComponent(tipId, FlipperTipComponent);
-                   const flipId    = tipComp.flipperEntityId;
-                   const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
-                   const state     = world.getComponent(flipId, FlipperStateComponent);
-                   // same math you use elsewhere to find the tip
-                   const angle = state.restAngle + state.sign * state.rotation;
-                   const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
-                   const tipPos = pivotPos.clone().add(dir, state.length);
-                   // write it into the tip entity’s PositionComponent
-                   world.getComponent(tipId, PositionComponent).pos.set(tipPos);
-                 }
-               }
-             }
              world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new PBDBallBorderCollisions());
              world.registerSystem(new CableAttachmentUpdateSystem());
