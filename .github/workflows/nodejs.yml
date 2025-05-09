@@ -7,11 +7,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [23.x]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm test
+          cache: 'npm' # Cache npm dependencies
+      # Puppeteer specific: Install dependencies for headless Chrome
+      # This step might be necessary if the default runner doesn't have them all.
+      # Often, Puppeteer's install script handles this, or the base image is sufficient.
+      # If tests fail with Chrome launch errors, uncomment and adapt this.
+      # - name: Install Puppeteer dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -yq libgconf-2-4 libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
+      #     libexpat1 libfontconfig1 libgcc1 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
+      #     libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 \
+      #     libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
+      #     ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test

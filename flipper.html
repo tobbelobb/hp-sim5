@@ -687,6 +687,29 @@ canvas {
     // --- Global World ---
     let world = new World();
 
+    getGameStateForTest = () => {
+        if (!world || !world.query) { // Check if world and its methods are available
+            console.error("World object not available for getGameStateForTest");
+            return null;
+        }
+
+        const ballEntities = world.query([BallTagComponent, PositionComponent]);
+        const balls = ballEntities.map(id => {
+            const posComp = world.getComponent(id, PositionComponent);
+            return { id, y: posComp ? posComp.pos.y : -Infinity }; // Handle missing component
+        });
+
+        const scoreEntity = world.query([ScoreComponent])[0];
+        const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
+        const score = scoreComp ? scoreComp.value : -1; // Default to -1 if score component not found
+
+        return {
+            balls,
+            score
+        };
+    };
+
+
     // --- Scene Setup ---
     function setupScene() {
         world.clear(); // Clear entities and components
