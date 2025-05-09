@@ -905,6 +905,7 @@ canvas {
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
              const inputSystemInstance = new InputSystem(canvas);
+             world.registerSystem(new PrevStateSystem());
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(
                [],

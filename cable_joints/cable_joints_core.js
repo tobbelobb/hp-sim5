@@ -347,6 +347,7 @@ class PositionComponent {
   constructor(x = 0, y = 0) {
     this.pos = new Vector2(x, y);
     this.prevPos = new Vector2(x, y);
+    this.pprevPos = new Vector2(x, y);
   }
 }
 class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
@@ -481,7 +482,6 @@ class GravitySystem {
   }
 }
 
-// --- System: Movement ---
 class MovementSystem {
   runInPause = false;
   update(world, dt) {
@@ -497,7 +497,6 @@ class MovementSystem {
   }
 }
 
-// --- System: Angular Movement ---
 class AngularMovementSystem {
     runInPause = false;
     update(world, dt) {
@@ -506,10 +505,24 @@ class AngularMovementSystem {
             const orientation = world.getComponent(entityId, OrientationComponent);
             const angularVel = world.getComponent(entityId, AngularVelocityComponent);
 
-            orientation.prevAngle = orientation.angle; // Store angle before update
             orientation.angle += angularVel.angularVelocity * dt;
         }
     }
+}
+
+class PrevStateSystem {
+  runInPause = false;           // snapshot only while simulating
+  update(world /*, dt */) {
+    // copy current pose → “previous” pose for coming step
+    for (const id of world.query([PositionComponent])) {
+      const pc = world.getComponent(id, PositionComponent);
+      pc.pprevPos.set(pc.pos);
+    }
+    for (const id of world.query([OrientationComponent])) {
+      const oc = world.getComponent(id, OrientationComponent);
+      oc.prevAngle = oc.angle;
+    }
+  }
 }
 
 // --- System: Cable Attachment Update ---
