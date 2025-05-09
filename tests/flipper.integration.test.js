@@ -12,7 +12,10 @@ describe('Flipper Integration Test', () => {
     beforeAll(async () => {
         browser = await puppeteer.launch({
             headless: "new", // Use "new" headless mode
-            // args: ['--no-sandbox', '--disable-setuid-sandbox'] // Uncomment if running in CI/Linux env and facing issues
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox'
+            ] // Add this for CI environments
         });
         page = await browser.newPage();
 
@@ -44,7 +47,8 @@ describe('Flipper Integration Test', () => {
     test('should run autonomously and reach a score of 99 when balls settle below flippers', async () => {
         // Wait for the game world and our test function to be ready
         try {
-            await page.waitForFunction(() => world && typeof getGameStateForTest === 'function', { timeout: 10000 });
+            // Corrected waitForFunction to check for global `world` and `window.getGameStateForTest`
+            await page.waitForFunction(() => (typeof world !== 'undefined' && world) && typeof window.getGameStateForTest === 'function', { timeout: 10000 });
         } catch (e) {
             throw new Error("Game world or getGameStateForTest function did not become available in time.");
         }
