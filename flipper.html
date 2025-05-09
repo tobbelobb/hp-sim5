@@ -321,10 +321,11 @@ canvas {
                // On release, reset ball velocity to zero to avoid slingshot
                const velComp = world.getComponent(ballE, VelocityComponent);
                const posComp = world.getComponent(ballE, PositionComponent);
+               const prevFinalPosComp = world.getComponent(ballE, PrevFinalPosComponent);
 
                const dt = world.getResource('dt');
                if (velComp) {
-                 velComp.vel.set(posComp.pos.clone().subtract(posComp.prevPos).scale(1.0/dt));
+                 velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0/dt));
                }
                world.destroyEntity(pathE);
                world.destroyEntity(jointE);
@@ -872,6 +873,8 @@ canvas {
         //world.addComponent(obs1, new CableLinkComponent());
         world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
+        world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
+        world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
 
         // Calculate initial points for joint1 (ball2 perimeter attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
@@ -924,6 +927,7 @@ canvas {
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
+             world.registerSystem(new PrevFinalPosSystem());
              const inputSystemInstance = new InputSystem(canvas);
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(

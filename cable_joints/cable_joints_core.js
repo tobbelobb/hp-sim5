@@ -348,6 +348,11 @@ class PositionComponent {
     this.pos = new Vector2(x, y);
   }
 }
+class PrevFinalPosComponent {
+  constructor(x = 0, y = 0) {
+    this.pos = new Vector2(x, y);
+  }
+}
 class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
 class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
 class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
@@ -499,6 +504,19 @@ class MovementSystem {
     }
   }
 }
+
+class PrevFinalPosSystem {
+    runInPause = false;
+    update(world, dt) {
+        const entities = world.query([PositionComponent, PrevFinalPosComponent]);
+        for (const entityId of entities) {
+            const posComponent = world.getComponent(entityId, PositionComponent);
+            const prevFinalPosComponent = world.getComponent(entityId,PrevFinalPosComponent);
+            prevFinalPosComponent.pos.set(posComponent.pos);
+        }
+    }
+}
+
 
 class AngularMovementSystem {
     runInPause = false;
