@@ -1617,7 +1617,11 @@ class RenderSystem {
         if (cA && rA !== null) {
           const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
           const s      = path.stored[0];
-          const delta_theta     = s / rA;
+          const max_renderable_ang = 2.0*Math.PI - 0.0001
+          let delta_theta     = s / rA;
+          if (delta_theta >= max_renderable_ang) {
+            delta_theta = max_renderable_ang;
+          }
           const cw0    = path.cw[0];
           const anticw = !cw0;
           const a2     = cw0 ? a1 - delta_theta : a1 + delta_theta;
@@ -1641,13 +1645,21 @@ class RenderSystem {
         const cB    = world.getComponent(rollerB, PositionComponent)?.pos;
         const rB    = world.getComponent(rollerB, RadiusComponent)?.radius;
         const P1    = jointN.attachmentPointB_world;
-        if (cB && rB !== null) {
-          const a1     = Math.atan2(P1.y - cB.y, P1.x - cB.x);
-          const s      = path.stored[nLinks - 1];
-          const delta_theta     = s / rB;
-          const cw1    = path.cw[nLinks - 1];
+
+        if (cB && rB && rB > 1e-6) { // Added check for rB being reasonably positive
+          const a1 = Math.atan2(P1.y - cB.y, P1.x - cB.x);
+          const s = path.stored[nLinks - 1];
+          const max_renderable_ang = 2.0*Math.PI - 0.0001
+          let delta_theta = s / rB;
+          if (delta_theta >= max_renderable_ang) {
+            delta_theta = max_renderable_ang;
+          }
+          const cw1 = path.cw[nLinks - 1];
           const anticw = !cw1;
-          const a2     = cw1 ? a1 - delta_theta : a1 + delta_theta;
+
+          // Calculate a2 based on the render_sweep_angle
+          const a2 = cw1 ? a1 - delta_theta : a1 + delta_theta;
+
           this.c.beginPath();
           this.c.strokeStyle = renderComp.color;
           this.c.arc(
