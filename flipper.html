@@ -685,7 +685,6 @@ canvas {
 
     // --- Global World ---
     let world = new World();
-    let renderSystemInstance = null; // Hold reference to render system
 
     // --- Scene Setup ---
     function setupScene() {
@@ -926,7 +925,6 @@ canvas {
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
              const inputSystemInstance = new InputSystem(canvas);
-             world.registerSystem(new PrevFinalAngleSystem());
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(
                [],
@@ -941,25 +939,10 @@ canvas {
              world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new PBDBallBorderCollisions());
              world.registerSystem(new CableAttachmentUpdateSystem());
+             world.registerSystem(new ScoreSystem());
+             world.registerSystem(new ScoreDisplaySystem('score'));
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85));
              world.registerSystem(new PBDCableConstraintSolver());
-
-            // --- Scoring and Rendering ---
-            world.registerSystem(new ScoreSystem());
-            world.registerSystem(new ScoreDisplaySystem('score'));
-
-            // Create or update RenderSystem
-            if (!renderSystemInstance) {
-                const renderSystemInstance = new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85);
-                world.registerSystem(renderSystemInstance);
-                world.setResource('renderSystem', renderSystemInstance); // Store for potential access elsewhere
-            } else {
-                // Update existing render system instance with new scale/dimensions if needed
-                renderSystemInstance.cScale = cScale;
-                renderSystemInstance.simHeight = simHeight;
-                // Ensure canvas reference is still correct (should be)
-                // renderSystemInstance.canvas = canvas;
-                // renderSystemInstance.c = canvas.getContext("2d");
-            }
         } else {
           world.systems[InputSystem]
         }

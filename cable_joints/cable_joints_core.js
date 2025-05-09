@@ -373,14 +373,18 @@ class FlipperStateComponent {
 class ObstacleTagComponent { }
 class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
-class CableLinkComponent { constructor(x = 0, y = 0) { this.prevCableAttachmentTimePos = new Vector2(x, y); } }
+class CableLinkComponent {
+  constructor(x = 0, y = 0, angle = 0.0) {
+    this.prevCableAttachmentTimePos = new Vector2(x, y);
+    this.prevCableAttachmentTimeAngle = angle;
+  }
+}
 
 
 // --- Rotation Components ---
 class OrientationComponent {
     constructor(angle = 0.0) {
         this.angle = angle; // Radians
-        this.prevFinalAngle = angle;
     }
 }
 class AngularVelocityComponent {
@@ -509,17 +513,6 @@ class AngularMovementSystem {
     }
 }
 
-class PrevFinalAngleSystem {
-    runInPause = false;
-    update(world, dt) {
-        const entities = world.query([OrientationComponent, AngularVelocityComponent]);
-        for (const entityId of entities) {
-            const orientation = world.getComponent(entityId, OrientationComponent);
-            orientation.prevFinalAngle = orientation.angle;
-        }
-    }
-}
-
 // --- System: Cable Attachment Update ---
 // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
 //  # Core Purpose: ABRS Updates
@@ -564,10 +557,11 @@ class PrevFinalAngleSystem {
 //  ## Memory Feature
 //  - At the very end of CableAttachmentUpdateSystem there's a feature that updates CableLinkComponent.prevCableAttachmentTimePos for all links with a PositionComponent
 //    so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
-//    There's a subtle point to why it stores this timestep's intermediate position but not the corresponding intermediate angle. It actually uses the finalized angle for
-//    each time step, not the intermediate one. This is because translation affects tangent points, which affects ABRS variables in one way that we need to control fully.
-//    Pure rotations don't affect tangent points so they only affect "RS" (restLength and stored values), not "AB" (attachmentPointA/B_world).
-//    Therefore we can account for rotations by simply calculating arc length diffs, who affect RS, purely based on the link's shape and (full-time-step version of) orientation delta.
+//    It does the same with CableLinkComponent.prevCableAttachmentTimeAngle
+//    There's a subtle point to why we store this timestep's intermediate position and angle but not the final or initial one at any given timestep.
+//    This is because the full position and angle deltas affect our ABRS, and both position and angle variables are changed before and after
+//    CableAttachmentUpdateSystem is invoked at each time step. So we need to capture the previous values (which current ABRS values derived from)
+//    at the exact part of the time step/game loop where CableAttachmentUpdateSystem itself is placed.
 //  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
 //    `path[i].linkTypes` and any other variable it touches in a way that makes sense physically and doesn't break the simulation.
 class CableAttachmentUpdateSystem {
@@ -695,7 +689,7 @@ class CableAttachmentUpdateSystem {
         const prevPosA = linkAComp?.prevCableAttachmentTimePos;
         const radiusA = radiusAComp?.radius;
         const angleA = orientationAComp?.angle ?? 0.0;
-        const prevAngleA = orientationAComp?.prevFinalAngle ?? 0.0;
+        const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
         const deltaAngleA = angleA - prevAngleA;
         const cwA = this._effectiveCW(path, A,  true);
         const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
@@ -714,7 +708,7 @@ class CableAttachmentUpdateSystem {
         const prevPosB = linkBComp?.prevCableAttachmentTimePos;
         const radiusB = radiusBComp?.radius;
         const angleB = orientationBComp?.angle ?? 0.0;
-        const prevAngleB = orientationBComp?.prevFinalAngle ?? 0.0;
+        const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
         const deltaAngleB = angleB - prevAngleB;
         const cwB = this._effectiveCW(path, B,  false);
         const attachmentLinkB = path.linkTypes[B] === 'attachment' || path.linkTypes[B] === 'hybrid-attachment';
@@ -1065,9 +1059,13 @@ class CableAttachmentUpdateSystem {
 
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const linkId of linkEntities) {
-      const posComp = world.getComponent(linkId, PositionComponent)
-      const linkComp = world.getComponent(linkId, CableLinkComponent)
+      const posComp = world.getComponent(linkId, PositionComponent);
+      const orientationComp = world.getComponent(linkId, OrientationComponent);
+      const linkComp = world.getComponent(linkId, CableLinkComponent);
       linkComp.prevCableAttachmentTimePos.set(posComp.pos);
+      if (orientationComp) {
+        linkComp.prevCableAttachmentTimeAngle = orientationComp.angle;
+      }
     }
 
     // Debugging/test loop 1
