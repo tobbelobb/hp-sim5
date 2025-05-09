@@ -669,12 +669,12 @@ class CableAttachmentUpdateSystem {
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
 
-      for (var jointIdx = 0; jointIdx < path.jointEntities.length; jointIdx++) {
-        const jointId = path.jointEntities[jointIdx];
+      for (let i = 0; i < path.jointEntities.length; i++) {
+        const jointId = path.jointEntities[i];
         const joint = world.getComponent(jointId, CableJointComponent);
 
-        const A = jointIdx; // Index for link/cw/stored related to entity A side
-        const B = jointIdx + 1; // Index for link/cw/stored related to entity B side
+        const A = i; // Index for link/cw/stored related to entity A side
+        const B = i + 1; // Index for link/cw/stored related to entity B side
 
         const entityA = joint.entityA;
         const entityB = joint.entityB;
@@ -833,12 +833,12 @@ class CableAttachmentUpdateSystem {
             let sA = 0.0;
             let sB = 0.0;
             if (isRollingA && isRollingB) {
-              const sA = signedArcLengthOnWheel(pA1, attachmentA_current, posA, radiusA, cwA);
-              const sB = signedArcLengthOnWheel(pB2, attachmentB_current, posB, radiusB, cwB);
+              sA = signedArcLengthOnWheel(pA1, attachmentA_current, posA, radiusA, cwA);
+              sB = signedArcLengthOnWheel(pB2, attachmentB_current, posB, radiusB, cwB);
             } else if (isRollingA && isAttachmentB) {
-              const sA = signedArcLengthOnWheel(pA1, attachmentA_current, posA, radiusA, cwA);
+              sA = signedArcLengthOnWheel(pA1, attachmentA_current, posA, radiusA, cwA);
             } else if (isAttachmentA && isRollingB) {
-              const sB = signedArcLengthOnWheel(pB2, attachmentB_current, posB, radiusB, cwB);
+              sB = signedArcLengthOnWheel(pB2, attachmentB_current, posB, radiusB, cwB);
             }
 
             path.stored[i] += sA;
@@ -866,9 +866,9 @@ class CableAttachmentUpdateSystem {
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 2) continue;
-      for (var jointIndex = 0; jointIndex < path.jointEntities.length - 1; jointIndex++) {
-        const jointId_i = path.jointEntities[jointIndex];
-        const jointId_i_plus_1 = path.jointEntities[jointIndex + 1];
+      for (let i = 0; i < path.jointEntities.length - 1; i++) {
+        const jointId_i = path.jointEntities[i];
+        const jointId_i_plus_1 = path.jointEntities[i + 1];
         const joint_i = world.getComponent(jointId_i, CableJointComponent);
         const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
         const pA = joint_i.attachmentPointA_world;
