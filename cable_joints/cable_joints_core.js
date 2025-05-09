@@ -923,7 +923,7 @@ class CableAttachmentUpdateSystem {
             continue;
           }
           const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
-          const radiusSplitter = world.getComponent(splitterId, RadiusComponent).radius;
+          const radiusSplitter = world.getComponent(splitterId, RadiusComponent)?.radius;
           if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
             // console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
             const entityA = joint.entityA;
@@ -935,7 +935,7 @@ class CableAttachmentUpdateSystem {
             const linkTypeA = path.linkTypes[i];
             const isRollingA = linkTypeA === 'rolling' || linkTypeA === 'hybrid';
             const isAttachmentA = linkTypeA === 'attachment' || linkTypeA === 'hybrid-attachment';
-            const radiusA = world.getComponent(entityA, RadiusComponent).radius;
+            const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
             const cwA = this._effectiveCW(path, i, true);
 
             // Get components for Entity B
@@ -943,7 +943,7 @@ class CableAttachmentUpdateSystem {
             const linkTypeB = path.linkTypes[i + 1];
             const isRollingB = linkTypeB === 'rolling' || linkTypeB === 'hybrid';
             const isAttachmentB = linkTypeB === 'attachment' || linkTypeB === 'hybrid-attachment';
-            const radiusB = world.getComponent(entityB, RadiusComponent).radius;
+            const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
             const cwB = path.cw[i + 1];
 
             // Calculate components for new joint
