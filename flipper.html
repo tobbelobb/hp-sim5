@@ -979,7 +979,9 @@ canvas {
       const pauseState = world.getResource('pauseState');
 
       // first frame init
-      if (lastTime === 0) lastTime = currentTime;
+      if (lastTime === 0) {
+        lastTime = currentTime;
+      }
 
       let frameSec = 0.6*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
