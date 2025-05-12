@@ -147,7 +147,6 @@ export class CablePathComponent {
 //    CableAttachmentUpdateSystem is invoked at each time step. So we need to capture the previous values (which current ABRS values derived from)
 //    at the exact part of the time step/game loop where CableAttachmentUpdateSystem itself is placed.
 //  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
-//    `path[i].linkTypes` and any other variable it touches in a way that makes sense physically and doesn't break the simulation.
 export class CableAttachmentUpdateSystem {
   runInPause = false;
 
@@ -240,16 +239,17 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
-  update(world, dt) {
-    const debugPoints = world.getResource('debugRenderPoints');
-    // Clear points from the previous frame
-    for (const key in debugPoints) {
-        delete debugPoints[key];
-    }
-
+  // # Core Purpose: ABRS Updates
+  // - This method's main job is to update `joint.attachmentPointA_world` and `joint.attachmentPointB_world`
+  //   so that they remain on top of or tangent to whatever points they're connected to.
+  // - A change of these two must balance out with an update of `joint.restLength` and `path[i].stored`
+  //   so that no amount of line vanishes or is created.
+  // - Let's call those four variables the ABRS-variables or just "ABRS".
+  // - Updates to ABRS are based on new PositionComponent pos and OrientationComponent angles that were calculated
+  //   during the previous time step (possibly modified by earlier systems in the current time step).
+  _updateAttachmentPoints(world, dt) {
     const pathEntities = world.query([CablePathComponent]);
 
-    // -- New attachment points --
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
 
@@ -350,9 +350,13 @@ export class CableAttachmentUpdateSystem {
         joint.attachmentPointA_world.set(attachmentA_current);
         joint.attachmentPointB_world.set(attachmentB_current);
       }
-    } // End New Attachment Points
+    }
+  }
 
-    //// Merge joints
+  // ## Merge Feature
+  // - The merge feature updates ABRS. It also destroys one element from `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`. Then it destroys the whole joint object.
+  _mergeJoints(world) {
+    const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 2) continue;
@@ -443,10 +447,13 @@ export class CableAttachmentUpdateSystem {
         }
       }
     }
+  }
 
-    this._updateHybridLinkStates(world);
-
-    // Even out tension
+  // ## Tension Distribution Feature
+  // - This logic tries to even out tension across links.
+  // - It _only_ changes pairs of `joint.restLength`. It does not change `joint.attachmentPointA_world`, `joint.attachmentPointB_world`, or `path.stored[i]`.
+  _evenOutTension(world) {
+    const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 2) continue;
@@ -472,9 +479,15 @@ export class CableAttachmentUpdateSystem {
         //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
       }
     }
+  }
 
-    // Split joints
+  // ## Split Feature
+  // - The split feature updates ABRS. It also updates joint.entityB and it creates a whole new joint with `entityA`, `entityB`, `restLength`, `attachmentPointA_world`, and `attachmentPointB_world` all set.
+  //   It also creates an element in `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`.
+  // - The split feature distributes the available restLength so that tension becomes equal on both sides of the new link.
+  _splitJoints(world) {
     const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
+    const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
@@ -640,7 +653,17 @@ export class CableAttachmentUpdateSystem {
         }
       }
     }
+  }
 
+  // ## Memory Feature
+  // - At the very end of CableAttachmentUpdateSystem there's a feature that updates CableLinkComponent.prevCableAttachmentTimePos for all links with a PositionComponent
+  //   so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
+  //   It does the same with CableLinkComponent.prevCableAttachmentTimeAngle
+  // - There's a subtle point to why we store this timestep's intermediate position and angle but not the final or initial one at any given timestep.
+  //   This is because the full position and angle deltas affect our ABRS, and both position and angle variables are changed before and after
+  //   CableAttachmentUpdateSystem is invoked at each time step. So we need to capture the previous values (which current ABRS values derived from)
+  //   at the exact part of the time step/game loop where CableAttachmentUpdateSystem itself is placed.
+  _updateLinkMemory(world) {
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const linkId of linkEntities) {
       const posComp = world.getComponent(linkId, PositionComponent);
@@ -651,8 +674,39 @@ export class CableAttachmentUpdateSystem {
         linkComp.prevCableAttachmentTimeAngle = orientationComp.angle;
       }
     }
+  }
 
-    // Debugging/test loop 1
+  update(world, dt) {
+    const debugPoints = world.getResource('debugRenderPoints');
+    // Clear points from the previous frame
+    if (debugPoints) {
+        for (const key in debugPoints) {
+            delete debugPoints[key];
+        }
+    }
+
+    // --- Update cable state based on entity movements ---
+    // 1. Update attachment points and adjust rest/stored lengths based on entity movement (ABRS update)
+    this._updateAttachmentPoints(world, dt);
+
+    // 2. Merge joints if a rolling link has unwrapped completely
+    this._mergeJoints(world);
+
+    // 3. Handle hybrid links switching between rolling and fixed attachment
+    this._updateHybridLinkStates(world);
+
+    // 4. Distribute rest length to even out tension between adjacent segments
+    this._evenOutTension(world);
+
+    // 5. Split joints if a cable segment intersects a potential new link
+    this._splitJoints(world);
+
+    // 6. Store current positions/angles of links for the next frame's ABRS calculation
+    this._updateLinkMemory(world);
+
+
+    // --- Final Sanity Checks / Debugging ---
+    const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
