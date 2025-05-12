@@ -156,6 +156,10 @@ export class CableAttachmentUpdateSystem {
     return path.cw[linkIndex];
   }
 
+  // ## Hybrid Features
+  // - The hybrid/hybrid-attachment features are currently both handled by one function which is called `_updateHybridLinkStates`.
+  // - The hybrid->hybrid-attachment logic updates ABRS, and `path.linkTypes[i]`.
+  // - The hybrid-attachment->hybrid logic updates ABRS, `path.linkTypes[i]`, and `path.cw[i]`.
   // Process hybrid link states - checks if hybrid links need to switch between rolling and attachment behavior
   _updateHybridLinkStates(world) {
     const debugPoints = world.getResource('debugRenderPoints');
