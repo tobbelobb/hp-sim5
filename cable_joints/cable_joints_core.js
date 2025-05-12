@@ -99,16 +99,15 @@ export class CablePathComponent {
 
 // --- System: Cable Attachment Update ---
 // Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
-//  # Core Purpose: ABRS Updates
-//  - CableAttachmentUpdateSystem's main job is to update `joint.attachmentPointA_world` and `joint.attachmentPointB_world`
-//    so that they remain on top of or tangent to whatever points they're connected to.
-//  - A change of these two must balance out with an update of `joint.restLength` and `path[i].stored`
-//    so that no amount of line vanishes or is created.
-//  - Let's call those four variables the ABRS-variables or just "ABRS".
-//  - Updates to ABRS are based on new PositionComponent pos and OrientationComponent angles that were calculated
-//    during the previous time step (possibly modified by earlier systems in the current time step).
-//  - The update and book keeping of ABRS is handled by logic called `// -- New attachment points --`.
-//  - `ABRS update` would have been a better name for the core purpose logic.
+//
+// # AttachmentPoints updates means updating the "ABRS" variables
+// - _updateAttachmentPoints's main job is to update `joint.attachmentPointA_world` and `joint.attachmentPointB_world`
+//   (call them AB for short), so that they remain on top of or tangent to whatever points they're connected to.
+// - A change of AB must balance out with an update of `joint.restLength` and `path[i].stored`
+//   (call them RS for short) so that no amount of cable vanishes or is created.
+// - Let's call those four variables the ABRS-variables or just "ABRS".
+// - Updates to ABRS are based on new PositionComponent pos and OrientationComponent angles that were calculated
+//   during the previous time step (possibly modified by earlier systems in the current time step).
 //
 //  # Features
 //  - CableAttachmentUpdateSystem also handles how joints might be merged or split do to intersections or non-intersections with objects
@@ -156,101 +155,15 @@ export class CableAttachmentUpdateSystem {
     return path.cw[linkIndex];
   }
 
-  // ## Hybrid Features
-  // - The hybrid/hybrid-attachment features are currently both handled by one function which is called `_updateHybridLinkStates`.
-  // - The hybrid->hybrid-attachment logic updates ABRS, and `path.linkTypes[i]`.
-  // - The hybrid-attachment->hybrid logic updates ABRS, `path.linkTypes[i]`, and `path.cw[i]`.
-  // Process hybrid link states - checks if hybrid links need to switch between rolling and attachment behavior
-  _updateHybridLinkStates(world) {
-    const debugPoints = world.getResource('debugRenderPoints');
-    const pathEntities = world.query([CablePathComponent]);
-
-    for (const pathId of pathEntities) {
-      const path = world.getComponent(pathId, CablePathComponent);
-      for (const i of [0, path.linkTypes.length - 1]) {
-        const epsilon = 1e-9;
-        if (path.linkTypes[i] === 'hybrid') {
-          if (path.stored[i] < 0.0) {
-            // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
-            path.linkTypes[i] = 'hybrid-attachment';
-            const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
-            const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
-            const radius = world.getComponent(linkEntity, RadiusComponent).radius;
-            const pos = world.getComponent(linkEntity, PositionComponent).pos;
-            // We have "fed out negative line", undo that
-            joint.restLength += path.stored[i];
-            const rotAng = -path.stored[i]/radius;
-            if (i === 0) {
-              joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
-            } else if (i === path.linkTypes.length - 1) {
-              joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
-            }
-            path.stored[i] = 0;
+  _clearDebugPoints(world) {
+      const debugPoints = world.getResource('debugRenderPoints');
+      if (debugPoints) {
+          for (const key in debugPoints) {
+              delete debugPoints[key];
           }
-        }
-        else if (path.linkTypes[i] === 'hybrid-attachment') {
-          let jointId, joint, entityId, attachmentPoint, neighborId, neighborAttachmentPoint;
-          if (i === 0) {
-            jointId = path.jointEntities[0];
-            joint   = world.getComponent(jointId, CableJointComponent);
-            entityId        = joint.entityA;
-            attachmentPoint = joint.attachmentPointA_world;
-            neighborId      = joint.entityB;
-            neighborAttachmentPoint = joint.attachmentPointB_world;
-          }
-          else if (i === path.linkTypes.length - 1) {
-            jointId = path.jointEntities[path.jointEntities.length - 1];
-            joint   = world.getComponent(jointId, CableJointComponent);
-            entityId        = joint.entityB;
-            attachmentPoint = joint.attachmentPointB_world;
-            neighborId      = joint.entityA;
-            neighborAttachmentPoint = joint.attachmentPointA_world;
-          }
-
-          const C = world.getComponent(entityId, PositionComponent).pos;
-          const P = world.getComponent(neighborId, PositionComponent).pos;
-          const R = world.getComponent(entityId, RadiusComponent).radius;
-
-          const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
-          const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;
-
-          const crossedCW  = signedArcLengthOnWheel(attachmentPoint, tanCW,  C, R, true);
-          const crossedCCW  = signedArcLengthOnWheel(attachmentPoint, tanCCW,  C, R, false);
-          const distSqCW = attachmentPoint.distanceToSq(tanCW);
-          const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
-
-          let newCW = null, crossingTangent = null;
-          if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
-              newCW = true;
-              crossingTangent = tanCCW;
-              path.stored[i] = crossedCCW;
-              joint.restLength -= crossedCCW;
-          } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
-              newCW = false;
-              crossingTangent = tanCW;
-              path.stored[i] = crossedCW;
-              joint.restLength -= crossedCW;
-          }
-
-          if (newCW !== null) {
-            // console.log(`Switching joint ${jointId} to hybrid`);
-            path.linkTypes[i] = 'hybrid';
-            path.cw[i]        = newCW;
-            attachmentPoint.set(crossingTangent);
-          }
-        }
       }
-    }
   }
 
-  // # Core Purpose: ABRS Updates
-  // - This method's main job is to update `joint.attachmentPointA_world` and `joint.attachmentPointB_world`
-  //   so that they remain on top of or tangent to whatever points they're connected to.
-  // - A change of these two must balance out with an update of `joint.restLength` and `path[i].stored`
-  //   so that no amount of line vanishes or is created.
-  // - Let's call those four variables the ABRS-variables or just "ABRS".
-  // - Updates to ABRS are based on new PositionComponent pos and OrientationComponent angles that were calculated
-  //   during the previous time step (possibly modified by earlier systems in the current time step).
   _updateAttachmentPoints(world, dt) {
     const pathEntities = world.query([CablePathComponent]);
 
@@ -357,8 +270,6 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
-  // ## Merge Feature
-  // - The merge feature updates ABRS. It also destroys one element from `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`. Then it destroys the whole joint object.
   _mergeJoints(world) {
     const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
@@ -453,9 +364,6 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
-  // ## Tension Distribution Feature
-  // - This logic tries to even out tension across links.
-  // - It _only_ changes pairs of `joint.restLength`. It does not change `joint.attachmentPointA_world`, `joint.attachmentPointB_world`, or `path.stored[i]`.
   _evenOutTension(world) {
     const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
@@ -485,10 +393,6 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
-  // ## Split Feature
-  // - The split feature updates ABRS. It also updates joint.entityB and it creates a whole new joint with `entityA`, `entityB`, `restLength`, `attachmentPointA_world`, and `attachmentPointB_world` all set.
-  //   It also creates an element in `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`.
-  // - The split feature distributes the available restLength so that tension becomes equal on both sides of the new link.
   _splitJoints(world) {
     const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
     const pathEntities = world.query([CablePathComponent]);
@@ -659,15 +563,89 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
-  // ## Memory Feature
-  // - At the very end of CableAttachmentUpdateSystem there's a feature that updates CableLinkComponent.prevCableAttachmentTimePos for all links with a PositionComponent
-  //   so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
-  //   It does the same with CableLinkComponent.prevCableAttachmentTimeAngle
-  // - There's a subtle point to why we store this timestep's intermediate position and angle but not the final or initial one at any given timestep.
-  //   This is because the full position and angle deltas affect our ABRS, and both position and angle variables are changed before and after
-  //   CableAttachmentUpdateSystem is invoked at each time step. So we need to capture the previous values (which current ABRS values derived from)
-  //   at the exact part of the time step/game loop where CableAttachmentUpdateSystem itself is placed.
-  _updateLinkMemory(world) {
+  _updateHybridLinkStates(world) {
+    const debugPoints = world.getResource('debugRenderPoints');
+    const pathEntities = world.query([CablePathComponent]);
+
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      for (const i of [0, path.linkTypes.length - 1]) {
+        const epsilon = 1e-9;
+        if (path.linkTypes[i] === 'hybrid') {
+          if (path.stored[i] < 0.0) {
+            // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
+            path.linkTypes[i] = 'hybrid-attachment';
+            const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
+            const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
+            const radius = world.getComponent(linkEntity, RadiusComponent).radius;
+            const pos = world.getComponent(linkEntity, PositionComponent).pos;
+            // We have "fed out negative line", undo that
+            joint.restLength += path.stored[i];
+            const rotAng = -path.stored[i]/radius;
+            if (i === 0) {
+              joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
+            } else if (i === path.linkTypes.length - 1) {
+              joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
+            }
+            path.stored[i] = 0;
+          }
+        }
+        else if (path.linkTypes[i] === 'hybrid-attachment') {
+          let jointId, joint, entityId, attachmentPoint, neighborId, neighborAttachmentPoint;
+          if (i === 0) {
+            jointId = path.jointEntities[0];
+            joint   = world.getComponent(jointId, CableJointComponent);
+            entityId        = joint.entityA;
+            attachmentPoint = joint.attachmentPointA_world;
+            neighborId      = joint.entityB;
+            neighborAttachmentPoint = joint.attachmentPointB_world;
+          }
+          else if (i === path.linkTypes.length - 1) {
+            jointId = path.jointEntities[path.jointEntities.length - 1];
+            joint   = world.getComponent(jointId, CableJointComponent);
+            entityId        = joint.entityB;
+            attachmentPoint = joint.attachmentPointB_world;
+            neighborId      = joint.entityA;
+            neighborAttachmentPoint = joint.attachmentPointA_world;
+          }
+
+          const C = world.getComponent(entityId, PositionComponent).pos;
+          const P = world.getComponent(neighborId, PositionComponent).pos;
+          const R = world.getComponent(entityId, RadiusComponent).radius;
+
+          const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
+          const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;
+
+          const crossedCW  = signedArcLengthOnWheel(attachmentPoint, tanCW,  C, R, true);
+          const crossedCCW  = signedArcLengthOnWheel(attachmentPoint, tanCCW,  C, R, false);
+          const distSqCW = attachmentPoint.distanceToSq(tanCW);
+          const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
+
+          let newCW = null, crossingTangent = null;
+          if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
+              newCW = true;
+              crossingTangent = tanCCW;
+              path.stored[i] = crossedCCW;
+              joint.restLength -= crossedCCW;
+          } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
+              newCW = false;
+              crossingTangent = tanCW;
+              path.stored[i] = crossedCW;
+              joint.restLength -= crossedCW;
+          }
+
+          if (newCW !== null) {
+            // console.log(`Switching joint ${jointId} to hybrid`);
+            path.linkTypes[i] = 'hybrid';
+            path.cw[i]        = newCW;
+            attachmentPoint.set(crossingTangent);
+          }
+        }
+      }
+    }
+  }
+
+  _storeCableLinkPoses(world) {
     const linkEntities = world.query([CableLinkComponent, PositionComponent]);
     for (const linkId of linkEntities) {
       const posComp = world.getComponent(linkId, PositionComponent);
@@ -680,36 +658,7 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
-  update(world, dt) {
-    const debugPoints = world.getResource('debugRenderPoints');
-    // Clear points from the previous frame
-    if (debugPoints) {
-        for (const key in debugPoints) {
-            delete debugPoints[key];
-        }
-    }
-
-    // --- Update cable state based on entity movements ---
-    // 1. Update attachment points and adjust rest/stored lengths based on entity movement (ABRS update)
-    this._updateAttachmentPoints(world, dt);
-
-    // 2. Merge joints if a rolling link has unwrapped completely
-    this._mergeJoints(world);
-
-    // 3. Handle hybrid links switching between rolling and fixed attachment
-    this._updateHybridLinkStates(world);
-
-    // 4. Distribute rest length to even out tension between adjacent segments
-    this._evenOutTension(world);
-
-    // 5. Split joints if a cable segment intersects a potential new link
-    this._splitJoints(world);
-
-    // 6. Store current positions/angles of links for the next frame's ABRS calculation
-    this._updateLinkMemory(world);
-
-
-    // --- Final Sanity Checks / Debugging ---
+  _sanityCheck(world) {
     const pathEntities = world.query([CablePathComponent]);
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
@@ -734,6 +683,17 @@ export class CableAttachmentUpdateSystem {
         console.warn(`Negative stored: ${path.stored}`);
       }
     }
+  }
+
+  update(world, dt) {
+    this._clearDebugPoints(world);
+    this._updateAttachmentPoints(world, dt);
+    this._mergeJoints(world);
+    this._evenOutTension(world);
+    this._splitJoints(world);
+    this._updateHybridLinkStates(world);
+    this._storeCableLinkPoses(world);
+    this._sanityCheck(world);
   }
 }
 
