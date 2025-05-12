@@ -739,6 +739,7 @@ canvas {
 
     // --- Global World ---
     let world = new World();
+    window.world = world; // Make available to jest test
 
     let getGameStateForTest = () => {
         if (!world || !world.query) { // Check if world and its methods are available
@@ -761,8 +762,7 @@ canvas {
             score
         };
     };
-    window.getGameStateForTest = getGameStateForTest; // Expose for testing
-
+    window.getGameStateForTest = getGameStateForTest;
 
     // --- Scene Setup ---
     function setupScene() {

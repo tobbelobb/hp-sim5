@@ -1,15 +1,62 @@
-// flipper.integration.test.js
 const puppeteer = require('puppeteer');
 const path = require('path');
+const http = require('http');
+const fs = require('fs');
 
 describe('Flipper Integration Test', () => {
     let browser;
     let page;
+    let server;
+    let port;
 
     // Increased timeout for Jest, Puppeteer can be slow to start
     jest.setTimeout(120000); // 120 seconds for the entire test suite in this file
 
     beforeAll(async () => {
+        const projectRoot = path.resolve(__dirname, '..');
+
+        server = http.createServer((req, res) => {
+            // Treat root requests as requests for flipper.html
+            const requestUrl = req.url === '/' ? '/flipper.html' : req.url;
+            // Construct file path relative to project root, ensuring to decode URI components
+            const filePath = path.join(projectRoot, decodeURIComponent(requestUrl.substring(1)));
+
+            let contentType = 'application/octet-stream'; // Default content type
+            const ext = path.extname(filePath).toLowerCase();
+
+            if (ext === '.html') contentType = 'text/html';
+            else if (ext === '.js') contentType = 'application/javascript';
+            else if (ext === '.css') contentType = 'text/css';
+            else if (ext === '.wasm') contentType = 'application/wasm';
+            else if (ext === '.json') contentType = 'application/json';
+            // Add more MIME types as needed
+
+            fs.readFile(filePath, (err, content) => {
+                if (err) {
+                    if (err.code === 'ENOENT') {
+                        console.error(`SERVER: File not found: ${filePath} (requested ${req.url})`);
+                        res.writeHead(404, { 'Content-Type': 'text/plain' });
+                        res.end('Not Found');
+                    } else {
+                        console.error(`SERVER: Error reading file ${filePath}: ${err.message}`);
+                        res.writeHead(500, { 'Content-Type': 'text/plain' });
+                        res.end('Server Error');
+                    }
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': contentType });
+                res.end(content);
+            });
+        });
+
+        await new Promise(resolve => {
+            server.listen(0, '127.0.0.1', () => { // Port 0 means OS picks a free port
+                port = server.address().port;
+                console.log(`Test server listening on http://127.0.0.1:${port}`);
+                resolve();
+            });
+        });
+
         browser = await puppeteer.launch({
             headless: "new", // Use "new" headless mode
             args: [
@@ -32,13 +79,15 @@ describe('Flipper Integration Test', () => {
             console.error(`PAGE ERROR: ${error.message}`);
         });
 
-
-        // Adjust the path if your test file is not in the root directory
-        const filePath = `file://${path.join(__dirname, '../flipper.html')}`;
-        await page.goto(filePath, { waitUntil: 'networkidle0' });
+        // Navigate to the page served by our local server
+        await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle0' });
     });
 
     afterAll(async () => {
+        if (server) {
+            await new Promise(resolve => server.close(resolve));
+            console.log('Test server closed.');
+        }
         if (browser) {
             await browser.close();
         }
@@ -47,8 +96,8 @@ describe('Flipper Integration Test', () => {
     test('should run autonomously and reach a score of 99 when balls settle below flippers', async () => {
         // Wait for the game world and our test function to be ready
         try {
-            // Corrected waitForFunction to check for global `world` and `window.getGameStateForTest`
-            await page.waitForFunction(() => (typeof world !== 'undefined' && world) && typeof window.getGameStateForTest === 'function', { timeout: 10000 });
+            // Corrected waitForFunction to check for global `window.world` and `window.getGameStateForTest`
+            await page.waitForFunction(() => (typeof window.world !== 'undefined' && window.world) && typeof window.getGameStateForTest === 'function', { timeout: 10000 });
         } catch (e) {
             throw new Error("Game world or getGameStateForTest function did not become available in time.");
         }
@@ -67,7 +116,7 @@ describe('Flipper Integration Test', () => {
         const startTime = Date.now();
 
         while (Date.now() - startTime < MAX_GAME_SIMULATION_TIME) {
-            const gameState = await page.evaluate(() => getGameStateForTest());
+            const gameState = await page.evaluate(() => window.getGameStateForTest());
 
             if (!gameState) {
                 // This might happen if the page context is lost or getGameStateForTest fails
@@ -118,14 +167,14 @@ describe('Flipper Integration Test', () => {
 
         // Final assertions after the loop
         if (!settled) {
-            const finalGameState = await page.evaluate(() => getGameStateForTest());
+            const finalGameState = await page.evaluate(() => window.getGameStateForTest());
             throw new Error(`Test failed: Timeout. Balls did not settle below flippers within ${MAX_GAME_SIMULATION_TIME / 1000}s. Final score: ${finalGameState.score}`);
         }
 
         // This assertion is a bit redundant if the loop logic is correct, but good for clarity
         expect(testPassed).toBe(true);
         expect(settled).toBe(true); // Ensure we exited because balls settled
-        const finalScore = (await page.evaluate(() => getGameStateForTest())).score;
+        const finalScore = (await page.evaluate(() => window.getGameStateForTest())).score;
         expect(finalScore).toBe(99); // Final check on score
 
     });
