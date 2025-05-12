@@ -110,6 +110,7 @@ canvas {
     </div>
 <script src="cable_joints/cable_joints_core.js"></script>
 <script>
+    const { dumpWorldState } = require('cable_joints/debugUtils');
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class ScoredTagComponent { }
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }

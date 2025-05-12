@@ -117,6 +117,8 @@ canvas {
     </div>
 <script src="../cable_joints_core.js"></script>
 <script>
+    const { dumpWorldState } = require('../debugUtils');
+    class SpoolTagComponent { };
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
          runInPause = true; // Input should work even when paused to unpause/interact
