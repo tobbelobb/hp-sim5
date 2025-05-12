@@ -164,7 +164,7 @@ export class CableAttachmentUpdateSystem {
       }
   }
 
-  _updateAttachmentPoints(world, dt) {
+  _updateAttachmentPoints(world) {
     const pathEntities = world.query([CablePathComponent]);
 
     for (const pathId of pathEntities) {
@@ -687,7 +687,7 @@ export class CableAttachmentUpdateSystem {
 
   update(world, dt) {
     this._clearDebugPoints(world);
-    this._updateAttachmentPoints(world, dt);
+    this._updateAttachmentPoints(world);
     this._mergeJoints(world);
     this._evenOutTension(world);
     this._splitJoints(world);
