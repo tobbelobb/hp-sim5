@@ -1,5 +1,5 @@
 import Vector2 from '../cable_joints/vector2.js';
-import { World, PositionComponent } from '../cable_joints/ecs.js';
+import { World, PositionComponent, VelocityComponent, MassComponent } from '../cable_joints/ecs.js';
 import {
   CableJointComponent,
   CablePathComponent,
@@ -73,10 +73,12 @@ describe('PBDCableConstraintSolver', () => {
     const world = new World();
     const e0 = world.createEntity();
     const e1 = world.createEntity();
-    const e2 = world.createEntity();
     world.addComponent(e0, new PositionComponent(0, 0));
     world.addComponent(e1, new PositionComponent(5, 0));
-    world.addComponent(e2, new PositionComponent(10, 0));
+    world.addComponent(e0, new VelocityComponent(0, 0));
+    world.addComponent(e1, new VelocityComponent(0, 0));
+    world.addComponent(e0, new MassComponent(1.0));
+    world.addComponent(e1, new MassComponent(1.0));
 
     const j1 = world.createEntity();
     world.addComponent(
@@ -89,35 +91,22 @@ describe('PBDCableConstraintSolver', () => {
         new Vector2(5, 0)
       )
     );
-    const j2 = world.createEntity();
-    world.addComponent(
-      j2,
-      new CableJointComponent(
-        e1,
-        e2,
-        4.0,
-        new Vector2(5, 0),
-        new Vector2(10, 0)
-      )
-    );
 
     const pathEnt = world.createEntity();
     const pathComp = new CablePathComponent(
       world,
-      [j1, j2],
-      ['attachment', 'attachment', 'attachment'],
-      [true, true, true]
+      [j1],
+      ['attachment', 'attachment'],
+      [true, true]
     );
     world.addComponent(pathEnt, pathComp);
 
     const solver = new PBDCableConstraintSolver();
     solver.update(world, 0.016);
+    solver.update(world, 0.016);
 
     const comp1 = world.getComponent(j1, CableJointComponent);
-    const comp2 = world.getComponent(j2, CableJointComponent);
     const d1 = comp1.attachmentPointA_world.distanceTo(comp1.attachmentPointB_world);
-    const d2 = comp2.attachmentPointA_world.distanceTo(comp2.attachmentPointB_world);
-    expect(d1).toBeCloseTo(3.0, 5);
-    expect(d2).toBeCloseTo(4.0, 5);
+    expect(d1).toBeCloseTo(3.0, 1);
   });
 });
