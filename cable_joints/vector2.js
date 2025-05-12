@@ -6,14 +6,10 @@ export default class Vector2 {
   addVectors(a, b) { this.x = a.x + b.x; this.y = a.y + b.y; return this; }
   subtract(v, s = 1.0) { this.x -= v.x * s; this.y -= v.y * s; return this; }
   subtractVectors(a, b) { this.x = a.x - b.x; this.y = a.y - b.y; return this; }
-  distanceTo(b) { return Math.sqrt((this.x - b.x)*(this.x - b.x) + (this.y - b.y)*(this.y - b.y)); }
-  distanceToSq(b) { return (this.x - b.x)*(this.x - b.x) + (this.y - b.y)*(this.y - b.y); }
-  length() { return Math.sqrt(this.x * this.x + this.y * this.y); }
-  lengthSq() { return this.x * this.x + this.y * this.y; }
-  //distanceTo(b) { return Math.hypot(this.x - b.x, this.y - b.y); }
-  //distanceToSq(b) { return (this.x - b.x)**2 + (this.y - b.y)**2; }
-  //length() { return Math.hypot(this.x, this.y); }
-  //lengthSq() { return this.x*this.x + this.y*this.y; }
+  distanceTo(b) { return Math.hypot(this.x - b.x, this.y - b.y); }
+  distanceToSq(b) { return (this.x - b.x)**2 + (this.y - b.y)**2; }
+  length() { return Math.hypot(this.x, this.y); }
+  lengthSq() { return this.x**2 + this.y**2; }
   scale(s) { this.x *= s; this.y *= s; return this; }
   dot(v) { return this.x * v.x + this.y * v.y; }
   perp() { return new Vector2(-this.y, this.x); }

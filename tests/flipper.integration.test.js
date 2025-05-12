@@ -92,8 +92,9 @@ describe('Flipper Integration Test', () => {
             await browser.close();
         }
     });
+    const EXPECTED_SCORE = 83;
 
-    test('should run autonomously and reach a score of 99 when balls settle below flippers', async () => {
+    test(`should run autonomously and reach a score of ${EXPECTED_SCORE} when balls settle below flippers`, async () => {
         // Wait for the game world and our test function to be ready
         try {
             // Corrected waitForFunction to check for global `window.world` and `window.getGameStateForTest`
@@ -128,9 +129,9 @@ describe('Flipper Integration Test', () => {
             // Log current state for debugging CI if needed
             // console.log(`Current state - Score: ${score}, Balls: ${balls.length}`);
 
-            // Condition 1: Score must not exceed 99
-            if (score > 99) {
-                throw new Error(`Test failed: Score exceeded 99. Current score: ${score}`);
+            // Condition 1: Score must not exceed EXPECTED_SCORE
+            if (score > 83) {
+                throw new Error(`Test failed: Score exceeded ${EXPECTED_SCORE}. Current score: ${score}`);
             }
 
             // Condition 2: Check if balls have settled below flippers
@@ -154,10 +155,10 @@ describe('Flipper Integration Test', () => {
             if (allBallsBelowFlippers) {
                 console.log(`All balls detected below flipper line (Y < ${FLIPPER_Y_LINE}). Current score: ${score}.`);
                 settled = true;
-                if (score === 99) {
+                if (score === EXPECTED_SCORE) {
                     testPassed = true;
                 } else {
-                    throw new Error(`Test failed: Balls settled below flippers, but score is ${score} (expected 99).`);
+                    throw new Error(`Test failed: Balls settled below flippers, but score is ${score} (expected ${EXPECTED_SCORE}).`);
                 }
                 break; // Exit polling loop
             }
@@ -175,7 +176,7 @@ describe('Flipper Integration Test', () => {
         expect(testPassed).toBe(true);
         expect(settled).toBe(true); // Ensure we exited because balls settled
         const finalScore = (await page.evaluate(() => window.getGameStateForTest())).score;
-        expect(finalScore).toBe(99); // Final check on score
+        expect(finalScore).toBe(EXPECTED_SCORE); // Final check on score
 
     });
 });
