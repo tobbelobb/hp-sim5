@@ -1,4 +1,5 @@
-const { Vector2, rightOfLine } = require('../cable_joints/cable_joints_core');
+import Vector2 from '../cable_joints/vector2.js';
+import { rightOfLine } from '../cable_joints/geometry.js';
 
 describe('rightOfLine', () => {
   test('point to the right of horizontal line', () => {

@@ -1,13 +1,14 @@
-const {
+import {
   World,
   PositionComponent,
   VelocityComponent,
   RadiusComponent,
   MassComponent,
   RestitutionComponent,
-  BallTagComponent,
-  PBDBallBallCollisions
-} = require('../cable_joints/cable_joints_core');
+  BallTagComponent
+} from '../cable_joints/ecs.js';
+
+import { PBDBallBallCollisions } from '../cable_joints/commonSystems.js';
 
 describe('PBDBallBallCollisions', () => {
   test('swaps velocities on perfectly elastic head-on collision', () => {

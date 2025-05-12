@@ -1,4 +1,4 @@
-class Vector2 {
+export default class Vector2 {
   constructor(x = 0.0, y = 0.0) { this.x = x; this.y = y; }
   set(v) { this.x = v.x; this.y = v.y; }
   clone() { return new Vector2(this.x, this.y); }
@@ -25,5 +25,3 @@ class Vector2 {
     return this;
   }
 }
-
-module.exports = { Vector2 };

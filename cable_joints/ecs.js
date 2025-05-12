@@ -1,7 +1,6 @@
-const { Vector2 } = require('./vector2');
+import Vector2 from './vector2.js';
 
-
-class World {
+export class World {
   constructor() {
     this.entities = new Map(); // entityId -> Set<ComponentClass>
     this.components = new Map(); // ComponentClass -> Map<entityId, ComponentInstance>
@@ -115,30 +114,29 @@ class World {
         system.update(this, dt);
       }
     }
-    canvas.focus();
   }
 }
 
 
-class PositionComponent {
+export class PositionComponent {
   constructor(x = 0, y = 0) {
     this.pos = new Vector2(x, y);
   }
 }
-class PrevFinalPosComponent {
+export class PrevFinalPosComponent {
   constructor(x = 0, y = 0) {
     this.pos = new Vector2(x, y);
   }
 }
-class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
-class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
-class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
-class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
-class GravityAffectedComponent { }
-class BallTagComponent { }
-class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
-class FlipperTagComponent { }
-class FlipperStateComponent {
+export class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
+export class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
+export class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
+export class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
+export class GravityAffectedComponent { }
+export class BallTagComponent { }
+export class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
+export class FlipperTagComponent { }
+export class FlipperStateComponent {
   constructor(length, restAngle, maxRotation, angularVelocity) {
     this.length = length;
     this.restAngle = restAngle;
@@ -151,50 +149,28 @@ class FlipperStateComponent {
     this.pressed = false; // Was it activated?
   }
 }
-class ObstacleTagComponent { }
-class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
-class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
-class OrientationComponent {
+export class ObstacleTagComponent { }
+export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
+export class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
+export class OrientationComponent {
     constructor(angle = 0.0) {
         this.angle = angle; // Radians
     }
 }
-class AngularVelocityComponent {
+export class AngularVelocityComponent {
     constructor(velocity = 0.0) {
         this.angularVelocity = velocity; // Radians per second
     }
 }
-class MomentOfInertiaComponent {
+export class MomentOfInertiaComponent {
     constructor(inertia = 1.0) {
         this.inertia = inertia; // kg * m^2 (approximate for 2D)
         this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0;
     }
 }
-class RenderableComponent {
+export class RenderableComponent {
   constructor(shape = 'circle', color = '#888888') {
     this.shape = shape; // 'circle', 'flipper', 'border'
     this.color = color;
   }
 }
-
-module.exports = {
-  World,
-  PositionComponent,
-  PrevFinalPosComponent,
-  VelocityComponent,
-  RadiusComponent,
-  MassComponent,
-  RestitutionComponent,
-  GravityAffectedComponent,
-  BallTagComponent,
-  BorderComponent,
-  FlipperTagComponent,
-  FlipperStateComponent,
-  ObstacleTagComponent,
-  PauseStateComponent,
-  SimulationErrorStateComponent,
-  OrientationComponent,
-  AngularVelocityComponent,
-  MomentOfInertiaComponent,
-  RenderableComponent
-};

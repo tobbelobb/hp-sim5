@@ -1,4 +1,13 @@
-const { World, VelocityComponent, GravityAffectedComponent, Vector2, GravitySystem } = require('../cable_joints/cable_joints_core');
+import Vector2 from '../cable_joints/vector2.js';
+
+import {
+  World,
+  PositionComponent,
+  VelocityComponent,
+  GravityAffectedComponent
+} from '../cable_joints/ecs.js';
+
+import { GravitySystem } from '../cable_joints/commonSystems.js';
 
 // Mocked world for system tests
 describe('GravitySystem', () => {

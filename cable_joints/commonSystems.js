@@ -1,18 +1,20 @@
-const { Vector2 } = require('./vector2');
+import Vector2 from './vector2.js';
 
-
-const {
+import {
   PositionComponent,
   VelocityComponent,
   GravityAffectedComponent,
   BallTagComponent,
   RadiusComponent,
   MassComponent,
-  RestitutionComponent
-} = require('./ecs');
+  RestitutionComponent,
+  PrevFinalPosComponent,
+  OrientationComponent,
+  AngularVelocityComponent
+} from './ecs.js';
 
 
-class GravitySystem {
+export class GravitySystem {
   runInPause = false;
   update(world, dt) {
     const grabbed = world.getResource('grabbedBall');
@@ -28,7 +30,7 @@ class GravitySystem {
   }
 }
 
-class MovementSystem {
+export class MovementSystem {
   runInPause = false;
   update(world, dt) {
     const grabbed = world.getResource('grabbedBall');
@@ -43,7 +45,7 @@ class MovementSystem {
   }
 }
 
-class PrevFinalPosSystem {
+export class PrevFinalPosSystem {
     runInPause = false;
     update(world, dt) {
         const entities = world.query([PositionComponent, PrevFinalPosComponent]);
@@ -56,7 +58,7 @@ class PrevFinalPosSystem {
 }
 
 
-class AngularMovementSystem {
+export class AngularMovementSystem {
     runInPause = false;
     update(world, dt) {
         const entities = world.query([OrientationComponent, AngularVelocityComponent]);
@@ -69,7 +71,7 @@ class AngularMovementSystem {
     }
 }
 
-class PBDBallBallCollisions {
+export class PBDBallBallCollisions {
   runInPause = false;
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
@@ -119,7 +121,7 @@ class PBDBallBallCollisions {
   }
 }
 
-class PBDBallObstacleCollisions {
+export class PBDBallObstacleCollisions {
   runInPause = false;
 
   update(world, dt) {
@@ -156,7 +158,7 @@ class PBDBallObstacleCollisions {
   }
 }
 
-class InputReplaySystem {
+export class InputReplaySystem {
   runInPause = false;
   constructor(inputLog, inputSystem) {
     this.inputLog = inputLog;
@@ -174,14 +176,3 @@ class InputReplaySystem {
     }
   }
 }
-
-
-module.exports = {
-  GravitySystem,
-  MovementSystem,
-  PrevFinalPosSystem,
-  AngularMovementSystem,
-  PBDBallBallCollisions,
-  PBDBallObstacleCollisions,
-  InputReplaySystem
-};

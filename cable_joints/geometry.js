@@ -1,6 +1,6 @@
-const { Vector2 } = require('./vector2');
+import Vector2 from './vector2.js';
 
-function closestPointOnSegment(p, a, b) {
+export function closestPointOnSegment(p, a, b) {
   const ab = new Vector2().subtractVectors(b, a);
   const ap = new Vector2().subtractVectors(p, a);
   let t = ap.dot(ab);
@@ -12,7 +12,7 @@ function closestPointOnSegment(p, a, b) {
 }
 
 // Helper: Calculate tangent points between a point and a circle (Algorithm 3 from Cable Joints paper)
-function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
+export function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
   const dVec = new Vector2().subtractVectors(p_circle, p_attach);
   const dSq = dVec.lengthSq();
 
@@ -47,15 +47,15 @@ function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFirst) {
   };
 }
 
-function tangentFromPointToCircle(p_attach, p_circle, r_circle, cw){
+export function tangentFromPointToCircle(p_attach, p_circle, r_circle, cw){
   return _tangentPointCircle(p_attach,p_circle,r_circle,cw,true);
 }
 
-function tangentFromCircleToPoint(p_attach, p_circle, r_circle, cw){
+export function tangentFromCircleToPoint(p_attach, p_circle, r_circle, cw){
   return _tangentPointCircle(p_attach,p_circle,r_circle,cw,false);
 }
 
-function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
+export function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
   let dVec = new Vector2().subtractVectors(posB, posA);
   let d = dVec.length();
 
@@ -107,7 +107,7 @@ function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB) {
  * @param {boolean} clockwisePreference - If true, positive arc length means CW, else CCW
  * @returns {number} Signed arc length (positive = preferred direction)
  */
-function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwisePreference, force_positive = false) {
+export function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwisePreference, force_positive = false) {
   const toPrev = new Vector2().subtractVectors(prevPoint, center);
   const toCurr = new Vector2().subtractVectors(currPoint, center);
 
@@ -138,7 +138,7 @@ function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwiseP
  * @param {number} radius - Radius of the circle
  * @returns {boolean} True if the segment intersects the circle, false otherwise.
  */
-function lineSegmentCircleIntersection(p1, p2, center, radius) {
+export function lineSegmentCircleIntersection(p1, p2, center, radius) {
   // 1. Check if either endpoint is inside the circle
   if (p1.distanceTo(center) <= radius || p2.distanceTo(center) <= radius) {
     return true;
@@ -175,7 +175,7 @@ function lineSegmentCircleIntersection(p1, p2, center, radius) {
  * @param {Vector2} p1 - The end point of the line segment.
  * @returns {boolean} True if x is strictly to the left, false otherwise (right or collinear).
  */
-function rightOfLine(x, p0, p1) {
+export function rightOfLine(x, p0, p1) {
   const v_x = p1.x - p0.x;
   const v_y = p1.y - p0.y;
   const w_x = x.x - p0.x;
@@ -185,14 +185,3 @@ function rightOfLine(x, p0, p1) {
   // Return true if the cross product is positive (indicating left)
   return crossProduct < 0.0;
 }
-
-module.exports = {
-  closestPointOnSegment,
-  _tangentPointCircle,
-  tangentFromPointToCircle,
-  tangentFromCircleToPoint,
-  tangentFromCircleToCircle,
-  signedArcLengthOnWheel,
-  lineSegmentCircleIntersection,
-  rightOfLine
-};

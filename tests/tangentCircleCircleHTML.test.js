@@ -1,4 +1,5 @@
-const { Vector2, tangentFromCircleToCircle } = require('../cable_joints/cable_joints_core');
+import Vector2 from '../cable_joints/vector2.js';
+import { tangentFromCircleToCircle } from '../cable_joints/geometry.js';
 
 describe('tangentFromCircleToCircle HTML test cases', () => {
   test('TT: cwA=true, cwB=true (outer tangent)', () => {

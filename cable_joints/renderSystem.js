@@ -1,12 +1,22 @@
-const { Vector2 } = require('./vector2');
-const {
+import Vector2 from './vector2.js';
+
+import {
   PositionComponent,
   RadiusComponent,
   RenderableComponent,
-  OrientationComponent
-} = require('./ecs');
+  OrientationComponent,
+  BorderComponent,
+  FlipperTagComponent,
+  FlipperStateComponent
+} from './ecs.js';
 
-class RenderSystem {
+import {
+  CableLinkComponent,
+  CableJointComponent,
+  CablePathComponent
+} from './cable_joints_core.js';
+
+export class RenderSystem {
   runInPause = true; // Always render
   constructor(canvas, cScale, simHeight, viewScaleMultiplier = 1.0, viewOffsetX_sim = 0.0, viewOffsetY_sim = 0.0) {
     this.canvas = canvas;
@@ -517,5 +527,3 @@ class RenderSystem {
     }
   }
 }
-
-module.exports = { RenderSystem };

@@ -1,5 +1,4 @@
-
-function dumpWorldState(world) {
+export function dumpWorldState(world) {
   const renderSystem = world.getResource('renderSystem');
   const viewportScale = renderSystem ? renderSystem.viewScaleMultiplier : 1.0;
   const viewportOffsetX = renderSystem ? renderSystem.viewOffsetX_sim : 0.0;
@@ -189,5 +188,3 @@ testGeneratedError: {
 `;
   return dump;
 }
-
-module.exports = { dumpWorldState };

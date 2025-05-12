@@ -1,4 +1,10 @@
-const { World, PositionComponent, VelocityComponent, MovementSystem } = require('../cable_joints/cable_joints_core');
+import {
+  World,
+  PositionComponent,
+  VelocityComponent
+} from '../cable_joints/ecs.js';
+
+import { MovementSystem } from '../cable_joints/commonSystems.js';
 
 describe('MovementSystem', () => {
   test('updates position based on velocity and dt', () => {

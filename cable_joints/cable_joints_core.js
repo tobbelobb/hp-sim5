@@ -1,51 +1,35 @@
-const { Vector2 } = require('./vector2');
+import Vector2 from './vector2.js';
 
-const {
-  closestPointOnSegment, // Only here for re-export
-  _tangentPointCircle,   // Only here for re-export
+import {
   tangentFromPointToCircle,
   tangentFromCircleToPoint,
   tangentFromCircleToCircle,
   signedArcLengthOnWheel,
   lineSegmentCircleIntersection,
   rightOfLine,
-} = require('./geometry');
+} from './geometry.js';
 
-const {
+import {
   World,
   PositionComponent,
   PrevFinalPosComponent,
   VelocityComponent,
   RadiusComponent,
   MassComponent,
-  RestitutionComponent, // Only here for re-export
-  GravityAffectedComponent, // Only here for re-export
-  BallTagComponent, // Only here for re-export
-  BorderComponent, // Only here for re-export
-  FlipperTagComponent, // Only here for re-export
-  FlipperStateComponent, // Only here for re-export
-  ObstacleTagComponent,// Only here for re-export
-  PauseStateComponent,// Only here for re-export
-  SimulationErrorStateComponent,// Only here for re-export
   OrientationComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
   RenderableComponent
-} = require('./ecs');
+} from './ecs.js';
 
-const {
+import {
   GravitySystem,
   MovementSystem,
-  PrevFinalPosSystem, // Only here for re-export
-  AngularMovementSystem, // Only here for re-export
-  PBDBallBallCollisions, // Only here for re-export
-  PBDBallObstacleCollisions, // Only here for re-export
-  InputReplaySystem // Only here for re-export
-} = require('./commonSystems');
+} from './commonSystems.js';
 
-const linecolor1 = '#FFFF00'
+export const linecolor1 = '#FFFF00'
 
-class CableLinkComponent {
+export class CableLinkComponent {
   constructor(x = 0, y = 0, angle = 0.0) {
     this.prevCableAttachmentTimePos = new Vector2(x, y);
     this.prevCableAttachmentTimeAngle = angle;
@@ -53,7 +37,7 @@ class CableLinkComponent {
 }
 
 // Represents a single segment constraint between two entities
-class CableJointComponent {
+export class CableJointComponent {
   constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
     this.entityA = entityA;
     this.entityB = entityB;
@@ -64,7 +48,7 @@ class CableJointComponent {
 }
 
 // Connects individual cable joints into a cable path
-class CablePathComponent {
+export class CablePathComponent {
   constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
@@ -164,7 +148,7 @@ class CablePathComponent {
 //    at the exact part of the time step/game loop where CableAttachmentUpdateSystem itself is placed.
 //  - Each feature is responsible for updating ABRS and any other variable (`path.cw[i]`, `path.linkTypes[i], `joint.entityA`, `joint.entityB`);
 //    `path[i].linkTypes` and any other variable it touches in a way that makes sense physically and doesn't break the simulation.
-class CableAttachmentUpdateSystem {
+export class CableAttachmentUpdateSystem {
   runInPause = false;
 
   _effectiveCW(path, linkIndex, travellingFromCircle) {
@@ -696,7 +680,7 @@ class CableAttachmentUpdateSystem {
 }
 
 
-class PBDCableConstraintSolver {
+export class PBDCableConstraintSolver {
   runInPause = false;
 
   update(world, dt) {
@@ -858,49 +842,3 @@ class PBDCableConstraintSolver {
     } // End loop through paths
   } // end update
 } // end PBDCableConstraintSolver
-
-// Export for testing
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    Vector2,
-    closestPointOnSegment,
-    _tangentPointCircle,
-    tangentFromPointToCircle,
-    tangentFromCircleToPoint,
-    tangentFromCircleToCircle,
-    signedArcLengthOnWheel,
-    lineSegmentCircleIntersection,
-    rightOfLine,
-    World,
-    PositionComponent,
-    PrevFinalPosComponent,
-    RadiusComponent,
-    CableJointComponent,
-    CableLinkComponent,
-    CablePathComponent,
-    VelocityComponent,
-    BallTagComponent,
-    BorderComponent,
-    FlipperTagComponent, // Only here for re-export
-    FlipperStateComponent, // Only here for re-export
-    ObstacleTagComponent,// Only here for re-export
-    PauseStateComponent,// Only here for re-export
-    SimulationErrorStateComponent,// Only here for re-export
-    OrientationComponent,
-    AngularVelocityComponent,
-    MomentOfInertiaComponent,
-    RenderableComponent,
-    MassComponent,
-    RestitutionComponent,
-    GravityAffectedComponent,
-    GravitySystem,
-    MovementSystem,
-    PBDBallBallCollisions,
-    CableAttachmentUpdateSystem,
-    PrevFinalPosSystem,
-    AngularMovementSystem,
-    PBDBallObstacleCollisions,
-    InputReplaySystem
-  };
-}
-

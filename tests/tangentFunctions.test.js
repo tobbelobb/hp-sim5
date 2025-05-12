@@ -1,4 +1,5 @@
-const { Vector2, _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle } = require('../cable_joints/cable_joints_core');
+import Vector2 from '../cable_joints/vector2.js';
+import { _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle } from '../cable_joints/geometry.js';
 
 describe('_tangentPointCircle', () => {
   test('point outside circle returns correct tangent points', () => {

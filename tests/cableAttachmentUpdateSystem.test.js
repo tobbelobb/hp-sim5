@@ -1,16 +1,23 @@
-const {
-  Vector2,
+import Vector2 from '../cable_joints/vector2.js';
+
+import {
   World,
   PositionComponent,
-  RadiusComponent,
+  RadiusComponent
+} from '../cable_joints/ecs.js';
+
+import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
+  CableAttachmentUpdateSystem
+} from '../cable_joints/cable_joints_core.js';
+
+import {
   tangentFromPointToCircle,
   tangentFromCircleToPoint,
-  signedArcLengthOnWheel,
-  CableAttachmentUpdateSystem
-} = require('../cable_joints/cable_joints_core');
+  signedArcLengthOnWheel
+} from '../cable_joints/geometry.js';
 
 describe('CableAttachmentUpdateSystem', () => {
   test('merges joints when positions opposite vertically, conserving rest length', () => {

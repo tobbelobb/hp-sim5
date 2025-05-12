@@ -1,4 +1,5 @@
-const { Vector2, closestPointOnSegment } = require('../cable_joints/cable_joints_core');
+import Vector2 from '../cable_joints/vector2.js';
+import { closestPointOnSegment } from '../cable_joints/geometry.js';
 
 describe('closestPointOnSegment', () => {
   test('point projects inside segment', () => {
