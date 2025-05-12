@@ -1,10 +1,13 @@
 import Vector2 from '../cable_joints/vector2.js';
-import { World, PositionComponent, VelocityComponent, MassComponent } from '../cable_joints/ecs.js';
+import { World, PositionComponent, VelocityComponent, MassComponent, GravityAffectedComponent } from '../cable_joints/ecs.js';
 import {
   CableJointComponent,
+  CableLinkComponent,
   CablePathComponent,
+  CableAttachmentUpdateSystem,
   PBDCableConstraintSolver
 } from '../cable_joints/cable_joints_core.js';
+import { GravitySystem } from '../cable_joints/commonSystems.js';
 
 describe('PBDCableConstraintSolver', () => {
   test('does nothing when compliance is zero', () => {
@@ -79,6 +82,8 @@ describe('PBDCableConstraintSolver', () => {
     world.addComponent(e1, new VelocityComponent(0, 0));
     world.addComponent(e0, new MassComponent(1.0));
     world.addComponent(e1, new MassComponent(1.0));
+    world.addComponent(e0, new CableLinkComponent);
+    world.addComponent(e1, new CableLinkComponent);
 
     const j1 = world.createEntity();
     world.addComponent(
@@ -101,9 +106,13 @@ describe('PBDCableConstraintSolver', () => {
     );
     world.addComponent(pathEnt, pathComp);
 
+    const dt = 0.016;
     const solver = new PBDCableConstraintSolver();
-    solver.update(world, 0.016);
-    solver.update(world, 0.016);
+    const cableAttachmentSystem = new CableAttachmentUpdateSystem();
+    cableAttachmentSystem.update(world, dt);
+    solver.update(world, dt);
+    cableAttachmentSystem.update(world, dt);
+    solver.update(world, dt);
 
     const comp1 = world.getComponent(j1, CableJointComponent);
     const d1 = comp1.attachmentPointA_world.distanceTo(comp1.attachmentPointB_world);
@@ -111,15 +120,20 @@ describe('PBDCableConstraintSolver', () => {
   });
 
   test('pendulum constraint keeps mass within restLength under gravity', () => {
+    const startLength = 2.0;
+    const restLength = 1.0;
     const world = new World();
     // Fixed point at origin
     const origin = world.createEntity();
     world.addComponent(origin, new PositionComponent(0, 0));
-    // Mass entity starting beyond rest length
+    world.addComponent(origin, new CableLinkComponent);
+    // Mass entity starting stretched beyond rest length
     const mass = world.createEntity();
-    world.addComponent(mass, new PositionComponent(0, -2));
+    world.addComponent(mass, new PositionComponent(0, -startLength));
     world.addComponent(mass, new VelocityComponent(0, 0));
     world.addComponent(mass, new MassComponent(1.0));
+    world.addComponent(mass, new GravityAffectedComponent);
+    world.addComponent(mass, new CableLinkComponent);
     // Cable joint with rest length 1 between origin and mass
     const j = world.createEntity();
     world.addComponent(
@@ -127,9 +141,9 @@ describe('PBDCableConstraintSolver', () => {
       new CableJointComponent(
         origin,
         mass,
-        1.0,
+        restLength,
         new Vector2(0, 0),
-        new Vector2(0, -2)
+        new Vector2(0, -startLength)
       )
     );
     // Build path
@@ -143,15 +157,20 @@ describe('PBDCableConstraintSolver', () => {
         [true, true]
       )
     );
+    const gravitySystem = new GravitySystem();
+    const cableAttachmentSystem = new CableAttachmentUpdateSystem();
     const solver = new PBDCableConstraintSolver();
+    const dt =  0.016;
     // Run solver multiple times to enforce constraint
     for (let i = 0; i < 5; i++) {
-      solver.update(world, 0.016);
+      gravitySystem.update(world, dt);
+      cableAttachmentSystem.update(world, dt);
+      solver.update(world, dt);
     }
     // Check that the mass is no further than rest length from origin
     const posOrigin = world.getComponent(origin, PositionComponent).pos;
     const posMass = world.getComponent(mass, PositionComponent).pos;
     const distance = posOrigin.distanceTo(posMass);
-    expect(distance).toBeLessThanOrEqual(1.0001);
+    expect(distance).toBeCloseTo(restLength, 5);
   });
 });
