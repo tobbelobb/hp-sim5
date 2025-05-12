@@ -2,9 +2,9 @@
 <html>
 <head>
     <title>Mindfulness Pinball</title>
-    <!-- Simple favicon: 1x1 transparent icon -->
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A" />
 
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
     <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
     <meta name="viewport"
           content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -108,9 +108,61 @@ canvas {
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
-<script src="cable_joints/cable_joints_core.js"></script>
-<script>
-    const { dumpWorldState } = require('cable_joints/debugUtils');
+<script type="module">
+    import Vector2 from './cable_joints/vector2.js';
+    import { dumpWorldState } from './cable_joints/debugUtils.js';
+    import {
+      World,
+      PauseStateComponent,
+      SimulationErrorStateComponent,
+      BorderComponent,
+      RenderableComponent,
+      BallTagComponent,
+      PositionComponent,
+      VelocityComponent,
+      RadiusComponent,
+      MassComponent,
+      RestitutionComponent,
+      GravityAffectedComponent,
+      OrientationComponent,
+      AngularVelocityComponent,
+      MomentOfInertiaComponent,
+      ObstacleTagComponent,
+      FlipperTagComponent,
+      FlipperStateComponent,
+      PrevFinalPosComponent
+    } from './cable_joints/ecs.js';
+
+    import {
+      CableLinkComponent,
+      CableJointComponent,
+      CablePathComponent,
+      linecolor1,
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
+    } from './cable_joints/cable_joints_core.js';
+
+    import {
+      tangentFromPointToCircle,
+      tangentFromCircleToPoint,
+      tangentFromCircleToCircle,
+      closestPointOnSegment,
+      rightOfLine
+    } from './cable_joints/geometry.js';
+
+    import {
+      PrevFinalPosSystem,
+      InputReplaySystem,
+      GravitySystem,
+      MovementSystem,
+      AngularMovementSystem,
+      PBDBallBallCollisions
+    } from './cable_joints/commonSystems.js';
+
+    import {
+      RenderSystem
+    } from './cable_joints/renderSystem.js';
+
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class ScoredTagComponent { }
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
@@ -688,7 +740,7 @@ canvas {
     // --- Global World ---
     let world = new World();
 
-    getGameStateForTest = () => {
+    let getGameStateForTest = () => {
         if (!world || !world.query) { // Check if world and its methods are available
             console.error("World object not available for getGameStateForTest");
             return null;
