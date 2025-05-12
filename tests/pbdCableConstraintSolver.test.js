@@ -109,4 +109,49 @@ describe('PBDCableConstraintSolver', () => {
     const d1 = comp1.attachmentPointA_world.distanceTo(comp1.attachmentPointB_world);
     expect(d1).toBeCloseTo(3.0, 1);
   });
+
+  test('pendulum constraint keeps mass within restLength under gravity', () => {
+    const world = new World();
+    // Fixed point at origin
+    const origin = world.createEntity();
+    world.addComponent(origin, new PositionComponent(0, 0));
+    // Mass entity starting beyond rest length
+    const mass = world.createEntity();
+    world.addComponent(mass, new PositionComponent(0, -2));
+    world.addComponent(mass, new VelocityComponent(0, 0));
+    world.addComponent(mass, new MassComponent(1.0));
+    // Cable joint with rest length 1 between origin and mass
+    const j = world.createEntity();
+    world.addComponent(
+      j,
+      new CableJointComponent(
+        origin,
+        mass,
+        1.0,
+        new Vector2(0, 0),
+        new Vector2(0, -2)
+      )
+    );
+    // Build path
+    const pathEnt = world.createEntity();
+    world.addComponent(
+      pathEnt,
+      new CablePathComponent(
+        world,
+        [j],
+        ['attachment', 'attachment'],
+        [true, true]
+      )
+    );
+    const solver = new PBDCableConstraintSolver();
+    // Run solver multiple times to enforce constraint
+    for (let i = 0; i < 5; i++) {
+      solver.update(world, 0.016);
+    }
+    // Check that the mass is no further than rest length from origin
+    const posOrigin = world.getComponent(origin, PositionComponent).pos;
+    const posMass = world.getComponent(mass, PositionComponent).pos;
+    const distance = posOrigin.distanceTo(posMass);
+    expect(distance).toBeLessThanOrEqual(1.0001);
+  });
 });
