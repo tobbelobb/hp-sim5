@@ -111,125 +111,125 @@ describe('_splitJoints', () => {
     expect(pathComp.jointEntities).toEqual(expect.arrayContaining([joint1, joint2]));
   });
 
-  //test('_splitJoints inserts a wheel joint when a straight segment intersects the wheel', () => {
-  //  const world  = new World();
-  //  const system = new CableAttachmentUpdateSystem();
+  test('_splitJoints inserts a wheel joint when a straight segment intersects the wheel', () => {
+    const world  = new World();
+    const system = new CableAttachmentUpdateSystem();
 
-  //  // Anchors on opposite sides of a wheel, but the rope is *still* a single
-  //  //  straight joint.  The line AB pierces the wheel’s circle => must split.
-  //  const A = world.createEntity();
-  //  const B = world.createEntity();
-  //  const wheel = world.createEntity();
-  //  world.addComponent(A, new PositionComponent(-4, 0));
-  //  world.addComponent(B, new PositionComponent(4, 0));
-  //  world.addComponent(wheel, new PositionComponent(0, 0));
-  //  world.addComponent(wheel, new RadiusComponent(1.5));
+    // Anchors on opposite sides of a wheel, but the rope is *still* a single
+    //  straight joint.  The line AB pierces the wheel’s circle => must split.
+    const A = world.createEntity();
+    const B = world.createEntity();
+    const wheel = world.createEntity();
+    world.addComponent(A, new PositionComponent(-4, 0));
+    world.addComponent(B, new PositionComponent(4, 0));
+    world.addComponent(wheel, new PositionComponent(0, 0));
+    world.addComponent(wheel, new CableLinkComponent(0, 0));
+    world.addComponent(wheel, new RadiusComponent(1.5));
 
-  //  // One straight joint for the entire rope
-  //  const joint = world.createEntity();
-  //  world.addComponent(
-  //    joint,
-  //    new CableJointComponent(A, B, 8, new Vector2(-4, 0), new Vector2(4, 0)),
-  //  );
-  //  const path = world.createEntity();
-  //  const pathComp = new CablePathComponent(
-  //    world,
-  //    [joint],
-  //    ['attachment', 'attachment'],
-  //    [false, false],
-  //  );
-  //  world.addComponent(path, pathComp);
+    // One straight joint for the entire rope
+    const joint = world.createEntity();
+    world.addComponent(
+      joint,
+      new CableJointComponent(A, B, 8, new Vector2(-4, 0), new Vector2(4, 0)),
+    );
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['attachment', 'attachment'],
+      [false, false],
+    );
+    world.addComponent(path, pathComp);
 
-  //  system._splitJoints(world);
+    system._splitJoints(world);
 
-  //  // Expect the path to have grown to two joints (Anchor-Wheel, Wheel-Anchor)
-  //  expect(pathComp.jointEntities.length).toBe(2);
+    // Expect the path to have grown to two joints (Anchor-Wheel, Wheel-Anchor)
+    expect(pathComp.jointEntities.length).toBe(2);
 
-  //  // Find new joint entity that wasn’t in the original single-joint array
-  //  const newJointId = pathComp.jointEntities.find(id => id !== joint);
-  //  const newJoint = world.getComponent(newJointId, CableJointComponent);
-  //  const oldJoint = world.getComponent(joint, CableJointComponent);
+    // Find new joint entity that wasn’t in the original single-joint array
+    const newJointId = pathComp.jointEntities.find(id => id !== joint);
+    const newJoint = world.getComponent(newJointId, CableJointComponent);
+    const oldJoint = world.getComponent(joint, CableJointComponent);
 
-  //  // One of them must terminate / originate at the wheel
-  //  expect([oldJoint.entityA, oldJoint.entityB, newJoint.entityA, newJoint.entityB])
-  //    .toContain(wheel);
+    // One of them must terminate / originate at the wheel
+    expect([oldJoint.entityA, oldJoint.entityB, newJoint.entityA, newJoint.entityB])
+      .toContain(wheel);
 
-  //  // Link-type list should now contain 'rolling' in the middle
-  //  expect(pathComp.linkTypes).toEqual(['attachment', 'rolling', 'attachment']);
+    // Link-type list should now contain 'rolling' in the middle
+    expect(pathComp.linkTypes).toEqual(['attachment', 'rolling', 'attachment']);
 
-  //  // Stored arc length around the wheel must be non-negative
-  //  expect(pathComp.stored[1]).toBeGreaterThanOrEqual(0);
-  //});
+    // Stored arc length around the wheel must be non-negative
+    expect(pathComp.stored[1]).toBeGreaterThanOrEqual(0);
+  });
 
-  ///* ------------------------------------------------------------------ *
-  // *  4. Splitting one segment into THREE when it intersects two wheels
-  // * ------------------------------------------------------------------ */
-  //test('_splitJoints creates three joints when a straight segment intersects two wheels', () => {
-  //  // Requires reRunSplit-style logic inside _splitJoints,
-  //  // analogous to the reRunMerge branch you exercised earlier.
+  test('_splitJoints creates three joints when a straight segment intersects two wheels', () => {
+    // Requires reRunSplit-style logic inside _splitJoints,
+    // analogous to the reRunMerge branch you exercised earlier.
 
-  //  const world  = new World();
-  //  const system = new CableAttachmentUpdateSystem();
+    const world  = new World();
+    const system = new CableAttachmentUpdateSystem();
 
-  //  const A = world.createEntity();
-  //  const B = world.createEntity();
-  //  const wheel1 = world.createEntity();
-  //  const wheel2 = world.createEntity();
+    const A = world.createEntity();
+    const B = world.createEntity();
+    const wheel1 = world.createEntity();
+    const wheel2 = world.createEntity();
 
-  //  // Geometry: wheels sit below the rope so AB crosses both circles
-  //  const aPos = new Vector2(-4,  0);
-  //  const bPos = new Vector2( 4,  0);
-  //  const w1Pos = new Vector2(-1.5, -0.75);
-  //  const w2Pos = new Vector2( 1.5,  0.75);
-  //  const r = 0.9;
+    // Geometry: wheels sit below the rope so AB crosses both circles
+    const aPos = new Vector2(-4,  0);
+    const bPos = new Vector2( 4,  0);
+    const w1Pos = new Vector2(-1.5, -0.75);
+    const w2Pos = new Vector2( 1.5,  0.75);
+    const r = 0.9;
 
-  //  world.addComponent(A, new PositionComponent(aPos.x, aPos.y));
-  //  world.addComponent(B, new PositionComponent(bPos.x, bPos.y));
+    world.addComponent(A, new PositionComponent(aPos.x, aPos.y));
+    world.addComponent(B, new PositionComponent(bPos.x, bPos.y));
 
-  //  world.addComponent(wheel1, new PositionComponent(w1Pos.x, w1Pos.y));
-  //  world.addComponent(wheel1, new RadiusComponent(r));
+    world.addComponent(wheel1, new PositionComponent(w1Pos.x, w1Pos.y));
+    world.addComponent(wheel1, new CableLinkComponent(w1Pos.x, w1Pos.y));
+    world.addComponent(wheel1, new RadiusComponent(r));
 
-  //  world.addComponent(wheel2, new PositionComponent(w2Pos.x, w2Pos.y));
-  //  world.addComponent(wheel2, new RadiusComponent(r));
+    world.addComponent(wheel2, new PositionComponent(w2Pos.x, w2Pos.y));
+    world.addComponent(wheel2, new CableLinkComponent(w2Pos.x, w2Pos.y));
+    world.addComponent(wheel2, new RadiusComponent(r));
 
-  //  // One joint: A - B
-  //  const joint = world.createEntity();
-  //  world.addComponent(
-  //    joint,
-  //    new CableJointComponent(A, B,
-  //      aPos.distanceTo(bPos), aPos.clone(), bPos.clone()),
-  //  );
+    // One joint: A - B
+    const joint = world.createEntity();
+    world.addComponent(
+      joint,
+      new CableJointComponent(A, B,
+        aPos.distanceTo(bPos), aPos.clone(), bPos.clone()),
+    );
 
-  //  const path = world.createEntity();
-  //  const pathComp = new CablePathComponent(
-  //    world,
-  //    [joint],
-  //    ['attachment', 'attachment'],
-  //    [false, false],
-  //  );
-  //  world.addComponent(path, pathComp);
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['attachment', 'attachment'],
+      [false, false],
+    );
+    world.addComponent(path, pathComp);
 
-  //  system._splitJoints(world);
+    system._splitJoints(world);
 
-  //  // Path should now have three joints (A-W1, W1-W2, W2-B)
-  //  expect(pathComp.jointEntities.length).toBe(3);
+    // Path should now have three joints (A-W1, W1-W2, W2-B)
+    expect(pathComp.jointEntities.length).toBe(3);
 
-  //  // Collect the new joints and verify each wheel appears exactly once
-  //  const comps = pathComp.jointEntities.map(id =>
-  //    world.getComponent(id, CableJointComponent));
+    // Collect the new joints and verify each wheel appears exactly once
+    const comps = pathComp.jointEntities.map(id =>
+      world.getComponent(id, CableJointComponent));
 
-  //  const wheelOccurrences = comps.flatMap(c => [c.entityA, c.entityB])
-  //    .filter(id => id === wheel1 || id === wheel2);
+    const wheelOccurrences = comps.flatMap(c => [c.entityA, c.entityB])
+      .filter(id => id === wheel1 || id === wheel2);
 
-  //  expect(wheelOccurrences.filter(id => id === wheel1).length).toBe(2); // in/out
-  //  expect(wheelOccurrences.filter(id => id === wheel2).length).toBe(2); // in/out
+    expect(wheelOccurrences.filter(id => id === wheel1).length).toBe(2); // in/out
+    expect(wheelOccurrences.filter(id => id === wheel2).length).toBe(2); // in/out
 
-  //  // Link types now: attachment - rolling - rolling - attachment
-  //  expect(pathComp.linkTypes).toEqual(['attachment', 'rolling', 'rolling', 'attachment']);
+    // Link types now: attachment - rolling - rolling - attachment
+    expect(pathComp.linkTypes).toEqual(['attachment', 'rolling', 'rolling', 'attachment']);
 
-  //  // Stored arc lengths: two positive values (one per wheel), no negatives
-  //  expect(pathComp.stored.length).toBe(4);
-  //  expect(pathComp.stored[1]).toBeGreaterThanOrEqual(0);
-  //  expect(pathComp.stored[2]).toBeGreaterThanOrEqual(0);
-  //});
+    // Stored arc lengths: two positive values (one per wheel), no negatives
+    expect(pathComp.stored.length).toBe(4);
+    expect(pathComp.stored[1]).toBeGreaterThanOrEqual(0);
+    expect(pathComp.stored[2]).toBeGreaterThanOrEqual(0);
+  });
 });
