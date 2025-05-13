@@ -190,88 +190,6 @@ describe('CableAttachmentUpdateSystem', () => {
     const finalTotalRestLength = jointComp.restLength + pathComp.stored[0] + pathComp.stored[1];
     expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
 
-      test('hybrid-attachment -> rolling -> rolling -> hybrid with small rotations', () => {
-        const world = new World();
-        const system = new CableAttachmentUpdateSystem();
-
-        // Entities: hybrid-attachment start, two rolling links, hybrid end
-        const startAttach = world.createEntity();
-        const rollA = world.createEntity();
-        const rollB = world.createEntity();
-        const endHybrid = world.createEntity();
-
-        // Initial positions and parameters
-        const posStart = new Vector2(-1, 0);
-        const posA = new Vector2(0, 0);
-        const posB = new Vector2(2, 0);
-        const posEnd = new Vector2(3, 0);
-        const radiusA = 0.5;
-        const radiusB = 0.5;
-        const cwA = true;
-        const cwB = false;
-        const smallRot = 0.1;
-
-        // Setup start hybrid-attachment link
-        world.addComponent(startAttach, new PositionComponent(posStart.x, posStart.y));
-        world.addComponent(startAttach, new OrientationComponent(0));
-        world.addComponent(startAttach, new RadiusComponent(0));
-        world.addComponent(startAttach, new CableLinkComponent(posStart.x, posStart.y));
-
-        // Setup rolling links
-        [ [rollA, posA, radiusA], [rollB, posB, radiusB] ].forEach(([e, pos, r], i) => {
-          world.addComponent(e, new PositionComponent(pos.x, pos.y));
-          world.addComponent(e, new OrientationComponent(0));
-          world.addComponent(e, new RadiusComponent(r));
-          world.addComponent(e, new CableLinkComponent(pos.x, pos.y));
-        });
-
-        // Setup end hybrid link
-        world.addComponent(endHybrid, new PositionComponent(posEnd.x, posEnd.y));
-        world.addComponent(endHybrid, new OrientationComponent(0));
-        world.addComponent(endHybrid, new RadiusComponent(0));
-        world.addComponent(endHybrid, new CableLinkComponent(posEnd.x, posEnd.y));
-
-        // Create joints: start->rollA, rollA->rollB, rollB->end
-        const jointIds = [];
-        const t0 = tangentFromPointToCircle(posStart, posA, radiusA, cwA);
-        const t1 = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-        const t2 = tangentFromCircleToPoint(posEnd, posB, radiusB, cwB);
-        const tArgs = [
-          [startAttach, rollA, t0.a_attach, t0.a_circle],
-          [rollA, rollB, t1.a_circle, t1.b_circle],
-          [rollB, endHybrid, t2.a_circle, t2.a_attach],
-        ];
-        tArgs.forEach(([a, b, Apt, Bpt]) => {
-          const id = world.createEntity();
-          world.addComponent(id, new CableJointComponent(
-            a, b, Apt.distanceTo(Bpt), Apt.clone(), Bpt.clone()
-          ));
-          jointIds.push(id);
-        });
-
-        // Build the cable path
-        const pathId = world.createEntity();
-        const pathComp = new CablePathComponent(
-          world,
-          jointIds,
-          ['hybrid-attachment', 'rolling', 'rolling', 'hybrid'],
-          [true, cwA, cwB, false]
-        );
-        world.addComponent(pathId, pathComp);
-
-        // Rotate both hybrid ends slightly before update
-        world.getComponent(startAttach, OrientationComponent).angle = smallRot;
-        world.getComponent(endHybrid, OrientationComponent).angle = -smallRot;
-
-        // Run attachment update
-        system._updateAttachmentPoints(world);
-
-        // Verify that the hybrid ends have moved from their original tangents
-        const firstJoint = world.getComponent(jointIds[0], CableJointComponent);
-        const lastJoint = world.getComponent(jointIds[jointIds.length - 1], CableJointComponent);
-        expect(firstJoint.attachmentPointA_world).not.toEqual(t0.a_attach);
-        expect(lastJoint.attachmentPointB_world).not.toEqual(t2.a_attach);
-      });
   });
 
   test('_updateAttachmentPoints: Rolling to Rolling (hybrid) - Translation', () => {
@@ -378,6 +296,107 @@ describe('CableAttachmentUpdateSystem', () => {
     // Total rest length of path should remain constant
     const finalTotalRestLength = jointComp_0.restLength + jointComp.restLength + pathComp.stored[0] + pathComp.stored[1] + pathComp.stored[2];
      expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
+  });
+
+  test('hybrid-attachment -> rolling -> rolling -> hybrid with small rotations', () => {
+    const world = new World();
+    const system = new CableAttachmentUpdateSystem();
+
+    // Entities: hybrid-attachment start, two rolling links, hybrid end
+    const r = 0.5;
+    const startAttach = world.createEntity();
+    const rollA = world.createEntity();
+    const rollB = world.createEntity();
+    const endHybrid = world.createEntity();
+    const cwStart = true;
+    const cwEnd = true;
+
+    // Initial positions and parameters
+    const posStart = new Vector2(-2.5, -2.0);
+    const posA     = new Vector2(-2.0,  0.0);
+    const posB     = new Vector2( 2.0,  0.0);
+    const posEnd   = new Vector2( 2.5,  2.0);
+    const cwA = true;
+    const cwB = false;
+    const smallRot = 0.1;
+
+    // Setup positions, radii, orientations on all four entities
+    [ [startAttach, posStart, r],
+      [rollA, posA, r],
+      [rollB, posB, r],
+      [endHybrid, posEnd, r] ].forEach(([e, pos, r_], i) => {
+      world.addComponent(e, new PositionComponent(pos.x, pos.y));
+      world.addComponent(e, new OrientationComponent(0.0));
+      world.addComponent(e, new RadiusComponent(r_));
+      world.addComponent(e, new CableLinkComponent(pos.x, pos.y));
+    });
+
+    // Create joints: start->rollA, rollA->rollB, rollB->end
+    const jointIds = [];
+    const t0_tangent = tangentFromPointToCircle(posStart, posA, r, cwA);
+    const t0_dir = t0_tangent.a_circle.clone().subtract(t0_tangent.a_attach).normalize();
+    const t0_hybrid_attach = posStart.clone().add(t0_dir.scale(r));
+    const t1 = tangentFromCircleToCircle(posA, r, cwA, posB, r, cwB);
+    const t2 = tangentFromCircleToCircle(posB, r, cwB, posEnd, r, cwEnd);
+    const tArgs = [
+      [startAttach, rollA, t0_hybrid_attach, t0_tangent.a_circle],
+      [rollA, rollB, t1.a_circle, t1.b_circle],
+      [rollB, endHybrid, t2.a_circle, t2.b_circle],
+    ];
+    tArgs.forEach(([a, b, Apt, Bpt]) => {
+      const id = world.createEntity();
+      world.addComponent(id, new CableJointComponent(
+        a, b, Apt.distanceTo(Bpt), Apt.clone(), Bpt.clone()
+      ));
+      jointIds.push(id);
+    });
+    const firstJoint = world.getComponent(jointIds[0], CableJointComponent);
+    expect(firstJoint.attachmentPointA_world).toEqual(t0_hybrid_attach);
+    expect(firstJoint.attachmentPointB_world).toEqual(t0_tangent.a_circle);
+
+    // Build the cable path
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      jointIds,
+      ['hybrid-attachment', 'rolling', 'rolling', 'hybrid'],
+      [cwStart, cwA, cwB, cwEnd]
+    );
+    world.addComponent(pathId, pathComp);
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 8);
+    const initialStoredA = pathComp.stored[1];
+    const initialStoredB = pathComp.stored[2];
+    const initialStoredEnd = pathComp.stored[3];
+    expect(initialStoredEnd).toBeCloseTo(0.0, 8);
+
+    // Rotate both hybrid ends slightly before update
+    world.getComponent(startAttach, OrientationComponent).angle += smallRot;
+    world.getComponent(endHybrid, OrientationComponent).angle += -smallRot;
+
+    // Run attachment update
+    system._updateAttachmentPoints(world);
+
+    // Verity stored
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 8);
+    expect(pathComp.stored[1]).toBeLessThan(initialStoredA);
+    expect(pathComp.stored[2]).toBeCloseTo(initialStoredB, 8);
+    expect(pathComp.stored[3]).toBeCloseTo(r*smallRot, 8);
+
+    // Verify that the hybrid ends have moved from their original tangents
+    expect(firstJoint.attachmentPointA_world).not.toEqual(t0_hybrid_attach);
+    expect(firstJoint.attachmentPointA_world.x).toBeLessThan(t0_hybrid_attach.x);
+    expect(firstJoint.attachmentPointA_world.y).toBeLessThan(t0_hybrid_attach.y);
+    expect(firstJoint.attachmentPointA_world.distanceTo(t0_hybrid_attach)).toBeLessThan(r*smallRot);
+    expect(firstJoint.attachmentPointA_world.distanceTo(posStart)).toBeCloseTo(r, 6);
+
+    expect(firstJoint.attachmentPointB_world).not.toEqual(t0_tangent.a_circle);
+    expect(firstJoint.attachmentPointB_world.x).toBeGreaterThan(t0_tangent.a_circle.x);
+    expect(firstJoint.attachmentPointB_world.y).toBeGreaterThan(t0_tangent.a_circle.y);
+    expect(firstJoint.attachmentPointB_world.distanceTo(t0_tangent.a_circle)).toBeLessThan(r*smallRot);
+    expect(firstJoint.attachmentPointB_world.distanceTo(posA)).toBeCloseTo(r, 6);
+
+    const lastJoint = world.getComponent(jointIds[jointIds.length - 1], CableJointComponent);
+    expect(lastJoint.attachmentPointB_world).toEqual(t2.b_circle);
   });
 
 });
