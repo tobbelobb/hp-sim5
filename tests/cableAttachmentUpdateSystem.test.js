@@ -190,115 +190,110 @@ describe('CableAttachmentUpdateSystem', () => {
     expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
   });
 
-  //test('_updateAttachmentPoints: Rolling to Rolling - Translation', () => {
-  //  const world = new World();
-  //  const system = new CableAttachmentUpdateSystem();
+  test('_updateAttachmentPoints: Rolling to Rolling (hybrid) - Translation', () => {
+    const world = new World();
+    const system = new CableAttachmentUpdateSystem();
 
-  //  // Entities
-  //  const attach0 = world.createEntity();
-  //  const rollingA = world.createEntity();
-  //  const rollingB = world.createEntity();
+    // Entities
+    const attach0 = world.createEntity();
+    const rollingA = world.createEntity();
+    const rollingB = world.createEntity();
 
-  //  // Components
-  //  const pos0 = new Vector2(-2.5, -2);
-  //  const posA = new Vector2(-2, 0);
-  //  const radiusA = 0.5;
-  //  const cwA = true;
-  //  const posB = new Vector2(2, 0);
-  //  const radiusB = 0.5;
-  //  const cwB = true;
+    // Components
+    const pos0 = new Vector2(-2.5, -2);
+    const posA = new Vector2(-2.0, 0);
+    const radiusA = 0.5;
+    const cwA = true;
+    const posB = new Vector2(2.0, 0);
+    const radiusB = 0.5;
+    const cwB = true;
 
-  //  world.addComponent(attach0, new PositionComponent(pos0.x, pos0.y));
-  //  world.addComponent(attach0, new CableLinkComponent(pos0.x, pos0.y)); // prevPos
+    world.addComponent(attach0, new PositionComponent(pos0.x, pos0.y));
+    world.addComponent(attach0, new CableLinkComponent(pos0.x, pos0.y)); // prevPos
 
-  //  world.addComponent(rollingA, new PositionComponent(posA.x, posA.y));
-  //  world.addComponent(rollingA, new RadiusComponent(radiusA));
-  //  world.addComponent(rollingA, new CableLinkComponent(posA.x, posA.y)); // prevPos
+    world.addComponent(rollingA, new PositionComponent(posA.x, posA.y));
+    world.addComponent(rollingA, new RadiusComponent(radiusA));
+    world.addComponent(rollingA, new CableLinkComponent(posA.x, posA.y)); // prevPos
 
-  //  world.addComponent(rollingB, new PositionComponent(posB.x, posB.y));
-  //  world.addComponent(rollingB, new RadiusComponent(radiusB));
-  //  world.addComponent(rollingB, new CableLinkComponent(posB.x, posB.y)); // prevPos
+    world.addComponent(rollingB, new PositionComponent(posB.x, posB.y));
+    world.addComponent(rollingB, new RadiusComponent(radiusB));
+    world.addComponent(rollingB, new CableLinkComponent(posB.x, posB.y)); // prevPos
 
-  //  // Initial Tangents and joint attach->rolling
-  //  const initialTangents_0 = tangentFromPointToCircle(pos0, posA, radiusA, cwA);
-  //  const initialAttachA_0 = initialTangents_0.a_attach;
-  //  const initialAttachB_0 = initialTangents_0.a_circle;
-  //  const initialRestLength_0 = initialAttachA_0.distanceTo(initialAttachB_0);
-  //  const jointId_0 = world.createEntity();
-  //  const jointComp_0 = new CableJointComponent(attach0, rollingA, initialRestLength_0, pos0.clone(), initialAttachB_0);
-  //  world.addComponent(jointId_0, jointComp_0);
+    // Initial Tangents and joint attach->rolling
+    const initialTangents_0 = tangentFromPointToCircle(pos0, posA, radiusA, cwA);
+    const initialAttachA_0 = initialTangents_0.a_attach;
+    const initialAttachB_0 = initialTangents_0.a_circle;
+    const initialRestLength_0 = initialAttachA_0.distanceTo(initialAttachB_0);
+    const jointId_0 = world.createEntity();
+    const jointComp_0 = new CableJointComponent(attach0, rollingA, initialRestLength_0, initialAttachA_0, initialAttachB_0);
+    world.addComponent(jointId_0, jointComp_0);
 
-  //  // Initial Tangents Rolling links
-  //  const initialTangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-  //  const initialAttachA = initialTangents.a_circle;
-  //  const initialAttachB = initialTangents.b_circle;
-  //  const initialRestLength = initialAttachA.distanceTo(initialAttachB);
+    // Initial Tangents Rolling links
+    const initialTangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+    const initialAttachA = initialTangents.a_circle;
+    const initialAttachB = initialTangents.b_circle;
+    const initialRestLength = initialAttachA.distanceTo(initialAttachB);
 
+    // Cable Joint
+    const jointId = world.createEntity();
+    const jointComp = new CableJointComponent(rollingA, rollingB, initialRestLength, initialAttachA.clone(), initialAttachB.clone());
+    world.addComponent(jointId, jointComp);
+    expect(jointComp.attachmentPointA_world.x).toBeCloseTo(initialAttachA.x);
+    expect(jointComp.attachmentPointA_world.y).toBeCloseTo(initialAttachA.y);
+    expect(jointComp.attachmentPointB_world.x).toBeCloseTo(initialAttachB.x);
+    expect(jointComp.attachmentPointB_world.y).toBeCloseTo(initialAttachB.y);
 
-  //  // Cable Joint
-  //  const jointId = world.createEntity();
-  //  const jointComp = new CableJointComponent(rollingA, rollingB, initialRestLength, initialAttachA.clone(), initialAttachB.clone());
-  //  world.addComponent(jointId, jointComp);
-  //  expect(jointComp.attachmentPointA_world.x).toBeCloseTo(initialAttachA.x);
-  //  expect(jointComp.attachmentPointA_world.y).toBeCloseTo(initialAttachA.y);
-  //  expect(jointComp.attachmentPointB_world.x).toBeCloseTo(initialAttachB.x);
-  //  expect(jointComp.attachmentPointB_world.y).toBeCloseTo(initialAttachB.y);
+    // Cable Path
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(world, [jointId_0, jointId], ['attachment', 'rolling', 'hybrid'], [true, cwA, cwB]);
+    world.addComponent(pathId, pathComp);
+    const initialStored0 = pathComp.stored[0];
+    const initialStoredA = pathComp.stored[1];
+    const initialStoredB = pathComp.stored[2];
 
-  //  // Cable Path
-  //  const pathId = world.createEntity();
-  //  // Note: cw array needs one more element than joints
-  //  const pathComp = new CablePathComponent(world, [jointId_0, jointId], ['attach', 'rolling', 'rolling'], [true, cwA, cwB]);
-  //  world.addComponent(pathId, pathComp);
-  //  const initialStoredA = pathComp.stored[1];
-  //  console.log(`initialStoredA=${initialStoredA}`);
-  //  const initialStoredB = pathComp.stored[2];
+    // --- Simulate Movement ---
+    const moveVectorA = new Vector2(0.0, 0.1); // Move A slightly up
+    const newPosA = posA.clone().add(moveVectorA);
+    world.getComponent(rollingA, PositionComponent).pos.set(newPosA);
 
+    // --- Run the System ---
+    system._updateAttachmentPoints(world);
 
-  //  // --- Simulate Movement ---
-  //  const moveVectorA = new Vector2(0, 0.1); // Move A slightly up
-  //  const newPosA = posA.clone().add(moveVectorA);
-  //  world.getComponent(rollingA, PositionComponent).pos.set(newPosA);
+    // --- Assertions ---
+    // Calculate expected new tangent points
+    const expectedTangents = tangentFromCircleToCircle(newPosA, radiusA, cwA, posB, radiusB, cwB);
+    const expectedAttachA = expectedTangents.a_circle;
+    const expectedAttachB = expectedTangents.b_circle;
 
-  //  // --- Run the System ---
-  //  system._updateAttachmentPoints(world);
-  //  console.log(`pathComp.stored[1]=${pathComp.stored[1]}`);
+    // Check attachment points
+    expect(jointComp.attachmentPointA_world.x).toBeCloseTo(expectedAttachA.x);
+    expect(jointComp.attachmentPointA_world.y).toBeCloseTo(expectedAttachA.y);
+    expect(jointComp.attachmentPointB_world.x).toBeCloseTo(expectedAttachB.x);
+    expect(jointComp.attachmentPointB_world.y).toBeCloseTo(expectedAttachB.y);
 
-  //  // --- Assertions ---
-  //  // Calculate expected new tangent points
-  //  const expectedTangents = tangentFromCircleToCircle(newPosA, radiusA, cwA, posB, radiusB, cwB);
-  //  const expectedAttachA = expectedTangents.a_circle;
-  //  const expectedAttachB = expectedTangents.b_circle;
+    // Check stored length changes (sA, sB)
+    const expectedSA = signedArcLengthOnWheel(
+        initialAttachA.clone().subtract(posA),    // prevAttachA relative to prevCenterA
+        expectedAttachA.clone().subtract(newPosA), // currentAttachA relative to currentCenterA
+        new Vector2(0,0), radiusA, cwA
+    );
 
-  //  // Check attachment points
-  //  expect(jointComp.attachmentPointA_world.x).toBeCloseTo(expectedAttachA.x);
-  //  expect(jointComp.attachmentPointA_world.y).toBeCloseTo(expectedAttachA.y);
-  //  expect(jointComp.attachmentPointB_world.x).toBeCloseTo(expectedAttachB.x);
-  //  expect(jointComp.attachmentPointB_world.y).toBeCloseTo(expectedAttachB.y);
+    const expectedSB = signedArcLengthOnWheel(
+        initialAttachB.clone().subtract(posB), // prevAttachB relative to prevCenterB
+        expectedAttachB.clone().subtract(posB), // currentAttachB relative to currentCenterB
+        new Vector2(0,0), radiusB, cwB
+    );
 
-  //  // Check stored length changes (sA, sB)
-  //  const expectedSA = signedArcLengthOnWheel(
-  //      initialAttachA.clone().subtract(posA),    // prevAttachA relative to prevCenterA
-  //      expectedAttachA.clone().subtract(newPosA), // currentAttachA relative to currentCenterA
-  //      new Vector2(0,0), radiusA, cwA
-  //  );
+    expect(pathComp.stored[1]).toBeCloseTo(initialStoredA + expectedSA); // stored[A] += sA
+    expect(pathComp.stored[2]).toBeCloseTo(initialStoredB - expectedSB); // stored[B] -= sB
 
-  //  console.log(`expectedSA=${expectedSA}`);
-  //  const expectedSB = signedArcLengthOnWheel(
-  //      initialAttachB.clone().subtract(posB), // prevAttachB relative to prevCenterB
-  //      expectedAttachB.clone().subtract(posB), // currentAttachB relative to currentCenterB
-  //      new Vector2(0,0), radiusB, cwB
-  //  );
+    // Check rest length change
+    // restLength -= sA; restLength += sB;
+    expect(jointComp.restLength).toBeCloseTo(initialRestLength - expectedSA + expectedSB);
 
-  //  expect(pathComp.stored[1]).toBeCloseTo(initialStoredA + expectedSA); // stored[A] += sA
-  //  expect(pathComp.stored[2]).toBeCloseTo(initialStoredB - expectedSB); // stored[B] -= sB
-
-  //  // Check rest length change
-  //  // restLength -= sA; restLength += sB;
-  //  expect(jointComp.restLength).toBeCloseTo(initialRestLength - expectedSA + expectedSB);
-
-  //  // Total rest length of path should remain constant
-  //  const finalTotalRestLength = jointComp.restLength + pathComp.stored[0] + pathComp.stored[1];
-  //   expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
-  //});
+    // Total rest length of path should remain constant
+    const finalTotalRestLength = jointComp_0.restLength + jointComp.restLength + pathComp.stored[0] + pathComp.stored[1] + pathComp.stored[2];
+     expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
+  });
 
 });
