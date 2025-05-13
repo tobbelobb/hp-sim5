@@ -256,5 +256,4 @@ describe('_mergeJoints', () => {
     // Link types should now indicate no rolling segment
     expect(pathComp.linkTypes).toEqual(['attachment', 'attachment']);
   });
-
 });
