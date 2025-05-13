@@ -79,6 +79,12 @@ describe('Flipper Integration Test', () => {
             console.error(`PAGE ERROR: ${error.message}`);
         });
 
+        // force all new pages to have _flipperSpeedScale=10.0
+        // We want to calculate the physics as fast as possible inside the test
+        await page.evaluateOnNewDocument(() => {
+          window._flipperSpeedScale = 10.0;
+        });
+
         // Navigate to the page served by our local server
         await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle0' });
     });

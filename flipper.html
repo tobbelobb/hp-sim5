@@ -1047,8 +1047,8 @@ canvas {
       if (lastTime === 0) {
         lastTime = currentTime;
       }
-
-      let frameSec = 0.6*(currentTime - lastTime) / 1000;
+      const speedScale = window._flipperSpeedScale ?? 0.6;
+      let frameSec = speedScale*(currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches
