@@ -3,7 +3,8 @@
 <head>
     <title>Test Hybrid Link</title>
     <!-- Simple favicon: 1x1 transparent icon -->
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A" />
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
 
     <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
     <meta name="viewport"
@@ -115,9 +116,47 @@ canvas {
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
-<script src="../cable_joints_core.js"></script>
-<script>
-    const { dumpWorldState } = require('../debugUtils');
+<script type="module">
+    import Vector2 from '../vector2.js';
+    import { dumpWorldState } from '../debugUtils.js';
+    import {
+      World,
+      PauseStateComponent,
+      SimulationErrorStateComponent,
+      PositionComponent,
+      VelocityComponent,
+      MassComponent,
+      GravityAffectedComponent,
+      OrientationComponent,
+      AngularVelocityComponent,
+      MomentOfInertiaComponent,
+      RenderableComponent,
+      RadiusComponent
+    } from '../ecs.js';
+
+    import {
+      CableLinkComponent,
+      CableJointComponent,
+      CablePathComponent,
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
+    } from '../cable_joints_core.js';
+
+    import {
+      tangentFromPointToCircle
+    } from '../geometry.js';
+
+
+    import {
+      GravitySystem,
+      MovementSystem,
+      AngularMovementSystem,
+    } from '../commonSystems.js';
+
+    import {
+      RenderSystem
+    } from '../renderSystem.js';
+
     class SpoolTagComponent { };
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
