@@ -298,7 +298,7 @@ describe('CableAttachmentUpdateSystem', () => {
      expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
   });
 
-  test('hybrid-attachment -> rolling -> rolling -> hybrid with small rotations', () => {
+  test('_updateAttachmentPoints: hybrid-attachment -> rolling -> rolling -> hybrid with small rotations', () => {
     const world = new World();
     const system = new CableAttachmentUpdateSystem();
 
@@ -399,7 +399,7 @@ describe('CableAttachmentUpdateSystem', () => {
     expect(lastJoint.attachmentPointB_world).toEqual(t2.b_circle);
   });
 
-  test('hybrid -> rolling -> rolling -> hybrid-attachment with small rotations', () => {
+  test('_updateAttachmentPoints: hybrid -> rolling -> rolling -> hybrid-attachment with small rotations', () => {
     const world = new World();
     const system = new CableAttachmentUpdateSystem();
 
@@ -434,6 +434,8 @@ describe('CableAttachmentUpdateSystem', () => {
 
     // Create joints: start->rollA, rollA->rollB, rollB->end
     const jointIds = [];
+    // NOTE: This !cwStart is the biggest gotcha in the whole code base.
+    //       cw/ccw are treated differently for hybrid links at position A.
     const t0 = tangentFromCircleToCircle(posStart, r, !cwStart, posA, r, cwA); // !cwStart because of _effectiveCW
     const t1 = tangentFromCircleToCircle(posA, r, cwA, posB, r, cwB);
     const t2_tangent = tangentFromCircleToPoint(posEnd, posB, r, cwB);
@@ -500,5 +502,4 @@ describe('CableAttachmentUpdateSystem', () => {
 
     expect(firstJoint.attachmentPointA_world).toEqual(t0.a_circle);
   });
-
 });
