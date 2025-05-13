@@ -4,3 +4,4 @@ tags
 attic/
 node_modules/
 done
+deploy.sh
