@@ -500,6 +500,7 @@ describe('CableAttachmentUpdateSystem', () => {
     expect(lastJoint.attachmentPointA_world.distanceTo(t2_tangent.a_circle)).toBeLessThan(r*smallRot);
     expect(lastJoint.attachmentPointA_world.distanceTo(posB)).toBeCloseTo(r, 6);
 
+    const firstJoint = world.getComponent(jointIds[0], CableJointComponent);
     expect(firstJoint.attachmentPointA_world).toEqual(t0.a_circle);
   });
 });
