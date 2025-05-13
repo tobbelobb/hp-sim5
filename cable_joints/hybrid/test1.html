@@ -350,9 +350,10 @@ canvas {
         const pos_anchorA = world.getComponent(anchorA, PositionComponent).pos;
         world.addComponent(spoolA, new CableLinkComponent(pos_spoolA.x, pos_spoolA.y));
         world.addComponent(anchorA, new CableLinkComponent(pos_anchorA.x, pos_anchorA.y));
+        const cwA = false;
 
         const jointA = world.createEntity();
-        const tangA = tangentFromPointToCircle(pos_anchorA, pos_spoolA, spoolRadius, true);
+        const tangA = tangentFromPointToCircle(pos_anchorA, pos_spoolA, spoolRadius, cwA);
         const initialDistA = tangA.a_attach.clone().subtract(tangA.a_circle).length();
         world.addComponent(jointA, new CableJointComponent(
           anchorA, spoolA, initialDistA, tangA.a_attach, tangA.a_circle)); // Order matters
@@ -364,7 +365,7 @@ canvas {
           world,
           [jointA],
           ['attachment', 'hybrid'],
-          [true, true]
+          [true, cwA]
         );
         // Set initial stored length for the hybrid link
         cableCompA.stored[1] = 0.2; // Start with some stored length
@@ -400,9 +401,10 @@ canvas {
         const pos_anchorB = world.getComponent(anchorB, PositionComponent).pos;
         world.addComponent(spoolB, new CableLinkComponent(pos_spoolB.x, pos_spoolB.y));
         world.addComponent(anchorB, new CableLinkComponent(pos_anchorB.x, pos_anchorB.y));
+        const cwB = true;
 
         const jointB = world.createEntity();
-        const tangB = tangentFromPointToCircle(pos_anchorB, pos_spoolB, spoolRadius, false);
+        const tangB = tangentFromPointToCircle(pos_anchorB, pos_spoolB, spoolRadius, cwB);
         const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
         world.addComponent(jointB, new CableJointComponent(
           spoolB, anchorB, initialDistB, tangB.a_circle, tangB.a_attach)); // Order matters
@@ -414,7 +416,7 @@ canvas {
           world,
           [jointB],
           ['hybrid', 'attachment'],
-          [false, true]
+          [cwB, true]
         );
         // Set initial stored length for the hybrid link
         cableCompB.stored[0] = 0.2; // Start with some stored length
