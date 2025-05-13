@@ -10,7 +10,8 @@ import {
   RestitutionComponent,
   PrevFinalPosComponent,
   OrientationComponent,
-  AngularVelocityComponent
+  AngularVelocityComponent,
+  ObstacleTagComponent
 } from './ecs.js';
 
 

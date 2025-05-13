@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Cable Joints</title>
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
     <style>
         body { margin: 0; overflow-y: auto; background-color: #202020; font-family: sans-serif; }
         canvas { border: 1px solid black; display: block; margin: 10px auto; }
@@ -21,9 +23,52 @@
     </div>
     <textarea id="errorDumpOutput" readonly style="width: 90%; height: 100vh; display: none; margin: 10px auto; font-family: monospace; background-color: #333; color: #eee; border: 1px solid #888;"></textarea>
 
-<script src="cable_joints_core.js"></script>
-<script>
-  const { dumpWorldState } = require('./debugUtils');
+<script type="module">
+  import Vector2 from './vector2.js';
+  import { dumpWorldState } from './debugUtils.js';
+  import {
+    World,
+    PauseStateComponent,
+    SimulationErrorStateComponent,
+    RenderableComponent,
+    BallTagComponent,
+    PositionComponent,
+    VelocityComponent,
+    RadiusComponent,
+    MassComponent,
+    RestitutionComponent,
+    GravityAffectedComponent,
+    OrientationComponent,
+    AngularVelocityComponent,
+    MomentOfInertiaComponent,
+    ObstacleTagComponent,
+  } from './ecs.js';
+
+  import {
+    CableLinkComponent,
+    CableJointComponent,
+    CablePathComponent,
+    CableAttachmentUpdateSystem,
+    PBDCableConstraintSolver
+  } from './cable_joints_core.js';
+
+  import {
+    tangentFromPointToCircle,
+      tangentFromCircleToPoint,
+  } from './geometry.js';
+
+  import {
+    GravitySystem,
+    MovementSystem,
+    AngularMovementSystem,
+    PBDBallBallCollisions,
+    PBDBallObstacleCollisions
+  } from './commonSystems.js';
+
+  import {
+    RenderSystem
+  } from './renderSystem.js';
+
   const canvas = document.getElementById("myCanvas");
   const errorInfoDiv = document.getElementById("errorInfo"); // Get error elements
   const errorDumpOutput = document.getElementById("errorDumpOutput");
@@ -62,7 +107,7 @@
     const ball1 = world.createEntity();
     world.addComponent(ball1, new BallTagComponent());
     world.addComponent(ball1, new PositionComponent(1.25, 0.6));
-    world.addComponent(ball1, new VelocityComponent(2.40, 10.0));
+    world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
     world.addComponent(ball1, new RadiusComponent(ballRadius));
     const ball1Mass = 0.1001;
     world.addComponent(ball1, new MassComponent(ball1Mass));
@@ -101,11 +146,6 @@
     world.addComponent(obs1, new RenderableComponent('circle', obsColor));
 
 
-    // --- Cable Setup ---
-    // Path: ball1 -> obs1 -> ball2
-    world.addComponent(obs1, new CableLinkComponent());
-    world.addComponent(ball1, new CableLinkComponent());
-    world.addComponent(ball2, new CableLinkComponent());
 
     // --- Calculate Initial Cable State ---
     // Need to compute initial attachment points and rest lengths
@@ -115,6 +155,12 @@
     const radius_obs1 = world.getComponent(obs1, RadiusComponent).radius;
     const cw_obs1 = true;
     const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
+
+    // --- Cable Setup ---
+    // Path: ball1 -> obs1 -> ball2
+    world.addComponent(obs1, new CableLinkComponent(pos_obs1.x, pos_obs1.y));
+    world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
+    world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
 
     // Calculate initial points for joint1 (ball1 attachment <-> obs1 rolling)
     // Reworked for hybrid/hybrid-attachment
@@ -181,11 +227,6 @@
     world.addComponent(obs2, new RenderableComponent('circle', obsColor));
 
 
-    // --- Cable Setup ---
-    // Path: ball3 -> obs2 -> ball4
-    world.addComponent(obs2, new CableLinkComponent());
-    world.addComponent(ball3, new CableLinkComponent());
-    world.addComponent(ball4, new CableLinkComponent());
 
     // --- Calculate Initial Cable State ---
     // Need to compute initial attachment points and rest lengths
@@ -195,6 +236,12 @@
     const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
     const cw_obs2 = true;
     const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
+
+    // --- Cable Setup ---
+    // Path: ball3 -> obs2 -> ball4
+    world.addComponent(obs2, new CableLinkComponent(pos_obs2.x, pos_obs2.y));
+    world.addComponent(ball3, new CableLinkComponent(pos_ball3.x, pos_ball3.y));
+    world.addComponent(ball4, new CableLinkComponent(pos_ball4.x, pos_ball4.y));
 
     const tangentBall3Obs2 = tangentFromPointToCircle(pos_ball3, pos_obs2, radius_obs2, cw_obs2);
     const attachBall3Obs2 = tangentBall3Obs2.a_circle;
