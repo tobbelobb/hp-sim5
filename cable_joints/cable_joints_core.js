@@ -49,7 +49,7 @@ export class CableJointComponent {
 
 // Connects individual cable joints into a cable path
 export class CablePathComponent {
-  constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6) {
+  constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6, stored = null) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
@@ -92,6 +92,10 @@ export class CablePathComponent {
         this.stored[i + 1] = initialStoredLength;
         this.totalRestLength += initialStoredLength;
       }
+    }
+
+    if (stored !== null) {
+      this.stored = stored;
     }
   }
 }

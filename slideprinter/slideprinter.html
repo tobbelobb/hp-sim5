@@ -129,7 +129,9 @@ canvas {
       AngularVelocityComponent,
       MomentOfInertiaComponent,
       RenderableComponent,
-      RadiusComponent
+      RadiusComponent,
+      BallTagComponent,
+      RestitutionComponent,
     } from '../cable_joints/ecs.js';
 
     import {
@@ -148,13 +150,13 @@ canvas {
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
+      PBDBallBallCollisions,
     } from '../cable_joints/commonSystems.js';
 
     import {
       RenderSystem
     } from '../cable_joints/renderSystem.js';
 
-    class SpoolTagComponent { }
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
          runInPause = true; // Input should work even when paused to unpause/interact
@@ -206,7 +208,7 @@ canvas {
 
              // 1) see if we hit a spool
              const clickVec = new Vector2(simX, simY);
-             for (const b of world.query([SpoolTagComponent,PositionComponent,RadiusComponent])) {
+             for (const b of world.query([BallTagComponent,PositionComponent,RadiusComponent])) {
                const pos = world.getComponent(b,PositionComponent).pos;
                const r   = world.getComponent(b,RadiusComponent).radius;
                if (clickVec.clone().subtract(pos).lengthSq() <= r*r) {
@@ -318,9 +320,10 @@ canvas {
         const spoolRadius = 0.03;
         const spoolMass = 0.005;
         const spoolInertia = 0.5 * spoolMass * spoolRadius * spoolRadius;
+        const ballRestitution = 0.5;
 
         const spoolA = world.createEntity();
-        world.addComponent(spoolA, new SpoolTagComponent());
+        world.addComponent(spoolA, new BallTagComponent());
         world.addComponent(spoolA, new PositionComponent(0.00, -0.05));
         world.addComponent(spoolA, new VelocityComponent(0.0, 0.0));
         world.addComponent(spoolA, new RadiusComponent(spoolRadius));
@@ -329,9 +332,10 @@ canvas {
         world.addComponent(spoolA, new OrientationComponent());
         world.addComponent(spoolA, new AngularVelocityComponent());
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
+        world.addComponent(spoolA, new RestitutionComponent(ballRestitution));
 
         const spoolB = world.createEntity();
-        world.addComponent(spoolB, new SpoolTagComponent());
+        world.addComponent(spoolB, new BallTagComponent());
         world.addComponent(spoolB, new PositionComponent(0.05*Math.cos(Math.PI*(1/6)), 0.05*Math.sin(Math.PI*(1/6))));
         world.addComponent(spoolB, new VelocityComponent(0.0, 0.0));
         world.addComponent(spoolB, new RadiusComponent(spoolRadius));
@@ -340,9 +344,10 @@ canvas {
         world.addComponent(spoolB, new OrientationComponent());
         world.addComponent(spoolB, new AngularVelocityComponent());
         world.addComponent(spoolB, new MomentOfInertiaComponent(spoolInertia));
+        world.addComponent(spoolB, new RestitutionComponent(ballRestitution));
 
         const spoolC = world.createEntity();
-        world.addComponent(spoolC, new SpoolTagComponent());
+        world.addComponent(spoolC, new BallTagComponent());
         world.addComponent(spoolC, new PositionComponent(0.05*Math.cos(Math.PI*(5/6)), 0.05*Math.sin(Math.PI*(5/6))));
         world.addComponent(spoolC, new VelocityComponent(0.0, 0.0));
         world.addComponent(spoolC, new RadiusComponent(spoolRadius));
@@ -351,10 +356,11 @@ canvas {
         world.addComponent(spoolC, new OrientationComponent());
         world.addComponent(spoolC, new AngularVelocityComponent());
         world.addComponent(spoolC, new MomentOfInertiaComponent(spoolInertia));
+        world.addComponent(spoolC, new RestitutionComponent(ballRestitution));
 
 
         const anchorA = world.createEntity();
-        world.addComponent(anchorA, new SpoolTagComponent());
+        world.addComponent(anchorA, new BallTagComponent());
         world.addComponent(anchorA, new PositionComponent(0.00, -0.05 - 2.0));
         world.addComponent(anchorA, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorA, new RadiusComponent(0.01));
@@ -362,7 +368,7 @@ canvas {
         world.addComponent(anchorA, new RenderableComponent('circle', '#aaaaaa'));
 
         const anchorB = world.createEntity();
-        world.addComponent(anchorB, new SpoolTagComponent());
+        world.addComponent(anchorB, new BallTagComponent());
         world.addComponent(anchorB, new PositionComponent(2.05*Math.cos(Math.PI*(1/6)), 2.05*Math.sin(Math.PI*(1/6))));
         world.addComponent(anchorB, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorB, new RadiusComponent(0.01));
@@ -370,7 +376,7 @@ canvas {
         world.addComponent(anchorB, new RenderableComponent('circle', '#aaaaaa'));
 
         const anchorC = world.createEntity();
-        world.addComponent(anchorC, new SpoolTagComponent());
+        world.addComponent(anchorC, new BallTagComponent());
         world.addComponent(anchorC, new PositionComponent(2.05*Math.cos(Math.PI*(5/6)), 2.05*Math.sin(Math.PI*(5/6))));
         world.addComponent(anchorC, new VelocityComponent(0.0, 0.0));
         world.addComponent(anchorC, new RadiusComponent(0.01));
@@ -394,7 +400,8 @@ canvas {
         world.addComponent(anchorA, new CableLinkComponent(anchorA_pos.x, anchorA_pos.y));
         world.addComponent(anchorB, new CableLinkComponent(anchorB_pos.x, anchorB_pos.y));
         world.addComponent(anchorC, new CableLinkComponent(anchorC_pos.x, anchorC_pos.y));
-        const initialStoredLength = 5.0;
+        const turns = 5.0;
+        const initialStoredLength = turns*spoolRadius*Math.PI*2.0;
 
         // --- Calculate Initial Cable State ---
         const jointA = world.createEntity();
@@ -410,33 +417,30 @@ canvas {
           world,
           [jointA],
           ['attachment', 'hybrid'],
-          [true, true]
+          [true, true], 20000.0, [0.0, initialStoredLength]
         );
-        // Set initial stored length for the hybrid link
-        cableCompA.stored[1] = initialStoredLength; // Start with some stored length
-        //const angleA = -0.5/spoolRadius;
+        //const angleA = -initialStoredLength/spoolRadius;
+        //const angleA = Math.PI/2;
         //world.getComponent(spoolA, CableLinkComponent).prevCableAttachmentTimeAngle = angleA;
         //world.getComponent(spoolA, OrientationComponent).angle = angleA;
         world.addComponent(cableA, cableCompA);
 
-        //const jointB = world.createEntity();
-        //const tangB = tangentFromPointToCircle(anchorB_pos, spoolB_pos, spoolRadius, true);
-        //const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
-        //world.addComponent(jointB, new CableJointComponent(
-        //  anchorB, spoolB, initialDistB, tangB.a_attach, tangB.a_circle)); // Order matters
-        //world.addComponent(jointB, new RenderableComponent('line', '#BB3311'));
+        const jointB = world.createEntity();
+        const tangB = tangentFromPointToCircle(anchorB_pos, spoolB_pos, spoolRadius, true);
+        const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
+        world.addComponent(jointB, new CableJointComponent(
+          anchorB, spoolB, initialDistB + initialStoredLength, tangB.a_attach, tangB.a_circle)); // Order matters
+        world.addComponent(jointB, new RenderableComponent('line', '#BB3311'));
 
-        //const cableB = world.createEntity();
-        //// CablePathComponent constructor now calculates initial stored length and totalRestLength
-        //const cableCompB = new CablePathComponent(
-        //  world,
-        //  [jointB],
-        //  ['attachment', 'hybrid'],
-        //  [true, true]
-        //);
-        //// Set initial stored length for the hybrid link
-        //cableCompB.stored[1] = 0.2; // Less stored length than cableA
-        //world.addComponent(cableB, cableCompB);
+        const cableB = world.createEntity();
+        // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        const cableCompB = new CablePathComponent(
+          world,
+          [jointB],
+          ['attachment', 'hybrid'],
+          [true, true], 20000.0, [0.0, initialStoredLength]
+        );
+        world.addComponent(cableB, cableCompB);
 
         //const jointC = world.createEntity();
         //const tangC = tangentFromPointToCircle(anchorC_pos, spoolC_pos, spoolRadius, true);
@@ -464,12 +468,14 @@ canvas {
           const inputSys = new InputSystem(canvas);
           inputSys.scaleMultiplier = 0.25;
           inputSys.viewOffsetX = 0.0;
-          inputSys.viewOffsetY = -0.3;
+          inputSys.viewOffsetY = 0.0;
           world.registerSystem(inputSys);
-          world.registerSystem(new MovementSystem());     // Updates position based on velocity
+          world.registerSystem(new MovementSystem());
+          world.registerSystem(new AngularMovementSystem());
+          world.registerSystem(new PBDBallBallCollisions());
           world.registerSystem(new CableAttachmentUpdateSystem());
           world.registerSystem(new PBDCableConstraintSolver());
-          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY));
+          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 1.0));
         }
 
         // Update button text based on initial pause state
