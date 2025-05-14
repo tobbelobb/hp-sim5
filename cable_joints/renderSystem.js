@@ -98,7 +98,7 @@ export class RenderSystem {
               // require same sign as last frame
               pt.add(pd, push);
             } else {
-              // exactly at center → force straight‐down
+              // exactly at center -> force straight‐down
               pt = obs.pos.clone().add(new Vector2(0, -obs.radius));
             }
           }
@@ -306,9 +306,9 @@ export class RenderSystem {
         }
       }
 
-      // Back end (link index = nLinks–1)
+      // Back end (link index = nLinks-1)
       if (path.linkTypes[nLinks - 1] === 'hybrid') {
-        // joint nLinks–2 ties into link nLinks–1 on its B side
+        // joint nLinks-2 ties into link nLinks-1 on its B side
         const jointN = world.getComponent(joints[nLinks - 2], CableJointComponent);
         const renderComp = world.getComponent(joints[nLinks - 2], RenderableComponent);
         const rollerB = jointN.entityB;
