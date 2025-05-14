@@ -18,7 +18,7 @@ import {
 
 export class RenderSystem {
   runInPause = true; // Always render
-  constructor(canvas, cScale, simHeight, viewScaleMultiplier = 1.0, viewOffsetX_sim = 0.0, viewOffsetY_sim = 0.0) {
+  constructor(canvas, cScale, simHeight, viewScaleMultiplier = 1.0, viewOffsetX_sim = 0.0, viewOffsetY_sim = 0.0, sag_multiplier = 0.1) {
     this.canvas = canvas;
     this.c = canvas.getContext("2d");
     this.baseCScale = cScale; // Original scale (pixels per sim unit at 1x zoom)
@@ -34,6 +34,7 @@ export class RenderSystem {
 
     // Store potential obstacles for catenary drawing
     this.cableLinkObstacles = [];
+    this.sag_multiplier = sag_multiplier;
   }
 
   // Coordinate transformation helpers using instance properties
@@ -74,7 +75,7 @@ export class RenderSystem {
       if (D <= 1e-6) return;
 
       // parabolic sag magnitude
-      const sag = Math.max(length - D, 0) * 0.1;
+      const sag = Math.max(length - D, 0) * this.sag_multiplier;
       sagDir = sagDir.clone().normalize();
 
       ctx.beginPath();
