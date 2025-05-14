@@ -138,10 +138,10 @@ export function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clo
  * @param {number} radius - Radius of the circle
  * @returns {boolean} True if the segment intersects the circle, false otherwise.
  */
-export function lineSegmentCircleIntersection(p1, p2, center, radius) {
+export function lineSegmentCircleIntersection(p1, p2, center, radius, isAPierceAnIntersection = false) {
   // 1. Check if either endpoint is inside the circle
   if (p1.distanceTo(center) <= radius || p2.distanceTo(center) <= radius) {
-    return true;
+    return isAPierceAnIntersection;
   }
 
   // 2. Check if the projection of the center onto the line lies within the segment
