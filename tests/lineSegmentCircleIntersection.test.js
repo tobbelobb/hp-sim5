@@ -10,10 +10,16 @@ describe('lineSegmentCircleIntersection', () => {
     expect(lineSegmentCircleIntersection(p1, p2, center, 1)).toBe(false);
   });
 
-  test('segment endpoint just inside circle', () => {
+  test('segment endpoint just inside circle with true setting', () => {
     const p1 = new Vector2(0.99999999, 0);
     const p2 = new Vector2(5, 0);
-    expect(lineSegmentCircleIntersection(p1, p2, center, 1)).toBe(true);
+    expect(lineSegmentCircleIntersection(p1, p2, center, 1, true)).toBe(true);
+  });
+
+  test('segment endpoint just inside circle with default false setting', () => {
+    const p1 = new Vector2(0.99999999, 0);
+    const p2 = new Vector2(5, 0);
+    expect(lineSegmentCircleIntersection(p1, p2, center, 1)).toBe(false);
   });
 
   test('segment passes through circle', () => {
@@ -31,7 +37,7 @@ describe('lineSegmentCircleIntersection', () => {
   test('zero-length segment inside circle', () => {
     const p1 = new Vector2(0, 0);
     const p2 = new Vector2(0, 0);
-    expect(lineSegmentCircleIntersection(p1, p2, center, 1)).toBe(true);
+    expect(lineSegmentCircleIntersection(p1, p2, center, 1)).toBe(false);
   });
 
   test('zero-length segment outside circle', () => {
