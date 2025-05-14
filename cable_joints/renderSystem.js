@@ -439,7 +439,7 @@ export class RenderSystem {
               }
               // Note: Middle hybrid links are not typically expected.
 
-              const markerRadius = 4;
+              const markerRadius = 4 * this.viewScaleMultiplier;
 
               if (path.linkTypes[i] === 'hybrid-attachment') {
                 // Draw RED dot at the fixed attachment point
