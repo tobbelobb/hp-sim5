@@ -16,7 +16,6 @@ The hp-sim5 repository implements a Position-Based Dynamics (PBD) approach to ca
 ### Hybrid Path B: Sequential Implementation with Staged Milestones
 Break the transition into discrete, testable milestones:
 
-1. Modularize and test CableAttachmentSystem in JavaScript (1-2 weeks)
 2. Create minimal 2D Python/Warp prototype with core algorithms (2 weeks)
 3. Implement 3D generalization in Python/Warp with ongoing JavaScript visualization (3-4 weeks)
 4. Develop full integration with scientific/ML frameworks (ongoing)

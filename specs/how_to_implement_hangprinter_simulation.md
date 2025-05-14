@@ -48,8 +48,6 @@ We will not accept a >10s slow read-evaluate-print cycle, just to get Omniverse 
 Find something more light weight initially.
 
 # Tasks
- - Refactor to just look much nicer and be more testable
- - Test much more
  - Build a working Slideprinter
  - Translate into Python
  - Translate into Python with Warp
