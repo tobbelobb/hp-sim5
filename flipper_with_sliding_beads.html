@@ -322,6 +322,7 @@ canvas {
                // 2) create a joint between ball and pointer
                //    restLength = 0 so it's a pure spring
                const ballPos = world.getComponent(closestBall, PositionComponent).pos.clone();
+               const ballMass = world.getComponent(closestBall, MassComponent).mass;
                const ptrPos  = new Vector2(simX, simY);
                const jointE = world.createEntity();
                world.addComponent(jointE,
@@ -342,7 +343,7 @@ canvas {
                  [ jointE ],               // one joint
                  ['attachment', 'attachment'], // one linkType
                  [ true ],                 // cw flag (arbitrary)
-                 10.0                     // spring_constant
+                 100000.0*ballMass         // spring_constant
                );
                world.addComponent(pathE, pathComp);
 
