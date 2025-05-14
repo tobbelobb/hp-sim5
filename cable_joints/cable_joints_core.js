@@ -882,7 +882,6 @@ export class PBDCableConstraintSolver {
                 const maxSpeed = 0.03/(2.0*dt);
                 if (v > maxSpeed) { // Enforce max speed
                   velComp.vel.scale(maxSpeed/v);
-                  console.log(`Scaling speed from ${v} down to ${velComp.vel.length()}`);
                 }
               }
             }
