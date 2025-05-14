@@ -393,6 +393,40 @@ export class CableAttachmentUpdateSystem {
     }
   }
 
+  _evenOutTensionPartial(world, alpha = 0.5) {
+    const pathEntities = world.query([CablePathComponent]);
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (path.jointEntities.length < 2) continue;
+
+      for (let i = 0; i < path.jointEntities.length - 1; i++) {
+        const j0 = world.getComponent(path.jointEntities[i],     CableJointComponent);
+        const j1 = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
+
+        // current segment lengths
+        const d0 = j0.attachmentPointA_world
+                     .clone().subtract(j0.attachmentPointB_world)
+                     .length();
+        const d1 = j1.attachmentPointA_world
+                     .clone().subtract(j1.attachmentPointB_world)
+                     .length();
+
+        // total rest length available to split
+        const sumL = j0.restLength + j1.restLength;
+        const totalD = d0 + d1;
+        if (totalD <= 1e-9) continue;  // avoid divide by zero
+
+        // target rest lengths for perfect even-tension
+        const target0 = sumL * (d0 / totalD);
+        const target1 = sumL * (d1 / totalD);
+
+        // move each restLength a fraction α toward its target
+        j0.restLength += alpha * (target0 - j0.restLength);
+        j1.restLength += alpha * (target1 - j1.restLength);
+      }
+    }
+  }
+
   _splitJoints(world) {
     const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
     const pathEntities = world.query([CablePathComponent]);
@@ -688,13 +722,14 @@ export class CableAttachmentUpdateSystem {
   update(world, dt) {
     this._clearDebugPoints(world);
     this._updateAttachmentPoints(world);
-    this._evenOutTension(world); // Only needed if sliding bead support is wanted
+    const even_out_how_much = 1.0;
+    this._evenOutTensionPartial(world, even_out_how_much);
     this._mergeJoints(world);
-    this._evenOutTension(world);
+    this._evenOutTensionPartial(world, even_out_how_much);
     this._splitJoints(world);
-    this._evenOutTension(world); // Only needed if sliding bead support is wanted
+    this._evenOutTensionPartial(world, even_out_how_much);
     this._updateHybridLinkStates(world);
-    this._evenOutTension(world); // Only needed if sliding bead support is wanted
+    this._evenOutTensionPartial(world, even_out_how_much);
     this._storeCableLinkPoses(world);
     this._sanityCheck(world);
   }
@@ -843,6 +878,12 @@ export class PBDCableConstraintSolver {
               const velComp = world.getComponent(entityId, VelocityComponent);
               if (velComp && dt > epsilon) {
                 velComp.vel.add(deltaPos, 1.0 / dt);
+                const v = velComp.vel.length();
+                const maxSpeed = 0.03/(2.0*dt);
+                if (v > maxSpeed) { // Enforce max speed
+                  velComp.vel.scale(maxSpeed/v);
+                  console.log(`Scaling speed from ${v} down to ${velComp.vel.length()}`);
+                }
               }
             }
             // Rotation correction
