@@ -967,42 +967,67 @@ canvas {
         world.addComponent(joint1, new RenderableComponent('line', linecolor1));
 
 
-        // Calculate initial points for joint2 (obs4 rolling <-> bead pinhole (attachment))
+        // Calculate initial points for joint2 and beads (obs4 -> obs3 split by two beads)
         const joint2 = world.createEntity();
         const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
-        const initialPoints2_dir = initialPoints2.b_circle.clone().subtract(initialPoints2.a_circle).normalize();
-        const initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-        const mid2 = initialPoints2.a_circle.clone().add(initialPoints2_dir, initialDist2/2.0);
+        const dir2 = initialPoints2.b_circle.clone().subtract(initialPoints2.a_circle).normalize();
+        const dist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
+        // Positions for beads
+        const bead1Pos = initialPoints2.a_circle.clone().add(dir2, dist2/3.0);
+        const bead2Pos = initialPoints2.a_circle.clone().add(dir2, (2*dist2)/3.0);
 
-        const bead = world.createEntity();
-        world.addComponent(bead, new BallTagComponent());
-        world.addComponent(bead, new PositionComponent(mid2.x, mid2.y));
-        world.addComponent(bead, new CableLinkComponent(mid2.x, mid2.y));
-        world.addComponent(bead, new PrevFinalPosComponent(mid2.x, mid2.y));
-        world.addComponent(bead, new VelocityComponent(0.0, 0.0));
-        world.addComponent(bead, new RadiusComponent(ballRadius/2));
-        world.addComponent(bead, new MassComponent(ballMass));
-        world.addComponent(bead, new RestitutionComponent(ballRestitution));
-        world.addComponent(bead, new GravityAffectedComponent());
-        world.addComponent(bead, new RenderableComponent('circle', '#a0a0a0'));
-        world.addComponent(bead, new OrientationComponent(0.0));
-        world.addComponent(bead, new AngularVelocityComponent(0.0));
-        world.addComponent(bead, new MomentOfInertiaComponent(ball1Inertia));
+        // Create bead1
+        const bead1 = world.createEntity();
+        world.addComponent(bead1, new BallTagComponent());
+        world.addComponent(bead1, new PositionComponent(bead1Pos.x, bead1Pos.y));
+        world.addComponent(bead1, new CableLinkComponent(bead1Pos.x, bead1Pos.y));
+        world.addComponent(bead1, new PrevFinalPosComponent(bead1Pos.x, bead1Pos.y));
+        world.addComponent(bead1, new VelocityComponent(0.0, 0.0));
+        world.addComponent(bead1, new RadiusComponent(ballRadius/2));
+        world.addComponent(bead1, new MassComponent(ballMass));
+        world.addComponent(bead1, new RestitutionComponent(ballRestitution));
+        world.addComponent(bead1, new GravityAffectedComponent());
+        world.addComponent(bead1, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(bead1, new OrientationComponent(0.0));
+        world.addComponent(bead1, new AngularVelocityComponent(0.0));
+        world.addComponent(bead1, new MomentOfInertiaComponent(ball1Inertia));
 
+        // Create bead2
+        const bead2 = world.createEntity();
+        world.addComponent(bead2, new BallTagComponent());
+        world.addComponent(bead2, new PositionComponent(bead2Pos.x, bead2Pos.y));
+        world.addComponent(bead2, new CableLinkComponent(bead2Pos.x, bead2Pos.y));
+        world.addComponent(bead2, new PrevFinalPosComponent(bead2Pos.x, bead2Pos.y));
+        world.addComponent(bead2, new VelocityComponent(0.0, 0.0));
+        world.addComponent(bead2, new RadiusComponent(ballRadius/2));
+        world.addComponent(bead2, new MassComponent(ballMass));
+        world.addComponent(bead2, new RestitutionComponent(ballRestitution));
+        world.addComponent(bead2, new GravityAffectedComponent());
+        world.addComponent(bead2, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(bead2, new OrientationComponent(0.0));
+        world.addComponent(bead2, new AngularVelocityComponent(0.0));
+        world.addComponent(bead2, new MomentOfInertiaComponent(ball1Inertia));
 
+        // Create joints: obs4 -> bead1
         world.addComponent(joint2, new CableJointComponent(
-          obs4, bead, initialDist2/2.0, initialPoints2.a_circle, mid2)); // Order matters
+          obs4, bead1, dist2/3.0, initialPoints2.a_circle, bead1Pos));
         world.addComponent(joint2, new RenderableComponent('line', linecolor1));
 
-
+        // bead1 -> bead2
         const joint3 = world.createEntity();
         world.addComponent(joint3, new CableJointComponent(
-          bead, obs3, initialDist2/2.0, mid2, initialPoints2.b_circle)); // Order matters
+          bead1, bead2, dist2/3.0, bead1Pos, bead2Pos));
         world.addComponent(joint3, new RenderableComponent('line', linecolor1));
+
+        // bead2 -> obs3
+        const joint4 = world.createEntity();
+        world.addComponent(joint4, new CableJointComponent(
+          bead2, obs3, dist2/3.0, bead2Pos, initialPoints2.b_circle));
+        world.addComponent(joint4, new RenderableComponent('line', linecolor1));
 
 
         // Calculate initial points for joint4 (obs3 rolling <-> ball1 perimeter attachment)
-        const joint4 = world.createEntity();
+        const joint5 = world.createEntity();
         // Attach to obstacle at its tangent point
         const tangentObs3 = tangentFromPointToCircle(pos_ball1, pos_obs3, radius_obs3, false);
         const attachObs3 = tangentObs3.a_circle;
@@ -1010,9 +1035,9 @@ canvas {
         const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
         const attachBall1 = pos_ball1.clone().add(dir3.scale(ballRadius));
         const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
-        world.addComponent(joint4, new CableJointComponent(
+        world.addComponent(joint5, new CableJointComponent(
           obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
-        world.addComponent(joint4, new RenderableComponent('line', linecolor1));
+        world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
         // Create Cable Path Entity
         const cablePath = world.createEntity();
@@ -1020,9 +1045,9 @@ canvas {
         // Use hybrid links at ball attachments to attach at perimeter
         const pathComp = new CablePathComponent(
           world,
-          [joint1, joint2, joint3, joint4],
-          ['hybrid-attachment', 'rolling', 'attachment', 'rolling', 'hybrid-attachment'],
-          [true, true, true, true, true],
+          [joint1, joint2, joint3, joint4, joint5],
+          ['hybrid-attachment', 'rolling', 'attachment', 'attachment', 'rolling', 'hybrid-attachment'],
+          [true, true, true, true, true, true],
           20000.0 // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
         );
         world.addComponent(cablePath, pathComp);
