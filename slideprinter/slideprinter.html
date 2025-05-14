@@ -325,12 +325,12 @@ canvas {
         const spoolA = world.createEntity();
         world.addComponent(spoolA, new BallTagComponent());
         world.addComponent(spoolA, new PositionComponent(0.00, -0.05));
-        world.addComponent(spoolA, new VelocityComponent(0.0, 0.0));
+        world.addComponent(spoolA, new VelocityComponent(0.0, 0.1));
         world.addComponent(spoolA, new RadiusComponent(spoolRadius));
         world.addComponent(spoolA, new MassComponent(spoolMass));
         world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(spoolA, new OrientationComponent());
-        world.addComponent(spoolA, new AngularVelocityComponent());
+        world.addComponent(spoolA, new AngularVelocityComponent(0.5));
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
         world.addComponent(spoolA, new RestitutionComponent(ballRestitution));
 
@@ -408,7 +408,7 @@ canvas {
         const tangA = tangentFromPointToCircle(anchorA_pos, spoolA_pos, spoolRadius, true);
         const initialDistA = tangA.a_attach.clone().subtract(tangA.a_circle).length();
         world.addComponent(jointA, new CableJointComponent(
-          anchorA, spoolA, initialDistA + initialStoredLength, tangA.a_attach, tangA.a_circle)); // Order matters
+          anchorA, spoolA, initialDistA, tangA.a_attach, tangA.a_circle)); // Order matters
         world.addComponent(jointA, new RenderableComponent('line', '#AA3311'));
 
         const cableA = world.createEntity();
@@ -419,17 +419,13 @@ canvas {
           ['attachment', 'hybrid'],
           [true, true], 20000.0, [0.0, initialStoredLength]
         );
-        //const angleA = -initialStoredLength/spoolRadius;
-        //const angleA = Math.PI/2;
-        //world.getComponent(spoolA, CableLinkComponent).prevCableAttachmentTimeAngle = angleA;
-        //world.getComponent(spoolA, OrientationComponent).angle = angleA;
         world.addComponent(cableA, cableCompA);
 
         const jointB = world.createEntity();
         const tangB = tangentFromPointToCircle(anchorB_pos, spoolB_pos, spoolRadius, true);
         const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
         world.addComponent(jointB, new CableJointComponent(
-          anchorB, spoolB, initialDistB + initialStoredLength, tangB.a_attach, tangB.a_circle)); // Order matters
+          anchorB, spoolB, initialDistB, tangB.a_attach, tangB.a_circle)); // Order matters
         world.addComponent(jointB, new RenderableComponent('line', '#BB3311'));
 
         const cableB = world.createEntity();
@@ -442,24 +438,22 @@ canvas {
         );
         world.addComponent(cableB, cableCompB);
 
-        //const jointC = world.createEntity();
-        //const tangC = tangentFromPointToCircle(anchorC_pos, spoolC_pos, spoolRadius, true);
-        //const initialDistC = tangC.a_attach.clone().subtract(tangC.a_circle).length();
-        //world.addComponent(jointC, new CableJointComponent(
-        //  anchorC, spoolC, initialDistC, tangC.a_attach, tangC.a_circle)); // Order matters
-        //world.addComponent(jointC, new RenderableComponent('line', '#CC3311'));
+        const jointC = world.createEntity();
+        const tangC = tangentFromPointToCircle(anchorC_pos, spoolC_pos, spoolRadius, true);
+        const initialDistC = tangC.a_attach.clone().subtract(tangC.a_circle).length();
+        world.addComponent(jointC, new CableJointComponent(
+          anchorC, spoolC, initialDistC, tangC.a_attach, tangC.a_circle)); // Order matters
+        world.addComponent(jointC, new RenderableComponent('line', '#CC3311'));
 
-        //const cableC = world.createEntity();
-        //// CablePathComponent constructor now calculates initial stored length and totalRestLength
-        //const cableCompC = new CablePathComponent(
-        //  world,
-        //  [jointC],
-        //  ['attachment', 'hybrid'],
-        //  [true, true]
-        //);
-        //// Set initial stored length for the hybrid link
-        //cableCompC.stored[1] = 0.1; // Even less stored length than cableB
-        //world.addComponent(cableC, cableCompC);
+        const cableC = world.createEntity();
+        // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        const cableCompC = new CablePathComponent(
+          world,
+          [jointC],
+          ['attachment', 'hybrid'],
+          [true, true], 20000.0, [0.0, initialStoredLength]
+        );
+        world.addComponent(cableC, cableCompC);
 
 
         // --- Systems Registration (Order Matters!) ---
