@@ -819,19 +819,18 @@ canvas {
         const ballRestitution = 0.4; // Slightly higher for more bounce
 
         const ball1 = world.createEntity();
-        const ball1_radius = ballRadius / 3;
         world.addComponent(ball1, new BallTagComponent());
         world.addComponent(ball1, new PositionComponent(0.90, 0.95));
         world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
-        world.addComponent(ball1, new RadiusComponent(ball1_radius));
-        world.addComponent(ball1, new MassComponent(ballMass/10));
+        world.addComponent(ball1, new RadiusComponent(ballRadius));
+        world.addComponent(ball1, new MassComponent(ballMass));
         world.addComponent(ball1, new RestitutionComponent(ballRestitution));
         world.addComponent(ball1, new GravityAffectedComponent());
         world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball1, new OrientationComponent(0.0));
         world.addComponent(ball1, new AngularVelocityComponent(0.0));
         const ball1Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
-        world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia/10));
+        world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
 
         const ball2 = world.createEntity();
         world.addComponent(ball2, new BallTagComponent());
@@ -983,7 +982,7 @@ canvas {
         const attachObs3 = tangentObs3.a_circle;
         // Attach to ball at closest perimeter point toward obstacle
         const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
-        const attachBall1 = pos_ball1.clone().add(dir3.scale(ball1_radius));
+        const attachBall1 = pos_ball1.clone().add(dir3.scale(ballRadius));
         const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
         world.addComponent(joint3, new CableJointComponent(
           obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
