@@ -879,10 +879,10 @@ export class PBDCableConstraintSolver {
               if (velComp && dt > epsilon) {
                 velComp.vel.add(deltaPos, 1.0 / dt);
                 const v = velComp.vel.length();
-                const maxSpeed = 0.03/(8.0*dt);
+                const maxSpeed = 0.03/(2.0*dt);
                 if (v > maxSpeed) { // Enforce max speed
                   velComp.vel.scale(maxSpeed/v);
-                  //console.log(`Scaling speed from ${v} down to ${velComp.vel.length()}`);
+                  console.log(`Scaling speed from ${v} down to ${velComp.vel.length()}`);
                 }
               }
             }
@@ -896,12 +896,6 @@ export class PBDCableConstraintSolver {
               const angVelComp = world.getComponent(entityId, AngularVelocityComponent);
               if (angVelComp && dt > epsilon) {
                 angVelComp.angularVelocity += deltaAng / dt;
-                const maxAngVelComp = 0.05/dt;
-                const av = Math.abs(angVelComp.angularVelocity);
-                if (av > maxAngVelComp) {
-                  angVelComp.angularVelocity *= maxAngVelComp/av;
-                  console.log(`Scaling angular speed from ${av} down to ${Math.abs(angVelComp.angularVelocity)}`);
-                }
               }
             }
           }
