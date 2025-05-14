@@ -783,7 +783,7 @@ canvas {
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -2.0));
-        world.setResource('dt', 1.0 / 200.0);
+        world.setResource('dt', 1.0 / 400.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -983,8 +983,8 @@ canvas {
         world.addComponent(bead1, new CableLinkComponent(bead1Pos.x, bead1Pos.y));
         world.addComponent(bead1, new PrevFinalPosComponent(bead1Pos.x, bead1Pos.y));
         world.addComponent(bead1, new VelocityComponent(0.0, 0.0));
-        world.addComponent(bead1, new RadiusComponent(ballRadius/2));
-        world.addComponent(bead1, new MassComponent(ballMass));
+        world.addComponent(bead1, new RadiusComponent(ballRadius));
+        world.addComponent(bead1, new MassComponent(ballMass/10.0));
         world.addComponent(bead1, new RestitutionComponent(ballRestitution));
         world.addComponent(bead1, new GravityAffectedComponent());
         world.addComponent(bead1, new RenderableComponent('circle', '#a0a0a0'));
@@ -999,8 +999,8 @@ canvas {
         world.addComponent(bead2, new CableLinkComponent(bead2Pos.x, bead2Pos.y));
         world.addComponent(bead2, new PrevFinalPosComponent(bead2Pos.x, bead2Pos.y));
         world.addComponent(bead2, new VelocityComponent(0.0, 0.0));
-        world.addComponent(bead2, new RadiusComponent(ballRadius/2));
-        world.addComponent(bead2, new MassComponent(ballMass));
+        world.addComponent(bead2, new RadiusComponent(ballRadius));
+        world.addComponent(bead2, new MassComponent(ballMass/10.0));
         world.addComponent(bead2, new RestitutionComponent(ballRestitution));
         world.addComponent(bead2, new GravityAffectedComponent());
         world.addComponent(bead2, new RenderableComponent('circle', '#a0a0a0'));

@@ -688,10 +688,13 @@ export class CableAttachmentUpdateSystem {
   update(world, dt) {
     this._clearDebugPoints(world);
     this._updateAttachmentPoints(world);
+    this._evenOutTension(world); // Only needed if sliding bead support is wanted
     this._mergeJoints(world);
     this._evenOutTension(world);
     this._splitJoints(world);
+    this._evenOutTension(world); // Only needed if sliding bead support is wanted
     this._updateHybridLinkStates(world);
+    this._evenOutTension(world); // Only needed if sliding bead support is wanted
     this._storeCableLinkPoses(world);
     this._sanityCheck(world);
   }
