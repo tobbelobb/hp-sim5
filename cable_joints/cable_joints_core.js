@@ -94,8 +94,17 @@ export class CablePathComponent {
       }
     }
 
+    // If amount of stored line is supplied directly, use those values instead of the calculated ones
     if (stored !== null) {
-      this.stored = stored;
+      for (let i = 0; i < this.stored.length; i++) {
+        // Allow the user to skip some values by sending null
+        // eg [1.0, null, null, 5.0] only sets stored at endpoints.
+        if (stored[i] !== null) {
+          this.totalRestLength -= this.stored[i];
+          this.totalRestLength += stored[i];
+          this.stored[i] = stored[i];
+        }
+      }
     }
   }
 }
