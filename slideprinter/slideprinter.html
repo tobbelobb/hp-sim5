@@ -2,8 +2,8 @@
 <html>
 <head>
     <title>Slideprinter</title>
-    <!-- Simple favicon: 1x1 transparent icon -->
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A" />
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
 
     <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
     <meta name="viewport"
@@ -115,9 +115,45 @@ canvas {
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
-<script src="../cable_joints/cable_joints_core.js"></script>
-<script src="../cable_joints/dumpWorldState.js"></script>
-<script>
+<script type="module">
+    import Vector2 from '../cable_joints/vector2.js';
+    import { dumpWorldState } from '../cable_joints/debugUtils.js';
+    import {
+      World,
+      PauseStateComponent,
+      SimulationErrorStateComponent,
+      PositionComponent,
+      VelocityComponent,
+      MassComponent,
+      OrientationComponent,
+      AngularVelocityComponent,
+      MomentOfInertiaComponent,
+      RenderableComponent,
+      RadiusComponent
+    } from '../cable_joints/ecs.js';
+
+    import {
+      CableLinkComponent,
+      CableJointComponent,
+      CablePathComponent,
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
+    } from '../cable_joints/cable_joints_core.js';
+
+    import {
+      tangentFromPointToCircle
+    } from '../cable_joints/geometry.js';
+
+    import {
+      GravitySystem,
+      MovementSystem,
+      AngularMovementSystem,
+    } from '../cable_joints/commonSystems.js';
+
+    import {
+      RenderSystem
+    } from '../cable_joints/renderSystem.js';
+
     class SpoolTagComponent { }
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
@@ -145,7 +181,7 @@ canvas {
              this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
          }
 
-         // on Space → emit minimal debug dump
+         // on Space -> emit minimal debug dump
          dumpDebugScenario() {
              // Custom stringification to serialize Vector2 instances
              const resStr = JSON.stringify(world.resources);
@@ -281,6 +317,7 @@ canvas {
         // Spool Entities
         const spoolRadius = 0.03;
         const spoolMass = 0.005;
+        const spoolInertia = 0.5 * spoolMass * spoolRadius * spoolRadius;
 
         const spoolA = world.createEntity();
         world.addComponent(spoolA, new SpoolTagComponent());
@@ -289,6 +326,9 @@ canvas {
         world.addComponent(spoolA, new RadiusComponent(spoolRadius));
         world.addComponent(spoolA, new MassComponent(spoolMass));
         world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(spoolA, new OrientationComponent());
+        world.addComponent(spoolA, new AngularVelocityComponent());
+        world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
 
         const spoolB = world.createEntity();
         world.addComponent(spoolB, new SpoolTagComponent());
@@ -297,6 +337,9 @@ canvas {
         world.addComponent(spoolB, new RadiusComponent(spoolRadius));
         world.addComponent(spoolB, new MassComponent(spoolMass));
         world.addComponent(spoolB, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(spoolB, new OrientationComponent());
+        world.addComponent(spoolB, new AngularVelocityComponent());
+        world.addComponent(spoolB, new MomentOfInertiaComponent(spoolInertia));
 
         const spoolC = world.createEntity();
         world.addComponent(spoolC, new SpoolTagComponent());
@@ -305,6 +348,9 @@ canvas {
         world.addComponent(spoolC, new RadiusComponent(spoolRadius));
         world.addComponent(spoolC, new MassComponent(spoolMass));
         world.addComponent(spoolC, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(spoolC, new OrientationComponent());
+        world.addComponent(spoolC, new AngularVelocityComponent());
+        world.addComponent(spoolC, new MomentOfInertiaComponent(spoolInertia));
 
 
         const anchorA = world.createEntity();
@@ -336,28 +382,26 @@ canvas {
         // Connect: anchorB -> spoolB
         // Connect: anchorC -> spoolC
 
-        world.addComponent(spoolA, new CableLinkComponent());
-        world.addComponent(spoolB, new CableLinkComponent());
-        world.addComponent(spoolC, new CableLinkComponent());
-        world.addComponent(anchorA, new CableLinkComponent());
-        world.addComponent(anchorB, new CableLinkComponent());
-        world.addComponent(anchorC, new CableLinkComponent());
+        const spoolA_pos = world.getComponent(spoolA, PositionComponent).pos;
+        const spoolB_pos = world.getComponent(spoolB, PositionComponent).pos;
+        const spoolC_pos = world.getComponent(spoolC, PositionComponent).pos;
+        const anchorA_pos = world.getComponent(anchorA, PositionComponent).pos;
+        const anchorB_pos = world.getComponent(anchorB, PositionComponent).pos;
+        const anchorC_pos = world.getComponent(anchorC, PositionComponent).pos;
+        world.addComponent(spoolA, new CableLinkComponent(spoolA_pos.x, spoolA_pos.y));
+        world.addComponent(spoolB, new CableLinkComponent(spoolB_pos.x, spoolB_pos.y));
+        world.addComponent(spoolC, new CableLinkComponent(spoolC_pos.x, spoolC_pos.y));
+        world.addComponent(anchorA, new CableLinkComponent(anchorA_pos.x, anchorA_pos.y));
+        world.addComponent(anchorB, new CableLinkComponent(anchorB_pos.x, anchorB_pos.y));
+        world.addComponent(anchorC, new CableLinkComponent(anchorC_pos.x, anchorC_pos.y));
+        const initialStoredLength = 5.0;
 
         // --- Calculate Initial Cable State ---
-        // Need to compute initial attachment points and rest lengths
-        // Get relevant components
-        const pos_spoolA = world.getComponent(spoolA, PositionComponent).pos;
-        const pos_spoolB = world.getComponent(spoolB, PositionComponent).pos;
-        const pos_spoolC = world.getComponent(spoolC, PositionComponent).pos;
-        const pos_anchorA = world.getComponent(anchorA, PositionComponent).pos;
-        const pos_anchorB = world.getComponent(anchorB, PositionComponent).pos;
-        const pos_anchorC = world.getComponent(anchorC, PositionComponent).pos;
-
         const jointA = world.createEntity();
-        const tangA = tangentFromPointToCircle(pos_anchorA, pos_spoolA, spoolRadius, true);
+        const tangA = tangentFromPointToCircle(anchorA_pos, spoolA_pos, spoolRadius, true);
         const initialDistA = tangA.a_attach.clone().subtract(tangA.a_circle).length();
         world.addComponent(jointA, new CableJointComponent(
-          anchorA, spoolA, initialDistA, tangA.a_attach, tangA.a_circle)); // Order matters
+          anchorA, spoolA, initialDistA + initialStoredLength, tangA.a_attach, tangA.a_circle)); // Order matters
         world.addComponent(jointA, new RenderableComponent('line', '#AA3311'));
 
         const cableA = world.createEntity();
@@ -369,53 +413,56 @@ canvas {
           [true, true]
         );
         // Set initial stored length for the hybrid link
-        cableCompA.stored[1] = 0.5; // Start with some stored length
+        cableCompA.stored[1] = initialStoredLength; // Start with some stored length
+        //const angleA = -0.5/spoolRadius;
+        //world.getComponent(spoolA, CableLinkComponent).prevCableAttachmentTimeAngle = angleA;
+        //world.getComponent(spoolA, OrientationComponent).angle = angleA;
         world.addComponent(cableA, cableCompA);
 
-        const jointB = world.createEntity();
-        const tangB = tangentFromPointToCircle(pos_anchorB, pos_spoolB, spoolRadius, true);
-        const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
-        world.addComponent(jointB, new CableJointComponent(
-          anchorB, spoolB, initialDistB, tangB.a_attach, tangB.a_circle)); // Order matters
-        world.addComponent(jointB, new RenderableComponent('line', '#BB3311'));
+        //const jointB = world.createEntity();
+        //const tangB = tangentFromPointToCircle(anchorB_pos, spoolB_pos, spoolRadius, true);
+        //const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
+        //world.addComponent(jointB, new CableJointComponent(
+        //  anchorB, spoolB, initialDistB, tangB.a_attach, tangB.a_circle)); // Order matters
+        //world.addComponent(jointB, new RenderableComponent('line', '#BB3311'));
 
-        const cableB = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        const cableCompB = new CablePathComponent(
-          world,
-          [jointB],
-          ['attachment', 'hybrid'],
-          [true, true]
-        );
-        // Set initial stored length for the hybrid link
-        cableCompB.stored[1] = 0.2; // Less stored length than cableA
-        world.addComponent(cableB, cableCompB);
+        //const cableB = world.createEntity();
+        //// CablePathComponent constructor now calculates initial stored length and totalRestLength
+        //const cableCompB = new CablePathComponent(
+        //  world,
+        //  [jointB],
+        //  ['attachment', 'hybrid'],
+        //  [true, true]
+        //);
+        //// Set initial stored length for the hybrid link
+        //cableCompB.stored[1] = 0.2; // Less stored length than cableA
+        //world.addComponent(cableB, cableCompB);
 
-        const jointC = world.createEntity();
-        const tangC = tangentFromPointToCircle(pos_anchorC, pos_spoolC, spoolRadius, true);
-        const initialDistC = tangC.a_attach.clone().subtract(tangC.a_circle).length();
-        world.addComponent(jointC, new CableJointComponent(
-          anchorC, spoolC, initialDistC, tangC.a_attach, tangC.a_circle)); // Order matters
-        world.addComponent(jointC, new RenderableComponent('line', '#CC3311'));
+        //const jointC = world.createEntity();
+        //const tangC = tangentFromPointToCircle(anchorC_pos, spoolC_pos, spoolRadius, true);
+        //const initialDistC = tangC.a_attach.clone().subtract(tangC.a_circle).length();
+        //world.addComponent(jointC, new CableJointComponent(
+        //  anchorC, spoolC, initialDistC, tangC.a_attach, tangC.a_circle)); // Order matters
+        //world.addComponent(jointC, new RenderableComponent('line', '#CC3311'));
 
-        const cableC = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        const cableCompC = new CablePathComponent(
-          world,
-          [jointC],
-          ['attachment', 'hybrid'],
-          [true, true]
-        );
-        // Set initial stored length for the hybrid link
-        cableCompC.stored[1] = 0.1; // Even less stored length than cableB
-        world.addComponent(cableC, cableCompC);
+        //const cableC = world.createEntity();
+        //// CablePathComponent constructor now calculates initial stored length and totalRestLength
+        //const cableCompC = new CablePathComponent(
+        //  world,
+        //  [jointC],
+        //  ['attachment', 'hybrid'],
+        //  [true, true]
+        //);
+        //// Set initial stored length for the hybrid link
+        //cableCompC.stored[1] = 0.1; // Even less stored length than cableB
+        //world.addComponent(cableC, cableCompC);
 
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
-          inputSys.scaleMultiplier = 0.6;
+          inputSys.scaleMultiplier = 0.25;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.3;
           world.registerSystem(inputSys);
@@ -437,7 +484,7 @@ canvas {
     let doStep = true; // Whether to do a single step when paused
 
     function loop(currentTime) {
-      const dt = world.getResource('dt');           // e.g. 1/150
+      const dt = world.getResource('dt');
       const pauseState = world.getResource('pauseState');
 
       // first frame init
