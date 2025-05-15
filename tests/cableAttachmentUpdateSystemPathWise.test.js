@@ -11,7 +11,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystem
+  CableAttachmentUpdateSystemPathWise
 } from '../cable_joints/cable_joints_core.js';
 
 import {
@@ -22,7 +22,7 @@ import {
 } from '../cable_joints/geometry.js';
 
 
-describe('CableAttachmentUpdateSystem', () => {
+describe('CableAttachmentUpdateSystemPathWise', () => {
   test('Merge joints when positions opposite vertically, conserving rest length', () => {
     const world = new World();
     const center = new Vector2(0, 0);
@@ -103,7 +103,7 @@ describe('CableAttachmentUpdateSystem', () => {
     world.getComponent(point1, PositionComponent).pos = new Vector2(1.001, 2);
 
     // Run the attachment update to trigger merge
-    const system = new CableAttachmentUpdateSystem();
+    const system = new CableAttachmentUpdateSystemPathWise();
     world.setResource('debugRenderPoints', {});
     system.update(world);
 

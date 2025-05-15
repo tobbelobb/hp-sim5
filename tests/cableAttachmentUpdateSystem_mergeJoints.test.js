@@ -11,7 +11,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystem
+  _mergeJoints
 } from '../cable_joints/cable_joints_core.js';
 
 import {
@@ -25,7 +25,6 @@ import {
 describe('_mergeJoints', () => {
   test('_mergeJoints does nothing for a single-joint path', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
     // Setup one cable joint between two anchors (no wheel involved)
     const anchorA = world.createEntity();
     const anchorB = world.createEntity();
@@ -41,7 +40,7 @@ describe('_mergeJoints', () => {
     const pathComp = new CablePathComponent(world, [jointId], ['attachment','attachment'], [false, false]);
     world.addComponent(pathId, pathComp);
 
-    system._mergeJoints(world);
+    _mergeJoints(world);
     expect(pathComp.jointEntities.length).toBe(1);            // still one joint
     expect(pathComp.jointEntities[0]).toBe(jointId);          // same joint remains
     expect(world.getComponent(jointId, CableJointComponent)).toBeDefined(); // joint still exists
@@ -50,7 +49,6 @@ describe('_mergeJoints', () => {
 
   test('_mergeJoints does not merge joints if wheel contact is still needed', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
     // Setup: Anchors on opposite sides of a wheel
     const anchorL = world.createEntity();
     const anchorR = world.createEntity();
@@ -78,7 +76,7 @@ describe('_mergeJoints', () => {
     world.addComponent(pathId, pathComp);
 
     // No movement; wheel contact remains valid
-    system._mergeJoints(world);
+    _mergeJoints(world);
     expect(pathComp.jointEntities.length).toBe(2);         // still two joints
     expect(pathComp.jointEntities).toContain(joint1);
     expect(pathComp.jointEntities).toContain(joint2);
@@ -94,7 +92,6 @@ describe('_mergeJoints', () => {
 
   test('_mergeJoints merges two joints into one when the cable detaches from a wheel', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
     // Initial setup: rope over a wheel (same as above)
     // Anchors on opposite sides of a wheel
     const anchorL = world.createEntity();
@@ -135,7 +132,7 @@ describe('_mergeJoints', () => {
     const initialTotalRestLength = pathComp.totalRestLength;
 
     // Now perform merging of joints if wheel contact dropped
-    system._mergeJoints(world);
+    _mergeJoints(world);
 
     // totalRestLength should not be altered by _mergeJoints or any other function.
     expect(pathComp.totalRestLength).toBe(initialTotalRestLength);
@@ -165,7 +162,6 @@ describe('_mergeJoints', () => {
     // Needs the reRunMerge feature inside _mergeJoints() to pass.
 
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
     // Initial setup: rope over a wheel (same as above)
     // Anchors on opposite sides of a wheel
     const anchorL = world.createEntity();
@@ -227,7 +223,7 @@ describe('_mergeJoints', () => {
     const initialTotalRestLength = pathComp.totalRestLength;
 
     // Now perform merging of joints if wheel contact dropped
-    system._mergeJoints(world);
+    _mergeJoints(world);
 
     // totalRestLength should not be altered by _mergeJoints or any other function.
     expect(pathComp.totalRestLength).toBe(initialTotalRestLength);

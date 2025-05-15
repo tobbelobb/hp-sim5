@@ -11,7 +11,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystem
+  _splitJoints
 } from '../cable_joints/cable_joints_core.js';
 
 import {
@@ -25,7 +25,6 @@ import {
 describe('_splitJoints', () => {
   test('_splitJoints does nothing for a single-joint path that misses every wheel', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Anchors five units apart; the wheel is off to the side - the segment
     //  between anchors never intersects it.
@@ -53,7 +52,7 @@ describe('_splitJoints', () => {
     );
     world.addComponent(path, pathComp);
 
-    system._splitJoints(world);
+    _splitJoints(world);
 
     // Nothing should change
     expect(pathComp.jointEntities.length).toBe(1);
@@ -63,7 +62,6 @@ describe('_splitJoints', () => {
 
   test('_splitJoints does not duplicate joints when rope already bends over a wheel', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Rope is ALREADY split: AnchorL - Wheel - AnchorR
     const L = world.createEntity();
@@ -104,7 +102,7 @@ describe('_splitJoints', () => {
     );
     world.addComponent(path, pathComp);
 
-    system._splitJoints(world);
+    _splitJoints(world);
 
     // The path must still have exactly two joints - no dupes
     expect(pathComp.jointEntities.length).toBe(2);
@@ -113,7 +111,6 @@ describe('_splitJoints', () => {
 
   test('_splitJoints inserts a wheel joint when a straight segment intersects the wheel', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Anchors on opposite sides of a wheel, but the rope is *still* a single
     //  straight joint.  The line AB pierces the wheel’s circle => must split.
@@ -141,7 +138,7 @@ describe('_splitJoints', () => {
     );
     world.addComponent(path, pathComp);
 
-    system._splitJoints(world);
+    _splitJoints(world);
 
     // Expect the path to have grown to two joints (Anchor-Wheel, Wheel-Anchor)
     expect(pathComp.jointEntities.length).toBe(2);
@@ -167,7 +164,6 @@ describe('_splitJoints', () => {
     // analogous to the reRunMerge branch you exercised earlier.
 
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     const A = world.createEntity();
     const B = world.createEntity();
@@ -209,7 +205,7 @@ describe('_splitJoints', () => {
     );
     world.addComponent(path, pathComp);
 
-    system._splitJoints(world);
+    _splitJoints(world);
 
     // Path should now have three joints (A-W1, W1-W2, W2-B)
     expect(pathComp.jointEntities.length).toBe(3);

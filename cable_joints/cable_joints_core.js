@@ -226,7 +226,7 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
-function _updateAttachmentPoints(world) {
+export function _updateAttachmentPoints(world) {
   const pathEntities = world.query([CablePathComponent]);
 
   for (const pathId of pathEntities) {
@@ -332,7 +332,7 @@ function _updateAttachmentPoints(world) {
   }
 }
 
-function _mergeJoints(world) {
+export function _mergeJoints(world) {
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -492,7 +492,7 @@ function _evenOutTensionPartial(world, alpha = 0.5) {
   }
 }
 
-function _splitJoints(world) {
+export function _splitJoints(world) {
   const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -662,7 +662,7 @@ function _splitJoints(world) {
   }
 }
 
-function _updateHybridLinkStates(world) {
+export function _updateHybridLinkStates(world) {
   const debugPoints = world.getResource('debugRenderPoints');
   const pathEntities = world.query([CablePathComponent]);
 

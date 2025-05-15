@@ -11,7 +11,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystem
+  _updateAttachmentPoints
 } from '../cable_joints/cable_joints_core.js';
 
 import {
@@ -24,7 +24,6 @@ import {
 describe('_updateAttachmentPoints', () => {
   test('Attachment to Rolling - Translation', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Entities
     const attachPoint = world.createEntity();
@@ -66,8 +65,7 @@ describe('_updateAttachmentPoints', () => {
     const newAttachPos = attachPos.clone().add(moveVector);
     world.getComponent(attachPoint, PositionComponent).pos.set(newAttachPos); // Update current position
 
-    // --- Run the System ---
-    system._updateAttachmentPoints(world);
+    _updateAttachmentPoints(world);
 
     // --- Assertions ---
     // Calculate expected new tangent points
@@ -103,7 +101,6 @@ describe('_updateAttachmentPoints', () => {
 
   test('Rolling to Rolling (hybrid) - Translation', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Entities
     const attach0 = world.createEntity();
@@ -167,8 +164,7 @@ describe('_updateAttachmentPoints', () => {
     const newPosA = posA.clone().add(moveVectorA);
     world.getComponent(rollingA, PositionComponent).pos.set(newPosA);
 
-    // --- Run the System ---
-    system._updateAttachmentPoints(world);
+    _updateAttachmentPoints(world);
 
     // --- Assertions ---
     // Calculate expected new tangent points
@@ -209,7 +205,6 @@ describe('_updateAttachmentPoints', () => {
 
   test('hybrid-attachment -> rolling -> rolling -> hybrid with small rotations', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Entities: hybrid-attachment start, two rolling links, hybrid end
     const r = 0.5;
@@ -283,7 +278,7 @@ describe('_updateAttachmentPoints', () => {
     world.getComponent(endHybrid, OrientationComponent).angle += -smallRot;
 
     // Run attachment update
-    system._updateAttachmentPoints(world);
+    _updateAttachmentPoints(world);
 
     // Verity stored
     expect(pathComp.stored[0]).toBeCloseTo(0.0, 8);
@@ -310,7 +305,6 @@ describe('_updateAttachmentPoints', () => {
 
   test('hybrid -> rolling -> rolling -> hybrid-attachment with small rotations', () => {
     const world = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Entities: hybrid-attachment start, two rolling links, hybrid end
     const r = 0.5;
@@ -388,7 +382,7 @@ describe('_updateAttachmentPoints', () => {
     world.getComponent(endHybridAttach, OrientationComponent).angle += -smallRot;
 
     // Run attachment update
-    system._updateAttachmentPoints(world);
+    _updateAttachmentPoints(world);
 
     // Verity stored
     expect(pathComp.stored[0]).toBeGreaterThan(0.0, 8);

@@ -11,7 +11,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystem
+  _updateHybridLinkStates
 } from '../cable_joints/cable_joints_core.js';
 
 import {
@@ -43,7 +43,6 @@ describe('_updateHybridLinkStates', () => {
 
   test('first link: hybrid -> hybrid-attachment when stored is negative', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
     const wheel  = addWheel(world, new Vector2(0, 0), 1);
     const anchor = addAnchor(world, new Vector2(0, 3));
 
@@ -70,7 +69,7 @@ describe('_updateHybridLinkStates', () => {
     // Feed out a bit of "negative" rope
     pathComp.stored[0] = -0.2;
 
-    system._updateHybridLinkStates(world);
+    _updateHybridLinkStates(world);
 
     // link type changed
     expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
@@ -83,7 +82,6 @@ describe('_updateHybridLinkStates', () => {
 
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     const anchor = addAnchor(world, new Vector2(-1, 0));
     const wheel  = addWheel(world, new Vector2(0, 0), 1);
@@ -110,7 +108,7 @@ describe('_updateHybridLinkStates', () => {
 
     pathComp.stored[1] = -0.15;
 
-    system._updateHybridLinkStates(world);
+    _updateHybridLinkStates(world);
 
     expect(pathComp.linkTypes[1]).toBe('hybrid-attachment');
     expect(pathComp.stored[1]).toBeCloseTo(0);
@@ -120,7 +118,6 @@ describe('_updateHybridLinkStates', () => {
 
   test('first link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     // Geometry chosen so the rope must wrap CCW onto the wheel
     const wheel  = addWheel(world, new Vector2(0, 0), 1);
@@ -147,7 +144,7 @@ describe('_updateHybridLinkStates', () => {
     world.addComponent(path, pathComp);
 
     // Nothing in stored; hybrid-attachment means "ready to re-wrap"
-    system._updateHybridLinkStates(world);
+    _updateHybridLinkStates(world);
 
     //  switched back to hybrid
     expect(pathComp.linkTypes[0]).toBe('hybrid');
@@ -161,7 +158,6 @@ describe('_updateHybridLinkStates', () => {
 
   test('last link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {
     const world  = new World();
-    const system = new CableAttachmentUpdateSystem();
 
     const anchor = addAnchor(world, new Vector2(0, -3));
     const wheel  = addWheel(world, new Vector2(0, 0), 1);
@@ -186,7 +182,7 @@ describe('_updateHybridLinkStates', () => {
     );
     world.addComponent(path, pathComp);
 
-    system._updateHybridLinkStates(world);
+    _updateHybridLinkStates(world);
 
     // switched back to hybrid
     expect(pathComp.linkTypes[1]).toBe('hybrid');

@@ -4,7 +4,7 @@ import {
   CableJointComponent,
   CableLinkComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystem,
+  CableAttachmentUpdateSystemPathWise,
   PBDCableConstraintSolverPathWise
 } from '../cable_joints/cable_joints_core.js';
 import { GravitySystem } from '../cable_joints/commonSystems.js';
@@ -108,7 +108,7 @@ describe('PBDCableConstraintSolverPathWise', () => {
 
     const dt = 0.016;
     const solver = new PBDCableConstraintSolverPathWise();
-    const cableAttachmentSystem = new CableAttachmentUpdateSystem();
+    const cableAttachmentSystem = new CableAttachmentUpdateSystemPathWise();
     cableAttachmentSystem.update(world, dt);
     solver.update(world, dt);
     cableAttachmentSystem.update(world, dt);
@@ -158,7 +158,7 @@ describe('PBDCableConstraintSolverPathWise', () => {
       )
     );
     const gravitySystem = new GravitySystem();
-    const cableAttachmentSystem = new CableAttachmentUpdateSystem();
+    const cableAttachmentSystem = new CableAttachmentUpdateSystemPathWise();
     const solver = new PBDCableConstraintSolverPathWise();
     const dt =  0.016;
     // Run solver multiple times to enforce constraint
