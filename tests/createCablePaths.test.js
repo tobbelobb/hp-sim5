@@ -203,7 +203,7 @@ describe('createCablePaths', () => {
   });
 
    test('should split correctly with attachments at start, middle, and end', () => {
-    const e = Array(4).fill(null).map((_,i) => createMockLinkEntity(world.createEntity(), false, new Vector2(i,0)));
+    const e = Array(4).fill(null).map((_,i) => createMockLinkEntity(world.createEntity(), (i === 1 || i === 3), new Vector2(i,0)));
     const j = Array(3).fill(null).map((_,i) => createMockJointEntity(e[i], e[i+1]));
 
     const jointEntities = [j[0], j[1], j[2]];
@@ -223,7 +223,7 @@ describe('createCablePaths', () => {
 
     const pathComp2 = world.getComponent(pathEntityIds[1], CablePathComponent);
     expect(pathComp2.jointEntities).toEqual([j[2]]);
-    expect(pathComp2.linkTypes).toEqual(['attachment', 'rolling']);
+    expect(pathComp2.linkTypes).toEqual(['attachment', 'hybrid-attachment']);
     expect(pathComp2.cw).toEqual([false, true]);
   });
 
