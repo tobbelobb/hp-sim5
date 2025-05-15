@@ -138,8 +138,8 @@ canvas {
       CableJointComponent,
       CablePathComponent,
       linecolor1,
-      CableAttachmentUpdateSystem,
-      PBDCableConstraintSolver
+      CableAttachmentUpdateSystemPathWise,
+      PBDCableConstraintSolverPathWise
     } from './cable_joints/cable_joints_core.js';
 
     import {
@@ -1071,11 +1071,11 @@ canvas {
              world.registerSystem(new PBDBallFlipperCollisions());
              world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new PBDBallBorderCollisions());
-             world.registerSystem(new CableAttachmentUpdateSystem());
+             world.registerSystem(new CableAttachmentUpdateSystemPathWise());
+             world.registerSystem(new PBDCableConstraintSolverPathWise());
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 1.00));
-             world.registerSystem(new PBDCableConstraintSolver());
         } else {
           world.systems[InputSystem]
         }

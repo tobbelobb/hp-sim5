@@ -5,11 +5,11 @@ import {
   CableLinkComponent,
   CablePathComponent,
   CableAttachmentUpdateSystem,
-  PBDCableConstraintSolver
+  PBDCableConstraintSolverPathWise
 } from '../cable_joints/cable_joints_core.js';
 import { GravitySystem } from '../cable_joints/commonSystems.js';
 
-describe('PBDCableConstraintSolver', () => {
+describe('PBDCableConstraintSolverPathWise', () => {
   test('does nothing when compliance is zero', () => {
     const world = new World();
     // Create entities and positions
@@ -54,7 +54,7 @@ describe('PBDCableConstraintSolver', () => {
     const initB2 = aB2.clone();
 
     // Run solver
-    const solver = new PBDCableConstraintSolver();
+    const solver = new PBDCableConstraintSolverPathWise();
     expect(() => solver.update(world, 0.016)).not.toThrow();
 
     // Verify points unchanged
@@ -68,7 +68,7 @@ describe('PBDCableConstraintSolver', () => {
 
   test('handles empty world without error', () => {
     const world = new World();
-    const solver = new PBDCableConstraintSolver();
+    const solver = new PBDCableConstraintSolverPathWise();
     expect(() => solver.update(world, 0.1)).not.toThrow();
   });
 
@@ -107,7 +107,7 @@ describe('PBDCableConstraintSolver', () => {
     world.addComponent(pathEnt, pathComp);
 
     const dt = 0.016;
-    const solver = new PBDCableConstraintSolver();
+    const solver = new PBDCableConstraintSolverPathWise();
     const cableAttachmentSystem = new CableAttachmentUpdateSystem();
     cableAttachmentSystem.update(world, dt);
     solver.update(world, dt);
@@ -159,7 +159,7 @@ describe('PBDCableConstraintSolver', () => {
     );
     const gravitySystem = new GravitySystem();
     const cableAttachmentSystem = new CableAttachmentUpdateSystem();
-    const solver = new PBDCableConstraintSolver();
+    const solver = new PBDCableConstraintSolverPathWise();
     const dt =  0.016;
     // Run solver multiple times to enforce constraint
     for (let i = 0; i < 5; i++) {
