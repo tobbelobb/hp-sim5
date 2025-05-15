@@ -111,7 +111,7 @@ export class CablePathComponent {
 
 
 // --- System: Cable Attachment Update ---
-// Calculates tangent points and updates rest lengths (dn) BEFORE the main solver
+// Calculates tangent points and updates rest lengths (dn) as well as stored lengths BEFORE the main solver.
 //
 // # AttachmentPoints updates means updating the "ABRS" variables
 // - _updateAttachmentPoints's main job is to update `joint.attachmentPointA_world` and `joint.attachmentPointB_world`
@@ -122,7 +122,7 @@ export class CablePathComponent {
 // - Updates to ABRS are based on new PositionComponent pos and OrientationComponent angles that were calculated
 //   during the previous time step (possibly modified by earlier systems in the current time step).
 //
-//  # Features
+//  # Extra Features
 //  - CableAttachmentUpdateSystem also handles how joints might be merged or split do to intersections or non-intersections with objects
 //    that interact with cables (objects with CableLinkComponent). That's two features: split and merge.
 //  - And CableAttachmentUpdateSystem also handles something called "hybrid links" which is a pair of features that let cables attach to the perimeter of
@@ -131,16 +131,20 @@ export class CablePathComponent {
 //  - Switching from hybrid to hybrid-attachment is one feature, switching back is another feature.
 //  - All these four features run their logic _after_  an initial round of ABRS updates.
 //  - Each feature is responsible for leaving ABRS in a physically consistent state. No new line is allowed to be removed or created.
+//  - CableAttachmentUpdateSystem also does a little sanity check at the end, contained in the _sanityCheck function.
+//
 //
 //  ## Merge Feature
+//  - Contained in the _mergeJoints function.
 //  - The merge feature updates ABRS. It also destroys one element from `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`. Then it destroys the whole joint object.
 //
 //  ## Hybrid Features
-//  - The hybrid/hybrid-attachment features are currently both handled by one function which is called `_updateHybridLinkStates`.
+//  - Contained in _updateHybridLinkStates function.
 //  - The hybrid->hybrid-attachment logic updates ABRS, and `path.linkTypes[i]`.
 //  - The hybrid-attachment->hybrid logic updates ABRS, `path.linkTypes[i]`, and `path.cw[i]`.
 //
 //  ## Split Feature
+//  - Contained in the _splitJoints function.
 //  - The split feature updates ABRS. It also updates joint.entityB and it creates a whole new joint with `entityA`, `entityB`, `restLength`, `attachmentPointA_world`, and `attachmentPointB_world` all set.
 //    It also creates an element in `path.jointEntities`, `path.stored`, `path.cw`, `path.linkTypes`.
 //  - The split feature distributes the available restLength so that tension becomes equal on both sides of the new link.
@@ -148,9 +152,10 @@ export class CablePathComponent {
 //    It _only_ changes pairs of `joint.restLength`. It does not change `joint.attachmentPointA_world`, `joint.attachmentPointB_world`, or `path.stored[i]`.
 //
 //  ## Tension Distribution Feature
-//  - This logic is called "// Even out tension" in the code and currently has no separate function.
+//  - Contained in _evenOutTension and _evenOutTensionPartial functions.
 //
 //  ## Memory Feature
+//  - Contained in the _storeCableLinkPoses function.
 //  - At the very end of CableAttachmentUpdateSystem there's a feature that updates CableLinkComponent.prevCableAttachmentTimePos for all links with a PositionComponent
 //    so that correct prevPos is available for the next time step/iteration of CableAttachmentUpdateSystem update.
 //    It does the same with CableLinkComponent.prevCableAttachmentTimeAngle
