@@ -224,6 +224,7 @@ export class RenderSystem {
         // Draw catenary if slack, otherwise straight
         const straightDist = pA.distanceTo(pB);
         if (jointComp.restLength > straightDist + 1e-6) {
+          this.c.strokeStyle = 'orange';
           this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
         } else {
           this.c.moveTo(this.cX(pA.x), this.cY(pA.y));

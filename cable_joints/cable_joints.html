@@ -144,6 +144,10 @@
     world.addComponent(obs1, new MassComponent(-1.0));
     world.addComponent(obs1, new RadiusComponent(0.1));
     world.addComponent(obs1, new RenderableComponent('circle', obsColor));
+    world.addComponent(obs1, new OrientationComponent(0.0));
+    world.addComponent(obs1, new AngularVelocityComponent(0.0));
+    const obsInertia = 0.5 * 1.0 * 0.1**2;
+    world.addComponent(obs1, new MomentOfInertiaComponent(obsInertia));
 
 
 
@@ -186,88 +190,88 @@
 
     const cablePath = world.createEntity();
     // CablePathComponent constructor now calculates initial stored length and totalRestLength
-    const pathComp1 = new CablePathComponent(world, [joint1, joint2], ['hybrid-attachment', 'rolling', 'hybrid-attachment'], [true, true, true], 100.0); // Order matters
+    const pathComp1 = new CablePathComponent(world, [joint1, joint2], ['hybrid-attachment', 'rolling', 'hybrid-attachment'], [true, true, true], Infinity); // Order matters
     world.addComponent(cablePath, pathComp1);
 
 
-    const offset_x = 0.3;
+    //const offset_x = 0.3;
 
-    const ball3 = world.createEntity();
-    world.addComponent(ball3, new BallTagComponent());
-    world.addComponent(ball3, new PositionComponent(1.35 + offset_x, 0.4));
-    world.addComponent(ball3, new VelocityComponent(0.0, 0.0));
-    world.addComponent(ball3, new RadiusComponent(ballRadius));
-    world.addComponent(ball3, new MassComponent(ball1Mass));
-    world.addComponent(ball3, new RestitutionComponent(ballRestitution));
-    world.addComponent(ball3, new GravityAffectedComponent());
-    world.addComponent(ball3, new RenderableComponent('circle', '#FF0000'));
-    world.addComponent(ball3, new MomentOfInertiaComponent(ball1Inertia));
-    world.addComponent(ball3, new OrientationComponent(0.0));
-    world.addComponent(ball3, new AngularVelocityComponent(0.0));
+    //const ball3 = world.createEntity();
+    //world.addComponent(ball3, new BallTagComponent());
+    //world.addComponent(ball3, new PositionComponent(1.35 + offset_x, 0.4));
+    //world.addComponent(ball3, new VelocityComponent(0.0, 0.0));
+    //world.addComponent(ball3, new RadiusComponent(ballRadius));
+    //world.addComponent(ball3, new MassComponent(ball1Mass));
+    //world.addComponent(ball3, new RestitutionComponent(ballRestitution));
+    //world.addComponent(ball3, new GravityAffectedComponent());
+    //world.addComponent(ball3, new RenderableComponent('circle', '#FF0000'));
+    //world.addComponent(ball3, new MomentOfInertiaComponent(ball1Inertia));
+    //world.addComponent(ball3, new OrientationComponent(0.0));
+    //world.addComponent(ball3, new AngularVelocityComponent(0.0));
 
-    const ball4 = world.createEntity();
-    world.addComponent(ball4, new BallTagComponent());
-    world.addComponent(ball4, new PositionComponent(1.6 + offset_x, 0.4));
-    world.addComponent(ball4, new VelocityComponent(0.0, 0.0));
-    world.addComponent(ball4, new RadiusComponent(ballRadius));
-    world.addComponent(ball4, new MassComponent(ball2Mass));
-    world.addComponent(ball4, new RestitutionComponent(ballRestitution));
-    world.addComponent(ball4, new GravityAffectedComponent());
-    world.addComponent(ball4, new RenderableComponent('circle', '#00FF00'));
-    world.addComponent(ball4, new MomentOfInertiaComponent(ball2Inertia));
-    world.addComponent(ball4, new OrientationComponent(0.0));
-    world.addComponent(ball4, new AngularVelocityComponent(0.0));
+    //const ball4 = world.createEntity();
+    //world.addComponent(ball4, new BallTagComponent());
+    //world.addComponent(ball4, new PositionComponent(1.6 + offset_x, 0.4));
+    //world.addComponent(ball4, new VelocityComponent(0.0, 0.0));
+    //world.addComponent(ball4, new RadiusComponent(ballRadius));
+    //world.addComponent(ball4, new MassComponent(ball2Mass));
+    //world.addComponent(ball4, new RestitutionComponent(ballRestitution));
+    //world.addComponent(ball4, new GravityAffectedComponent());
+    //world.addComponent(ball4, new RenderableComponent('circle', '#00FF00'));
+    //world.addComponent(ball4, new MomentOfInertiaComponent(ball2Inertia));
+    //world.addComponent(ball4, new OrientationComponent(0.0));
+    //world.addComponent(ball4, new AngularVelocityComponent(0.0));
 
-    // Obstacle Entities
-    const obs2 = world.createEntity();
-    world.addComponent(obs2, new ObstacleTagComponent());
-    world.addComponent(obs2, new PositionComponent(1.5 + offset_x, 1.5));
-    world.addComponent(obs2, new MassComponent(-1.0));
-    world.addComponent(obs2, new RadiusComponent(0.1));
-    world.addComponent(obs2, new RenderableComponent('circle', obsColor));
-
-
-
-    // --- Calculate Initial Cable State ---
-    // Need to compute initial attachment points and rest lengths
-    // Get relevant components
-    const pos_ball3 = world.getComponent(ball3, PositionComponent).pos;
-    const pos_obs2 = world.getComponent(obs2, PositionComponent).pos;
-    const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
-    const cw_obs2 = true;
-    const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
-
-    // --- Cable Setup ---
-    // Path: ball3 -> obs2 -> ball4
-    world.addComponent(obs2, new CableLinkComponent(pos_obs2.x, pos_obs2.y));
-    world.addComponent(ball3, new CableLinkComponent(pos_ball3.x, pos_ball3.y));
-    world.addComponent(ball4, new CableLinkComponent(pos_ball4.x, pos_ball4.y));
-
-    const tangentBall3Obs2 = tangentFromPointToCircle(pos_ball3, pos_obs2, radius_obs2, cw_obs2);
-    const attachBall3Obs2 = tangentBall3Obs2.a_circle;
-    const dir3 = attachBall3Obs2.clone().subtract(pos_ball3).normalize();
-    const attachBall3 = pos_ball3.clone().add(dir3, ballRadius);
-    const initialDist3 = attachBall3.clone().subtract(attachBall3Obs2).length();
-    const joint3 = world.createEntity(); // ball3 <-> obs2
-    world.addComponent(joint3, new CableJointComponent(
-      ball3, obs2, initialDist3, attachBall3, attachBall3Obs2)); // Order matters
-    world.addComponent(joint3, new RenderableComponent('line', '#FF0000')); // Red line
-
-    const tangentObs2Ball4 = tangentFromCircleToPoint(pos_ball4, pos_obs2, radius_obs2, cw_obs2);
-    const attachObs2Ball4 = tangentObs2Ball4.a_circle;
-    const dir4 = attachObs2Ball4.clone().subtract(pos_ball4).normalize();
-    const attachBall4 = pos_ball4.clone().add(dir4, ballRadius);
-    const initialDist4 = attachBall4.clone().subtract(attachObs2Ball4).length();
-    const joint4 = world.createEntity(); // obs2 <-> ball4
-    world.addComponent(joint4, new CableJointComponent(
-      obs2, ball4, initialDist4, attachObs2Ball4, attachBall4)); // Order matters
-    world.addComponent(joint4, new RenderableComponent('line', '#FFFF00')); // Yellow line
+    //// Obstacle Entities
+    //const obs2 = world.createEntity();
+    //world.addComponent(obs2, new ObstacleTagComponent());
+    //world.addComponent(obs2, new PositionComponent(1.5 + offset_x, 1.5));
+    //world.addComponent(obs2, new MassComponent(-1.0));
+    //world.addComponent(obs2, new RadiusComponent(0.1));
+    //world.addComponent(obs2, new RenderableComponent('circle', obsColor));
 
 
-    const cablePath2 = world.createEntity();
-    // CablePathComponent constructor now calculates initial stored length and totalRestLength
-    const pathComp2 = new CablePathComponent(world, [joint3, joint4], ['hybrid-attachment', 'rolling', 'hybrid-attachment'], [true, true, true], 100.0); // Order matters
-    world.addComponent(cablePath2, pathComp2);
+
+    //// --- Calculate Initial Cable State ---
+    //// Need to compute initial attachment points and rest lengths
+    //// Get relevant components
+    //const pos_ball3 = world.getComponent(ball3, PositionComponent).pos;
+    //const pos_obs2 = world.getComponent(obs2, PositionComponent).pos;
+    //const radius_obs2 = world.getComponent(obs2, RadiusComponent).radius;
+    //const cw_obs2 = true;
+    //const pos_ball4 = world.getComponent(ball4, PositionComponent).pos;
+
+    //// --- Cable Setup ---
+    //// Path: ball3 -> obs2 -> ball4
+    //world.addComponent(obs2, new CableLinkComponent(pos_obs2.x, pos_obs2.y));
+    //world.addComponent(ball3, new CableLinkComponent(pos_ball3.x, pos_ball3.y));
+    //world.addComponent(ball4, new CableLinkComponent(pos_ball4.x, pos_ball4.y));
+
+    //const tangentBall3Obs2 = tangentFromPointToCircle(pos_ball3, pos_obs2, radius_obs2, cw_obs2);
+    //const attachBall3Obs2 = tangentBall3Obs2.a_circle;
+    //const dir3 = attachBall3Obs2.clone().subtract(pos_ball3).normalize();
+    //const attachBall3 = pos_ball3.clone().add(dir3, ballRadius);
+    //const initialDist3 = attachBall3.clone().subtract(attachBall3Obs2).length();
+    //const joint3 = world.createEntity(); // ball3 <-> obs2
+    //world.addComponent(joint3, new CableJointComponent(
+    //  ball3, obs2, initialDist3, attachBall3, attachBall3Obs2)); // Order matters
+    //world.addComponent(joint3, new RenderableComponent('line', '#FF0000')); // Red line
+
+    //const tangentObs2Ball4 = tangentFromCircleToPoint(pos_ball4, pos_obs2, radius_obs2, cw_obs2);
+    //const attachObs2Ball4 = tangentObs2Ball4.a_circle;
+    //const dir4 = attachObs2Ball4.clone().subtract(pos_ball4).normalize();
+    //const attachBall4 = pos_ball4.clone().add(dir4, ballRadius);
+    //const initialDist4 = attachBall4.clone().subtract(attachObs2Ball4).length();
+    //const joint4 = world.createEntity(); // obs2 <-> ball4
+    //world.addComponent(joint4, new CableJointComponent(
+    //  obs2, ball4, initialDist4, attachObs2Ball4, attachBall4)); // Order matters
+    //world.addComponent(joint4, new RenderableComponent('line', '#FFFF00')); // Yellow line
+
+
+    //const cablePath2 = world.createEntity();
+    //// CablePathComponent constructor now calculates initial stored length and totalRestLength
+    //const pathComp2 = new CablePathComponent(world, [joint3, joint4], ['hybrid-attachment', 'rolling', 'hybrid-attachment'], [true, true, true], 100.0); // Order matters
+    //world.addComponent(cablePath2, pathComp2);
 
 
 
