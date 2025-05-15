@@ -182,6 +182,18 @@ export class CableAttachmentUpdateSystem {
       }
   }
 
+  _isAttachment(value) {
+    return value === 'attachment' || value === 'hybrid-attachment' || value === 'pinhole';
+  }
+
+  _isRolling(value) {
+    return value === 'rolling' || value === 'hybrid';
+  }
+
+  _isHybrid(value) {
+    return value === 'hybrid' || value === 'hybrid-attachment';
+  }
+
   _updateAttachmentPoints(world) {
     const pathEntities = world.query([CablePathComponent]);
 
@@ -211,9 +223,9 @@ export class CableAttachmentUpdateSystem {
         const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
         const deltaAngleA = angleA - prevAngleA;
         const cwA = this._effectiveCW(path, A,  true);
-        const attachmentLinkA = path.linkTypes[A] === 'attachment' || path.linkTypes[A] === 'hybrid-attachment';
-        const rollingLinkA = path.linkTypes[A] === 'rolling' || path.linkTypes[A] === 'hybrid';
-        const isHybridA = path.linkTypes[A] === 'hybrid' || path.linkTypes[A] === 'hybrid-attachment';
+        const attachmentLinkA = this._isAttachment(path.linkTypes[A]);
+        const rollingLinkA = this._isRolling(path.linkTypes[A]);
+        const isHybridA = this._isHybrid(path.linkTypes[A]);
         const pADiffFromTranslation = posA.clone().subtract(prevPosA)
         const pADiffFromRotation = attachmentA_previous.clone().rotate(deltaAngleA, prevPosA, true).subtract(attachmentA_previous);
 
@@ -230,9 +242,9 @@ export class CableAttachmentUpdateSystem {
         const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
         const deltaAngleB = angleB - prevAngleB;
         const cwB = this._effectiveCW(path, B,  false);
-        const attachmentLinkB = path.linkTypes[B] === 'attachment' || path.linkTypes[B] === 'hybrid-attachment';
-        const rollingLinkB = path.linkTypes[B] === 'rolling' || path.linkTypes[B] === 'hybrid';
-        const isHybridB = path.linkTypes[B] === 'hybrid' || path.linkTypes[B] === 'hybrid-attachment';
+        const attachmentLinkB = this._isAttachment(path.linkTypes[B]);
+        const rollingLinkB = this._isRolling(path.linkTypes[B]);
+        const isHybridB = this._isHybrid(path.linkTypes[B]);
         const pBDiffFromTranslation = posB.clone().subtract(prevPosB)
         const pBDiffFromRotation = attachmentB_previous.clone().rotate(deltaAngleB, prevPosB, true).subtract(attachmentB_previous);
 
@@ -334,10 +346,10 @@ export class CableAttachmentUpdateSystem {
 
             joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
             joint_i.entityB = joint_i_plus_1.entityB;
-            const isRollingA = path.linkTypes[i] === 'rolling' || path.linkTypes[i] === 'hybrid';
-            const isAttachmentA = path.linkTypes[i] === 'attachment' || path.linkTypes[i] === 'hybrid-attachment';
-            const isRollingB = path.linkTypes[i+2] === 'rolling' || path.linkTypes[i+2] === 'hybrid';
-            const isAttachmentB = path.linkTypes[i+2] === 'attachment' || path.linkTypes[i+2] === 'hybrid-attachment';
+            const isAttachmentA = this._isAttachment(path.linkTypes[i]);
+            const isRollingA = this._isRolling(path.linkTypes[i]);
+            const isAttachmentB = this._isAttachment(path.linkTypes[i+2]);
+            const isRollingB = this._isRolling(path.linkTypes[i+2]);
 
             let attachmentA_current = pA1;
             let attachmentB_current = pB2;
@@ -472,16 +484,16 @@ export class CableAttachmentUpdateSystem {
             // Get components for Entity A
             const posA = world.getComponent(entityA, PositionComponent).pos;
             const linkTypeA = path.linkTypes[i];
-            const isRollingA = linkTypeA === 'rolling' || linkTypeA === 'hybrid';
-            const isAttachmentA = linkTypeA === 'attachment' || linkTypeA === 'hybrid-attachment';
+            const isAttachmentA = this._isAttachment(linkTypeA);
+            const isRollingA = this._isRolling(linkTypeA);
             const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
             const cwA = this._effectiveCW(path, i, true);
 
             // Get components for Entity B
             const posB = world.getComponent(entityB, PositionComponent).pos;
             const linkTypeB = path.linkTypes[i + 1];
-            const isRollingB = linkTypeB === 'rolling' || linkTypeB === 'hybrid';
-            const isAttachmentB = linkTypeB === 'attachment' || linkTypeB === 'hybrid-attachment';
+            const isAttachmentB = this._isAttachment(linkTypeB);
+            const isRollingB = this._isRolling(linkTypeB);
             const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
             const cwB = path.cw[i + 1];
 
