@@ -740,14 +740,13 @@ export class CableAttachmentUpdateSystem {
   update(world, dt) {
     this._clearDebugPoints(world);
     this._updateAttachmentPoints(world);
-    const even_out_how_much = 1.0;
-    this._evenOutTensionPartial(world, even_out_how_much);
+    this._evenOutTension(world);
     this._mergeJoints(world);
-    this._evenOutTensionPartial(world, even_out_how_much);
+    this._evenOutTension(world);
     this._splitJoints(world);
-    this._evenOutTensionPartial(world, even_out_how_much);
+    this._evenOutTension(world);
     this._updateHybridLinkStates(world);
-    this._evenOutTensionPartial(world, even_out_how_much);
+    this._evenOutTension(world);
     this._storeCableLinkPoses(world);
     this._sanityCheck(world);
   }
