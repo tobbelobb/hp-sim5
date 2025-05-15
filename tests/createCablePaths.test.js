@@ -146,29 +146,28 @@ describe('createCablePaths', () => {
     const cw = [true, false, true, false, true, false, true];
 
     const pathEntityIds = createCablePaths(world, jointEntities, linkTypes, cw, springConstant);
-    expect(pathEntityIds).toHaveLength(3);
+    expect(pathEntityIds).toHaveLength(4);
 
     const pathComp1 = world.getComponent(pathEntityIds[0], CablePathComponent);
-    expect(pathComp1.jointEntities).toEqual([j[0], j[1]]); // j0 connects e0-e1, j1 connects e1-e2
-    // Links for pathComp1: link(e0), link(e1), link(e2)
-    // Original linkTypes indices: 0, 1, 2
-    expect(pathComp1.linkTypes).toEqual(['hybrid-attachment', 'attachment', 'rolling']);
-    expect(pathComp1.cw).toEqual([true, false, true]);
+    expect(pathComp1.jointEntities).toEqual([j[0]]); // j0 connects e0-e1
+    expect(pathComp1.linkTypes).toEqual(['hybrid-attachment', 'attachment']);
+    expect(pathComp1.cw).toEqual([true, false]);
 
 
     const pathComp2 = world.getComponent(pathEntityIds[1], CablePathComponent);
-    expect(pathComp2.jointEntities).toEqual([j[2], j[3]]); // j2 connects e2-e3, j3 connects e3-e4
-    // Links for pathComp2: link(e2), link(e3), link(e4)
-    // Original linkTypes indices: 2, 3, 4
-    expect(pathComp2.linkTypes).toEqual(['rolling', 'attachment', 'rolling']);
-    expect(pathComp2.cw).toEqual([true, false, true]);
+    expect(pathComp2.jointEntities).toEqual([j[1], j[2]]); // j1 connects e1-e2, j2 connects e2-e3
+    expect(pathComp2.linkTypes).toEqual(['attachment', 'rolling', 'attachment']);
+    expect(pathComp2.cw).toEqual([false, true, false]);
 
     const pathComp3 = world.getComponent(pathEntityIds[2], CablePathComponent);
-    expect(pathComp3.jointEntities).toEqual([j[4], j[5]]); // j4 connects e4-e5, j5 connects e5-e6
-    // Links for pathComp3: link(e4), link(e5), link(e6)
-    // Original linkTypes indices: 4, 5, 6
-    expect(pathComp3.linkTypes).toEqual(['rolling', 'attachment', 'hybrid-attachment']);
-    expect(pathComp3.cw).toEqual([true, false, true]);
+    expect(pathComp3.jointEntities).toEqual([j[3], j[4]]); // j3 connects e3-e4, j4 connects e4-e5
+    expect(pathComp3.linkTypes).toEqual(['attachment', 'rolling', 'attachment']);
+    expect(pathComp3.cw).toEqual([false, true, false]);
+
+    const pathComp4 = world.getComponent(pathEntityIds[3], CablePathComponent);
+    expect(pathComp4.jointEntities).toEqual([j[5]]); // j5 connects e5-e6
+    expect(pathComp4.linkTypes).toEqual(['attachment', 'hybrid-attachment']);
+    expect(pathComp4.cw).toEqual([false, true]);
   });
 
   test('should not split if attachment link is at the start', () => {
@@ -193,7 +192,7 @@ describe('createCablePaths', () => {
 
   test('should not split if attachment links are only at start and end', () => {
     const e0 = createMockLinkEntity(world.createEntity());
-    const e1 = createMockLinkEntity(world.createEntity());
+    const e1 = createMockLinkEntity(world.createEntity(), true);
     const e2 = createMockLinkEntity(world.createEntity());
     const j1 = createMockJointEntity(e0, e1);
     const j2 = createMockJointEntity(e1, e2);
@@ -211,7 +210,7 @@ describe('createCablePaths', () => {
     // Path: e0 --j0-- e1 --j1-- e2 --j2-- e3
     // Links: L(e0) L(e1) L(e2) L(e3)
     // LT:    attach, roll, attach, roll
-    const linkTypes = ['attachment', 'rolling', 'attachment', 'rolling'];
+    const linkTypes = ['attachment', 'rolling', 'attachment', 'hybrid-attachment'];
     const cw = [true, true, false, true];
     const pathEntityIds = createCablePaths(world, jointEntities, linkTypes, cw, springConstant);
 
