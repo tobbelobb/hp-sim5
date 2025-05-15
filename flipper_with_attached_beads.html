@@ -1040,18 +1040,17 @@ canvas {
           obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
         world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
-        // Create Cable Path Entity
-        const cablePath = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
+        // Create Cable Path(s) using the builder function
+        // This will split the path at 'attachment' links if they are not at the ends.
         // Use hybrid links at ball attachments to attach at perimeter
-        const pathComp = new CablePathComponent(
+        createCablePaths(
           world,
-          [joint1, joint2, joint3, joint4, joint5],
-          ['hybrid-attachment', 'rolling', 'attachment', 'attachment', 'rolling', 'hybrid-attachment'],
-          [true, true, true, true, true, true],
-          20000.0 // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
+          [joint1, joint2, joint3, joint4, joint5], // jointEntities
+          ['hybrid-attachment', 'rolling', 'attachment', 'attachment', 'rolling', 'hybrid-attachment'], // linkTypes
+          [true, true, true, true, true, true], // cw
+          20000.0, // spring_constant
+          null // userStored (let constructor calculate)
         );
-        world.addComponent(cablePath, pathComp);
 
 
         // --- Systems Registration (Order Matters!) ---
