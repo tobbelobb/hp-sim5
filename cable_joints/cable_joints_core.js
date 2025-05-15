@@ -400,6 +400,9 @@ export class CableAttachmentUpdateSystem {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 2) continue;
       for (let i = 0; i < path.jointEntities.length - 1; i++) {
+        if (path.linkTypes[i+1] === 'attachment') {
+          continue;
+        }
         const jointId_i = path.jointEntities[i];
         const jointId_i_plus_1 = path.jointEntities[i + 1];
         const joint_i = world.getComponent(jointId_i, CableJointComponent);
