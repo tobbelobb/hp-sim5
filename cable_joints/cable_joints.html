@@ -48,8 +48,9 @@
     CableLinkComponent,
     CableJointComponent,
     CablePathComponent,
-    CableAttachmentUpdateSystem,
-    PBDCableConstraintSolver
+    CableAttachmentUpdateSystemPathWise,
+    CableAttachmentUpdateSystemJointWise,
+    PBDCableConstraintSolverLinkWise
   } from './cable_joints_core.js';
 
   import {
@@ -282,8 +283,8 @@
       world.registerSystem(new AngularMovementSystem());
       world.registerSystem(new PBDBallBallCollisions());
       world.registerSystem(new PBDBallObstacleCollisions());
-      world.registerSystem(new CableAttachmentUpdateSystem());
-      world.registerSystem(new PBDCableConstraintSolver());
+      world.registerSystem(new CableAttachmentUpdateSystemJointWise());
+      world.registerSystem(new PBDCableConstraintSolverLinkWise());
       const renderSystem = new RenderSystem(canvas, cScale, simHeight, 0.8, 1.5, 0.4);
       world.registerSystem(renderSystem);
       world.setResource('renderSystem', renderSystem);

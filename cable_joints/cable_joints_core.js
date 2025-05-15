@@ -1181,3 +1181,208 @@ export class PBDCableConstraintSolverPathWise {
     } // End loop through paths
   } // end update
 } // end PBDCableConstraintSolverPathWise
+
+export class PBDCableConstraintSolverLinkWise {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const dt      = world.getResource('dt');
+    const epsilon = 1e-9;
+
+    // for each full cable‐path
+    const pathEntities = world.query([CablePathComponent]);
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || path.jointEntities.length === 0) continue;
+
+      // build a map: linkEntityId -> [ jointIndices … ]
+      const linkToJoints = new Map();
+      path.jointEntities.forEach((jointId, idx) => {
+        const j = world.getComponent(jointId, CableJointComponent);
+        [ j.entityA, j.entityB ].forEach(linkId => {
+          if (!linkToJoints.has(linkId)) linkToJoints.set(linkId, []);
+          linkToJoints.get(linkId).push(idx);
+        });
+      });
+
+      // now for each link in this path
+      for (const [linkId, jointIndices] of linkToJoints.entries()) {
+        if (jointIndices.length === 1) {
+          // single‐joint case → do the same correction as PBDCableConstraintSolverJointWise
+          this._solveSingleJoint(world, path, jointIndices[0], dt, epsilon);
+        } else {
+          // multi‐joint case → sort & solve every sub-path between adjacent joints
+          jointIndices.sort((a,b)=>a-b);
+          for (let k = 0; k < jointIndices.length - 1; ++k) {
+            const start = jointIndices[k];
+            const end   = jointIndices[k+1];
+            this._solvePathSegment(world, path, start, end, dt, epsilon);
+          }
+        }
+      }
+    }
+  }
+
+  // exactly the per‐joint PBD solve, copied/adapted from your existing JointWise
+  _solveSingleJoint(world, path, idx, dt, eps) {
+    const jointId = path.jointEntities[idx];
+    const joint   = world.getComponent(jointId, CableJointComponent);
+    const pA      = joint.attachmentPointA_world;
+    const pB      = joint.attachmentPointB_world;
+    const L0      = joint.restLength;
+    const d       = pA.distanceTo(pB);
+    const C       = d - L0;
+    if (C <= eps) return;
+
+    // fetch inv‐mass & inv‐inertia for A/B
+    const [ mA, iA ] = this._getInvMassInertia(world, joint.entityA);
+    const [ mB, iB ] = this._getInvMassInertia(world, joint.entityB);
+    let denom = 0;
+
+    // build gradients
+    const diff = new Vector2().subtractVectors(pB, pA);
+    const dir  = diff.clone().scale(1 / diff.length());
+    const gradPA = dir.clone();           // ∇_pA |pB−pA|
+    const gradPB = dir.clone().scale(-1); // ∇_pB |pB−pA|
+
+    // rotational grads:  r × grad
+    const posA = world.getComponent(joint.entityA, PositionComponent).pos;
+    const rA   = new Vector2().subtractVectors(pA, posA);
+    const gA   = rA.x*dir.y - rA.y*dir.x;
+
+    const posB = world.getComponent(joint.entityB, PositionComponent).pos;
+    const rB   = new Vector2().subtractVectors(pB, posB);
+    const gB   = rB.x*(-dir.y) - rB.y*(-dir.x);
+
+    denom += mA * gradPA.lengthSq() + iA * gA*gA;
+    denom += mB * gradPB.lengthSq() + iB * gB*gB;
+    denom += path.compliance/(dt*dt);
+    if (denom <= eps) return;
+
+    const λ = -C/denom;
+
+    // apply to A
+    if (mA>0) {
+      const ΔpA = gradPA.clone().scale(-mA*λ);
+      world.getComponent(joint.entityA, PositionComponent).pos.add(ΔpA);
+      const vA = world.getComponent(joint.entityA, VelocityComponent);
+      if (vA && dt>eps) vA.vel.add(ΔpA, 1/dt);
+    }
+    if (iA>0) {
+      const ΔθA = -iA*λ*gA;
+      world.getComponent(joint.entityA, OrientationComponent).angle += ΔθA;
+      const wA = world.getComponent(joint.entityA, AngularVelocityComponent);
+      if (wA && dt>eps) wA.angularVelocity += ΔθA/dt;
+    }
+
+    // apply to B
+    if (mB>0) {
+      const ΔpB = gradPB.clone().scale(-mB*λ);
+      world.getComponent(joint.entityB, PositionComponent).pos.add(ΔpB);
+      const vB = world.getComponent(joint.entityB, VelocityComponent);
+      if (vB && dt>eps) vB.vel.add(ΔpB, 1/dt);
+    }
+    if (iB>0) {
+      const ΔθB = -iB*λ*gB;
+      world.getComponent(joint.entityB, OrientationComponent).angle += ΔθB;
+      const wB = world.getComponent(joint.entityB, AngularVelocityComponent);
+      if (wB && dt>eps) wB.angularVelocity += ΔθB/dt;
+    }
+  }
+
+  // very similar to your PathWise solve, but only over joints [start…end]
+  _solvePathSegment(world, path, start, end, dt, eps) {
+    // 1) compute total current length & total rest length over that sub-range
+    let currLen = 0, restLen = 0;
+    for (let i = start; i <= end; ++i) {
+      const j = world.getComponent(path.jointEntities[i], CableJointComponent);
+      currLen += j.attachmentPointA_world.distanceTo(j.attachmentPointB_world);
+      restLen += j.restLength;
+      // add stored link‐length between joints if you're using rolling segments:
+      if (path.linkTypes[i+1] === 'rolling') {
+        currLen += path.stored[i+1];
+        restLen += path.stored[i+1];
+      }
+    }
+    const C = currLen - restLen;
+    if (C <= eps) return;
+
+    // 2) collect unique entities in this sub-range & accumulate gradients
+    const gradData = new Map(); // entityId -> { gradPos, gradAng, invM, invI }
+    function ensure(id){
+      if (!gradData.has(id)) {
+        const [ m, I ] = this._getInvMassInertia(world, id);
+        gradData.set(id,{ gradPos:new Vector2(), gradAng:0, invM:m, invI:I });
+      }
+    }
+    for (let i = start; i <= end; ++i) {
+      const j = world.getComponent(path.jointEntities[i], CableJointComponent);
+      ensure.call(this,j.entityA);
+      ensure.call(this,j.entityB);
+    }
+
+    // accumulate per‐joint
+    for (let i = start; i <= end; ++i) {
+      const joint = world.getComponent(path.jointEntities[i], CableJointComponent);
+      const pA    = joint.attachmentPointA_world;
+      const pB    = joint.attachmentPointB_world;
+      const diff  = new Vector2().subtractVectors(pB,pA);
+      const len   = diff.length();
+      if (len<=eps) continue;
+      const dir   = diff.clone().scale(1/len);
+
+      // A
+      const dA = gradData.get(joint.entityA);
+      dA.gradPos.add(dir);
+      const posA = world.getComponent(joint.entityA, PositionComponent).pos;
+      const rA   = new Vector2().subtractVectors(pA,posA);
+      dA.gradAng += (rA.x*dir.y - rA.y*dir.x);
+
+      // B
+      const dB = gradData.get(joint.entityB);
+      dB.gradPos.add(dir.clone().scale(-1));
+      const posB = world.getComponent(joint.entityB, PositionComponent).pos;
+      const rB   = new Vector2().subtractVectors(pB,posB);
+      dB.gradAng += -(rB.x*dir.y - rB.y*dir.x);
+    }
+
+    // 3) build denominator & apply the single λ
+    let denom = 0;
+    for (const d of gradData.values()) {
+      denom += d.invM * d.gradPos.lengthSq();
+      denom += d.invI * d.gradAng*d.gradAng;
+      denom += path.compliance/(dt*dt);
+    }
+    if (denom <= eps) return;
+    const λ = -C/denom;
+
+    // 4) apply corrections
+    for (const [eid,d] of gradData.entries()) {
+      // trans
+      if (d.invM>0) {
+        const Δp = d.gradPos.clone().scale(-d.invM*λ);
+        const P   = world.getComponent(eid, PositionComponent);
+        if (P) P.pos.add(Δp);
+        const V   = world.getComponent(eid, VelocityComponent);
+        if (V && dt>eps) V.vel.add(Δp,1/dt);
+      }
+      // rot
+      if (d.invI>0) {
+        const Δθ = -d.invI*λ*d.gradAng;
+        const O   = world.getComponent(eid, OrientationComponent);
+        if (O) O.angle += Δθ;
+        const W   = world.getComponent(eid, AngularVelocityComponent);
+        if (W && dt>eps) W.angularVelocity += Δθ/dt;
+      }
+    }
+  }
+
+  _getInvMassInertia(world, entity) {
+    const mC = world.getComponent(entity, MassComponent);
+    const iC = world.getComponent(entity, MomentOfInertiaComponent);
+    const invM = (mC && mC.mass>0) ? 1/mC.mass : 0;
+    const invI = iC ? iC.invInertia : 0;
+    return [invM, invI];
+  }
+}
+
