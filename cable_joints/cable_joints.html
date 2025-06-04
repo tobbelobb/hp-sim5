@@ -124,7 +124,8 @@
     world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
     world.addComponent(ball1, new OrientationComponent(0.0));
     world.addComponent(ball1, new AngularVelocityComponent(0.0));
-    world.addComponent(ball1, new CoefficientOfFrictionComponent(1.0));
+    const frictionCoefficient = 0.2; // Dyneema over steel is in the range ca 0.05 to 0.4.
+    world.addComponent(ball1, new CoefficientOfFrictionComponent(frictionCoefficient));
 
     const ball2 = world.createEntity();
     world.addComponent(ball2, new BallTagComponent());
@@ -141,7 +142,7 @@
     world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
     world.addComponent(ball2, new OrientationComponent(0.0));
     world.addComponent(ball2, new AngularVelocityComponent(0.0));
-    world.addComponent(ball2, new CoefficientOfFrictionComponent(1.0));
+    world.addComponent(ball2, new CoefficientOfFrictionComponent(frictionCoefficient));
 
     // Obstacle Entities
     const obsColor = "#FF8000";
@@ -155,7 +156,7 @@
     world.addComponent(obs1, new AngularVelocityComponent(0.0));
     const obsInertia = 0.5 * 1.0 * 0.1**2;
     world.addComponent(obs1, new MomentOfInertiaComponent(obsInertia));
-    world.addComponent(obs1, new CoefficientOfFrictionComponent(100.0));
+    world.addComponent(obs1, new CoefficientOfFrictionComponent(frictionCoefficient));
 
 
 

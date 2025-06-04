@@ -500,10 +500,8 @@ function _evenOutTensionFriction(world) {
           if (Math.abs(storedLengthOnLink) > epsilon) {
             const wrapAngle = Math.abs(storedLengthOnLink / radius);
             if (wrapAngle > epsilon) {
-              //if (d0 >= l0_current && d1 >= l1_current) { // tension on both sides
-                frictionActive = true;
-                frictionThreshold = Math.exp(mu * wrapAngle);
-              //}
+              frictionActive = true;
+              frictionThreshold = Math.exp(mu * wrapAngle);
             }
           }
         }
@@ -517,7 +515,6 @@ function _evenOutTensionFriction(world) {
           j0_comp.restLength = availableRestLength * d0 / totalDist;
           j1_comp.restLength = availableRestLength * d1 / totalDist;
         }
-        console.log("Friction is not active");
         continue; // Next pair
       }
 
@@ -529,11 +526,21 @@ function _evenOutTensionFriction(world) {
       let T_low, L_low_current, D_low;
 
       if (tension0 > tension1) {
-        T_high = tension0; L_high_current = l0_current; D_high = d0; is_j0_high = true;
-        T_low = tension1; L_low_current = l1_current; D_low = d1;
+        T_high = tension0;
+        L_high_current = l0_current;
+        D_high = d0;
+        is_j0_high = true;
+        T_low = tension1;
+        L_low_current = l1_current;
+        D_low = d1;
       } else if (tension1 > tension0) {
-        T_high = tension1; L_high_current = l1_current; D_high = d1; is_j0_high = false;
-        T_low = tension0; L_low_current = l0_current; D_low = d0;
+        T_high = tension1;
+        L_high_current = l1_current;
+        D_high = d1;
+        is_j0_high = false;
+        T_low = tension0;
+        L_low_current = l0_current;
+        D_low = d0;
       } else {
         // Tensions are already equal (or very close)
         continue;
@@ -572,16 +579,14 @@ function _evenOutTensionFriction(world) {
         }
 
         if (is_j0_high) {
-          console.log("Slip. j0 high");
+          //console.log("Slip. j0 high");
           j0_comp.restLength = L_high_new;
           j1_comp.restLength = L_low_new;
         } else {
-          console.log("Slip. j1 high");
+          //console.log("Slip. j1 high");
           j1_comp.restLength = L_high_new;
           j0_comp.restLength = L_low_new;
         }
-      } else {
-        console.log("No slip!");
       }
       // Else (NO SLIP: T_high <= T_low * frictionThreshold + epsilon)
       // No adjustment to rest lengths is made because friction holds.
@@ -609,11 +614,13 @@ function _slipSlack(world) {
         slip = Math.min(slack0, -slack1);
         j0.restLength -= slip;
         j1.restLength += slip;
+        //console.log("slack slip 1");
       }
       else if (slack1 > 0 && slack0 < 0) {
         slip = Math.min(slack1, -slack0);
         j1.restLength -= slip;
         j0.restLength += slip;
+        //console.log("slack slip 2");
       }
     }
   }
@@ -1009,6 +1016,7 @@ export class CableAttachmentUpdateSystemJointWise {
     _updateHybridLinkStates(world);
     _slipSlack(world);
     _evenOutTensionFriction(world);
+    _slipSlack(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }
@@ -1020,17 +1028,17 @@ export class CableAttachmentUpdateSystemPathWise {
   update(world, dt) {
     _clearDebugPoints(world);
     _updateAttachmentPoints(world);
-    _evenOutTension(world);
     _slipSlack(world);
+    _evenOutTension(world);
     _mergeJoints(world);
-    _evenOutTension(world);
     _slipSlack(world);
+    _evenOutTension(world);
     _splitJoints(world);
-    _evenOutTension(world);
     _slipSlack(world);
+    _evenOutTension(world);
     _updateHybridLinkStates(world);
-    _evenOutTension(world);
     _slipSlack(world);
+    _evenOutTension(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }
