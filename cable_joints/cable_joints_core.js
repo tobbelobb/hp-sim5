@@ -1021,16 +1021,16 @@ export class CableAttachmentUpdateSystemPathWise {
     _clearDebugPoints(world);
     _updateAttachmentPoints(world);
     _evenOutTension(world);
-    _slipLines(world);
+    _slipSlack(world);
     _mergeJoints(world);
     _evenOutTension(world);
-    _slipLines(world);
+    _slipSlack(world);
     _splitJoints(world);
     _evenOutTension(world);
-    _slipLines(world);
+    _slipSlack(world);
     _updateHybridLinkStates(world);
     _evenOutTension(world);
-    _slipLines(world);
+    _slipSlack(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }
