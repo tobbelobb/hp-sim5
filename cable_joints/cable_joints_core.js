@@ -311,15 +311,11 @@ export function _updateAttachmentPoints(world) {
       let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
       if (rollingLinkA) {
           sA = signedArcLengthOnWheel(attachmentA_previous.clone().subtract(prevPosA), attachmentA_current.clone().subtract(posA), new Vector2(0.0, 0.0), radiusA, cwA);
-          if (isHybridA) {
-            sA += (cwA ? deltaAngleA*radiusA : -deltaAngleA*radiusA);
-          }
+          sA += (cwA ? deltaAngleA*radiusA : -deltaAngleA*radiusA);
       }
       if (rollingLinkB) {
           sB = signedArcLengthOnWheel(attachmentB_previous.clone().subtract(prevPosB), attachmentB_current.clone().subtract(posB), new Vector2(0.0, 0.0), radiusB, cwB);
-          if (isHybridB) {
-            sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
-          }
+          sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
       }
       path.stored[A] += sA;
       joint.restLength -= sA;

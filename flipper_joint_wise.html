@@ -872,6 +872,10 @@ canvas {
         world.addComponent(obs3, new RadiusComponent(0.12));
         world.addComponent(obs3, new ObstaclePushComponent(obsPush));
         world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
+        world.addComponent(obs3, new OrientationComponent(0.0));
+        world.addComponent(obs3, new AngularVelocityComponent(0.0));
+        const obsInertia = 0.005 * 0.1**2;
+        world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia));
 
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
@@ -880,6 +884,9 @@ canvas {
         world.addComponent(obs4, new RadiusComponent(0.1));
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
         world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
+        world.addComponent(obs4, new OrientationComponent(0.0));
+        world.addComponent(obs4, new AngularVelocityComponent(0.0));
+        world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia));
 
 
         // Flipper Entities
