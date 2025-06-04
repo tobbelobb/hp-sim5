@@ -850,7 +850,6 @@ export class CableAttachmentUpdateSystemJointWise {
     _mergeJoints(world);
     _splitJoints(world);
     _updateHybridLinkStates(world);
-    _evenOutTension(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }
@@ -867,6 +866,21 @@ export class CableAttachmentUpdateSystemPathWise {
     _evenOutTension(world);
     _splitJoints(world);
     _evenOutTension(world);
+    _updateHybridLinkStates(world);
+    _evenOutTension(world);
+    _storeCableLinkPoses(world);
+    _sanityCheck(world);
+  }
+}
+
+export class CableAttachmentUpdateSystemLinkWise {
+  runInPause = false;
+
+  update(world, dt) {
+    _clearDebugPoints(world);
+    _updateAttachmentPoints(world);
+    _mergeJoints(world);
+    _splitJoints(world);
     _updateHybridLinkStates(world);
     _evenOutTension(world);
     _storeCableLinkPoses(world);
