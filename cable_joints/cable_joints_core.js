@@ -442,14 +442,44 @@ function _evenOutTension(world) {
       const l_i = joint_i.restLength;
       const l_i_plus_1 = joint_i_plus_1.restLength;
       const availableRestLength = l_i + l_i_plus_1;
-      const d_i = new Vector2().subtractVectors(pA, pB).length();
-      const d_i_plus_1 = new Vector2().subtractVectors(pC, pD).length();
+      const d_i = pA.distanceTo(pB);
+      const d_i_plus_1 = pC.distanceTo(pD);
       const totalDist = d_i + d_i_plus_1;
       const tension_i = d_i/joint_i.restLength;
       const tension_i_plus_1 = d_i_plus_1/joint_i_plus_1.restLength;
       joint_i.restLength = availableRestLength * d_i/totalDist;
       joint_i_plus_1.restLength = availableRestLength * d_i_plus_1/totalDist;
       //console.log(`tension_i=${tension_i}, tension_i_plus_1=${tension_i_plus_1}`);
+    }
+  }
+}
+
+function _slipLines(world) {
+  const pathEntities = world.query([CablePathComponent]);
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (path.jointEntities.length < 2) continue;
+    for (let i = 0; i < path.jointEntities.length - 1; i++) {
+      if (path.linkTypes[i + 1] === 'attachment') continue;
+      const j0 = world.getComponent(path.jointEntities[i], CableJointComponent);
+      const j1 = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
+      const d0 = j0.attachmentPointA_world.distanceTo(j0.attachmentPointB_world);
+      const d1 = j1.attachmentPointA_world.distanceTo(j1.attachmentPointB_world);
+      const l0 = j0.restLength;
+      const l1 = j1.restLength;
+      const slack0 = l0 - d0;  // >0 means slack, <0 means over-stretched
+      const slack1 = l1 - d1;
+      let slip = 0;
+      if (slack0 > 0 && slack1 < 0) {
+        slip = Math.min(slack0, -slack1);
+        j0.restLength -= slip;
+        j1.restLength += slip;
+      }
+      else if (slack1 > 0 && slack0 < 0) {
+        slip = Math.min(slack1, -slack0);
+        j1.restLength -= slip;
+        j0.restLength += slip;
+      }
     }
   }
 }
@@ -465,12 +495,8 @@ function _evenOutTensionPartial(world, alpha = 0.5) {
       const j1 = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
 
       // current segment lengths
-      const d0 = j0.attachmentPointA_world
-                   .clone().subtract(j0.attachmentPointB_world)
-                   .length();
-      const d1 = j1.attachmentPointA_world
-                   .clone().subtract(j1.attachmentPointB_world)
-                   .length();
+      const d0 = j0.attachmentPointA_world.distanceTo(j0.attachmentPointB_world);
+      const d1 = j1.attachmentPointA_world.distanceTo(j1.attachmentPointB_world);
 
       // total rest length available to split
       const sumL = j0.restLength + j1.restLength;
@@ -846,6 +872,7 @@ export class CableAttachmentUpdateSystemJointWise {
     _mergeJoints(world);
     _splitJoints(world);
     _updateHybridLinkStates(world);
+    _slipLines(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }
@@ -858,12 +885,16 @@ export class CableAttachmentUpdateSystemPathWise {
     _clearDebugPoints(world);
     _updateAttachmentPoints(world);
     _evenOutTension(world);
+    _slipLines(world);
     _mergeJoints(world);
     _evenOutTension(world);
+    _slipLines(world);
     _splitJoints(world);
     _evenOutTension(world);
+    _slipLines(world);
     _updateHybridLinkStates(world);
     _evenOutTension(world);
+    _slipLines(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }
