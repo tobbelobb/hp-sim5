@@ -19,6 +19,7 @@ import {
   OrientationComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
+  CoefficientOfFrictionComponent,
   RenderableComponent
 } from './ecs.js';
 
@@ -260,6 +261,7 @@ export function _updateAttachmentPoints(world) {
       const isHybridA = _isHybrid(path.linkTypes[A]);
       const pADiffFromTranslation = posA.clone().subtract(prevPosA)
       const pADiffFromRotation = attachmentA_previous.clone().rotate(deltaAngleA, prevPosA, true).subtract(attachmentA_previous);
+      const hasFrictionA = world.getComponent(entityA, CoefficientOfFrictionComponent);
 
       // Get components for Entity B
       const posBComp = world.getComponent(entityB, PositionComponent);
@@ -279,6 +281,7 @@ export function _updateAttachmentPoints(world) {
       const isHybridB = _isHybrid(path.linkTypes[B]);
       const pBDiffFromTranslation = posB.clone().subtract(prevPosB)
       const pBDiffFromRotation = attachmentB_previous.clone().rotate(deltaAngleB, prevPosB, true).subtract(attachmentB_previous);
+      const hasFrictionB = world.getComponent(entityB, CoefficientOfFrictionComponent);
 
       // --- Calculate  Attachment Points based on this frame's positions and rotations ---
       let attachmentA_current = posA
@@ -311,11 +314,15 @@ export function _updateAttachmentPoints(world) {
       let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
       if (rollingLinkA) {
           sA = signedArcLengthOnWheel(attachmentA_previous.clone().subtract(prevPosA), attachmentA_current.clone().subtract(posA), new Vector2(0.0, 0.0), radiusA, cwA);
-          sA += (cwA ? deltaAngleA*radiusA : -deltaAngleA*radiusA);
+          if (isHybridA || hasFrictionA) {
+            sA += (cwA ? deltaAngleA*radiusA : -deltaAngleA*radiusA);
+          }
       }
       if (rollingLinkB) {
           sB = signedArcLengthOnWheel(attachmentB_previous.clone().subtract(prevPosB), attachmentB_current.clone().subtract(posB), new Vector2(0.0, 0.0), radiusB, cwB);
-          sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
+          if (isHybridB || hasFrictionB) {
+            sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
+          }
       }
       path.stored[A] += sA;
       joint.restLength -= sA;
@@ -422,6 +429,7 @@ export function _mergeJoints(world) {
   }
 }
 
+
 function _evenOutTension(world) {
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -454,7 +462,134 @@ function _evenOutTension(world) {
   }
 }
 
-function _slipLines(world) {
+function _evenOutTensionFriction(world) {
+  const pathEntities = world.query([CablePathComponent]);
+  const epsilon = 1e-9;
+
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (!path || path.jointEntities.length < 2) continue;
+
+    for (let i = 0; i < path.jointEntities.length - 1; i++) {
+      const j0_comp = world.getComponent(path.jointEntities[i], CableJointComponent);
+      const j1_comp = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
+
+      if (!j0_comp || !j1_comp) continue;
+
+      const d0 = j0_comp.attachmentPointA_world.distanceTo(j0_comp.attachmentPointB_world);
+      const d1 = j1_comp.attachmentPointA_world.distanceTo(j1_comp.attachmentPointB_world);
+      const l0_current = j0_comp.restLength;
+      const l1_current = j1_comp.restLength;
+
+      if (l0_current <= epsilon || l1_current <= epsilon) continue;
+
+      const linkType = path.linkTypes[i + 1];
+      let frictionActive = false;
+      let frictionThreshold = 1.0; // Default for mu=0 or radius=0 or no wrap
+
+      if (linkType === 'rolling') {
+        const linkEntityId = j0_comp.entityB; // Assuming j0.entityB is the link
+        const frictionComp = world.getComponent(linkEntityId, CoefficientOfFrictionComponent);
+        const mu = frictionComp ? frictionComp.mu : 0.0;
+
+        const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
+        const radius = radiusComp ? radiusComp.radius : 0.0;
+
+        if (mu > epsilon && radius > epsilon) {
+          const storedLengthOnLink = path.stored[i + 1];
+          if (Math.abs(storedLengthOnLink) > epsilon) {
+            const wrapAngle = Math.abs(storedLengthOnLink / radius);
+            if (wrapAngle > epsilon) {
+              //if (d0 >= l0_current && d1 >= l1_current) { // tension on both sides
+                frictionActive = true;
+                frictionThreshold = Math.exp(mu * wrapAngle);
+              //}
+            }
+          }
+        }
+      }
+
+      if (!frictionActive) {
+        // Frictionless case (original _evenOutTension logic or mu=0, no wrap, etc.)
+        const availableRestLength = l0_current + l1_current;
+        const totalDist = d0 + d1;
+        if (totalDist > epsilon) {
+          j0_comp.restLength = availableRestLength * d0 / totalDist;
+          j1_comp.restLength = availableRestLength * d1 / totalDist;
+        }
+        console.log("Friction is not active");
+        continue; // Next pair
+      }
+
+      // Friction is active
+      const tension0 = d0 / l0_current;
+      const tension1 = d1 / l1_current;
+
+      let T_high, L_high_current, D_high, is_j0_high;
+      let T_low, L_low_current, D_low;
+
+      if (tension0 > tension1) {
+        T_high = tension0; L_high_current = l0_current; D_high = d0; is_j0_high = true;
+        T_low = tension1; L_low_current = l1_current; D_low = d1;
+      } else if (tension1 > tension0) {
+        T_high = tension1; L_high_current = l1_current; D_high = d1; is_j0_high = false;
+        T_low = tension0; L_low_current = l0_current; D_low = d0;
+      } else {
+        // Tensions are already equal (or very close)
+        continue;
+      }
+
+      // Check for slip: T_high > T_low * frictionThreshold
+      if (T_high > T_low * frictionThreshold + epsilon) {
+        // Slip occurs. Adjust rest lengths to satisfy T_high_new = T_low_new * frictionThreshold
+        const L_total = L_high_current + L_low_current;
+        let L_high_new, L_low_new;
+
+        const denominator = D_high + D_low * frictionThreshold;
+        if (denominator > epsilon) {
+          L_high_new = (D_high * L_total) / denominator;
+          L_low_new = L_total - L_high_new;
+
+          // Ensure new lengths are not negative (can happen if D_low is ~0)
+          if (L_high_new < 0) L_high_new = 0;
+          if (L_low_new < 0) L_low_new = 0;
+          // Re-normalize if one became zero and total changed
+          const currentNewTotal = L_high_new + L_low_new;
+          if (currentNewTotal > epsilon && Math.abs(currentNewTotal - L_total)>epsilon) {
+             L_high_new = (L_high_new / currentNewTotal) * L_total;
+             L_low_new = (L_low_new / currentNewTotal) * L_total;
+          }
+
+
+        } else {
+          // Denominator is zero (e.g. D_high and D_low are zero), effectively no tension.
+          // Fallback to simple equal distribution if possible, or skip.
+          // This case should ideally be caught by T_high and T_low being zero.
+          // If D_high and D_low are zero, T_high and T_low are zero, so slip condition T_high > T_low * thresh is false.
+          // So, this 'else' for denominator should not be hit if logic is sound.
+          // For safety, just skip adjustment if somehow reached.
+          continue;
+        }
+
+        if (is_j0_high) {
+          console.log("Slip. j0 high");
+          j0_comp.restLength = L_high_new;
+          j1_comp.restLength = L_low_new;
+        } else {
+          console.log("Slip. j1 high");
+          j1_comp.restLength = L_high_new;
+          j0_comp.restLength = L_low_new;
+        }
+      } else {
+        console.log("No slip!");
+      }
+      // Else (NO SLIP: T_high <= T_low * frictionThreshold + epsilon)
+      // No adjustment to rest lengths is made because friction holds.
+    }
+  }
+}
+
+function _slipSlack(world) {
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -851,7 +986,7 @@ function _sanityCheck(world) {
 //    It _only_ changes pairs of `joint.restLength`. It does not change `joint.attachmentPointA_world`, `joint.attachmentPointB_world`, or `path.stored[i]`.
 //
 //  ## Tension Distribution Feature
-//  - Contained in _evenOutTension and _evenOutTensionPartial functions.
+//  - Contained in _evenOutTension, _evenOutTensionFriction and _evenOutTensionPartial functions.
 //
 //  ## Memory Feature
 //  - Contained in the _storeCableLinkPoses function.
@@ -872,7 +1007,8 @@ export class CableAttachmentUpdateSystemJointWise {
     _mergeJoints(world);
     _splitJoints(world);
     _updateHybridLinkStates(world);
-    _slipLines(world);
+    _slipSlack(world);
+    _evenOutTensionFriction(world);
     _storeCableLinkPoses(world);
     _sanityCheck(world);
   }

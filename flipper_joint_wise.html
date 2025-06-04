@@ -126,6 +126,7 @@ canvas {
       GravityAffectedComponent,
       OrientationComponent,
       AngularVelocityComponent,
+      CoefficientOfFrictionComponent,
       MomentOfInertiaComponent,
       ObstacleTagComponent,
       FlipperTagComponent,
@@ -930,6 +931,9 @@ canvas {
         world.addComponent(flipper2Tip, new CableLinkComponent());
         world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
 
+        world.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(0.0));
+        world.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(0.0));
+
         // Score Entity
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
@@ -951,12 +955,16 @@ canvas {
         // Add necessary components to obstacles (assuming they act as wheels)
         world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
         world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
+        world.addComponent(obs4, new CoefficientOfFrictionComponent(100.0));
+        world.addComponent(obs3, new CoefficientOfFrictionComponent(100.0));
         //world.addComponent(obs2, new CableLinkComponent());
         //world.addComponent(obs1, new CableLinkComponent());
         world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
         world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
+        world.addComponent(ball1, new CoefficientOfFrictionComponent(0.0));
+        world.addComponent(ball2, new CoefficientOfFrictionComponent(0.0));
 
         // Calculate initial points for joint1 (ball2 perimeter attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
