@@ -514,15 +514,15 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
                 anchorRadius // Using the defined anchorRadius
             );
 
-            //createCableAndJointEntities(
-            //    world,
-            //    anchorEntity,
-            //    spoolEntity,
-            //    spoolRadius,
-            //    initialStoredLength,
-            //    config.jointColor,
-            //    cableStiffness // Using the defined cableStiffness
-            //);
+            createCableAndJointEntities(
+                world,
+                anchorEntity,
+                spoolEntity,
+                spoolRadius,
+                initialStoredLength,
+                config.jointColor,
+                cableStiffness // Using the defined cableStiffness
+            );
         }
 
         createDistanceConstraintEntity(world, spoolEntities[0], spoolEntities[1]);
@@ -547,7 +547,7 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           world.registerSystem(new PBDCableConstraintSolverJointWise());
           // Update velocities after all position-based solvers
           world.registerSystem(new PBDVelocityUpdateSystem());
-          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 1.0));
+          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
         }
 
         // Update button text based on initial pause state

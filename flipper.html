@@ -160,7 +160,8 @@ canvas {
       MovementSystem,
       AngularMovementSystem,
       PBDBallObstacleCollisions,
-      PBDBallBallCollisions
+      PBDBallBallCollisions,
+      PBDVelocityUpdateSystem
     } from './cable_joints/commonSystems.js';
 
     import {
@@ -985,17 +986,28 @@ canvas {
              world.registerSystem(new InputReplaySystem(
                [],
              inputSystemInstance));
+
+             // Predict new positions.
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
              world.registerSystem(new GravitySystem());      // Applies gravity acceleration
              world.registerSystem(new MovementSystem());     // Updates position based on velocity
              world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
+             world.registerSystem(new FlipperTipLinkSystem());
+
+             // Solve positional constraints
+             world.registerSystem(new CableAttachmentUpdateSystemJointWise());
+             world.registerSystem(new PBDCableConstraintSolverJointWise());
+
+             // Update velocities based on the pos-difference
+             world.registerSystem(new PBDVelocityUpdateSystem());
+
+             // Perform a velocity-level solve
+             world.registerSystem(new PBDBallBorderCollisions());
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions());
              world.registerSystem(new PBDBallFlipperCollisions());
-             world.registerSystem(new FlipperTipLinkSystem());
-             world.registerSystem(new PBDBallBorderCollisions());
-             world.registerSystem(new CableAttachmentUpdateSystemJointWise());
-             world.registerSystem(new PBDCableConstraintSolverJointWise());
+
+             // Misc
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
