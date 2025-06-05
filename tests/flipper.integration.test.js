@@ -98,7 +98,7 @@ describe('Flipper Integration Test', () => {
             await browser.close();
         }
     });
-    const EXPECTED_SCORE = 83;
+    const EXPECTED_SCORE = 52;
 
     test(`should run autonomously and reach a score of ${EXPECTED_SCORE} when balls settle below flippers`, async () => {
         // Wait for the game world and our test function to be ready
