@@ -1011,8 +1011,20 @@ export class CableAttachmentUpdateSystemJointWise {
   update(world, dt) {
     _clearDebugPoints(world);
     _updateAttachmentPoints(world);
+    _slipSlack(world);
+    _evenOutTensionFriction(world);
+    _slipSlack(world);
+
     _mergeJoints(world);
+    _slipSlack(world);
+    _evenOutTensionFriction(world);
+    _slipSlack(world);
+
     _splitJoints(world);
+    _slipSlack(world);
+    _evenOutTensionFriction(world);
+    _slipSlack(world);
+
     _updateHybridLinkStates(world);
     _slipSlack(world);
     _evenOutTensionFriction(world);
