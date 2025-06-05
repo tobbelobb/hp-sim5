@@ -138,8 +138,8 @@ canvas {
       CableLinkComponent,
       CableJointComponent,
       CablePathComponent,
-      CableAttachmentUpdateSystem,
-      PBDCableConstraintSolver
+      CableAttachmentUpdateSystemJointWise,
+      PBDCableConstraintSolverJointWise
     } from '../cable_joints/cable_joints_core.js';
 
     import {
@@ -460,15 +460,15 @@ canvas {
         if (world.systems.length === 0) { // Only register systems once
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
-          inputSys.scaleMultiplier = 0.25;
+          inputSys.scaleMultiplier = 0.75;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = 0.0;
           world.registerSystem(inputSys);
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
           world.registerSystem(new PBDBallBallCollisions());
-          world.registerSystem(new CableAttachmentUpdateSystem());
-          world.registerSystem(new PBDCableConstraintSolver());
+          world.registerSystem(new CableAttachmentUpdateSystemJointWise());
+          world.registerSystem(new PBDCableConstraintSolverJointWise());
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 1.0));
         }
 
