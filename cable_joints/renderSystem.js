@@ -7,7 +7,8 @@ import {
   OrientationComponent,
   BorderComponent,
   FlipperTagComponent,
-  FlipperStateComponent
+  FlipperStateComponent,
+  DistanceConstraintComponent
 } from './ecs.js';
 
 import {
@@ -357,6 +358,32 @@ export class RenderSystem {
       }
     }
     this.c.lineWidth = 1;
+
+    // Render Distance Constraints
+    const distanceConstraintEntities = world.query([DistanceConstraintComponent]);
+    if (distanceConstraintEntities.length > 0) {
+        this.c.save();
+        this.c.strokeStyle = 'purple'; // Thick purple lines
+        this.c.lineWidth = 4 * this.viewScaleMultiplier; // Make it thick
+
+        for (const entityId of distanceConstraintEntities) {
+            const constraint = world.getComponent(entityId, DistanceConstraintComponent);
+            const posAComp = world.getComponent(constraint.entityA, PositionComponent);
+            const posBComp = world.getComponent(constraint.entityB, PositionComponent);
+
+            if (posAComp && posBComp) {
+                const pA = posAComp.pos;
+                const pB = posBComp.pos;
+
+                this.c.beginPath();
+                this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+                this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+                this.c.stroke();
+            }
+        }
+        this.c.restore();
+    }
+
 
     // Render All Renderable Entities (Circles/Obstacles/Etc.) considering rotation
     const renderableEntities = world.query([PositionComponent, RenderableComponent]);
