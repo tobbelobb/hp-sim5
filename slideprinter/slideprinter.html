@@ -156,6 +156,7 @@ canvas {
       PBDBallBallCollisions,
       PrevFinalPosSystem,
       XPBDDistanceConstraintSystem,
+      PBDVelocityUpdateSystem,
     } from '../cable_joints/commonSystems.js';
 
     import {
@@ -544,6 +545,8 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           world.registerSystem(new XPBDDistanceConstraintSystem());
           world.registerSystem(new CableAttachmentUpdateSystemJointWise());
           world.registerSystem(new PBDCableConstraintSolverJointWise());
+          // Update velocities after all position-based solvers
+          world.registerSystem(new PBDVelocityUpdateSystem());
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 1.0));
         }
 

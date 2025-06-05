@@ -20,6 +20,33 @@ import {
 } from './ecs.js';
 
 
+export class PBDVelocityUpdateSystem {
+  runInPause = false;
+  update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
+    const entities = world.query([PositionComponent, VelocityComponent, PrevFinalPosComponent, MassComponent]);
+    const epsilon = 1e-9;
+
+    if (dt <= epsilon) return; // Avoid division by zero or very small dt
+
+    for (const entityId of entities) {
+      if (entityId === grabbed) continue; // Don't update velocity of grabbed ball this way
+
+      const massComp = world.getComponent(entityId, MassComponent);
+      // Only update velocities for dynamic objects (mass > 0)
+      if (massComp && massComp.mass <= 0) continue;
+
+
+      const posComp = world.getComponent(entityId, PositionComponent);
+      const velComp = world.getComponent(entityId, VelocityComponent);
+      const prevFinalPosComp = world.getComponent(entityId, PrevFinalPosComponent);
+
+      // v = (x_new - x_old) / dt
+      velComp.vel.subtractVectors(posComp.pos, prevFinalPosComp.pos).scale(1.0 / dt);
+    }
+  }
+}
+
 export class GravitySystem {
   runInPause = false;
   update(world, dt) {
