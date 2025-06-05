@@ -126,11 +126,8 @@ canvas {
       GravityAffectedComponent,
       OrientationComponent,
       AngularVelocityComponent,
-      CoefficientOfFrictionComponent,
       MomentOfInertiaComponent,
       ObstacleTagComponent,
-      ObstaclePushComponent,
-      ScoredTagComponent,
       FlipperTagComponent,
       FlipperStateComponent,
       PrevFinalPosComponent
@@ -141,8 +138,9 @@ canvas {
       CableJointComponent,
       CablePathComponent,
       linecolor1,
-      CableAttachmentUpdateSystemJointWise,
-      PBDCableConstraintSolverJointWise
+      CableAttachmentUpdateSystemPathWise,
+      PBDCableConstraintSolverPathWise,
+      PBDCableConstraintSolverLinkWise
     } from './cable_joints/cable_joints_core.js';
 
     import {
@@ -159,7 +157,6 @@ canvas {
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
-      PBDBallObstacleCollisions,
       PBDBallBallCollisions
     } from './cable_joints/commonSystems.js';
 
@@ -168,6 +165,8 @@ canvas {
     } from './cable_joints/renderSystem.js';
 
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
+    class ScoredTagComponent { }
+    class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 
     // helper to remember which flipper this tip belongs to
     class FlipperTipComponent {
@@ -690,6 +689,46 @@ canvas {
       }
     }
 
+    class PBDBallObstacleCollisions2 {
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+        for (const ballId of ballEntities) {
+          const p1 = world.getComponent(ballId, PositionComponent).pos;
+          const v1 = world.getComponent(ballId, VelocityComponent).vel;
+          const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+          for (const obsId of obstacleEntities) {
+            const p2 = world.getComponent(obsId, PositionComponent).pos;
+            const r2 = world.getComponent(obsId, RadiusComponent).radius;
+            const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
+
+            const dir = new Vector2().subtractVectors(p1, p2);
+            const dSq = dir.lengthSq();
+            const rSum = r1 + r2;
+
+            if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+            const d = Math.sqrt(dSq);
+            dir.scale(1.0 / d); // Normalize
+
+            // Resolve penetration
+            const corr = rSum - d;
+            p1.add(dir, corr);
+
+            // Resolve velocity (simple push)
+            const v_dot = v1.dot(dir);
+            v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
+
+            // Add ScoredTagComponent to the ball that scored
+            const grabbed = world.getResource('grabbedBall');
+            if (ballId !== grabbed) {
+              world.addComponent(ballId, new ScoredTagComponent());
+            }
+          }
+        }
+      }
+    }
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
@@ -743,7 +782,7 @@ canvas {
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -2.0));
-        world.setResource('dt', 1.0 / 300.0);
+        world.setResource('dt', 1.0 / 200.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -789,7 +828,7 @@ canvas {
         world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball1, new OrientationComponent(0.0));
         world.addComponent(ball1, new AngularVelocityComponent(0.0));
-        const ball1Inertia = 0.5 * ballMass * ballRadius * ballRadius;
+        const ball1Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
 
         const ball2 = world.createEntity();
@@ -809,7 +848,7 @@ canvas {
         // Obstacle Entities
         const obsColor1 = "#FF8000";
         const obsColor2 = "#0F7090";
-        const obsPush = 2.7;
+        const obsPush = 1.7;
 
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
@@ -834,10 +873,6 @@ canvas {
         world.addComponent(obs3, new RadiusComponent(0.12));
         world.addComponent(obs3, new ObstaclePushComponent(obsPush));
         world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
-        world.addComponent(obs3, new OrientationComponent(0.0));
-        world.addComponent(obs3, new AngularVelocityComponent(0.0));
-        const obsInertia = 0.005 * 0.1**2;
-        world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia));
 
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
@@ -846,9 +881,6 @@ canvas {
         world.addComponent(obs4, new RadiusComponent(0.1));
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
         world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
-        world.addComponent(obs4, new OrientationComponent(0.0));
-        world.addComponent(obs4, new AngularVelocityComponent(0.0));
-        world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia));
 
 
         // Flipper Entities
@@ -892,10 +924,6 @@ canvas {
         world.addComponent(flipper2Tip, new CableLinkComponent());
         world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
 
-        const frictionCoefficient = 0.2; // Dyneema over steel is in the range ca 0.05 to 0.4.
-        world.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(frictionCoefficient));
-
         // Score Entity
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
@@ -917,16 +945,12 @@ canvas {
         // Add necessary components to obstacles (assuming they act as wheels)
         world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
         world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
-        world.addComponent(obs4, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(obs3, new CoefficientOfFrictionComponent(frictionCoefficient));
         //world.addComponent(obs2, new CableLinkComponent());
         //world.addComponent(obs1, new CableLinkComponent());
         world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
         world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
-        world.addComponent(ball1, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(ball2, new CoefficientOfFrictionComponent(frictionCoefficient));
 
         // Calculate initial points for joint1 (ball2 perimeter attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
@@ -990,15 +1014,15 @@ canvas {
              world.registerSystem(new MovementSystem());     // Updates position based on velocity
              world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
              world.registerSystem(new PBDBallBallCollisions());
-             world.registerSystem(new PBDBallObstacleCollisions());
+             world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
              world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new PBDBallBorderCollisions());
-             world.registerSystem(new CableAttachmentUpdateSystemJointWise());
-             world.registerSystem(new PBDCableConstraintSolverJointWise());
+             world.registerSystem(new CableAttachmentUpdateSystemPathWise());
+             world.registerSystem(new PBDCableConstraintSolverPathWise());
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
-             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85));
         } else {
           world.systems[InputSystem]
         }
