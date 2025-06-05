@@ -43,6 +43,7 @@
     CoefficientOfFrictionComponent,
     MomentOfInertiaComponent,
     ObstacleTagComponent,
+    ObstaclePushComponent
   } from './ecs.js';
 
   import {
@@ -148,6 +149,7 @@
     const obsColor = "#FF8000";
     const obs1 = world.createEntity();
     world.addComponent(obs1, new ObstacleTagComponent());
+    world.addComponent(obs1, new ObstaclePushComponent(1.7));
     world.addComponent(obs1, new PositionComponent(1.5, 1.5));
     world.addComponent(obs1, new MassComponent(-1.0));
     world.addComponent(obs1, new RadiusComponent(0.1));

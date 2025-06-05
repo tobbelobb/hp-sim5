@@ -150,6 +150,7 @@ export class FlipperStateComponent {
   }
 }
 export class ObstacleTagComponent { }
+export class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 export class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
 export class OrientationComponent {
@@ -179,3 +180,4 @@ export class CoefficientOfFrictionComponent {
     this.mu = mu; // Coefficient of static friction
   }
 }
+export class ScoredTagComponent { }

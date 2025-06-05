@@ -129,6 +129,8 @@ canvas {
       CoefficientOfFrictionComponent,
       MomentOfInertiaComponent,
       ObstacleTagComponent,
+      ObstaclePushComponent,
+      ScoredTagComponent,
       FlipperTagComponent,
       FlipperStateComponent,
       PrevFinalPosComponent
@@ -157,6 +159,7 @@ canvas {
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
+      PBDBallObstacleCollisions,
       PBDBallBallCollisions
     } from './cable_joints/commonSystems.js';
 
@@ -165,8 +168,6 @@ canvas {
     } from './cable_joints/renderSystem.js';
 
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
-    class ScoredTagComponent { }
-    class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 
     // helper to remember which flipper this tip belongs to
     class FlipperTipComponent {
@@ -689,104 +690,6 @@ canvas {
       }
     }
 
-    class PBDBallObstacleCollisions2 {
-      update(world, dt) {
-        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent]); // RestitutionComponent not used here
-        const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
-
-        for (const ballId of ballEntities) {
-          const p1 = world.getComponent(ballId, PositionComponent).pos;
-          const v1 = world.getComponent(ballId, VelocityComponent).vel;
-          const r1 = world.getComponent(ballId, RadiusComponent).radius;
-          const ballMassComp = world.getComponent(ballId, MassComponent);
-          const ballAngVelComp = world.getComponent(ballId, AngularVelocityComponent);
-          const ballMoIComp = world.getComponent(ballId, MomentOfInertiaComponent);
-
-          for (const obsId of obstacleEntities) {
-            const p2 = world.getComponent(obsId, PositionComponent).pos;
-            const r2 = world.getComponent(obsId, RadiusComponent).radius;
-            const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
-
-            const dir = new Vector2().subtractVectors(p1, p2);
-            const dSq = dir.lengthSq();
-            const rSum = r1 + r2;
-
-            if (dSq == 0.0 || dSq > rSum * rSum) continue;
-
-            const d = Math.sqrt(dSq);
-            dir.scale(1.0 / d); // Normalize
-
-            // Resolve penetration
-            const corr = rSum - d;
-            p1.add(dir, corr);
-
-            // Resolve velocity & rotation with friction and obstacle rotation
-            const obsAngVelComp = world.getComponent(obsId, AngularVelocityComponent);
-            const obsMoIComp = world.getComponent(obsId, MomentOfInertiaComponent);
-            const obsFrictionComp = world.getComponent(obsId, CoefficientOfFrictionComponent);
-
-            const omega_obs = obsAngVelComp ? obsAngVelComp.angularVelocity : 0.0;
-            const mu = obsFrictionComp ? obsFrictionComp.mu : 0.0;
-
-            const tangent = new Vector2(-dir.y, dir.x); // Tangential direction
-
-            // Calculate obstacle's surface tangential velocity component at contact point
-            let v_surf_obs_tangential_comp = 0;
-            if (omega_obs !== 0) {
-                // r_vec_obs is vector from obstacle center to contact point on its surface
-                // Contact point on obs surface is p2 + dir * r2. So r_vec_obs = dir * r2.
-                // Surface velocity v_surf = omega_obs x r_vec_obs.
-                // v_surf.x = -omega_obs * r_vec_obs.y = -omega_obs * (dir.y * r2)
-                // v_surf.y =  omega_obs * r_vec_obs.x =  omega_obs * (dir.x * r2)
-                // v_surf_obs_tangential_comp = v_surf.dot(tangent)
-                v_surf_obs_tangential_comp = (-omega_obs * dir.y * r2) * tangent.x + (omega_obs * dir.x * r2) * tangent.y;
-            }
-
-            // Determine effective push direction
-            const s_sign = (v_surf_obs_tangential_comp === 0 || mu === 0) ? 0 : Math.sign(v_surf_obs_tangential_comp);
-            let effectivePushDir = dir.clone();
-            if (s_sign !== 0) {
-                effectivePushDir.add(tangent.clone().scale(mu * s_sign));
-            }
-            effectivePushDir.normalize(); // Normalize to ensure pushVel is the magnitude along this dir
-
-            // Apply translational push
-            v1.add(effectivePushDir, pushVel);
-
-            // Rotational transfer if friction is present
-            if (mu > 0 && ballMassComp) {
-                // The tangential component of the velocity change *actually applied* to the ball
-                const delta_v_ball_tangential_actual_scalar_comp = effectivePushDir.dot(tangent) * pushVel;
-
-                if (Math.abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9) {
-                    const J_t_on_ball_vec = tangent.clone().scale(delta_v_ball_tangential_actual_scalar_comp * ballMassComp.mass);
-
-                    // Apply torque to ball
-                    if (ballAngVelComp && ballMoIComp && ballMoIComp.invInertia > 0) {
-                        const r_contact_ball = dir.clone().scale(-r1); // Vector from ball center to contact point
-                        const delta_L_ball = r_contact_ball.x * J_t_on_ball_vec.y - r_contact_ball.y * J_t_on_ball_vec.x;
-                        ballAngVelComp.angularVelocity += delta_L_ball * ballMoIComp.invInertia;
-                    }
-
-                    // Apply torque to obstacle
-                    if (obsAngVelComp && obsMoIComp && obsMoIComp.invInertia > 0) {
-                        const J_t_on_obs_vec = J_t_on_ball_vec.clone().scale(-1);
-                        const r_contact_obs = dir.clone().scale(r2); // Vector from obstacle center to contact point
-                        const delta_L_obs = r_contact_obs.x * J_t_on_obs_vec.y - r_contact_obs.y * J_t_on_obs_vec.x;
-                        obsAngVelComp.angularVelocity += delta_L_obs * obsMoIComp.invInertia;
-                    }
-                }
-            }
-
-            // Add ScoredTagComponent to the ball that scored
-            const grabbed = world.getResource('grabbedBall');
-            if (ballId !== grabbed) {
-              world.addComponent(ballId, new ScoredTagComponent());
-            }
-          }
-        }
-      }
-    }
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
@@ -906,7 +809,7 @@ canvas {
         // Obstacle Entities
         const obsColor1 = "#FF8000";
         const obsColor2 = "#0F7090";
-        const obsPush = 1.7;
+        const obsPush = 2.7;
 
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
@@ -1087,7 +990,7 @@ canvas {
              world.registerSystem(new MovementSystem());     // Updates position based on velocity
              world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
              world.registerSystem(new PBDBallBallCollisions());
-             world.registerSystem(new PBDBallObstacleCollisions2());
+             world.registerSystem(new PBDBallObstacleCollisions());
              world.registerSystem(new PBDBallFlipperCollisions());
              world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new PBDBallBorderCollisions());
