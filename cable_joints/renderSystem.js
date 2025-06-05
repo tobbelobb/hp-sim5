@@ -262,7 +262,11 @@ export class RenderSystem {
         // cw‐flag stored in path.cw[i]
         const anticlockwise = !path.cw[i];
         this.c.beginPath();
-        this.c.strokeStyle = renderComp.color;               // or pick your cable colour
+        if () {
+          this.c.strokeStyle = renderComp.color;               // or pick your cable colour
+        } else {
+          this.c.strokeStyle = 'orange';
+        }
         this.c.arc(
           this.cX(C.x),
           this.cY(C.y),
