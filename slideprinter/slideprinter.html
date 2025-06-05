@@ -294,6 +294,69 @@ canvas {
 
     let world = new World();
 
+function createSpoolEntity(world, posVec, velVec, angVelVal, spoolRadius, spoolMass, spoolInertia, ballRestitution, renderColor = '#a0a0a0') {
+    const spool = world.createEntity();
+    world.addComponent(spool, new BallTagComponent());
+    world.addComponent(spool, new PositionComponent(posVec.x, posVec.y));
+    world.addComponent(spool, new VelocityComponent(velVec.x, velVec.y));
+    world.addComponent(spool, new RadiusComponent(spoolRadius));
+    world.addComponent(spool, new MassComponent(spoolMass));
+    world.addComponent(spool, new RenderableComponent('circle', renderColor));
+    world.addComponent(spool, new OrientationComponent()); // Default orientation
+    world.addComponent(spool, new AngularVelocityComponent(angVelVal));
+    world.addComponent(spool, new MomentOfInertiaComponent(spoolInertia));
+    world.addComponent(spool, new RestitutionComponent(ballRestitution));
+    return spool;
+}
+
+function createAnchorEntity(world, posVec, anchorRadius = 0.01, renderColor = '#aaaaaa') {
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new BallTagComponent());
+    world.addComponent(anchor, new PositionComponent(posVec.x, posVec.y));
+    world.addComponent(anchor, new VelocityComponent(0.0, 0.0)); // Anchors are static
+    world.addComponent(anchor, new RadiusComponent(anchorRadius));
+    world.addComponent(anchor, new MassComponent(-1.0)); // Immovable
+    world.addComponent(anchor, new RenderableComponent('circle', renderColor));
+    return anchor;
+}
+
+function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadius, initialStoredLength, jointRenderColor, cableStiffness = 20000.0) {
+    const anchorPos = world.getComponent(anchorEntity, PositionComponent).pos;
+    const spoolPos = world.getComponent(spoolEntity, PositionComponent).pos;
+
+    // Add CableLinkComponents if not already present
+    if (!world.hasComponent(anchorEntity, CableLinkComponent)) {
+        world.addComponent(anchorEntity, new CableLinkComponent(anchorPos.x, anchorPos.y));
+    }
+    if (!world.hasComponent(spoolEntity, CableLinkComponent)) {
+        world.addComponent(spoolEntity, new CableLinkComponent(spoolPos.x, spoolPos.y));
+    }
+
+    // Create Joint
+    const joint = world.createEntity();
+    // Assuming clockwisePreference = true for the spool when calculating tangent
+    const tang = tangentFromPointToCircle(anchorPos, spoolPos, spoolRadius, true);
+    const initialDist = tang.a_attach.clone().subtract(tang.a_circle).length();
+    world.addComponent(joint, new CableJointComponent(
+        anchorEntity, spoolEntity, initialDist, tang.a_attach, tang.a_circle
+    ));
+    world.addComponent(joint, new RenderableComponent('line', jointRenderColor));
+
+    // Create Cable
+    const cable = world.createEntity();
+    const cableComp = new CablePathComponent(
+        world,
+        [joint],
+        ['attachment', 'hybrid'], // Types for anchor (attachment) and spool (hybrid)
+        [true, true],             // Clockwise preferences for joint connections
+        cableStiffness,
+        [0.0, initialStoredLength] // storedLengths: 0 for anchor, initialStoredLength for spool
+    );
+    world.addComponent(cable, cableComp);
+
+    return { jointEntity: joint, cableEntity: cable, cableComponent: cableComp };
+}
+
     function setupScene() {
         world.clear(); // Clear entities and components
         canvas.width = canvas.clientWidth;
@@ -316,145 +379,73 @@ canvas {
         world.setResource('grabbedBall', null);
 
         // --- Entities and Components ---
-        // Spool Entities
+        // Common properties for spools
         const spoolRadius = 0.03;
         const spoolMass = 0.005;
         const spoolInertia = 0.5 * spoolMass * spoolRadius * spoolRadius;
         const ballRestitution = 0.5;
 
-        const spoolA = world.createEntity();
-        world.addComponent(spoolA, new BallTagComponent());
-        world.addComponent(spoolA, new PositionComponent(0.00, -0.05));
-        world.addComponent(spoolA, new VelocityComponent(0.0, 0.1));
-        world.addComponent(spoolA, new RadiusComponent(spoolRadius));
-        world.addComponent(spoolA, new MassComponent(spoolMass));
-        world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
-        world.addComponent(spoolA, new OrientationComponent());
-        world.addComponent(spoolA, new AngularVelocityComponent(0.5));
-        world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
-        world.addComponent(spoolA, new RestitutionComponent(ballRestitution));
+        // Common properties for anchors
+        const anchorRadius = 0.01; // Standard anchor radius from original code
 
-        const spoolB = world.createEntity();
-        world.addComponent(spoolB, new BallTagComponent());
-        world.addComponent(spoolB, new PositionComponent(0.05*Math.cos(Math.PI*(1/6)), 0.05*Math.sin(Math.PI*(1/6))));
-        world.addComponent(spoolB, new VelocityComponent(0.0, 0.0));
-        world.addComponent(spoolB, new RadiusComponent(spoolRadius));
-        world.addComponent(spoolB, new MassComponent(spoolMass));
-        world.addComponent(spoolB, new RenderableComponent('circle', '#a0a0a0'));
-        world.addComponent(spoolB, new OrientationComponent());
-        world.addComponent(spoolB, new AngularVelocityComponent());
-        world.addComponent(spoolB, new MomentOfInertiaComponent(spoolInertia));
-        world.addComponent(spoolB, new RestitutionComponent(ballRestitution));
-
-        const spoolC = world.createEntity();
-        world.addComponent(spoolC, new BallTagComponent());
-        world.addComponent(spoolC, new PositionComponent(0.05*Math.cos(Math.PI*(5/6)), 0.05*Math.sin(Math.PI*(5/6))));
-        world.addComponent(spoolC, new VelocityComponent(0.0, 0.0));
-        world.addComponent(spoolC, new RadiusComponent(spoolRadius));
-        world.addComponent(spoolC, new MassComponent(spoolMass));
-        world.addComponent(spoolC, new RenderableComponent('circle', '#a0a0a0'));
-        world.addComponent(spoolC, new OrientationComponent());
-        world.addComponent(spoolC, new AngularVelocityComponent());
-        world.addComponent(spoolC, new MomentOfInertiaComponent(spoolInertia));
-        world.addComponent(spoolC, new RestitutionComponent(ballRestitution));
-
-
-        const anchorA = world.createEntity();
-        world.addComponent(anchorA, new BallTagComponent());
-        world.addComponent(anchorA, new PositionComponent(0.00, -0.05 - 2.0));
-        world.addComponent(anchorA, new VelocityComponent(0.0, 0.0));
-        world.addComponent(anchorA, new RadiusComponent(0.01));
-        world.addComponent(anchorA, new MassComponent(-1.0)); // Immovible
-        world.addComponent(anchorA, new RenderableComponent('circle', '#aaaaaa'));
-
-        const anchorB = world.createEntity();
-        world.addComponent(anchorB, new BallTagComponent());
-        world.addComponent(anchorB, new PositionComponent(2.05*Math.cos(Math.PI*(1/6)), 2.05*Math.sin(Math.PI*(1/6))));
-        world.addComponent(anchorB, new VelocityComponent(0.0, 0.0));
-        world.addComponent(anchorB, new RadiusComponent(0.01));
-        world.addComponent(anchorB, new MassComponent(-1.0)); // Immovible
-        world.addComponent(anchorB, new RenderableComponent('circle', '#aaaaaa'));
-
-        const anchorC = world.createEntity();
-        world.addComponent(anchorC, new BallTagComponent());
-        world.addComponent(anchorC, new PositionComponent(2.05*Math.cos(Math.PI*(5/6)), 2.05*Math.sin(Math.PI*(5/6))));
-        world.addComponent(anchorC, new VelocityComponent(0.0, 0.0));
-        world.addComponent(anchorC, new RadiusComponent(0.01));
-        world.addComponent(anchorC, new MassComponent(-1.0)); // Immovible
-        world.addComponent(anchorC, new RenderableComponent('circle', '#aaaaaa'));
-
-        // --- Cable Setup ---
-        // Connect: anchorA -> spoolA
-        // Connect: anchorB -> spoolB
-        // Connect: anchorC -> spoolC
-
-        const spoolA_pos = world.getComponent(spoolA, PositionComponent).pos;
-        const spoolB_pos = world.getComponent(spoolB, PositionComponent).pos;
-        const spoolC_pos = world.getComponent(spoolC, PositionComponent).pos;
-        const anchorA_pos = world.getComponent(anchorA, PositionComponent).pos;
-        const anchorB_pos = world.getComponent(anchorB, PositionComponent).pos;
-        const anchorC_pos = world.getComponent(anchorC, PositionComponent).pos;
-        world.addComponent(spoolA, new CableLinkComponent(spoolA_pos.x, spoolA_pos.y));
-        world.addComponent(spoolB, new CableLinkComponent(spoolB_pos.x, spoolB_pos.y));
-        world.addComponent(spoolC, new CableLinkComponent(spoolC_pos.x, spoolC_pos.y));
-        world.addComponent(anchorA, new CableLinkComponent(anchorA_pos.x, anchorA_pos.y));
-        world.addComponent(anchorB, new CableLinkComponent(anchorB_pos.x, anchorB_pos.y));
-        world.addComponent(anchorC, new CableLinkComponent(anchorC_pos.x, anchorC_pos.y));
+        // Common properties for cables
         const turns = 5.0;
-        const initialStoredLength = turns*spoolRadius*Math.PI*2.0;
+        const initialStoredLength = turns * spoolRadius * Math.PI * 2.0;
+        const cableStiffness = 20000.0; // Standard cable stiffness from original code
 
-        // --- Calculate Initial Cable State ---
-        const jointA = world.createEntity();
-        const tangA = tangentFromPointToCircle(anchorA_pos, spoolA_pos, spoolRadius, true);
-        const initialDistA = tangA.a_attach.clone().subtract(tangA.a_circle).length();
-        world.addComponent(jointA, new CableJointComponent(
-          anchorA, spoolA, initialDistA, tangA.a_attach, tangA.a_circle)); // Order matters
-        world.addComponent(jointA, new RenderableComponent('line', '#AA3311'));
+        // Configurations for each spool-anchor-cable setup
+        const configurations = [
+            {
+                spoolPos: new Vector2(0.00, -0.05),
+                spoolVel: new Vector2(0.0, 0.1),
+                spoolAngVel: 0.5,
+                anchorPos: new Vector2(0.00, -0.05 - 2.0),
+                jointColor: '#AA3311'
+            },
+            {
+                spoolPos: new Vector2(0.05 * Math.cos(Math.PI * (1/6)), 0.05 * Math.sin(Math.PI * (1/6))),
+                spoolVel: new Vector2(0.0, 0.0),
+                spoolAngVel: 0.0, // Corresponds to new AngularVelocityComponent()
+                anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (1/6)), 2.05 * Math.sin(Math.PI * (1/6))),
+                jointColor: '#BB3311'
+            },
+            {
+                spoolPos: new Vector2(0.05 * Math.cos(Math.PI * (5/6)), 0.05 * Math.sin(Math.PI * (5/6))),
+                spoolVel: new Vector2(0.0, 0.0),
+                spoolAngVel: 0.0, // Corresponds to new AngularVelocityComponent()
+                anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (5/6)), 2.05 * Math.sin(Math.PI * (5/6))),
+                jointColor: '#CC3311'
+            }
+        ];
 
-        const cableA = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        const cableCompA = new CablePathComponent(
-          world,
-          [jointA],
-          ['attachment', 'hybrid'],
-          [true, true], 20000.0, [0.0, initialStoredLength]
-        );
-        world.addComponent(cableA, cableCompA);
+        for (const config of configurations) {
+            const spoolEntity = createSpoolEntity(
+                world,
+                config.spoolPos,
+                config.spoolVel,
+                config.spoolAngVel,
+                spoolRadius,
+                spoolMass,
+                spoolInertia,
+                ballRestitution
+            );
 
-        const jointB = world.createEntity();
-        const tangB = tangentFromPointToCircle(anchorB_pos, spoolB_pos, spoolRadius, true);
-        const initialDistB = tangB.a_attach.clone().subtract(tangB.a_circle).length();
-        world.addComponent(jointB, new CableJointComponent(
-          anchorB, spoolB, initialDistB, tangB.a_attach, tangB.a_circle)); // Order matters
-        world.addComponent(jointB, new RenderableComponent('line', '#BB3311'));
+            const anchorEntity = createAnchorEntity(
+                world,
+                config.anchorPos,
+                anchorRadius // Using the defined anchorRadius
+            );
 
-        const cableB = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        const cableCompB = new CablePathComponent(
-          world,
-          [jointB],
-          ['attachment', 'hybrid'],
-          [true, true], 20000.0, [0.0, initialStoredLength]
-        );
-        world.addComponent(cableB, cableCompB);
-
-        const jointC = world.createEntity();
-        const tangC = tangentFromPointToCircle(anchorC_pos, spoolC_pos, spoolRadius, true);
-        const initialDistC = tangC.a_attach.clone().subtract(tangC.a_circle).length();
-        world.addComponent(jointC, new CableJointComponent(
-          anchorC, spoolC, initialDistC, tangC.a_attach, tangC.a_circle)); // Order matters
-        world.addComponent(jointC, new RenderableComponent('line', '#CC3311'));
-
-        const cableC = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        const cableCompC = new CablePathComponent(
-          world,
-          [jointC],
-          ['attachment', 'hybrid'],
-          [true, true], 20000.0, [0.0, initialStoredLength]
-        );
-        world.addComponent(cableC, cableCompC);
-
+            createCableAndJointEntities(
+                world,
+                anchorEntity,
+                spoolEntity,
+                spoolRadius,
+                initialStoredLength,
+                config.jointColor,
+                cableStiffness // Using the defined cableStiffness
+            );
+        }
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
