@@ -181,3 +181,13 @@ export class CoefficientOfFrictionComponent {
   }
 }
 export class ScoredTagComponent { }
+
+export class DistanceConstraintComponent {
+  constructor(entityA, entityB, restLength, compliance = 0.0) {
+    this.entityA = entityA;
+    this.entityB = entityB;
+    this.restLength = restLength;
+    this.compliance = compliance; // XPBD compliance (alpha / dt^2)
+    this.lambda = 0.0; // Accumulated Lagrange multiplier
+  }
+}

@@ -133,6 +133,7 @@ canvas {
       RadiusComponent,
       BallTagComponent,
       RestitutionComponent,
+      DistanceConstraintComponent,
     } from '../cable_joints/ecs.js';
 
     import {
@@ -152,6 +153,7 @@ canvas {
       MovementSystem,
       AngularMovementSystem,
       PBDBallBallCollisions,
+      XPBDDistanceConstraintSystem,
     } from '../cable_joints/commonSystems.js';
 
     import {
@@ -361,6 +363,14 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
     return { jointEntity: joint, cableEntity: cable, cableComponent: cableComp };
 }
 
+function createDistanceConstraintEntity(world, entityA, entityB, restLength, compliance = 0.0) {
+    const constraintEntity = world.createEntity();
+    world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, compliance));
+    // Optionally, add a RenderableComponent if you want to visualize it
+    // world.addComponent(constraintEntity, new RenderableComponent('line', '#00FF00')); // Example color
+    return constraintEntity;
+}
+
     function setupScene() {
         world.clear(); // Clear entities and components
         canvas.width = canvas.clientWidth;
@@ -399,6 +409,23 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
 
         // Configurations for each spool-anchor-cable setup
         const configurations = [
+            // Original configurations will be modified to test distance constraints
+            // Let's create two spools and connect them with a distance constraint
+            {
+                spoolPos: new Vector2(-0.2, 0.0), // Spool 1
+                spoolVel: new Vector2(0.0, 0.0),
+                spoolAngVel: 0.0,
+                // No anchor for this one, it will be constrained to another spool
+                jointColor: '#AA3311' // Not used for distance constraint directly
+            },
+            {
+                spoolPos: new Vector2(0.2, 0.0), // Spool 2
+                spoolVel: new Vector2(0.0, 0.0),
+                spoolAngVel: 0.0,
+                // No anchor for this one
+                jointColor: '#BB3311' // Not used
+            }
+            /* Original configurations:
             {
                 spoolPos: new Vector2(0.00, -0.05),
                 spoolVel: new Vector2(0.0, 0.1),
@@ -420,8 +447,10 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
                 anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (5/6)), 2.05 * Math.sin(Math.PI * (5/6))),
                 jointColor: '#CC3311'
             }
+            */
         ];
 
+        const spoolEntities = [];
         for (const config of configurations) {
             const spoolEntity = createSpoolEntity(
                 world,
@@ -433,23 +462,40 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
                 spoolInertia,
                 ballRestitution
             );
+            spoolEntities.push(spoolEntity);
 
-            const anchorEntity = createAnchorEntity(
-                world,
-                config.anchorPos,
-                anchorRadius // Using the defined anchorRadius
-            );
+            // Skip anchor and cable creation for this distance constraint example
+            // const anchorEntity = createAnchorEntity(
+            //     world,
+            //     config.anchorPos,
+            //     anchorRadius // Using the defined anchorRadius
+            // );
 
-            createCableAndJointEntities(
-                world,
-                anchorEntity,
-                spoolEntity,
-                spoolRadius,
-                initialStoredLength,
-                config.jointColor,
-                cableStiffness // Using the defined cableStiffness
-            );
+            // createCableAndJointEntities(
+            //     world,
+            //     anchorEntity,
+            //     spoolEntity,
+            //     spoolRadius,
+            //     initialStoredLength,
+            //     config.jointColor,
+            //     cableStiffness // Using the defined cableStiffness
+            // );
         }
+
+        // Create a distance constraint between the two spools
+        if (spoolEntities.length >= 2) {
+            const restLength = 0.3; // Desired distance between spools
+            const compliance = 0.0; // For a stiff constraint (XPBD alpha, not alpha_tilde)
+            createDistanceConstraintEntity(world, spoolEntities[0], spoolEntities[1], restLength, compliance);
+
+            // You can add more constraints, e.g., to static points (anchors)
+            const anchor1 = createAnchorEntity(world, new Vector2(-0.5, 0.2));
+            createDistanceConstraintEntity(world, spoolEntities[0], anchor1, 0.4, 0.0001); // Softer constraint
+
+            const anchor2 = createAnchorEntity(world, new Vector2(0.5, -0.2));
+            createDistanceConstraintEntity(world, spoolEntities[1], anchor2, 0.35, 0.0);
+        }
+
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
@@ -462,8 +508,9 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
           world.registerSystem(new PBDBallBallCollisions());
-          world.registerSystem(new CableAttachmentUpdateSystemJointWise());
-          world.registerSystem(new PBDCableConstraintSolverJointWise());
+          // world.registerSystem(new CableAttachmentUpdateSystemJointWise()); // Not used in this example
+          // world.registerSystem(new PBDCableConstraintSolverJointWise()); // Not used in this example
+          world.registerSystem(new XPBDDistanceConstraintSystem()); // Add the new system
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
         }
 
