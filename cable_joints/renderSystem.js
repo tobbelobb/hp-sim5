@@ -140,7 +140,7 @@ export class RenderSystem {
 
 
     // Base line width and debug radius (adjust as needed)
-    const baseLineWidth = 2;
+    const baseLineWidth = 2.5;
     const baseDebugRadius = 3;
 
     // Render Border

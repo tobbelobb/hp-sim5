@@ -508,7 +508,7 @@ function _evenOutTensionFriction(world) {
       }
 
       if (!frictionActive) {
-        // Frictionless case (original _evenOutTension logic or mu=0, no wrap, etc.)
+        // Frictionless case. There can be no difference in tension between the two sides.
         const availableRestLength = l0_current + l1_current;
         const totalDist = d0 + d1;
         if (totalDist > epsilon) {

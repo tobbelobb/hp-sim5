@@ -782,7 +782,7 @@ canvas {
 
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -2.0));
-        world.setResource('dt', 1.0 / 200.0);
+        world.setResource('dt', 1.0 / 300.0);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -828,7 +828,7 @@ canvas {
         world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball1, new OrientationComponent(0.0));
         world.addComponent(ball1, new AngularVelocityComponent(0.0));
-        const ball1Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
+        const ball1Inertia = 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
 
         const ball2 = world.createEntity();
@@ -1037,7 +1037,7 @@ canvas {
              world.registerSystem(new PBDCableConstraintSolverJointWise());
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
-             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85));
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
         } else {
           world.systems[InputSystem]
         }
