@@ -154,6 +154,7 @@ canvas {
       MovementSystem,
       AngularMovementSystem,
       PBDBallBallCollisions,
+      PrevFinalPosSystem,
       XPBDDistanceConstraintSystem,
     } from '../cable_joints/commonSystems.js';
 
@@ -290,7 +291,7 @@ canvas {
 
              if (this.grabSpring) {
                const { ptrE, jointE, pathE, ballE } = this.grabSpring;
-               
+
                const posComp = world.getComponent(ballE, PositionComponent);
                const velComp = world.getComponent(ballE, VelocityComponent);
                const prevFinalPosComp = world.getComponent(ballE, PrevFinalPosComponent);
@@ -339,7 +340,7 @@ canvas {
            const pixelY = event.clientY - rect.top;
            const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
            const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
-           
+
            // Update the position of the pointer entity in the grab spring
            const { ptrE } = this.grabSpring;
            const pos = world.getComponent(ptrE, PositionComponent).pos;
@@ -465,29 +466,30 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
         const turns = 5.0;
         const initialStoredLength = turns * spoolRadius * Math.PI * 2.0;
         const cableStiffness = 20000.0; // Standard cable stiffness from original code
+        const spool_dist_from_center = 0.1;
 
         // Configurations for each spool-anchor-cable setup
         const configurations = [
             {
-                spoolPos: new Vector2(0.00, -0.05),
+                spoolPos: new Vector2(0.00, -spool_dist_from_center),
                 spoolVel: new Vector2(0.0, 0.1),
                 spoolAngVel: 5.0,
-                anchorPos: new Vector2(0.00, -0.05 - 2.0),
-                jointColor: '#AA3311'
+                anchorPos: new Vector2(0.00, -spool_dist_from_center - 2.0),
+                jointColor: 'orange'
             },
             {
-                spoolPos: new Vector2(0.05 * Math.cos(Math.PI * (1/6)), 0.05 * Math.sin(Math.PI * (1/6))),
+                spoolPos: new Vector2(spool_dist_from_center * Math.cos(Math.PI * (1/6)), spool_dist_from_center * Math.sin(Math.PI * (1/6))),
                 spoolVel: new Vector2(0.0, 0.0),
                 spoolAngVel: 5.0, // Corresponds to new AngularVelocityComponent()
                 anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (1/6)), 2.05 * Math.sin(Math.PI * (1/6))),
-                jointColor: '#BB3311'
+                jointColor: 'orange'
             },
             {
-                spoolPos: new Vector2(0.05 * Math.cos(Math.PI * (5/6)), 0.05 * Math.sin(Math.PI * (5/6))),
+                spoolPos: new Vector2(spool_dist_from_center * Math.cos(Math.PI * (5/6)), spool_dist_from_center * Math.sin(Math.PI * (5/6))),
                 spoolVel: new Vector2(0.0, 0.0),
                 spoolAngVel: 5.0, // Corresponds to new AngularVelocityComponent()
                 anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (5/6)), 2.05 * Math.sin(Math.PI * (5/6))),
-                jointColor: '#CC3311'
+                jointColor: 'orange'
             }
         ];
 
@@ -531,9 +533,9 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
         if (world.systems.length === 0) { // Only register systems once
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
-          inputSys.scaleMultiplier = 0.45;
+          inputSys.scaleMultiplier = 0.5;
           inputSys.viewOffsetX = 0.0;
-          inputSys.viewOffsetY = 0.0;
+          inputSys.viewOffsetY = -0.5;
           world.registerSystem(new PrevFinalPosSystem()); // Update previous positions first
           world.registerSystem(inputSys);
           world.registerSystem(new MovementSystem());
@@ -542,7 +544,7 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           world.registerSystem(new XPBDDistanceConstraintSystem());
           world.registerSystem(new CableAttachmentUpdateSystemJointWise());
           world.registerSystem(new PBDCableConstraintSolverJointWise());
-          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
+          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 1.0));
         }
 
         // Update button text based on initial pause state

@@ -15,7 +15,8 @@ import {
   CoefficientOfFrictionComponent,
   ObstacleTagComponent,
   ObstaclePushComponent,
-  ScoredTagComponent
+  ScoredTagComponent,
+  DistanceConstraintComponent
 } from './ecs.js';
 
 

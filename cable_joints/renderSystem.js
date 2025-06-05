@@ -363,10 +363,11 @@ export class RenderSystem {
     const distanceConstraintEntities = world.query([DistanceConstraintComponent]);
     if (distanceConstraintEntities.length > 0) {
         this.c.save();
-        this.c.strokeStyle = 'purple'; // Thick purple lines
-        this.c.lineWidth = 4 * this.viewScaleMultiplier; // Make it thick
+        this.c.lineWidth = 4;
 
         for (const entityId of distanceConstraintEntities) {
+            const renderComp = world.getComponent(entityId, RenderableComponent);
+            this.c.strokeStyle = renderComp.color;
             const constraint = world.getComponent(entityId, DistanceConstraintComponent);
             const posAComp = world.getComponent(constraint.entityA, PositionComponent);
             const posBComp = world.getComponent(constraint.entityB, PositionComponent);
