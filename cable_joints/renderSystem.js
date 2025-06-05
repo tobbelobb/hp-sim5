@@ -262,8 +262,17 @@ export class RenderSystem {
         // cw‐flag stored in path.cw[i]
         const anticlockwise = !path.cw[i];
         this.c.beginPath();
-        if () {
-          this.c.strokeStyle = renderComp.color;               // or pick your cable colour
+
+        // Determine tension for color
+        const epsilon = 1e-6;
+        const distPrev = jPrev.attachmentPointA_world.distanceTo(jPrev.attachmentPointB_world);
+        const tensionPrev = distPrev > (jPrev.restLength + epsilon);
+
+        const distNext = jNext.attachmentPointA_world.distanceTo(jNext.attachmentPointB_world);
+        const tensionNext = distNext > (jNext.restLength + epsilon);
+
+        if (tensionPrev && tensionNext) {
+          this.c.strokeStyle = renderComp.color; // or pick your cable colour
         } else {
           this.c.strokeStyle = 'orange';
         }
