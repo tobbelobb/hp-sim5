@@ -127,6 +127,7 @@ canvas {
       MassComponent,
       OrientationComponent,
       AngularVelocityComponent,
+      CoefficientOfFrictionComponent,
       MomentOfInertiaComponent,
       RenderableComponent,
       RadiusComponent,
@@ -306,6 +307,9 @@ function createSpoolEntity(world, posVec, velVec, angVelVal, spoolRadius, spoolM
     world.addComponent(spool, new AngularVelocityComponent(angVelVal));
     world.addComponent(spool, new MomentOfInertiaComponent(spoolInertia));
     world.addComponent(spool, new RestitutionComponent(ballRestitution));
+    const frictionCoefficient = 0.2; // Dyneema over steel is in the range ca 0.05 to 0.4.
+    world.addComponent(spool, new CoefficientOfFrictionComponent(frictionCoefficient));
+
     return spool;
 }
 
@@ -451,7 +455,7 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
         if (world.systems.length === 0) { // Only register systems once
           // Initialize input system with view parameters matching RenderSystem
           const inputSys = new InputSystem(canvas);
-          inputSys.scaleMultiplier = 0.75;
+          inputSys.scaleMultiplier = 0.25;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = 0.0;
           world.registerSystem(inputSys);
@@ -460,7 +464,7 @@ function createCableAndJointEntities(world, anchorEntity, spoolEntity, spoolRadi
           world.registerSystem(new PBDBallBallCollisions());
           world.registerSystem(new CableAttachmentUpdateSystemJointWise());
           world.registerSystem(new PBDCableConstraintSolverJointWise());
-          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 1.0));
+          world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
         }
 
         // Update button text based on initial pause state
