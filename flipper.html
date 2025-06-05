@@ -803,7 +803,7 @@ canvas {
         world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball2, new OrientationComponent(0.0));
         world.addComponent(ball2, new AngularVelocityComponent(0.0));
-        const ball2Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
+        const ball2Inertia = 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
 
         // Obstacle Entities
@@ -836,7 +836,7 @@ canvas {
         world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
         world.addComponent(obs3, new OrientationComponent(0.0));
         world.addComponent(obs3, new AngularVelocityComponent(0.0));
-        const obsInertia = 0.005 * 0.1**2;
+        const obsInertia = 0.020 * 0.1**2;
         world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia));
 
         const obs4 = world.createEntity();
