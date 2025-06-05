@@ -133,7 +133,8 @@ canvas {
       ScoredTagComponent,
       FlipperTagComponent,
       FlipperStateComponent,
-      PrevFinalPosComponent
+      PrevFinalPosComponent,
+      PrevFinalOrientationComponent
     } from './cable_joints/ecs.js';
 
     import {
@@ -161,7 +162,9 @@ canvas {
       AngularMovementSystem,
       PBDBallObstacleCollisions,
       PBDBallBallCollisions,
-      PBDVelocityUpdateSystem
+      PBDVelocityUpdateSystem,
+      PrevFinalOrientationSystem,
+      PBDAngularVelocityUpdateSystem
     } from './cable_joints/commonSystems.js';
 
     import {
@@ -792,6 +795,7 @@ canvas {
         world.addComponent(ball1, new AngularVelocityComponent(0.0));
         const ball1Inertia = 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
+        world.addComponent(ball1, new PrevFinalOrientationComponent(0.0));
 
         const ball2 = world.createEntity();
         world.addComponent(ball2, new BallTagComponent());
@@ -806,6 +810,7 @@ canvas {
         world.addComponent(ball2, new AngularVelocityComponent(0.0));
         const ball2Inertia = 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
+        world.addComponent(ball2, new PrevFinalOrientationComponent(0.0));
 
         // Obstacle Entities
         const obsColor1 = "#FF8000";
@@ -839,6 +844,7 @@ canvas {
         world.addComponent(obs3, new AngularVelocityComponent(0.0));
         const obsInertia = 0.020 * 0.1**2;
         world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia));
+        world.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
 
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
@@ -850,6 +856,7 @@ canvas {
         world.addComponent(obs4, new OrientationComponent(0.0));
         world.addComponent(obs4, new AngularVelocityComponent(0.0));
         world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia));
+        world.addComponent(obs4, new PrevFinalOrientationComponent(0.0));
 
 
         // Flipper Entities
@@ -981,6 +988,7 @@ canvas {
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
              world.registerSystem(new PrevFinalPosSystem());
+             world.registerSystem(new PrevFinalOrientationSystem());
              const inputSystemInstance = new InputSystem(canvas);
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(
@@ -1000,6 +1008,7 @@ canvas {
 
              // Update velocities based on the pos-difference
              world.registerSystem(new PBDVelocityUpdateSystem());
+             world.registerSystem(new PBDAngularVelocityUpdateSystem());
 
              // Perform a velocity-level solve
              world.registerSystem(new PBDBallBorderCollisions());

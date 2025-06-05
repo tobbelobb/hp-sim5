@@ -135,6 +135,7 @@ canvas {
       RestitutionComponent,
       DistanceConstraintComponent,
       PrevFinalPosComponent,
+      PrevFinalOrientationComponent,
     } from '../cable_joints/ecs.js';
 
     import {
@@ -157,6 +158,8 @@ canvas {
       PrevFinalPosSystem,
       XPBDDistanceConstraintSystem,
       PBDVelocityUpdateSystem,
+      PrevFinalOrientationSystem,
+      PBDAngularVelocityUpdateSystem,
     } from '../cable_joints/commonSystems.js';
 
     import {
@@ -371,7 +374,8 @@ function createSpoolEntity(world, posVec, velVec, angVelVal, spoolRadius, spoolM
     world.addComponent(spool, new RestitutionComponent(ballRestitution));
     const frictionCoefficient = 0.2; // Dyneema over steel is in the range ca 0.05 to 0.4.
     world.addComponent(spool, new CoefficientOfFrictionComponent(frictionCoefficient));
-    world.addComponent(spool, new PrevFinalPosComponent(posVec.x, posVec.y)); // For grab velocity calculation
+    world.addComponent(spool, new PrevFinalPosComponent(posVec.x, posVec.y));
+    world.addComponent(spool, new PrevFinalOrientationComponent()); // Initial angle defaults to 0, matching OrientationComponent
 
     return spool;
 }
@@ -537,16 +541,20 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           inputSys.scaleMultiplier = 0.5;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.5;
-          world.registerSystem(new PrevFinalPosSystem()); // Update previous positions first
+          world.registerSystem(new PrevFinalPosSystem()); 
+          world.registerSystem(new PrevFinalOrientationSystem());
           world.registerSystem(inputSys);
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
-          world.registerSystem(new PBDBallBallCollisions());
+          // Positional constraint solvers
           world.registerSystem(new XPBDDistanceConstraintSystem());
           world.registerSystem(new CableAttachmentUpdateSystemJointWise());
           world.registerSystem(new PBDCableConstraintSolverJointWise());
-          // Update velocities after all position-based solvers
+          // Update velocities from positional changes
           world.registerSystem(new PBDVelocityUpdateSystem());
+          world.registerSystem(new PBDAngularVelocityUpdateSystem());
+          // Velocity-level solvers (which might also do positional adjustments)
+          world.registerSystem(new PBDBallBallCollisions());
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
         }
 

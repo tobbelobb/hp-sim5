@@ -16,9 +16,63 @@ import {
   ObstacleTagComponent,
   ObstaclePushComponent,
   ScoredTagComponent,
-  DistanceConstraintComponent
+  DistanceConstraintComponent,
+  PrevFinalOrientationComponent
 } from './ecs.js';
 
+
+export class PrevFinalOrientationSystem {
+    runInPause = false;
+    update(world, dt) {
+        const entities = world.query([OrientationComponent, PrevFinalOrientationComponent]);
+        for (const entityId of entities) {
+            const orientationComp = world.getComponent(entityId, OrientationComponent);
+            const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
+            prevFinalOrientationComp.angle = orientationComp.angle;
+        }
+    }
+}
+
+export class PBDAngularVelocityUpdateSystem {
+  runInPause = false;
+
+  _normalizeAngle(angle) { // Helper to find the shortest angle difference
+    while (angle > Math.PI) angle -= 2 * Math.PI;
+    while (angle < -Math.PI) angle += 2 * Math.PI;
+    return angle;
+  }
+
+  update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
+    const entities = world.query([
+      OrientationComponent,
+      AngularVelocityComponent,
+      PrevFinalOrientationComponent,
+      MomentOfInertiaComponent
+    ]);
+    const epsilon = 1e-9;
+
+    if (dt <= epsilon) return;
+
+    for (const entityId of entities) {
+      if (entityId === grabbed) continue;
+
+      const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
+      if (moiComp && moiComp.invInertia <= 0) continue; // Skip static or non-rotational objects
+
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+      const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
+
+      const currentAngle = orientationComp.angle;
+      const prevAngle = prevFinalOrientationComp.angle;
+
+      let deltaAngle = this._normalizeAngle(currentAngle - prevAngle);
+
+      angularVelComp.angularVelocity = deltaAngle / dt;
+    }
+  }
+}
 
 export class PBDVelocityUpdateSystem {
   runInPause = false;
