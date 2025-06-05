@@ -134,6 +134,7 @@ canvas {
       BallTagComponent,
       RestitutionComponent,
       DistanceConstraintComponent,
+      PrevFinalPosComponent,
     } from '../cable_joints/ecs.js';
 
     import {
@@ -170,9 +171,7 @@ canvas {
              this.releases = [];
              this.eventLog = [];     // ← record inputs per frame
              this.frame = 0;         // ← frame counter
-             this.grabbedBall = null;
-             this.grabOffset = new Vector2();
-             this.grabStartPrevPos = new Vector2();
+             this.grabSpring = null; // { ptrE, jointE, pathE, ballE }
              // Viewport parameters (to be set from setupScene)
              this.scaleMultiplier = 1.0;
              this.viewOffsetX = 0.0;
@@ -209,26 +208,72 @@ canvas {
             const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
             const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
 
-             // 1) see if we hit a spool
              const clickVec = new Vector2(simX, simY);
-             for (const b of world.query([BallTagComponent,PositionComponent,RadiusComponent])) {
-               const pos = world.getComponent(b,PositionComponent).pos;
-               const r   = world.getComponent(b,RadiusComponent).radius;
-               if (clickVec.clone().subtract(pos).lengthSq() <= r*r) {
-                 this.grabbedBall = b;
-                 this.grabOffset = pos.clone().subtract(clickVec);
-                 // record old pos for velocity
-                 this.grabStartPrevPos = pos.clone();
-                 world.setResource('grabbedBall', b);
 
-                 // Potentially unpause
-                 const pauseState = world.getResource('pauseState');
-                 pauseState.paused = false;
-                 pauseBtn.textContent = "Pause";
-                 return;       // now we’re in grab mode
+             // Calculate extra clickable radius based on physical size (adapted from flipper.html)
+             const cmOnScreen = 0.5; // Desired clickable radius increase in physical cm
+             const dpi = 96; // Approximate screen DPI
+             const pixelsPerCm = dpi / 2.54;
+             const extraPixels = cmOnScreen * pixelsPerCm;
+             // Use the effective scale from slideprinter's input system
+             const effectiveScale = (this.canvas.height / world.getResource('simHeight')) * this.scaleMultiplier;
+             const extraClickableRadius = extraPixels / effectiveScale;
+
+             let closestBall = null;
+             let closestDistSq = Infinity;
+             for (const b of world.query([BallTagComponent, PositionComponent, RadiusComponent])) {
+               const pos = world.getComponent(b, PositionComponent).pos;
+               const r = world.getComponent(b, RadiusComponent).radius + extraClickableRadius;
+               const distSq = clickVec.clone().subtract(pos).lengthSq();
+               if (distSq <= r * r && distSq < closestDistSq) {
+                 closestBall = b;
+                 closestDistSq = distSq;
                }
              }
-             this.clicks.push(new Vector2(simX, simY));
+
+             if (closestBall !== null) {
+               // 1) create a pointer‐link entity at the mouse
+               const ptrE = world.createEntity();
+               world.addComponent(ptrE, new PositionComponent(simX, simY));
+               world.addComponent(ptrE, new CableLinkComponent(simX, simY));
+
+               // 2) create a joint between ball and pointer
+               const ballPos = world.getComponent(closestBall, PositionComponent).pos.clone();
+               const ptrPos  = new Vector2(simX, simY);
+               const jointE = world.createEntity();
+               world.addComponent(jointE,
+                 new CableJointComponent(
+                   closestBall,  // entityA
+                   ptrE,         // entityB
+                   0.1,          // restLength (small slack)
+                   ballPos,      // attachmentA_world (ball center)
+                   ptrPos        // attachmentB_world (pointer pos)
+                 )
+               );
+               world.addComponent(jointE, new RenderableComponent('line', '#888888')); // Grab spring color
+
+               // 3) wrap it in a CablePathComponent
+               const pathE = world.createEntity();
+               const pathComp = new CablePathComponent(
+                 world,
+                 [ jointE ],               // one joint
+                 ['attachment', 'attachment'], // linkTypes for ball and pointer
+                 [ true, true ],           // cw flags (arbitrary for simple link)
+                 10.0                     // spring_constant (soft spring)
+               );
+               world.addComponent(pathE, pathComp);
+
+               // 4) store for move/release
+               this.grabSpring = { ptrE, jointE, pathE, ballE: closestBall };
+               world.setResource('grabbedBall', closestBall);
+
+               const pauseState = world.getResource('pauseState');
+               pauseState.paused = false;
+               pauseBtn.textContent = "Pause";
+               return;
+             }
+
+             this.clicks.push(new Vector2(simX, simY)); // Log if no ball was grabbed
          }
 
          handlePointerUp(event) {
@@ -243,37 +288,49 @@ canvas {
             const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
             const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
 
-             // if we were grabbing a spool, drop it and set its velocity
-             if (this.grabbedBall != null) {
-               const b = this.grabbedBall;
-               const newPos = new Vector2(simX, simY).add(this.grabOffset);
-               const posComp = world.getComponent(b, PositionComponent);
-               // move it to the release point
-               posComp.pos.set(newPos);
-               // new vel = delta position since grab start
-               const prev   = this.grabStartPrevPos;
-               const vel    = world.getComponent(b, VelocityComponent).vel;
+             if (this.grabSpring) {
+               const { ptrE, jointE, pathE, ballE } = this.grabSpring;
+               
+               const posComp = world.getComponent(ballE, PositionComponent);
+               const velComp = world.getComponent(ballE, VelocityComponent);
+               const prevFinalPosComp = world.getComponent(ballE, PrevFinalPosComponent);
                const dt = world.getResource('dt');
-               vel.set(new Vector2((newPos.x - prev.x)/dt, (newPos.y - prev.y)/dt));
-               // clear grab
-               this.grabbedBall = null;
+
+               if (velComp && posComp && prevFinalPosComp && dt > 1e-9) {
+                 // Set velocity based on displacement since last simulation step's final position
+                 velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0/dt));
+               } else if (velComp) {
+                 velComp.vel.set(new Vector2(0,0)); // Fallback: reset velocity
+               }
+
+               world.destroyEntity(pathE);
+               world.destroyEntity(jointE);
+               world.destroyEntity(ptrE);
+               this.grabSpring = null;
                world.setResource('grabbedBall', null);
                return;
              }
-             this.releases.push(new Vector2(simX, simY));
+             this.releases.push(new Vector2(simX, simY)); // Log if not ungrabbing
          }
 
          update(world, dt) {
-           const grabbedBall = world.getResource('grabbedBall');
-           if (grabbedBall != null) {
-              const pos = world.getComponent(grabbedBall, PositionComponent).pos;
-              this.grabStartPrevPos = pos.clone();
-           }
+             // Snapshot and clear inputs each frame for logging
+             const clicksFrame = this.clicks.slice();
+             if (clicksFrame.length > 0) this.clicks = []; // Clear after copying
+
+             const releasesFrame = this.releases.slice();
+             if (releasesFrame.length > 0) this.releases = []; // Clear after copying
+
+             if (clicksFrame.length > 0 || releasesFrame.length > 0) {
+                 this.eventLog.push({ frame: this.frame, clicks: clicksFrame, releases: releasesFrame });
+             }
+             this.frame++;
          }
 
          handlePointerMove(event) {
            event.preventDefault();
-           if (this.grabbedBall === null) return;
+           if (this.grabSpring === null) return;
+
            // Map pointer to simulation coords (account for view scale and offset)
            const rect = this.canvas.getBoundingClientRect();
            const baseScale = this.canvas.height / world.getResource('simHeight');
@@ -282,10 +339,11 @@ canvas {
            const pixelY = event.clientY - rect.top;
            const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
            const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
-           // spool center = pointer + saved offset
-           const newPos = new Vector2(simX, simY).add(this.grabOffset);
-           world.getComponent(this.grabbedBall, PositionComponent)
-                .pos.set(newPos);
+           
+           // Update the position of the pointer entity in the grab spring
+           const { ptrE } = this.grabSpring;
+           const pos = world.getComponent(ptrE, PositionComponent).pos;
+           pos.set(new Vector2(simX, simY));
          }
     }
 
@@ -311,6 +369,7 @@ function createSpoolEntity(world, posVec, velVec, angVelVal, spoolRadius, spoolM
     world.addComponent(spool, new RestitutionComponent(ballRestitution));
     const frictionCoefficient = 0.2; // Dyneema over steel is in the range ca 0.05 to 0.4.
     world.addComponent(spool, new CoefficientOfFrictionComponent(frictionCoefficient));
+    world.addComponent(spool, new PrevFinalPosComponent(posVec.x, posVec.y)); // For grab velocity calculation
 
     return spool;
 }
@@ -475,6 +534,7 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           inputSys.scaleMultiplier = 0.45;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = 0.0;
+          world.registerSystem(new PrevFinalPosSystem()); // Update previous positions first
           world.registerSystem(inputSys);
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
