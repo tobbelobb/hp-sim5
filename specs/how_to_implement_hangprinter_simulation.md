@@ -9,7 +9,7 @@ We have a home-rolled version of this logic, including merge/split and hybrid fe
 We might want a home-rolled extension to Universal Scene Description (USD) language,
 to get be able to express Cable Joints in some language as close to USD as possible.
 
-We ultimately want to express the and logic of the Hangprinter Roboti in USD.
+We ultimately want to express the and logic of the Hangprinter Robot in USD.
 
 # Software Architecture
 
@@ -30,7 +30,7 @@ so we can give the AI assistant all the context it needs in order to work on a f
 adding one whole directory to the context window.
 No manually curating context snippets or bloating the context window.
 
-This means we copy lots of utility code into each feture directory.
+This means we copy lots of utility code into each feature directory.
 This is ok, as long as we isolate our features from each other.
 
 # Libraries

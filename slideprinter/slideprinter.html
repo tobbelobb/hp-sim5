@@ -472,14 +472,14 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
         const configurations = [
             {
                 spoolPos: new Vector2(0.00, -spool_dist_from_center),
-                spoolVel: new Vector2(0.0, 0.1),
+                spoolVel: new Vector2(1.0, 0.0),
                 spoolAngVel: 5.0,
                 anchorPos: new Vector2(0.00, -spool_dist_from_center - 2.0),
                 jointColor: 'orange'
             },
             {
                 spoolPos: new Vector2(spool_dist_from_center * Math.cos(Math.PI * (1/6)), spool_dist_from_center * Math.sin(Math.PI * (1/6))),
-                spoolVel: new Vector2(0.0, 0.0),
+                spoolVel: new Vector2(-1.0/Math.sqrt(2), 1.0/Math.sqrt(2)),
                 spoolAngVel: 5.0, // Corresponds to new AngularVelocityComponent()
                 anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (1/6)), 2.05 * Math.sin(Math.PI * (1/6))),
                 jointColor: 'orange'
@@ -513,15 +513,15 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
                 anchorRadius // Using the defined anchorRadius
             );
 
-            createCableAndJointEntities(
-                world,
-                anchorEntity,
-                spoolEntity,
-                spoolRadius,
-                initialStoredLength,
-                config.jointColor,
-                cableStiffness // Using the defined cableStiffness
-            );
+            //createCableAndJointEntities(
+            //    world,
+            //    anchorEntity,
+            //    spoolEntity,
+            //    spoolRadius,
+            //    initialStoredLength,
+            //    config.jointColor,
+            //    cableStiffness // Using the defined cableStiffness
+            //);
         }
 
         createDistanceConstraintEntity(world, spoolEntities[0], spoolEntities[1]);
