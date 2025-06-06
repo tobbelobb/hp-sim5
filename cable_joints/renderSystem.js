@@ -434,34 +434,81 @@ export class RenderSystem {
         // Add rendering for other shapes if needed
     }
 
-    // Render Angular Velocity for Obstacles
+    // Render Angular Velocity for Obstacles as a Circular Arrow
     const obstacleEntitiesWithAngularVelocity = world.query([ObstacleTagComponent, AngularVelocityComponent, PositionComponent]);
     if (obstacleEntitiesWithAngularVelocity.length > 0) {
         this.c.save();
-        this.c.fillStyle = '#FFFFFF'; // White text
-        this.c.strokeStyle = '#000000'; // Black outline for better visibility
-        this.c.lineWidth = 2.5;
-        this.c.font = `${12 * this.viewScaleMultiplier}px Arial`; // Scale font with zoom
-        this.c.textAlign = 'center';
-        this.c.textBaseline = 'bottom';
+        this.c.strokeStyle = '#FFFFFF'; // White arrow
+
+        const baseArrowOffsetSim = 0.05;          // Base offset from obstacle surface, or base radius if no obstacle radius (sim units)
+        const minArrowRadiusFromCenterSim = 0.1;  // Min radius of the arrow arc from entity center (sim units)
+        const maxArrowRadiusFromCenterSim = 0.4;  // Max radius of the arrow arc from entity center (sim units)
+        const velSensitivity = 0.03;              // How much angVel (rad/s) affects radius (sim units per rad/s)
+        const arrowheadSizeSim = 0.04;            // Length of arrowhead wings in sim units
+        const arrowLineWidthPx = 2.0;             // Base line width in pixels
+
+        this.c.lineWidth = arrowLineWidthPx * this.viewScaleMultiplier;
 
         for (const entityId of obstacleEntitiesWithAngularVelocity) {
             const posComp = world.getComponent(entityId, PositionComponent);
             const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+            const radiusComp = world.getComponent(entityId, RadiusComponent); // Optional
 
-            if (posComp && angularVelComp) {
-                const text = angularVelComp.angularVelocity.toFixed(1);
-                const x = this.cX(posComp.pos.x);
-                const y = this.cY(posComp.pos.y) - 20; // Offset above the center, scaled
+            if (posComp && angularVelComp && Math.abs(angularVelComp.angularVelocity) > 1e-2) { // Only draw if rotating significantly
+                const angVel = angularVelComp.angularVelocity;
+                const isClockwise = angVel > 0;
 
-                // Draw outline then text
-                this.c.strokeText(text, x, y);
-                this.c.fillText(text, x, y);
+                let calculatedRadiusSim;
+                if (radiusComp && radiusComp.radius > 0) {
+                    // Arrow is outside the obstacle's radius
+                    calculatedRadiusSim = radiusComp.radius + baseArrowOffsetSim + Math.abs(angVel) * velSensitivity;
+                } else {
+                    // No radius or zero radius, use a base size for the arrow starting from center
+                    calculatedRadiusSim = baseArrowOffsetSim + Math.abs(angVel) * velSensitivity;
+                }
+
+                // Clamp the arrow's radius
+                const currentArrowRadiusSim = Math.max(minArrowRadiusFromCenterSim, Math.min(calculatedRadiusSim, maxArrowRadiusFromCenterSim));
+                
+                const cx = this.cX(posComp.pos.x);
+                const cy = this.cY(posComp.pos.y);
+                const arrowRadiusPx = currentArrowRadiusSim * this.effectiveCScale;
+                const arrowheadActualPx = arrowheadSizeSim * this.effectiveCScale;
+
+                this.c.beginPath();
+
+                let startAngle, endAngle;
+                const sweep = 1.5 * Math.PI; // 270 degrees sweep
+
+                if (isClockwise) {
+                    // Clockwise arrow: starts top (-PI/2), sweeps 270 deg CW, ends left (PI)
+                    startAngle = -Math.PI / 2;
+                    endAngle = startAngle + sweep;
+                    this.c.arc(cx, cy, arrowRadiusPx, startAngle, endAngle, false); // false for clockwise
+                } else {
+                    // Counter-clockwise arrow: starts top (-PI/2), sweeps 270 deg CCW, ends right (0 or -2PI)
+                    startAngle = -Math.PI / 2;
+                    endAngle = startAngle - sweep;
+                    this.c.arc(cx, cy, arrowRadiusPx, startAngle, endAngle, true); // true for counter-clockwise
+                }
+                this.c.stroke(); // Draw the arc
+
+                // Draw arrowhead at endAngle
+                const headX = cx + arrowRadiusPx * Math.cos(endAngle);
+                const headY = cy + arrowRadiusPx * Math.sin(endAngle);
+
+                this.c.beginPath();
+                this.c.moveTo(headX, headY);
+                this.c.lineTo(headX - arrowheadActualPx * Math.cos(endAngle - Math.PI / 6),
+                              headY - arrowheadActualPx * Math.sin(endAngle - Math.PI / 6));
+                this.c.moveTo(headX, headY);
+                this.c.lineTo(headX - arrowheadActualPx * Math.cos(endAngle + Math.PI / 6),
+                              headY - arrowheadActualPx * Math.sin(endAngle + Math.PI / 6));
+                this.c.stroke();
             }
         }
         this.c.restore();
     }
-
 
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');
