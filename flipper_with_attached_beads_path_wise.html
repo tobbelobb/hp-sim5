@@ -126,15 +126,11 @@ canvas {
       GravityAffectedComponent,
       OrientationComponent,
       AngularVelocityComponent,
-      CoefficientOfFrictionComponent,
       MomentOfInertiaComponent,
       ObstacleTagComponent,
-      ObstaclePushComponent,
-      ScoredTagComponent,
       FlipperTagComponent,
       FlipperStateComponent,
-      PrevFinalPosComponent,
-      PrevFinalOrientationComponent
+      PrevFinalPosComponent
     } from './cable_joints/ecs.js';
 
     import {
@@ -142,8 +138,9 @@ canvas {
       CableJointComponent,
       CablePathComponent,
       linecolor1,
-      CableAttachmentUpdateSystemJointWise,
-      PBDCableConstraintSolverJointWise
+      CableAttachmentUpdateSystemPathWise,
+      PBDCableConstraintSolverPathWise,
+      createCablePaths
     } from './cable_joints/cable_joints_core.js';
 
     import {
@@ -160,11 +157,7 @@ canvas {
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
-      PBDBallObstacleCollisions,
-      PBDBallBallCollisions,
-      PBDVelocityUpdateSystem,
-      PrevFinalOrientationSystem,
-      PBDAngularVelocityUpdateSystem
+      PBDBallBallCollisions
     } from './cable_joints/commonSystems.js';
 
     import {
@@ -172,6 +165,8 @@ canvas {
     } from './cable_joints/renderSystem.js';
 
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
+    class ScoredTagComponent { }
+    class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
 
     // helper to remember which flipper this tip belongs to
     class FlipperTipComponent {
@@ -180,6 +175,8 @@ canvas {
       }
     }
 
+
+    // Register FlipperTipLinkSystem BEFORE CableAttachmentUpdateSystem
     class FlipperTipLinkSystem {
       runInPause = false;
       update(world, dt) {
@@ -208,8 +205,8 @@ canvas {
              this.canvas = canvas;
              this.clicks = [];
              this.releases = [];
-             this.eventLog = [];     // ← record inputs per frame
-             this.frame = 0;         // ← frame counter
+             this.eventLog = [];     // record inputs per frame
+             this.frame = 0;         // frame counter
              this.grabSpring = null; // { ptrE, jointE, pathE, ballE }
              this.canvas.setAttribute('tabindex', '0');
              this.canvas.style.outline = 'none';
@@ -222,7 +219,7 @@ canvas {
              this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
          }
 
-        // on Space → emit minimal debug dump
+        // on Space -> emit minimal debug dump
         dumpDebugScenario() {
             // Custom stringification to serialize Vector2 instances
             const resStr = JSON.stringify(world.resources);
@@ -326,13 +323,14 @@ canvas {
                // 2) create a joint between ball and pointer
                //    restLength = 0 so it's a pure spring
                const ballPos = world.getComponent(closestBall, PositionComponent).pos.clone();
+               const ballMass = world.getComponent(closestBall, MassComponent).mass;
                const ptrPos  = new Vector2(simX, simY);
                const jointE = world.createEntity();
                world.addComponent(jointE,
                  new CableJointComponent(
                    closestBall,  // entityA
                    ptrE,         // entityB
-                   0.1,          // restLength
+                   0.05,          // restLength
                    ballPos,      // attachmentA_world
                    ptrPos        // attachmentB_world
                  )
@@ -346,7 +344,7 @@ canvas {
                  [ jointE ],               // one joint
                  ['attachment', 'attachment'], // one linkType
                  [ true ],                 // cw flag (arbitrary)
-                 10.0                     // spring_constant
+                 100000.0*ballMass         // spring_constant
                );
                world.addComponent(pathE, pathComp);
 
@@ -444,7 +442,7 @@ canvas {
                    world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
                  }
                } else {
-                 // click inside play‐area → original pivot‐radius test
+                 // click inside play‐area -> original pivot‐radius test
                  for (const id of flipperEntities) {
                    const pos   = world.getComponent(id, PositionComponent).pos;
                    const state = world.getComponent(id, FlipperStateComponent);
@@ -694,6 +692,46 @@ canvas {
       }
     }
 
+    class PBDBallObstacleCollisions2 {
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+        for (const ballId of ballEntities) {
+          const p1 = world.getComponent(ballId, PositionComponent).pos;
+          const v1 = world.getComponent(ballId, VelocityComponent).vel;
+          const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+          for (const obsId of obstacleEntities) {
+            const p2 = world.getComponent(obsId, PositionComponent).pos;
+            const r2 = world.getComponent(obsId, RadiusComponent).radius;
+            const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
+
+            const dir = new Vector2().subtractVectors(p1, p2);
+            const dSq = dir.lengthSq();
+            const rSum = r1 + r2;
+
+            if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+            const d = Math.sqrt(dSq);
+            dir.scale(1.0 / d); // Normalize
+
+            // Resolve penetration
+            const corr = rSum - d;
+            p1.add(dir, corr);
+
+            // Resolve velocity (simple push)
+            const v_dot = v1.dot(dir);
+            v1.add(dir, pushVel - v_dot); // Impart obstacle's push velocity along normal
+
+            // Add ScoredTagComponent to the ball that scored
+            const grabbed = world.getResource('grabbedBall');
+            if (ballId !== grabbed) {
+              world.addComponent(ballId, new ScoredTagComponent());
+            }
+          }
+        }
+      }
+    }
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
@@ -793,9 +831,8 @@ canvas {
         world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball1, new OrientationComponent(0.0));
         world.addComponent(ball1, new AngularVelocityComponent(0.0));
-        const ball1Inertia = 0.5 * ballMass * ballRadius * ballRadius;
+        const ball1Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
-        world.addComponent(ball1, new PrevFinalOrientationComponent(0.0));
 
         const ball2 = world.createEntity();
         world.addComponent(ball2, new BallTagComponent());
@@ -808,14 +845,13 @@ canvas {
         world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball2, new OrientationComponent(0.0));
         world.addComponent(ball2, new AngularVelocityComponent(0.0));
-        const ball2Inertia = 0.5 * ballMass * ballRadius * ballRadius;
+        const ball2Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
-        world.addComponent(ball2, new PrevFinalOrientationComponent(0.0));
 
         // Obstacle Entities
         const obsColor1 = "#FF8000";
         const obsColor2 = "#0F7090";
-        const obsPush = 2.7;
+        const obsPush = 1.7;
 
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
@@ -840,11 +876,6 @@ canvas {
         world.addComponent(obs3, new RadiusComponent(0.12));
         world.addComponent(obs3, new ObstaclePushComponent(obsPush));
         world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
-        world.addComponent(obs3, new OrientationComponent(0.0));
-        world.addComponent(obs3, new AngularVelocityComponent(200.0));
-        const obsInertia3 = 0.020 * 0.12**2;
-        world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia3));
-        world.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
 
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
@@ -853,11 +884,6 @@ canvas {
         world.addComponent(obs4, new RadiusComponent(0.1));
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
         world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
-        world.addComponent(obs4, new OrientationComponent(0.0));
-        world.addComponent(obs4, new AngularVelocityComponent(-200.0));
-        const obsInertia4 = 0.020 * 0.1**2;
-        world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia4));
-        world.addComponent(obs4, new PrevFinalOrientationComponent(0.0));
 
 
         // Flipper Entities
@@ -901,10 +927,6 @@ canvas {
         world.addComponent(flipper2Tip, new CableLinkComponent());
         world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
 
-        const frictionCoefficient = 0.2; // Dyneema over steel is in the range ca 0.05 to 0.4.
-        world.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(0.01));
-        world.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(0.01));
-
         // Score Entity
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
@@ -926,18 +948,14 @@ canvas {
         // Add necessary components to obstacles (assuming they act as wheels)
         world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
         world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
-        world.addComponent(obs4, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(obs3, new CoefficientOfFrictionComponent(frictionCoefficient));
         //world.addComponent(obs2, new CableLinkComponent());
         //world.addComponent(obs1, new CableLinkComponent());
         world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
         world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
-        world.addComponent(ball1, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(ball2, new CoefficientOfFrictionComponent(frictionCoefficient));
 
-        // Calculate initial points for joint1 (ball2 perimeter attachment <-> obs4 rolling)
+        // Calculate initial points for joint1 (ball2 perimeter hybrid-attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
         // Attach to obstacle at its tangent point
         const tangentObs4 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
@@ -949,6 +967,7 @@ canvas {
         world.addComponent(joint1, new CableJointComponent(
           ball2, obs4, initialDist1, attachBall2, attachObs4)); // Order matters
         world.addComponent(joint1, new RenderableComponent('line', linecolor1));
+
 
         // Calculate initial points for joint2 and beads (obs4 -> obs3 split by two beads)
         const joint2 = world.createEntity();
@@ -967,8 +986,7 @@ canvas {
         world.addComponent(bead1, new PrevFinalPosComponent(bead1Pos.x, bead1Pos.y));
         world.addComponent(bead1, new VelocityComponent(0.0, 0.0));
         world.addComponent(bead1, new RadiusComponent(ballRadius));
-        world.addComponent(bead1, new MassComponent(ballMass));
-        world.addComponent(bead1, new CoefficientOfFrictionComponent(frictionCoefficient));
+        world.addComponent(bead1, new MassComponent(ballMass/10.0));
         world.addComponent(bead1, new RestitutionComponent(ballRestitution));
         world.addComponent(bead1, new GravityAffectedComponent());
         world.addComponent(bead1, new RenderableComponent('circle', '#a0a0a0'));
@@ -984,8 +1002,7 @@ canvas {
         world.addComponent(bead2, new PrevFinalPosComponent(bead2Pos.x, bead2Pos.y));
         world.addComponent(bead2, new VelocityComponent(0.0, 0.0));
         world.addComponent(bead2, new RadiusComponent(ballRadius));
-        world.addComponent(bead2, new MassComponent(ballMass));
-        world.addComponent(bead2, new CoefficientOfFrictionComponent(frictionCoefficient));
+        world.addComponent(bead2, new MassComponent(ballMass/10.0));
         world.addComponent(bead2, new RestitutionComponent(ballRestitution));
         world.addComponent(bead2, new GravityAffectedComponent());
         world.addComponent(bead2, new RenderableComponent('circle', '#a0a0a0'));
@@ -994,25 +1011,22 @@ canvas {
         world.addComponent(bead2, new MomentOfInertiaComponent(ball1Inertia));
 
         // Create joints: obs4 -> bead1
-        const attachBead1_for_obs4 = bead1Pos.clone().add(initialPoints2.a_circle.clone().subtract(bead1Pos).normalize().scale(ballRadius));
         world.addComponent(joint2, new CableJointComponent(
-          obs4, bead1, (dist2/3.0) - ballRadius, initialPoints2.a_circle, attachBead1_for_obs4));
+          obs4, bead1, dist2/3.0, initialPoints2.a_circle, bead1Pos));
         world.addComponent(joint2, new RenderableComponent('line', linecolor1));
 
         // bead1 -> bead2
         const joint3 = world.createEntity();
-        const attachBead1_for_bead2 = bead1Pos.clone().add(bead2Pos.clone().subtract(bead1Pos).normalize().scale(ballRadius));
-        const attachBead2_for_bead1 = bead2Pos.clone().add(bead1Pos.clone().subtract(bead2Pos).normalize().scale(ballRadius));
         world.addComponent(joint3, new CableJointComponent(
-          bead1, bead2, (dist2/3.0) - (2 * ballRadius), attachBead1_for_bead2, attachBead2_for_bead1));
+          bead1, bead2, dist2/3.0, bead1Pos, bead2Pos));
         world.addComponent(joint3, new RenderableComponent('line', linecolor1));
 
         // bead2 -> obs3
         const joint4 = world.createEntity();
-        const attachBead2_for_obs3 = bead2Pos.clone().add(initialPoints2.b_circle.clone().subtract(bead2Pos).normalize().scale(ballRadius));
         world.addComponent(joint4, new CableJointComponent(
-          bead2, obs3, (dist2/3.0) - ballRadius, attachBead2_for_obs3, initialPoints2.b_circle));
+          bead2, obs3, dist2/3.0, bead2Pos, initialPoints2.b_circle));
         world.addComponent(joint4, new RenderableComponent('line', linecolor1));
+
 
         // Calculate initial points for joint4 (obs3 rolling <-> ball1 perimeter attachment)
         const joint5 = world.createEntity();
@@ -1027,78 +1041,41 @@ canvas {
           obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
         world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
-        // Create Cable Path Entities
-        const springConstant = 200.0; // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
-
-        // Path 1: ball2 -> obs4 -> bead1
-        const cablePath1 = world.createEntity();
-        const pathComp1 = new CablePathComponent(
+        // Create Cable Path(s) using the builder function
+        // This will split the path at 'attachment' links if they are not at the ends.
+        // Use hybrid links at ball attachments to attach at perimeter
+        createCablePaths(
           world,
-          [joint1, joint2], // joint1: ball2-obs4, joint2: obs4-bead1
-          ['hybrid-attachment', 'rolling', 'hybrid-attachment'], // ball2 (hybrid), obs4 (rolling), bead1 (hybrid)
-          [true, true, true], // cw flags
-          springConstant
+          [joint1, joint2, joint3, joint4, joint5], // jointEntities
+          ['hybrid-attachment', 'rolling', 'attachment', 'attachment', 'rolling', 'hybrid-attachment'], // linkTypes
+          [true, true, true, true, true, true], // cw
+          20000.0, // spring_constant
+          null // userStored (let constructor calculate)
         );
-        world.addComponent(cablePath1, pathComp1);
-
-        // Path 2: bead1 -> bead2
-        const cablePath2 = world.createEntity();
-        const pathComp2 = new CablePathComponent(
-          world,
-          [joint3], // joint3: bead1-bead2
-          ['hybrid-attachment', 'hybrid-attachment'], // bead1 (hybrid), bead2 (hybrid)
-          [true, true], // cw flags
-          springConstant
-        );
-        world.addComponent(cablePath2, pathComp2);
-
-        // Path 3: bead2 -> obs3 -> ball1
-        const cablePath3 = world.createEntity();
-        const pathComp3 = new CablePathComponent(
-          world,
-          [joint4, joint5], // joint4: bead2-obs3, joint5: obs3-ball1
-          ['hybrid-attachment', 'rolling', 'hybrid-attachment'], // bead2 (hybrid), obs3 (rolling), ball1 (hybrid)
-          [true, true, true], // cw flags
-          springConstant
-        );
-        world.addComponent(cablePath3, pathComp3);
 
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
              world.registerSystem(new PrevFinalPosSystem());
-             world.registerSystem(new PrevFinalOrientationSystem());
              const inputSystemInstance = new InputSystem(canvas);
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem(
                [],
              inputSystemInstance));
-
-             // Predict new positions.
              world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
              world.registerSystem(new GravitySystem());      // Applies gravity acceleration
              world.registerSystem(new MovementSystem());     // Updates position based on velocity
              world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
-             world.registerSystem(new FlipperTipLinkSystem());
-
-             // Solve positional constraints
-             world.registerSystem(new CableAttachmentUpdateSystemJointWise());
-             world.registerSystem(new PBDCableConstraintSolverJointWise());
-
-             // Update velocities based on the pos-difference
-             world.registerSystem(new PBDVelocityUpdateSystem());
-             world.registerSystem(new PBDAngularVelocityUpdateSystem());
-
-             // Perform a velocity-level solve
-             world.registerSystem(new PBDBallBorderCollisions());
              world.registerSystem(new PBDBallBallCollisions());
-             world.registerSystem(new PBDBallObstacleCollisions());
+             world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
-
-             // Misc
+             world.registerSystem(new FlipperTipLinkSystem());
+             world.registerSystem(new PBDBallBorderCollisions());
+             world.registerSystem(new CableAttachmentUpdateSystemPathWise());
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
-             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.50));
+             world.registerSystem(new PBDCableConstraintSolverPathWise());
         } else {
           world.systems[InputSystem]
         }
