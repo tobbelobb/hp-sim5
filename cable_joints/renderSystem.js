@@ -8,7 +8,9 @@ import {
   BorderComponent,
   FlipperTagComponent,
   FlipperStateComponent,
-  DistanceConstraintComponent
+  DistanceConstraintComponent,
+  ObstacleTagComponent,
+  AngularVelocityComponent
 } from './ecs.js';
 
 import {
@@ -430,6 +432,34 @@ export class RenderSystem {
             }
         }
         // Add rendering for other shapes if needed
+    }
+
+    // Render Angular Velocity for Obstacles
+    const obstacleEntitiesWithAngularVelocity = world.query([ObstacleTagComponent, AngularVelocityComponent, PositionComponent]);
+    if (obstacleEntitiesWithAngularVelocity.length > 0) {
+        this.c.save();
+        this.c.fillStyle = '#FFFFFF'; // White text
+        this.c.strokeStyle = '#000000'; // Black outline for better visibility
+        this.c.lineWidth = 0.5;
+        this.c.font = `${12 * this.viewScaleMultiplier}px Arial`; // Scale font with zoom
+        this.c.textAlign = 'center';
+        this.c.textBaseline = 'bottom';
+
+        for (const entityId of obstacleEntitiesWithAngularVelocity) {
+            const posComp = world.getComponent(entityId, PositionComponent);
+            const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+
+            if (posComp && angularVelComp) {
+                const text = angularVelComp.angularVelocity.toFixed(2) + " rad/s";
+                const x = this.cX(posComp.pos.x);
+                const y = this.cY(posComp.pos.y) - (10 * this.viewScaleMultiplier); // Offset above the center, scaled
+
+                // Draw outline then text
+                this.c.strokeText(text, x, y);
+                this.c.fillText(text, x, y);
+            }
+        }
+        this.c.restore();
     }
 
 
