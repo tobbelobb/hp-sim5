@@ -992,20 +992,24 @@ canvas {
         world.addComponent(bead2, new MomentOfInertiaComponent(ball1Inertia));
 
         // Create joints: obs4 -> bead1
+        const attachBead1_for_obs4 = bead1Pos.clone().add(initialPoints2.a_circle.clone().subtract(bead1Pos).normalize().scale(ballRadius));
         world.addComponent(joint2, new CableJointComponent(
-          obs4, bead1, dist2/3.0, initialPoints2.a_circle, bead1Pos));
+          obs4, bead1, (dist2/3.0) - ballRadius, initialPoints2.a_circle, attachBead1_for_obs4));
         world.addComponent(joint2, new RenderableComponent('line', linecolor1));
 
         // bead1 -> bead2
         const joint3 = world.createEntity();
+        const attachBead1_for_bead2 = bead1Pos.clone().add(bead2Pos.clone().subtract(bead1Pos).normalize().scale(ballRadius));
+        const attachBead2_for_bead1 = bead2Pos.clone().add(bead1Pos.clone().subtract(bead2Pos).normalize().scale(ballRadius));
         world.addComponent(joint3, new CableJointComponent(
-          bead1, bead2, dist2/3.0, bead1Pos, bead2Pos));
+          bead1, bead2, (dist2/3.0) - (2 * ballRadius), attachBead1_for_bead2, attachBead2_for_bead1));
         world.addComponent(joint3, new RenderableComponent('line', linecolor1));
 
         // bead2 -> obs3
         const joint4 = world.createEntity();
+        const attachBead2_for_obs3 = bead2Pos.clone().add(initialPoints2.b_circle.clone().subtract(bead2Pos).normalize().scale(ballRadius));
         world.addComponent(joint4, new CableJointComponent(
-          bead2, obs3, dist2/3.0, bead2Pos, initialPoints2.b_circle));
+          bead2, obs3, (dist2/3.0) - ballRadius, attachBead2_for_obs3, initialPoints2.b_circle));
         world.addComponent(joint4, new RenderableComponent('line', linecolor1));
 
         // Calculate initial points for joint4 (obs3 rolling <-> ball1 perimeter attachment)
@@ -1021,18 +1025,41 @@ canvas {
           obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
         world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
-        // Create Cable Path Entity
-        const cablePath = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        // Use hybrid links at ball attachments to attach at perimeter
-        const pathComp = new CablePathComponent(
+        // Create Cable Path Entities
+        const springConstant = 200.0; // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
+
+        // Path 1: ball2 -> obs4 -> bead1
+        const cablePath1 = world.createEntity();
+        const pathComp1 = new CablePathComponent(
           world,
-          [joint1, joint2, joint3, joint4, joint5],
-          ['hybrid-attachment', 'rolling', 'attachment', 'attachment', 'rolling', 'hybrid-attachment'],
-          [true, true, true, true, true, true],
-          200.0 // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
+          [joint1, joint2], // joint1: ball2-obs4, joint2: obs4-bead1
+          ['hybrid-attachment', 'rolling', 'hybrid-attachment'], // ball2 (hybrid), obs4 (rolling), bead1 (hybrid)
+          [true, true, true], // cw flags
+          springConstant
         );
-        world.addComponent(cablePath, pathComp);
+        world.addComponent(cablePath1, pathComp1);
+
+        // Path 2: bead1 -> bead2
+        const cablePath2 = world.createEntity();
+        const pathComp2 = new CablePathComponent(
+          world,
+          [joint3], // joint3: bead1-bead2
+          ['hybrid-attachment', 'hybrid-attachment'], // bead1 (hybrid), bead2 (hybrid)
+          [true, true], // cw flags
+          springConstant
+        );
+        world.addComponent(cablePath2, pathComp2);
+
+        // Path 3: bead2 -> obs3 -> ball1
+        const cablePath3 = world.createEntity();
+        const pathComp3 = new CablePathComponent(
+          world,
+          [joint4, joint5], // joint4: bead2-obs3, joint5: obs3-ball1
+          ['hybrid-attachment', 'rolling', 'hybrid-attachment'], // bead2 (hybrid), obs3 (rolling), ball1 (hybrid)
+          [true, true, true], // cw flags
+          springConstant
+        );
+        world.addComponent(cablePath3, pathComp3);
 
 
         // --- Systems Registration (Order Matters!) ---
