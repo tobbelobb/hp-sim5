@@ -600,7 +600,7 @@ function _slipSlack(world) {
     const path = world.getComponent(pathId, CablePathComponent);
     if (path.jointEntities.length < 2) continue;
     for (let i = 0; i < path.jointEntities.length - 1; i++) {
-      if (path.linkTypes[i + 1] === 'attachment') continue;
+      //if (path.linkTypes[i + 1] === 'attachment') continue;
       const j0 = world.getComponent(path.jointEntities[i], CableJointComponent);
       const j1 = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
       const d0 = j0.attachmentPointA_world.distanceTo(j0.attachmentPointB_world);
