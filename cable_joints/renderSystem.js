@@ -440,7 +440,7 @@ export class RenderSystem {
         this.c.save();
         this.c.fillStyle = '#FFFFFF'; // White text
         this.c.strokeStyle = '#000000'; // Black outline for better visibility
-        this.c.lineWidth = 0.5;
+        this.c.lineWidth = 2.5;
         this.c.font = `${12 * this.viewScaleMultiplier}px Arial`; // Scale font with zoom
         this.c.textAlign = 'center';
         this.c.textBaseline = 'bottom';
@@ -450,9 +450,9 @@ export class RenderSystem {
             const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
 
             if (posComp && angularVelComp) {
-                const text = angularVelComp.angularVelocity.toFixed(2) + " rad/s";
+                const text = angularVelComp.angularVelocity.toFixed(1);
                 const x = this.cX(posComp.pos.x);
-                const y = this.cY(posComp.pos.y) - (10 * this.viewScaleMultiplier); // Offset above the center, scaled
+                const y = this.cY(posComp.pos.y) - 20; // Offset above the center, scaled
 
                 // Draw outline then text
                 this.c.strokeText(text, x, y);
