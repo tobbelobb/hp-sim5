@@ -12,6 +12,13 @@ export default class Vector2 {
   lengthSq() { return this.x**2 + this.y**2; }
   scale(s) { this.x *= s; this.y *= s; return this; }
   dot(v) { return this.x * v.x + this.y * v.y; }
+  angleTo(v) {
+    const dotProduct = this.dot(v);
+    const lenProduct = this.length() * v.length();
+    if (lenProduct === 0) return 0.0; // Avoid division by zero
+    const angle = Math.acos(Math.max(-1.0, Math.min(1.0, dotProduct / lenProduct))); // Clamp for precision issues
+    return angle;
+  }
   perp() { return new Vector2(-this.y, this.x); }
   normalize() { const l = this.length(); if (l>0) this.scale(1/l); return this; }
   rotate(ang, center, cw) {
