@@ -438,14 +438,14 @@ export class RenderSystem {
     const obstacleEntitiesWithAngularVelocity = world.query([ObstacleTagComponent, AngularVelocityComponent, PositionComponent]);
     if (obstacleEntitiesWithAngularVelocity.length > 0) {
         this.c.save();
-        this.c.strokeStyle = '#FFFFFF'; // White arrow
+        this.c.strokeStyle = 'black';
 
-        const baseArrowOffsetSim = 0.05;          // Base offset from obstacle surface, or base radius if no obstacle radius (sim units)
-        const minArrowRadiusFromCenterSim = 0.1;  // Min radius of the arrow arc from entity center (sim units)
-        const maxArrowRadiusFromCenterSim = 0.4;  // Max radius of the arrow arc from entity center (sim units)
-        const velSensitivity = 0.03;              // How much angVel (rad/s) affects radius (sim units per rad/s)
-        const arrowheadSizeSim = 0.04;            // Length of arrowhead wings in sim units
-        const arrowLineWidthPx = 2.0;             // Base line width in pixels
+        const baseArrowOffsetSim = 0.0;          // Base offset from obstacle surface, or base radius if no obstacle radius (sim units)
+        const minArrowRadiusFromCenterSim = 0.001;  // Min radius of the arrow arc from entity center (sim units)
+        const maxArrowRadiusFromCenterSim = 0.10;  // Max radius of the arrow arc from entity center (sim units)
+        const velSensitivity = 0.0005;              // How much angVel (rad/s) affects radius (sim units per rad/s)
+        const arrowheadSizeSim = 0.02;            // Length of arrowhead wings in sim units
+        const arrowLineWidthPx = 1.2;             // Base line width in pixels
 
         this.c.lineWidth = arrowLineWidthPx * this.viewScaleMultiplier;
 
@@ -458,18 +458,15 @@ export class RenderSystem {
                 const angVel = angularVelComp.angularVelocity;
                 const isClockwise = angVel > 0;
 
-                let calculatedRadiusSim;
-                if (radiusComp && radiusComp.radius > 0) {
-                    // Arrow is outside the obstacle's radius
-                    calculatedRadiusSim = radiusComp.radius + baseArrowOffsetSim + Math.abs(angVel) * velSensitivity;
-                } else {
-                    // No radius or zero radius, use a base size for the arrow starting from center
-                    calculatedRadiusSim = baseArrowOffsetSim + Math.abs(angVel) * velSensitivity;
-                }
+                const calculatedRadiusSim = baseArrowOffsetSim + Math.abs(angVel) * velSensitivity;
 
                 // Clamp the arrow's radius
                 const currentArrowRadiusSim = Math.max(minArrowRadiusFromCenterSim, Math.min(calculatedRadiusSim, maxArrowRadiusFromCenterSim));
-                
+                    console.log(minArrowRadiusFromCenterSim);
+                    console.log(calculatedRadiusSim);
+                    console.log(maxArrowRadiusFromCenterSim);
+                    console.log(currentArrowRadiusSim);
+
                 const cx = this.cX(posComp.pos.x);
                 const cy = this.cY(posComp.pos.y);
                 const arrowRadiusPx = currentArrowRadiusSim * this.effectiveCScale;
@@ -478,7 +475,7 @@ export class RenderSystem {
                 this.c.beginPath();
 
                 let startAngle, endAngle;
-                const sweep = 1.5 * Math.PI; // 270 degrees sweep
+                const sweep = 0.25 * Math.PI; // degrees sweep
 
                 if (isClockwise) {
                     // Clockwise arrow: starts top (-PI/2), sweeps 270 deg CW, ends left (PI)
@@ -494,21 +491,22 @@ export class RenderSystem {
                 this.c.stroke(); // Draw the arc
 
                 // Draw arrowhead at endAngle
-                const headX = cx + arrowRadiusPx * Math.cos(endAngle);
-                const headY = cy + arrowRadiusPx * Math.sin(endAngle);
+                const headX = cx + arrowRadiusPx * Math.cos(endAngle - Math.sign(angVel)*sweep);
+                const headY = cy + arrowRadiusPx * Math.sin(endAngle - Math.sign(angVel)*sweep);
 
                 this.c.beginPath();
                 this.c.moveTo(headX, headY);
-                this.c.lineTo(headX - arrowheadActualPx * Math.cos(endAngle - Math.PI / 6),
-                              headY - arrowheadActualPx * Math.sin(endAngle - Math.PI / 6));
+                this.c.lineTo(headX - arrowheadActualPx * Math.cos(endAngle + Math.PI + Math.sign(angVel)* (Math.PI / 4 - sweep)),
+                              headY - arrowheadActualPx * Math.sin(endAngle + Math.PI + Math.sign(angVel)* (Math.PI / 4 - sweep)));
                 this.c.moveTo(headX, headY);
-                this.c.lineTo(headX - arrowheadActualPx * Math.cos(endAngle + Math.PI / 6),
-                              headY - arrowheadActualPx * Math.sin(endAngle + Math.PI / 6));
+                this.c.lineTo(headX - arrowheadActualPx * Math.cos(endAngle -  Math.sign(angVel)*(Math.PI / 4 + sweep)),
+                              headY - arrowheadActualPx * Math.sin(endAngle -  Math.sign(angVel)*(Math.PI / 4 + sweep)));
                 this.c.stroke();
             }
         }
         this.c.restore();
     }
+
 
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');
