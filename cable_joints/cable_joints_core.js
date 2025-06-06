@@ -487,7 +487,7 @@ function _evenOutTensionFriction(world) {
       let frictionActive = false;
       let frictionThreshold = 1.0; // Default for mu=0 or radius=0 or no wrap
 
-      if (linkType === 'rolling') {
+      if (linkType === 'rolling' || linkType === 'pinhole') {
         const linkEntityId = j0_comp.entityB; // Assuming j0.entityB is the link
         const frictionComp = world.getComponent(linkEntityId, CoefficientOfFrictionComponent);
         const mu = frictionComp ? frictionComp.mu : 0.0;
@@ -495,25 +495,36 @@ function _evenOutTensionFriction(world) {
         const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
         const radius = radiusComp ? radiusComp.radius : 0.0;
 
-        if (mu > epsilon && radius > epsilon) {
+        if (mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
-          if (Math.abs(storedLengthOnLink) > epsilon) {
-            const wrapAngle = Math.abs(storedLengthOnLink / radius);
-            if (wrapAngle > epsilon) {
-              frictionActive = true;
-              frictionThreshold = Math.exp(mu * wrapAngle);
+          let wrapAngle = 0;
+          if (Math.abs(storedLengthOnLink) > epsilon && linkType === 'rolling') {
+            wrapAngle = Math.abs(storedLengthOnLink / radius);
+          }
+          if (linkType === 'pinhole') {
+            const v0 = j0_comp.attachmentPointA_world.clone().subtract(j0_comp.attachmentPointB_world);
+            const v1 = j1_comp.attachmentPointA_world.clone().subtract(j1_comp.attachmentPointB_world);
+            wrapAngle = v0.angleTo(v1);
+            if (wrapAngle < 0.0) {
+              console.log(`wrapAngle=${wrapAngle}`);
             }
+          }
+          if (wrapAngle > epsilon) {
+            frictionActive = true;
+            frictionThreshold = Math.exp(mu * wrapAngle);
           }
         }
       }
 
       if (!frictionActive) {
         // Frictionless case. There can be no difference in tension between the two sides.
-        const availableRestLength = l0_current + l1_current;
-        const totalDist = d0 + d1;
-        if (totalDist > epsilon) {
-          j0_comp.restLength = availableRestLength * d0 / totalDist;
-          j1_comp.restLength = availableRestLength * d1 / totalDist;
+        if  (linkType !== 'attachment') {
+          const availableRestLength = l0_current + l1_current;
+          const totalDist = d0 + d1;
+          if (totalDist > epsilon) {
+            j0_comp.restLength = availableRestLength * d0 / totalDist;
+            j1_comp.restLength = availableRestLength * d1 / totalDist;
+          }
         }
         continue; // Next pair
       }
@@ -600,7 +611,7 @@ function _slipSlack(world) {
     const path = world.getComponent(pathId, CablePathComponent);
     if (path.jointEntities.length < 2) continue;
     for (let i = 0; i < path.jointEntities.length - 1; i++) {
-      //if (path.linkTypes[i + 1] === 'attachment') continue;
+      if (path.linkTypes[i + 1] === 'attachment') continue; // Nothing slides across an attachment
       const j0 = world.getComponent(path.jointEntities[i], CableJointComponent);
       const j1 = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
       const d0 = j0.attachmentPointA_world.distanceTo(j0.attachmentPointB_world);

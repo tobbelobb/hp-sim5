@@ -968,7 +968,8 @@ canvas {
         world.addComponent(bead1, new VelocityComponent(0.0, 0.0));
         world.addComponent(bead1, new RadiusComponent(ballRadius));
         world.addComponent(bead1, new MassComponent(ballMass));
-        world.addComponent(bead1, new CoefficientOfFrictionComponent(frictionCoefficient));
+        const beadFriction = 5.0;
+        world.addComponent(bead1, new CoefficientOfFrictionComponent(beadFriction));
         world.addComponent(bead1, new RestitutionComponent(ballRestitution));
         world.addComponent(bead1, new GravityAffectedComponent());
         world.addComponent(bead1, new RenderableComponent('circle', '#a0a0a0'));
@@ -985,7 +986,7 @@ canvas {
         world.addComponent(bead2, new VelocityComponent(0.0, 0.0));
         world.addComponent(bead2, new RadiusComponent(ballRadius));
         world.addComponent(bead2, new MassComponent(ballMass));
-        world.addComponent(bead2, new CoefficientOfFrictionComponent(frictionCoefficient));
+        world.addComponent(bead2, new CoefficientOfFrictionComponent(beadFriction));
         world.addComponent(bead2, new RestitutionComponent(ballRestitution));
         world.addComponent(bead2, new GravityAffectedComponent());
         world.addComponent(bead2, new RenderableComponent('circle', '#a0a0a0'));
@@ -1030,7 +1031,7 @@ canvas {
         const pathComp = new CablePathComponent(
           world,
           [joint1, joint2, joint3, joint4, joint5],
-          ['hybrid-attachment', 'rolling', 'attachment', 'attachment', 'rolling', 'hybrid-attachment'],
+          ['hybrid-attachment', 'rolling', 'pinhole', 'pinhole', 'rolling', 'hybrid-attachment'],
           [true, true, true, true, true, true],
           200.0 // Spring constant (20000 would be a rough approximation) for Garda 1.1 mm line (unit N/m).
         );
