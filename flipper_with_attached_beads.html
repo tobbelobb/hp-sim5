@@ -1028,7 +1028,7 @@ canvas {
         world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
         // Create Cable Path Entities
-        const springConstant = 200.0; // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
+        const springConstant = 200.0; // Spring constant (20000 would be a rough approximation) for Garda 1.1 mm line (unit N/m).
 
         // Path 1: ball2 -> obs4 -> bead1
         const cablePath1 = world.createEntity();
