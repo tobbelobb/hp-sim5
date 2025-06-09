@@ -4,13 +4,15 @@ import math
 
 from python.ecs import (
     PositionComponent, RadiusComponent, CableLinkComponent,
+)
+from python.cable_joints_components import (
     CableJointComponent, CablePathComponent
 )
 from python.geometry import (
     tangent_from_point_to_circle, tangent_from_circle_to_point,
     tangent_from_circle_to_circle, signed_arc_length_on_wheel
 )
-from python.cable_joints_core import _merge_joints
+from python.merge_joints import _merge_joints
 
 class MockWorld:
     """A minimal mock of the ECS World for testing purposes."""
@@ -43,7 +45,7 @@ class MockWorld:
         if component_class in self.components:
             return list(self.components[component_class].keys())
         return []
-    
+
     def destroy_entity(self, entity_id):
         if entity_id in self.entities:
             del self.entities[entity_id]
@@ -62,27 +64,27 @@ def create_cable_path_component(world, joint_entities, link_types, cw, stored=No
         stored=[0.0] * len(cw),
         total_rest_length=0.0
     )
-    
+
     total_rest_length = 0.0
     for joint_id in joint_entities:
         joint = world.get_component(joint_id, CableJointComponent)
         total_rest_length += joint.rest_length
-    
+
     for i in range(len(joint_entities) - 1):
         joint_i = world.get_component(joint_entities[i], CableJointComponent)
         joint_i_plus_1 = world.get_component(joint_entities[i+1], CableJointComponent)
-        
+
         link_id = joint_i.entity_b
         if link_id != joint_i_plus_1.entity_a:
             print("Warning: Path mismatch during creation")
             return None
-            
+
         is_rolling = link_types[i+1] == 'rolling'
         if is_rolling:
             link_pos = world.get_component(link_id, PositionComponent).pos
             link_radius = world.get_component(link_id, RadiusComponent).radius
             is_cw = cw[i+1]
-            
+
             initial_stored_length = signed_arc_length_on_wheel(
                 joint_i.attachment_point_b_world,
                 joint_i_plus_1.attachment_point_a_world,
@@ -95,7 +97,7 @@ def create_cable_path_component(world, joint_entities, link_types, cw, stored=No
             total_rest_length += initial_stored_length
 
     path.total_rest_length = total_rest_length
-    
+
     if stored is not None:
         for i in range(len(stored)):
             if stored[i] is not None:
@@ -111,7 +113,7 @@ def test_merge_joints_does_nothing_for_a_single_joint_path():
     anchor_b = world.create_entity()
     world.add_component(anchor_a, PositionComponent(pos=np.array([0.0, 0.0, 0.0])))
     world.add_component(anchor_b, PositionComponent(pos=np.array([5.0, 0.0, 0.0])))
-    
+
     joint_id = world.create_entity()
     rest_len = 5.0
     attach_comp = CableJointComponent(
@@ -120,13 +122,13 @@ def test_merge_joints_does_nothing_for_a_single_joint_path():
         attachment_point_b_world=np.array([5.0, 0.0, 0.0])
     )
     world.add_component(joint_id, attach_comp)
-    
+
     path_id = world.create_entity()
     path_comp = create_cable_path_component(world, [joint_id], ['attachment', 'attachment'], [False, False])
     world.add_component(path_id, path_comp)
 
     _merge_joints(world)
-    
+
     assert len(path_comp.joint_entities) == 1
     assert path_comp.joint_entities[0] == joint_id
     assert world.get_component(joint_id, CableJointComponent) is not None
@@ -143,7 +145,7 @@ def test_merge_joints_does_not_merge_if_wheel_contact_is_needed():
 
     tang_l = tangent_from_point_to_circle(np.array([-4.0, 2.0, 0.0]), np.array([0.0, 0.0, 0.0]), 1.5, cw=False)
     tang_r = tangent_from_point_to_circle(np.array([4.0, 2.0, 0.0]), np.array([0.0, 0.0, 0.0]), 1.5, cw=True)
-    
+
     contact_l = tang_l['a_circle']
     contact_r = tang_r['a_circle']
     dist_l = np.linalg.norm(contact_l - tang_l['a_attach'])
@@ -204,29 +206,29 @@ def test_merge_joints_merges_two_joints_when_cable_detaches():
 
     assert path_comp.total_rest_length == initial_total_rest_length
     assert len(path_comp.joint_entities) == 1
-    
+
     remaining_joint_id = path_comp.joint_entities[0]
     remaining_joint = world.get_component(remaining_joint_id, CableJointComponent)
-    
+
     assert anchor_l in [remaining_joint.entity_a, remaining_joint.entity_b]
     assert anchor_r in [remaining_joint.entity_a, remaining_joint.entity_b]
     assert wheel not in [remaining_joint.entity_a, remaining_joint.entity_b]
-    
+
     removed_joint_id = joint2 if remaining_joint_id == joint1 else joint1
     assert removed_joint_id not in path_comp.joint_entities
     assert world.get_component(removed_joint_id, CableJointComponent) is None
-    
+
     assert math.isclose(path_comp.stored[0], 0.0, abs_tol=1e-8)
     assert math.isclose(path_comp.stored[1], 0.0, abs_tol=1e-8)
     assert math.isclose(remaining_joint.rest_length, initial_total_rest_length, abs_tol=1e-8)
-    
+
     assert path_comp.link_types == ['attachment', 'attachment']
 
 def test_merge_joints_merges_three_joints_into_one():
     world = MockWorld()
     anchor_l, anchor_r = world.create_entity(), world.create_entity()
     wheel1, wheel2 = world.create_entity(), world.create_entity()
-    
+
     l_pos, r_pos = np.array([-4., 0., 0.]), np.array([4., 0., 0.])
     w1_pos, w2_pos = np.array([-2., -0.51, 0.]), np.array([2., 0.51, 0.])
     w1_cw, w2_cw = True, False
@@ -268,15 +270,15 @@ def test_merge_joints_merges_three_joints_into_one():
 
     assert math.isclose(path_comp.total_rest_length, initial_total_rest_length)
     assert len(path_comp.joint_entities) == 1
-    
+
     remaining_joint_id = path_comp.joint_entities[0]
     remaining_joint = world.get_component(remaining_joint_id, CableJointComponent)
-    
+
     assert anchor_l in [remaining_joint.entity_a, remaining_joint.entity_b]
     assert anchor_r in [remaining_joint.entity_a, remaining_joint.entity_b]
     assert wheel1 not in [remaining_joint.entity_a, remaining_joint.entity_b]
     assert wheel2 not in [remaining_joint.entity_a, remaining_joint.entity_b]
-    
+
     removed_ids = {joint1, joint2, joint3} - {remaining_joint_id}
     for removed_id in removed_ids:
         assert removed_id not in path_comp.joint_entities
@@ -286,5 +288,5 @@ def test_merge_joints_merges_three_joints_into_one():
     assert math.isclose(path_comp.stored[0], 0.0, abs_tol=1e-8)
     assert math.isclose(path_comp.stored[1], 0.0, abs_tol=1e-8)
     assert math.isclose(remaining_joint.rest_length, initial_total_rest_length, abs_tol=1e-8)
-    
+
     assert path_comp.link_types == ['attachment', 'attachment']

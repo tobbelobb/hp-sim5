@@ -1,6 +1,8 @@
 import numpy as np
 from .ecs import (
     PositionComponent, RadiusComponent,
+)
+from .cable_joints_components import (
     CableJointComponent, CablePathComponent
 )
 from .geometry import (
@@ -111,7 +113,7 @@ def _merge_joints(world):
                     joint_i.rest_length -= sA
                     path.stored[i + 2] -= sB
                     joint_i.rest_length += sB
-                    
+
                     if path.stored[i] < 0.0 or path.stored[i + 2] < 0.0:
                         re_run_merge = True
 
@@ -123,7 +125,7 @@ def _merge_joints(world):
                     path.cw.pop(i + 1)
                     path.link_types.pop(i + 1)
                     world.destroy_entity(joint_id_i_plus_1)
-                    
+
                     # To replicate JS behavior, we do not increment `i` here.
                     # The while loop will continue with the same `i` but on a shorter list,
                     # effectively checking the newly formed adjacent pair.

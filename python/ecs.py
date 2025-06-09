@@ -21,6 +21,11 @@ class MassComponent:
     mass: float = 1.0
 
 @dataclass
+class RadiusComponent:
+    """Stores the radius of an entity."""
+    radius: float = 1.0
+
+@dataclass
 class OrientationComponent:
     """Stores the orientation (angle in radians) of an entity."""
     angle: float = 0.0
