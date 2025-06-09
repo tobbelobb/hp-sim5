@@ -9,7 +9,7 @@ from python.ecs import (
     OrientationComponent, AngularVelocityComponent, CableLinkComponent,
     GravityAffectedComponent, RadiusComponent
 )
-from python.cable_joints_components import CableJointComponent, CablePathComponent
+from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 
 # --- Mocks for Testing ---
 
@@ -47,7 +47,13 @@ def test_does_nothing_when_compliance_is_zero():
     world.add_component(j2, CableJointComponent(e1, e2, 1.0, aA2.copy(), aB2.copy()))
 
     path_ent = world.create_entity()
-    path_comp = CablePathComponent(joint_entities=[j1, j2], spring_constant=np.inf)
+    path_comp = create_cable_path_component(
+        world,
+        joint_entities=[j1, j2],
+        link_types=['attachment', 'attachment', 'attachment'],
+        cw=[True, True, True],
+        spring_constant=np.inf
+    )
     world.add_component(path_ent, path_comp)
 
     solver = PBDCableConstraintSolver()
@@ -101,11 +107,13 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     world.add_component(j1, CableJointComponent(e0, e1, 3.0, pos0.copy(), pos1.copy()))
 
     path_ent = world.create_entity()
-    world.add_component(path_ent, CablePathComponent(
+    path_comp = create_cable_path_component(
+        world,
         joint_entities=[j1],
         link_types=['attachment', 'attachment'],
         cw=[True, True]
-    ))
+    )
+    world.add_component(path_ent, path_comp)
 
     dt = 0.016
     world.set_resource('dt', dt)
@@ -164,11 +172,13 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
     ))
 
     path_ent = world.create_entity()
-    world.add_component(path_ent, CablePathComponent(
+    path_comp = create_cable_path_component(
+        world,
         joint_entities=[j],
         link_types=['attachment', 'attachment'],
         cw=[True, True]
-    ))
+    )
+    world.add_component(path_ent, path_comp)
 
     gravity_system = MockGravitySystem()
     attachment_system = CableAttachmentUpdateSystem()
