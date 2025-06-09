@@ -1,50 +1,9 @@
 import pytest
 import numpy as np
 
-from python.ecs import PositionComponent, RadiusComponent, CableLinkComponent
+from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
 from python.cable_joints_components import CableJointComponent, CablePathComponent
 from python.updateHybridLinkStates import update_hybrid_link_states
-
-# Mock World for testing
-class MockWorld:
-    def __init__(self):
-        self.entities = {}
-        self.next_entity_id = 0
-        self.components = {}
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.entities[entity_id] = set()
-        self.next_entity_id += 1
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = type(component)
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-        if entity_id in self.entities:
-            self.entities[entity_id].add(component_class)
-
-    def get_component(self, entity_id, component_class):
-        return self.components.get(component_class, {}).get(entity_id)
-
-    def query(self, component_classes):
-        if not component_classes:
-            return list(self.entities.keys())
-        
-        first_class = component_classes[0]
-        if first_class not in self.components:
-            return []
-        
-        candidate_ids = set(self.components[first_class].keys())
-        
-        for component_class in component_classes[1:]:
-            if component_class not in self.components:
-                return []
-            candidate_ids.intersection_update(self.components[component_class].keys())
-        
-        return list(candidate_ids)
 
 # Test setup helpers
 def add_wheel(world, pos, r=1.0):
@@ -62,7 +21,7 @@ def add_anchor(world, pos):
 
 # Tests ported from JS
 def test_first_link_hybrid_to_hybrid_attachment():
-    world = MockWorld()
+    world = World()
     wheel = add_wheel(world, np.array([0.0, 0.0, 0.0]), 1.0)
     anchor = add_anchor(world, np.array([0.0, 3.0, 0.0]))
 
@@ -96,7 +55,7 @@ def test_first_link_hybrid_to_hybrid_attachment():
     assert joint.rest_length == pytest.approx(initial_rest - 0.2)
 
 def test_last_link_hybrid_to_hybrid_attachment():
-    world = MockWorld()
+    world = World()
     anchor = add_anchor(world, np.array([-1.0, 0.0, 0.0]))
     wheel = add_wheel(world, np.array([0.0, 0.0, 0.0]), 1.0)
 
@@ -129,7 +88,7 @@ def test_last_link_hybrid_to_hybrid_attachment():
     assert joint.rest_length == pytest.approx(initial_rest - 0.15)
 
 def test_first_link_hybrid_attachment_to_hybrid():
-    world = MockWorld()
+    world = World()
     wheel = add_wheel(world, np.array([0.0, 0.0, 0.0]), 1.0)
     anchor = add_anchor(world, np.array([0.0, 3.0, 0.0]))
 
@@ -161,7 +120,7 @@ def test_first_link_hybrid_attachment_to_hybrid():
     assert joint.rest_length == pytest.approx(initial_rest - arc)
 
 def test_last_link_hybrid_attachment_to_hybrid():
-    world = MockWorld()
+    world = World()
     anchor = add_anchor(world, np.array([0.0, -3.0, 0.0]))
     wheel = add_wheel(world, np.array([0.0, 0.0, 0.0]), 1.0)
 

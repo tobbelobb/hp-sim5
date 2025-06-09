@@ -1,6 +1,106 @@
 import numpy as np
 from dataclasses import dataclass, field
 
+class World:
+    def __init__(self):
+        self.entities = {}  # entity_id -> set of component classes
+        self.components = {}  # component_class -> {entity_id: component_instance}
+        self.next_entity_id = 0
+        self.systems = []
+        self.resources = {}
+
+    def create_entity(self):
+        entity_id = self.next_entity_id
+        self.next_entity_id += 1
+        self.entities[entity_id] = set()
+        return entity_id
+
+    def add_component(self, entity_id, component):
+        component_class = type(component)
+        if component_class not in self.components:
+            self.components[component_class] = {}
+        self.components[component_class][entity_id] = component
+        if entity_id in self.entities:
+            self.entities[entity_id].add(component_class)
+        else:
+            # This case might happen if an entity is created outside the world system
+            # but we still want to track its components. For tests, this is fine.
+            self.entities[entity_id] = {component_class}
+
+    def get_component(self, entity_id, component_class):
+        return self.components.get(component_class, {}).get(entity_id)
+
+    def has_component(self, entity_id, component_class):
+        return entity_id in self.components.get(component_class, {})
+
+    def remove_component(self, entity_id, component_class):
+        if component_class in self.components:
+            if entity_id in self.components[component_class]:
+                del self.components[component_class][entity_id]
+        if entity_id in self.entities:
+            self.entities[entity_id].discard(component_class)
+
+    def destroy_entity(self, entity_id):
+        if entity_id in self.entities:
+            for component_class in list(self.entities[entity_id]):
+                self.remove_component(entity_id, component_class)
+            if entity_id in self.entities:
+                del self.entities[entity_id]
+
+    def query(self, component_classes):
+        if not component_classes:
+            return []
+        
+        if not isinstance(component_classes, (list, tuple)):
+            component_classes = [component_classes]
+
+        first_class = component_classes[0]
+        if first_class not in self.components:
+            return []
+        
+        candidate_ids = set(self.components[first_class].keys())
+        if not candidate_ids:
+            return []
+
+        for component_class in component_classes[1:]:
+            if component_class not in self.components:
+                return []
+            candidate_ids.intersection_update(self.components[component_class].keys())
+        
+        return list(candidate_ids)
+
+    def register_system(self, system):
+        self.systems.append(system)
+
+    def set_resource(self, name, value):
+        self.resources[name] = value
+
+    def get_resource(self, name):
+        return self.resources.get(name)
+
+    def clear(self):
+        self.entities.clear()
+        self.components.clear()
+        self.next_entity_id = 0
+        # Note: systems and resources are kept, same as JS version
+
+    def update(self, dt):
+        pause_state = self.get_resource('pauseState')
+        error_state = self.get_resource('errorState')
+        
+        is_paused = pause_state.paused if pause_state and hasattr(pause_state, 'paused') else False
+        has_error = error_state.has_error if error_state and hasattr(error_state, 'hasError') else False
+
+        for system in self.systems:
+            if not hasattr(system, 'update'):
+                continue
+            
+            run_in_pause = getattr(system, 'runInPause', False)
+            if (not run_in_pause and is_paused) or has_error:
+                continue
+            
+            system.update(self, dt)
+
 # Using dataclasses for components is a common and clean practice in Python ECS.
 # The `field` with `default_factory` is used to ensure that each component
 # instance gets its own mutable numpy array, rather than sharing one.

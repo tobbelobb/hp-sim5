@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from python.ecs import PositionComponent, RadiusComponent, CableLinkComponent, OrientationComponent
+from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent, OrientationComponent
 from python.cable_joints_components import CableJointComponent, CablePathComponent
 from python.updateAttachmentPoints import update_attachment_points
 from python.geometry import (
@@ -11,54 +11,8 @@ from python.geometry import (
     signed_arc_length_on_wheel
 )
 
-class MockWorld:
-    """A minimal mock of the ECS World for testing purposes."""
-    def __init__(self):
-        self.entities = {}
-        self.components = {}
-        self.next_entity_id = 0
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.next_entity_id += 1
-        self.entities[entity_id] = set()
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = component.__class__
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-        if entity_id in self.entities:
-            self.entities[entity_id].add(component_class)
-
-    def get_component(self, entity_id, component_class):
-        if component_class in self.components:
-            return self.components[component_class].get(entity_id)
-        return None
-
-    def query(self, component_classes):
-        if not isinstance(component_classes, list):
-            component_classes = [component_classes]
-        
-        if not component_classes:
-            return []
-
-        first_comp_map = self.components.get(component_classes[0], {})
-        if not first_comp_map:
-            return []
-
-        entity_ids = list(first_comp_map.keys())
-        
-        for comp_class in component_classes[1:]:
-            if comp_class not in self.components:
-                return []
-            entity_ids = [eid for eid in entity_ids if eid in self.components.get(comp_class, {})]
-        
-        return entity_ids
-
 def test_attachment_to_rolling_translation():
-    world = MockWorld()
+    world = World()
 
     # Entities
     attach_point_id = world.create_entity()
@@ -134,7 +88,7 @@ def test_attachment_to_rolling_translation():
     assert final_total_rest_length == pytest.approx(path_comp.total_rest_length)
 
 def test_rolling_to_rolling_hybrid_translation():
-    world = MockWorld()
+    world = World()
 
     # Entities
     attach0_id = world.create_entity()
@@ -225,7 +179,7 @@ def test_rolling_to_rolling_hybrid_translation():
     assert final_total_rest_length == pytest.approx(path_comp.total_rest_length)
 
 def test_hybrid_attachment_to_hybrid_with_rotations():
-    world = MockWorld()
+    world = World()
     r = 0.5
     start_attach_id = world.create_entity()
     roll_a_id = world.create_entity()
@@ -295,7 +249,7 @@ def test_hybrid_attachment_to_hybrid_with_rotations():
     np.testing.assert_allclose(np.linalg.norm(j2.attachment_point_b_world - pos_end), r, atol=1e-6)
 
 def test_hybrid_to_hybrid_attachment_with_rotations():
-    world = MockWorld()
+    world = World()
     r = 0.5
     start_hybrid_id = world.create_entity()
     roll_a_id = world.create_entity()

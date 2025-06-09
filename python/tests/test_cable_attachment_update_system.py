@@ -1,72 +1,13 @@
 import pytest
 import numpy as np
 
-from python.ecs import PositionComponent, RadiusComponent, CableLinkComponent
+from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
 from python.cable_joints_components import CableJointComponent, create_cable_path_component
 from python.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point, signed_arc_length_on_wheel
 from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 
-class MockWorld:
-    def __init__(self):
-        self.entities = {}
-        self.next_entity_id = 0
-        self.components = {}
-        self.resources = {}
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.entities[entity_id] = set()
-        self.next_entity_id += 1
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = type(component)
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-        if entity_id in self.entities:
-            self.entities[entity_id].add(component_class)
-
-    def get_component(self, entity_id, component_class):
-        return self.components.get(component_class, {}).get(entity_id)
-
-    def query(self, component_classes):
-        if not component_classes:
-            return list(self.entities.keys())
-        
-        # This is a simplified query for tests. A real implementation would be more robust.
-        try:
-            first_class = component_classes[0]
-            if first_class not in self.components:
-                return []
-            
-            candidate_ids = set(self.components[first_class].keys())
-            
-            for component_class in component_classes[1:]:
-                if component_class not in self.components:
-                    return []
-                candidate_ids.intersection_update(self.components[component_class].keys())
-            
-            return list(candidate_ids)
-        except (IndexError, KeyError):
-            return []
-
-
-    def destroy_entity(self, entity_id):
-        if entity_id in self.entities:
-            for component_class in list(self.entities[entity_id]):
-                if component_class in self.components and entity_id in self.components[component_class]:
-                    del self.components[component_class][entity_id]
-            del self.entities[entity_id]
-
-    def set_resource(self, name, value):
-        self.resources[name] = value
-
-    def get_resource(self, name):
-        return self.resources.get(name)
-
 def test_merge_joints_when_positions_opposite_vertically():
-    world = MockWorld()
+    world = World()
     center = np.array([0.0, 0.0, 0.0])
     radius = 1.0
     cw = True

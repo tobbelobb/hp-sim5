@@ -1,36 +1,12 @@
 import pytest
 import numpy as np
 
-from python.ecs import PositionComponent, RadiusComponent
+from python.ecs import World, PositionComponent, RadiusComponent
 from python.cable_joints_components import CableJointComponent, create_cable_path_component
 from python.geometry import signed_arc_length_on_wheel
 
-class MockWorld:
-    def __init__(self):
-        self.entities = {}
-        self.next_entity_id = 0
-        self.components = {}
-        self.resources = {}
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.entities[entity_id] = set()
-        self.next_entity_id += 1
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = type(component)
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-        if entity_id in self.entities:
-            self.entities[entity_id].add(component_class)
-
-    def get_component(self, entity_id, component_class):
-        return self.components.get(component_class, {}).get(entity_id)
-
 def test_initial_stored_lengths_and_total_rest_length_are_computed_correctly():
-    world = MockWorld()
+    world = World()
     # Entities: start, rolling center, end
     start_id = world.create_entity()
     center_id = world.create_entity()

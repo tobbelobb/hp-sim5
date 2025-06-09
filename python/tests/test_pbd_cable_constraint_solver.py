@@ -4,7 +4,7 @@ import numpy as np
 # Use absolute imports from the 'python' package root.
 from python.pbdCableConstraintSolver import PBDCableConstraintSolver
 from python.ecs import (
-    PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
+    World, PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
     OrientationComponent, AngularVelocityComponent, CableLinkComponent,
     GravityAffectedComponent
 )
@@ -12,43 +12,13 @@ from python.cable_joints_components import CableJointComponent, CablePathCompone
 
 # --- Mocks for Testing ---
 
-class MockWorld:
-    """A minimal mock of the ECS World for testing purposes."""
-    def __init__(self):
-        self.components = {}
-        self.next_entity_id = 0
-        self.resources = {}
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.next_entity_id += 1
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = type(component)
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-
-    def get_component(self, entity_id, component_class):
-        return self.components.get(component_class, {}).get(entity_id)
-
-    def query(self, component_class):
-        return list(self.components.get(component_class, {}).keys())
-
-    def set_resource(self, name, value):
-        self.resources[name] = value
-
-    def get_resource(self, name):
-        return self.resources.get(name)
-
 class MockCableAttachmentUpdateSystem:
     """
     A mock system that updates joint attachment points from entity positions.
     This simplified version assumes attachment points are at the entity's center.
     """
     def update(self, world, dt):
-        joint_entities = world.query(CableJointComponent)
+        joint_entities = world.query([CableJointComponent])
         for joint_id in joint_entities:
             joint = world.get_component(joint_id, CableJointComponent)
             pos_a = world.get_component(joint.entity_a, PositionComponent)
@@ -64,7 +34,7 @@ class MockGravitySystem:
         gravity = world.get_resource('gravity')
         if gravity is None:
             return
-        entities = world.query(GravityAffectedComponent)
+        entities = world.query([GravityAffectedComponent])
         for entity_id in entities:
             vel_comp = world.get_component(entity_id, VelocityComponent)
             if vel_comp:
@@ -77,7 +47,7 @@ def test_does_nothing_when_compliance_is_zero():
     Tests that the solver makes no changes when compliance is zero
     (i.e., spring_constant is infinite).
     """
-    world = MockWorld()
+    world = World()
     e0, e1, e2 = world.create_entity(), world.create_entity(), world.create_entity()
     world.add_component(e0, PositionComponent(np.array([0.0, 0.0])))
     world.add_component(e1, PositionComponent(np.array([1.0, 0.0])))
@@ -107,7 +77,7 @@ def test_does_nothing_when_compliance_is_zero():
 
 def test_handles_empty_world_without_error():
     """Tests that the solver runs without error on an empty world."""
-    world = MockWorld()
+    world = World()
     solver = PBDCableConstraintSolver()
     try:
         solver.update(world, 0.1)
@@ -118,7 +88,7 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     """
     Tests that a stretched cable segment is correctly clamped to its rest length.
     """
-    world = MockWorld()
+    world = World()
     e0, e1 = world.create_entity(), world.create_entity()
     world.add_component(e0, PositionComponent(np.array([0.0, 0.0])))
     world.add_component(e1, PositionComponent(np.array([5.0, 0.0])))
@@ -164,7 +134,7 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
     rest length.
     """
     start_length, rest_length = 2.0, 1.0
-    world = MockWorld()
+    world = World()
 
     # Fixed point at origin
     origin = world.create_entity()

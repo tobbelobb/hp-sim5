@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 from python.ecs import (
-    PositionComponent, RadiusComponent, CableLinkComponent,
+    World, PositionComponent, RadiusComponent, CableLinkComponent,
 )
 from python.cable_joints_components import (
     CableJointComponent, CablePathComponent
@@ -13,47 +13,6 @@ from python.geometry import (
     tangent_from_circle_to_circle, signed_arc_length_on_wheel
 )
 from python.merge_joints import _merge_joints
-
-class MockWorld:
-    """A minimal mock of the ECS World for testing purposes."""
-    def __init__(self):
-        self.entities = {}
-        self.components = {}
-        self.next_entity_id = 0
-        self.destroyed_entities = set()
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.next_entity_id += 1
-        self.entities[entity_id] = set()
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = type(component)
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-        if entity_id in self.entities:
-            self.entities[entity_id].add(component_class)
-
-    def get_component(self, entity_id, component_class):
-        if component_class in self.components:
-            return self.components[component_class].get(entity_id)
-        return None
-
-    def query(self, component_class):
-        if component_class in self.components:
-            return list(self.components[component_class].keys())
-        return []
-
-    def destroy_entity(self, entity_id):
-        if entity_id in self.entities:
-            del self.entities[entity_id]
-            for comp_class in list(self.components.keys()):
-                if entity_id in self.components[comp_class]:
-                    if entity_id in self.components[comp_class]:
-                        del self.components[comp_class][entity_id]
-            self.destroyed_entities.add(entity_id)
 
 def create_cable_path_component(world, joint_entities, link_types, cw, stored=None):
     """Helper to create and initialize a CablePathComponent like in JS."""
@@ -108,7 +67,7 @@ def create_cable_path_component(world, joint_entities, link_types, cw, stored=No
     return path
 
 def test_merge_joints_does_nothing_for_a_single_joint_path():
-    world = MockWorld()
+    world = World()
     anchor_a = world.create_entity()
     anchor_b = world.create_entity()
     world.add_component(anchor_a, PositionComponent(pos=np.array([0.0, 0.0, 0.0])))
@@ -134,7 +93,7 @@ def test_merge_joints_does_nothing_for_a_single_joint_path():
     assert world.get_component(joint_id, CableJointComponent) is not None
 
 def test_merge_joints_does_not_merge_if_wheel_contact_is_needed():
-    world = MockWorld()
+    world = World()
     anchor_l = world.create_entity()
     anchor_r = world.create_entity()
     wheel = world.create_entity()
@@ -173,7 +132,7 @@ def test_merge_joints_does_not_merge_if_wheel_contact_is_needed():
     assert wheel in [j2_comp.entity_a, j2_comp.entity_b]
 
 def test_merge_joints_merges_two_joints_when_cable_detaches():
-    world = MockWorld()
+    world = World()
     anchor_l, anchor_r, wheel = world.create_entity(), world.create_entity(), world.create_entity()
     l_pos, r_pos, w_pos = np.array([-4., 2., 0.]), np.array([4., 2., 0.]), np.array([0., 0., 0.])
     r = 1.5
@@ -225,7 +184,7 @@ def test_merge_joints_merges_two_joints_when_cable_detaches():
     assert path_comp.link_types == ['attachment', 'attachment']
 
 def test_merge_joints_merges_three_joints_into_one():
-    world = MockWorld()
+    world = World()
     anchor_l, anchor_r = world.create_entity(), world.create_entity()
     wheel1, wheel2 = world.create_entity(), world.create_entity()
 

@@ -1,66 +1,13 @@
 import pytest
 import numpy as np
 
-from python.ecs import PositionComponent, RadiusComponent, CableLinkComponent
+from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
 from python.cable_joints_components import CableJointComponent, CablePathComponent
 from python.splitJoints import split_joints
 from python.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point
 
-class MockWorld:
-    """A minimal mock of the ECS World for testing purposes."""
-    def __init__(self):
-        self.entities = {}
-        self.components = {}
-        self.next_entity_id = 0
-
-    def create_entity(self):
-        entity_id = self.next_entity_id
-        self.next_entity_id += 1
-        self.entities[entity_id] = set()
-        return entity_id
-
-    def add_component(self, entity_id, component):
-        component_class = component.__class__
-        if component_class not in self.components:
-            self.components[component_class] = {}
-        self.components[component_class][entity_id] = component
-        if entity_id in self.entities:
-            self.entities[entity_id].add(component_class)
-
-    def get_component(self, entity_id, component_class):
-        if component_class in self.components:
-            return self.components[component_class].get(entity_id)
-        return None
-
-    def query(self, component_classes):
-        if not isinstance(component_classes, list):
-            component_classes = [component_classes]
-        
-        if not component_classes:
-            return []
-
-        first_comp_map = self.components.get(component_classes[0], {})
-        if not first_comp_map:
-            return []
-
-        entity_ids = list(first_comp_map.keys())
-        
-        for comp_class in component_classes[1:]:
-            if comp_class not in self.components:
-                return []
-            entity_ids = [eid for eid in entity_ids if eid in self.components.get(comp_class, {})]
-        
-        return entity_ids
-
-    def destroy_entity(self, entity_id):
-        if entity_id in self.entities:
-            for component_class in self.entities[entity_id]:
-                if component_class in self.components and entity_id in self.components[component_class]:
-                    del self.components[component_class][entity_id]
-            del self.entities[entity_id]
-
 def test_split_joints_does_nothing_for_a_single_joint_path_that_misses_every_wheel():
-    world = MockWorld()
+    world = World()
 
     A = world.create_entity()
     B = world.create_entity()
@@ -98,7 +45,7 @@ def test_split_joints_does_nothing_for_a_single_joint_path_that_misses_every_whe
     assert world.get_component(joint_id, CableJointComponent) is not None
 
 def test_split_joints_does_not_duplicate_joints_when_rope_already_bends_over_a_wheel():
-    world = MockWorld()
+    world = World()
 
     L = world.create_entity()
     R = world.create_entity()
@@ -156,7 +103,7 @@ def test_split_joints_does_not_duplicate_joints_when_rope_already_bends_over_a_w
     assert joint2_id in path_comp.joint_entities
 
 def test_split_joints_inserts_a_wheel_joint_when_a_straight_segment_intersects_the_wheel():
-    world = MockWorld()
+    world = World()
 
     A = world.create_entity()
     B = world.create_entity()
@@ -206,7 +153,7 @@ def test_split_joints_inserts_a_wheel_joint_when_a_straight_segment_intersects_t
     assert path_comp.stored[1] >= 0
 
 def test_split_joints_creates_three_joints_when_a_straight_segment_intersects_two_wheels():
-    world = MockWorld()
+    world = World()
 
     A = world.create_entity()
     B = world.create_entity()
