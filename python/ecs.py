@@ -51,6 +51,11 @@ class MomentOfInertiaComponent:
             self.inv_inertia = 0.0
 
 @dataclass
+class CoefficientOfFrictionComponent:
+    """Stores the coefficient of friction for an entity."""
+    mu: float = 0.0
+
+@dataclass
 class CableLinkComponent:
     """
     Indicates an entity can be part of a cable.
