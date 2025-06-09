@@ -9,11 +9,11 @@ def closest_point_on_segment(p, a, b):
     t = np.dot(ap, ab)
     if t <= 0.0:
         return a.copy()
-    
+
     denom = np.dot(ab, ab)
     if t >= denom:
         return b.copy()
-        
+
     t = t / denom
     return a + ab * t
 
@@ -69,7 +69,7 @@ def tangent_from_circle_to_circle(pos_a, radius_a, cw_a, pos_b, radius_b, cw_b):
 
     r = (radius_b - radius_a) if (cw_a == cw_b) else (radius_a + radius_b)
     alpha = np.arctan2(d_vec[1], d_vec[0])
-    
+
     # Clamp argument to asin to handle floating point inaccuracies
     asin_arg = np.clip(r / d, -1.0, 1.0)
     phi = np.arcsin(asin_arg)
@@ -124,7 +124,7 @@ def signed_arc_length_on_wheel(prev_point, curr_point, center, radius, clockwise
     if force_positive:
         while angle < 0.0:
             angle += 2 * np.pi
-            
+
     return radius * angle
 
 def line_segment_circle_intersection(p1, p2, center, radius, is_a_pierce_an_intersection=False):
@@ -156,11 +156,8 @@ def right_of_line(x, p0, p1):
     """
     Determines if point x is to the right of the directed line segment from p0 to p1.
     Uses the 2D cross product on the XY plane.
-    Returns True if x is strictly to the right, false otherwise (left or collinear).
     """
     v = p1 - p0
     w = x - p0
-    # Calculate the Z component of the 2D cross product
     cross_product = v[0] * w[1] - v[1] * w[0]
-    # JS version returned true for "left", this returns true for "right"
     return cross_product < 0.0
