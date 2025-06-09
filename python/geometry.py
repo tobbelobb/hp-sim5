@@ -21,21 +21,34 @@ def _tangent_point_circle(p_attach, p_circle, r_circle, cw, point_is_first):
     """
     Helper to calculate tangent points between a point and a circle.
     This is a port of Algorithm 3 from the Cable Joints paper.
+    Calculations are performed in the XY plane.
     """
     d_vec = p_circle - p_attach
-    d_sq = np.dot(d_vec, d_vec)
+    d_sq = np.dot(d_vec[:2], d_vec[:2]) # Use 2D distance for calculations
 
     if d_sq <= r_circle * r_circle + 1e-9:
-        # Attachment point is inside or on the rolling circle.
+        # Attachment point is inside or on the rolling circle's XY projection.
         # Return a point on the circumference in the opposite direction of the attachment point.
-        direction = d_vec / np.linalg.norm(d_vec) if np.linalg.norm(d_vec) > 1e-9 else np.array([1.0, 0.0, 0.0])
+        d_vec_2d = d_vec[:2]
+        norm_2d = np.linalg.norm(d_vec_2d)
+        if norm_2d > 1e-9:
+            dir_2d = d_vec_2d / norm_2d
+        else:
+            dir_2d = np.array([1.0, 0.0])
+
+        # The tangent point should be on the same Z-plane as the circle center.
+        a_circle = p_circle.copy()
+        a_circle[0] -= dir_2d[0] * r_circle
+        a_circle[1] -= dir_2d[1] * r_circle
+        # a_circle[2] is unchanged
+
         return {
             'a_attach': p_attach.copy(),
-            'a_circle': p_circle - direction * r_circle
+            'a_circle': a_circle
         }
 
     d = np.sqrt(d_sq)
-    alpha = np.arctan2(d_vec[1], d_vec[0])
+    alpha = np.arctan2(d_vec[1], d_vec[0]) # Angle in XY plane
     phi = np.arcsin(r_circle / d)
 
     if (cw and point_is_first) or (not cw and not point_is_first):
@@ -63,9 +76,14 @@ def tangent_from_circle_to_point(p_attach, p_circle, r_circle, cw):
     return _tangent_point_circle(p_attach, p_circle, r_circle, cw, False)
 
 def tangent_from_circle_to_circle(pos_a, radius_a, cw_a, pos_b, radius_b, cw_b):
-    """Calculates the common tangent between two circles."""
+    """Calculates the common tangent between two circles in the XY plane."""
     d_vec = pos_b - pos_a
-    d = np.linalg.norm(d_vec)
+    d = np.linalg.norm(d_vec[:2]) # Use 2D distance for calculations
+
+    if d < 1e-9: # Circles are at the same XY location, cannot determine tangent
+        tangent_a = pos_a + np.array([radius_a, 0, 0])
+        tangent_b = pos_b + np.array([radius_b, 0, 0])
+        return {'a_circle': tangent_a, 'b_circle': tangent_b}
 
     r = (radius_b - radius_a) if (cw_a == cw_b) else (radius_a + radius_b)
     alpha = np.arctan2(d_vec[1], d_vec[0])
@@ -106,6 +124,7 @@ def tangent_from_circle_to_circle(pos_a, radius_a, cw_a, pos_b, radius_b, cw_b):
 def signed_arc_length_on_wheel(prev_point, curr_point, center, radius, clockwise_preference, force_positive=False):
     """
     Calculates signed arc length between two world-space points on the circumference of a wheel.
+    Calculations are performed in the XY plane.
     """
     to_prev = prev_point - center
     to_curr = curr_point - center
@@ -129,28 +148,29 @@ def signed_arc_length_on_wheel(prev_point, curr_point, center, radius, clockwise
 
 def line_segment_circle_intersection(p1, p2, center, radius, is_a_pierce_an_intersection=False):
     """
-    Checks if a line segment intersects a circle.
+    Checks if a line segment intersects a circle in the XY plane.
     """
-    # 1. Check if either endpoint is inside the circle
-    if np.linalg.norm(p1 - center) <= radius or np.linalg.norm(p2 - center) <= radius:
+    # 1. Check if either endpoint is inside the circle (in XY plane)
+    if np.linalg.norm((p1 - center)[:2]) <= radius or np.linalg.norm((p2 - center)[:2]) <= radius:
         return is_a_pierce_an_intersection
 
-    # 2. Check if the projection of the center onto the line lies within the segment
-    d = p2 - p1
-    lc = center - p1
-    d_length_sq = np.dot(d, d)
+    # 2. Check if the projection of the center onto the line (in XY plane) lies within the segment
+    d_2d = (p2 - p1)[:2]
+    lc_2d = (center - p1)[:2]
+    d_length_sq_2d = np.dot(d_2d, d_2d)
 
-    t = np.dot(lc, d)
-    if d_length_sq > 1e-9:
-        t /= d_length_sq
+    if d_length_sq_2d < 1e-9: # segment is a point in XY plane
+        return False
+
+    t = np.dot(lc_2d, d_2d) / d_length_sq_2d
 
     if t < 0.0 or t > 1.0:
         return False # Closest point is an endpoint, which we already checked
 
-    closest_point_on_line = p1 + d * t
+    closest_point_on_line_2d = p1[:2] + d_2d * t
 
     # 3. Check if the closest point on the segment is within the circle's radius
-    return np.linalg.norm(closest_point_on_line - center) <= radius
+    return np.linalg.norm(closest_point_on_line_2d - center[:2]) <= radius
 
 def right_of_line(x, p0, p1):
     """
