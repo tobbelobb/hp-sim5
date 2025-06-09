@@ -1,13 +1,14 @@
 # This file provides a guide for translating the JavaScript Vector2 class
 # from `cable_joints/vector2.js` to Python using the NumPy library.
 #
-# Using raw NumPy arrays for 2D vectors is generally more idiomatic and
+# Using raw NumPy arrays for 3D vectors is generally more idiomatic and
 # performant in Python for this kind of numerical work than creating a
-# custom Vector2 class.
+# custom Vector2/Vector3 class.
 #
 # CONVENTION:
-# A 2D vector `v` is represented as a NumPy array of shape (2,).
-# Example: `v = np.array([1.0, 2.0])`
+# A 3D vector `v` is represented as a NumPy array of shape (3,).
+# For 2D calculations, the z-component is often set to 0.
+# Example: `v = np.array([1.0, 2.0, 0.0])`
 
 import numpy as np
 
@@ -17,12 +18,12 @@ import numpy as np
 # equivalent operations in NumPy.
 #
 # In the examples below:
-# v, v1, v2, a, b, center are NumPy arrays: np.array([x, y])
+# v, v1, v2, a, b, center are NumPy arrays: np.array([x, y, z])
 # s, ang are scalars (floats)
 # cw is a boolean
 
 # JS: constructor(x = 0.0, y = 0.0)
-# PY: v = np.array([x, y], dtype=float)
+# PY: v = np.array([x, y, 0.0], dtype=float)
 
 # JS: set(v)
 # PY: v1[:] = v2  (in-place assignment)
@@ -60,18 +61,20 @@ import numpy as np
 # JS: dot(v)
 # PY: np.dot(v1, v2)
 
-# JS: perp() (returns new vector, perpendicular)
-# PY: np.array([-v[1], v[0]])
+# JS: perp() (returns new vector, perpendicular in XY plane)
+# PY: np.array([-v[1], v[0], v[2]]) # Preserves Z
 
 # --- Functions for Complex Operations ---
 
 def angle_to(v1, v2):
     """
-    Calculates the angle between two vectors.
+    Calculates the angle between the XY components of two vectors.
     Equivalent to JS Vector2.angleTo(v).
     """
-    dot = np.dot(v1, v2)
-    norm_product = np.linalg.norm(v1) * np.linalg.norm(v2)
+    v1_2d = v1[:2]
+    v2_2d = v2[:2]
+    dot = np.dot(v1_2d, v2_2d)
+    norm_product = np.linalg.norm(v1_2d) * np.linalg.norm(v2_2d)
     if norm_product == 0:
         return 0.0
     # Clamp the value to handle potential floating point inaccuracies
@@ -90,7 +93,8 @@ def normalize_inplace(v):
 
 def rotate_inplace(v, ang, center, cw):
     """
-    Rotates a vector in-place around a center point.
+    Rotates a 3D vector in-place around a center point in the XY plane.
+    The Z component is not affected.
     Equivalent to JS Vector2.rotate(ang, center, cw).
 
     Note on the 'cw' parameter: The naming from the JS source is kept for
@@ -104,11 +108,22 @@ def rotate_inplace(v, ang, center, cw):
         ang = -ang
 
     cos_a, sin_a = np.cos(ang), np.sin(ang)
-    rotation_matrix = np.array([[cos_a, -sin_a],
-                                [sin_a,  cos_a]])
 
-    # Translate point to origin, rotate, and translate back
-    v_centered = v - center
-    v_rotated = rotation_matrix @ v_centered
-    v[:] = v_rotated + center
+    # Extract XY components for rotation
+    vx, vy = v[0], v[1]
+    cx, cy = center[0], center[1]
+
+    # Translate point to origin
+    temp_x = vx - cx
+    temp_y = vy - cy
+
+    # Rotate in the XY plane
+    rotated_x = temp_x * cos_a - temp_y * sin_a
+    rotated_y = temp_x * sin_a + temp_y * cos_a
+
+    # Translate back and update the original vector in-place
+    v[0] = rotated_x + cx
+    v[1] = rotated_y + cy
+    # v[2] remains unchanged
+
     return v
