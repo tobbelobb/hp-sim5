@@ -1,10 +1,7 @@
 import math
 import pytest
 
-# Assuming Vector2 is in a parent directory.
-# If the structure is different, this might need adjustment.
-from ..vector2 import Vector2
-from ..geometry import (
+from python.geometry import (
     _tangent_point_circle,
     tangent_from_point_to_circle,
     tangent_from_circle_to_point,
@@ -39,7 +36,7 @@ def test_tangent_from_point_to_circle_wrapper():
     cw = False
     result = tangent_from_point_to_circle(p_attach, p_circle, r_circle, cw)
     expected = _tangent_point_circle(p_attach, p_circle, r_circle, cw, True)
-    
+
     assert result['a_attach'] == expected['a_attach']
     assert result['a_circle'] == expected['a_circle']
 
@@ -89,7 +86,7 @@ def test_tangent_from_circle_to_circle_TT_outer():
     radiusB = 0.5
     cwB = True
     result = tangent_from_circle_to_circle(posA, radiusA, cwA, posB, radiusB, cwB)
-    
+
     expectedA = Vector2(1/6, math.sqrt(35)/6)
     expectedB = Vector2(37/12, math.sqrt(35)/12)
 
@@ -109,7 +106,7 @@ def test_tangent_from_circle_to_circle_TF_internal():
     radiusB = 1.0
     cwB = False
     result = tangent_from_circle_to_circle(posA, radiusA, cwA, posB, radiusB, cwB)
-    
+
     phi = math.asin(2/3)
     expectedA = Vector2(math.sin(phi), math.cos(phi))
     expectedB = Vector2(3 - math.sin(phi), -math.cos(phi))
@@ -130,7 +127,7 @@ def test_tangent_from_circle_to_circle_FT_internal():
     radiusB = 1.0
     cwB = True
     result = tangent_from_circle_to_circle(posA, radiusA, cwA, posB, radiusB, cwB)
-    
+
     phi = math.asin(2/3)
     expectedA = Vector2(math.sin(phi), -math.cos(phi))
     expectedB = Vector2(3 - math.sin(phi), math.cos(phi))
@@ -151,7 +148,7 @@ def test_tangent_from_circle_to_circle_FF_outer():
     radiusB = 0.5
     cwB = False
     result = tangent_from_circle_to_circle(posA, radiusA, cwA, posB, radiusB, cwB)
-    
+
     expectedA = Vector2(1/6, -math.sqrt(35)/6)
     expectedB = Vector2(37/12, -math.sqrt(35)/12)
 
