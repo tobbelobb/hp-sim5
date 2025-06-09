@@ -1,5 +1,6 @@
 import math
-from .vector2 import Vector2
+import numpy as np
+from . import vector2 as v2_helpers
 from .ecs import (
     PositionComponent,
     VelocityComponent,
@@ -96,14 +97,14 @@ class PBDVelocityUpdateSystem:
             prev_final_pos_comp = world.get_component(entity_id, PrevFinalPosComponent)
 
             # v = (x_new - x_old) / dt
-            vel_comp.vel.subtract_vectors(pos_comp.pos, prev_final_pos_comp.pos).scale(1.0 / dt)
+            vel_comp.vel = (pos_comp.pos - prev_final_pos_comp.pos) / dt
 
 class GravitySystem:
     run_in_pause = False
     def update(self, world, dt):
         grabbed = world.get_resource('grabbedBall')
         gravity = world.get_resource('gravity')
-        if not gravity:
+        if gravity is None:
             return
 
         entities = world.query([VelocityComponent, GravityAffectedComponent])
@@ -111,7 +112,7 @@ class GravitySystem:
             if entity_id == grabbed:
                 continue
             vel_comp = world.get_component(entity_id, VelocityComponent)
-            vel_comp.vel.add(gravity, dt)
+            vel_comp.vel += gravity * dt
 
 class XPBDDistanceConstraintSystem:
     run_in_pause = False
@@ -147,12 +148,12 @@ class XPBDDistanceConstraintSystem:
             if inv_mass_a + inv_mass_b + inv_inertia_a + inv_inertia_b <= epsilon:
                 continue
 
-            diff = Vector2(p_b.x - p_a.x, p_b.y - p_a.y)
-            current_length = diff.length()
+            diff = p_b - p_a
+            current_length = np.linalg.norm(diff)
             if current_length <= epsilon:
                 continue
 
-            direction = diff.clone().scale(1.0 / current_length)
+            direction = diff / current_length
 
             C = current_length - constraint.restLength
 
@@ -170,14 +171,14 @@ class XPBDDistanceConstraintSystem:
             delta_lambda = (-C - alpha_tilde * constraint.lambda_val) / denominator
             constraint.lambda_val += delta_lambda
 
-            correction = direction.clone().scale(delta_lambda)
+            correction = direction * delta_lambda
 
             if inv_mass_a > 0:
-                dp_a = correction.clone().scale(-inv_mass_a)
-                p_a.add(dp_a)
+                dp_a = correction * -inv_mass_a
+                p_a += dp_a
             if inv_mass_b > 0:
-                dp_b = correction.clone().scale(inv_mass_b)
-                p_b.add(dp_b)
+                dp_b = correction * inv_mass_b
+                p_b += dp_b
 
 class MovementSystem:
     run_in_pause = False
@@ -189,7 +190,7 @@ class MovementSystem:
                 continue
             pos_comp = world.get_component(entity_id, PositionComponent)
             vel_comp = world.get_component(entity_id, VelocityComponent)
-            pos_comp.pos.add(vel_comp.vel, dt)
+            pos_comp.pos += vel_comp.vel * dt
 
 class PrevFinalPosSystem:
     run_in_pause = False
@@ -198,7 +199,7 @@ class PrevFinalPosSystem:
         for entity_id in entities:
             pos_component = world.get_component(entity_id, PositionComponent)
             prev_final_pos_component = world.get_component(entity_id, PrevFinalPosComponent)
-            prev_final_pos_component.pos.set(pos_component.pos)
+            prev_final_pos_component.pos[:] = pos_component.pos
 
 class AngularMovementSystem:
     run_in_pause = False
@@ -231,30 +232,30 @@ class PBDBallBallCollisions:
                 res2 = world.get_component(e2, RestitutionComponent).restitution
 
                 restitution = min(res1, res2)
-                direction = Vector2(p2.x - p1.x, p2.y - p1.y)
-                d_sq = direction.length_sq()
+                direction = p2 - p1
+                d_sq = np.dot(direction, direction)
                 r_sum = r1 + r2
 
                 if d_sq == 0.0 or d_sq > r_sum * r_sum:
                     continue
 
                 d = math.sqrt(d_sq)
-                direction.scale(1.0 / d) # Normalize
+                direction /= d # Normalize
 
                 # Resolve penetration
                 corr = (r_sum - d) / 2.0
-                p1.add(direction, -corr)
-                p2.add(direction, corr)
+                p1 += direction * -corr
+                p2 += direction * corr
 
                 # Resolve velocity
-                vel1_dot = v1.dot(direction)
-                vel2_dot = v2.dot(direction)
+                vel1_dot = np.dot(v1, direction)
+                vel2_dot = np.dot(v2, direction)
 
                 new_v1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2)
                 new_v2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2)
 
-                v1.add(direction, new_v1_dot - vel1_dot)
-                v2.add(direction, new_v2_dot - vel2_dot)
+                v1 += direction * (new_v1_dot - vel1_dot)
+                v2 += direction * (new_v2_dot - vel2_dot)
 
 class PBDBallObstacleCollisions:
     def update(self, world, dt):
@@ -274,19 +275,19 @@ class PBDBallObstacleCollisions:
                 r2 = world.get_component(obs_id, RadiusComponent).radius
                 push_vel = world.get_component(obs_id, ObstaclePushComponent).pushVel
 
-                direction = Vector2(p1.x - p2.x, p1.y - p2.y)
-                d_sq = direction.length_sq()
+                direction = p1 - p2
+                d_sq = np.dot(direction, direction)
                 r_sum = r1 + r2
 
                 if d_sq == 0.0 or d_sq > r_sum * r_sum:
                     continue
 
                 d = math.sqrt(d_sq)
-                direction.scale(1.0 / d) # Normalize
+                direction /= d # Normalize
 
                 # Resolve penetration
                 corr = r_sum - d
-                p1.add(direction, corr)
+                p1 += direction * corr
 
                 # Resolve velocity & rotation with friction and obstacle rotation
                 obs_ang_vel_comp = world.get_component(obs_id, AngularVelocityComponent)
@@ -296,38 +297,38 @@ class PBDBallObstacleCollisions:
                 omega_obs = obs_ang_vel_comp.angularVelocity if obs_ang_vel_comp else 0.0
                 mu = obs_friction_comp.mu if obs_friction_comp else 0.0
 
-                tangent = Vector2(-direction.y, direction.x)
+                tangent = np.array([-direction[1], direction[0], direction[2]])
 
                 v_surf_obs_tangential_comp = 0
                 if omega_obs != 0:
-                    v_surf_obs_tangential_comp = (-omega_obs * direction.y * r2) * tangent.x + (omega_obs * direction.x * r2) * tangent.y
+                    v_surf_obs_tangential_comp = (-omega_obs * direction[1] * r2) * tangent[0] + (omega_obs * direction[0] * r2) * tangent[1]
 
                 s_sign = 0
                 if v_surf_obs_tangential_comp != 0 and mu != 0:
                     s_sign = math.copysign(1, v_surf_obs_tangential_comp)
                 
-                effective_push_dir = direction.clone()
+                effective_push_dir = direction.copy()
                 if s_sign != 0:
-                    effective_push_dir.add(tangent.clone().scale(mu * s_sign))
-                effective_push_dir.normalize()
+                    effective_push_dir += tangent * (mu * s_sign)
+                v2_helpers.normalize_inplace(effective_push_dir)
 
-                v1.add(effective_push_dir, push_vel)
+                v1 += effective_push_dir * push_vel
 
                 if mu > 0 and ball_mass_comp:
-                    delta_v_ball_tangential_actual_scalar_comp = effective_push_dir.dot(tangent) * push_vel
+                    delta_v_ball_tangential_actual_scalar_comp = np.dot(effective_push_dir, tangent) * push_vel
 
                     if abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9:
-                        j_t_on_ball_vec = tangent.clone().scale(delta_v_ball_tangential_actual_scalar_comp * ball_mass_comp.mass)
+                        j_t_on_ball_vec = tangent * (delta_v_ball_tangential_actual_scalar_comp * ball_mass_comp.mass)
 
                         if ball_ang_vel_comp and ball_moi_comp and ball_moi_comp.invInertia > 0:
-                            r_contact_ball = direction.clone().scale(-r1)
-                            delta_l_ball = r_contact_ball.x * j_t_on_ball_vec.y - r_contact_ball.y * j_t_on_ball_vec.x
+                            r_contact_ball = direction * -r1
+                            delta_l_ball = r_contact_ball[0] * j_t_on_ball_vec[1] - r_contact_ball[1] * j_t_on_ball_vec[0]
                             ball_ang_vel_comp.angularVelocity += delta_l_ball * ball_moi_comp.invInertia
 
                         if obs_ang_vel_comp and obs_moi_comp and obs_moi_comp.invInertia > 0:
-                            j_t_on_obs_vec = j_t_on_ball_vec.clone().scale(-1)
-                            r_contact_obs = direction.clone().scale(r2)
-                            delta_l_obs = r_contact_obs.x * j_t_on_obs_vec.y - r_contact_obs.y * j_t_on_obs_vec.x
+                            j_t_on_obs_vec = j_t_on_ball_vec * -1
+                            r_contact_obs = direction * r2
+                            delta_l_obs = r_contact_obs[0] * j_t_on_obs_vec[1] - r_contact_obs[1] * j_t_on_obs_vec[0]
                             obs_ang_vel_comp.angularVelocity += delta_l_obs * obs_moi_comp.invInertia
 
                 grabbed = world.get_resource('grabbedBall')
