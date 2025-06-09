@@ -142,8 +142,8 @@ canvas {
       CableJointComponent,
       CablePathComponent,
       linecolor1,
-      CableAttachmentUpdateSystemJointWise,
-      PBDCableConstraintSolverJointWise
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
     } from './cable_joints/cable_joints_core.js';
 
     import {
@@ -1004,8 +1004,8 @@ canvas {
              world.registerSystem(new FlipperTipLinkSystem());
 
              // Solve positional constraints
-             world.registerSystem(new CableAttachmentUpdateSystemJointWise());
-             world.registerSystem(new PBDCableConstraintSolverJointWise());
+             world.registerSystem(new CableAttachmentUpdateSystem());
+             world.registerSystem(new PBDCableConstraintSolver());
 
              // Update velocities based on the pos-difference
              world.registerSystem(new PBDVelocityUpdateSystem());

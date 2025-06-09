@@ -4,12 +4,12 @@ import {
   CableJointComponent,
   CableLinkComponent,
   CablePathComponent,
-  CableAttachmentUpdateSystemPathWise,
-  PBDCableConstraintSolverPathWise
+  CableAttachmentUpdateSystem,
+  PBDCableConstraintSolver
 } from '../cable_joints/cable_joints_core.js';
 import { GravitySystem } from '../cable_joints/commonSystems.js';
 
-describe('PBDCableConstraintSolverPathWise', () => {
+describe('PBDCableConstraintSolver', () => {
   test('does nothing when compliance is zero', () => {
     const world = new World();
     // Create entities and positions
@@ -54,7 +54,7 @@ describe('PBDCableConstraintSolverPathWise', () => {
     const initB2 = aB2.clone();
 
     // Run solver
-    const solver = new PBDCableConstraintSolverPathWise();
+    const solver = new PBDCableConstraintSolver();
     expect(() => solver.update(world, 0.016)).not.toThrow();
 
     // Verify points unchanged
@@ -68,7 +68,7 @@ describe('PBDCableConstraintSolverPathWise', () => {
 
   test('handles empty world without error', () => {
     const world = new World();
-    const solver = new PBDCableConstraintSolverPathWise();
+    const solver = new PBDCableConstraintSolver();
     expect(() => solver.update(world, 0.1)).not.toThrow();
   });
 
@@ -107,8 +107,8 @@ describe('PBDCableConstraintSolverPathWise', () => {
     world.addComponent(pathEnt, pathComp);
 
     const dt = 0.016;
-    const solver = new PBDCableConstraintSolverPathWise();
-    const cableAttachmentSystem = new CableAttachmentUpdateSystemPathWise();
+    const solver = new PBDCableConstraintSolver();
+    const cableAttachmentSystem = new CableAttachmentUpdateSystem();
     cableAttachmentSystem.update(world, dt);
     solver.update(world, dt);
     cableAttachmentSystem.update(world, dt);
@@ -158,8 +158,8 @@ describe('PBDCableConstraintSolverPathWise', () => {
       )
     );
     const gravitySystem = new GravitySystem();
-    const cableAttachmentSystem = new CableAttachmentUpdateSystemPathWise();
-    const solver = new PBDCableConstraintSolverPathWise();
+    const cableAttachmentSystem = new CableAttachmentUpdateSystem();
+    const solver = new PBDCableConstraintSolver();
     const dt =  0.016;
     // Run solver multiple times to enforce constraint
     for (let i = 0; i < 5; i++) {

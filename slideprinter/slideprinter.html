@@ -142,8 +142,8 @@ canvas {
       CableLinkComponent,
       CableJointComponent,
       CablePathComponent,
-      CableAttachmentUpdateSystemJointWise,
-      PBDCableConstraintSolverJointWise
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
     } from '../cable_joints/cable_joints_core.js';
 
     import {
@@ -548,8 +548,8 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           world.registerSystem(new AngularMovementSystem());
           // Positional constraint solvers
           world.registerSystem(new XPBDDistanceConstraintSystem());
-          world.registerSystem(new CableAttachmentUpdateSystemJointWise());
-          world.registerSystem(new PBDCableConstraintSolverJointWise());
+          world.registerSystem(new CableAttachmentUpdateSystem());
+          world.registerSystem(new PBDCableConstraintSolver());
           // Update velocities from positional changes
           world.registerSystem(new PBDVelocityUpdateSystem());
           world.registerSystem(new PBDAngularVelocityUpdateSystem());
