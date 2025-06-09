@@ -3,13 +3,13 @@ import numpy as np
 
 # Adjust the relative imports based on your project structure.
 # This assumes the tests are run from the root of the `python` directory.
-from ..pbdCableConstraintSolver import PBDCableConstraintSolver
-from ..ecs import (
+from pbdCableConstraintSolver import PBDCableConstraintSolver
+from ecs import (
     PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
     OrientationComponent, AngularVelocityComponent, CableLinkComponent,
     GravityAffectedComponent
 )
-from ..cable_joints_core import CableJointComponent, CablePathComponent
+from cable_joints_core import CableJointComponent, CablePathComponent
 
 # --- Mocks for Testing ---
 
