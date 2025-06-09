@@ -82,8 +82,8 @@ describe('PBDCableConstraintSolver', () => {
     world.addComponent(e1, new VelocityComponent(0, 0));
     world.addComponent(e0, new MassComponent(1.0));
     world.addComponent(e1, new MassComponent(1.0));
-    world.addComponent(e0, new CableLinkComponent);
-    world.addComponent(e1, new CableLinkComponent);
+    world.addComponent(e0, new CableLinkComponent());
+    world.addComponent(e1, new CableLinkComponent());
 
     const j1 = world.createEntity();
     world.addComponent(
@@ -107,6 +107,7 @@ describe('PBDCableConstraintSolver', () => {
     world.addComponent(pathEnt, pathComp);
 
     const dt = 0.016;
+    world.setResource('dt', dt);
     const solver = new PBDCableConstraintSolver();
     const cableAttachmentSystem = new CableAttachmentUpdateSystem();
     cableAttachmentSystem.update(world, dt);
@@ -126,14 +127,14 @@ describe('PBDCableConstraintSolver', () => {
     // Fixed point at origin
     const origin = world.createEntity();
     world.addComponent(origin, new PositionComponent(0, 0));
-    world.addComponent(origin, new CableLinkComponent);
+    world.addComponent(origin, new CableLinkComponent());
     // Mass entity starting stretched beyond rest length
     const mass = world.createEntity();
     world.addComponent(mass, new PositionComponent(0, -startLength));
     world.addComponent(mass, new VelocityComponent(0, 0));
     world.addComponent(mass, new MassComponent(1.0));
-    world.addComponent(mass, new GravityAffectedComponent);
-    world.addComponent(mass, new CableLinkComponent);
+    world.addComponent(mass, new GravityAffectedComponent());
+    world.addComponent(mass, new CableLinkComponent());
     // Cable joint with rest length 1 between origin and mass
     const j = world.createEntity();
     world.addComponent(
@@ -161,6 +162,7 @@ describe('PBDCableConstraintSolver', () => {
     const cableAttachmentSystem = new CableAttachmentUpdateSystem();
     const solver = new PBDCableConstraintSolver();
     const dt =  0.016;
+    world.setResource('dt', dt);
     // Run solver multiple times to enforce constraint
     for (let i = 0; i < 5; i++) {
       gravitySystem.update(world, dt);
