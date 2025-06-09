@@ -6,10 +6,12 @@ import {
 } from '../cable_joints/ecs.js';
 import {
   CableJointComponent,
-  CablePathComponent,
-  createCablePaths
+  CablePathComponent
 } from '../cable_joints/cable_joints_core.js';
 import { signedArcLengthOnWheel } from '../cable_joints/geometry.js';
+import {
+  createCablePaths
+} from '../cable_joints/createCablePaths.js';
 
 describe('createCablePaths', () => {
   let world;
