@@ -1,10 +1,9 @@
 import numpy as np
 
-from .ecs import (
-    MassComponent, MomentOfInertiaComponent, PositionComponent,
-    VelocityComponent, OrientationComponent, AngularVelocityComponent
-)
-from .cable_joints_core import CablePathComponent, CableJointComponent
+from python.cable_joints_core import CablePathComponent, CableJointComponent
+from python.ecs import (PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
+                        OrientationComponent, AngularVelocityComponent)
+
 
 class PBDCableConstraintSolver:
     """
@@ -18,23 +17,17 @@ class PBDCableConstraintSolver:
     run_in_pause = False
 
     def update(self, world, _dt_unused):
-        """
-        Updates the cable constraints for one PBD iteration.
-        """
-        # Assuming world.query can take a single component type
         path_entities = world.query(CablePathComponent)
         epsilon = 1e-9  # Small value to avoid division by zero
         dt = world.get_resource('dt')
 
         for path_id in path_entities:
             path = world.get_component(path_id, CablePathComponent)
-            if not path or len(path.joint_entities) < 1:
+            if not path.joint_entities:
                 continue
 
             for joint_id in path.joint_entities:
                 joint = world.get_component(joint_id, CableJointComponent)
-                if not joint:
-                    continue
 
                 entity_a = joint.entity_a
                 entity_b = joint.entity_b
@@ -45,19 +38,19 @@ class PBDCableConstraintSolver:
                 current_segment_length = np.linalg.norm(p_a - p_b)
                 constraint_error = current_segment_length - joint.rest_length
 
-                # Apply correction only if the segment is over-extended
+                # Apply correction only if the segment is longer than its rest length
                 if constraint_error > epsilon:
                     mass_a_comp = world.get_component(entity_a, MassComponent)
-                    inv_mass_a = 1.0 / mass_a_comp.mass if mass_a_comp and mass_a_comp.mass > 0 else 0.0
+                    inv_mass_a = 1.0 / mass_a_comp.mass if mass_a_comp and mass_a_comp.mass > 0 and not np.isinf(mass_a_comp.mass) else 0.0
                     moi_a_comp = world.get_component(entity_a, MomentOfInertiaComponent)
                     inv_inertia_a = moi_a_comp.inv_inertia if moi_a_comp else 0.0
 
                     mass_b_comp = world.get_component(entity_b, MassComponent)
-                    inv_mass_b = 1.0 / mass_b_comp.mass if mass_b_comp and mass_b_comp.mass > 0 else 0.0
+                    inv_mass_b = 1.0 / mass_b_comp.mass if mass_b_comp and mass_b_comp.mass > 0 and not np.isinf(mass_b_comp.mass) else 0.0
                     moi_b_comp = world.get_component(entity_b, MomentOfInertiaComponent)
                     inv_inertia_b = moi_b_comp.inv_inertia if moi_b_comp else 0.0
 
-                    # If both entities are effectively immovable, skip
+                    # If both entities are effectively immovable for this constraint, skip
                     if inv_mass_a + inv_mass_b + inv_inertia_a + inv_inertia_b <= epsilon:
                         continue
 
@@ -65,25 +58,38 @@ class PBDCableConstraintSolver:
                     length = np.linalg.norm(diff)
                     if length <= epsilon:
                         continue
-                    direction = diff / length  # Normalized direction from A to B
+                    direction = diff / length
 
-                    # Gradients are defined based on the JS implementation
-                    grad_pos_a = direction.copy()
-                    grad_pos_b = -direction.copy()
+                    # The JS implementation uses confusing gradient names. These are based on
+                    # the direction of correction, not the gradient of the constraint function.
+                    # To match JS: gradPosA = dir, gradPosB = -dir
+                    grad_pos_a = direction
+                    grad_pos_b = -direction
 
                     pos_a_comp = world.get_component(entity_a, PositionComponent)
-                    r_a = p_a - pos_a_comp.pos  # Vector from CoM of A to attachment point A
-                    grad_ang_a = np.cross(r_a, direction) # 2D cross product
+                    r_a = p_a - pos_a_comp.pos
+                    
+                    # Use 3D cross product to avoid NumPy 2.0 deprecation warning
+                    r_a_3d = np.array([r_a[0], r_a[1], 0.0])
+                    direction_3d = np.array([direction[0], direction[1], 0.0])
+                    grad_ang_a = np.cross(r_a_3d, direction_3d)[2]
 
                     pos_b_comp = world.get_component(entity_b, PositionComponent)
-                    r_b = p_b - pos_b_comp.pos  # Vector from CoM of B to attachment point B
-                    grad_ang_b = np.cross(r_b, -direction) # 2D cross product
+                    r_b = p_b - pos_b_comp.pos
+                    
+                    # Use 3D cross product to avoid NumPy 2.0 deprecation warning
+                    r_b_3d = np.array([r_b[0], r_b[1], 0.0])
+                    neg_direction_3d = np.array([-direction[0], -direction[1], 0.0])
+                    grad_ang_b = np.cross(r_b_3d, neg_direction_3d)[2]
 
-                    denom = (inv_mass_a * np.dot(grad_pos_a, grad_pos_a) +
-                             inv_inertia_a * grad_ang_a**2 +
-                             inv_mass_b * np.dot(grad_pos_b, grad_pos_b) +
-                             inv_inertia_b * grad_ang_b**2 +
-                             path.compliance / (dt**2))
+                    denom = 0.0
+                    denom += inv_mass_a * np.dot(grad_pos_a, grad_pos_a)
+                    denom += inv_inertia_a * grad_ang_a * grad_ang_a
+                    denom += inv_mass_b * np.dot(grad_pos_b, grad_pos_b)
+                    denom += inv_inertia_b * grad_ang_b * grad_ang_b
+                    
+                    if dt is not None and dt > 0:
+                        denom += path.compliance / (dt * dt)
 
                     if denom <= epsilon:
                         continue
@@ -95,7 +101,7 @@ class PBDCableConstraintSolver:
                         delta_pos_a = grad_pos_a * (-inv_mass_a * lambda_)
                         pos_a_comp.pos += delta_pos_a
                         vel_a_comp = world.get_component(entity_a, VelocityComponent)
-                        if vel_a_comp and dt > epsilon:
+                        if vel_a_comp is not None and dt is not None and dt > epsilon:
                             vel_a_comp.vel += delta_pos_a / dt
                             v_a = np.linalg.norm(vel_a_comp.vel)
                             max_speed = 0.03 / (2.0 * dt)
@@ -108,7 +114,7 @@ class PBDCableConstraintSolver:
                         if orientation_a_comp:
                             orientation_a_comp.angle += delta_ang_a
                         ang_vel_a_comp = world.get_component(entity_a, AngularVelocityComponent)
-                        if ang_vel_a_comp and dt > epsilon:
+                        if ang_vel_a_comp is not None and dt is not None and dt > epsilon:
                             ang_vel_a_comp.angular_velocity += delta_ang_a / dt
 
                     # Apply corrections to Entity B
@@ -116,7 +122,7 @@ class PBDCableConstraintSolver:
                         delta_pos_b = grad_pos_b * (-inv_mass_b * lambda_)
                         pos_b_comp.pos += delta_pos_b
                         vel_b_comp = world.get_component(entity_b, VelocityComponent)
-                        if vel_b_comp and dt > epsilon:
+                        if vel_b_comp is not None and dt is not None and dt > epsilon:
                             vel_b_comp.vel += delta_pos_b / dt
                             v_b = np.linalg.norm(vel_b_comp.vel)
                             max_speed = 0.03 / (2.0 * dt)
@@ -129,5 +135,5 @@ class PBDCableConstraintSolver:
                         if orientation_b_comp:
                             orientation_b_comp.angle += delta_ang_b
                         ang_vel_b_comp = world.get_component(entity_b, AngularVelocityComponent)
-                        if ang_vel_b_comp and dt > epsilon:
+                        if ang_vel_b_comp is not None and dt is not None and dt > epsilon:
                             ang_vel_b_comp.angular_velocity += delta_ang_b / dt
