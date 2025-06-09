@@ -3,30 +3,15 @@ import numpy as np
 
 # Use absolute imports from the 'python' package root.
 from python.pbdCableConstraintSolver import PBDCableConstraintSolver
+from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 from python.ecs import (
     World, PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
     OrientationComponent, AngularVelocityComponent, CableLinkComponent,
-    GravityAffectedComponent
+    GravityAffectedComponent, RadiusComponent
 )
 from python.cable_joints_components import CableJointComponent, CablePathComponent
 
 # --- Mocks for Testing ---
-
-class MockCableAttachmentUpdateSystem:
-    """
-    A mock system that updates joint attachment points from entity positions.
-    This simplified version assumes attachment points are at the entity's center.
-    """
-    def update(self, world, dt):
-        joint_entities = world.query([CableJointComponent])
-        for joint_id in joint_entities:
-            joint = world.get_component(joint_id, CableJointComponent)
-            pos_a = world.get_component(joint.entity_a, PositionComponent)
-            pos_b = world.get_component(joint.entity_b, PositionComponent)
-            if pos_a:
-                joint.attachment_point_a_world[:] = pos_a.pos
-            if pos_b:
-                joint.attachment_point_b_world[:] = pos_b.pos
 
 class MockGravitySystem:
     """A mock system that applies gravity to entities."""
@@ -90,8 +75,12 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     """
     world = World()
     e0, e1 = world.create_entity(), world.create_entity()
-    world.add_component(e0, PositionComponent(np.array([0.0, 0.0, 0.0])))
-    world.add_component(e1, PositionComponent(np.array([5.0, 0.0, 0.0])))
+
+    pos0 = np.array([0.0, 0.0, 0.0])
+    pos1 = np.array([5.0, 0.0, 0.0])
+
+    world.add_component(e0, PositionComponent(pos0.copy()))
+    world.add_component(e1, PositionComponent(pos1.copy()))
     world.add_component(e0, VelocityComponent())
     world.add_component(e1, VelocityComponent())
     world.add_component(e0, MassComponent(1.0))
@@ -103,17 +92,25 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     world.add_component(e1, OrientationComponent())
     world.add_component(e0, AngularVelocityComponent())
     world.add_component(e1, AngularVelocityComponent())
+    world.add_component(e0, RadiusComponent(0.0))
+    world.add_component(e1, RadiusComponent(0.0))
+    world.add_component(e0, CableLinkComponent(prev_cable_attachment_time_pos=pos0.copy()))
+    world.add_component(e1, CableLinkComponent(prev_cable_attachment_time_pos=pos1.copy()))
 
     j1 = world.create_entity()
-    world.add_component(j1, CableJointComponent(e0, e1, 3.0, np.array([0.0, 0.0, 0.0]), np.array([5.0, 0.0, 0.0])))
+    world.add_component(j1, CableJointComponent(e0, e1, 3.0, pos0.copy(), pos1.copy()))
 
     path_ent = world.create_entity()
-    world.add_component(path_ent, CablePathComponent(joint_entities=[j1]))
+    world.add_component(path_ent, CablePathComponent(
+        joint_entities=[j1],
+        link_types=['attachment', 'attachment'],
+        cw=[True, True]
+    ))
 
     dt = 0.016
     world.set_resource('dt', dt)
     solver = PBDCableConstraintSolver()
-    attachment_system = MockCableAttachmentUpdateSystem()
+    attachment_system = CableAttachmentUpdateSystem()
 
     for _ in range(2):
         attachment_system.update(world, dt)
@@ -122,7 +119,6 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     # Final update to get the latest attachment points after solver corrections
     attachment_system.update(world, dt)
 
-    comp1 = world.get_component(j1, CableJointComponent)
     p_a = world.get_component(e0, PositionComponent).pos
     p_b = world.get_component(e1, PositionComponent).pos
     distance = np.linalg.norm(p_a - p_b)
@@ -138,34 +134,44 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
 
     # Fixed point at origin
     origin = world.create_entity()
-    world.add_component(origin, PositionComponent(np.array([0.0, 0.0, 0.0])))
+    pos_origin = np.array([0.0, 0.0, 0.0])
+    world.add_component(origin, PositionComponent(pos_origin.copy()))
     world.add_component(origin, MassComponent(mass=np.inf)) # Immovable
     world.add_component(origin, MomentOfInertiaComponent(inertia=np.inf)) # Non-rotatable
     world.add_component(origin, OrientationComponent())
     world.add_component(origin, AngularVelocityComponent())
+    world.add_component(origin, RadiusComponent(0.0))
+    world.add_component(origin, CableLinkComponent(prev_cable_attachment_time_pos=pos_origin.copy()))
 
     # Mass entity
     mass = world.create_entity()
-    world.add_component(mass, PositionComponent(np.array([0.0, -start_length, 0.0])))
+    pos_mass = np.array([0.0, -start_length, 0.0])
+    world.add_component(mass, PositionComponent(pos_mass.copy()))
     world.add_component(mass, VelocityComponent())
     world.add_component(mass, MassComponent(1.0))
     world.add_component(mass, MomentOfInertiaComponent(inertia=1.0))
     world.add_component(mass, GravityAffectedComponent())
     world.add_component(mass, OrientationComponent())
     world.add_component(mass, AngularVelocityComponent())
+    world.add_component(mass, RadiusComponent(0.0))
+    world.add_component(mass, CableLinkComponent(prev_cable_attachment_time_pos=pos_mass.copy()))
 
     # Cable joint
     j = world.create_entity()
     world.add_component(j, CableJointComponent(
         origin, mass, rest_length,
-        np.array([0.0, 0.0, 0.0]), np.array([0.0, -start_length, 0.0])
+        pos_origin.copy(), pos_mass.copy()
     ))
 
     path_ent = world.create_entity()
-    world.add_component(path_ent, CablePathComponent(joint_entities=[j]))
+    world.add_component(path_ent, CablePathComponent(
+        joint_entities=[j],
+        link_types=['attachment', 'attachment'],
+        cw=[True, True]
+    ))
 
     gravity_system = MockGravitySystem()
-    attachment_system = MockCableAttachmentUpdateSystem()
+    attachment_system = CableAttachmentUpdateSystem()
     solver = PBDCableConstraintSolver()
     dt = 0.016
     world.set_resource('dt', dt)
@@ -176,7 +182,7 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
         attachment_system.update(world, dt)
         solver.update(world, dt)
 
-    pos_origin = world.get_component(origin, PositionComponent).pos
-    pos_mass = world.get_component(mass, PositionComponent).pos
-    distance = np.linalg.norm(pos_origin - pos_mass)
+    pos_origin_final = world.get_component(origin, PositionComponent).pos
+    pos_mass_final = world.get_component(mass, PositionComponent).pos
+    distance = np.linalg.norm(pos_origin_final - pos_mass_final)
     assert distance == pytest.approx(rest_length, abs=1e-5)
