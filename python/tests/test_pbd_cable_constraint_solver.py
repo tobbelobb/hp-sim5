@@ -8,7 +8,7 @@ from python.ecs import (
     OrientationComponent, AngularVelocityComponent, CableLinkComponent,
     GravityAffectedComponent
 )
-from python.cable_joints_core import CableJointComponent, CablePathComponent
+from python.cable_joints_components import CableJointComponent, CablePathComponent
 
 # --- Mocks for Testing ---
 

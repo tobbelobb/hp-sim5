@@ -1,6 +1,6 @@
 import numpy as np
 
-from python.cable_joints_core import CablePathComponent, CableJointComponent
+from python.cable_joints_components import CablePathComponent, CableJointComponent
 from python.ecs import (PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
                         OrientationComponent, AngularVelocityComponent)
 
@@ -68,7 +68,7 @@ class PBDCableConstraintSolver:
 
                     pos_a_comp = world.get_component(entity_a, PositionComponent)
                     r_a = p_a - pos_a_comp.pos
-                    
+
                     # Use 3D cross product to avoid NumPy 2.0 deprecation warning
                     r_a_3d = np.array([r_a[0], r_a[1], 0.0])
                     direction_3d = np.array([direction[0], direction[1], 0.0])
@@ -76,7 +76,7 @@ class PBDCableConstraintSolver:
 
                     pos_b_comp = world.get_component(entity_b, PositionComponent)
                     r_b = p_b - pos_b_comp.pos
-                    
+
                     # Use 3D cross product to avoid NumPy 2.0 deprecation warning
                     r_b_3d = np.array([r_b[0], r_b[1], 0.0])
                     neg_direction_3d = np.array([-direction[0], -direction[1], 0.0])
@@ -87,7 +87,7 @@ class PBDCableConstraintSolver:
                     denom += inv_inertia_a * grad_ang_a * grad_ang_a
                     denom += inv_mass_b * np.dot(grad_pos_b, grad_pos_b)
                     denom += inv_inertia_b * grad_ang_b * grad_ang_b
-                    
+
                     if dt is not None and dt > 0:
                         denom += path.compliance / (dt * dt)
 

@@ -173,15 +173,12 @@ export function lineSegmentCircleIntersection(p1, p2, center, radius, isAPierceA
  * @param {Vector2} x - The point to test.
  * @param {Vector2} p0 - The start point of the line segment.
  * @param {Vector2} p1 - The end point of the line segment.
- * @returns {boolean} True if x is strictly to the left, false otherwise (right or collinear).
  */
 export function rightOfLine(x, p0, p1) {
   const v_x = p1.x - p0.x;
   const v_y = p1.y - p0.y;
   const w_x = x.x - p0.x;
   const w_y = x.y - p0.y;
-  // Calculate the 2D cross product (determinant)
   const crossProduct = v_x * w_y - v_y * w_x;
-  // Return true if the cross product is positive (indicating left)
   return crossProduct < 0.0;
 }
