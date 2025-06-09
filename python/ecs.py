@@ -7,13 +7,13 @@ from dataclasses import dataclass, field
 
 @dataclass
 class PositionComponent:
-    """Stores the 2D position of an entity."""
-    pos: np.ndarray = field(default_factory=lambda: np.zeros(2, dtype=float))
+    """Stores the 3D position of an entity (with Z often unused for 2D physics)."""
+    pos: np.ndarray = field(default_factory=lambda: np.zeros(3, dtype=float))
 
 @dataclass
 class VelocityComponent:
-    """Stores the 2D velocity of an entity."""
-    vel: np.ndarray = field(default_factory=lambda: np.zeros(2, dtype=float))
+    """Stores the 3D velocity of an entity (with Z often unused for 2D physics)."""
+    vel: np.ndarray = field(default_factory=lambda: np.zeros(3, dtype=float))
 
 @dataclass
 class MassComponent:
@@ -62,7 +62,7 @@ class CableLinkComponent:
     Corresponds to CableLinkComponent in JavaScript.
     """
     # These fields are from the JS version, for tracking previous state.
-    prev_cable_attachment_time_pos: np.ndarray = field(default_factory=lambda: np.zeros(2, dtype=float))
+    prev_cable_attachment_time_pos: np.ndarray = field(default_factory=lambda: np.zeros(3, dtype=float))
     prev_cable_attachment_time_angle: float = 0.0
 
 @dataclass
