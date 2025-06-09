@@ -149,7 +149,7 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     for _ in range(2):
         attachment_system.update(world, dt)
         solver.update(world, dt)
-    
+
     # Final update to get the latest attachment points after solver corrections
     attachment_system.update(world, dt)
 
