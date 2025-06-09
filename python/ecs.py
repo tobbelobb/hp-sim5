@@ -40,7 +40,22 @@ class MomentOfInertiaComponent:
     inv_inertia: float = field(init=False)
 
     def __post_init__(self):
-        if self.inertia > 0:
+        if self.inertia > 0 and np.isfinite(self.inertia):
             self.inv_inertia = 1.0 / self.inertia
         else:
             self.inv_inertia = 0.0
+
+@dataclass
+class CableLinkComponent:
+    """
+    Indicates an entity can be part of a cable.
+    Corresponds to CableLinkComponent in JavaScript.
+    """
+    # These fields are from the JS version, for tracking previous state.
+    prev_cable_attachment_time_pos: np.ndarray = field(default_factory=lambda: np.zeros(2, dtype=float))
+    prev_cable_attachment_time_angle: float = 0.0
+
+@dataclass
+class GravityAffectedComponent:
+    """A tag component for entities affected by gravity."""
+    pass
