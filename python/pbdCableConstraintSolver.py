@@ -1,12 +1,10 @@
 import numpy as np
 
-# Note: These imports are placeholders. You may need to adjust them
-# to match the structure of your Python project.
-# from .ecs import (
-#     MassComponent, MomentOfInertiaComponent, PositionComponent,
-#     VelocityComponent, OrientationComponent, AngularVelocityComponent
-# )
-# from .cable_joints_core import CablePathComponent, CableJointComponent
+from .ecs import (
+    MassComponent, MomentOfInertiaComponent, PositionComponent,
+    VelocityComponent, OrientationComponent, AngularVelocityComponent
+)
+from .cable_joints_core import CablePathComponent, CableJointComponent
 
 class PBDCableConstraintSolver:
     """
