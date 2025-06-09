@@ -49,16 +49,16 @@ def test_does_nothing_when_compliance_is_zero():
     """
     world = World()
     e0, e1, e2 = world.create_entity(), world.create_entity(), world.create_entity()
-    world.add_component(e0, PositionComponent(np.array([0.0, 0.0])))
-    world.add_component(e1, PositionComponent(np.array([1.0, 0.0])))
-    world.add_component(e2, PositionComponent(np.array([2.0, 0.0])))
+    world.add_component(e0, PositionComponent(np.array([0.0, 0.0, 0.0])))
+    world.add_component(e1, PositionComponent(np.array([1.0, 0.0, 0.0])))
+    world.add_component(e2, PositionComponent(np.array([2.0, 0.0, 0.0])))
 
     j1 = world.create_entity()
-    aA1, aB1 = np.array([0.0, 0.0]), np.array([1.0, 0.0])
+    aA1, aB1 = np.array([0.0, 0.0, 0.0]), np.array([1.0, 0.0, 0.0])
     world.add_component(j1, CableJointComponent(e0, e1, 1.0, aA1.copy(), aB1.copy()))
 
     j2 = world.create_entity()
-    aA2, aB2 = np.array([1.0, 0.0]), np.array([2.0, 0.0])
+    aA2, aB2 = np.array([1.0, 0.0, 0.0]), np.array([2.0, 0.0, 0.0])
     world.add_component(j2, CableJointComponent(e1, e2, 1.0, aA2.copy(), aB2.copy()))
 
     path_ent = world.create_entity()
@@ -90,8 +90,8 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     """
     world = World()
     e0, e1 = world.create_entity(), world.create_entity()
-    world.add_component(e0, PositionComponent(np.array([0.0, 0.0])))
-    world.add_component(e1, PositionComponent(np.array([5.0, 0.0])))
+    world.add_component(e0, PositionComponent(np.array([0.0, 0.0, 0.0])))
+    world.add_component(e1, PositionComponent(np.array([5.0, 0.0, 0.0])))
     world.add_component(e0, VelocityComponent())
     world.add_component(e1, VelocityComponent())
     world.add_component(e0, MassComponent(1.0))
@@ -105,7 +105,7 @@ def test_clamps_each_segment_to_rest_length_when_stretched():
     world.add_component(e1, AngularVelocityComponent())
 
     j1 = world.create_entity()
-    world.add_component(j1, CableJointComponent(e0, e1, 3.0, np.array([0.0, 0.0]), np.array([5.0, 0.0])))
+    world.add_component(j1, CableJointComponent(e0, e1, 3.0, np.array([0.0, 0.0, 0.0]), np.array([5.0, 0.0, 0.0])))
 
     path_ent = world.create_entity()
     world.add_component(path_ent, CablePathComponent(joint_entities=[j1]))
@@ -138,7 +138,7 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
 
     # Fixed point at origin
     origin = world.create_entity()
-    world.add_component(origin, PositionComponent(np.array([0.0, 0.0])))
+    world.add_component(origin, PositionComponent(np.array([0.0, 0.0, 0.0])))
     world.add_component(origin, MassComponent(mass=np.inf)) # Immovable
     world.add_component(origin, MomentOfInertiaComponent(inertia=np.inf)) # Non-rotatable
     world.add_component(origin, OrientationComponent())
@@ -146,7 +146,7 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
 
     # Mass entity
     mass = world.create_entity()
-    world.add_component(mass, PositionComponent(np.array([0.0, -start_length])))
+    world.add_component(mass, PositionComponent(np.array([0.0, -start_length, 0.0])))
     world.add_component(mass, VelocityComponent())
     world.add_component(mass, MassComponent(1.0))
     world.add_component(mass, MomentOfInertiaComponent(inertia=1.0))
@@ -158,7 +158,7 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
     j = world.create_entity()
     world.add_component(j, CableJointComponent(
         origin, mass, rest_length,
-        np.array([0.0, 0.0]), np.array([0.0, -start_length])
+        np.array([0.0, 0.0, 0.0]), np.array([0.0, -start_length, 0.0])
     ))
 
     path_ent = world.create_entity()
@@ -169,7 +169,7 @@ def test_pendulum_constraint_keeps_mass_within_rest_length_under_gravity():
     solver = PBDCableConstraintSolver()
     dt = 0.016
     world.set_resource('dt', dt)
-    world.set_resource('gravity', np.array([0.0, -9.8]))
+    world.set_resource('gravity', np.array([0.0, -9.8, 0.0]))
 
     for _ in range(5):
         gravity_system.update(world, dt)
