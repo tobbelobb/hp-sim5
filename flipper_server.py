@@ -276,7 +276,7 @@ def setup_scene(world):
         pos = np.array([pos_tuple[0], pos_tuple[1], 0.0])
         ball = world.create_entity()
         world.add_component(ball, BallTagComponent())
-        world.add_component(ball, PositionComponent(pos))
+        world.add_component(ball, PositionComponent(pos.copy()))
         world.add_component(ball, VelocityComponent(np.zeros(3)))
         world.add_component(ball, RadiusComponent(ball_radius))
         world.add_component(ball, MassComponent(ball_mass))
@@ -287,7 +287,7 @@ def setup_scene(world):
         world.add_component(ball, AngularVelocityComponent(0.0))
         world.add_component(ball, MomentOfInertiaComponent(0.5 * ball_mass * ball_radius**2))
         world.add_component(ball, PrevFinalOrientationComponent(0.0))
-        world.add_component(ball, PrevFinalPosComponent(pos))
+        world.add_component(ball, PrevFinalPosComponent(pos.copy()))
         ball_ids.append(ball)
     ball1, ball2 = ball_ids[0], ball_ids[1]
 
@@ -369,12 +369,12 @@ def setup_scene(world):
     pos_obs4 = world.get_component(obs4, PositionComponent).pos
     radius_obs4 = world.get_component(obs4, RadiusComponent).radius
 
-    world.add_component(obs4, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs4))
-    world.add_component(obs3, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs3))
+    world.add_component(obs4, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs4.copy()))
+    world.add_component(obs3, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs3.copy()))
     world.add_component(obs4, CoefficientOfFrictionComponent(friction_coefficient))
     world.add_component(obs3, CoefficientOfFrictionComponent(friction_coefficient))
-    world.add_component(ball1, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball1))
-    world.add_component(ball2, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball2))
+    world.add_component(ball1, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball1.copy()))
+    world.add_component(ball2, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball2.copy()))
     world.add_component(ball1, CoefficientOfFrictionComponent(friction_coefficient))
     world.add_component(ball2, CoefficientOfFrictionComponent(friction_coefficient))
 

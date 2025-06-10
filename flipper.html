@@ -1034,7 +1034,7 @@ canvas {
     // --- Main Loop ---
     let lastTime = 0;           // in ms
     let accumulator = 0.0;      // in seconds
-    let doStep = false; // Whether to do a single step when paused
+    let doStep = true; // Whether to do a single step when paused
 
     function gameLoop(currentTime) {
       const dt = world.getResource('dt');
