@@ -698,7 +698,7 @@ async def handler(websocket):
             pause_state.paused = True
         elif action == 'reset':
             setup_scene(world)
-            input_system = world.get_system(RemoteInputSystem) # Re-get system instance
+            input_system = world.get_system(RemoteInputSystem)
         elif action == 'pause':
             pause_state.paused = data['paused']
         elif action == 'input':
