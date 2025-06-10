@@ -62,6 +62,8 @@
  1. `npm install`
  2. `npm test` — run all unit tests.
  3. Open `cable_joints/cable_joints.html` or `flipper.html` in a browser for interactive demos.
+ 4. `python flipper_server.py`
+ 5. Open `flipper_python.html` for a fully Python driven version of flipper.html.
 
- ---  
- _This README was generated to provide an overview of the Cable Joints codebase._  
+ ---
+ _This README was generated to provide an overview of the Cable Joints codebase._
