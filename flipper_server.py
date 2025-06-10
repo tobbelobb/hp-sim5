@@ -488,7 +488,8 @@ def world_to_json(world):
 
         cable_render_data = {
             'joints': [],
-            'arcs': []
+            'arcs': [],
+            'links': []
         }
 
         # 1. Joints
@@ -534,6 +535,46 @@ def world_to_json(world):
                     'anticlockwise': anticlockwise,
                     'is_taut': bool(is_taut)
                 })
+        
+        # 3. Hybrid link markers
+        for i, link_type in enumerate(path.link_types):
+            link_data = {"type": link_type}
+            if link_type == 'hybrid-attachment':
+                attachment_point = None
+                if i == 0:
+                    joint = world.get_component(path.joint_entities[0], CableJointComponent)
+                    attachment_point = joint.attachment_point_a_world
+                else:  # Last link
+                    joint = world.get_component(path.joint_entities[-1], CableJointComponent)
+                    attachment_point = joint.attachment_point_b_world
+                
+                if attachment_point is not None:
+                    link_data['attachmentPoint'] = attachment_point.tolist()[:2]
+
+            elif link_type == 'hybrid':
+                roller_id = None
+                tangent_point = None
+                if i == 0:
+                    joint = world.get_component(path.joint_entities[0], CableJointComponent)
+                    roller_id = joint.entity_a
+                    tangent_point = joint.attachment_point_a_world
+                else:  # Last link
+                    joint = world.get_component(path.joint_entities[-1], CableJointComponent)
+                    roller_id = joint.entity_b
+                    tangent_point = joint.attachment_point_b_world
+
+                center_comp = world.get_component(roller_id, PositionComponent)
+                radius_comp = world.get_component(roller_id, RadiusComponent)
+
+                if center_comp and radius_comp and tangent_point is not None:
+                    link_data['center'] = center_comp.pos.tolist()[:2]
+                    link_data['radius'] = radius_comp.radius
+                    link_data['tangentPoint'] = tangent_point.tolist()[:2]
+                    link_data['storedLength'] = path.stored[i]
+                    link_data['cw'] = path.cw[i]
+            
+            cable_render_data['links'].append(link_data)
+
         state['cables'].append(cable_render_data)
 
     return json.dumps(state)

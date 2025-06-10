@@ -238,6 +238,40 @@ canvas {
                     );
                     ctx.stroke();
                 });
+
+                // Draw Hybrid Markers
+                if (cable.links) {
+                    cable.links.forEach(link => {
+                        if (link.type === 'hybrid-attachment') {
+                            if (link.attachmentPoint) {
+                                ctx.fillStyle = '#FF0000'; // Red
+                                const markerPos = toCanvasCoords(link.attachmentPoint[0], link.attachmentPoint[1]);
+                                ctx.beginPath();
+                                ctx.arc(markerPos.x, markerPos.y, 4, 0, 2 * Math.PI); // 4px radius marker
+                                ctx.fill();
+                            }
+                        } else if (link.type === 'hybrid') {
+                            if (link.center && link.radius > 1e-9) {
+                                const center_sim = { x: link.center[0], y: link.center[1] };
+                                const tangent_sim = { x: link.tangentPoint[0], y: link.tangentPoint[1] };
+                                
+                                const toTangent = { x: tangent_sim.x - center_sim.x, y: tangent_sim.y - center_sim.y };
+                                const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
+                                const deltaAngle = link.storedLength / link.radius;
+                                const endAngle = link.cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
+
+                                const endOfArcPointX = center_sim.x + link.radius * Math.cos(endAngle);
+                                const endOfArcPointY = center_sim.y + link.radius * Math.sin(endAngle);
+
+                                ctx.fillStyle = '#FF0000'; // Red
+                                const markerPos = toCanvasCoords(endOfArcPointX, endOfArcPointY);
+                                ctx.beginPath();
+                                ctx.arc(markerPos.x, markerPos.y, 4, 0, 2 * Math.PI);
+                                ctx.fill();
+                            }
+                        }
+                    });
+                }
             });
         }
 
