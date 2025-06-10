@@ -71,9 +71,9 @@ canvas {
     let cScale, simHeight = 1.7, simWidth = 1.0;
 
     let ws;
-    let accumulator = 0.0; // in milliseconds
-    const dt_ms = (1.0 / 300.0) * 1000.0;
-    const maxAccumulator = dt_ms * 5; // To prevent spiral of death
+    let accumulator = 0.0; // in seconds
+    const dt = (1.0 / 300.0);
+    const maxAccumulator = dt * 5; // To prevent spiral of death
 
     function setupCanvas() {
         canvas.width = canvas.clientWidth;
@@ -337,23 +337,25 @@ canvas {
 
     let lastTime = 0;
     function gameLoop(currentTime) {
-        if (!lastTime) lastTime = currentTime;
-        const deltaTime = currentTime - lastTime;
-        lastTime = currentTime;
+        if (!lastTime) {
+            lastTime = currentTime;
+        }
 
-        if (!isPaused && ws && ws.readyState === WebSocket.OPEN) {
-            accumulator += deltaTime;
+        const speedScale = 0.6; // Match flipper.html
+        const frameSec = speedScale * (currentTime - lastTime) / 1000.0;
 
-            // Clamp accumulator to avoid spiral of death if tab is inactive for a while
-            if (accumulator > maxAccumulator) {
-                accumulator = maxAccumulator;
-            }
+        if (frameSec >= dt) {
+            lastTime = currentTime;
 
-            const stepsToTake = Math.floor(accumulator / dt_ms);
+            if (!isPaused && ws && ws.readyState === WebSocket.OPEN) {
+                accumulator = Math.min(accumulator + frameSec, maxAccumulator);
 
-            if (stepsToTake > 0) {
-                accumulator -= stepsToTake * dt_ms;
-                ws.send(JSON.stringify({ action: 'step', steps: stepsToTake }));
+                const stepsToTake = Math.floor(accumulator / dt);
+
+                if (stepsToTake > 0) {
+                    accumulator -= stepsToTake * dt;
+                    ws.send(JSON.stringify({ action: 'step', steps: stepsToTake }));
+                }
             }
         }
         requestAnimationFrame(gameLoop);

@@ -1034,10 +1034,10 @@ canvas {
     // --- Main Loop ---
     let lastTime = 0;           // in ms
     let accumulator = 0.0;      // in seconds
-    let doStep = true; // Whether to do a single step when paused
+    let doStep = false; // Whether to do a single step when paused
 
     function gameLoop(currentTime) {
-      const dt = world.getResource('dt');           // e.g. 1/150
+      const dt = world.getResource('dt');
       const pauseState = world.getResource('pauseState');
 
       // first frame init
@@ -1045,7 +1045,7 @@ canvas {
         lastTime = currentTime;
       }
       const speedScale = window._flipperSpeedScale ?? 0.6;
-      let frameSec = speedScale*(currentTime - lastTime) / 1000;
+      let frameSec = speedScale * (currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
         // optional clamp to avoid spiral‑of‑death if caller hitches
@@ -1060,8 +1060,11 @@ canvas {
               pauseState.paused = true;
               doStep = false;
             }
+            accumulator -= dt;
+          } else {
+            // If paused, stop consuming accumulator and wait for next frame.
+            break;
           }
-          accumulator -= dt;
         }
       }
 
