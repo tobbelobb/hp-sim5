@@ -480,8 +480,28 @@ canvas {
     function handlePointerDown(event) {
         event.preventDefault();
         if (ws && ws.readyState === WebSocket.OPEN) {
-            const { x, y } = toSimCoords(event.clientX, event.clientY);
-            ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x, y }));
+            const { x: simX, y: simY } = toSimCoords(event.clientX, event.clientY);
+
+            // Client-side grab detection to unpause the game immediately.
+            let isGrabClick = false;
+            if (simState.balls) {
+                for (const ball of simState.balls) {
+                    const dx = simX - ball.x;
+                    const dy = simY - ball.y;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq <= ball.radius * ball.radius) {
+                        isGrabClick = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isGrabClick) {
+                isPaused = false;
+                pauseBtn.textContent = "Pause";
+            }
+
+            ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x: simX, y: simY }));
         }
     }
 
