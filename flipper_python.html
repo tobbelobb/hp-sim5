@@ -151,6 +151,56 @@ canvas {
             ctx.restore();
         });
 
+        // Draw Cables
+        if (simState.cables) {
+            const cableColorTaut = '#00FFFF'; // Cyan
+            const cableColorSlack = 'orange';
+
+            simState.cables.forEach(cable => {
+                ctx.lineWidth = 2.0;
+
+                // Draw joints (line segments)
+                cable.joints.forEach(joint => {
+                    const pA = toCanvasCoords(joint.pA[0], joint.pA[1]);
+                    const pB = toCanvasCoords(joint.pB[0], joint.pB[1]);
+                    const dist = Math.hypot(joint.pB[0] - joint.pA[0], joint.pB[1] - joint.pA[1]);
+                    
+                    ctx.strokeStyle = (joint.restLength > dist + 1e-6) ? cableColorSlack : cableColorTaut;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(pA.x, pA.y);
+                    ctx.lineTo(pB.x, pB.y);
+                    ctx.stroke();
+                });
+
+                // Draw arcs (for rolling contacts)
+                cable.arcs.forEach(arc => {
+                    const center = toCanvasCoords(arc.center[0], arc.center[1]);
+                    const radius = arc.radius * cScale;
+                    
+                    const p1_sim = {x: arc.p1[0], y: arc.p1[1]};
+                    const center_sim = {x: arc.center[0], y: arc.center[1]};
+                    const p2_sim = {x: arc.p2[0], y: arc.p2[1]};
+
+                    const a1 = Math.atan2(p1_sim.y - center_sim.y, p1_sim.x - center_sim.x);
+                    const a2 = Math.atan2(p2_sim.y - center_sim.y, p2_sim.x - center_sim.x);
+
+                    ctx.strokeStyle = arc.is_taut ? cableColorTaut : cableColorSlack;
+
+                    ctx.beginPath();
+                    ctx.arc(
+                        center.x,
+                        center.y,
+                        radius,
+                        -a1, // negate for canvas' flipped y-axis
+                        -a2,
+                        arc.anticlockwise
+                    );
+                    ctx.stroke();
+                });
+            });
+        }
+
         // Update Score
         scoreEl.textContent = simState.score;
     }

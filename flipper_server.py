@@ -20,7 +20,7 @@ from python.common_systems import (
 from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from python.geometry import right_of_line, tangent_from_point_to_circle, tangent_from_circle_to_circle
-from python.cable_joints_components import CableJointComponent, create_cable_path_component
+from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 
 # --- Server-Side Systems ---
 
@@ -431,7 +431,7 @@ def setup_scene(world):
 
 def world_to_json(world):
     state = {
-        'balls': [], 'obstacles': [], 'flippers': [], 'border': [], 'score': 0
+        'balls': [], 'obstacles': [], 'flippers': [], 'border': [], 'score': 0, 'cables': []
     }
     for ball_id in world.query([BallTagComponent, PositionComponent, RadiusComponent]):
         pos = world.get_component(ball_id, PositionComponent).pos
@@ -464,6 +464,63 @@ def world_to_json(world):
     if score_query:
         score_id = score_query[0]
         state['score'] = world.get_component(score_id, ScoreComponent).value
+
+    # Serialize Cables
+    path_entities = world.query([CablePathComponent])
+    for path_id in path_entities:
+        path = world.get_component(path_id, CablePathComponent)
+        if not path.joint_entities:
+            continue
+
+        cable_render_data = {
+            'joints': [],
+            'arcs': []
+        }
+
+        # 1. Joints
+        for joint_id in path.joint_entities:
+            joint = world.get_component(joint_id, CableJointComponent)
+            pA = joint.attachment_point_a_world.tolist()[:2]
+            pB = joint.attachment_point_b_world.tolist()[:2]
+            rest_length = joint.rest_length
+            cable_render_data['joints'].append({'pA': pA, 'pB': pB, 'restLength': rest_length})
+
+        # 2. Rolling arcs
+        for i in range(1, len(path.link_types) - 1):
+            if path.link_types[i] == 'rolling':
+                j_prev_id = path.joint_entities[i - 1]
+                j_next_id = path.joint_entities[i]
+                j_prev = world.get_component(j_prev_id, CableJointComponent)
+                j_next = world.get_component(j_next_id, CableJointComponent)
+
+                roller_id = j_prev.entity_b
+                center_comp = world.get_component(roller_id, PositionComponent)
+                radius_comp = world.get_component(roller_id, RadiusComponent)
+                if not center_comp or not radius_comp:
+                    continue
+
+                center = center_comp.pos.tolist()[:2]
+                radius = radius_comp.radius
+                p1 = j_prev.attachment_point_b_world.tolist()[:2]
+                p2 = j_next.attachment_point_a_world.tolist()[:2]
+                anticlockwise = not path.cw[i]
+
+                epsilon = 1e-6
+                dist_prev = np.linalg.norm(j_prev.attachment_point_a_world - j_prev.attachment_point_b_world)
+                tension_prev = dist_prev > (j_prev.rest_length + epsilon)
+                dist_next = np.linalg.norm(j_next.attachment_point_a_world - j_next.attachment_point_b_world)
+                tension_next = dist_next > (j_next.rest_length + epsilon)
+                is_taut = tension_prev and tension_next
+
+                cable_render_data['arcs'].append({
+                    'center': center,
+                    'radius': radius,
+                    'p1': p1,
+                    'p2': p2,
+                    'anticlockwise': anticlockwise,
+                    'is_taut': is_taut
+                })
+        state['cables'].append(cable_render_data)
 
     return json.dumps(state)
 
