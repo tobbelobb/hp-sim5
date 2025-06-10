@@ -69,6 +69,7 @@ canvas {
     let simState = {};
     let isPaused = true;
     let cScale, simHeight = 1.7, simWidth = 1.0;
+    const sag_multiplier = 0.3; // For catenary drawing
 
     let ws;
     let accumulator = 0.0; // in seconds
@@ -91,6 +92,63 @@ canvas {
         const simX = (canvasX - rect.left) / cScale;
         const simY = (canvas.height - (canvasY - rect.top)) / cScale;
         return { x: simX, y: simY };
+    }
+
+    function _drawCatenary(ctx, pA_sim, pB_sim, length, obstacles, sag_multiplier, toCanvasCoords, segments = 20) {
+        const dx = pB_sim.x - pA_sim.x;
+        const dy = pB_sim.y - pA_sim.y;
+        const D = Math.hypot(dx, dy);
+        if (D <= 1e-6) return;
+
+        // parabolic sag magnitude
+        const sag = Math.max(length - D, 0) * sag_multiplier;
+        const sagDir = { x: 0, y: -1 }; // default sag direction, normalized
+
+        ctx.beginPath();
+
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            // 1) ideal point along straight+parabola
+            const sagOff = sag * 4 * t * (1 - t);
+            let pt = {
+                x: pA_sim.x + dx * t + sagDir.x * sagOff,
+                y: pA_sim.y + dy * t + sagDir.y * sagOff
+            };
+
+            // 2) obstacle-avoidance
+            for (const obs of obstacles) {
+                const obs_pos = { x: obs.x, y: obs.y };
+                const v_x = pt.x - obs_pos.x;
+                const v_y = pt.y - obs_pos.y;
+                const d2 = v_x * v_x + v_y * v_y;
+                const r2 = obs.radius * obs.radius;
+
+                if (d2 < r2) {
+                    const d = Math.sqrt(d2);
+                    const push = obs.radius - d;
+                    if (d > 1e-9) {
+                        const pd_x = v_x / d;
+                        const pd_y = v_y / d;
+                        pt.x += pd_x * push;
+                        pt.y += pd_y * push;
+                    } else {
+                        // exactly at center -> force straight-down
+                        pt.x = obs_pos.x;
+                        pt.y = obs_pos.y - obs.radius;
+                    }
+                }
+            }
+
+            // 3) draw
+            const c_pt = toCanvasCoords(pt.x, pt.y);
+            if (i === 0) {
+                ctx.moveTo(c_pt.x, c_pt.y);
+            } else {
+                ctx.lineTo(c_pt.x, c_pt.y);
+            }
+        }
+
+        ctx.stroke();
     }
 
     function render() {
@@ -200,21 +258,43 @@ canvas {
             const cableColorTaut = '#00FFFF'; // Cyan
             const cableColorSlack = 'orange';
 
+            // The obstacles for catenary drawing are all balls and obstacles.
+            // In the JS version, it's only entities with CableLinkComponent.
+            // Here we don't have that info, so we use all of them.
+            const obstaclesForCatenary = [
+                ...simState.balls.map(b => ({ x: b.x, y: b.y, radius: b.radius })),
+                ...simState.obstacles.map(o => ({ x: o.x, y: o.y, radius: o.radius }))
+            ];
+            // Also add flipper pivot and tip as obstacles
+            simState.flippers.forEach(flipper => {
+                obstaclesForCatenary.push({ x: flipper.x, y: flipper.y, radius: flipper.radius });
+                const tipX = flipper.x + flipper.length * Math.cos(flipper.angle);
+                const tipY = flipper.y + flipper.length * Math.sin(flipper.angle);
+                obstaclesForCatenary.push({ x: tipX, y: tipY, radius: flipper.radius });
+            });
+
             simState.cables.forEach(cable => {
                 ctx.lineWidth = 2.0;
 
                 // Draw joints (line segments)
                 cable.joints.forEach(joint => {
-                    const pA = toCanvasCoords(joint.pA[0], joint.pA[1]);
-                    const pB = toCanvasCoords(joint.pB[0], joint.pB[1]);
-                    const dist = Math.hypot(joint.pB[0] - joint.pA[0], joint.pB[1] - joint.pA[1]);
+                    const pA_sim = { x: joint.pA[0], y: joint.pA[1] };
+                    const pB_sim = { x: joint.pB[0], y: joint.pB[1] };
+                    const dist = Math.hypot(pB_sim.x - pA_sim.x, pB_sim.y - pA_sim.y);
+                    const isSlack = joint.restLength > dist + 1e-6;
 
-                    ctx.strokeStyle = (joint.restLength > dist + 1e-6) ? cableColorSlack : cableColorTaut;
+                    ctx.strokeStyle = isSlack ? cableColorSlack : cableColorTaut;
 
-                    ctx.beginPath();
-                    ctx.moveTo(pA.x, pA.y);
-                    ctx.lineTo(pB.x, pB.y);
-                    ctx.stroke();
+                    if (isSlack) {
+                        _drawCatenary(ctx, pA_sim, pB_sim, joint.restLength, obstaclesForCatenary, sag_multiplier, toCanvasCoords);
+                    } else {
+                        const pA_canvas = toCanvasCoords(pA_sim.x, pA_sim.y);
+                        const pB_canvas = toCanvasCoords(pB_sim.x, pB_sim.y);
+                        ctx.beginPath();
+                        ctx.moveTo(pA_canvas.x, pA_canvas.y);
+                        ctx.lineTo(pB_canvas.x, pB_canvas.y);
+                        ctx.stroke();
+                    }
                 });
 
                 // Draw arcs (for rolling contacts)
