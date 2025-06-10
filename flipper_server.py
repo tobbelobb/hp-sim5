@@ -66,7 +66,7 @@ class PBDBallFlipperCollisions:
 
                 tip = self._get_flipper_tip(fp, fs)
                 closest = self._closest_point_on_segment(p1, fp, tip)
-                
+
                 direction = p1 - closest
                 d_sq = np.dot(direction, direction)
                 r_sum = r1 + fr
@@ -85,12 +85,12 @@ class PBDBallFlipperCollisions:
                 radius_vec = closest - fp
                 contact_point_on_flipper = fp + radius_vec + direction * -fr
                 radius_to_surface = contact_point_on_flipper - fp
-                
+
                 surface_vel = np.array([-fs.current_angular_velocity * radius_to_surface[1], fs.current_angular_velocity * radius_to_surface[0], 0.0])
-                
+
                 v_dot = np.dot(v1, direction)
                 surf_vel_dot = np.dot(surface_vel, direction)
-                
+
                 v1 += direction * (surf_vel_dot - v_dot)
 
 class PBDBallBorderCollisions:
@@ -106,7 +106,7 @@ class PBDBallBorderCollisions:
         ball_entities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, RestitutionComponent])
         border_entities = world.query([BorderComponent])
         if not border_entities: return
-        
+
         border_comp = world.get_component(border_entities[0], BorderComponent)
         border_points = border_comp.points
 
@@ -129,7 +129,7 @@ class PBDBallBorderCollisions:
                     min_dist_sq = dist_sq
                     closest_seg_point = closest_pt
                     edge_start, edge_end = a, b
-            
+
             if min_dist_sq > r1 * r1: continue
 
             ball_to_closest = p1 - closest_seg_point
@@ -174,7 +174,7 @@ class RemoteInputSystem:
             border_ents = world.query([BorderComponent])
             if not border_ents: return
             border_points = world.get_component(border_ents[0], BorderComponent).points
-            
+
             right_click = right_of_line(click_pos, border_points[0], border_points[1]) and \
                           right_of_line(click_pos, border_points[1], border_points[2])
             left_click = right_of_line(click_pos, border_points[5], border_points[6]) and \
@@ -201,7 +201,7 @@ class RemoteInputSystem:
                     state = world.get_component(id, FlipperStateComponent)
                     if np.sum((click_pos - pos)**2) < state.length**2:
                         state.pressed = True
-        
+
         if self.releases:
             release_pos = self.releases.pop(0)
             flipper_entities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent])
@@ -222,10 +222,10 @@ class RemoteInputSystem:
 
 def setup_scene(world):
     world.clear()
-    
+
     sim_height = 1.7
     sim_width = 1.0 # Aspect ratio 1/1.7, will be updated by client
-    
+
     world.set_resource('gravity', np.array([0.0, -2.0, 0.0]))
     world.set_resource('dt', 1.0 / 300.0)
     world.set_resource('simWidth', sim_width)
@@ -246,7 +246,7 @@ def setup_scene(world):
     ball_radius = 0.03
     ball_mass = np.pi * ball_radius**2
     ball_restitution = 0.4
-    
+
     for pos in [(0.90, 0.95), (0.08, 0.5)]:
         ball = world.create_entity()
         world.add_component(ball, BallTagComponent())
@@ -340,7 +340,7 @@ def world_to_json(world):
             'x': pos[0], 'y': pos[1], 'radius': radius, 'length': f_state.length,
             'angle': f_state.rest_angle + f_state.sign * f_state.rotation
         })
-    
+
     border_query = world.query([BorderComponent])
     if border_query:
         border_id = border_query[0]
@@ -356,17 +356,17 @@ def world_to_json(world):
 
 # --- WebSocket Handler ---
 
-async def handler(websocket, path):
+async def handler(websocket):
     world = World()
     setup_scene(world)
-    
+
     # Send initial state
     await websocket.send(world_to_json(world))
 
     async for message in websocket:
         data = json.loads(message)
         action = data.get('action')
-        
+
         pause_state = world.get_resource('pauseState')
 
         if action == 'step':
@@ -388,7 +388,7 @@ async def handler(websocket, path):
                 input_system.clicks.append(pos)
             elif data['type'] == 'release':
                 input_system.releases.append(pos)
-        
+
         await websocket.send(world_to_json(world))
 
 async def main():
