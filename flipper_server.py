@@ -188,7 +188,7 @@ class RemoteInputSystem:
             for fid in flipper_entities:
                 pos = world.get_component(fid, PositionComponent).pos
                 flipper_data.append({'id': fid, 'x': pos[0]})
-            
+
             flipper_data.sort(key=lambda f: f['x'])
             left_flipper_id = flipper_data[0]['id']
             right_flipper_id = flipper_data[-1]['id']
@@ -207,7 +207,7 @@ class RemoteInputSystem:
                     if dist_sq < min_dist_sq:
                         min_dist_sq = dist_sq
                         closest_flipper_id = fid
-                
+
                 if closest_flipper_id is not None:
                     state = world.get_component(closest_flipper_id, FlipperStateComponent)
                     # Check if click is within flipper's radius of influence (e.g., its length)
@@ -306,7 +306,7 @@ def setup_scene(world):
     world.add_component(flipper2, FlipperTagComponent())
     world.add_component(flipper2, PositionComponent(np.array([0.74, 0.22, 0.0])))
     world.add_component(flipper2, RadiusComponent(flip_radius))
-    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + 0.5, -flip_max_rot, flip_ang_vel))
+    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + 0.5, -flip_max_rot, flip_ang_vel, sign: -1))
     world.add_component(flipper2, RenderableComponent('flipper', '#FF0000'))
 
     score_entity = world.create_entity()
