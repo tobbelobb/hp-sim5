@@ -8,7 +8,7 @@ def test_point_to_the_right_of_horizontal_line():
     p0 = np.array([0.0, 0.0, 0.0])
     p1 = np.array([1.0, 0.0, 0.0])
     x = np.array([0.0, -1.0, 0.0])
-    assert right_of_line(x, p0, p1) is True
+    assert right_of_line(x, p0, p1)
 
 def test_point_to_the_left_of_horizontal_line():
     """
@@ -17,7 +17,7 @@ def test_point_to_the_left_of_horizontal_line():
     p0 = np.array([0.0, 0.0, 0.0])
     p1 = np.array([1.0, 0.0, 0.0])
     x = np.array([0.0, 1.0, 0.0])
-    assert right_of_line(x, p0, p1) is False
+    assert not right_of_line(x, p0, p1)
 
 def test_point_collinear_on_line_returns_false():
     """
@@ -26,7 +26,7 @@ def test_point_collinear_on_line_returns_false():
     p0 = np.array([0.0, 0.0, 0.0])
     p1 = np.array([1.0, 0.0, 0.0])
     x = np.array([0.5, 0.0, 0.0])
-    assert right_of_line(x, p0, p1) is False
+    assert not right_of_line(x, p0, p1)
 
 def test_point_to_the_right_of_slanted_line():
     """
@@ -35,4 +35,4 @@ def test_point_to_the_right_of_slanted_line():
     p0 = np.array([0.0, 0.0, 0.0])
     p1 = np.array([1.0, 1.0, 0.0])
     x = np.array([1.0, 0.0, 0.0])
-    assert right_of_line(x, p0, p1) is True
+    assert right_of_line(x, p0, p1)

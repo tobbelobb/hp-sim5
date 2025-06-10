@@ -18,6 +18,7 @@ from .ecs import (
     ObstaclePushComponent,
     ScoredTagComponent,
     DistanceConstraintComponent,
+    FlipperTipComponent,
     PrevFinalOrientationComponent
 )
 
@@ -59,7 +60,7 @@ class PBDAngularVelocityUpdateSystem:
                 continue
 
             moi_comp = world.get_component(entity_id, MomentOfInertiaComponent)
-            if moi_comp and moi_comp.invInertia <= 0: # Skip static or non-rotational objects
+            if moi_comp and moi_comp.inv_inertia <= 0: # Skip static or non-rotational objects
                 continue
 
             orientation_comp = world.get_component(entity_id, OrientationComponent)
@@ -71,7 +72,7 @@ class PBDAngularVelocityUpdateSystem:
 
             delta_angle = self._normalize_angle(current_angle - prev_angle)
 
-            angular_vel_comp.angularVelocity = delta_angle / dt
+            angular_vel_comp.angular_velocity = delta_angle / dt
 
 class PBDVelocityUpdateSystem:
     run_in_pause = False
@@ -98,6 +99,25 @@ class PBDVelocityUpdateSystem:
 
             # v = (x_new - x_old) / dt
             vel_comp.vel = (pos_comp.pos - prev_final_pos_comp.pos) / dt
+
+
+class FlipperTipLinkSystem:
+    run_in_pause = False  # Pythonic snake_case
+
+    def update(self, world, dt):
+        for tip_id in world.query([FlipperTipComponent, PositionComponent]):
+            tip_comp = world.get_component(tip_id, FlipperTipComponent)
+            flip_id = tip_comp.flipper_entity_id
+
+            pivot_pos = world.get_component(flip_id, PositionComponent).pos
+            state = world.get_component(flip_id, FlipperStateComponent)
+
+            angle = state.rest_angle + state.sign * state.rotation
+            dir_vec = np.array([math.cos(angle), math.sin(angle), 0.0])  # 3D assumed
+
+            tip_pos = pivot_pos + dir_vec * state.length
+
+            world.get_component(tip_id, PositionComponent).pos[:] = tip_pos
 
 class GravitySystem:
     run_in_pause = False
@@ -138,12 +158,12 @@ class XPBDDistanceConstraintSystem:
             mass_a_comp = world.get_component(entity_a, MassComponent)
             inv_mass_a = 1.0 / mass_a_comp.mass if mass_a_comp and mass_a_comp.mass > 0 else 0.0
             moi_a_comp = world.get_component(entity_a, MomentOfInertiaComponent)
-            inv_inertia_a = moi_a_comp.invInertia if moi_a_comp else 0.0
+            inv_inertia_a = moi_a_comp.inv_inertia if moi_a_comp else 0.0
 
             mass_b_comp = world.get_component(entity_b, MassComponent)
             inv_mass_b = 1.0 / mass_b_comp.mass if mass_b_comp and mass_b_comp.mass > 0 else 0.0
             moi_b_comp = world.get_component(entity_b, MomentOfInertiaComponent)
-            inv_inertia_b = moi_b_comp.invInertia if moi_b_comp else 0.0
+            inv_inertia_b = moi_b_comp.inv_inertia if moi_b_comp else 0.0
 
             if inv_mass_a + inv_mass_b + inv_inertia_a + inv_inertia_b <= epsilon:
                 continue
@@ -164,7 +184,7 @@ class XPBDDistanceConstraintSystem:
             denominator = w_sum + alpha_tilde
             if denominator <= epsilon:
                 continue
-            
+
             # Note: `constraint.lambda` from JS is renamed to `constraint.lambda_val`
             # to avoid conflict with Python's `lambda` keyword.
             # The `DistanceConstraintComponent` dataclass should reflect this.
@@ -208,7 +228,7 @@ class AngularMovementSystem:
         for entity_id in entities:
             orientation = world.get_component(entity_id, OrientationComponent)
             angular_vel = world.get_component(entity_id, AngularVelocityComponent)
-            orientation.angle += angular_vel.angularVelocity * dt
+            orientation.angle += angular_vel.angular_velocity * dt
 
 class PBDBallBallCollisions:
     run_in_pause = False
@@ -294,7 +314,7 @@ class PBDBallObstacleCollisions:
                 obs_moi_comp = world.get_component(obs_id, MomentOfInertiaComponent)
                 obs_friction_comp = world.get_component(obs_id, CoefficientOfFrictionComponent)
 
-                omega_obs = obs_ang_vel_comp.angularVelocity if obs_ang_vel_comp else 0.0
+                omega_obs = obs_ang_vel_comp.angular_velocity if obs_ang_vel_comp else 0.0
                 mu = obs_friction_comp.mu if obs_friction_comp else 0.0
 
                 tangent = np.array([-direction[1], direction[0], direction[2]])
@@ -306,7 +326,7 @@ class PBDBallObstacleCollisions:
                 s_sign = 0
                 if v_surf_obs_tangential_comp != 0 and mu != 0:
                     s_sign = math.copysign(1, v_surf_obs_tangential_comp)
-                
+
                 effective_push_dir = direction.copy()
                 if s_sign != 0:
                     effective_push_dir += tangent * (mu * s_sign)
@@ -320,16 +340,16 @@ class PBDBallObstacleCollisions:
                     if abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9:
                         j_t_on_ball_vec = tangent * (delta_v_ball_tangential_actual_scalar_comp * ball_mass_comp.mass)
 
-                        if ball_ang_vel_comp and ball_moi_comp and ball_moi_comp.invInertia > 0:
+                        if ball_ang_vel_comp and ball_moi_comp and ball_moi_comp.inv_inertia > 0:
                             r_contact_ball = direction * -r1
                             delta_l_ball = r_contact_ball[0] * j_t_on_ball_vec[1] - r_contact_ball[1] * j_t_on_ball_vec[0]
-                            ball_ang_vel_comp.angularVelocity += delta_l_ball * ball_moi_comp.invInertia
+                            ball_ang_vel_comp.angular_velocity += delta_l_ball * ball_moi_comp.inv_inertia
 
-                        if obs_ang_vel_comp and obs_moi_comp and obs_moi_comp.invInertia > 0:
+                        if obs_ang_vel_comp and obs_moi_comp and obs_moi_comp.inv_inertia > 0:
                             j_t_on_obs_vec = j_t_on_ball_vec * -1
                             r_contact_obs = direction * r2
                             delta_l_obs = r_contact_obs[0] * j_t_on_obs_vec[1] - r_contact_obs[1] * j_t_on_obs_vec[0]
-                            obs_ang_vel_comp.angularVelocity += delta_l_obs * obs_moi_comp.invInertia
+                            obs_ang_vel_comp.angular_velocity += delta_l_obs * obs_moi_comp.inv_inertia
 
                 grabbed = world.get_resource('grabbedBall')
                 if ball_id != grabbed:

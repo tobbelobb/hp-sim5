@@ -3,7 +3,7 @@ import numpy as np
 
 from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent, OrientationComponent
 from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.updateAttachmentPoints import update_attachment_points
+from python.update_attachment_points import update_attachment_points
 from python.geometry import (
     tangent_from_point_to_circle,
     tangent_from_circle_to_point,
@@ -137,7 +137,7 @@ def test_rolling_to_rolling_hybrid_translation():
 
     # Cable Path
     path_id = world.create_entity()
-    
+
     # Manual path setup, replicating JS constructor logic
     stored_on_a = signed_arc_length_on_wheel(joint_comp_0.attachment_point_b_world, joint_comp.attachment_point_a_world, pos_a, radius_a, cw_a, True)
     total_rest = joint_comp_0.rest_length + joint_comp.rest_length + stored_on_a

@@ -3,7 +3,7 @@ import numpy as np
 
 from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
 from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.splitJoints import split_joints
+from python.split_joints import split_joints
 from python.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point
 
 def test_split_joints_does_nothing_for_a_single_joint_path_that_misses_every_wheel():
@@ -202,7 +202,7 @@ def test_split_joints_creates_three_joints_when_a_straight_segment_intersects_tw
     assert len(path_comp.joint_entities) == 3
 
     comps = [world.get_component(jid, CableJointComponent) for jid in path_comp.joint_entities]
-    
+
     # The path should be A -> W1 -> W2 -> B
     assert comps[0].entity_a == A
     assert comps[0].entity_b == wheel1

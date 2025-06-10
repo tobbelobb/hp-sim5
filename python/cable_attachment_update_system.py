@@ -11,8 +11,8 @@ from .geometry import (
     tangent_from_circle_to_circle, signed_arc_length_on_wheel
 )
 from .vector2 import rotate_inplace, normalize_inplace
-from .updateHybridLinkStates import update_hybrid_link_states
-from .splitJoints import split_joints
+from .update_hybrid_link_states import update_hybrid_link_states
+from .split_joints import split_joints
 
 def _effective_cw(path, link_index, travelling_from_circle):
     if link_index == 0 and travelling_from_circle:
@@ -196,7 +196,7 @@ def _merge_joints(world):
                     s_a = 0.0
                     if is_rolling_a:
                         s_a = signed_arc_length_on_wheel(p_a1, attachment_a_current, pos_a, radius_a, cw_a)
-                    
+
                     s_b = 0.0
                     if is_rolling_b:
                         s_b = signed_arc_length_on_wheel(p_b2, attachment_b_current, pos_b, radius_b, cw_b)
@@ -205,7 +205,7 @@ def _merge_joints(world):
                     joint_i.rest_length -= s_a
                     path.stored[i + 2] -= s_b
                     joint_i.rest_length += s_b
-                    
+
                     re_run_merge = path.stored[i] < 0.0 or path.stored[i + 2] < 0.0
 
                     joint_i.attachment_point_a_world = attachment_a_current
@@ -228,19 +228,19 @@ def _slip_slack(world):
         for i in range(len(path.joint_entities) - 1):
             if path.link_types[i + 1] == 'attachment':
                 continue
-            
+
             j0 = world.get_component(path.joint_entities[i], CableJointComponent)
             j1 = world.get_component(path.joint_entities[i + 1], CableJointComponent)
-            
+
             d0 = np.linalg.norm(j0.attachment_point_a_world - j0.attachment_point_b_world)
             d1 = np.linalg.norm(j1.attachment_point_a_world - j1.attachment_point_b_world)
-            
+
             l0 = j0.rest_length
             l1 = j1.rest_length
-            
+
             slack0 = l0 - d0
             slack1 = l1 - d1
-            
+
             if slack0 > 0 and slack1 < 0:
                 slip = min(slack0, -slack1)
                 j0.rest_length -= slip
@@ -296,7 +296,7 @@ def _even_out_tension_friction(world):
                         normalize_inplace(v1)
                         dot = np.dot(v0[:2], v1[:2])
                         wrap_angle = np.arccos(np.clip(dot, -1.0, 1.0))
-                    
+
                     if wrap_angle > epsilon:
                         friction_active = True
                         friction_threshold = math.exp(mu * wrap_angle)
@@ -335,7 +335,7 @@ def _even_out_tension_friction(world):
                     if current_new_total > epsilon and abs(current_new_total - L_total) > epsilon:
                         L_high_new = (L_high_new / current_new_total) * L_total
                         L_low_new = (L_low_new / current_new_total) * L_total
-                    
+
                     if is_j0_high:
                         j0_comp.rest_length, j1_comp.rest_length = L_high_new, L_low_new
                     else:
@@ -357,7 +357,7 @@ def _sanity_check(world):
         path = world.get_component(path_id, CablePathComponent)
         if not path.joint_entities:
             continue
-        
+
         total_current_rest_length = sum(path.stored)
         for joint_id in path.joint_entities:
             joint = world.get_component(joint_id, CableJointComponent)
@@ -394,6 +394,6 @@ class CableAttachmentUpdateSystem:
         _slip_slack(world)
         _even_out_tension_friction(world)
         _slip_slack(world)
-        
+
         _store_cable_link_poses(world)
         _sanity_check(world)

@@ -218,6 +218,12 @@ class FlipperStateComponent:
         self.max_rotation = abs(self.max_rotation)
 
 @dataclass
+class FlipperTipComponent:
+    """Associates a tip entity with its parent flipper entity."""
+    flipper_entity_id: int
+
+
+@dataclass
 class BorderComponent:
     """
     Stores a list of 2D or 3D points that define a border polygon or polyline.

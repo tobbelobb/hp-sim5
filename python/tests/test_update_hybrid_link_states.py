@@ -3,7 +3,7 @@ import numpy as np
 
 from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
 from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.updateHybridLinkStates import update_hybrid_link_states
+from python.update_hybrid_link_states import update_hybrid_link_states
 
 # Test setup helpers
 def add_wheel(world, pos, r=1.0):
@@ -50,7 +50,7 @@ def test_first_link_hybrid_to_hybrid_attachment():
 
     assert path_comp.link_types[0] == 'hybrid-attachment'
     assert path_comp.stored[0] == pytest.approx(0.0)
-    
+
     joint = world.get_component(joint_id, CableJointComponent)
     assert joint.rest_length == pytest.approx(initial_rest - 0.2)
 
@@ -83,7 +83,7 @@ def test_last_link_hybrid_to_hybrid_attachment():
 
     assert path_comp.link_types[1] == 'hybrid-attachment'
     assert path_comp.stored[1] == pytest.approx(0.0)
-    
+
     joint = world.get_component(joint_id, CableJointComponent)
     assert joint.rest_length == pytest.approx(initial_rest - 0.15)
 
@@ -114,7 +114,7 @@ def test_first_link_hybrid_attachment_to_hybrid():
 
     assert path_comp.link_types[0] == 'hybrid'
     assert path_comp.stored[0] > 0
-    
+
     arc = path_comp.stored[0]
     joint = world.get_component(joint_id, CableJointComponent)
     assert joint.rest_length == pytest.approx(initial_rest - arc)
@@ -146,7 +146,7 @@ def test_last_link_hybrid_attachment_to_hybrid():
 
     assert path_comp.link_types[1] == 'hybrid'
     assert path_comp.stored[1] > 0
-    
+
     arc = path_comp.stored[1]
     joint = world.get_component(joint_id, CableJointComponent)
     assert joint.rest_length == pytest.approx(initial_rest - arc)

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from ..ecs import (
+from python.ecs import (
     World,
     PositionComponent,
     VelocityComponent,
@@ -10,7 +10,7 @@ from ..ecs import (
     MassComponent,
     RestitutionComponent
 )
-from ..common_systems import (
+from python.common_systems import (
     GravitySystem,
     MovementSystem,
     PBDBallBallCollisions

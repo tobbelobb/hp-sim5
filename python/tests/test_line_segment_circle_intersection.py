@@ -10,7 +10,7 @@ def test_segment_completely_outside_circle():
     """
     p1 = np.array([0.0, -1.0000001, 0.0])
     p2 = np.array([2.0, -1.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0) is False
+    assert not line_segment_circle_intersection(p1, p2, center, 1.0)
 
 def test_segment_endpoint_just_inside_circle_with_true_setting():
     """
@@ -18,7 +18,7 @@ def test_segment_endpoint_just_inside_circle_with_true_setting():
     """
     p1 = np.array([0.99999999, 0.0, 0.0])
     p2 = np.array([5.0, 0.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0, is_a_pierce_an_intersection=True) is True
+    assert line_segment_circle_intersection(p1, p2, center, 1.0, is_a_pierce_an_intersection=True)
 
 def test_segment_endpoint_just_inside_circle_with_default_false_setting():
     """
@@ -26,7 +26,7 @@ def test_segment_endpoint_just_inside_circle_with_default_false_setting():
     """
     p1 = np.array([0.99999999, 0.0, 0.0])
     p2 = np.array([5.0, 0.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0) is False
+    assert not line_segment_circle_intersection(p1, p2, center, 1.0)
 
 def test_segment_passes_through_circle():
     """
@@ -34,7 +34,7 @@ def test_segment_passes_through_circle():
     """
     p1 = np.array([-2.0, 0.0, 0.0])
     p2 = np.array([2.0, 0.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0) is True
+    assert line_segment_circle_intersection(p1, p2, center, 1.0)
 
 def test_segment_tangent_to_circle():
     """
@@ -42,7 +42,7 @@ def test_segment_tangent_to_circle():
     """
     p1 = np.array([1.0, -1.0, 0.0])
     p2 = np.array([1.0, 1.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0) is True
+    assert line_segment_circle_intersection(p1, p2, center, 1.0)
 
 def test_zero_length_segment_inside_circle():
     """
@@ -50,7 +50,7 @@ def test_zero_length_segment_inside_circle():
     """
     p1 = np.array([0.0, 0.0, 0.0])
     p2 = np.array([0.0, 0.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0) is False
+    assert not line_segment_circle_intersection(p1, p2, center, 1.0)
 
 def test_zero_length_segment_outside_circle():
     """
@@ -58,7 +58,7 @@ def test_zero_length_segment_outside_circle():
     """
     p1 = np.array([2.0, 0.0, 0.0])
     p2 = np.array([2.0, 0.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 1.0) is False
+    assert not line_segment_circle_intersection(p1, p2, center, 1.0)
 
 def test_going_through_zero_radius_circle():
     """
@@ -66,7 +66,7 @@ def test_going_through_zero_radius_circle():
     """
     p1 = np.array([-2.0, -2.0, 0.0])
     p2 = np.array([2.0, 2.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, 0.0) is True
+    assert line_segment_circle_intersection(p1, p2, center, 0.0)
 
 def test_segment_through_circle_negative_radius():
     """
@@ -74,7 +74,7 @@ def test_segment_through_circle_negative_radius():
     """
     p1 = np.array([-2.0, 0.0, 0.0])
     p2 = np.array([2.0, 0.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, -1.0) is False
+    assert not line_segment_circle_intersection(p1, p2, center, -1.0)
 
 def test_segment_tangent_to_circle_negative_radius():
     """
@@ -82,4 +82,4 @@ def test_segment_tangent_to_circle_negative_radius():
     """
     p1 = np.array([1.0, -1.0, 0.0])
     p2 = np.array([1.0, 1.0, 0.0])
-    assert line_segment_circle_intersection(p1, p2, center, -1.0) is False
+    assert not line_segment_circle_intersection(p1, p2, center, -1.0)

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 # Use absolute imports from the 'python' package root.
-from python.pbdCableConstraintSolver import PBDCableConstraintSolver
+from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 from python.ecs import (
     World, PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,

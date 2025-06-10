@@ -8,14 +8,16 @@ from python.ecs import (
     World, PauseStateComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
     RestitutionComponent, GravityAffectedComponent, OrientationComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, ObstacleTagComponent, ScoredTagComponent, FlipperTagComponent,
-    FlipperStateComponent, BorderComponent, RenderableComponent, PrevFinalPosComponent,
-    PrevFinalOrientationComponent, BallTagComponent, ObstaclePushComponent
+    FlipperStateComponent, FlipperTipComponent, BorderComponent, RenderableComponent,
+    PrevFinalPosComponent, PrevFinalOrientationComponent, BallTagComponent, ObstaclePushComponent
 )
 from python.common_systems import (
     PrevFinalPosSystem, GravitySystem, MovementSystem, AngularMovementSystem,
     PBDBallObstacleCollisions, PBDBallBallCollisions, PBDVelocityUpdateSystem,
-    PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem
+    PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem, FlipperTipLinkSystem
 )
+from python.cable_attachment_update_system import CableAttachmentUpdateSystem
+from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from python.geometry import right_of_line
 
 # --- Server-Side Systems ---
@@ -321,13 +323,10 @@ def setup_scene(world):
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
         world.register_system(FlipperTipLinkSystem());
-
-        world.registerSystem(CableAttachmentUpdateSystem());
-        world.registerSystem(PBDCableConstraintSolver());
-
+        world.register_system(CableAttachmentUpdateSystem());
+        world.register_system(PBDCableConstraintSolver());
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
-
         world.register_system(PBDBallBorderCollisions())
         world.register_system(PBDBallBallCollisions())
         world.register_system(PBDBallObstacleCollisions())
