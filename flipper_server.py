@@ -9,7 +9,8 @@ from python.ecs import (
     RestitutionComponent, GravityAffectedComponent, OrientationComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, ObstacleTagComponent, ScoredTagComponent, FlipperTagComponent,
     FlipperStateComponent, FlipperTipComponent, BorderComponent, RenderableComponent,
-    PrevFinalPosComponent, PrevFinalOrientationComponent, BallTagComponent, ObstaclePushComponent
+    PrevFinalPosComponent, PrevFinalOrientationComponent, BallTagComponent, ObstaclePushComponent,
+    CableLinkComponent, CoefficientOfFrictionComponent
 )
 from python.common_systems import (
     PrevFinalPosSystem, GravitySystem, MovementSystem, AngularMovementSystem,
@@ -18,7 +19,8 @@ from python.common_systems import (
 )
 from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
-from python.geometry import right_of_line
+from python.geometry import right_of_line, tangent_from_point_to_circle, tangent_from_circle_to_circle
+from python.cable_joints_components import CableJointComponent, create_cable_path_component
 
 # --- Server-Side Systems ---
 
@@ -245,6 +247,7 @@ def setup_scene(world):
     world.set_resource('simWidth', sim_width)
     world.set_resource('simHeight', sim_height)
     world.set_resource('pauseState', PauseStateComponent(True))
+    world.set_resource('debugRenderPoints', {})
 
     offset = 0.02
     border_points = [
@@ -261,10 +264,13 @@ def setup_scene(world):
     ball_mass = np.pi * ball_radius**2
     ball_restitution = 0.4
 
-    for pos in [(0.90, 0.95), (0.08, 0.5)]:
+    ball_ids = []
+    ball_positions = [(0.90, 0.95), (0.08, 0.5)]
+    for pos_tuple in ball_positions:
+        pos = np.array([pos_tuple[0], pos_tuple[1], 0.0])
         ball = world.create_entity()
         world.add_component(ball, BallTagComponent())
-        world.add_component(ball, PositionComponent(np.array([pos[0], pos[1], 0.0])))
+        world.add_component(ball, PositionComponent(pos))
         world.add_component(ball, VelocityComponent(np.zeros(3)))
         world.add_component(ball, RadiusComponent(ball_radius))
         world.add_component(ball, MassComponent(ball_mass))
@@ -275,13 +281,16 @@ def setup_scene(world):
         world.add_component(ball, AngularVelocityComponent(0.0))
         world.add_component(ball, MomentOfInertiaComponent(0.5 * ball_mass * ball_radius**2))
         world.add_component(ball, PrevFinalOrientationComponent(0.0))
-        world.add_component(ball, PrevFinalPosComponent(np.array([pos[0], pos[1], 0.0])))
+        world.add_component(ball, PrevFinalPosComponent(pos))
+        ball_ids.append(ball)
+    ball1, ball2 = ball_ids[0], ball_ids[1]
 
     obs_push = 2.7
     obstacles_data = [
         (0.25, 0.6, 0.1, "#0F7090", 0), (0.75, 0.5, 0.1, "#0F7090", 0),
         (0.7, 1.0, 0.12, "#FF8000", 200.0), (0.2, 1.2, 0.1, "#FF8000", -200.0)
     ]
+    obs_ids = []
     for x, y, r, color, ang_vel in obstacles_data:
         obs = world.create_entity()
         world.add_component(obs, ObstacleTagComponent())
@@ -295,24 +304,111 @@ def setup_scene(world):
             world.add_component(obs, AngularVelocityComponent(ang_vel))
             world.add_component(obs, MomentOfInertiaComponent(0.020 * r**2))
             world.add_component(obs, PrevFinalOrientationComponent(0.0))
+        obs_ids.append(obs)
+    obs3, obs4 = obs_ids[2], obs_ids[3]
 
-    flip_radius, flip_length, flip_max_rot, flip_ang_vel = 0.03, 0.2, 1.0, 20.0
+    # Flipper Entities
+    flip_radius = 0.03
+    flip_length = 0.2
+    flip_max_rot = 1.0
+    flip_rest_angle = 0.5
+    flip_ang_vel = 20.0
+    flip_restitution = 0.2
+
     flipper1 = world.create_entity()
+    flipper1_pos = np.array([0.26, 0.22, 0.0])
     world.add_component(flipper1, FlipperTagComponent())
-    world.add_component(flipper1, PositionComponent(np.array([0.26, 0.22, 0.0])))
+    world.add_component(flipper1, PositionComponent(flipper1_pos))
     world.add_component(flipper1, RadiusComponent(flip_radius))
-    world.add_component(flipper1, FlipperStateComponent(flip_length, -0.5, flip_max_rot, flip_ang_vel))
+    world.add_component(flipper1, FlipperStateComponent(flip_length, -flip_rest_angle, flip_max_rot, flip_ang_vel))
+    world.add_component(flipper1, RestitutionComponent(flip_restitution))
     world.add_component(flipper1, RenderableComponent('flipper', '#FF0000'))
+    world.add_component(flipper1, CableLinkComponent(prev_cable_attachment_time_pos=flipper1_pos))
+
+    flipper1_tip = world.create_entity()
+    world.add_component(flipper1_tip, PositionComponent())
+    world.add_component(flipper1_tip, RadiusComponent(flip_radius))
+    world.add_component(flipper1_tip, FlipperTipComponent(flipper1))
+    world.add_component(flipper1_tip, CableLinkComponent())
+    world.add_component(flipper1_tip, CoefficientOfFrictionComponent(0.01))
 
     flipper2 = world.create_entity()
+    flipper2_pos = np.array([0.74, 0.22, 0.0])
     world.add_component(flipper2, FlipperTagComponent())
-    world.add_component(flipper2, PositionComponent(np.array([0.74, 0.22, 0.0])))
+    world.add_component(flipper2, PositionComponent(flipper2_pos))
     world.add_component(flipper2, RadiusComponent(flip_radius))
-    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + 0.5, -flip_max_rot, flip_ang_vel))
+    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + flip_rest_angle, -flip_max_rot, flip_ang_vel))
+    world.add_component(flipper2, RestitutionComponent(flip_restitution))
     world.add_component(flipper2, RenderableComponent('flipper', '#FF0000'))
+    world.add_component(flipper2, CableLinkComponent(prev_cable_attachment_time_pos=flipper2_pos))
+
+    flipper2_tip = world.create_entity()
+    world.add_component(flipper2_tip, PositionComponent())
+    world.add_component(flipper2_tip, RadiusComponent(flip_radius))
+    world.add_component(flipper2_tip, FlipperTipComponent(flipper2))
+    world.add_component(flipper2_tip, CableLinkComponent())
+    world.add_component(flipper2_tip, CoefficientOfFrictionComponent(0.01))
 
     score_entity = world.create_entity()
     world.add_component(score_entity, ScoreComponent(0))
+
+    # --- Cable Setup ---
+    # Connect: ball2 -> obs4 -> obs3 -> ball1
+    friction_coefficient = 0.2
+
+    pos_ball1 = world.get_component(ball1, PositionComponent).pos
+    pos_ball2 = world.get_component(ball2, PositionComponent).pos
+    pos_obs3 = world.get_component(obs3, PositionComponent).pos
+    radius_obs3 = world.get_component(obs3, RadiusComponent).radius
+    pos_obs4 = world.get_component(obs4, PositionComponent).pos
+    radius_obs4 = world.get_component(obs4, RadiusComponent).radius
+
+    world.add_component(obs4, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs4))
+    world.add_component(obs3, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs3))
+    world.add_component(obs4, CoefficientOfFrictionComponent(friction_coefficient))
+    world.add_component(obs3, CoefficientOfFrictionComponent(friction_coefficient))
+    world.add_component(ball1, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball1))
+    world.add_component(ball2, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball2))
+    world.add_component(ball1, CoefficientOfFrictionComponent(friction_coefficient))
+    world.add_component(ball2, CoefficientOfFrictionComponent(friction_coefficient))
+
+    # Joint 1: ball2 -> obs4
+    joint1 = world.create_entity()
+    tangent_obs4 = tangent_from_point_to_circle(pos_ball2, pos_obs4, radius_obs4, True)
+    attach_obs4 = tangent_obs4['a_circle']
+    dir1 = attach_obs4 - pos_ball2
+    dir1 /= np.linalg.norm(dir1)
+    attach_ball2 = pos_ball2 + dir1 * ball_radius
+    initial_dist1 = np.linalg.norm(attach_ball2 - attach_obs4)
+    world.add_component(joint1, CableJointComponent(ball2, obs4, initial_dist1, attach_ball2, attach_obs4))
+
+    # Joint 2: obs4 -> obs3
+    joint2 = world.create_entity()
+    initial_points2 = tangent_from_circle_to_circle(pos_obs4, radius_obs4, True, pos_obs3, radius_obs3, True)
+    initial_dist2 = np.linalg.norm(initial_points2['a_circle'] - initial_points2['b_circle'])
+    world.add_component(joint2, CableJointComponent(obs4, obs3, initial_dist2, initial_points2['a_circle'], initial_points2['b_circle']))
+
+    # Joint 3: obs3 -> ball1
+    joint3 = world.create_entity()
+    tangent_obs3 = tangent_from_point_to_circle(pos_ball1, pos_obs3, radius_obs3, False)
+    attach_obs3 = tangent_obs3['a_circle']
+    dir3 = attach_obs3 - pos_ball1
+    dir3 /= np.linalg.norm(dir3)
+    attach_ball1 = pos_ball1 + dir3 * ball_radius
+    initial_dist3 = np.linalg.norm(attach_ball1 - attach_obs3)
+    world.add_component(joint3, CableJointComponent(obs3, ball1, initial_dist3, attach_obs3, attach_ball1))
+
+    # Create Cable Path
+    cable_path = world.create_entity()
+    path_comp = create_cable_path_component(
+        world,
+        [joint1, joint2, joint3],
+        ['hybrid-attachment', 'rolling', 'rolling', 'hybrid-attachment'],
+        [True, True, True, True],
+        200.0
+    )
+    world.add_component(cable_path, path_comp)
+
 
     if not world.systems:
         world.register_system(PrevFinalPosSystem())
