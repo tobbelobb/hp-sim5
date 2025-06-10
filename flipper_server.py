@@ -424,9 +424,9 @@ def setup_scene(world):
         world.register_system(GravitySystem())
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
-        world.register_system(FlipperTipLinkSystem());
-        world.register_system(CableAttachmentUpdateSystem());
-        world.register_system(PBDCableConstraintSolver());
+        world.register_system(FlipperTipLinkSystem())
+        world.register_system(CableAttachmentUpdateSystem())
+        world.register_system(PBDCableConstraintSolver())
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
         world.register_system(PBDBallBorderCollisions())
@@ -535,7 +535,7 @@ def world_to_json(world):
                     'anticlockwise': anticlockwise,
                     'is_taut': bool(is_taut)
                 })
-        
+
         # 3. Hybrid link markers and arcs
         for i, link_type in enumerate(path.link_types):
             link_data = {"type": link_type}
@@ -547,7 +547,7 @@ def world_to_json(world):
                 else:  # Last link
                     joint = world.get_component(path.joint_entities[-1], CableJointComponent)
                     attachment_point = joint.attachment_point_b_world
-                
+
                 if attachment_point is not None:
                     link_data['attachmentPoint'] = attachment_point.tolist()[:2]
 
@@ -580,7 +580,7 @@ def world_to_json(world):
                     link_data['storedLength'] = path.stored[i]
                     link_data['cw'] = path.cw[i]
                     link_data['is_taut'] = bool(is_taut)
-            
+
             cable_render_data['links'].append(link_data)
 
         state['cables'].append(cable_render_data)

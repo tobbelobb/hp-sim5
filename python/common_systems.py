@@ -18,6 +18,7 @@ from .ecs import (
     ObstaclePushComponent,
     ScoredTagComponent,
     DistanceConstraintComponent,
+    FlipperStateComponent,
     FlipperTipComponent,
     PrevFinalOrientationComponent
 )
@@ -102,7 +103,7 @@ class PBDVelocityUpdateSystem:
 
 
 class FlipperTipLinkSystem:
-    run_in_pause = False  # Pythonic snake_case
+    run_in_pause = False
 
     def update(self, world, dt):
         for tip_id in world.query([FlipperTipComponent, PositionComponent]):

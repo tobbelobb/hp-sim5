@@ -1005,15 +1005,6 @@ export class PBDCableConstraintSolver {
           if (invMassA > 0.0) {
             const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
             posAComp.pos.add(deltaPosA);
-            const velAComp = world.getComponent(entityA, VelocityComponent);
-            if (velAComp && dt > epsilon) {
-              velAComp.vel.add(deltaPosA, 1.0 / dt);
-              const vA = velAComp.vel.length();
-              const maxSpeed = 0.03 / (2.0 * dt); // Keep existing max speed logic
-              if (vA > maxSpeed) {
-                velAComp.vel.scale(maxSpeed / vA);
-              }
-            }
           }
           if (invInertiaA > 0.0) {
             const deltaAngA = -invInertiaA * lambda * gradAngA;
@@ -1021,35 +1012,18 @@ export class PBDCableConstraintSolver {
             if (orientationAComp) {
               orientationAComp.angle += deltaAngA;
             }
-            const angVelAComp = world.getComponent(entityA, AngularVelocityComponent);
-            if (angVelAComp && dt > epsilon) {
-              angVelAComp.angularVelocity += deltaAngA / dt;
-            }
           }
 
           // Apply corrections to Entity B
           if (invMassB > 0.0) {
             const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
             posBComp.pos.add(deltaPosB);
-            const velBComp = world.getComponent(entityB, VelocityComponent);
-            if (velBComp && dt > epsilon) {
-              velBComp.vel.add(deltaPosB, 1.0 / dt);
-              const vB = velBComp.vel.length();
-              const maxSpeed = 0.03 / (2.0 * dt); // Keep existing max speed logic
-              if (vB > maxSpeed) {
-                velBComp.vel.scale(maxSpeed / vB);
-              }
-            }
           }
           if (invInertiaB > 0.0) {
             const deltaAngB = -invInertiaB * lambda * gradAngB;
             const orientationBComp = world.getComponent(entityB, OrientationComponent);
             if (orientationBComp) {
               orientationBComp.angle += deltaAngB;
-            }
-            const angVelBComp = world.getComponent(entityB, AngularVelocityComponent);
-            if (angVelBComp && dt > epsilon) {
-              angVelBComp.angularVelocity += deltaAngB / dt;
             }
           }
         }
