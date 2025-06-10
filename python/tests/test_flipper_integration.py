@@ -1,0 +1,95 @@
+import pytest
+import numpy as np
+
+from python.ecs import World, PositionComponent, BallTagComponent
+from flipper_server import setup_scene, ScoreComponent
+
+def get_game_state_for_test(world):
+    """Helper function to extract ball positions and score from the world."""
+    state = {'balls': [], 'score': 0}
+    
+    # Get ball positions
+    ball_entities = world.query([BallTagComponent, PositionComponent])
+    for ball_id in ball_entities:
+        pos_comp = world.get_component(ball_id, PositionComponent)
+        state['balls'].append({'id': ball_id, 'y': pos_comp.pos[1]})
+        
+    # Get score
+    score_query = world.query([ScoreComponent])
+    if score_query:
+        score_comp = world.get_component(score_query[0], ScoreComponent)
+        state['score'] = score_comp.value
+        
+    return state
+
+@pytest.mark.timeout(120) # 120 seconds timeout for the test
+def test_flipper_autonomous_run_and_settle():
+    """
+    Tests that the flipper simulation can run autonomously and that the balls
+    settle below the flippers with a specific score, similar to the JS integration test.
+    """
+    world = World()
+    setup_scene(world)
+
+    # The JS test sets a speed scale. Here, we control simulation time by the number of steps.
+    # The game starts paused. Unpause it.
+    pause_state = world.get_resource('pauseState')
+    pause_state.paused = False
+
+    # Constants from the JS integration test
+    EXPECTED_SCORE = 45
+    # JS test runs for 100s. Sim runs at 300Hz. So 100 * 300 = 30000 steps.
+    # The JS test polls every 1s. So we poll every 300 steps.
+    MAX_SIMULATION_STEPS = 100 * 300 
+    POLLING_INTERVAL_STEPS = 300 
+    FLIPPER_Y_LINE = 0.05 # Y-coordinate just above 1 ball radius (floor is at y=0)
+    SCORE_GUARDRAIL = 83
+
+    dt = world.get_resource('dt')
+    
+    test_passed = False
+    settled = False
+
+    for step in range(MAX_SIMULATION_STEPS):
+        world.update(dt)
+
+        # Poll for game state at intervals
+        if step > 0 and step % POLLING_INTERVAL_STEPS == 0:
+            game_state = get_game_state_for_test(world)
+            
+            balls = game_state['balls']
+            score = game_state['score']
+
+            # Condition 1: Score must not exceed guardrail
+            if score > SCORE_GUARDRAIL:
+                pytest.fail(f"Test failed: Score exceeded {SCORE_GUARDRAIL}. Current score: {score}")
+
+            # Condition 2: Check if balls have settled below flippers
+            all_balls_below_flippers = len(balls) > 0
+            if not balls:
+                all_balls_below_flippers = False
+            else:
+                for ball in balls:
+                    if ball['y'] >= FLIPPER_Y_LINE:
+                        all_balls_below_flippers = False
+                        break
+            
+            if all_balls_below_flippers:
+                print(f"All balls detected below flipper line (Y < {FLIPPER_Y_LINE}) at step {step}. Current score: {score}.")
+                settled = True
+                if score == EXPECTED_SCORE:
+                    test_passed = True
+                else:
+                    pytest.fail(f"Test failed: Balls settled below flippers, but score is {score} (expected {EXPECTED_SCORE}).")
+                break # Exit simulation loop
+
+    # Final assertions after the loop
+    if not settled:
+        final_game_state = get_game_state_for_test(world)
+        pytest.fail(f"Test failed: Timeout. Balls did not settle below flippers within {int(MAX_SIMULATION_STEPS / POLLING_INTERVAL_STEPS)}s. Final score: {final_game_state['score']}")
+
+    assert settled, "Balls should have settled"
+    assert test_passed, f"Test condition for score was not met."
+    
+    final_score = get_game_state_for_test(world)['score']
+    assert final_score == EXPECTED_SCORE, f"Final score should be {EXPECTED_SCORE}"
