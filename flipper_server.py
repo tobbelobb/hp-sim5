@@ -536,7 +536,7 @@ def world_to_json(world):
                     'is_taut': bool(is_taut)
                 })
         
-        # 3. Hybrid link markers
+        # 3. Hybrid link markers and arcs
         for i, link_type in enumerate(path.link_types):
             link_data = {"type": link_type}
             if link_type == 'hybrid-attachment':
@@ -554,14 +554,21 @@ def world_to_json(world):
             elif link_type == 'hybrid':
                 roller_id = None
                 tangent_point = None
+                is_taut = False
+                epsilon = 1e-6
+
                 if i == 0:
                     joint = world.get_component(path.joint_entities[0], CableJointComponent)
                     roller_id = joint.entity_a
                     tangent_point = joint.attachment_point_a_world
+                    dist = np.linalg.norm(joint.attachment_point_a_world - joint.attachment_point_b_world)
+                    is_taut = dist > (joint.rest_length + epsilon)
                 else:  # Last link
                     joint = world.get_component(path.joint_entities[-1], CableJointComponent)
                     roller_id = joint.entity_b
                     tangent_point = joint.attachment_point_b_world
+                    dist = np.linalg.norm(joint.attachment_point_a_world - joint.attachment_point_b_world)
+                    is_taut = dist > (joint.rest_length + epsilon)
 
                 center_comp = world.get_component(roller_id, PositionComponent)
                 radius_comp = world.get_component(roller_id, RadiusComponent)
@@ -572,6 +579,7 @@ def world_to_json(world):
                     link_data['tangentPoint'] = tangent_point.tolist()[:2]
                     link_data['storedLength'] = path.stored[i]
                     link_data['cw'] = path.cw[i]
+                    link_data['is_taut'] = bool(is_taut)
             
             cable_render_data['links'].append(link_data)
 

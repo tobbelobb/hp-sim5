@@ -243,7 +243,7 @@ canvas {
                     ctx.stroke();
                 });
 
-                // Draw Hybrid Markers
+                // Draw Hybrid Links (markers and arcs)
                 if (cable.links) {
                     cable.links.forEach(link => {
                         if (link.type === 'hybrid-attachment') {
@@ -264,14 +264,21 @@ canvas {
                                 const deltaAngle = link.storedLength / link.radius;
                                 const endAngle = link.cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
 
-                                const endOfArcPointX = center_sim.x + link.radius * Math.cos(endAngle);
-                                const endOfArcPointY = center_sim.y + link.radius * Math.sin(endAngle);
+                                const center = toCanvasCoords(center_sim.x, center_sim.y);
+                                const radius = link.radius * cScale;
+                                const anticlockwise = !link.cw;
 
-                                ctx.fillStyle = '#FF0000'; // Red
-                                const markerPos = toCanvasCoords(endOfArcPointX, endOfArcPointY);
+                                ctx.strokeStyle = link.is_taut ? cableColorTaut : cableColorSlack;
                                 ctx.beginPath();
-                                ctx.arc(markerPos.x, markerPos.y, 4, 0, 2 * Math.PI);
-                                ctx.fill();
+                                ctx.arc(
+                                    center.x,
+                                    center.y,
+                                    radius,
+                                    -tangentAngle, // start angle
+                                    -endAngle,     // end angle
+                                    anticlockwise
+                                );
+                                ctx.stroke();
                             }
                         }
                     });
