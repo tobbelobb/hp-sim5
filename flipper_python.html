@@ -468,7 +468,15 @@ canvas {
         event.preventDefault();
         if (ws && ws.readyState === WebSocket.OPEN) {
             const { x, y } = toSimCoords(event.clientX, event.clientY);
-            ws.send(JSON.stringify({ action: 'input', type: 'click', x, y }));
+            ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x, y }));
+        }
+    }
+
+    function handlePointerMove(event) {
+        event.preventDefault();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const { x, y } = toSimCoords(event.clientX, event.clientY);
+            ws.send(JSON.stringify({ action: 'input', type: 'pointermove', x, y }));
         }
     }
 
@@ -476,7 +484,7 @@ canvas {
         event.preventDefault();
         if (ws && ws.readyState === WebSocket.OPEN) {
             const { x, y } = toSimCoords(event.clientX, event.clientY);
-            ws.send(JSON.stringify({ action: 'input', type: 'release', x, y }));
+            ws.send(JSON.stringify({ action: 'input', type: 'pointerup', x, y }));
         }
     }
 
@@ -499,6 +507,7 @@ canvas {
     }
 
     document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('keydown', (e) => handleKey(e, 'click'));
     document.addEventListener('keyup', (e) => handleKey(e, 'release'));

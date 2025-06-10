@@ -177,8 +177,95 @@ class RemoteInputSystem:
     def __init__(self):
         self.clicks = []
         self.releases = []
+        self.grab_spring = None
+        self.events_queue = []
+
+    def add_event(self, event):
+        self.events_queue.append(event)
+
+    def _handle_pointer_down(self, world, pos):
+        if self.grab_spring:
+            return
+
+        closest_ball = None
+        closest_dist_sq = float('inf')
+        
+        ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent])
+        for ball_id in ball_entities:
+            ball_pos = world.get_component(ball_id, PositionComponent).pos
+            radius = world.get_component(ball_id, RadiusComponent).radius
+            dist_sq = np.sum((pos - ball_pos)**2)
+            if dist_sq <= radius**2 and dist_sq < closest_dist_sq:
+                closest_ball = ball_id
+                closest_dist_sq = dist_sq
+
+        if closest_ball is not None:
+            ptr_e = world.create_entity()
+            world.add_component(ptr_e, PositionComponent(pos.copy()))
+            world.add_component(ptr_e, CableLinkComponent(prev_cable_attachment_time_pos=pos.copy()))
+
+            ball_pos = world.get_component(closest_ball, PositionComponent).pos
+            joint_e = world.create_entity()
+            world.add_component(joint_e, CableJointComponent(
+                entity_a=closest_ball, entity_b=ptr_e, rest_length=0.1,
+                attachment_point_a_world=ball_pos.copy(), attachment_point_b_world=pos.copy()
+            ))
+
+            path_e = world.create_entity()
+            path_comp = create_cable_path_component(
+                world, joint_entities=[joint_e], link_types=['attachment', 'attachment'],
+                cw=[True], spring_constant=10.0
+            )
+            world.add_component(path_e, path_comp)
+
+            self.grab_spring = {'ptr_e': ptr_e, 'joint_e': joint_e, 'path_e': path_e, 'ball_e': closest_ball}
+            world.set_resource('grabbedBall', closest_ball)
+            
+            pause_state = world.get_resource('pauseState')
+            if pause_state:
+                pause_state.paused = False
+        else:
+            self.clicks.append(pos)
+
+    def _handle_pointer_move(self, world, pos):
+        if self.grab_spring:
+            ptr_e = self.grab_spring['ptr_e']
+            ptr_pos_comp = world.get_component(ptr_e, PositionComponent)
+            if ptr_pos_comp:
+                ptr_pos_comp.pos[:] = pos
+
+    def _handle_pointer_up(self, world, pos):
+        if self.grab_spring:
+            ball_e = self.grab_spring['ball_e']
+            vel_comp = world.get_component(ball_e, VelocityComponent)
+            pos_comp = world.get_component(ball_e, PositionComponent)
+            prev_final_pos_comp = world.get_component(ball_e, PrevFinalPosComponent)
+            dt = world.get_resource('dt')
+
+            if vel_comp and pos_comp and prev_final_pos_comp and dt > 1e-9:
+                np.subtract(pos_comp.pos, prev_final_pos_comp.pos, out=vel_comp.vel)
+                np.divide(vel_comp.vel, dt, out=vel_comp.vel)
+
+            world.destroy_entity(self.grab_spring['path_e'])
+            world.destroy_entity(self.grab_spring['joint_e'])
+            world.destroy_entity(self.grab_spring['ptr_e'])
+            self.grab_spring = None
+            world.set_resource('grabbedBall', None)
+        else:
+            self.releases.append(pos)
 
     def update(self, world, dt):
+        for event in self.events_queue:
+            event_type = event.get('type')
+            pos = event.get('pos')
+            if event_type == 'pointerdown':
+                self._handle_pointer_down(world, pos)
+            elif event_type == 'pointermove':
+                self._handle_pointer_move(world, pos)
+            elif event_type == 'pointerup':
+                self._handle_pointer_up(world, pos)
+        self.events_queue.clear()
+
         if self.clicks:
             click_pos = self.clicks.pop(0)
             border_ents = world.query([BorderComponent])
@@ -193,12 +280,7 @@ class RemoteInputSystem:
             flipper_entities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent])
             if not flipper_entities: return
 
-            # Identify left and right flippers robustly
-            flipper_data = []
-            for fid in flipper_entities:
-                pos = world.get_component(fid, PositionComponent).pos
-                flipper_data.append({'id': fid, 'x': pos[0]})
-
+            flipper_data = [{'id': fid, 'x': world.get_component(fid, PositionComponent).pos[0]} for fid in flipper_entities]
             flipper_data.sort(key=lambda f: f['x'])
             left_flipper_id = flipper_data[0]['id']
             right_flipper_id = flipper_data[-1]['id']
@@ -208,35 +290,28 @@ class RemoteInputSystem:
             elif left_click:
                 world.get_component(left_flipper_id, FlipperStateComponent).pressed = True
             else:
-                # Direct click on a flipper - find the closest one
-                closest_flipper_id = None
-                min_dist_sq = float('inf')
+                closest_flipper_id, min_dist_sq = None, float('inf')
                 for fid in flipper_entities:
                     pos = world.get_component(fid, PositionComponent).pos
                     dist_sq = np.sum((click_pos - pos)**2)
                     if dist_sq < min_dist_sq:
-                        min_dist_sq = dist_sq
-                        closest_flipper_id = fid
-
-                if closest_flipper_id is not None:
+                        min_dist_sq, closest_flipper_id = dist_sq, fid
+                if closest_flipper_id:
                     state = world.get_component(closest_flipper_id, FlipperStateComponent)
-                    # Check if click is within flipper's radius of influence (e.g., its length)
                     if min_dist_sq < state.length**2:
                          world.get_component(closest_flipper_id, FlipperStateComponent).pressed = True
 
         if self.releases:
             release_pos = self.releases.pop(0)
             flipper_entities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent])
-            closest_id = None
-            min_dist_sq = float('inf')
+            closest_id, min_dist_sq = None, float('inf')
             for id in flipper_entities:
                 state = world.get_component(id, FlipperStateComponent)
                 if not state.pressed: continue
                 pos = world.get_component(id, PositionComponent).pos
                 d2 = np.sum((release_pos - pos)**2)
                 if d2 < min_dist_sq:
-                    min_dist_sq = d2
-                    closest_id = id
+                    min_dist_sq, closest_id = d2, id
             if closest_id is not None:
                 world.get_component(closest_id, FlipperStateComponent).pressed = False
 
@@ -254,6 +329,7 @@ def setup_scene(world):
     world.set_resource('simHeight', sim_height)
     world.set_resource('pauseState', PauseStateComponent(True))
     world.set_resource('debugRenderPoints', {})
+    world.set_resource('grabbedBall', None)
 
     offset = 0.02
     border_points = [
@@ -592,6 +668,7 @@ def world_to_json(world):
 async def handler(websocket):
     world = World()
     setup_scene(world)
+    input_system = world.get_system(RemoteInputSystem)
 
     # Send initial state
     await websocket.send(world_to_json(world))
@@ -615,15 +692,19 @@ async def handler(websocket):
             pause_state.paused = True
         elif action == 'reset':
             setup_scene(world)
+            input_system = world.get_system(RemoteInputSystem) # Re-get system instance
         elif action == 'pause':
             pause_state.paused = data['paused']
         elif action == 'input':
-            input_system = world.get_system(RemoteInputSystem)
             if input_system:
                 pos = np.array([data['x'], data['y'], 0.0])
-                if data['type'] == 'click':
+                event_type = data['type']
+                
+                if event_type in ['pointerdown', 'pointermove', 'pointerup']:
+                    input_system.add_event({'type': event_type, 'pos': pos})
+                elif event_type == 'click':
                     input_system.clicks.append(pos)
-                elif data['type'] == 'release':
+                elif event_type == 'release':
                     input_system.releases.append(pos)
 
         await websocket.send(world_to_json(world))
