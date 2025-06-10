@@ -137,12 +137,18 @@ class PBDBallBorderCollisions:
             if min_dist_sq > r1 * r1: continue
 
             ball_to_closest = p1 - closest_seg_point
+
+            edge_vec = edge_end - edge_start
+            normal = np.array([-edge_vec[1], edge_vec[0], 0.0])
+            normal /= np.linalg.norm(normal)
+
             if np.sum(ball_to_closest**2) < 1e-9:
-                edge_vec = edge_end - edge_start
-                collision_normal = np.array([-edge_vec[1], edge_vec[0], 0.0])
-                collision_normal /= np.linalg.norm(collision_normal)
+                collision_normal = normal
             else:
-                collision_normal = ball_to_closest / np.linalg.norm(collision_normal)
+                collision_normal = ball_to_closest / np.linalg.norm(ball_to_closest)
+
+            if np.dot(ball_to_closest, normal) < 0:
+                collision_normal = normal
 
             dist = np.sqrt(min_dist_sq)
             penetration = r1 - dist
