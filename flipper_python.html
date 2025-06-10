@@ -397,6 +397,19 @@ canvas {
 
         ws.onmessage = (event) => {
             simState = JSON.parse(event.data);
+            if (simState.isPaused !== undefined) {
+                isPaused = simState.isPaused;
+                if (isPaused) {
+                    // When paused, button should say "Resume" or "Start".
+                    // If it already says "Start" (from a reset), leave it.
+                    if (pauseBtn.textContent !== "Start") {
+                        pauseBtn.textContent = "Resume";
+                    }
+                } else {
+                    // When running, button must say "Pause".
+                    pauseBtn.textContent = "Pause";
+                }
+            }
             render();
         };
 

@@ -214,7 +214,7 @@ class RemoteInputSystem:
             path_e = world.create_entity()
             path_comp = create_cable_path_component(
                 world, joint_entities=[joint_e], link_types=['attachment', 'attachment'],
-                cw=[True], spring_constant=10.0
+                cw=[True, True], spring_constant=10.0
             )
             world.add_component(path_e, path_comp)
 
@@ -554,6 +554,12 @@ def world_to_json(world):
     if score_query:
         score_id = score_query[0]
         state['score'] = world.get_component(score_id, ScoreComponent).value
+
+    pause_comp = world.get_resource('pauseState')
+    if pause_comp:
+        state['isPaused'] = pause_comp.paused
+    else:
+        state['isPaused'] = True
 
     # Serialize Cables
     path_entities = world.query([CablePathComponent])
