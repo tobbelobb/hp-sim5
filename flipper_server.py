@@ -142,7 +142,7 @@ class PBDBallBorderCollisions:
                 collision_normal = np.array([-edge_vec[1], edge_vec[0], 0.0])
                 collision_normal /= np.linalg.norm(collision_normal)
             else:
-                collision_normal = ball_to_closest / np.linalg.norm(ball_to_closest)
+                collision_normal = ball_to_closest / np.linalg.norm(collision_normal)
 
             dist = np.sqrt(min_dist_sq)
             penetration = r1 - dist
@@ -436,14 +436,22 @@ def world_to_json(world):
     for ball_id in world.query([BallTagComponent, PositionComponent, RadiusComponent]):
         pos = world.get_component(ball_id, PositionComponent).pos
         radius = world.get_component(ball_id, RadiusComponent).radius
-        state['balls'].append({'x': pos[0], 'y': pos[1], 'radius': radius})
+        ball_data = {'x': pos[0], 'y': pos[1], 'radius': radius}
+        orientation_comp = world.get_component(ball_id, OrientationComponent)
+        if orientation_comp:
+            ball_data['angle'] = orientation_comp.angle
+        state['balls'].append(ball_data)
 
     for obs_id in world.query([ObstacleTagComponent, PositionComponent, RadiusComponent]):
         pos = world.get_component(obs_id, PositionComponent).pos
         radius = world.get_component(obs_id, RadiusComponent).radius
         renderable = world.get_component(obs_id, RenderableComponent)
         color = renderable.color if renderable else '#ffffff'
-        state['obstacles'].append({'x': pos[0], 'y': pos[1], 'radius': radius, 'color': color})
+        obs_data = {'x': pos[0], 'y': pos[1], 'radius': radius, 'color': color}
+        orientation_comp = world.get_component(obs_id, OrientationComponent)
+        if orientation_comp:
+            obs_data['angle'] = orientation_comp.angle
+        state['obstacles'].append(obs_data)
 
     for flip_id in world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]):
         pos = world.get_component(flip_id, PositionComponent).pos

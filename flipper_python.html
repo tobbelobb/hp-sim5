@@ -111,18 +111,58 @@ canvas {
         simState.balls.forEach(ball => {
             ctx.fillStyle = '#a0a0a0';
             const p = toCanvasCoords(ball.x, ball.y);
+            const r = ball.radius * cScale;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            if (ball.angle !== undefined) {
+                ctx.rotate(-ball.angle);
+            }
+
+            // Draw circle
             ctx.beginPath();
-            ctx.arc(p.x, p.y, ball.radius * cScale, 0, 2 * Math.PI);
+            ctx.arc(0, 0, r, 0, 2 * Math.PI);
             ctx.fill();
+
+            // Draw orientation line
+            if (ball.angle !== undefined) {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -r);
+                ctx.stroke();
+            }
+            ctx.restore();
         });
 
         // Draw Obstacles
         simState.obstacles.forEach(obs => {
             ctx.fillStyle = obs.color;
             const p = toCanvasCoords(obs.x, obs.y);
+            const r = obs.radius * cScale;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            if (obs.angle !== undefined) {
+                ctx.rotate(-obs.angle); // negate for canvas' flipped y-axis
+            }
+
+            // Draw circle
             ctx.beginPath();
-            ctx.arc(p.x, p.y, obs.radius * cScale, 0, 2 * Math.PI);
+            ctx.arc(0, 0, r, 0, 2 * Math.PI);
             ctx.fill();
+
+            // Draw orientation line if angle exists
+            if (obs.angle !== undefined) {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -r); // To top edge in local rotated coords
+                ctx.stroke();
+            }
+            ctx.restore();
         });
 
         // Draw Flippers
