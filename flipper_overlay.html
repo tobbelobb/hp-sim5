@@ -464,7 +464,12 @@ canvas {
         return { x: simX, y: simY };
     }
     function connect() {
-        ws = new WebSocket('ws://localhost:8765');
+        // Choose host intelligently – works for https, http, file:// and ipv4/ipv6
+        let host = window.location.hostname || '127.0.0.1';
+        let scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsURL = `${scheme}://${host}:8765`;
+
+        ws = new WebSocket(wsURL);
         ws.onopen = () => {
             console.log('Connected to Python WebSocket server.');
             pauseBtn.disabled = false; resetBtn.disabled = false; stepBtn.disabled = false;
@@ -479,7 +484,10 @@ canvas {
             pauseBtn.disabled = true; resetBtn.disabled = true; stepBtn.disabled = true;
             setTimeout(connect, 1000);
         };
-        ws.onerror = (error) => { console.error('WebSocket Error:', error); };
+        ws.onerror = (e) => {
+            console.error('WebSocket Error:', e);
+            console.error('Tried URL:', wsURL);
+        };
     }
 
     // --- Overlay Rendering ---
