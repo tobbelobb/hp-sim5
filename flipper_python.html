@@ -69,7 +69,7 @@ canvas {
     let isPaused = true;
     let cScale, simHeight = 1.7, simWidth = 1.0;
 
-    const ws = new WebSocket('ws://localhost:8765');
+    let ws;
 
     function setupCanvas() {
         canvas.width = canvas.clientWidth;
@@ -155,25 +155,38 @@ canvas {
         scoreEl.textContent = simState.score;
     }
 
-    ws.onopen = () => {
-        console.log('Connected to Python WebSocket server.');
-        setupCanvas();
-    };
+    function connect() {
+        ws = new WebSocket('ws://localhost:8765');
 
-    ws.onmessage = (event) => {
-        simState = JSON.parse(event.data);
-        render();
-    };
+        ws.onopen = () => {
+            console.log('Connected to Python WebSocket server.');
+            setupCanvas();
+            isPaused = true; // Server starts paused, so sync UI
+            pauseBtn.textContent = "Start";
+            pauseBtn.disabled = false;
+            resetBtn.disabled = false;
+            stepBtn.disabled = false;
+        };
 
-    ws.onclose = () => {
-        console.log('Disconnected from server.');
-        pauseBtn.textContent = "Disconnected";
-        pauseBtn.disabled = true;
-    };
+        ws.onmessage = (event) => {
+            simState = JSON.parse(event.data);
+            render();
+        };
 
-    ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-    };
+        ws.onclose = () => {
+            console.log('Disconnected from server. Reconnecting in 1s...');
+            pauseBtn.textContent = "Reconnecting...";
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            stepBtn.disabled = true;
+            setTimeout(connect, 1000);
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+            // The browser will fire the 'close' event automatically after an error.
+        };
+    }
 
     let lastTime = 0;
     function gameLoop(currentTime) {
@@ -181,7 +194,7 @@ canvas {
         const deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        if (!isPaused && ws.readyState === WebSocket.OPEN) {
+        if (!isPaused && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ action: 'step', dt: deltaTime }));
         }
         requestAnimationFrame(gameLoop);
@@ -189,48 +202,58 @@ canvas {
 
     // --- Event Listeners ---
     pauseBtn.addEventListener('click', () => {
-        isPaused = !isPaused;
-        pauseBtn.textContent = isPaused ? "Resume" : "Pause";
-        ws.send(JSON.stringify({ action: 'pause', paused: isPaused }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? "Resume" : "Pause";
+            ws.send(JSON.stringify({ action: 'pause', paused: isPaused }));
+        }
     });
 
     resetBtn.addEventListener('click', () => {
-        isPaused = true;
-        pauseBtn.textContent = "Start";
-        ws.send(JSON.stringify({ action: 'reset' }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            isPaused = true;
+            pauseBtn.textContent = "Start";
+            ws.send(JSON.stringify({ action: 'reset' }));
+        }
     });
 
     stepBtn.addEventListener('click', () => {
-        if (isPaused) {
+        if (isPaused && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ action: 'single_step' }));
         }
     });
 
     function handlePointerDown(event) {
         event.preventDefault();
-        const { x, y } = toSimCoords(event.clientX, event.clientY);
-        ws.send(JSON.stringify({ action: 'input', type: 'click', x, y }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const { x, y } = toSimCoords(event.clientX, event.clientY);
+            ws.send(JSON.stringify({ action: 'input', type: 'click', x, y }));
+        }
     }
 
     function handlePointerUp(event) {
         event.preventDefault();
-        const { x, y } = toSimCoords(event.clientX, event.clientY);
-        ws.send(JSON.stringify({ action: 'input', type: 'release', x, y }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const { x, y } = toSimCoords(event.clientX, event.clientY);
+            ws.send(JSON.stringify({ action: 'input', type: 'release', x, y }));
+        }
     }
     
     function handleKey(event, type) {
-        const flippers = simState.flippers;
-        if (!flippers || flippers.length < 2) return;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const flippers = simState.flippers;
+            if (!flippers || flippers.length < 2) return;
 
-        const leftFlipper = flippers[0].x < flippers[1].x ? flippers[0] : flippers[1];
-        const rightFlipper = flippers[0].x > flippers[1].x ? flippers[0] : flippers[1];
+            const leftFlipper = flippers[0].x < flippers[1].x ? flippers[0] : flippers[1];
+            const rightFlipper = flippers[0].x > flippers[1].x ? flippers[0] : flippers[1];
 
-        let targetPos = null;
-        if (event.key === 'ArrowLeft') targetPos = {x: leftFlipper.x, y: leftFlipper.y};
-        if (event.key === 'ArrowRight') targetPos = {x: rightFlipper.x, y: rightFlipper.y};
-        
-        if (targetPos) {
-            ws.send(JSON.stringify({ action: 'input', type: type, x: targetPos.x, y: targetPos.y }));
+            let targetPos = null;
+            if (event.key === 'ArrowLeft') targetPos = {x: leftFlipper.x, y: leftFlipper.y};
+            if (event.key === 'ArrowRight') targetPos = {x: rightFlipper.x, y: rightFlipper.y};
+            
+            if (targetPos) {
+                ws.send(JSON.stringify({ action: 'input', type: type, x: targetPos.x, y: targetPos.y }));
+            }
         }
     }
 
@@ -240,6 +263,7 @@ canvas {
     document.addEventListener('keyup', (e) => handleKey(e, 'release'));
     window.addEventListener('resize', setupCanvas);
 
+    connect(); // Initial connection
     requestAnimationFrame(gameLoop);
 </script>
 </body>

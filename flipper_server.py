@@ -306,7 +306,7 @@ def setup_scene(world):
     world.add_component(flipper2, FlipperTagComponent())
     world.add_component(flipper2, PositionComponent(np.array([0.74, 0.22, 0.0])))
     world.add_component(flipper2, RadiusComponent(flip_radius))
-    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + 0.5, -flip_max_rot, flip_ang_vel, sign: -1))
+    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + 0.5, -flip_max_rot, flip_ang_vel))
     world.add_component(flipper2, RenderableComponent('flipper', '#FF0000'))
 
     score_entity = world.create_entity()

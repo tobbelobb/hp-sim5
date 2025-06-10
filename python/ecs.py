@@ -214,8 +214,8 @@ class FlipperStateComponent:
     pressed: bool = False            # Was the flipper activated?
 
     def __post_init__(self):
-        self.max_rotation = abs(self.max_rotation)
         self.sign = math.copysign(1.0, self.max_rotation)
+        self.max_rotation = abs(self.max_rotation)
 
 @dataclass
 class BorderComponent:
