@@ -93,7 +93,7 @@ canvas {
         if (!simState.border || simState.border.length === 0) return;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
         // Draw Border
         ctx.strokeStyle = '#fafafa';
         ctx.lineWidth = 2;
@@ -164,9 +164,9 @@ canvas {
                     const pA = toCanvasCoords(joint.pA[0], joint.pA[1]);
                     const pB = toCanvasCoords(joint.pB[0], joint.pB[1]);
                     const dist = Math.hypot(joint.pB[0] - joint.pA[0], joint.pB[1] - joint.pA[1]);
-                    
+
                     ctx.strokeStyle = (joint.restLength > dist + 1e-6) ? cableColorSlack : cableColorTaut;
-                    
+
                     ctx.beginPath();
                     ctx.moveTo(pA.x, pA.y);
                     ctx.lineTo(pB.x, pB.y);
@@ -177,7 +177,7 @@ canvas {
                 cable.arcs.forEach(arc => {
                     const center = toCanvasCoords(arc.center[0], arc.center[1]);
                     const radius = arc.radius * cScale;
-                    
+
                     const p1_sim = {x: arc.p1[0], y: arc.p1[1]};
                     const center_sim = {x: arc.center[0], y: arc.center[1]};
                     const p2_sim = {x: arc.p2[0], y: arc.p2[1]};
@@ -288,7 +288,7 @@ canvas {
             ws.send(JSON.stringify({ action: 'input', type: 'release', x, y }));
         }
     }
-    
+
     function handleKey(event, type) {
         if (ws && ws.readyState === WebSocket.OPEN) {
             const flippers = simState.flippers;
@@ -300,7 +300,7 @@ canvas {
             let targetPos = null;
             if (event.key === 'ArrowLeft') targetPos = {x: leftFlipper.x, y: leftFlipper.y};
             if (event.key === 'ArrowRight') targetPos = {x: rightFlipper.x, y: rightFlipper.y};
-            
+
             if (targetPos) {
                 ws.send(JSON.stringify({ action: 'input', type: type, x: targetPos.x, y: targetPos.y }));
             }

@@ -518,7 +518,7 @@ def world_to_json(world):
                     'p1': p1,
                     'p2': p2,
                     'anticlockwise': anticlockwise,
-                    'is_taut': is_taut
+                    'is_taut': bool(is_taut)
                 })
         state['cables'].append(cable_render_data)
 
