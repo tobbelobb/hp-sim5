@@ -596,8 +596,11 @@ async def handler(websocket):
 
         if action == 'step':
             if not pause_state.paused:
-                # The JS client sends dt in ms, the python sim expects seconds
-                world.update(data['dt'] / 1000.0)
+                steps = data.get('steps', 0)
+                if steps > 0:
+                    dt = world.get_resource('dt')
+                    for _ in range(steps):
+                        world.update(dt)
         elif action == 'single_step':
             pause_state.paused = False
             world.update(world.get_resource('dt'))

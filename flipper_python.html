@@ -71,6 +71,9 @@ canvas {
     let cScale, simHeight = 1.7, simWidth = 1.0;
 
     let ws;
+    let accumulator = 0.0; // in milliseconds
+    const dt_ms = (1.0 / 300.0) * 1000.0;
+    const maxAccumulator = dt_ms * 5; // To prevent spiral of death
 
     function setupCanvas() {
         canvas.width = canvas.clientWidth;
@@ -320,7 +323,19 @@ canvas {
         lastTime = currentTime;
 
         if (!isPaused && ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ action: 'step', dt: deltaTime }));
+            accumulator += deltaTime;
+
+            // Clamp accumulator to avoid spiral of death if tab is inactive for a while
+            if (accumulator > maxAccumulator) {
+                accumulator = maxAccumulator;
+            }
+
+            const stepsToTake = Math.floor(accumulator / dt_ms);
+
+            if (stepsToTake > 0) {
+                accumulator -= stepsToTake * dt_ms;
+                ws.send(JSON.stringify({ action: 'step', steps: stepsToTake }));
+            }
         }
         requestAnimationFrame(gameLoop);
     }
