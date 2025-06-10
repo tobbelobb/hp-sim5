@@ -262,8 +262,8 @@ canvas {
             // In the JS version, it's only entities with CableLinkComponent.
             // Here we don't have that info, so we use all of them.
             const obstaclesForCatenary = [
-                ...simState.balls.map(b => ({ x: b.x, y: b.y, radius: b.radius })),
-                ...simState.obstacles.map(o => ({ x: o.x, y: o.y, radius: o.radius }))
+                //...simState.balls.map(b => ({ x: b.x, y: b.y, radius: b.radius })),
+                //...simState.obstacles.map(o => ({ x: o.x, y: o.y, radius: o.radius }))
             ];
             // Also add flipper pivot and tip as obstacles
             simState.flippers.forEach(flipper => {
@@ -338,7 +338,7 @@ canvas {
                             if (link.center && link.radius > 1e-9) {
                                 const center_sim = { x: link.center[0], y: link.center[1] };
                                 const tangent_sim = { x: link.tangentPoint[0], y: link.tangentPoint[1] };
-                                
+
                                 const toTangent = { x: tangent_sim.x - center_sim.x, y: tangent_sim.y - center_sim.y };
                                 const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
                                 const deltaAngle = link.storedLength / link.radius;
