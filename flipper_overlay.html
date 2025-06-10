@@ -876,7 +876,21 @@ canvas {
     stepBtn.addEventListener('click', (e) => {
         e.preventDefault();
         const pauseState = jsWorld.getResource('pauseState');
-        if (pauseState && pauseState.paused) doStep = true;
+        if (!pauseState) return;
+
+        /*  Always perform a single-step for BOTH sims.
+            If the game is currently running, we first pause it so that the
+            step happens from a well-defined paused state, then request one
+            fixed-dt update in the next frame for JS and send the matching
+            ‘single_step’ command to the Python backend. */
+        if (!pauseState.paused) {
+            pauseState.paused = true;
+            pauseBtn.textContent = "Resume";
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'pause', paused: true }));
+            }
+        }
+        doStep = true;
     });
     dumpBtn.addEventListener('click', (e) => {
         e.preventDefault();
