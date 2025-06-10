@@ -180,27 +180,39 @@ class RemoteInputSystem:
             left_click = right_of_line(click_pos, border_points[5], border_points[6]) and \
                          right_of_line(click_pos, border_points[6], border_points[7])
 
-            flippers = world.query([FlipperStateComponent, PositionComponent])
-            if len(flippers) < 2: return
-            flipper_pos0 = world.get_component(flippers[0], PositionComponent).pos
-            flipper_pos1 = world.get_component(flippers[1], PositionComponent).pos
+            flipper_entities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent])
+            if not flipper_entities: return
+
+            # Identify left and right flippers robustly
+            flipper_data = []
+            for fid in flipper_entities:
+                pos = world.get_component(fid, PositionComponent).pos
+                flipper_data.append({'id': fid, 'x': pos[0]})
+            
+            flipper_data.sort(key=lambda f: f['x'])
+            left_flipper_id = flipper_data[0]['id']
+            right_flipper_id = flipper_data[-1]['id']
 
             if right_click:
-                if flipper_pos0[0] > flipper_pos1[0]:
-                    world.get_component(flippers[0], FlipperStateComponent).pressed = True
-                else:
-                    world.get_component(flippers[1], FlipperStateComponent).pressed = True
+                world.get_component(right_flipper_id, FlipperStateComponent).pressed = True
             elif left_click:
-                if flipper_pos0[0] < flipper_pos1[0]:
-                    world.get_component(flippers[0], FlipperStateComponent).pressed = True
-                else:
-                    world.get_component(flippers[1], FlipperStateComponent).pressed = True
+                world.get_component(left_flipper_id, FlipperStateComponent).pressed = True
             else:
-                for id in flippers:
-                    pos = world.get_component(id, PositionComponent).pos
-                    state = world.get_component(id, FlipperStateComponent)
-                    if np.sum((click_pos - pos)**2) < state.length**2:
-                        state.pressed = True
+                # Direct click on a flipper - find the closest one
+                closest_flipper_id = None
+                min_dist_sq = float('inf')
+                for fid in flipper_entities:
+                    pos = world.get_component(fid, PositionComponent).pos
+                    dist_sq = np.sum((click_pos - pos)**2)
+                    if dist_sq < min_dist_sq:
+                        min_dist_sq = dist_sq
+                        closest_flipper_id = fid
+                
+                if closest_flipper_id is not None:
+                    state = world.get_component(closest_flipper_id, FlipperStateComponent)
+                    # Check if click is within flipper's radius of influence (e.g., its length)
+                    if min_dist_sq < state.length**2:
+                         world.get_component(closest_flipper_id, FlipperStateComponent).pressed = True
 
         if self.releases:
             release_pos = self.releases.pop(0)
@@ -383,11 +395,12 @@ async def handler(websocket):
             pause_state.paused = data['paused']
         elif action == 'input':
             input_system = world.get_system(RemoteInputSystem)
-            pos = np.array([data['x'], data['y'], 0.0])
-            if data['type'] == 'click':
-                input_system.clicks.append(pos)
-            elif data['type'] == 'release':
-                input_system.releases.append(pos)
+            if input_system:
+                pos = np.array([data['x'], data['y'], 0.0])
+                if data['type'] == 'click':
+                    input_system.clicks.append(pos)
+                elif data['type'] == 'release':
+                    input_system.releases.append(pos)
 
         await websocket.send(world_to_json(world))
 

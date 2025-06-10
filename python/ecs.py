@@ -73,6 +73,12 @@ class World:
     def register_system(self, system):
         self.systems.append(system)
 
+    def get_system(self, system_class):
+        for system in self.systems:
+            if isinstance(system, system_class):
+                return system
+        return None
+
     def set_resource(self, name, value):
         self.resources[name] = value
 
