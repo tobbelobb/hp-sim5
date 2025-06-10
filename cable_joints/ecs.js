@@ -176,7 +176,7 @@ export class MomentOfInertiaComponent {
 }
 export class RenderableComponent {
   constructor(shape = 'circle', color = '#888888') {
-    this.shape = shape; // 'circle', 'flipper', 'border'
+    this.shape = shape; // 'circle', 'line', 'flipper', 'border'
     this.color = color;
   }
 }

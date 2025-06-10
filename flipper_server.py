@@ -320,8 +320,14 @@ def setup_scene(world):
         world.register_system(GravitySystem())
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
+        world.register_system(FlipperTipLinkSystem());
+
+        world.registerSystem(CableAttachmentUpdateSystem());
+        world.registerSystem(PBDCableConstraintSolver());
+
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
+
         world.register_system(PBDBallBorderCollisions())
         world.register_system(PBDBallBallCollisions())
         world.register_system(PBDBallObstacleCollisions())
