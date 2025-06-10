@@ -712,6 +712,12 @@ async def handler(websocket):
                     input_system.clicks.append(pos)
                 elif event_type == 'release':
                     input_system.releases.append(pos)
+            
+            # If the game is paused, input events that can unpause it (like grabbing)
+            # won't be processed unless we manually run the systems that operate
+            # during pause.
+            if pause_state.paused:
+                world.update(world.get_resource('dt'))
 
         await websocket.send(world_to_json(world))
 
