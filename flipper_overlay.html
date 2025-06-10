@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mindfulness Pinball (JS vs Python Overlay)</title>
+
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
+    <style>
+:root {
+  --bg-1: #2d2d2d; --accent-1: #ff452a; --accent-2: #ffb347;
+  --text-main: #fafafa; --text-dim:  #c0c0c0; --radius: 4px;
+}
+html, body {
+  margin: 0; padding: 0; height: 100dvh; overflow: hidden;
+  background: var(--bg-1); color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+#gameContainer {
+  width: min(90vw, 460px); max-height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+}
+#controls {
+  width: 100%; text-align: center; margin-block: 12px 8px;
+  font-size: 0.9rem; color: var(--text-dim);
+}
+#controls button {
+  all: unset; cursor: pointer; display: inline-block; margin: 6px auto;
+  border-radius: var(--radius); font-weight: 600; font-size: 0.95rem;
+  color: #fff; background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+  padding: 10px 16px; font-size: 0.85rem;
+}
+#controls button:hover, #controls button:focus-visible {
+  transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active { transform: scale(.97); }
+canvas {
+  width: 100%; aspect-ratio: 1 / 1.7;
+  border-radius: var(--radius); touch-action: manipulation;
+}
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="controls">
+            <button id="pauseBtn" tabindex="-1">Start</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump States</button><br />
+            JS Score: <span id="score">0</span> | Py Score: <span id="pyScore">0</span>
+        </div>
+        <canvas id="myCanvas"></canvas>
+    </div>
+<script type="module">
+    import Vector2 from './cable_joints/vector2.js';
+    import { dumpWorldState } from './cable_joints/debugUtils.js';
+    import {
+      World, PauseStateComponent, SimulationErrorStateComponent, BorderComponent, RenderableComponent,
+      BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
+      RestitutionComponent, GravityAffectedComponent, OrientationComponent, AngularVelocityComponent,
+      CoefficientOfFrictionComponent, MomentOfInertiaComponent, ObstacleTagComponent,
+      ObstaclePushComponent, ScoredTagComponent, FlipperTagComponent, FlipperStateComponent,
+      PrevFinalPosComponent, PrevFinalOrientationComponent
+    } from './cable_joints/ecs.js';
+    import {
+      CableLinkComponent, CableJointComponent, CablePathComponent, linecolor1,
+      CableAttachmentUpdateSystem, PBDCableConstraintSolver
+    } from './cable_joints/cable_joints_core.js';
+    import {
+      tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle,
+      closestPointOnSegment, rightOfLine
+    } from './cable_joints/geometry.js';
+    import {
+      PrevFinalPosSystem, InputReplaySystem, GravitySystem, MovementSystem, AngularMovementSystem,
+      PBDBallObstacleCollisions, PBDBallBallCollisions, PBDVelocityUpdateSystem,
+      PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem
+    } from './cable_joints/commonSystems.js';
+    import { RenderSystem } from './cable_joints/renderSystem.js';
+
+    class ScoreComponent { constructor(score = 0) { this.value = score; } }
+    class FlipperTipComponent { constructor(flipperEntityId) { this.flipperEntityId = flipperEntityId; } }
+
+    class FlipperTipLinkSystem {
+      runInPause = false;
+      update(world, dt) {
+        for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
+          const tipComp   = world.getComponent(tipId, FlipperTipComponent);
+          const flipId    = tipComp.flipperEntityId;
+          const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
+          const state     = world.getComponent(flipId, FlipperStateComponent);
+          const angle = state.restAngle + state.sign * state.rotation;
+          const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
+          const tipPos = pivotPos.clone().add(dir, state.length);
+          world.getComponent(tipId, PositionComponent).pos.set(tipPos);
+        }
+      }
+    }
+
+    class InputSystem {
+         runInPause = true;
+         constructor(canvas) {
+             this.canvas = canvas; this.clicks = []; this.releases = [];
+             this.eventLog = []; this.frame = 0; this.grabSpring = null;
+             this.canvas.setAttribute('tabindex', '0'); this.canvas.style.outline = 'none';
+             this.canvas.focus();
+             document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+             document.addEventListener('pointerup', this.handlePointerUp.bind(this));
+             this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
+             this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
+             this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
+         }
+        dumpDebugScenario() {
+            const resStr = JSON.stringify(jsWorld.resources);
+            const logEntries = this.eventLog.map(frame => {
+                const clicksStr = frame.clicks.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
+                const releasesStr = frame.releases.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
+                return `{ "frame": ${frame.frame}, "clicks": [${clicksStr}], "releases": [${releasesStr}] }`;
+            }).join(', ');
+            console.log('DEBUG_SCENARIO_DUMP', `{ "resources": ${resStr}, "inputLog": [${logEntries}] }`);
+        }
+         handleKeyup(event) {
+             if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
+                 const flipperEntities = jsWorld.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 if (flipperEntities.length < 2) return;
+                 var firstPos = jsWorld.getComponent(flipperEntities[0], PositionComponent).pos;
+                 var secondPos = jsWorld.getComponent(flipperEntities[1], PositionComponent).pos;
+                 if (firstPos.x < secondPos.x) {
+                     if (event.key == 'ArrowLeft') this.releases.push(firstPos);
+                     if (event.key == 'ArrowRight') this.releases.push(secondPos);
+                 } else {
+                     if (event.key == 'ArrowLeft') this.releases.push(secondPos);
+                     if (event.key == 'ArrowRight') this.releases.push(firstPos);
+                 }
+             }
+         }
+         handleKeydown(event) {
+             if (event.code === 'Space') this.dumpDebugScenario();
+             if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
+                 const flipperEntities = jsWorld.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 if (flipperEntities.length < 2) return;
+                 var firstPos = jsWorld.getComponent(flipperEntities[0], PositionComponent).pos;
+                 var secondPos = jsWorld.getComponent(flipperEntities[1], PositionComponent).pos;
+                 if (firstPos.x < secondPos.x) {
+                     if (event.key == 'ArrowLeft') this.clicks.push(firstPos);
+                     if (event.key == 'ArrowRight') this.clicks.push(secondPos);
+                 } else {
+                     if (event.key == 'ArrowLeft') this.clicks.push(secondPos);
+                     if (event.key == 'ArrowRight') this.clicks.push(firstPos);
+                 }
+             }
+         }
+         handlePointerDown(event) {
+             event.preventDefault();
+             const rect = this.canvas.getBoundingClientRect();
+             const scale = this.canvas.height / jsWorld.getResource('simHeight');
+             const simX = (event.clientX - rect.left) / scale;
+             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+             const cmOnScreen = 0.5; const dpi = 96; const pixelsPerCm = dpi / 2.54;
+             const extraPixels = cmOnScreen * pixelsPerCm;
+             const extraClickableRadius = extraPixels / scale;
+             const clickVec = new Vector2(simX, simY);
+             let closestBall = null; let closestDistSq = Infinity;
+             for (const b of jsWorld.query([BallTagComponent, PositionComponent, RadiusComponent])) {
+               const pos = jsWorld.getComponent(b, PositionComponent).pos;
+               const r = jsWorld.getComponent(b, RadiusComponent).radius + extraClickableRadius;
+               const distSq = clickVec.clone().subtract(pos).lengthSq();
+               if (distSq <= r * r && distSq < closestDistSq) {
+                 closestBall = b; closestDistSq = distSq;
+               }
+             }
+             if (closestBall !== null) {
+               const ptrE = jsWorld.createEntity();
+               jsWorld.addComponent(ptrE, new PositionComponent(simX, simY));
+               jsWorld.addComponent(ptrE, new CableLinkComponent(simX, simY));
+               const ballPos = jsWorld.getComponent(closestBall, PositionComponent).pos.clone();
+               const ptrPos  = new Vector2(simX, simY);
+               const jointE = jsWorld.createEntity();
+               jsWorld.addComponent(jointE, new CableJointComponent(closestBall, ptrE, 0.1, ballPos, ptrPos));
+               jsWorld.addComponent(jointE, new RenderableComponent('line', '#888888'));
+               const pathE = jsWorld.createEntity();
+               const pathComp = new CablePathComponent(jsWorld, [ jointE ], ['attachment', 'attachment'], [ true ], 10.0);
+               jsWorld.addComponent(pathE, pathComp);
+               this.grabSpring = { ptrE, jointE, pathE, ballE: closestBall };
+               jsWorld.setResource('grabbedBall', closestBall);
+               const pauseState = jsWorld.getResource('pauseState');
+               pauseState.paused = false;
+               pauseBtn.textContent = "Pause";
+               if (ws && ws.readyState === WebSocket.OPEN) {
+                   ws.send(JSON.stringify({ action: 'pause', paused: false }));
+               }
+               return;
+             }
+             this.clicks.push(new Vector2(simX, simY));
+         }
+         handlePointerUp(event) {
+             event.preventDefault();
+             this.canvas.releasePointerCapture(event.pointerId);
+             const rect = this.canvas.getBoundingClientRect();
+             const scale = this.canvas.height / jsWorld.getResource('simHeight');
+             const simX = (event.clientX - rect.left) / scale;
+             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+             if (this.grabSpring) {
+               const { ptrE, jointE, pathE, ballE } = this.grabSpring;
+               const velComp = jsWorld.getComponent(ballE, VelocityComponent);
+               const posComp = jsWorld.getComponent(ballE, PositionComponent);
+               const prevFinalPosComp = jsWorld.getComponent(ballE, PrevFinalPosComponent);
+               const dt = jsWorld.getResource('dt');
+               if (velComp) {
+                 velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0/dt));
+               }
+               jsWorld.destroyEntity(pathE);
+               jsWorld.destroyEntity(jointE);
+               jsWorld.destroyEntity(ptrE);
+               this.grabSpring = null;
+               jsWorld.setResource('grabbedBall', null);
+               return;
+             }
+             this.releases.push(new Vector2(simX, simY));
+         }
+         update(world, dt) {
+             const clicksFrame = this.clicks.slice();
+             const releasesFrame = this.releases.slice();
+             if (clicksFrame.length > 0 || releasesFrame.length > 0) {
+                 this.eventLog.push({ frame: this.frame, clicks: clicksFrame, releases: releasesFrame });
+             }
+             this.frame++;
+             if (clicksFrame.length > 0) {
+                 const clickPos = this.clicks.shift();
+                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 const borderEnts = world.query([BorderComponent]);
+                 const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
+                 const rightClick = rightOfLine(clickPos, borderPoints[0], borderPoints[1]) && rightOfLine(clickPos, borderPoints[1], borderPoints[2]);
+                 const leftClick = rightOfLine(clickPos, borderPoints[5], borderPoints[6]) && rightOfLine(clickPos, borderPoints[6], borderPoints[7]);
+                 if (rightClick) {
+                     const flippers = world.query([FlipperStateComponent, PositionComponent]);
+                     const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
+                     const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
+                     if (flipperPos0.x > flipperPos1.x) world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
+                     else world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
+                 } else if (leftClick) {
+                     const flippers = world.query([FlipperStateComponent, PositionComponent]);
+                     const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
+                     const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
+                     if (flipperPos0.x < flipperPos1.x) world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
+                     else world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
+                 } else {
+                     for (const id of flipperEntities) {
+                         const pos = world.getComponent(id, PositionComponent).pos;
+                         const state = world.getComponent(id, FlipperStateComponent);
+                         if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) state.pressed = true;
+                     }
+                 }
+             }
+             if (this.releases.length > 0) {
+                 const releasePos = this.releases.shift();
+                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
+                 let closestId = null; let minDistSq = Infinity;
+                 for (const id of flipperEntities) {
+                     const state = world.getComponent(id, FlipperStateComponent);
+                     if (!state.pressed) continue;
+                     const pos = world.getComponent(id, PositionComponent).pos;
+                     const d2 = releasePos.clone().subtract(pos).lengthSq();
+                     if (d2 < minDistSq) { minDistSq = d2; closestId = id; }
+                 }
+                 if (closestId !== null) world.getComponent(closestId, FlipperStateComponent).pressed = false;
+             }
+         }
+         handlePointerMove(event) {
+           event.preventDefault();
+           const rect = this.canvas.getBoundingClientRect();
+           const scale = this.canvas.height / jsWorld.getResource('simHeight');
+           const simX = (event.clientX - rect.left) / scale;
+           const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
+           if (this.grabSpring) {
+             const { ptrE } = this.grabSpring;
+             const pos = jsWorld.getComponent(ptrE, PositionComponent).pos;
+             pos.set(new Vector2(simX, simY));
+           }
+         }
+    }
+
+    class FlipperMotionSystem {
+        runInPause = true;
+        update(world, dt) {
+            const flipperEntities = world.query([FlipperStateComponent]);
+            for (const entityId of flipperEntities) {
+                const state = world.getComponent(entityId, FlipperStateComponent);
+                const prevRotation = state.rotation;
+                if (state.pressed) state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
+                else state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
+                state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
+            }
+        }
+    }
+
+    class ScoreSystem {
+        runInPause = false;
+        update(world, dt) {
+            const scoreEntity = world.query([ScoreComponent])[0];
+            const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
+            const scoredEntities = world.query([ScoredTagComponent]);
+            for (const scoredId of scoredEntities) {
+               world.removeComponent(scoredId, ScoredTagComponent);
+               scoreComp.value++;
+            }
+        }
+    }
+
+    class ScoreDisplaySystem {
+        runInPause = true;
+        constructor(elementId) { this.scoreElement = document.getElementById(elementId); }
+        update(world, dt) {
+            const scoreEntity = world.query([ScoreComponent])[0];
+            if (scoreEntity !== undefined && this.scoreElement) {
+                const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
+                this.scoreElement.textContent = scoreComp.value.toString();
+            }
+        }
+    }
+
+    class PBDBallFlipperCollisions {
+      _getFlipperTip(flipperPos, flipperState) {
+        const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+        const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+        return flipperPos.clone().add(dir, flipperState.length);
+      }
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
+        for (const ballId of ballEntities) {
+          const p1 = world.getComponent(ballId, PositionComponent).pos;
+          const v1 = world.getComponent(ballId, VelocityComponent).vel;
+          const r1 = world.getComponent(ballId, RadiusComponent).radius;
+          for (const flipId of flipperEntities) {
+            const fp = world.getComponent(flipId, PositionComponent).pos;
+            const fr = world.getComponent(flipId, RadiusComponent).radius;
+            const fs = world.getComponent(flipId, FlipperStateComponent);
+            const tip = this._getFlipperTip(fp, fs);
+            const closest = closestPointOnSegment(p1, fp, tip);
+            const dir = new Vector2().subtractVectors(p1, closest);
+            const dSq = dir.lengthSq();
+            const rSum = r1 + fr;
+            if (dSq == 0.0 || dSq > rSum * rSum) continue;
+            const d = Math.sqrt(dSq);
+            dir.scale(1.0 / d);
+            const corr = rSum - d;
+            p1.add(dir, corr);
+            const radiusVec = closest.clone().subtract(fp);
+            const contactPointOnFlipperSurface = fp.clone().add(radiusVec).add(dir, -fr);
+            const radiusToSurface = contactPointOnFlipperSurface.subtract(fp);
+            const surfaceVel = new Vector2(-fs.currentAngularVelocity * radiusToSurface.y, fs.currentAngularVelocity * radiusToSurface.x);
+            const v_dot = v1.dot(dir);
+            const surfVel_dot = surfaceVel.dot(dir);
+            v1.add(dir, surfVel_dot - v_dot);
+          }
+        }
+      }
+    }
+
+    class PBDBallBorderCollisions {
+      update(world, dt) {
+        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+        const borderEntities = world.query([BorderComponent]);
+        if (borderEntities.length > 0) {
+          const borderId = borderEntities[0];
+          const borderComp = world.getComponent(borderId, BorderComponent);
+          const borderPoints = borderComp.points;
+          if (borderPoints.length >= 3) {
+            for (const ballId of ballEntities) {
+              const p1 = world.getComponent(ballId, PositionComponent).pos;
+              const v1 = world.getComponent(ballId, VelocityComponent).vel;
+              const r1 = world.getComponent(ballId, RadiusComponent).radius;
+              const res1 = world.getComponent(ballId, RestitutionComponent).restitution;
+              let minDistSq = Infinity;
+              let closestSegPoint = new Vector2();
+              let edgeNormal = new Vector2();
+              let edgeStart = null; let edgeEnd = null;
+              for (let i = 0; i < borderPoints.length; i++) {
+                const a = borderPoints[i];
+                const b = borderPoints[(i + 1) % borderPoints.length];
+                const closestPtOnSeg = closestPointOnSegment(p1, a, b);
+                const distSq = p1.clone().subtract(closestPtOnSeg).lengthSq();
+                if (distSq < minDistSq) {
+                  minDistSq = distSq; closestSegPoint.set(closestPtOnSeg);
+                  edgeStart = a; edgeEnd = b;
+                }
+              }
+              if (minDistSq > r1 * r1) continue;
+              const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
+              const normal = edgeVec.perp().normalize();
+              const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
+              let collisionNormal = ballToClosest.clone();
+              if (collisionNormal.lengthSq() < 1e-9) collisionNormal.set(normal);
+              else collisionNormal.normalize();
+              if (ballToClosest.dot(normal) < 0) collisionNormal.set(normal);
+              const dist = Math.sqrt(minDistSq);
+              const penetration = r1 - dist;
+              if (penetration > 0) p1.add(collisionNormal, penetration);
+              const v_dot = v1.dot(collisionNormal);
+              if (v_dot < 0) {
+                const v_new_dot = -v_dot * res1;
+                v1.add(collisionNormal, v_new_dot - v_dot);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const stepBtn = document.getElementById("stepBtn");
+    const dumpBtn = document.getElementById('dumpBtn');
+    const pyScoreEl = document.getElementById("pyScore");
+
+    // --- Global Worlds & State ---
+    let jsWorld = new World();
+    window.world = jsWorld; // Make available to jest test
+    let pyState = {};
+    let ws;
+
+    // For coordinate conversion and rendering
+    let cScale, simHeight = 1.7, simWidth = 1.0;
+    const sag_multiplier = 0.3;
+
+    let getGameStateForTest = () => {
+        if (!jsWorld || !jsWorld.query) {
+            console.error("World object not available for getGameStateForTest");
+            return null;
+        }
+        const ballEntities = jsWorld.query([BallTagComponent, PositionComponent]);
+        const balls = ballEntities.map(id => {
+            const posComp = jsWorld.getComponent(id, PositionComponent);
+            return { id, y: posComp ? posComp.pos.y : -Infinity };
+        });
+        const scoreEntity = jsWorld.query([ScoreComponent])[0];
+        const scoreComp = scoreEntity !== undefined ? jsWorld.getComponent(scoreEntity, ScoreComponent) : null;
+        const score = scoreComp ? scoreComp.value : -1;
+        return { balls, score };
+    };
+    window.getGameStateForTest = getGameStateForTest;
+
+    // --- WebSocket Logic ---
+    function toCanvasCoords(simX, simY) {
+        return { x: simX * cScale, y: canvas.height - (simY * cScale) };
+    }
+    function toSimCoords(canvasX, canvasY) {
+        const rect = canvas.getBoundingClientRect();
+        const simX = (canvasX - rect.left) / cScale;
+        const simY = (canvas.height - (canvasY - rect.top)) / cScale;
+        return { x: simX, y: simY };
+    }
+    function connect() {
+        ws = new WebSocket('ws://localhost:8765');
+        ws.onopen = () => {
+            console.log('Connected to Python WebSocket server.');
+            pauseBtn.disabled = false; resetBtn.disabled = false; stepBtn.disabled = false;
+        };
+        ws.onmessage = (event) => {
+            pyState = JSON.parse(event.data);
+            if (pyState.score !== undefined) pyScoreEl.textContent = pyState.score;
+        };
+        ws.onclose = () => {
+            console.log('Disconnected from server. Reconnecting in 1s...');
+            pauseBtn.textContent = "Reconnecting...";
+            pauseBtn.disabled = true; resetBtn.disabled = true; stepBtn.disabled = true;
+            setTimeout(connect, 1000);
+        };
+        ws.onerror = (error) => { console.error('WebSocket Error:', error); };
+    }
+
+    // --- Overlay Rendering ---
+    function renderOverlay() {
+        // 1. Render JS world using its RenderSystem
+        const renderSystem = jsWorld.systems.find(s => s instanceof RenderSystem);
+        if (renderSystem) {
+            renderSystem.update(jsWorld, 0); // dt=0 as we only want to render
+        }
+
+        // 2. Render Python state on top
+        if (!pyState.border || pyState.border.length === 0) return;
+
+        const pyColor = 'cyan';
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = pyColor;
+
+        // Draw Balls (as outlines)
+        pyState.balls.forEach(ball => {
+            const p = toCanvasCoords(ball.x, ball.y);
+            const r = ball.radius * cScale;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, 2 * Math.PI);
+            ctx.stroke();
+        });
+
+        // Draw Obstacles (as outlines)
+        pyState.obstacles.forEach(obs => {
+            const p = toCanvasCoords(obs.x, obs.y);
+            const r = obs.radius * cScale;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, 2 * Math.PI);
+            ctx.stroke();
+        });
+
+        // Draw Flippers (as outlines)
+        pyState.flippers.forEach(flipper => {
+            const pivot = toCanvasCoords(flipper.x, flipper.y);
+            const tipX = flipper.x + flipper.length * Math.cos(flipper.angle);
+            const tipY = flipper.y + flipper.length * Math.sin(flipper.angle);
+            const tip = toCanvasCoords(tipX, tipY);
+            const radius = flipper.radius * cScale;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(pivot.x, pivot.y);
+            ctx.lineTo(tip.x, tip.y);
+            ctx.lineWidth = radius * 2;
+            ctx.stroke();
+            ctx.restore();
+        });
+
+        // Draw Cables
+        if (pyState.cables) {
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = pyColor;
+            pyState.cables.forEach(cable => {
+                cable.joints.forEach(joint => {
+                    const pA = toCanvasCoords(joint.pA[0], joint.pA[1]);
+                    const pB = toCanvasCoords(joint.pB[0], joint.pB[1]);
+                    ctx.beginPath();
+                    ctx.moveTo(pA.x, pA.y);
+                    ctx.lineTo(pB.x, pB.y);
+                    ctx.stroke();
+                });
+                cable.arcs.forEach(arc => {
+                    const center = toCanvasCoords(arc.center[0], arc.center[1]);
+                    const radius = arc.radius * cScale;
+                    const p1_sim = {x: arc.p1[0], y: arc.p1[1]};
+                    const center_sim = {x: arc.center[0], y: arc.center[1]};
+                    const p2_sim = {x: arc.p2[0], y: arc.p2[1]};
+                    const a1 = Math.atan2(p1_sim.y - center_sim.y, p1_sim.x - center_sim.x);
+                    const a2 = Math.atan2(p2_sim.y - center_sim.y, p2_sim.x - center_sim.x);
+                    ctx.beginPath();
+                    ctx.arc(center.x, center.y, radius, -a1, -a2, arc.anticlockwise);
+                    ctx.stroke();
+                });
+            });
+        }
+        ctx.globalAlpha = 1.0;
+    }
+
+    // --- Scene Setup ---
+    function setupScene() {
+        jsWorld.clear();
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        cScale = canvas.height / simHeight;
+        simWidth = canvas.width / cScale;
+
+        jsWorld.setResource('gravity', new Vector2(0.0, -2.0));
+        jsWorld.setResource('dt', 1.0 / 300.0);
+        jsWorld.setResource('simWidth', simWidth);
+        jsWorld.setResource('simHeight', simHeight);
+        jsWorld.setResource('pauseState', new PauseStateComponent(true));
+        jsWorld.setResource('debugRenderPoints', {});
+        jsWorld.setResource('errorState', new SimulationErrorStateComponent(false));
+        jsWorld.setResource('grabbedBall', null);
+
+        const offset = 0.02;
+        const borderEntity = jsWorld.createEntity();
+        const borderPoints = [
+             new Vector2(0.74, 0.0), new Vector2(0.74, 0.25), new Vector2(1.0 - offset, 0.4),
+             new Vector2(1.0 - offset, simHeight - offset), new Vector2(offset, simHeight - offset),
+             new Vector2(offset, 0.4), new Vector2(0.26, 0.25), new Vector2(0.26, 0.0)
+        ];
+        jsWorld.addComponent(borderEntity, new BorderComponent(borderPoints));
+        jsWorld.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
+
+        const ballRadius = 0.03, ballMass = Math.PI * ballRadius * ballRadius, ballRestitution = 0.4;
+        const ball1 = jsWorld.createEntity();
+        jsWorld.addComponent(ball1, new BallTagComponent());
+        jsWorld.addComponent(ball1, new PositionComponent(0.90, 0.95));
+        jsWorld.addComponent(ball1, new VelocityComponent(0.0, 0.0));
+        jsWorld.addComponent(ball1, new RadiusComponent(ballRadius));
+        jsWorld.addComponent(ball1, new MassComponent(ballMass));
+        jsWorld.addComponent(ball1, new RestitutionComponent(ballRestitution));
+        jsWorld.addComponent(ball1, new GravityAffectedComponent());
+        jsWorld.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
+        jsWorld.addComponent(ball1, new OrientationComponent(0.0));
+        jsWorld.addComponent(ball1, new AngularVelocityComponent(0.0));
+        jsWorld.addComponent(ball1, new MomentOfInertiaComponent(0.5 * ballMass * ballRadius * ballRadius));
+        jsWorld.addComponent(ball1, new PrevFinalOrientationComponent(0.0));
+        const ball2 = jsWorld.createEntity();
+        jsWorld.addComponent(ball2, new BallTagComponent());
+        jsWorld.addComponent(ball2, new PositionComponent(0.08, 0.5));
+        jsWorld.addComponent(ball2, new VelocityComponent(0.0, 0.0));
+        jsWorld.addComponent(ball2, new RadiusComponent(ballRadius));
+        jsWorld.addComponent(ball2, new MassComponent(ballMass));
+        jsWorld.addComponent(ball2, new RestitutionComponent(ballRestitution));
+        jsWorld.addComponent(ball2, new GravityAffectedComponent());
+        jsWorld.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
+        jsWorld.addComponent(ball2, new OrientationComponent(0.0));
+        jsWorld.addComponent(ball2, new AngularVelocityComponent(0.0));
+        jsWorld.addComponent(ball2, new MomentOfInertiaComponent(0.5 * ballMass * ballRadius * ballRadius));
+        jsWorld.addComponent(ball2, new PrevFinalOrientationComponent(0.0));
+
+        const obsColor1 = "#FF8000", obsColor2 = "#0F7090", obsPush = 2.7;
+        const obs1 = jsWorld.createEntity();
+        jsWorld.addComponent(obs1, new ObstacleTagComponent());
+        jsWorld.addComponent(obs1, new PositionComponent(0.25, 0.6));
+        jsWorld.addComponent(obs1, new MassComponent(-1.0));
+        jsWorld.addComponent(obs1, new RadiusComponent(0.1));
+        jsWorld.addComponent(obs1, new ObstaclePushComponent(obsPush));
+        jsWorld.addComponent(obs1, new RenderableComponent('circle', obsColor2));
+        const obs2 = jsWorld.createEntity();
+        jsWorld.addComponent(obs2, new ObstacleTagComponent());
+        jsWorld.addComponent(obs2, new PositionComponent(0.75, 0.5));
+        jsWorld.addComponent(obs2, new MassComponent(-1.0));
+        jsWorld.addComponent(obs2, new RadiusComponent(0.1));
+        jsWorld.addComponent(obs2, new ObstaclePushComponent(obsPush));
+        jsWorld.addComponent(obs2, new RenderableComponent('circle', obsColor2));
+        const obs3 = jsWorld.createEntity();
+        jsWorld.addComponent(obs3, new ObstacleTagComponent());
+        jsWorld.addComponent(obs3, new PositionComponent(0.7, 1.0));
+        jsWorld.addComponent(obs3, new MassComponent(-1.0));
+        jsWorld.addComponent(obs3, new RadiusComponent(0.12));
+        jsWorld.addComponent(obs3, new ObstaclePushComponent(obsPush));
+        jsWorld.addComponent(obs3, new RenderableComponent('circle', obsColor1));
+        jsWorld.addComponent(obs3, new OrientationComponent(0.0));
+        jsWorld.addComponent(obs3, new AngularVelocityComponent(200.0));
+        jsWorld.addComponent(obs3, new MomentOfInertiaComponent(0.020 * 0.12**2));
+        jsWorld.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
+        const obs4 = jsWorld.createEntity();
+        jsWorld.addComponent(obs4, new ObstacleTagComponent());
+        jsWorld.addComponent(obs4, new PositionComponent(0.2, 1.2));
+        jsWorld.addComponent(obs4, new MassComponent(-1.0));
+        jsWorld.addComponent(obs4, new RadiusComponent(0.1));
+        jsWorld.addComponent(obs4, new ObstaclePushComponent(obsPush));
+        jsWorld.addComponent(obs4, new RenderableComponent('circle', obsColor1));
+        jsWorld.addComponent(obs4, new OrientationComponent(0.0));
+        jsWorld.addComponent(obs4, new AngularVelocityComponent(-200.0));
+        jsWorld.addComponent(obs4, new MomentOfInertiaComponent(0.020 * 0.1**2));
+        jsWorld.addComponent(obs4, new PrevFinalOrientationComponent(0.0));
+
+        const flipRadius = 0.03, flipLength = 0.2, flipMaxRotation = 1.0, flipRestAngle = 0.5, flipAngularVelocity = 20.0, flipColor = "#FF0000", flipRestitution = 0.2;
+        const flipper1 = jsWorld.createEntity();
+        jsWorld.addComponent(flipper1, new FlipperTagComponent());
+        jsWorld.addComponent(flipper1, new PositionComponent(0.26, 0.22));
+        jsWorld.addComponent(flipper1, new RadiusComponent(flipRadius));
+        jsWorld.addComponent(flipper1, new FlipperStateComponent(flipLength, -flipRestAngle, flipMaxRotation, flipAngularVelocity));
+        jsWorld.addComponent(flipper1, new RestitutionComponent(flipRestitution));
+        jsWorld.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
+        jsWorld.addComponent(flipper1, new CableLinkComponent(0.26, 0.22));
+        const flipper1Tip = jsWorld.createEntity();
+        jsWorld.addComponent(flipper1Tip, new PositionComponent());
+        jsWorld.addComponent(flipper1Tip, new RadiusComponent(flipRadius));
+        jsWorld.addComponent(flipper1Tip, new FlipperTipComponent(flipper1));
+        jsWorld.addComponent(flipper1Tip, new CableLinkComponent());
+        const flipper2 = jsWorld.createEntity();
+        jsWorld.addComponent(flipper2, new FlipperTagComponent());
+        jsWorld.addComponent(flipper2, new PositionComponent(0.74, 0.22));
+        jsWorld.addComponent(flipper2, new RadiusComponent(flipRadius));
+        jsWorld.addComponent(flipper2, new FlipperStateComponent(flipLength, Math.PI + flipRestAngle, -flipMaxRotation, flipAngularVelocity));
+        jsWorld.addComponent(flipper2, new RestitutionComponent(flipRestitution));
+        jsWorld.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
+        jsWorld.addComponent(flipper2, new CableLinkComponent());
+        const flipper2Tip = jsWorld.createEntity();
+        jsWorld.addComponent(flipper2Tip, new PositionComponent());
+        jsWorld.addComponent(flipper2Tip, new RadiusComponent(flipRadius));
+        jsWorld.addComponent(flipper2Tip, new CableLinkComponent());
+        jsWorld.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
+        const frictionCoefficient = 0.2;
+        jsWorld.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(0.01));
+        jsWorld.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(0.01));
+
+        const scoreEntity = jsWorld.createEntity();
+        jsWorld.addComponent(scoreEntity, new ScoreComponent(0));
+
+        const pos_ball1 = jsWorld.getComponent(ball1, PositionComponent).pos, pos_ball2 = jsWorld.getComponent(ball2, PositionComponent).pos;
+        const pos_obs3 = jsWorld.getComponent(obs3, PositionComponent).pos, radius_obs3 = jsWorld.getComponent(obs3, RadiusComponent).radius;
+        const pos_obs4 = jsWorld.getComponent(obs4, PositionComponent).pos, radius_obs4 = jsWorld.getComponent(obs4, RadiusComponent).radius;
+        jsWorld.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
+        jsWorld.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
+        jsWorld.addComponent(obs4, new CoefficientOfFrictionComponent(frictionCoefficient));
+        jsWorld.addComponent(obs3, new CoefficientOfFrictionComponent(frictionCoefficient));
+        jsWorld.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
+        jsWorld.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
+        jsWorld.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
+        jsWorld.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
+        jsWorld.addComponent(ball1, new CoefficientOfFrictionComponent(frictionCoefficient));
+        jsWorld.addComponent(ball2, new CoefficientOfFrictionComponent(frictionCoefficient));
+        const joint1 = jsWorld.createEntity();
+        const tangentObs4 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
+        const attachObs4 = tangentObs4.a_circle;
+        const dir1 = attachObs4.clone().subtract(pos_ball2).normalize();
+        const attachBall2 = pos_ball2.clone().add(dir1.scale(ballRadius));
+        const initialDist1 = attachBall2.clone().subtract(attachObs4).length();
+        jsWorld.addComponent(joint1, new CableJointComponent(ball2, obs4, initialDist1, attachBall2, attachObs4));
+        jsWorld.addComponent(joint1, new RenderableComponent('line', linecolor1));
+        const joint2 = jsWorld.createEntity();
+        const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
+        const initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
+        jsWorld.addComponent(joint2, new CableJointComponent(obs4, obs3, initialDist2, initialPoints2.a_circle, initialPoints2.b_circle));
+        jsWorld.addComponent(joint2, new RenderableComponent('line', linecolor1));
+        const joint3 = jsWorld.createEntity();
+        const tangentObs3 = tangentFromPointToCircle(pos_ball1, pos_obs3, radius_obs3, false);
+        const attachObs3 = tangentObs3.a_circle;
+        const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
+        const attachBall1 = pos_ball1.clone().add(dir3.scale(ballRadius));
+        const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
+        jsWorld.addComponent(joint3, new CableJointComponent(obs3, ball1, initialDist3, attachObs3, attachBall1));
+        jsWorld.addComponent(joint3, new RenderableComponent('line', linecolor1));
+        const cablePath = jsWorld.createEntity();
+        const pathComp = new CablePathComponent(jsWorld, [joint1, joint2, joint3], ['hybrid-attachment', 'rolling', 'rolling', 'hybrid-attachment'], [true, true, true, true], 200.0);
+        jsWorld.addComponent(cablePath, pathComp);
+
+        if (jsWorld.systems.length === 0) {
+             jsWorld.registerSystem(new PrevFinalPosSystem());
+             jsWorld.registerSystem(new PrevFinalOrientationSystem());
+             const inputSystemInstance = new InputSystem(canvas);
+             jsWorld.registerSystem(inputSystemInstance);
+             jsWorld.registerSystem(new InputReplaySystem([], inputSystemInstance));
+             jsWorld.registerSystem(new FlipperMotionSystem());
+             jsWorld.registerSystem(new GravitySystem());
+             jsWorld.registerSystem(new MovementSystem());
+             jsWorld.registerSystem(new AngularMovementSystem());
+             jsWorld.registerSystem(new FlipperTipLinkSystem());
+             jsWorld.registerSystem(new CableAttachmentUpdateSystem());
+             jsWorld.registerSystem(new PBDCableConstraintSolver());
+             jsWorld.registerSystem(new PBDVelocityUpdateSystem());
+             jsWorld.registerSystem(new PBDAngularVelocityUpdateSystem());
+             jsWorld.registerSystem(new PBDBallBorderCollisions());
+             jsWorld.registerSystem(new PBDBallBallCollisions());
+             jsWorld.registerSystem(new PBDBallObstacleCollisions());
+             jsWorld.registerSystem(new PBDBallFlipperCollisions());
+             jsWorld.registerSystem(new ScoreSystem());
+             jsWorld.registerSystem(new ScoreDisplaySystem('score'));
+             jsWorld.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
+        }
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ action: 'reset' }));
+        }
+        const pauseState = jsWorld.getResource('pauseState');
+        pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
+        pyScoreEl.textContent = "0";
+    }
+
+    // --- Main Loop ---
+    let lastTime = 0;
+    let accumulator = 0.0;
+    let doStep = false;
+
+    function gameLoop(currentTime) {
+        const dt = jsWorld.getResource('dt');
+        const pauseState = jsWorld.getResource('pauseState');
+        if (!dt || !pauseState) {
+            requestAnimationFrame(gameLoop);
+            return;
+        }
+
+        if (lastTime === 0) lastTime = currentTime;
+        const speedScale = window._flipperSpeedScale ?? 0.6;
+        let frameSec = speedScale * (currentTime - lastTime) / 1000;
+
+        if (frameSec > 0) {
+            lastTime = currentTime;
+            const maxAccum = dt * 5;
+            accumulator = Math.min(accumulator + frameSec, maxAccum);
+
+            if (doStep && pauseState.paused) {
+                jsWorld.update(dt);
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ action: 'single_step' }));
+                }
+                accumulator = Math.max(0, accumulator - dt);
+                doStep = false;
+            } else if (!pauseState.paused) {
+                const stepsToTake = Math.floor(accumulator / dt);
+                if (stepsToTake > 0) {
+                    for (let i = 0; i < stepsToTake; i++) {
+                        jsWorld.update(dt);
+                    }
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: 'step', steps: stepsToTake }));
+                    }
+                    accumulator -= stepsToTake * dt;
+                }
+            }
+        }
+        renderOverlay();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Event Listeners ---
+    // Python input listeners
+    function handlePointerDownPy(event) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const { x: simX, y: simY } = toSimCoords(event.clientX, event.clientY);
+            ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x: simX, y: simY }));
+        }
+    }
+    function handlePointerMovePy(event) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const { x, y } = toSimCoords(event.clientX, event.clientY);
+            ws.send(JSON.stringify({ action: 'input', type: 'pointermove', x, y }));
+        }
+    }
+    function handlePointerUpPy(event) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const { x, y } = toSimCoords(event.clientX, event.clientY);
+            ws.send(JSON.stringify({ action: 'input', type: 'pointerup', x, y }));
+        }
+    }
+    function handleKeyPy(event, type) {
+        if (ws && ws.readyState === WebSocket.OPEN && pyState.flippers && pyState.flippers.length >= 2) {
+            const flippers = pyState.flippers;
+            const leftFlipper = flippers[0].x < flippers[1].x ? flippers[0] : flippers[1];
+            const rightFlipper = flippers[0].x > flippers[1].x ? flippers[0] : flippers[1];
+            let targetPos = null;
+            if (event.key === 'ArrowLeft') targetPos = {x: leftFlipper.x, y: leftFlipper.y};
+            if (event.key === 'ArrowRight') targetPos = {x: rightFlipper.x, y: rightFlipper.y};
+            if (targetPos) {
+                ws.send(JSON.stringify({ action: 'input', type: type, x: targetPos.x, y: targetPos.y }));
+            }
+        }
+    }
+    // JS input is handled by InputSystem. We add separate listeners for Python.
+    document.addEventListener('pointerdown', handlePointerDownPy);
+    document.addEventListener('pointermove', handlePointerMovePy);
+    document.addEventListener('pointerup', handlePointerUpPy);
+    document.addEventListener('keydown', (e) => handleKeyPy(e, 'click'));
+    document.addEventListener('keyup', (e) => handleKeyPy(e, 'release'));
+
+    // Button listeners
+    pauseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = jsWorld.getResource('pauseState');
+        if (pauseState) {
+            pauseState.paused = !pauseState.paused;
+            pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'pause', paused: pauseState.paused }));
+            }
+        }
+    });
+    resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setupScene();
+        const pauseState = jsWorld.getResource('pauseState');
+        if (pauseState) pauseState.paused = true;
+        pauseBtn.textContent = "Start";
+        doStep = false;
+    });
+    stepBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pauseState = jsWorld.getResource('pauseState');
+        if (pauseState && pauseState.paused) doStep = true;
+    });
+    dumpBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log("--- JS WORLD STATE ---");
+        console.log(dumpWorldState(jsWorld));
+        console.log("--- PYTHON STATE ---");
+        console.log(JSON.stringify(pyState, null, 2));
+    });
+
+    // --- Start ---
+    connect();
+    setupScene();
+    requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
