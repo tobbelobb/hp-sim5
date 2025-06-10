@@ -17,50 +17,44 @@ def closest_point_on_segment(p, a, b):
     t = t / denom
     return a + ab * t
 
+
 def _tangent_point_circle(p_attach, p_circle, r_circle, cw, point_is_first):
     """
     Helper to calculate tangent points between a point and a circle.
-    This is a port of Algorithm 3 from the Cable Joints paper.
-    Calculations are performed in the XY plane.
+    Port of Algorithm 3 from the Cable Joints paper.
+    Operates in the XY plane.
     """
-    d_vec = p_circle - p_attach
-    d_sq = np.dot(d_vec[:2], d_vec[:2]) # Use 2D distance for calculations
+    d_vec = p_circle[:2] - p_attach[:2]
+    d_sq = np.dot(d_vec, d_vec)
 
     if d_sq <= r_circle * r_circle + 1e-9:
-        # Attachment point is inside or on the rolling circle's XY projection.
-        # Return a point on the circumference in the opposite direction of the attachment point.
-        d_vec_2d = d_vec[:2]
-        norm_2d = np.linalg.norm(d_vec_2d)
-        if norm_2d > 1e-9:
-            dir_2d = d_vec_2d / norm_2d
+        # Attachment point is inside or on the rolling circle
+        if d_sq > 1e-9:
+            dir_2d = d_vec / np.sqrt(d_sq)
         else:
             dir_2d = np.array([1.0, 0.0])
 
-        # The tangent point should be on the same Z-plane as the circle center.
         a_circle = p_circle.copy()
         a_circle[0] -= dir_2d[0] * r_circle
         a_circle[1] -= dir_2d[1] * r_circle
-        # a_circle[2] is unchanged
-
         return {
             'a_attach': p_attach.copy(),
             'a_circle': a_circle
         }
 
     d = np.sqrt(d_sq)
-    alpha = np.arctan2(d_vec[1], d_vec[0]) # Angle in XY plane
+    alpha = np.arctan2(d_vec[1], d_vec[0])
     phi = np.arcsin(r_circle / d)
 
     if (cw and point_is_first) or (not cw and not point_is_first):
-        tangent_point_angle_on_circle = alpha + phi + np.pi / 2
+        theta = alpha + phi + np.pi / 2
     else:
-        tangent_point_angle_on_circle = alpha - phi - np.pi / 2
+        theta = alpha - phi - np.pi / 2
 
-    a_circle = np.array([
-        p_circle[0] + r_circle * np.cos(tangent_point_angle_on_circle),
-        p_circle[1] + r_circle * np.sin(tangent_point_angle_on_circle),
-        p_circle[2] # Preserve Z coordinate
-    ])
+    a_circle = p_circle.copy()
+    a_circle[0] += r_circle * np.cos(theta)
+    a_circle[1] += r_circle * np.sin(theta)
+    # a_circle[2] is unchanged
 
     return {
         'a_attach': p_attach.copy(),
