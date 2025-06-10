@@ -100,40 +100,20 @@ class PBDCableConstraintSolver:
                     if inv_mass_a > 0.0:
                         delta_pos_a = grad_pos_a * (-inv_mass_a * lambda_)
                         pos_a_comp.pos += delta_pos_a
-                        vel_a_comp = world.get_component(entity_a, VelocityComponent)
-                        if vel_a_comp is not None and dt is not None and dt > epsilon:
-                            vel_a_comp.vel += delta_pos_a / dt
-                            v_a = np.linalg.norm(vel_a_comp.vel)
-                            max_speed = 0.03 / (2.0 * dt)
-                            if v_a > max_speed:
-                                vel_a_comp.vel *= (max_speed / v_a)
 
                     if inv_inertia_a > 0.0:
                         delta_ang_a = -inv_inertia_a * lambda_ * grad_ang_a
                         orientation_a_comp = world.get_component(entity_a, OrientationComponent)
                         if orientation_a_comp:
                             orientation_a_comp.angle += delta_ang_a
-                        ang_vel_a_comp = world.get_component(entity_a, AngularVelocityComponent)
-                        if ang_vel_a_comp is not None and dt is not None and dt > epsilon:
-                            ang_vel_a_comp.angular_velocity += delta_ang_a / dt
 
                     # Apply corrections to Entity B
                     if inv_mass_b > 0.0:
                         delta_pos_b = grad_pos_b * (-inv_mass_b * lambda_)
                         pos_b_comp.pos += delta_pos_b
-                        vel_b_comp = world.get_component(entity_b, VelocityComponent)
-                        if vel_b_comp is not None and dt is not None and dt > epsilon:
-                            vel_b_comp.vel += delta_pos_b / dt
-                            v_b = np.linalg.norm(vel_b_comp.vel)
-                            max_speed = 0.03 / (2.0 * dt)
-                            if v_b > max_speed:
-                                vel_b_comp.vel *= (max_speed / v_b)
 
                     if inv_inertia_b > 0.0:
                         delta_ang_b = -inv_inertia_b * lambda_ * grad_ang_b
                         orientation_b_comp = world.get_component(entity_b, OrientationComponent)
                         if orientation_b_comp:
                             orientation_b_comp.angle += delta_ang_b
-                        ang_vel_b_comp = world.get_component(entity_b, AngularVelocityComponent)
-                        if ang_vel_b_comp is not None and dt is not None and dt > epsilon:
-                            ang_vel_b_comp.angular_velocity += delta_ang_b / dt
