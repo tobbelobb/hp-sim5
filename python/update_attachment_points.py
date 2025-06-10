@@ -5,6 +5,7 @@ from python.ecs import (
     RadiusComponent,
     CableLinkComponent,
     OrientationComponent,
+    CoefficientOfFrictionComponent
 )
 from python.cable_joints_components import CableJointComponent, CablePathComponent
 from python.geometry import (
@@ -14,28 +15,12 @@ from python.geometry import (
     signed_arc_length_on_wheel,
 )
 from python.vector2 import rotate_inplace
-
-def _is_attachment(value):
-    """Checks if a link type is an attachment point."""
-    return value in ['attachment', 'hybrid-attachment', 'pinhole']
-
-def _is_rolling(value):
-    """Checks if a link type is a rolling contact."""
-    return value in ['rolling', 'hybrid']
-
-def _is_hybrid(value):
-    """Checks if a link type is a hybrid or hybrid-attachment."""
-    return value in ['hybrid', 'hybrid-attachment']
-
-def _effective_cw(path, link_index, travelling_from_circle):
-    """
-    Determines the effective clockwise direction for tangent calculations.
-    This is a special case for the first link in a path when calculating
-    the tangent from that link (which is a circle).
-    """
-    if link_index == 0 and travelling_from_circle:
-        return not path.cw[link_index]
-    return path.cw[link_index]
+from python.util import (
+    is_attachment,
+    is_rolling,
+    is_hybrid,
+    effective_cw
+)
 
 def update_attachment_points(world):
     """
@@ -70,23 +55,26 @@ def update_attachment_points(world):
             link_a_comp = world.get_component(entity_a, CableLinkComponent)
             orientation_a_comp = world.get_component(entity_a, OrientationComponent)
 
-            pos_a = pos_a_comp.pos
+            pos_a = pos_a_comp.pos if pos_a_comp else None
             attachment_a_previous = joint.attachment_point_a_world
-            prev_pos_a = link_a_comp.prev_cable_attachment_time_pos
-            radius_a = radius_a_comp.radius if radius_a_comp else 0.0
+            prev_pos_a = link_a_comp.prev_cable_attachment_time_pos if link_a_comp else None
+            radius_a = radius_a_comp.radius if radius_a_comp else None
             angle_a = orientation_a_comp.angle if orientation_a_comp else 0.0
-            prev_angle_a = link_a_comp.prev_cable_attachment_time_angle
+            prev_angle_a = link_a_comp.prev_cable_attachment_time_angle if link_a_comp else 0.0
             delta_angle_a = angle_a - prev_angle_a
 
-            cw_a = _effective_cw(path, A, True)
-            attachment_link_a = _is_attachment(path.link_types[A])
-            rolling_link_a = _is_rolling(path.link_types[A])
-            is_hybrid_a = _is_hybrid(path.link_types[A])
+            cw_a = effective_cw(path, A, True)
+            attachment_link_a = is_attachment(path.link_types[A])
+            rolling_link_a = is_rolling(path.link_types[A])
+            is_hybrid_a = is_hybrid(path.link_types[A])
 
-            p_a_diff_from_translation = pos_a - prev_pos_a
+            # Pre-calculate translation and rotation differences (like JS version)
+            p_a_diff_from_translation = pos_a - prev_pos_a if (pos_a is not None and prev_pos_a is not None) else None
             temp_rotated_point_a = attachment_a_previous.copy()
             rotate_inplace(temp_rotated_point_a, delta_angle_a, prev_pos_a, True)
             p_a_diff_from_rotation = temp_rotated_point_a - attachment_a_previous
+
+            has_friction_a = world.get_component(entity_a, CoefficientOfFrictionComponent) is not None
 
             # Get components for Entity B
             pos_b_comp = world.get_component(entity_b, PositionComponent)
@@ -94,64 +82,86 @@ def update_attachment_points(world):
             link_b_comp = world.get_component(entity_b, CableLinkComponent)
             orientation_b_comp = world.get_component(entity_b, OrientationComponent)
 
-            pos_b = pos_b_comp.pos
+            pos_b = pos_b_comp.pos if pos_b_comp else None
             attachment_b_previous = joint.attachment_point_b_world
-            prev_pos_b = link_b_comp.prev_cable_attachment_time_pos
-            radius_b = radius_b_comp.radius if radius_b_comp else 0.0
+            prev_pos_b = link_b_comp.prev_cable_attachment_time_pos if link_b_comp else None
+            radius_b = radius_b_comp.radius if radius_b_comp else None
             angle_b = orientation_b_comp.angle if orientation_b_comp else 0.0
-            prev_angle_b = link_b_comp.prev_cable_attachment_time_angle
+            prev_angle_b = link_b_comp.prev_cable_attachment_time_angle if link_b_comp else 0.0
             delta_angle_b = angle_b - prev_angle_b
 
-            cw_b = _effective_cw(path, B, False)
-            attachment_link_b = _is_attachment(path.link_types[B])
-            rolling_link_b = _is_rolling(path.link_types[B])
-            is_hybrid_b = _is_hybrid(path.link_types[B])
+            cw_b = effective_cw(path, B, False)
+            attachment_link_b = is_attachment(path.link_types[B])
+            rolling_link_b = is_rolling(path.link_types[B])
+            is_hybrid_b = is_hybrid(path.link_types[B])
 
-            p_b_diff_from_translation = pos_b - prev_pos_b
+            # Pre-calculate translation and rotation differences (like JS version)
+            p_b_diff_from_translation = pos_b - prev_pos_b if (pos_b is not None and prev_pos_b is not None) else None
             temp_rotated_point_b = attachment_b_previous.copy()
             rotate_inplace(temp_rotated_point_b, delta_angle_b, prev_pos_b, True)
             p_b_diff_from_rotation = temp_rotated_point_b - attachment_b_previous
 
+            has_friction_b = world.get_component(entity_b, CoefficientOfFrictionComponent) is not None
+
             # --- Calculate Attachment Points based on this frame's positions and rotations ---
-            attachment_a_current = pos_a.copy()
-            attachment_b_current = pos_b.copy()
+            attachment_a_current = pos_a.copy() if pos_a is not None else None
+            attachment_b_current = pos_b.copy() if pos_b is not None else None
 
             if attachment_link_a and rolling_link_b:
-                if is_hybrid_a:
+                if is_hybrid_a and p_a_diff_from_translation is not None:
                     attachment_a_current = attachment_a_previous + p_a_diff_from_translation + p_a_diff_from_rotation
-                tangents = tangent_from_point_to_circle(attachment_a_current, pos_b, radius_b, cw_b)
-                attachment_b_current = tangents['a_circle']
+                if attachment_a_current is not None and pos_b is not None and radius_b is not None:
+                    tangents = tangent_from_point_to_circle(attachment_a_current, pos_b, radius_b, cw_b)
+                    attachment_b_current = tangents['a_circle']
             elif rolling_link_a and attachment_link_b:
-                if is_hybrid_b:
+                if is_hybrid_b and p_b_diff_from_translation is not None:
                     attachment_b_current = attachment_b_previous + p_b_diff_from_translation + p_b_diff_from_rotation
-                tangents = tangent_from_circle_to_point(attachment_b_current, pos_a, radius_a, cw_a)
-                attachment_a_current = tangents['a_circle']
+                if attachment_b_current is not None and pos_a is not None and radius_a is not None:
+                    tangents = tangent_from_circle_to_point(attachment_b_current, pos_a, radius_a, cw_a)
+                    attachment_a_current = tangents['a_circle']
             elif rolling_link_a and rolling_link_b:
-                tangents = tangent_from_circle_to_circle(pos_a, radius_a, cw_a, pos_b, radius_b, cw_b)
-                attachment_a_current = tangents['a_circle']
-                attachment_b_current = tangents['b_circle']
+                if pos_a is not None and pos_b is not None and radius_a is not None and radius_b is not None:
+                    tangents = tangent_from_circle_to_circle(pos_a, radius_a, cw_a, pos_b, radius_b, cw_b)
+                    attachment_a_current = tangents['a_circle']
+                    attachment_b_current = tangents['b_circle']
             else:  # attachment_link_a and attachment_link_b
-                if is_hybrid_a:
+                if is_hybrid_a and p_a_diff_from_translation is not None:
                     attachment_a_current = attachment_a_previous + p_a_diff_from_translation + p_a_diff_from_rotation
-                if is_hybrid_b:
+                if is_hybrid_b and p_b_diff_from_translation is not None:
                     attachment_b_current = attachment_b_previous + p_b_diff_from_translation + p_b_diff_from_rotation
 
             # --- Calculate Wrapping/Unwrapping Arc Lengths (sA, sB) ---
-            sA = 0.0
-            sB = 0.0
-            if rolling_link_a:
-                sA = signed_arc_length_on_wheel(attachment_a_previous - prev_pos_a, attachment_a_current - pos_a, np.zeros(3), radius_a, cw_a)
-                if is_hybrid_a:
-                    sA += delta_angle_a * radius_a if cw_a else -delta_angle_a * radius_a
-            if rolling_link_b:
-                sB = signed_arc_length_on_wheel(attachment_b_previous - prev_pos_b, attachment_b_current - pos_b, np.zeros(3), radius_b, cw_b)
-                if is_hybrid_b:
-                    sB += delta_angle_b * radius_b if cw_b else -delta_angle_b * radius_b
+            s_a = 0.0  # Change in stored length on side A due to wrapping/unwrapping this frame
+            s_b = 0.0  # Change in stored length on side B due to wrapping/unwrapping this frame
 
-            path.stored[A] += sA
-            joint.rest_length -= sA
-            path.stored[B] -= sB
-            joint.rest_length += sB
+            if rolling_link_a and attachment_a_previous is not None and attachment_a_current is not None and prev_pos_a is not None and pos_a is not None and radius_a is not None:
+                s_a = signed_arc_length_on_wheel(
+                    attachment_a_previous - prev_pos_a,
+                    attachment_a_current - pos_a,
+                    np.zeros(3),
+                    radius_a,
+                    cw_a
+                )
+                if is_hybrid_a or has_friction_a:
+                    s_a += (delta_angle_a * radius_a if cw_a else -delta_angle_a * radius_a)
 
-            joint.attachment_point_a_world = attachment_a_current
-            joint.attachment_point_b_world = attachment_b_current
+            if rolling_link_b and attachment_b_previous is not None and attachment_b_current is not None and prev_pos_b is not None and pos_b is not None and radius_b is not None:
+                s_b = signed_arc_length_on_wheel(
+                    attachment_b_previous - prev_pos_b,
+                    attachment_b_current - pos_b,
+                    np.zeros(3),
+                    radius_b,
+                    cw_b
+                )
+                if is_hybrid_b or has_friction_b:
+                    s_b += (delta_angle_b * radius_b if cw_b else -delta_angle_b * radius_b)
+
+            path.stored[A] += s_a
+            joint.rest_length -= s_a
+            path.stored[B] -= s_b
+            joint.rest_length += s_b
+
+            if attachment_a_current is not None:
+                joint.attachment_point_a_world = attachment_a_current
+            if attachment_b_current is not None:
+                joint.attachment_point_b_world = attachment_b_current

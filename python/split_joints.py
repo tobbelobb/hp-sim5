@@ -10,20 +10,11 @@ from python.geometry import (
     tangent_from_circle_to_point,
     signed_arc_length_on_wheel
 )
-
-def _is_attachment(value):
-    """Checks if a link type is an attachment point."""
-    return value in ['attachment', 'hybrid-attachment', 'pinhole']
-
-def _is_rolling(value):
-    """Checks if a link type is a rolling contact."""
-    return value in ['rolling', 'hybrid']
-
-def _effective_cw(path, link_index, travelling_from_circle):
-    """Determines the effective clockwise direction for tangent calculations."""
-    if link_index == 0 and travelling_from_circle:
-        return not path.cw[link_index]
-    return path.cw[link_index]
+from python.util import (
+    is_attachment,
+    is_rolling,
+    effective_cw
+)
 
 def split_joints(world):
     """
@@ -62,7 +53,7 @@ def split_joints(world):
 
                 pos_splitter_comp = world.get_component(splitter_id, PositionComponent)
                 radius_splitter_comp = world.get_component(splitter_id, RadiusComponent)
-                
+
                 if not pos_splitter_comp or not radius_splitter_comp:
                     continue
 
@@ -76,17 +67,17 @@ def split_joints(world):
                     # Get components for Entity A
                     pos_a = world.get_component(entity_a, PositionComponent).pos
                     link_type_a = path.link_types[i]
-                    is_attachment_a = _is_attachment(link_type_a)
-                    is_rolling_a = _is_rolling(link_type_a)
+                    is_attachment_a = is_attachment(link_type_a)
+                    is_rolling_a = is_rolling(link_type_a)
                     radius_a_comp = world.get_component(entity_a, RadiusComponent)
                     radius_a = radius_a_comp.radius if radius_a_comp else 0.0
-                    cw_a = _effective_cw(path, i, True)
+                    cw_a = effective_cw(path, i, True)
 
                     # Get components for Entity B
                     pos_b = world.get_component(entity_b, PositionComponent).pos
                     link_type_b = path.link_types[i + 1]
-                    is_attachment_b = _is_attachment(link_type_b)
-                    is_rolling_b = _is_rolling(link_type_b)
+                    is_attachment_b = is_attachment(link_type_b)
+                    is_rolling_b = is_rolling(link_type_b)
                     radius_b_comp = world.get_component(entity_b, RadiusComponent)
                     radius_b = radius_b_comp.radius if radius_b_comp else 0.0
                     cw_b = path.cw[i + 1]
@@ -136,10 +127,10 @@ def split_joints(world):
                     # Distribute original rest length to maintain tension
                     dAS = np.linalg.norm(new_attachment_point_a_for_joint - new_attachment_point_b_for_joint)
                     dSB = np.linalg.norm(attachment_point_a_for_new_joint - attachment_point_b_for_new_joint)
-                    
+
                     original_available_length = joint.rest_length + sB - sA
                     total_dist = dAS + dSB
-                    
+
                     new_rest_length_as = 0.0
                     new_rest_length_sb = 0.0
                     if total_dist > 1e-9:
@@ -173,8 +164,8 @@ def split_joints(world):
                         splitter_id, entity_b, new_rest_length_sb,
                         attachment_point_a_for_new_joint, attachment_point_b_for_new_joint
                     ))
-                    
+
                     # Break from the splitter loop to continue to the next joint
                     break
-            
+
             i += 1

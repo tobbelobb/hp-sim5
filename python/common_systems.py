@@ -99,7 +99,8 @@ class PBDVelocityUpdateSystem:
             prev_final_pos_comp = world.get_component(entity_id, PrevFinalPosComponent)
 
             # v = (x_new - x_old) / dt
-            vel_comp.vel = (pos_comp.pos - prev_final_pos_comp.pos) / dt
+            np.subtract(pos_comp.pos, prev_final_pos_comp.pos, out=vel_comp.vel)
+            np.divide(vel_comp.vel, dt, out=vel_comp.vel)
 
 
 class FlipperTipLinkSystem:
@@ -279,6 +280,7 @@ class PBDBallBallCollisions:
                 v2 += direction * (new_v2_dot - vel2_dot)
 
 class PBDBallObstacleCollisions:
+    run_in_pause = False
     def update(self, world, dt):
         ball_entities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent])
         obstacle_entities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent])
@@ -318,7 +320,7 @@ class PBDBallObstacleCollisions:
                 omega_obs = obs_ang_vel_comp.angular_velocity if obs_ang_vel_comp else 0.0
                 mu = obs_friction_comp.mu if obs_friction_comp else 0.0
 
-                tangent = np.array([-direction[1], direction[0], direction[2]])
+                tangent = np.array([-direction[1], direction[0], 0.0])
 
                 v_surf_obs_tangential_comp = 0
                 if omega_obs != 0:

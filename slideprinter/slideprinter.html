@@ -541,7 +541,7 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           inputSys.scaleMultiplier = 0.5;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.5;
-          world.registerSystem(new PrevFinalPosSystem()); 
+          world.registerSystem(new PrevFinalPosSystem());
           world.registerSystem(new PrevFinalOrientationSystem());
           world.registerSystem(inputSys);
           world.registerSystem(new MovementSystem());

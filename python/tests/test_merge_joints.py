@@ -12,7 +12,7 @@ from python.geometry import (
     tangent_from_point_to_circle, tangent_from_circle_to_point,
     tangent_from_circle_to_circle, signed_arc_length_on_wheel
 )
-from python.merge_joints import _merge_joints
+from python.merge_joints import merge_joints
 
 def create_cable_path_component(world, joint_entities, link_types, cw, stored=None):
     """Helper to create and initialize a CablePathComponent like in JS."""
@@ -86,7 +86,7 @@ def test_merge_joints_does_nothing_for_a_single_joint_path():
     path_comp = create_cable_path_component(world, [joint_id], ['attachment', 'attachment'], [False, False])
     world.add_component(path_id, path_comp)
 
-    _merge_joints(world)
+    merge_joints(world)
 
     assert len(path_comp.joint_entities) == 1
     assert path_comp.joint_entities[0] == joint_id
@@ -119,7 +119,7 @@ def test_merge_joints_does_not_merge_if_wheel_contact_is_needed():
     path_comp = create_cable_path_component(world, [joint1, joint2], ['attachment', 'rolling', 'attachment'], [False, True, True])
     world.add_component(path_id, path_comp)
 
-    _merge_joints(world)
+    merge_joints(world)
 
     assert len(path_comp.joint_entities) == 2
     assert joint1 in path_comp.joint_entities
@@ -161,7 +161,7 @@ def test_merge_joints_merges_two_joints_when_cable_detaches():
     assert path_comp.stored[1] < 0.0
     initial_total_rest_length = path_comp.total_rest_length
 
-    _merge_joints(world)
+    merge_joints(world)
 
     assert path_comp.total_rest_length == initial_total_rest_length
     assert len(path_comp.joint_entities) == 1
@@ -225,7 +225,7 @@ def test_merge_joints_merges_three_joints_into_one():
     assert path_comp.stored[2] < 0.0
     initial_total_rest_length = path_comp.total_rest_length
 
-    _merge_joints(world)
+    merge_joints(world)
 
     assert math.isclose(path_comp.total_rest_length, initial_total_rest_length)
     assert len(path_comp.joint_entities) == 1
