@@ -50,9 +50,10 @@ canvas {
 <body>
     <div id="gameContainer">
         <div id="controls">
-            <button id="pauseBtn">Start</button>
-            <button id="resetBtn">Reset</button>
+            <button id="pauseBtn" tabindex="-1">Start</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
             Score: <span id="score">0</span>
         </div>
         <canvas id="myCanvas"></canvas>
