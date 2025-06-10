@@ -189,7 +189,7 @@ class RemoteInputSystem:
 
         closest_ball = None
         closest_dist_sq = float('inf')
-        
+
         ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent])
         for ball_id in ball_entities:
             ball_pos = world.get_component(ball_id, PositionComponent).pos
@@ -220,7 +220,7 @@ class RemoteInputSystem:
 
             self.grab_spring = {'ptr_e': ptr_e, 'joint_e': joint_e, 'path_e': path_e, 'ball_e': closest_ball}
             world.set_resource('grabbedBall', closest_ball)
-            
+
             pause_state = world.get_resource('pauseState')
             if pause_state:
                 pause_state.paused = False
@@ -705,19 +705,13 @@ async def handler(websocket):
             if input_system:
                 pos = np.array([data['x'], data['y'], 0.0])
                 event_type = data['type']
-                
+
                 if event_type in ['pointerdown', 'pointermove', 'pointerup']:
                     input_system.add_event({'type': event_type, 'pos': pos})
                 elif event_type == 'click':
                     input_system.clicks.append(pos)
                 elif event_type == 'release':
                     input_system.releases.append(pos)
-            
-            # If the game is paused, input events that can unpause it (like grabbing)
-            # won't be processed unless we manually run the systems that operate
-            # during pause.
-            if pause_state.paused:
-                world.update(world.get_resource('dt'))
 
         await websocket.send(world_to_json(world))
 

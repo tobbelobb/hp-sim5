@@ -499,6 +499,7 @@ canvas {
             if (isGrabClick) {
                 isPaused = false;
                 pauseBtn.textContent = "Pause";
+                ws.send(JSON.stringify({ action: 'pause', paused: isPaused }));
             }
 
             ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x: simX, y: simY }));
