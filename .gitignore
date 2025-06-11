@@ -5,3 +5,4 @@ attic/
 node_modules/
 done
 deploy.sh
+**/__pycache__*
