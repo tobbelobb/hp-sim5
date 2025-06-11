@@ -270,14 +270,14 @@ class PBDBallBallCollisions:
                 p2 += direction * corr
 
                 # Resolve velocity
-                vel1_dot = np.dot(v1, direction)
-                vel2_dot = np.dot(v2, direction)
+                #vel1_dot = np.dot(v1, direction)
+                #vel2_dot = np.dot(v2, direction)
 
-                new_v1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2)
-                new_v2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2)
+                #new_v1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2)
+                #new_v2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2)
 
-                v1 += direction * (new_v1_dot - vel1_dot)
-                v2 += direction * (new_v2_dot - vel2_dot)
+                #v1 += direction * (new_v1_dot - vel1_dot)
+                #v2 += direction * (new_v2_dot - vel2_dot)
 
 class PBDBallObstacleCollisions:
     run_in_pause = False
@@ -313,46 +313,46 @@ class PBDBallObstacleCollisions:
                 p1 += direction * corr
 
                 # Resolve velocity & rotation with friction and obstacle rotation
-                obs_ang_vel_comp = world.get_component(obs_id, AngularVelocityComponent)
-                obs_moi_comp = world.get_component(obs_id, MomentOfInertiaComponent)
-                obs_friction_comp = world.get_component(obs_id, CoefficientOfFrictionComponent)
+                #obs_ang_vel_comp = world.get_component(obs_id, AngularVelocityComponent)
+                #obs_moi_comp = world.get_component(obs_id, MomentOfInertiaComponent)
+                #obs_friction_comp = world.get_component(obs_id, CoefficientOfFrictionComponent)
 
-                omega_obs = obs_ang_vel_comp.angular_velocity if obs_ang_vel_comp else 0.0
-                mu = obs_friction_comp.mu if obs_friction_comp else 0.0
+                #omega_obs = obs_ang_vel_comp.angular_velocity if obs_ang_vel_comp else 0.0
+                #mu = obs_friction_comp.mu if obs_friction_comp else 0.0
 
-                tangent = np.array([-direction[1], direction[0], 0.0])
+                #tangent = np.array([-direction[1], direction[0], 0.0])
 
-                v_surf_obs_tangential_comp = 0
-                if omega_obs != 0:
-                    v_surf_obs_tangential_comp = (-omega_obs * direction[1] * r2) * tangent[0] + (omega_obs * direction[0] * r2) * tangent[1]
+                #v_surf_obs_tangential_comp = 0
+                #if omega_obs != 0:
+                #    v_surf_obs_tangential_comp = (-omega_obs * direction[1] * r2) * tangent[0] + (omega_obs * direction[0] * r2) * tangent[1]
 
-                s_sign = 0
-                if v_surf_obs_tangential_comp != 0 and mu != 0:
-                    s_sign = math.copysign(1, v_surf_obs_tangential_comp)
+                #s_sign = 0
+                #if v_surf_obs_tangential_comp != 0 and mu != 0:
+                #    s_sign = math.copysign(1, v_surf_obs_tangential_comp)
 
-                effective_push_dir = direction.copy()
-                if s_sign != 0:
-                    effective_push_dir += tangent * (mu * s_sign)
-                v2_helpers.normalize_inplace(effective_push_dir)
+                #effective_push_dir = direction.copy()
+                #if s_sign != 0:
+                #    effective_push_dir += tangent * (mu * s_sign)
+                #v2_helpers.normalize_inplace(effective_push_dir)
 
-                v1 += effective_push_dir * push_vel
+                #v1 += effective_push_dir * push_vel
 
-                if mu > 0 and ball_mass_comp:
-                    delta_v_ball_tangential_actual_scalar_comp = np.dot(effective_push_dir, tangent) * push_vel
+                #if mu > 0 and ball_mass_comp:
+                #    delta_v_ball_tangential_actual_scalar_comp = np.dot(effective_push_dir, tangent) * push_vel
 
-                    if abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9:
-                        j_t_on_ball_vec = tangent * (delta_v_ball_tangential_actual_scalar_comp * ball_mass_comp.mass)
+                #    if abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9:
+                #        j_t_on_ball_vec = tangent * (delta_v_ball_tangential_actual_scalar_comp * ball_mass_comp.mass)
 
-                        if ball_ang_vel_comp and ball_moi_comp and ball_moi_comp.inv_inertia > 0:
-                            r_contact_ball = direction * -r1
-                            delta_l_ball = r_contact_ball[0] * j_t_on_ball_vec[1] - r_contact_ball[1] * j_t_on_ball_vec[0]
-                            ball_ang_vel_comp.angular_velocity += delta_l_ball * ball_moi_comp.inv_inertia
+                #        if ball_ang_vel_comp and ball_moi_comp and ball_moi_comp.inv_inertia > 0:
+                #            r_contact_ball = direction * -r1
+                #            delta_l_ball = r_contact_ball[0] * j_t_on_ball_vec[1] - r_contact_ball[1] * j_t_on_ball_vec[0]
+                #            ball_ang_vel_comp.angular_velocity += delta_l_ball * ball_moi_comp.inv_inertia
 
-                        if obs_ang_vel_comp and obs_moi_comp and obs_moi_comp.inv_inertia > 0:
-                            j_t_on_obs_vec = j_t_on_ball_vec * -1
-                            r_contact_obs = direction * r2
-                            delta_l_obs = r_contact_obs[0] * j_t_on_obs_vec[1] - r_contact_obs[1] * j_t_on_obs_vec[0]
-                            obs_ang_vel_comp.angular_velocity += delta_l_obs * obs_moi_comp.inv_inertia
+                #        if obs_ang_vel_comp and obs_moi_comp and obs_moi_comp.inv_inertia > 0:
+                #            j_t_on_obs_vec = j_t_on_ball_vec * -1
+                #            r_contact_obs = direction * r2
+                #            delta_l_obs = r_contact_obs[0] * j_t_on_obs_vec[1] - r_contact_obs[1] * j_t_on_obs_vec[0]
+                #            obs_ang_vel_comp.angular_velocity += delta_l_obs * obs_moi_comp.inv_inertia
 
                 grabbed = world.get_resource('grabbedBall')
                 if ball_id != grabbed:

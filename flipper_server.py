@@ -86,16 +86,16 @@ class PBDBallFlipperCollisions:
                 p1 += direction * corr
 
                 # Resolve velocity
-                radius_vec = closest - fp
-                contact_point_on_flipper = fp + radius_vec + direction * -fr
-                radius_to_surface = contact_point_on_flipper - fp
+                #radius_vec = closest - fp
+                #contact_point_on_flipper = fp + radius_vec + direction * -fr
+                #radius_to_surface = contact_point_on_flipper - fp
 
-                surface_vel = np.array([-fs.current_angular_velocity * radius_to_surface[1], fs.current_angular_velocity * radius_to_surface[0], 0.0])
+                #surface_vel = np.array([-fs.current_angular_velocity * radius_to_surface[1], fs.current_angular_velocity * radius_to_surface[0], 0.0])
 
-                v_dot = np.dot(v1, direction)
-                surf_vel_dot = np.dot(surface_vel, direction)
+                #v_dot = np.dot(v1, direction)
+                #surf_vel_dot = np.dot(surface_vel, direction)
 
-                v1 += direction * (surf_vel_dot - v_dot)
+                #v1 += direction * (surf_vel_dot - v_dot)
 
 class PBDBallBorderCollisions:
     def _closest_point_on_segment(self, p, a, b):
@@ -155,10 +155,10 @@ class PBDBallBorderCollisions:
             if penetration > 0:
                 p1 += collision_normal * penetration
 
-            v_dot = np.dot(v1, collision_normal)
-            if v_dot < 0:
-                v_new_dot = -v_dot * res1
-                v1 += collision_normal * (v_new_dot - v_dot)
+            #v_dot = np.dot(v1, collision_normal)
+            #if v_dot < 0:
+            #    v_new_dot = -v_dot * res1
+            #    v1 += collision_normal * (v_new_dot - v_dot)
 
 class ScoreSystem:
     run_in_pause = False
@@ -491,24 +491,41 @@ def setup_scene(world):
     )
     world.add_component(cable_path, path_comp)
 
-
     if not world.systems:
+        # 1. Cache state from previous step
         world.register_system(PrevFinalPosSystem())
         world.register_system(PrevFinalOrientationSystem())
+
+        # 2. Handle user input and non-physics state changes
         world.register_system(RemoteInputSystem())
         world.register_system(FlipperMotionSystem())
+
+        # 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
         world.register_system(GravitySystem())
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
+
+        # 4. Update derived geometry based on predicted positions
         world.register_system(FlipperTipLinkSystem())
         world.register_system(CableAttachmentUpdateSystem())
+
+        # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
+        #    (These must be modified to ONLY change positions/orientations)
         world.register_system(PBDCableConstraintSolver())
+        world.register_system(PBDBallBorderCollisions())      # MODIFIED
+        world.register_system(PBDBallBallCollisions())        # MODIFIED
+        world.register_system(PBDBallObstacleCollisions())    # MODIFIED
+        world.register_system(PBDBallFlipperCollisions())     # MODIFIED
+
+        # 6. UPDATE VELOCITY: Derive final velocities from the position changes
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
-        world.register_system(PBDBallBorderCollisions())
-        world.register_system(PBDBallBallCollisions())
-        world.register_system(PBDBallObstacleCollisions())
-        world.register_system(PBDBallFlipperCollisions())
+
+        # 7. VELOCITY SOLVERS (NEW): Apply restitution and dynamic friction
+        world.register_system(BallObstacleBumpSystem())
+        # world.register_system(VelocityContactSystem()) # You would create this
+
+        # 8. Game Logic
         world.register_system(ScoreSystem())
 
 def world_to_json(world):
