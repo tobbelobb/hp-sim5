@@ -22,6 +22,7 @@ from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from python.geometry import right_of_line, tangent_from_point_to_circle, tangent_from_circle_to_circle
 from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 from python.ball_obstacle_bump_system import BallObstacleBumpSystem
+from python.ball_border_velocity_contact_system import BallBorderVelocityContactSystem
 
 # --- Server-Side Systems ---
 
@@ -115,6 +116,12 @@ class PBDBallBorderCollisions:
         border_comp = world.get_component(border_entities[0], BorderComponent)
         border_points = border_comp.points
 
+        contacts = world.get_resource('ball_border_contacts')
+        if contacts is None:
+            contacts = []
+            world.set_resource('ball_border_contacts', contacts)
+        contacts.clear()
+
         for ball_id in ball_entities:
             p1 = world.get_component(ball_id, PositionComponent).pos
             v1 = world.get_component(ball_id, VelocityComponent).vel
@@ -150,6 +157,12 @@ class PBDBallBorderCollisions:
 
             if np.dot(ball_to_closest, normal) < 0:
                 collision_normal = normal
+
+            # Store contact info for the velocity-based system
+            contacts.append({
+                'ball_id': ball_id,
+                'normal': collision_normal.copy()
+            })
 
             dist = np.sqrt(min_dist_sq)
             penetration = r1 - dist
@@ -332,6 +345,7 @@ def setup_scene(world):
     world.set_resource('debugRenderPoints', {})
     world.set_resource('grabbedBall', None)
     world.set_resource('ball_obstacle_contacts', [])
+    world.set_resource('ball_border_contacts', [])
 
     offset = 0.02
     border_points = [
@@ -366,6 +380,7 @@ def setup_scene(world):
         world.add_component(ball, MomentOfInertiaComponent(0.5 * ball_mass * ball_radius**2))
         world.add_component(ball, PrevFinalOrientationComponent(0.0))
         world.add_component(ball, PrevFinalPosComponent(pos.copy()))
+        world.add_component(ball, CoefficientOfFrictionComponent(0.2)) # Add friction to balls
         ball_ids.append(ball)
     ball1, ball2 = ball_ids[0], ball_ids[1]
 
@@ -525,7 +540,7 @@ def setup_scene(world):
 
         # 7. VELOCITY SOLVERS (NEW): Apply restitution and dynamic friction
         world.register_system(BallObstacleBumpSystem())
-        world.register_system(BallBorderVelocityContactSystem()) # You would create this
+        world.register_system(BallBorderVelocityContactSystem())
 
         # 8. Game Logic
         world.register_system(ScoreSystem())
