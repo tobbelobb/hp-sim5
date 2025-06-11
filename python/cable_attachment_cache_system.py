@@ -12,7 +12,7 @@ def _store_cable_link_poses(world):
         if orientation_comp:
             link_comp.prev_cable_attachment_time_angle = orientation_comp.angle
 
-class PrevCableLinkPoseSystem:
+class CableAttachmentCacheSystem:
     """
     Caches the position and orientation of entities with a CableLinkComponent
     at the beginning of a substep. This is analogous to PrevFinalPosSystem

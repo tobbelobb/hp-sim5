@@ -544,8 +544,8 @@ def setup_scene(world):
 
         # 4. Update derived geometry and cable state
         world.register_system(FlipperTipLinkSystem())
-        world.register_system(CableAttachmentCacheSystem()) # Must run BEFORE CableAttachmentUpdateSystem
         world.register_system(CableAttachmentUpdateSystem())
+        world.register_system(CableAttachmentCacheSystem()) # Must run immediately after CableAttachmentUpdateSystem
         world.register_system(CableSlackSystem()) # PRE-SOLVE: Slip obvious slack
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
