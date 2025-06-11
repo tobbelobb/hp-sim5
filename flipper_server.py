@@ -23,7 +23,7 @@ from python.geometry import right_of_line, tangent_from_point_to_circle, tangent
 from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 from python.ball_obstacle_bump_system import BallObstacleBumpSystem
 from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
-from python.prev_cable_link_pose_system import PrevCableLinkPoseSystem
+from python.cable_attachment_cache_system import CableAttachmentCacheSystem
 from python.cable_slip_slack_friction_system import CableSlipSlackFrictionSystem
 
 # --- Server-Side Systems ---
@@ -379,7 +379,7 @@ def setup_scene(world):
 
     ball_radius = 0.03
     ball_mass = np.pi * ball_radius**2
-    ball_restitution = 0.4
+    ball_restitution = 0.6
 
     ball_ids = []
     ball_positions = [(0.90, 0.95), (0.08, 0.5)]
@@ -406,7 +406,7 @@ def setup_scene(world):
     obs_push = 2.7
     obstacles_data = [
         (0.25, 0.6, 0.1, "#0F7090", 0), (0.75, 0.5, 0.1, "#0F7090", 0),
-        (0.7, 1.0, 0.12, "#FF8000", 200.0), (0.2, 1.2, 0.1, "#FF8000", -200.0)
+        (0.7, 1.0, 0.12, "#FF8000", 100.0), (0.2, 1.2, 0.1, "#FF8000", -100.0)
     ]
     obs_ids = []
     for x, y, r, color, ang_vel in obstacles_data:
@@ -431,7 +431,7 @@ def setup_scene(world):
     flip_max_rot = 1.0
     flip_rest_angle = 0.5
     flip_ang_vel = 20.0
-    flip_restitution = 0.2
+    flip_restitution = 0.6
 
     flipper1 = world.create_entity()
     flipper1_pos = np.array([0.26, 0.22, 0.0])
@@ -531,7 +531,6 @@ def setup_scene(world):
         # 1. Cache state from previous step
         world.register_system(PrevFinalPosSystem())
         world.register_system(PrevFinalOrientationSystem())
-        world.register_system(PrevCableLinkPoseSystem())
 
         # 2. Handle user input and non-physics state changes
         world.register_system(RemoteInputSystem())
@@ -545,6 +544,8 @@ def setup_scene(world):
         # 4. Update derived geometry based on predicted positions
         world.register_system(FlipperTipLinkSystem())
         world.register_system(CableAttachmentUpdateSystem())
+        world.register_system(CableAttachmentCacheSystem())
+        world.register_system(CableSlipSlackFrictionSystem())
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
         world.register_system(PBDCableConstraintSolver())
@@ -560,9 +561,6 @@ def setup_scene(world):
         # 7. VELOCITY SOLVERS: Apply restitution and dynamic friction
         world.register_system(BallObstacleBumpSystem())
         world.register_system(BallBorderOrFlipperVelocityContactSystem())
-
-        # 8. CABLE DYNAMICS: Slip slack and handle friction
-        world.register_system(CableSlipSlackFrictionSystem())
 
         # 9. Game Logic
         world.register_system(ScoreSystem())
