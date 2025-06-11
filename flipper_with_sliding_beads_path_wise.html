@@ -130,7 +130,8 @@ canvas {
       ObstacleTagComponent,
       FlipperTagComponent,
       FlipperStateComponent,
-      PrevFinalPosComponent
+      PrevFinalPosComponent,
+      FlipperTipComponent
     } from './cable_joints/ecs.js';
 
     import {
@@ -156,7 +157,8 @@ canvas {
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
-      PBDBallBallCollisions
+      PBDBallBallCollisions,
+      FlipperTipLinkSystem
     } from './cable_joints/commonSystems.js';
 
     import {
@@ -166,34 +168,6 @@ canvas {
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
     class ScoredTagComponent { }
     class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
-
-    // helper to remember which flipper this tip belongs to
-    class FlipperTipComponent {
-      constructor(flipperEntityId) {
-        this.flipperEntityId = flipperEntityId;
-      }
-    }
-
-
-    // Register FlipperTipLinkSystem BEFORE CableAttachmentUpdateSystem
-    class FlipperTipLinkSystem {
-      runInPause = false;
-      update(world, dt) {
-        // for each tip‐entity, compute its current position
-        for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
-          const tipComp   = world.getComponent(tipId, FlipperTipComponent);
-          const flipId    = tipComp.flipperEntityId;
-          const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
-          const state     = world.getComponent(flipId, FlipperStateComponent);
-          // same math you use elsewhere to find the tip
-          const angle = state.restAngle + state.sign * state.rotation;
-          const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
-          const tipPos = pivotPos.clone().add(dir, state.length);
-          // write it into the tip entity’s PositionComponent
-          world.getComponent(tipId, PositionComponent).pos.set(tipPos);
-        }
-      }
-    }
 
 
     // --- System: Input --- (Simplified Click Handling)
