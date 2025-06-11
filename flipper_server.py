@@ -22,7 +22,7 @@ from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from python.geometry import right_of_line, tangent_from_point_to_circle, tangent_from_circle_to_circle
 from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 from python.ball_obstacle_bump_system import BallObstacleBumpSystem
-from python.ball_border_velocity_contact_system import BallBorderVelocityContactSystem
+from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
 
 # --- Server-Side Systems ---
 
@@ -57,12 +57,17 @@ class PBDBallFlipperCollisions:
         return a + ab * t
 
     def update(self, world, dt):
-        ball_entities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent])
+        ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent])
         flipper_entities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent])
+
+        contacts = world.get_resource('ball_flipper_contacts')
+        if contacts is None:
+            contacts = []
+            world.set_resource('ball_flipper_contacts', contacts)
+        contacts.clear()
 
         for ball_id in ball_entities:
             p1 = world.get_component(ball_id, PositionComponent).pos
-            v1 = world.get_component(ball_id, VelocityComponent).vel
             r1 = world.get_component(ball_id, RadiusComponent).radius
 
             for flip_id in flipper_entities:
@@ -87,17 +92,13 @@ class PBDBallFlipperCollisions:
                 corr = r_sum - d
                 p1 += direction * corr
 
-                # Resolve velocity
-                #radius_vec = closest - fp
-                #contact_point_on_flipper = fp + radius_vec + direction * -fr
-                #radius_to_surface = contact_point_on_flipper - fp
-
-                #surface_vel = np.array([-fs.current_angular_velocity * radius_to_surface[1], fs.current_angular_velocity * radius_to_surface[0], 0.0])
-
-                #v_dot = np.dot(v1, direction)
-                #surf_vel_dot = np.dot(surface_vel, direction)
-
-                #v1 += direction * (surf_vel_dot - v_dot)
+                # Store contact info for velocity system
+                contacts.append({
+                    'ball_id': ball_id,
+                    'flip_id': flip_id,
+                    'normal': direction.copy(),
+                    'contact_point_on_flipper': closest.copy()
+                })
 
 class PBDBallBorderCollisions:
     def _closest_point_on_segment(self, p, a, b):
@@ -346,6 +347,7 @@ def setup_scene(world):
     world.set_resource('grabbedBall', None)
     world.set_resource('ball_obstacle_contacts', [])
     world.set_resource('ball_border_contacts', [])
+    world.set_resource('ball_flipper_contacts', [])
 
     offset = 0.02
     border_points = [
@@ -540,7 +542,7 @@ def setup_scene(world):
 
         # 7. VELOCITY SOLVERS (NEW): Apply restitution and dynamic friction
         world.register_system(BallObstacleBumpSystem())
-        world.register_system(BallBorderVelocityContactSystem())
+        world.register_system(BallBorderOrFlipperVelocityContactSystem())
 
         # 8. Game Logic
         world.register_system(ScoreSystem())
