@@ -110,7 +110,6 @@ canvas {
     </div>
 <script type="module">
     import Vector2 from './cable_joints/vector2.js';
-    import { dumpWorldState } from './cable_joints/debugUtils.js';
     import {
       World,
       PauseStateComponent,
@@ -131,7 +130,9 @@ canvas {
       FlipperTagComponent,
       FlipperStateComponent,
       PrevFinalPosComponent,
-      FlipperTipComponent
+      FlipperTipComponent,
+      ScoredTagComponent,
+      ObstaclePushComponent
     } from './cable_joints/ecs.js';
 
     import {
@@ -161,509 +162,19 @@ canvas {
       FlipperTipLinkSystem
     } from './cable_joints/commonSystems.js';
 
+    import { RenderSystem } from './cable_joints/renderSystem.js';
+
     import {
-      RenderSystem
-    } from './cable_joints/renderSystem.js';
+        ScoreComponent,
+        InputSystem,
+        FlipperMotionSystem,
+        ScoreSystem,
+        ScoreDisplaySystem,
+        PBDBallFlipperCollisions,
+        PBDBallBorderCollisions
+    } from './cable_joints/flipper_common.js';
 
-    class ScoreComponent { constructor(score = 0) { this.value = score; } }
-    class ScoredTagComponent { }
-    class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
-
-
-    // --- System: Input --- (Simplified Click Handling)
-    class InputSystem {
-         runInPause = true; // Input should work even when paused to unpause/interact
-
-         constructor(canvas) {
-             this.canvas = canvas;
-             this.clicks = [];
-             this.releases = [];
-             this.eventLog = [];     // record inputs per frame
-             this.frame = 0;         // frame counter
-             this.grabSpring = null; // { ptrE, jointE, pathE, ballE }
-             this.canvas.setAttribute('tabindex', '0');
-             this.canvas.style.outline = 'none';
-             this.canvas.focus();
-             // listen globally so ups/downs outside the canvas still fire
-             document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
-             document.addEventListener('pointerup', this.handlePointerUp.bind(this));
-             this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
-             this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
-             this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
-         }
-
-        // on Space -> emit minimal debug dump
-        dumpDebugScenario() {
-            // Custom stringification to serialize Vector2 instances
-            const resStr = JSON.stringify(world.resources);
-            const logEntries = this.eventLog.map(frame => {
-                const clicksStr = frame.clicks.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
-                const releasesStr = frame.releases.map(p => `new Vector2(${p.x}, ${p.y})`).join(', ');
-                return `{ "frame": ${frame.frame}, "clicks": [${clicksStr}], "releases": [${releasesStr}] }`;
-            }).join(', ');
-            console.log('DEBUG_SCENARIO_DUMP', `{ "resources": ${resStr}, "inputLog": [${logEntries}] }`);
-        }
-
-         handleKeyup(event) {
-             if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
-                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
-                 if (flipperEntities.length < 2) {
-                   return;
-                 }
-                 var firstPos = world.getComponent(flipperEntities[0], PositionComponent).pos;
-                 var secondPos = world.getComponent(flipperEntities[1], PositionComponent).pos;
-                 if (firstPos.x < secondPos.x) {
-                     if (event.key == 'ArrowLeft') {
-                       this.releases.push(firstPos);
-                     }
-                     if  (event.key == 'ArrowRight') {
-                       this.releases.push(secondPos);
-                     }
-                 } else {
-                     if (event.key == 'ArrowLeft') {
-                       this.releases.push(secondPos);
-                     }
-                     if  (event.key == 'ArrowRight') {
-                       this.releases.push(firstPos);
-                     }
-                 }
-             }
-         }
-
-         handleKeydown(event) {
-             if (event.code === 'Space') {
-                 this.dumpDebugScenario();
-             }
-             if (event.key == 'ArrowLeft' || event.key == 'ArrowRight') {
-                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
-                 if (flipperEntities.length < 2) {
-                   return;
-                 }
-                 var firstPos = world.getComponent(flipperEntities[0], PositionComponent).pos;
-                 var secondPos = world.getComponent(flipperEntities[1], PositionComponent).pos;
-                 if (firstPos.x < secondPos.x) {
-                     if (event.key == 'ArrowLeft') {
-                       this.clicks.push(firstPos);
-                     }
-                     if  (event.key == 'ArrowRight') {
-                       this.clicks.push(secondPos);
-                     }
-                 } else {
-                     if (event.key == 'ArrowLeft') {
-                       this.clicks.push(secondPos);
-                     }
-                     if  (event.key == 'ArrowRight') {
-                       this.clicks.push(firstPos);
-                     }
-                 }
-             }
-         }
-
-         handlePointerDown(event) {
-             event.preventDefault();
-             const rect = this.canvas.getBoundingClientRect();
-             const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
-             const simX = (event.clientX - rect.left) / scale;
-             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
-
-             const cmOnScreen = 0.5; // Desired clickable radius increase in physical cm
-             const dpi = 96; // Approximate screen DPI; adjust or measure if needed
-             const pixelsPerCm = dpi / 2.54;
-             const extraPixels = cmOnScreen * pixelsPerCm;
-             const extraClickableRadius = extraPixels / scale;
-
-             // 1) see if we hit a ball
-             const clickVec = new Vector2(simX, simY);
-
-             let closestBall = null;
-             let closestDistSq = Infinity;
-             for (const b of world.query([BallTagComponent, PositionComponent, RadiusComponent])) {
-               const pos = world.getComponent(b, PositionComponent).pos;
-               const r = world.getComponent(b, RadiusComponent).radius + extraClickableRadius;
-               const distSq = clickVec.clone().subtract(pos).lengthSq();
-               if (distSq <= r * r && distSq < closestDistSq) {
-                 closestBall = b;
-                 closestDistSq = distSq;
-               }
-             }
-
-             if (closestBall !== null) {
-               // 1) create a pointer‐link entity at the mouse
-               const ptrE = world.createEntity();
-               world.addComponent(ptrE, new PositionComponent(simX, simY));
-               world.addComponent(ptrE, new CableLinkComponent(simX, simY));
-
-               // 2) create a joint between ball and pointer
-               //    restLength = 0 so it's a pure spring
-               const ballPos = world.getComponent(closestBall, PositionComponent).pos.clone();
-               const ballMass = world.getComponent(closestBall, MassComponent).mass;
-               const ptrPos  = new Vector2(simX, simY);
-               const jointE = world.createEntity();
-               world.addComponent(jointE,
-                 new CableJointComponent(
-                   closestBall,  // entityA
-                   ptrE,         // entityB
-                   0.05,          // restLength
-                   ballPos,      // attachmentA_world
-                   ptrPos        // attachmentB_world
-                 )
-               );
-               world.addComponent(jointE, new RenderableComponent('line', '#888888'));
-
-               // 3) wrap it in a CablePathComponent (spring_constant = 100)
-               const pathE = world.createEntity();
-               const pathComp = new CablePathComponent(
-                 world,
-                 [ jointE ],               // one joint
-                 ['attachment', 'attachment'], // one linkType
-                 [ true ],                 // cw flag (arbitrary)
-                 100000.0*ballMass         // spring_constant
-               );
-               world.addComponent(pathE, pathComp);
-
-               // 4) store for move/release
-               this.grabSpring = { ptrE, jointE, pathE, ballE: closestBall };
-               world.setResource('grabbedBall', closestBall);
-
-               const pauseState = world.getResource('pauseState');
-               pauseState.paused = false;
-               pauseBtn.textContent = "Pause";
-
-               return;
-             }
-
-             this.clicks.push(new Vector2(simX, simY));
-         }
-
-         handlePointerUp(event) {
-             event.preventDefault();
-             this.canvas.releasePointerCapture(event.pointerId);
-             const rect = this.canvas.getBoundingClientRect();
-             const scale = this.canvas.height / world.getResource('simHeight'); // Need access to world/scale somehow
-             const simX = (event.clientX - rect.left) / scale;
-             const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
-
-             // if we were grabbing with a spring, tear it down
-             if (this.grabSpring) {
-               const { ptrE, jointE, pathE, ballE } = this.grabSpring;
-               // On release, reset ball velocity to zero to avoid slingshot
-               const velComp = world.getComponent(ballE, VelocityComponent);
-               const posComp = world.getComponent(ballE, PositionComponent);
-               const prevFinalPosComp = world.getComponent(ballE, PrevFinalPosComponent);
-
-               const dt = world.getResource('dt');
-               if (velComp) {
-                 velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0/dt));
-               }
-               world.destroyEntity(pathE);
-               world.destroyEntity(jointE);
-               world.destroyEntity(ptrE);
-               this.grabSpring = null;
-               world.setResource('grabbedBall', null);
-               return;
-             }
-             this.releases.push(new Vector2(simX, simY));
-         }
-
-         update(world, dt) {
-             // snapshot and clear inputs each frame
-             const clicksFrame = this.clicks.slice();
-             const releasesFrame = this.releases.slice();
-             if (clicksFrame.length > 0 || releasesFrame.length > 0) {
-                 this.eventLog.push({ frame: this.frame, clicks: clicksFrame, releases: releasesFrame });
-             }
-             this.frame++;
-
-             if (clicksFrame.length > 0) {
-                 const clickPos = this.clicks.shift(); // Process one click per frame for simplicity
-               // --- find all flippers ---
-               const flipperEntities = world.query([
-                 FlipperTagComponent,
-                 PositionComponent,
-                 FlipperStateComponent
-               ]);
-               // get world bounds
-               const simWidth  = world.getResource('simWidth');
-               const simHeight = world.getResource('simHeight');
-
-               // test if click is in‐canvas but outside the border polygon
-               let outsideBorder = false;
-               const borderEnts = world.query([BorderComponent]);
-               const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
-               const rightClick =
-                 rightOfLine(clickPos, borderPoints[0], borderPoints[1]) &&
-                 rightOfLine(clickPos, borderPoints[1], borderPoints[2]);
-               const leftClick =
-                 rightOfLine(clickPos, borderPoints[5], borderPoints[6]) &&
-                 rightOfLine(clickPos, borderPoints[6], borderPoints[7]);
-               if (rightClick) {
-                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
-                 const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
-                 const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
-                 if (flipperPos0.x > flipperPos1.x) {
-                   world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
-                 } else {
-                   world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
-                 }
-               } else if (leftClick) {
-                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
-                 const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
-                 const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
-                 if (flipperPos0.x < flipperPos1.x) {
-                   world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
-                 } else {
-                   world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
-                 }
-               } else {
-                 // click inside play‐area -> original pivot‐radius test
-                 for (const id of flipperEntities) {
-                   const pos   = world.getComponent(id, PositionComponent).pos;
-                   const state = world.getComponent(id, FlipperStateComponent);
-                   if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) {
-                     state.pressed = true;
-                   }
-                 }
-               }
-             }
-
-             if (this.releases.length > 0) {
-                 const releasePos = this.releases.shift();
-                 const flipperEntities = world.query([FlipperTagComponent, PositionComponent, FlipperStateComponent]);
-                 let closestId = null;
-                 let minDistSq = Infinity;
-                 // only consider flippers that are currently pressed
-                 for (const id of flipperEntities) {
-                     const state = world.getComponent(id, FlipperStateComponent);
-                     if (!state.pressed) continue;
-                     const pos = world.getComponent(id, PositionComponent).pos;
-                     const d2 = releasePos.clone().subtract(pos).lengthSq();
-                     if (d2 < minDistSq) {
-                         minDistSq = d2;
-                         closestId = id;
-                     }
-                 }
-                 if (closestId !== null) {
-                     world.getComponent(closestId, FlipperStateComponent).pressed = false;
-                 }
-             }
-
-             // Could add logic here to interact with pause button entity if it existed
-         }
-
-         handlePointerMove(event) {
-           event.preventDefault();
-           const rect = this.canvas.getBoundingClientRect();
-           const scale = this.canvas.height / world.getResource('simHeight');
-           const simX = (event.clientX - rect.left) / scale;
-           const simY = (this.canvas.height - (event.clientY - rect.top)) / scale;
-           if (this.grabSpring) {
-             const { ptrE } = this.grabSpring;
-             const pos = world.getComponent(ptrE, PositionComponent).pos;
-             pos.set(new Vector2(simX, simY));
-           }
-         }
-    }
-
-
-    // --- System: Flipper Motion ---
-    class FlipperMotionSystem {
-        runInPause = true;
-        update(world, dt) {
-            const flipperEntities = world.query([FlipperStateComponent]);
-            for (const entityId of flipperEntities) {
-                const state = world.getComponent(entityId, FlipperStateComponent);
-
-                const prevRotation = state.rotation;
-                if (state.pressed) {
-                    state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
-                } else {
-                    state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
-                }
-                // Avoid division by zero if dt is tiny
-                state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
-            }
-        }
-    }
-
-    class ScoreSystem {
-        runInPause = false;
-
-        update(world, dt) {
-            // One entity is holding the global score
-            const scoreEntity = world.query([ScoreComponent])[0]; // Shold be only one scoreEntity
-            const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
-
-            // Multiple entities might have scored since the previous update
-            const scoredEntities = world.query([ScoredTagComponent]);
-            for (const scoredId of scoredEntities) {
-               world.removeComponent(scoredId, ScoredTagComponent);
-               scoreComp.value++;
-            }
-        }
-    }
-
-
-    // --- System: Score Display ---
-    class ScoreDisplaySystem {
-        runInPause = true; // Score should update even if paused? Or maybe not? Your call.
-        constructor(elementId) {
-            this.scoreElement = document.getElementById(elementId);
-        }
-        update(world, dt) {
-            const scoreEntity = world.query([ScoreComponent])[0]; // Shold be only one scoreEntity
-            if (scoreEntity !== undefined && this.scoreElement) {
-                const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
-                this.scoreElement.textContent = scoreComp.value.toString();
-            }
-        }
-    }
-
-    class PBDBallFlipperCollisions {
-      _getFlipperTip(flipperPos, flipperState) {
-        const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
-        const dir = new Vector2(Math.cos(angle), Math.sin(angle));
-        return flipperPos.clone().add(dir, flipperState.length);
-      }
-
-      update(world, dt) {
-        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
-        const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
-        for (const ballId of ballEntities) {
-          const p1 = world.getComponent(ballId, PositionComponent).pos;
-          const v1 = world.getComponent(ballId, VelocityComponent).vel;
-          const r1 = world.getComponent(ballId, RadiusComponent).radius;
-          // Ball restitution handled in border/ball-ball
-
-          for (const flipId of flipperEntities) {
-            const fp = world.getComponent(flipId, PositionComponent).pos;
-            const fr = world.getComponent(flipId, RadiusComponent).radius; // Flipper thickness/radius
-            const fs = world.getComponent(flipId, FlipperStateComponent);
-
-            const tip = this._getFlipperTip(fp, fs);
-            const closest = closestPointOnSegment(p1, fp, tip);
-
-            const dir = new Vector2().subtractVectors(p1, closest);
-            const dSq = dir.lengthSq();
-            const rSum = r1 + fr;
-
-            if (dSq == 0.0 || dSq > rSum * rSum) continue;
-
-            const d = Math.sqrt(dSq);
-            dir.scale(1.0 / d); // Normalize
-
-            // Resolve penetration
-            const corr = rSum - d;
-            p1.add(dir, corr);
-
-            // Resolve velocity - Calculate surface velocity at contact point
-            const radiusVec = closest.clone().subtract(fp); // Vector from pivot to contact point
-            // Add the penetration correction offset relative to the pivot
-            const contactPointOnFlipperSurface = fp.clone().add(radiusVec).add(dir, -fr); // Approx point on flipper surface
-            const radiusToSurface = contactPointOnFlipperSurface.subtract(fp);
-
-
-            // Velocity of the flipper surface at the contact point = w x r (angular velocity cross radius vector)
-            // In 2D, (0,0,w) x (rx, ry, 0) = (-w*ry, w*rx, 0)
-            const surfaceVel = new Vector2(-fs.currentAngularVelocity * radiusToSurface.y, fs.currentAngularVelocity * radiusToSurface.x);
-
-            // Project ball velocity and surface velocity onto the collision normal
-            const v_dot = v1.dot(dir);
-            const surfVel_dot = surfaceVel.dot(dir);
-
-            // Simple model: Make the ball's normal velocity match the flipper's surface normal velocity
-            // This effectively means v_new_dot = surfVel_dot
-            // More physically plausible might involve restitution e = (v_new_dot - surfVel_dot) / (surfVel_dot - v_dot)
-            // But sticking to original logic:
-            v1.add(dir, surfVel_dot - v_dot);
-
-          }
-        }
-      }
-    }
-
-    class PBDBallBorderCollisions {
-      update(world, dt) {
-        const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
-        const borderEntities = world.query([BorderComponent]);
-        if (borderEntities.length > 0) {
-          const borderId = borderEntities[0]; // Assume only one border
-          const borderComp = world.getComponent(borderId, BorderComponent);
-          const borderPoints = borderComp.points;
-
-          if (borderPoints.length >= 3) {
-            for (const ballId of ballEntities) {
-              const p1 = world.getComponent(ballId, PositionComponent).pos;
-              const v1 = world.getComponent(ballId, VelocityComponent).vel;
-              const r1 = world.getComponent(ballId, RadiusComponent).radius;
-              const res1 = world.getComponent(ballId, RestitutionComponent).restitution;
-
-              let minDistSq = Infinity;
-              let closestSegPoint = new Vector2();
-              let edgeNormal = new Vector2();
-              let edgeStart = null;
-              let edgeEnd = null;
-
-              // Find closest point on the entire border polygon
-              for (let i = 0; i < borderPoints.length; i++) {
-                const a = borderPoints[i];
-                const b = borderPoints[(i + 1) % borderPoints.length];
-                const closestPtOnSeg = closestPointOnSegment(p1, a, b);
-                const distSq = p1.clone().subtract(closestPtOnSeg).lengthSq();
-
-                if (distSq < minDistSq) {
-                  minDistSq = distSq;
-                  closestSegPoint.set(closestPtOnSeg);
-                  edgeStart = a;
-                  edgeEnd = b;
-                }
-              }
-
-              if (minDistSq > r1 * r1) continue; // Not colliding
-
-              // Calculate normal (outward-pointing assuming clockwise vertices)
-              const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
-              const normal = edgeVec.perp().normalize(); // Points outwards for CW polygon
-
-              // Check if the ball center is outside the border (it should be!)
-              // If the closest point is a vertex, the normal needs careful handling,
-              // but for simple penetration resolution, using the segment normal is often okay.
-              const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
-              let collisionNormal = ballToClosest.clone();
-              if (collisionNormal.lengthSq() < 1e-9) {
-                // Ball center is exactly on the border segment, use edge normal
-                collisionNormal.set(normal);
-              } else {
-                collisionNormal.normalize();
-              }
-
-
-              // Ensure normal points from border towards ball
-              // Check if ball is roughly 'inside' the normal direction from the closest point
-              if (ballToClosest.dot(normal) < 0) {
-                // Ball might be inside corner, use segment normal but check distance
-                collisionNormal.set(normal); // Use segment normal for resolution
-              }
-
-
-              const dist = Math.sqrt(minDistSq);
-
-              // Resolve penetration
-              const penetration = r1 - dist;
-              if (penetration > 0) {
-                p1.add(collisionNormal, penetration);
-              }
-
-              // Resolve velocity
-              const v_dot = v1.dot(collisionNormal);
-              if (v_dot < 0) { // Only apply restitution if moving towards the wall
-                const v_new_dot = -v_dot * res1; // Reflect velocity component
-                v1.add(collisionNormal, v_new_dot - v_dot);
-              }
-            }
-          }
-        }
-      }
-    }
+    import { runGame } from './flipper_runner.js';
 
     class PBDBallObstacleCollisions2 {
       update(world, dt) {
@@ -708,9 +219,6 @@ canvas {
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
-    const pauseBtn = document.getElementById("pauseBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const stepBtn = document.getElementById("stepBtn");
 
     // --- Global World ---
     let world = new World();
@@ -744,7 +252,6 @@ canvas {
         world.clear(); // Clear entities and components
 
         // --- Set Canvas Size from CSS ---
-        // Match drawing buffer size to the CSS display size
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
@@ -753,26 +260,19 @@ canvas {
         const cScale = canvas.height / simHeight; // Calculate scale based on actual height
         const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
 
-        // console.log(`Canvas: ${canvas.width}x${canvas.height}, Sim: ${simWidth.toFixed(2)}x${simHeight.toFixed(2)}, Scale: ${cScale.toFixed(2)}`);
-
-
         // --- Resources ---
         world.setResource('gravity', new Vector2(0.0, -2.0));
         world.setResource('dt', 1.0 / 600.0);
         world.setResource('simWidth', simWidth);
-        world.setResource('simHeight', simHeight); // Store the reference simHeight
+        world.setResource('simHeight', simHeight);
         world.setResource('pauseState', new PauseStateComponent(true));
-        world.setResource('debugRenderPoints', {}); // Initialize debug points resource
-        world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
-        // reset any grab
+        world.setResource('debugRenderPoints', {});
+        world.setResource('errorState', new SimulationErrorStateComponent(false));
         world.setResource('grabbedBall', null);
 
-
         // --- Entities and Components ---
-
         const offset = 0.02;
 
-        // Border Entity (Clockwise points for outward normal calc)
         const borderEntity = world.createEntity();
         const borderPoints = [
              new Vector2(0.74, 0.0),
@@ -787,11 +287,9 @@ canvas {
         world.addComponent(borderEntity, new BorderComponent(borderPoints));
         world.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
 
-
-        // Ball Entities
         const ballRadius = 0.03;
         const ballMass = Math.PI * ballRadius * ballRadius;
-        const ballRestitution = 0.4; // Slightly higher for more bounce
+        const ballRestitution = 0.4;
 
         const ball1 = world.createEntity();
         world.addComponent(ball1, new BallTagComponent());
@@ -821,7 +319,6 @@ canvas {
         const ball2Inertia = 30.0 * 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
 
-        // Obstacle Entities
         const obsColor1 = "#FF8000";
         const obsColor2 = "#0F7090";
         const obsPush = 1.7;
@@ -858,13 +355,11 @@ canvas {
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
         world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
 
-
-        // Flipper Entities
-        const flipRadius = 0.03; // Thickness
+        const flipRadius = 0.03;
         const flipLength = 0.2;
-        const flipMaxRotation = 1.0; // Radians
-        const flipRestAngle = 0.5; // Radians from horizontal
-        const flipAngularVelocity = 20.0; // Radians per second
+        const flipMaxRotation = 1.0;
+        const flipRestAngle = 0.5;
+        const flipAngularVelocity = 20.0;
         const flipColor = "#FF0000";
         const flipRestitution = 0.2;
 
@@ -875,9 +370,7 @@ canvas {
         world.addComponent(flipper1, new FlipperStateComponent(flipLength, -flipRestAngle, flipMaxRotation, flipAngularVelocity));
         world.addComponent(flipper1, new RestitutionComponent(flipRestitution));
         world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
-        // make the pivot (and tip) act as a cable‐link
         world.addComponent(flipper1, new CableLinkComponent(0.26, 0.22));
-        // Flipper 1 tip entity
         const flipper1Tip = world.createEntity();
         world.addComponent(flipper1Tip, new PositionComponent());
         world.addComponent(flipper1Tip, new RadiusComponent(flipRadius));
@@ -891,26 +384,16 @@ canvas {
         world.addComponent(flipper2, new FlipperStateComponent(flipLength, Math.PI + flipRestAngle, -flipMaxRotation, flipAngularVelocity));
         world.addComponent(flipper2, new RestitutionComponent(flipRestitution));
         world.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
-        // also make this flipper a cable link
         world.addComponent(flipper2, new CableLinkComponent());
-        // Flipper 2 tip entity
         const flipper2Tip = world.createEntity();
         world.addComponent(flipper2Tip, new PositionComponent());
         world.addComponent(flipper2Tip, new RadiusComponent(flipRadius));
         world.addComponent(flipper2Tip, new CableLinkComponent());
         world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
 
-        // Score Entity
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
 
-
-        // --- Cable Setup ---
-        // Connect: ball2 -> obs4 -> obs3 -> ball1
-
-        // --- Calculate Initial Cable State ---
-        // Need to compute initial attachment points and rest lengths
-        // Get relevant components
         const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
         const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
         const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
@@ -918,40 +401,31 @@ canvas {
         const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
         const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
 
-        // Add necessary components to obstacles (assuming they act as wheels)
         world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
         world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
-        //world.addComponent(obs2, new CableLinkComponent());
-        //world.addComponent(obs1, new CableLinkComponent());
         world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
         world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
 
-        // Calculate initial points for joint1 (ball2 perimeter hybrid-attachment <-> obs4 rolling)
         const joint1 = world.createEntity();
-        // Attach to obstacle at its tangent point
         const tangentObs4 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
         const attachObs4 = tangentObs4.a_circle;
-        // Attach to ball at closest perimeter point toward obstacle
         const dir1 = attachObs4.clone().subtract(pos_ball2).normalize();
         const attachBall2 = pos_ball2.clone().add(dir1.scale(ballRadius));
         const initialDist1 = attachBall2.clone().subtract(attachObs4).length();
         world.addComponent(joint1, new CableJointComponent(
-          ball2, obs4, initialDist1, attachBall2, attachObs4)); // Order matters
+          ball2, obs4, initialDist1, attachBall2, attachObs4));
         world.addComponent(joint1, new RenderableComponent('line', linecolor1));
 
-
-        // Calculate initial points for joint2 and beads (obs4 -> obs3 split by two beads)
         const joint2 = world.createEntity();
         const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
         const dir2 = initialPoints2.b_circle.clone().subtract(initialPoints2.a_circle).normalize();
         const dist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-        // Positions for beads
+        
         const bead1Pos = initialPoints2.a_circle.clone().add(dir2, dist2/3.0);
         const bead2Pos = initialPoints2.a_circle.clone().add(dir2, (2*dist2)/3.0);
 
-        // Create bead1
         const bead1 = world.createEntity();
         world.addComponent(bead1, new BallTagComponent());
         world.addComponent(bead1, new PositionComponent(bead1Pos.x, bead1Pos.y));
@@ -967,7 +441,6 @@ canvas {
         world.addComponent(bead1, new AngularVelocityComponent(0.0));
         world.addComponent(bead1, new MomentOfInertiaComponent(ball1Inertia));
 
-        // Create bead2
         const bead2 = world.createEntity();
         world.addComponent(bead2, new BallTagComponent());
         world.addComponent(bead2, new PositionComponent(bead2Pos.x, bead2Pos.y));
@@ -983,63 +456,50 @@ canvas {
         world.addComponent(bead2, new AngularVelocityComponent(0.0));
         world.addComponent(bead2, new MomentOfInertiaComponent(ball1Inertia));
 
-        // Create joints: obs4 -> bead1
         world.addComponent(joint2, new CableJointComponent(
           obs4, bead1, dist2/3.0, initialPoints2.a_circle, bead1Pos));
         world.addComponent(joint2, new RenderableComponent('line', linecolor1));
 
-        // bead1 -> bead2
         const joint3 = world.createEntity();
         world.addComponent(joint3, new CableJointComponent(
           bead1, bead2, dist2/3.0, bead1Pos, bead2Pos));
         world.addComponent(joint3, new RenderableComponent('line', linecolor1));
 
-        // bead2 -> obs3
         const joint4 = world.createEntity();
         world.addComponent(joint4, new CableJointComponent(
           bead2, obs3, dist2/3.0, bead2Pos, initialPoints2.b_circle));
         world.addComponent(joint4, new RenderableComponent('line', linecolor1));
 
-
-        // Calculate initial points for joint4 (obs3 rolling <-> ball1 perimeter attachment)
         const joint5 = world.createEntity();
-        // Attach to obstacle at its tangent point
         const tangentObs3 = tangentFromPointToCircle(pos_ball1, pos_obs3, radius_obs3, false);
         const attachObs3 = tangentObs3.a_circle;
-        // Attach to ball at closest perimeter point toward obstacle
         const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
         const attachBall1 = pos_ball1.clone().add(dir3.scale(ballRadius));
         const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
         world.addComponent(joint5, new CableJointComponent(
-          obs3, ball1, initialDist3, attachObs3, attachBall1)); // Order matters
+          obs3, ball1, initialDist3, attachObs3, attachBall1));
         world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
-        // Create Cable Path Entity
         const cablePath = world.createEntity();
-        // CablePathComponent constructor now calculates initial stored length and totalRestLength
-        // Use hybrid links at ball attachments to attach at perimeter
         const pathComp = new CablePathComponent(
           world,
           [joint1, joint2, joint3, joint4, joint5],
           ['hybrid-attachment', 'rolling', 'pinhole', 'pinhole', 'rolling', 'hybrid-attachment'],
           [true, true, true, true, true, true],
-          20000.0 // Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
+          20000.0
         );
         world.addComponent(cablePath, pathComp);
 
-
-        // --- Systems Registration (Order Matters!) ---
-        if (world.systems.length === 0) { // Only register systems once
+        if (world.systems.length === 0) {
              world.registerSystem(new PrevFinalPosSystem());
-             const inputSystemInstance = new InputSystem(canvas);
+             const grabParams = { restLength: 0.05, springConstant: (mass) => 100000.0 * mass };
+             const inputSystemInstance = new InputSystem(canvas, world, grabParams);
              world.registerSystem(inputSystemInstance);
-             world.registerSystem(new InputReplaySystem(
-               [],
-             inputSystemInstance));
-             world.registerSystem(new FlipperMotionSystem()); // Handles flipper input -> state change
-             world.registerSystem(new GravitySystem());      // Applies gravity acceleration
-             world.registerSystem(new MovementSystem());     // Updates position based on velocity
-             world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
+             world.registerSystem(new InputReplaySystem([], inputSystemInstance));
+             world.registerSystem(new FlipperMotionSystem());
+             world.registerSystem(new GravitySystem());
+             world.registerSystem(new MovementSystem());
+             world.registerSystem(new AngularMovementSystem());
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions2());
              world.registerSystem(new PBDBallFlipperCollisions());
@@ -1050,93 +510,10 @@ canvas {
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 1.00));
-        } else {
-          world.systems[InputSystem]
         }
-
-        // Update button text based on initial pause state
-         const pauseState = world.getResource('pauseState');
-         pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
 
-
-    // --- Main Loop ---
-    let lastTime = 0;           // in ms
-    let accumulator = 0.0;      // in seconds
-    let doStep = true; // Whether to do a single step when paused
-
-    function gameLoop(currentTime) {
-      const dt = world.getResource('dt');           // e.g. 1/150
-      const pauseState = world.getResource('pauseState');
-
-      // first frame init
-      if (lastTime === 0) {
-        lastTime = currentTime;
-      }
-      const speedScale = window._flipperSpeedScale ?? 0.6;
-      let frameSec = speedScale*(currentTime - lastTime) / 1000;
-      if (frameSec >= dt) {
-        lastTime = currentTime;
-        // optional clamp to avoid spiral‑of‑death if caller hitches
-        const maxAccum = dt * 5;
-        accumulator = Math.min(accumulator + frameSec, maxAccum);
-        // consume as many fixed‐dt steps as we can
-        while (accumulator >= dt) {
-          if (!pauseState.paused || doStep) {
-            if (doStep) pauseState.paused = false;
-            world.update(dt);
-            if (doStep) {
-              pauseState.paused = true;
-              doStep = false;
-            }
-          }
-          accumulator -= dt;
-        }
-      }
-
-      // schedule next frame
-      requestAnimationFrame(gameLoop);
-    }
-
-    // kick it off
-    requestAnimationFrame(gameLoop);
-
-    // --- Event Listeners ---
-    pauseBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pauseState = world.getResource('pauseState');
-        if (pauseState) {
-            pauseState.paused = !pauseState.paused;
-            pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
-        }
-    });
-
-    resetBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        setupScene(); // Re-initialize the world state
-        // Ensure pause state resource is reset if needed
-        const pauseState = world.getResource('pauseState');
-        if (pauseState) pauseState.paused = true; // Start paused after reset
-        pauseBtn.textContent = "Resume";
-        doStep = true;
-    });
-
-    stepBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pauseState = world.getResource('pauseState');
-        if (pauseState && pauseState.paused) {
-            doStep = true;
-        }
-    });
-    const dumpBtn = document.getElementById('dumpBtn');
-    dumpBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log(dumpWorldState(world));
-    });
-
-    // --- Start ---
-    setupScene();
-    requestAnimationFrame(gameLoop);
+    runGame(world, setupScene);
 
 </script>
 
