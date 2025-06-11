@@ -70,7 +70,7 @@ canvas {
       RestitutionComponent, GravityAffectedComponent, OrientationComponent, AngularVelocityComponent,
       CoefficientOfFrictionComponent, MomentOfInertiaComponent, ObstacleTagComponent,
       ObstaclePushComponent, ScoredTagComponent, FlipperTagComponent, FlipperStateComponent,
-      PrevFinalPosComponent, PrevFinalOrientationComponent
+      PrevFinalPosComponent, PrevFinalOrientationComponent, FlipperTipComponent
     } from './cable_joints/ecs.js';
     import {
       CableLinkComponent, CableJointComponent, CablePathComponent, linecolor1,
@@ -83,28 +83,11 @@ canvas {
     import {
       PrevFinalPosSystem, InputReplaySystem, GravitySystem, MovementSystem, AngularMovementSystem,
       PBDBallObstacleCollisions, PBDBallBallCollisions, PBDVelocityUpdateSystem,
-      PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem
+      PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem, FlipperTipLinkSystem
     } from './cable_joints/commonSystems.js';
     import { RenderSystem } from './cable_joints/renderSystem.js';
 
     class ScoreComponent { constructor(score = 0) { this.value = score; } }
-    class FlipperTipComponent { constructor(flipperEntityId) { this.flipperEntityId = flipperEntityId; } }
-
-    class FlipperTipLinkSystem {
-      runInPause = false;
-      update(world, dt) {
-        for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
-          const tipComp   = world.getComponent(tipId, FlipperTipComponent);
-          const flipId    = tipComp.flipperEntityId;
-          const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
-          const state     = world.getComponent(flipId, FlipperStateComponent);
-          const angle = state.restAngle + state.sign * state.rotation;
-          const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
-          const tipPos = pivotPos.clone().add(dir, state.length);
-          world.getComponent(tipId, PositionComponent).pos.set(tipPos);
-        }
-      }
-    }
 
     class InputSystem {
          runInPause = true;
