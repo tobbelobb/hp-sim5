@@ -6,3 +6,4 @@ node_modules/
 done
 deploy.sh
 **/__pycache__*
+**/scratch

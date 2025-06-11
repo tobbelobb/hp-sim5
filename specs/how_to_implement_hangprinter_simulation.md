@@ -1,10 +1,10 @@
 # Logic to Implement
 
 Extended Position Based Dynamics (XPBD) time stepping/physics simulation framework.
-We will use substepping as our main method for reducing errors and enhancing stability.
+We will use short dt (small time steps) as our main method for reducing errors and enhancing stability.
 
 Cable Joints, Matthias Müller et al contains the logic we want to use for simulating cables.
-We have a home-rolled version of this logic, including merge/split and hybrid features, implemented in javascript.
+We have a home-rolled version of this logic, including merge/split and hybrid features, implemented in javascript and Python.
 
 We might want a home-rolled extension to Universal Scene Description (USD) language,
 to get be able to express Cable Joints in some language as close to USD as possible.

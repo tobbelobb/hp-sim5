@@ -49,11 +49,7 @@ Modularization and testing before porting reduces risk.
 
 ## Implementation Plan
 
-### Phase 2: Python/Warp Prototype (2 weeks)
-1. Set up Python/Warp development environment
-2. Implement core Vector2 functionality and PBD solver
-3. Port the simplified ABRS update logic to establish pattern
-4. Create simple test cases to validate against JavaScript version
+### Phase 2.5 Work on the Warp side to have somewhere that Cable Joints can plug in
 
 ### Phase 3: 3D Generalization in Python/Warp (3-4 weeks)
 1. Extend the vector operations to 3D
