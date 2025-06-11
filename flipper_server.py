@@ -525,7 +525,7 @@ def setup_scene(world):
 
         # 7. VELOCITY SOLVERS (NEW): Apply restitution and dynamic friction
         world.register_system(BallObstacleBumpSystem())
-        # world.register_system(VelocityContactSystem()) # You would create this
+        world.register_system(BallBorderVelocityContactSystem()) # You would create this
 
         # 8. Game Logic
         world.register_system(ScoreSystem())
