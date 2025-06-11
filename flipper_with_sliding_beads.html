@@ -137,6 +137,11 @@ canvas {
       FlipperTipComponent
     } from './cable_joints/ecs.js';
 
+    import { CableAttachmentCacheSystem } from './cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from './cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from './cable_joints/cable_friction_system.js';
+    import { BallObstacleBumpSystem } from './cable_joints/ball_obstacle_bump_system.js';
+    import { BallBorderOrFlipperVelocityContactSystem } from './cable_joints/ball_border_or_flipper_velocity_contact_system.js';
     import {
       CableLinkComponent,
       CableJointComponent,
@@ -168,7 +173,7 @@ canvas {
     } from './cable_joints/commonSystems.js';
 
     import { RenderSystem } from './cable_joints/renderSystem.js';
-    
+
     import {
         ScoreComponent,
         InputSystem,
@@ -183,7 +188,7 @@ canvas {
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
-    
+
     // --- Global World ---
     let world = new World();
     window.world = world; // Make available to jest test
@@ -406,7 +411,7 @@ canvas {
         const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
         const dir2 = initialPoints2.b_circle.clone().subtract(initialPoints2.a_circle).normalize();
         const dist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-        
+
         const bead1Pos = initialPoints2.a_circle.clone().add(dir2, dist2/3.0);
         const bead2Pos = initialPoints2.a_circle.clone().add(dir2, (2*dist2)/3.0);
 
@@ -478,24 +483,46 @@ canvas {
         world.addComponent(cablePath, pathComp);
 
         if (world.systems.length === 0) {
+             // 1. Cache state from previous step
              world.registerSystem(new PrevFinalPosSystem());
              world.registerSystem(new PrevFinalOrientationSystem());
-             const inputSystemInstance = new InputSystem(canvas, world);
+
+             // 2. Handle user input and non-physics state changes
+             const inputSystemInstance = new InputSystem(canvas);
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem([], inputSystemInstance));
              world.registerSystem(new FlipperMotionSystem());
+
+             // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
              world.registerSystem(new GravitySystem());
              world.registerSystem(new MovementSystem());
              world.registerSystem(new AngularMovementSystem());
+
+             // 4. Update derived geometry and cable state
              world.registerSystem(new FlipperTipLinkSystem());
              world.registerSystem(new CableAttachmentUpdateSystem());
+             world.registerSystem(new CableAttachmentCacheSystem());
+             world.registerSystem(new CableSlackSystem());
+
+             // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
              world.registerSystem(new PBDCableConstraintSolver());
-             world.registerSystem(new PBDVelocityUpdateSystem());
-             world.registerSystem(new PBDAngularVelocityUpdateSystem());
              world.registerSystem(new PBDBallBorderCollisions());
              world.registerSystem(new PBDBallBallCollisions());
              world.registerSystem(new PBDBallObstacleCollisions());
              world.registerSystem(new PBDBallFlipperCollisions());
+
+             // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
+             world.registerSystem(new CableFrictionSystem());
+
+             // 7. UPDATE VELOCITY: Derive final velocities from the position changes
+             world.registerSystem(new PBDVelocityUpdateSystem());
+             world.registerSystem(new PBDAngularVelocityUpdateSystem());
+
+             // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
+             world.registerSystem(new BallObstacleBumpSystem());
+             world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
+
+             // 9. Game Logic
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
