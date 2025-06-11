@@ -1,4 +1,5 @@
-import { CableLinkComponent, PositionComponent, OrientationComponent } from './ecs.js';
+import { PositionComponent, OrientationComponent } from './ecs.js';
+import { CableLinkComponent } from './cable_joints_core.js';
 
 function _storeCableLinkPoses(world) {
   const linkEntities = world.query([CableLinkComponent, PositionComponent]);

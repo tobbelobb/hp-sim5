@@ -196,3 +196,9 @@ export class DistanceConstraintComponent {
     this.lambda = 0.0; // Accumulated Lagrange multiplier
   }
 }
+
+export class FlipperTipComponent {
+  constructor(flipperEntityId) {
+    this.flipperEntityId = flipperEntityId;
+  }
+}
