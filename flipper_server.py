@@ -24,7 +24,8 @@ from python.cable_joints_components import CableJointComponent, CablePathCompone
 from python.ball_obstacle_bump_system import BallObstacleBumpSystem
 from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
 from python.cable_attachment_cache_system import CableAttachmentCacheSystem
-from python.cable_slip_slack_friction_system import CableSlipSlackFrictionSystem
+from python.cable_slack_system import CableSlackSystem
+from python.cable_friction_system import CableFrictionSystem
 
 # --- Server-Side Systems ---
 
@@ -541,11 +542,11 @@ def setup_scene(world):
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
 
-        # 4. Update derived geometry based on predicted positions
+        # 4. Update derived geometry and cable state
         world.register_system(FlipperTipLinkSystem())
+        world.register_system(CableAttachmentCacheSystem()) # Must run BEFORE CableAttachmentUpdateSystem
         world.register_system(CableAttachmentUpdateSystem())
-        world.register_system(CableAttachmentCacheSystem())
-        world.register_system(CableSlipSlackFrictionSystem())
+        world.register_system(CableSlackSystem()) # PRE-SOLVE: Slip obvious slack
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
         world.register_system(PBDCableConstraintSolver())
@@ -554,11 +555,14 @@ def setup_scene(world):
         world.register_system(PBDBallObstacleCollisions())
         world.register_system(PBDBallFlipperCollisions())
 
-        # 6. UPDATE VELOCITY: Derive final velocities from the position changes
+        # 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
+        world.register_system(CableFrictionSystem())
+
+        # 7. UPDATE VELOCITY: Derive final velocities from the position changes
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
 
-        # 7. VELOCITY SOLVERS: Apply restitution and dynamic friction
+        # 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
         world.register_system(BallObstacleBumpSystem())
         world.register_system(BallBorderOrFlipperVelocityContactSystem())
 
