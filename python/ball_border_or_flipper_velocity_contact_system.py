@@ -15,7 +15,7 @@ class BallBorderOrFlipperVelocityContactSystem:
     """
     run_in_pause = False
 
-    def _handle_ball_contact(self, world, ball_id, normal, v_surface, restitution_other, friction_other):
+    def _handle_ball_contact(self, world, ball_id, normal, v_surface, restitution_other, friction_other, delta_lambda, dt):
         """
         Generic handler for ball contacts with a surface (static or dynamic).
         Applies impulses for restitution and friction.
@@ -60,29 +60,29 @@ class BallBorderOrFlipperVelocityContactSystem:
 
         # Relative velocity at contact point
         v_rel = v_ball_at_contact - v_surface
-
-        # Decompose relative velocity into normal and tangential components
         v_rel_n_scalar = np.dot(v_rel, normal)
 
-        # If the ball is already moving away from the surface, do nothing
-        if v_rel_n_scalar >= 0:
-            return
-
         # --- 1. Restitution (Normal Impulse) ---
-        r_cross_n_z = np.cross(r_ball, normal)[2]
-        w_inv_n = inv_mass + inv_inertia * (r_cross_n_z ** 2)
-
-        if w_inv_n < 1e-9:
-            return
-
-        j_n = -(1.0 + restitution) * v_rel_n_scalar / w_inv_n
-
-        impulse_n_vec = j_n * normal
-        vel_comp.vel += impulse_n_vec * inv_mass
-        torque_n_impulse = r_cross_n_z * j_n
-        ang_vel_comp.angular_velocity += torque_n_impulse * inv_inertia
+        j_n_restitution = 0
+        if v_rel_n_scalar < 0:
+            r_cross_n_z = np.cross(r_ball, normal)[2]
+            w_inv_n = inv_mass + inv_inertia * (r_cross_n_z ** 2)
+            if w_inv_n > 1e-9:
+                j_n_restitution = -(1.0 + restitution) * v_rel_n_scalar / w_inv_n
+                impulse_n_vec = j_n_restitution * normal
+                vel_comp.vel += impulse_n_vec * inv_mass
+                torque_n_impulse = r_cross_n_z * j_n_restitution
+                ang_vel_comp.angular_velocity += torque_n_impulse * inv_inertia
 
         # --- 2. Friction (Tangential Impulse) ---
+        # The total normal impulse for friction is the sum of the bounce impulse
+        # and the impulse from the positional correction (for resting contact).
+        j_n_force = 0
+        if dt > 1e-9:
+            j_n_force = delta_lambda / dt
+        
+        j_n_for_friction = j_n_restitution + j_n_force
+
         # Re-calculate relative velocity after normal impulse
         v_angular_at_contact_new = np.cross(np.array([0, 0, ang_vel_comp.angular_velocity]), r_ball)
         v_ball_at_contact_new = vel_comp.vel + v_angular_at_contact_new
@@ -98,7 +98,7 @@ class BallBorderOrFlipperVelocityContactSystem:
 
             if w_inv_t > 1e-9:
                 j_t_noslip = -v_rel_t_mag / w_inv_t
-                j_t = np.clip(j_t_noslip, -mu * j_n, mu * j_n)
+                j_t = np.clip(j_t_noslip, -mu * j_n_for_friction, mu * j_n_for_friction)
                 impulse_t_vec = j_t * tangent
                 vel_comp.vel += impulse_t_vec * inv_mass
                 torque_t_impulse = r_cross_t_z * j_t
@@ -109,8 +109,7 @@ class BallBorderOrFlipperVelocityContactSystem:
         border_contacts = world.get_resource('ball_border_contacts')
         if border_contacts:
             for contact in border_contacts:
-                # Border is static: v_surface=0, restitution=0, friction=0
-                self._handle_ball_contact(world, contact['ball_id'], contact['normal'], np.zeros(3), 0.0, 0.0)
+                self._handle_ball_contact(world, contact['ball_id'], contact['normal'], np.zeros(3), 0.0, 0.0, contact['delta_lambda'], dt)
 
         # --- Handle Flipper Contacts ---
         flipper_contacts = world.get_resource('ball_flipper_contacts')
@@ -120,6 +119,7 @@ class BallBorderOrFlipperVelocityContactSystem:
                 flip_id = contact['flip_id']
                 normal = contact['normal']
                 contact_point_on_flipper = contact['contact_point_on_flipper']
+                delta_lambda = contact['delta_lambda']
 
                 # Get flipper components
                 flipper_pos_comp = world.get_component(flip_id, PositionComponent)
@@ -149,4 +149,4 @@ class BallBorderOrFlipperVelocityContactSystem:
                 restitution_flipper = flipper_restitution_comp.restitution
                 friction_flipper = flipper_friction_comp.mu if flipper_friction_comp else 0.1
 
-                self._handle_ball_contact(world, ball_id, normal, v_flipper, restitution_flipper, friction_flipper)
+                self._handle_ball_contact(world, ball_id, normal, v_flipper, restitution_flipper, friction_flipper, delta_lambda, dt)

@@ -57,7 +57,7 @@ class PBDBallFlipperCollisions:
         return a + ab * t
 
     def update(self, world, dt):
-        ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent])
+        ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent])
         flipper_entities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent])
 
         contacts = world.get_resource('ball_flipper_contacts')
@@ -67,8 +67,11 @@ class PBDBallFlipperCollisions:
         contacts.clear()
 
         for ball_id in ball_entities:
-            p1 = world.get_component(ball_id, PositionComponent).pos
+            p1_comp = world.get_component(ball_id, PositionComponent)
+            p1 = p1_comp.pos
             r1 = world.get_component(ball_id, RadiusComponent).radius
+            mass_comp = world.get_component(ball_id, MassComponent)
+            inv_mass = 1.0 / mass_comp.mass if mass_comp and mass_comp.mass > 0 else 0.0
 
             for flip_id in flipper_entities:
                 fp = world.get_component(flip_id, PositionComponent).pos
@@ -90,14 +93,24 @@ class PBDBallFlipperCollisions:
 
                 # Resolve penetration
                 corr = r_sum - d
-                p1 += direction * corr
+                if inv_mass > 0:
+                    p1 += direction * corr
+
+                # Calculate positional impulse for the velocity solver
+                delta_lambda = 0
+                if inv_mass > 0:
+                    # Since the flipper is treated as having infinite mass in this positional solve,
+                    # the generalized inverse mass is just the ball's inverse mass.
+                    w_inv = inv_mass
+                    delta_lambda = corr / w_inv
 
                 # Store contact info for velocity system
                 contacts.append({
                     'ball_id': ball_id,
                     'flip_id': flip_id,
                     'normal': direction.copy(),
-                    'contact_point_on_flipper': closest.copy()
+                    'contact_point_on_flipper': closest.copy(),
+                    'delta_lambda': delta_lambda
                 })
 
 class PBDBallBorderCollisions:
@@ -110,7 +123,7 @@ class PBDBallBorderCollisions:
         return a + ab * t
 
     def update(self, world, dt):
-        ball_entities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, RestitutionComponent])
+        ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent])
         border_entities = world.query([BorderComponent])
         if not border_entities: return
 
@@ -124,10 +137,11 @@ class PBDBallBorderCollisions:
         contacts.clear()
 
         for ball_id in ball_entities:
-            p1 = world.get_component(ball_id, PositionComponent).pos
-            v1 = world.get_component(ball_id, VelocityComponent).vel
+            p1_comp = world.get_component(ball_id, PositionComponent)
+            p1 = p1_comp.pos
             r1 = world.get_component(ball_id, RadiusComponent).radius
-            res1 = world.get_component(ball_id, RestitutionComponent).restitution
+            mass_comp = world.get_component(ball_id, MassComponent)
+            inv_mass = 1.0 / mass_comp.mass if mass_comp and mass_comp.mass > 0 else 0.0
 
             min_dist_sq = float('inf')
             closest_seg_point = np.zeros(3)
@@ -159,21 +173,22 @@ class PBDBallBorderCollisions:
             if np.dot(ball_to_closest, normal) < 0:
                 collision_normal = normal
 
+            dist = np.sqrt(min_dist_sq)
+            penetration = r1 - dist
+            delta_lambda = 0
+            if penetration > 0:
+                if inv_mass > 0:
+                    p1 += collision_normal * penetration
+                    # Since the border is static, the generalized inverse mass is just the ball's.
+                    w_inv = inv_mass
+                    delta_lambda = penetration / w_inv
+
             # Store contact info for the velocity-based system
             contacts.append({
                 'ball_id': ball_id,
-                'normal': collision_normal.copy()
+                'normal': collision_normal.copy(),
+                'delta_lambda': delta_lambda
             })
-
-            dist = np.sqrt(min_dist_sq)
-            penetration = r1 - dist
-            if penetration > 0:
-                p1 += collision_normal * penetration
-
-            #v_dot = np.dot(v1, collision_normal)
-            #if v_dot < 0:
-            #    v_new_dot = -v_dot * res1
-            #    v1 += collision_normal * (v_new_dot - v_dot)
 
 class ScoreSystem:
     run_in_pause = False
