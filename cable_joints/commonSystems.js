@@ -245,25 +245,25 @@ export class AngularMovementSystem {
 export class PBDBallBallCollisions {
   runInPause = false;
   update(world, dt) {
-    const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     for (let i = 0; i < ballEntities.length; i++) {
       for (let j = i + 1; j < ballEntities.length; j++) {
         const e1 = ballEntities[i];
         const e2 = ballEntities[j];
 
-        const p1 = world.getComponent(e1, PositionComponent).pos;
-        const v1 = world.getComponent(e1, VelocityComponent).vel;
+        const p1Comp = world.getComponent(e1, PositionComponent);
         const r1 = world.getComponent(e1, RadiusComponent).radius;
-        const m1 = world.getComponent(e1, MassComponent).mass;
-        const res1 = world.getComponent(e1, RestitutionComponent).restitution;
-
-        const p2 = world.getComponent(e2, PositionComponent).pos;
-        const v2 = world.getComponent(e2, VelocityComponent).vel;
+        const m1Comp = world.getComponent(e1, MassComponent);
+        
+        const p2Comp = world.getComponent(e2, PositionComponent);
         const r2 = world.getComponent(e2, RadiusComponent).radius;
-        const m2 = world.getComponent(e2, MassComponent).mass;
-        const res2 = world.getComponent(e2, RestitutionComponent).restitution;
+        const m2Comp = world.getComponent(e2, MassComponent);
 
-        const restitution = Math.min(res1, res2);
+        const p1 = p1Comp.pos;
+        const m1 = m1Comp ? m1Comp.mass : 0.0;
+        const p2 = p2Comp.pos;
+        const m2 = m2Comp ? m2Comp.mass : 0.0;
+
         const dir = new Vector2().subtractVectors(p2, p1);
         const dSq = dir.lengthSq();
         const rSum = r1 + r2;
@@ -274,41 +274,41 @@ export class PBDBallBallCollisions {
         dir.scale(1.0 / d); // Normalize
 
         // Resolve penetration
-        const corr = (rSum - d) / 2.0;
-        p1.add(dir, -corr);
-        p2.add(dir, corr);
+        const penetration = rSum - d;
+        const invMass1 = (m1 > 0) ? 1.0 / m1 : 0.0;
+        const invMass2 = (m2 > 0) ? 1.0 / m2 : 0.0;
+        const totalInvMass = invMass1 + invMass2;
 
-        // Resolve velocity
-        const vel1_dot = v1.dot(dir);
-        const vel2_dot = v2.dot(dir);
+        if (totalInvMass <= 1e-9) continue;
 
-        const newV1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2);
-        const newV2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2);
-
-        v1.add(dir, newV1_dot - vel1_dot);
-        v2.add(dir, newV2_dot - vel2_dot);
+        const corr = dir.clone().scale(penetration / totalInvMass);
+        p1.add(corr, -invMass1);
+        p2.add(corr, invMass2);
       }
     }
   }
 }
 
 export class PBDBallObstacleCollisions {
+  runInPause = false;
   update(world, dt) {
-    const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent]); // RestitutionComponent not used here
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent]);
     const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+
+    let contacts = world.getResource('ball_obstacle_contacts');
+    if (!contacts) {
+        contacts = [];
+        world.setResource('ball_obstacle_contacts', contacts);
+    }
+    contacts.length = 0; // Clear existing contacts
 
     for (const ballId of ballEntities) {
       const p1 = world.getComponent(ballId, PositionComponent).pos;
-      const v1 = world.getComponent(ballId, VelocityComponent).vel;
       const r1 = world.getComponent(ballId, RadiusComponent).radius;
-      const ballMassComp = world.getComponent(ballId, MassComponent);
-      const ballAngVelComp = world.getComponent(ballId, AngularVelocityComponent);
-      const ballMoIComp = world.getComponent(ballId, MomentOfInertiaComponent);
 
       for (const obsId of obstacleEntities) {
         const p2 = world.getComponent(obsId, PositionComponent).pos;
         const r2 = world.getComponent(obsId, RadiusComponent).radius;
-        const pushVel = world.getComponent(obsId, ObstaclePushComponent).pushVel;
 
         const dir = new Vector2().subtractVectors(p1, p2);
         const dSq = dir.lengthSq();
@@ -319,69 +319,14 @@ export class PBDBallObstacleCollisions {
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
 
+        // Store contact info for the velocity-based bump system
+        contacts.push({ ball_id: ballId, obs_id: obsId, direction: dir.clone() });
+
         // Resolve penetration
         const corr = rSum - d;
         p1.add(dir, corr);
 
-        // Resolve velocity & rotation with friction and obstacle rotation
-        const obsAngVelComp = world.getComponent(obsId, AngularVelocityComponent);
-        const obsMoIComp = world.getComponent(obsId, MomentOfInertiaComponent);
-        const obsFrictionComp = world.getComponent(obsId, CoefficientOfFrictionComponent);
-
-        const omega_obs = obsAngVelComp ? obsAngVelComp.angularVelocity : 0.0;
-        const mu = obsFrictionComp ? obsFrictionComp.mu : 0.0;
-
-        const tangent = new Vector2(-dir.y, dir.x); // Tangential direction
-
-        // Calculate obstacle's surface tangential velocity component at contact point
-        let v_surf_obs_tangential_comp = 0;
-        if (omega_obs !== 0) {
-            // r_vec_obs is vector from obstacle center to contact point on its surface
-            // Contact point on obs surface is p2 + dir * r2. So r_vec_obs = dir * r2.
-            // Surface velocity v_surf = omega_obs x r_vec_obs.
-            // v_surf.x = -omega_obs * r_vec_obs.y = -omega_obs * (dir.y * r2)
-            // v_surf.y =  omega_obs * r_vec_obs.x =  omega_obs * (dir.x * r2)
-            // v_surf_obs_tangential_comp = v_surf.dot(tangent)
-            v_surf_obs_tangential_comp = (-omega_obs * dir.y * r2) * tangent.x + (omega_obs * dir.x * r2) * tangent.y;
-        }
-
-        // Determine effective push direction
-        const s_sign = (v_surf_obs_tangential_comp === 0 || mu === 0) ? 0 : Math.sign(v_surf_obs_tangential_comp);
-        let effectivePushDir = dir.clone();
-        if (s_sign !== 0) {
-            effectivePushDir.add(tangent.clone().scale(mu * s_sign));
-        }
-        effectivePushDir.normalize(); // Normalize to ensure pushVel is the magnitude along this dir
-
-        // Apply translational push
-        v1.add(effectivePushDir, pushVel);
-
-        // Rotational transfer if friction is present
-        if (mu > 0 && ballMassComp) {
-            // The tangential component of the velocity change *actually applied* to the ball
-            const delta_v_ball_tangential_actual_scalar_comp = effectivePushDir.dot(tangent) * pushVel;
-
-            if (Math.abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9) {
-                const J_t_on_ball_vec = tangent.clone().scale(delta_v_ball_tangential_actual_scalar_comp * ballMassComp.mass);
-
-                // Apply torque to ball
-                if (ballAngVelComp && ballMoIComp && ballMoIComp.invInertia > 0) {
-                    const r_contact_ball = dir.clone().scale(-r1); // Vector from ball center to contact point
-                    const delta_L_ball = r_contact_ball.x * J_t_on_ball_vec.y - r_contact_ball.y * J_t_on_ball_vec.x;
-                    ballAngVelComp.angularVelocity += delta_L_ball * ballMoIComp.invInertia;
-                }
-
-                // Apply torque to obstacle
-                if (obsAngVelComp && obsMoIComp && obsMoIComp.invInertia > 0) {
-                    const J_t_on_obs_vec = J_t_on_ball_vec.clone().scale(-1);
-                    const r_contact_obs = dir.clone().scale(r2); // Vector from obstacle center to contact point
-                    const delta_L_obs = r_contact_obs.x * J_t_on_obs_vec.y - r_contact_obs.y * J_t_on_obs_vec.x;
-                    obsAngVelComp.angularVelocity += delta_L_obs * obsMoIComp.invInertia;
-                }
-            }
-        }
-
-        // Add ScoredTagComponent to the ball that scored
+        // Velocity resolution is now handled by BallObstacleBumpSystem
         const grabbed = world.getResource('grabbedBall');
         if (ballId !== grabbed) {
           world.addComponent(ballId, new ScoredTagComponent());
