@@ -21,6 +21,7 @@ from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from python.geometry import right_of_line, tangent_from_point_to_circle, tangent_from_circle_to_circle
 from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
+from python.ball_obstacle_bump_system import BallObstacleBumpSystem
 
 # --- Server-Side Systems ---
 
@@ -330,6 +331,7 @@ def setup_scene(world):
     world.set_resource('pauseState', PauseStateComponent(True))
     world.set_resource('debugRenderPoints', {})
     world.set_resource('grabbedBall', None)
+    world.set_resource('ball_obstacle_contacts', [])
 
     offset = 0.02
     border_points = [

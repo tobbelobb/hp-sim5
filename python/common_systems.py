@@ -241,19 +241,18 @@ class PBDBallBallCollisions:
                 e1 = ball_entities[i]
                 e2 = ball_entities[j]
 
-                p1 = world.get_component(e1, PositionComponent).pos
-                v1 = world.get_component(e1, VelocityComponent).vel
+                p1_comp = world.get_component(e1, PositionComponent)
+                p1 = p1_comp.pos
                 r1 = world.get_component(e1, RadiusComponent).radius
-                m1 = world.get_component(e1, MassComponent).mass
-                res1 = world.get_component(e1, RestitutionComponent).restitution
+                m1_comp = world.get_component(e1, MassComponent)
+                m1 = m1_comp.mass if m1_comp else 0.0
 
-                p2 = world.get_component(e2, PositionComponent).pos
-                v2 = world.get_component(e2, VelocityComponent).vel
+                p2_comp = world.get_component(e2, PositionComponent)
+                p2 = p2_comp.pos
                 r2 = world.get_component(e2, RadiusComponent).radius
-                m2 = world.get_component(e2, MassComponent).mass
-                res2 = world.get_component(e2, RestitutionComponent).restitution
+                m2_comp = world.get_component(e2, MassComponent)
+                m2 = m2_comp.mass if m2_comp else 0.0
 
-                restitution = min(res1, res2)
                 direction = p2 - p1
                 d_sq = np.dot(direction, direction)
                 r_sum = r1 + r2
@@ -265,38 +264,37 @@ class PBDBallBallCollisions:
                 direction /= d # Normalize
 
                 # Resolve penetration
-                corr = (r_sum - d) / 2.0
-                p1 += direction * -corr
-                p2 += direction * corr
+                penetration = r_sum - d
+                inv_mass1 = 1.0 / m1 if m1 > 0 else 0.0
+                inv_mass2 = 1.0 / m2 if m2 > 0 else 0.0
+                total_inv_mass = inv_mass1 + inv_mass2
 
-                # Resolve velocity
-                #vel1_dot = np.dot(v1, direction)
-                #vel2_dot = np.dot(v2, direction)
+                if total_inv_mass <= 1e-9: continue
 
-                #new_v1_dot = (m1 * vel1_dot + m2 * vel2_dot - m2 * (vel1_dot - vel2_dot) * restitution) / (m1 + m2)
-                #new_v2_dot = (m1 * vel1_dot + m2 * vel2_dot - m1 * (vel2_dot - vel1_dot) * restitution) / (m1 + m2)
+                corr = direction * (penetration / total_inv_mass)
+                p1_comp.pos -= corr * inv_mass1
+                p2_comp.pos += corr * inv_mass2
 
-                #v1 += direction * (new_v1_dot - vel1_dot)
-                #v2 += direction * (new_v2_dot - vel2_dot)
 
 class PBDBallObstacleCollisions:
     run_in_pause = False
     def update(self, world, dt):
-        ball_entities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent])
+        ball_entities = world.query([BallTagComponent, PositionComponent, RadiusComponent])
         obstacle_entities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent])
+
+        contacts = world.get_resource('ball_obstacle_contacts')
+        if contacts is None:
+            contacts = []
+            world.set_resource('ball_obstacle_contacts', contacts)
+        contacts.clear()
 
         for ball_id in ball_entities:
             p1 = world.get_component(ball_id, PositionComponent).pos
-            v1 = world.get_component(ball_id, VelocityComponent).vel
             r1 = world.get_component(ball_id, RadiusComponent).radius
-            ball_mass_comp = world.get_component(ball_id, MassComponent)
-            ball_ang_vel_comp = world.get_component(ball_id, AngularVelocityComponent)
-            ball_moi_comp = world.get_component(ball_id, MomentOfInertiaComponent)
 
             for obs_id in obstacle_entities:
                 p2 = world.get_component(obs_id, PositionComponent).pos
                 r2 = world.get_component(obs_id, RadiusComponent).radius
-                push_vel = world.get_component(obs_id, ObstaclePushComponent).pushVel
 
                 direction = p1 - p2
                 d_sq = np.dot(direction, direction)
@@ -308,51 +306,14 @@ class PBDBallObstacleCollisions:
                 d = math.sqrt(d_sq)
                 direction /= d # Normalize
 
+                # Store contact info for the velocity-based bump system
+                contacts.append({'ball_id': ball_id, 'obs_id': obs_id, 'direction': direction.copy()})
+
                 # Resolve penetration
                 corr = r_sum - d
                 p1 += direction * corr
 
-                # Resolve velocity & rotation with friction and obstacle rotation
-                #obs_ang_vel_comp = world.get_component(obs_id, AngularVelocityComponent)
-                #obs_moi_comp = world.get_component(obs_id, MomentOfInertiaComponent)
-                #obs_friction_comp = world.get_component(obs_id, CoefficientOfFrictionComponent)
-
-                #omega_obs = obs_ang_vel_comp.angular_velocity if obs_ang_vel_comp else 0.0
-                #mu = obs_friction_comp.mu if obs_friction_comp else 0.0
-
-                #tangent = np.array([-direction[1], direction[0], 0.0])
-
-                #v_surf_obs_tangential_comp = 0
-                #if omega_obs != 0:
-                #    v_surf_obs_tangential_comp = (-omega_obs * direction[1] * r2) * tangent[0] + (omega_obs * direction[0] * r2) * tangent[1]
-
-                #s_sign = 0
-                #if v_surf_obs_tangential_comp != 0 and mu != 0:
-                #    s_sign = math.copysign(1, v_surf_obs_tangential_comp)
-
-                #effective_push_dir = direction.copy()
-                #if s_sign != 0:
-                #    effective_push_dir += tangent * (mu * s_sign)
-                #v2_helpers.normalize_inplace(effective_push_dir)
-
-                #v1 += effective_push_dir * push_vel
-
-                #if mu > 0 and ball_mass_comp:
-                #    delta_v_ball_tangential_actual_scalar_comp = np.dot(effective_push_dir, tangent) * push_vel
-
-                #    if abs(delta_v_ball_tangential_actual_scalar_comp) > 1e-9:
-                #        j_t_on_ball_vec = tangent * (delta_v_ball_tangential_actual_scalar_comp * ball_mass_comp.mass)
-
-                #        if ball_ang_vel_comp and ball_moi_comp and ball_moi_comp.inv_inertia > 0:
-                #            r_contact_ball = direction * -r1
-                #            delta_l_ball = r_contact_ball[0] * j_t_on_ball_vec[1] - r_contact_ball[1] * j_t_on_ball_vec[0]
-                #            ball_ang_vel_comp.angular_velocity += delta_l_ball * ball_moi_comp.inv_inertia
-
-                #        if obs_ang_vel_comp and obs_moi_comp and obs_moi_comp.inv_inertia > 0:
-                #            j_t_on_obs_vec = j_t_on_ball_vec * -1
-                #            r_contact_obs = direction * r2
-                #            delta_l_obs = r_contact_obs[0] * j_t_on_obs_vec[1] - r_contact_obs[1] * j_t_on_obs_vec[0]
-                #            obs_ang_vel_comp.angular_velocity += delta_l_obs * obs_moi_comp.inv_inertia
+                # Velocity resolution is now handled by BallObstacleBumpSystem
 
                 grabbed = world.get_resource('grabbedBall')
                 if ball_id != grabbed:
