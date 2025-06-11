@@ -23,6 +23,8 @@ from python.geometry import right_of_line, tangent_from_point_to_circle, tangent
 from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 from python.ball_obstacle_bump_system import BallObstacleBumpSystem
 from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
+from python.prev_cable_link_pose_system import PrevCableLinkPoseSystem
+from python.cable_slip_slack_friction_system import CableSlipSlackFrictionSystem
 
 # --- Server-Side Systems ---
 
@@ -529,6 +531,7 @@ def setup_scene(world):
         # 1. Cache state from previous step
         world.register_system(PrevFinalPosSystem())
         world.register_system(PrevFinalOrientationSystem())
+        world.register_system(PrevCableLinkPoseSystem())
 
         # 2. Handle user input and non-physics state changes
         world.register_system(RemoteInputSystem())
@@ -544,22 +547,24 @@ def setup_scene(world):
         world.register_system(CableAttachmentUpdateSystem())
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
-        #    (These must be modified to ONLY change positions/orientations)
         world.register_system(PBDCableConstraintSolver())
-        world.register_system(PBDBallBorderCollisions())      # MODIFIED
-        world.register_system(PBDBallBallCollisions())        # MODIFIED
-        world.register_system(PBDBallObstacleCollisions())    # MODIFIED
-        world.register_system(PBDBallFlipperCollisions())     # MODIFIED
+        world.register_system(PBDBallBorderCollisions())
+        world.register_system(PBDBallBallCollisions())
+        world.register_system(PBDBallObstacleCollisions())
+        world.register_system(PBDBallFlipperCollisions())
 
         # 6. UPDATE VELOCITY: Derive final velocities from the position changes
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
 
-        # 7. VELOCITY SOLVERS (NEW): Apply restitution and dynamic friction
+        # 7. VELOCITY SOLVERS: Apply restitution and dynamic friction
         world.register_system(BallObstacleBumpSystem())
         world.register_system(BallBorderOrFlipperVelocityContactSystem())
 
-        # 8. Game Logic
+        # 8. CABLE DYNAMICS: Slip slack and handle friction
+        world.register_system(CableSlipSlackFrictionSystem())
+
+        # 9. Game Logic
         world.register_system(ScoreSystem())
 
 def world_to_json(world):
