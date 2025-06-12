@@ -11,7 +11,7 @@ import {
 import { PBDBallBallCollisions } from '../cable_joints/commonSystems.js';
 
 describe('PBDBallBallCollisions', () => {
-  test('swaps velocities on perfectly elastic head-on collision', () => {
+  test('velocities remain unchanged on perfectly elastic head-on collision', () => {
     const world = new World();
     const dt = 0.016;
     const ball1 = world.createEntity();
@@ -36,12 +36,12 @@ describe('PBDBallBallCollisions', () => {
 
     const v1 = world.getComponent(ball1, VelocityComponent).vel;
     const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Velocities should swap
-    expect(v1.x).toBeCloseTo(-1);
-    expect(v2.x).toBeCloseTo(1);
+    // Position-only resolution should not change velocities
+    expect(v1.x).toBeCloseTo(1);
+    expect(v2.x).toBeCloseTo(-1);
   });
 
-  test('swaps and halves velocities after head-on collision when restitution is 0.5 for both entities', () => {
+  test('velocities unchanged with restitution 0.5 on head-on collision', () => {
     const world = new World();
     const dt = 0.016;
     const ball1 = world.createEntity();
@@ -66,12 +66,12 @@ describe('PBDBallBallCollisions', () => {
 
     const v1 = world.getComponent(ball1, VelocityComponent).vel;
     const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Velocities should swap
-    expect(v1.x).toBeCloseTo(-0.5);
-    expect(v2.x).toBeCloseTo(0.5);
+    // Position correction only
+    expect(v1.x).toBeCloseTo(1);
+    expect(v2.x).toBeCloseTo(-1);
   });
 
-  test('uses the smallest restitution for both entities in a collision', () => {
+  test('uses the smallest restitution but leaves velocities unchanged', () => {
     // This is a simple heuristics we use. Might want to change to more realistic restitution/collision handling later
     const world = new World();
     const dt = 0.016;
@@ -97,9 +97,9 @@ describe('PBDBallBallCollisions', () => {
 
     const v1 = world.getComponent(ball1, VelocityComponent).vel;
     const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Velocities should swap
-    expect(v1.x).toBeCloseTo(-0.5);
-    expect(v2.x).toBeCloseTo(0.5);
+    // Even with different restitution, velocities are unaffected
+    expect(v1.x).toBeCloseTo(1);
+    expect(v2.x).toBeCloseTo(-1);
   });
 
   test('no change when balls do not intersect', () => {
@@ -132,7 +132,7 @@ describe('PBDBallBallCollisions', () => {
     expect(v2.x).toBeCloseTo(-1);
   });
 
-  test('handles overlaps gracefully', () => {
+  test('handles overlaps gracefully without altering velocity', () => {
     const world = new World();
     const dt = 0.016;
     const ball1 = world.createEntity();
@@ -157,12 +157,12 @@ describe('PBDBallBallCollisions', () => {
 
     const v1 = world.getComponent(ball1, VelocityComponent).vel;
     const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Velocities should swap
-    expect(v1.x).toBeCloseTo(-1);
-    expect(v2.x).toBeCloseTo(1);
+    // Only penetration is resolved
+    expect(v1.x).toBeCloseTo(1);
+    expect(v2.x).toBeCloseTo(-1);
   });
 
-  test('distributes impact based on inverse mass', () => {
+  test('distributes impact based on inverse mass without changing velocity', () => {
     const world = new World();
     const dt = 0.016;
     const ball1 = world.createEntity();
@@ -187,14 +187,12 @@ describe('PBDBallBallCollisions', () => {
 
     const v1 = world.getComponent(ball1, VelocityComponent).vel;
     const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // invMass: entity1=1/2, entity2=1, invMassSum=1.5
-    // With restitution=1, computed new velocities are:
-    // entity1 (heavy) ≈ -0.33333, entity2 (light) ≈ 1.66667
-    expect(v1.x).toBeCloseTo(-0.33333333);
-    expect(v2.x).toBeCloseTo(1.66666667);
+    // Velocities remain the same since the position solver only resolves overlap
+    expect(v1.x).toBeCloseTo(1);
+    expect(v2.x).toBeCloseTo(-1);
   });
 
-  test('swaps velocities based on inverse mass with restitution 0.9', () => {
+  test('velocities unchanged with restitution 0.9 and different masses', () => {
     // invMass sum = 1/2 + 1 = 1.5
     // restitution = 0.9
     // Computed velocities: entity1 ≈ -0.26667, entity2 ≈ 1.53333
@@ -222,8 +220,8 @@ describe('PBDBallBallCollisions', () => {
 
     const v1_r = world.getComponent(ball1, VelocityComponent).vel;
     const v2_r = world.getComponent(ball2, VelocityComponent).vel;
-    expect(v1_r.x).toBeCloseTo(-0.26666667);
-    expect(v2_r.x).toBeCloseTo(1.53333333);
+    expect(v1_r.x).toBeCloseTo(1);
+    expect(v2_r.x).toBeCloseTo(-1);
     expect(v1_r.y).toBeCloseTo(0.0);
     expect(v2_r.y).toBeCloseTo(0.0);
   });
