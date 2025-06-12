@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cable Joints - 3D Tests</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: sans-serif; color: white; }
+        #mainContainer { display: flex; height: 100vh; }
+        #controlsAndResults { width: 350px; padding: 10px; background-color: #222; overflow-y: auto; }
+        #testCanvas { flex-grow: 1; }
+        #testResults { font-family: monospace; font-size: 12px; }
+        #testResults ul { list-style-type: none; padding-left: 0; }
+        #testResults li.fail { color: salmon; }
+        #testResults li.pass { color: lightgreen; }
+        #testResults li.summary { font-weight: bold; margin-top: 10px; }
+        #controls { padding-bottom: 10px; border-bottom: 1px solid #444; }
+    </style>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="mainContainer">
+        <div id="controlsAndResults">
+            <div id="controls">
+                <h3>3D Tests</h3>
+                <select id="testSelector"></select>
+                <button id="runBtn">Run &amp; Visualize</button>
+            </div>
+            <div id="testResults">
+                <h4>Results:</h4>
+                <ul id="testList"></ul>
+            </div>
+        </div>
+        <canvas id="testCanvas"></canvas>
+    </div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { World, PositionComponent, OrientationComponent } from '../ecs.js';
+    import { CableLinkComponent } from '../cable_joints_core.js';
+    import { CableAttachmentCacheSystem } from '../cable_attachment_cache_system.js';
+    import Vector3 from '../vector3.js';
+    import Quaternion from '../quaternion.js';
+
+    // --- Import Test Suites ---
+    import { vector3Tests } from './vector3.test.js';
+    import { quaternionTests } from './quaternion.test.js';
+    import { geometry3Tests } from './geometry3.test.js';
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("testCanvas");
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    function setupScene() {
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        camera.position.set(1, 2, 4);
+        controls.update();
+        scene.clear();
+        scene.add(new THREE.AmbientLight(0x606060));
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5).normalize();
+        scene.add(light);
+        const gridHelper = new THREE.GridHelper(10, 10);
+        scene.add(gridHelper);
+    }
+
+    // --- Visualization Helpers ---
+    const vizHelpers = {
+        addSphere: (pos, radius, color, wireframe = false) => {
+            const geom = new THREE.SphereGeometry(radius, 16, 16);
+            const mat = new THREE.MeshStandardMaterial({ color, wireframe });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(pos.x, pos.y, pos.z);
+            scene.add(mesh);
+            return mesh;
+        },
+        addLine: (start, end, color) => {
+            const points = [
+                new THREE.Vector3(start.x, start.y, start.z),
+                new THREE.Vector3(end.x, end.y, end.z)
+            ];
+            const geom = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color });
+            const line = new THREE.Line(geom, mat);
+            scene.add(line);
+            return line;
+        },
+        addVector: (origin, dir, color, length = 1.0) => {
+            const originTHREE = new THREE.Vector3(origin.x, origin.y, origin.z);
+            const dirTHREE = new THREE.Vector3(dir.x, dir.y, dir.z);
+            const arrow = new THREE.ArrowHelper(dirTHREE, originTHREE, length, color);
+            scene.add(arrow);
+            return arrow;
+        }
+    };
+    scene.userData.helpers = vizHelpers;
+
+
+    // --- Test Framework ---
+    const testResultsList = document.getElementById('testList');
+    let testsPassed = 0;
+    let testsFailed = 0;
+
+    function logTestResult(name, passed, message = '') {
+        const li = document.createElement('li');
+        li.classList.add(passed ? 'pass' : 'fail');
+        li.textContent = `${passed ? 'PASS' : 'FAIL'} - ${name}${message ? ': ' + message : ''}`;
+        testResultsList.appendChild(li);
+        if (passed) testsPassed++; else testsFailed++;
+    }
+
+    const assert = {
+        equal: (expected, actual, message) => {
+            if (expected !== actual) {
+                console.error(`FAIL: ${message}. Expected ${expected}, got ${actual}`);
+                return false;
+            }
+            return true;
+        },
+        near: (expected, actual, tolerance, message) => {
+            if (Math.abs(expected - actual) > tolerance) {
+                console.error(`FAIL: ${message}. Expected near ${expected}, got ${actual}`);
+                return false;
+            }
+            return true;
+        },
+        true: (condition, message) => {
+            if (!condition) {
+                console.error(`FAIL: ${message}. Expected true, got false.`);
+                return false;
+            }
+            return true;
+        },
+        false: (condition, message) => {
+            if (condition) {
+                console.error(`FAIL: ${message}. Expected false, got true.`);
+                return false;
+            }
+            return true;
+        }
+    };
+
+    // --- Test Cases ---
+    const testCases = {
+        ...vector3Tests,
+        ...quaternionTests,
+        ...geometry3Tests,
+        'System: CableAttachmentCacheSystem 3D': (assert, scene) => {
+            let success = true;
+            const world = new World();
+            const system = new CableAttachmentCacheSystem();
+
+            const entityId = world.createEntity();
+            const pos = new PositionComponent(1, 2, 3);
+            const ori = new OrientationComponent(0.1, 0.2, 0.3, 0.9);
+            const link = new CableLinkComponent(); // Starts at default
+            world.addComponent(entityId, pos);
+            world.addComponent(entityId, ori);
+            world.addComponent(entityId, link);
+
+            system.update(world, 0.016);
+
+            const updatedLink = world.getComponent(entityId, CableLinkComponent);
+            success &&= assert.near(updatedLink.prevCableAttachmentTimePos.x, 1, 1e-9, 'cached pos.x');
+            success &&= assert.near(updatedLink.prevCableAttachmentTimePos.y, 2, 1e-9, 'cached pos.y');
+            success &&= assert.near(updatedLink.prevCableAttachmentTimePos.z, 3, 1e-9, 'cached pos.z');
+            success &&= assert.near(updatedLink.prevCableAttachmentTimeOrientation.x, 0.1, 1e-9, 'cached ori.x');
+            success &&= assert.near(updatedLink.prevCableAttachmentTimeOrientation.y, 0.2, 1e-9, 'cached ori.y');
+            success &&= assert.near(updatedLink.prevCableAttachmentTimeOrientation.z, 0.3, 1e-9, 'cached ori.z');
+            success &&= assert.near(updatedLink.prevCableAttachmentTimeOrientation.w, 0.9, 1e-9, 'cached ori.w');
+
+            return success;
+        }
+    };
+
+    // --- Test Runner ---
+    function runAndVisualizeTest(testName) {
+        console.log(`--- Running Test: ${testName} ---`);
+        setupScene();
+        testResultsList.innerHTML = '';
+        testsPassed = 0;
+        testsFailed = 0;
+
+        const testFn = testCases[testName];
+        if (testFn) {
+            const passed = testFn(assert, scene);
+            logTestResult(testName, passed);
+        } else {
+            logTestResult(testName, false, "Test function not found.");
+        }
+
+        const summary = document.createElement('li');
+        summary.classList.add('summary');
+        summary.textContent = `Finished: ${testsPassed} passed, ${testsFailed} failed.`;
+        testResultsList.appendChild(summary);
+    }
+
+    // --- UI and Main Loop ---
+    const testSelector = document.getElementById('testSelector');
+    Object.keys(testCases).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        testSelector.appendChild(option);
+    });
+
+    document.getElementById('runBtn').addEventListener('click', () => {
+        runAndVisualizeTest(testSelector.value);
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    // --- Initial Run ---
+    runAndVisualizeTest(testSelector.value);
+    animate();
+
+</script>
+</body>
+</html>
