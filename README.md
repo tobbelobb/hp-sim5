@@ -32,8 +32,9 @@
   - Dependencies:
     - numpy
     - pytest
+    - websockets
   - Usage:
-    1. Install dependencies: `pip install numpy pytest`
+    1. Install dependencies: `pip install numpy pytest websockets`
     2. Run Python tests: `pytest python/tests`
     3. (Optional) Run the Python-driven flipper demo:
        - Start server: `python flipper_server.py`
@@ -77,6 +78,8 @@
 ## 6. Demos & Usage
  1. `npm install`
  2. `npm test` - run all unit tests.
- 3. Open `cable_joints/cable_joints.html` in a browser or any of the `flipper*.html` demos under the root for interactive demos.
- 4. `python flipper_server.py`
- 5. Open `flipper_python.html` for a fully Python-driven version of flipper.html.
+3. Open `cable_joints/cable_joints.html` in a browser or any of the `flipper*.html` demos under the root for interactive demos.
+4. `python flipper_server.py`
+5. Open `flipper_python.html` for a fully Python-driven version of flipper.html.
+6. `python slideprinter_server.py`
+7. Open `slideprinter_python.html` for a Python-based Slideprinter demo.
