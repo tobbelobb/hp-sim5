@@ -10,3 +10,6 @@
 - The Python port lives in `flipper_python.html`, `flipper_server.py`, and the modules under `python/`.
 - When working on one implementation, cross reference the corresponding files from the other implementation to understand how features translate between JS and Python.
 
+## Tests
+- Don't change integration test expectations unless explicitly asked to do so.
+
