@@ -1,7 +1,6 @@
 import asyncio
 import json
 import numpy as np
-import websockets
 
 # Assuming the python ECS code is in a 'python' directory
 from python.ecs import (
@@ -774,6 +773,7 @@ async def handler(websocket):
         await websocket.send(world_to_json(world))
 
 async def main():
+    import websockets
     print("Starting WebSocket server on ws://localhost:8765")
     async with websockets.serve(handler, "localhost", 8765):
         await asyncio.Future()  # run forever

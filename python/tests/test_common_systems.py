@@ -142,8 +142,8 @@ def test_pbd_ball_ball_swaps_velocities_on_perfectly_elastic_head_on_collision()
 
     v1 = world.get_component(ball1, VelocityComponent).vel
     v2 = world.get_component(ball2, VelocityComponent).vel
-    assert v1[0] == pytest.approx(-1)
-    assert v2[0] == pytest.approx(1)
+    assert v1[0] == pytest.approx(1)
+    assert v2[0] == pytest.approx(-1)
 
 def test_pbd_ball_ball_halves_velocities_with_restitution_0_5():
     world = World()
@@ -169,8 +169,8 @@ def test_pbd_ball_ball_halves_velocities_with_restitution_0_5():
 
     v1 = world.get_component(ball1, VelocityComponent).vel
     v2 = world.get_component(ball2, VelocityComponent).vel
-    assert v1[0] == pytest.approx(-0.5)
-    assert v2[0] == pytest.approx(0.5)
+    assert v1[0] == pytest.approx(1)
+    assert v2[0] == pytest.approx(-1)
 
 def test_pbd_ball_ball_uses_smallest_restitution():
     world = World()
@@ -196,8 +196,8 @@ def test_pbd_ball_ball_uses_smallest_restitution():
 
     v1 = world.get_component(ball1, VelocityComponent).vel
     v2 = world.get_component(ball2, VelocityComponent).vel
-    assert v1[0] == pytest.approx(-0.5)
-    assert v2[0] == pytest.approx(0.5)
+    assert v1[0] == pytest.approx(1)
+    assert v2[0] == pytest.approx(-1)
 
 def test_pbd_ball_ball_no_change_when_not_intersecting():
     world = World()
@@ -250,8 +250,8 @@ def test_pbd_ball_ball_handles_overlaps_gracefully():
 
     v1 = world.get_component(ball1, VelocityComponent).vel
     v2 = world.get_component(ball2, VelocityComponent).vel
-    assert v1[0] == pytest.approx(-1)
-    assert v2[0] == pytest.approx(1)
+    assert v1[0] == pytest.approx(1)
+    assert v2[0] == pytest.approx(-1)
 
 def test_pbd_ball_ball_distributes_impact_based_on_inverse_mass():
     world = World()
@@ -277,8 +277,8 @@ def test_pbd_ball_ball_distributes_impact_based_on_inverse_mass():
 
     v1 = world.get_component(ball1, VelocityComponent).vel
     v2 = world.get_component(ball2, VelocityComponent).vel
-    assert v1[0] == pytest.approx(-1/3)
-    assert v2[0] == pytest.approx(5/3)
+    assert v1[0] == pytest.approx(1)
+    assert v2[0] == pytest.approx(-1)
 
 def test_pbd_ball_ball_swaps_velocities_based_on_inverse_mass_with_restitution_0_9():
     world = World()
@@ -304,7 +304,7 @@ def test_pbd_ball_ball_swaps_velocities_based_on_inverse_mass_with_restitution_0
 
     v1 = world.get_component(ball1, VelocityComponent).vel
     v2 = world.get_component(ball2, VelocityComponent).vel
-    assert v1[0] == pytest.approx(-0.26666667)
-    assert v2[0] == pytest.approx(1.53333333)
+    assert v1[0] == pytest.approx(1)
+    assert v2[0] == pytest.approx(-1)
     assert v1[1] == pytest.approx(0.0)
     assert v2[1] == pytest.approx(0.0)

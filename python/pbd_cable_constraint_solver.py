@@ -1,8 +1,15 @@
 import numpy as np
 
-from python.cable_joints_components import CablePathComponent, CableJointComponent
-from python.ecs import (PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
-                        OrientationComponent, AngularVelocityComponent)
+from python.cable_joints_components import (
+    CablePathComponent,
+    CableJointComponent,
+)
+from python.ecs import (
+    PositionComponent,
+    MassComponent,
+    MomentOfInertiaComponent,
+    OrientationComponent,
+)
 
 
 class PBDCableConstraintSolver:

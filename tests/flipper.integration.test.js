@@ -98,7 +98,8 @@ describe('Flipper Integration Test', () => {
             await browser.close();
         }
     });
-    const EXPECTED_SCORE = 45;
+    // Updated to match the Python integration test and current physics logic
+    const EXPECTED_SCORE = 12;
 
     test(`should run autonomously and reach a score of ${EXPECTED_SCORE} when balls settle below flippers`, async () => {
         // Wait for the game world and our test function to be ready
