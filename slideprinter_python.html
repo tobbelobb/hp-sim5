@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Slideprinter (Python Backend)</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <style>
+      body { margin:0; background:#222; color:white; font-family:Arial,sans-serif; }
+      canvas { background:#000; display:block; margin:0 auto; }
+      #controls { text-align:center; margin:10px; }
+      button { margin:0 5px; }
+    </style>
+</head>
+<body>
+<div id="controls">
+  <button id="pauseBtn">Start</button>
+  <button id="resetBtn">Reset</button>
+</div>
+<canvas id="simCanvas" width="600" height="400"></canvas>
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+const pauseBtn = document.getElementById('pauseBtn');
+const resetBtn = document.getElementById('resetBtn');
+let ws;
+let isPaused = true;
+let simState = {};
+let cScale = 150;
+
+function setupCanvas(){
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  cScale = canvas.height / 1.7;
+}
+
+function toCanvas(x,y){
+  return {x: canvas.width/2 + x*cScale, y: canvas.height - y*cScale};
+}
+
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(simState.balls){
+    simState.balls.forEach(b=>{
+      const p = toCanvas(b.x,b.y);
+      ctx.fillStyle = b.mass < 0 ? '#777' : (b.color || '#ccc');
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,b.radius*cScale,0,2*Math.PI);
+      ctx.fill();
+    });
+  }
+  if(simState.cables){
+    ctx.strokeStyle = '#00FFFF';
+    simState.cables.forEach(c=>{
+      c.joints.forEach(j=>{
+        const pA = toCanvas(j.pA[0],j.pA[1]);
+        const pB = toCanvas(j.pB[0],j.pB[1]);
+        ctx.beginPath();
+        ctx.moveTo(pA.x,pA.y);
+        ctx.lineTo(pB.x,pB.y);
+        ctx.stroke();
+      });
+    });
+  }
+}
+
+function connect(){
+  ws = new WebSocket('ws://localhost:8766');
+  ws.onopen = () => {
+    pauseBtn.disabled = false;
+    resetBtn.disabled = false;
+    setupCanvas();
+  };
+  ws.onmessage = e => {
+    simState = JSON.parse(e.data);
+    if(simState.isPaused !== undefined){
+      isPaused = simState.isPaused;
+      pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+    }
+    render();
+  };
+  ws.onclose = () => {
+    pauseBtn.disabled = true;
+    resetBtn.disabled = true;
+    setTimeout(connect,1000);
+  };
+}
+
+function step(){
+  if(ws && ws.readyState === WebSocket.OPEN){
+    ws.send(JSON.stringify({action:'step', steps:1}));
+  }
+}
+
+function loop(){
+  if(!isPaused) step();
+  requestAnimationFrame(loop);
+}
+
+pauseBtn.onclick = () => {
+  if(!ws) return;
+  isPaused = !isPaused;
+  pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+  ws.send(JSON.stringify({action:'pause', paused:isPaused}));
+};
+
+resetBtn.onclick = () => {
+  if(ws && ws.readyState === WebSocket.OPEN){
+    isPaused = true;
+    pauseBtn.textContent = 'Start';
+    ws.send(JSON.stringify({action:'reset'}));
+  }
+};
+
+connect();
+setupCanvas();
+render();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
