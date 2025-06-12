@@ -9,7 +9,8 @@ function _storeCableLinkPoses(world) {
     const linkComp = world.getComponent(linkId, CableLinkComponent);
     linkComp.prevCableAttachmentTimePos.set(posComp.pos);
     if (orientationComp) {
-      linkComp.prevCableAttachmentTimeAngle = orientationComp.angle;
+      // In 3D, this is a quaternion
+      linkComp.prevCableAttachmentTimeOrientation.set(orientationComp.orientation);
     }
   }
 }
