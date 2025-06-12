@@ -83,3 +83,6 @@
 5. Open `flipper_python.html` for a fully Python-driven version of flipper.html.
 6. `python slideprinter_server.py`
 7. Open `slideprinter_python.html` for a Python-based Slideprinter demo.
+8. `python -m python.hanging_pendulum` will generate a USD file showing a simple
+   3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
+   See `ai_docs/Warp/README.md` for Warp installation details.
