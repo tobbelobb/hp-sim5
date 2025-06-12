@@ -270,7 +270,7 @@ class PBDBallBallCollisions:
                 total_inv_mass = inv_mass1 + inv_mass2
 
                 if total_inv_mass <= 1e-9: continue
-
+                
                 corr = direction * (penetration / total_inv_mass)
                 p1_comp.pos -= corr * inv_mass1
                 p2_comp.pos += corr * inv_mass2
