@@ -83,3 +83,6 @@
 5. Open `flipper_python.html` for a fully Python-driven version of flipper.html.
 6. `python slideprinter_server.py`
 7. Open `slideprinter_python.html` for a Python-based Slideprinter demo.
+8. `python slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
+   Edit the script to parse either `slideprinter/slideprinter.usda` or the
+   provided `flipper_scene.usda` to experiment with different setups.
