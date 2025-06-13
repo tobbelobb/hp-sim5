@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    doc = "USD scene for Flipper cable demo"
+)
+
+def Xform "FlipperScene" {
+    def Xform "Ball1" (
+        customData = { string purpose = "ball" }
+    )
+    {
+        double3 xformOp:translate = (0.90, 0.95, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double radius = 0.03
+        double mass = 0.002827433388
+    }
+
+    def Xform "Ball2" (
+        customData = { string purpose = "ball" }
+    )
+    {
+        double3 xformOp:translate = (0.08, 0.5, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double radius = 0.03
+        double mass = 0.002827433388
+    }
+
+    def Xform "Obs3" (
+        customData = { string purpose = "obstacle" }
+    )
+    {
+        double3 xformOp:translate = (0.7, 1.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double radius = 0.12
+    }
+
+    def Xform "Obs4" (
+        customData = { string purpose = "obstacle" }
+    )
+    {
+        double3 xformOp:translate = (0.2, 1.2, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double radius = 0.1
+    }
+
+    def Xform "Joint1" (
+        customData = { string purpose = "cable_joint" }
+    )
+    {
+        token entityA = "Ball2"
+        token entityB = "Obs4"
+        double restLength = 0.67313583325
+        double3 attachA = (0.08085505, 0.52998781, 0.0)
+        double3 attachB = (0.10004063, 1.20285018, 0.0)
+    }
+
+    def Xform "Joint2" (
+        customData = { string purpose = "cable_joint" }
+    )
+    {
+        token entityA = "Obs4"
+        token entityB = "Obs3"
+        double restLength = 0.53814496188
+        double3 attachA = (0.23366517, 1.29416292, 0.0)
+        double3 attachB = (0.7403982, 1.11299551, 0.0)
+    }
+
+    def Xform "Joint3" (
+        customData = { string purpose = "cable_joint" }
+    )
+    {
+        token entityA = "Obs3"
+        token entityB = "Ball1"
+        double restLength = 0.13763054614
+        double3 attachA = (0.79143019, 1.07772078, 0.0)
+        double3 attachB = (0.88056981, 0.97285755, 0.0)
+    }
+
+    def Xform "CablePath" (
+        customData = { string purpose = "cable_path" }
+    )
+    {
+        token[] joints = ["Joint1", "Joint2", "Joint3"]
+        token[] linkTypes = ["hybrid-attachment", "rolling", "rolling", "hybrid-attachment"]
+        bool[] cw = [true, true, true, true]
+        double[] stored = [0.0, 0.18856494488, 0.06274932329, 0.0]
+    }
+}
