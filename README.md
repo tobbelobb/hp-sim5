@@ -86,6 +86,9 @@
 8. `python -m python.hanging_pendulum` will generate a USD file showing a simple
    3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
    See `ai_docs/Warp/README.md` for Warp installation details.
+9. `python -m python.slideprinter_warp` will generate `slideprinter.usd`
+   demonstrating a basic Slideprinter setup rendered with Warp. The script
+   defaults to running on `cuda:0`; pass `--device cpu` to run on the CPU.
 
 ## 7. 3D Visualization
 - `cable_joints/cable_joints_3d.html` demonstrates rendering cable joint points using Three.js.
