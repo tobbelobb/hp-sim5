@@ -301,24 +301,6 @@ export class InputSystem {
      }
 }
 
-export class FlipperMotionSystem {
-    runInPause = true;
-    update(world, dt) {
-        const flipperEntities = world.query([FlipperStateComponent]);
-        for (const entityId of flipperEntities) {
-            const state = world.getComponent(entityId, FlipperStateComponent);
-
-            const prevRotation = state.rotation;
-            if (state.pressed) {
-                state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
-            } else {
-                state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
-            }
-            state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
-        }
-    }
-}
-
 export class ScoreSystem {
     runInPause = false;
     update(world, dt) {

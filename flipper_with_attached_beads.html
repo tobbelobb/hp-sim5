@@ -110,6 +110,7 @@ canvas {
     </div>
 <script type="module">
     import Vector2 from './cable_joints/vector2.js';
+    import { dumpWorldState } from './cable_joints/debugUtils.js';
     import {
       World,
       PauseStateComponent,
@@ -161,29 +162,33 @@ canvas {
       AngularMovementSystem,
       PBDBallObstacleCollisions,
       PBDBallBallCollisions,
+      PBDBallBorderCollisions,
+      PBDBallFlipperCollisions,
       PBDVelocityUpdateSystem,
       PrevFinalOrientationSystem,
       PBDAngularVelocityUpdateSystem,
-      FlipperTipLinkSystem
+      FlipperTipLinkSystem,
+      FlipperMotionSystem,
+      InputSystem
     } from './cable_joints/commonSystems.js';
 
     import { RenderSystem } from './cable_joints/renderSystem.js';
-    
+    import { CableAttachmentCacheSystem } from './cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from './cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from './cable_joints/cable_friction_system.js';
+    import { BallObstacleBumpSystem } from './cable_joints/ball_obstacle_bump_system.js';
+    import { BallBorderOrFlipperVelocityContactSystem } from './cable_joints/ball_border_or_flipper_velocity_contact_system.js';
     import {
         ScoreComponent,
-        InputSystem,
-        FlipperMotionSystem,
         ScoreSystem,
-        ScoreDisplaySystem,
-        PBDBallFlipperCollisions,
-        PBDBallBorderCollisions
+        ScoreDisplaySystem
     } from './cable_joints/flipper_common.js';
 
     import { runGame } from './flipper_runner.js';
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
-    
+
     // --- Global World ---
     let world = new World();
     window.world = world; // Make available to jest test
@@ -406,7 +411,7 @@ canvas {
         const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
         const dir2 = initialPoints2.b_circle.clone().subtract(initialPoints2.a_circle).normalize();
         const dist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-        
+
         const bead1Pos = initialPoints2.a_circle.clone().add(dir2, dist2/3.0);
         const bead2Pos = initialPoints2.a_circle.clone().add(dir2, (2*dist2)/3.0);
 
