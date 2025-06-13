@@ -1,6 +1,6 @@
 # Cable Joints Physics Engine (JavaScript & Python)
 
- This is a physics engine for simulating cables wrapping and sliding over pulleys and wheels, built on a Position-Based Dynamics (PBD) approach with an Entity-Component-System (ECS) core. It is implemented in pure JavaScript and fully ported to Python.
+A physics engine for simulating cables, built on a Position-Based Dynamics (PBD) approach with an Entity-Component-System (ECS) core. It is implemented in JavaScript and Python. It's long term purpose is to simulate a cable driven robot (Hangprinter) in a way that can be integrated into Isaac Lab, Omniverse, Warp etc.
 
  ## 1. Purpose
  - A physics engine for cables interacting with rolling wheels and other obstacles.
