@@ -1,4 +1,4 @@
-import Vector3 from '../cable_joints/vector3.js';
+import Vector3 from '../cable_joints_3d/vector3.js';
 
 test('length and distance work in 3D', () => {
   const a = new Vector3(1,2,3);
