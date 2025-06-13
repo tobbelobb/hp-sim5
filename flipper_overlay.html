@@ -91,8 +91,12 @@ canvas {
     import { CableFrictionSystem } from './cable_joints/cable_friction_system.js';
     import { BallObstacleBumpSystem } from './cable_joints/ball_obstacle_bump_system.js';
     import { BallBorderOrFlipperVelocityContactSystem } from './cable_joints/ball_border_or_flipper_velocity_contact_system.js';
-
-    class ScoreComponent { constructor(score = 0) { this.value = score; } }
+    import {
+        ScoreComponent,
+        FlipperMotionSystem,
+        ScoreSystem,
+        ScoreDisplaySystem
+    } from './cable_joints/flipper_common.js';
 
     class InputSystem {
          runInPause = true;
@@ -275,45 +279,6 @@ canvas {
              pos.set(new Vector2(simX, simY));
            }
          }
-    }
-
-    class FlipperMotionSystem {
-        runInPause = true;
-        update(world, dt) {
-            const flipperEntities = world.query([FlipperStateComponent]);
-            for (const entityId of flipperEntities) {
-                const state = world.getComponent(entityId, FlipperStateComponent);
-                const prevRotation = state.rotation;
-                if (state.pressed) state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
-                else state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
-                state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
-            }
-        }
-    }
-
-    class ScoreSystem {
-        runInPause = false;
-        update(world, dt) {
-            const scoreEntity = world.query([ScoreComponent])[0];
-            const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
-            const scoredEntities = world.query([ScoredTagComponent]);
-            for (const scoredId of scoredEntities) {
-               world.removeComponent(scoredId, ScoredTagComponent);
-               scoreComp.value++;
-            }
-        }
-    }
-
-    class ScoreDisplaySystem {
-        runInPause = true;
-        constructor(elementId) { this.scoreElement = document.getElementById(elementId); }
-        update(world, dt) {
-            const scoreEntity = world.query([ScoreComponent])[0];
-            if (scoreEntity !== undefined && this.scoreElement) {
-                const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
-                this.scoreElement.textContent = scoreComp.value.toString();
-            }
-        }
     }
 
     // --- Global Setup ---

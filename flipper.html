@@ -176,9 +176,13 @@ canvas {
     import { CableFrictionSystem } from './cable_joints/cable_friction_system.js';
     import { BallObstacleBumpSystem } from './cable_joints/ball_obstacle_bump_system.js';
     import { BallBorderOrFlipperVelocityContactSystem } from './cable_joints/ball_border_or_flipper_velocity_contact_system.js';
+    import {
+        ScoreComponent,
+        FlipperMotionSystem,
+        ScoreSystem,
+        ScoreDisplaySystem
+    } from './cable_joints/flipper_common.js';
 
-
-    class ScoreComponent { constructor(score = 0) { this.value = score; } }
 
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {
@@ -472,62 +476,6 @@ canvas {
            }
          }
     }
-
-
-    // --- System: Flipper Motion ---
-    class FlipperMotionSystem {
-        runInPause = true;
-        update(world, dt) {
-            const flipperEntities = world.query([FlipperStateComponent]);
-            for (const entityId of flipperEntities) {
-                const state = world.getComponent(entityId, FlipperStateComponent);
-
-                const prevRotation = state.rotation;
-                if (state.pressed) {
-                    state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
-                } else {
-                    state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
-                }
-                // Avoid division by zero if dt is tiny
-                state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
-            }
-        }
-    }
-
-    class ScoreSystem {
-        runInPause = false;
-
-        update(world, dt) {
-            // One entity is holding the global score
-            const scoreEntity = world.query([ScoreComponent])[0]; // Shold be only one scoreEntity
-            const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
-
-            // Multiple entities might have scored since the previous update
-            const scoredEntities = world.query([ScoredTagComponent]);
-            for (const scoredId of scoredEntities) {
-               world.removeComponent(scoredId, ScoredTagComponent);
-               scoreComp.value++;
-            }
-        }
-    }
-
-
-    // --- System: Score Display ---
-    class ScoreDisplaySystem {
-        runInPause = true; // Score should update even if paused? Or maybe not? Your call.
-        constructor(elementId) {
-            this.scoreElement = document.getElementById(elementId);
-        }
-        update(world, dt) {
-            const scoreEntity = world.query([ScoreComponent])[0]; // Shold be only one scoreEntity
-            if (scoreEntity !== undefined && this.scoreElement) {
-                const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
-                this.scoreElement.textContent = scoreComp.value.toString();
-            }
-        }
-    }
-
-
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
