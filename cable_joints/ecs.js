@@ -1,4 +1,5 @@
-import Vector2 from './vector2.js';
+import Vector3 from './vector3.js';
+import Quaternion from './quaternion.js';
 
 export class World {
   constructor() {
@@ -119,34 +120,48 @@ export class World {
 
 
 export class PositionComponent {
-  constructor(x = 0, y = 0) {
-    this.pos = new Vector2(x, y);
+  constructor(x = 0, y = 0, z = 0) {
+    this.pos = new Vector3(x, y, z);
   }
 }
 export class PrevFinalPosComponent {
-  constructor(x = 0, y = 0) {
-    this.pos = new Vector2(x, y);
+  constructor(x = 0, y = 0, z = 0) {
+    this.pos = new Vector3(x, y, z);
   }
 }
 export class PrevFinalOrientationComponent {
-  constructor(angle = 0.0) {
-    this.angle = angle; // Radians
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.orientation = new Quaternion(x, y, z, w);
   }
 }
-export class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
+export class VelocityComponent {
+  constructor(x = 0, y = 0, z = 0) {
+    this.vel = new Vector3(x, y, z);
+  }
+}
 export class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
 export class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
 export class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
 export class GravityAffectedComponent { }
 export class BallTagComponent { }
-export class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
+export class BorderComponent {
+  constructor(points = []) {
+    // In 3D, a border would likely be a mesh of faces (triangles)
+    // For now, we'll keep it as points, but the logic will need to change.
+    this.points = points.map(p => p.clone());
+    this.faces = []; // e.g., [[0, 1, 2], [0, 2, 3]]
+  }
+}
 export class FlipperTagComponent { }
 export class FlipperStateComponent {
+  // This component is highly 2D specific. Generalizing it requires
+  // defining how a flipper works in 3D (e.g., rotation around an axis).
+  // For now, we'll leave it, but it won't work with 3D systems.
   constructor(length, restAngle, maxRotation, angularVelocity) {
     this.length = length;
-    this.restAngle = restAngle;
+    this.restAngle = restAngle; // This would be a rest orientation (Quaternion)
     this.maxRotation = Math.abs(maxRotation);
-    this.sign = Math.sign(maxRotation); // Direction it rotates
+    this.sign = Math.sign(maxRotation); // This would be a rotation axis (Vector3)
     this.angularVelocity = angularVelocity;
     // Dynamic state
     this.rotation = 0.0; // Current rotation from restAngle
@@ -159,24 +174,30 @@ export class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel =
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 export class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
 export class OrientationComponent {
-    constructor(angle = 0.0) {
-        this.angle = angle; // Radians
+    constructor(x = 0, y = 0, z = 0, w = 1) {
+        this.orientation = new Quaternion(x, y, z, w);
     }
 }
 export class AngularVelocityComponent {
-    constructor(velocity = 0.0) {
-        this.angularVelocity = velocity; // Radians per second
+    constructor(x = 0, y = 0, z = 0) {
+        this.angularVelocity = new Vector3(x, y, z); // Radians per second around each axis
     }
 }
 export class MomentOfInertiaComponent {
     constructor(inertia = 1.0) {
-        this.inertia = inertia; // kg * m^2 (approximate for 2D)
+        // For a sphere, inertia is a scalar. For general objects, it's a tensor.
+        // We store the inverse inertia for calculations.
+        // For a sphere: I = 2/5 * m * r^2. invI = 1/I.
+        // For a general body, we'd store the inverse inertia tensor (a 3x3 matrix).
+        // We'll simplify and assume a sphere-like object where inertia is the same
+        // around all axes, so we can use a scalar inverse.
+        this.inertia = inertia;
         this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0;
     }
 }
 export class RenderableComponent {
-  constructor(shape = 'circle', color = '#888888') {
-    this.shape = shape; // 'circle', 'line', 'flipper', 'border'
+  constructor(shape = 'sphere', color = '#888888') {
+    this.shape = shape; // 'sphere', 'line', 'flipper', 'border'
     this.color = color;
   }
 }

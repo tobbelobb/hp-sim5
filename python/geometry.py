@@ -29,6 +29,7 @@ def _tangent_point_circle(p_attach, p_circle, r_circle, cw, point_is_first):
 
     if d_sq <= r_circle * r_circle + 1e-9:
         # Attachment point is inside or on the rolling circle
+        print("Attachment point inside or on rolling circle.")
         if d_sq > 1e-9:
             dir_2d = d_vec / np.sqrt(d_sq)
         else:

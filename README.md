@@ -86,3 +86,11 @@
 8. `python slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
    Edit the script to parse either `slideprinter/slideprinter.usda` or the
    provided `flipper_scene.usda` to experiment with different setups.
+9. `python -m python.hanging_pendulum` will generate a USD file showing a simple
+   3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
+   See `ai_docs/Warp/README.md` for Warp installation details.
+
+## 7. 3D Visualization
+- `cable_joints/cable_joints_3d.html` demonstrates rendering cable joint points using Three.js.
+- Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers.
+- The Python side includes `python/vector3.py` and `python/geometry3.py` for analogous 3D helpers.
