@@ -95,7 +95,7 @@
    demonstrating a basic Slideprinter setup rendered with Warp. The script
    defaults to running on `cuda:0`; pass `--device cpu` to run on the CPU.
 
-## 7. 3D Visualization
-- `cable_joints/cable_joints_3d.html` demonstrates rendering cable joint points using Three.js.
-- Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers.
+-## 7. 3D Visualization
+- `cable_joints_3d/cable_joints_3d.html` demonstrates rendering cable joint points using Three.js.
+- Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers and now live under `cable_joints_3d/`.
 - The Python side includes `python/vector3.py` and `python/geometry3.py` for analogous 3D helpers.
