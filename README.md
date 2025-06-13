@@ -36,9 +36,10 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
   - Usage:
     1. Install dependencies: `pip install numpy pytest websockets`
     2. Run Python tests: `pytest python/tests`
-    3. (Optional) Run the Python-driven flipper demo:
-       - Start server: `python flipper_server.py`
-       - Open `flipper_python.html` in a browser.
+    3. Run the Warp solver integration test: `pytest python/tests/test_flipper_warp_integration.py`
+    4. (Optional) Run the Python-driven flipper demo:
+      - Start server: `python flipper_server.py`
+      - Open `flipper_python.html` in a browser.
 
   ## 4. Core Library (`cable_joints_core.js`)
  ### a. Geometry Utilities
