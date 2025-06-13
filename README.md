@@ -84,8 +84,10 @@
 6. `python slideprinter_server.py`
 7. Open `slideprinter_python.html` for a Python-based Slideprinter demo.
 8. `python slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
-   Edit the script to parse either `slideprinter/slideprinter.usda` or the
-   provided `flipper_scene.usda` to experiment with different setups.
+   If the optional `pxr` and `warp` modules are not installed the script falls
+   back to a tiny built‑in parser. Edit the script to parse either
+   `slideprinter/slideprinter.usda` or the provided `flipper_scene.usda` to
+   experiment with different setups.
 9. `python -m python.hanging_pendulum` will generate a USD file showing a simple
    3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
    See `ai_docs/Warp/README.md` for Warp installation details.
