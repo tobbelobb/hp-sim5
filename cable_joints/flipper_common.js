@@ -226,7 +226,7 @@ export class InputSystem {
              PositionComponent,
              FlipperStateComponent
            ]);
-           
+
            const borderEnts = world.query([BorderComponent]);
            if (borderEnts.length > 0) {
                const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
@@ -301,24 +301,6 @@ export class InputSystem {
      }
 }
 
-export class FlipperMotionSystem {
-    runInPause = true;
-    update(world, dt) {
-        const flipperEntities = world.query([FlipperStateComponent]);
-        for (const entityId of flipperEntities) {
-            const state = world.getComponent(entityId, FlipperStateComponent);
-
-            const prevRotation = state.rotation;
-            if (state.pressed) {
-                state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
-            } else {
-                state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
-            }
-            state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
-        }
-    }
-}
-
 export class ScoreSystem {
     runInPause = false;
     update(world, dt) {
@@ -346,124 +328,4 @@ export class ScoreDisplaySystem {
             this.scoreElement.textContent = scoreComp.value.toString();
         }
     }
-}
-
-export class PBDBallFlipperCollisions {
-  _getFlipperTip(flipperPos, flipperState) {
-    const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
-    const dir = new Vector2(Math.cos(angle), Math.sin(angle));
-    return flipperPos.clone().add(dir, flipperState.length);
-  }
-
-  update(world, dt) {
-    const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
-    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent, RestitutionComponent]);
-    for (const ballId of ballEntities) {
-      const p1 = world.getComponent(ballId, PositionComponent).pos;
-      const v1 = world.getComponent(ballId, VelocityComponent).vel;
-      const r1 = world.getComponent(ballId, RadiusComponent).radius;
-
-      for (const flipId of flipperEntities) {
-        const fp = world.getComponent(flipId, PositionComponent).pos;
-        const fr = world.getComponent(flipId, RadiusComponent).radius;
-        const fs = world.getComponent(flipId, FlipperStateComponent);
-
-        const tip = this._getFlipperTip(fp, fs);
-        const closest = closestPointOnSegment(p1, fp, tip);
-
-        const dir = new Vector2().subtractVectors(p1, closest);
-        const dSq = dir.lengthSq();
-        const rSum = r1 + fr;
-
-        if (dSq == 0.0 || dSq > rSum * rSum) continue;
-
-        const d = Math.sqrt(dSq);
-        dir.scale(1.0 / d);
-
-        const corr = rSum - d;
-        p1.add(dir, corr);
-
-        const radiusVec = closest.clone().subtract(fp);
-        const contactPointOnFlipperSurface = fp.clone().add(radiusVec).add(dir, -fr);
-        const radiusToSurface = contactPointOnFlipperSurface.subtract(fp);
-
-        const surfaceVel = new Vector2(-fs.currentAngularVelocity * radiusToSurface.y, fs.currentAngularVelocity * radiusToSurface.x);
-
-        const v_dot = v1.dot(dir);
-        const surfVel_dot = surfaceVel.dot(dir);
-
-        v1.add(dir, surfVel_dot - v_dot);
-      }
-    }
-  }
-}
-
-export class PBDBallBorderCollisions {
-  update(world, dt) {
-    const ballEntities = world.query([BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent, RestitutionComponent]);
-    const borderEntities = world.query([BorderComponent]);
-    if (borderEntities.length > 0) {
-      const borderId = borderEntities[0];
-      const borderComp = world.getComponent(borderId, BorderComponent);
-      const borderPoints = borderComp.points;
-
-      if (borderPoints.length >= 3) {
-        for (const ballId of ballEntities) {
-          const p1 = world.getComponent(ballId, PositionComponent).pos;
-          const v1 = world.getComponent(ballId, VelocityComponent).vel;
-          const r1 = world.getComponent(ballId, RadiusComponent).radius;
-          const res1 = world.getComponent(ballId, RestitutionComponent).restitution;
-
-          let minDistSq = Infinity;
-          let closestSegPoint = new Vector2();
-          let edgeStart = null;
-          let edgeEnd = null;
-
-          for (let i = 0; i < borderPoints.length; i++) {
-            const a = borderPoints[i];
-            const b = borderPoints[(i + 1) % borderPoints.length];
-            const closestPtOnSeg = closestPointOnSegment(p1, a, b);
-            const distSq = p1.clone().subtract(closestPtOnSeg).lengthSq();
-
-            if (distSq < minDistSq) {
-              minDistSq = distSq;
-              closestSegPoint.set(closestPtOnSeg);
-              edgeStart = a;
-              edgeEnd = b;
-            }
-          }
-
-          if (minDistSq > r1 * r1) continue;
-
-          const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
-          const normal = edgeVec.perp().normalize();
-
-          const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
-          let collisionNormal = ballToClosest.clone();
-          if (collisionNormal.lengthSq() < 1e-9) {
-            collisionNormal.set(normal);
-          } else {
-            collisionNormal.normalize();
-          }
-
-          if (ballToClosest.dot(normal) < 0) {
-            collisionNormal.set(normal);
-          }
-
-          const dist = Math.sqrt(minDistSq);
-
-          const penetration = r1 - dist;
-          if (penetration > 0) {
-            p1.add(collisionNormal, penetration);
-          }
-
-          const v_dot = v1.dot(collisionNormal);
-          if (v_dot < 0) {
-            const v_new_dot = -v_dot * res1;
-            v1.add(collisionNormal, v_new_dot - v_dot);
-          }
-        }
-      }
-    }
-  }
 }
