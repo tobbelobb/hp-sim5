@@ -31,9 +31,9 @@ def test_flipper_warp_autonomous_run_and_settle():
 
     EXPECTED_SCORE = 11  # Expect same score as non-warp solver
     MAX_SIMULATION_STEPS = 100 * 300
-    POLLING_INTERVAL_STEPS = 300
+    POLLING_INTERVAL_STEPS = 1
     FLIPPER_Y_LINE = 0.05
-    SCORE_GUARDRAIL = 83
+    SCORE_GUARDRAIL = 100
 
     dt = world.get_resource('dt')
 

@@ -39,9 +39,9 @@ def test_flipper_autonomous_run_and_settle():
     # JS test runs for 100s. Sim runs at 300Hz. So 100 * 300 = 30000 steps.
     # The JS test polls every 1s. So we poll every 300 steps.
     MAX_SIMULATION_STEPS = 100 * 300
-    POLLING_INTERVAL_STEPS = 300
+    POLLING_INTERVAL_STEPS = 1
     FLIPPER_Y_LINE = 0.05 # Y-coordinate just above 1 ball radius (floor is at y=0)
-    SCORE_GUARDRAIL = 83
+    SCORE_GUARDRAIL = 100
 
     dt = world.get_resource('dt')
 

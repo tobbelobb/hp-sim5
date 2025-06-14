@@ -27,6 +27,7 @@ def solve_cable_joints(
     compliance: wp.array(dtype=float),
     dt: float,
 ):
+    epsilon = 1e-9
     tid = wp.tid()
     id_a = entity_a[tid]
     id_b = entity_b[tid]
@@ -40,16 +41,18 @@ def solve_cable_joints(
     inv_inertia_b = inv_inertias[id_b]
 
     w_sum = inv_mass_a + inv_mass_b + inv_inertia_a + inv_inertia_b
-    if w_sum <= 1.0e-9:
+    if w_sum <= epsilon:
         return
 
     diff = p_b - p_a
     length = wp.length(diff)
-    if length <= 1.0e-6:
+    if length <= epsilon:
         return
 
     direction = diff / length
     C = length - rest_lengths[tid]
+    if C <= epsilon:
+        return
 
     grad_pos_a = direction
     grad_pos_b = -direction
@@ -68,7 +71,7 @@ def solve_cable_joints(
     )
     if dt > 0.0:
         denom += compliance[tid] / (dt * dt)
-    if denom <= 1.0e-9:
+    if denom <= epsilon:
         return
 
     lambda_val = -C / denom

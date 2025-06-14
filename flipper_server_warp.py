@@ -548,7 +548,7 @@ def setup_scene(world):
         world.register_system(CableSlackSystem()) # PRE-SOLVE: Slip obvious slack
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
-        world.register_system(WarpCableConstraintSolver())
+        world.register_system(WarpCableConstraintSolver("cpu"))
         world.register_system(PBDBallBorderCollisions())
         world.register_system(PBDBallBallCollisions())
         world.register_system(PBDBallObstacleCollisions())
