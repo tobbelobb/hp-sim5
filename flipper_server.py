@@ -1,5 +1,6 @@
 import asyncio
 import json
+import functools
 import numpy as np
 
 # Assuming the python ECS code is in a 'python' directory
@@ -733,7 +734,7 @@ def world_to_json(world):
 
 # --- WebSocket Handler ---
 
-async def handler(websocket, path, use_warp=False, device='cpu'):
+async def handler(websocket, path=None, use_warp=False, device='cpu'):
     world = World()
     setup_scene(world, use_warp=use_warp, device=device)
     input_system = world.get_system(RemoteInputSystem)
@@ -790,7 +791,7 @@ async def main():
     port = args.port if args.port else (8767 if args.warp else 8765)
     print(f"Starting WebSocket server on ws://localhost:{port}")
 
-    serve_handler = lambda ws, path: handler(ws, path, use_warp=args.warp, device=args.device)
+    serve_handler = functools.partial(handler, use_warp=args.warp, device=args.device)
 
     async with websockets.serve(serve_handler, "localhost", port):
         await asyncio.Future()  # run forever
