@@ -19,10 +19,17 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
    - `cable_joints_test.html` - in-browser smoke tests.
    - `hybrid/` - experimental hybrid examples.
  - `tests/` - Jest tests for geometry, components, systems, and solver logic.
- - Root HTML demos:
-   - `flipper.html`, `flipper9g.html` - pin-ball/flipper basic demos.
-   - `flipper_with_attached_beads.html`, `flipper_with_attached_beads_joint_wise.html` - attached-beads link type demos.
-   - `flipper_with_sliding_beads.html`, `flipper_with_sliding_beads_path_wise.html` - sliding-beads link type demos.
+ - Root HTML js based demos:
+   - `flipper.html` - pin-ball/flipper basic demo.
+   - `flipper_with_attached_beads.html`
+   - `flipper_with_sliding_beads.html`
+ - How to run js demos:
+   - `cd hp-sim5`
+   - `python -m http.server`
+   - You might have to do `npm install` the first time?
+   - Open for example http://127.0.0.1:8000/flipper.html in browser. Or:
+ - Js based demos are also available at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/flipper), [tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads), [tobbelobb.github.io/hp-sim5/flipper_with_attached_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_attached_beads)
+ - Slideprinter demo at slideprinter/slideprinter.html
 
   ## 3. Python Port
   A complete Python port of the cable joints engine is available in the `python/` directory, mirroring the JavaScript implementation with equivalent ECS, geometry, and PBD systems.
@@ -33,13 +40,32 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
     - numpy
     - pytest
     - websockets
+    - warp-lang[extras]
   - Usage:
-    1. Install dependencies: `pip install numpy pytest websockets`
+    1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras]`
     2. Run Python tests: `pytest python/tests`
     3. Run the Warp solver integration test: `pytest python/tests/test_flipper_warp_integration.py`
-    4. (Optional) Run the Python-driven flipper demo:
+    4. (Optional) Run the Python-(but not Warp)-driven flipper demo:
       - Start server: `python flipper_server.py`
       - Open `flipper_python.html` in a browser.
+    5. (Optional) To play the (non-warp) and js driven flipper both at the same time, to test
+        their equivalence, first start the `python -m http.server` to start the js engine, then `python flipper_server.py`
+        to start the Python (non-warp) engine. Then open flipper_overlay.html in a browser.
+    5. (Optional) Run the Python-with-Warp-driven flipper demo:
+      - Start server: `python flipper_server_warp.py`
+      - Open `flipper_python_warp.html` in a browser.
+    6. (Optional) `python slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
+       If the optional `pxr` and `warp` modules are not installed the script falls
+       back to a tiny built‑in parser. Edit the script to parse either
+       `slideprinter/slideprinter.usda` or the provided `flipper_scene.usda` to
+       experiment with different setups.
+    7. (Optional) `python -m python.hanging_pendulum` will generate a USD file showing a simple
+       3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
+       See `ai_docs/Warp/README.md` for Warp installation details.
+    8. (Optional) `python -m python.slideprinter_warp` will generate `slideprinter.usd`
+       demonstrating a basic Slideprinter setup rendered with Warp. The script
+       defaults to running on `cuda:0`; pass `--device cpu` to run on the CPU.
+
 
   ## 4. Core Library (`cable_joints_core.js`)
  ### a. Geometry Utilities
@@ -76,27 +102,7 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
  - Systems: gravity, movement, ball-ball/obstacle collisions.
  - Tangent-point cases: all combinations of circle-to-circle (TT, TF, FT, FF).
 
-## 6. Demos & Usage
- 1. `npm install`
- 2. `npm test` - run all unit tests.
-3. Open `cable_joints/cable_joints.html` in a browser or any of the `flipper*.html` demos under the root for interactive demos.
-4. `python flipper_server.py`
-5. Open `flipper_python.html` for a fully Python-driven version of flipper.html.
-6. `python slideprinter_server.py`
-7. Open `slideprinter_python.html` for a Python-based Slideprinter demo.
-8. `python slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
-   If the optional `pxr` and `warp` modules are not installed the script falls
-   back to a tiny built‑in parser. Edit the script to parse either
-   `slideprinter/slideprinter.usda` or the provided `flipper_scene.usda` to
-   experiment with different setups.
-9. `python -m python.hanging_pendulum` will generate a USD file showing a simple
-   3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
-   See `ai_docs/Warp/README.md` for Warp installation details.
-9. `python -m python.slideprinter_warp` will generate `slideprinter.usd`
-   demonstrating a basic Slideprinter setup rendered with Warp. The script
-   defaults to running on `cuda:0`; pass `--device cpu` to run on the CPU.
-
--## 7. 3D Visualization
+-## 6. 3D Visualization
 - `cable_joints_3d/cable_joints_3d.html` demonstrates rendering cable joint points using Three.js.
 - Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers and now live under `cable_joints_3d/`.
 - The Python side includes `python/vector3.py` and `python/geometry3.py` for analogous 3D helpers.
