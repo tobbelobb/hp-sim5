@@ -29,11 +29,11 @@ jobs:
       #     ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
       - name: Install dependencies
         run: npm ci
-      - name: Install Python, pytest, and numpy
+      - name: Install Python, pytest, numpy, and warp-lang[extras]
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip
-          pip3 install pytest numpy
+          pip3 install pytest numpy warp-lang[extras]
       - name: Run js tests
         run: npm test
       - name: Run python tests
