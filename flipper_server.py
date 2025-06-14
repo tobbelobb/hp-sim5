@@ -2,6 +2,8 @@ import asyncio
 import json
 import functools
 import numpy as np
+from pathlib import Path
+from slideprinter_usd_demo import parse_slideprinter
 
 # Assuming the python ECS code is in a 'python' directory
 from python.ecs import (
@@ -19,7 +21,7 @@ from python.common_systems import (
 )
 from python.cable_attachment_update_system import CableAttachmentUpdateSystem
 from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
-from python.geometry import right_of_line, tangent_from_point_to_circle, tangent_from_circle_to_circle
+from python.geometry import right_of_line
 from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
 from python.ball_obstacle_bump_system import BallObstacleBumpSystem
 from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
@@ -378,26 +380,29 @@ def setup_scene(world, use_warp=False, device='cpu'):
     world.add_component(border_entity, BorderComponent(border_points))
     world.add_component(border_entity, RenderableComponent('border', '#000000'))
 
-    ball_radius = 0.03
-    ball_mass = np.pi * ball_radius**2
     ball_restitution = 0.6
 
+    scene_path = Path(__file__).with_name('flipper_scene.usda')
+    _, usd_entities, usd_joints, usd_paths, _ = parse_slideprinter(str(scene_path))
+
     ball_ids = []
-    ball_positions = [(0.90, 0.95), (0.08, 0.5)]
-    for pos_tuple in ball_positions:
-        pos = np.array([pos_tuple[0], pos_tuple[1], 0.0])
+    for name in ['Ball1', 'Ball2']:
+        ent = usd_entities.get(name, {})
+        pos = np.array([ent.get('pos', [0.0, 0.0])[0], ent.get('pos', [0.0, 0.0])[1], 0.0])
+        radius = ent.get('radius', 0.03)
+        mass = ent.get('mass', np.pi * radius**2)
         ball = world.create_entity()
         world.add_component(ball, BallTagComponent())
         world.add_component(ball, PositionComponent(pos.copy()))
         world.add_component(ball, VelocityComponent(np.zeros(3)))
-        world.add_component(ball, RadiusComponent(ball_radius))
-        world.add_component(ball, MassComponent(ball_mass))
+        world.add_component(ball, RadiusComponent(radius))
+        world.add_component(ball, MassComponent(mass))
         world.add_component(ball, RestitutionComponent(ball_restitution))
         world.add_component(ball, GravityAffectedComponent())
         world.add_component(ball, RenderableComponent('circle', '#a0a0a0'))
         world.add_component(ball, OrientationComponent(0.0))
         world.add_component(ball, AngularVelocityComponent(0.0))
-        world.add_component(ball, MomentOfInertiaComponent(0.5 * ball_mass * ball_radius**2))
+        world.add_component(ball, MomentOfInertiaComponent(0.5 * mass * radius**2))
         world.add_component(ball, PrevFinalOrientationComponent(0.0))
         world.add_component(ball, PrevFinalPosComponent(pos.copy()))
         world.add_component(ball, CoefficientOfFrictionComponent(0.2)) # Add friction to balls
@@ -406,9 +411,15 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
     obs_push = 2.7
     obstacles_data = [
-        (0.25, 0.6, 0.1, "#0F7090", 0), (0.75, 0.5, 0.1, "#0F7090", 0),
-        (0.7, 1.0, 0.12, "#FF8000", 100.0), (0.2, 1.2, 0.1, "#FF8000", -100.0)
+        (0.25, 0.6, 0.1, "#0F7090", 0),
+        (0.75, 0.5, 0.1, "#0F7090", 0),
     ]
+    obs3_info = usd_entities.get('Obs3', {})
+    obs4_info = usd_entities.get('Obs4', {})
+    obstacles_data.extend([
+        (obs3_info.get('pos', [0.7, 1.0])[0], obs3_info.get('pos', [0.7, 1.0])[1], obs3_info.get('radius', 0.12), "#FF8000", 100.0),
+        (obs4_info.get('pos', [0.2, 1.2])[0], obs4_info.get('pos', [0.2, 1.2])[1], obs4_info.get('radius', 0.1), "#FF8000", -100.0)
+    ])
     obs_ids = []
     for x, y, r, color, ang_vel in obstacles_data:
         obs = world.create_entity()
@@ -491,42 +502,39 @@ def setup_scene(world, use_warp=False, device='cpu'):
     world.add_component(ball1, CoefficientOfFrictionComponent(friction_coefficient))
     world.add_component(ball2, CoefficientOfFrictionComponent(friction_coefficient))
 
-    # Joint 1: ball2 -> obs4
-    joint1 = world.create_entity()
-    tangent_obs4 = tangent_from_point_to_circle(pos_ball2, pos_obs4, radius_obs4, True)
-    attach_obs4 = tangent_obs4['a_circle']
-    dir1 = attach_obs4 - pos_ball2
-    dir1 /= np.linalg.norm(dir1)
-    attach_ball2 = pos_ball2 + dir1 * ball_radius
-    initial_dist1 = np.linalg.norm(attach_ball2 - attach_obs4)
-    world.add_component(joint1, CableJointComponent(ball2, obs4, initial_dist1, attach_ball2, attach_obs4))
-
-    # Joint 2: obs4 -> obs3
-    joint2 = world.create_entity()
-    initial_points2 = tangent_from_circle_to_circle(pos_obs4, radius_obs4, True, pos_obs3, radius_obs3, True)
-    initial_dist2 = np.linalg.norm(initial_points2['a_circle'] - initial_points2['b_circle'])
-    world.add_component(joint2, CableJointComponent(obs4, obs3, initial_dist2, initial_points2['a_circle'], initial_points2['b_circle']))
-
-    # Joint 3: obs3 -> ball1
-    joint3 = world.create_entity()
-    tangent_obs3 = tangent_from_point_to_circle(pos_ball1, pos_obs3, radius_obs3, False)
-    attach_obs3 = tangent_obs3['a_circle']
-    dir3 = attach_obs3 - pos_ball1
-    dir3 /= np.linalg.norm(dir3)
-    attach_ball1 = pos_ball1 + dir3 * ball_radius
-    initial_dist3 = np.linalg.norm(attach_ball1 - attach_obs3)
-    world.add_component(joint3, CableJointComponent(obs3, ball1, initial_dist3, attach_obs3, attach_ball1))
+    # Cable joints parsed from the USD file
+    name_to_entity = {
+        'Ball1': ball1,
+        'Ball2': ball2,
+        'Obs3': obs3,
+        'Obs4': obs4,
+    }
+    joint_entities = {}
+    for j in usd_joints:
+        je = world.create_entity()
+        ea = name_to_entity.get(j['entityA'])
+        eb = name_to_entity.get(j['entityB'])
+        attach_a = np.array(j.get('attachA', [0.0, 0.0, 0.0]))
+        attach_b = np.array(j.get('attachB', [0.0, 0.0, 0.0]))
+        world.add_component(
+            je,
+            CableJointComponent(ea, eb, j.get('restLength', 0.0), attach_a, attach_b)
+        )
+        joint_entities[j['name']] = je
 
     # Create Cable Path
-    cable_path = world.create_entity()
-    path_comp = create_cable_path_component(
-        world,
-        [joint1, joint2, joint3],
-        ['hybrid-attachment', 'rolling', 'rolling', 'hybrid-attachment'],
-        [True, True, True, True],
-        200.0
-    )
-    world.add_component(cable_path, path_comp)
+    if usd_paths:
+        p = usd_paths[0]
+        cable_path = world.create_entity()
+        path_comp = create_cable_path_component(
+            world,
+            [joint_entities[n] for n in p['joints']],
+            p.get('linkTypes', []),
+            p.get('cw', []),
+            200.0,
+            stored=p.get('stored')
+        )
+        world.add_component(cable_path, path_comp)
 
     if not world.systems:
         # 1. Cache state from previous step
