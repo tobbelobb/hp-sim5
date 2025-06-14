@@ -21,7 +21,8 @@ export function runGame(world, setupScene) {
         let frameSec = speedScale * (currentTime - lastTime) / 1000;
         if (frameSec >= dt) {
             lastTime = currentTime;
-            const maxAccum = dt * 5;
+            const maxSteps = window._flipperMaxSubSteps ?? 5;
+            const maxAccum = dt * maxSteps;
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {
                 if (!pauseState.paused || doStep) {

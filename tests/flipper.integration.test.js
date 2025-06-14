@@ -83,6 +83,7 @@ describe('Flipper Integration Test', () => {
         // We want to calculate the physics as fast as possible inside the test
         await page.evaluateOnNewDocument(() => {
           window._flipperSpeedScale = 10.0;
+          window._flipperMaxSubSteps = 500;
         });
 
         // Navigate to the page served by our local server
