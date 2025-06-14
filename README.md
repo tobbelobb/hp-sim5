@@ -44,15 +44,14 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
   - Usage:
     1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras]`
     2. Run Python tests: `pytest python/tests`
-    3. Run the Warp solver integration test: `pytest python/tests/test_flipper_warp_integration.py`
-    4. (Optional) Run the Python-(but not Warp)-driven flipper demo:
+    3. (Optional) Run the Python-driven flipper demo:
       - Start server: `python flipper_server.py`
       - Open `flipper_python.html` in a browser.
-    5. (Optional) To play the (non-warp) and js driven flipper both at the same time, to test
+    4. (Optional) To play the (non-warp) and js driven flipper both at the same time, to test
         their equivalence, first start the `python -m http.server` to start the js engine, then `python flipper_server.py`
-        to start the Python (non-warp) engine. Then open flipper_overlay.html in a browser.
+        to start the Python engine. Then open flipper_overlay.html in a browser.
     5. (Optional) Run the Python-with-Warp-driven flipper demo:
-      - Start server: `python flipper_server_warp.py`
+      - Start server: `python flipper_server.py --warp`
       - Open `flipper_python_warp.html` in a browser.
     6. (Optional) `python slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
        If the optional `pxr` and `warp` modules are not installed the script falls

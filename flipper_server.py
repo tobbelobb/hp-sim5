@@ -349,7 +349,7 @@ class RemoteInputSystem:
 
 # --- Scene and World Setup ---
 
-def setup_scene(world):
+def setup_scene(world, use_warp=False, device='cpu'):
     world.clear()
 
     sim_height = 1.7
@@ -548,7 +548,12 @@ def setup_scene(world):
         world.register_system(CableSlackSystem()) # PRE-SOLVE: Slip obvious slack
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
-        world.register_system(PBDCableConstraintSolver())
+        if use_warp:
+            from python_warp.cable_solver_warp import WarpCableConstraintSolver
+            solver = WarpCableConstraintSolver(device)
+        else:
+            solver = PBDCableConstraintSolver()
+        world.register_system(solver)
         world.register_system(PBDBallBorderCollisions())
         world.register_system(PBDBallBallCollisions())
         world.register_system(PBDBallObstacleCollisions())
@@ -728,9 +733,9 @@ def world_to_json(world):
 
 # --- WebSocket Handler ---
 
-async def handler(websocket):
+async def handler(websocket, path, use_warp=False, device='cpu'):
     world = World()
-    setup_scene(world)
+    setup_scene(world, use_warp=use_warp, device=device)
     input_system = world.get_system(RemoteInputSystem)
 
     # Send initial state
@@ -754,7 +759,7 @@ async def handler(websocket):
             world.update(world.get_resource('dt'))
             pause_state.paused = True
         elif action == 'reset':
-            setup_scene(world)
+            setup_scene(world, use_warp=use_warp, device=device)
             input_system = world.get_system(RemoteInputSystem)
         elif action == 'pause':
             pause_state.paused = data['paused']
@@ -774,8 +779,20 @@ async def handler(websocket):
 
 async def main():
     import websockets
-    print("Starting WebSocket server on ws://localhost:8765")
-    async with websockets.serve(handler, "localhost", 8765):
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--warp", action="store_true", help="Use Warp solver")
+    parser.add_argument("--device", default="cpu", help="Warp device")
+    parser.add_argument("--port", type=int, help="WebSocket port")
+    args = parser.parse_args()
+
+    port = args.port if args.port else (8767 if args.warp else 8765)
+    print(f"Starting WebSocket server on ws://localhost:{port}")
+
+    serve_handler = lambda ws, path: handler(ws, path, use_warp=args.warp, device=args.device)
+
+    async with websockets.serve(serve_handler, "localhost", port):
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
