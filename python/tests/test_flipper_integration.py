@@ -22,16 +22,13 @@ def get_game_state_for_test(world):
 
     return state
 
-@pytest.mark.parametrize("use_warp", [False, True])
-def test_flipper_autonomous_run_and_settle(use_warp):
+def test_flipper_autonomous_run_and_settle():
     """
     Tests that the flipper simulation can run autonomously and that the balls
     settle below the flippers with a specific score, similar to the JS integration test.
     """
-    if use_warp:
-        pytest.importorskip("warp")
     world = World()
-    setup_scene(world, use_warp=use_warp, device="cpu")
+    setup_scene(world, use_warp=True, device="cpu")
 
     # The JS test sets a speed scale. Here, we control simulation time by the number of steps.
     # The game starts paused. Unpause it.

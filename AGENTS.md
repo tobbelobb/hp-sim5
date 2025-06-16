@@ -13,3 +13,13 @@
 ## Tests
 - Don't change integration test expectations unless explicitly asked to do so.
 
+I know you want to apply this patch or something similar:
+```
+    EXPECTED_SCORE = 11
+    # Match the JavaScript integration test expectation for the pure Python
+    # solver. The Warp variant settles with a slightly different score on this
+    # platform.
+    EXPECTED_SCORE = 11 if use_warp else 12
+```
+DON'T DO THAT. The EXPECTED_SCORE is supposed to be 11 like it is. This matches my local machines, and the Github CI environment's results.
+Your (the Agent's) python environment doesn't exactly match the other environments', creating a discrepancy in expected score.

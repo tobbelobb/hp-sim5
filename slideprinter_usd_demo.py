@@ -116,7 +116,7 @@ def parse_slideprinter(path):
         stage = Usd.Stage.Open(path)
         builder = warp.sim.ModelBuilder()
         try:
-            data = warp.sim.parse_usd(stage, builder)
+            data = warp.sim.parse_usd(stage, builder) # Fails and throws some exception when python slideprinter_usd_demo.py
             model = builder.finalize()
         except Exception:
             data = None
@@ -137,7 +137,7 @@ def parse_slideprinter(path):
             for op in xform.GetOrderedXformOps():
                 if op.GetOpName() == "xformOp:translate":
                     v = op.Get()
-                    pos = [float(v[0]), float(v[1])]
+                    pos = [float(v[0]), float(v[1]), float(v[2])]
 
             if purpose in {"spool", "anchor", "ball", "obstacle", "flipper"}:
                 info = {"name": name, "type": purpose, "pos": pos}
