@@ -1,6 +1,9 @@
 import { dumpWorldState } from './cable_joints/debugUtils.js';
+import { InputSystem, InputReplaySystem } from './cable_joints/commonSystems.js';
 
 export function runGame(world, setupScene, sceneData) {
+    const originalScene = sceneData ? (typeof structuredClone === 'function' ?
+        structuredClone(sceneData) : JSON.parse(JSON.stringify(sceneData))) : null;
     const pauseBtn = document.getElementById("pauseBtn");
     const resetBtn = document.getElementById("resetBtn");
     const stepBtn = document.getElementById("stepBtn");
@@ -58,7 +61,17 @@ export function runGame(world, setupScene, sceneData) {
 
     resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        setupScene(sceneData);
+        const data = originalScene ? (typeof structuredClone === 'function' ?
+            structuredClone(originalScene) : JSON.parse(JSON.stringify(originalScene))) : sceneData;
+        setupScene(data);
+        // reset any input related state
+        for (const sys of world.systems) {
+            if (sys instanceof InputSystem || sys instanceof InputReplaySystem) {
+                if (typeof sys.reset === 'function') sys.reset();
+            }
+        }
+        lastTime = 0;
+        accumulator = 0;
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
