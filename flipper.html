@@ -272,8 +272,6 @@ canvas {
         const ballRestitution = 0.6;
         const ball1Info = entities['Ball1'];
         const ball2Info = entities['Ball2'];
-        ball1Info.mass = Math.PI * ball1Info.radius * ball1Info.radius;
-        ball2Info.mass = Math.PI * ball2Info.radius * ball2Info.radius;
 
         const ball1 = world.createEntity();
         world.addComponent(ball1, new BallTagComponent());
@@ -312,19 +310,21 @@ canvas {
         const obsColor2 = "#0F7090";
         const obsPush = 2.7;
 
+        const obs1Info = entities['Obs1'];
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
-        world.addComponent(obs1, new PositionComponent(0.25, 0.6));
+        world.addComponent(obs1, new PositionComponent(obs1Info.pos[0], obs1Info.pos[1]));
         world.addComponent(obs1, new MassComponent(-1.0));
-        world.addComponent(obs1, new RadiusComponent(0.1));
+        world.addComponent(obs1, new RadiusComponent(obs1Info.radius));
         world.addComponent(obs1, new ObstaclePushComponent(obsPush));
         world.addComponent(obs1, new RenderableComponent('circle', obsColor2));
 
+        const obs2Info = entities['Obs2'];
         const obs2 = world.createEntity();
         world.addComponent(obs2, new ObstacleTagComponent());
-        world.addComponent(obs2, new PositionComponent(0.75, 0.5));
+        world.addComponent(obs2, new PositionComponent(obs2Info.pos[0], obs2Info.pos[1]));
         world.addComponent(obs2, new MassComponent(-1.0));
-        world.addComponent(obs2, new RadiusComponent(0.1));
+        world.addComponent(obs2, new RadiusComponent(obs2Info.radius));
         world.addComponent(obs2, new ObstaclePushComponent(obsPush));
         world.addComponent(obs2, new RenderableComponent('circle', obsColor2));
 
@@ -404,12 +404,19 @@ canvas {
 
 
         // --- Cable Setup ---
+        const entityNameToId = {
+            'Ball1': ball1,
+            'Ball2': ball2,
+            'Obs1': obs1,
+            'Obs2': obs2,
+            'Obs3': obs3,
+            'Obs4': obs4
+        };
+
         const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
         const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
         const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
-        const radius_obs3 = world.getComponent(obs3, RadiusComponent).radius;
         const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
-        const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
 
         world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
         world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
@@ -420,33 +427,24 @@ canvas {
         world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
 
-        const joint1 = world.createEntity();
-        const tangentObs4 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
-        const attachObs4 = tangentObs4.a_circle;
-        const dir1 = attachObs4.clone().subtract(pos_ball2).normalize();
-        const attachBall2 = pos_ball2.clone().add(dir1.scale(ball2Info.radius));
-        const initialDist1 = attachBall2.clone().subtract(attachObs4).length();
-        world.addComponent(joint1, new CableJointComponent(ball2, obs4, initialDist1, attachBall2, attachObs4));
-        world.addComponent(joint1, new RenderableComponent('line', linecolor1));
+        const jointEntityMap = {};
+        for (const jointName in jointsData) {
+            const jointInfo = jointsData[jointName];
+            const joint = world.createEntity();
+            const entityA = entityNameToId[jointInfo.entityA];
+            const entityB = entityNameToId[jointInfo.entityB];
+            const restLength = jointInfo.restLength;
+            const attachA = new Vector2(jointInfo.attachA[0], jointInfo.attachA[1]);
+            const attachB = new Vector2(jointInfo.attachB[0], jointInfo.attachB[1]);
 
-        const joint2 = world.createEntity();
-        const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
-        const initialDist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
-        world.addComponent(joint2, new CableJointComponent(obs4, obs3, initialDist2, initialPoints2.a_circle, initialPoints2.b_circle));
-        world.addComponent(joint2, new RenderableComponent('line', linecolor1));
-
-        const joint3 = world.createEntity();
-        const tangentObs3 = tangentFromPointToCircle(pos_ball1, pos_obs3, radius_obs3, false);
-        const attachObs3 = tangentObs3.a_circle;
-        const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
-        const attachBall1 = pos_ball1.clone().add(dir3.scale(ball1Info.radius));
-        const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
-        world.addComponent(joint3, new CableJointComponent(obs3, ball1, initialDist3, attachObs3, attachBall1));
-        world.addComponent(joint3, new RenderableComponent('line', linecolor1));
+            world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
+            world.addComponent(joint, new RenderableComponent('line', linecolor1));
+            jointEntityMap[jointName] = joint;
+        }
 
         const cablePath = world.createEntity();
-        const pathInfo = pathsData[0] || {joints:['Joint1','Joint2','Joint3'], linkTypes:['hybrid-attachment','rolling','rolling','hybrid-attachment'], cw:[true,true,true,true]};
-        const jointEntities = [joint1, joint2, joint3];
+        const pathInfo = pathsData[0];
+        const jointEntities = pathInfo.joints.map(jointName => jointEntityMap[jointName]);
         const pathComp = new CablePathComponent(
           world,
           jointEntities,
