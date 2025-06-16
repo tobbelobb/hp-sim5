@@ -65,45 +65,11 @@ class CableJoint "CableJoint" (
         """
     )
 
-    double damping = 10.0 (
-        doc = """Damping coefficient for the cable constraint in N*s/m.
-
-        Damping reduces oscillations and helps stabilize the cable simulation.
-        Higher values provide more damping but may make the cable feel sluggish.
-        """
-    )
-
-    bool allowSlack = true (
-        doc = """Whether the cable allows slack (unilateral constraint).
-
-        When true (default), the cable only prevents separation beyond restLength
-        but allows the bodies to move closer together, creating slack.
-        When false, the cable acts as a bilateral constraint maintaining fixed distance.
-        """
-    )
-
-    double maxForce = -1.0 (
-        doc = """Maximum force the cable can exert before breaking, in Newtons.
-
-        If positive, the cable will break (disable) when the constraint force
-        exceeds this threshold. If negative (default), the cable never breaks.
-        """
-    )
-
     bool enabled = true (
         doc = """Whether this cable joint constraint is active.
 
         Disabled cable joints do not participate in simulation but remain
         in the scene for potential re-enabling later.
-        """
-    )
-
-    token constraintType = "unilateral" (
-        allowedTokens = ["unilateral", "bilateral"]
-        doc = """Type of distance constraint imposed by the cable.
-
-        'unilateral': Cable prevents separation beyond restLength but allows slack
-        'bilateral': Cable maintains exactly restLength distance (no slack)
         """
     )
 }
