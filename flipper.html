@@ -428,8 +428,7 @@ canvas {
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
 
         const jointEntityMap = {};
-        for (const jointName in jointsData) {
-            const jointInfo = jointsData[jointName];
+        for (const jointInfo of jointsData) {
             const joint = world.createEntity();
             const entityA = entityNameToId[jointInfo.entityA];
             const entityB = entityNameToId[jointInfo.entityB];
@@ -439,7 +438,7 @@ canvas {
 
             world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
             world.addComponent(joint, new RenderableComponent('line', linecolor1));
-            jointEntityMap[jointName] = joint;
+            jointEntityMap[jointInfo.name] = joint;
         }
 
         const cablePath = world.createEntity();
