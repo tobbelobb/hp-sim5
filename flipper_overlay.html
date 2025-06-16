@@ -446,7 +446,7 @@ canvas {
         jsWorld.addComponent(borderEntity, new BorderComponent(borderPoints));
         jsWorld.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
 
-        const ballRadius = 0.03, ballMass = Math.PI * ballRadius * ballRadius, ballRestitution = 0.6;
+        const ballRadius = 0.03, ballMass = 0.0028274333882308137, ballRestitution = 0.6;
         const ball1 = jsWorld.createEntity();
         jsWorld.addComponent(ball1, new BallTagComponent());
         jsWorld.addComponent(ball1, new PositionComponent(0.90, 0.95));
