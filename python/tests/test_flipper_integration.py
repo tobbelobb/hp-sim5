@@ -1,8 +1,16 @@
+import os
 import pytest
 import numpy as np
 
 from python.ecs import World, PositionComponent, BallTagComponent
 from flipper_server import setup_scene, ScoreComponent
+
+# Skip this slow integration test unless explicitly enabled.
+if not os.environ.get("RUN_FLIPPER_INTEGRATION"):
+    pytest.skip(
+        "Skipping flipper integration test. Set RUN_FLIPPER_INTEGRATION=1 to run.",
+        allow_module_level=True,
+    )
 
 def get_game_state_for_test(world):
     """Helper function to extract ball positions and score from the world."""
