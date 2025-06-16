@@ -64,6 +64,9 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
     8. (Optional) `python -m python.slideprinter_warp` will generate `slideprinter.usd`
        demonstrating a basic Slideprinter setup rendered with Warp. The script
        defaults to running on `cuda:0`; pass `--device cpu` to run on the CPU.
+    9. (Optional) `python -m python.double_pendulum_warp` will generate `double_pendulum.usd`
+       showing two cable joint pendulums that collide. The script uses the Warp
+       solver and renderer and defaults to the `cuda:0` device.
 
 
   ## 4. Core Library (`cable_joints_core.js`)
