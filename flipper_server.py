@@ -410,16 +410,28 @@ def setup_scene(world, use_warp=False, device='cpu'):
     ball1, ball2 = ball_ids[0], ball_ids[1]
 
     obs_push = 2.7
+
+    obs3_info = usd_entities.get('Obs3', {})
+    obs4_info = usd_entities.get('Obs4', {})
+
     obstacles_data = [
         (0.25, 0.6, 0.1, "#0F7090", 0),
         (0.75, 0.5, 0.1, "#0F7090", 0),
+        (
+            obs3_info.get('pos', [0.7, 1.0])[0],
+            obs3_info.get('pos', [0.7, 1.0])[1],
+            obs3_info.get('radius', 0.12),
+            "#FF8000",
+            100.0,
+        ),
+        (
+            obs4_info.get('pos', [0.2, 1.2])[0],
+            obs4_info.get('pos', [0.2, 1.2])[1],
+            obs4_info.get('radius', 0.1),
+            "#FF8000",
+            -100.0,
+        ),
     ]
-    obs3_info = usd_entities.get('Obs3', {})
-    obs4_info = usd_entities.get('Obs4', {})
-    obstacles_data.extend([
-        (obs3_info.get('pos', [0.7, 1.0])[0], obs3_info.get('pos', [0.7, 1.0])[1], obs3_info.get('radius', 0.12), "#FF8000", 100.0),
-        (obs4_info.get('pos', [0.2, 1.2])[0], obs4_info.get('pos', [0.2, 1.2])[1], obs4_info.get('radius', 0.1), "#FF8000", -100.0)
-    ])
     obs_ids = []
     for x, y, r, color, ang_vel in obstacles_data:
         obs = world.create_entity()

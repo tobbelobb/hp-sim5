@@ -24,6 +24,24 @@ def Xform "FlipperScene" {
         double mass = 0.002827433388
     }
 
+    def Xform "Obs1" (
+        customData = { string purpose = "obstacle" }
+    )
+    {
+        double3 xformOp:translate = (0.25, 0.6, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double radius = 0.1
+    }
+
+    def Xform "Obs2" (
+        customData = { string purpose = "obstacle" }
+    )
+    {
+        double3 xformOp:translate = (0.75, 0.5, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double radius = 0.1
+    }
+
     def Xform "Obs3" (
         customData = { string purpose = "obstacle" }
     )
