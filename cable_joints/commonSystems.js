@@ -407,6 +407,12 @@ export class InputReplaySystem {
       }
     }
   }
+
+  reset() {
+    this.inputLog = [];
+    this.currentIndex = 0;
+    this.frame = 0;
+  }
 }
 
 export class PBDBallFlipperCollisions {
@@ -576,6 +582,14 @@ export class InputSystem {
     this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
     this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
     this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
+  }
+
+  reset() {
+    this.clicks = [];
+    this.releases = [];
+    this.eventLog = [];
+    this.frame = 0;
+    this.grabSpring = null;
   }
 
   // on Space → emit minimal debug dump
