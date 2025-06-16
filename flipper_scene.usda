@@ -11,7 +11,7 @@ def Xform "FlipperScene" {
         double3 xformOp:translate = (0.90, 0.95, 0.0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
         double radius = 0.03
-        double mass = 0.002827433388
+        double mass = 0.0028274333882308137
     }
 
     def Xform "Ball2" (
@@ -21,7 +21,7 @@ def Xform "FlipperScene" {
         double3 xformOp:translate = (0.08, 0.5, 0.0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
         double radius = 0.03
-        double mass = 0.002827433388
+        double mass = 0.0028274333882308137
     }
 
     def Xform "Obs1" (
