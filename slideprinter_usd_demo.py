@@ -5,6 +5,7 @@ except Exception:  # pragma: no cover - optional dependency
     UsdGeom = None
 
 try:
+    import warp  # type: ignore
     import warp.sim  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     warp = None
@@ -181,11 +182,14 @@ def run_sim(model, steps=10, dt=1.0/200.0):
     """Run a tiny Warp simulation just to show the USD data works."""
     if warp is None or model is None:
         return None
-    integrator = warp.sim.SemiImplicitIntegrator(model)
-    state = model.state()
+    warp.set_device("cpu")
+    integrator = warp.sim.SemiImplicitIntegrator()
+    state_in = model.state()
+    state_out = model.state()
     for _ in range(steps):
-        integrator.step(dt, state)
-    return state
+        integrator.simulate(model, state_in, state_out, dt)
+        state_in, state_out = state_out, state_in
+    return state_in
 
 
 def main():
