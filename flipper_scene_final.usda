@@ -1,0 +1,135 @@
+#usda 1.0
+(
+    doc = """Generated from Composed Stage of root layer /home/torbjorn/repos/hp-sim5/flipper_scene_step2.usda
+
+
+Generated from Composed Stage of root layer /home/torbjorn/repos/hp-sim5/flipper_scene_step3.usda
+
+
+Generated from Composed Stage of root layer /home/torbjorn/repos/hp-sim5/flipper_scene_step5.usda
+
+
+Generated from Composed Stage of root layer /home/torbjorn/repos/hp-sim5/flipper_scene_step6.usda
+"""
+)
+
+def Xform "World"
+{
+    def Xform "FlipperScene"
+    {
+        def Sphere "Ball1" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            double radius = 0.03
+            double3 xformOp:translate = (0.9, 0.95, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Ball2" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            double radius = 0.03
+            double3 xformOp:translate = (0.08, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs1" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:rigidBodyEnabled = 0
+            double radius = 0.1
+            double3 xformOp:translate = (0.25, 0.6, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs2" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:rigidBodyEnabled = 0
+            double radius = 0.1
+            double3 xformOp:translate = (0.75, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs3" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:rigidBodyEnabled = 0
+            double radius = 0.12
+            double3 xformOp:translate = (0.7, 1, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs4" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:rigidBodyEnabled = 0
+            double radius = 0.1
+            double3 xformOp:translate = (0.2, 1.2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Joint1"
+        {
+            custom point3d cableJoint:attachPointA = (0.08085505352834965, 0.5299878122487063, 0)
+            custom point3d cableJoint:attachPointB = (0.10004062583764584, 1.202850178427832, 0)
+            custom double cableJoint:damping = 10
+            custom bool cableJoint:enabled = 1
+            custom rel cableJoint:entityA = </World/FlipperScene/Ball2>
+            custom rel cableJoint:entityB = </World/FlipperScene/Obs4>
+            custom double cableJoint:restLength = 0.6731358332498777
+            custom double cableJoint:stiffness = 1000
+        }
+
+        def Xform "Joint2"
+        {
+            custom point3d cableJoint:attachPointA = (0.23366516978503094, 1.2941629244625772, 0)
+            custom point3d cableJoint:attachPointB = (0.740398203742037, 1.1129955093550927, 0)
+            custom double cableJoint:damping = 10
+            custom bool cableJoint:enabled = 1
+            custom rel cableJoint:entityA = </World/FlipperScene/Obs4>
+            custom rel cableJoint:entityB = </World/FlipperScene/Obs3>
+            custom double cableJoint:restLength = 0.5381449618829482
+            custom double cableJoint:stiffness = 1000
+        }
+
+        def Xform "Joint3"
+        {
+            custom point3d cableJoint:attachPointA = (0.7914301947495155, 1.0777207789980623, 0)
+            custom point3d cableJoint:attachPointB = (0.8805698052504844, 0.9728575486873788, 0)
+            custom double cableJoint:damping = 10
+            custom bool cableJoint:enabled = 1
+            custom rel cableJoint:entityA = </World/FlipperScene/Obs3>
+            custom rel cableJoint:entityB = </World/FlipperScene/Ball1>
+            custom double cableJoint:restLength = 0.1376305461424022
+            custom double cableJoint:stiffness = 1000
+        }
+
+        def Xform "CablePath"
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1]
+            custom bool cablePath:enabled = 1
+            custom rel cablePath:joints = [
+                </World/FlipperScene/Joint1>,
+                </World/FlipperScene/Joint2>,
+                </World/FlipperScene/Joint3>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid-attachment", "rolling", "rolling", "hybrid-attachment"]
+            custom double[] cablePath:stored = [0, 0.18856494486496805, 0.06274932338455928, 0]
+            custom double cablePath:totalLength = 1.4488413
+        }
+    }
+
+    def PhysicsScene "PhysicsScene"
+    {
+        vector3f physics:gravityDirection = (0, -1, 0)
+        float physics:gravityMagnitude = 981
+    }
+}
+

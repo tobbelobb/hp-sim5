@@ -1,0 +1,80 @@
+#usda 1.0
+(
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "CableJointSchema"
+        string libraryPath = ""
+        string libraryPrefix = "CableJoint"
+        bool skipCodeGeneration = true
+    }
+) {
+}
+
+class "CableJointAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        string className = "CableJointAPI"
+        string doc = """API schema for cable joint constraints that connect two entities with a flexible cable."""
+    }
+)
+{
+    rel cableJoint:entityA (
+        doc = """Reference to the first entity (body A) connected by this cable joint"""
+    )
+    rel cableJoint:entityB (
+        doc = """Reference to the second entity (body B) connected by this cable joint"""
+    )
+    double cableJoint:restLength (
+        doc = """Rest length of the cable in world units"""
+    )
+    point3d cableJoint:attachPointA (
+        doc = """Local attachment point on entity A"""
+    )
+    point3d cableJoint:attachPointB (
+        doc = """Local attachment point on entity B"""
+    )
+    double cableJoint:stiffness = 1000.0 (
+        doc = """Stiffness of the cable constraint"""
+    )
+    double cableJoint:damping = 10.0 (
+        doc = """Damping of the cable constraint"""
+    )
+    bool cableJoint:enabled = true (
+        doc = """Whether this cable joint is enabled"""
+    )
+}
+
+class "CablePathAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        string className = "CablePathAPI"
+        string doc = """API schema for cable paths that define sequences of cable joints and their routing."""
+    }
+)
+{
+    rel cablePath:joints[] (
+        doc = """Ordered list of cable joint prims that make up this path"""
+    )
+    token[] cablePath:linkTypes (
+        doc = """Type of link for each segment (hybrid-attachment, rolling, etc.)"""
+    )
+    bool[] cablePath:clockwise (
+        doc = """Whether each segment follows a clockwise path"""
+    )
+    double[] cablePath:stored (
+        doc = """Stored cable length for each segment"""
+    )
+    double cablePath:totalLength (
+        doc = """Total length of cable in this path"""
+    )
+    bool cablePath:enabled = true (
+        doc = """Whether this cable path is enabled"""
+    )
+}

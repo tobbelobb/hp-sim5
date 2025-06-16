@@ -1,0 +1,87 @@
+#usda 1.0
+
+def Xform "World"
+{
+    def Xform "FlipperScene"
+    {
+        def Sphere "Ball1"
+        {
+            custom double physics:mass = 0.0028274333882308137
+            double radius = 0.03
+            double3 xformOp:translate = (0.9, 0.95, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Ball2"
+        {
+            custom double physics:mass = 0.0028274333882308137
+            double radius = 0.03
+            double3 xformOp:translate = (0.08, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs1"
+        {
+            double radius = 0.1
+            double3 xformOp:translate = (0.25, 0.6, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs2"
+        {
+            double radius = 0.1
+            double3 xformOp:translate = (0.75, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs3"
+        {
+            double radius = 0.12
+            double3 xformOp:translate = (0.7, 1, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Obs4"
+        {
+            double radius = 0.1
+            double3 xformOp:translate = (0.2, 1.2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Joint1"
+        {
+            custom double3 cable:attachPointA = (0.08085505352834965, 0.5299878122487063, 0)
+            custom double3 cable:attachPointB = (0.10004062583764584, 1.202850178427832, 0)
+            custom token cable:entityA = "Ball2"
+            custom token cable:entityB = "Obs4"
+            custom double cable:restLength = 0.6731358332498777
+        }
+
+        def Xform "Joint2"
+        {
+            custom double3 cable:attachPointA = (0.23366516978503094, 1.2941629244625772, 0)
+            custom double3 cable:attachPointB = (0.740398203742037, 1.1129955093550927, 0)
+            custom token cable:entityA = "Obs4"
+            custom token cable:entityB = "Obs3"
+            custom double cable:restLength = 0.5381449618829482
+        }
+
+        def Xform "Joint3"
+        {
+            custom double3 cable:attachPointA = (0.7914301947495155, 1.0777207789980623, 0)
+            custom double3 cable:attachPointB = (0.8805698052504844, 0.9728575486873788, 0)
+            custom token cable:entityA = "Obs3"
+            custom token cable:entityB = "Ball1"
+            custom double cable:restLength = 0.1376305461424022
+        }
+
+        def Xform "CablePath"
+        {
+            custom bool[] cable:clockwise = [1, 1, 1, 1]
+            custom token[] cable:joints = ["Joint1", "Joint2", "Joint3"]
+            custom token[] cable:linkTypes = ["hybrid-attachment", "rolling", "rolling", "hybrid-attachment"]
+            custom double[] cable:stored = [0, 0.18856494486496805, 0.06274932338455928, 0]
+        }
+    }
+}
+
