@@ -1,6 +1,8 @@
 import asyncio
 import json
 import functools
+import os
+import sys
 import numpy as np
 from pathlib import Path
 from slideprinter_usd_demo import parse_slideprinter
@@ -28,6 +30,36 @@ from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFl
 from python.cable_attachment_cache_system import CableAttachmentCacheSystem
 from python.cable_slack_system import CableSlackSystem
 from python.cable_friction_system import CableFrictionSystem
+
+# Files that trigger a server restart when modified
+WATCHED_FILES = [
+    Path(__file__),
+    Path(__file__).with_name("flipper_scene.usda"),
+]
+
+async def watch_and_restart(files, interval=1.0):
+    """Monitor *files* and restart the process if any change."""
+    mtimes = {}
+    for f in files:
+        try:
+            mtimes[f] = Path(f).stat().st_mtime
+        except FileNotFoundError:
+            mtimes[f] = 0
+    while True:
+        await asyncio.sleep(interval)
+        for f in files:
+            try:
+                mtime = Path(f).stat().st_mtime
+            except FileNotFoundError:
+                mtime = 0
+            if mtime != mtimes.get(f):
+                print(f"{f} changed, restarting server...")
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+        for f in files:
+            try:
+                mtimes[f] = Path(f).stat().st_mtime
+            except FileNotFoundError:
+                mtimes[f] = 0
 
 # --- Server-Side Systems ---
 
@@ -814,6 +846,7 @@ async def main():
     serve_handler = functools.partial(handler, use_warp=args.warp, device=args.device)
 
     async with websockets.serve(serve_handler, "localhost", port):
+        asyncio.create_task(watch_and_restart(WATCHED_FILES))
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
