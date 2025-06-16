@@ -1,6 +1,6 @@
 import { dumpWorldState } from './cable_joints/debugUtils.js';
 
-export function runGame(world, setupScene) {
+export function runGame(world, setupScene, sceneData) {
     const pauseBtn = document.getElementById("pauseBtn");
     const resetBtn = document.getElementById("resetBtn");
     const stepBtn = document.getElementById("stepBtn");
@@ -58,7 +58,7 @@ export function runGame(world, setupScene) {
 
     resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        setupScene();
+        setupScene(sceneData);
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
@@ -80,7 +80,7 @@ export function runGame(world, setupScene) {
         console.log(dumpWorldState(world));
     });
 
-    setupScene();
+    setupScene(sceneData);
     const pauseState = world.getResource('pauseState');
     pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     requestAnimationFrame(gameLoop);
