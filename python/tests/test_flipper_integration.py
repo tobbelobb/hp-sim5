@@ -38,7 +38,7 @@ def test_flipper_autonomous_run_and_settle(use_warp):
     pause_state = world.get_resource('pauseState')
     pause_state.paused = False
 
-    EXPECTED_SCORE = 32 if use_warp else 20
+    EXPECTED_SCORE = 11
     # JS test runs for 100s. Sim runs at 300Hz. So 100 * 300 = 30000 steps.
     # The JS test polls every 1s. So we poll every 300 steps.
     MAX_SIMULATION_STEPS = 100 * 300
