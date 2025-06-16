@@ -234,3 +234,80 @@ This demonstrates the workflow: define the schema, apply it to prims (recorded i
 In summary, custom API schemas let you **extend USD** in a structured way. They can be distributed as plugins (with `schema.usda` and a `plugInfo.json` entry) and used in any USD-compatible application, including Isaac Sim. Whether codeless or code-generated, their usage in Python and USDA is similar to built-in schemas: apply the API to a prim, then read/write its attributes via USD’s API or the schema’s convenience methods.
 
 **Sources:** Pixar’s USD documentation on schema generation and NVIDIA/OpenUSD examples of using an applied API schema in Python.
+
+
+OpenUSD Fundamentals — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/omniverse_usd/open_usd.html
+OpenUSD Fundamentals — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/omniverse_usd/open_usd.html
+OpenUSD Fundamentals — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/omniverse_usd/open_usd.html
+Traversing a Stage — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_traversing_stage.html
+OpenUSD Fundamentals — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/omniverse_usd/open_usd.html
+Hello World - Creating Your First USD Stage — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_helloworld.html
+Scene Setup Snippets — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/python_scripting/environment_setup.html
+Scene Setup Snippets — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/python_scripting/environment_setup.html
+Universal Scene Description: UsdPhysicsScene Class Reference
+
+https://openusd.org/release/api/class_usd_physics_scene.html
+Universal Scene Description: UsdPhysicsScene Class Reference
+
+https://openusd.org/release/api/class_usd_physics_scene.html
+Universal Scene Description: UsdPhysicsScene Class Reference
+
+https://openusd.org/release/api/class_usd_physics_scene.html
+Hello World - Creating Your First USD Stage — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_helloworld.html
+Scene Setup Snippets — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/python_scripting/environment_setup.html
+Scene Setup Snippets — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/python_scripting/environment_setup.html
+Scene Setup Snippets — Isaac Sim Documentation
+
+https://docs.isaacsim.omniverse.nvidia.com/4.5.0/python_scripting/environment_setup.html
+Universal Scene Description: UsdPhysics : USD Physics Schema
+
+https://openusd.org/dev/api/usd_physics_page_front.html
+Universal Scene Description: UsdPhysics : USD Physics Schema
+
+https://openusd.org/dev/api/usd_physics_page_front.html
+usdrt::UsdPhysicsRevoluteJoint — USDRT 7.5.0 documentation
+
+https://docs.omniverse.nvidia.com/kit/docs/usdrt.scenegraph/7.5.0/api/classusdrt_1_1_usd_physics_revolute_joint.html
+usdrt::UsdPhysicsRevoluteJoint — USDRT 7.5.0 documentation
+
+https://docs.omniverse.nvidia.com/kit/docs/usdrt.scenegraph/7.5.0/api/classusdrt_1_1_usd_physics_revolute_joint.html
+usdrt::UsdPhysicsRevoluteJoint — USDRT 7.5.0 documentation
+
+https://docs.omniverse.nvidia.com/kit/docs/usdrt.scenegraph/7.5.0/api/classusdrt_1_1_usd_physics_revolute_joint.html
+Generating New Schema Classes — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_generating_new_schema.html
+Generating New Schema Classes — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_generating_new_schema.html
+Generating New Schema Classes — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_generating_new_schema.html
+Generating New Schema Classes — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_generating_new_schema.html
+Generating New Schema Classes — Universal Scene Description 25.05 documentation
+
+https://openusd.org/release/tut_generating_new_schema.html
