@@ -248,9 +248,9 @@ canvas {
         // --- Entities and Components ---
 
         const offset = 0.02;
-        const entities = sceneData?.entities || {};
-        const jointsData = sceneData?.joints || [];
-        const pathsData = sceneData?.paths || [];
+        const entities = sceneData.entities;
+        const jointsData = sceneData.joints;
+        const pathsData = sceneData.paths;
 
         // Border Entity (Clockwise points for outward normal calc)
         const borderEntity = world.createEntity();
@@ -270,8 +270,8 @@ canvas {
 
         // Ball Entities
         const ballRestitution = 0.6;
-        const ball1Info = entities['Ball1'] || {pos: [0.90, 0.95], radius: 0.03};
-        const ball2Info = entities['Ball2'] || {pos: [0.08, 0.5], radius: 0.03};
+        const ball1Info = entities['Ball1'];
+        const ball2Info = entities['Ball2'];
         ball1Info.mass = Math.PI * ball1Info.radius * ball1Info.radius;
         ball2Info.mass = Math.PI * ball2Info.radius * ball2Info.radius;
 
@@ -328,7 +328,7 @@ canvas {
         world.addComponent(obs2, new ObstaclePushComponent(obsPush));
         world.addComponent(obs2, new RenderableComponent('circle', obsColor2));
 
-        const obs3Info = entities['Obs3'] || {pos:[0.7,1.0], radius:0.12};
+        const obs3Info = entities['Obs3'];
         const obs3 = world.createEntity();
         world.addComponent(obs3, new ObstacleTagComponent());
         world.addComponent(obs3, new PositionComponent(obs3Info.pos[0], obs3Info.pos[1]));
@@ -342,7 +342,7 @@ canvas {
         world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia3));
         world.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
 
-        const obs4Info = entities['Obs4'] || {pos:[0.2,1.2], radius:0.1};
+        const obs4Info = entities['Obs4'];
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
         world.addComponent(obs4, new PositionComponent(obs4Info.pos[0], obs4Info.pos[1]));
