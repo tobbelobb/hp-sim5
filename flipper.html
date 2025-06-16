@@ -505,7 +505,6 @@ canvas {
          const pauseState = world.getResource('pauseState');
          pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
-
     parseUsda('flipper_scene.usda').then(data => {
         runGame(world, () => setupScene(data));
     });
