@@ -38,9 +38,6 @@ def test_flipper_autonomous_run_and_settle(use_warp):
     pause_state = world.get_resource('pauseState')
     pause_state.paused = False
 
-    # Match the JavaScript integration test expectation for the pure Python
-    # solver. The Warp variant settles with a slightly different score on this
-    # platform.
     EXPECTED_SCORE = 11
     # JS test runs for 100s. Sim runs at 300Hz. So 100 * 300 = 30000 steps.
     # The JS test polls every 1s. So we poll every 300 steps.
