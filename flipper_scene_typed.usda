@@ -54,6 +54,7 @@ def Xform "World"
             token[] ecs:tags = ["Obstacle"]
             bool physics:rigidBodyEnabled = 0
             custom bool cable:linkable = 1
+            custom float obstacle:pushVel = 2.7
             rel material:binding = </World/PhysicsScene/ObstacleMaterialBlue>
             double radius = 0.1
             quatf xformOp:orient = (1, 0, 0, 0)
@@ -68,6 +69,7 @@ def Xform "World"
             token[] ecs:tags = ["Obstacle"]
             bool physics:rigidBodyEnabled = 0
             custom bool cable:linkable = 1
+            custom float obstacle:pushVel = 2.7
             rel material:binding = </World/PhysicsScene/ObstacleMaterialBlue>
             double radius = 0.1
             quatf xformOp:orient = (1, 0, 0, 0)
@@ -82,7 +84,7 @@ def Xform "World"
             token[] ecs:tags = ["Obstacle"]
             rel material:binding = </World/PhysicsScene/ObstacleMaterialOrange>
             custom bool cable:linkable = 1
-            custom float obstacle:pushVel = 2.0
+            custom float obstacle:pushVel = 2.7
             double radius = 0.12
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.7, 1, 0)
@@ -98,7 +100,7 @@ def Xform "World"
             token[] ecs:tags = ["Obstacle"]
             rel material:binding = </World/PhysicsScene/ObstacleMaterialOrange>
             custom bool cable:linkable = 1
-            custom float obstacle:pushVel = 2.0
+            custom float obstacle:pushVel = 2.7
             double radius = 0.1
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.2, 1.2, 0)
