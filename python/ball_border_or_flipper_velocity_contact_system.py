@@ -126,7 +126,8 @@ class BallBorderOrFlipperVelocityContactSystem:
 
         # --- Handle Flipper Contacts ---
         flipper_contacts = world.get_resource('ball_flipper_contacts')
-        if flipper_contacts:
+        flipper_to_tip_map = world.get_resource('flipper_to_tip_map')
+        if flipper_contacts and flipper_to_tip_map:
             for contact in flipper_contacts:
                 ball_id = contact['ball_id']
                 flip_id = contact['flip_id']
@@ -139,16 +140,8 @@ class BallBorderOrFlipperVelocityContactSystem:
                 flipper_state_comp = world.get_component(flip_id, FlipperStateComponent)
                 flipper_restitution_comp = world.get_component(flip_id, RestitutionComponent)
 
-                # Find the associated flipper tip to get its friction component
-                flipper_tip_id = None
-                tip_entities = world.query([FlipperTipComponent])
-                for tip_id in tip_entities:
-                    tip_comp = world.get_component(tip_id, FlipperTipComponent)
-                    if tip_comp.flipper_entity_id == flip_id:
-                        flipper_tip_id = tip_id
-                        break
-                
-                flipper_friction_comp = world.get_component(flipper_tip_id, CoefficientOfFrictionComponent) if flipper_tip_id else None
+                flipper_tip_id = flipper_to_tip_map.get(flip_id)
+                flipper_friction_comp = world.get_component(flipper_tip_id, CoefficientOfFrictionComponent) if flipper_tip_id is not None else None
 
                 if not all([flipper_pos_comp, flipper_state_comp, flipper_restitution_comp]):
                     continue

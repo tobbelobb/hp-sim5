@@ -396,297 +396,217 @@ class RemoteInputSystem:
 
 # --- Scene and World Setup ---
 
-def setup_scene(world, use_warp=False, device='cpu'):
+def load_flipper_stage():
+    """Load the flipper demo USD stage."""
+    scene_path = Path(__file__).with_name("flipper_scene_typed.usda")
+    return Usd.Stage.Open(str(scene_path))
+
+def _material_properties(stage, prim):
+    """Return (color_hex, friction, restitution) from a prim's bound material."""
+    rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+    if not rel.GetTargets():
+        return None, None, None
+
+    mat_prim = stage.GetPrimAtPath(rel.GetTargets()[0])
+    color = None
+    friction = None
+    restitution = None
+
+    if not mat_prim:
+        return color, friction, restitution
+
+    shader_prim = mat_prim.GetChild("Shader")
+    if shader_prim:
+        color_attr = shader_prim.GetAttribute("inputs:diffuseColor")
+        if color_attr and color_attr.Get() is not None:
+            c = color_attr.Get()
+            color = "#%02x%02x%02x" % (int(c[0] * 255), int(c[1] * 255), int(c[2] * 255))
+
+    fric_attr = mat_prim.GetAttribute("physics:staticFriction")
+    if fric_attr and fric_attr.Get() is not None:
+        friction = fric_attr.Get()
+
+    rest_attr = mat_prim.GetAttribute("physics:restitution")
+    if rest_attr and rest_attr.Get() is not None:
+        restitution = rest_attr.Get()
+
+    return color, friction, restitution
+
+def stage_to_world(world, stage):
+    """Populate *world* using entities described in *stage*."""
     world.clear()
 
-    sim_height = 1.7
-    sim_width = 1.0 # Aspect ratio 1/1.7, will be updated by client
+    dt = 1.0 / stage.GetTimeCodesPerSecond()
+    world.set_resource("dt", dt)
+    world.set_resource("pauseState", PauseStateComponent(True))
+    world.set_resource("debugRenderPoints", {})
+    world.set_resource("grabbedBall", None)
+    world.set_resource("ball_obstacle_contacts", [])
+    world.set_resource("ball_border_contacts", [])
+    world.set_resource("ball_flipper_contacts", [])
 
-    world.set_resource('dt', 1.0 / 300.0)
-    world.set_resource('simWidth', sim_width)
-    world.set_resource('simHeight', sim_height)
-    world.set_resource('pauseState', PauseStateComponent(True))
-    world.set_resource('debugRenderPoints', {})
-    world.set_resource('grabbedBall', None)
-    world.set_resource('ball_obstacle_contacts', [])
-    world.set_resource('ball_border_contacts', [])
-    world.set_resource('ball_flipper_contacts', [])
+    physics_scene = stage.GetPrimAtPath("/World/PhysicsScene")
+    if physics_scene:
+        gdir = np.array(physics_scene.GetAttribute("physics:gravityDirection").Get())
+        gmag = physics_scene.GetAttribute("physics:gravityMagnitude").Get()
+        world.set_resource("gravity", gdir * gmag)
 
-    scene_path = Path(__file__).with_name('flipper_scene_typed.usda')
-    stage = Usd.Stage.Open(str(scene_path))
+    scene_root = stage.GetPrimAtPath("/World/FlipperScene")
+    name_to_entity = {}
 
-    # Read gravity from USD
-    physics_scene_prim = stage.GetPrimAtPath("/World/PhysicsScene")
-    gravity_dir = np.array([0.0, -1.0, 0.0])
-    gravity_mag = 2.0 # Default value
-    if physics_scene_prim:
-        dir_attr = physics_scene_prim.GetAttribute("physics:gravityDirection")
-        mag_attr = physics_scene_prim.GetAttribute("physics:gravityMagnitude")
-        if dir_attr and dir_attr.Get() is not None:
-            gravity_dir = np.array(dir_attr.Get())
-        if mag_attr and mag_attr.Get() is not None:
-            gravity_mag = mag_attr.Get()
-    world.set_resource('gravity', gravity_dir * gravity_mag)
-
-
-    # --- Border Setup from USD ---
-    border_prim = stage.GetPrimAtPath("/World/FlipperScene/Border")
+    border_prim = scene_root.GetChild("Border")
     if border_prim:
-        border_mesh = UsdGeom.Mesh(border_prim)
-        points_attr = border_mesh.GetPointsAttr()
-        if points_attr:
-            # The collision system uses a 2D polyline. We take the first 8 points which form the base loop.
-            all_points = np.array(points_attr.Get())
-            border_points_3d = all_points[:8]
+        mesh = UsdGeom.Mesh(border_prim)
+        points = np.array(mesh.GetPointsAttr().Get())[:8]
+        border_e = world.create_entity()
+        world.add_component(border_e, BorderComponent(points))
+        color, fric, rest = _material_properties(stage, border_prim)
+        world.add_component(border_e, RenderableComponent("border", color or "#000000"))
+        if rest is not None:
+            world.add_component(border_e, RestitutionComponent(rest))
+        if fric is not None:
+            world.add_component(border_e, CoefficientOfFrictionComponent(fric))
 
-            border_entity = world.create_entity()
-            world.add_component(border_entity, BorderComponent(border_points_3d))
-            world.add_component(border_entity, RenderableComponent('border', '#000000'))
+        world.set_resource("simWidth", float(points[:,0].max() - points[:,0].min()))
+        world.set_resource("simHeight", float(points[:,1].max() - points[:,1].min()))
 
-            # Get physics properties from the material
-            material_rel = UsdShade.MaterialBindingAPI(border_prim).GetDirectBindingRel()
-            if material_rel.GetTargets():
-                material_path = material_rel.GetTargets()[0]
-                material_prim = stage.GetPrimAtPath(material_path)
-                if material_prim:
-                    restitution_attr = material_prim.GetAttribute("physics:restitution")
-                    friction_attr = material_prim.GetAttribute("physics:staticFriction")
-                    if restitution_attr and restitution_attr.Get() is not None:
-                        world.add_component(border_entity, RestitutionComponent(restitution_attr.Get()))
-                    if friction_attr and friction_attr.Get() is not None:
-                        world.add_component(border_entity, CoefficientOfFrictionComponent(friction_attr.Get()))
-
-    # --- Ball Setup from USD ---
-    ball_ids = []
-    for name in ['Ball1', 'Ball2']:
-        prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
-
-        pos_attr = prim.GetAttribute("xformOp:translate") if prim else None
-        pos = np.array(pos_attr.Get()) if pos_attr and pos_attr.Get() is not None else np.array([0.0, 0.0, 0.0])
-
-        radius_attr = prim.GetAttribute("radius") if prim else None
-        radius = radius_attr.Get() if radius_attr and radius_attr.Get() is not None else 0.03
-
-        mass_attr = prim.GetAttribute("physics:mass") if prim else None
-        mass = mass_attr.Get() if mass_attr and mass_attr.Get() is not None else (np.pi * radius**2)
-
-        ball = world.create_entity()
-        world.add_component(ball, BallTagComponent())
-        world.add_component(ball, PositionComponent(pos.copy()))
-        world.add_component(ball, VelocityComponent(np.zeros(3)))
-        world.add_component(ball, RadiusComponent(radius))
-        world.add_component(ball, MassComponent(mass))
-        world.add_component(ball, GravityAffectedComponent())
-        world.add_component(ball, RenderableComponent('circle', '#a0a0a0'))
-        world.add_component(ball, OrientationComponent(0.0))
-        world.add_component(ball, AngularVelocityComponent(0.0))
-        world.add_component(ball, MomentOfInertiaComponent(0.5 * mass * radius**2))
-        world.add_component(ball, PrevFinalOrientationComponent(0.0))
-        world.add_component(ball, PrevFinalPosComponent(pos.copy()))
-
-        # Get physics properties from the material
-        material_rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
-        if material_rel.GetTargets():
-            material_path = material_rel.GetTargets()[0]
-            material_prim = stage.GetPrimAtPath(material_path)
-            if material_prim:
-                restitution_attr = material_prim.GetAttribute("physics:restitution")
-                friction_attr = material_prim.GetAttribute("physics:staticFriction")
-                if restitution_attr and restitution_attr.Get() is not None:
-                    world.add_component(ball, RestitutionComponent(restitution_attr.Get()))
-                if friction_attr and friction_attr.Get() is not None:
-                    world.add_component(ball, CoefficientOfFrictionComponent(friction_attr.Get()))
-        ball_ids.append(ball)
-    ball1, ball2 = ball_ids[0], ball_ids[1]
-
-    # --- Obstacle Setup from USD ---
-    obs_ids = []
-    obs_map = {} # name -> entity_id
-    for i in range(1, 5):
-        name = f"Obs{i}"
-        prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
-        if not prim:
+    for prim in scene_root.GetChildren():
+        tags_attr = prim.GetAttribute("ecs:tags")
+        tags = tags_attr.Get() if tags_attr else []
+        if not tags:
             continue
 
-        pos_attr = prim.GetAttribute("xformOp:translate")
-        pos = np.array(pos_attr.Get()) if pos_attr and pos_attr.Get() is not None else np.zeros(3)
+        xform = UsdGeom.Xformable(prim)
+        pos = np.zeros(3)
+        for op in xform.GetOrderedXformOps():
+            if op.GetOpName() == "xformOp:translate":
+                pos = np.array(op.Get())
 
-        radius_attr = prim.GetAttribute("radius")
-        radius = radius_attr.Get() if radius_attr and radius_attr.Get() is not None else 0.1
+        color, fric, rest = _material_properties(stage, prim)
 
-        material_rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
-        color = "#FFFFFF" # default
-        friction = 0.0
-        if material_rel.GetTargets():
-            material_path = material_rel.GetTargets()[0]
-            material_prim = stage.GetPrimAtPath(material_path)
-            if material_prim:
-                shader_prim = material_prim.GetPrimAtPath("Shader")
-                if shader_prim:
-                    color_attr = shader_prim.GetAttribute("inputs:diffuseColor")
-                    if color_attr and color_attr.Get() is not None:
-                        c = color_attr.Get()
-                        color = '#%02x%02x%02x' % (int(c[0]*255), int(c[1]*255), int(c[2]*255))
-                
-                friction_attr = material_prim.GetAttribute("physics:staticFriction")
-                if friction_attr and friction_attr.Get() is not None:
-                    friction = friction_attr.Get()
+        if "Ball" in tags:
+            radius = prim.GetAttribute("radius").Get()
+            mass = prim.GetAttribute("physics:mass").Get()
+            inertia = prim.GetAttribute("physics:inertiaTensor").Get()[2][2]
+            ent = world.create_entity()
+            world.add_component(ent, BallTagComponent())
+            world.add_component(ent, PositionComponent(pos.copy()))
+            world.add_component(ent, VelocityComponent(np.zeros(3)))
+            world.add_component(ent, RadiusComponent(radius))
+            world.add_component(ent, MassComponent(mass))
+            world.add_component(ent, GravityAffectedComponent())
+            world.add_component(ent, OrientationComponent(0.0))
+            world.add_component(ent, AngularVelocityComponent(0.0))
+            world.add_component(ent, MomentOfInertiaComponent(inertia))
+            world.add_component(ent, PrevFinalOrientationComponent(0.0))
+            world.add_component(ent, PrevFinalPosComponent(pos.copy()))
+            world.add_component(ent, RenderableComponent("circle", color or "#ffffff"))
+            if prim.GetAttribute("cable:linkable").Get():
+                world.add_component(ent, CableLinkComponent(prev_cable_attachment_time_pos=pos.copy()))
+            if rest is not None:
+                world.add_component(ent, RestitutionComponent(rest))
+            if fric is not None:
+                world.add_component(ent, CoefficientOfFrictionComponent(fric))
+            name_to_entity[prim.GetName()] = ent
 
-        ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
-        ang_vel_deg = 0.0
-        if ang_vel_attr and ang_vel_attr.Get() is not None:
-            ang_vel_deg = ang_vel_attr.Get()[2]
-        ang_vel_rad = np.deg2rad(ang_vel_deg)
-
-        obs_push_attr = prim.GetAttribute("obstacle:pushVel")
-        obs_push = obs_push_attr.Get() if obs_push_attr and obs_push_attr.Get() is not None else 2.7
-
-        obs = world.create_entity()
-        world.add_component(obs, ObstacleTagComponent())
-        world.add_component(obs, PositionComponent(np.array([pos[0], pos[1], 0.0])))
-        world.add_component(obs, MassComponent(-1.0)) # Obstacles are static for collisions
-        world.add_component(obs, RadiusComponent(radius))
-        world.add_component(obs, ObstaclePushComponent(obs_push))
-        world.add_component(obs, RenderableComponent('circle', color))
-        if friction > 0.0:
-            world.add_component(obs, CoefficientOfFrictionComponent(friction))
-        if ang_vel_rad != 0:
-            world.add_component(obs, OrientationComponent(0.0))
-            world.add_component(obs, AngularVelocityComponent(ang_vel_rad))
+        elif "Obstacle" in tags:
+            radius = prim.GetAttribute("radius").Get()
+            ang_attr = prim.GetAttribute("physics:angularVelocity")
+            ang_vel_rad = np.deg2rad(ang_attr.Get()[2]) if ang_attr and ang_attr.Get() is not None else 0.0
             moi_attr = prim.GetAttribute("physics:inertiaTensor")
-            moi = 0.0
-            if moi_attr and moi_attr.Get() is not None:
-                moi = moi_attr.Get()[2][2]
-            else: # fallback to old formula
-                moi = 0.020 * radius**2
-            world.add_component(obs, MomentOfInertiaComponent(moi))
-            world.add_component(obs, PrevFinalOrientationComponent(0.0))
-        obs_ids.append(obs)
-        obs_map[name] = obs
+            moi = moi_attr.Get()[2][2] if moi_attr and moi_attr.Get() is not None else 0.0
+            push_attr = prim.GetAttribute("obstacle:pushVel")
+            push = push_attr.Get() if push_attr and push_attr.Get() is not None else 0.0
+            ent = world.create_entity()
+            world.add_component(ent, ObstacleTagComponent())
+            world.add_component(ent, PositionComponent(pos.copy()))
+            world.add_component(ent, MassComponent(-1.0))
+            world.add_component(ent, RadiusComponent(radius))
+            world.add_component(ent, ObstaclePushComponent(push))
+            world.add_component(ent, RenderableComponent("circle", color or "#ffffff"))
+            if fric is not None:
+                world.add_component(ent, CoefficientOfFrictionComponent(fric))
+            if ang_vel_rad != 0.0:
+                world.add_component(ent, OrientationComponent(0.0))
+                world.add_component(ent, AngularVelocityComponent(ang_vel_rad))
+                world.add_component(ent, MomentOfInertiaComponent(moi))
+                world.add_component(ent, PrevFinalOrientationComponent(0.0))
+            if prim.GetAttribute("cable:linkable").Get():
+                world.add_component(ent, CableLinkComponent(prev_cable_attachment_time_pos=pos.copy()))
+            name_to_entity[prim.GetName()] = ent
 
-    obs1, obs2, obs3, obs4 = obs_ids[0], obs_ids[1], obs_ids[2], obs_ids[3]
+        elif "Flipper" in tags:
+            length = prim.GetAttribute("flipper:length").Get()
+            rest_angle = prim.GetAttribute("flipper:restAngle").Get()
+            max_rot = prim.GetAttribute("flipper:maxRotation").Get()
+            ang_vel = prim.GetAttribute("flipper:angularVelocity").Get()
 
-    # Flipper Entities
-    flip_radius = 0.03
-    flip_length = 0.2
-    flip_max_rot = 1.0
-    flip_rest_angle = 0.5
-    flip_ang_vel = 20.0
-    flip_restitution = 0.6
+            geom = prim.GetChild("Geom")
+            radius = geom.GetAttribute("radius").Get() if geom else 0.0
 
-    flipper1 = world.create_entity()
-    flipper1_pos = np.array([0.26, 0.22, 0.0])
-    world.add_component(flipper1, FlipperTagComponent())
-    world.add_component(flipper1, PositionComponent(flipper1_pos))
-    world.add_component(flipper1, RadiusComponent(flip_radius))
-    world.add_component(flipper1, FlipperStateComponent(flip_length, -flip_rest_angle, flip_max_rot, flip_ang_vel))
-    world.add_component(flipper1, RestitutionComponent(flip_restitution))
-    world.add_component(flipper1, RenderableComponent('flipper', '#FF0000'))
-    world.add_component(flipper1, CableLinkComponent(prev_cable_attachment_time_pos=flipper1_pos))
+            ent = world.create_entity()
+            world.add_component(ent, FlipperTagComponent())
+            world.add_component(ent, PositionComponent(pos.copy()))
+            world.add_component(ent, RadiusComponent(radius))
+            world.add_component(ent, FlipperStateComponent(length, rest_angle, max_rot, ang_vel))
+            world.add_component(ent, RenderableComponent("flipper", color or "#ff0000"))
+            if prim.GetAttribute("cable:linkable").Get():
+                world.add_component(ent, CableLinkComponent(prev_cable_attachment_time_pos=pos.copy()))
+            if rest is not None:
+                world.add_component(ent, RestitutionComponent(rest))
+            name_to_entity[prim.GetName()] = ent
 
-    flipper1_tip = world.create_entity()
-    world.add_component(flipper1_tip, PositionComponent())
-    world.add_component(flipper1_tip, RadiusComponent(flip_radius))
-    world.add_component(flipper1_tip, FlipperTipComponent(flipper1))
-    world.add_component(flipper1_tip, CableLinkComponent())
-    world.add_component(flipper1_tip, CoefficientOfFrictionComponent(0.01))
+            tip_prim = prim.GetChild("Tip")
+            if tip_prim:
+                tip = world.create_entity()
+                world.add_component(tip, PositionComponent())
+                world.add_component(tip, RadiusComponent(radius))
+                world.add_component(tip, FlipperTipComponent(ent))
+                if tip_prim.GetAttribute("cable:linkable").Get():
+                    world.add_component(tip, CableLinkComponent())
+                if fric is not None:
+                    world.add_component(tip, CoefficientOfFrictionComponent(fric))
 
-    flipper2 = world.create_entity()
-    flipper2_pos = np.array([0.74, 0.22, 0.0])
-    world.add_component(flipper2, FlipperTagComponent())
-    world.add_component(flipper2, PositionComponent(flipper2_pos))
-    world.add_component(flipper2, RadiusComponent(flip_radius))
-    world.add_component(flipper2, FlipperStateComponent(flip_length, np.pi + flip_rest_angle, -flip_max_rot, flip_ang_vel))
-    world.add_component(flipper2, RestitutionComponent(flip_restitution))
-    world.add_component(flipper2, RenderableComponent('flipper', '#FF0000'))
-    world.add_component(flipper2, CableLinkComponent(prev_cable_attachment_time_pos=flipper2_pos))
+    # Score tracking
+    score_e = world.create_entity()
+    world.add_component(score_e, ScoreComponent(0))
 
-    flipper2_tip = world.create_entity()
-    world.add_component(flipper2_tip, PositionComponent())
-    world.add_component(flipper2_tip, RadiusComponent(flip_radius))
-    world.add_component(flipper2_tip, FlipperTipComponent(flipper2))
-    world.add_component(flipper2_tip, CableLinkComponent())
-    world.add_component(flipper2_tip, CoefficientOfFrictionComponent(0.01))
-
-    score_entity = world.create_entity()
-    world.add_component(score_entity, ScoreComponent(0))
-
-    # --- Cable Component Setup ---
-    # Connect: ball2 -> obs4 -> obs3 -> ball1
-    friction_coefficient = 0.2
-
-    pos_ball1 = world.get_component(ball1, PositionComponent).pos
-    pos_ball2 = world.get_component(ball2, PositionComponent).pos
-    pos_obs3 = world.get_component(obs3, PositionComponent).pos
-    pos_obs4 = world.get_component(obs4, PositionComponent).pos
-
-    world.add_component(obs4, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs4.copy()))
-    world.add_component(obs3, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs3.copy()))
-    world.add_component(obs4, CoefficientOfFrictionComponent(friction_coefficient))
-    world.add_component(obs3, CoefficientOfFrictionComponent(friction_coefficient))
-    world.add_component(ball1, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball1.copy()))
-    world.add_component(ball2, CableLinkComponent(prev_cable_attachment_time_pos=pos_ball2.copy()))
-    world.add_component(ball1, CoefficientOfFrictionComponent(friction_coefficient))
-    world.add_component(ball2, CoefficientOfFrictionComponent(friction_coefficient))
-
-    # --- Cable Joints and Path from USD ---
-    name_to_entity = {
-        'Ball1': ball1, 'Ball2': ball2,
-        'Obs3': obs3, 'Obs4': obs4,
-    }
-
-    joint_entities_map = {} # Sdf.Path -> entity_id
-    cable_path_prim = stage.GetPrimAtPath("/World/FlipperScene/CablePath")
+    # Cable joints and path
+    cable_path_prim = scene_root.GetChild("CablePath")
     if cable_path_prim:
-        # Parse Joints from the path's relationships
-        joint_rels = cable_path_prim.GetRelationship("cablePath:joints").GetTargets()
-        for joint_path in joint_rels:
-            joint_prim = stage.GetPrimAtPath(joint_path)
-            if not joint_prim: continue
+        joint_paths = cable_path_prim.GetRelationship("cablePath:joints").GetTargets()
+        joint_entities = {}
+        for jpath in joint_paths:
+            jp = stage.GetPrimAtPath(jpath)
+            body0 = jp.GetRelationship("physics:body0").GetTargets()[0].name
+            body1 = jp.GetRelationship("physics:body1").GetTargets()[0].name
+            attach_a = np.array(jp.GetAttribute("localPos0").Get())
+            attach_b = np.array(jp.GetAttribute("localPos1").Get())
+            rest_len = jp.GetAttribute("restLength").Get()
+            ent = world.create_entity()
+            world.add_component(ent, CableJointComponent(name_to_entity[body0], name_to_entity[body1], rest_len, attach_a, attach_b))
+            joint_entities[jp.GetPath()] = ent
 
-            body0_rel = joint_prim.GetRelationship("physics:body0").GetTargets()
-            body1_rel = joint_prim.GetRelationship("physics:body1").GetTargets()
-            if not body0_rel or not body1_rel: continue
-
-            body0_name = body0_rel[0].name
-            body1_name = body1_rel[0].name
-
-            entity_a = name_to_entity.get(body0_name)
-            entity_b = name_to_entity.get(body1_name)
-
-            if entity_a is None or entity_b is None:
-                print(f"Warning: could not find entities for joint {joint_path}")
-                continue
-
-            attach_a_attr = joint_prim.GetAttribute("localPos0")
-            attach_b_attr = joint_prim.GetAttribute("localPos1")
-            rest_length_attr = joint_prim.GetAttribute("restLength")
-
-            attach_a = np.array(attach_a_attr.Get()) if attach_a_attr.Get() is not None else np.zeros(3)
-            attach_b = np.array(attach_b_attr.Get()) if attach_b_attr.Get() is not None else np.zeros(3)
-            rest_length = rest_length_attr.Get() if rest_length_attr.Get() is not None else 0.0
-
-            joint_entity = world.create_entity()
-            world.add_component(
-                joint_entity,
-                CableJointComponent(entity_a, entity_b, rest_length, attach_a, attach_b)
-            )
-            joint_entities_map[joint_prim.GetPath()] = joint_entity
-
-        # Parse Cable Path
-        path_joints_ordered = [joint_entities_map[p] for p in joint_rels if p in joint_entities_map]
-
+        ordered = [joint_entities[p] for p in joint_paths if p in joint_entities]
         link_types = list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or [])
         cw = list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or [])
         stored = list(cable_path_prim.GetAttribute("cablePath:stored").Get() or [])
-        stiffness = cable_path_prim.GetAttribute("stiffness").Get() or 200.0
+        stiffness = cable_path_prim.GetAttribute("stiffness").Get()
+        if ordered:
+            cid = world.create_entity()
+            path_comp = create_cable_path_component(world, ordered, link_types, cw, stiffness, stored=stored)
+            world.add_component(cid, path_comp)
 
-        if path_joints_ordered:
-            cable_path_entity = world.create_entity()
-            path_comp = create_cable_path_component(
-                world, path_joints_ordered, link_types, cw, stiffness, stored=stored
-            )
-            world.add_component(cable_path_entity, path_comp)
+    # Create a map for easy flipper -> tip lookup
+    flipper_to_tip_map = {}
+    for tip_id in world.query([FlipperTipComponent]):
+        tip_comp = world.get_component(tip_id, FlipperTipComponent)
+        flipper_to_tip_map[tip_comp.flipper_entity_id] = tip_id
+    world.set_resource('flipper_to_tip_map', flipper_to_tip_map)
+
+def setup_scene(world, use_warp=False, device='cpu'):
+    stage = load_flipper_stage()
+    stage_to_world(world, stage)
 
     if not world.systems:
         # 1. Cache state from previous step
