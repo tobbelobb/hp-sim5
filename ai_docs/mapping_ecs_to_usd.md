@@ -84,15 +84,29 @@ By continuing to follow this pattern, you can fully represent your scene's stati
 ## Specific table of advice 2
 Below is a high‑level mapping of common ECS concepts to USD constructs:
 
-ECS concept                             | Possible USD representation                                                                                                                                                                                                                                        | Example reference
-Entity ID                               | Path of a USD prim within a stage (the prim acts as the "container" for all data about the entity)                                                                                                                                                                 | "Each ECS entity can be mapped to a corresponding USD prim. This prim will act as the container for the entity’s data."
-Component data                          | Attributes on the prim or API schema properties (possibly typed schemas for reusable components)                                                                                                                                                                   | "ECS components can be mapped to USD prim attributes."
-Component definitions                   | IsA typed schemas (e.g., CableJoint), or applied API schemas (e.g., CablePathAPI, PhysicsRigidBodyAPI), which provide structured properties on prims                                                                                                               | apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"] on /World/FlipperScene/Ball1 in the typed scene; custom API example in docs showing how to define CableJointAPI
-Initialization logic                    | Authoring the USD stage (defining prims and attributes) or layering additional stages; the ECS loader reads this data when constructing entities                                                                                                                   | "USD can be used to author the initial scene data… which can then be loaded into an ECS for runtime processing."
-Systems                                 | Runtime code that reads or writes prim attributes. They may correspond to stage operations such as adding layers or updating attribute values. USD’s composition arcs and operations (references, payloads, etc.) serve as the data that systems consume or modify | "USD allows for various operations like referencing, layering, and payloading to compose scenes… Systems can leverage these operations or directly modify attribute values on prims."
-Solvers (physics or other)              | Often represented through specialized typed schemas or API schemas that store solver parameters on prims (e.g., CableJoint’s restLength, stiffness). The solver code reads these attributes from the stage during simulation                                       | CableJoint prims with custom attributes restLength, localPos0, localPos1 etc. in the typed scene
-Caching / previous-frame state          | Could be stored as additional attributes (possibly in a session layer or custom namespace), or as time-sampled values. USD’s "Index" concept describes caching of composed prim data when a stage is opened
-Scene composition / resource management | Use USD composition arcs (subLayers, references, payloads). Entities and their components can be authored in separate USD files and brought together via composition, enabling re‑use and overrides                                                                | "Composition is the process that assembles multiple layers together by the composition arcs that relate them to each other."
+ECS concept: Entity ID
+Possible USD representation: Path of a USD prim within a stage (the prim acts as the "container" for all data about the entity)
+
+ECS concept: Component data
+Possible USD representation: Attributes on the prim or API schema properties (possibly typed schemas for reusable components)
+
+ECS concept: Component definitions
+Possible USD representations: IsA typed schemas (e.g., CableJoint), or applied API schemas (e.g., CablePathAPI, PhysicsRigidBodyAPI), which provide structured properties on prims
+
+ECS concept: Initialization logic
+Possible USD representations: Authoring the USD stage (defining prims and attributes) or layering additional stages; the ECS loader reads this data when constructing entities
+
+ECS concept: Systems
+Possible USD representations: Runtime code that reads or writes prim attributes. They may correspond to stage operations such as adding layers or updating attribute values. USD’s composition arcs and operations (references, payloads, etc.) serve as the data that systems consume or modify
+
+ECS concept: Solvers (physics or other)
+Possible USD representations: Often represented through specialized typed schemas or API schemas that store solver parameters on prims (e.g., CableJoint’s restLength, stiffness). The solver code reads these attributes from the stage during simulation
+
+ECS concept: Caching / previous-frame state
+Possible USD representations: Could be stored as additional attributes (possibly in a session layer or custom namespace), or as time-sampled values. USD’s "Index" concept describes caching of composed prim data when a stage is opened
+
+ECS concept: Scene composition / resource management
+Possible USD representation: Use USD composition arcs (subLayers, references, payloads). Entities and their components can be authored in separate USD files and brought together via composition, enabling re‑use and overrides
 
 This mapping reflects how the data initialized in setupScene for JavaScript (e.g., creating entities and adding components) and setup_scene for Python is mirrored by corresponding prims and attributes in flipper_scene_typed.usda.
 Systems like PBDCableConstraintSolver or CableFrictionSystem read the custom attributes (e.g., joint rest lengths, cable path parameters) to compute new positions at runtime.
