@@ -269,7 +269,7 @@ canvas {
 
 
         // Ball Entities
-        const ballRestitution = 0.6;
+        const ballRestitution = 1.0;
         const ball1Info = entities['Ball1'];
         const ball2Info = entities['Ball2'];
 
@@ -505,7 +505,7 @@ canvas {
          const pauseState = world.getResource('pauseState');
          pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
-    parseUsda('flipper_scene.usda').then(data => {
+    parseUsda('flipper_scene_typed.usda').then(data => {
         runGame(world, setupScene, data);
     });
 </script>

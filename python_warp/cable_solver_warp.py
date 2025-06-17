@@ -75,15 +75,19 @@ def solve_cable_joints(
         return
 
     lambda_val = -C / denom
-
     if inv_mass_a > 0.0:
-        positions[id_a] += grad_pos_a * (-inv_mass_a * lambda_val)
+        delta_pos = grad_pos_a * (-inv_mass_a * lambda_val)
+        wp.atomic_add(positions, id_a, delta_pos)
     if inv_inertia_a > 0.0:
-        angles[id_a] += -inv_inertia_a * lambda_val * grad_ang_a
+        delta_ang = -inv_inertia_a * lambda_val * grad_ang_a
+        wp.atomic_add(angles, id_a, delta_ang)
     if inv_mass_b > 0.0:
-        positions[id_b] += grad_pos_b * (-inv_mass_b * lambda_val)
+        delta_pos = grad_pos_b * (-inv_mass_b * lambda_val)
+        wp.atomic_add(positions, id_b, delta_pos)
     if inv_inertia_b > 0.0:
-        angles[id_b] += -inv_inertia_b * lambda_val * grad_ang_b
+        delta_ang = -inv_inertia_b * lambda_val * grad_ang_b
+        wp.atomic_add(angles, id_b, delta_ang)
+    lambda_val = -C / denom
 
 
 class WarpCableConstraintSolver:

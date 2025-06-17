@@ -48,7 +48,6 @@ def Xform "World"
         {
             token[] ecs:tags = ["Obstacle"]
             bool physics:rigidBodyEnabled = 0
-            custom bool cable:linkable = 1
             custom float obstacle:pushVel = 2.7
             rel material:binding = </World/PhysicsScene/ObstacleMaterialBlue>
             double radius = 0.1
@@ -63,7 +62,6 @@ def Xform "World"
         {
             token[] ecs:tags = ["Obstacle"]
             bool physics:rigidBodyEnabled = 0
-            custom bool cable:linkable = 1
             custom float obstacle:pushVel = 2.7
             rel material:binding = </World/PhysicsScene/ObstacleMaterialBlue>
             double radius = 0.1
@@ -266,7 +264,7 @@ def Xform "World"
     def PhysicsScene "PhysicsScene"
     {
         vector3f physics:gravityDirection = (0, -1, 0)
-        float physics:gravityMagnitude = 2.0
+        float physics:gravityMagnitude = 2.00
         def Material "BallMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )

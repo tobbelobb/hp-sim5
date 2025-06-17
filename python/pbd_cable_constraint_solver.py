@@ -50,12 +50,12 @@ class PBDCableConstraintSolver:
                     continue
 
                 mass_a_comp = world.get_component(entity_a, MassComponent)
-                inv_mass_a = 1.0 / mass_a_comp.mass if mass_a_comp and mass_a_comp.mass > 0 and not np.isinf(mass_a_comp.mass) else 0.0
+                inv_mass_a = 1.0 / mass_a_comp.mass if mass_a_comp and mass_a_comp.mass > 0 and np.isfinite(mass_a_comp.mass) else 0.0
                 moi_a_comp = world.get_component(entity_a, MomentOfInertiaComponent)
                 inv_inertia_a = moi_a_comp.inv_inertia if moi_a_comp else 0.0
 
                 mass_b_comp = world.get_component(entity_b, MassComponent)
-                inv_mass_b = 1.0 / mass_b_comp.mass if mass_b_comp and mass_b_comp.mass > 0 and not np.isinf(mass_b_comp.mass) else 0.0
+                inv_mass_b = 1.0 / mass_b_comp.mass if mass_b_comp and mass_b_comp.mass > 0 and np.isfinite(mass_b_comp.mass) else 0.0
                 moi_b_comp = world.get_component(entity_b, MomentOfInertiaComponent)
                 inv_inertia_b = moi_b_comp.inv_inertia if moi_b_comp else 0.0
 
