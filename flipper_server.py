@@ -513,6 +513,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
         material_rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
         color = "#FFFFFF" # default
+        friction = 0.0
         if material_rel.GetTargets():
             material_path = material_rel.GetTargets()[0]
             material_prim = stage.GetPrimAtPath(material_path)
@@ -523,6 +524,10 @@ def setup_scene(world, use_warp=False, device='cpu'):
                     if color_attr and color_attr.Get() is not None:
                         c = color_attr.Get()
                         color = '#%02x%02x%02x' % (int(c[0]*255), int(c[1]*255), int(c[2]*255))
+                
+                friction_attr = material_prim.GetAttribute("physics:staticFriction")
+                if friction_attr and friction_attr.Get() is not None:
+                    friction = friction_attr.Get()
 
         ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
         ang_vel_deg = 0.0
@@ -540,6 +545,8 @@ def setup_scene(world, use_warp=False, device='cpu'):
         world.add_component(obs, RadiusComponent(radius))
         world.add_component(obs, ObstaclePushComponent(obs_push))
         world.add_component(obs, RenderableComponent('circle', color))
+        if friction > 0.0:
+            world.add_component(obs, CoefficientOfFrictionComponent(friction))
         if ang_vel_rad != 0:
             world.add_component(obs, OrientationComponent(0.0))
             world.add_component(obs, AngularVelocityComponent(ang_vel_rad))
