@@ -152,6 +152,26 @@ def Xform "World"
             custom rel physics:body1 = </World/FlipperScene/Ball1>
             custom double restLength = 0.1376305461424022
         }
+
+        def PhysicsRevoluteJoint "FixedObs3"
+        {
+            rel physics:body1 = </World/FlipperScene/Obs3>
+            point3f physics:localPos0 = (0.7, 1, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            token physics:axis = "Z"
+        }
+
+        def PhysicsRevoluteJoint "FixedObs4"
+        {
+            rel physics:body1 = </World/FlipperScene/Obs4>
+            point3f physics:localPos0 = (0.2, 1.2, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            token physics:axis = "Z"
+        }
     }
 
     def PhysicsScene "PhysicsScene"
