@@ -1,9 +1,6 @@
 #usda 1.0
 (
     doc = "A better USD scene for Flipper cable demo"
-    customLayerData = {
-
-    }
     metersPerUnit = 1
     startTimeCode = 0
     timeCodesPerSecond = 300
@@ -121,7 +118,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid-attachment", "rolling", "rolling", "hybrid-attachment"]
             custom double[] cablePath:stored = [0, 0.18856494486496805, 0.06274932338455928, 0]
             custom double cablePath:totalLength = 1.600225609524756
-            custom double stiffness = 1000
+            custom double stiffness = 200
         }
 
         def CableJoint "Joint1"
