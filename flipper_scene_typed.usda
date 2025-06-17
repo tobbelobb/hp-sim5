@@ -295,7 +295,6 @@ def Xform "World"
             }
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2
-            float physics:restitution = 0
         }
 
         def Material "ObstacleMaterialBlue" (
@@ -308,7 +307,6 @@ def Xform "World"
             }
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2
-            float physics:restitution = 0
         }
 
         def Material "FlipperMaterial" (
@@ -334,7 +332,7 @@ def Xform "World"
             }
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2
-            float physics:restitution = 0.5
+            float physics:restitution = 0.6
         }
     }
 }
