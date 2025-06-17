@@ -449,10 +449,18 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
     ball_ids = []
     for name in ['Ball1', 'Ball2']:
-        ent = usd_entities.get(name, {})
-        pos = np.array([ent.get('pos', [0.0, 0.0])[0], ent.get('pos', [0.0, 0.0])[1], 0.0])
-        radius = ent.get('radius', 0.03)
-        mass = ent.get('mass', np.pi * radius**2)
+        prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
+
+        # Get data from USD, with fallbacks similar to original code
+        pos_attr = prim.GetAttribute("xformOp:translate") if prim else None
+        pos = np.array(pos_attr.Get()) if pos_attr and pos_attr.Get() is not None else np.array([0.0, 0.0, 0.0])
+
+        radius_attr = prim.GetAttribute("radius") if prim else None
+        radius = radius_attr.Get() if radius_attr and radius_attr.Get() is not None else 0.03
+
+        mass_attr = prim.GetAttribute("physics:mass") if prim else None
+        mass = mass_attr.Get() if mass_attr and mass_attr.Get() is not None else (np.pi * radius**2)
+
         ball = world.create_entity()
         world.add_component(ball, BallTagComponent())
         world.add_component(ball, PositionComponent(pos.copy()))
