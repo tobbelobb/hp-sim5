@@ -126,6 +126,7 @@ def Xform "World"
 
         def CableJoint "Joint1"
         {
+            # TODO: The localPos attributes on CableJoints are likely misnamed and contain world coordinates.
             custom bool enabled = 1
             custom point3d localPos0 = (0.08085505352834965, 0.5299878122487063, 0)
             custom point3d localPos1 = (0.10004062583764584, 1.202850178427832, 0)

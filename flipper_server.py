@@ -5,7 +5,6 @@ import os
 import sys
 import numpy as np
 from pathlib import Path
-from slideprinter_usd_demo import parse_slideprinter
 from pxr import Usd, UsdGeom, UsdShade
 
 # Assuming the python ECS code is in a 'python' directory
@@ -412,9 +411,9 @@ def setup_scene(world, use_warp=False, device='cpu'):
     world.set_resource('ball_flipper_contacts', [])
 
     scene_path = Path(__file__).with_name('flipper_scene_typed.usda')
+    stage = Usd.Stage.Open(str(scene_path))
     
     # --- Border Setup from USD ---
-    stage = Usd.Stage.Open(str(scene_path))
     border_prim = stage.GetPrimAtPath("/World/FlipperScene/Border")
     if border_prim:
         border_mesh = UsdGeom.Mesh(border_prim)
@@ -441,17 +440,12 @@ def setup_scene(world, use_warp=False, device='cpu'):
                     if friction_attr and friction_attr.Get() is not None:
                         world.add_component(border_entity, CoefficientOfFrictionComponent(friction_attr.Get()))
 
-    # NOTE: The old parser is left for legacy entities. A full migration would
-    # replace this with proper USD parsing for all entities.
-    _, usd_entities, usd_joints, usd_paths, _ = parse_slideprinter(str(scene_path))
-
+    # --- Ball Setup from USD ---
     ball_restitution = 0.6
-
     ball_ids = []
     for name in ['Ball1', 'Ball2']:
         prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
 
-        # Get data from USD, with fallbacks similar to original code
         pos_attr = prim.GetAttribute("xformOp:translate") if prim else None
         pos = np.array(pos_attr.Get()) if pos_attr and pos_attr.Get() is not None else np.array([0.0, 0.0, 0.0])
 
@@ -479,45 +473,64 @@ def setup_scene(world, use_warp=False, device='cpu'):
         ball_ids.append(ball)
     ball1, ball2 = ball_ids[0], ball_ids[1]
 
-    obs_push = 2.7
-
-    obs3_info = usd_entities.get('Obs3', {})
-    obs4_info = usd_entities.get('Obs4', {})
-
-    obstacles_data = [
-        (0.25, 0.6, 0.1, "#0F7090", 0),
-        (0.75, 0.5, 0.1, "#0F7090", 0),
-        (
-            obs3_info.get('pos', [0.7, 1.0])[0],
-            obs3_info.get('pos', [0.7, 1.0])[1],
-            obs3_info.get('radius', 0.12),
-            "#FF8000",
-            100.0,
-        ),
-        (
-            obs4_info.get('pos', [0.2, 1.2])[0],
-            obs4_info.get('pos', [0.2, 1.2])[1],
-            obs4_info.get('radius', 0.1),
-            "#FF8000",
-            -100.0,
-        ),
-    ]
+    # --- Obstacle Setup from USD ---
     obs_ids = []
-    for x, y, r, color, ang_vel in obstacles_data:
+    obs_map = {} # name -> entity_id
+    for i in range(1, 5):
+        name = f"Obs{i}"
+        prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
+        if not prim:
+            continue
+        
+        pos_attr = prim.GetAttribute("xformOp:translate")
+        pos = np.array(pos_attr.Get()) if pos_attr and pos_attr.Get() is not None else np.zeros(3)
+
+        radius_attr = prim.GetAttribute("radius")
+        radius = radius_attr.Get() if radius_attr and radius_attr.Get() is not None else 0.1
+
+        material_rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+        color = "#FFFFFF" # default
+        if material_rel.GetTargets():
+            material_path = material_rel.GetTargets()[0]
+            material_prim = stage.GetPrimAtPath(material_path)
+            if material_prim:
+                shader_prim = material_prim.GetPrimAtPath("Shader")
+                if shader_prim:
+                    color_attr = shader_prim.GetAttribute("inputs:diffuseColor")
+                    if color_attr and color_attr.Get() is not None:
+                        c = color_attr.Get()
+                        color = '#%02x%02x%02x' % (int(c[0]*255), int(c[1]*255), int(c[2]*255))
+
+        ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
+        ang_vel = 0.0
+        if ang_vel_attr and ang_vel_attr.Get() is not None:
+            ang_vel = ang_vel_attr.Get()[2]
+
+        obs_push_attr = prim.GetAttribute("obstacle:pushVel")
+        obs_push = obs_push_attr.Get() if obs_push_attr and obs_push_attr.Get() is not None else 2.7
+
         obs = world.create_entity()
         world.add_component(obs, ObstacleTagComponent())
-        world.add_component(obs, PositionComponent(np.array([x, y, 0.0])))
-        world.add_component(obs, MassComponent(-1.0))
-        world.add_component(obs, RadiusComponent(r))
+        world.add_component(obs, PositionComponent(np.array([pos[0], pos[1], 0.0])))
+        world.add_component(obs, MassComponent(-1.0)) # Obstacles are static for collisions
+        world.add_component(obs, RadiusComponent(radius))
         world.add_component(obs, ObstaclePushComponent(obs_push))
         world.add_component(obs, RenderableComponent('circle', color))
         if ang_vel != 0:
             world.add_component(obs, OrientationComponent(0.0))
             world.add_component(obs, AngularVelocityComponent(ang_vel))
-            world.add_component(obs, MomentOfInertiaComponent(0.020 * r**2))
+            moi_attr = prim.GetAttribute("physics:inertiaTensor")
+            moi = 0.0
+            if moi_attr and moi_attr.Get() is not None:
+                moi = moi_attr.Get()[2][2]
+            else: # fallback to old formula
+                moi = 0.020 * radius**2
+            world.add_component(obs, MomentOfInertiaComponent(moi))
             world.add_component(obs, PrevFinalOrientationComponent(0.0))
         obs_ids.append(obs)
-    obs3, obs4 = obs_ids[2], obs_ids[3]
+        obs_map[name] = obs
+    
+    obs1, obs2, obs3, obs4 = obs_ids[0], obs_ids[1], obs_ids[2], obs_ids[3]
 
     # Flipper Entities
     flip_radius = 0.03
@@ -564,16 +577,14 @@ def setup_scene(world, use_warp=False, device='cpu'):
     score_entity = world.create_entity()
     world.add_component(score_entity, ScoreComponent(0))
 
-    # --- Cable Setup ---
+    # --- Cable Component Setup ---
     # Connect: ball2 -> obs4 -> obs3 -> ball1
     friction_coefficient = 0.2
 
     pos_ball1 = world.get_component(ball1, PositionComponent).pos
     pos_ball2 = world.get_component(ball2, PositionComponent).pos
     pos_obs3 = world.get_component(obs3, PositionComponent).pos
-    radius_obs3 = world.get_component(obs3, RadiusComponent).radius
     pos_obs4 = world.get_component(obs4, PositionComponent).pos
-    radius_obs4 = world.get_component(obs4, RadiusComponent).radius
 
     world.add_component(obs4, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs4.copy()))
     world.add_component(obs3, CableLinkComponent(prev_cable_attachment_time_pos=pos_obs3.copy()))
@@ -584,39 +595,64 @@ def setup_scene(world, use_warp=False, device='cpu'):
     world.add_component(ball1, CoefficientOfFrictionComponent(friction_coefficient))
     world.add_component(ball2, CoefficientOfFrictionComponent(friction_coefficient))
 
-    # Cable joints parsed from the USD file
+    # --- Cable Joints and Path from USD ---
     name_to_entity = {
-        'Ball1': ball1,
-        'Ball2': ball2,
-        'Obs3': obs3,
-        'Obs4': obs4,
+        'Ball1': ball1, 'Ball2': ball2,
+        'Obs3': obs3, 'Obs4': obs4,
     }
-    joint_entities = {}
-    for j in usd_joints:
-        je = world.create_entity()
-        ea = name_to_entity.get(j['entityA'])
-        eb = name_to_entity.get(j['entityB'])
-        attach_a = np.array(j.get('attachA', [0.0, 0.0, 0.0]))
-        attach_b = np.array(j.get('attachB', [0.0, 0.0, 0.0]))
-        world.add_component(
-            je,
-            CableJointComponent(ea, eb, j.get('restLength', 0.0), attach_a, attach_b)
-        )
-        joint_entities[j['name']] = je
+    
+    joint_entities_map = {} # Sdf.Path -> entity_id
+    cable_path_prim = stage.GetPrimAtPath("/World/FlipperScene/CablePath")
+    if cable_path_prim:
+        # Parse Joints from the path's relationships
+        joint_rels = cable_path_prim.GetRelationship("cablePath:joints").GetTargets()
+        for joint_path in joint_rels:
+            joint_prim = stage.GetPrimAtPath(joint_path)
+            if not joint_prim: continue
 
-    # Create Cable Path
-    if usd_paths:
-        p = usd_paths[0]
-        cable_path = world.create_entity()
-        path_comp = create_cable_path_component(
-            world,
-            [joint_entities[n] for n in p['joints']],
-            p.get('linkTypes', []),
-            p.get('cw', []),
-            200.0,
-            stored=p.get('stored')
-        )
-        world.add_component(cable_path, path_comp)
+            body0_rel = joint_prim.GetRelationship("physics:body0").GetTargets()
+            body1_rel = joint_prim.GetRelationship("physics:body1").GetTargets()
+            if not body0_rel or not body1_rel: continue
+            
+            body0_name = body0_rel[0].name
+            body1_name = body1_rel[0].name
+
+            entity_a = name_to_entity.get(body0_name)
+            entity_b = name_to_entity.get(body1_name)
+
+            if entity_a is None or entity_b is None:
+                print(f"Warning: could not find entities for joint {joint_path}")
+                continue
+
+            attach_a_attr = joint_prim.GetAttribute("localPos0")
+            attach_b_attr = joint_prim.GetAttribute("localPos1")
+            rest_length_attr = joint_prim.GetAttribute("restLength")
+
+            attach_a = np.array(attach_a_attr.Get()) if attach_a_attr.Get() is not None else np.zeros(3)
+            attach_b = np.array(attach_b_attr.Get()) if attach_b_attr.Get() is not None else np.zeros(3)
+            rest_length = rest_length_attr.Get() if rest_length_attr.Get() is not None else 0.0
+
+            joint_entity = world.create_entity()
+            world.add_component(
+                joint_entity,
+                CableJointComponent(entity_a, entity_b, rest_length, attach_a, attach_b)
+            )
+            joint_entities_map[joint_prim.GetPath()] = joint_entity
+
+        # Parse Cable Path
+        path_joints_ordered = [joint_entities_map[p] for p in joint_rels if p in joint_entities_map]
+        
+        link_types = cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or []
+        cw = cable_path_prim.GetAttribute("cablePath:clockwise").Get() or []
+        stored = cable_path_prim.GetAttribute("cablePath:stored").Get() or []
+        stiffness = cable_path_prim.GetAttribute("stiffness").Get() or 200.0
+
+        if path_joints_ordered:
+            cable_path_entity = world.create_entity()
+            path_comp = create_cable_path_component(
+                world, path_joints_ordered, link_types, cw, stiffness, stored=stored
+            )
+            world.add_component(cable_path_entity, path_comp)
 
     if not world.systems:
         # 1. Cache state from previous step
