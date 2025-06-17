@@ -22,9 +22,12 @@ def Xform "World"
         {
             rel material:binding = </World/PhysicsScene/BallMaterial>
             double radius = 0.03
+            quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.9, 0.95, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.0028274333882308137
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((1.272345e-6, 0, 0), (0, 1.272345e-6, 0), (0, 0, 1.272345e-6))
         }
 
         def Sphere "Ball2" (
@@ -34,9 +37,12 @@ def Xform "World"
         {
             rel material:binding = </World/PhysicsScene/BallMaterial>
             double radius = 0.03
+            quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.08, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.0028274333882308137
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((1.272345e-6, 0, 0), (0, 1.272345e-6, 0), (0, 0, 1.272345e-6))
         }
 
         def Sphere "Obs1" (
@@ -47,8 +53,9 @@ def Xform "World"
             bool physics:rigidBodyEnabled = 0
             rel material:binding = </World/PhysicsScene/ObstacleMaterialBlue>
             double radius = 0.1
+            quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.25, 0.6, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
         def Sphere "Obs2" (
@@ -59,32 +66,37 @@ def Xform "World"
             bool physics:rigidBodyEnabled = 0
             rel material:binding = </World/PhysicsScene/ObstacleMaterialBlue>
             double radius = 0.1
+            quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.75, 0.5, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
         def Sphere "Obs3" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "MaterialBindingAPI"],
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"],
             customData = { string purpose = "obstacle" }
         )
         {
-            bool physics:rigidBodyEnabled = 0
             rel material:binding = </World/PhysicsScene/ObstacleMaterialOrange>
             double radius = 0.12
+            quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.7, 1, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float3 physics:angularVelocity = (0, 0, 5729.578)
+            matrix3d physics:inertiaTensor = ((0.000288, 0, 0), (0, 0.000288, 0), (0, 0, 0.000288))
         }
 
         def Sphere "Obs4" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "MaterialBindingAPI"],
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"],
             customData = { string purpose = "obstacle" }
         )
         {
-            bool physics:rigidBodyEnabled = 0
             rel material:binding = </World/PhysicsScene/ObstacleMaterialOrange>
             double radius = 0.1
+            quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.2, 1.2, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float3 physics:angularVelocity = (0, 0, -5729.578)
+            matrix3d physics:inertiaTensor = ((0.0002, 0, 0), (0, 0.0002, 0), (0, 0, 0.0002))
         }
 
         def Xform "CablePath" (
@@ -200,4 +212,3 @@ def Xform "World"
         }
     }
 }
-
