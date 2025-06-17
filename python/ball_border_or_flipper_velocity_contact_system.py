@@ -47,9 +47,9 @@ class BallBorderOrFlipperVelocityContactSystem:
         mu_ball = friction_comp.mu if friction_comp else 0.0
         ang_vel = ang_vel_comp.angular_velocity
 
-        # Combine properties of the two colliding objects (e.g., average)
-        restitution = (restitution_ball + restitution_other) / 2.0
-        mu = (mu_ball + friction_other) / 2.0
+        # Combine properties. If other has no property, use ball's. Otherwise, average.
+        restitution = restitution_ball if restitution_other is None else (restitution_ball + restitution_other) / 2.0
+        mu = mu_ball if friction_other is None else (mu_ball + friction_other) / 2.0
 
         # Vector from ball center to contact point
         r_ball = -normal * radius
@@ -111,8 +111,8 @@ class BallBorderOrFlipperVelocityContactSystem:
             for contact in border_contacts:
                 # The contact dictionary is now expected to contain the border's
                 # physical properties, read from its components by the PBD collision system.
-                restitution_border = contact.get('restitution', 0.0)
-                friction_border = contact.get('friction', 0.0)
+                restitution_border = contact.get('restitution')
+                friction_border = contact.get('friction')
                 self._handle_ball_contact(
                     world,
                     contact['ball_id'],
@@ -160,6 +160,6 @@ class BallBorderOrFlipperVelocityContactSystem:
                 v_flipper = np.cross(np.array([0, 0, flipper_ang_vel]), r_flipper)
 
                 restitution_flipper = flipper_restitution_comp.restitution
-                friction_flipper = flipper_friction_comp.mu if flipper_friction_comp else 0.1
+                friction_flipper = flipper_friction_comp.mu if flipper_friction_comp else None
 
                 self._handle_ball_contact(world, ball_id, normal, v_flipper, restitution_flipper, friction_flipper, delta_lambda, dt)

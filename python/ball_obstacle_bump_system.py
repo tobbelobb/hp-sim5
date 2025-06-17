@@ -48,21 +48,33 @@ class BallObstacleBumpSystem:
             r2 = r2_comp.radius
             push_vel = push_comp.pushVel
 
-            # --- This is the user's requested logic ---
             omega_obs = obs_ang_vel_comp.angular_velocity if obs_ang_vel_comp else 0.0
             mu = obs_friction_comp.mu if obs_friction_comp else 0.0
+            omega_ball = ball_ang_vel_comp.angular_velocity if ball_ang_vel_comp else 0.0
 
             tangent = np.array([-direction[1], direction[0], 0.0])
 
+            # Obstacle surface velocity at contact point
             v_surf_obs_tangential_comp = 0
             if omega_obs != 0:
+                # v_surf = omega_obs x r_obs, where r_obs = direction * r2
                 v_surf_x = -omega_obs * direction[1] * r2
                 v_surf_y =  omega_obs * direction[0] * r2
                 v_surf_obs_tangential_comp = v_surf_x * tangent[0] + v_surf_y * tangent[1]
 
+            # Ball surface velocity at contact point
+            # v_contact_ball = v_ball + (omega_ball x r_ball), where r_ball = -direction * r1
+            r_contact_ball = -direction * r1
+            v_angular_ball_at_contact = np.cross(np.array([0, 0, omega_ball]), r_contact_ball)
+            v_ball_at_contact = v1 + v_angular_ball_at_contact
+            v_ball_tangential_comp = np.dot(v_ball_at_contact, tangent)
+
+            v_rel_tangential = v_ball_tangential_comp - v_surf_obs_tangential_comp
+
             s_sign = 0
-            if v_surf_obs_tangential_comp != 0 and mu != 0:
-                s_sign = math.copysign(1, v_surf_obs_tangential_comp)
+            # Friction opposes relative motion
+            if abs(v_rel_tangential) > 1e-9 and mu != 0:
+                s_sign = -math.copysign(1, v_rel_tangential)
 
             effective_push_dir = direction.copy()
             if s_sign != 0:

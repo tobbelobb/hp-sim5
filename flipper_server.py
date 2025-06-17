@@ -171,8 +171,8 @@ class PBDBallBorderCollisions:
         # Get physics properties from the border entity
         border_restitution_comp = world.get_component(border_id, RestitutionComponent)
         border_friction_comp = world.get_component(border_id, CoefficientOfFrictionComponent)
-        restitution = border_restitution_comp.restitution if border_restitution_comp else 0.0
-        friction = border_friction_comp.mu if border_friction_comp else 0.0
+        restitution = border_restitution_comp.restitution if border_restitution_comp else None
+        friction = border_friction_comp.mu if border_friction_comp else None
 
         contacts = world.get_resource('ball_border_contacts')
         if contacts is None:
