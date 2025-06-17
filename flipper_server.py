@@ -6,6 +6,7 @@ import sys
 import numpy as np
 from pathlib import Path
 from slideprinter_usd_demo import parse_slideprinter
+from pxr import Usd, UsdGeom, UsdShade
 
 # Assuming the python ECS code is in a 'python' directory
 from python.ecs import (
@@ -34,7 +35,7 @@ from python.cable_friction_system import CableFrictionSystem
 # Files that trigger a server restart when modified
 WATCHED_FILES = [
     Path(__file__),
-    Path(__file__).with_name("flipper_scene.usda"),
+    Path(__file__).with_name("flipper_scene_typed.usda"),
 ]
 
 async def watch_and_restart(files, interval=1.0):
@@ -164,8 +165,15 @@ class PBDBallBorderCollisions:
         border_entities = world.query([BorderComponent])
         if not border_entities: return
 
-        border_comp = world.get_component(border_entities[0], BorderComponent)
+        border_id = border_entities[0]
+        border_comp = world.get_component(border_id, BorderComponent)
         border_points = border_comp.points
+
+        # Get physics properties from the border entity
+        border_restitution_comp = world.get_component(border_id, RestitutionComponent)
+        border_friction_comp = world.get_component(border_id, CoefficientOfFrictionComponent)
+        restitution = border_restitution_comp.restitution if border_restitution_comp else 0.0
+        friction = border_friction_comp.mu if border_friction_comp else 0.0
 
         contacts = world.get_resource('ball_border_contacts')
         if contacts is None:
@@ -224,7 +232,9 @@ class PBDBallBorderCollisions:
             contacts.append({
                 'ball_id': ball_id,
                 'normal': collision_normal.copy(),
-                'delta_lambda': delta_lambda
+                'delta_lambda': delta_lambda,
+                'restitution': restitution,
+                'friction': friction
             })
 
 class ScoreSystem:
@@ -401,21 +411,41 @@ def setup_scene(world, use_warp=False, device='cpu'):
     world.set_resource('ball_border_contacts', [])
     world.set_resource('ball_flipper_contacts', [])
 
-    offset = 0.02
-    border_points = [
-        np.array([0.74, 0.0, 0.0]), np.array([0.74, 0.25, 0.0]),
-        np.array([1.0 - offset, 0.4, 0.0]), np.array([1.0 - offset, sim_height - offset, 0.0]),
-        np.array([offset, sim_height - offset, 0.0]), np.array([offset, 0.4, 0.0]),
-        np.array([0.26, 0.25, 0.0]), np.array([0.26, 0.0, 0.0])
-    ]
-    border_entity = world.create_entity()
-    world.add_component(border_entity, BorderComponent(border_points))
-    world.add_component(border_entity, RenderableComponent('border', '#000000'))
+    scene_path = Path(__file__).with_name('flipper_scene_typed.usda')
+    
+    # --- Border Setup from USD ---
+    stage = Usd.Stage.Open(str(scene_path))
+    border_prim = stage.GetPrimAtPath("/World/FlipperScene/Border")
+    if border_prim:
+        border_mesh = UsdGeom.Mesh(border_prim)
+        points_attr = border_mesh.GetPointsAttr()
+        if points_attr:
+            # The collision system uses a 2D polyline. We take the first 8 points which form the base loop.
+            all_points = np.array(points_attr.Get())
+            border_points_3d = all_points[:8]
+
+            border_entity = world.create_entity()
+            world.add_component(border_entity, BorderComponent(border_points_3d))
+            world.add_component(border_entity, RenderableComponent('border', '#000000'))
+
+            # Get physics properties from the material
+            material_rel = UsdShade.MaterialBindingAPI(border_prim).GetDirectBindingRel()
+            if material_rel.GetTargets():
+                material_path = material_rel.GetTargets()[0]
+                material_prim = stage.GetPrimAtPath(material_path)
+                if material_prim:
+                    restitution_attr = material_prim.GetAttribute("physics:restitution")
+                    friction_attr = material_prim.GetAttribute("physics:staticFriction")
+                    if restitution_attr and restitution_attr.Get() is not None:
+                        world.add_component(border_entity, RestitutionComponent(restitution_attr.Get()))
+                    if friction_attr and friction_attr.Get() is not None:
+                        world.add_component(border_entity, CoefficientOfFrictionComponent(friction_attr.Get()))
+
+    # NOTE: The old parser is left for legacy entities. A full migration would
+    # replace this with proper USD parsing for all entities.
+    _, usd_entities, usd_joints, usd_paths, _ = parse_slideprinter(str(scene_path))
 
     ball_restitution = 0.6
-
-    scene_path = Path(__file__).with_name('flipper_scene.usda')
-    _, usd_entities, usd_joints, usd_paths, _ = parse_slideprinter(str(scene_path))
 
     ball_ids = []
     for name in ['Ball1', 'Ball2']:
