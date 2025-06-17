@@ -412,7 +412,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
     scene_path = Path(__file__).with_name('flipper_scene_typed.usda')
     stage = Usd.Stage.Open(str(scene_path))
-    
+
     # --- Border Setup from USD ---
     border_prim = stage.GetPrimAtPath("/World/FlipperScene/Border")
     if border_prim:
@@ -481,7 +481,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
         prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
         if not prim:
             continue
-        
+
         pos_attr = prim.GetAttribute("xformOp:translate")
         pos = np.array(pos_attr.Get()) if pos_attr and pos_attr.Get() is not None else np.zeros(3)
 
@@ -529,7 +529,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
             world.add_component(obs, PrevFinalOrientationComponent(0.0))
         obs_ids.append(obs)
         obs_map[name] = obs
-    
+
     obs1, obs2, obs3, obs4 = obs_ids[0], obs_ids[1], obs_ids[2], obs_ids[3]
 
     # Flipper Entities
@@ -600,7 +600,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
         'Ball1': ball1, 'Ball2': ball2,
         'Obs3': obs3, 'Obs4': obs4,
     }
-    
+
     joint_entities_map = {} # Sdf.Path -> entity_id
     cable_path_prim = stage.GetPrimAtPath("/World/FlipperScene/CablePath")
     if cable_path_prim:
@@ -613,7 +613,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
             body0_rel = joint_prim.GetRelationship("physics:body0").GetTargets()
             body1_rel = joint_prim.GetRelationship("physics:body1").GetTargets()
             if not body0_rel or not body1_rel: continue
-            
+
             body0_name = body0_rel[0].name
             body1_name = body1_rel[0].name
 
@@ -641,7 +641,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
         # Parse Cable Path
         path_joints_ordered = [joint_entities_map[p] for p in joint_rels if p in joint_entities_map]
-        
+
         link_types = cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or []
         cw = cable_path_prim.GetAttribute("cablePath:clockwise").Get() or []
         stored = cable_path_prim.GetAttribute("cablePath:stored").Get() or []
