@@ -325,6 +325,13 @@ def Xform "World"
             {
                 color3f inputs:diffuseColor = (0, 0, 0)
             }
+            # Set friction and restitution to 0 for now
+            #float physics:staticFriction = 0.2
+            #float physics:dynamicFriction = 0.2
+            #float physics:restitution = 0.6
+            float physics:staticFriction = 0
+            float physics:dynamicFriction = 0
+            float physics:restitution = 0
         }
     }
 }
