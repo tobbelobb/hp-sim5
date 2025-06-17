@@ -32,9 +32,12 @@ from python.cable_slack_system import CableSlackSystem
 from python.cable_friction_system import CableFrictionSystem
 
 # Files that trigger a server restart when modified
+python_dir = Path(__file__).parent
 WATCHED_FILES = [
     Path(__file__),
     Path(__file__).with_name("flipper_scene_typed.usda"),
+    python_dir / "python" / "ball_obstacle_bump_system.py",
+    python_dir / "python" / "ball_border_or_flipper_velocity_contact_system.py",
 ]
 
 async def watch_and_restart(files, interval=1.0):
