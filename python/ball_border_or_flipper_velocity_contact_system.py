@@ -109,7 +109,20 @@ class BallBorderOrFlipperVelocityContactSystem:
         border_contacts = world.get_resource('ball_border_contacts')
         if border_contacts:
             for contact in border_contacts:
-                self._handle_ball_contact(world, contact['ball_id'], contact['normal'], np.zeros(3), 0.0, 0.0, contact['delta_lambda'], dt)
+                # The contact dictionary is now expected to contain the border's
+                # physical properties, read from its components by the PBD collision system.
+                restitution_border = contact.get('restitution', 0.0)
+                friction_border = contact.get('friction', 0.0)
+                self._handle_ball_contact(
+                    world,
+                    contact['ball_id'],
+                    contact['normal'],
+                    np.zeros(3),  # Border is static, so velocity is zero
+                    restitution_border,
+                    friction_border,
+                    contact['delta_lambda'],
+                    dt
+                )
 
         # --- Handle Flipper Contacts ---
         flipper_contacts = world.get_resource('ball_flipper_contacts')

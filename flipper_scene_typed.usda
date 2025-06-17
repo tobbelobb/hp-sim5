@@ -245,6 +245,26 @@ def Xform "World"
                 uniform token[] xformOpOrder = ["xformOp:translate"]
             }
         }
+
+        def Mesh "Border" (
+            apiSchemas = ["PhysicsCollisionAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Border"]
+            rel material:binding = </World/PhysicsScene/BorderMaterial>
+            point3f[] points = [
+                (0.74, 0.0, 0.0), (0.74, 0.25, 0.0), (0.98, 0.4, 0.0), (0.98, 1.38, 0.0),
+                (0.02, 1.38, 0.0), (0.02, 0.4, 0.0), (0.26, 0.25, 0.0), (0.26, 0.0, 0.0),
+                (0.74, 0.0, 0.1), (0.74, 0.25, 0.1), (0.98, 0.4, 0.1), (0.98, 1.38, 0.1),
+                (0.02, 1.38, 0.1), (0.02, 0.4, 0.1), (0.26, 0.25, 0.1), (0.26, 0.0, 0.1)
+            ]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [
+                0, 1, 9, 8, 1, 2, 10, 9, 2, 3, 11, 10, 3, 4, 12, 11,
+                4, 5, 13, 12, 5, 6, 14, 13, 6, 7, 15, 14
+            ]
+            uniform token subdivisionScheme = "none"
+        }
     }
 
     def PhysicsScene "PhysicsScene"
@@ -302,6 +322,19 @@ def Xform "World"
             float physics:staticFriction = 0.01
             float physics:dynamicFriction = 0.01
             float physics:restitution = 0.6
+        }
+
+        def Material "BorderMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            def Shader "Shader"
+            {
+                color3f inputs:diffuseColor = (0, 0, 0)
+            }
+            float physics:staticFriction = 0.2
+            float physics:dynamicFriction = 0.2
+            float physics:restitution = 0.5
         }
     }
 }
