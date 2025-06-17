@@ -1,0 +1,342 @@
+[
+  {
+    "usd_glossary_terms": [
+      {
+        "term": "Active / Inactive",
+        "definition": "Activation is a metadatum/behavior of prims that models a 'non destructive and reversible prim deletion' from a stage. Prims are active by default, which means they and their active children will be composed and visited by stage traversals."
+      },
+      {
+        "term": "API Schema",
+        "definition": "An API schema is a prim Schema that serves as an interface or API for authoring and extracting a set of related data, and may also contribute to a prim’s definition."
+      },
+      {
+        "term": "Assembly",
+        "definition": "In USD an assembly is a kind of Model. Assemblies are group models, i.e. models that aggregate other models into meaningful collections."
+      },
+      {
+        "term": "Asset",
+        "definition": "Asset is a fairly common organizational concept in content-producing pipelines. In the most generic terms in USD, an asset is something that can be identified and located with a string identifier."
+      },
+      {
+        "term": "AssetInfo",
+        "definition": "AssetInfo is a metadata dictionary that can be applied to any UsdPrim or UsdProperty to convey asset-identification-and-management-related information."
+      },
+      {
+        "term": "Asset Resolution",
+        "definition": "Asset resolution is the process by which an asset path is translated into the location of a consumable resource."
+      },
+      {
+        "term": "Attribute",
+        "definition": "Attributes are the most common type of property authored in most USD scenes. An attribute can take on exactly one of the legal attribute typeNames USD provides."
+      },
+      {
+        "term": "Attribute Block",
+        "definition": "Similarly to how prims can be deactivated through composing overriding opinions, the value that an attribute produces can be blocked by an overriding opinion of None."
+      },
+      {
+        "term": "Attribute Connection",
+        "definition": "See Connection."
+      },
+      {
+        "term": "Attribute Variability",
+        "definition": "See Variability."
+      },
+      {
+        "term": "Change Processing",
+        "definition": "Change processing is the action a UsdStage takes in response to edits of any of the layers that contribute to its composition."
+      },
+      {
+        "term": "Class",
+        "definition": "Class is one of the three possible specifiers a prim (and also a primSpec) can possess."
+      },
+      {
+        "term": "Clips",
+        "definition": "See Value Clips."
+      },
+      {
+        "term": "Collection",
+        "definition": "Collections build on the ability of relationships to identify objects in a USD scene."
+      },
+      {
+        "term": "Component",
+        "definition": "A component is a 'leaf' kind of Model. Components can contain subcomponents, but no other models."
+      },
+      {
+        "term": "Composition",
+        "definition": "Composition is the process that assembles multiple layers together by the composition arcs that relate them to each other."
+      },
+      {
+        "term": "Composition Arcs",
+        "definition": "Composition arcs are the 'operators' that allow USD to create rich compositions of many layers containing mixes of 'base' scene description and overrides."
+      },
+      {
+        "term": "Connection",
+        "definition": "Connections are quite similar to relationships in that they are list-edited 'scene pointers' that robustly identify other scene objects."
+      },
+      {
+        "term": "Crate File Format",
+        "definition": "The crate file format is USD’s own binary file format, whose file extension is .usdc, and which is losslessly, bidirectionally convertible to the .usda text format."
+      },
+      {
+        "term": "Def",
+        "definition": "Def is one of the three possible specifiers a prim (and also a primSpec) can possess."
+      },
+      {
+        "term": "Default Value",
+        "definition": "Many assets consist entirely of a static definition, which really exists 'outside time'."
+      },
+      {
+        "term": "Direct Opinion",
+        "definition": "A direct opinion for some property or metadatum of a prim at path in a layerStack is one that is authored 'directly' on the primSpec."
+      },
+      {
+        "term": "EditTarget",
+        "definition": "When authoring composed scene description, it is often desirable to edit the targets of various composition arcs in context of the scene you are constructing."
+      },
+      {
+        "term": "Fallback",
+        "definition": "Many IsA Schemas and applied API Schemas define attributes that have an identifiable value that makes sense in most situations."
+      },
+      {
+        "term": "Flatten",
+        "definition": "Even though USD derives great efficiencies from accessing data directly from the layers that a stage composes together, it can sometimes be useful to 'bake down the composition' into a single layer."
+      },
+      {
+        "term": "Gprim",
+        "definition": "Gprim comes from Pixar’s RenderMan terminology, and is a contraction for 'Geometric primitive'."
+      },
+      {
+        "term": "Group",
+        "definition": "In USD a group is a kind of Model. Groups are models that aggregate other models into meaningful collections."
+      },
+      {
+        "term": "Hydra",
+        "definition": "Hydra is a modern rendering architecture optimized for handling very large scenes and 'change processing'."
+      },
+      {
+        "term": "Index",
+        "definition": "An index, also referred to as a PrimIndex, is the result of composition, and the primary piece of information we compute and cache for a composed prim on a stage."
+      },
+      {
+        "term": "Inherits",
+        "definition": "Inherits is a composition arc that addresses the problem of adding a single, non-destructive edit that can affect a whole class of distinct objects on a stage."
+      },
+      {
+        "term": "Instanceable",
+        "definition": "Instanceable is a metadatum that declares whether a given prim should be considered as a candidate for instancing."
+      },
+      {
+        "term": "Instancing",
+        "definition": "Instancing in USD is a feature that allows many instances of 'the same' object to share the same representation on a UsdStage."
+      },
+      {
+        "term": "Interpolation",
+        "definition": "Interpolation appears in two different contexts in USD: Temporal Interpolation of values in attribute value resolution and Spatial Interpolation of Primvar values across a gprim."
+      },
+      {
+        "term": "IsA Schema",
+        "definition": "An IsA schema is a prim Schema that defines the prim’s role or purpose on the Stage."
+      },
+      {
+        "term": "Kind",
+        "definition": "Kind is a reserved, prim-level metadatum whose authored value is a simple string token."
+      },
+      {
+        "term": "Layer",
+        "definition": "A Layer is the atomic persistent container of scene description for USD."
+      },
+      {
+        "term": "Layer Offset",
+        "definition": "Composition arcs such as References and SubLayers can include an offset and scaling of time to be applied during attribute value resolution for all data composed from the target layer."
+      },
+      {
+        "term": "LayerStack",
+        "definition": "LayerStacks are the keystone to understanding composition in USD."
+      },
+      {
+        "term": "List Editing",
+        "definition": "List editing is a feature to which some array-valued data elements in USD can subscribe."
+      },
+      {
+        "term": "LIVERPS Strength Ordering",
+        "definition": "LIVERPS is an acronym for Local, Inherits, VariantSets, Relocates, References, Payload, Specializes, and is the fundamental rubric for understanding opinions and namespace compose in USD."
+      },
+      {
+        "term": "Load / Unload",
+        "definition": "The Payload arc provides a 'deferred reference' behavior."
+      },
+      {
+        "term": "Localize",
+        "definition": "USD allows the construction of highly referenced and layered scenes that assemble files from many different sources."
+      },
+      {
+        "term": "Metadata",
+        "definition": "Metadata is the lightest-weight form of (name, value) scene description."
+      },
+      {
+        "term": "Model",
+        "definition": "Model is a scenegraph annotation ascribable to prims by setting their kind metadata."
+      },
+      {
+        "term": "Model Hierarchy",
+        "definition": "Model Hierarchy builds on the concept of model in a scenegraph to tackle the problem of discovering and defining a 'table of contents of important subtrees of prims'."
+      },
+      {
+        "term": "Namespace",
+        "definition": "Namespace is simply the term USD uses to describe the set of prim paths that provide the identities for prims on a Stage."
+      },
+      {
+        "term": "Opinions",
+        "definition": "Opinions are the atomic elements that participate in Value Resolution in USD."
+      },
+      {
+        "term": "Over",
+        "definition": "Over is one of the three possible specifiers a prim can possess."
+      },
+      {
+        "term": "Path",
+        "definition": "A path is a location in namespace."
+      },
+      {
+        "term": "Path Translation",
+        "definition": "All of USD’s Composition Arcs other than SubLayers allow a 'prim name change' as the target prim of the arc gets composed under the prim that added the composition arc."
+      },
+      {
+        "term": "Payload",
+        "definition": "A Payload is a composition arc that is a special kind of a Reference."
+      },
+      {
+        "term": "Prim",
+        "definition": "A Prim is the primary container object in USD."
+      },
+      {
+        "term": "Prim Definition",
+        "definition": "A prim definition is the set of built-in properties and metadata that a prim gains from a combination of the IsA schema determined from its typeName and its applied API schemas."
+      },
+      {
+        "term": "PrimSpec",
+        "definition": "Each composed Prim on a Stage is the result of potentially many PrimSpecs each contributing their own scene description to a composite result."
+      },
+      {
+        "term": "PrimStack",
+        "definition": "A PrimStack is a list of PropertySpecs that contribute a default or timeSample for a given property."
+      },
+      {
+        "term": "Primvar",
+        "definition": "The name primvar comes from RenderMan, and stands for 'primitive variable'."
+      },
+      {
+        "term": "Property",
+        "definition": "Properties are the other kind of namespace object in USD."
+      },
+      {
+        "term": "PropertySpec",
+        "definition": "Just as PrimSpecs contain data for a prim within a layer, PropertySpecs contain the data for a property within a layer."
+      },
+      {
+        "term": "PropertyStack",
+        "definition": "A PropertyStack is a list of PropertySpecs that contribute a default or timeSample for a given property."
+      },
+      {
+        "term": "Proxy",
+        "definition": "Proxy is a highly overloaded term in computer graphics."
+      },
+      {
+        "term": "PseudoRoot",
+        "definition": "A Stage’s PseudoRoot Prim is a contrivance that allows every UsdStage to contain a single tree of prims rather than a forest."
+      },
+      {
+        "term": "Purpose",
+        "definition": "Purpose is a builtin attribute of the UsdGeomImageable schema."
+      },
+      {
+        "term": "References",
+        "definition": "After SubLayers, References are the next most-basic and most-important composition arc."
+      },
+      {
+        "term": "Relationship",
+        "definition": "A Relationship is a 'namespace pointer' that is robust in the face of composition arcs."
+      },
+      {
+        "term": "Relocates",
+        "definition": "Relocates is a composition arc that maps a prim path defined in a remote LayerStack to a new path location in the local namespace."
+      },
+      {
+        "term": "Root LayerStack",
+        "definition": "Every Stage has a 'root' LayerStack, comprised of the LayerStack defined by the root Layer on which the Stage was opened."
+      },
+      {
+        "term": "Schema",
+        "definition": "USD defines a schema as an object whose purpose is to author and retrieve structured data from some UsdObject."
+      },
+      {
+        "term": "Session Layer",
+        "definition": "Each UsdStage can be created with a session layer that provides for 'scratch space' to configure, override, and experiment with the data contained in files backing the stage."
+      },
+      {
+        "term": "Specializes",
+        "definition": "Specializes is a composition arc that allows a specialized prim to be continuously refined from a base prim."
+      },
+      {
+        "term": "Specifier",
+        "definition": "Every PrimSpec possesses a specifier, which conveys the author’s intent for how the PrimSpec should be consumed and interpreted in a composed scene."
+      },
+      {
+        "term": "Stage",
+        "definition": "A stage is the USD abstraction for a scenegraph derived from a root USD file."
+      },
+      {
+        "term": "Stage Traversal",
+        "definition": "Most consumption of USD data follows the pattern of traversing an open stage."
+      },
+      {
+        "term": "Subcomponent",
+        "definition": "Subcomponent is another kind value like component that can be applied to a prim."
+      },
+      {
+        "term": "SubLayers",
+        "definition": "SubLayers is the composition arc used to construct LayerStacks."
+      },
+      {
+        "term": "TimeCode",
+        "definition": "TimeCodes are the unit-less time coordinate in USD."
+      },
+      {
+        "term": "TimeCodes Scaled to Real Time",
+        "definition": "For a composed scene, TimeCode coordinate values from TimeSamples are scaled to real-time seconds."
+      },
+      {
+        "term": "TimeSample",
+        "definition": "The term timeSample is used in two related contexts in USD."
+      },
+      {
+        "term": "Typed Schema",
+        "definition": "Synonym for IsA Schema."
+      },
+      {
+        "term": "User Properties",
+        "definition": "userProperties: is a property namespace recognized by the majority of DCC plugins as a place to look for 'extra custom properties'."
+      },
+      {
+        "term": "Value Clips",
+        "definition": "Value Clips are a feature that allows one to partition varying attribute timeSample overrides into multiple files."
+      },
+      {
+        "term": "Value Resolution",
+        "definition": "Value Resolution is the algorithm by which final values for properties or metadata are composed from all of the various PropertySpecs or PrimSpecs."
+      },
+      {
+        "term": "Variability",
+        "definition": "Attributes possess a special piece of metadata called variability that serves as a statement of intent."
+      },
+      {
+        "term": "Variant",
+        "definition": "A variant represents a single, named variation of a VariantSet."
+      },
+      {
+        "term": "VariantSet",
+        "definition": "A VariantSet is a composition arc that allows a content creator to package a discrete set of alternatives."
+      }
+    ]
+  }
+]
