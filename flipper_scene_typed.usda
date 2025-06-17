@@ -266,8 +266,7 @@ def Xform "World"
     def PhysicsScene "PhysicsScene"
     {
         vector3f physics:gravityDirection = (0, -1, 0)
-        float physics:gravityMagnitude = 0.2
-
+        float physics:gravityMagnitude = 2.0
         def Material "BallMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )

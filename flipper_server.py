@@ -399,7 +399,6 @@ def setup_scene(world, use_warp=False, device='cpu'):
     sim_height = 1.7
     sim_width = 1.0 # Aspect ratio 1/1.7, will be updated by client
 
-    world.set_resource('gravity', np.array([0.0, -2.0, 0.0]))
     world.set_resource('dt', 1.0 / 300.0)
     world.set_resource('simWidth', sim_width)
     world.set_resource('simHeight', sim_height)
@@ -412,6 +411,20 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
     scene_path = Path(__file__).with_name('flipper_scene_typed.usda')
     stage = Usd.Stage.Open(str(scene_path))
+
+    # Read gravity from USD
+    physics_scene_prim = stage.GetPrimAtPath("/World/PhysicsScene")
+    gravity_dir = np.array([0.0, -1.0, 0.0])
+    gravity_mag = 2.0 # Default value
+    if physics_scene_prim:
+        dir_attr = physics_scene_prim.GetAttribute("physics:gravityDirection")
+        mag_attr = physics_scene_prim.GetAttribute("physics:gravityMagnitude")
+        if dir_attr and dir_attr.Get() is not None:
+            gravity_dir = np.array(dir_attr.Get())
+        if mag_attr and mag_attr.Get() is not None:
+            gravity_mag = mag_attr.Get()
+    world.set_resource('gravity', gravity_dir * gravity_mag)
+
 
     # --- Border Setup from USD ---
     border_prim = stage.GetPrimAtPath("/World/FlipperScene/Border")
@@ -441,7 +454,6 @@ def setup_scene(world, use_warp=False, device='cpu'):
                         world.add_component(border_entity, CoefficientOfFrictionComponent(friction_attr.Get()))
 
     # --- Ball Setup from USD ---
-    ball_restitution = 0.6
     ball_ids = []
     for name in ['Ball1', 'Ball2']:
         prim = stage.GetPrimAtPath(f"/World/FlipperScene/{name}")
@@ -461,7 +473,6 @@ def setup_scene(world, use_warp=False, device='cpu'):
         world.add_component(ball, VelocityComponent(np.zeros(3)))
         world.add_component(ball, RadiusComponent(radius))
         world.add_component(ball, MassComponent(mass))
-        world.add_component(ball, RestitutionComponent(ball_restitution))
         world.add_component(ball, GravityAffectedComponent())
         world.add_component(ball, RenderableComponent('circle', '#a0a0a0'))
         world.add_component(ball, OrientationComponent(0.0))
@@ -469,7 +480,19 @@ def setup_scene(world, use_warp=False, device='cpu'):
         world.add_component(ball, MomentOfInertiaComponent(0.5 * mass * radius**2))
         world.add_component(ball, PrevFinalOrientationComponent(0.0))
         world.add_component(ball, PrevFinalPosComponent(pos.copy()))
-        world.add_component(ball, CoefficientOfFrictionComponent(0.2)) # Add friction to balls
+
+        # Get physics properties from the material
+        material_rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+        if material_rel.GetTargets():
+            material_path = material_rel.GetTargets()[0]
+            material_prim = stage.GetPrimAtPath(material_path)
+            if material_prim:
+                restitution_attr = material_prim.GetAttribute("physics:restitution")
+                friction_attr = material_prim.GetAttribute("physics:staticFriction")
+                if restitution_attr and restitution_attr.Get() is not None:
+                    world.add_component(ball, RestitutionComponent(restitution_attr.Get()))
+                if friction_attr and friction_attr.Get() is not None:
+                    world.add_component(ball, CoefficientOfFrictionComponent(friction_attr.Get()))
         ball_ids.append(ball)
     ball1, ball2 = ball_ids[0], ball_ids[1]
 
@@ -502,9 +525,10 @@ def setup_scene(world, use_warp=False, device='cpu'):
                         color = '#%02x%02x%02x' % (int(c[0]*255), int(c[1]*255), int(c[2]*255))
 
         ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
-        ang_vel = 0.0
+        ang_vel_deg = 0.0
         if ang_vel_attr and ang_vel_attr.Get() is not None:
-            ang_vel = ang_vel_attr.Get()[2]
+            ang_vel_deg = ang_vel_attr.Get()[2]
+        ang_vel_rad = np.deg2rad(ang_vel_deg)
 
         obs_push_attr = prim.GetAttribute("obstacle:pushVel")
         obs_push = obs_push_attr.Get() if obs_push_attr and obs_push_attr.Get() is not None else 2.7
@@ -516,9 +540,9 @@ def setup_scene(world, use_warp=False, device='cpu'):
         world.add_component(obs, RadiusComponent(radius))
         world.add_component(obs, ObstaclePushComponent(obs_push))
         world.add_component(obs, RenderableComponent('circle', color))
-        if ang_vel != 0:
+        if ang_vel_rad != 0:
             world.add_component(obs, OrientationComponent(0.0))
-            world.add_component(obs, AngularVelocityComponent(ang_vel))
+            world.add_component(obs, AngularVelocityComponent(ang_vel_rad))
             moi_attr = prim.GetAttribute("physics:inertiaTensor")
             moi = 0.0
             if moi_attr and moi_attr.Get() is not None:
