@@ -24,6 +24,11 @@ export function parseUsdaText(text) {
         const l = lines[i].trim();
         const m = l.match(/purpose\s*=\s*"([^"]+)"/);
         if (m) purpose = m[1];
+        const t = l.match(/ecs:tags\s*=\s*\[([^\]]+)\]/);
+        if (!m && t) {
+          const first = t[1].split(',')[0].replace(/"/g,'').trim();
+          if (first) purpose = first;
+        }
         if (l.endsWith(')')) { i++; break; }
         i++;
       }
@@ -38,6 +43,13 @@ export function parseUsdaText(text) {
             m = l.match(/\(([^)]+)\)/);
             if (m) {
               attrs.pos = m[1].split(',').map(n => parseFloat(n)).slice(0,2);
+            }
+          }
+          if (l.startsWith('token[] ecs:tags')) {
+            m = l.match(/\[([^\]]+)\]/);
+            if (m) {
+              const tag = m[1].split(',')[0].replace(/"/g,'').trim();
+              if (!purpose) purpose = tag;
             }
           }
           const numAttrs = ['radius','mass','angVel','velX','velY','restLength'];
