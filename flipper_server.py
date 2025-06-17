@@ -642,9 +642,9 @@ def setup_scene(world, use_warp=False, device='cpu'):
         # Parse Cable Path
         path_joints_ordered = [joint_entities_map[p] for p in joint_rels if p in joint_entities_map]
 
-        link_types = cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or []
-        cw = cable_path_prim.GetAttribute("cablePath:clockwise").Get() or []
-        stored = cable_path_prim.GetAttribute("cablePath:stored").Get() or []
+        link_types = list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or [])
+        cw = list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or [])
+        stored = list(cable_path_prim.GetAttribute("cablePath:stored").Get() or [])
         stiffness = cable_path_prim.GetAttribute("stiffness").Get() or 200.0
 
         if path_joints_ordered:
