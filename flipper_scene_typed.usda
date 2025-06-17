@@ -172,6 +172,76 @@ def Xform "World"
             quatf physics:localRot1 = (1, 0, 0, 0)
             token physics:axis = "Z"
         }
+
+        def Xform "Flipper1" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "MaterialBindingAPI"],
+            customData = { string purpose = "flipper" }
+        )
+        {
+            rel material:binding = </World/PhysicsScene/FlipperMaterial>
+            bool physics:kinematicEnabled = 1
+            custom bool cable:linkable = 1
+            custom float flipper:angularVelocity = 20
+            custom float flipper:length = 0.2
+            custom float flipper:maxRotation = 1
+            custom float flipper:restAngle = -0.5
+            double3 xformOp:translate = (0.26, 0.22, 0)
+            quatf xformOp:orient = (0.9689124, 0, 0, -0.247404)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Capsule "Geom" (
+                apiSchemas = ["PhysicsCollisionAPI"]
+            )
+            {
+                double radius = 0.03
+                double height = 0.2
+                token axis = "X"
+                double3 xformOp:translate = (0.1, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "Tip"
+            {
+                custom bool cable:linkable = 1
+                double3 xformOp:translate = (0.2, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "Flipper2" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "MaterialBindingAPI"],
+            customData = { string purpose = "flipper" }
+        )
+        {
+            rel material:binding = </World/PhysicsScene/FlipperMaterial>
+            bool physics:kinematicEnabled = 1
+            custom bool cable:linkable = 1
+            custom float flipper:angularVelocity = 20
+            custom float flipper:length = 0.2
+            custom float flipper:maxRotation = -1
+            custom float flipper:restAngle = 3.6415927
+            double3 xformOp:translate = (0.74, 0.22, 0)
+            quatf xformOp:orient = (-0.247404, 0, 0, 0.9689124)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Capsule "Geom" (
+                apiSchemas = ["PhysicsCollisionAPI"]
+            )
+            {
+                double radius = 0.03
+                double height = 0.2
+                token axis = "X"
+                double3 xformOp:translate = (0.1, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "Tip"
+            {
+                custom bool cable:linkable = 1
+                double3 xformOp:translate = (0.2, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
     }
 
     def PhysicsScene "PhysicsScene"
