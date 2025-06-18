@@ -1,12 +1,10 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const http = require('http');
-const fs = require('fs');
 
 describe('Flipper Integration Test', () => {
     let browser;
     let page;
-    let server;
+    let server; // vite dev server
     let port;
 
     // Increased timeout for Jest, Puppeteer can be slow to start
@@ -15,48 +13,17 @@ describe('Flipper Integration Test', () => {
     beforeAll(async () => {
         const projectRoot = path.resolve(__dirname, '../../..');
 
-        server = http.createServer((req, res) => {
-            // Treat root requests as requests for flipper.html
-            let requestUrl = req.url === '/' ? '/examples/js_flipper/index.html' : req.url;
-            if (requestUrl === '/flipper_runner.js') requestUrl = '/examples/js_flipper/flipper_runner.js';
-            // Construct file path relative to project root, ensuring to decode URI components
-            const filePath = path.join(projectRoot, decodeURIComponent(requestUrl.substring(1)));
-
-            let contentType = 'application/octet-stream'; // Default content type
-            const ext = path.extname(filePath).toLowerCase();
-
-            if (ext === '.html') contentType = 'text/html';
-            else if (ext === '.js') contentType = 'application/javascript';
-            else if (ext === '.css') contentType = 'text/css';
-            else if (ext === '.wasm') contentType = 'application/wasm';
-            else if (ext === '.json') contentType = 'application/json';
-            // Add more MIME types as needed
-
-            fs.readFile(filePath, (err, content) => {
-                if (err) {
-                    if (err.code === 'ENOENT') {
-                        console.error(`SERVER: File not found: ${filePath} (requested ${req.url})`);
-                        res.writeHead(404, { 'Content-Type': 'text/plain' });
-                        res.end('Not Found');
-                    } else {
-                        console.error(`SERVER: Error reading file ${filePath}: ${err.message}`);
-                        res.writeHead(500, { 'Content-Type': 'text/plain' });
-                        res.end('Server Error');
-                    }
-                    return;
-                }
-                res.writeHead(200, { 'Content-Type': contentType });
-                res.end(content);
+        const { spawn } = require('child_process');
+        const serverScript = path.join(projectRoot, 'tests/startViteServer.mjs');
+        server = spawn(process.execPath, [serverScript, projectRoot], { stdio: ['pipe', 'pipe', 'inherit'] });
+        port = await new Promise((resolve, reject) => {
+            server.stdout.once('data', data => {
+                const m = /PORT:(\d+)/.exec(data.toString());
+                resolve(m ? parseInt(m[1], 10) : NaN);
             });
+            server.once('error', reject);
         });
-
-        await new Promise(resolve => {
-            server.listen(0, '127.0.0.1', () => { // Port 0 means OS picks a free port
-                port = server.address().port;
-                console.log(`Test server listening on http://127.0.0.1:${port}`);
-                resolve();
-            });
-        });
+        console.log(`Vite server listening on http://127.0.0.1:${port}`);
 
         browser = await puppeteer.launch({
             headless: "new", // Use "new" headless mode
@@ -87,13 +54,13 @@ describe('Flipper Integration Test', () => {
           window._flipperMaxSubSteps = 500;
         });
 
-        // Navigate to the page served by our local server
-        await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle0' });
+        // Navigate to the page served by the Vite dev server
+        await page.goto(`http://127.0.0.1:${port}/examples/js_flipper/index.html`, { waitUntil: 'networkidle0' });
     });
 
     afterAll(async () => {
         if (server) {
-            await new Promise(resolve => server.close(resolve));
+            server.kill('SIGTERM');
             console.log('Test server closed.');
         }
         if (browser) {
