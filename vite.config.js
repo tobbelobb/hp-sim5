@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
 
+// This configuration makes the project's root directory the server's root.
+// This allows for predictable absolute path resolution for assets.
 export default defineConfig({
-  // Set the root to the directory containing your index.html
-  root: 'examples/js_flipper',
-
   server: {
-    // Allow serving files from one level up to access the `src` directory
+    // This is still useful to allow the browser to fetch modules
+    // from anywhere in the project if needed.
     fs: {
-      allow: ['../..']
+      allow: ['..']
     }
   }
 });
