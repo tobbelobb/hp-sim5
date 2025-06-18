@@ -1,13 +1,13 @@
-import Vector2 from '../cable_joints/vector2.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 
 import {
   World,
   PositionComponent,
   VelocityComponent,
   GravityAffectedComponent
-} from '../cable_joints/ecs.js';
+} from '../../../src/js/cable_joints/ecs.js';
 
-import { GravitySystem } from '../cable_joints/commonSystems.js';
+import { GravitySystem } from '../../../src/js/cable_joints/commonSystems.js';
 
 // Mocked world for system tests
 describe('GravitySystem', () => {

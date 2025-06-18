@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from python.geometry import signed_arc_length_on_wheel, tangent_from_point_to_circle, tangent_from_circle_to_point
+from cable_joints.geometry import signed_arc_length_on_wheel, tangent_from_point_to_circle, tangent_from_circle_to_point
 
 # Common center point for all tests, mirroring the JS setup
 center = np.array([0.0, 0.0, 0.0])

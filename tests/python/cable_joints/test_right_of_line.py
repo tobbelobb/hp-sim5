@@ -1,5 +1,5 @@
 import numpy as np
-from python.geometry import right_of_line
+from cable_joints.geometry import right_of_line
 
 def test_point_to_the_right_of_horizontal_line():
     """

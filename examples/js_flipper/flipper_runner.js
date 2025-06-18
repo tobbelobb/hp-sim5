@@ -1,5 +1,5 @@
-import { dumpWorldState } from './cable_joints/debugUtils.js';
-import { InputSystem, InputReplaySystem } from './cable_joints/commonSystems.js';
+import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
+import { InputSystem, InputReplaySystem } from '../../src/js/cable_joints/commonSystems.js';
 
 function cloneData(obj) {
     return obj ? (typeof structuredClone === 'function'

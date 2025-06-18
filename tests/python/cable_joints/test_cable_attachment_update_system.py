@@ -1,10 +1,10 @@
 import pytest
 import numpy as np
 
-from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
-from python.cable_joints_components import CableJointComponent, create_cable_path_component
-from python.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point, signed_arc_length_on_wheel
-from python.cable_attachment_update_system import CableAttachmentUpdateSystem
+from cable_joints.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
+from cable_joints.cable_joints_components import CableJointComponent, create_cable_path_component
+from cable_joints.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point, signed_arc_length_on_wheel
+from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
 
 def test_merge_joints_when_positions_opposite_vertically():
     world = World()

@@ -1,10 +1,10 @@
 import numpy as np
 
-from python.cable_joints_components import (
+from cable_joints.cable_joints_components import (
     CablePathComponent,
     CableJointComponent,
 )
-from python.ecs import (
+from cable_joints.ecs import (
     PositionComponent,
     MassComponent,
     MomentOfInertiaComponent,

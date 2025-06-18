@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-from python.ecs import (
+from cable_joints.ecs import (
     World,
     PositionComponent,
     MassComponent,
     DistanceConstraintComponent,
 )
-from python.common_systems import XPBDDistanceConstraintSystem
+from cable_joints.common_systems import XPBDDistanceConstraintSystem
 
 
 def test_xpbd_distance_constraint_converges_to_rest_length():

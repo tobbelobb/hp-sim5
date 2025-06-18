@@ -1,13 +1,13 @@
 import numpy as np
 import warp as wp
 
-from python.ecs import (
+from cable_joints.ecs import (
     PositionComponent,
     OrientationComponent,
     MassComponent,
     MomentOfInertiaComponent,
 )
-from python.cable_joints_components import (
+from cable_joints.cable_joints_components import (
     CableJointComponent,
     CablePathComponent,
 )

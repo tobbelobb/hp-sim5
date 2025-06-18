@@ -1,5 +1,5 @@
-import Vector3 from '../vector3.js';
-import { closestPointOnSegment, lineSegmentSphereIntersection } from '../geometry3.js';
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import { closestPointOnSegment, lineSegmentSphereIntersection } from '../../../src/js/cable_joints_3d/geometry3.js';
 
 export const geometry3Tests = {
   'Geometry3: Closest Point on Segment': (assert, scene) => {
@@ -80,3 +80,4 @@ export const geometry3Tests = {
     return success;
   },
 };
+test('placeholder', () => {});

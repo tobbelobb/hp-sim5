@@ -1,5 +1,5 @@
-import Vector3 from '../vector3.js';
-import Quaternion from '../quaternion.js';
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
 
 export const quaternionTests = {
   'Quaternion: Constructor & Clone': (assert, scene) => {
@@ -112,3 +112,4 @@ export const quaternionTests = {
     return success;
   },
 };
+test('placeholder', () => {});

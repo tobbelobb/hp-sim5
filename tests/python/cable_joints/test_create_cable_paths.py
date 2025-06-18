@@ -2,10 +2,10 @@ import pytest
 import numpy as np
 import warnings
 
-from python.ecs import World, PositionComponent, RadiusComponent
-from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.geometry import signed_arc_length_on_wheel
-from python.create_cable_paths import create_cable_paths
+from cable_joints.ecs import World, PositionComponent, RadiusComponent
+from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.geometry import signed_arc_length_on_wheel
+from cable_joints.create_cable_paths import create_cable_paths
 
 # Helper functions similar to the JS test setup
 def _create_mock_joint_entity(world, entity_a, entity_b, rest_length=1.0, attach_a=np.zeros(3), attach_b=np.zeros(3)):
