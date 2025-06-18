@@ -294,6 +294,12 @@ canvas {
         world.setResource('ball_obstacle_contacts', []);
         world.setResource('ball_border_contacts', []);
         world.setResource('ball_flipper_contacts', []);
+        const simWidth = 1.0;
+        const simHeight = 1.7;
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
+        const cScale = canvas.height / simHeight;
+        world.setResource('cScale', cScale);
 
         const sceneRoot = stage.GetPrimAtPath("/World/FlipperScene");
         const nameToEntityId = {};
@@ -314,13 +320,6 @@ canvas {
             world.addComponent(borderEntity, new RenderableComponent('border', color || '#000000'));
             if (restitution !== null) world.addComponent(borderEntity, new RestitutionComponent(restitution));
             if (friction !== null) world.addComponent(borderEntity, new CoefficientOfFrictionComponent(friction));
-
-            const simWidth = Math.max(...points.map(p => p[0])) - Math.min(...points.map(p => p[0]));
-            const simHeight = Math.max(...points.map(p => p[1])) - Math.min(...points.map(p => p[1]));
-            world.setResource('simWidth', simWidth);
-            world.setResource('simHeight', simHeight);
-            const cScale = canvas.height / simHeight;
-            world.setResource('cScale', cScale);
         } else {
             console.error("Could not find Border prim in scene.");
             world.getResource('errorState').hasError = true;

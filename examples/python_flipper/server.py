@@ -475,9 +475,6 @@ def stage_to_world(world, stage):
         if fric is not None:
             world.add_component(border_e, CoefficientOfFrictionComponent(fric))
 
-        world.set_resource("simWidth", float(points[:,0].max() - points[:,0].min()))
-        world.set_resource("simHeight", float(points[:,1].max() - points[:,1].min()))
-
     for prim in scene_root.GetChildren():
         tags_attr = prim.GetAttribute("ecs:tags")
         tags = tags_attr.Get() if tags_attr else []

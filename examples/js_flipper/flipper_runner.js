@@ -19,7 +19,7 @@ export function runGame(world, setupScene, sceneData) {
         if (lastTime === 0) {
             lastTime = currentTime;
         }
-        const speedScale = window._flipperSpeedScale ?? 0.6;
+        const speedScale = window._flipperSpeedScale ?? 1.0;
         let frameSec = speedScale * (currentTime - lastTime) / 1000;
         if (frameSec >= dt) {
             lastTime = currentTime;
