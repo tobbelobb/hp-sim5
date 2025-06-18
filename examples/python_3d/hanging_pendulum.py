@@ -11,6 +11,11 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass
+from pathlib import Path
+import sys
+
+root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root / "src" / "python"))
 
 from cable_joints.ecs import (
     World, PositionComponent, VelocityComponent, MassComponent,

@@ -7,6 +7,9 @@ import numpy as np
 from pathlib import Path
 from pxr import Usd, UsdGeom, UsdShade
 
+root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root / "src" / "python"))
+
 # Assuming the python ECS code is in a 'python' directory
 from cable_joints.ecs import (
     World, PauseStateComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
