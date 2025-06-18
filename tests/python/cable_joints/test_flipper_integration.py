@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from python.ecs import World, PositionComponent, BallTagComponent
-from flipper_server import setup_scene, ScoreComponent
+from cable_joints.ecs import World, PositionComponent, BallTagComponent
+from server import setup_scene, ScoreComponent
 
 def get_game_state_for_test(world):
     """Helper function to extract ball positions and score from the world."""

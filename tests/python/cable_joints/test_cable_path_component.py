@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
 
-from python.ecs import World, PositionComponent, RadiusComponent
-from python.cable_joints_components import CableJointComponent, create_cable_path_component
-from python.geometry import signed_arc_length_on_wheel
+from cable_joints.ecs import World, PositionComponent, RadiusComponent
+from cable_joints.cable_joints_components import CableJointComponent, create_cable_path_component
+from cable_joints.geometry import signed_arc_length_on_wheel
 
 def test_initial_stored_lengths_and_total_rest_length_are_computed_correctly():
     world = World()

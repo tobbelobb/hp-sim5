@@ -9,7 +9,7 @@ from .geometry import (
     tangent_from_circle_to_circle, tangent_from_circle_to_point,
     tangent_from_point_to_circle, signed_arc_length_on_wheel
 )
-from python.util import (
+from cable_joints.util import (
     is_attachment,
     is_rolling,
     effective_cw

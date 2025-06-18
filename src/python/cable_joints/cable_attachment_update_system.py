@@ -13,8 +13,8 @@ from .geometry import (
 from .vector2 import rotate_inplace, normalize_inplace
 from .update_hybrid_link_states import update_hybrid_link_states
 from .split_joints import split_joints
-from python.update_attachment_points import update_attachment_points
-from python.merge_joints import merge_joints
+from cable_joints.update_attachment_points import update_attachment_points
+from cable_joints.merge_joints import merge_joints
 
 def _clear_debug_points(world):
     debug_points = world.get_resource('debugRenderPoints')

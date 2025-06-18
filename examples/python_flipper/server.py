@@ -7,8 +7,11 @@ import numpy as np
 from pathlib import Path
 from pxr import Usd, UsdGeom, UsdShade
 
+root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root / "src" / "python"))
+
 # Assuming the python ECS code is in a 'python' directory
-from python.ecs import (
+from cable_joints.ecs import (
     World, PauseStateComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
     RestitutionComponent, GravityAffectedComponent, OrientationComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, ObstacleTagComponent, ScoredTagComponent, FlipperTagComponent,
@@ -16,28 +19,28 @@ from python.ecs import (
     PrevFinalPosComponent, PrevFinalOrientationComponent, BallTagComponent, ObstaclePushComponent,
     CableLinkComponent, CoefficientOfFrictionComponent
 )
-from python.common_systems import (
+from cable_joints.common_systems import (
     PrevFinalPosSystem, GravitySystem, MovementSystem, AngularMovementSystem,
     PBDBallObstacleCollisions, PBDBallBallCollisions, PBDVelocityUpdateSystem,
     PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem, FlipperTipLinkSystem
 )
-from python.cable_attachment_update_system import CableAttachmentUpdateSystem
-from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
-from python.geometry import right_of_line
-from python.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
-from python.ball_obstacle_bump_system import BallObstacleBumpSystem
-from python.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
-from python.cable_attachment_cache_system import CableAttachmentCacheSystem
-from python.cable_slack_system import CableSlackSystem
-from python.cable_friction_system import CableFrictionSystem
+from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
+from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
+from cable_joints.geometry import right_of_line
+from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
+from cable_joints.ball_obstacle_bump_system import BallObstacleBumpSystem
+from cable_joints.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
+from cable_joints.cable_attachment_cache_system import CableAttachmentCacheSystem
+from cable_joints.cable_slack_system import CableSlackSystem
+from cable_joints.cable_friction_system import CableFrictionSystem
 
 # Files that trigger a server restart when modified
-python_dir = Path(__file__).parent
+python_dir = Path(__file__).resolve().parents[1] / "src" / "python" / "cable_joints"
 WATCHED_FILES = [
     Path(__file__),
-    Path(__file__).with_name("flipper_scene_typed.usda"),
-    python_dir / "python" / "ball_obstacle_bump_system.py",
-    python_dir / "python" / "ball_border_or_flipper_velocity_contact_system.py",
+    Path(__file__).resolve().parents[1]/"usd_scenes"/"flipper_scene.usda",
+    python_dir / "ball_obstacle_bump_system.py",
+    python_dir / "ball_border_or_flipper_velocity_contact_system.py",
 ]
 
 async def watch_and_restart(files, interval=1.0):
@@ -398,7 +401,7 @@ class RemoteInputSystem:
 
 def load_flipper_stage():
     """Load the flipper demo USD stage."""
-    scene_path = Path(__file__).with_name("flipper_scene_typed.usda")
+    scene_path = Path(__file__).resolve().parents[1]/"usd_scenes"/"flipper_scene.usda"
     return Usd.Stage.Open(str(scene_path))
 
 def _material_properties(stage, prim):
@@ -630,7 +633,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
         if use_warp:
-            from python_warp.cable_solver_warp import WarpCableConstraintSolver
+            from cable_joints_warp.cable_solver_warp import WarpCableConstraintSolver
             solver = WarpCableConstraintSolver(device)
         else:
             solver = PBDCableConstraintSolver()

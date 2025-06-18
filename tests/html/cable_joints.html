@@ -24,8 +24,8 @@
     <textarea id="errorDumpOutput" readonly style="width: 90%; height: 100vh; display: none; margin: 10px auto; font-family: monospace; background-color: #333; color: #eee; border: 1px solid #888;"></textarea>
 
 <script type="module">
-  import Vector2 from './vector2.js';
-  import { dumpWorldState } from './debugUtils.js';
+  import Vector2 from '../../src/js/cable_joints/vector2.js';
+  import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
   import {
     World,
     PauseStateComponent,
@@ -44,7 +44,7 @@
     MomentOfInertiaComponent,
     ObstacleTagComponent,
     ObstaclePushComponent
-  } from './ecs.js';
+  } from '../../src/js/cable_joints/ecs.js';
 
   import {
     CableLinkComponent,
@@ -52,12 +52,12 @@
     CablePathComponent,
     CableAttachmentUpdateSystem,
     PBDCableConstraintSolver,
-  } from './cable_joints_core.js';
+  } from '../../src/js/cable_joints/cable_joints_core.js';
 
   import {
     tangentFromPointToCircle,
       tangentFromCircleToPoint,
-  } from './geometry.js';
+  } from '../../src/js/cable_joints/geometry.js';
 
   import {
     GravitySystem,
@@ -65,11 +65,11 @@
     AngularMovementSystem,
     PBDBallBallCollisions,
     PBDBallObstacleCollisions
-  } from './commonSystems.js';
+  } from '../../src/js/cable_joints/commonSystems.js';
 
   import {
     RenderSystem
-  } from './renderSystem.js';
+  } from '../../src/js/cable_joints/renderSystem.js';
 
   const canvas = document.getElementById("myCanvas");
   const errorInfoDiv = document.getElementById("errorInfo"); // Get error elements

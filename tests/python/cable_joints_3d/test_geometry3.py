@@ -1,5 +1,5 @@
 import numpy as np
-from python.geometry3 import closest_point_on_segment, line_segment_sphere_intersection
+from cable_joints_3d.geometry3 import closest_point_on_segment, line_segment_sphere_intersection
 
 # These tests mirror the JavaScript geometry3 tests under cable_joints_3d/tests/geometry3.js
 

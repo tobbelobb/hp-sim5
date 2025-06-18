@@ -13,11 +13,12 @@ describe('Flipper Integration Test', () => {
     jest.setTimeout(120000); // 120 seconds for the entire test suite in this file
 
     beforeAll(async () => {
-        const projectRoot = path.resolve(__dirname, '..');
+        const projectRoot = path.resolve(__dirname, '../../..');
 
         server = http.createServer((req, res) => {
             // Treat root requests as requests for flipper.html
-            const requestUrl = req.url === '/' ? '/flipper.html' : req.url;
+            let requestUrl = req.url === '/' ? '/examples/js_flipper/index.html' : req.url;
+            if (requestUrl === '/flipper_runner.js') requestUrl = '/examples/js_flipper/flipper_runner.js';
             // Construct file path relative to project root, ensuring to decode URI components
             const filePath = path.join(projectRoot, decodeURIComponent(requestUrl.substring(1)));
 

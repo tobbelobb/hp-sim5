@@ -1,7 +1,7 @@
 {
   "name": "cable_joints",
   "version": "1.0.0",
-  "main": "cable_joints_core.js",
+  "main": "src/js/cable_joints/cable_joints_core.js",
   "scripts": {
     "test": "jest"
   },

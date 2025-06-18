@@ -43,11 +43,11 @@
 <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { World, PositionComponent, OrientationComponent } from '../ecs.js';
-    import { CableLinkComponent } from '../cable_joints_core.js';
-    import { CableAttachmentCacheSystem } from '../cable_attachment_cache_system.js';
-    import Vector3 from '../vector3.js';
-    import Quaternion from '../quaternion.js';
+    import { World, PositionComponent, OrientationComponent } from ../../src/js/cable_joints/ecs.js';
+    import { CableLinkComponent } from ../../src/js/cable_joints/cable_joints_core.js';
+    import { CableAttachmentCacheSystem } from ../../src/js/cable_joints/cable_attachment_cache_system.js';
+    import Vector3 from ../../../src/js/cable_joints_3d/vector3.js';
+    import Quaternion from ../../../src/js/cable_joints_3d/quaternion.js';
 
     // --- Import Test Suites ---
     import { vector3Tests } from './vector3.test.js';

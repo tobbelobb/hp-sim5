@@ -1,8 +1,8 @@
 import numpy as np
 
-from python.ecs import PositionComponent, RadiusComponent, CableLinkComponent
-from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.geometry import (
+from cable_joints.ecs import PositionComponent, RadiusComponent, CableLinkComponent
+from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.geometry import (
     line_segment_circle_intersection,
     right_of_line,
     tangent_from_circle_to_circle,
@@ -10,7 +10,7 @@ from python.geometry import (
     tangent_from_circle_to_point,
     signed_arc_length_on_wheel
 )
-from python.util import (
+from cable_joints.util import (
     is_attachment,
     is_rolling,
     effective_cw

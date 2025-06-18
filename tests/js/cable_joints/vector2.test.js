@@ -1,4 +1,4 @@
-import Vector2 from '../cable_joints/vector2.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 
 describe('Vector2.angleTo', () => {
     const v1 = new Vector2(1, 0);

@@ -1,5 +1,5 @@
 import numpy as np
-from python.geometry import line_segment_circle_intersection
+from cable_joints.geometry import line_segment_circle_intersection
 
 # Common center point for all tests, mirroring the JS setup
 center = np.array([0.0, 0.0, 0.0])

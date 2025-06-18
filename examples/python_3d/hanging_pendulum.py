@@ -3,7 +3,7 @@
 This example mirrors the simple Warp-based demo but runs on the
 custom Position Based Dynamics (PBD) engine used by the rest of the
 project.  The simulation is built on the ECS framework from
-:mod:`python.ecs` and uses a single :class:`CableJointComponent` to
+:mod:`cable_joints.ecs` and uses a single :class:`CableJointComponent` to
 constrain a mass to an anchor point.
 """
 
@@ -11,19 +11,24 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass
+from pathlib import Path
+import sys
 
-from python.ecs import (
+root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root / "src" / "python"))
+
+from cable_joints.ecs import (
     World, PositionComponent, VelocityComponent, MassComponent,
     OrientationComponent, AngularVelocityComponent, MomentOfInertiaComponent,
     PrevFinalPosComponent, PrevFinalOrientationComponent,
     GravityAffectedComponent, CableLinkComponent, RadiusComponent,
 )
-from python.cable_joints_components import (
+from cable_joints.cable_joints_components import (
     CableJointComponent, create_cable_path_component, CablePathComponent,
 )
-from python.cable_attachment_update_system import CableAttachmentUpdateSystem
-from python.pbd_cable_constraint_solver import PBDCableConstraintSolver
-from python.common_systems import (
+from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
+from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
+from cable_joints.common_systems import (
     PrevFinalPosSystem, PrevFinalOrientationSystem, MovementSystem,
     AngularMovementSystem, GravitySystem, PBDVelocityUpdateSystem,
     PBDAngularVelocityUpdateSystem,

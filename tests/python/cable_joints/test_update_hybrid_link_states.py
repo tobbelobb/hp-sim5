@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
 
-from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
-from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.update_hybrid_link_states import update_hybrid_link_states
+from cable_joints.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
+from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.update_hybrid_link_states import update_hybrid_link_states
 
 # Test setup helpers
 def add_wheel(world, pos, r=1.0):

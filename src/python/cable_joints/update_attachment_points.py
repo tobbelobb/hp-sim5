@@ -1,21 +1,21 @@
 import numpy as np
 
-from python.ecs import (
+from cable_joints.ecs import (
     PositionComponent,
     RadiusComponent,
     CableLinkComponent,
     OrientationComponent,
     CoefficientOfFrictionComponent
 )
-from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.geometry import (
+from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.geometry import (
     tangent_from_point_to_circle,
     tangent_from_circle_to_point,
     tangent_from_circle_to_circle,
     signed_arc_length_on_wheel,
 )
-from python.vector2 import rotate_inplace
-from python.util import (
+from cable_joints.vector2 import rotate_inplace
+from cable_joints.util import (
     is_attachment,
     is_rolling,
     is_hybrid,

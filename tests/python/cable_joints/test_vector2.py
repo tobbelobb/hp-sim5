@@ -1,5 +1,5 @@
 import numpy as np
-from python.vector2 import angle_to, normalize_inplace, rotate_inplace
+from cable_joints.vector2 import angle_to, normalize_inplace, rotate_inplace
 
 # These tests mirror portions of tests/vector2.test.js
 

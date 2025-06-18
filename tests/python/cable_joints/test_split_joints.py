@@ -1,10 +1,10 @@
 import pytest
 import numpy as np
 
-from python.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
-from python.cable_joints_components import CableJointComponent, CablePathComponent
-from python.split_joints import split_joints
-from python.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point
+from cable_joints.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
+from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.split_joints import split_joints
+from cable_joints.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point
 
 def test_split_joints_does_nothing_for_a_single_joint_path_that_misses_every_wheel():
     world = World()
