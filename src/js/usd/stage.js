@@ -8,7 +8,20 @@ import { parse as parseUsda } from "@kroxilon/usda-parser";
 export async function Open(pathOrSource) {
   const source = isUsdText(pathOrSource)
     ? pathOrSource                              // already the file text
-    : await fetch(pathOrSource).then(r => r.text());
+    : await fetch(pathOrSource).then(async (r) => {
+        if (!r.ok) {
+          throw new Error(`Failed to fetch ${r.url}: ${r.status} ${r.statusText}. Check that the file path is correct and the server is configured to serve it.`);
+        }
+        const text = await r.text();
+        // A common error is for the server to return an HTML 404 page.
+        // This provides a better error message than the parser's syntax error.
+        if (text.trim().startsWith("<")) {
+          throw new Error(
+            `Fetch for ${r.url} returned HTML, not a USDA file. Check that the file path is correct.`
+          );
+        }
+        return text;
+      });
 
   const ast = parseUsda(source);
   const primIndex = indexPrims(ast.statements);
