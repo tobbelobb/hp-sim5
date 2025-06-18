@@ -273,7 +273,6 @@ canvas {
     // --- Scene Setup ---
     function setupScene(stage) {
         world.clear(); // Clear entities and components
-        console.log(stage);
 
         // --- Set Canvas Size from CSS ---
         canvas.width = canvas.clientWidth;
@@ -312,8 +311,6 @@ canvas {
             const borderPoints = points.slice(0, 8).map(p => new Vector2(p[0], p[1]));
             world.addComponent(borderEntity, new BorderComponent(borderPoints));
             const { color, friction, restitution } = materialProperties(stage, borderPrim);
-            console.log(borderPrim);
-            console.log(materialProperties(stage, borderPrim));
             world.addComponent(borderEntity, new RenderableComponent('border', color || '#000000'));
             if (restitution !== null) world.addComponent(borderEntity, new RestitutionComponent(restitution));
             if (friction !== null) world.addComponent(borderEntity, new CoefficientOfFrictionComponent(friction));

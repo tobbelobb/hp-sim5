@@ -271,7 +271,7 @@ def Xform "World"
         {
             def Shader "Shader"
             {
-                color3f inputs:diffuseColor = (0.3922, 0.2537, 0)
+                color3f inputs:diffuseColor = (0.62745, 0.62745, 0.62745)
             }
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2
