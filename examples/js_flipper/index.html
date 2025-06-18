@@ -316,6 +316,7 @@ canvas {
             if (!tags.length) continue;
 
             const posArr = getAttribute(prim, "xformOp:translate");
+            if (!posArr) continue;
             const pos = new Vector2(posArr[0], posArr[1]);
             const { color, friction, restitution } = materialProperties(stage, prim);
 
