@@ -537,7 +537,7 @@ canvas {
          const pauseState = world.getResource('pauseState');
          pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
-    UsdOpen('/examples/usd_scenes/flipper_scene.usda').then(data => {
+    UsdOpen('/examples/usd_scenes/flipper_scene.usda.txt').then(data => {
         runGame(world, () => setupScene(data));
     });
 </script>
