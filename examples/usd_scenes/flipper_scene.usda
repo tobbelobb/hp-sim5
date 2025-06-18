@@ -23,7 +23,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.0028274333882308137
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((1.272345e-6, 0, 0), (0, 1.272345e-6, 0), (0, 0, 1.272345e-6))
+            matrix3d physics:inertiaTensor = ((1.272345024703866e-06, 0, 0), (0, 1.272345024703866e-06, 0), (0, 0, 1.272345024703866e-06))
         }
 
         def Sphere "Ball2" (
@@ -39,7 +39,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.0028274333882308137
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((1.272345e-6, 0, 0), (0, 1.272345e-6, 0), (0, 0, 1.272345e-6))
+            matrix3d physics:inertiaTensor = ((1.272345024703866e-06, 0, 0), (0, 1.272345024703866e-06, 0), (0, 0, 1.272345024703866e-06))
         }
 
         def Sphere "Obs1" (
@@ -296,7 +296,7 @@ def Xform "World"
         {
             def Shader "Shader"
             {
-                color3f inputs:diffuseColor = (0, 0, 1.0)
+                color3f inputs:diffuseColor = (0.059, 0.439, 0.565)
             }
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2

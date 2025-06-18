@@ -22,20 +22,23 @@ def get_game_state_for_test(world):
 
     return state
 
-def test_flipper_autonomous_run_and_settle():
+@pytest.mark.parametrize("use_warp,expected_score", [
+    (True, 17),
+    (False, 15),
+])
+def test_flipper_autonomous_run_and_settle(use_warp, expected_score):
     """
     Tests that the flipper simulation can run autonomously and that the balls
     settle below the flippers with a specific score, similar to the JS integration test.
     """
     world = World()
-    setup_scene(world, use_warp=True, device="cpu")
+    setup_scene(world, use_warp=use_warp, device="cpu")
 
     # The JS test sets a speed scale. Here, we control simulation time by the number of steps.
     # The game starts paused. Unpause it.
     pause_state = world.get_resource('pauseState')
     pause_state.paused = False
 
-    EXPECTED_SCORE = 11
     # JS test runs for 100s. Sim runs at 300Hz. So 100 * 300 = 30000 steps.
     # The JS test polls every 1s. So we poll every 300 steps.
     MAX_SIMULATION_STEPS = 100 * 300
@@ -75,10 +78,10 @@ def test_flipper_autonomous_run_and_settle():
             if all_balls_below_flippers:
                 print(f"All balls detected below flipper line (Y < {FLIPPER_Y_LINE}) at step {step}. Current score: {score}.")
                 settled = True
-                if score == EXPECTED_SCORE:
+                if score == expected_score:
                     test_passed = True
                 else:
-                    pytest.fail(f"Test failed: Balls settled below flippers, but score is {score} (expected {EXPECTED_SCORE}).")
+                    pytest.fail(f"Test failed: Balls settled below flippers, but score is {score} (expected {expected_score}).")
                 break # Exit simulation loop
 
     # Final assertions after the loop
@@ -90,4 +93,4 @@ def test_flipper_autonomous_run_and_settle():
     assert test_passed, f"Test condition for score was not met."
 
     final_score = get_game_state_for_test(world)['score']
-    assert final_score == EXPECTED_SCORE, f"Final score should be {EXPECTED_SCORE}"
+    assert final_score == expected_score, f"Final score should be {expected_score}"
