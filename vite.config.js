@@ -10,6 +10,6 @@ export default defineConfig(async () => {
   return {
     base: '/hp-sim5/',
     build: { rollupOptions: { input: inputs } },
-    assetsInclude: ['**/*.usda']
+    assetsInclude: ['**/*.usda', '**/*.usda.txt']
   };
 });
