@@ -3,18 +3,18 @@ import json
 import numpy as np
 import websockets
 
-from python.ecs import (
+from cable_joints.ecs import (
     World, PauseStateComponent, PositionComponent, VelocityComponent,
     RadiusComponent, MassComponent, OrientationComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, RenderableComponent, PrevFinalPosComponent,
     PrevFinalOrientationComponent, BallTagComponent, CableLinkComponent,
     DistanceConstraintComponent
 )
-from python.cable_joints_components import (
+from cable_joints.cable_joints_components import (
     CableJointComponent, CablePathComponent, create_cable_path_component
 )
-from python.geometry import tangent_from_point_to_circle
-from python.common_systems import (
+from cable_joints.geometry import tangent_from_point_to_circle
+from cable_joints.common_systems import (
     PrevFinalPosSystem, PrevFinalOrientationSystem, MovementSystem,
     AngularMovementSystem, XPBDDistanceConstraintSystem,
     CableAttachmentUpdateSystem, PBDCableConstraintSolver,

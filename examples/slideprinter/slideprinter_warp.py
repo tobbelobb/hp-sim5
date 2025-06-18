@@ -2,11 +2,11 @@
 
 This script previously used Warp's built in XPBD solver for both simulation and
 rendering.  It now mirrors :mod:`slideprinter_server`/``slideprinter.html`` and
-uses the Python PBD implementation from ``python.common_systems`` together with
+uses the Python PBD implementation from ``cable_joints.common_systems`` together with
 Warp only for rendering.  This makes it easier to compare the JavaScript and
 Python versions while still producing a nice USD animation.
 
-Run with ``python -m python.slideprinter_warp``.  The generated
+Run with ``python -m cable_joints_warp.slideprinter_warp``.  The generated
 ``slideprinter.usd`` file can be opened in any USD viewer.  See
 ``ai_docs/Warp/README.md`` for Warp installation instructions.
 """

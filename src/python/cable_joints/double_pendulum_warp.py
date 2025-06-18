@@ -37,7 +37,7 @@ from .common_systems import (
     PBDAngularVelocityUpdateSystem,
     PBDBallBallCollisions,
 )
-from python_warp.cable_solver_warp import WarpCableConstraintSolver
+from cable_joints_warp.cable_solver_warp import WarpCableConstraintSolver
 
 
 @dataclass

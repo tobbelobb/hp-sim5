@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from python.ecs import (
+from cable_joints.ecs import (
     World,
     PositionComponent,
     VelocityComponent,
@@ -10,7 +10,7 @@ from python.ecs import (
     MassComponent,
     RestitutionComponent
 )
-from python.common_systems import (
+from cable_joints.common_systems import (
     GravitySystem,
     MovementSystem,
     PBDBallBallCollisions

@@ -1,5 +1,5 @@
-import Vector2 from '../cable_joints/vector2.js';
-import { _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle } from '../cable_joints/geometry.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
+import { _tangentPointCircle, tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle } from '../../../src/js/cable_joints/geometry.js';
 
 describe('_tangentPointCircle', () => {
   test('point outside circle returns correct tangent points', () => {

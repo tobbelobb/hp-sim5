@@ -1,19 +1,19 @@
-import Vector2 from '../cable_joints/vector2.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 
 import {
   World,
   PositionComponent,
   RadiusComponent
-} from '../cable_joints/ecs.js';
+} from '../../../src/js/cable_joints/ecs.js';
 
 import {
   signedArcLengthOnWheel
-} from '../cable_joints/geometry.js';
+} from '../../../src/js/cable_joints/geometry.js';
 
 import {
   CableJointComponent,
   CablePathComponent,
-} from '../cable_joints/cable_joints_core.js';
+} from '../../../src/js/cable_joints/cable_joints_core.js';
 
 describe('CablePathComponent constructor', () => {
   test('initial stored lengths and totalRestLength are computed correctly', () => {

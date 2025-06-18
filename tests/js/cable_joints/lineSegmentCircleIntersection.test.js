@@ -1,5 +1,5 @@
-import Vector2 from '../cable_joints/vector2.js';
-import { lineSegmentCircleIntersection } from  '../cable_joints/geometry.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
+import { lineSegmentCircleIntersection } from  '../../../src/js/cable_joints/geometry.js';
 
 describe('lineSegmentCircleIntersection', () => {
   const center = new Vector2(0, 0);

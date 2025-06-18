@@ -1,13 +1,13 @@
-import Vector2 from '../cable_joints/vector2.js';
-import { World, PositionComponent, VelocityComponent, MassComponent, GravityAffectedComponent } from '../cable_joints/ecs.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
+import { World, PositionComponent, VelocityComponent, MassComponent, GravityAffectedComponent } from '../../../src/js/cable_joints/ecs.js';
 import {
   CableJointComponent,
   CableLinkComponent,
   CablePathComponent,
   CableAttachmentUpdateSystem,
   PBDCableConstraintSolver
-} from '../cable_joints/cable_joints_core.js';
-import { GravitySystem } from '../cable_joints/commonSystems.js';
+} from '../../../src/js/cable_joints/cable_joints_core.js';
+import { GravitySystem } from '../../../src/js/cable_joints/commonSystems.js';
 
 describe('PBDCableConstraintSolver', () => {
   test('does nothing when compliance is zero', () => {

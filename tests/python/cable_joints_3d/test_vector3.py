@@ -1,5 +1,5 @@
 import numpy as np
-from python.vector3 import vec3, length, dot, cross
+from cable_joints_3d.vector3 import vec3, length, dot, cross
 
 def test_vec3_helpers():
     v = vec3(1,2,2)

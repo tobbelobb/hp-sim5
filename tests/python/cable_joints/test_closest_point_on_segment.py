@@ -1,5 +1,5 @@
 import numpy as np
-from python.geometry import closest_point_on_segment
+from cable_joints.geometry import closest_point_on_segment
 
 def test_point_projects_inside_segment():
     """

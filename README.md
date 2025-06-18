@@ -21,27 +21,27 @@ This project simulates cables using a Position‑Based Dynamics (PBD) solver bui
    ```
 3. Start the demo server and open the HTML front end:
    ```bash
-   python flipper_server.py
-   # then visit flipper_python.html in your browser
+   python examples/python_flipper/server.py
+   # then visit examples/python_flipper/index.html in your browser
    ```
-4. To run the Warp version use `python flipper_server.py --warp` and open `flipper_python_warp.html`.
+4. To run the Warp version use `python examples/python_flipper/server.py --warp` and open `examples/python_flipper/index_warp.html`.
 
 ### Running the tests
 JavaScript tests use Jest and Python tests use pytest.
 
 ```bash
 npm test             # runs tests under tests/
-pytest python/tests  # runs tests for the Python port
+pytest tests/python  # runs tests for the Python port
 ```
 
 ## Project Layout
-- **cable_joints/** – JavaScript source modules
-- **python/** – Python port mirroring the JS implementation
+- **src/js/cable_joints/** – JavaScript source modules
+- **src/python/cable_joints/** – Python port mirroring the JS implementation
 - **tests/** – Jest unit and integration tests
-- **python/tests/** – pytest suite for the Python port
-- **cable_joints_3d/** – experimental 3D viewer using Three.js
+- **tests/python/** – pytest suite for the Python port
+- **src/js/cable_joints_3d/** – experimental 3D viewer using Three.js
 
 ## 3D Visualization
-`cable_joints_3d/cable_joints_3d.html` shows cable joint points in 3D using Three.js.  Equivalent helpers live in `python/vector3.py` and `python/geometry3.py`.
+`tests/html/3d_tests.html` shows cable joint points in 3D using Three.js.  Equivalent helpers live in `src/python/cable_joints_3d/vector3.py` and `src/python/cable_joints_3d/geometry3.py`.
 
 For more details on the physics algorithms see the papers in `ai_docs/`.

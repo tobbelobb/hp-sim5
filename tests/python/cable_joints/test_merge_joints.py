@@ -2,17 +2,17 @@ import pytest
 import numpy as np
 import math
 
-from python.ecs import (
+from cable_joints.ecs import (
     World, PositionComponent, RadiusComponent, CableLinkComponent,
 )
-from python.cable_joints_components import (
+from cable_joints.cable_joints_components import (
     CableJointComponent, CablePathComponent
 )
-from python.geometry import (
+from cable_joints.geometry import (
     tangent_from_point_to_circle, tangent_from_circle_to_point,
     tangent_from_circle_to_circle, signed_arc_length_on_wheel
 )
-from python.merge_joints import merge_joints
+from cable_joints.merge_joints import merge_joints
 
 def create_cable_path_component(world, joint_entities, link_types, cw, stored=None):
     """Helper to create and initialize a CablePathComponent like in JS."""

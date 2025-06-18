@@ -2,7 +2,7 @@ import math
 import pytest
 import numpy as np
 
-from python.geometry import (
+from cable_joints.geometry import (
     _tangent_point_circle,
     tangent_from_point_to_circle,
     tangent_from_circle_to_point,

@@ -2,9 +2,9 @@ import {
   World,
   PositionComponent,
   VelocityComponent
-} from '../cable_joints/ecs.js';
+} from '../../../src/js/cable_joints/ecs.js';
 
-import { MovementSystem } from '../cable_joints/commonSystems.js';
+import { MovementSystem } from '../../../src/js/cable_joints/commonSystems.js';
 
 describe('MovementSystem', () => {
   test('updates position based on velocity and dt', () => {
