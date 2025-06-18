@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mindfulness Pinball</title>
+
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Nice free Google font – optional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
+    <style>
+/* =========  BASIC COLOUR THEME  ========= */
+:root {
+  --bg-1: #2d2d2d;        /* page background */
+  --accent-1: #ff452a;    /* flipper + button gradient start */
+  --accent-2: #ffb347;    /* flipper + button gradient end   */
+  --text-main: #fafafa;
+  --text-dim:  #c0c0c0;
+  --radius: 4px;
+}
+
+/* =========  PAGE LAYOUT  ========= */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
+  overflow: hidden;               /* **kills the vertical / horizontal scroll**   */
+  background: var(--bg-1);
+  color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
+  touch-action: none;     /* **stops double‑tap zoom in most browsers**   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* =========  CONTAINER  ========= */
+#gameContainer {
+  width: min(90vw, 460px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* =========  CONTROL BAR  ========= */
+#controls {
+  width: 100%;
+  text-align: center;
+  margin-block: 12px 8px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+#controls button {
+  all: unset;                      /* wipe default button styles */
+  cursor: pointer;
+  display: inline-block;
+  margin: 6px auto;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+#controls button:hover,
+#controls button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active {
+  transform: scale(.97);
+}
+
+/* =========  CANVAS  ========= */
+canvas {
+  width: 100%;
+  aspect-ratio: 1 / 1.7;          /* keeps exact sim ratio */
+  border-radius: var(--radius);
+  touch-action: manipulation;    /* ← turn off browser panning/zoom so pointermove/up always fire */
+}
+
+/* =========  SMALL‑SCREEN TWEAKS  ========= */
+#controls button {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="controls">
+            <button id="pauseBtn" tabindex="-1">Pause</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+          Score: <span id="score">0</span>
+        </div>
+        <canvas id="myCanvas"></canvas>
+    </div>
+<script type="module">
+    import Vector2 from './cable_joints/vector2.js';
+    import { dumpWorldState } from './cable_joints/debugUtils.js';
+    import { parseUsda } from './parse_usd.js';
+    import {
+      World,
+      PauseStateComponent,
+      SimulationErrorStateComponent,
+      BorderComponent,
+      RenderableComponent,
+      BallTagComponent,
+      PositionComponent,
+      VelocityComponent,
+      RadiusComponent,
+      MassComponent,
+      RestitutionComponent,
+      GravityAffectedComponent,
+      OrientationComponent,
+      AngularVelocityComponent,
+      CoefficientOfFrictionComponent,
+      MomentOfInertiaComponent,
+      ObstacleTagComponent,
+      ObstaclePushComponent,
+      ScoredTagComponent,
+      FlipperTagComponent,
+      FlipperStateComponent,
+      PrevFinalPosComponent,
+      PrevFinalOrientationComponent,
+      FlipperTipComponent
+    } from './cable_joints/ecs.js';
+
+    import {
+      CableLinkComponent,
+      CableJointComponent,
+      CablePathComponent,
+      linecolor1,
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
+    } from './cable_joints/cable_joints_core.js';
+
+    import {
+      tangentFromPointToCircle,
+      tangentFromCircleToPoint,
+      tangentFromCircleToCircle
+    } from './cable_joints/geometry.js';
+
+    import {
+      PrevFinalPosSystem,
+      InputReplaySystem,
+      GravitySystem,
+      MovementSystem,
+      AngularMovementSystem,
+      PBDBallObstacleCollisions,
+      PBDBallBallCollisions,
+      PBDBallBorderCollisions,
+      PBDBallFlipperCollisions,
+      PBDVelocityUpdateSystem,
+      PrevFinalOrientationSystem,
+      PBDAngularVelocityUpdateSystem,
+      FlipperTipLinkSystem,
+      FlipperMotionSystem,
+      InputSystem
+    } from './cable_joints/commonSystems.js';
+
+    import { RenderSystem } from './cable_joints/renderSystem.js';
+    import { CableAttachmentCacheSystem } from './cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from './cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from './cable_joints/cable_friction_system.js';
+    import { BallObstacleBumpSystem } from './cable_joints/ball_obstacle_bump_system.js';
+    import { BallBorderOrFlipperVelocityContactSystem } from './cable_joints/ball_border_or_flipper_velocity_contact_system.js';
+    import {
+        ScoreComponent,
+        ScoreSystem,
+        ScoreDisplaySystem
+    } from './cable_joints/flipper_common.js';
+
+
+    import { runGame } from './flipper_runner.js';
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+
+    // --- Global World ---
+    let world = new World();
+    window.world = world; // Make available to jest test
+
+    let getGameStateForTest = () => {
+        if (!world || !world.query) { // Check if world and its methods are available
+            console.error("World object not available for getGameStateForTest");
+            return null;
+        }
+
+        const ballEntities = world.query([BallTagComponent, PositionComponent]);
+        const balls = ballEntities.map(id => {
+            const posComp = world.getComponent(id, PositionComponent);
+            return { id, y: posComp ? posComp.pos.y : -Infinity }; // Handle missing component
+        });
+
+        const scoreEntity = world.query([ScoreComponent])[0];
+        const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
+        const score = scoreComp ? scoreComp.value : -1; // Default to -1 if score component not found
+
+        return {
+            balls,
+            score
+        };
+    };
+    window.getGameStateForTest = getGameStateForTest;
+
+    // --- Scene Setup ---
+    function setupScene(sceneData) {
+        world.clear(); // Clear entities and components
+
+        // --- Set Canvas Size from CSS ---
+        // Match drawing buffer size to the CSS display size
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        // --- Calculate Simulation Dimensions & Scale ---
+        const simHeight = 1.7; // Target simulation height remains fixed
+        const cScale = canvas.height / simHeight; // Calculate scale based on actual height
+        const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
+
+        // --- Resources ---
+        world.setResource('gravity', new Vector2(0.0, -2.0));
+        world.setResource('dt', 1.0 / 300.0);
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight); // Store the reference simHeight
+        world.setResource('pauseState', new PauseStateComponent(true));
+        world.setResource('debugRenderPoints', {}); // Initialize debug points resource
+        world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
+        world.setResource('grabbedBall', null);
+        world.setResource('ball_obstacle_contacts', []);
+        world.setResource('ball_border_contacts', []);
+        world.setResource('ball_flipper_contacts', []);
+
+
+        // --- Entities and Components ---
+
+        const offset = 0.02;
+        const entities = sceneData.entities;
+        const jointsData = sceneData.joints;
+        const pathsData = sceneData.paths;
+
+        // Border Entity (Clockwise points for outward normal calc)
+        const borderEntity = world.createEntity();
+        const borderPoints = [
+             new Vector2(0.74, 0.0),
+             new Vector2(0.74, 0.25),
+             new Vector2(1.0 - offset, 0.4),
+             new Vector2(1.0 - offset, simHeight - offset),
+             new Vector2(offset, simHeight - offset),
+             new Vector2(offset, 0.4),
+             new Vector2(0.26, 0.25),
+             new Vector2(0.26, 0.0)
+        ];
+        world.addComponent(borderEntity, new BorderComponent(borderPoints));
+        world.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
+
+
+        // Ball Entities
+        const ballRestitution = 0.6;
+        const ball1Info = entities['Ball1'];
+        const ball2Info = entities['Ball2'];
+
+        const ball1 = world.createEntity();
+        world.addComponent(ball1, new BallTagComponent());
+        world.addComponent(ball1, new PositionComponent(ball1Info.pos[0], ball1Info.pos[1]));
+        world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
+        world.addComponent(ball1, new RadiusComponent(ball1Info.radius));
+        world.addComponent(ball1, new MassComponent(ball1Info.mass));
+        world.addComponent(ball1, new RestitutionComponent(ballRestitution));
+        world.addComponent(ball1, new GravityAffectedComponent());
+        world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(ball1, new OrientationComponent(0.0));
+        world.addComponent(ball1, new AngularVelocityComponent(0.0));
+        const ball1Inertia = 0.5 * ball1Info.mass * ball1Info.radius * ball1Info.radius;
+        world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
+        world.addComponent(ball1, new PrevFinalOrientationComponent(0.0));
+        world.addComponent(ball1, new CoefficientOfFrictionComponent(0.2));
+
+        const ball2 = world.createEntity();
+        world.addComponent(ball2, new BallTagComponent());
+        world.addComponent(ball2, new PositionComponent(ball2Info.pos[0], ball2Info.pos[1]));
+        world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
+        world.addComponent(ball2, new RadiusComponent(ball2Info.radius));
+        world.addComponent(ball2, new MassComponent(ball2Info.mass));
+        world.addComponent(ball2, new RestitutionComponent(ballRestitution));
+        world.addComponent(ball2, new GravityAffectedComponent());
+        world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(ball2, new OrientationComponent(0.0));
+        world.addComponent(ball2, new AngularVelocityComponent(0.0));
+        const ball2Inertia = 0.5 * ball2Info.mass * ball2Info.radius * ball2Info.radius;
+        world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
+        world.addComponent(ball2, new PrevFinalOrientationComponent(0.0));
+        world.addComponent(ball2, new CoefficientOfFrictionComponent(0.2));
+
+        // Obstacle Entities
+        const obsColor1 = "#FF8000";
+        const obsColor2 = "#0F7090";
+        const obsPush = 2.7;
+
+        const obs1Info = entities['Obs1'];
+        const obs1 = world.createEntity();
+        world.addComponent(obs1, new ObstacleTagComponent());
+        world.addComponent(obs1, new PositionComponent(obs1Info.pos[0], obs1Info.pos[1]));
+        world.addComponent(obs1, new MassComponent(-1.0));
+        world.addComponent(obs1, new RadiusComponent(obs1Info.radius));
+        world.addComponent(obs1, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs1, new RenderableComponent('circle', obsColor2));
+
+        const obs2Info = entities['Obs2'];
+        const obs2 = world.createEntity();
+        world.addComponent(obs2, new ObstacleTagComponent());
+        world.addComponent(obs2, new PositionComponent(obs2Info.pos[0], obs2Info.pos[1]));
+        world.addComponent(obs2, new MassComponent(-1.0));
+        world.addComponent(obs2, new RadiusComponent(obs2Info.radius));
+        world.addComponent(obs2, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs2, new RenderableComponent('circle', obsColor2));
+
+        const obs3Info = entities['Obs3'];
+        const obs3 = world.createEntity();
+        world.addComponent(obs3, new ObstacleTagComponent());
+        world.addComponent(obs3, new PositionComponent(obs3Info.pos[0], obs3Info.pos[1]));
+        world.addComponent(obs3, new MassComponent(-1.0));
+        world.addComponent(obs3, new RadiusComponent(obs3Info.radius));
+        world.addComponent(obs3, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
+        world.addComponent(obs3, new OrientationComponent(0.0));
+        world.addComponent(obs3, new AngularVelocityComponent(100.0));
+        const obsInertia3 = 0.020 * obs3Info.radius**2;
+        world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia3));
+        world.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
+
+        const obs4Info = entities['Obs4'];
+        const obs4 = world.createEntity();
+        world.addComponent(obs4, new ObstacleTagComponent());
+        world.addComponent(obs4, new PositionComponent(obs4Info.pos[0], obs4Info.pos[1]));
+        world.addComponent(obs4, new MassComponent(-1.0));
+        world.addComponent(obs4, new RadiusComponent(obs4Info.radius));
+        world.addComponent(obs4, new ObstaclePushComponent(obsPush));
+        world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
+        world.addComponent(obs4, new OrientationComponent(0.0));
+        world.addComponent(obs4, new AngularVelocityComponent(-100.0));
+        const obsInertia4 = 0.020 * obs4Info.radius**2;
+        world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia4));
+        world.addComponent(obs4, new PrevFinalOrientationComponent(0.0));
+
+
+        // Flipper Entities
+        const flipRadius = 0.03; // Thickness
+        const flipLength = 0.2;
+        const flipMaxRotation = 1.0; // Radians
+        const flipRestAngle = 0.5; // Radians from horizontal
+        const flipAngularVelocity = 20.0; // Radians per second
+        const flipColor = "#FF0000";
+        const flipRestitution = 0.6;
+
+        const flipper1 = world.createEntity();
+        world.addComponent(flipper1, new FlipperTagComponent());
+        world.addComponent(flipper1, new PositionComponent(0.26, 0.22));
+        world.addComponent(flipper1, new RadiusComponent(flipRadius));
+        world.addComponent(flipper1, new FlipperStateComponent(flipLength, -flipRestAngle, flipMaxRotation, flipAngularVelocity));
+        world.addComponent(flipper1, new RestitutionComponent(flipRestitution));
+        world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
+        world.addComponent(flipper1, new CableLinkComponent(0.26, 0.22));
+        const flipper1Tip = world.createEntity();
+        world.addComponent(flipper1Tip, new PositionComponent());
+        world.addComponent(flipper1Tip, new RadiusComponent(flipRadius));
+        world.addComponent(flipper1Tip, new FlipperTipComponent(flipper1));
+        world.addComponent(flipper1Tip, new CableLinkComponent());
+
+        const flipper2 = world.createEntity();
+        world.addComponent(flipper2, new FlipperTagComponent());
+        world.addComponent(flipper2, new PositionComponent(0.74, 0.22));
+        world.addComponent(flipper2, new RadiusComponent(flipRadius));
+        world.addComponent(flipper2, new FlipperStateComponent(flipLength, Math.PI + flipRestAngle, -flipMaxRotation, flipAngularVelocity));
+        world.addComponent(flipper2, new RestitutionComponent(flipRestitution));
+        world.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
+        world.addComponent(flipper2, new CableLinkComponent());
+        const flipper2Tip = world.createEntity();
+        world.addComponent(flipper2Tip, new PositionComponent());
+        world.addComponent(flipper2Tip, new RadiusComponent(flipRadius));
+        world.addComponent(flipper2Tip, new CableLinkComponent());
+        world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
+
+        const frictionCoefficient = 0.2;
+        world.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(0.01));
+        world.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(0.01));
+
+        // Score Entity
+        const scoreEntity = world.createEntity();
+        world.addComponent(scoreEntity, new ScoreComponent(0));
+
+
+        // --- Cable Setup ---
+        const entityNameToId = {
+            'Ball1': ball1,
+            'Ball2': ball2,
+            'Obs1': obs1,
+            'Obs2': obs2,
+            'Obs3': obs3,
+            'Obs4': obs4
+        };
+
+        const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
+        const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
+        const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
+        const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
+
+        world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
+        world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
+        world.addComponent(obs4, new CoefficientOfFrictionComponent(frictionCoefficient));
+        world.addComponent(obs3, new CoefficientOfFrictionComponent(frictionCoefficient));
+        world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
+        world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
+        world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
+        world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
+
+        const jointEntityMap = {};
+        for (const jointInfo of jointsData) {
+            const joint = world.createEntity();
+            const entityA = entityNameToId[jointInfo.entityA];
+            const entityB = entityNameToId[jointInfo.entityB];
+            const restLength = jointInfo.restLength;
+            const attachA = new Vector2(jointInfo.attachA[0], jointInfo.attachA[1]);
+            const attachB = new Vector2(jointInfo.attachB[0], jointInfo.attachB[1]);
+
+            world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
+            world.addComponent(joint, new RenderableComponent('line', linecolor1));
+            jointEntityMap[jointInfo.name] = joint;
+        }
+
+        const cablePath = world.createEntity();
+        const pathInfo = pathsData[0];
+        const jointEntities = pathInfo.joints.map(jointName => jointEntityMap[jointName]);
+        const pathComp = new CablePathComponent(
+          world,
+          jointEntities,
+          pathInfo.linkTypes,
+          pathInfo.cw,
+          200.0
+        );
+        world.addComponent(cablePath, pathComp);
+
+
+        // --- Systems Registration (Order Matters!) ---
+        if (world.systems.length === 0) {
+             // 1. Cache state from previous step
+             world.registerSystem(new PrevFinalPosSystem());
+             world.registerSystem(new PrevFinalOrientationSystem());
+
+             // 2. Handle user input and non-physics state changes
+             const inputSystemInstance = new InputSystem(canvas);
+             world.registerSystem(inputSystemInstance);
+             world.registerSystem(new InputReplaySystem([], inputSystemInstance));
+             world.registerSystem(new FlipperMotionSystem());
+
+             // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
+             world.registerSystem(new GravitySystem());
+             world.registerSystem(new MovementSystem());
+             world.registerSystem(new AngularMovementSystem());
+
+             // 4. Update derived geometry and cable state
+             world.registerSystem(new FlipperTipLinkSystem());
+             world.registerSystem(new CableAttachmentUpdateSystem());
+             world.registerSystem(new CableAttachmentCacheSystem());
+             world.registerSystem(new CableSlackSystem());
+
+             // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
+             world.registerSystem(new PBDCableConstraintSolver());
+             world.registerSystem(new PBDBallBorderCollisions());
+             world.registerSystem(new PBDBallBallCollisions());
+             world.registerSystem(new PBDBallObstacleCollisions());
+             world.registerSystem(new PBDBallFlipperCollisions());
+
+             // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
+             world.registerSystem(new CableFrictionSystem());
+
+             // 7. UPDATE VELOCITY: Derive final velocities from the position changes
+             world.registerSystem(new PBDVelocityUpdateSystem());
+             world.registerSystem(new PBDAngularVelocityUpdateSystem());
+
+             // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
+             world.registerSystem(new BallObstacleBumpSystem());
+             world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
+
+             // 9. Game Logic
+             world.registerSystem(new ScoreSystem());
+             world.registerSystem(new ScoreDisplaySystem('score'));
+             world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
+        }
+
+        // Update button text based on initial pause state
+         const pauseState = world.getResource('pauseState');
+         pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
+    }
+    parseUsda('flipper_scene.usda').then(data => {
+        runGame(world, () => setupScene(data));
+    });
+</script>
+
+</body>
+</html>
