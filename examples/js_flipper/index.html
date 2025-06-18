@@ -279,7 +279,7 @@ canvas {
         const gravityDir = getAttribute(physicsScene, "physics:gravityDirection");
         const gravityMag = getAttribute(physicsScene, "physics:gravityMagnitude");
         const gravity = new Vector2(gravityDir[0] * gravityMag, gravityDir[1] * gravityMag);
-        const dt = 1.0 / stage.ast.descriptor.timeCodesPerSecond;
+        const dt = 1.0 / stage.ast.statements.find(s => s.type === 'metadata' && s.key === 'timeCodesPerSecond')?.value || 300.0;
 
         world.setResource('gravity', gravity);
         world.setResource('dt', dt);
