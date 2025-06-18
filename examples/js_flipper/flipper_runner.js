@@ -87,7 +87,7 @@ export function runGame(world, setupScene, sceneData) {
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
-        doStep = true;
+        doStep = false;
         startLoop(); // to render the reset state
     });
 
