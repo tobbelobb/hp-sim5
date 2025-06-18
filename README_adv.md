@@ -25,9 +25,9 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
    - `flipper_with_sliding_beads.html`
  - How to run js demos:
    - `cd hp-sim5`
-   - `python -m http.server`
+   - `npx vite`
    - You might have to do `npm install` the first time?
-   - Open for example http://127.0.0.1:8000/flipper.html in browser. Or:
+   - Open for example http://localhost:5173/flipper.html in browser. Or:
  - Js based demos are also available at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/flipper), [tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads), [tobbelobb.github.io/hp-sim5/flipper_with_attached_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_attached_beads)
  - Slideprinter demo at examples/slideprinter/slideprinter.html
 
@@ -48,7 +48,7 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
       - Start server: `python examples/python_flipper/server.py`
       - Open `examples/python_flipper/index.html` in a browser.
     4. (Optional) To play the (non-warp) and js driven flipper both at the same time, to test
-        their equivalence, first start the `python -m http.server` to start the js engine, then `python examples/python_flipper/server.py`
+        their equivalence, first start the `npx vite` to start the js engine, then `python examples/python_flipper/server.py`
         to start the Python engine. Then open flipper_overlay.html in a browser.
     5. (Optional) Run the Python-with-Warp-driven flipper demo on cpu:
       - Start server: `python examples/python_flipper/server.py --warp`

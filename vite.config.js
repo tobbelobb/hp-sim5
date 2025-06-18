@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import fg from 'fast-glob';
 
-// This configuration makes the project's root directory the server's root.
-// This allows for predictable absolute path resolution for assets.
-export default defineConfig({
-  server: {
-    // This is still useful to allow the browser to fetch modules
-    // from anywhere in the project if needed.
-    fs: {
-      allow: ['..']
-    }
-  }
+export default defineConfig(async () => {
+  const pages = await fg('**/*.html', { ignore: ['node_modules/**'] });
+  const inputs = pages.reduce((o, p) => { o[p] = resolve(__dirname, p); return o; }, {});
+
+  return {
+    build: { rollupOptions: { input: inputs } },
+    assetsInclude: ['**/*.usda']
+  };
 });

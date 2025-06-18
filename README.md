@@ -9,9 +9,9 @@ This project simulates cables using a Position‑Based Dynamics (PBD) solver bui
 2. In this repository run:
    ```bash
    npm install        # only needed the first time
-   python -m http.server
+   npx vite
    ```
-3. Open <http://127.0.0.1:8000/flipper.html> in your browser.
+3. Open <http://localhost:5173/flipper.html> in your browser.
 
 ### Running the Python demos
 1. Make sure Python 3.10+ is installed.
