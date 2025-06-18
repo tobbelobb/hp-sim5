@@ -1,5 +1,6 @@
 import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
 import { InputSystem, InputReplaySystem } from '../../src/js/cable_joints/commonSystems.js';
+import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
 
 export function runGame(world, setupScene, sceneData) {
     const pauseBtn = document.getElementById("pauseBtn");
@@ -41,6 +42,13 @@ export function runGame(world, setupScene, sceneData) {
                 accumulator -= dt;
             }
         }
+
+        // Always render, even if paused or if no physics step was taken.
+        const renderSystem = world.systems.find(s => s instanceof RenderSystem);
+        if (renderSystem) {
+            renderSystem.update(world, 0); // dt=0 as we only want to render
+        }
+
         requestAnimationFrame(gameLoop);
     }
 
