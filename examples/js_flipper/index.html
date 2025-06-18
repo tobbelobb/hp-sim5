@@ -436,7 +436,7 @@ canvas {
             }
 
             const cablePath = world.createEntity();
-            const jointNames = getRelationship(cablePathPrim, "cablePath:joints").map(p => p.split('/').pop());
+            const jointNames = getRelationship(cablePathPrim, "cablePath:joints").filter(p => p).map(p => p.split('/').pop());
             const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]);
             const pathComp = new CablePathComponent(
               world,

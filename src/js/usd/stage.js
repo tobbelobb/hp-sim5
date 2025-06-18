@@ -1,4 +1,4 @@
-import { parse as parseUsda } from "/node_modules/@kroxilon/usda-parser/lib/usda-parser.peggy.js";
+import { parse as parseUsda } from "@kroxilon/usda-parser";
 
 /**
  * Open() – the JavaScript twin of Usd.Stage.Open().
