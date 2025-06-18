@@ -116,8 +116,8 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
-    import Vector2 from '../cable_joints/vector2.js';
-    import { dumpWorldState } from '../cable_joints/debugUtils.js';
+    import Vector2 from '../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
     import {
       World,
       PauseStateComponent,
@@ -136,7 +136,7 @@ canvas {
       DistanceConstraintComponent,
       PrevFinalPosComponent,
       PrevFinalOrientationComponent,
-    } from '../cable_joints/ecs.js';
+    } from '../../src/js/cable_joints/ecs.js';
 
     import {
       CableLinkComponent,
@@ -144,11 +144,11 @@ canvas {
       CablePathComponent,
       CableAttachmentUpdateSystem,
       PBDCableConstraintSolver
-    } from '../cable_joints/cable_joints_core.js';
+    } from '../../src/js/cable_joints/cable_joints_core.js';
 
     import {
       tangentFromPointToCircle
-    } from '../cable_joints/geometry.js';
+    } from '../../src/js/cable_joints/geometry.js';
 
     import {
       GravitySystem,
@@ -160,11 +160,11 @@ canvas {
       PBDVelocityUpdateSystem,
       PrevFinalOrientationSystem,
       PBDAngularVelocityUpdateSystem,
-    } from '../cable_joints/commonSystems.js';
+    } from '../../src/js/cable_joints/commonSystems.js';
 
     import {
       RenderSystem
-    } from '../cable_joints/renderSystem.js';
+    } from '../../src/js/cable_joints/renderSystem.js';
 
     // --- System: Input --- (Simplified Click Handling)
     class InputSystem {

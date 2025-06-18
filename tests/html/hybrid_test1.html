@@ -117,8 +117,8 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
-    import Vector2 from ../../src/js/cable_joints/vector2.js';
-    import { dumpWorldState } from ../../src/js/cable_joints/debugUtils.js';
+    import Vector2 from '../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
     import {
       World,
       PauseStateComponent,
@@ -132,7 +132,7 @@ canvas {
       MomentOfInertiaComponent,
       RenderableComponent,
       RadiusComponent
-    } from ../../src/js/cable_joints/ecs.js';
+    } from '../../src/js/cable_joints/ecs.js';
 
     import {
       CableLinkComponent,
@@ -140,22 +140,22 @@ canvas {
       CablePathComponent,
       CableAttachmentUpdateSystem,
       PBDCableConstraintSolver
-    } from ../../src/js/cable_joints/cable_joints_core.js';
+    } from '../../src/js/cable_joints/cable_joints_core.js';
 
     import {
       tangentFromPointToCircle
-    } from ../../src/js/cable_joints/geometry.js';
+    } from '../../src/js/cable_joints/geometry.js';
 
 
     import {
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
-    } from ../../src/js/cable_joints/commonSystems.js';
+    } from '../../src/js/cable_joints/commonSystems.js';
 
     import {
       RenderSystem
-    } from ../../src/js/cable_joints/renderSystem.js';
+    } from '../../src/js/cable_joints/renderSystem.js';
 
     class SpoolTagComponent { };
     // --- System: Input --- (Simplified Click Handling)
