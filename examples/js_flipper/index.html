@@ -111,7 +111,7 @@ canvas {
 <script type="module">
     import Vector2 from '../../src/js/cable_joints/vector2.js';
     import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
-    import { parseUsda } from '../../src/js/usd/parse_usd.js';
+    import { Open as UsdOpen } from "../../src/js/usd/stage.js";
     import {
       World,
       PauseStateComponent,
@@ -505,7 +505,7 @@ canvas {
          const pauseState = world.getResource('pauseState');
          pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
-    parseUsda('../usd_scenes/flipper_scene.usda').then(data => {
+    UsdOpen('../usd_scenes/flipper_scene.usda').then(data => {
         runGame(world, setupScene, data);
     });
 </script>
