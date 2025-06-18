@@ -32,8 +32,33 @@
         <ul id="testList"></ul>
     </div>
 
-<script src="../../src/js/cable_joints/cable_joints_core.js"></script>
-<script>
+<script type="module">
+  import Vector2 from '../../src/js/cable_joints/vector2.js';
+  import {
+    World,
+    RenderableComponent,
+    BallTagComponent,
+    PositionComponent,
+    VelocityComponent,
+    RadiusComponent,
+    MassComponent,
+    RestitutionComponent,
+    GravityAffectedComponent,
+    ObstacleTagComponent
+  } from '../../src/js/cable_joints/ecs.js';
+  import {
+    CableLinkComponent,
+    CableJointComponent,
+    CablePathComponent,
+    CableAttachmentUpdateSystem
+  } from '../../src/js/cable_joints/cable_joints_core.js';
+  import {
+    tangentFromPointToCircle,
+    tangentFromCircleToPoint,
+    tangentFromCircleToCircle
+  } from '../../src/js/cable_joints/geometry.js';
+  import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
+
   const canvas = document.getElementById("testCanvas");
   canvas.width = window.innerWidth * 0.8; // Adjust size as needed
   canvas.height = window.innerHeight * 0.7;
