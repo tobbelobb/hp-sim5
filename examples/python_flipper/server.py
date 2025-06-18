@@ -5,6 +5,14 @@ import os
 import sys
 import numpy as np
 from pathlib import Path
+
+# Add src/python to sys.path to allow for `from cable_joints...` imports
+# __file__ is examples/python_flipper/server.py, so project root is 3 levels up.
+root_dir = Path(__file__).resolve().parents[2]
+src_python_path = root_dir / "src" / "python"
+if str(src_python_path) not in sys.path:
+    sys.path.insert(0, str(src_python_path))
+
 from pxr import Usd, UsdGeom, UsdShade
 
 # Assuming the python ECS code is in a 'python' directory
@@ -32,10 +40,10 @@ from cable_joints.cable_slack_system import CableSlackSystem
 from cable_joints.cable_friction_system import CableFrictionSystem
 
 # Files that trigger a server restart when modified
-python_dir = Path(__file__).resolve().parents[1] / "src" / "python" / "cable_joints"
+python_dir = src_python_path / "cable_joints"
 WATCHED_FILES = [
     Path(__file__),
-    Path(__file__).resolve().parents[1]/"usd_scenes"/"flipper_scene.usda",
+    root_dir / "examples" / "usd_scenes" / "flipper_scene.usda",
     python_dir / "ball_obstacle_bump_system.py",
     python_dir / "ball_border_or_flipper_velocity_contact_system.py",
 ]
@@ -398,7 +406,7 @@ class RemoteInputSystem:
 
 def load_flipper_stage():
     """Load the flipper demo USD stage."""
-    scene_path = Path(__file__).resolve().parents[1]/"usd_scenes"/"flipper_scene.usda"
+    scene_path = root_dir / "examples" / "usd_scenes" / "flipper_scene.usda"
     return Usd.Stage.Open(str(scene_path))
 
 def _material_properties(stage, prim):
