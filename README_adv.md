@@ -59,7 +59,7 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
     7. (Optional) `python examples/usd_scenes/slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
        If the optional `pxr` and `warp` modules are not installed the script falls
        back to a tiny built‑in parser. Edit the script to parse either
-       `slideprinter/slideprinter.usda` or the provided `flipper_scene.usda` to
+       `slideprinter/slideprinter.usda` or the provided `flipper_scene.usda.txt` to
        experiment with different setups.
     8. (Optional) `python examples/python_3d/hanging_pendulum.py` will generate a USD file showing a simple
        3D pendulum simulated with Warp. The output can be viewed with any USD viewer.

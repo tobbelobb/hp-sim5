@@ -43,7 +43,7 @@ from cable_joints.cable_friction_system import CableFrictionSystem
 python_dir = src_python_path / "cable_joints"
 WATCHED_FILES = [
     Path(__file__),
-    root_dir / "examples" / "usd_scenes" / "flipper_scene.usda",
+    root_dir / "examples" / "usd_scenes" / "flipper_scene.usda.txt",
     python_dir / "ball_obstacle_bump_system.py",
     python_dir / "ball_border_or_flipper_velocity_contact_system.py",
 ]
@@ -406,7 +406,7 @@ class RemoteInputSystem:
 
 def load_flipper_stage():
     """Load the flipper demo USD stage."""
-    scene_path = root_dir / "examples" / "usd_scenes" / "flipper_scene.usda"
+    scene_path = root_dir / "examples" / "usd_scenes" / "flipper_scene.usda.txt"
     return Usd.Stage.Open(str(scene_path))
 
 def _material_properties(stage, prim):
