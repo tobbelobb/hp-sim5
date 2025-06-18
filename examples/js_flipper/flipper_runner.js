@@ -11,6 +11,14 @@ export function runGame(world, setupScene, sceneData) {
     let lastTime = 0;
     let accumulator = 0.0;
     let doStep = true;
+    let animationId = null;
+
+    function startLoop() {
+        if (animationId !== null) {
+            cancelAnimationFrame(animationId);
+        }
+        animationId = requestAnimationFrame(gameLoop);
+    }
 
     function gameLoop(currentTime) {
         const dt = world.getResource('dt');
@@ -49,7 +57,7 @@ export function runGame(world, setupScene, sceneData) {
             renderSystem.update(world, 0); // dt=0 as we only want to render
         }
 
-        requestAnimationFrame(gameLoop);
+        animationId = requestAnimationFrame(gameLoop);
     }
 
     pauseBtn.addEventListener('click', (e) => {
@@ -60,7 +68,7 @@ export function runGame(world, setupScene, sceneData) {
             pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
             if (!pauseState.paused) {
                 lastTime = performance.now();
-                requestAnimationFrame(gameLoop);
+                startLoop();
             }
         }
     });
@@ -80,7 +88,7 @@ export function runGame(world, setupScene, sceneData) {
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
         doStep = true;
-        requestAnimationFrame(gameLoop); // to render the reset state
+        startLoop(); // to render the reset state
     });
 
     stepBtn.addEventListener('click', (e) => {
@@ -88,7 +96,7 @@ export function runGame(world, setupScene, sceneData) {
         const pauseState = world.getResource('pauseState');
         if (pauseState && pauseState.paused) {
             doStep = true;
-            requestAnimationFrame(gameLoop);
+            startLoop();
         }
     });
 
@@ -100,5 +108,5 @@ export function runGame(world, setupScene, sceneData) {
     setupScene(sceneData);
     const pauseState = world.getResource('pauseState');
     pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
-    requestAnimationFrame(gameLoop);
+    startLoop();
 }
