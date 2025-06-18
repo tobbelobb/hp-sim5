@@ -297,9 +297,14 @@ canvas {
         // Border Entity
         const borderPrim = getChild(sceneRoot, "Border");
         if (borderPrim) {
-            const points = getAttribute(borderPrim, "points").slice(0, 8);
+            const points = getAttribute(borderPrim, "points");
+            if (!points) {
+                console.error("Failed to get 'points' for Border prim. The USD parser may not support 'point3f[]'.");
+                world.getResource('errorState').hasError = true;
+                return;
+            }
             const borderEntity = world.createEntity();
-            const borderPoints = points.map(p => new Vector2(p[0], p[1]));
+            const borderPoints = points.slice(0, 8).map(p => new Vector2(p[0], p[1]));
             world.addComponent(borderEntity, new BorderComponent(borderPoints));
             const { color, friction, restitution } = materialProperties(stage, borderPrim);
             world.addComponent(borderEntity, new RenderableComponent('border', color || '#000000'));
@@ -312,6 +317,10 @@ canvas {
             world.setResource('simHeight', simHeight);
             const cScale = canvas.height / simHeight;
             world.setResource('cScale', cScale);
+        } else {
+            console.error("Could not find Border prim in scene.");
+            world.getResource('errorState').hasError = true;
+            return;
         }
 
         // Process Prims
@@ -328,7 +337,12 @@ canvas {
                 const ent = world.createEntity();
                 const radius = getAttribute(prim, "radius");
                 const mass = getAttribute(prim, "physics:mass");
-                const inertia = getAttribute(prim, "physics:inertiaTensor")[2][2];
+                const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
+                if (radius === null || mass === null || inertiaTensor === null) {
+                    console.warn(`Skipping Ball prim ${prim.name} due to missing attributes.`);
+                    continue;
+                }
+                const inertia = inertiaTensor[2][2];
                 world.addComponent(ent, new BallTagComponent());
                 world.addComponent(ent, new PositionComponent(pos.x, pos.y));
                 world.addComponent(ent, new VelocityComponent(0.0, 0.0));
@@ -350,6 +364,10 @@ canvas {
             } else if (tags.includes("Obstacle")) {
                 const ent = world.createEntity();
                 const radius = getAttribute(prim, "radius");
+                if (radius === null) {
+                    console.warn(`Skipping Obstacle prim ${prim.name} due to missing radius.`);
+                    continue;
+                }
                 const push = getAttribute(prim, "obstacle:pushVel") || 0.0;
                 const angVelAttr = getAttribute(prim, "physics:angularVelocity");
                 const angVel = angVelAttr ? angVelAttr[2] * Math.PI / 180.0 : 0.0;
@@ -379,6 +397,10 @@ canvas {
                 const restAngle = getAttribute(prim, "flipper:restAngle");
                 const maxRotation = getAttribute(prim, "flipper:maxRotation");
                 const angularVelocity = getAttribute(prim, "flipper:angularVelocity");
+                if (length === null || restAngle === null || maxRotation === null || angularVelocity === null) {
+                    console.warn(`Skipping Flipper prim ${prim.name} due to missing attributes.`);
+                    continue;
+                }
                 const geom = getChild(prim, "Geom");
                 const radius = geom ? getAttribute(geom, "radius") : 0.0;
 
@@ -430,6 +452,12 @@ canvas {
                 const restLength = getAttribute(jointPrim, "restLength");
                 const attachAArr = getAttribute(jointPrim, "localPos0");
                 const attachBArr = getAttribute(jointPrim, "localPos1");
+
+                if (!entityA || !entityB || restLength === null || !attachAArr || !attachBArr) {
+                    console.warn(`Skipping CableJoint ${jointPrim.name} due to missing data.`);
+                    continue;
+                }
+
                 const attachA = new Vector2(attachAArr[0], attachAArr[1]);
                 const attachB = new Vector2(attachBArr[0], attachBArr[1]);
 
@@ -441,7 +469,7 @@ canvas {
 
             const cablePath = world.createEntity();
             const jointNames = getRelationship(cablePathPrim, "cablePath:joints").map(p => p.split('/').pop());
-            const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]);
+            const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]).filter(Boolean);
             const pathComp = new CablePathComponent(
               world,
               jointEntities,
@@ -506,7 +534,7 @@ canvas {
          pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
     UsdOpen('/examples/usd_scenes/flipper_scene.usda').then(data => {
-        runGame(world, setupScene, data);
+        runGame(world, () => setupScene(data));
     });
 </script>
 
