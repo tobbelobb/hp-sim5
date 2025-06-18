@@ -7,46 +7,9 @@
     canvas { display: block; }
   </style>
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/tests/html/cable_joints_3d.html-DY_TB7-o.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
 </head>
 <body>
-<script type="module">
-import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
-
-// Basic three.js setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-const balls = [];
-function addBall(pos, radius=0.1, color=0x888888) {
-  const geom = new THREE.SphereGeometry(radius, 16, 16);
-  const mat = new THREE.MeshStandardMaterial({ color });
-  const mesh = new THREE.Mesh(geom, mat);
-  mesh.position.set(pos.x, pos.y, pos.z);
-  scene.add(mesh);
-  balls.push({mesh, pos});
-}
-
-// Simple lighting
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5,5,5);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040));
-
-// Example balls representing cable joint endpoints
-addBall(new Vector3(0,0,0), 0.1, 0xff0000);
-addBall(new Vector3(1,0,0), 0.1, 0x00ff00);
-addBall(new Vector3(1,1,0), 0.1, 0x0000ff);
-
-camera.position.z = 3;
-
-function animate() {
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-}
-animate();
-</script>
 </body>
 </html>
