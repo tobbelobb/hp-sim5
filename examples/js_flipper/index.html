@@ -227,12 +227,16 @@ canvas {
     function getRelationship(primNode, relName) {
         const value = getAttribute(primNode, relName);
         if (!value) return [];
-        const targets = Array.isArray(value) ? value : [value];
-        // The parser may produce non-string values (e.g. for trailing commas).
-        // We must filter these out and ensure we only return strings.
-        return targets
-            .filter(t => typeof t === 'string' && t.length > 0)
-            .map(t => t.replace(/[<>]/g, ''));
+        // The new parser returns an object or an array of objects for relationships
+        if (Array.isArray(value)) {
+            // It's a list of relationships
+            return value.map(v => v.importPath).filter(Boolean);
+        }
+        if (value.importPath) {
+            // It's a single relationship
+            return [value.importPath];
+        }
+        return [];
     }
 
     function getChildren(primNode) {
@@ -478,7 +482,8 @@ canvas {
               jointEntities,
               getAttribute(cablePathPrim, "cablePath:linkTypes"),
               getAttribute(cablePathPrim, "cablePath:clockwise"),
-              getAttribute(cablePathPrim, "stiffness") || 200.0
+              getAttribute(cablePathPrim, "stiffness") || 200.0,
+              getAttribute(cablePathPrim, "cablePath:stored")
             );
             world.addComponent(cablePath, pathComp);
         }
