@@ -3,36 +3,35 @@ import { parse as parseUsda } from "@kroxilon/usda-parser";
 /**
  * Open() – the JavaScript twin of Usd.Stage.Open().
  * Accepts either a file path/URL or an in-memory USDA string and
- * returns a Stage instance with GetPrimAtPath(), Traverse(), etc.
+ * returns a Stage-like object with GetPrimAtPath(), Traverse(), and the raw AST.
  */
 export async function Open(pathOrSource) {
   const source = isUsdText(pathOrSource)
     ? pathOrSource                              // already the file text
     : await fetch(pathOrSource).then(r => r.text());
 
-  const ast = parseUsda(source);                // low-level PEG parse :contentReference[oaicite:0]{index=0}
-  return new Stage(ast, pathOrSource);
-}
+  const ast = parseUsda(source);
+  const primIndex = indexPrims(ast.statements);
 
-/* ---------- Stage – a *very* small subset of the real USD API ---------- */
-class Stage {
-  constructor(ast, identifier = "<memory>") {
-    this.identifier = identifier;
-    this.ast        = ast;                      // raw @kroxilon/usda-parser AST
-    this._index     = indexPrims(ast.statements);
-  }
+  return {
+    /**
+     * A very simplified GetPrimAtPath that returns the raw parser node.
+     * For a richer API, you might wrap the node in a Prim-like class.
+     */
+    GetPrimAtPath(path) {
+      return primIndex[path] ?? null;
+    },
 
-  /** Mirror of UsdStage.GetPrimAtPath(). Returns the AST node or null. */
-  GetPrimAtPath(path) {
-    return this._index[path] ?? null;
-  }
+    /** Simple breadth-first traversal generator over [path, prim] pairs. */
+    *Traverse() {
+      for (const path in primIndex) {
+        yield [path, primIndex[path]];
+      }
+    },
 
-  /** Simple breadth-first traversal generator (like stage.Traverse()). */
-  *Traverse() {
-    for (const [path, prim] of Object.entries(this._index)) {
-      yield [path, prim];
-    }
-  }
+    /** The raw AST from @kroxilon/usda-parser. */
+    ast,
+  };
 }
 
 /* ---------- helpers ---------------------------------------------------- */
@@ -46,7 +45,9 @@ function indexPrims(statements, parent = "", out = {}) {
     if (stmt.type === "definition") {
       const path = `${parent}/${stmt.name}`.replace("//", "/");
       out[path] = stmt;
-      indexPrims(stmt.statements, path, out);
+      if (stmt.statements) {
+        indexPrims(stmt.statements, path, out);
+      }
     }
   }
   return out;

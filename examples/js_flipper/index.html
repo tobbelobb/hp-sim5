@@ -217,242 +217,235 @@ canvas {
     };
     window.getGameStateForTest = getGameStateForTest;
 
+    // --- USD Parsing Helpers ---
+    function getAttribute(primNode, attrName) {
+        if (!primNode || !primNode.statements) return null;
+        const decl = primNode.statements.find(s => s.type === 'declaration' && s.reference === attrName);
+        return decl ? decl.value : null;
+    }
+
+    function getRelationship(primNode, relName) {
+        const value = getAttribute(primNode, relName);
+        if (!value) return [];
+        const targets = Array.isArray(value) ? value : [value];
+        return targets.map(t => typeof t === 'string' ? t.replace(/[<>]/g, '') : t);
+    }
+
+    function getChildren(primNode) {
+        return primNode?.statements?.filter(s => s.type === 'definition') ?? [];
+    }
+
+    function getChild(primNode, name) {
+        return primNode?.statements?.find(s => s.type === 'definition' && s.name === name);
+    }
+
+    function materialProperties(stage, prim) {
+        const materialPath = getRelationship(prim, 'material:binding')[0];
+        if (!materialPath) return { color: null, friction: null, restitution: null };
+
+        const matPrim = stage.GetPrimAtPath(materialPath);
+        if (!matPrim) return { color: null, friction: null, restitution: null };
+
+        const shaderPrim = getChild(matPrim, "Shader");
+        let color = null;
+        if (shaderPrim) {
+            const colorVal = getAttribute(shaderPrim, "inputs:diffuseColor");
+            if (colorVal) {
+                const toHex = c => Math.round(c * 255).toString(16).padStart(2, '0');
+                color = `#${toHex(colorVal[0])}${toHex(colorVal[1])}${toHex(colorVal[2])}`;
+            }
+        }
+
+        const friction = getAttribute(matPrim, "physics:staticFriction");
+        const restitution = getAttribute(matPrim, "physics:restitution");
+
+        return { color, friction, restitution };
+    }
+
     // --- Scene Setup ---
-    function setupScene(sceneData) {
+    function setupScene(stage) {
         world.clear(); // Clear entities and components
 
         // --- Set Canvas Size from CSS ---
-        // Match drawing buffer size to the CSS display size
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
-        // --- Calculate Simulation Dimensions & Scale ---
-        const simHeight = 1.7; // Target simulation height remains fixed
-        const cScale = canvas.height / simHeight; // Calculate scale based on actual height
-        const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
-
         // --- Resources ---
-        world.setResource('gravity', new Vector2(0.0, -2.0));
-        world.setResource('dt', 1.0 / 300.0);
-        world.setResource('simWidth', simWidth);
-        world.setResource('simHeight', simHeight); // Store the reference simHeight
+        const physicsScene = stage.GetPrimAtPath("/World/PhysicsScene");
+        const gravityDir = getAttribute(physicsScene, "physics:gravityDirection");
+        const gravityMag = getAttribute(physicsScene, "physics:gravityMagnitude");
+        const gravity = new Vector2(gravityDir[0] * gravityMag, gravityDir[1] * gravityMag);
+        const dt = 1.0 / stage.ast.descriptor.timeCodesPerSecond;
+
+        world.setResource('gravity', gravity);
+        world.setResource('dt', dt);
         world.setResource('pauseState', new PauseStateComponent(true));
-        world.setResource('debugRenderPoints', {}); // Initialize debug points resource
-        world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
+        world.setResource('debugRenderPoints', {});
+        world.setResource('errorState', new SimulationErrorStateComponent(false));
         world.setResource('grabbedBall', null);
         world.setResource('ball_obstacle_contacts', []);
         world.setResource('ball_border_contacts', []);
         world.setResource('ball_flipper_contacts', []);
 
+        const sceneRoot = stage.GetPrimAtPath("/World/FlipperScene");
+        const nameToEntityId = {};
 
-        // --- Entities and Components ---
+        // Border Entity
+        const borderPrim = getChild(sceneRoot, "Border");
+        if (borderPrim) {
+            const points = getAttribute(borderPrim, "points").slice(0, 8);
+            const borderEntity = world.createEntity();
+            const borderPoints = points.map(p => new Vector2(p[0], p[1]));
+            world.addComponent(borderEntity, new BorderComponent(borderPoints));
+            const { color, friction, restitution } = materialProperties(stage, borderPrim);
+            world.addComponent(borderEntity, new RenderableComponent('border', color || '#000000'));
+            if (restitution !== null) world.addComponent(borderEntity, new RestitutionComponent(restitution));
+            if (friction !== null) world.addComponent(borderEntity, new CoefficientOfFrictionComponent(friction));
 
-        const offset = 0.02;
-        const entities = sceneData.entities;
-        const jointsData = sceneData.joints;
-        const pathsData = sceneData.paths;
+            const simWidth = Math.max(...points.map(p => p[0])) - Math.min(...points.map(p => p[0]));
+            const simHeight = Math.max(...points.map(p => p[1])) - Math.min(...points.map(p => p[1]));
+            world.setResource('simWidth', simWidth);
+            world.setResource('simHeight', simHeight);
+            const cScale = canvas.height / simHeight;
+            world.setResource('cScale', cScale);
+        }
 
-        // Border Entity (Clockwise points for outward normal calc)
-        const borderEntity = world.createEntity();
-        const borderPoints = [
-             new Vector2(0.74, 0.0),
-             new Vector2(0.74, 0.25),
-             new Vector2(1.0 - offset, 0.4),
-             new Vector2(1.0 - offset, simHeight - offset),
-             new Vector2(offset, simHeight - offset),
-             new Vector2(offset, 0.4),
-             new Vector2(0.26, 0.25),
-             new Vector2(0.26, 0.0)
-        ];
-        world.addComponent(borderEntity, new BorderComponent(borderPoints));
-        world.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
+        // Process Prims
+        for (const prim of getChildren(sceneRoot)) {
+            const tags = getAttribute(prim, "ecs:tags") || [];
+            if (!tags.length) continue;
 
+            const posArr = getAttribute(prim, "xformOp:translate");
+            const pos = new Vector2(posArr[0], posArr[1]);
+            const { color, friction, restitution } = materialProperties(stage, prim);
 
-        // Ball Entities
-        const ballRestitution = 1.0;
-        const ball1Info = entities['Ball1'];
-        const ball2Info = entities['Ball2'];
+            if (tags.includes("Ball")) {
+                const ent = world.createEntity();
+                const radius = getAttribute(prim, "radius");
+                const mass = getAttribute(prim, "physics:mass");
+                const inertia = getAttribute(prim, "physics:inertiaTensor")[2][2];
+                world.addComponent(ent, new BallTagComponent());
+                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                world.addComponent(ent, new VelocityComponent(0.0, 0.0));
+                world.addComponent(ent, new RadiusComponent(radius));
+                world.addComponent(ent, new MassComponent(mass));
+                world.addComponent(ent, new GravityAffectedComponent());
+                world.addComponent(ent, new RenderableComponent('circle', color || '#a0a0a0'));
+                world.addComponent(ent, new OrientationComponent(0.0));
+                world.addComponent(ent, new AngularVelocityComponent(0.0));
+                world.addComponent(ent, new MomentOfInertiaComponent(inertia));
+                world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
+                world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y));
+                if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
+                if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                if (getAttribute(prim, "cable:linkable")) {
+                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                }
+                nameToEntityId[prim.name] = ent;
+            } else if (tags.includes("Obstacle")) {
+                const ent = world.createEntity();
+                const radius = getAttribute(prim, "radius");
+                const push = getAttribute(prim, "obstacle:pushVel") || 0.0;
+                const angVelAttr = getAttribute(prim, "physics:angularVelocity");
+                const angVel = angVelAttr ? angVelAttr[2] * Math.PI / 180.0 : 0.0;
+                const inertiaAttr = getAttribute(prim, "physics:inertiaTensor");
+                const inertia = inertiaAttr ? inertiaAttr[2][2] : 0.0;
 
-        const ball1 = world.createEntity();
-        world.addComponent(ball1, new BallTagComponent());
-        world.addComponent(ball1, new PositionComponent(ball1Info.pos[0], ball1Info.pos[1]));
-        world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
-        world.addComponent(ball1, new RadiusComponent(ball1Info.radius));
-        world.addComponent(ball1, new MassComponent(ball1Info.mass));
-        world.addComponent(ball1, new RestitutionComponent(ballRestitution));
-        world.addComponent(ball1, new GravityAffectedComponent());
-        world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
-        world.addComponent(ball1, new OrientationComponent(0.0));
-        world.addComponent(ball1, new AngularVelocityComponent(0.0));
-        const ball1Inertia = 0.5 * ball1Info.mass * ball1Info.radius * ball1Info.radius;
-        world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
-        world.addComponent(ball1, new PrevFinalOrientationComponent(0.0));
-        world.addComponent(ball1, new CoefficientOfFrictionComponent(0.2));
+                world.addComponent(ent, new ObstacleTagComponent());
+                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                world.addComponent(ent, new MassComponent(-1.0));
+                world.addComponent(ent, new RadiusComponent(radius));
+                world.addComponent(ent, new ObstaclePushComponent(push));
+                world.addComponent(ent, new RenderableComponent('circle', color || '#ffffff'));
+                if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                if (angVel !== 0.0) {
+                    world.addComponent(ent, new OrientationComponent(0.0));
+                    world.addComponent(ent, new AngularVelocityComponent(angVel));
+                    world.addComponent(ent, new MomentOfInertiaComponent(inertia));
+                    world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
+                }
+                if (getAttribute(prim, "cable:linkable")) {
+                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                }
+                nameToEntityId[prim.name] = ent;
+            } else if (tags.includes("Flipper")) {
+                const ent = world.createEntity();
+                const length = getAttribute(prim, "flipper:length");
+                const restAngle = getAttribute(prim, "flipper:restAngle");
+                const maxRotation = getAttribute(prim, "flipper:maxRotation");
+                const angularVelocity = getAttribute(prim, "flipper:angularVelocity");
+                const geom = getChild(prim, "Geom");
+                const radius = geom ? getAttribute(geom, "radius") : 0.0;
 
-        const ball2 = world.createEntity();
-        world.addComponent(ball2, new BallTagComponent());
-        world.addComponent(ball2, new PositionComponent(ball2Info.pos[0], ball2Info.pos[1]));
-        world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
-        world.addComponent(ball2, new RadiusComponent(ball2Info.radius));
-        world.addComponent(ball2, new MassComponent(ball2Info.mass));
-        world.addComponent(ball2, new RestitutionComponent(ballRestitution));
-        world.addComponent(ball2, new GravityAffectedComponent());
-        world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
-        world.addComponent(ball2, new OrientationComponent(0.0));
-        world.addComponent(ball2, new AngularVelocityComponent(0.0));
-        const ball2Inertia = 0.5 * ball2Info.mass * ball2Info.radius * ball2Info.radius;
-        world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
-        world.addComponent(ball2, new PrevFinalOrientationComponent(0.0));
-        world.addComponent(ball2, new CoefficientOfFrictionComponent(0.2));
+                world.addComponent(ent, new FlipperTagComponent());
+                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                world.addComponent(ent, new RadiusComponent(radius));
+                world.addComponent(ent, new FlipperStateComponent(length, restAngle, maxRotation, angularVelocity));
+                world.addComponent(ent, new RenderableComponent('flipper', color || '#FF0000'));
+                if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
+                if (getAttribute(prim, "cable:linkable")) {
+                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                }
+                nameToEntityId[prim.name] = ent;
 
-        // Obstacle Entities
-        const obsColor1 = "#FF8000";
-        const obsColor2 = "#0F7090";
-        const obsPush = 2.7;
-
-        const obs1Info = entities['Obs1'];
-        const obs1 = world.createEntity();
-        world.addComponent(obs1, new ObstacleTagComponent());
-        world.addComponent(obs1, new PositionComponent(obs1Info.pos[0], obs1Info.pos[1]));
-        world.addComponent(obs1, new MassComponent(-1.0));
-        world.addComponent(obs1, new RadiusComponent(obs1Info.radius));
-        world.addComponent(obs1, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs1, new RenderableComponent('circle', obsColor2));
-
-        const obs2Info = entities['Obs2'];
-        const obs2 = world.createEntity();
-        world.addComponent(obs2, new ObstacleTagComponent());
-        world.addComponent(obs2, new PositionComponent(obs2Info.pos[0], obs2Info.pos[1]));
-        world.addComponent(obs2, new MassComponent(-1.0));
-        world.addComponent(obs2, new RadiusComponent(obs2Info.radius));
-        world.addComponent(obs2, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs2, new RenderableComponent('circle', obsColor2));
-
-        const obs3Info = entities['Obs3'];
-        const obs3 = world.createEntity();
-        world.addComponent(obs3, new ObstacleTagComponent());
-        world.addComponent(obs3, new PositionComponent(obs3Info.pos[0], obs3Info.pos[1]));
-        world.addComponent(obs3, new MassComponent(-1.0));
-        world.addComponent(obs3, new RadiusComponent(obs3Info.radius));
-        world.addComponent(obs3, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
-        world.addComponent(obs3, new OrientationComponent(0.0));
-        world.addComponent(obs3, new AngularVelocityComponent(100.0));
-        const obsInertia3 = 0.020 * obs3Info.radius**2;
-        world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia3));
-        world.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
-
-        const obs4Info = entities['Obs4'];
-        const obs4 = world.createEntity();
-        world.addComponent(obs4, new ObstacleTagComponent());
-        world.addComponent(obs4, new PositionComponent(obs4Info.pos[0], obs4Info.pos[1]));
-        world.addComponent(obs4, new MassComponent(-1.0));
-        world.addComponent(obs4, new RadiusComponent(obs4Info.radius));
-        world.addComponent(obs4, new ObstaclePushComponent(obsPush));
-        world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
-        world.addComponent(obs4, new OrientationComponent(0.0));
-        world.addComponent(obs4, new AngularVelocityComponent(-100.0));
-        const obsInertia4 = 0.020 * obs4Info.radius**2;
-        world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia4));
-        world.addComponent(obs4, new PrevFinalOrientationComponent(0.0));
-
-
-        // Flipper Entities
-        const flipRadius = 0.03; // Thickness
-        const flipLength = 0.2;
-        const flipMaxRotation = 1.0; // Radians
-        const flipRestAngle = 0.5; // Radians from horizontal
-        const flipAngularVelocity = 20.0; // Radians per second
-        const flipColor = "#FF0000";
-        const flipRestitution = 0.6;
-
-        const flipper1 = world.createEntity();
-        world.addComponent(flipper1, new FlipperTagComponent());
-        world.addComponent(flipper1, new PositionComponent(0.26, 0.22));
-        world.addComponent(flipper1, new RadiusComponent(flipRadius));
-        world.addComponent(flipper1, new FlipperStateComponent(flipLength, -flipRestAngle, flipMaxRotation, flipAngularVelocity));
-        world.addComponent(flipper1, new RestitutionComponent(flipRestitution));
-        world.addComponent(flipper1, new RenderableComponent('flipper', flipColor));
-        world.addComponent(flipper1, new CableLinkComponent(0.26, 0.22));
-        const flipper1Tip = world.createEntity();
-        world.addComponent(flipper1Tip, new PositionComponent());
-        world.addComponent(flipper1Tip, new RadiusComponent(flipRadius));
-        world.addComponent(flipper1Tip, new FlipperTipComponent(flipper1));
-        world.addComponent(flipper1Tip, new CableLinkComponent());
-
-        const flipper2 = world.createEntity();
-        world.addComponent(flipper2, new FlipperTagComponent());
-        world.addComponent(flipper2, new PositionComponent(0.74, 0.22));
-        world.addComponent(flipper2, new RadiusComponent(flipRadius));
-        world.addComponent(flipper2, new FlipperStateComponent(flipLength, Math.PI + flipRestAngle, -flipMaxRotation, flipAngularVelocity));
-        world.addComponent(flipper2, new RestitutionComponent(flipRestitution));
-        world.addComponent(flipper2, new RenderableComponent('flipper', flipColor));
-        world.addComponent(flipper2, new CableLinkComponent());
-        const flipper2Tip = world.createEntity();
-        world.addComponent(flipper2Tip, new PositionComponent());
-        world.addComponent(flipper2Tip, new RadiusComponent(flipRadius));
-        world.addComponent(flipper2Tip, new CableLinkComponent());
-        world.addComponent(flipper2Tip, new FlipperTipComponent(flipper2));
-
-        const frictionCoefficient = 0.2;
-        world.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(0.01));
-        world.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(0.01));
+                const tipPrim = getChild(prim, "Tip");
+                if (tipPrim) {
+                    const tip = world.createEntity();
+                    world.addComponent(tip, new PositionComponent());
+                    world.addComponent(tip, new RadiusComponent(radius));
+                    world.addComponent(tip, new FlipperTipComponent(ent));
+                    if (getAttribute(tipPrim, "cable:linkable")) {
+                        world.addComponent(tip, new CableLinkComponent());
+                    }
+                    if (friction !== null) {
+                        world.addComponent(tip, new CoefficientOfFrictionComponent(friction));
+                    }
+                }
+            }
+        }
 
         // Score Entity
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
 
+        // Cable Setup
+        const cablePathPrim = getChild(sceneRoot, "CablePath");
+        if (cablePathPrim) {
+            const jointPaths = getRelationship(cablePathPrim, "cablePath:joints");
+            const jointEntityMap = {};
 
-        // --- Cable Setup ---
-        const entityNameToId = {
-            'Ball1': ball1,
-            'Ball2': ball2,
-            'Obs1': obs1,
-            'Obs2': obs2,
-            'Obs3': obs3,
-            'Obs4': obs4
-        };
+            for (const jointPath of jointPaths) {
+                const jointPrim = stage.GetPrimAtPath(jointPath);
+                if (!jointPrim) continue;
 
-        const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
-        const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
-        const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
-        const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
+                const body0Path = getRelationship(jointPrim, "physics:body0")[0];
+                const body1Path = getRelationship(jointPrim, "physics:body1")[0];
+                const entityA = nameToEntityId[body0Path.split('/').pop()];
+                const entityB = nameToEntityId[body1Path.split('/').pop()];
+                const restLength = getAttribute(jointPrim, "restLength");
+                const attachAArr = getAttribute(jointPrim, "localPos0");
+                const attachBArr = getAttribute(jointPrim, "localPos1");
+                const attachA = new Vector2(attachAArr[0], attachAArr[1]);
+                const attachB = new Vector2(attachBArr[0], attachBArr[1]);
 
-        world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
-        world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
-        world.addComponent(obs4, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(obs3, new CoefficientOfFrictionComponent(frictionCoefficient));
-        world.addComponent(ball1, new CableLinkComponent(pos_ball1.x, pos_ball1.y));
-        world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
-        world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
-        world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
+                const joint = world.createEntity();
+                world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
+                world.addComponent(joint, new RenderableComponent('line', linecolor1));
+                jointEntityMap[jointPrim.name] = joint;
+            }
 
-        const jointEntityMap = {};
-        for (const jointInfo of jointsData) {
-            const joint = world.createEntity();
-            const entityA = entityNameToId[jointInfo.entityA];
-            const entityB = entityNameToId[jointInfo.entityB];
-            const restLength = jointInfo.restLength;
-            const attachA = new Vector2(jointInfo.attachA[0], jointInfo.attachA[1]);
-            const attachB = new Vector2(jointInfo.attachB[0], jointInfo.attachB[1]);
-
-            world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
-            world.addComponent(joint, new RenderableComponent('line', linecolor1));
-            jointEntityMap[jointInfo.name] = joint;
+            const cablePath = world.createEntity();
+            const jointNames = getRelationship(cablePathPrim, "cablePath:joints").map(p => p.split('/').pop());
+            const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]);
+            const pathComp = new CablePathComponent(
+              world,
+              jointEntities,
+              getAttribute(cablePathPrim, "cablePath:linkTypes"),
+              getAttribute(cablePathPrim, "cablePath:clockwise"),
+              getAttribute(cablePathPrim, "stiffness") || 200.0
+            );
+            world.addComponent(cablePath, pathComp);
         }
-
-        const cablePath = world.createEntity();
-        const pathInfo = pathsData[0];
-        const jointEntities = pathInfo.joints.map(jointName => jointEntityMap[jointName]);
-        const pathComp = new CablePathComponent(
-          world,
-          jointEntities,
-          pathInfo.linkTypes,
-          pathInfo.cw,
-          200.0
-        );
-        world.addComponent(cablePath, pathComp);
-
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) {
@@ -498,6 +491,8 @@ canvas {
              // 9. Game Logic
              world.registerSystem(new ScoreSystem());
              world.registerSystem(new ScoreDisplaySystem('score'));
+             const cScale = world.getResource('cScale');
+             const simHeight = world.getResource('simHeight');
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
         }
 
