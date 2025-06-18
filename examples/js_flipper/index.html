@@ -228,7 +228,11 @@ canvas {
         const value = getAttribute(primNode, relName);
         if (!value) return [];
         const targets = Array.isArray(value) ? value : [value];
-        return targets.map(t => typeof t === 'string' ? t.replace(/[<>]/g, '') : t);
+        // The parser may produce non-string values (e.g. for trailing commas).
+        // We must filter these out and ensure we only return strings.
+        return targets
+            .filter(t => typeof t === 'string' && t.length > 0)
+            .map(t => t.replace(/[<>]/g, ''));
     }
 
     function getChildren(primNode) {
@@ -436,7 +440,7 @@ canvas {
             }
 
             const cablePath = world.createEntity();
-            const jointNames = getRelationship(cablePathPrim, "cablePath:joints").filter(p => p).map(p => p.split('/').pop());
+            const jointNames = getRelationship(cablePathPrim, "cablePath:joints").map(p => p.split('/').pop());
             const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]);
             const pathComp = new CablePathComponent(
               world,
