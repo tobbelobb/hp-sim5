@@ -48,6 +48,43 @@ WATCHED_FILES = [
     python_dir / "ball_border_or_flipper_velocity_contact_system.py",
 ]
 
+def _copy_usd_on_change(changed_file: Path, root_dir: Path):
+    """If changed_file is the flipper scene, copy it to the public dir for vite.
+
+    This is done atomically with a lock file to support multiple server processes.
+    This function is designed to fail silently if the copy is not possible.
+    """
+    try:
+        source_path = root_dir / "examples" / "usd_scenes" / "flipper_scene.usda"
+        if changed_file.resolve() != source_path.resolve():
+            return
+
+        dest_path = root_dir / "public" / "examples" / "usd_scenes" / "flipper_scene_copy_for_vite.usda.txt"
+        lock_path = dest_path.parent / (dest_path.name + ".lock")
+
+        # Ensure destination directory exists
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Attempt to acquire lock.
+        try:
+            lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            # Another process has the lock. It will handle the copy.
+            return
+        else:
+            # We got the lock.
+            try:
+                import shutil
+                shutil.copy(source_path, dest_path)
+                print(f"Copied {source_path.relative_to(root_dir)} to {dest_path.relative_to(root_dir)}")
+            finally:
+                os.close(lock_fd)
+                os.remove(lock_path)
+    except Exception as e:
+        # Fail silently, but log to stderr for debugging.
+        print(f"Could not copy {changed_file}: {e}", file=sys.stderr)
+
+
 async def watch_and_restart(files, interval=1.0):
     """Monitor *files* and restart the process if any change."""
     mtimes = {}
@@ -64,6 +101,7 @@ async def watch_and_restart(files, interval=1.0):
             except FileNotFoundError:
                 mtime = 0
             if mtime != mtimes.get(f):
+                _copy_usd_on_change(Path(f), root_dir)
                 print(f"{f} changed, restarting server...")
                 os.execv(sys.executable, [sys.executable] + sys.argv)
         for f in files:
@@ -863,6 +901,70 @@ async def handler(websocket, path=None, use_warp=False, device='cpu'):
 
         await websocket.send(world_to_json(world))
 
+def _run_copy_test():
+    """Integration test for the USD file copy-on-change logic."""
+    print("Running integration test for file copy logic...")
+    import tempfile
+    import shutil
+    import time
+
+    # 1. Setup temporary directories and files
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+
+        # Mock project structure
+        source_dir = tmpdir_path / "examples" / "usd_scenes"
+        dest_dir = tmpdir_path / "public" / "examples" / "usd_scenes"
+        source_dir.mkdir(parents=True, exist_ok=True)
+
+        source_file = source_dir / "flipper_scene.usda"
+        dest_file = dest_dir / "flipper_scene_copy_for_vite.usda.txt"
+
+        # 2. Create initial source file
+        source_content_v1 = "#USD 1.0 (v1)"
+        source_file.write_text(source_content_v1)
+
+        # 3. Modify source file and trigger copy
+        time.sleep(0.01)  # ensure mtime is different on filesystems with low resolution
+        source_content_v2 = "#USD 1.0 (v2)"
+        source_file.write_text(source_content_v2)
+
+        _copy_usd_on_change(source_file, tmpdir_path)
+
+        # 4. Assertions
+        assert dest_file.exists(), "Destination file was not created."
+        assert dest_file.read_text() == source_content_v2, "Destination file content is incorrect."
+        print("Test 1: File copied successfully on change.")
+
+        # 5. Test lock mechanism (simulate concurrent access)
+        lock_file = dest_dir / (dest_file.name + ".lock")
+
+        # Create a lock file manually
+        lock_fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+
+        # Modify source again
+        time.sleep(0.01)
+        source_content_v3 = "#USD 1.0 (v3)"
+        source_file.write_text(source_content_v3)
+
+        # This call should not be able to copy because of the lock
+        _copy_usd_on_change(source_file, tmpdir_path)
+
+        # Content should still be v2
+        assert dest_file.read_text() == source_content_v2, "File was copied despite lock."
+        print("Test 2: Copy was correctly skipped when locked.")
+
+        # Release lock and try again
+        os.close(lock_fd)
+        os.remove(lock_file)
+
+        _copy_usd_on_change(source_file, tmpdir_path)
+        assert dest_file.read_text() == source_content_v3, "File was not copied after lock release."
+        print("Test 3: File copied successfully after lock was released.")
+
+    print("All copy logic tests passed.")
+
+
 async def main():
     import websockets
     import argparse
@@ -871,7 +973,12 @@ async def main():
     parser.add_argument("--warp", action="store_true", help="Use Warp solver")
     parser.add_argument("--device", default="cpu", help="Warp device")
     parser.add_argument("--port", type=int, help="WebSocket port")
+    parser.add_argument("--test-copy-logic", action="store_true", help="Run the copy logic integration test and exit.")
     args = parser.parse_args()
+
+    if args.test_copy_logic:
+        _run_copy_test()
+        return
 
     port = args.port if args.port else (8767 if args.warp else 8765)
     print(f"Starting WebSocket server on ws://localhost:{port}")
