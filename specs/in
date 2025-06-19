@@ -1,3 +1,4 @@
+the problem where one cable path can pull one object "multiple times" remains
 bumper vel Bounce different in js than python
 restore 3d_test.html
 code duplication in js_flipper/index.html and python_flipper
