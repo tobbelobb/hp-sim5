@@ -57,10 +57,8 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
       - Start server: `python examples/python_flipper/server.py --warp --device cuda:0`
       - Open `examples/python_flipper/index_warp.html` in a browser.
     7. (Optional) `python examples/usd_scenes/slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
-       If the optional `pxr` and `warp` modules are not installed the script falls
-       back to a tiny built‑in parser. Edit the script to parse either
-       `slideprinter/slideprinter.usda` or the provided `flipper_scene.usda.txt` to
-       experiment with different setups.
+       Edit the script to parse either `slideprinter/slideprinter.usda` or the provided
+       `flipper_scene.usda` to experiment with different setups.
     8. (Optional) `python examples/python_3d/hanging_pendulum.py` will generate a USD file showing a simple
        3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
        See `ai_docs/Warp/README.md` for Warp installation details.
