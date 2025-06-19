@@ -65,3 +65,58 @@ function indexPrims(statements, parent = "", out = {}) {
   }
   return out;
 }
+
+
+// --- USD Parsing Helpers ---
+export function getAttribute(primNode, attrName) {
+    if (!primNode || !primNode.statements) return null;
+    const decl = primNode.statements.find(s => s.type === 'declaration' && s.reference === attrName);
+    return decl ? decl.value : null;
+}
+
+export function getRelationship(primNode, relName) {
+    const value = getAttribute(primNode, relName);
+    if (!value) return [];
+    // The new parser returns an object or an array of objects for relationships
+    if (Array.isArray(value)) {
+        // It's a list of relationships
+        return value.map(v => v.importPath).filter(Boolean);
+    }
+    if (value.importPath) {
+        // It's a single relationship
+        return [value.importPath];
+    }
+    return [];
+}
+
+export function getChildren(primNode) {
+    return primNode?.statements?.filter(s => s.type === 'definition') ?? [];
+}
+
+export function getChild(primNode, name) {
+    return primNode?.statements?.find(s => s.type === 'definition' && s.name === name);
+}
+
+export function materialProperties(stage, prim) {
+    const materialPath = getRelationship(prim, 'material:binding')[0];
+    if (!materialPath) return { color: null, friction: null, restitution: null };
+
+    const matPrim = stage.GetPrimAtPath(materialPath);
+    if (!matPrim) return { color: null, friction: null, restitution: null };
+
+    const shaderPrim = getChild(matPrim, "Shader");
+    let color = null;
+    if (shaderPrim) {
+        const colorVal = getAttribute(shaderPrim, "inputs:diffuseColor");
+        if (colorVal) {
+            const toHex = c => Math.round(c * 255).toString(16).padStart(2, '0');
+            color = `#${toHex(colorVal[0])}${toHex(colorVal[1])}${toHex(colorVal[2])}`;
+        }
+    }
+
+    const friction = getAttribute(matPrim, "physics:staticFriction");
+    const restitution = getAttribute(matPrim, "physics:restitution");
+
+    return { color, friction, restitution };
+}
+

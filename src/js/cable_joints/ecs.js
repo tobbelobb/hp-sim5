@@ -138,25 +138,6 @@ export class RadiusComponent { constructor(radius = 0.1) { this.radius = radius;
 export class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
 export class RestitutionComponent { constructor(restitution = 0.5) { this.restitution = restitution; } }
 export class GravityAffectedComponent { }
-export class BallTagComponent { }
-export class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
-export class FlipperTagComponent { }
-export class FlipperStateComponent {
-  constructor(length, restAngle, maxRotation, angularVelocity) {
-    this.length = length;
-    this.restAngle = restAngle;
-    this.maxRotation = Math.abs(maxRotation);
-    this.sign = Math.sign(maxRotation); // Direction it rotates
-    this.angularVelocity = angularVelocity;
-    // Dynamic state
-    this.rotation = 0.0; // Current rotation from restAngle
-    this.currentAngularVelocity = 0.0; // Velocity in the last frame
-    this.pressed = false; // Was it activated?
-  }
-}
-export class ObstacleTagComponent { }
-export class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
-export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 export class SimulationErrorStateComponent { constructor(hasError = false) { this.hasError = hasError; } }
 export class OrientationComponent {
     constructor(angle = 0.0) {
@@ -185,7 +166,6 @@ export class CoefficientOfFrictionComponent {
     this.mu = mu; // Coefficient of static friction
   }
 }
-export class ScoredTagComponent { }
 
 export class DistanceConstraintComponent {
   constructor(entityA, entityB, restLength, compliance = 0.0) {
@@ -197,8 +177,3 @@ export class DistanceConstraintComponent {
   }
 }
 
-export class FlipperTipComponent {
-  constructor(flipperEntityId) {
-    this.flipperEntityId = flipperEntityId;
-  }
-}

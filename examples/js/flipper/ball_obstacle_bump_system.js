@@ -1,4 +1,4 @@
-import Vector2 from './vector2.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
     VelocityComponent,
     RadiusComponent,
@@ -6,8 +6,11 @@ import {
     AngularVelocityComponent,
     MomentOfInertiaComponent,
     CoefficientOfFrictionComponent,
+} from '../../../src/js/cable_joints/ecs.js';
+
+import {
     ObstaclePushComponent
-} from './ecs.js';
+} from './flipper_common.js';
 
 export class BallObstacleBumpSystem {
     runInPause = false;

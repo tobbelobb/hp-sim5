@@ -1,23 +1,26 @@
-import Vector2 from './vector2.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 
 import {
   PositionComponent,
   RadiusComponent,
   RenderableComponent,
   OrientationComponent,
-  BorderComponent,
-  FlipperTagComponent,
-  FlipperStateComponent,
   DistanceConstraintComponent,
-  ObstacleTagComponent,
   AngularVelocityComponent
-} from './ecs.js';
+} from '../../../src/js/cable_joints/ecs.js';
 
 import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent
-} from './cable_joints_core.js';
+} from '../../../src/js/cable_joints/cable_joints_core.js';
+
+import {
+  BorderComponent,
+  FlipperTagComponent,
+  FlipperStateComponent,
+  ObstacleTagComponent,
+} from './flipper_common.js';
 
 export class RenderSystem {
   runInPause = true; // Always render

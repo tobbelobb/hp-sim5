@@ -1,26 +1,55 @@
-import Vector2 from './vector2.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
-  BallTagComponent,
   PositionComponent,
   VelocityComponent,
   RadiusComponent,
   MassComponent,
   RestitutionComponent,
-  FlipperTagComponent,
-  FlipperStateComponent,
-  BorderComponent,
-  ScoredTagComponent,
   PrevFinalPosComponent,
   RenderableComponent
-} from './ecs.js';
+} from '../../../src/js/cable_joints/ecs.js';
 import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-} from './cable_joints_core.js';
-import { closestPointOnSegment, rightOfLine } from './geometry.js';
+} from '../../../src/js/cable_joints/cable_joints_core.js';
+import { closestPointOnSegment, rightOfLine } from '../../../src/js/cable_joints/geometry.js';
+
+export class BallTagComponent { }
+
+export class ObstacleTagComponent { }
+
+export class ObstaclePushComponent { constructor(pushVel = 2.0) { this.pushVel = pushVel; } }
+
+export class FlipperTagComponent { }
+
+export class FlipperStateComponent {
+  constructor(length, restAngle, maxRotation, angularVelocity) {
+    this.length = length;
+    this.restAngle = restAngle;
+    this.maxRotation = Math.abs(maxRotation);
+    this.sign = Math.sign(maxRotation); // Direction it rotates
+    this.angularVelocity = angularVelocity;
+    // Dynamic state
+    this.rotation = 0.0; // Current rotation from restAngle
+    this.currentAngularVelocity = 0.0; // Velocity in the last frame
+    this.pressed = false; // Was it activated?
+  }
+}
+
+export class FlipperTipComponent {
+  constructor(flipperEntityId) {
+    this.flipperEntityId = flipperEntityId;
+  }
+}
+
+export class BorderComponent { constructor(points = []) { this.points = points.map(p => p.clone()); } }
+
+export class ScoredTagComponent { }
 
 export class ScoreComponent { constructor(score = 0) { this.value = score; } }
+
+export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 
 // --- System: Input --- (Simplified Click Handling)
 export class InputSystem {
@@ -32,8 +61,8 @@ export class InputSystem {
          this.grabSpringParams = grabSpringParams;
          this.clicks = [];
          this.releases = [];
-         this.eventLog = [];     // ← record inputs per frame
-         this.frame = 0;         // ← frame counter
+         this.eventLog = [];     // record inputs per frame
+         this.frame = 0;         // frame counter
          this.grabSpring = null; // { ptrE, jointE, pathE, ballE }
          this.canvas.setAttribute('tabindex', '0');
          this.canvas.style.outline = 'none';
@@ -46,7 +75,7 @@ export class InputSystem {
          this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
      }
 
-    // on Space → emit minimal debug dump
+    // on Space emit minimal debug dump
     dumpDebugScenario() {
         // Custom stringification to serialize Vector2 instances
         const resStr = JSON.stringify(this.world.resources);
@@ -301,6 +330,33 @@ export class InputSystem {
      }
 }
 
+export class InputReplaySystem {
+  runInPause = false;
+  constructor(inputLog, inputSystem) {
+    this.inputLog = inputLog;
+    this.currentIndex = 0;
+    this.frame = 0;
+    this.inputSystem = inputSystem;
+  }
+  update(world, dt) {
+    if (this.inputLog.length > 0) {
+      if (this.inputSystem.frame === this.inputLog[0].frame) {
+        const frame = this.inputLog.shift();
+        this.inputSystem.clicks = frame.clicks.slice();
+        this.inputSystem.releases = frame.releases.slice();
+      }
+    }
+  }
+
+  reset() {
+    this.inputLog = [];
+    this.currentIndex = 0;
+    this.frame = 0;
+  }
+}
+
+
+
 export class ScoreSystem {
     runInPause = false;
     update(world, dt) {
@@ -328,4 +384,282 @@ export class ScoreDisplaySystem {
             this.scoreElement.textContent = scoreComp.value.toString();
         }
     }
+}
+
+export class FlipperMotionSystem {
+    runInPause = true;
+    update(world, dt) {
+        const flipperEntities = world.query([FlipperStateComponent]);
+        for (const entityId of flipperEntities) {
+            const state = world.getComponent(entityId, FlipperStateComponent);
+
+            const prevRotation = state.rotation;
+            if (state.pressed) {
+                state.rotation = Math.min(state.rotation + dt * state.angularVelocity, state.maxRotation);
+            } else {
+                state.rotation = Math.max(state.rotation - dt * state.angularVelocity, 0.0);
+            }
+            state.currentAngularVelocity = (dt > 1e-6) ? state.sign * (state.rotation - prevRotation) / dt : 0.0;
+        }
+    }
+}
+
+export class FlipperTipLinkSystem {
+  runInPause = false;
+  update(world, dt) {
+    // for each tip‐entity, compute its current position
+    for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
+      const tipComp   = world.getComponent(tipId, FlipperTipComponent);
+      const flipId    = tipComp.flipperEntityId;
+      const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
+      const state     = world.getComponent(flipId, FlipperStateComponent);
+      // same math you use elsewhere to find the tip
+      const angle = state.restAngle + state.sign * state.rotation;
+      const dir   = new Vector2(Math.cos(angle), Math.sin(angle));
+      const tipPos = pivotPos.clone().add(dir, state.length);
+      // write it into the tip entity’s PositionComponent
+      world.getComponent(tipId, PositionComponent).pos.set(tipPos);
+    }
+  }
+}
+
+export class PBDBallBorderCollisions {
+  update(world, dt) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const borderEntities = world.query([BorderComponent]);
+    if (borderEntities.length === 0) return;
+
+    const borderId = borderEntities[0];
+    const borderComp = world.getComponent(borderId, BorderComponent);
+    const borderPoints = borderComp.points;
+
+    let contacts = world.getResource('ball_border_contacts');
+    if (!contacts) {
+        contacts = [];
+        world.setResource('ball_border_contacts', contacts);
+    }
+    contacts.length = 0;
+
+    if (borderPoints.length >= 2) {
+        for (const ballId of ballEntities) {
+            const p1Comp = world.getComponent(ballId, PositionComponent);
+            const p1 = p1Comp.pos;
+            const r1 = world.getComponent(ballId, RadiusComponent).radius;
+            const massComp = world.getComponent(ballId, MassComponent);
+            const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
+
+            let minDistSq = Infinity;
+            let closestSegPoint = new Vector2();
+            let edgeStart = null;
+            let edgeEnd = null;
+
+            for (let i = 0; i < borderPoints.length; i++) {
+                const a = borderPoints[i];
+                const b = borderPoints[(i + 1) % borderPoints.length];
+                const closestPtOnSeg = closestPointOnSegment(p1, a, b);
+                const distSq = p1.distanceToSq(closestPtOnSeg);
+
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    closestSegPoint.set(closestPtOnSeg);
+                    edgeStart = a;
+                    edgeEnd = b;
+                }
+            }
+
+            if (minDistSq > r1 * r1) continue;
+
+            const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
+            const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
+            const normal = new Vector2(-edgeVec.y, edgeVec.x).normalize();
+
+            let collisionNormal;
+            if (ballToClosest.lengthSq() < 1e-9) {
+                collisionNormal = normal.clone();
+            } else {
+                collisionNormal = ballToClosest.clone().normalize();
+            }
+
+            if (ballToClosest.dot(normal) < 0) {
+                collisionNormal = normal.clone();
+            }
+
+            const dist = Math.sqrt(minDistSq);
+            const penetration = r1 - dist;
+            let delta_lambda = 0;
+            if (penetration > 0) {
+                if (invMass > 0) {
+                    p1.add(collisionNormal, penetration);
+                    const w_inv = invMass;
+                    delta_lambda = penetration / w_inv;
+                }
+            }
+
+            contacts.push({
+                'ball_id': ballId,
+                'normal': collisionNormal.clone(),
+                'delta_lambda': delta_lambda
+            });
+        }
+    }
+  }
+}
+
+export class PBDBallBallCollisions {
+  runInPause = false;
+  update(world, dt) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    for (let i = 0; i < ballEntities.length; i++) {
+      for (let j = i + 1; j < ballEntities.length; j++) {
+        const e1 = ballEntities[i];
+        const e2 = ballEntities[j];
+
+        const p1Comp = world.getComponent(e1, PositionComponent);
+        const r1 = world.getComponent(e1, RadiusComponent).radius;
+        const m1Comp = world.getComponent(e1, MassComponent);
+
+        const p2Comp = world.getComponent(e2, PositionComponent);
+        const r2 = world.getComponent(e2, RadiusComponent).radius;
+        const m2Comp = world.getComponent(e2, MassComponent);
+
+        const p1 = p1Comp.pos;
+        const m1 = m1Comp ? m1Comp.mass : 0.0;
+        const p2 = p2Comp.pos;
+        const m2 = m2Comp ? m2Comp.mass : 0.0;
+
+        const dir = new Vector2().subtractVectors(p2, p1);
+        const dSq = dir.lengthSq();
+        const rSum = r1 + r2;
+
+        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d); // Normalize
+
+        // Resolve penetration
+        const penetration = rSum - d;
+        const invMass1 = (m1 > 0) ? 1.0 / m1 : 0.0;
+        const invMass2 = (m2 > 0) ? 1.0 / m2 : 0.0;
+        const totalInvMass = invMass1 + invMass2;
+
+        if (totalInvMass <= 1e-9) continue;
+
+        const corr = dir.clone().scale(penetration / totalInvMass);
+        p1.add(corr, -invMass1);
+        p2.add(corr, invMass2);
+      }
+    }
+  }
+}
+
+export class PBDBallObstacleCollisions {
+  runInPause = false;
+  update(world, dt) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent]);
+    const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+
+    let contacts = world.getResource('ball_obstacle_contacts');
+    if (!contacts) {
+        contacts = [];
+        world.setResource('ball_obstacle_contacts', contacts);
+    }
+    contacts.length = 0; // Clear existing contacts
+
+    for (const ballId of ballEntities) {
+      const p1 = world.getComponent(ballId, PositionComponent).pos;
+      const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+      for (const obsId of obstacleEntities) {
+        const p2 = world.getComponent(obsId, PositionComponent).pos;
+        const r2 = world.getComponent(obsId, RadiusComponent).radius;
+
+        const dir = new Vector2().subtractVectors(p1, p2);
+        const dSq = dir.lengthSq();
+        const rSum = r1 + r2;
+
+        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d); // Normalize
+
+        // Store contact info for the velocity-based bump system
+        contacts.push({ ball_id: ballId, obs_id: obsId, direction: dir.clone() });
+
+        // Resolve penetration
+        const corr = rSum - d;
+        p1.add(dir, corr);
+
+        // Velocity resolution is now handled by BallObstacleBumpSystem
+        const grabbed = world.getResource('grabbedBall');
+        if (ballId !== grabbed) {
+          world.addComponent(ballId, new ScoredTagComponent());
+        }
+      }
+    }
+  }
+}
+
+export class PBDBallFlipperCollisions {
+  _getFlipperTip(flipperPos, flipperState) {
+    const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+    const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+    return flipperPos.clone().add(dir, flipperState.length);
+  }
+
+  update(world, dt) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
+
+    let contacts = world.getResource('ball_flipper_contacts');
+    if (!contacts) {
+        contacts = [];
+        world.setResource('ball_flipper_contacts', contacts);
+    }
+    contacts.length = 0;
+
+    for (const ballId of ballEntities) {
+      const p1Comp = world.getComponent(ballId, PositionComponent);
+      const p1 = p1Comp.pos;
+      const r1 = world.getComponent(ballId, RadiusComponent).radius;
+      const massComp = world.getComponent(ballId, MassComponent);
+      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
+
+      for (const flipId of flipperEntities) {
+        const fp = world.getComponent(flipId, PositionComponent).pos;
+        const fr = world.getComponent(flipId, RadiusComponent).radius;
+        const fs = world.getComponent(flipId, FlipperStateComponent);
+
+        const tip = this._getFlipperTip(fp, fs);
+        const closest = closestPointOnSegment(p1, fp, tip);
+
+        const dir = new Vector2().subtractVectors(p1, closest);
+        const dSq = dir.lengthSq();
+        const rSum = r1 + fr;
+
+        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d);
+
+        const corr = rSum - d;
+        if (invMass > 0) {
+            p1.add(dir, corr);
+        }
+
+        let delta_lambda = 0;
+        if (invMass > 0) {
+            const w_inv = invMass;
+            delta_lambda = corr / w_inv;
+        }
+
+        contacts.push({
+            'ball_id': ballId,
+            'flip_id': flipId,
+            'normal': dir.clone(),
+            'contact_point_on_flipper': closest.clone(),
+            'delta_lambda': delta_lambda
+        });
+      }
+    }
+  }
 }
