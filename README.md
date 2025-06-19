@@ -37,7 +37,7 @@ python -m pytest tests/python  # runs tests for the Python port
 ## Project Layout
 - **src/js/cable_joints/** – JavaScript source modules
 - **src/python/cable_joints/** – Python port mirroring the JS implementation
-- **tests/** – Jest unit and integration tests
+- **tests/js/** – Jest unit and integration tests
 - **tests/python/** – pytest suite for the Python port
 - **src/js/cable_joints_3d/** – experimental 3D viewer using Three.js
 
