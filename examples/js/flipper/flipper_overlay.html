@@ -103,6 +103,14 @@ canvas {
 
     // For coordinate conversion and rendering
     let cScale;
+    const simHeight = 1.7;
+
+    function setupCanvas() {
+        if (!canvas) return;
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        cScale = canvas.height / simHeight;
+    }
 
     // --- WebSocket Logic ---
     function toCanvasCoords(simX, simY) {
@@ -229,6 +237,7 @@ canvas {
         const pauseState = jsWorld.getResource('pauseState');
         pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
         pyScoreEl.textContent = "0";
+        setupCanvas();
     }
 
     // --- Main Loop ---
@@ -310,6 +319,7 @@ canvas {
     document.addEventListener('pointerup', handlePointerUpPy);
     document.addEventListener('keydown', (e) => handleKeyPy(e, 'click'));
     document.addEventListener('keyup', (e) => handleKeyPy(e, 'release'));
+    window.addEventListener('resize', setupCanvas);
 
     // Button listeners
     pauseBtn.addEventListener('click', (e) => {

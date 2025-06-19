@@ -318,7 +318,7 @@ class RemoteInputSystem:
         self.events_queue.append(event)
 
     def _handle_pointer_down(self, world, pos):
-        if self.grab_spring:
+        if self.grab_spring or pos is None:
             return
 
         closest_ball = None
@@ -362,7 +362,7 @@ class RemoteInputSystem:
             self.clicks.append(pos)
 
     def _handle_pointer_move(self, world, pos):
-        if self.grab_spring:
+        if self.grab_spring and pos is not None:
             ptr_e = self.grab_spring['ptr_e']
             ptr_pos_comp = world.get_component(ptr_e, PositionComponent)
             if ptr_pos_comp:
@@ -386,7 +386,8 @@ class RemoteInputSystem:
             self.grab_spring = None
             world.set_resource('grabbedBall', None)
         else:
-            self.releases.append(pos)
+            if pos is not None:
+                self.releases.append(pos)
 
     def update(self, world, dt):
         for event in self.events_queue:
