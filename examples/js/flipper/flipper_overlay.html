@@ -340,14 +340,6 @@ canvas {
             requestAnimationFrame(gameLoop);
         }
     });
-    stepBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pauseState = jsWorld.getResource('pauseState');
-        if (pauseState && pauseState.paused) {
-            doStep = true;
-            requestAnimationFrame(gameLoop);
-        }
-    });
     dumpBtn.addEventListener('click', (e) => {
         e.preventDefault();
         console.log("--- JS WORLD STATE ---");
