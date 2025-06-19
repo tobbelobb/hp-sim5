@@ -481,7 +481,7 @@ canvas {
               jointEntities,
               linkTypes ? [...linkTypes] : null,
               clockwise ? [...clockwise] : null,
-              getAttribute(cablePathPrim, "stiffness") || 200.0,
+              getAttribute(cablePathPrim, "stiffness") || Infinity,
               stored ? [...stored] : null
             );
             world.addComponent(cablePath, pathComp);
