@@ -1,5 +1,5 @@
 export function dumpWorldState(world) {
-  const renderSystem = world.getResource('renderSystem');
+  const renderSystem = world.systems.find(s => s.constructor.name === 'RenderSystem');
   const viewportScale = renderSystem ? renderSystem.viewScaleMultiplier : 1.0;
   const viewportOffsetX = renderSystem ? renderSystem.viewOffsetX_sim : 0.0;
   const viewportOffsetY = renderSystem ? renderSystem.viewOffsetY_sim : 0.0;
@@ -60,6 +60,7 @@ testGeneratedError: {
       // Serialize component data based on type
       switch (componentClass.name) {
         case 'PositionComponent':
+        case 'PrevFinalPosComponent':
           addCompStr += `${component.pos.x}, ${component.pos.y}`;
           break;
         case 'VelocityComponent':
@@ -80,11 +81,33 @@ testGeneratedError: {
         case 'RestitutionComponent':
           addCompStr += `${component.restitution}`;
           break;
+        case 'CoefficientOfFrictionComponent':
+          addCompStr += `${component.mu}`;
+          break;
+        case 'OrientationComponent':
+        case 'PrevFinalOrientationComponent':
+          addCompStr += `${component.angle}`;
+          break;
+        case 'AngularVelocityComponent':
+          addCompStr += `${component.angularVelocity}`;
+          break;
+        case 'MomentOfInertiaComponent':
+          addCompStr += `${component.inertia}`;
+          break;
         case 'RenderableComponent':
           addCompStr += `'${component.shape}', '${component.color}'`;
           break;
         case 'FlipperStateComponent':
-          addCompStr += `${component.length}, ${component.restAngle},  ${component.maxRotation}, ${component.angularVelocity}`;
+          addCompStr += `${component.length}, ${component.restAngle},  ${component.sign * component.maxRotation}, ${component.angularVelocity}`;
+          break;
+        case 'FlipperTipComponent':
+          const flipperEntityVar = entityVarMap.get(component.flipperEntityId);
+          if (!flipperEntityVar) {
+            console.warn(`Could not find variable name for flipper entity ${component.flipperEntityId} in FlipperTipComponent for entity ${entityId}`);
+            addCompStr = `    // Skipped FlipperTipComponent for ${varName} due to missing entity mapping\n`;
+          } else {
+            addCompStr += flipperEntityVar;
+          }
           break;
         case 'CableJointComponent':
           const entityAVar = entityVarMap.get(component.entityA);
@@ -93,9 +116,15 @@ testGeneratedError: {
             console.warn(`Could not find variable names for entities ${component.entityA} or ${component.entityB} in joint ${entityId}`);
             addCompStr = `    // Skipped CableJointComponent for ${varName} due to missing entity mapping\n`;
           } else {
-            addCompStr += `${entityAVar}, ${entityBVar}, ${component.restLength}, `;
-            addCompStr += `new Vector2(${component.attachmentPointA_world.x}, ${component.attachmentPointA_world.y}), `;
-            addCompStr += `new Vector2(${component.attachmentPointB_world.x}, ${component.attachmentPointB_world.y})`;
+            // NOTE: Assuming component stores constructor arguments for local attachment points as `attachmentA` and `attachmentB`.
+            // The old dump code used `attachmentPointA_world`, which is derived state and incorrect for re-creation.
+            if (component.attachmentA && component.attachmentB) {
+                addCompStr += `${entityAVar}, ${entityBVar}, ${component.restLength}, `;
+                addCompStr += `new Vector2(${component.attachmentA.x}, ${component.attachmentA.y}), `;
+                addCompStr += `new Vector2(${component.attachmentB.x}, ${component.attachmentB.y})`;
+            } else {
+                addCompStr = `    // Skipped CableJointComponent for ${varName}: could not find local attachment point properties (e.g., 'attachmentA').\n`;
+            }
           }
           break;
         case 'PauseStateComponent': // Usually a resource, but handle if added to entity
@@ -115,6 +144,7 @@ testGeneratedError: {
         case 'BallTagComponent':
         case 'FlipperTagComponent':
         case 'ObstacleTagComponent':
+        case 'ScoredTagComponent':
           break;
         default:
           console.warn(`Unhandled component type for serialization: ${componentClass.name}`);
@@ -147,13 +177,13 @@ testGeneratedError: {
         } else {
           addCompStr += `world, [${jointVars.join(', ')}], `;
           addCompStr += `[${component.linkTypes.map(t => `'${t}'`).join(', ')}], `;
-          addCompStr += `[${component.cw.join(', ')}]`;
-          // Need to manually set stored and totalRestLength after creation in the test
+          addCompStr += `[${component.cw.join(', ')}], `;
+          addCompStr += `${component.spring_constant}, `;
+          addCompStr += `[${component.stored.join(', ')}]`;
           addCompStr += `));\n`;
+          // totalRestLength is calculated inside constructor, so we need to set it manually if it's not 0.
           addCompStr += `    const pathComp_${varName} = world.getComponent(${varName}, CablePathComponent);\n`;
-          addCompStr += `    pathComp_${varName}.stored = [${component.stored.join(', ')}];\n`;
           addCompStr += `    pathComp_${varName}.totalRestLength = ${component.totalRestLength};\n`;
-          addCompStr += `    pathComp_${varName}.spring_constant = ${component.spring_constant};\n`;
           dump += addCompStr;
           continue; // Skip the default closing parenthesis below
         }

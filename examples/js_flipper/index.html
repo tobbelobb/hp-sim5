@@ -532,7 +532,7 @@ canvas {
              const simHeight = world.getResource('simHeight');
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
         }
-        dumpWorldState();
+        dumpWorldState(world);
 
         // Update button text based on initial pause state
          const pauseState = world.getResource('pauseState');
