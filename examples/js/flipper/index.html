@@ -109,9 +109,9 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
-    import Vector2 from '../../src/js/cable_joints/vector2.js';
-    import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
-    import { Open as UsdOpen } from "../../src/js/usd/stage.js";
+    import Vector2 from '../../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
+    import { Open as UsdOpen } from "../../../src/js/usd/stage.js";
     import {
       World,
       PauseStateComponent,
@@ -137,7 +137,7 @@ canvas {
       PrevFinalPosComponent,
       PrevFinalOrientationComponent,
       FlipperTipComponent
-    } from '../../src/js/cable_joints/ecs.js';
+    } from '../../../src/js/cable_joints/ecs.js';
 
     import {
       CableLinkComponent,
@@ -146,13 +146,13 @@ canvas {
       linecolor1,
       CableAttachmentUpdateSystem,
       PBDCableConstraintSolver
-    } from '../../src/js/cable_joints/cable_joints_core.js';
+    } from '../../../src/js/cable_joints/cable_joints_core.js';
 
     import {
       tangentFromPointToCircle,
       tangentFromCircleToPoint,
       tangentFromCircleToCircle
-    } from '../../src/js/cable_joints/geometry.js';
+    } from '../../../src/js/cable_joints/geometry.js';
 
     import {
       PrevFinalPosSystem,
@@ -170,22 +170,22 @@ canvas {
       FlipperTipLinkSystem,
       FlipperMotionSystem,
       InputSystem
-    } from '../../src/js/cable_joints/commonSystems.js';
+    } from '../../../src/js/cable_joints/commonSystems.js';
 
-    import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
-    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints/cable_attachment_cache_system.js';
-    import { CableSlackSystem } from '../../src/js/cable_joints/cable_slack_system.js';
-    import { CableFrictionSystem } from '../../src/js/cable_joints/cable_friction_system.js';
-    import { BallObstacleBumpSystem } from '../../src/js/cable_joints/ball_obstacle_bump_system.js';
-    import { BallBorderOrFlipperVelocityContactSystem } from '../../src/js/cable_joints/ball_border_or_flipper_velocity_contact_system.js';
+    import { RenderSystem } from '../../../src/js/cable_joints/renderSystem.js';
+    import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
+    import { BallObstacleBumpSystem } from '../../../src/js/cable_joints/ball_obstacle_bump_system.js';
+    import { BallBorderOrFlipperVelocityContactSystem } from '../../../src/js/cable_joints/ball_border_or_flipper_velocity_contact_system.js';
     import {
         ScoreComponent,
         ScoreSystem,
         ScoreDisplaySystem
-    } from '../../src/js/cable_joints/flipper_common.js';
+    } from '../../../src/js/cable_joints/flipper_common.js';
 
 
-    import { runGame } from './flipper_runner.js';
+    import { runGame } from './runner.js';
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");

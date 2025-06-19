@@ -1,6 +1,6 @@
-import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
-import { InputSystem, InputReplaySystem } from '../../src/js/cable_joints/commonSystems.js';
-import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
+import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
+import { InputSystem, InputReplaySystem } from '../../../src/js/cable_joints/commonSystems.js';
+import { RenderSystem } from '../../../src/js/cable_joints/renderSystem.js';
 
 export function runGame(world, setupScene, sceneData) {
     const pauseBtn = document.getElementById("pauseBtn");

@@ -7,8 +7,8 @@ import numpy as np
 from pathlib import Path
 
 # Add src/python to sys.path to allow for `from cable_joints...` imports
-# __file__ is examples/python_flipper/server.py, so project root is 3 levels up.
-root_dir = Path(__file__).resolve().parents[2]
+# __file__ is examples/python/flipper/server.py, so project root is 4 levels up.
+root_dir = Path(__file__).resolve().parents[3]
 src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:
     sys.path.insert(0, str(src_python_path))

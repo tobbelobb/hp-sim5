@@ -1,5 +1,4 @@
-Reset button js flipper doesn't work right 
-bumper vel Bounce different in js than python 
+bumper vel Bounce different in js than python
 make usda.txt generation auto via python_flipper/server.py
 restore 3d_test.html
 code duplication in js_flipper/index.html and python_flipper

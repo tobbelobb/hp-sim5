@@ -62,8 +62,8 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
-    import Vector2 from '../../src/js/cable_joints/vector2.js';
-    import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
+    import Vector2 from '../../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
     import {
       World, PauseStateComponent, SimulationErrorStateComponent, BorderComponent, RenderableComponent,
       BallTagComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
@@ -71,32 +71,32 @@ canvas {
       CoefficientOfFrictionComponent, MomentOfInertiaComponent, ObstacleTagComponent,
       ObstaclePushComponent, ScoredTagComponent, FlipperTagComponent, FlipperStateComponent,
       PrevFinalPosComponent, PrevFinalOrientationComponent, FlipperTipComponent
-    } from '../../src/js/cable_joints/ecs.js';
+    } from '../../../src/js/cable_joints/ecs.js';
     import {
       CableLinkComponent, CableJointComponent, CablePathComponent, linecolor1,
       CableAttachmentUpdateSystem, PBDCableConstraintSolver
-    } from '../../src/js/cable_joints/cable_joints_core.js';
+    } from '../../../src/js/cable_joints/cable_joints_core.js';
     import {
       tangentFromPointToCircle, tangentFromCircleToPoint, tangentFromCircleToCircle,
       rightOfLine
-    } from '../../src/js/cable_joints/geometry.js';
+    } from '../../../src/js/cable_joints/geometry.js';
     import {
       PrevFinalPosSystem, InputReplaySystem, GravitySystem, MovementSystem, AngularMovementSystem,
       PBDBallBallCollisions, PBDBallObstacleCollisions, PBDBallBorderCollisions, PBDBallFlipperCollisions,
       PBDVelocityUpdateSystem, PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem, FlipperTipLinkSystem,
       FlipperMotionSystem
-    } from '../../src/js/cable_joints/commonSystems.js';
-    import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
-    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints/cable_attachment_cache_system.js';
-    import { CableSlackSystem } from '../../src/js/cable_joints/cable_slack_system.js';
-    import { CableFrictionSystem } from '../../src/js/cable_joints/cable_friction_system.js';
-    import { BallObstacleBumpSystem } from '../../src/js/cable_joints/ball_obstacle_bump_system.js';
-    import { BallBorderOrFlipperVelocityContactSystem } from '../../src/js/cable_joints/ball_border_or_flipper_velocity_contact_system.js';
+    } from '../../../src/js/cable_joints/commonSystems.js';
+    import { RenderSystem } from '../../../src/js/cable_joints/renderSystem.js';
+    import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
+    import { BallObstacleBumpSystem } from '../../../src/js/cable_joints/ball_obstacle_bump_system.js';
+    import { BallBorderOrFlipperVelocityContactSystem } from '../../../src/js/cable_joints/ball_border_or_flipper_velocity_contact_system.js';
     import {
         ScoreComponent,
         ScoreSystem,
         ScoreDisplaySystem
-    } from '../../src/js/cable_joints/flipper_common.js';
+    } from '../../../src/js/cable_joints/flipper_common.js';
 
     class InputSystem {
          runInPause = true;

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mindfulness Pinball</title>
+    <title>Stressfulness Pinball</title>
 
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
@@ -9,7 +9,7 @@
     <meta name="viewport"
           content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-    <!-- Nice free Google font – optional -->
+    <!-- Nice free Google font - optional -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
@@ -87,7 +87,7 @@ canvas {
   width: 100%;
   aspect-ratio: 1 / 1.7;          /* keeps exact sim ratio */
   border-radius: var(--radius);
-  touch-action: manipulation;    /* ← turn off browser panning/zoom so pointermove/up always fire */
+  touch-action: manipulation;    /* turn off browser panning/zoom so pointermove/up always fire */
 }
 
 /* =========  SMALL‑SCREEN TWEAKS  ========= */
@@ -109,9 +109,8 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
-    import Vector2 from './cable_joints/vector2.js';
-    import { dumpWorldState } from './cable_joints/debugUtils.js';
-    import { parseUsda } from './parse_usd.js';
+    import Vector2 from '../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
     import {
       World,
       PauseStateComponent,
@@ -137,7 +136,7 @@ canvas {
       PrevFinalPosComponent,
       PrevFinalOrientationComponent,
       FlipperTipComponent
-    } from './cable_joints/ecs.js';
+    } from '../../src/js/cable_joints/ecs.js';
 
     import {
       CableLinkComponent,
@@ -146,13 +145,14 @@ canvas {
       linecolor1,
       CableAttachmentUpdateSystem,
       PBDCableConstraintSolver
-    } from './cable_joints/cable_joints_core.js';
+    } from '../../src/js/cable_joints/cable_joints_core.js';
 
     import {
       tangentFromPointToCircle,
       tangentFromCircleToPoint,
-      tangentFromCircleToCircle
-    } from './cable_joints/geometry.js';
+      tangentFromCircleToCircle,
+      rightOfLine
+    } from '../../src/js/cable_joints/geometry.js';
 
     import {
       PrevFinalPosSystem,
@@ -170,22 +170,21 @@ canvas {
       FlipperTipLinkSystem,
       FlipperMotionSystem,
       InputSystem
-    } from './cable_joints/commonSystems.js';
+    } from '../../src/js/cable_joints/commonSystems.js';
 
-    import { RenderSystem } from './cable_joints/renderSystem.js';
-    import { CableAttachmentCacheSystem } from './cable_joints/cable_attachment_cache_system.js';
-    import { CableSlackSystem } from './cable_joints/cable_slack_system.js';
-    import { CableFrictionSystem } from './cable_joints/cable_friction_system.js';
-    import { BallObstacleBumpSystem } from './cable_joints/ball_obstacle_bump_system.js';
-    import { BallBorderOrFlipperVelocityContactSystem } from './cable_joints/ball_border_or_flipper_velocity_contact_system.js';
+    import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
+    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from '../../src/js/cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from '../../src/js/cable_joints/cable_friction_system.js';
+    import { BallObstacleBumpSystem } from '../../src/js/cable_joints/ball_obstacle_bump_system.js';
+    import { BallBorderOrFlipperVelocityContactSystem } from '../../src/js/cable_joints/ball_border_or_flipper_velocity_contact_system.js';
     import {
         ScoreComponent,
         ScoreSystem,
         ScoreDisplaySystem
-    } from './cable_joints/flipper_common.js';
+    } from '../../src/js/cable_joints/flipper_common.js';
 
-
-    import { runGame } from './flipper_runner.js';
+    import { runGame } from './runner.js';
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
@@ -194,35 +193,11 @@ canvas {
     let world = new World();
     window.world = world; // Make available to jest test
 
-    let getGameStateForTest = () => {
-        if (!world || !world.query) { // Check if world and its methods are available
-            console.error("World object not available for getGameStateForTest");
-            return null;
-        }
-
-        const ballEntities = world.query([BallTagComponent, PositionComponent]);
-        const balls = ballEntities.map(id => {
-            const posComp = world.getComponent(id, PositionComponent);
-            return { id, y: posComp ? posComp.pos.y : -Infinity }; // Handle missing component
-        });
-
-        const scoreEntity = world.query([ScoreComponent])[0];
-        const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
-        const score = scoreComp ? scoreComp.value : -1; // Default to -1 if score component not found
-
-        return {
-            balls,
-            score
-        };
-    };
-    window.getGameStateForTest = getGameStateForTest;
-
     // --- Scene Setup ---
-    function setupScene(sceneData) {
+    function setupScene() {
         world.clear(); // Clear entities and components
 
         // --- Set Canvas Size from CSS ---
-        // Match drawing buffer size to the CSS display size
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
@@ -235,24 +210,15 @@ canvas {
         world.setResource('gravity', new Vector2(0.0, -2.0));
         world.setResource('dt', 1.0 / 300.0);
         world.setResource('simWidth', simWidth);
-        world.setResource('simHeight', simHeight); // Store the reference simHeight
+        world.setResource('simHeight', simHeight);
         world.setResource('pauseState', new PauseStateComponent(true));
-        world.setResource('debugRenderPoints', {}); // Initialize debug points resource
-        world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
+        world.setResource('debugRenderPoints', {});
+        world.setResource('errorState', new SimulationErrorStateComponent(false));
         world.setResource('grabbedBall', null);
-        world.setResource('ball_obstacle_contacts', []);
-        world.setResource('ball_border_contacts', []);
-        world.setResource('ball_flipper_contacts', []);
-
 
         // --- Entities and Components ---
-
         const offset = 0.02;
-        const entities = sceneData.entities;
-        const jointsData = sceneData.joints;
-        const pathsData = sceneData.paths;
 
-        // Border Entity (Clockwise points for outward normal calc)
         const borderEntity = world.createEntity();
         const borderPoints = [
              new Vector2(0.74, 0.0),
@@ -267,104 +233,93 @@ canvas {
         world.addComponent(borderEntity, new BorderComponent(borderPoints));
         world.addComponent(borderEntity, new RenderableComponent('border', '#000000'));
 
-
-        // Ball Entities
-        const ballRestitution = 0.6;
-        const ball1Info = entities['Ball1'];
-        const ball2Info = entities['Ball2'];
+        const ballRadius = 0.03;
+        const ballMass = Math.PI * ballRadius * ballRadius;
+        const ballRestitution = 0.4;
 
         const ball1 = world.createEntity();
         world.addComponent(ball1, new BallTagComponent());
-        world.addComponent(ball1, new PositionComponent(ball1Info.pos[0], ball1Info.pos[1]));
+        world.addComponent(ball1, new PositionComponent(0.90, 0.95));
         world.addComponent(ball1, new VelocityComponent(0.0, 0.0));
-        world.addComponent(ball1, new RadiusComponent(ball1Info.radius));
-        world.addComponent(ball1, new MassComponent(ball1Info.mass));
+        world.addComponent(ball1, new RadiusComponent(ballRadius));
+        world.addComponent(ball1, new MassComponent(ballMass));
         world.addComponent(ball1, new RestitutionComponent(ballRestitution));
         world.addComponent(ball1, new GravityAffectedComponent());
         world.addComponent(ball1, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball1, new OrientationComponent(0.0));
         world.addComponent(ball1, new AngularVelocityComponent(0.0));
-        const ball1Inertia = 0.5 * ball1Info.mass * ball1Info.radius * ball1Info.radius;
+        const ball1Inertia = 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball1, new MomentOfInertiaComponent(ball1Inertia));
         world.addComponent(ball1, new PrevFinalOrientationComponent(0.0));
-        world.addComponent(ball1, new CoefficientOfFrictionComponent(0.2));
 
         const ball2 = world.createEntity();
         world.addComponent(ball2, new BallTagComponent());
-        world.addComponent(ball2, new PositionComponent(ball2Info.pos[0], ball2Info.pos[1]));
+        world.addComponent(ball2, new PositionComponent(0.08, 0.5));
         world.addComponent(ball2, new VelocityComponent(0.0, 0.0));
-        world.addComponent(ball2, new RadiusComponent(ball2Info.radius));
-        world.addComponent(ball2, new MassComponent(ball2Info.mass));
+        world.addComponent(ball2, new RadiusComponent(ballRadius));
+        world.addComponent(ball2, new MassComponent(ballMass));
         world.addComponent(ball2, new RestitutionComponent(ballRestitution));
         world.addComponent(ball2, new GravityAffectedComponent());
         world.addComponent(ball2, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(ball2, new OrientationComponent(0.0));
         world.addComponent(ball2, new AngularVelocityComponent(0.0));
-        const ball2Inertia = 0.5 * ball2Info.mass * ball2Info.radius * ball2Info.radius;
+        const ball2Inertia = 0.5 * ballMass * ballRadius * ballRadius;
         world.addComponent(ball2, new MomentOfInertiaComponent(ball2Inertia));
         world.addComponent(ball2, new PrevFinalOrientationComponent(0.0));
-        world.addComponent(ball2, new CoefficientOfFrictionComponent(0.2));
 
-        // Obstacle Entities
         const obsColor1 = "#FF8000";
         const obsColor2 = "#0F7090";
         const obsPush = 2.7;
 
-        const obs1Info = entities['Obs1'];
         const obs1 = world.createEntity();
         world.addComponent(obs1, new ObstacleTagComponent());
-        world.addComponent(obs1, new PositionComponent(obs1Info.pos[0], obs1Info.pos[1]));
+        world.addComponent(obs1, new PositionComponent(0.25, 0.6));
         world.addComponent(obs1, new MassComponent(-1.0));
-        world.addComponent(obs1, new RadiusComponent(obs1Info.radius));
+        world.addComponent(obs1, new RadiusComponent(0.1));
         world.addComponent(obs1, new ObstaclePushComponent(obsPush));
         world.addComponent(obs1, new RenderableComponent('circle', obsColor2));
 
-        const obs2Info = entities['Obs2'];
         const obs2 = world.createEntity();
         world.addComponent(obs2, new ObstacleTagComponent());
-        world.addComponent(obs2, new PositionComponent(obs2Info.pos[0], obs2Info.pos[1]));
+        world.addComponent(obs2, new PositionComponent(0.75, 0.5));
         world.addComponent(obs2, new MassComponent(-1.0));
-        world.addComponent(obs2, new RadiusComponent(obs2Info.radius));
+        world.addComponent(obs2, new RadiusComponent(0.1));
         world.addComponent(obs2, new ObstaclePushComponent(obsPush));
         world.addComponent(obs2, new RenderableComponent('circle', obsColor2));
 
-        const obs3Info = entities['Obs3'];
         const obs3 = world.createEntity();
         world.addComponent(obs3, new ObstacleTagComponent());
-        world.addComponent(obs3, new PositionComponent(obs3Info.pos[0], obs3Info.pos[1]));
+        world.addComponent(obs3, new PositionComponent(0.7, 1.0));
         world.addComponent(obs3, new MassComponent(-1.0));
-        world.addComponent(obs3, new RadiusComponent(obs3Info.radius));
+        world.addComponent(obs3, new RadiusComponent(0.12));
         world.addComponent(obs3, new ObstaclePushComponent(obsPush));
         world.addComponent(obs3, new RenderableComponent('circle', obsColor1));
         world.addComponent(obs3, new OrientationComponent(0.0));
-        world.addComponent(obs3, new AngularVelocityComponent(100.0));
-        const obsInertia3 = 0.020 * obs3Info.radius**2;
+        world.addComponent(obs3, new AngularVelocityComponent(200.0));
+        const obsInertia3 = 0.020 * 0.12**2;
         world.addComponent(obs3, new MomentOfInertiaComponent(obsInertia3));
         world.addComponent(obs3, new PrevFinalOrientationComponent(0.0));
 
-        const obs4Info = entities['Obs4'];
         const obs4 = world.createEntity();
         world.addComponent(obs4, new ObstacleTagComponent());
-        world.addComponent(obs4, new PositionComponent(obs4Info.pos[0], obs4Info.pos[1]));
+        world.addComponent(obs4, new PositionComponent(0.2, 1.2));
         world.addComponent(obs4, new MassComponent(-1.0));
-        world.addComponent(obs4, new RadiusComponent(obs4Info.radius));
+        world.addComponent(obs4, new RadiusComponent(0.1));
         world.addComponent(obs4, new ObstaclePushComponent(obsPush));
         world.addComponent(obs4, new RenderableComponent('circle', obsColor1));
         world.addComponent(obs4, new OrientationComponent(0.0));
-        world.addComponent(obs4, new AngularVelocityComponent(-100.0));
-        const obsInertia4 = 0.020 * obs4Info.radius**2;
+        world.addComponent(obs4, new AngularVelocityComponent(-200.0));
+        const obsInertia4 = 0.020 * 0.1**2;
         world.addComponent(obs4, new MomentOfInertiaComponent(obsInertia4));
         world.addComponent(obs4, new PrevFinalOrientationComponent(0.0));
 
-
-        // Flipper Entities
-        const flipRadius = 0.03; // Thickness
+        const flipRadius = 0.03;
         const flipLength = 0.2;
-        const flipMaxRotation = 1.0; // Radians
-        const flipRestAngle = 0.5; // Radians from horizontal
-        const flipAngularVelocity = 20.0; // Radians per second
+        const flipMaxRotation = 1.0;
+        const flipRestAngle = 0.5;
+        const flipAngularVelocity = 20.0;
         const flipColor = "#FF0000";
-        const flipRestitution = 0.6;
+        const flipRestitution = 0.2;
 
         const flipper1 = world.createEntity();
         world.addComponent(flipper1, new FlipperTagComponent());
@@ -398,25 +353,15 @@ canvas {
         world.addComponent(flipper1Tip, new CoefficientOfFrictionComponent(0.01));
         world.addComponent(flipper2Tip, new CoefficientOfFrictionComponent(0.01));
 
-        // Score Entity
         const scoreEntity = world.createEntity();
         world.addComponent(scoreEntity, new ScoreComponent(0));
-
-
-        // --- Cable Setup ---
-        const entityNameToId = {
-            'Ball1': ball1,
-            'Ball2': ball2,
-            'Obs1': obs1,
-            'Obs2': obs2,
-            'Obs3': obs3,
-            'Obs4': obs4
-        };
 
         const pos_ball1 = world.getComponent(ball1, PositionComponent).pos;
         const pos_ball2 = world.getComponent(ball2, PositionComponent).pos;
         const pos_obs3 = world.getComponent(obs3, PositionComponent).pos;
+        const radius_obs3 = world.getComponent(obs3, RadiusComponent).radius;
         const pos_obs4 = world.getComponent(obs4, PositionComponent).pos;
+        const radius_obs4 = world.getComponent(obs4, RadiusComponent).radius;
 
         world.addComponent(obs4, new CableLinkComponent(pos_obs4.x, pos_obs4.y));
         world.addComponent(obs3, new CableLinkComponent(pos_obs3.x, pos_obs3.y));
@@ -426,42 +371,101 @@ canvas {
         world.addComponent(ball2, new CableLinkComponent(pos_ball2.x, pos_ball2.y));
         world.addComponent(ball1, new PrevFinalPosComponent(pos_ball1.x, pos_ball1.y));
         world.addComponent(ball2, new PrevFinalPosComponent(pos_ball2.x, pos_ball2.y));
+        world.addComponent(ball1, new CoefficientOfFrictionComponent(frictionCoefficient));
+        world.addComponent(ball2, new CoefficientOfFrictionComponent(frictionCoefficient));
 
-        const jointEntityMap = {};
-        for (const jointInfo of jointsData) {
-            const joint = world.createEntity();
-            const entityA = entityNameToId[jointInfo.entityA];
-            const entityB = entityNameToId[jointInfo.entityB];
-            const restLength = jointInfo.restLength;
-            const attachA = new Vector2(jointInfo.attachA[0], jointInfo.attachA[1]);
-            const attachB = new Vector2(jointInfo.attachB[0], jointInfo.attachB[1]);
+        const joint1 = world.createEntity();
+        const tangentObs4 = tangentFromPointToCircle(pos_ball2, pos_obs4, radius_obs4, true);
+        const attachObs4 = tangentObs4.a_circle;
+        const dir1 = attachObs4.clone().subtract(pos_ball2).normalize();
+        const attachBall2 = pos_ball2.clone().add(dir1.scale(ballRadius));
+        const initialDist1 = attachBall2.clone().subtract(attachObs4).length();
+        world.addComponent(joint1, new CableJointComponent(
+          ball2, obs4, initialDist1, attachBall2, attachObs4));
+        world.addComponent(joint1, new RenderableComponent('line', linecolor1));
 
-            world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
-            world.addComponent(joint, new RenderableComponent('line', linecolor1));
-            jointEntityMap[jointInfo.name] = joint;
-        }
+        const joint2 = world.createEntity();
+        const initialPoints2 = tangentFromCircleToCircle(pos_obs4, radius_obs4, true, pos_obs3, radius_obs3, true);
+        const dir2 = initialPoints2.b_circle.clone().subtract(initialPoints2.a_circle).normalize();
+        const dist2 = initialPoints2.a_circle.clone().subtract(initialPoints2.b_circle).length();
+
+        const bead1Pos = initialPoints2.a_circle.clone().add(dir2, dist2/3.0);
+        const bead2Pos = initialPoints2.a_circle.clone().add(dir2, (2*dist2)/3.0);
+
+        const bead1 = world.createEntity();
+        world.addComponent(bead1, new BallTagComponent());
+        world.addComponent(bead1, new PositionComponent(bead1Pos.x, bead1Pos.y));
+        world.addComponent(bead1, new CableLinkComponent(bead1Pos.x, bead1Pos.y));
+        world.addComponent(bead1, new PrevFinalPosComponent(bead1Pos.x, bead1Pos.y));
+        world.addComponent(bead1, new VelocityComponent(0.0, 0.0));
+        world.addComponent(bead1, new RadiusComponent(ballRadius));
+        world.addComponent(bead1, new MassComponent(ballMass));
+        const beadFriction = 5.0;
+        world.addComponent(bead1, new CoefficientOfFrictionComponent(beadFriction));
+        world.addComponent(bead1, new RestitutionComponent(ballRestitution));
+        world.addComponent(bead1, new GravityAffectedComponent());
+        world.addComponent(bead1, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(bead1, new OrientationComponent(0.0));
+        world.addComponent(bead1, new AngularVelocityComponent(0.0));
+        world.addComponent(bead1, new MomentOfInertiaComponent(ball1Inertia));
+
+        const bead2 = world.createEntity();
+        world.addComponent(bead2, new BallTagComponent());
+        world.addComponent(bead2, new PositionComponent(bead2Pos.x, bead2Pos.y));
+        world.addComponent(bead2, new CableLinkComponent(bead2Pos.x, bead2Pos.y));
+        world.addComponent(bead2, new PrevFinalPosComponent(bead2Pos.x, bead2Pos.y));
+        world.addComponent(bead2, new VelocityComponent(0.0, 0.0));
+        world.addComponent(bead2, new RadiusComponent(ballRadius));
+        world.addComponent(bead2, new MassComponent(ballMass));
+        world.addComponent(bead2, new CoefficientOfFrictionComponent(beadFriction));
+        world.addComponent(bead2, new RestitutionComponent(ballRestitution));
+        world.addComponent(bead2, new GravityAffectedComponent());
+        world.addComponent(bead2, new RenderableComponent('circle', '#a0a0a0'));
+        world.addComponent(bead2, new OrientationComponent(0.0));
+        world.addComponent(bead2, new AngularVelocityComponent(0.0));
+        world.addComponent(bead2, new MomentOfInertiaComponent(ball1Inertia));
+
+        world.addComponent(joint2, new CableJointComponent(
+          obs4, bead1, dist2/3.0, initialPoints2.a_circle, bead1Pos));
+        world.addComponent(joint2, new RenderableComponent('line', linecolor1));
+
+        const joint3 = world.createEntity();
+        world.addComponent(joint3, new CableJointComponent(
+          bead1, bead2, dist2/3.0, bead1Pos, bead2Pos));
+        world.addComponent(joint3, new RenderableComponent('line', linecolor1));
+
+        const joint4 = world.createEntity();
+        world.addComponent(joint4, new CableJointComponent(
+          bead2, obs3, dist2/3.0, bead2Pos, initialPoints2.b_circle));
+        world.addComponent(joint4, new RenderableComponent('line', linecolor1));
+
+        const joint5 = world.createEntity();
+        const tangentObs3 = tangentFromPointToCircle(pos_ball1, pos_obs3, radius_obs3, false);
+        const attachObs3 = tangentObs3.a_circle;
+        const dir3 = attachObs3.clone().subtract(pos_ball1).normalize();
+        const attachBall1 = pos_ball1.clone().add(dir3.scale(ballRadius));
+        const initialDist3 = attachBall1.clone().subtract(attachObs3).length();
+        world.addComponent(joint5, new CableJointComponent(
+          obs3, ball1, initialDist3, attachObs3, attachBall1));
+        world.addComponent(joint5, new RenderableComponent('line', linecolor1));
 
         const cablePath = world.createEntity();
-        const pathInfo = pathsData[0];
-        const jointEntities = pathInfo.joints.map(jointName => jointEntityMap[jointName]);
         const pathComp = new CablePathComponent(
           world,
-          jointEntities,
-          pathInfo.linkTypes,
-          pathInfo.cw,
+          [joint1, joint2, joint3, joint4, joint5],
+          ['hybrid-attachment', 'rolling', 'pinhole', 'pinhole', 'rolling', 'hybrid-attachment'],
+          [true, true, true, true, true, true],
           200.0
         );
         world.addComponent(cablePath, pathComp);
 
-
-        // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) {
              // 1. Cache state from previous step
              world.registerSystem(new PrevFinalPosSystem());
              world.registerSystem(new PrevFinalOrientationSystem());
 
              // 2. Handle user input and non-physics state changes
-             const inputSystemInstance = new InputSystem(canvas);
+            const inputSystemInstance = new InputSystem(canvas, world);
              world.registerSystem(inputSystemInstance);
              world.registerSystem(new InputReplaySystem([], inputSystemInstance));
              world.registerSystem(new FlipperMotionSystem());
@@ -500,14 +504,10 @@ canvas {
              world.registerSystem(new ScoreDisplaySystem('score'));
              world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
         }
-
-        // Update button text based on initial pause state
-         const pauseState = world.getResource('pauseState');
-         pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     }
-    parseUsda('flipper_scene.usda').then(data => {
-        runGame(world, () => setupScene(data));
-    });
+
+    runGame(world, setupScene);
+
 </script>
 
 </body>
