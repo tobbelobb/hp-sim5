@@ -44,8 +44,17 @@ python_dir = src_python_path / "cable_joints"
 WATCHED_FILES = [
     Path(__file__),
     root_dir / "examples" / "usd_scenes" / "flipper_scene.usda",
+    python_dir / "ecs.py",
+    python_dir / "common_systems.py",
+    python_dir / "cable_attachment_update_system.py",
+    python_dir / "pbd_cable_constraint_solver.py",
+    python_dir / "geometry.py",
+    python_dir / "cable_joints_components.py",
     python_dir / "ball_obstacle_bump_system.py",
     python_dir / "ball_border_or_flipper_velocity_contact_system.py",
+    python_dir / "cable_attachment_cache_system.py",
+    python_dir / "cable_slack_system.py",
+    python_dir / "cable_friction_system.py",
 ]
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):

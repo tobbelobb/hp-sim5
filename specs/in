@@ -1,10 +1,8 @@
 bumper vel Bounce different in js than python
-make usda.txt generation auto via python_flipper/server.py
 restore 3d_test.html
 code duplication in js_flipper/index.html and python_flipper
 make usda in isaacsim and use in hp-sim5?
 ci integration test fail (make robust?)
-rename examples/js_flipper to examples/js/flipper
 rename usd_scenes/flipper_scene.usda to usd_scenes/flipper.usda
 make usda CableJoint localpos be really local
 draw figure if hp-sim5 assets:
