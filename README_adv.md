@@ -45,20 +45,20 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
     1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras]`
     2. Run Python tests: `pytest tests/python`
     3. (Optional) Run the Python-driven flipper demo:
-      - Start server: `python examples/python_flipper/server.py`
-      - Open `examples/python_flipper/index.html` in a browser.
+      - Start server: `python -m examples.python.flipper.server`
+      - Open `examples/python/flipper/index.html` in a browser.
     4. (Optional) To play the (non-warp) and js driven flipper both at the same time, to test
-        their equivalence, first start the `npx vite` to start the js engine, then `python examples/python_flipper/server.py`
+        their equivalence, first start the `npx vite` to start the js engine, then `python -m examples.python.flipper.server`
         to start the Python engine. Then open flipper_overlay.html in a browser.
     5. (Optional) Run the Python-with-Warp-driven flipper demo on cpu:
-      - Start server: `python examples/python_flipper/server.py --warp`
-      - Open `examples/python_flipper/index_warp.html` in a browser.
+      - Start server: `python -m examples.python.flipper.server --warp`
+      - Open `examples/python/flipper/index_warp.html` in a browser.
     6. (Optional) Run the Python-with-Warp-driven flipper demo on gpu:
-      - Start server: `python examples/python_flipper/server.py --warp --device cuda:0`
-      - Open `examples/python_flipper/index_warp.html` in a browser.
+      - Start server: `python -m examples.python.flipper.server --warp --device cuda:0`
+      - Open `examples/python/flipper/index_warp.html` in a browser.
     7. (Optional) `python examples/usd_scenes/slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
        Edit the script to parse either `slideprinter/slideprinter.usda` or the provided
-       `flipper_scene.usda` to experiment with different setups.
+       `examples/usd_scenes/flipper_scene.usda` to experiment with different setups.
     8. (Optional) `python examples/python_3d/hanging_pendulum.py` will generate a USD file showing a simple
        3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
        See `ai_docs/Warp/README.md` for Warp installation details.

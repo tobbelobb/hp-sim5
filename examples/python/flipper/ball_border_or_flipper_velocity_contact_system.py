@@ -1,6 +1,6 @@
 import numpy as np
 
-from .ecs import (
+from cable_joints.ecs import (
     PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
     RestitutionComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, CoefficientOfFrictionComponent,
@@ -80,7 +80,7 @@ class BallBorderOrFlipperVelocityContactSystem:
         j_n_force = 0
         if dt > 1e-9:
             j_n_force = delta_lambda / dt
-        
+
         j_n_for_friction = j_n_restitution + j_n_force
 
         # Re-calculate relative velocity after normal impulse

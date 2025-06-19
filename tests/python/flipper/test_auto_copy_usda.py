@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 # Following the pattern from test_flipper_integration.py, we assume
-# 'examples/python_flipper' is in PYTHONPATH during tests.
+# 'examples/python/flipper' is in PYTHONPATH during tests.
 from server import _copy_usd_on_change
 
 def test_usd_file_copy_on_change():

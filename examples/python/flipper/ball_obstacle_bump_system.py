@@ -1,7 +1,7 @@
 import numpy as np
 import math
-from . import vector2 as v2_helpers
-from .ecs import (
+from cable_joints import vector2 as v2_helpers
+from cable_joints.ecs import (
     VelocityComponent, RadiusComponent, MassComponent,
     AngularVelocityComponent, MomentOfInertiaComponent, CoefficientOfFrictionComponent,
     ObstaclePushComponent

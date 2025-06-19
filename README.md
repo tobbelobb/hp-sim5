@@ -21,10 +21,10 @@ This project simulates cables using a Position‑Based Dynamics (PBD) solver bui
    ```
 3. Start the demo server and open the HTML front end:
    ```bash
-   python examples/python_flipper/server.py
-   # then visit examples/python_flipper/index.html in your browser
+   python -m examples.python.flipper.server
+   # then visit examples/python/flipper/index.html in your browser
    ```
-4. To run the Warp version use `python examples/python_flipper/server.py --warp` and open `examples/python_flipper/index_warp.html`.
+4. To run the Warp version use `python -m examples.python.flipper.server --warp` and open `examples/python/flipper/index_warp.html`.
 
 ### Running the tests
 JavaScript tests use Jest and Python tests use pytest.

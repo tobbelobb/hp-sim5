@@ -6,8 +6,9 @@
 - Each subfolder of `ai_docs/` (such as `CableJoints`, `PBDBodies`, `XPBD`, and `smallsteps`) contains the paper in markdown form.
 
 ## JavaScript and Python Ports
-- The JavaScript version of the flipper and cable joints lives in `flipper.html (redirects to examples/js_flipper/index.html)` and the modules under `src/js/cable_joints/`.
-- The Python port lives in `examples/python_flipper/index.html`, `examples/python_flipper/server.py`, and the modules under `src/python/cable_joints/`.
+- The JavaScript version of the flipper and cable joints lives in `flipper.html (redirects to examples/js/flipper/index.html)` and the modules under `src/js/cable_joints/` and `examples/js/flipper/`.
+- The Python port lives in `examples/python/flipper/index.html`, `examples/python/flipper/server.py`, and the modules under `src/python/cable_joints/` and
+  `examples/python/flipper/`.
 - When working on one implementation, cross reference the corresponding files from the other implementation to understand how features translate between JS and Python.
 
 ## Tests

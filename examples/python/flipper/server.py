@@ -33,11 +33,11 @@ from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSys
 from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints.geometry import right_of_line
 from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
-from cable_joints.ball_obstacle_bump_system import BallObstacleBumpSystem
-from cable_joints.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
 from cable_joints.cable_attachment_cache_system import CableAttachmentCacheSystem
 from cable_joints.cable_slack_system import CableSlackSystem
 from cable_joints.cable_friction_system import CableFrictionSystem
+from .ball_obstacle_bump_system import BallObstacleBumpSystem
+from .ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
 
 # Files that trigger a server restart when modified
 python_dir = src_python_path / "cable_joints"
