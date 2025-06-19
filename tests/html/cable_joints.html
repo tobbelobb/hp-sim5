@@ -28,10 +28,8 @@
   import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
   import {
     World,
-    PauseStateComponent,
     SimulationErrorStateComponent,
     RenderableComponent,
-    BallTagComponent,
     PositionComponent,
     VelocityComponent,
     RadiusComponent,
@@ -42,8 +40,6 @@
     AngularVelocityComponent,
     CoefficientOfFrictionComponent,
     MomentOfInertiaComponent,
-    ObstacleTagComponent,
-    ObstaclePushComponent
   } from '../../src/js/cable_joints/ecs.js';
 
   import {
@@ -63,13 +59,20 @@
     GravitySystem,
     MovementSystem,
     AngularMovementSystem,
-    PBDBallBallCollisions,
-    PBDBallObstacleCollisions
   } from '../../src/js/cable_joints/commonSystems.js';
 
   import {
+    BallTagComponent,
+    ObstacleTagComponent,
+    ObstaclePushComponent,
+    PauseStateComponent,
+    PBDBallBallCollisions,
+    PBDBallObstacleCollisions
+  } from '../../examples/js/flipper/flipper_common.js';
+
+  import {
     RenderSystem
-  } from '../../src/js/cable_joints/renderSystem.js';
+  } from '../../examples/js/flipper/renderSystem.js';
 
   const canvas = document.getElementById("myCanvas");
   const errorInfoDiv = document.getElementById("errorInfo"); // Get error elements

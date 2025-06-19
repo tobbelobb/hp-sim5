@@ -121,7 +121,6 @@ canvas {
     import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
     import {
       World,
-      PauseStateComponent,
       SimulationErrorStateComponent,
       PositionComponent,
       VelocityComponent,
@@ -154,8 +153,12 @@ canvas {
     } from '../../src/js/cable_joints/commonSystems.js';
 
     import {
+      PauseStateComponent,
+    } from '../../examples/js/flipper/flipper_common.js';
+
+    import {
       RenderSystem
-    } from '../../src/js/cable_joints/renderSystem.js';
+    } from '../../examples/js/flipper/renderSystem.js';
 
     class SpoolTagComponent { };
     // --- System: Input --- (Simplified Click Handling)
