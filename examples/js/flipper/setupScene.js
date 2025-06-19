@@ -292,7 +292,7 @@ export function setupScene(world, stage, canvas) {
         world.registerSystem(new PrevFinalOrientationSystem());
 
         // 2. Handle user input and non-physics state changes
-        const inputSystemInstance = new InputSystem(canvas);
+        const inputSystemInstance = new InputSystem(canvas, world);
         world.registerSystem(inputSystemInstance);
         world.registerSystem(new InputReplaySystem([], inputSystemInstance));
         world.registerSystem(new FlipperMotionSystem());
@@ -334,4 +334,3 @@ export function setupScene(world, stage, canvas) {
         world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, 0.5, 0.85, 0.3));
     }
 }
-
