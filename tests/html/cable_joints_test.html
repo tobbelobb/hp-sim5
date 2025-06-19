@@ -37,15 +37,17 @@
   import {
     World,
     RenderableComponent,
-    BallTagComponent,
     PositionComponent,
     VelocityComponent,
     RadiusComponent,
     MassComponent,
     RestitutionComponent,
     GravityAffectedComponent,
-    ObstacleTagComponent
   } from '../../src/js/cable_joints/ecs.js';
+  import {
+    BallTagComponent,
+    ObstacleTagComponent
+  } from '../../examples/js/flipper/flipper_common.js';
   import {
     CableLinkComponent,
     CableJointComponent,
@@ -57,7 +59,7 @@
     tangentFromCircleToPoint,
     tangentFromCircleToCircle
   } from '../../src/js/cable_joints/geometry.js';
-  import { RenderSystem } from '../../src/js/cable_joints/renderSystem.js';
+  import { RenderSystem } from '../../examples/js/flipper/renderSystem.js';
 
   const canvas = document.getElementById("testCanvas");
   canvas.width = window.innerWidth * 0.8; // Adjust size as needed
