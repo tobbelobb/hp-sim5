@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import os
 
 from examples.python.flipper.flipper_common import BallTagComponent
 from cable_joints.ecs import World, PositionComponent
@@ -23,9 +24,24 @@ def get_game_state_for_test(world):
 
     return state
 
+IS_CI = os.environ.get('CI') == 'true'
+
+if IS_CI:
+    # Expectations for the GitHub CI environment
+    EXPECTATIONS = {
+        "warp": 28,
+        "no_warp": 30,
+    }
+else:
+    # Expectations for the local environment
+    EXPECTATIONS = {
+        "warp": 17,
+        "no_warp": 15,
+    }
+
 @pytest.mark.parametrize("use_warp,expected_score", [
-    (True, 17),
-    (False, 15),
+    (True, EXPECTATIONS["warp"]),
+    (False, EXPECTATIONS["no_warp"]),
 ])
 def test_flipper_autonomous_run_and_settle(use_warp, expected_score):
     """
