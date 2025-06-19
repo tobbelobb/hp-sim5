@@ -118,12 +118,12 @@ testGeneratedError: {
           } else {
             // NOTE: Assuming component stores constructor arguments for local attachment points as `attachmentA` and `attachmentB`.
             // The old dump code used `attachmentPointA_world`, which is derived state and incorrect for re-creation.
-            if (component.attachmentA && component.attachmentB) {
+            if (component.attachmentPointA_world && component.attachmentPointB_world) {
                 addCompStr += `${entityAVar}, ${entityBVar}, ${component.restLength}, `;
-                addCompStr += `new Vector2(${component.attachmentA.x}, ${component.attachmentA.y}), `;
-                addCompStr += `new Vector2(${component.attachmentB.x}, ${component.attachmentB.y})`;
+                addCompStr += `new Vector2(${component.attachmentPointA_world.x}, ${component.attachmentPointA_world.y}), `;
+                addCompStr += `new Vector2(${component.attachmentPointB_world.x}, ${component.attachmentPointB_world.y})`;
             } else {
-                addCompStr = `    // Skipped CableJointComponent for ${varName}: could not find local attachment point properties (e.g., 'attachmentA').\n`;
+                addCompStr = `    // Skipped CableJointComponent for ${varName}: could not find local attachment point properties (e.g., 'attachmentPointA_world').\n`;
             }
           }
           break;
@@ -138,6 +138,7 @@ testGeneratedError: {
           addCompStr += `[${pointsStr}]`;
           break;
         case 'CablePathComponent': // Handled separately below
+          addCompStr = "\n";
           break;
         case 'GravityAffectedComponent':
         case 'CableLinkComponent':
