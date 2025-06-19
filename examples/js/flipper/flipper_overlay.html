@@ -100,6 +100,7 @@ canvas {
     window.world = jsWorld; // Make available to jest test
     let pyState = {};
     let ws;
+    let stage;
 
     // For coordinate conversion and rendering
     let cScale;
@@ -335,11 +336,10 @@ canvas {
     });
     resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        setupScene();
-        const pauseState = jsWorld.getResource('pauseState');
-        if (pauseState) pauseState.paused = true;
-        pauseBtn.textContent = "Start";
-        doStep = false;
+        if (stage) {
+            setupScene2(jsWorld, stage, canvas);
+            doStep = false;
+        }
     });
 
     stepBtn.addEventListener('click', (e) => {
@@ -364,7 +364,8 @@ canvas {
     const base = import.meta.env.BASE_URL || '/';
     const usdaPath = `${base}examples/usd_scenes/flipper_scene_copy_for_vite.usda.txt`;
 
-    UsdOpen(usdaPath).then(stage => {
+    UsdOpen(usdaPath).then(loadedStage => {
+      stage = loadedStage;
       setupScene2(jsWorld, stage, canvas);
     });
     requestAnimationFrame(gameLoop);
