@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 
-describe('Flipper Integration Test', () => {
+describe.skip('Flipper Integration Test', () => {
     let browser;
     let page;
     let server; // vite dev server

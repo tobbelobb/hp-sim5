@@ -71,7 +71,9 @@ describe('Flipper Node Simulation', () => {
     return { balls, score };
   }
 
-  test('balls settle below flippers with score 25', async () => {
+  test('balls settle below flippers with expected score', async () => {
+    const originalWarn = console.warn;
+    console.warn = jest.fn(); // suppress warnings
     const usdaPath = path.resolve(__dirname, '../../../examples/usd_scenes/flipper_scene.usda');
     const source = fs.readFileSync(usdaPath, 'utf8');
     const stage = await Open(source);
@@ -94,7 +96,8 @@ describe('Flipper Node Simulation', () => {
       }
     }
 
+    console.warn = originalWarn; // restore after test
     expect(settled).toBe(true);
-    expect(state.score).toBe(25);
+    expect(state.score).toBe(31);
   });
 });

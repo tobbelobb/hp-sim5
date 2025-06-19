@@ -4,7 +4,6 @@ restore 3d_test.html
 code duplication in js_flipper/index.html and python_flipper
 make usda in isaacsim and use in hp-sim5?
 ci integration test fail (make robust?)
-rename usd_scenes/flipper_scene.usda to usd_scenes/flipper.usda
 make usda CableJoint localpos be really local
 draw figure if hp-sim5 assets:
  - USD: CableJoint isA and CablePathAPI definitions
