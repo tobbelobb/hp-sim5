@@ -59,12 +59,15 @@ export function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB
   let dVec = new Vector2().subtractVectors(posB, posA);
   let d = dVec.length();
 
+  cwA = Boolean(cwA);
+  cwB = Boolean(cwB);
+
   const r = (cwA === cwB) ? (radiusB - radiusA) : (radiusA + radiusB);
   const alpha = Math.atan2(dVec.y, dVec.x);
   const phi = Math.asin(Math.max(-1, Math.min(1, r / d)));
 
   let angleA, angleB;
-  if (!cwA === cwB) {
+  if (cwA !== cwB) {
     if (!cwA) {
       angleA = alpha - Math.PI / 2 + phi;
       angleB = alpha + Math.PI / 2 + phi;
