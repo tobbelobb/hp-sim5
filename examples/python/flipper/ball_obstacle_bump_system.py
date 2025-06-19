@@ -2,10 +2,15 @@ import numpy as np
 import math
 from cable_joints import vector2 as v2_helpers
 from cable_joints.ecs import (
-    VelocityComponent, RadiusComponent, MassComponent,
-    AngularVelocityComponent, MomentOfInertiaComponent, CoefficientOfFrictionComponent,
-    ObstaclePushComponent
+    VelocityComponent,
+    RadiusComponent,
+    MassComponent,
+    AngularVelocityComponent,
+    MomentOfInertiaComponent,
+    CoefficientOfFrictionComponent
 )
+
+from .flipper_common import ObstaclePushComponent
 
 class BallObstacleBumpSystem:
     """

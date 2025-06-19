@@ -5,14 +5,17 @@ from cable_joints.ecs import (
     PositionComponent,
     VelocityComponent,
     GravityAffectedComponent,
-    BallTagComponent,
     RadiusComponent,
     MassComponent,
     RestitutionComponent
 )
 from cable_joints.common_systems import (
     GravitySystem,
-    MovementSystem,
+    MovementSystem
+)
+
+from examples.python.flipper.flipper_common import (
+    BallTagComponent,
     PBDBallBallCollisions
 )
 

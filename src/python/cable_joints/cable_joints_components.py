@@ -6,6 +6,16 @@ from .ecs import PositionComponent, RadiusComponent
 from .geometry import signed_arc_length_on_wheel
 
 @dataclass
+class CableLinkComponent:
+    """
+    Indicates an entity can be part of a cable.
+    Corresponds to CableLinkComponent in JavaScript.
+    """
+    # These fields are from the JS version, for tracking previous state.
+    prev_cable_attachment_time_pos: np.ndarray = field(default_factory=lambda: np.zeros(3, dtype=float))
+    prev_cable_attachment_time_angle: float = 0.0
+
+@dataclass
 class CableJointComponent:
     """
     Represents a single segment constraint between two entities.
@@ -66,7 +76,7 @@ def create_cable_path_component(world, joint_entities, link_types, cw, spring_co
         joint_i = world.get_component(joint_entities[i], CableJointComponent)
         joint_i_plus_1 = world.get_component(joint_entities[i+1], CableJointComponent)
         link_id = joint_i.entity_b
-        
+
         link_id2 = joint_i_plus_1.entity_a
         if link_id != link_id2:
             print("Warning: CablePathComponent constructor: Links don't match up.")
@@ -78,7 +88,7 @@ def create_cable_path_component(world, joint_entities, link_types, cw, spring_co
                 center = center_comp.pos
                 radius = radius_comp.radius
                 is_cw = cw[i + 1]
-                
+
                 initial_stored_length = signed_arc_length_on_wheel(
                     joint_i.attachment_point_b_world,
                     joint_i_plus_1.attachment_point_a_world,

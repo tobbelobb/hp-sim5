@@ -2,10 +2,16 @@ import numpy as np
 import math
 
 from .ecs import (
-    PositionComponent, RadiusComponent, OrientationComponent, CableLinkComponent,
+    PositionComponent,
+    RadiusComponent,
+    OrientationComponent,
     CoefficientOfFrictionComponent
 )
-from .cable_joints_components import CablePathComponent, CableJointComponent
+from .cable_joints_components import (
+    CableLinkComponent,
+    CableJointComponent,
+    CablePathComponent
+)
 from .geometry import (
     tangent_from_point_to_circle, tangent_from_circle_to_point,
     tangent_from_circle_to_circle, signed_arc_length_on_wheel
@@ -13,8 +19,8 @@ from .geometry import (
 from .vector2 import rotate_inplace, normalize_inplace
 from .update_hybrid_link_states import update_hybrid_link_states
 from .split_joints import split_joints
-from cable_joints.update_attachment_points import update_attachment_points
-from cable_joints.merge_joints import merge_joints
+from .update_attachment_points import update_attachment_points
+from .merge_joints import merge_joints
 
 def _clear_debug_points(world):
     debug_points = world.get_resource('debugRenderPoints')

@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 
-from cable_joints.ecs import World, PositionComponent, BallTagComponent
+from examples.python.flipper.flipper_common import BallTagComponent
+from cable_joints.ecs import World, PositionComponent
 from server import setup_scene, ScoreComponent
 
 def get_game_state_for_test(world):

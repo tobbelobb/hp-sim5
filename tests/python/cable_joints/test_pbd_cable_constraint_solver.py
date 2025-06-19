@@ -5,11 +5,22 @@ import numpy as np
 from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints.ecs import (
-    World, PositionComponent, VelocityComponent, MassComponent, MomentOfInertiaComponent,
-    OrientationComponent, AngularVelocityComponent, CableLinkComponent,
-    GravityAffectedComponent, RadiusComponent
+    World,
+    PositionComponent,
+    VelocityComponent,
+    MassComponent,
+    MomentOfInertiaComponent,
+    OrientationComponent,
+    AngularVelocityComponent,
+    GravityAffectedComponent,
+    RadiusComponent
 )
-from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
+from cable_joints.cable_joints_components import (
+    CableLinkComponent,
+    CableJointComponent,
+    CablePathComponent,
+    create_cable_path_component
+)
 
 # --- Mocks for Testing ---
 

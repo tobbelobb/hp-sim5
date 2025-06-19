@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from cable_joints.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
-from cable_joints.cable_joints_components import CableJointComponent, create_cable_path_component
+from cable_joints.ecs import World, PositionComponent, RadiusComponent
+from cable_joints.cable_joints_components import CableLinkComponent, CableJointComponent, create_cable_path_component
 from cable_joints.geometry import tangent_from_point_to_circle, tangent_from_circle_to_point, signed_arc_length_on_wheel
 from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
 
@@ -25,7 +25,7 @@ def test_merge_joints_when_positions_opposite_vertically():
     world.add_component(point1_id, CableLinkComponent(prev_cable_attachment_time_pos=pos1_initial.copy()))
     world.add_component(wheel_id, CableLinkComponent(prev_cable_attachment_time_pos=center.copy()))
     world.add_component(point2_id, CableLinkComponent(prev_cable_attachment_time_pos=pos2.copy()))
-    
+
     world.add_component(wheel_id, PositionComponent(pos=center.copy()))
     world.add_component(point1_id, PositionComponent(pos=pos1_initial.copy()))
     world.add_component(point2_id, PositionComponent(pos=pos2.copy()))

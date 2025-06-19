@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from cable_joints.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent, OrientationComponent
-from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.ecs import World, PositionComponent, RadiusComponent, OrientationComponent
+from cable_joints.cable_joints_components import CableLinkComponent, CableJointComponent, CablePathComponent
 from cable_joints.update_attachment_points import update_attachment_points
 from cable_joints.geometry import (
     tangent_from_point_to_circle,

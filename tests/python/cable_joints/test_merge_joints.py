@@ -3,10 +3,10 @@ import numpy as np
 import math
 
 from cable_joints.ecs import (
-    World, PositionComponent, RadiusComponent, CableLinkComponent,
+    World, PositionComponent, RadiusComponent
 )
 from cable_joints.cable_joints_components import (
-    CableJointComponent, CablePathComponent
+    CableLinkComponent, CableJointComponent, CablePathComponent
 )
 from cable_joints.geometry import (
     tangent_from_point_to_circle, tangent_from_circle_to_point,

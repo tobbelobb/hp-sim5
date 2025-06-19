@@ -1,9 +1,17 @@
 import numpy as np
 
 from cable_joints.ecs import (
-    PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
-    RestitutionComponent, AngularVelocityComponent,
-    MomentOfInertiaComponent, CoefficientOfFrictionComponent,
+    PositionComponent,
+    VelocityComponent,
+    RadiusComponent,
+    MassComponent,
+    RestitutionComponent,
+    AngularVelocityComponent,
+    MomentOfInertiaComponent,
+    CoefficientOfFrictionComponent,
+)
+
+from .flipper_common import (
     FlipperStateComponent, FlipperTipComponent
 )
 

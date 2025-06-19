@@ -1,6 +1,8 @@
 from .ecs import (
-    PositionComponent, OrientationComponent, CableLinkComponent
+    PositionComponent, OrientationComponent
 )
+
+from .cable_joints_components import CableLinkComponent
 
 def _store_cable_link_poses(world):
     link_entities = world.query([CableLinkComponent, PositionComponent])

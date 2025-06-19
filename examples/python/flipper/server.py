@@ -17,27 +17,58 @@ from pxr import Usd, UsdGeom, UsdShade
 
 # Assuming the python ECS code is in a 'python' directory
 from cable_joints.ecs import (
-    World, PauseStateComponent, PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
-    RestitutionComponent, GravityAffectedComponent, OrientationComponent, AngularVelocityComponent,
-    MomentOfInertiaComponent, ObstacleTagComponent, ScoredTagComponent, FlipperTagComponent,
-    FlipperStateComponent, FlipperTipComponent, BorderComponent, RenderableComponent,
-    PrevFinalPosComponent, PrevFinalOrientationComponent, BallTagComponent, ObstaclePushComponent,
-    CableLinkComponent, CoefficientOfFrictionComponent
+    World,
+    PositionComponent,
+    VelocityComponent,
+    RadiusComponent,
+    MassComponent,
+    RestitutionComponent,
+    GravityAffectedComponent,
+    OrientationComponent,
+    AngularVelocityComponent,
+    MomentOfInertiaComponent,
+    RenderableComponent,
+    PrevFinalPosComponent,
+    PrevFinalOrientationComponent,
+    CoefficientOfFrictionComponent
 )
 from cable_joints.common_systems import (
-    PrevFinalPosSystem, GravitySystem, MovementSystem, AngularMovementSystem,
-    PBDBallObstacleCollisions, PBDBallBallCollisions, PBDVelocityUpdateSystem,
-    PrevFinalOrientationSystem, PBDAngularVelocityUpdateSystem, FlipperTipLinkSystem
+    PrevFinalPosSystem,
+    GravitySystem,
+    MovementSystem,
+    AngularMovementSystem,
+    PBDVelocityUpdateSystem,
+    PrevFinalOrientationSystem,
+    PBDAngularVelocityUpdateSystem
 )
 from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints.geometry import right_of_line
-from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent, create_cable_path_component
+from cable_joints.cable_joints_components import (
+    CableJointComponent,
+    CableLinkComponent,
+    CablePathComponent,
+    create_cable_path_component
+)
 from cable_joints.cable_attachment_cache_system import CableAttachmentCacheSystem
 from cable_joints.cable_slack_system import CableSlackSystem
 from cable_joints.cable_friction_system import CableFrictionSystem
-from .ball_obstacle_bump_system import BallObstacleBumpSystem
-from .ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
+from examples.python.flipper.ball_obstacle_bump_system import BallObstacleBumpSystem
+from examples.python.flipper.ball_border_or_flipper_velocity_contact_system import BallBorderOrFlipperVelocityContactSystem
+from examples.python.flipper.flipper_common import (
+    BallTagComponent,
+    PauseStateComponent,
+    ObstacleTagComponent,
+    ScoredTagComponent,
+    FlipperTagComponent,
+    FlipperStateComponent,
+    FlipperTipComponent,
+    BorderComponent,
+    ObstaclePushComponent,
+    PBDBallObstacleCollisions,
+    PBDBallBallCollisions,
+    FlipperTipLinkSystem
+)
 
 # Files that trigger a server restart when modified
 python_dir = src_python_path / "cable_joints"

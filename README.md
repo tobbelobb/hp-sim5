@@ -31,7 +31,7 @@ JavaScript tests use Jest and Python tests use pytest.
 
 ```bash
 npm test             # runs tests under tests/
-pytest tests/python  # runs tests for the Python port
+python -m pytest tests/python  # runs tests for the Python port
 ```
 
 ## Project Layout

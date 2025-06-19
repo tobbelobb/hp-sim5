@@ -43,7 +43,7 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
     - warp-lang[extras]
   - Usage:
     1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras]`
-    2. Run Python tests: `pytest tests/python`
+    2. Run Python tests: `python -m pytest tests/python`
     3. (Optional) Run the Python-driven flipper demo:
       - Start server: `python -m examples.python.flipper.server`
       - Open `examples/python/flipper/index.html` in a browser.

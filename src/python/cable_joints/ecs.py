@@ -1,6 +1,5 @@
 import numpy as np
 from dataclasses import dataclass, field
-import math
 
 class World:
     def __init__(self):
@@ -162,81 +161,11 @@ class CoefficientOfFrictionComponent:
     """Stores the coefficient of friction for an entity."""
     mu: float = 0.0
 
-@dataclass
-class CableLinkComponent:
-    """
-    Indicates an entity can be part of a cable.
-    Corresponds to CableLinkComponent in JavaScript.
-    """
-    # These fields are from the JS version, for tracking previous state.
-    prev_cable_attachment_time_pos: np.ndarray = field(default_factory=lambda: np.zeros(3, dtype=float))
-    prev_cable_attachment_time_angle: float = 0.0
 
 @dataclass
 class GravityAffectedComponent:
     """A tag component for entities affected by gravity."""
     pass
-
-@dataclass
-class BallTagComponent:
-    """A tag component for entities considered to be balls."""
-    pass
-
-@dataclass
-class ObstacleTagComponent:
-    """A tag component for entities considered to be obstacles."""
-    pass
-
-@dataclass
-class ObstaclePushComponent:
-    """Stores the push velocity for an obstacle entity."""
-    pushVel: float = 2.0
-    pass
-
-@dataclass
-class FlipperTagComponent:
-    """A tag component for entities considered to be flippers."""
-    pass
-
-@dataclass
-class FlipperStateComponent:
-    """
-    Represents the state of a flipper mechanism with rotational behavior.
-    """
-    length: float
-    rest_angle: float
-    max_rotation: float
-    angular_velocity: float
-
-    sign: float = field(init=False)  # Direction of rotation (+1 or -1)
-    rotation: float = 0.0            # Current rotation from rest_angle
-    current_angular_velocity: float = 0.0  # Angular velocity in last frame
-    pressed: bool = False            # Was the flipper activated?
-
-    def __post_init__(self):
-        self.sign = math.copysign(1.0, self.max_rotation)
-        self.max_rotation = abs(self.max_rotation)
-
-@dataclass
-class FlipperTipComponent:
-    """Associates a tip entity with its parent flipper entity."""
-    flipper_entity_id: int
-
-
-@dataclass
-class BorderComponent:
-    """
-    Stores a list of 2D or 3D points that define a border polygon or polyline.
-    Each point is cloned on initialization to prevent shared references.
-    """
-    points: list = field(default_factory=list)
-
-    def __init__(self, points=None):
-        if points is None:
-            self.points = []
-        else:
-            # Clone each point to avoid shared references
-            self.points = [np.copy(p) for p in points]
 
 @dataclass
 class RenderableComponent:
@@ -248,10 +177,6 @@ class RenderableComponent:
     shape: str = 'circle'
     color: str = '#888888'
 
-@dataclass
-class ScoredTagComponent:
-    """A tag component for entities considered to have scored."""
-    pass
 
 @dataclass
 class RestitutionComponent:
@@ -267,11 +192,6 @@ class PrevFinalPosComponent:
 class PrevFinalOrientationComponent:
     """Stores the orientation (angle in radians) of an entity."""
     angle: float = 0.0
-
-@dataclass
-class PauseStateComponent:
-    """Stores the state that says whether the simulation is paused or not."""
-    paused: bool = True
 
 @dataclass
 class DistanceConstraintComponent:

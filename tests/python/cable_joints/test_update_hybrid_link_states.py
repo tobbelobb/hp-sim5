@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from cable_joints.ecs import World, PositionComponent, RadiusComponent, CableLinkComponent
-from cable_joints.cable_joints_components import CableJointComponent, CablePathComponent
+from cable_joints.ecs import World, PositionComponent, RadiusComponent
+from cable_joints.cable_joints_components import CableLinkComponent, CableJointComponent, CablePathComponent
 from cable_joints.update_hybrid_link_states import update_hybrid_link_states
 
 # Test setup helpers
