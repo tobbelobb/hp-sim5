@@ -473,13 +473,16 @@ canvas {
             const cablePath = world.createEntity();
             const jointNames = getRelationship(cablePathPrim, "cablePath:joints").map(p => p.split('/').pop());
             const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]).filter(Boolean);
+            const linkTypes = getAttribute(cablePathPrim, "cablePath:linkTypes");
+            const clockwise = getAttribute(cablePathPrim, "cablePath:clockwise");
+            const stored = getAttribute(cablePathPrim, "cablePath:stored");
             const pathComp = new CablePathComponent(
               world,
               jointEntities,
-              getAttribute(cablePathPrim, "cablePath:linkTypes"),
-              getAttribute(cablePathPrim, "cablePath:clockwise"),
+              linkTypes ? [...linkTypes] : null,
+              clockwise ? [...clockwise] : null,
               getAttribute(cablePathPrim, "stiffness") || 200.0,
-              getAttribute(cablePathPrim, "cablePath:stored")
+              stored ? [...stored] : null
             );
             world.addComponent(cablePath, pathComp);
         }
