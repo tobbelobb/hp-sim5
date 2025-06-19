@@ -55,7 +55,7 @@ describe('Flipper Integration Test', () => {
         });
 
         // Navigate to the page served by the Vite dev server
-        await page.goto(`http://127.0.0.1:${port}/examples/js_flipper/index.html`, { waitUntil: 'networkidle0' });
+        await page.goto(`http://127.0.0.1:${port}/examples/js/flipper/index.html`, { waitUntil: 'networkidle0' });
     });
 
     afterAll(async () => {

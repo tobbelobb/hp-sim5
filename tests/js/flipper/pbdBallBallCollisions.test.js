@@ -5,10 +5,12 @@ import {
   RadiusComponent,
   MassComponent,
   RestitutionComponent,
-  BallTagComponent
 } from '../../../src/js/cable_joints/ecs.js';
 
-import { PBDBallBallCollisions } from '../../../src/js/cable_joints/commonSystems.js';
+import {
+  BallTagComponent,
+  PBDBallBallCollisions
+} from '../../../examples/js/flipper/flipper_common.js';
 
 describe('PBDBallBallCollisions', () => {
   test('velocities remain unchanged on perfectly elastic head-on collision', () => {
