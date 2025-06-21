@@ -55,8 +55,8 @@ export function runGame(world, setupScene, sceneData) {
             }
         }
 
-        // Speed calculation
-        if (frameSec > 1e-6) {
+        // Speed calculation - only record if simulation time actually advanced
+        if (frameSec > 1e-6 && simTimeProcessed > 0) {
             const currentSpeed = simTimeProcessed / frameSec;
             speedSamples.push(currentSpeed);
             if (speedSamples.length > numSpeedSamples) {

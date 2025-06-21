@@ -462,8 +462,8 @@ canvas {
             }
         }
 
-        // Speed calculation
-        if (frameSec > 1e-6) {
+        // Speed calculation - only record if simulation time actually advanced
+        if (frameSec > 1e-6 && stepsToTake > 0) {
             const simTimeDelta = stepsToTake * dt;
             const currentSpeed = simTimeDelta / frameSec;
             speedSamples.push(currentSpeed);
