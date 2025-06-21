@@ -57,7 +57,7 @@ class PBDResolveCableOverCorrections:
                 if post_cable_solve_length < joint.rest_length: # If now slack
                     over_corrected_joints.append(joint_id)
 
-        if not over_corrected_joints:
+        if len(over_corrected_joints) < 2:
             return
 
         # Jacobi-style solve: calculate all corrections first, then apply averaged corrections.
@@ -72,7 +72,7 @@ class PBDResolveCableOverCorrections:
 
         # 3. Apply the averaged corrections to each affected entity
         for entity_id, pos_deltas in position_corrections.items():
-            if pos_deltas:
+            if len(pos_deltas) >= 2:
                 avg_delta = np.mean(pos_deltas, axis=0)
                 pos_comp = world.get_component(entity_id, PositionComponent)
                 if pos_comp:

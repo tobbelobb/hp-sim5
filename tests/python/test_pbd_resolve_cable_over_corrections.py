@@ -32,8 +32,7 @@ def test_resolve_over_correction_pushes_apart():
     # Entity A: A static anchor point at the origin
     entity_a = world.create_entity()
     world.add_component(entity_a, PositionComponent(np.array([0.0, 0.0, 0.0])))
-    world.add_component(entity_a, MassComponent(np.inf))
-    world.add_component(entity_a, MomentOfInertiaComponent(np.inf))
+    world.add_component(entity_a, MassComponent(-1.0))
     world.add_component(entity_a, CableLinkComponent())
 
     # Entity B: A dynamic body, positioned so the cable is slack
@@ -52,27 +51,38 @@ def test_resolve_over_correction_pushes_apart():
     # The attachment on B is its left-most point (-1,0) locally.
     # With B at (8,0), the world attachment point is (7,0).
     # The initial distance is 7, which is < rest_length, so it's slack.
-    joint_entity = world.create_entity()
-    joint = CableJointComponent(
+    joint_entity1 = world.create_entity()
+    joint1 = CableJointComponent(
         entity_a=entity_a,
         entity_b=entity_b,
         rest_length=10.0,
-        attachment_a_local=np.array([0.0, 0.0, 0.0]),
-        attachment_b_local=np.array([-1.0, 0.0, 0.0]),
+        attachment_point_a_world=np.array([0.0, 0.0, 0.0]),
+        attachment_point_b_world=np.array([7.0, 0.0, 0.0]),
     )
-    world.add_component(joint_entity, joint)
+    world.add_component(joint_entity1, joint1)
+    joint_entity2 = world.create_entity()
+    joint2 = CableJointComponent(
+        entity_a=entity_b,
+        entity_b=entity_a,
+        rest_length=10.0,
+        attachment_point_a_world=np.array([7.0, 0.0, 0.0]),
+        attachment_point_b_world=np.array([0.0, 0.0, 0.0]),
+    )
+    world.add_component(joint_entity2, joint2)
 
     path_entity = world.create_entity()
-    path_comp = create_cable_path_component(world, [joint_entity], ['fixed', 'rolling', 'fixed'], [False, False, False], 0.0)
+    path_comp = create_cable_path_component(world, [joint_entity1, joint_entity2], ['attachment', 'rolling', 'attachment'], [False, False, False])
     world.add_component(path_entity, path_comp)
 
     # --- Simulate Pre-Solver State ---
     # To trigger the over-correction logic, the system must believe the joint
     # *was* taut before the main solver ran. We simulate this by manually
     # setting the world attachment points to a stretched state and caching them.
-    joint.attachment_point_a_world = np.array([0.0, 0.0, 0.0])
-    joint.attachment_point_b_world = np.array([11.0, 0.0, 0.0]) # Stretched state
-    
+    joint1.attachment_point_a_world = np.array([0.0, 0.0, 0.0])
+    joint1.attachment_point_b_world = np.array([11.0, 0.0, 0.0]) # Stretched state
+    joint2.attachment_point_a_world = np.array([11.0, 0.0, 0.0])
+    joint2.attachment_point_b_world = np.array([0.0, 0.0, 0.0]) # Stretched state
+
     cache_system = CableAttachmentCacheSystem()
     cache_system.update(world, dt)
 
@@ -94,8 +104,8 @@ def test_resolve_over_correction_pushes_apart():
     # The new attachment point on B is its center + rotated local attachment.
     # Since angle is 0, it's (final_pos_x - 1, 0, 0).
     initial_distance = 7.0
-    final_attachment_b = final_pos_comp_b.pos + joint.attachment_b_local
-    final_distance = np.linalg.norm(final_attachment_b - joint.attachment_point_a_world)
+    final_attachment_b = final_pos_comp_b.pos + np.array([-1.0, 0, 0])
+    final_distance = np.linalg.norm(final_attachment_b - joint1.attachment_point_a_world)
     assert final_distance > initial_distance
 
     # 3. In this symmetrical setup, there should be no vertical movement or rotation.
