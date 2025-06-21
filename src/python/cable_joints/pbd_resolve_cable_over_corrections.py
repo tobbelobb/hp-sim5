@@ -31,10 +31,6 @@ class PBDResolveCableOverCorrections:
     run_in_pause = False
 
     def update(self, world: World, _dt_unused):
-        cache = world.get_resource("pbd_cable_solver_cache")
-        if not cache or not cache.was_taut:
-            return
-
         path_entities = world.query(CablePathComponent)
         if not path_entities:
             return
@@ -50,14 +46,15 @@ class PBDResolveCableOverCorrections:
         # 1. Find all joints that were taut but are now slack
         over_corrected_joints = []
         for joint_id in all_joint_ids:
-            if cache.was_taut.get(joint_id, False):
-                joint = world.get_component(joint_id, CableJointComponent)
+            joint = world.get_component(joint_id, CableJointComponent)
+            p_a = joint.attachment_point_a_world
+            p_b = joint.attachment_point_b_world
+            pre_cable_solve_length = np.linalg.norm(p_a - p_b)
+            if pre_cable_solve_length >= joint.rest_length: # If was stretched
                 path, i = joint_to_path_and_index[joint_id]
                 p_a, p_b = calculate_attachment_points(world, joint, path, i)
-                if p_a is None or p_b is None:
-                    continue
-                current_length = np.linalg.norm(p_a - p_b)
-                if current_length < joint.rest_length:
+                post_cable_solve_length = np.linalg.norm(p_a - p_b)
+                if post_cable_solve_length < joint.rest_length: # If now slack
                     over_corrected_joints.append(joint_id)
 
         if not over_corrected_joints:

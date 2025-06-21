@@ -45,14 +45,12 @@ from cable_joints.common_systems import (
 )
 from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
-from cable_joints.pbd_record_which_cable_joints_are_taut import PBDRecordWhichCableJointsAreTaut
 from cable_joints.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
 from cable_joints.cable_joints_components import (
     CableJointComponent,
     CableLinkComponent,
     CablePathComponent,
-    create_cable_path_component,
-    PBDCableSolverCache
+    create_cable_path_component
 )
 from cable_joints.cable_attachment_cache_system import CableAttachmentCacheSystem
 from cable_joints.cable_slack_system import CableSlackSystem
@@ -96,7 +94,6 @@ WATCHED_FILES = [
     python_dir / "cable_attachment_cache_system.py",
     python_dir / "cable_slack_system.py",
     python_dir / "cable_friction_system.py",
-    python_dir / "pbd_record_which_cable_joints_are_taut.py",
     python_dir / "pbd_resolve_cable_over_corrections.py",
 ]
 
@@ -214,7 +211,6 @@ def stage_to_world(world, stage):
     world.set_resource("ball_obstacle_contacts", [])
     world.set_resource("ball_border_contacts", [])
     world.set_resource("ball_flipper_contacts", [])
-    world.set_resource("pbd_cable_solver_cache", PBDCableSolverCache())
 
     physics_scene = stage.GetPrimAtPath("/World/PhysicsScene")
     if physics_scene:
@@ -397,7 +393,6 @@ def setup_scene(world, use_warp=False, device='cpu'):
         world.register_system(CableSlackSystem()) # PRE-SOLVE: Slip obvious slack
 
         # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
-        world.register_system(PBDRecordWhichCableJointsAreTaut())
         if use_warp:
             from cable_joints_warp.cable_solver_warp import WarpCableConstraintSolver
             solver = WarpCableConstraintSolver(device)

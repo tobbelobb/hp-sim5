@@ -6,15 +6,6 @@ from .ecs import PositionComponent, RadiusComponent
 from .geometry import signed_arc_length_on_wheel
 
 @dataclass
-class PBDCableSolverCache:
-    """
-    A resource to cache state for the PBD cable solver, particularly for
-    multi-pass correction schemes.
-    """
-    # Maps joint entity ID to a boolean indicating if it was taut before the solver.
-    was_taut: Dict[int, bool] = field(default_factory=dict)
-
-@dataclass
 class CableLinkComponent:
     """
     Indicates an entity can be part of a cable.
