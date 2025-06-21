@@ -399,7 +399,7 @@ def setup_scene(world, use_warp=False, device='cpu'):
         else:
             solver = PBDCableConstraintSolver()
         world.register_system(solver)
-        world.register_system(PBDResolveCableOverCorrections())
+        #world.register_system(PBDResolveCableOverCorrections())
         world.register_system(PBDBallBorderCollisions())
         world.register_system(PBDBallBallCollisions())
         world.register_system(PBDBallObstacleCollisions())
