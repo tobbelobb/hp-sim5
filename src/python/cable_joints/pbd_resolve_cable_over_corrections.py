@@ -12,6 +12,8 @@ from .ecs import (
     MomentOfInertiaComponent,
     OrientationComponent,
 )
+from .update_attachment_points import calculate_attachment_points
+
 
 class PBDResolveCableOverCorrections:
     """
@@ -35,21 +37,23 @@ class PBDResolveCableOverCorrections:
         if not path_entities:
             return
 
-        joint_to_path = {}
+        joint_to_path_and_index = {}
         all_joint_ids = set()
         for path_id in path_entities:
             path = world.get_component(path_id, CablePathComponent)
-            for joint_id in path.joint_entities:
+            for i, joint_id in enumerate(path.joint_entities):
                 all_joint_ids.add(joint_id)
-                joint_to_path[joint_id] = path
+                joint_to_path_and_index[joint_id] = (path, i)
 
         # Find all joints that were taut but are now slack
         over_corrected_joints = []
         for joint_id in all_joint_ids:
             if cache.was_taut.get(joint_id, True):
                 joint = world.get_component(joint_id, CableJointComponent)
-                p_a = joint.attachment_point_a_world
-                p_b = joint.attachment_point_b_world
+                path, i = joint_to_path_and_index[joint_id]
+                p_a, p_b = calculate_attachment_points(world, joint, path, i)
+                if p_a is None or p_b is None:
+                    continue
                 current_length = np.linalg.norm(p_a - p_b)
                 if current_length < joint.rest_length:
                     over_corrected_joints.append(joint_id)
@@ -60,16 +64,18 @@ class PBDResolveCableOverCorrections:
         # Iteratively resolve these over-corrections
         for _ in range(self.iterations):
             for joint_id in over_corrected_joints:
-                self.solve_joint(world, joint_id, joint_to_path)
+                self.solve_joint(world, joint_id, joint_to_path_and_index)
 
-    def solve_joint(self, world, joint_id, joint_to_path):
+    def solve_joint(self, world, joint_id, joint_to_path_and_index):
         joint = world.get_component(joint_id, CableJointComponent)
-        path = joint_to_path.get(joint_id)
-        if not path:
+        path_data = joint_to_path_and_index.get(joint_id)
+        if not path_data:
             return
+        path, i = path_data
 
-        p_a = joint.attachment_point_a_world
-        p_b = joint.attachment_point_b_world
+        p_a, p_b = calculate_attachment_points(world, joint, path, i)
+        if p_a is None or p_b is None:
+            return
 
         current_segment_length = np.linalg.norm(p_a - p_b)
         constraint_error = current_segment_length - joint.rest_length
