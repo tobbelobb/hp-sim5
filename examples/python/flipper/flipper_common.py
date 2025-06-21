@@ -19,6 +19,13 @@ from cable_joints.ecs import (
     RestitutionComponent,
     RadiusComponent,
     CoefficientOfFrictionComponent,
+    PrevFinalPosComponent
+)
+
+from cable_joints.cable_joints_components import (
+    CableLinkComponent,
+    CableJointComponent,
+    create_cable_path_component
 )
 
 

@@ -84,9 +84,9 @@ class PBDCableConstraintSolver:
                 grad_ang_b = np.cross(r_b_3d, neg_direction_3d)[2]
 
                 denom = 0.0
-                denom += inv_mass_a * np.dot(grad_pos_a, grad_pos_a)
+                denom += inv_mass_a # * np.dot(grad_pos_a, grad_pos_a) # The dot product of two unit vectors is 1
                 denom += inv_inertia_a * grad_ang_a * grad_ang_a
-                denom += inv_mass_b * np.dot(grad_pos_b, grad_pos_b)
+                denom += inv_mass_b # * np.dot(grad_pos_b, grad_pos_b) # The dot product of two unit vectors is 1
                 denom += inv_inertia_b * grad_ang_b * grad_ang_b
 
                 if dt is not None and dt > 0:
