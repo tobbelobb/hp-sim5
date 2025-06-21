@@ -18,15 +18,15 @@ from .update_attachment_points import calculate_attachment_points
 class PBDResolveCableOverCorrections:
     """
     This system runs after the main PBD cable solver to correct for
-    over-contraction artifacts. When multiple taut cables pull on the same
-    object, the main solver can cause joints that should remain taut to become
-    slack. This pass identifies such joints and pushes them back towards
-    their rest length.
+    over-contraction artifacts. When multiple taut cables in the same path pull
+    on a shared object, the main solver can cause joints that should remain
+    taut to become slack. This pass identifies such joints and pushes them
+    back towards their rest length.
 
-    It uses a Jacobi-style approach, calculating all corrections based on the
-    state after the main solver, and then applying an averaged correction for
-    each body. This prevents the instability of a sequential solve and better
-    handles bodies affected by multiple over-corrected joints.
+    It uses a path-wise, Jacobi-style approach, calculating all corrections
+    for a given path's over-corrected joints, and then applying an averaged
+    correction for each body. This prevents the instability of a sequential
+    solve and better handles bodies affected by multiple over-corrected joints.
     """
     run_in_pause = False
 
@@ -35,55 +35,65 @@ class PBDResolveCableOverCorrections:
         if not path_entities:
             return
 
-        joint_to_path_and_index = {}
-        all_joint_ids = set()
         for path_id in path_entities:
             path = world.get_component(path_id, CablePathComponent)
+            if not path.joint_entities:
+                continue
+
+            joint_to_path_and_index = {}
             for i, joint_id in enumerate(path.joint_entities):
-                all_joint_ids.add(joint_id)
                 joint_to_path_and_index[joint_id] = (path, i)
 
-        # 1. Find all joints that were taut but are now slack
-        over_corrected_joints = []
-        for joint_id in all_joint_ids:
-            joint = world.get_component(joint_id, CableJointComponent)
-            p_a = joint.attachment_point_a_world
-            p_b = joint.attachment_point_b_world
-            pre_cable_solve_length = np.linalg.norm(p_a - p_b)
-            if pre_cable_solve_length >= joint.rest_length: # If was stretched
-                path, i = joint_to_path_and_index[joint_id]
-                p_a, p_b = calculate_attachment_points(world, joint, path, i)
-                post_cable_solve_length = np.linalg.norm(p_a - p_b)
-                if post_cable_solve_length < joint.rest_length: # If now slack
-                    over_corrected_joints.append(joint_id)
+            # 1. Find all joints for THIS path that were taut but are now slack
+            over_corrected_joints = []
+            for joint_id in path.joint_entities:
+                joint = world.get_component(joint_id, CableJointComponent)
+                p_a = joint.attachment_point_a_world
+                p_b = joint.attachment_point_b_world
+                pre_cable_solve_length = np.linalg.norm(p_a - p_b)
+                if pre_cable_solve_length >= joint.rest_length:  # If was stretched
+                    path_for_joint, i_for_joint = joint_to_path_and_index[joint_id]
+                    p_a, p_b = calculate_attachment_points(world, joint, path_for_joint, i_for_joint)
+                    if p_a is None or p_b is None:
+                        continue
+                    post_cable_solve_length = np.linalg.norm(p_a - p_b)
+                    if post_cable_solve_length < joint.rest_length:  # If now slack
+                        over_corrected_joints.append(joint_id)
 
-        if len(over_corrected_joints) < 2:
-            return
+            # Only apply corrections if an object is pulled by at least two
+            # over-corrected joints from the same path. The check for
+            # len(pos_deltas) >= 2 later on handles this, but this is a
+            # quick exit to avoid unnecessary calculations.
+            if len(over_corrected_joints) < 2:
+                continue
 
-        # Jacobi-style solve: calculate all corrections first, then apply averaged corrections.
-        position_corrections = defaultdict(list)
-        angle_corrections = defaultdict(list)
+            # Jacobi-style solve for this path: calculate all corrections first,
+            # then apply averaged corrections.
+            position_corrections = defaultdict(list)
+            angle_corrections = defaultdict(list)
 
-        # 2. Calculate corrections for each over-corrected joint without applying them
-        for joint_id in over_corrected_joints:
-            self.calculate_joint_correction(
-                world, joint_id, joint_to_path_and_index, position_corrections, angle_corrections
-            )
+            # 2. Calculate corrections for each over-corrected joint without applying them
+            for joint_id in over_corrected_joints:
+                self.calculate_joint_correction(
+                    world, joint_id, joint_to_path_and_index, position_corrections, angle_corrections
+                )
 
-        # 3. Apply the averaged corrections to each affected entity
-        for entity_id, pos_deltas in position_corrections.items():
-            if len(pos_deltas) >= 2:
-                avg_delta = np.mean(pos_deltas, axis=0)
-                pos_comp = world.get_component(entity_id, PositionComponent)
-                if pos_comp:
-                    pos_comp.pos += avg_delta
+            # 3. Apply the averaged corrections to each affected entity
+            for entity_id, pos_deltas in position_corrections.items():
+                # This is the key condition: only correct an entity if it's
+                # affected by two or more over-corrected joints in this path.
+                if len(pos_deltas) >= 2:
+                    avg_delta = np.mean(pos_deltas, axis=0)
+                    pos_comp = world.get_component(entity_id, PositionComponent)
+                    if pos_comp:
+                        pos_comp.pos += avg_delta
 
-        for entity_id, ang_deltas in angle_corrections.items():
-            if ang_deltas:
-                avg_delta = np.mean(ang_deltas)
-                orientation_comp = world.get_component(entity_id, OrientationComponent)
-                if orientation_comp:
-                    orientation_comp.angle += avg_delta
+            for entity_id, ang_deltas in angle_corrections.items():
+                if ang_deltas:
+                    avg_delta = np.mean(ang_deltas)
+                    orientation_comp = world.get_component(entity_id, OrientationComponent)
+                    if orientation_comp:
+                        orientation_comp.angle += avg_delta
 
     def calculate_joint_correction(self, world, joint_id, joint_to_path_and_index, position_corrections, angle_corrections):
         """
