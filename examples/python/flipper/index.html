@@ -79,7 +79,7 @@ canvas {
 
     let ws;
     let accumulator = 0.0; // in seconds
-    const dt = (1.0 / 300.0);
+    const dt = (1.0 / 400.0);
     if (dtEl) dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
     const maxAccumulator = dt * 5; // To prevent spiral of death
     let speedSamples = [];
