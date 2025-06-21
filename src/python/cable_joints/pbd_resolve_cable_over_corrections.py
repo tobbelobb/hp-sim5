@@ -46,7 +46,7 @@ class PBDResolveCableOverCorrections:
         # Find all joints that were taut but are now slack
         over_corrected_joints = []
         for joint_id in all_joint_ids:
-            if cache.was_taut.get(joint_id, False):
+            if cache.was_taut.get(joint_id, True):
                 joint = world.get_component(joint_id, CableJointComponent)
                 p_a = joint.attachment_point_a_world
                 p_b = joint.attachment_point_b_world
@@ -76,6 +76,7 @@ class PBDResolveCableOverCorrections:
 
         epsilon = 1e-9
         if constraint_error >= -epsilon:
+            print("Exit 1");
             return
 
         entity_a = joint.entity_a
@@ -134,20 +135,24 @@ class PBDResolveCableOverCorrections:
         if inv_mass_a > 0.0:
             delta_pos_a = grad_pos_a * (inv_mass_a * lambda_)
             pos_a_comp.pos += delta_pos_a
+            print("pbd_resolve_cable_over_corrections corrected entity A pos")
 
         if inv_inertia_a > 0.0:
             delta_ang_a = -inv_inertia_a * lambda_ * grad_ang_a
             orientation_a_comp = world.get_component(entity_a, OrientationComponent)
             if orientation_a_comp:
                 orientation_a_comp.angle += delta_ang_a
+                print("pbd_resolve_cable_over_corrections corrected entity A ang")
 
         # Apply corrections to Entity B
         if inv_mass_b > 0.0:
             delta_pos_b = grad_pos_b * (inv_mass_b * lambda_)
             pos_b_comp.pos += delta_pos_b
+            print("pbd_resolve_cable_over_corrections corrected entity B pos")
 
         if inv_inertia_b > 0.0:
             delta_ang_b = -inv_inertia_b * lambda_ * grad_ang_b
             orientation_b_comp = world.get_component(entity_b, OrientationComponent)
             if orientation_b_comp:
                 orientation_b_comp.angle += delta_ang_b
+                print("pbd_resolve_cable_over_corrections corrected entity B ang")
