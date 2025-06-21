@@ -1,4 +1,4 @@
-var q=Object.defineProperty;var D=(a,e,i)=>e in a?q(a,e,{enumerable:!0,configurable:!0,writable:!0,value:i}):a[e]=i;var g=(a,e,i)=>D(a,typeof e!="symbol"?e+"":e,i);import{c as $,j as I,O as P,k,d as b,A,D as j,M as R,g as V,V as W,G as L}from"./renderSystem-BqDvGlZH.js";function z(a){const e=a.systems.find(c=>c.constructor.name==="RenderSystem"),i=e?e.viewScaleMultiplier:1,m=e?e.viewOffsetX_sim:0,r=e?e.viewOffsetY_sim:0;let s=`
+var q=Object.defineProperty;var D=(a,e,i)=>e in a?q(a,e,{enumerable:!0,configurable:!0,writable:!0,value:i}):a[e]=i;var g=(a,e,i)=>D(a,typeof e!="symbol"?e+"":e,i);import{c as $,j as I,O as P,k,d as b,A,D as j,M as R,g as V,V as W,G as L}from"./renderSystem-e7hQh9L-.js";function z(a){const e=a.systems.find(c=>c.constructor.name==="RenderSystem"),i=e?e.viewScaleMultiplier:1,m=e?e.viewOffsetX_sim:0,r=e?e.viewOffsetY_sim:0;let s=`
 // --- Generated Error Test Case ---
 testGeneratedError: {
   // Viewport settings from the time of the error
