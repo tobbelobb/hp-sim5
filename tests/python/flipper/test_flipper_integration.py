@@ -2,9 +2,24 @@ import pytest
 import numpy as np
 import os
 
-from examples.python.flipper.flipper_common import BallTagComponent
+import sys
+from pathlib import Path
+
+root_dir = Path(__file__).resolve().parents[3]
+src_python_path = root_dir / "src" / "python"
+if str(src_python_path) not in sys.path:
+    sys.path.insert(0, str(src_python_path))
+
+examples_python_path = root_dir / "examples" / "python"
+if str(examples_python_path) not in sys.path:
+    sys.path.insert(0, str(examples_python_path))
+
+from flipper.flipper_common import (
+    ScoreComponent,
+    BallTagComponent
+)
 from cable_joints.ecs import World, PositionComponent
-from server import setup_scene, ScoreComponent
+from flipper.server import setup_scene
 
 def get_game_state_for_test(world):
     """Helper function to extract ball positions and score from the world."""

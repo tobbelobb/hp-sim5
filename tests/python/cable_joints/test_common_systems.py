@@ -1,5 +1,19 @@
 import pytest
 import numpy as np
+
+import sys
+from pathlib import Path
+
+root_dir = Path(__file__).resolve().parents[3]
+src_python_path = root_dir / "src" / "python"
+if str(src_python_path) not in sys.path:
+    sys.path.insert(0, str(src_python_path))
+
+examples_python_path = root_dir / "examples" / "python"
+if str(examples_python_path) not in sys.path:
+    sys.path.insert(0, str(examples_python_path))
+
+
 from cable_joints.ecs import (
     World,
     PositionComponent,
@@ -14,7 +28,7 @@ from cable_joints.common_systems import (
     MovementSystem
 )
 
-from examples.python.flipper.flipper_common import (
+from flipper.flipper_common import (
     BallTagComponent,
     PBDBallBallCollisions
 )
