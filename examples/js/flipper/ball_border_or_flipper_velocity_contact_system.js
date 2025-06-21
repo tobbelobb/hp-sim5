@@ -46,8 +46,12 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const muBall = frictionComp ? frictionComp.mu : 0.0;
         const angVel = angVelComp.angularVelocity;
 
-        const restitution = (restitutionBall + restitution_other) / 2.0;
-        const mu = (muBall + friction_other) / 2.0;
+        const restitution = (restitution_other !== null && restitution_other !== undefined)
+            ? (restitutionBall + restitution_other) / 2.0
+            : restitutionBall;
+        const mu = (friction_other !== null && friction_other !== undefined)
+            ? (muBall + friction_other) / 2.0
+            : muBall;
 
         const r_ball = normal.clone().scale(-radius);
 
@@ -106,7 +110,9 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const borderContacts = world.getResource('ball_border_contacts');
         if (borderContacts) {
             for (const contact of borderContacts) {
-                this._handleBallContact(world, contact.ball_id, contact.normal, new Vector2(0, 0), 0.0, 0.0, contact.delta_lambda, dt);
+                const restitutionBorder = contact.restitution;
+                const frictionBorder = contact.friction;
+                this._handleBallContact(world, contact.ball_id, contact.normal, new Vector2(0, 0), restitutionBorder, frictionBorder, contact.delta_lambda, dt);
             }
         }
 
@@ -141,7 +147,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                 const v_flipper = new Vector2(-flipperAngVel * r_flipper.y, flipperAngVel * r_flipper.x);
 
                 const restitutionFlipper = flipperRestitutionComp.restitution;
-                const frictionFlipper = flipperFrictionComp ? flipperFrictionComp.mu : 0.1;
+                const frictionFlipper = flipperFrictionComp ? flipperFrictionComp.mu : null;
 
                 this._handleBallContact(world, ball_id, normal, v_flipper, restitutionFlipper, frictionFlipper, delta_lambda, dt);
             }
