@@ -46,12 +46,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const muBall = frictionComp ? frictionComp.mu : 0.0;
         const angVel = angVelComp.angularVelocity;
 
-        const restitution = (restitution_other !== null && restitution_other !== undefined)
-            ? (restitutionBall + restitution_other) / 2.0
-            : restitutionBall;
-        const mu = (friction_other !== null && friction_other !== undefined)
-            ? (muBall + friction_other) / 2.0
-            : muBall;
+        const restitution = (restitutionBall + restitution_other) / 2.0;
+        const mu = (muBall + friction_other) / 2.0;
 
         const r_ball = normal.clone().scale(-radius);
 
