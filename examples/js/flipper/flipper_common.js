@@ -6,7 +6,8 @@ import {
   MassComponent,
   RestitutionComponent,
   PrevFinalPosComponent,
-  RenderableComponent
+  RenderableComponent,
+  CoefficientOfFrictionComponent
 } from '../../../src/js/cable_joints/ecs.js';
 import {
   CableLinkComponent,
@@ -433,6 +434,11 @@ export class PBDBallBorderCollisions {
     const borderComp = world.getComponent(borderId, BorderComponent);
     const borderPoints = borderComp.points;
 
+    const borderRestitutionComp = world.getComponent(borderId, RestitutionComponent);
+    const borderFrictionComp = world.getComponent(borderId, CoefficientOfFrictionComponent);
+    const restitution = borderRestitutionComp ? borderRestitutionComp.restitution : null;
+    const friction = borderFrictionComp ? borderFrictionComp.mu : null;
+
     let contacts = world.getResource('ball_border_contacts');
     if (!contacts) {
         contacts = [];
@@ -498,7 +504,9 @@ export class PBDBallBorderCollisions {
             contacts.push({
                 'ball_id': ballId,
                 'normal': collisionNormal.clone(),
-                'delta_lambda': delta_lambda
+                'delta_lambda': delta_lambda,
+                'restitution': restitution,
+                'friction': friction
             });
         }
     }
