@@ -33,9 +33,6 @@ def update_attachment_points(world):
     attachment points for each joint. It handles different link types (attachment,
     rolling, hybrid) and updates the stored length of cable on rolling links
     and the rest length of flexible segments to conserve total cable length.
-
-    This is a Python port of the _updateAttachmentPoints function from
-    cable_joints_core.js.
     """
     path_entities = world.query([CablePathComponent])
 

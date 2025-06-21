@@ -6,7 +6,6 @@ import sys
 import numpy as np
 from pathlib import Path
 
-# Add src/python to sys.path to allow for `from cable_joints...` imports
 # __file__ is examples/python/flipper/server.py, so project root is 4 levels up.
 root_dir = Path(__file__).resolve().parents[3]
 src_python_path = root_dir / "src" / "python"
@@ -19,7 +18,6 @@ if str(examples_python_path) not in sys.path:
 
 from pxr import Usd, UsdGeom, UsdShade
 
-# Assuming the python ECS code is in a 'python' directory
 from cable_joints.ecs import (
     World,
     PositionComponent,

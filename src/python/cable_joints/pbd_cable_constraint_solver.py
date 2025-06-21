@@ -14,8 +14,6 @@ from cable_joints.ecs import (
 
 class PBDCableConstraintSolver:
     """
-    A Python port of the PBDCableConstraintSolver from JavaScript.
-
     This system solves distance constraints for cable segments using Position
     Based Dynamics (PBD). It iterates through each cable joint, calculates the
     constraint error, and applies positional and rotational corrections to the
@@ -59,7 +57,6 @@ class PBDCableConstraintSolver:
                 moi_b_comp = world.get_component(entity_b, MomentOfInertiaComponent)
                 inv_inertia_b = moi_b_comp.inv_inertia if moi_b_comp else 0.0
 
-                # If both entities are effectively immovable for this constraint, skip
                 if inv_mass_a + inv_mass_b + inv_inertia_a + inv_inertia_b <= epsilon:
                     continue
 
@@ -69,16 +66,12 @@ class PBDCableConstraintSolver:
                     continue
                 direction = diff / length
 
-                # The JS implementation uses confusing gradient names. These are based on
-                # the direction of correction, not the gradient of the constraint function.
-                # To match JS: gradPosA = dir, gradPosB = -dir
-                grad_pos_a = direction
-                grad_pos_b = -direction
+                grad_pos_a = -direction
+                grad_pos_b = direction
 
                 pos_a_comp = world.get_component(entity_a, PositionComponent)
                 r_a = p_a - pos_a_comp.pos
 
-                # Use 3D cross product to avoid NumPy 2.0 deprecation warning
                 r_a_3d = np.array([r_a[0], r_a[1], 0.0])
                 direction_3d = np.array([direction[0], direction[1], 0.0])
                 grad_ang_a = np.cross(r_a_3d, direction_3d)[2]
@@ -86,7 +79,6 @@ class PBDCableConstraintSolver:
                 pos_b_comp = world.get_component(entity_b, PositionComponent)
                 r_b = p_b - pos_b_comp.pos
 
-                # Use 3D cross product to avoid NumPy 2.0 deprecation warning
                 r_b_3d = np.array([r_b[0], r_b[1], 0.0])
                 neg_direction_3d = np.array([-direction[0], -direction[1], 0.0])
                 grad_ang_b = np.cross(r_b_3d, neg_direction_3d)[2]
@@ -107,7 +99,7 @@ class PBDCableConstraintSolver:
 
                 # Apply corrections to Entity A
                 if inv_mass_a > 0.0:
-                    delta_pos_a = grad_pos_a * (-inv_mass_a * lambda_)
+                    delta_pos_a = grad_pos_a * (inv_mass_a * lambda_)
                     pos_a_comp.pos += delta_pos_a
 
                 if inv_inertia_a > 0.0:
@@ -118,7 +110,7 @@ class PBDCableConstraintSolver:
 
                 # Apply corrections to Entity B
                 if inv_mass_b > 0.0:
-                    delta_pos_b = grad_pos_b * (-inv_mass_b * lambda_)
+                    delta_pos_b = grad_pos_b * (inv_mass_b * lambda_)
                     pos_b_comp.pos += delta_pos_b
 
                 if inv_inertia_b > 0.0:
