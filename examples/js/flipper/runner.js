@@ -8,13 +8,21 @@ export function runGame(world, setupScene, sceneData) {
     const resetBtn = document.getElementById("resetBtn");
     const stepBtn = document.getElementById("stepBtn");
     const dumpBtn = document.getElementById('dumpBtn');
+    const dtEl = document.getElementById('dt');
+    const speedEl = document.getElementById('speed');
 
     let lastTime = 0;
     let accumulator = 0.0;
     let doStep = true;
+    let speedSamples = [];
+    const numSpeedSamples = 60;
+    let frameCounter = 0;
 
     function gameLoop(currentTime) {
         const dt = world.getResource('dt');
+        if (dtEl && dtEl.textContent === 'N/A') {
+            dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
+        }
         const pauseState = world.getResource('pauseState');
 
         if (lastTime === 0) {
@@ -22,6 +30,8 @@ export function runGame(world, setupScene, sceneData) {
         }
         const speedScale = window._flipperSpeedScale ?? 1.0;
         let frameSec = speedScale * (currentTime - lastTime) / 1000;
+        let simTimeProcessed = 0;
+
         if (frameSec >= dt) {
             lastTime = currentTime;
             const maxSteps = window._flipperMaxSubSteps ?? 5;
@@ -31,6 +41,7 @@ export function runGame(world, setupScene, sceneData) {
                 if (!pauseState.paused || doStep) {
                     if (doStep) pauseState.paused = false;
                     world.update(dt);
+                    simTimeProcessed += dt;
                     if (doStep) {
                         pauseState.paused = true;
                         doStep = false;
@@ -43,6 +54,22 @@ export function runGame(world, setupScene, sceneData) {
                 accumulator -= dt;
             }
         }
+
+        // Speed calculation
+        if (frameSec > 1e-6) {
+            const currentSpeed = simTimeProcessed / frameSec;
+            speedSamples.push(currentSpeed);
+            if (speedSamples.length > numSpeedSamples) {
+                speedSamples.shift();
+            }
+        }
+
+        frameCounter++;
+        if (frameCounter % 10 === 0 && speedEl && speedSamples.length > 0) {
+            const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
+            speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+        }
+
 
         // Always render, even if paused or if no physics step was taken.
         const renderSystem = world.systems.find(s => s instanceof RenderSystem);
@@ -77,6 +104,9 @@ export function runGame(world, setupScene, sceneData) {
         }
         lastTime = 0;
         accumulator = 0;
+        speedSamples = [];
+        frameCounter = 0;
+        if (speedEl) speedEl.textContent = 'N/A';
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
