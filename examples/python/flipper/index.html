@@ -79,9 +79,8 @@ canvas {
 
     let ws;
     let accumulator = 0.0; // in seconds
-    const dt = (1.0 / 400.0);
-    if (dtEl) dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
-    const maxAccumulator = dt * 5; // To prevent spiral of death
+    let dt; // Will be loaded from USDA
+    let maxAccumulator; // Derived from dt
     let speedSamples = [];
     const numSpeedSamples = 60;
     let frameCounter = 0;
@@ -583,8 +582,41 @@ canvas {
     document.addEventListener('keyup', (e) => handleKey(e, 'release'));
     window.addEventListener('resize', setupCanvas);
 
-    connect(); // Initial connection
-    requestAnimationFrame(gameLoop);
+    async function start() {
+        const usdaPath = '../../usd_scenes/flipper_scene_copy_for_vite.usda.txt';
+        try {
+            const response = await fetch(usdaPath);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const text = await response.text();
+            const match = text.match(/timeCodesPerSecond\s*=\s*(\d+(\.\d+)?)/);
+            let timeCodesPerSecond = 400; // Default fallback
+            if (match && match[1]) {
+                timeCodesPerSecond = parseFloat(match[1]);
+            } else {
+                console.warn(`Could not find 'timeCodesPerSecond' in ${usdaPath}. Falling back to ${timeCodesPerSecond}Hz.`);
+            }
+
+            dt = 1.0 / timeCodesPerSecond;
+            maxAccumulator = dt * 5; // To prevent spiral of death
+
+            if (dtEl) dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
+
+        } catch (error) {
+            console.error('Failed to load or parse USDA file for dt:', error);
+            // Fallback to a default value if fetching fails
+            dt = 1.0 / 400.0;
+            maxAccumulator = dt * 5;
+            if (dtEl) dtEl.textContent = `ERR! Using ${(dt * 1000).toFixed(2)}ms`;
+        }
+
+        // Now that dt is configured, connect and start the loop
+        connect(); // Initial connection
+        requestAnimationFrame(gameLoop);
+    }
+
+    start();
 </script>
 </body>
 </html>
