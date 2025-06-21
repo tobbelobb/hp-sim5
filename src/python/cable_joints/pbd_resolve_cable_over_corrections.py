@@ -1,10 +1,10 @@
 import numpy as np
+from collections import defaultdict
 
 from .ecs import World
 from .cable_joints_components import (
     CableJointComponent,
     CablePathComponent,
-    PBDCableSolverCache,
 )
 from .ecs import (
     PositionComponent,
@@ -19,9 +19,14 @@ class PBDResolveCableOverCorrections:
     """
     This system runs after the main PBD cable solver to correct for
     over-contraction artifacts. When multiple taut cables pull on the same
-    object, the solver can cause joints that should remain taut to become
+    object, the main solver can cause joints that should remain taut to become
     slack. This pass identifies such joints and pushes them back towards
     their rest length.
+
+    It uses a Jacobi-style approach, calculating all corrections based on the
+    state after the main solver, and then applying an averaged correction for
+    each body. This prevents the instability of a sequential solve and better
+    handles bodies affected by multiple over-corrected joints.
     """
     run_in_pause = False
 
@@ -42,7 +47,7 @@ class PBDResolveCableOverCorrections:
                 all_joint_ids.add(joint_id)
                 joint_to_path_and_index[joint_id] = (path, i)
 
-        # Find all joints that were taut but are now slack
+        # 1. Find all joints that were taut but are now slack
         over_corrected_joints = []
         for joint_id in all_joint_ids:
             if cache.was_taut.get(joint_id, False):
@@ -58,14 +63,37 @@ class PBDResolveCableOverCorrections:
         if not over_corrected_joints:
             return
 
-        if len(over_corrected_joints) > 0:
-            print(over_corrected_joints)
+        # Jacobi-style solve: calculate all corrections first, then apply averaged corrections.
+        position_corrections = defaultdict(list)
+        angle_corrections = defaultdict(list)
 
-        # Resolve these over-corrections
+        # 2. Calculate corrections for each over-corrected joint without applying them
         for joint_id in over_corrected_joints:
-            self.solve_joint(world, joint_id, joint_to_path_and_index)
+            self.calculate_joint_correction(
+                world, joint_id, joint_to_path_and_index, position_corrections, angle_corrections
+            )
 
-    def solve_joint(self, world, joint_id, joint_to_path_and_index):
+        # 3. Apply the averaged corrections to each affected entity
+        for entity_id, pos_deltas in position_corrections.items():
+            if pos_deltas:
+                avg_delta = np.mean(pos_deltas, axis=0)
+                pos_comp = world.get_component(entity_id, PositionComponent)
+                if pos_comp:
+                    pos_comp.pos += avg_delta
+
+        for entity_id, ang_deltas in angle_corrections.items():
+            if ang_deltas:
+                avg_delta = np.mean(ang_deltas)
+                orientation_comp = world.get_component(entity_id, OrientationComponent)
+                if orientation_comp:
+                    orientation_comp.angle += avg_delta
+
+    def calculate_joint_correction(self, world, joint_id, joint_to_path_and_index, position_corrections, angle_corrections):
+        """
+        Calculates the PBD correction for a single joint that has become slack
+        and stores the delta values in the provided dictionaries instead of
+        applying them directly to the components.
+        """
         joint = world.get_component(joint_id, CableJointComponent)
         path_data = joint_to_path_and_index.get(joint_id)
         if not path_data:
@@ -80,8 +108,8 @@ class PBDResolveCableOverCorrections:
         constraint_error = current_segment_length - joint.rest_length
 
         epsilon = 1e-9
+        # This function should only be called for slack joints, where error is negative.
         if constraint_error >= -epsilon:
-            print("Exit 1");
             return
 
         entity_a = joint.entity_a
@@ -136,28 +164,19 @@ class PBDResolveCableOverCorrections:
 
         lambda_ = -constraint_error / denom
 
-        # Apply corrections to Entity A
+        # Store corrections instead of applying them directly
         if inv_mass_a > 0.0:
             delta_pos_a = grad_pos_a * (inv_mass_a * lambda_)
-            pos_a_comp.pos += delta_pos_a
-            print("pbd_resolve_cable_over_corrections corrected entity A pos")
+            position_corrections[entity_a].append(delta_pos_a)
 
         if inv_inertia_a > 0.0:
             delta_ang_a = -inv_inertia_a * lambda_ * grad_ang_a
-            orientation_a_comp = world.get_component(entity_a, OrientationComponent)
-            if orientation_a_comp:
-                orientation_a_comp.angle += delta_ang_a
-                print("pbd_resolve_cable_over_corrections corrected entity A ang")
+            angle_corrections[entity_a].append(delta_ang_a)
 
-        # Apply corrections to Entity B
         if inv_mass_b > 0.0:
             delta_pos_b = grad_pos_b * (inv_mass_b * lambda_)
-            pos_b_comp.pos += delta_pos_b
-            print("pbd_resolve_cable_over_corrections corrected entity B pos")
+            position_corrections[entity_b].append(delta_pos_b)
 
         if inv_inertia_b > 0.0:
             delta_ang_b = -inv_inertia_b * lambda_ * grad_ang_b
-            orientation_b_comp = world.get_component(entity_b, OrientationComponent)
-            if orientation_b_comp:
-                orientation_b_comp.angle += delta_ang_b
-                print("pbd_resolve_cable_over_corrections corrected entity B ang")
+            angle_corrections[entity_b].append(delta_ang_b)
