@@ -132,10 +132,11 @@ describe('PBDResolveCableOverCorrections', () => {
 
     const j1Comp = world.getComponent(joint1, CableJointComponent);
     j1Comp.attachmentPointA_world.set(new Vector2(0, 0));
-    j1Comp.attachmentPointB_world.set(new Vector2(11, 0));
+    j1Comp.attachmentPointB_world.set(new Vector2(11, 0)); // Stretched: length is 11 > 10
 
     const j2Comp = world.getComponent(joint2, CableJointComponent);
-    j2Comp.attachmentPointA_world.set(new Vector2(11, 0));
+    // Stretched: C is at (16,0), set attachment on B to (5,0). Length is |16-5|=11 > 10
+    j2Comp.attachmentPointA_world.set(new Vector2(5, 0));
     j2Comp.attachmentPointB_world.set(new Vector2(16, 0));
 
     const cacheSystem = new CableAttachmentCacheSystem();
