@@ -138,6 +138,100 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
+export function calculateAttachmentPoints(world, joint, path, i) {
+  const A = i;
+  const B = i + 1;
+
+  const entityA = joint.entityA;
+  const entityB = joint.entityB;
+
+  // Get components for Entity A
+  const posAComp = world.getComponent(entityA, PositionComponent);
+  const radiusAComp = world.getComponent(entityA, RadiusComponent);
+  const linkAComp = world.getComponent(entityA, CableLinkComponent);
+  const orientationAComp = world.getComponent(entityA, OrientationComponent);
+
+  const posA = posAComp?.pos;
+  const attachmentA_previous = joint.attachmentPointA_world;
+  const prevPosA = linkAComp?.prevCableAttachmentTimePos;
+  const radiusA = radiusAComp?.radius;
+  const angleA = orientationAComp?.angle ?? 0.0;
+  const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
+  const deltaAngleA = angleA - prevAngleA;
+
+  const cwA = _effectiveCW(path, A, true);
+  const attachmentLinkA = _isAttachment(path.linkTypes[A]);
+  const rollingLinkA = _isRolling(path.linkTypes[A]);
+  const isHybridA = _isHybrid(path.linkTypes[A]);
+
+  const pADiffFromTranslation = (posA && prevPosA) ? posA.clone().subtract(prevPosA) : null;
+  const tempRotatedA = attachmentA_previous.clone();
+  if (prevPosA) {
+    tempRotatedA.rotate(deltaAngleA, prevPosA, true);
+  }
+  const pADiffFromRotation = tempRotatedA.clone().subtract(attachmentA_previous);
+
+  // Get components for Entity B
+  const posBComp = world.getComponent(entityB, PositionComponent);
+  const radiusBComp = world.getComponent(entityB, RadiusComponent);
+  const linkBComp = world.getComponent(entityB, CableLinkComponent);
+  const orientationBComp = world.getComponent(entityB, OrientationComponent);
+
+  const posB = posBComp?.pos;
+  const attachmentB_previous = joint.attachmentPointB_world;
+  const prevPosB = linkBComp?.prevCableAttachmentTimePos;
+  const radiusB = radiusBComp?.radius;
+  const angleB = orientationBComp?.angle ?? 0.0;
+  const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
+  const deltaAngleB = angleB - prevAngleB;
+
+  const cwB = _effectiveCW(path, B, false);
+  const attachmentLinkB = _isAttachment(path.linkTypes[B]);
+  const rollingLinkB = _isRolling(path.linkTypes[B]);
+  const isHybridB = _isHybrid(path.linkTypes[B]);
+
+  const pBDiffFromTranslation = (posB && prevPosB) ? posB.clone().subtract(prevPosB) : null;
+  const tempRotatedB = attachmentB_previous.clone();
+  if (prevPosB) {
+    tempRotatedB.rotate(deltaAngleB, prevPosB, true);
+  }
+  const pBDiffFromRotation = tempRotatedB.clone().subtract(attachmentB_previous);
+
+  let attachmentA_current = posA ? posA.clone() : null;
+  let attachmentB_current = posB ? posB.clone() : null;
+
+  if (attachmentLinkA && rollingLinkB) {
+    if (isHybridA && pADiffFromTranslation) {
+      attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
+    }
+    if (attachmentA_current && posB && radiusB !== undefined) {
+      attachmentB_current = tangentFromPointToCircle(attachmentA_current, posB, radiusB, cwB).a_circle;
+    }
+  } else if (rollingLinkA && attachmentLinkB) {
+    if (isHybridB && pBDiffFromTranslation) {
+      attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
+    }
+    if (attachmentB_current && posA && radiusA !== undefined) {
+      attachmentA_current = tangentFromCircleToPoint(attachmentB_current, posA, radiusA, cwA).a_circle;
+    }
+  } else if (rollingLinkA && rollingLinkB) {
+    if (posA && posB && radiusA !== undefined && radiusB !== undefined) {
+      const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
+      attachmentA_current = tangents.a_circle;
+      attachmentB_current = tangents.b_circle;
+    }
+  } else {
+    if (isHybridA && pADiffFromTranslation) {
+      attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
+    }
+    if (isHybridB && pBDiffFromTranslation) {
+      attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
+    }
+  }
+
+  return { attachmentA_current, attachmentB_current };
+}
+
 export function _updateAttachmentPoints(world) {
   const pathEntities = world.query([CablePathComponent]);
 
@@ -148,9 +242,13 @@ export function _updateAttachmentPoints(world) {
       const jointId = path.jointEntities[i];
       const joint = world.getComponent(jointId, CableJointComponent);
 
-      const A = i; // Index for link/cw/stored related to entity A side
-      const B = i + 1; // Index for link/cw/stored related to entity B side
+      const attachmentA_previous = joint.attachmentPointA_world.clone();
+      const attachmentB_previous = joint.attachmentPointB_world.clone();
 
+      const { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i);
+
+      const A = i;
+      const B = i + 1;
       const entityA = joint.entityA;
       const entityB = joint.entityB;
 
@@ -160,18 +258,14 @@ export function _updateAttachmentPoints(world) {
       const linkAComp = world.getComponent(entityA, CableLinkComponent);
       const orientationAComp = world.getComponent(entityA, OrientationComponent);
       const posA = posAComp?.pos;
-      const attachmentA_previous = joint.attachmentPointA_world;
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
       const radiusA = radiusAComp?.radius;
       const angleA = orientationAComp?.angle ?? 0.0;
       const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleA = angleA - prevAngleA;
-      const cwA = _effectiveCW(path, A,  true);
-      const attachmentLinkA = _isAttachment(path.linkTypes[A]);
+      const cwA = _effectiveCW(path, A, true);
       const rollingLinkA = _isRolling(path.linkTypes[A]);
       const isHybridA = _isHybrid(path.linkTypes[A]);
-      const pADiffFromTranslation = posA.clone().subtract(prevPosA)
-      const pADiffFromRotation = attachmentA_previous.clone().rotate(deltaAngleA, prevPosA, true).subtract(attachmentA_previous);
       const hasFrictionA = world.getComponent(entityA, CoefficientOfFrictionComponent);
 
       // Get components for Entity B
@@ -180,68 +274,56 @@ export function _updateAttachmentPoints(world) {
       const linkBComp = world.getComponent(entityB, CableLinkComponent);
       const orientationBComp = world.getComponent(entityB, OrientationComponent);
       const posB = posBComp?.pos;
-      const attachmentB_previous = joint.attachmentPointB_world;
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
       const radiusB = radiusBComp?.radius;
       const angleB = orientationBComp?.angle ?? 0.0;
       const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleB = angleB - prevAngleB;
-      const cwB = _effectiveCW(path, B,  false);
-      const attachmentLinkB = _isAttachment(path.linkTypes[B]);
+      const cwB = _effectiveCW(path, B, false);
       const rollingLinkB = _isRolling(path.linkTypes[B]);
       const isHybridB = _isHybrid(path.linkTypes[B]);
-      const pBDiffFromTranslation = posB.clone().subtract(prevPosB)
-      const pBDiffFromRotation = attachmentB_previous.clone().rotate(deltaAngleB, prevPosB, true).subtract(attachmentB_previous);
       const hasFrictionB = world.getComponent(entityB, CoefficientOfFrictionComponent);
 
-      // --- Calculate  Attachment Points based on this frame's positions and rotations ---
-      let attachmentA_current = posA
-      let attachmentB_current = posB;
-      if (attachmentLinkA && rollingLinkB) {
-        if (isHybridA) {
-          attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-        }
-        attachmentB_current = tangentFromPointToCircle(attachmentA_current, posB, radiusB, cwB).a_circle;
-      } else if (rollingLinkA && attachmentLinkB) {
-        if (isHybridB) {
-          attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
-        }
-        attachmentA_current = tangentFromCircleToPoint(attachmentB_current, posA, radiusA, cwA).a_circle;
-      } else if (rollingLinkA && rollingLinkB) {
-        const tangents = tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB);
-        attachmentA_current = tangents.a_circle;
-        attachmentB_current = tangents.b_circle;
-      } else { // attachmentLinkA && attachmentLinkB
-        if (isHybridA) {
-          attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-        }
-        if (isHybridB) {
-          attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
-        }
+      let sA = 0;
+      let sB = 0;
+
+      if (rollingLinkA && attachmentA_previous && attachmentA_current && prevPosA && posA && radiusA !== undefined) {
+          sA = signedArcLengthOnWheel(
+            attachmentA_previous.clone().subtract(prevPosA),
+            attachmentA_current.clone().subtract(posA),
+            new Vector2(0.0, 0.0),
+            radiusA,
+            cwA
+          );
+          if (isHybridA || hasFrictionA) {
+            sA += (cwA ? deltaAngleA * radiusA : -deltaAngleA * radiusA);
+          }
       }
 
-      // --- Calculate Wrapping/Unwrapping Arc Lengths (sA, sB) ---
-      let sA = 0; // Change in stored length on side A due to wrapping/unwrapping this frame
-      let sB = 0; // Change in stored length on side B due to wrapping/unwrapping this frame
-      if (rollingLinkA) {
-          sA = signedArcLengthOnWheel(attachmentA_previous.clone().subtract(prevPosA), attachmentA_current.clone().subtract(posA), new Vector2(0.0, 0.0), radiusA, cwA);
-          if (isHybridA || hasFrictionA) {
-            sA += (cwA ? deltaAngleA*radiusA : -deltaAngleA*radiusA);
-          }
-      }
-      if (rollingLinkB) {
-          sB = signedArcLengthOnWheel(attachmentB_previous.clone().subtract(prevPosB), attachmentB_current.clone().subtract(posB), new Vector2(0.0, 0.0), radiusB, cwB);
+      if (rollingLinkB && attachmentB_previous && attachmentB_current && prevPosB && posB && radiusB !== undefined) {
+          sB = signedArcLengthOnWheel(
+            attachmentB_previous.clone().subtract(prevPosB),
+            attachmentB_current.clone().subtract(posB),
+            new Vector2(0.0, 0.0),
+            radiusB,
+            cwB
+          );
           if (isHybridB || hasFrictionB) {
-            sB += (cwB ? deltaAngleB*radiusB : -deltaAngleB*radiusB);
+            sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
           }
       }
+
       path.stored[A] += sA;
       joint.restLength -= sA;
       path.stored[B] -= sB;
       joint.restLength += sB;
 
-      joint.attachmentPointA_world.set(attachmentA_current);
-      joint.attachmentPointB_world.set(attachmentB_current);
+      if (attachmentA_current) {
+        joint.attachmentPointA_world.set(attachmentA_current);
+      }
+      if (attachmentB_current) {
+        joint.attachmentPointB_world.set(attachmentB_current);
+      }
     }
   }
 }
