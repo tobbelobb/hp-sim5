@@ -30,6 +30,9 @@ import {
   CableAttachmentUpdateSystem,
   PBDCableConstraintSolver
 } from '../../../src/js/cable_joints/cable_joints_core.js';
+import {
+  PBDResolveCableOverCorrections
+} from '../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
 
 import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
 import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
@@ -310,6 +313,7 @@ export function setupScene(world, stage, canvas) {
 
         // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
         world.registerSystem(new PBDCableConstraintSolver());
+        world.registerSystem(new PBDResolveCableOverCorrections());
         world.registerSystem(new PBDBallBorderCollisions());
         world.registerSystem(new PBDBallBallCollisions());
         world.registerSystem(new PBDBallObstacleCollisions());
