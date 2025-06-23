@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cable Joints - 3D Tests</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: sans-serif; color: white; }
+        #mainContainer { display: grid; grid-template-columns: 350px 1fr; height: 100vh; }
+        #controlsAndResults { padding: 10px; background-color: #222; overflow-y: auto; }
+        #testCanvas { display: block; width: 100%; height: 100%; }
+        #testResults { font-family: monospace; font-size: 12px; }
+        #testResults ul { list-style-type: none; padding-left: 0; }
+        #testResults li.fail { color: salmon; }
+        #testResults li.pass { color: lightgreen; }
+        #testResults li.summary { font-weight: bold; margin-top: 10px; }
+        #controls { padding-bottom: 10px; border-bottom: 1px solid #444; }
+    </style>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+  <script type="module" crossorigin src="/hp-sim5/assets/tests/html/3d_tests.html-Cqz6DUmp.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-kerxVC-m.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-051LwU-e.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/vector3-BHxPp5GD.js">
+</head>
+<body>
+    <div id="mainContainer">
+        <div id="controlsAndResults">
+            <div id="controls">
+                <h3>3D Tests</h3>
+                <select id="testSelector"></select>
+                <button id="runBtn">Run &amp; Visualize</button>
+            </div>
+            <div id="testResults">
+                <h4>Results:</h4>
+                <ul id="testList"></ul>
+            </div>
+        </div>
+        <canvas id="testCanvas"></canvas>
+    </div>
+
+</body>
+</html>
