@@ -78,7 +78,7 @@ export class PBDResolveCableOverCorrections {
     }
 
     for (const [entityId, deltas] of angCorrections.entries()) {
-      if (deltas.length) {
+      if (deltas.length >= 2) {
         const sum = deltas.reduce((a, b) => a + b, 0);
         const avg = sum / deltas.length;
         const orientComp = world.getComponent(entityId, OrientationComponent);

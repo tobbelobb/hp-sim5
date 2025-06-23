@@ -50,7 +50,7 @@ if IS_CI:
 else:
     # Expectations for the local environment
     EXPECTATIONS = {
-        "warp": 17,
+        "warp": 23,
         "no_warp": 28,
     }
 
