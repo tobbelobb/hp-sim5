@@ -579,9 +579,9 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
           world.registerSystem(new PBDAngularVelocityUpdateSystem());
 
           // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
+          // Velocity-level solvers (which might also do positional adjustments)
 
           // 9. Game Logic or similar. Counters and stuff
-          // Velocity-level solvers (which might also do positional adjustments)
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
         }
 

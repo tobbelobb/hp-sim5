@@ -150,7 +150,7 @@ class XPBDDistanceConstraintSystem:
 
             direction = diff / current_length
 
-            C = current_length - constraint.restLength
+            C = current_length - constraint.rest_length
 
             alpha_tilde = constraint.compliance / (dt * dt)
 

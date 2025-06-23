@@ -3,23 +3,45 @@ import json
 import numpy as np
 import websockets
 
+import sys
+from pathlib import Path
+
+
+root_dir = Path(__file__).resolve().parents[3]
+src_python_path = root_dir / "src" / "python"
+if str(src_python_path) not in sys.path:
+    sys.path.insert(0, str(src_python_path))
+
+examples_python_path = root_dir / "examples" / "python"
+if str(examples_python_path) not in sys.path:
+    sys.path.insert(0, str(examples_python_path))
+
 from cable_joints.ecs import (
-    World, PauseStateComponent, PositionComponent, VelocityComponent,
+    World, PositionComponent, VelocityComponent,
     RadiusComponent, MassComponent, OrientationComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, RenderableComponent, PrevFinalPosComponent,
-    PrevFinalOrientationComponent, BallTagComponent, CableLinkComponent,
+    PrevFinalOrientationComponent,
     DistanceConstraintComponent
 )
 from cable_joints.cable_joints_components import (
-    CableJointComponent, CablePathComponent, create_cable_path_component
+    CableLinkComponent, CableJointComponent, CablePathComponent, create_cable_path_component
 )
 from cable_joints.geometry import tangent_from_point_to_circle
 from cable_joints.common_systems import (
     PrevFinalPosSystem, PrevFinalOrientationSystem, MovementSystem,
     AngularMovementSystem, XPBDDistanceConstraintSystem,
-    CableAttachmentUpdateSystem, PBDCableConstraintSolver,
-    PBDVelocityUpdateSystem, PBDAngularVelocityUpdateSystem,
-    PBDBallBallCollisions
+    PBDVelocityUpdateSystem, PBDAngularVelocityUpdateSystem
+)
+
+from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
+from cable_joints.cable_attachment_cache_system import CableAttachmentCacheSystem
+from cable_joints.cable_slack_system import CableSlackSystem
+from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
+from cable_joints.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
+from cable_joints.cable_friction_system import CableFrictionSystem
+
+from flipper.flipper_common import (
+    PauseStateComponent, BallTagComponent,
 )
 
 
@@ -145,16 +167,38 @@ def setup_scene(world: World):
     create_distance_constraint(world, spools[2], spools[0])
 
     if not world.systems:
+        # 1. Cache state from previous step
         world.register_system(PrevFinalPosSystem())
         world.register_system(PrevFinalOrientationSystem())
+
+        # 2. Handle user input and non-physics state changes
+        # This is where we could animate spool movements for example
+
+        # 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
+
+        # 4. Update derived geometry and cable state
         world.register_system(XPBDDistanceConstraintSystem())
         world.register_system(CableAttachmentUpdateSystem())
+        world.register_system(CableAttachmentCacheSystem())
+        world.register_system(CableSlackSystem());
+
+        # 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
         world.register_system(PBDCableConstraintSolver())
+        world.register_system(PBDResolveCableOverCorrections());
+
+        # 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
+        world.register_system(CableFrictionSystem());
+
+        # 7. UPDATE VELOCITY: Derive final velocities from the position changes
         world.register_system(PBDVelocityUpdateSystem())
         world.register_system(PBDAngularVelocityUpdateSystem())
-        world.register_system(PBDBallBallCollisions())
+
+        # 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
+        # Velocity-level solvers (which might also do positional adjustments)
+
+        # 9. Game Logic or similar. Counters and stuff
 
 
 # --- Serialization ---

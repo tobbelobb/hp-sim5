@@ -6,7 +6,6 @@ import sys
 import numpy as np
 from pathlib import Path
 
-# __file__ is examples/python/flipper/server.py, so project root is 4 levels up.
 root_dir = Path(__file__).resolve().parents[3]
 src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:

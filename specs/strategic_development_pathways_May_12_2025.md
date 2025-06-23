@@ -8,44 +8,22 @@ The hp-sim5 repository implements a Position-Based Dynamics (PBD) approach to ca
 The CableAttachmentSystem handles complex behaviors like tangent point calculations, merging/splitting of joints, and tension distribution across cable segments.
 Currently, the implementation is:
 
-- JavaScript-based with an Entity-Component-System architecture
+- Ported to JavaScript and Python
+- Based with an Entity-Component-System architecture
 - 2D only, but with plans to extend to 3D
-- Functionally complete but needing modularization and testing
 - Intended as one module in a larger Hangprinter simulation ecosystem
 
 ## Further Development Approach: Sequential Implementation with Staged Milestones
 Break the transition into discrete, testable milestones:
 
-2. Create minimal 2D Python/Warp prototype with core algorithms (2 weeks)
 3. Implement 3D generalization in Python/Warp with ongoing JavaScript visualization (3-4 weeks)
 4. Develop full integration with scientific/ML frameworks (ongoing)
-
-**Pros:**
-- Clear progression with defined success criteria
-- Balances risk reduction with forward momentum
-- Preserves visualization capabilities throughout
-- Avoids overinvestment in any single approach
-
-**Cons:**
-- Slightly longer initial timeline
-- Requires discipline to avoid scope creep at each stage
-
-This approach:
-
-1. Addresses the immediate need for modularization and testing
-2. Avoids overinvestment in JavaScript for 3D work
-3. Provides a clear transition path to Python/Warp
-4. Maintains the ability to visualize and validate throughout development
-5. Creates natural checkpoints to reassess direction
 
 NVIDIA Warp[5][9] is specifically designed for the type of physics simulation we're building, with built-in support for:
 - Differentiable programming (essential for your reinforcement learning goals)
 - GPU acceleration (critical for complex cable simulations)
 - Integration with ML frameworks like PyTorch
 - Robust spatial computing primitives
-
-However, CableAttachmentSystem is complicated.
-Modularization and testing before porting reduces risk.
 
 ## Implementation Plan
 
@@ -62,19 +40,6 @@ Modularization and testing before porting reduces risk.
 2. Implement reinforcement learning capabilities
 3. Develop digital twin interfaces
 4. Scale to full system simulation
-
-This approach allows you to make steady, measurable progress while minimizing the risk of going down unproductive paths. The early transition to Python/Warp for 3D work leverages its strengths in that domain while the initial modularization ensures your core algorithms are sound.
-
-## Final Thoughts
-
-The approach aligns with software engineering best practices by:
-1. Focusing on testing and modularization before major transitions
-2. Leveraging appropriate technologies for specific problems
-3. Creating clear milestones to measure progress
-4. Maintaining reference implementations for validation
-5. Prioritizing forward momentum toward the ultimate goal
-
-By following this path, you'll build a solid foundation while making continuous progress toward your end goal of enabling digital workflows for Hangprinter development.
 
 Citations:
 [1] https://github.com/tobbelobb/hp-sim5

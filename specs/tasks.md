@@ -1,6 +1,6 @@
 # Strategy 1: Warp first 2d track. Go all the way with Python/Warp Slideprinter (2d Hangprinter) before making Cable Joints 3d capable.
  - Make slideprinter.html with Python
- - Make the Slideprinter contained in a USD file, use Warp for help with this
+ - Make the Slideprinter contained in a USD file
  - Visualize Slideprinter in 3d with Warp
  - Connect Slideprinter to control software, preferrably Klipper.
    The design of the control interface at this stage is really crucial.

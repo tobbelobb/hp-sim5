@@ -1,5 +1,5 @@
+Make Slideprinter with cable joints
 Make Hangprinter with cable joints
-restore 3d_test.html
 make usda in isaacsim and use in hp-sim5? -
 make usda CableJoint localpos be really local - not now. later. It's not important for any demo or for getting any basic thing to work
 
