@@ -4,9 +4,9 @@
     <title>Cable Joints - 3D Tests</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #111; font-family: sans-serif; color: white; }
-        #mainContainer { display: flex; height: 100vh; }
-        #controlsAndResults { width: 350px; padding: 10px; background-color: #222; overflow-y: auto; }
-        #testCanvas { flex-grow: 1; }
+        #mainContainer { display: grid; grid-template-columns: 350px 1fr; height: 100vh; }
+        #controlsAndResults { padding: 10px; background-color: #222; overflow-y: auto; }
+        #testCanvas { display: block; width: 100%; height: 100%; }
         #testResults { font-family: monospace; font-size: 12px; }
         #testResults ul { list-style-type: none; padding-left: 0; }
         #testResults li.fail { color: salmon; }
