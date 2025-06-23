@@ -51,7 +51,7 @@ else:
     # Expectations for the local environment
     EXPECTATIONS = {
         "warp": 17,
-        "no_warp": 15,
+        "no_warp": 28,
     }
 
 @pytest.mark.parametrize("use_warp,expected_score", [

@@ -65,7 +65,6 @@ export class PBDResolveCableOverCorrections {
           const avg = deltas.reduce((acc, v) => acc.add(v), new Vector2()).scale(1 / deltas.length);
           const posComp = world.getComponent(entityId, PositionComponent);
           if (posComp) {
-            console.log(`adjusted pos ${avg}`);
             posComp.pos.add(avg);
           }
         }
@@ -77,7 +76,6 @@ export class PBDResolveCableOverCorrections {
           const avg = sum / deltas.length;
           const orientComp = world.getComponent(entityId, OrientationComponent);
           if (orientComp) {
-            console.log(`adjusted orient ${avg}`);
             orientComp.angle += avg;
           }
         }
