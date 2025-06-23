@@ -144,6 +144,12 @@ canvas {
       PBDCableConstraintSolver
     } from '../../src/js/cable_joints/cable_joints_core.js';
 
+    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from '../../src/js/cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from '../../src/js/cable_joints/cable_friction_system.js';
+    import {
+      PBDResolveCableOverCorrections
+    } from '../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
     import {
       tangentFromPointToCircle
     } from '../../src/js/cable_joints/geometry.js';
@@ -539,25 +545,43 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
 
         // --- Systems Registration (Order Matters!) ---
         if (world.systems.length === 0) { // Only register systems once
-          // Initialize input system with view parameters matching RenderSystem
+          // 1. Cache state from previous step
+          world.registerSystem(new PrevFinalPosSystem());
+          world.registerSystem(new PrevFinalOrientationSystem());
+
+          // 2. Handle user input and non-physics state changes
           const inputSys = new InputSystem(canvas);
           inputSys.scaleMultiplier = 0.5;
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.5;
-          world.registerSystem(new PrevFinalPosSystem());
-          world.registerSystem(new PrevFinalOrientationSystem());
           world.registerSystem(inputSys);
+          // This is where we could animate spool movements for example
+
+          // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
-          // Positional constraint solvers
+
+          // 4. Update derived geometry and cable state
           world.registerSystem(new XPBDDistanceConstraintSystem());
           world.registerSystem(new CableAttachmentUpdateSystem());
+          world.registerSystem(new CableAttachmentCacheSystem());
+          world.registerSystem(new CableSlackSystem());
+
+          // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
-          // Update velocities from positional changes
+          world.registerSystem(new PBDResolveCableOverCorrections());
+
+          // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
+          world.registerSystem(new CableFrictionSystem());
+
+          // 7. UPDATE VELOCITY: Derive final velocities from the position changes
           world.registerSystem(new PBDVelocityUpdateSystem());
           world.registerSystem(new PBDAngularVelocityUpdateSystem());
+
+          // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
+
+          // 9. Game Logic or similar. Counters and stuff
           // Velocity-level solvers (which might also do positional adjustments)
-          world.registerSystem(new PBDBallBallCollisions());
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
         }
 
@@ -582,7 +606,7 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
       let frameSec = (currentTime - lastTime) / 1000;
       if (frameSec >= dt) {
         lastTime = currentTime;
-        const maxAccum = dt * 5;
+        const maxAccum = dt * 500;
         accumulator = Math.min(accumulator + frameSec, maxAccum);
         while (accumulator >= dt) {
           if (!pauseState.paused || doStep) {
