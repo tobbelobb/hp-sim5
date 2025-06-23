@@ -27,57 +27,63 @@ export class PBDResolveCableOverCorrections {
     const pathEntities = world.query([CablePathComponent]);
     if (!pathEntities) return;
 
+    const jointToPathAndIndex = new Map();
+    const allJointIds = new Set();
+
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (!path.jointEntities || path.jointEntities.length === 0) continue;
 
-      const jointToPathAndIndex = new Map();
-      for (let i = 0; i < path.jointEntities.length; i++) {
-        jointToPathAndIndex.set(path.jointEntities[i], { path, i });
-      }
-
-      const overCorrected = [];
       for (let i = 0; i < path.jointEntities.length; i++) {
         const jointId = path.jointEntities[i];
-        const joint = world.getComponent(jointId, CableJointComponent);
-        const preLen = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
-        if (preLen >= joint.restLength) {
-          const { attachmentA_current: pA, attachmentB_current: pB } = calculateAttachmentPoints(world, joint, path, i);
-          if (!pA || !pB) continue;
-          const postLen = pA.distanceTo(pB);
-          if (postLen < joint.restLength) {
-            overCorrected.push(jointId);
-          }
+        allJointIds.add(jointId);
+        jointToPathAndIndex.set(jointId, { path, i });
+      }
+    }
+
+    const overCorrected = [];
+    for (const jointId of allJointIds) {
+      const joint = world.getComponent(jointId, CableJointComponent);
+      const preLen = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+      if (preLen >= joint.restLength) {
+        const data = jointToPathAndIndex.get(jointId);
+        if (!data) continue;
+        const { path, i } = data;
+        const { attachmentA_current: pA, attachmentB_current: pB } = calculateAttachmentPoints(world, joint, path, i);
+        if (!pA || !pB) continue;
+        const postLen = pA.distanceTo(pB);
+        if (postLen < joint.restLength) {
+          overCorrected.push(jointId);
         }
       }
+    }
 
-      if (overCorrected.length < 2) continue;
+    if (overCorrected.length < 2) return;
 
-      const posCorrections = new Map();
-      const angCorrections = new Map();
+    const posCorrections = new Map();
+    const angCorrections = new Map();
 
-      for (const jointId of overCorrected) {
-        this.calculateJointCorrection(world, jointId, jointToPathAndIndex, posCorrections, angCorrections);
-      }
+    for (const jointId of overCorrected) {
+      this.calculateJointCorrection(world, jointId, jointToPathAndIndex, posCorrections, angCorrections);
+    }
 
-      for (const [entityId, deltas] of posCorrections.entries()) {
-        if (deltas.length >= 2) {
-          const avg = deltas.reduce((acc, v) => acc.add(v), new Vector2()).scale(1 / deltas.length);
-          const posComp = world.getComponent(entityId, PositionComponent);
-          if (posComp) {
-            posComp.pos.add(avg);
-          }
+    for (const [entityId, deltas] of posCorrections.entries()) {
+      if (deltas.length >= 2) {
+        const avg = deltas.reduce((acc, v) => acc.add(v), new Vector2()).scale(1 / deltas.length);
+        const posComp = world.getComponent(entityId, PositionComponent);
+        if (posComp) {
+          posComp.pos.add(avg);
         }
       }
+    }
 
-      for (const [entityId, deltas] of angCorrections.entries()) {
-        if (deltas.length) {
-          const sum = deltas.reduce((a, b) => a + b, 0);
-          const avg = sum / deltas.length;
-          const orientComp = world.getComponent(entityId, OrientationComponent);
-          if (orientComp) {
-            orientComp.angle += avg;
-          }
+    for (const [entityId, deltas] of angCorrections.entries()) {
+      if (deltas.length) {
+        const sum = deltas.reduce((a, b) => a + b, 0);
+        const avg = sum / deltas.length;
+        const orientComp = world.getComponent(entityId, OrientationComponent);
+        if (orientComp) {
+          orientComp.angle += avg;
         }
       }
     }
