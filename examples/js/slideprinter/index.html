@@ -116,8 +116,8 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
-    import Vector2 from '../../src/js/cable_joints/vector2.js';
-    import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
+    import Vector2 from '../../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
     import {
       World,
       SimulationErrorStateComponent,
@@ -134,7 +134,7 @@ canvas {
       DistanceConstraintComponent,
       PrevFinalPosComponent,
       PrevFinalOrientationComponent,
-    } from '../../src/js/cable_joints/ecs.js';
+    } from '../../../src/js/cable_joints/ecs.js';
 
     import {
       CableLinkComponent,
@@ -142,17 +142,17 @@ canvas {
       CablePathComponent,
       CableAttachmentUpdateSystem,
       PBDCableConstraintSolver
-    } from '../../src/js/cable_joints/cable_joints_core.js';
+    } from '../../../src/js/cable_joints/cable_joints_core.js';
 
-    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints/cable_attachment_cache_system.js';
-    import { CableSlackSystem } from '../../src/js/cable_joints/cable_slack_system.js';
-    import { CableFrictionSystem } from '../../src/js/cable_joints/cable_friction_system.js';
+    import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
+    import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
     import {
       PBDResolveCableOverCorrections
-    } from '../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
+    } from '../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
     import {
       tangentFromPointToCircle
-    } from '../../src/js/cable_joints/geometry.js';
+    } from '../../../src/js/cable_joints/geometry.js';
 
     import {
       GravitySystem,
@@ -163,7 +163,7 @@ canvas {
       PBDVelocityUpdateSystem,
       PrevFinalOrientationSystem,
       PBDAngularVelocityUpdateSystem,
-    } from '../../src/js/cable_joints/commonSystems.js';
+    } from '../../../src/js/cable_joints/commonSystems.js';
 
     import {
       PauseStateComponent,
