@@ -34,7 +34,7 @@ export function runGame(world, setupScene, sceneData) {
 
         if (frameSec >= dt) {
             lastTime = currentTime;
-            const maxSteps = window._flipperMaxSubSteps ?? 5;
+            const maxSteps = window._flipperMaxSubSteps ?? 500;
             const maxAccum = dt * maxSteps;
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {

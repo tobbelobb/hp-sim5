@@ -1,6 +1,4 @@
-the problem where one cable path can pull one object "multiple times" remains
 restore 3d_test.html
-code duplication in js_flipper/index.html and python_flipper
 make usda in isaacsim and use in hp-sim5?
 make usda CableJoint localpos be really local
 
