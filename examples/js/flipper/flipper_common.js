@@ -409,7 +409,7 @@ export class FlipperTipLinkSystem {
   runInPause = false;
   update(world, dt) {
     // for each tip‐entity, compute its current position
-    for (const tipId of world.query([FlipperTipComponent, PositionComponent, FlipperTipComponent])) {
+    for (const tipId of world.query([FlipperTipComponent, PositionComponent])) {
       const tipComp   = world.getComponent(tipId, FlipperTipComponent);
       const flipId    = tipComp.flipperEntityId;
       const pivotPos  = world.getComponent(flipId, PositionComponent).pos;
