@@ -43,7 +43,6 @@ class PBDResolveCableOverCorrections:
             if not path.joint_entities:
                 continue
 
-            joint_to_path_and_index = {}
             for i, joint_id in enumerate(path.joint_entities):
                 all_joint_ids.add(joint_id)
                 joint_to_path_and_index[joint_id] = (path, i)
