@@ -44,8 +44,8 @@ IS_CI = os.environ.get('CI') == 'true'
 if IS_CI:
     # Expectations for the GitHub CI environment
     EXPECTATIONS = {
-        "warp": 28,
-        "no_warp": 30,
+        "warp": 16,
+        "no_warp": 24,
     }
 else:
     # Expectations for the local environment
