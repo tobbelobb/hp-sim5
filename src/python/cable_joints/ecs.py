@@ -196,11 +196,18 @@ class PrevFinalOrientationComponent:
 @dataclass
 class DistanceConstraintComponent:
     """
-    Represents a distance constraint between two entities,
-    following the XPBD formulation.
+    Represents a distance constraint between two entities, following
+    the XPBD formulation.
+
+    The JavaScript version of this project stores the accumulated
+    Lagrange multiplier in a field named ``lambda``.  In Python the
+    ``lambda`` keyword cannot be used as an attribute name, so the
+    component exposes ``lambda_val`` instead.  This mirrors the
+    JavaScript implementation while avoiding the reserved keyword.
     """
+
     entityA: int
     entityB: int
     rest_length: float
     compliance: float = 0.0
-    lambda_: float = 0.0  # Accumulated Lagrange multiplier
+    lambda_val: float = 0.0  # Accumulated Lagrange multiplier
