@@ -79,6 +79,9 @@ class PBDResolveCableOverCorrections:
         # 3. Apply the averaged corrections to each affected entity
         for entity_id, pos_deltas in position_corrections.items():
             if len(pos_deltas) >= 2:
+                # Multiple joints connected to this one body are slack now
+                # They should not have been considered to have such a great effect on
+                # the body during this time step. Correct that back by averaging.
                 avg_delta = np.mean(pos_deltas, axis=0)
                 pos_comp = world.get_component(entity_id, PositionComponent)
                 if pos_comp:
@@ -86,6 +89,9 @@ class PBDResolveCableOverCorrections:
 
         for entity_id, ang_deltas in angle_corrections.items():
             if len(ang_deltas) >= 2:
+                # Multiple joints connected to this one body are slack now
+                # They should not have been considered to have such a great effect on
+                # the body during this time step. Correct that back by averaging.
                 avg_delta = np.mean(ang_deltas)
                 orientation_comp = world.get_component(entity_id, OrientationComponent)
                 if orientation_comp:

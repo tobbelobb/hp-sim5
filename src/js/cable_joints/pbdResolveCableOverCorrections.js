@@ -69,6 +69,9 @@ export class PBDResolveCableOverCorrections {
 
     for (const [entityId, deltas] of posCorrections.entries()) {
       if (deltas.length >= 2) {
+        // Multiple joints connected to this one body are slack now
+        // They should not have been considered to have such a great effect on
+        // the body during this time step. Correct that back by averaging.
         const avg = deltas.reduce((acc, v) => acc.add(v), new Vector2()).scale(1 / deltas.length);
         const posComp = world.getComponent(entityId, PositionComponent);
         if (posComp) {
@@ -79,6 +82,9 @@ export class PBDResolveCableOverCorrections {
 
     for (const [entityId, deltas] of angCorrections.entries()) {
       if (deltas.length >= 2) {
+        // Multiple joints connected to this one body are slack now
+        // They should not have been considered to have such a great effect on
+        // the body during this time step. Correct that back by averaging.
         const sum = deltas.reduce((a, b) => a + b, 0);
         const avg = sum / deltas.length;
         const orientComp = world.getComponent(entityId, OrientationComponent);
