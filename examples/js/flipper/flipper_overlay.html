@@ -256,7 +256,7 @@ canvas {
 
         if (frameSec >= dt) {
             lastTime = currentTime;
-            const maxAccum = dt * 5;
+            const maxAccum = dt * 500;
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {
               if (!pauseState.paused || doStep) {

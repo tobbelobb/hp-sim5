@@ -599,7 +599,7 @@ canvas {
             }
 
             dt = 1.0 / timeCodesPerSecond;
-            maxAccumulator = dt * 5; // To prevent spiral of death
+            maxAccumulator = dt * 500; // To prevent spiral of death
 
             if (dtEl) dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
 
