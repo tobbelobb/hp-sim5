@@ -17,7 +17,7 @@ def Xform "World"
             token[] ecs:tags = ["Ball"]
             rel material:binding = </World/PhysicsScene/BallMaterial>
             custom bool cable:linkable = 1
-            double radius = 0.03
+            double radius = 0.04
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.9, 0.95, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
