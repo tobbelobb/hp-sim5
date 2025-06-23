@@ -1,10 +1,10 @@
 import asyncio
 import json
-import numpy as np
-import websockets
-
+import os
 import sys
 from pathlib import Path
+
+import numpy as np
 
 
 root_dir = Path(__file__).resolve().parents[3]
@@ -43,6 +43,85 @@ from cable_joints.cable_friction_system import CableFrictionSystem
 from flipper.flipper_common import (
     PauseStateComponent, BallTagComponent,
 )
+
+# Files that trigger a server restart when modified
+python_dir = src_python_path / "cable_joints"
+WATCHED_FILES = [
+    Path(__file__),
+    root_dir / "examples" / "usd_scenes" / "slideprinter.usda",
+    python_dir / "ecs.py",
+    python_dir / "common_systems.py",
+    python_dir / "cable_attachment_update_system.py",
+    python_dir / "cable_attachment_cache_system.py",
+    python_dir / "cable_slack_system.py",
+    python_dir / "pbd_cable_constraint_solver.py",
+    python_dir / "pbd_resolve_cable_over_corrections.py",
+    python_dir / "cable_friction_system.py",
+    python_dir / "cable_joints_components.py",
+    python_dir / "geometry.py",
+    examples_python_path / "flipper" / "flipper_common.py",
+]
+
+def _copy_usd_on_change(changed_file: Path, root_dir: Path):
+    """Copy slideprinter.usda to the public dir for vite when it changes."""
+    try:
+        source_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
+        if changed_file.resolve() != source_path.resolve():
+            return
+
+        dest_path = (
+            root_dir
+            / "public"
+            / "examples"
+            / "usd_scenes"
+            / "slideprinter_copy_for_vite.usda.txt"
+        )
+        lock_path = dest_path.parent / (dest_path.name + ".lock")
+
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            return
+        else:
+            try:
+                import shutil
+                shutil.copy(source_path, dest_path)
+                print(
+                    f"Copied {source_path.relative_to(root_dir)} to {dest_path.relative_to(root_dir)}"
+                )
+            finally:
+                os.close(lock_fd)
+                os.remove(lock_path)
+    except Exception as e:  # pragma: no cover - best effort only
+        print(f"Could not copy {changed_file}: {e}", file=sys.stderr)
+
+
+async def watch_and_restart(files, interval=1.0):
+    """Monitor *files* and restart the process if any change."""
+    mtimes = {}
+    for f in files:
+        try:
+            mtimes[f] = Path(f).stat().st_mtime
+        except FileNotFoundError:
+            mtimes[f] = 0
+    while True:
+        await asyncio.sleep(interval)
+        for f in files:
+            try:
+                mtime = Path(f).stat().st_mtime
+            except FileNotFoundError:
+                mtime = 0
+            if mtime != mtimes.get(f):
+                _copy_usd_on_change(Path(f), root_dir)
+                print(f"{f} changed, restarting server...")
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+        for f in files:
+            try:
+                mtimes[f] = Path(f).stat().st_mtime
+            except FileNotFoundError:
+                mtimes[f] = 0
 
 
 # --- Helper entity creation ---
@@ -264,9 +343,18 @@ async def handler(websocket):
 
 
 async def main():
-    print('Starting Slideprinter server on ws://localhost:8766')
-    async with websockets.serve(handler, 'localhost', 8766):
-        await asyncio.Future()
+    import websockets
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8766, help="WebSocket port")
+    args = parser.parse_args()
+
+    print(f"Starting Slideprinter server on ws://localhost:{args.port}")
+
+    async with websockets.serve(handler, "localhost", args.port):
+        asyncio.create_task(watch_and_restart(WATCHED_FILES))
+        await asyncio.Future()  # run forever
 
 if __name__ == '__main__':
     asyncio.run(main())
