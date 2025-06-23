@@ -28,7 +28,7 @@ def test_xpbd_distance_constraint_converges_to_rest_length():
     )
     # Alias fields expected by the system's JS-port implementation
     constraint.restLength = constraint.rest_length
-    constraint.lambda_val = constraint.lambda_
+    constraint.lambda_val = 0.0
 
     constraint_entity = world.create_entity()
     world.add_component(constraint_entity, constraint)
