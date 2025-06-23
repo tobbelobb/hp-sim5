@@ -54,8 +54,6 @@ def Xform "World"
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.25, 0.6, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float3 physics:angularVelocity = (0, 0, 5729.5779513082325)
-            matrix3d physics:inertiaTensor = ((0.000288, 0, 0), (0, 0.000288, 0), (0, 0, 0.000288))
         }
 
         def Sphere "Obs2" (
@@ -70,8 +68,6 @@ def Xform "World"
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.75, 0.5, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float3 physics:angularVelocity = (0, 0, -5729.5779513082325)
-            matrix3d physics:inertiaTensor = ((0.00020000000000000004, 0, 0), (0, 0.00020000000000000004, 0), (0, 0, 0.00020000000000000004))
         }
 
         def Sphere "Obs3" (
