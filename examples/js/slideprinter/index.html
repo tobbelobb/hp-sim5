@@ -164,6 +164,7 @@ canvas {
       PrevFinalOrientationSystem,
       PBDAngularVelocityUpdateSystem,
     } from '../../../src/js/cable_joints/commonSystems.js';
+    import { Open as UsdOpen, getAttribute } from '../../../src/js/usd/stage.js';
 
     import {
       PauseStateComponent,
@@ -368,6 +369,7 @@ canvas {
     const stepBtn = document.getElementById("stepBtn");
 
     let world = new World();
+    let usdStage = null;
 
 function createSpoolEntity(world, posVec, velVec, angVelVal, spoolRadius, spoolMass, spoolInertia, ballRestitution, renderColor = '#a0a0a0') {
     const spool = world.createEntity();
@@ -456,8 +458,11 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
         const simWidth = canvas.width / cScale; // Calculate sim width based on actual width and scale
 
         // --- Resources ---
+        if (!usdStage) return;
+        const tcpsAssign = usdStage.ast.descriptor.assignments.find(a => a.identifier === 'timeCodesPerSecond');
+        const dtVal = tcpsAssign ? 1.0 / tcpsAssign.value : 1.0 / 200.0;
         world.setResource('gravity', new Vector2(0.0, 0.0));
-        world.setResource('dt', 1.0 / 200.0);
+        world.setResource('dt', dtVal);
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
@@ -467,45 +472,28 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
         world.setResource('grabbedBall', null);
 
         // --- Entities and Components ---
-        // Common properties for spools
-        const spoolRadius = 0.03;
-        const spoolMass = 0.005;
-        const spoolInertia = 30 * 0.5 * spoolMass * spoolRadius * spoolRadius;
-        const ballRestitution = 0.5;
-
-        // Common properties for anchors
-        const anchorRadius = 0.01; // Standard anchor radius from original code
-
-        // Common properties for cables
         const turns = 5.0;
-        const initialStoredLength = turns * spoolRadius * Math.PI * 2.0;
-        const cableStiffness = 20000.0; // Standard cable stiffness from original code
-        const spool_dist_from_center = 0.1;
+        const cableStiffness = 20000.0;
 
-        // Configurations for each spool-anchor-cable setup
-        const configurations = [
-            {
-                spoolPos: new Vector2(0.00, -spool_dist_from_center),
-                spoolVel: new Vector2(1.0, 0.0),
-                spoolAngVel: 5.0,
-                anchorPos: new Vector2(0.00, -spool_dist_from_center - 2.0),
-                jointColor: 'orange'
-            },
-            {
-                spoolPos: new Vector2(spool_dist_from_center * Math.cos(Math.PI * (1/6)), spool_dist_from_center * Math.sin(Math.PI * (1/6))),
-                spoolVel: new Vector2(-1.0/Math.sqrt(2), 1.0/Math.sqrt(2)),
-                spoolAngVel: 5.0, // Corresponds to new AngularVelocityComponent()
-                anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (1/6)), 2.05 * Math.sin(Math.PI * (1/6))),
-                jointColor: 'orange'
-            },
-            {
-                spoolPos: new Vector2(spool_dist_from_center * Math.cos(Math.PI * (5/6)), spool_dist_from_center * Math.sin(Math.PI * (5/6))),
-                spoolVel: new Vector2(0.0, 0.0),
-                spoolAngVel: 5.0, // Corresponds to new AngularVelocityComponent()
-                anchorPos: new Vector2(2.05 * Math.cos(Math.PI * (5/6)), 2.05 * Math.sin(Math.PI * (5/6))),
-                jointColor: 'orange'
-            }
-        ];
+        const names = ['A','B','C'];
+        const configurations = names.map(n => {
+            const spoolPrim = usdStage.GetPrimAtPath(`/World/SlideprinterScene/Spool${n}`);
+            const anchorPrim = usdStage.GetPrimAtPath(`/World/SlideprinterScene/Anchor${n}`);
+            const posArr = getAttribute(spoolPrim, 'xformOp:translate');
+            const spoolPos = new Vector2(posArr[0], posArr[1]);
+            const velX = getAttribute(spoolPrim, 'velX') || 0;
+            const velY = getAttribute(spoolPrim, 'velY') || 0;
+            const spoolVel = new Vector2(velX, velY);
+            const spoolAngVel = getAttribute(spoolPrim, 'angVel') || 0;
+            const spoolRadius = getAttribute(spoolPrim, 'radius') || 0.03;
+            const spoolMass = getAttribute(spoolPrim, 'mass') || 0.005;
+            const spoolInertia = 30 * 0.5 * spoolMass * spoolRadius * spoolRadius;
+            const anchorPosArr = getAttribute(anchorPrim, 'xformOp:translate');
+            const anchorPos = new Vector2(anchorPosArr[0], anchorPosArr[1]);
+            const anchorRadius = getAttribute(anchorPrim, 'radius') || 0.01;
+            const initialStoredLength = turns * spoolRadius * Math.PI * 2.0;
+            return { spoolPos, spoolVel, spoolAngVel, spoolRadius, spoolMass, spoolInertia, anchorPos, anchorRadius, initialStoredLength, jointColor: 'orange' };
+        });
 
         const spoolEntities = [];
         for (const config of configurations) {
@@ -514,25 +502,25 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
                 config.spoolPos,
                 config.spoolVel,
                 config.spoolAngVel,
-                spoolRadius,
-                spoolMass,
-                spoolInertia,
-                ballRestitution
+                config.spoolRadius,
+                config.spoolMass,
+                config.spoolInertia,
+                0.5
             );
             spoolEntities.push(spoolEntity);
 
             const anchorEntity = createAnchorEntity(
                 world,
                 config.anchorPos,
-                anchorRadius // Using the defined anchorRadius
+                config.anchorRadius
             );
 
             createCableAndJointEntities(
                 world,
                 anchorEntity,
                 spoolEntity,
-                spoolRadius,
-                initialStoredLength,
+                config.spoolRadius,
+                config.initialStoredLength,
                 config.jointColor,
                 cableStiffness // Using the defined cableStiffness
             );
@@ -660,8 +648,13 @@ function createDistanceConstraintEntity(world, entityA, entityB, compliance = 0.
     });
 
     // --- Start ---
-    setupScene();
-    requestAnimationFrame(loop);
+    const base = import.meta.env.BASE_URL || '/';
+    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
+    UsdOpen(usdaPath).then(stage => {
+        usdStage = stage;
+        setupScene();
+        requestAnimationFrame(loop);
+    });
 
 </script>
 

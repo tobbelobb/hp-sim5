@@ -102,6 +102,7 @@ let ws;
 let isPaused = true;
 let simState = {};
 let cScale = 150;
+let dt = 1.0 / 200.0;
 function setupCanvas(){
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -178,10 +179,28 @@ resetBtn.onclick = () => {
     ws.send(JSON.stringify({action:'reset'}));
   }
 };
-connect();
-setupCanvas();
-render();
-requestAnimationFrame(loop);
+
+async function start(){
+  const usdaPath = '../../usd_scenes/slideprinter_copy_for_vite.usda.txt';
+  try{
+    const res = await fetch(usdaPath);
+    if(res.ok){
+      const text = await res.text();
+      const m = text.match(/timeCodesPerSecond\s*=\s*(\d+(\.\d+)?)/);
+      if(m && m[1]){
+        dt = 1.0 / parseFloat(m[1]);
+      }
+    }
+  }catch(err){
+    console.error('Failed to load dt from USDA', err);
+  }
+  connect();
+  setupCanvas();
+  render();
+  requestAnimationFrame(loop);
+}
+
+start();
 </script>
 </body>
 </html>

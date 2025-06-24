@@ -39,6 +39,8 @@ from cable_joints.cable_slack_system import CableSlackSystem
 from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
 from cable_joints.cable_friction_system import CableFrictionSystem
+from examples.usd_scenes.slideprinter_usd_demo import parse_slideprinter
+import re
 
 from flipper.flipper_common import (
     PauseStateComponent, BallTagComponent,
@@ -96,6 +98,19 @@ def _copy_usd_on_change(changed_file: Path, root_dir: Path):
                 os.remove(lock_path)
     except Exception as e:  # pragma: no cover - best effort only
         print(f"Could not copy {changed_file}: {e}", file=sys.stderr)
+
+
+def _read_timecodes_per_second(path: Path) -> float:
+    """Parse timeCodesPerSecond from a USDA file."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                m = re.search(r"timeCodesPerSecond\s*=\s*(\d+(?:\.\d+)?)", line)
+                if m:
+                    return float(m.group(1))
+    except Exception:
+        pass
+    return 200.0
 
 
 async def watch_and_restart(files, interval=1.0):
@@ -193,53 +208,54 @@ def create_distance_constraint(world, eA, eB, compliance=0.0):
 def setup_scene(world: World):
     world.clear()
 
+    scene_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
+    tcps = _read_timecodes_per_second(scene_path)
+    _, entities, _j, _p, _ = parse_slideprinter(str(scene_path))
+
     sim_height = 1.7
     world.set_resource('gravity', np.array([0.0, 0.0, 0.0]))
-    world.set_resource('dt', 1.0 / 200.0)
+    world.set_resource('dt', 1.0 / tcps)
     world.set_resource('simWidth', 1.0)
     world.set_resource('simHeight', sim_height)
     world.set_resource('pauseState', PauseStateComponent(True))
     world.set_resource('debugRenderPoints', {})
     world.set_resource('grabbedBall', None)
 
-    spool_radius = 0.03
-    spool_mass = 0.005
-    spool_inertia = 30 * 0.5 * spool_mass * spool_radius * spool_radius
-    ball_restitution = 0.5
-    anchor_radius = 0.01
     turns = 5.0
-    initial_stored = turns * spool_radius * np.pi * 2.0
     cable_stiffness = 20000.0
-    dist = 0.1
-
-    configs = [
-        {
-            'spoolPos': (0.0, -dist),
-            'spoolVel': (1.0, 0.0),
-            'spoolAng': 5.0,
-            'anchorPos': (0.0, -dist - 2.0)
-        },
-        {
-            'spoolPos': (dist*np.cos(np.pi/6), dist*np.sin(np.pi/6)),
-            'spoolVel': (-1.0/np.sqrt(2), 1.0/np.sqrt(2)),
-            'spoolAng': 5.0,
-            'anchorPos': (2.05*np.cos(np.pi/6), 2.05*np.sin(np.pi/6))
-        },
-        {
-            'spoolPos': (dist*np.cos(5*np.pi/6), dist*np.sin(5*np.pi/6)),
-            'spoolVel': (0.0, 0.0),
-            'spoolAng': 5.0,
-            'anchorPos': (2.05*np.cos(5*np.pi/6), 2.05*np.sin(5*np.pi/6))
-        }
-    ]
 
     spools = []
-    for cfg in configs:
-        s = create_spool_entity(world, cfg['spoolPos'], cfg['spoolVel'], cfg['spoolAng'],
-                                spool_radius, spool_mass, spool_inertia, ball_restitution)
-        a = create_anchor_entity(world, cfg['anchorPos'], anchor_radius)
+    spool_names = ['A', 'B', 'C']
+    for n in spool_names:
+        sp_info = entities.get(f'Spool{n}')
+        an_info = entities.get(f'Anchor{n}')
+        if not sp_info or not an_info:
+            continue
+        spool_radius = sp_info.get('radius', 0.03)
+        spool_mass = sp_info.get('mass', 0.005)
+        spool_inertia = 30 * 0.5 * spool_mass * spool_radius * spool_radius
+        ball_restitution = 0.5
+        anchor_radius = an_info.get('radius', 0.01)
+        initial_stored = turns * spool_radius * np.pi * 2.0
+
+        s = create_spool_entity(
+            world,
+            tuple(sp_info.get('pos', [0.0, 0.0])),
+            (sp_info.get('velX', 0.0), sp_info.get('velY', 0.0)),
+            sp_info.get('angVel', 0.0),
+            spool_radius,
+            spool_mass,
+            spool_inertia,
+            ball_restitution,
+        )
+        a = create_anchor_entity(world, tuple(an_info.get('pos', [0.0, 0.0])), anchor_radius)
         create_cable_and_joint(world, a, s, spool_radius, initial_stored, stiffness=cable_stiffness)
         spools.append(s)
+
+    if len(spools) >= 3:
+        create_distance_constraint(world, spools[0], spools[1])
+        create_distance_constraint(world, spools[1], spools[2])
+        create_distance_constraint(world, spools[2], spools[0])
 
     create_distance_constraint(world, spools[0], spools[1])
     create_distance_constraint(world, spools[1], spools[2])
