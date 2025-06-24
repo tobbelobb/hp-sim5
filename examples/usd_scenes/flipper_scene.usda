@@ -121,8 +121,7 @@ def Xform "World"
 
         def CableJoint "Joint1"
         {
-            # TODO: The localPos attributes on CableJoints are likely misnamed and contain world coordinates.
-            custom bool enabled = 1
+            # TODO: The localPos attributes on CableJoints are misnamed and contain world coordinates.
             custom point3d localPos0 = (0.08085505352834965, 0.5299878122487063, 0)
             custom point3d localPos1 = (0.10004062583764584, 1.202850178427832, 0)
             custom rel physics:body0 = </World/FlipperScene/Ball2>
@@ -132,7 +131,6 @@ def Xform "World"
 
         def CableJoint "Joint2"
         {
-            custom bool enabled = 1
             custom point3d localPos0 = (0.23366516978503094, 1.2941629244625772, 0)
             custom point3d localPos1 = (0.740398203742037, 1.1129955093550927, 0)
             custom rel physics:body0 = </World/FlipperScene/Obs4>
@@ -142,7 +140,6 @@ def Xform "World"
 
         def CableJoint "Joint3"
         {
-            custom bool enabled = 1
             custom point3d localPos0 = (0.7914301947495155, 1.0777207789980623, 0)
             custom point3d localPos1 = (0.8805698052504844, 0.9728575486873788, 0)
             custom rel physics:body0 = </World/FlipperScene/Obs3>
