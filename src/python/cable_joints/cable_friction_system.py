@@ -7,6 +7,16 @@ from .ecs import (
 from .cable_joints_components import CablePathComponent, CableJointComponent
 from .vector2 import normalize_inplace
 
+# Base iteration count tuned for a 60 Hz frame time.  When the simulation uses
+# smaller timesteps, we reduce the per‑step iterations so that the total number
+# of friction iterations per real‑time second stays roughly constant.  See
+# `ai_docs/CableJoints/CableJoints.md` for the friction model and
+# `ai_docs/Smallsteps/Smallsteps.md` for why the work should scale with the
+# timestep size.
+
+BASE_ITERATIONS = 4
+TARGET_DT = 1.0 / 500.0
+
 def _even_out_tension_friction(world):
     path_entities = world.query([CablePathComponent])
     epsilon = 1e-9
@@ -127,8 +137,10 @@ class CableFrictionSystem:
         self.run_in_pause = False
 
     def update(self, world, dt):
-        # Iterate a few times to allow tension to propagate along the entire cable path.
-        for _ in range(4):
+        # Keep the total number of friction iterations per real-time second
+        # constant as described in Smallsteps.md.
+        iterations = max(1, int(BASE_ITERATIONS * dt / TARGET_DT))
+        for _ in range(iterations):
             _even_out_tension_friction(world)
-        
+
         _sanity_check(world)

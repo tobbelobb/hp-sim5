@@ -3,6 +3,14 @@ import {
     CableJointComponent
 } from './cable_joints_core.js';
 
+// Adjust the number of slack iterations so the cost per second remains
+// constant regardless of substep size. See `ai_docs/CableJoints/CableJoints.md`
+// and `ai_docs/Smallsteps/Smallsteps.md` for details on the model and the
+// rationale behind scaling work with the timestep.
+
+const BASE_ITERATIONS = 4;
+const TARGET_DT = 1 / 500;
+
 function _slipSlack(world) {
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -36,8 +44,10 @@ function _slipSlack(world) {
 export class CableSlackSystem {
     runInPause = false;
     update(world, dt) {
-        // Iterate a few times to allow slack to propagate
-        for (let i = 0; i < 4; i++) {
+        // Scale iterations with dt so slack propagation work per second
+        // matches the target budget (see Smallsteps.md).
+        const iterations = Math.max(1, Math.floor(BASE_ITERATIONS * dt / TARGET_DT));
+        for (let i = 0; i < iterations; i++) {
             _slipSlack(world);
         }
     }
