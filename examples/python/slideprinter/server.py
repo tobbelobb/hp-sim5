@@ -3,8 +3,10 @@ import json
 import os
 import sys
 from pathlib import Path
+from dataclasses import dataclass
 
 import numpy as np
+from pxr import Usd, UsdGeom, UsdShade
 
 
 root_dir = Path(__file__).resolve().parents[3]
@@ -21,12 +23,13 @@ from cable_joints.ecs import (
     RadiusComponent, MassComponent, OrientationComponent, AngularVelocityComponent,
     MomentOfInertiaComponent, RenderableComponent, PrevFinalPosComponent,
     PrevFinalOrientationComponent,
-    DistanceConstraintComponent
+    DistanceConstraintComponent,
+    RestitutionComponent,
+    CoefficientOfFrictionComponent
 )
 from cable_joints.cable_joints_components import (
     CableLinkComponent, CableJointComponent, CablePathComponent, create_cable_path_component
 )
-from cable_joints.geometry import tangent_from_point_to_circle
 from cable_joints.common_systems import (
     PrevFinalPosSystem, PrevFinalOrientationSystem, MovementSystem,
     AngularMovementSystem, XPBDDistanceConstraintSystem,
@@ -43,6 +46,12 @@ from cable_joints.cable_friction_system import CableFrictionSystem
 from flipper.flipper_common import (
     PauseStateComponent, BallTagComponent,
 )
+
+@dataclass
+class SpoolTagComponent:
+    """A tag component for entities that are spools."""
+    pass
+
 
 # Files that trigger a server restart when modified
 python_dir = src_python_path / "cable_joints"
@@ -126,58 +135,6 @@ async def watch_and_restart(files, interval=1.0):
 
 # --- Helper entity creation ---
 
-def create_spool_entity(world, pos, vel, ang_vel, radius, mass, inertia, restitution, color="#a0a0a0"):
-    spool = world.create_entity()
-    world.add_component(spool, BallTagComponent())
-    world.add_component(spool, PositionComponent(np.array([pos[0], pos[1], 0.0])))
-    world.add_component(spool, VelocityComponent(np.array([vel[0], vel[1], 0.0])))
-    world.add_component(spool, RadiusComponent(radius))
-    world.add_component(spool, MassComponent(mass))
-    world.add_component(spool, RenderableComponent("circle", color))
-    world.add_component(spool, OrientationComponent(0.0))
-    world.add_component(spool, AngularVelocityComponent(ang_vel))
-    world.add_component(spool, MomentOfInertiaComponent(inertia))
-    world.add_component(spool, PrevFinalPosComponent(np.array([pos[0], pos[1], 0.0])))
-    world.add_component(spool, PrevFinalOrientationComponent(0.0))
-    world.add_component(spool, CableLinkComponent())
-    return spool
-
-
-def create_anchor_entity(world, pos, radius=0.01, color="#aaaaaa"):
-    anchor = world.create_entity()
-    world.add_component(anchor, BallTagComponent())
-    world.add_component(anchor, PositionComponent(np.array([pos[0], pos[1], 0.0])))
-    world.add_component(anchor, VelocityComponent(np.zeros(3)))
-    world.add_component(anchor, RadiusComponent(radius))
-    world.add_component(anchor, MassComponent(-1.0))
-    world.add_component(anchor, RenderableComponent("circle", color))
-    world.add_component(anchor, CableLinkComponent())
-    return anchor
-
-
-def create_cable_and_joint(world, anchor_e, spool_e, spool_radius, initial_stored, color="orange", stiffness=20000.0):
-    anchor_pos = world.get_component(anchor_e, PositionComponent).pos
-    spool_pos = world.get_component(spool_e, PositionComponent).pos
-
-    joint = world.create_entity()
-    tang = tangent_from_point_to_circle(anchor_pos, spool_pos, spool_radius, True)
-    rest_len = np.linalg.norm(tang['a_attach'] - tang['a_circle'])
-    world.add_component(joint, CableJointComponent(anchor_e, spool_e, rest_len, tang['a_attach'], tang['a_circle']))
-    world.add_component(joint, RenderableComponent('line', color))
-
-    path_e = world.create_entity()
-    path_comp = create_cable_path_component(
-        world,
-        [joint],
-        ['attachment', 'hybrid'],
-        [True, True],
-        stiffness,
-        [0.0, initial_stored]
-    )
-    world.add_component(path_e, path_comp)
-    return joint, path_e
-
-
 def create_distance_constraint(world, eA, eB, compliance=0.0):
     constraint = world.create_entity()
     pos_a = world.get_component(eA, PositionComponent).pos
@@ -190,60 +147,164 @@ def create_distance_constraint(world, eA, eB, compliance=0.0):
 
 # --- Scene setup ---
 
-def setup_scene(world: World):
+def load_slideprinter_stage():
+    """Load the slideprinter demo USD stage."""
+    scene_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
+    return Usd.Stage.Open(str(scene_path))
+
+
+def _material_properties(stage, prim):
+    """Return (color_hex, friction, restitution) from a prim's bound material."""
+    rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+    if not rel.GetTargets():
+        return None, None, None
+
+    mat_prim = stage.GetPrimAtPath(rel.GetTargets()[0])
+    color = None
+    friction = None
+    restitution = None
+
+    if not mat_prim:
+        return color, friction, restitution
+
+    shader_prim = mat_prim.GetChild("Shader")
+    if shader_prim:
+        color_attr = shader_prim.GetAttribute("inputs:diffuseColor")
+        if color_attr and color_attr.Get() is not None:
+            c = color_attr.Get()
+            color = "#%02x%02x%02x" % (int(c[0] * 255), int(c[1] * 255), int(c[2] * 255))
+
+    fric_attr = mat_prim.GetAttribute("physics:staticFriction")
+    if fric_attr and fric_attr.Get() is not None:
+        friction = fric_attr.Get()
+
+    rest_attr = mat_prim.GetAttribute("physics:restitution")
+    if rest_attr and rest_attr.Get() is not None:
+        restitution = rest_attr.Get()
+
+    return color, friction, restitution
+
+
+def stage_to_world(world, stage):
+    """Populate *world* using entities described in *stage*."""
     world.clear()
 
-    sim_height = 1.7
-    world.set_resource('gravity', np.array([0.0, 0.0, 0.0]))
-    world.set_resource('dt', 1.0 / 200.0)
-    world.set_resource('simWidth', 1.0)
-    world.set_resource('simHeight', sim_height)
-    world.set_resource('pauseState', PauseStateComponent(True))
-    world.set_resource('debugRenderPoints', {})
-    world.set_resource('grabbedBall', None)
+    dt = 1.0 / stage.GetTimeCodesPerSecond()
+    world.set_resource("dt", dt)
+    world.set_resource("pauseState", PauseStateComponent(True))
+    world.set_resource("debugRenderPoints", {})
+    world.set_resource("grabbedBall", None)
 
-    spool_radius = 0.03
-    spool_mass = 0.005
-    spool_inertia = 30 * 0.5 * spool_mass * spool_radius * spool_radius
-    ball_restitution = 0.5
-    anchor_radius = 0.01
-    turns = 5.0
-    initial_stored = turns * spool_radius * np.pi * 2.0
-    cable_stiffness = 20000.0
-    dist = 0.1
+    physics_scene = stage.GetPrimAtPath("/World/PhysicsScene")
+    if physics_scene:
+        gdir_attr = physics_scene.GetAttribute("physics:gravityDirection")
+        gmag_attr = physics_scene.GetAttribute("physics:gravityMagnitude")
+        if gdir_attr.Get() is not None and gmag_attr.Get() is not None:
+            gdir = np.array(gdir_attr.Get())
+            gmag = gmag_attr.Get()
+            world.set_resource("gravity", gdir * gmag)
+        else:
+            world.set_resource("gravity", np.array([0.0, 0.0, 0.0]))
+    else:
+        world.set_resource("gravity", np.array([0.0, 0.0, 0.0]))
 
-    configs = [
-        {
-            'spoolPos': (0.0, -dist),
-            'spoolVel': (1.0, 0.0),
-            'spoolAng': 5.0,
-            'anchorPos': (0.0, -dist - 2.0)
-        },
-        {
-            'spoolPos': (dist*np.cos(np.pi/6), dist*np.sin(np.pi/6)),
-            'spoolVel': (-1.0/np.sqrt(2), 1.0/np.sqrt(2)),
-            'spoolAng': 5.0,
-            'anchorPos': (2.05*np.cos(np.pi/6), 2.05*np.sin(np.pi/6))
-        },
-        {
-            'spoolPos': (dist*np.cos(5*np.pi/6), dist*np.sin(5*np.pi/6)),
-            'spoolVel': (0.0, 0.0),
-            'spoolAng': 5.0,
-            'anchorPos': (2.05*np.cos(5*np.pi/6), 2.05*np.sin(5*np.pi/6))
-        }
-    ]
+    scene_root = stage.GetPrimAtPath("/World/SlideprinterScene")
+    name_to_entity = {}
 
-    spools = []
-    for cfg in configs:
-        s = create_spool_entity(world, cfg['spoolPos'], cfg['spoolVel'], cfg['spoolAng'],
-                                spool_radius, spool_mass, spool_inertia, ball_restitution)
-        a = create_anchor_entity(world, cfg['anchorPos'], anchor_radius)
-        create_cable_and_joint(world, a, s, spool_radius, initial_stored, stiffness=cable_stiffness)
-        spools.append(s)
+    for prim in scene_root.GetChildren():
+        tags_attr = prim.GetAttribute("ecs:tags")
+        tags = tags_attr.Get() if tags_attr else []
+        if not tags:
+            continue
 
-    create_distance_constraint(world, spools[0], spools[1])
-    create_distance_constraint(world, spools[1], spools[2])
-    create_distance_constraint(world, spools[2], spools[0])
+        xform = UsdGeom.Xformable(prim)
+        pos = np.zeros(3)
+        for op in xform.GetOrderedXformOps():
+            if op.GetOpName() == "xformOp:translate":
+                pos = np.array(op.Get())
+
+        color, fric, rest = _material_properties(stage, prim)
+
+        if "Spool" in tags:
+            ent = world.create_entity()
+            radius = prim.GetAttribute("radius").Get()
+            mass = prim.GetAttribute("physics:mass").Get()
+            inertia_tensor = prim.GetAttribute("physics:inertiaTensor").Get()
+            inertia = inertia_tensor[2][2]
+            vel = np.array(prim.GetAttribute("physics:velocity").Get())
+            ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
+            ang_vel = ang_vel_attr.Get()[2] if ang_vel_attr and ang_vel_attr.Get() is not None else 0.0
+
+            world.add_component(ent, SpoolTagComponent())
+            world.add_component(ent, BallTagComponent()) # For serialization
+            world.add_component(ent, PositionComponent(pos.copy()))
+            world.add_component(ent, VelocityComponent(vel.copy()))
+            world.add_component(ent, RadiusComponent(radius))
+            world.add_component(ent, MassComponent(mass))
+            world.add_component(ent, RenderableComponent("circle", color or '#a0a0a0'))
+            world.add_component(ent, OrientationComponent(0.0))
+            world.add_component(ent, AngularVelocityComponent(ang_vel))
+            world.add_component(ent, MomentOfInertiaComponent(inertia))
+            world.add_component(ent, PrevFinalPosComponent(pos.copy()))
+            world.add_component(ent, PrevFinalOrientationComponent(0.0))
+            if prim.GetAttribute("cable:linkable").Get():
+                world.add_component(ent, CableLinkComponent())
+            if rest is not None:
+                world.add_component(ent, RestitutionComponent(rest))
+            if fric is not None:
+                world.add_component(ent, CoefficientOfFrictionComponent(fric))
+            name_to_entity[prim.GetName()] = ent
+
+        elif "Anchor" in tags:
+            ent = world.create_entity()
+            world.add_component(ent, PositionComponent(pos.copy()))
+            world.add_component(ent, RadiusComponent(0.01))
+            world.add_component(ent, MassComponent(-1.0))
+            world.add_component(ent, RenderableComponent("circle", color or '#aaaaaa'))
+            if prim.GetAttribute("cable:linkable").Get():
+                world.add_component(ent, CableLinkComponent())
+            name_to_entity[prim.GetName()] = ent
+
+    # Cable joints and path
+    joint_prims = [p for p in scene_root.GetChildren() if p.GetTypeName() == 'CableJoint']
+    joint_entities = {}
+    for jp in joint_prims:
+        body0 = jp.GetRelationship("physics:body0").GetTargets()[0].name
+        body1 = jp.GetRelationship("physics:body1").GetTargets()[0].name
+        attach_a = np.array(jp.GetAttribute("localPos0").Get())
+        attach_b = np.array(jp.GetAttribute("localPos1").Get())
+        rest_len = jp.GetAttribute("restLength").Get()
+        ent = world.create_entity()
+        world.add_component(ent, CableJointComponent(name_to_entity[body0], name_to_entity[body1], rest_len, attach_a, attach_b))
+        joint_entities[jp.GetPath()] = ent
+
+    path_prims = [p for p in scene_root.GetChildren() if p.GetAttribute("apiSchemas").Get() and "CablePathAPI" in p.GetAttribute("apiSchemas").Get()]
+    for cable_path_prim in path_prims:
+        joint_paths = cable_path_prim.GetRelationship("cablePath:joints").GetTargets()
+        ordered = [joint_entities[p] for p in joint_paths if p in joint_entities]
+        link_types = list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or [])
+        cw = list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or [])
+        stored = list(cable_path_prim.GetAttribute("cablePath:stored").Get() or [])
+        stiffness = cable_path_prim.GetAttribute("stiffness").Get()
+        if ordered:
+            cid = world.create_entity()
+            path_comp = create_cable_path_component(world, ordered, link_types, cw, stiffness, stored=stored)
+            world.add_component(cid, path_comp)
+
+    return name_to_entity
+
+
+def setup_scene(world: World):
+    stage = load_slideprinter_stage()
+    name_to_entity = stage_to_world(world, stage)
+
+    spool_names = sorted([name for name, entity_id in name_to_entity.items() if world.has_component(entity_id, SpoolTagComponent)])
+
+    if len(spool_names) == 3:
+        spool_entities = [name_to_entity[name] for name in spool_names]
+        create_distance_constraint(world, spool_entities[0], spool_entities[1])
+        create_distance_constraint(world, spool_entities[1], spool_entities[2])
+        create_distance_constraint(world, spool_entities[2], spool_entities[0])
 
     if not world.systems:
         # 1. Cache state from previous step
@@ -291,7 +352,11 @@ def world_to_json(world: World) -> str:
         mass = world.get_component(ball_id, MassComponent).mass
         renderable = world.get_component(ball_id, RenderableComponent)
         color = renderable.color if renderable else '#888888'
-        state['balls'].append({'x': pos[0], 'y': pos[1], 'radius': radius, 'mass': mass, 'color': color})
+        ball_data = {'x': pos[0], 'y': pos[1], 'radius': radius, 'mass': mass, 'color': color}
+        orientation_comp = world.get_component(ball_id, OrientationComponent)
+        if orientation_comp:
+            ball_data['angle'] = orientation_comp.angle
+        state['balls'].append(ball_data)
 
     pause_comp = world.get_resource('pauseState')
     if pause_comp:
@@ -330,7 +395,7 @@ async def handler(websocket):
 
         if action == 'step':
             if not pause_state.paused:
-                steps = data.get('steps', 0)
+                steps = data.get('steps', 1)
                 dt = world.get_resource('dt')
                 for _ in range(steps):
                     world.update(dt)

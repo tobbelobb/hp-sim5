@@ -62,6 +62,8 @@ html, body {
   background: var(--accent-1);
   box-shadow: 0 3px 8px rgba(0,0,0,.45);
   transition: transform .12s ease, box-shadow .12s ease;
+  padding: 10px 16px;
+  font-size: 0.85rem;
 }
 #controls button:hover,
 #controls button:focus-visible {
@@ -78,10 +80,6 @@ canvas {
   border-radius: var(--radius);
   touch-action: manipulation;
 }
-#controls button {
-  padding: 10px 16px;
-  font-size: 0.85rem;
-}
     </style>
 </head>
 <body>
@@ -91,114 +89,249 @@ canvas {
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+            <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
+              dt: <span id="dt">N/A</span> |
+              Speed: <span id="speed">N/A</span>
+            </div>
         </div>
-        <canvas id="simCanvas"></canvas>
+        <canvas id="myCanvas"></canvas>
     </div>
 <script>
-const canvas = document.getElementById('simCanvas');
-const ctx = canvas.getContext('2d');
-const pauseBtn = document.getElementById('pauseBtn');
-const resetBtn = document.getElementById('resetBtn');
-const stepBtn = document.getElementById('stepBtn');
-const dumpBtn = document.getElementById('dumpBtn');
-let ws;
-let isPaused = true;
-let simState = {};
-let baseScale = 150;
-const viewScale = 0.5;
-const viewOffsetX = 0.0;
-const viewOffsetY = -0.5;
-function setupCanvas(){
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  baseScale = canvas.height / 1.7;
-}
-function toCanvas(x,y){
-  const scale = baseScale * viewScale;
-  return {
-    x: canvas.width/2 + (x - viewOffsetX)*scale,
-    y: canvas.height/2 - (y - viewOffsetY)*scale
-  };
-}
-function render(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(simState.balls){
-    simState.balls.forEach(b=>{
-      const p = toCanvas(b.x,b.y);
-      ctx.fillStyle = b.mass < 0 ? '#777' : (b.color || '#ccc');
-      const scale = baseScale * viewScale;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,b.radius*scale,0,2*Math.PI);
-      ctx.fill();
-    });
-  }
-  if(simState.cables){
-    ctx.strokeStyle = '#00FFFF';
-    simState.cables.forEach(c=>{
-      c.joints.forEach(j=>{
-        const pA = toCanvas(j.pA[0],j.pA[1]);
-        const pB = toCanvas(j.pB[0],j.pB[1]);
-        ctx.beginPath();
-        ctx.moveTo(pA.x,pA.y);
-        ctx.lineTo(pB.x,pB.y);
-        ctx.stroke();
-      });
-    });
-  }
-}
-function connect(){
-  ws = new WebSocket('ws://localhost:8766');
-  ws.onopen = () => {
-    pauseBtn.disabled = false;
-    resetBtn.disabled = false;
-    setupCanvas();
-  };
-  ws.onmessage = e => {
-    simState = JSON.parse(e.data);
-    if(simState.isPaused !== undefined){
-      isPaused = simState.isPaused;
-      pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const stepBtn = document.getElementById("stepBtn");
+    const dumpBtn = document.getElementById('dumpBtn');
+    const dtEl = document.getElementById('dt');
+    const speedEl = document.getElementById('speed');
+
+    let simState = {};
+    let isPaused = true;
+    let cScale, simHeight = 1.7, simWidth = 1.0;
+    const viewScale = 0.5;
+    const viewOffsetX = 0.0;
+    const viewOffsetY = -0.5;
+
+    let ws;
+    let accumulator = 0.0; // in seconds
+    let dt; // Will be loaded from USDA
+    let maxAccumulator; // Derived from dt
+    let speedSamples = [];
+    const numSpeedSamples = 60;
+    let frameCounter = 0;
+
+    function setupCanvas() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        cScale = canvas.height / simHeight;
     }
-    render();
-  };
-  ws.onclose = () => {
-    pauseBtn.disabled = true;
-    resetBtn.disabled = true;
-    setTimeout(connect,1000);
-  };
-}
-function step(){
-  if(ws && ws.readyState === WebSocket.OPEN){
-    ws.send(JSON.stringify({action:'step', steps:1}));
-  }
-}
-function loop(){
-  if(!isPaused) step();
-  requestAnimationFrame(loop);
-}
-stepBtn.onclick = () => {
-  if(isPaused) step();
-};
-dumpBtn.onclick = () => {
-  console.log(simState);
-};
-pauseBtn.onclick = () => {
-  if(!ws) return;
-  isPaused = !isPaused;
-  pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
-  ws.send(JSON.stringify({action:'pause', paused:isPaused}));
-};
-resetBtn.onclick = () => {
-  if(ws && ws.readyState === WebSocket.OPEN){
-    isPaused = true;
-    pauseBtn.textContent = 'Start';
-    ws.send(JSON.stringify({action:'reset'}));
-  }
-};
-connect();
-setupCanvas();
-render();
-requestAnimationFrame(loop);
+
+    function toCanvas(simX, simY) {
+        const scale = cScale * viewScale;
+        return {
+            x: canvas.width / 2 + (simX - viewOffsetX) * scale,
+            y: canvas.height / 2 - (simY - viewOffsetY) * scale
+        };
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const scale = cScale * viewScale;
+
+        if (simState.balls) {
+            simState.balls.forEach(b => {
+                const p = toCanvas(b.x, b.y);
+                ctx.fillStyle = b.mass < 0 ? '#777' : (b.color || '#ccc');
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                if (b.angle !== undefined) {
+                    ctx.rotate(-b.angle);
+                }
+
+                ctx.beginPath();
+                ctx.arc(0, 0, b.radius * scale, 0, 2 * Math.PI);
+                ctx.fill();
+
+                if (b.angle !== undefined) {
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, -b.radius * scale);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+        }
+        if (simState.cables) {
+            ctx.strokeStyle = '#00FFFF';
+            ctx.lineWidth = 2;
+            simState.cables.forEach(c => {
+                c.joints.forEach(j => {
+                    const pA = toCanvas(j.pA[0], j.pA[1]);
+                    const pB = toCanvas(j.pB[0], j.pB[1]);
+                    ctx.beginPath();
+                    ctx.moveTo(pA.x, pA.y);
+                    ctx.lineTo(pB.x, pB.y);
+                    ctx.stroke();
+                });
+            });
+        }
+    }
+
+    function connect() {
+        ws = new WebSocket('ws://localhost:8766');
+
+        ws.onopen = () => {
+            console.log('Connected to Python WebSocket server.');
+            setupCanvas();
+            isPaused = true;
+            pauseBtn.textContent = "Start";
+            pauseBtn.disabled = false;
+            resetBtn.disabled = false;
+            stepBtn.disabled = false;
+        };
+
+        ws.onmessage = (event) => {
+            simState = JSON.parse(event.data);
+            if (simState.isPaused !== undefined) {
+                isPaused = simState.isPaused;
+                if (isPaused) {
+                    if (pauseBtn.textContent !== "Start") {
+                        pauseBtn.textContent = "Resume";
+                    }
+                } else {
+                    pauseBtn.textContent = "Pause";
+                }
+            }
+            render();
+        };
+
+        ws.onclose = () => {
+            console.log('Disconnected from server. Reconnecting in 1s...');
+            pauseBtn.textContent = "Reconnecting...";
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            stepBtn.disabled = true;
+            setTimeout(connect, 1000);
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+        };
+    }
+
+    let lastTime = 0;
+    function gameLoop(currentTime) {
+        if (!lastTime) {
+            lastTime = currentTime;
+        }
+
+        const speedScale = 1.0;
+        const frameSec = speedScale * (currentTime - lastTime) / 1000.0;
+        let stepsToTake = 0;
+
+        if (frameSec >= dt) {
+            lastTime = currentTime;
+
+            if (!isPaused && ws && ws.readyState === WebSocket.OPEN) {
+                accumulator = Math.min(accumulator + frameSec, maxAccumulator);
+                stepsToTake = Math.floor(accumulator / dt);
+
+                if (stepsToTake > 0) {
+                    accumulator -= stepsToTake * dt;
+                    ws.send(JSON.stringify({ action: 'step', steps: stepsToTake }));
+                }
+            }
+        }
+
+        if (frameSec > 1e-6 && stepsToTake > 0) {
+            const simTimeDelta = stepsToTake * dt;
+            const currentSpeed = simTimeDelta / frameSec;
+            speedSamples.push(currentSpeed);
+            if (speedSamples.length > numSpeedSamples) {
+                speedSamples.shift();
+            }
+        }
+
+        frameCounter++;
+        if (frameCounter % 10 === 0 && speedEl && speedSamples.length > 0) {
+            const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
+            speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    pauseBtn.addEventListener('click', () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? "Resume" : "Pause";
+            ws.send(JSON.stringify({ action: 'pause', paused: isPaused }));
+            if (!isPaused) {
+                lastTime = performance.now();
+            }
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            isPaused = true;
+            pauseBtn.textContent = "Start";
+            ws.send(JSON.stringify({ action: 'reset' }));
+            speedSamples = [];
+            frameCounter = 0;
+            if (speedEl) speedEl.textContent = 'N/A';
+            accumulator = 0.0;
+            lastTime = 0;
+        }
+    });
+
+    stepBtn.addEventListener('click', () => {
+        if (isPaused && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ action: 'step', steps: 1 }));
+        }
+    });
+
+    dumpBtn.addEventListener('click', () => {
+        console.log(simState);
+    });
+
+    window.addEventListener('resize', setupCanvas);
+
+    async function start() {
+        const usdaPath = '../../../public/examples/usd_scenes/slideprinter_copy_for_vite.usda.txt';
+        try {
+            const response = await fetch(usdaPath);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const text = await response.text();
+            const match = text.match(/timeCodesPerSecond\s*=\s*(\d+(\.\d+)?)/);
+            let timeCodesPerSecond = 200; // Default fallback
+            if (match && match[1]) {
+                timeCodesPerSecond = parseFloat(match[1]);
+            } else {
+                console.warn(`Could not find 'timeCodesPerSecond' in ${usdaPath}. Falling back to ${timeCodesPerSecond}Hz.`);
+            }
+
+            dt = 1.0 / timeCodesPerSecond;
+            maxAccumulator = dt * 500;
+
+            if (dtEl) dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
+
+        } catch (error) {
+            console.error('Failed to load or parse USDA file for dt:', error);
+            dt = 1.0 / 200.0;
+            maxAccumulator = dt * 5;
+            if (dtEl) dtEl.textContent = `ERR! Using ${(dt * 1000).toFixed(2)}ms`;
+        }
+
+        connect();
+        requestAnimationFrame(gameLoop);
+    }
+
+    start();
 </script>
 </body>
 </html>
