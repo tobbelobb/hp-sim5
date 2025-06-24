@@ -130,10 +130,8 @@ export function setupScene(world, stage, canvas) {
         } else if (tags.includes("Anchor")) {
             const ent = world.createEntity();
             const radius = 0.01;
-            world.addComponent(ent, new SpoolTagComponent());
             world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-            world.addComponent(ent, new VelocityComponent(0.0, 0.0));
-            world.addComponent(ent, new RadiusComponent(radius));
+            world.addComponent(ent, new RadiusComponent(0.01));
             world.addComponent(ent, new MassComponent(-1.0));
             world.addComponent(ent, new RenderableComponent('circle', color || '#aaaaaa'));
             if (getAttribute(prim, "cable:linkable")) {
