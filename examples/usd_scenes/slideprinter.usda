@@ -1,85 +1,86 @@
 #usda 1.0
 (
-    doc = "USD scene for Slideprinter"
-    defaultPrim = "Slideprinter"
+    doc = "A better USD scene for Slideprinter"
+    defaultPrim = "SlideprinterScene"
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 500
+    upAxis = "Y"
 )
 
-def Xform "Slideprinter" {
-    def Xform "SpoolA" (
-        customData = {
-            string purpose = "spool"
+def Xform "World"
+{
+    def Xform "SlideprinterScene" {
+        def Circle "SpoolA" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Spool"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            custom bool cable:linkable = 1
+            double radius = 0.03
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (0.0, -0.1, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float physics:mass = 0.005
+            float3 physics:angularVelocity = (0, 0, 5.0)
+            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            vector3f physics:velocity = (1.0, 0.0, 0.0)
         }
-    )
-    {
-        double3 xformOp:translate = (0.0, -0.1, 0.0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-        double radius = 0.03
-        double mass = 0.005
-        double angVel = 5.0
-        double velX = 1.0
-        double velY = 0.0
-    }
 
-    def Xform "AnchorA" (
-        customData = {
-            string purpose = "anchor"
+        def Xform "AnchorA" ()
+        {
+            token[] ecs:tags = ["Anchor"]
+            double3 xformOp:translate = (0.0, -2.1, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
-    )
-    {
-        double3 xformOp:translate = (0.0, -2.1, 0.0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-        double radius = 0.01
-    }
 
-    def Xform "SpoolB" (
-        customData = {
-            string purpose = "spool"
+        def Circle "SpoolB" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Spool"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            custom bool cable:linkable = 1
+            double radius = 0.03
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (0.08660254, 0.05, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float physics:mass = 0.005
+            float3 physics:angularVelocity = (0, 0, 5.0)
+            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            vector3f physics:velocity = (-0.7071, 0.7071, 0.0)
         }
-    )
-    {
-        double3 xformOp:translate = (0.08660254, 0.05, 0.0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-        double radius = 0.03
-        double mass = 0.005
-        double angVel = 5.0
-        double velX = -0.7071
-        double velY = 0.7071
-    }
 
-    def Xform "AnchorB" (
-        customData = {
-            string purpose = "anchor"
+        def Xform "AnchorB" ()
+        {
+            token[] ecs:tags = ["Anchor"]
+            double3 xformOp:translate = (1.776, 1.025, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
-    )
-    {
-        double3 xformOp:translate = (1.776, 1.025, 0.0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-        double radius = 0.01
-    }
 
-    def Xform "SpoolC" (
-        customData = {
-            string purpose = "spool"
+        def Circle "SpoolC" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Spool"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            custom bool cable:linkable = 1
+            double radius = 0.03
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (-0.08660254, 0.05, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float physics:mass = 0.005
+            float3 physics:angularVelocity = (0, 0, 5.0)
+            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
-    )
-    {
-        double3 xformOp:translate = (-0.08660254, 0.05, 0.0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-        double radius = 0.03
-        double mass = 0.005
-        double angVel = 5.0
-        double velX = 0.0
-        double velY = 0.0
-    }
 
-    def Xform "AnchorC" (
-        customData = {
-            string purpose = "anchor"
+        def Xform "AnchorC" ()
+        {
+            token[] ecs:tags = ["Anchor"]
+            double3 xformOp:translate = (-1.776, 1.025, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
-    )
-    {
-        double3 xformOp:translate = (-1.776, 1.025, 0.0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-        double radius = 0.01
     }
 }
