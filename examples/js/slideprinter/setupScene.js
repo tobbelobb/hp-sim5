@@ -26,6 +26,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
+  linecolor1,
   CableAttachmentUpdateSystem,
   PBDCableConstraintSolver
 } from '../../../src/js/cable_joints/cable_joints_core.js';
@@ -54,7 +55,6 @@ import {
   PBDAngularVelocityUpdateSystem,
   XPBDDistanceConstraintSystem,
 } from '../../../src/js/cable_joints/commonSystems.js';
-import { tangentFromPointToCircle } from '../../../src/js/cable_joints/geometry.js';
 
 export function setupScene(world, stage, canvas) {
   world.clear();
@@ -82,8 +82,7 @@ export function setupScene(world, stage, canvas) {
     world.setResource('grabbedBall', null);
 
     const sceneRoot = stage.GetPrimAtPath("/World/SlideprinterScene");
-    const spools = {};
-    const anchors = {};
+    const nameToEntityId = {};
 
     for (const prim of getChildren(sceneRoot)) {
         const tags = getAttribute(prim, "ecs:tags") || [];
@@ -126,7 +125,7 @@ export function setupScene(world, stage, canvas) {
             if (getAttribute(prim, "cable:linkable")) {
                 world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
             }
-            spools[prim.name] = ent;
+            nameToEntityId[prim.name] = ent;
         } else if (tags.includes("Anchor")) {
             const ent = world.createEntity();
             const radius = 0.01;
@@ -137,48 +136,70 @@ export function setupScene(world, stage, canvas) {
             if (getAttribute(prim, "cable:linkable")) {
                 world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
             }
-            anchors[prim.name] = ent;
+            nameToEntityId[prim.name] = ent;
         }
     }
 
-    const spoolNames = Object.keys(spools).sort();
-    const anchorNames = Object.keys(anchors).sort();
+    // Cable Setup
+    const jointEntityMap = {};
 
-    if (spoolNames.length === anchorNames.length) {
-        const turns = 5.0;
-        const cableStiffness = 20000.0;
+    // Process CableJoints
+    for (const prim of getChildren(sceneRoot)) {
+        if (prim.specifier !== 'def' || prim.type !== 'CableJoint') continue;
 
-        for (let i = 0; i < spoolNames.length; i++) {
-            const spoolEntity = spools[spoolNames[i]];
-            const anchorEntity = anchors[anchorNames[i]];
+        const body0Path = getRelationship(prim, "physics:body0")[0];
+        const body1Path = getRelationship(prim, "physics:body1")[0];
+        const entityA = nameToEntityId[body0Path.split('/').pop()];
+        const entityB = nameToEntityId[body1Path.split('/').pop()];
+        const restLength = getAttribute(prim, "restLength");
+        const attachAArr = getAttribute(prim, "localPos0");
+        const attachBArr = getAttribute(prim, "localPos1");
 
-            const spoolRadius = world.getComponent(spoolEntity, RadiusComponent).radius;
-            const initialStoredLength = turns * spoolRadius * Math.PI * 2.0;
-
-            const anchorPos = world.getComponent(anchorEntity, PositionComponent).pos;
-            const spoolPos = world.getComponent(spoolEntity, PositionComponent).pos;
-
-            const joint = world.createEntity();
-            const tang = tangentFromPointToCircle(anchorPos, spoolPos, spoolRadius, true);
-            const local_attach_A = tang.a_attach.clone().subtract(anchorPos);
-            const local_attach_B = tang.a_circle.clone().subtract(spoolPos);
-            const initialDist = tang.a_attach.distanceTo(tang.a_circle);
-
-            world.addComponent(joint, new CableJointComponent(
-                anchorEntity, spoolEntity, initialDist, local_attach_A, local_attach_B
-            ));
-            world.addComponent(joint, new RenderableComponent('line', 'yellow'));
-
-            const cable = world.createEntity();
-            const cableComp = new CablePathComponent(
-                world, [joint], ['attachment', 'hybrid'], [true, true],
-                cableStiffness, [0.0, initialStoredLength]
-            );
-            world.addComponent(cable, cableComp);
+        if (!entityA || !entityB || restLength === null || !attachAArr || !attachBArr) {
+            console.warn(`Skipping CableJoint ${prim.name} due to missing data.`);
+            continue;
         }
+
+        const attachA = new Vector2(attachAArr[0], attachAArr[1]);
+        const attachB = new Vector2(attachBArr[0], attachBArr[1]);
+
+        const joint = world.createEntity();
+        world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
+        world.addComponent(joint, new RenderableComponent('line', linecolor1));
+        jointEntityMap[prim.name] = joint;
     }
 
-    const spoolEntities = spoolNames.map(name => spools[name]);
+    // Process CablePaths
+    for (const prim of getChildren(sceneRoot)) {
+        const apiSchemas = getAttribute(prim, "apiSchemas");
+        if (!apiSchemas || !apiSchemas.includes("CablePathAPI")) continue;
+
+        const cablePath = world.createEntity();
+        const jointPaths = getRelationship(prim, "cablePath:joints");
+        if (!jointPaths) continue;
+
+        const jointNames = jointPaths.map(p => p.split('/').pop());
+        const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]).filter(Boolean);
+        const linkTypes = getAttribute(prim, "cablePath:linkTypes");
+        const clockwise = getAttribute(prim, "cablePath:clockwise");
+        const stored = getAttribute(prim, "cablePath:stored");
+        const stiffness = getAttribute(prim, "stiffness");
+
+        const pathComp = new CablePathComponent(
+          world,
+          jointEntities,
+          linkTypes ? [...linkTypes] : null,
+          clockwise ? [...clockwise] : null,
+          stiffness || Infinity,
+          stored ? [...stored] : null
+        );
+        world.addComponent(cablePath, pathComp);
+    }
+
+    const spoolNames = Object.keys(nameToEntityId)
+        .filter(name => world.hasComponent(nameToEntityId[name], SpoolTagComponent))
+        .sort();
+    const spoolEntities = spoolNames.map(name => nameToEntityId[name]);
     if (spoolEntities.length === 3) {
         const createDistanceConstraintEntity = (entityA, entityB, compliance = 0.0) => {
             const constraintEntity = world.createEntity();
