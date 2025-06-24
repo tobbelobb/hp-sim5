@@ -83,70 +83,85 @@ export function setupScene(world, stage, canvas) {
 
     const sceneRoot = stage.GetPrimAtPath("/World/SlideprinterScene");
     const nameToEntityId = {};
+    const jointPrims = [];
+    const pathPrims = [];
 
+    // Discover prims and create body entities in a single pass
     for (const prim of getChildren(sceneRoot)) {
+        // Check for API schemas to identify paths
+        const apiSchemas = getAttribute(prim, "apiSchemas");
+        if (apiSchemas && apiSchemas.includes("CablePathAPI")) {
+            pathPrims.push(prim);
+        }
+
+        // console.log(prim);
+        // console.log(prim.subType);
+        // console.log(prim.subType === 'def');
+        // console.log(prim.defType === 'CableJoint');
+        // Check for prim type to identify joints
+        if (prim.type === 'definition' && prim.defType === 'CableJoint') {
+            jointPrims.push(prim);
+            console.log(prim);
+        }
+
+        // Check for tags to identify bodies (Spools, Anchors)
         const tags = getAttribute(prim, "ecs:tags") || [];
-        if (!tags.length) continue;
+        if (tags.length > 0) {
+            const posArr = getAttribute(prim, "xformOp:translate");
+            if (!posArr) continue;
+            const pos = new Vector2(posArr[0], posArr[1]);
+            const { color, friction, restitution } = materialProperties(stage, prim);
 
-        const posArr = getAttribute(prim, "xformOp:translate");
-        if (!posArr) continue;
-        const pos = new Vector2(posArr[0], posArr[1]);
-        const { color, friction, restitution } = materialProperties(stage, prim);
+            if (tags.includes("Spool")) {
+                const ent = world.createEntity();
+                const radius = getAttribute(prim, "radius");
+                const mass = getAttribute(prim, "physics:mass");
+                const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
+                const velArr = getAttribute(prim, "physics:velocity");
+                const angVelArr = getAttribute(prim, "physics:angularVelocity");
 
-        if (tags.includes("Spool")) {
-            const ent = world.createEntity();
-            const radius = getAttribute(prim, "radius");
-            const mass = getAttribute(prim, "physics:mass");
-            const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
-            const velArr = getAttribute(prim, "physics:velocity");
-            const angVelArr = getAttribute(prim, "physics:angularVelocity");
+                if (radius === null || mass === null || inertiaTensor === null || !velArr || !angVelArr) {
+                    console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
+                    continue;
+                }
+                const inertia = inertiaTensor[2][2];
+                const vel = new Vector2(velArr[0], velArr[1]);
+                const angVel = angVelArr[2];
 
-            if (radius === null || mass === null || inertiaTensor === null || !velArr || !angVelArr) {
-                console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
-                continue;
+                world.addComponent(ent, new SpoolTagComponent());
+                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
+                world.addComponent(ent, new RadiusComponent(radius));
+                world.addComponent(ent, new MassComponent(mass));
+                world.addComponent(ent, new RenderableComponent('circle', color || '#a0a0a0'));
+                world.addComponent(ent, new OrientationComponent(0.0));
+                world.addComponent(ent, new AngularVelocityComponent(angVel));
+                world.addComponent(ent, new MomentOfInertiaComponent(inertia));
+                world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
+                world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y));
+                if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
+                if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                if (getAttribute(prim, "cable:linkable")) {
+                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                }
+                nameToEntityId[prim.name] = ent;
+            } else if (tags.includes("Anchor")) {
+                const ent = world.createEntity();
+                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                world.addComponent(ent, new RadiusComponent(0.01));
+                world.addComponent(ent, new MassComponent(-1.0));
+                world.addComponent(ent, new RenderableComponent('circle', color || '#aaaaaa'));
+                if (getAttribute(prim, "cable:linkable")) {
+                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                }
+                nameToEntityId[prim.name] = ent;
             }
-            const inertia = inertiaTensor[2][2];
-            const vel = new Vector2(velArr[0], velArr[1]);
-            const angVel = angVelArr[2];
-
-            world.addComponent(ent, new SpoolTagComponent());
-            world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-            world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
-            world.addComponent(ent, new RadiusComponent(radius));
-            world.addComponent(ent, new MassComponent(mass));
-            world.addComponent(ent, new RenderableComponent('circle', color || '#a0a0a0'));
-            world.addComponent(ent, new OrientationComponent(0.0));
-            world.addComponent(ent, new AngularVelocityComponent(angVel));
-            world.addComponent(ent, new MomentOfInertiaComponent(inertia));
-            world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
-            world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y));
-            if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
-            if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
-            if (getAttribute(prim, "cable:linkable")) {
-                world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
-            }
-            nameToEntityId[prim.name] = ent;
-        } else if (tags.includes("Anchor")) {
-            const ent = world.createEntity();
-            const radius = 0.01;
-            world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-            world.addComponent(ent, new RadiusComponent(0.01));
-            world.addComponent(ent, new MassComponent(-1.0));
-            world.addComponent(ent, new RenderableComponent('circle', color || '#aaaaaa'));
-            if (getAttribute(prim, "cable:linkable")) {
-                world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
-            }
-            nameToEntityId[prim.name] = ent;
         }
     }
 
-    // Cable Setup
+    // Process discovered CableJoints
     const jointEntityMap = {};
-
-    // Process CableJoints
-    for (const prim of getChildren(sceneRoot)) {
-        if (prim.specifier !== 'def' || prim.type !== 'CableJoint') continue;
-
+    for (const prim of jointPrims) {
         const body0Path = getRelationship(prim, "physics:body0")[0];
         const body1Path = getRelationship(prim, "physics:body1")[0];
         const entityA = nameToEntityId[body0Path.split('/').pop()];
@@ -155,8 +170,9 @@ export function setupScene(world, stage, canvas) {
         const attachAArr = getAttribute(prim, "localPos0");
         const attachBArr = getAttribute(prim, "localPos1");
 
-        if (!entityA || !entityB || restLength === null || !attachAArr || !attachBArr) {
+        if (entityA === null || entityB === null || restLength === null || attachAArr === null || attachBArr === null) {
             console.warn(`Skipping CableJoint ${prim.name} due to missing data.`);
+            console.log(`entityA: ${entityA}, entityB: ${entityB}, restLength: ${restLength}, attachAArr: ${attachAArr}, attachBarr: ${attachBArr}`);
             continue;
         }
 
@@ -169,11 +185,8 @@ export function setupScene(world, stage, canvas) {
         jointEntityMap[prim.name] = joint;
     }
 
-    // Process CablePaths
-    for (const prim of getChildren(sceneRoot)) {
-        const apiSchemas = getAttribute(prim, "apiSchemas");
-        if (!apiSchemas || !apiSchemas.includes("CablePathAPI")) continue;
-
+    // Process discovered CablePaths
+    for (const prim of pathPrims) {
         const cablePath = world.createEntity();
         const jointPaths = getRelationship(prim, "cablePath:joints");
         if (!jointPaths) continue;

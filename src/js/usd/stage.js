@@ -69,9 +69,25 @@ function indexPrims(statements, parent = "", out = {}) {
 
 // --- USD Parsing Helpers ---
 export function getAttribute(primNode, attrName) {
-    if (!primNode || !primNode.statements) return null;
-    const decl = primNode.statements.find(s => s.type === 'declaration' && s.reference === attrName);
-    return decl ? decl.value : null;
+    if (!primNode) return null;
+
+    // First, check the prim's metadata assignments (e.g., apiSchemas = ["..."])
+    if (primNode.descriptor && primNode.descriptor.assignments) {
+        const assignment = primNode.descriptor.assignments.find(a => a.type === 'assignment' && a.identifier === attrName);
+        if (assignment) {
+            return assignment.value;
+        }
+    }
+
+    // Then, check the prim's body statements (e.g., custom double radius = 1.0)
+    if (primNode.statements) {
+        const decl = primNode.statements.find(s => s.type === 'declaration' && s.reference === attrName);
+        if (decl) {
+            return decl.value;
+        }
+    }
+
+    return null;
 }
 
 export function getRelationship(primNode, relName) {
@@ -119,4 +135,3 @@ export function materialProperties(stage, prim) {
 
     return { color, friction, restitution };
 }
-
