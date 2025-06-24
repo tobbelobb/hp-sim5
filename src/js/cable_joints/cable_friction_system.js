@@ -8,6 +8,16 @@ import {
     CableJointComponent
 } from './cable_joints_core.js';
 
+// Base iteration count tuned for a 60 Hz frame time. When the simulation uses
+// smaller timesteps, we reduce the per‑step iterations so that the total number
+// of friction iterations per real‑time second stays roughly constant. See
+// `ai_docs/CableJoints/CableJoints.md` for the friction model and
+// `ai_docs/Smallsteps/Smallsteps.md` for why the work should scale with the
+// timestep size.
+
+const BASE_ITERATIONS = 4;
+const TARGET_DT = 1 / 60;
+
 
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
@@ -141,7 +151,10 @@ function _sanityCheck(world) {
 export class CableFrictionSystem {
     runInPause = false;
     update(world, dt) {
-        for (let i = 0; i < 4; i++) {
+        // Keep the total number of friction iterations per real-time second
+        // constant as described in Smallsteps.md.
+        const iterations = Math.max(1, Math.floor(BASE_ITERATIONS * dt / TARGET_DT));
+        for (let i = 0; i < iterations; i++) {
             _evenOutTensionFriction(world);
         }
         _sanityCheck(world);
