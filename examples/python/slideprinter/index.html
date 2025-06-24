@@ -75,7 +75,6 @@ canvas {
   width: 100%;
   flex: 1;
   display: block;
-  background: #000;
   border-radius: var(--radius);
   touch-action: manipulation;
 }
@@ -88,8 +87,10 @@ canvas {
 <body>
     <div id="gameContainer">
         <div id="controls">
-            <button id="pauseBtn">Start</button>
-            <button id="resetBtn">Reset</button>
+            <button id="pauseBtn" tabindex="-1">Start</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
         </div>
         <canvas id="simCanvas"></canvas>
     </div>
@@ -98,18 +99,30 @@ const canvas = document.getElementById('simCanvas');
 const ctx = canvas.getContext('2d');
 const pauseBtn = document.getElementById('pauseBtn');
 const resetBtn = document.getElementById('resetBtn');
+const stepBtn = document.getElementById('stepBtn');
+const dumpBtn = document.getElementById('dumpBtn');
 let ws;
 let isPaused = true;
 let simState = {};
+
 let cScale = 150;
 let dt = 1.0 / 200.0;
+let baseScale = 150;
+const viewScale = 0.5;
+const viewOffsetX = 0.0;
+const viewOffsetY = -0.5;
+
 function setupCanvas(){
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
-  cScale = canvas.height / 1.7;
+  baseScale = canvas.height / 1.7;
 }
 function toCanvas(x,y){
-  return {x: canvas.width/2 + x*cScale, y: canvas.height - y*cScale};
+  const scale = baseScale * viewScale;
+  return {
+    x: canvas.width/2 + (x - viewOffsetX)*scale,
+    y: canvas.height/2 - (y - viewOffsetY)*scale
+  };
 }
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -117,8 +130,9 @@ function render(){
     simState.balls.forEach(b=>{
       const p = toCanvas(b.x,b.y);
       ctx.fillStyle = b.mass < 0 ? '#777' : (b.color || '#ccc');
+      const scale = baseScale * viewScale;
       ctx.beginPath();
-      ctx.arc(p.x,p.y,b.radius*cScale,0,2*Math.PI);
+      ctx.arc(p.x,p.y,b.radius*scale,0,2*Math.PI);
       ctx.fill();
     });
   }
@@ -166,6 +180,12 @@ function loop(){
   if(!isPaused) step();
   requestAnimationFrame(loop);
 }
+stepBtn.onclick = () => {
+  if(isPaused) step();
+};
+dumpBtn.onclick = () => {
+  console.log(simState);
+};
 pauseBtn.onclick = () => {
   if(!ws) return;
   isPaused = !isPaused;
