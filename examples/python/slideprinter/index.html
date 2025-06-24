@@ -120,63 +120,216 @@ canvas {
     let speedSamples = [];
     const numSpeedSamples = 60;
     let frameCounter = 0;
+    const sag_multiplier = 0.3; // For catenary drawing
 
     function setupCanvas() {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         cScale = canvas.height / simHeight;
+        simWidth = canvas.width / cScale;
     }
 
-    function toCanvas(simX, simY) {
-        const scale = cScale * viewScale;
-        return {
-            x: canvas.width / 2 + (simX - viewOffsetX) * scale,
-            y: canvas.height / 2 - (simY - viewOffsetY) * scale
-        };
+    function toCanvasCoords(simX, simY) {
+        return { x: simX * cScale, y: canvas.height - (simY * cScale) };
+    }
+
+    function _drawCatenary(ctx, pA_sim, pB_sim, length, obstacles, sag_multiplier, toCanvasCoords, segments = 20) {
+        const dx = pB_sim.x - pA_sim.x;
+        const dy = pB_sim.y - pA_sim.y;
+        const D = Math.hypot(dx, dy);
+        if (D <= 1e-6) return;
+
+        // parabolic sag magnitude
+        const sag = Math.max(length - D, 0) * sag_multiplier;
+        const sagDir = { x: 0, y: -1 }; // default sag direction, normalized
+
+        ctx.beginPath();
+
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            // 1) ideal point along straight+parabola
+            const sagOff = sag * 4 * t * (1 - t);
+            let pt = {
+                x: pA_sim.x + dx * t + sagDir.x * sagOff,
+                y: pA_sim.y + dy * t + sagDir.y * sagOff
+            };
+
+            // 2) obstacle-avoidance
+            for (const obs of obstacles) {
+                const obs_pos = { x: obs.x, y: obs.y };
+                const v_x = pt.x - obs_pos.x;
+                const v_y = pt.y - obs_pos.y;
+                const d2 = v_x * v_x + v_y * v_y;
+                const r2 = obs.radius * obs.radius;
+
+                if (d2 < r2) {
+                    const d = Math.sqrt(d2);
+                    const push = obs.radius - d;
+                    if (d > 1e-9) {
+                        const pd_x = v_x / d;
+                        const pd_y = v_y / d;
+                        pt.x += pd_x * push;
+                        pt.y += pd_y * push;
+                    } else {
+                        // exactly at center -> force straight-down
+                        pt.x = obs_pos.x;
+                        pt.y = obs_pos.y - obs.radius;
+                    }
+                }
+            }
+
+            // 3) draw
+            const c_pt = toCanvasCoords(pt.x, pt.y);
+            if (i === 0) {
+                ctx.moveTo(c_pt.x, c_pt.y);
+            } else {
+                ctx.lineTo(c_pt.x, c_pt.y);
+            }
+        }
+
+        ctx.stroke();
     }
 
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const scale = cScale * viewScale;
 
-        if (simState.balls) {
-            simState.balls.forEach(b => {
-                const p = toCanvas(b.x, b.y);
-                ctx.fillStyle = b.mass < 0 ? '#777' : (b.color || '#ccc');
+        // Draw Balls
+        simState.balls.forEach(ball => {
+            ctx.fillStyle = '#a0a0a0';
+            const p = toCanvasCoords(ball.x, ball.y);
+            const r = ball.radius * cScale;
 
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                if (b.angle !== undefined) {
-                    ctx.rotate(-b.angle);
-                }
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            if (ball.angle !== undefined) {
+                ctx.rotate(-ball.angle);
+            }
 
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw orientation line
+            if (ball.angle !== undefined) {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.arc(0, 0, b.radius * scale, 0, 2 * Math.PI);
-                ctx.fill();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -r);
+                ctx.stroke();
+            }
+            ctx.restore();
+        });
 
-                if (b.angle !== undefined) {
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(0, -b.radius * scale);
-                    ctx.stroke();
-                }
-                ctx.restore();
-            });
-        }
+        // Draw Cables
         if (simState.cables) {
-            ctx.strokeStyle = '#00FFFF';
-            ctx.lineWidth = 2;
-            simState.cables.forEach(c => {
-                c.joints.forEach(j => {
-                    const pA = toCanvas(j.pA[0], j.pA[1]);
-                    const pB = toCanvas(j.pB[0], j.pB[1]);
+            const cableColorTaut = '#00FFFF'; // Cyan
+            const cableColorSlack = 'orange';
+
+
+            simState.cables.forEach(cable => {
+                ctx.lineWidth = 2.0;
+
+                // Draw joints (line segments)
+                cable.joints.forEach(joint => {
+                    const pA_sim = { x: joint.pA[0], y: joint.pA[1] };
+                    const pB_sim = { x: joint.pB[0], y: joint.pB[1] };
+                    const dist = Math.hypot(pB_sim.x - pA_sim.x, pB_sim.y - pA_sim.y);
+                    const isSlack = joint.restLength > dist + 1e-6;
+
+                    ctx.strokeStyle = isSlack ? cableColorSlack : cableColorTaut;
+
+                    if (isSlack) {
+                        _drawCatenary(ctx, pA_sim, pB_sim, joint.restLength, [], sag_multiplier, toCanvasCoords);
+                    } else {
+                        const pA_canvas = toCanvasCoords(pA_sim.x, pA_sim.y);
+                        const pB_canvas = toCanvasCoords(pB_sim.x, pB_sim.y);
+                        ctx.beginPath();
+                        ctx.moveTo(pA_canvas.x, pA_canvas.y);
+                        ctx.lineTo(pB_canvas.x, pB_canvas.y);
+                        ctx.stroke();
+                    }
+                });
+
+                // Draw arcs (for rolling contacts)
+                cable.arcs.forEach(arc => {
+                    const center = toCanvasCoords(arc.center[0], arc.center[1]);
+                    const radius = arc.radius * cScale;
+
+                    const p1_sim = {x: arc.p1[0], y: arc.p1[1]};
+                    const center_sim = {x: arc.center[0], y: arc.center[1]};
+                    const p2_sim = {x: arc.p2[0], y: arc.p2[1]};
+
+                    const a1 = Math.atan2(p1_sim.y - center_sim.y, p1_sim.x - center_sim.x);
+                    const a2 = Math.atan2(p2_sim.y - center_sim.y, p2_sim.x - center_sim.x);
+
+                    ctx.strokeStyle = arc.is_taut ? cableColorTaut : cableColorSlack;
+
                     ctx.beginPath();
-                    ctx.moveTo(pA.x, pA.y);
-                    ctx.lineTo(pB.x, pB.y);
+                    ctx.arc(
+                        center.x,
+                        center.y,
+                        radius,
+                        -a1, // negate for canvas' flipped y-axis
+                        -a2,
+                        arc.anticlockwise
+                    );
                     ctx.stroke();
                 });
+
+                // Draw Hybrid Links (markers and arcs)
+                if (cable.links) {
+                    cable.links.forEach(link => {
+                        if (link.type === 'hybrid-attachment') {
+                            if (link.attachmentPoint) {
+                                ctx.fillStyle = '#FF0000'; // Red
+                                const markerPos = toCanvasCoords(link.attachmentPoint[0], link.attachmentPoint[1]);
+                                ctx.beginPath();
+                                ctx.arc(markerPos.x, markerPos.y, 4, 0, 2 * Math.PI); // 4px radius marker
+                                ctx.fill();
+                            }
+                        } else if (link.type === 'hybrid') {
+                            if (link.center && link.radius > 1e-9) {
+                                const center_sim = { x: link.center[0], y: link.center[1] };
+                                const tangent_sim = { x: link.tangentPoint[0], y: link.tangentPoint[1] };
+
+                                const toTangent = { x: tangent_sim.x - center_sim.x, y: tangent_sim.y - center_sim.y };
+                                const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
+                                const deltaAngle = link.storedLength / link.radius;
+                                const endAngle = link.cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
+
+                                const center = toCanvasCoords(center_sim.x, center_sim.y);
+                                const radius = link.radius * cScale;
+                                const anticlockwise = !link.cw;
+
+                                // Draw the arc for the wrapped cable
+                                ctx.strokeStyle = link.is_taut ? cableColorTaut : cableColorSlack;
+                                ctx.beginPath();
+                                ctx.arc(
+                                    center.x,
+                                    center.y,
+                                    radius,
+                                    -tangentAngle, // start angle
+                                    -endAngle,     // end angle
+                                    anticlockwise
+                                );
+                                ctx.stroke();
+
+                                // Draw the red dot at the end of the stored arc
+                                const endOfArcPoint_sim = {
+                                    x: center_sim.x + link.radius * Math.cos(endAngle),
+                                    y: center_sim.y + link.radius * Math.sin(endAngle)
+                                };
+                                const markerPos = toCanvasCoords(endOfArcPoint_sim.x, endOfArcPoint_sim.y);
+                                ctx.fillStyle = '#FF0000'; // Red
+                                ctx.beginPath();
+                                ctx.arc(markerPos.x, markerPos.y, 4, 0, 2 * Math.PI); // 4px radius marker
+                                ctx.fill();
+                            }
+                        }
+                    });
+                }
             });
         }
     }
