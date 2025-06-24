@@ -1,27 +1,25 @@
-"""3D Warp visualization of the Slideprinter using this repo's PBD engine.
-
-This script previously used Warp's built in XPBD solver for both simulation and
-rendering.  It now mirrors :mod:`slideprinter_server`/``slideprinter.html`` and
-uses the Python PBD implementation from ``cable_joints.common_systems`` together with
-Warp only for rendering.  This makes it easier to compare the JavaScript and
-Python versions while still producing a nice USD animation.
-
-Run with ``python -m cable_joints_warp.slideprinter_warp``.  The generated
-``slideprinter.usd`` file can be opened in any USD viewer.  See
-``ai_docs/Warp/README.md`` for Warp installation instructions.
-"""
-
 import math
 from typing import List
+
+import sys
+from pathlib import Path
 
 import numpy as np
 import warp as wp
 import warp.sim
 import warp.sim.render
 
-from .ecs import (
+root_dir = Path(__file__).resolve().parents[3]
+src_python_path = root_dir / "src" / "python"
+if str(src_python_path) not in sys.path:
+    sys.path.insert(0, str(src_python_path))
+
+examples_python_path = root_dir / "examples" / "python"
+if str(examples_python_path) not in sys.path:
+    sys.path.insert(0, str(examples_python_path))
+
+from cable_joints.ecs import (
     World,
-    PauseStateComponent,
     PositionComponent,
     VelocityComponent,
     RadiusComponent,
@@ -32,28 +30,31 @@ from .ecs import (
     RenderableComponent,
     PrevFinalPosComponent,
     PrevFinalOrientationComponent,
-    BallTagComponent,
-    CableLinkComponent,
     RestitutionComponent,
     DistanceConstraintComponent,
 )
-from .cable_joints_components import (
+from cable_joints.cable_joints_components import (
+    CableLinkComponent,
     CableJointComponent,
     CablePathComponent,
     create_cable_path_component,
 )
-from .geometry import tangent_from_point_to_circle
-from .common_systems import (
+from cable_joints.geometry import tangent_from_point_to_circle
+from cable_joints.common_systems import (
     PrevFinalPosSystem,
     PrevFinalOrientationSystem,
     MovementSystem,
     AngularMovementSystem,
     XPBDDistanceConstraintSystem,
-    CableAttachmentUpdateSystem,
-    PBDCableConstraintSolver,
     PBDVelocityUpdateSystem,
     PBDAngularVelocityUpdateSystem,
+)
+from cable_joints.cable_attachment_update_system import CableAttachmentUpdateSystem
+from cable_joints.pbd_cable_constraint_solver import PBDCableConstraintSolver
+from flipper.flipper_common import (
+    PauseStateComponent,
     PBDBallBallCollisions,
+    BallTagComponent,
 )
 
 
@@ -268,7 +269,7 @@ class SlideprinterExample:
         # copy positions back to Warp state
         for idx, aid in enumerate(self.anchor_entities):
             pos = self.world.get_component(aid, PositionComponent).pos
-            self.state.particle_q[idx] = wp.vec3(*pos)
+            self.state.particle_q[idx] = wp.vec3(*pos) # This doesn't work
         base = len(self.anchor_entities)
         for i, sid in enumerate(self.spool_entities):
             pos = self.world.get_component(sid, PositionComponent).pos
@@ -290,7 +291,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "--stage_path", type=str, default="slideprinter.usd", help="USD output path"
+        "--stage_path", type=str, default="examples/usd_scenes/generated_slideprinter.usd", help="USD output path"
     )
     parser.add_argument(
         "--num_frames", type=int, default=240, help="Number of frames to simulate"

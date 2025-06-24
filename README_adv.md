@@ -56,15 +56,6 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
     6. (Optional) Run the Python-with-Warp-driven flipper demo on gpu:
       - Start server: `python -m examples.python.flipper.server --warp --device cuda:0`
       - Open `examples/python/flipper/index_warp.html` in a browser.
-    7. (Optional) `python examples/usd_scenes/slideprinter_usd_demo.py` demonstrates loading a USD scene via Warp.
-       Edit the script to parse either `slideprinter/slideprinter.usda` or the provided
-       `examples/usd_scenes/flipper_scene.usda` to experiment with different setups.
-    8. (Optional) `python examples/python_3d/hanging_pendulum.py` will generate a USD file showing a simple
-       3D pendulum simulated with Warp. The output can be viewed with any USD viewer.
-       See `ai_docs/Warp/README.md` for Warp installation details.
-    9. (Optional) `python examples/slideprinter/slideprinter_warp.py` will generate `slideprinter.usd`
-       demonstrating a basic Slideprinter setup rendered with Warp. The script
-       defaults to running on `cuda:0`; pass `--device cpu` to run on the CPU.
 
 
   ## 4. Core Library (`cable_joints_core.js`)
