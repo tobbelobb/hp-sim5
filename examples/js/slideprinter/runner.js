@@ -1,5 +1,5 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
-import { RenderSystem } from '../../flipper/renderSystem.js';
+import { RenderSystem } from '../flipper/renderSystem.js';
 import { InputSystem } from './slideprinter_common.js';
 
 

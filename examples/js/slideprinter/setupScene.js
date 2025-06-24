@@ -38,10 +38,12 @@ import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_syste
 import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
 import {
   PauseStateComponent,
-  BallTagComponent,
-} from '../../flipper/flipper_common.js';
-import { InputSystem } from './slideprinter_common.js';
-import { RenderSystem } from '../../flipper/renderSystem.js';
+} from '../flipper/flipper_common.js';
+import {
+  InputSystem,
+  SpoolTagComponent
+} from './slideprinter_common.js';
+import { RenderSystem } from '../flipper/renderSystem.js';
 import {
   PrevFinalPosSystem,
   PrevFinalOrientationSystem,
@@ -108,7 +110,7 @@ export function setupScene(world, stage, canvas) {
             const vel = new Vector2(velArr[0], velArr[1]);
             const angVel = angVelArr[2];
 
-            world.addComponent(ent, new BallTagComponent());
+            world.addComponent(ent, new SpoolTagComponent());
             world.addComponent(ent, new PositionComponent(pos.x, pos.y));
             world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
             world.addComponent(ent, new RadiusComponent(radius));
@@ -128,7 +130,7 @@ export function setupScene(world, stage, canvas) {
         } else if (tags.includes("Anchor")) {
             const ent = world.createEntity();
             const radius = 0.01;
-            world.addComponent(ent, new BallTagComponent());
+            world.addComponent(ent, new SpoolTagComponent());
             world.addComponent(ent, new PositionComponent(pos.x, pos.y));
             world.addComponent(ent, new VelocityComponent(0.0, 0.0));
             world.addComponent(ent, new RadiusComponent(radius));
@@ -167,7 +169,7 @@ export function setupScene(world, stage, canvas) {
             world.addComponent(joint, new CableJointComponent(
                 anchorEntity, spoolEntity, initialDist, local_attach_A, local_attach_B
             ));
-            world.addComponent(joint, new RenderableComponent('line', 'orange'));
+            world.addComponent(joint, new RenderableComponent('line', 'yellow'));
 
             const cable = world.createEntity();
             const cableComp = new CablePathComponent(
@@ -184,7 +186,7 @@ export function setupScene(world, stage, canvas) {
             const constraintEntity = world.createEntity();
             const restLength = world.getComponent(entityA, PositionComponent).pos.distanceTo(world.getComponent(entityB, PositionComponent).pos);
             world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, compliance));
-            world.addComponent(constraintEntity, new RenderableComponent('line', 'purple'));
+            world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
         };
         createDistanceConstraintEntity(spoolEntities[0], spoolEntities[1]);
         createDistanceConstraintEntity(spoolEntities[1], spoolEntities[2]);
@@ -206,13 +208,13 @@ export function setupScene(world, stage, canvas) {
       world.registerSystem(new MovementSystem());
       world.registerSystem(new AngularMovementSystem());
 
-      world.registerSystem(new XPBDDistanceConstraintSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new CableSlackSystem());
 
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
+      world.registerSystem(new XPBDDistanceConstraintSystem());
 
       world.registerSystem(new CableFrictionSystem());
 

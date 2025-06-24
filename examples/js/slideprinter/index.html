@@ -132,7 +132,7 @@ canvas {
     let world = new World();
 
     const base = import.meta.env.BASE_URL || '/';
-    const usdaPath = `${base}examples/usd_scenes/slideprinter_scene_copy_for_vite.usda.txt`;
+    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
 
     UsdOpen(usdaPath).then(stage => {
       if (!stage) {

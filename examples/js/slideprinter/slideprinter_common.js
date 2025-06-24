@@ -11,9 +11,8 @@ import {
     CableJointComponent,
     CablePathComponent,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
-import {
-    BallTagComponent
-} from '../../flipper/flipper_common.js';
+
+export class SpoolTagComponent {}
 
 // --- System: Input --- (Simplified Click Handling)
 export class InputSystem {
@@ -55,13 +54,13 @@ export class InputSystem {
 
      handlePointerDown(event) {
          event.preventDefault();
-        const rect = this.canvas.getBoundingClientRect();
-        const baseScale = this.canvas.height / this.world.getResource('simHeight');
-        const scale = baseScale * this.scaleMultiplier;
-        const pixelX = event.clientX - rect.left;
-        const pixelY = event.clientY - rect.top;
-        const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
-        const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+         const rect = this.canvas.getBoundingClientRect();
+         const baseScale = this.canvas.height / this.world.getResource('simHeight');
+         const scale = baseScale * this.scaleMultiplier;
+         const pixelX = event.clientX - rect.left;
+         const pixelY = event.clientY - rect.top;
+         const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+         const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
          const clickVec = new Vector2(simX, simY);
 
          const cmOnScreen = 0.5;
@@ -73,7 +72,7 @@ export class InputSystem {
 
          let closestBall = null;
          let closestDistSq = Infinity;
-         for (const b of this.world.query([BallTagComponent, PositionComponent, RadiusComponent])) {
+         for (const b of this.world.query([SpoolTagComponent, PositionComponent, RadiusComponent])) {
            const pos = this.world.getComponent(b, PositionComponent).pos;
            const r = this.world.getComponent(b, RadiusComponent).radius + extraClickableRadius;
            const distSq = clickVec.clone().subtract(pos).lengthSq();
