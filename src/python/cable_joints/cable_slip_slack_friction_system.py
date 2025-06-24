@@ -7,6 +7,14 @@ from .ecs import (
 from .cable_joints_components import CablePathComponent, CableJointComponent
 from .vector2 import normalize_inplace
 
+# Similar to CableFrictionSystem we want a fixed amount of work per second.
+# These constants reference `ai_docs/CableJoints/CableJoints.md` for the
+# friction model and `ai_docs/Smallsteps/Smallsteps.md` for maintaining a
+# constant compute budget as the timestep changes.
+
+BASE_ITERATIONS = 4
+TARGET_DT = 1.0 / 60.0
+
 def _slip_slack(world):
     path_entities = world.query([CablePathComponent])
     for path_id in path_entities:
@@ -159,9 +167,10 @@ class CableSlipSlackFrictionSystem:
         self.run_in_pause = False
 
     def update(self, world, dt):
-        # Iterate a few times to allow slack and tension to propagate
-        # along the entire cable path.
-        for _ in range(4):
+        # Scale iterations with dt so the overall cost per second stays
+        # approximately constant (see Smallsteps.md).
+        iterations = max(1, int(BASE_ITERATIONS * dt / TARGET_DT))
+        for _ in range(iterations):
             _slip_slack(world)
             _even_out_tension_friction(world)
         

@@ -2,6 +2,14 @@ import numpy as np
 
 from .cable_joints_components import CablePathComponent, CableJointComponent
 
+# Adjust the number of slack iterations so the cost per second remains
+# constant regardless of substep size.  See `ai_docs/CableJoints/CableJoints.md`
+# and `ai_docs/Smallsteps/Smallsteps.md` for details on the model and the
+# rationale behind scaling work with the timestep.
+
+BASE_ITERATIONS = 4
+TARGET_DT = 1.0 / 60.0
+
 def _slip_slack(world):
     path_entities = world.query([CablePathComponent])
     for path_id in path_entities:
@@ -43,6 +51,8 @@ class CableSlackSystem:
         self.run_in_pause = False
 
     def update(self, world, dt):
-        # Iterate a few times to allow slack to propagate along the entire cable path.
-        for _ in range(4):
+        # Scale iterations with dt so slack propagation work per second
+        # matches the target budget (see Smallsteps.md).
+        iterations = max(1, int(BASE_ITERATIONS * dt / TARGET_DT))
+        for _ in range(iterations):
             _slip_slack(world)
