@@ -97,6 +97,14 @@ canvas {
         <canvas id="myCanvas"></canvas>
     </div>
 <script type="module">
+    import {
+      getAttribute,
+      getChild,
+      getChildren,
+      getRelationship,
+      materialProperties
+    } from "../../../src/js/usd/stage.js";
+
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext("2d");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -199,6 +207,22 @@ canvas {
         const scale = cScale * viewScale;
         console.log(simState);
 
+        // Draw Distance Constraints
+        if (simState.distanceConstraints) {
+            ctx.save();
+            ctx.lineWidth = 4;
+            simState.distanceConstraints.forEach(dc => {
+                ctx.strokeStyle = dc.color;
+                const pA_canvas = toCanvas(dc.pA[0], dc.pA[1]);
+                const pB_canvas = toCanvas(dc.pB[0], dc.pB[1]);
+                ctx.beginPath();
+                ctx.moveTo(pA_canvas.x, pA_canvas.y);
+                ctx.lineTo(pB_canvas.x, pB_canvas.y);
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
         // Draw Balls
         if (simState.balls) {
             simState.balls.forEach(ball => {
@@ -228,23 +252,8 @@ canvas {
                 }
                 ctx.restore();
             });
+        }
 
-        // Draw Distance Constraints
-        if (simState.distanceConstraints) {
-            ctx.save();
-            ctx.lineWidth = 4;
-            simState.distanceConstraints.forEach(dc => {
-                ctx.strokeStyle = dc.color;
-                const pA_canvas = toCanvas(dc.pA[0], dc.pA[1]);
-                const pB_canvas = toCanvas(dc.pB[0], dc.pB[1]);
-                ctx.beginPath();
-                ctx.moveTo(pA_canvas.x, pA_canvas.y);
-                ctx.lineTo(pB_canvas.x, pB_canvas.y);
-                ctx.stroke();
-            });
-            ctx.restore();
-        }
-        }
 
         // Draw Cables
         if (simState.cables) {
