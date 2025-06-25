@@ -232,6 +232,7 @@ canvas {
 
         // Draw Cables
         if (simState.cables) {
+            const obstaclesForCatenary = simState.balls ? simState.balls.map(b => ({ x: b.x, y: b.y, radius: b.radius })) : [];
             const cableColorTaut = '#00FFFF'; // Cyan
             const cableColorSlack = 'orange';
 
@@ -249,7 +250,7 @@ canvas {
                         ctx.strokeStyle = isSlack ? cableColorSlack : cableColorTaut;
 
                         if (isSlack) {
-                            _drawCatenary(ctx, pA_sim, pB_sim, joint.restLength, [], sag_multiplier, toCanvas);
+                            _drawCatenary(ctx, pA_sim, pB_sim, joint.restLength, obstaclesForCatenary, sag_multiplier, toCanvas);
                         } else {
                             const pA_canvas = toCanvas(pA_sim.x, pA_sim.y);
                             const pB_canvas = toCanvas(pB_sim.x, pB_sim.y);
