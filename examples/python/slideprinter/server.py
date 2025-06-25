@@ -414,8 +414,11 @@ async def handler(websocket):
         if action == 'step':
             steps = data.get('steps', 1)
             dt = world.get_resource('dt')
+            old_paused = pause_state.paused
+            pause_state.paused = False
             for _ in range(steps):
                 world.update(dt)
+            pause_state.paused = old_paused
         elif action == 'reset':
             setup_scene(world)
         elif action == 'pause':

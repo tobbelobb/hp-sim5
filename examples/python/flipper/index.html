@@ -62,7 +62,7 @@ canvas {
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
-<script>
+<script type="module">
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext("2d");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -583,7 +583,8 @@ canvas {
     window.addEventListener('resize', setupCanvas);
 
     async function start() {
-        const usdaPath = '../../usd_scenes/flipper_scene_copy_for_vite.usda.txt';
+        const base = import.meta.env.BASE_URL || '/';
+        const usdaPath = `${base}examples/usd_scenes/flipper_scene_copy_for_vite.usda.txt`;
         try {
             const response = await fetch(usdaPath);
             if (!response.ok) {
