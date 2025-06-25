@@ -88,12 +88,14 @@ WATCHED_FILES = [
     python_dir / "pbd_cable_constraint_solver.py",
     python_dir / "geometry.py",
     python_dir / "cable_joints_components.py",
-    python_dir / "ball_obstacle_bump_system.py",
-    python_dir / "ball_border_or_flipper_velocity_contact_system.py",
     python_dir / "cable_attachment_cache_system.py",
     python_dir / "cable_slack_system.py",
     python_dir / "cable_friction_system.py",
     python_dir / "pbd_resolve_cable_over_corrections.py",
+    examples_python_path / "flipper" / "flipper_common.py",
+    examples_python_path / "flipper" / "ball_border_or_flipper_velocity_contact_system.py",
+    examples_python_path / "flipper" / "ball_obstacle_bump_system.py",
+
 ]
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):

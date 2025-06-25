@@ -44,14 +44,12 @@ from cable_joints.pbd_resolve_cable_over_corrections import PBDResolveCableOverC
 from cable_joints.cable_friction_system import CableFrictionSystem
 
 from flipper.flipper_common import (
-    PauseStateComponent, BallTagComponent,
+    PauseStateComponent
 )
 
-@dataclass
-class SpoolTagComponent:
-    """A tag component for entities that are spools."""
-    pass
-
+from slideprinter.slideprinter_common import (
+    SpoolTagComponent
+)
 
 # Files that trigger a server restart when modified
 python_dir = src_python_path / "cable_joints"
@@ -69,6 +67,7 @@ WATCHED_FILES = [
     python_dir / "cable_joints_components.py",
     python_dir / "geometry.py",
     examples_python_path / "flipper" / "flipper_common.py",
+    examples_python_path / "slideprinter" / "slideprinter_common.py",
 ]
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
@@ -236,7 +235,7 @@ def stage_to_world(world, stage):
             ang_vel = ang_vel_attr.Get()[2] if ang_vel_attr and ang_vel_attr.Get() is not None else 0.0
 
             world.add_component(ent, SpoolTagComponent())
-            world.add_component(ent, BallTagComponent()) # For serialization
+            world.add_component(ent, SpoolTagComponent()) # For serialization
             world.add_component(ent, PositionComponent(pos.copy()))
             world.add_component(ent, VelocityComponent(vel.copy()))
             world.add_component(ent, RadiusComponent(radius))
@@ -265,32 +264,51 @@ def stage_to_world(world, stage):
                 world.add_component(ent, CableLinkComponent())
             name_to_entity[prim.GetName()] = ent
 
-    # Cable joints and path
-    joint_prims = [p for p in scene_root.GetChildren() if p.GetTypeName() == 'CableJoint']
-    joint_entities = {}
-    for jp in joint_prims:
-        body0 = jp.GetRelationship("physics:body0").GetTargets()[0].name
-        body1 = jp.GetRelationship("physics:body1").GetTargets()[0].name
-        attach_a = np.array(jp.GetAttribute("localPos0").Get())
-        attach_b = np.array(jp.GetAttribute("localPos1").Get())
-        rest_len = jp.GetAttribute("restLength").Get()
-        ent = world.create_entity()
-        world.add_component(ent, CableJointComponent(name_to_entity[body0], name_to_entity[body1], rest_len, attach_a, attach_b))
-        joint_entities[jp.GetPath()] = ent
-
-    path_prims = [p for p in scene_root.GetChildren() if p.GetAttribute("apiSchemas").Get() and "CablePathAPI" in p.GetAttribute("apiSchemas").Get()]
-    for cable_path_prim in path_prims:
+    for cable_path_prim in [
+            p for p in scene_root.GetChildren()
+            if p.GetRelationship("cablePath:joints")
+    ]:
         joint_paths = cable_path_prim.GetRelationship("cablePath:joints").GetTargets()
-        ordered = [joint_entities[p] for p in joint_paths if p in joint_entities]
-        link_types = list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or [])
-        cw = list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or [])
-        stored = list(cable_path_prim.GetAttribute("cablePath:stored").Get() or [])
-        stiffness = cable_path_prim.GetAttribute("stiffness").Get()
-        if ordered:
-            cid = world.create_entity()
-            path_comp = create_cable_path_component(world, ordered, link_types, cw, stiffness, stored=stored)
-            world.add_component(cid, path_comp)
+        joint_entities = []
 
+        for jpath in joint_paths:
+            jp = stage.GetPrimAtPath(jpath)
+            if not jp:
+                continue
+
+            body0_targets = jp.GetRelationship("physics:body0").GetTargets()
+            body1_targets = jp.GetRelationship("physics:body1").GetTargets()
+            if not (body0_targets and body1_targets):
+                continue
+
+            body0_name = body0_targets[0].name
+            body1_name = body1_targets[0].name
+
+            ent = world.create_entity()
+            world.add_component(
+                ent,
+                CableJointComponent(
+                    name_to_entity[body0_name],
+                    name_to_entity[body1_name],
+                    float(jp.GetAttribute("restLength").Get()),
+                    np.array(jp.GetAttribute("localPos0").Get(), dtype=float),
+                    np.array(jp.GetAttribute("localPos1").Get(), dtype=float),
+                ),
+            )
+            joint_entities.append(ent)
+
+        if joint_entities:
+            world.add_component(
+                world.create_entity(),
+                create_cable_path_component(
+                    world,
+                    joint_entities,
+                    list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or []),
+                    list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or []),
+                    float(cable_path_prim.GetAttribute("stiffness").Get()),
+                    stored=list(cable_path_prim.GetAttribute("cablePath:stored").Get() or []),
+                ),
+            )
     return name_to_entity
 
 
@@ -346,7 +364,7 @@ def setup_scene(world: World):
 def world_to_json(world: World) -> str:
     state = {'balls': [], 'cables': [], 'isPaused': True}
 
-    for ball_id in world.query([BallTagComponent, PositionComponent, RadiusComponent]):
+    for ball_id in world.query([SpoolTagComponent, PositionComponent, RadiusComponent]):
         pos = world.get_component(ball_id, PositionComponent).pos
         radius = world.get_component(ball_id, RadiusComponent).radius
         mass = world.get_component(ball_id, MassComponent).mass

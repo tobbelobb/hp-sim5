@@ -94,14 +94,8 @@ export function setupScene(world, stage, canvas) {
             pathPrims.push(prim);
         }
 
-        // console.log(prim);
-        // console.log(prim.subType);
-        // console.log(prim.subType === 'def');
-        // console.log(prim.defType === 'CableJoint');
-        // Check for prim type to identify joints
         if (prim.type === 'definition' && prim.defType === 'CableJoint') {
             jointPrims.push(prim);
-            console.log(prim);
         }
 
         // Check for tags to identify bodies (Spools, Anchors)
