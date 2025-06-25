@@ -380,6 +380,19 @@ def world_to_json(world: World) -> str:
     if pause_comp:
         state['isPaused'] = pause_comp.paused
 
+    # Distance Constraints
+    for cid in world.query([DistanceConstraintComponent]):
+        constraint = world.get_component(cid, DistanceConstraintComponent)
+        posA = world.get_component(constraint.entityA, PositionComponent).pos
+        posB = world.get_component(constraint.entityB, PositionComponent).pos
+        renderComp = world.get_component(cid, RenderableComponent)
+        color = renderComp.color if renderComp else '#ffffff'
+        state.setdefault('distanceConstraints', []).append({
+            'pA': [posA[0], posA[1]],
+            'pB': [posB[0], posB[1]],
+            'color': color
+        })
+
     # Cables
     path_entities = world.query([CablePathComponent])
     for pid in path_entities:
