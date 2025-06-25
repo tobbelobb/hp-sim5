@@ -386,7 +386,7 @@ def world_to_json(world: World) -> str:
         path = world.get_component(pid, CablePathComponent)
         if not path.joint_entities:
             continue
-        cable_render = {'joints': []}
+        cable_render = {'joints': [], 'arcs': [], 'links': []}
         for jid in path.joint_entities:
             joint = world.get_component(jid, CableJointComponent)
             cable_render['joints'].append({
@@ -394,6 +394,71 @@ def world_to_json(world: World) -> str:
                 'pB': joint.attachment_point_b_world.tolist()[:2],
                 'restLength': joint.rest_length
             })
+        # Compute arcs and links for rendering
+        link_types = list(path.link_types)
+        cw = list(path.cw)
+        stored = list(path.stored or [])
+        # Rolling arcs
+        for i in range(1, len(link_types) - 1):
+            if link_types[i] == 'rolling':
+                j_prev = world.get_component(path.joint_entities[i - 1], CableJointComponent)
+                j_next = world.get_component(path.joint_entities[i], CableJointComponent)
+                center_id = j_prev.entity_b
+                center_comp = world.get_component(center_id, PositionComponent)
+                radius_comp = world.get_component(center_id, RadiusComponent)
+                if center_comp and radius_comp:
+                    p1 = j_prev.attachment_point_b_world.tolist()[:2]
+                    p2 = j_next.attachment_point_a_world.tolist()[:2]
+                    center = center_comp.pos.tolist()[:2]
+                    radius = radius_comp.radius
+                    anticlockwise = not cw[i]
+                    dist_prev = np.linalg.norm(j_prev.attachment_point_a_world - j_prev.attachment_point_b_world)
+                    dist_next = np.linalg.norm(j_next.attachment_point_a_world - j_next.attachment_point_b_world)
+                    is_taut = dist_prev > (j_prev.rest_length + 1e-6) and dist_next > (j_next.rest_length + 1e-6)
+                    cable_render['arcs'].append({
+                        'center': center,
+                        'radius': radius,
+                        'p1': p1,
+                        'p2': p2,
+                        'anticlockwise': anticlockwise,
+                        'is_taut': bool(is_taut)
+                    })
+        # Hybrid links and attachments
+        for idx, lt in enumerate(link_types):
+            link_data = {'type': lt}
+            if lt == 'hybrid-attachment':
+                ap = (world.get_component(path.joint_entities[0], CableJointComponent).attachment_point_a_world.tolist()[:2]
+                      if idx == 0 else
+                      world.get_component(path.joint_entities[-1], CableJointComponent).attachment_point_b_world.tolist()[:2])
+                link_data['attachmentPoint'] = ap
+            elif lt == 'hybrid':
+                if idx == 0:
+                    joint = world.get_component(path.joint_entities[0], CableJointComponent)
+                    roller_id = joint.entity_a
+                    attachment_point = joint.attachment_point_a_world
+                else:
+                    joint = world.get_component(path.joint_entities[-1], CableJointComponent)
+                    roller_id = joint.entity_b
+                    attachment_point = joint.attachment_point_b_world
+                center_comp = world.get_component(roller_id, PositionComponent)
+                radius_comp = world.get_component(roller_id, RadiusComponent)
+                if center_comp and radius_comp:
+                    center = center_comp.pos.tolist()[:2]
+                    radius = radius_comp.radius
+                    tangent = attachment_point.tolist()[:2]
+                    stored_len = stored[idx]
+                    cw_flag = cw[idx]
+                    dist = np.linalg.norm(joint.attachment_point_a_world - joint.attachment_point_b_world)
+                    is_taut = dist > (joint.rest_length + 1e-6)
+                    link_data.update({
+                        'center': center,
+                        'radius': radius,
+                        'tangentPoint': tangent,
+                        'storedLength': stored_len,
+                        'cw': cw_flag,
+                        'is_taut': bool(is_taut)
+                    })
+            cable_render['links'].append(link_data)
         state['cables'].append(cable_render)
 
     return json.dumps(state)
