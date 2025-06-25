@@ -223,6 +223,18 @@ canvas {
             ctx.restore();
         }
 
+        // Draw Anchors
+        if (simState.anchors) {
+            simState.anchors.forEach(a => {
+                ctx.fillStyle = a.color;
+                const p = toCanvas(a.x, a.y);
+                const r = a.radius * scale;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, r, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
         // Draw Balls
         if (simState.balls) {
             simState.balls.forEach(ball => {

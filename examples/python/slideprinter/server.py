@@ -376,6 +376,18 @@ def world_to_json(world: World) -> str:
             ball_data['angle'] = orientation_comp.angle
         state['balls'].append(ball_data)
 
+    # Anchors
+    for anchor_id in world.query([PositionComponent, RadiusComponent, MassComponent, RenderableComponent]):
+        mass = world.get_component(anchor_id, MassComponent).mass
+        if mass < 0:
+            pos = world.get_component(anchor_id, PositionComponent).pos
+            radius = world.get_component(anchor_id, RadiusComponent).radius
+            render_comp = world.get_component(anchor_id, RenderableComponent)
+            color = render_comp.color if render_comp else '#aaaaaa'
+            state.setdefault('anchors', []).append({
+                'x': pos[0], 'y': pos[1], 'radius': radius, 'color': color
+            })
+
     pause_comp = world.get_resource('pauseState')
     if pause_comp:
         state['isPaused'] = pause_comp.paused
