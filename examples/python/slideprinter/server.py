@@ -140,7 +140,7 @@ def create_distance_constraint(world, eA, eB, compliance=0.0):
     pos_b = world.get_component(eB, PositionComponent).pos
     rest = np.linalg.norm(pos_a - pos_b)
     world.add_component(constraint, DistanceConstraintComponent(eA, eB, rest, compliance))
-    world.add_component(constraint, RenderableComponent('line', 'purple'))
+    world.add_component(constraint, RenderableComponent('line', 'green'))
     return constraint
 
 
