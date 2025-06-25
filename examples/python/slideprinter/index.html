@@ -238,7 +238,7 @@ canvas {
         // Draw Balls
         if (simState.balls) {
             simState.balls.forEach(ball => {
-                ctx.fillStyle = '#a0a0a0';
+                ctx.fillStyle = ball.color;
                 const p = toCanvas(ball.x, ball.y);
                 const r = ball.radius * scale;
 
