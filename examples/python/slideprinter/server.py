@@ -217,7 +217,7 @@ def stage_to_world(world, stage):
 
     dt = 1.0 / stage.GetTimeCodesPerSecond()
     world.set_resource("dt", dt)
-    world.set_resource("pauseState", PauseStateComponent(True))
+    world.set_resource("pauseState", PauseStateComponent(False))
     world.set_resource("debugRenderPoints", {})
     world.set_resource("grabbedBall", None)
 
