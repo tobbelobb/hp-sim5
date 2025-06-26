@@ -29,7 +29,10 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
    - You might have to do `npm install` the first time?
    - Open for example http://localhost:5173/flipper.html in browser. Or:
  - Js based demos are also available at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/flipper), [tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads), [tobbelobb.github.io/hp-sim5/flipper_with_attached_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_attached_beads)
- - Slideprinter demo at examples/slideprinter/slideprinter.html
+ - Slideprinter demo at examples/slideprinter/slideprinter.html. When the
+   Python slideprinter server is running, executing
+   `python -m examples.python.slideprinter.move_commander` will move it using
+   simulated 3D printer firmware commands.
 
   ## 3. Python Port
   A complete Python port of the cable joints engine is available in the `src/python/cable_joints/` directory, mirroring the JavaScript implementation with equivalent ECS, geometry, and PBD systems.
