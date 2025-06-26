@@ -49,8 +49,7 @@ from flipper.flipper_common import (
 )
 from slideprinter.slideprinter_common import (
     SpoolTagComponent,
-    SpoolStateComponent,
-    SlideprinterMotionSystem
+    SpoolStateComponent
 )
 
 # Files that trigger a server restart when modified
@@ -76,21 +75,33 @@ WATCHED_FILES = [
 class RemoteSpoolSystem:
     def __init__(self):
         self.commands = []
+        self.axis_to_entity = {}
 
     def add_command(self, command):
         self.commands.append(command)
 
     def update(self, world, dt):
-        if not self.commands:
-          return
-        command = self.commands.pop(0)
-        print("got command:", command)
-        if command['type'] == 'G1':
+        if not self.axis_to_entity:
             spool_entities = world.query([SpoolTagComponent, SpoolStateComponent])
-            for i, axis in enumerate(['A', 'B', 'C']):
-                if axis in command and i < len(spool_entities):
-                    spool_state = world.get_component(spool_entities[i], SpoolStateComponent)
-                    spool_state.target_angle = command[axis]
+            for e in spool_entities:
+                state = world.get_component(e, SpoolStateComponent)
+                if state.axis:
+                    self.axis_to_entity[state.axis] = e
+
+        if not self.commands:
+            return
+        
+        command = self.commands.pop(0)
+        if command['type'] == 'G1':
+            for axis, entity_id in self.axis_to_entity.items():
+                if axis in command:
+                    target_angle = command[axis]
+                    orientation = world.get_component(entity_id, OrientationComponent)
+                    angular_vel = world.get_component(entity_id, AngularVelocityComponent)
+                    
+                    # Set velocity required to reach target angle in one time step.
+                    # The AngularMovementSystem will then perform the integration.
+                    angular_vel.angular_velocity = (target_angle - orientation.angle) / dt
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
     """Copy slideprinter.usda to the public dir for vite when it changes."""
@@ -252,7 +263,8 @@ def stage_to_world(world, stage):
             inertia = inertia_tensor[2][2]
 
             world.add_component(ent, SpoolTagComponent())
-            world.add_component(ent, SpoolStateComponent())
+            axis_name = prim.GetName()[-1] # Assumes names like 'SpoolA'
+            world.add_component(ent, SpoolStateComponent(axis=axis_name))
             world.add_component(ent, PositionComponent(pos.copy()))
             world.add_component(ent, VelocityComponent(np.zeros(3)))
             world.add_component(ent, RadiusComponent(radius))
@@ -348,7 +360,6 @@ def setup_scene(world: World):
         # 2. Handle user input and non-physics state changes
         # This is where we could animate spool movements for example
         world.register_system(RemoteSpoolSystem())
-        world.register_system(SlideprinterMotionSystem())
 
         # 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
         world.register_system(MovementSystem())
