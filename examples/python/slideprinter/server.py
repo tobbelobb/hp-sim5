@@ -1,5 +1,6 @@
 import asyncio
 import json
+import functools
 import os
 import sys
 from pathlib import Path
@@ -46,9 +47,10 @@ from cable_joints.cable_friction_system import CableFrictionSystem
 from flipper.flipper_common import (
     PauseStateComponent
 )
-
 from slideprinter.slideprinter_common import (
-    SpoolTagComponent
+    SpoolTagComponent,
+    SpoolStateComponent,
+    SlideprinterMotionSystem
 )
 
 # Files that trigger a server restart when modified
@@ -69,6 +71,26 @@ WATCHED_FILES = [
     examples_python_path / "flipper" / "flipper_common.py",
     examples_python_path / "slideprinter" / "slideprinter_common.py",
 ]
+
+# --- Server-Side Systems ---
+class RemoteSpoolSystem:
+    def __init__(self):
+        self.commands = []
+
+    def add_command(self, command):
+        self.commands.append(command)
+
+    def update(self, world, dt):
+        if not self.commands:
+        command = self.commands.pop(0)
+        if command['type'] == 'G1':
+            spool_entities = world.query([SpoolTagComponent, SpoolStateComponent])
+            for i, axis in enumerate(['A', 'B', 'C']):
+                if axis in command and i < len(spool_entities):
+                    spool_state = world.get_component(spool_entities[i], SpoolStateComponent)
+                    spool_state.target_angle = command[axis]
+                    if 'speed' in command:
+                        spool_state.speed = command['speed']
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
     """Copy slideprinter.usda to the public dir for vite when it changes."""
@@ -144,13 +166,12 @@ def create_distance_constraint(world, eA, eB, compliance=0.0):
     return constraint
 
 
-# --- Scene setup ---
+# --- Scene and World Setup ---
 
 def load_slideprinter_stage():
     """Load the slideprinter demo USD stage."""
     scene_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
     return Usd.Stage.Open(str(scene_path))
-
 
 def _material_properties(stage, prim):
     """Return (color_hex, friction, restitution) from a prim's bound material."""
@@ -182,7 +203,6 @@ def _material_properties(stage, prim):
         restitution = rest_attr.Get()
 
     return color, friction, restitution
-
 
 def stage_to_world(world, stage):
     """Populate *world* using entities described in *stage*."""
@@ -230,19 +250,16 @@ def stage_to_world(world, stage):
             mass = prim.GetAttribute("physics:mass").Get()
             inertia_tensor = prim.GetAttribute("physics:inertiaTensor").Get()
             inertia = inertia_tensor[2][2]
-            vel = np.array(prim.GetAttribute("physics:velocity").Get())
-            ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
-            ang_vel = ang_vel_attr.Get()[2] if ang_vel_attr and ang_vel_attr.Get() is not None else 0.0
 
             world.add_component(ent, SpoolTagComponent())
-            world.add_component(ent, SpoolTagComponent()) # For serialization
+            world.add_component(ent, SpoolStateComponent())
             world.add_component(ent, PositionComponent(pos.copy()))
-            world.add_component(ent, VelocityComponent(vel.copy()))
+            world.add_component(ent, VelocityComponent(np.zeros(3)))
             world.add_component(ent, RadiusComponent(radius))
             world.add_component(ent, MassComponent(mass))
             world.add_component(ent, RenderableComponent("circle", color or '#a0a0a0'))
             world.add_component(ent, OrientationComponent(0.0))
-            world.add_component(ent, AngularVelocityComponent(ang_vel))
+            world.add_component(ent, AngularVelocityComponent(0.0))
             world.add_component(ent, MomentOfInertiaComponent(inertia))
             world.add_component(ent, PrevFinalPosComponent(pos.copy()))
             world.add_component(ent, PrevFinalOrientationComponent(0.0))
@@ -311,7 +328,6 @@ def stage_to_world(world, stage):
             )
     return name_to_entity
 
-
 def setup_scene(world: World):
     stage = load_slideprinter_stage()
     name_to_entity = stage_to_world(world, stage)
@@ -331,6 +347,8 @@ def setup_scene(world: World):
 
         # 2. Handle user input and non-physics state changes
         # This is where we could animate spool movements for example
+        world.register_system(RemoteSpoolSystem())
+        world.register_system(SlideprinterMotionSystem())
 
         # 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
         world.register_system(MovementSystem())
@@ -490,10 +508,7 @@ def world_to_json(world: World) -> str:
 
 
 # --- WebSocket handler ---
-async def handler(websocket):
-    world = World()
-    setup_scene(world)
-
+async def handler(websocket, world, remote_spool_system):
     await websocket.send(world_to_json(world))
 
     async for message in websocket:
@@ -513,6 +528,8 @@ async def handler(websocket):
             setup_scene(world)
         elif action == 'pause':
             pause_state.paused = data['paused']
+        elif action == 'gcode':
+            remote_spool_system.add_command(data['command'])
 
         await websocket.send(world_to_json(world))
 
@@ -525,9 +542,14 @@ async def main():
     parser.add_argument("--port", type=int, default=8766, help="WebSocket port")
     args = parser.parse_args()
 
+    world = World()
+    setup_scene(world)
+    remote_spool_system = world.get_system(RemoteSpoolSystem)
+
     print(f"Starting Slideprinter server on ws://localhost:{args.port}")
 
-    async with websockets.serve(handler, "localhost", args.port):
+    serve_handler = functools.partial(handler, world=world, remote_spool_system=remote_spool_system)
+    async with websockets.serve(serve_handler, "localhost", args.port):
         asyncio.create_task(watch_and_restart(WATCHED_FILES))
         await asyncio.Future()  # run forever
 
