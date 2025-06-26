@@ -28,7 +28,7 @@ class MoveCommander:
                 return 1.0 / time_codes_per_second
         except Exception as e:
             print(f"Could not read dt from usd file: {e}")
-        
+
         print("Falling back to dt=1/200s")
         return 1.0 / 200.0
 
@@ -66,13 +66,13 @@ class MoveCommander:
                     for axis in ['A', 'B', 'C']:
                         if axis in command:
                             target_angles[axis] = command[axis]
-                    
+
                     if not target_angles:
                         continue
 
                     deltas = {axis: target_angles.get(axis, self.current_angles[axis]) - self.current_angles[axis] for axis in ['A', 'B', 'C']}
                     distance = np.linalg.norm([deltas[axis] for axis in target_angles.keys()])
-                    
+
                     # G-code speed is in units/minute. Assume radians.
                     speed_rad_per_min = command.get('speed', 60.0)
                     speed_rad_per_sec = speed_rad_per_min / 60.0
@@ -85,7 +85,7 @@ class MoveCommander:
 
                     if num_steps == 0:
                         continue
-                    
+
                     print(f"Executing G1 move: {target_angles} over {duration:.2f}s in {num_steps} steps.")
 
                     for i in range(1, num_steps + 1):
@@ -93,15 +93,18 @@ class MoveCommander:
                         interpolated_cmd = {'type': 'G1'}
                         for axis, target_val in target_angles.items():
                             interpolated_cmd[axis] = self.current_angles[axis] + deltas[axis] * t
-                        
+
                         await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
                         await asyncio.sleep(self.dt)
 
                     for axis, target_val in target_angles.items():
                         self.current_angles[axis] = target_val
-            
+
             print("All commands sent.")
 
 if __name__ == '__main__':
-    commander = MoveCommander('test_movements.gcode', "ws://localhost:8766")
+    from pathlib import Path
+    root_dir = Path(__file__).resolve().parents[3]
+
+    commander = MoveCommander(root_dir / "examples" / "python" / "slideprinter" / "test_movements.gcode", "ws://localhost:8766")
     asyncio.run(commander.send_commands())

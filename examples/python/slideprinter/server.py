@@ -90,18 +90,14 @@ class RemoteSpoolSystem:
 
         if not self.commands:
             return
-        
+
         command = self.commands.pop(0)
         if command['type'] == 'G1':
             for axis, entity_id in self.axis_to_entity.items():
                 if axis in command:
                     target_angle = command[axis]
                     orientation = world.get_component(entity_id, OrientationComponent)
-                    angular_vel = world.get_component(entity_id, AngularVelocityComponent)
-                    
-                    # Set velocity required to reach target angle in one time step.
-                    # The AngularMovementSystem will then perform the integration.
-                    angular_vel.angular_velocity = (target_angle - orientation.angle) / dt
+                    orientation.angle = target_angle
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
     """Copy slideprinter.usda to the public dir for vite when it changes."""
@@ -358,12 +354,12 @@ def setup_scene(world: World):
         world.register_system(PrevFinalOrientationSystem())
 
         # 2. Handle user input and non-physics state changes
-        # This is where we could animate spool movements for example
-        world.register_system(RemoteSpoolSystem())
 
         # 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
         world.register_system(MovementSystem())
         world.register_system(AngularMovementSystem())
+
+        world.register_system(RemoteSpoolSystem())
 
         # 4. Update derived geometry and cable state
         world.register_system(XPBDDistanceConstraintSystem())
