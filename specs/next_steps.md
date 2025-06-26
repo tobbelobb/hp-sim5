@@ -4,6 +4,12 @@ Implement the Slideprinter scenario with the existing 2D engine and host it.
 Use the current JavaScript/Python code to model a few spools and an end-effector in 2D.
 Once working, attempt to connect it to a firmware loop in a basic way
 
+
+ - Make `hp-sim-motor-mover <gcode file>`.
+   It reads a gcode file and sends commands to simulated slideprinter, along with which timesteps the movements should happen.
+   Extent examples/python/slideprinter/server.py WebSocket handler.
+
+
  - Stream G-code or step commands from Klipper to move the slideprinter in sim.
 
 This will require designing a control interface (perhaps a virtual serial port or a WebSocket that Klipper thinks is a machine).

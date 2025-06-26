@@ -205,7 +205,6 @@ canvas {
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const scale = cScale * viewScale;
-        console.log(simState);
 
         // Draw Distance Constraints
         if (simState.distanceConstraints) {

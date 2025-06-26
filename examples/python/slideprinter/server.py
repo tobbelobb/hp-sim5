@@ -82,15 +82,15 @@ class RemoteSpoolSystem:
 
     def update(self, world, dt):
         if not self.commands:
+          return
         command = self.commands.pop(0)
+        print("got command:", command)
         if command['type'] == 'G1':
             spool_entities = world.query([SpoolTagComponent, SpoolStateComponent])
             for i, axis in enumerate(['A', 'B', 'C']):
                 if axis in command and i < len(spool_entities):
                     spool_state = world.get_component(spool_entities[i], SpoolStateComponent)
                     spool_state.target_angle = command[axis]
-                    if 'speed' in command:
-                        spool_state.speed = command['speed']
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
     """Copy slideprinter.usda to the public dir for vite when it changes."""

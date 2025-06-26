@@ -160,9 +160,6 @@ class XPBDDistanceConstraintSystem:
             if denominator <= epsilon:
                 continue
 
-            # Note: `constraint.lambda` from JS is renamed to `constraint.lambda_val`
-            # to avoid conflict with Python's `lambda` keyword.
-            # The `DistanceConstraintComponent` dataclass should reflect this.
             delta_lambda = (-C - alpha_tilde * constraint.lambda_val) / denominator
             constraint.lambda_val += delta_lambda
 
