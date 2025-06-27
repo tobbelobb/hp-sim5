@@ -9,6 +9,15 @@ import numpy as np
 from .kinematics import pos_to_motor_pos_samples
 from .guessed_data import guessed_anchors
 
+async def _recv_and_discard(websocket):
+    """Drain messages from the websocket connection to prevent it from blocking."""
+    try:
+        async for _ in websocket:
+            pass
+    except websockets.exceptions.ConnectionClosed:
+        # The connection was closed, which is expected when the sender is done.
+        pass
+
 class MoveCommander:
     def __init__(self, gcode_file, uri):
         self.gcode_file = gcode_file
@@ -65,77 +74,85 @@ class MoveCommander:
         print(f"Connecting to {self.uri}")
         async with websockets.connect(self.uri) as websocket:
             print("Connection established. Sending commands...")
-            for command in self.commands:
-                if command['type'] == 'G1':
-                    target_pos_mm = self.current_pos_mm.copy()
-                    has_move = False
-                    for axis in ['X', 'Y', 'Z']:
-                        if axis in command:
-                            # G-code is in mm, kinematics uses meters
-                            target_pos_mm[axis] = command[axis]
-                            has_move = True
+            
+            recv_task = asyncio.create_task(_recv_and_discard(websocket))
 
-                    if not has_move:
-                        continue
+            try:
+                for command in self.commands:
+                    if command['type'] == 'G1':
+                        target_pos_mm = self.current_pos_mm.copy()
+                        has_move = False
+                        for axis in ['X', 'Y', 'Z']:
+                            if axis in command:
+                                # G-code is in mm, kinematics uses meters
+                                target_pos_mm[axis] = command[axis]
+                                has_move = True
 
-                    pos_mm = np.array([[target_pos_mm['X'], target_pos_mm['Y'], target_pos_mm['Z']]])
-                    low_axis_max_force = 20.0
-                    use_flex = False
-                    spool_buildup_factor = 0.0
+                        if not has_move:
+                            continue
 
-                    motor_positions_deg = pos_to_motor_pos_samples(
-                        self.anchors_mm,
-                        pos_mm,
-                        low_axis_max_force,
-                        use_flex,
-                        spool_buildup_factor=spool_buildup_factor,
-                    )
+                        pos_mm = np.array([[target_pos_mm['X'], target_pos_mm['Y'], target_pos_mm['Z']]])
+                        low_axis_max_force = 20.0
+                        use_flex = False
+                        spool_buildup_factor = 0.0
 
-                    target_angles_rad = motor_positions_deg[0]*(np.pi/180.0)
+                        motor_positions_deg = pos_to_motor_pos_samples(
+                            self.anchors_mm,
+                            pos_mm,
+                            low_axis_max_force,
+                            use_flex,
+                            spool_buildup_factor=spool_buildup_factor,
+                        )
 
-                    print(self.current_pos_mm)
-                    print(target_pos_mm)
-                    axesXYZ = ['X', 'Y', 'Z']
-                    distance_mm = np.linalg.norm(
-                        np.array([self.current_pos_mm[axis] for axis in axesXYZ]) -
-                        np.array([target_pos_mm[axis] for axis in axesXYZ])
-                    )
-                    print(distance_mm)
+                        target_angles_rad = motor_positions_deg[0]*(np.pi/180.0)
 
-                    # G-code speed is in mm/min. Convert to m/s.
-                    speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
-                    speed_mm_per_s = speed_mm_per_min / 60.0
+                        print(self.current_pos_mm)
+                        print(target_pos_mm)
+                        axesXYZ = ['X', 'Y', 'Z']
+                        distance_mm = np.linalg.norm(
+                            np.array([self.current_pos_mm[axis] for axis in axesXYZ]) -
+                            np.array([target_pos_mm[axis] for axis in axesXYZ])
+                        )
+                        print(distance_mm)
 
-                    if distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
-                        self.current_pos_mm = target_pos_mm
+                        # G-code speed is in mm/min. Convert to m/s.
+                        speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
+                        speed_mm_per_s = speed_mm_per_min / 60.0
+
+                        if distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
+                            self.current_pos_mm = target_pos_mm
+                            self.current_angles_rad = target_angles_rad
+                            continue
+
+                        duration_s = distance_mm / speed_mm_per_s
+                        num_steps = math.ceil(duration_s / self.dt)
+
+                        if num_steps == 0:
+                            self.current_pos_mm = target_pos_mm
+                            self.current_angles_rad = target_angles_rad
+                            continue
+
+                        print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} steps.")
+
+                        deltas_rad = target_angles_rad - self.current_angles_rad
+                        axesABC = ['A', 'B', 'C']
+                        for i in range(1, num_steps + 1):
+                            t = i / num_steps
+                            interpolated_cmd = {'type': 'G1'}
+                            for idx, axis in enumerate(axesABC):
+                                interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
+
+                            await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
+                            await asyncio.sleep(self.dt)
+
                         self.current_angles_rad = target_angles_rad
-                        continue
-
-                    duration_s = distance_mm / speed_mm_per_s
-                    num_steps = math.ceil(duration_s / self.dt)
-
-                    if num_steps == 0:
                         self.current_pos_mm = target_pos_mm
-                        self.current_angles_rad = target_angles_rad
-                        continue
 
-                    print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} steps.")
-
-                    deltas_rad = target_angles_rad - self.current_angles_rad
-                    axesABC = ['A', 'B', 'C']
-                    for i in range(1, num_steps + 1):
-                        t = i / num_steps
-                        interpolated_cmd = {'type': 'G1'}
-                        for idx, axis in enumerate(axesABC):
-                            interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
-
-                        await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
-                        await asyncio.sleep(self.dt)
-
-                    self.current_angles_rad = target_angles_rad
-                    self.current_pos_mm = target_pos_mm
-
-            print("All commands sent.")
+                print("All commands sent.")
+            finally:
+                recv_task.cancel()
+                # Wait for the task to acknowledge cancellation
+                await asyncio.gather(recv_task, return_exceptions=True)
 
 if __name__ == '__main__':
     from pathlib import Path
