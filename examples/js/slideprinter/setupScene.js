@@ -163,14 +163,14 @@ export function setupScene(world, stage, canvas) {
         const body0PathRel = getRelationship(prim, "physics:body0");
         const body1PathRel = getRelationship(prim, "physics:body1");
 
-        if (!body0PathRel || !body1PathRel || body0PathRel.length === 0 || body1PathRel.length === 0) {
+        if (body0PathRel == null || body1PathRel == null || body0PathRel.length === 0 || body1PathRel.length === 0) {
             continue;
         }
 
         const body0Name = body0PathRel[0].split('/').pop();
         const body1Name = body1PathRel[0].split('/').pop();
 
-        if (!nameToEntityId[body0Name] || !nameToEntityId[body1Name]) {
+        if (nameToEntityId[body0Name] == null || nameToEntityId[body1Name] == null) {
             continue;
         }
 

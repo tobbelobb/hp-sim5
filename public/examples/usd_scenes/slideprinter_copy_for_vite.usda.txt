@@ -23,9 +23,9 @@ def Xform "World"
             double3 xformOp:translate = (0.0, -0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.005
-            float3 physics:angularVelocity = (0, 0, 5.0)
+            float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
-            vector3f physics:velocity = (1.0, 0.0, 0.0)
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
         def Xform "AnchorA" ()
@@ -48,9 +48,9 @@ def Xform "World"
             double3 xformOp:translate = (0.08660254, 0.05, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.005
-            float3 physics:angularVelocity = (0, 0, 5.0)
+            float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
-            vector3f physics:velocity = (-0.7071, 0.7071, 0.0)
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
         def Xform "AnchorB" ()
@@ -73,7 +73,7 @@ def Xform "World"
             double3 xformOp:translate = (-0.08660254, 0.05, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.005
-            float3 physics:angularVelocity = (0, 0, 5.0)
+            float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
@@ -84,6 +84,36 @@ def Xform "World"
             double3 xformOp:translate = (-1.776, 1.025, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def DistancePhysicsJoint "DistanceJointAB"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolA>
+            rel physics:body1 = </World/SlideprinterScene/SpoolB>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.173205
+            float physics:maxDistance = 0.173205
+        }
+
+        def DistancePhysicsJoint "DistanceJointBC"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolB>
+            rel physics:body1 = </World/SlideprinterScene/SpoolC>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.173205
+            float physics:maxDistance = 0.173205
+        }
+
+        def DistancePhysicsJoint "DistanceJointCA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolC>
+            rel physics:body1 = </World/SlideprinterScene/SpoolA>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.173205
+            float physics:maxDistance = 0.173205
         }
 
         def CableJoint "JointA"
