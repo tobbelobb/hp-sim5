@@ -81,6 +81,7 @@ class RemoteSpoolSystem:
         self.commands.append(command)
 
     def update(self, world, dt):
+        # Cache axis-to-entity mapping if not already done
         if not self.axis_to_entity:
             spool_entities = world.query([SpoolTagComponent, SpoolStateComponent])
             for e in spool_entities:
@@ -88,17 +89,18 @@ class RemoteSpoolSystem:
                 if state.axis:
                     self.axis_to_entity[state.axis] = e
 
-        if not self.commands:
-            return
+        # Default to no command
+        command = self.commands.pop(0) if self.commands else None
 
-        command = self.commands.pop(0)
-        if command['type'] == 'G1':
-            for axis, entity_id in self.axis_to_entity.items():
-                if axis in command:
-                    target_angle = command[axis]
-                    orientation = world.get_component(entity_id, OrientationComponent)
-                    angular_velocity = world.get_component(entity_id, AngularVelocityComponent)
-                    angular_velocity.angular_velocity = (target_angle - orientation.angle)/dt
+        for axis, entity_id in self.axis_to_entity.items():
+            orientation = world.get_component(entity_id, OrientationComponent)
+            angular_velocity = world.get_component(entity_id, AngularVelocityComponent)
+
+            if command and command['type'] == 'G1' and axis in command:
+                target_angle = command[axis]
+                angular_velocity.angular_velocity = (target_angle - orientation.angle) / dt
+            else:
+                angular_velocity.angular_velocity = 0.0
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
     """Copy slideprinter.usda to the public dir for vite when it changes."""
