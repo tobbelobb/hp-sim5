@@ -1,5 +1,22 @@
-from flex_distance import *
-from guessed_data.py import *
+from .flex_distance import *
+from .guessed_data import *
+import numpy as np
+
+
+def distance_samples_relative_to_origin(anchors, pos):
+    """
+    Calculates the change in line length to each anchor from origin to pos.
+    """
+    # The origin is implicitly at [0,0,0] in this calculation
+    pos_w_origin = np.r_[[[0.0, 0.0, 0.0]], pos]
+    anch_to_pos = anchors - pos_w_origin[:, np.newaxis, :]
+    distances = np.linalg.norm(anch_to_pos, axis=2)
+    # distances is shape (num_positions, num_anchors)
+    # where num_positions is len(pos) + 1
+    # distances[0] is distances to origin
+    # distances[1:] is distances to points in pos
+    return distances[1:] - distances[0]
+
 
 def pos_to_motor_pos_samples(
     anchors,
@@ -30,7 +47,6 @@ def pos_to_motor_pos_samples(
     # we now want to use degrees instead of steps as unit of rotation
     # so setting 360 where steps per motor rotation is in firmware buildup compensation algorithms
     degrees_per_unit_times_r = (spool_to_motor_gearing_factor * mech_adv_ * 360.0) / (2.0 * np.pi)
-    k0 = 2.0 * degrees_per_unit_times_r / k2
 
     relative_line_lengths = distance_samples_relative_to_origin(anchors, pos)
     if use_flex:
@@ -43,6 +59,12 @@ def pos_to_motor_pos_samples(
             springKPerUnitLength,
             mover_weight,
         )
-    motor_positions = k0 * (np.sqrt(abs(spool_r_in_origin_sq + relative_line_lengths * k2)) - spool_r_in_origin)
+
+    if (k2 > 1e-9).all():
+        k0 = 2.0 * degrees_per_unit_times_r / k2
+        motor_positions = k0 * (np.sqrt(abs(spool_r_in_origin_sq + relative_line_lengths * k2)) - spool_r_in_origin)
+    else:
+        # Simplified kinematics without spool buildup (linear relationship)
+        motor_positions = (degrees_per_unit_times_r / spool_r_in_origin) * relative_line_lengths
 
     return motor_positions

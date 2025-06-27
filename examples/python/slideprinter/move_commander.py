@@ -74,7 +74,7 @@ class MoveCommander:
         print(f"Connecting to {self.uri}")
         async with websockets.connect(self.uri) as websocket:
             print("Connection established. Sending commands...")
-            
+
             recv_task = asyncio.create_task(_recv_and_discard(websocket))
 
             try:
@@ -106,14 +106,11 @@ class MoveCommander:
 
                         target_angles_rad = motor_positions_deg[0]*(np.pi/180.0)
 
-                        print(self.current_pos_mm)
-                        print(target_pos_mm)
                         axesXYZ = ['X', 'Y', 'Z']
                         distance_mm = np.linalg.norm(
                             np.array([self.current_pos_mm[axis] for axis in axesXYZ]) -
                             np.array([target_pos_mm[axis] for axis in axesXYZ])
                         )
-                        print(distance_mm)
 
                         # G-code speed is in mm/min. Convert to m/s.
                         speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
