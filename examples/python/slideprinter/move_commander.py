@@ -6,7 +6,8 @@ from pathlib import Path
 import math
 import numpy as np
 
-from kinematics import pos_to_motor_pos_samples
+from .kinematics import pos_to_motor_pos_samples
+from .guessed_data import guessed_anchors
 
 class MoveCommander:
     def __init__(self, gcode_file, uri):
@@ -14,7 +15,9 @@ class MoveCommander:
         self.uri = uri
         self.commands = self._parse_gcode()
         self.dt = self._get_dt()
-        self.current_angles = {'A': 0.0, 'B': 0.0, 'C': 0.0}
+        self.current_angles_rad = np.array([0.0, 0.0, 0.0])
+        self.anchors_mm = guessed_anchors
+        self.current_pos_mm = {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
 
     def _get_dt(self):
         try:
@@ -49,11 +52,11 @@ class MoveCommander:
         command = {'type': 'G1'}
         for part in parts:
             if part.startswith('X'):
-                command['A'] = float(part[1:])
+                command['X'] = float(part[1:])
             elif part.startswith('Y'):
-                command['B'] = float(part[1:])
+                command['Y'] = float(part[1:])
             elif part.startswith('Z'):
-                command['C'] = float(part[1:])
+                command['Z'] = float(part[1:])
             elif part.startswith('F'):
                 command['speed'] = float(part[1:])
         return command
@@ -64,43 +67,73 @@ class MoveCommander:
             print("Connection established. Sending commands...")
             for command in self.commands:
                 if command['type'] == 'G1':
-                    target_angles = {}
-                    for axis in ['A', 'B', 'C']:
+                    target_pos_mm = self.current_pos_mm.copy()
+                    has_move = False
+                    for axis in ['X', 'Y', 'Z']:
                         if axis in command:
-                            target_angles[axis] = command[axis]
+                            # G-code is in mm, kinematics uses meters
+                            target_pos_mm[axis] = command[axis]
+                            has_move = True
 
-                    if not target_angles:
+                    if not has_move:
                         continue
 
-                    deltas = {axis: target_angles.get(axis, self.current_angles[axis]) - self.current_angles[axis] for axis in ['A', 'B', 'C']}
-                    distance = np.linalg.norm([deltas[axis] for axis in target_angles.keys()])
+                    pos_mm = np.array([[target_pos_mm['X'], target_pos_mm['Y'], target_pos_mm['Z']]])
+                    low_axis_max_force = 20.0
+                    use_flex = False
+                    spool_buildup_factor = 0.0
 
-                    # G-code speed is in units/minute. Assume radians.
-                    speed_rad_per_min = command.get('speed', 60.0)
-                    speed_rad_per_sec = speed_rad_per_min / 60.0
+                    motor_positions_deg = pos_to_motor_pos_samples(
+                        self.anchors_mm,
+                        pos_mm,
+                        low_axis_max_force,
+                        use_flex,
+                        spool_buildup_factor=spool_buildup_factor,
+                    )
 
-                    if distance < 1e-6 or speed_rad_per_sec < 1e-6:
+                    target_angles_rad = motor_positions_deg[0]*(np.pi/180.0)
+
+                    print(self.current_pos_mm)
+                    print(target_pos_mm)
+                    axesXYZ = ['X', 'Y', 'Z']
+                    distance_mm = np.linalg.norm(
+                        np.array([self.current_pos_mm[axis] for axis in axesXYZ]) -
+                        np.array([target_pos_mm[axis] for axis in axesXYZ])
+                    )
+                    print(distance_mm)
+
+                    # G-code speed is in mm/min. Convert to m/s.
+                    speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
+                    speed_mm_per_s = speed_mm_per_min / 60.0
+
+                    if distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
+                        self.current_pos_mm = target_pos_mm
+                        self.current_angles_rad = target_angles_rad
                         continue
 
-                    duration = distance / speed_rad_per_sec
-                    num_steps = math.ceil(duration / self.dt)
+                    duration_s = distance_mm / speed_mm_per_s
+                    num_steps = math.ceil(duration_s / self.dt)
 
                     if num_steps == 0:
+                        self.current_pos_mm = target_pos_mm
+                        self.current_angles_rad = target_angles_rad
                         continue
 
-                    print(f"Executing G1 move: {target_angles} over {duration:.2f}s in {num_steps} steps.")
+                    print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} steps.")
 
+                    deltas_rad = target_angles_rad - self.current_angles_rad
+                    axesABC = ['A', 'B', 'C']
                     for i in range(1, num_steps + 1):
                         t = i / num_steps
                         interpolated_cmd = {'type': 'G1'}
-                        for axis, target_val in target_angles.items():
-                            interpolated_cmd[axis] = self.current_angles[axis] + deltas[axis] * t
+                        for idx, axis in enumerate(axesABC):
+                            interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
 
                         await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
                         await asyncio.sleep(self.dt)
 
-                    for axis, target_val in target_angles.items():
-                        self.current_angles[axis] = target_val
+                    self.current_angles_rad = target_angles_rad
+                    self.current_pos_mm = target_pos_mm
 
             print("All commands sent.")
 
