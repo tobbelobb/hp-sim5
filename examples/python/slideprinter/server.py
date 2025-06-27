@@ -161,18 +161,6 @@ async def watch_and_restart(files, interval=1.0):
                 mtimes[f] = 0
 
 
-# --- Helper entity creation ---
-
-def create_distance_constraint(world, eA, eB, compliance=0.0):
-    constraint = world.create_entity()
-    pos_a = world.get_component(eA, PositionComponent).pos
-    pos_b = world.get_component(eB, PositionComponent).pos
-    rest = np.linalg.norm(pos_a - pos_b)
-    world.add_component(constraint, DistanceConstraintComponent(eA, eB, rest, compliance))
-    world.add_component(constraint, RenderableComponent('line', 'green'))
-    return constraint
-
-
 # --- Scene and World Setup ---
 
 def load_slideprinter_stage():
@@ -289,6 +277,41 @@ def stage_to_world(world, stage):
                 world.add_component(ent, CableLinkComponent())
             name_to_entity[prim.GetName()] = ent
 
+    # Process distance joints
+    for prim in scene_root.GetChildren():
+        if prim.GetTypeName() == 'DistancePhysicsJoint':
+            body0_rel = prim.GetRelationship("physics:body0")
+            body1_rel = prim.GetRelationship("physics:body1")
+
+            if not (body0_rel.GetTargets() and body1_rel.GetTargets()):
+                continue
+
+            body0_path = body0_rel.GetTargets()[0]
+            body1_path = body1_rel.GetTargets()[0]
+
+            body0_name = body0_path.name
+            body1_name = body1_path.name
+
+            if body0_name not in name_to_entity or body1_name not in name_to_entity:
+                continue
+
+            entityA = name_to_entity[body0_name]
+            entityB = name_to_entity[body1_name]
+
+            min_dist_attr = prim.GetAttribute("physics:minDistance")
+            max_dist_attr = prim.GetAttribute("physics:maxDistance")
+
+            if min_dist_attr.Get() is not None and max_dist_attr.Get() is not None:
+                min_dist = min_dist_attr.Get()
+                max_dist = max_dist_attr.Get()
+
+                if abs(min_dist - max_dist) < 1e-6:  # It's a fixed distance constraint
+                    rest_length = (min_dist + max_dist) / 2.0
+
+                    constraint_entity = world.create_entity()
+                    world.add_component(constraint_entity, DistanceConstraintComponent(entityA, entityB, rest_length, 0.0))
+                    world.add_component(constraint_entity, RenderableComponent('line', 'green'))
+
     for cable_path_prim in [
             p for p in scene_root.GetChildren()
             if p.GetRelationship("cablePath:joints")
@@ -338,15 +361,7 @@ def stage_to_world(world, stage):
 
 def setup_scene(world: World):
     stage = load_slideprinter_stage()
-    name_to_entity = stage_to_world(world, stage)
-
-    spool_names = sorted([name for name, entity_id in name_to_entity.items() if world.has_component(entity_id, SpoolTagComponent)])
-
-    if len(spool_names) == 3:
-        spool_entities = [name_to_entity[name] for name in spool_names]
-        create_distance_constraint(world, spool_entities[0], spool_entities[1])
-        create_distance_constraint(world, spool_entities[1], spool_entities[2])
-        create_distance_constraint(world, spool_entities[2], spool_entities[0])
+    stage_to_world(world, stage)
 
     if not world.systems:
         # 1. Cache state from previous step
