@@ -6,6 +6,8 @@ from pathlib import Path
 import math
 import numpy as np
 
+from kinematics import pos_to_motor_pos_samples
+
 class MoveCommander:
     def __init__(self, gcode_file, uri):
         self.gcode_file = gcode_file
