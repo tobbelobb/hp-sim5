@@ -85,6 +85,7 @@ export function setupScene(world, stage, canvas) {
     const nameToEntityId = {};
     const jointPrims = [];
     const pathPrims = [];
+    const distanceJointPrims = [];
 
     // Discover prims and create body entities in a single pass
     for (const prim of getChildren(sceneRoot)) {
@@ -96,6 +97,10 @@ export function setupScene(world, stage, canvas) {
 
         if (prim.type === 'definition' && prim.defType === 'CableJoint') {
             jointPrims.push(prim);
+        }
+
+        if (prim.type === 'definition' && prim.defType === 'DistancePhysicsJoint') {
+            distanceJointPrims.push(prim);
         }
 
         // Check for tags to identify bodies (Spools, Anchors)
@@ -153,6 +158,38 @@ export function setupScene(world, stage, canvas) {
         }
     }
 
+    // Process discovered DistancePhysicsJoints
+    for (const prim of distanceJointPrims) {
+        const body0PathRel = getRelationship(prim, "physics:body0");
+        const body1PathRel = getRelationship(prim, "physics:body1");
+
+        if (!body0PathRel || !body1PathRel || body0PathRel.length === 0 || body1PathRel.length === 0) {
+            continue;
+        }
+
+        const body0Name = body0PathRel[0].split('/').pop();
+        const body1Name = body1PathRel[0].split('/').pop();
+
+        if (!nameToEntityId[body0Name] || !nameToEntityId[body1Name]) {
+            continue;
+        }
+
+        const entityA = nameToEntityId[body0Name];
+        const entityB = nameToEntityId[body1Name];
+
+        const minDistance = getAttribute(prim, "physics:minDistance");
+        const maxDistance = getAttribute(prim, "physics:maxDistance");
+
+        if (minDistance !== null && maxDistance !== null) {
+            if (Math.abs(minDistance - maxDistance) < 1e-6) {
+                const restLength = (minDistance + maxDistance) / 2.0;
+                const constraintEntity = world.createEntity();
+                world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
+                world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
+            }
+        }
+    }
+
     // Process discovered CableJoints
     const jointEntityMap = {};
     for (const prim of jointPrims) {
@@ -201,22 +238,6 @@ export function setupScene(world, stage, canvas) {
           stored ? [...stored] : null
         );
         world.addComponent(cablePath, pathComp);
-    }
-
-    const spoolNames = Object.keys(nameToEntityId)
-        .filter(name => world.hasComponent(nameToEntityId[name], SpoolTagComponent))
-        .sort();
-    const spoolEntities = spoolNames.map(name => nameToEntityId[name]);
-    if (spoolEntities.length === 3) {
-        const createDistanceConstraintEntity = (entityA, entityB, compliance = 0.0) => {
-            const constraintEntity = world.createEntity();
-            const restLength = world.getComponent(entityA, PositionComponent).pos.distanceTo(world.getComponent(entityB, PositionComponent).pos);
-            world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, compliance));
-            world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
-        };
-        createDistanceConstraintEntity(spoolEntities[0], spoolEntities[1]);
-        createDistanceConstraintEntity(spoolEntities[1], spoolEntities[2]);
-        createDistanceConstraintEntity(spoolEntities[2], spoolEntities[0]);
     }
 
     if (world.systems.length === 0) {
