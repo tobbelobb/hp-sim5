@@ -38,9 +38,9 @@ class SpoolStateComponent:
 class StepperMotorComponent:
     """Holds the state and physical properties of a stepper motor."""
     commanded_angle: float = 0.0
-    holding_torque: float = 0.5  # Nm
+    holding_torque: float = 0.5  # Nm. Within the typical range for Nema 17 motors
     num_pole_pairs: int = 50     # For a 1.8 deg/step motor
-    damping_coeff: float = 0.2   # Gotten by trial and error. For stepper inertia 2.25e-04
+    damping_coeff: float = 0.01   # Gotten by trial and error. For stepper inertia 5e-05
 
 # Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
 class StepperMotorSystem:
