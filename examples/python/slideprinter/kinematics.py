@@ -18,7 +18,7 @@ def distance_samples_relative_to_origin(anchors, pos):
     return distances[1:] - distances[0]
 
 
-def pos_to_motor_pos_samples(
+def pos_to_motor_pos_samples_deg(
     anchors,
     pos,
     low_axis_max_force,

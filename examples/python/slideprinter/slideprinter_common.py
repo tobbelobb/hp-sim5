@@ -38,6 +38,7 @@ class SpoolStateComponent:
 class StepperMotorComponent:
     """Holds the state and physical properties of a stepper motor."""
     commanded_angle: float = 0.0
+    delta_angle: float = 0.0
     holding_torque: float = 0.5  # Nm. Within the typical range for Nema 17 motors
     num_pole_pairs: int = 50     # For a 1.8 deg/step motor
     damping_coeff: float = 0.01   # Gotten by trial and error. For stepper inertia 5e-05
@@ -58,9 +59,7 @@ class StepperMotorSystem:
             inertia = world.get_component(e, MomentOfInertiaComponent)
 
             # Calculate restoring torque based on angular error
-            error = orient.angle - stepper.commanded_angle
-            if abs(error) > 1e-6:
-                print(error)
+            error = orient.angle - (stepper.commanded_angle - stepper.delta_angle)
             restoring_torque = -stepper.holding_torque * np.sin(stepper.num_pole_pairs * error)
 
             # Add damping to help the motor settle

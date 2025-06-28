@@ -91,14 +91,17 @@ class RemoteSpoolSystem:
                 if state.axis:
                     self.axis_to_entity[state.axis] = e
 
-        # Default to no command
         command = self.commands.pop(0) if self.commands else None
 
         for axis, entity_id in self.axis_to_entity.items():
-            if command and command['type'] == 'G1' and axis in command:
+            if command and command['type'] == 'Move' and axis in command:
                 stepper_comp = world.get_component(entity_id, StepperMotorComponent)
                 if stepper_comp:
                     stepper_comp.commanded_angle = command[axis]
+            if command and command['type'] == 'Add to reference' and axis in command:
+                stepper_comp = world.get_component(entity_id, StepperMotorComponent)
+                if stepper_comp:
+                    stepper_comp.delta_angle += command[axis]
 
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):

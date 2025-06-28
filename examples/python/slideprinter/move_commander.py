@@ -7,7 +7,7 @@ import math
 import numpy as np
 
 from .forward_kinematics import slideprinter_forward_transform
-from .kinematics import pos_to_motor_pos_samples, spool_r_in_origin_first_guess
+from .kinematics import pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess
 from .guessed_data import guessed_anchors
 
 async def _recv_and_discard(websocket):
@@ -29,6 +29,9 @@ class MoveCommander:
         self.anchors_mm = guessed_anchors
         self.current_pos_mm = {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
         self.spool_radius_mm = spool_r_in_origin_first_guess
+        self.low_axis_max_force = 20.0
+        self.use_flex = False
+        self.spool_buildup_factor = 0.0
 
     def _get_dt(self):
         try:
@@ -120,6 +123,8 @@ class MoveCommander:
             recv_task = asyncio.create_task(_recv_and_discard(websocket))
 
             try:
+                axesABC = ['A', 'B', 'C']
+                axesXYZ = ['X', 'Y', 'Z']
                 for command in self.commands:
                     if command['type'] == 'G1':
                         target_pos_mm = self.current_pos_mm.copy()
@@ -134,21 +139,16 @@ class MoveCommander:
                             continue
 
                         pos_mm = np.array([[target_pos_mm['X'], target_pos_mm['Y'], target_pos_mm['Z']]])
-                        low_axis_max_force = 20.0
-                        use_flex = False
-                        spool_buildup_factor = 0.0
-
-                        motor_positions_deg = pos_to_motor_pos_samples(
+                        motor_positions_deg = pos_to_motor_pos_samples_deg(
                             self.anchors_mm,
                             pos_mm,
-                            low_axis_max_force,
-                            use_flex,
-                            spool_buildup_factor=spool_buildup_factor,
+                            self.low_axis_max_force,
+                            self.use_flex,
+                            spool_buildup_factor=self.spool_buildup_factor,
                         )
 
                         target_angles_rad = motor_positions_deg[0]*(np.pi/180.0)
 
-                        axesXYZ = ['X', 'Y', 'Z']
                         distance_mm = np.linalg.norm(
                             np.array([self.current_pos_mm[axis] for axis in axesXYZ]) -
                             np.array([target_pos_mm[axis] for axis in axesXYZ])
@@ -174,7 +174,6 @@ class MoveCommander:
                         print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} time steps.")
 
                         deltas_rad = target_angles_rad - self.current_angles_rad
-                        axesABC = ['A', 'B', 'C']
                         for i in range(1, num_steps + 1):
                             t = i / num_steps
                             interpolated_cmd = {'type': 'Move'}
@@ -187,46 +186,43 @@ class MoveCommander:
                         self.current_angles_rad = target_angles_rad
                         self.current_pos_mm = target_pos_mm
                     elif command['type'] == 'G92':
-                        p_set_mm = np.array([
-                            command.get('X', self.current_pos_mm['X']),
-                            command.get('Y', self.current_pos_mm['Y']),
-                            command.get('Z', self.current_pos_mm['Z'])
-                        ])
+                        target_pos_mm = self.current_pos_mm.copy()
+                        has_move = False
+                        for axis in ['X', 'Y', 'Z']:
+                            if axis in command:
+                                # G-code is in mm, kinematics uses meters
+                                target_pos_mm[axis] = command[axis]
+                                has_move = True
 
-                        print(f"Executing G92: setting current position to {p_set_mm}")
-
-                        # Based on angle * r = |pos - anchor| - |anchor|
-                        anchor_norms = np.linalg.norm(self.anchors_mm, axis=1)
-                        line_lengths_mm = self.current_angles_rad * self.spool_radius_mm + anchor_norms
-
-                        p_phys_mm, spread = slideprinter_forward_transform(self.anchors_mm, line_lengths_mm)
-
-                        if p_phys_mm is None:
-                            print("G92 failed: forward kinematics could not find a solution.")
+                        if not has_move:
                             continue
 
-                        print(f"G92: current physical position calculated as {p_phys_mm} with spread {spread}")
+                        pos_mm = np.array([[target_pos_mm['X'], target_pos_mm['Y'], target_pos_mm['Z']]])
 
-                        offset_mm = p_phys_mm - p_set_mm
-                        self.anchors_mm = self.anchors_mm - offset_mm
+                        print(f"Executing G92: setting current position to {target_pos_mm}")
 
-                        self.current_pos_mm = {'X': p_set_mm[0], 'Y': p_set_mm[1], 'Z': p_set_mm[2]}
+                        target_angles_rad = pos_to_motor_pos_samples_deg(
+                            self.anchors_mm,
+                            pos_mm,
+                            self.low_axis_max_force,
+                            self.use_flex,
+                            spool_buildup_factor=self.spool_buildup_factor,
+                        )[0]*(np.pi/180.0)
 
-                        # Recalculate angles for new reference frame
-                        new_anchor_norms = np.linalg.norm(self.anchors_mm, axis=1)
-                        p_set_vec = np.array(list(self.current_pos_mm.values()))
-                        new_line_lengths_to_pos = np.linalg.norm(p_set_vec - self.anchors_mm, axis=1)
-                        self.current_angles_rad = (new_line_lengths_to_pos - new_anchor_norms) / self.spool_radius_mm
+                        deltas_rad = target_angles_rad.copy() - self.current_angles_rad.copy()
+                        self.current_angles_rad = target_angles_rad
+                        self.current_pos_mm = target_pos_mm
+                        cmd = {'type': 'Add to reference'}
 
-                        print(f"G92: new anchors at {self.anchors_mm.tolist()}")
-                        print(f"G92: new current angles (rad) {self.current_angles_rad.tolist()}")
+                        for idx, axis in enumerate(axesABC):
+                            cmd[axis] = deltas_rad[idx]
 
                         await websocket.send(json.dumps({
-                            'action': 'configure',
-                            'anchors': self.anchors_mm.tolist()
+                            'action': 'gcode',
+                            'command': cmd
                         }))
+
                     elif command['type'] == 'G6':
-                        axesABC = ['A', 'B', 'C']
                         line_deltas_mm = np.array([command.get(ax, 0.0) for ax in axesABC])
 
                         delta_angles_rad = line_deltas_mm / self.spool_radius_mm
@@ -238,16 +234,8 @@ class MoveCommander:
                         speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
                         speed_mm_per_s = speed_mm_per_min / 60.0
 
-                        if line_distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
-                            self.current_angles_rad = target_angles_rad
-                            continue
-
                         duration_s = line_distance_mm / speed_mm_per_s
                         num_steps = math.ceil(duration_s / self.dt)
-
-                        if num_steps == 0:
-                            self.current_angles_rad = target_angles_rad
-                            continue
 
                         print(f"Executing G6 move with deltas {line_deltas_mm} (mm) over {duration_s:.2f}s in {num_steps} time steps.")
 
@@ -261,9 +249,17 @@ class MoveCommander:
                             await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
                             await asyncio.sleep(self.dt)
 
-                        self.current_angles_rad = target_angles_rad
+                        cmd = {'type': 'Add to reference'}
+                        for idx, axis in enumerate(axesABC):
+                            cmd[axis] = deltas_rad[idx]
+
+                        await websocket.send(json.dumps({
+                            'action': 'gcode',
+                            'command': cmd
+                        }))
 
                 print("All commands sent.")
+                await asyncio.sleep(0.1) # Allow server to process and respond
             finally:
                 recv_task.cancel()
                 # Wait for the task to acknowledge cancellation
