@@ -1,0 +1,555 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Stepper Motor Model for Dynamic Simulation",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          76.69921875,
+          147.00262451171875
+        ],
+        [
+          541.1399536132812,
+          147.00262451171875
+        ],
+        [
+          541.1399536132812,
+          172.2646484375
+        ],
+        [
+          76.69921875,
+          172.2646484375
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          71.3970947265625,
+          387.3611755371094
+        ],
+        [
+          158.3303985595703,
+          387.3611755371094
+        ],
+        [
+          158.3303985595703,
+          399.82666015625
+        ],
+        [
+          71.3970947265625,
+          399.82666015625
+        ]
+      ]
+    },
+    {
+      "title": "2. Model generation",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          320.1611328125,
+          624.9611511230469
+        ],
+        [
+          429.3994140625,
+          624.9611511230469
+        ],
+        [
+          429.3994140625,
+          637.255859375
+        ],
+        [
+          320.1611328125,
+          637.255859375
+        ]
+      ]
+    },
+    {
+      "title": "2.1. Basic equations",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          320.1611328125,
+          652.5611419677734
+        ],
+        [
+          420.9000244140625,
+          652.5611419677734
+        ],
+        [
+          420.9000244140625,
+          664.5611419677734
+        ],
+        [
+          320.1611328125,
+          664.5611419677734
+        ]
+      ]
+    },
+    {
+      "title": "2.2. Generation of pulses",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          71.033935546875,
+          142.50115966796875
+        ],
+        [
+          201.3624267578125,
+          142.50115966796875
+        ],
+        [
+          201.3624267578125,
+          154.894287109375
+        ],
+        [
+          71.033935546875,
+          154.894287109375
+        ]
+      ]
+    },
+    {
+      "title": "3. Stepper motor in closed loop",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          53.45703125,
+          712.921142578125
+        ],
+        [
+          221.54397583007812,
+          712.921142578125
+        ],
+        [
+          221.54397583007812,
+          725.6494140625
+        ],
+        [
+          53.45703125,
+          725.6494140625
+        ]
+      ]
+    },
+    {
+      "title": "4. Simulation of microstepping",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          302.0400085449219,
+          714.8411560058594
+        ],
+        [
+          465.71533203125,
+          714.8411560058594
+        ],
+        [
+          465.71533203125,
+          726.8411560058594
+        ],
+        [
+          302.0400085449219,
+          726.8411560058594
+        ]
+      ]
+    },
+    {
+      "title": "5. Failure mode simulation",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          320.2200012207031,
+          355.02117919921875
+        ],
+        [
+          465.13427734375,
+          355.02117919921875
+        ],
+        [
+          465.13427734375,
+          367.02117919921875
+        ],
+        [
+          320.2200012207031,
+          367.02117919921875
+        ]
+      ]
+    },
+    {
+      "title": "6. Conclusions",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          52.8759765625,
+          141.63525390625
+        ],
+        [
+          134.51416015625,
+          141.63525390625
+        ],
+        [
+          134.51416015625,
+          155.408203125
+        ],
+        [
+          52.8759765625,
+          155.408203125
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          300.986328125,
+          183.468017578125
+        ],
+        [
+          361.0320129394531,
+          183.468017578125
+        ],
+        [
+          361.0320129394531,
+          196.418701171875
+        ],
+        [
+          300.986328125,
+          196.418701171875
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          137
+        ],
+        [
+          "Line",
+          60
+        ],
+        [
+          "Text",
+          13
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "ListItem",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          289
+        ],
+        [
+          "Line",
+          118
+        ],
+        [
+          "TableCell",
+          40
+        ],
+        [
+          "Text",
+          17
+        ],
+        [
+          "ListItem",
+          10
+        ],
+        [
+          "Equation",
+          9
+        ],
+        [
+          "ListGroup",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 17,
+        "llm_error_count": 1,
+        "llm_tokens_used": 52295
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          199
+        ],
+        [
+          "Line",
+          89
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "ListItem",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 23,
+        "llm_error_count": 5,
+        "llm_tokens_used": 74286
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          144
+        ],
+        [
+          "Line",
+          66
+        ],
+        [
+          "TableCell",
+          29
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "Figure",
+          3
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Table",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 2684
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          199
+        ],
+        [
+          "Line",
+          82
+        ],
+        [
+          "TableCell",
+          38
+        ],
+        [
+          "Text",
+          12
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 10,
+        "llm_error_count": 0,
+        "llm_tokens_used": 26170
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          160
+        ],
+        [
+          "Line",
+          55
+        ],
+        [
+          "ListItem",
+          8
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "ListGroup",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/Paper08_Morar"
+}
