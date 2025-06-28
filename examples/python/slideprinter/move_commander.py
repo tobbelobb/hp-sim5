@@ -129,13 +129,13 @@ class MoveCommander:
                             self.current_angles_rad = target_angles_rad
                             continue
 
-                        print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} steps.")
+                        print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} time steps.")
 
                         deltas_rad = target_angles_rad - self.current_angles_rad
                         axesABC = ['A', 'B', 'C']
                         for i in range(1, num_steps + 1):
                             t = i / num_steps
-                            interpolated_cmd = {'type': 'G1'}
+                            interpolated_cmd = {'type': 'Move'}
                             for idx, axis in enumerate(axesABC):
                                 interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
 
