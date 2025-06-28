@@ -6,7 +6,7 @@ from pathlib import Path
 import math
 import numpy as np
 
-from .kinematics import pos_to_motor_pos_samples
+from .kinematics import pos_to_motor_pos_samples, spool_r_in_origin_first_guess
 from .guessed_data import guessed_anchors
 
 async def _recv_and_discard(websocket):
@@ -27,6 +27,7 @@ class MoveCommander:
         self.current_angles_rad = np.array([0.0, 0.0, 0.0])
         self.anchors_mm = guessed_anchors
         self.current_pos_mm = {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
+        self.spool_radius_mm = spool_r_in_origin_first_guess
 
     def _get_dt(self):
         try:
@@ -54,6 +55,10 @@ class MoveCommander:
                     command = self._parse_g1_command(line)
                     if command:
                         commands.append(command)
+                elif line.startswith('G6'):
+                    command = self._parse_g6_command(line)
+                    if command:
+                        commands.append(command)
         return commands
 
     def _parse_g1_command(self, line):
@@ -66,6 +71,20 @@ class MoveCommander:
                 command['Y'] = float(part[1:])
             elif part.startswith('Z'):
                 command['Z'] = float(part[1:])
+            elif part.startswith('F'):
+                command['speed'] = float(part[1:])
+        return command
+
+    def _parse_g6_command(self, line):
+        parts = line.strip().split()
+        command = {'type': 'G6'}
+        for part in parts:
+            if part.startswith('A'):
+                command['A'] = float(part[1:])
+            elif part.startswith('B'):
+                command['B'] = float(part[1:])
+            elif part.startswith('C'):
+                command['C'] = float(part[1:])
             elif part.startswith('F'):
                 command['speed'] = float(part[1:])
         return command
@@ -144,6 +163,43 @@ class MoveCommander:
 
                         self.current_angles_rad = target_angles_rad
                         self.current_pos_mm = target_pos_mm
+                    elif command['type'] == 'G6':
+                        axesABC = ['A', 'B', 'C']
+                        line_deltas_mm = np.array([command.get(ax, 0.0) for ax in axesABC])
+
+                        delta_angles_rad = line_deltas_mm / self.spool_radius_mm
+                        target_angles_rad = self.current_angles_rad + delta_angles_rad
+
+                        line_distance_mm = np.linalg.norm(line_deltas_mm)
+
+                        # G-code speed is in mm/min. Convert to mm/s.
+                        speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
+                        speed_mm_per_s = speed_mm_per_min / 60.0
+
+                        if line_distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
+                            self.current_angles_rad = target_angles_rad
+                            continue
+
+                        duration_s = line_distance_mm / speed_mm_per_s
+                        num_steps = math.ceil(duration_s / self.dt)
+
+                        if num_steps == 0:
+                            self.current_angles_rad = target_angles_rad
+                            continue
+
+                        print(f"Executing G6 move with deltas {line_deltas_mm} (mm) over {duration_s:.2f}s in {num_steps} time steps.")
+
+                        deltas_rad = target_angles_rad - self.current_angles_rad
+                        for i in range(1, num_steps + 1):
+                            t = i / num_steps
+                            interpolated_cmd = {'type': 'Move'}
+                            for idx, axis in enumerate(axesABC):
+                                interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
+
+                            await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
+                            await asyncio.sleep(self.dt)
+
+                        self.current_angles_rad = target_angles_rad
 
                 print("All commands sent.")
             finally:
