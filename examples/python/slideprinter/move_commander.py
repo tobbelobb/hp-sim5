@@ -208,8 +208,11 @@ class MoveCommander:
                 await asyncio.gather(recv_task, return_exceptions=True)
 
 if __name__ == '__main__':
-    from pathlib import Path
-    root_dir = Path(__file__).resolve().parents[3]
+    import argparse
 
-    commander = MoveCommander(root_dir / "examples" / "python" / "slideprinter" / "test_movements.gcode", "ws://localhost:8766")
+    parser = argparse.ArgumentParser(description='Send G-code commands from a file to the simulation.')
+    parser.add_argument('gcode_file', help='Path to the G-code file.')
+    args = parser.parse_args()
+
+    commander = MoveCommander(args.gcode_file, "ws://localhost:8766")
     asyncio.run(commander.send_commands())
