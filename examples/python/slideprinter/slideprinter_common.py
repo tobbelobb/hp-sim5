@@ -4,6 +4,8 @@ import math
 import sys
 from pathlib import Path
 
+import numpy as np
+
 root_dir = Path(__file__).resolve().parents[3]
 src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:
@@ -15,7 +17,8 @@ if str(examples_python_path) not in sys.path:
 
 from cable_joints.ecs import (
     OrientationComponent,
-    AngularVelocityComponent
+    AngularVelocityComponent,
+    MomentOfInertiaComponent
 )
 
 
@@ -28,3 +31,43 @@ class SpoolTagComponent:
 class SpoolStateComponent:
     """Represents the state of a spool mechanism with rotational behavior."""
     axis: str = None
+
+
+# Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
+@dataclass
+class StepperMotorComponent:
+    """Holds the state and physical properties of a stepper motor."""
+    commanded_angle: float = 0.0
+    holding_torque: float = 0.5  # Nm
+    num_pole_pairs: int = 50     # For a 1.8 deg/step motor
+    damping_coeff: float = 0.2   # Gotten by trial and error. For stepper inertia 2.25e-04
+
+# Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
+class StepperMotorSystem:
+    def update(self, world, dt):
+        query = [
+            StepperMotorComponent,
+            OrientationComponent,
+            AngularVelocityComponent,
+            MomentOfInertiaComponent,
+        ]
+        for e in world.query(query):
+            stepper = world.get_component(e, StepperMotorComponent)
+            orient = world.get_component(e, OrientationComponent)
+            ang_vel = world.get_component(e, AngularVelocityComponent)
+            inertia = world.get_component(e, MomentOfInertiaComponent)
+
+            # Calculate restoring torque based on angular error
+            error = orient.angle - stepper.commanded_angle
+            if abs(error) > 1e-6:
+                print(error)
+            restoring_torque = -stepper.holding_torque * np.sin(stepper.num_pole_pairs * error)
+
+            # Add damping to help the motor settle
+            damping_torque = -stepper.damping_coeff * ang_vel.angular_velocity
+
+            total_torque = restoring_torque + damping_torque
+
+            # Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
+            angular_acceleration = total_torque / inertia.inertia
+            ang_vel.angular_velocity += angular_acceleration * dt

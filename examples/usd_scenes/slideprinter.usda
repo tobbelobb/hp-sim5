@@ -15,7 +15,7 @@ def Xform "World"
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Spool"]
+            token[] ecs:tags = ["Spool", "Stepper"]
             rel material:binding = </World/PhysicsScene/SpoolMaterial>
             custom bool cable:linkable = 1
             double radius = 0.03
@@ -24,7 +24,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.005
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            matrix3d physics:inertiaTensor = ((2.25e-04, 0, 0), (0, 2.25e-04, 0), (0, 0, 2.25e-04))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -40,7 +40,7 @@ def Xform "World"
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Spool"]
+            token[] ecs:tags = ["Spool", "Stepper"]
             rel material:binding = </World/PhysicsScene/SpoolMaterial>
             custom bool cable:linkable = 1
             double radius = 0.03
@@ -49,7 +49,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.005
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            matrix3d physics:inertiaTensor = ((2.25e-04, 0, 0), (0, 2.25e-04, 0), (0, 0, 2.25e-04))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -65,7 +65,7 @@ def Xform "World"
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Spool"]
+            token[] ecs:tags = ["Spool", "Stepper"]
             rel material:binding = </World/PhysicsScene/SpoolMaterial>
             custom bool cable:linkable = 1
             double radius = 0.03
@@ -74,7 +74,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.005
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            matrix3d physics:inertiaTensor = ((2.25e-04, 0, 0), (0, 2.25e-04, 0), (0, 0, 2.25e-04))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 

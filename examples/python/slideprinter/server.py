@@ -49,7 +49,9 @@ from flipper.flipper_common import (
 )
 from slideprinter.slideprinter_common import (
     SpoolTagComponent,
-    SpoolStateComponent
+    SpoolStateComponent,
+    StepperMotorComponent,
+    StepperMotorSystem
 )
 
 # Files that trigger a server restart when modified
@@ -93,14 +95,11 @@ class RemoteSpoolSystem:
         command = self.commands.pop(0) if self.commands else None
 
         for axis, entity_id in self.axis_to_entity.items():
-            orientation = world.get_component(entity_id, OrientationComponent)
-            angular_velocity = world.get_component(entity_id, AngularVelocityComponent)
-
             if command and command['type'] == 'G1' and axis in command:
-                target_angle = command[axis]
-                angular_velocity.angular_velocity = (target_angle - orientation.angle) / dt
-            else:
-                angular_velocity.angular_velocity = 0.0
+                stepper_comp = world.get_component(entity_id, StepperMotorComponent)
+                if stepper_comp:
+                    stepper_comp.commanded_angle = command[axis]
+
 
 def _copy_usd_on_change(changed_file: Path, root_dir: Path):
     """Copy slideprinter.usda to the public dir for vite when it changes."""
@@ -269,8 +268,10 @@ def stage_to_world(world, stage):
             if fric is not None:
                 world.add_component(ent, CoefficientOfFrictionComponent(fric))
             name_to_entity[prim.GetName()] = ent
+            if "Stepper" in tags:
+                world.add_component(ent, StepperMotorComponent())
 
-        elif "Anchor" in tags:
+        if "Anchor" in tags:
             ent = world.create_entity()
             world.add_component(ent, PositionComponent(pos.copy()))
             world.add_component(ent, RadiusComponent(0.01))
@@ -373,6 +374,7 @@ def setup_scene(world: World):
 
         # 2. Handle user input and non-physics state changes
         world.register_system(RemoteSpoolSystem())
+        world.register_system(StepperMotorSystem())
 
         # 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
         world.register_system(MovementSystem())
