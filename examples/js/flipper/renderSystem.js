@@ -21,6 +21,7 @@ import {
   FlipperStateComponent,
   ObstacleTagComponent,
 } from './flipper_common.js';
+import { ExtruderComponent } from '../slideprinter/slideprinter_common.js';
 
 export class RenderSystem {
   runInPause = true; // Always render
@@ -406,6 +407,29 @@ export class RenderSystem {
             }
         }
         this.c.restore();
+    }
+
+
+    // Render Extruder circle if present
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length > 0) {
+        const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+        if (extruderComp && extruderComp.totalExtrudedLength > 0) {
+            const center = extruderComp.centerPos; // this is an array [x, y, z]
+            // Assume totalExtrudedLength is proportional to area. Radius is sqrt(Area/PI).
+            // The scaling factor is chosen empirically to look reasonable.
+            const radius = Math.sqrt(extruderComp.totalExtrudedLength / Math.PI) * 0.01;
+
+            this.c.fillStyle = 'rgba(100, 255, 100, 0.5)';
+            this.c.beginPath();
+            this.c.arc(
+                this.cX(center[0]),
+                this.cY(center[1]),
+                radius * this.effectiveCScale,
+                0, 2 * Math.PI
+            );
+            this.c.fill();
+        }
     }
 
 

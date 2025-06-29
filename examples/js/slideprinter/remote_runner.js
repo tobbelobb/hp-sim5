@@ -11,7 +11,7 @@ import {
 import {
     CableLinkComponent, CableJointComponent, CablePathComponent
 } from '../../../src/js/cable_joints/cable_joints_core.js';
-import { SpoolTagComponent } from './slideprinter_common.js';
+import { SpoolTagComponent, ExtruderComponent } from './slideprinter_common.js';
 
 const componentRegistry = {
     PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
@@ -19,7 +19,7 @@ const componentRegistry = {
     PrevFinalOrientationComponent, PrevFinalPosComponent, RestitutionComponent,
     CoefficientOfFrictionComponent, SimulationErrorStateComponent, RenderableComponent,
     DistanceConstraintComponent, CableLinkComponent, CableJointComponent,
-    CablePathComponent, SpoolTagComponent
+    CablePathComponent, SpoolTagComponent, ExtruderComponent
 };
 
 function rebuildWorldFromState(world, state) {

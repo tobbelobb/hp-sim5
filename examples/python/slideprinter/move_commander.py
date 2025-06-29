@@ -80,6 +80,8 @@ class MoveCommander:
                 command['Y'] = float(part[1:])
             elif part.startswith('Z'):
                 command['Z'] = float(part[1:])
+            elif part.startswith('E'):
+                command['E'] = float(part[1:])
             elif part.startswith('F'):
                 self.last_speed_mm_per_min = float(part[1:])
         command['speed'] = self.last_speed_mm_per_min
@@ -136,8 +138,10 @@ class MoveCommander:
                                 # G-code is in mm, kinematics uses meters
                                 target_pos_mm[axis] = command[axis]
                                 has_move = True
+                        
+                        extrusion_delta_mm = command.get('E', 0.0)
 
-                        if not has_move:
+                        if not has_move and extrusion_delta_mm == 0.0:
                             continue
 
                         pos_mm = np.array([[target_pos_mm['X'], target_pos_mm['Y'], target_pos_mm['Z']]])
@@ -163,6 +167,9 @@ class MoveCommander:
                         if distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
                             self.current_pos_mm = target_pos_mm
                             self.current_angles_rad = target_angles_rad
+                            if extrusion_delta_mm > 0.0:
+                                cmd = {'type': 'Move', 'E': extrusion_delta_mm}
+                                await websocket.send(json.dumps({'action': 'gcode', 'command': cmd}))
                             continue
 
                         duration_s = distance_mm / speed_mm_per_s
@@ -176,11 +183,15 @@ class MoveCommander:
                         print(f"Executing G1 move to {target_pos_mm} (mm) over {duration_s:.2f}s in {num_steps} time steps.")
 
                         deltas_rad = target_angles_rad - self.current_angles_rad
+                        extrusion_per_step = extrusion_delta_mm / num_steps
                         for i in range(1, num_steps + 1):
                             t = i / num_steps
                             interpolated_cmd = {'type': 'Move'}
                             for idx, axis in enumerate(axesABC):
                                 interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
+                            
+                            if extrusion_per_step > 0.0:
+                                interpolated_cmd['E'] = extrusion_per_step
 
                             await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
                             await asyncio.sleep(self.dt)

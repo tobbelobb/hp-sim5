@@ -23,6 +23,13 @@ from cable_joints.ecs import (
 
 
 @dataclass
+class ExtruderComponent:
+    """Represents the state of the extruder."""
+    total_extruded_length: float = 0.0
+    center_pos: np.ndarray = field(default_factory=lambda: np.zeros(3))
+
+
+@dataclass
 class SpoolTagComponent:
     """A tag component for entities that are spools."""
     pass

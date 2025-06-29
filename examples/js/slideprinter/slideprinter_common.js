@@ -12,6 +12,13 @@ import {
     CablePathComponent,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 
+export class ExtruderComponent {
+    constructor() {
+        this.totalExtrudedLength = 0.0;
+        this.centerPos = [0.0, 0.0, 0.0];
+    }
+}
+
 export class SpoolTagComponent {}
 
 // --- System: Input --- (Simplified Click Handling)

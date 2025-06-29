@@ -52,7 +52,8 @@ from slideprinter.slideprinter_common import (
     SpoolTagComponent,
     SpoolStateComponent,
     StepperMotorComponent,
-    StepperMotorSystem
+    StepperMotorSystem,
+    ExtruderComponent
 )
 
 # Files that trigger a server restart when modified
@@ -90,6 +91,26 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
+class ExtruderSystem:
+    def update(self, world, dt):
+        extruder_comp = None
+        for e in world.query([ExtruderComponent]):
+            extruder_comp = world.get_component(e, ExtruderComponent)
+            break
+
+        if not extruder_comp:
+            return
+
+        spool_positions = []
+        spool_entities = world.query([SpoolTagComponent, PositionComponent])
+        for e in spool_entities:
+            pos = world.get_component(e, PositionComponent).pos
+            spool_positions.append(pos)
+
+        if spool_positions:
+            extruder_comp.center_pos = np.mean(spool_positions, axis=0)
+
+
 class RemoteSpoolSystem:
     def __init__(self):
         self.commands = []
@@ -108,6 +129,14 @@ class RemoteSpoolSystem:
                     self.axis_to_entity[state.axis] = e
 
         command = self.commands.pop(0) if self.commands else None
+
+        if command and 'E' in command:
+            extruder_comp = None
+            for e in world.query([ExtruderComponent]):
+                extruder_comp = world.get_component(e, ExtruderComponent)
+                break
+            if extruder_comp:
+                extruder_comp.total_extruded_length += command['E']
 
         for axis, entity_id in self.axis_to_entity.items():
             if command and command['type'] == 'Move' and axis in command:
@@ -300,6 +329,9 @@ def stage_to_world(world, stage):
                 world.add_component(ent, CableLinkComponent())
             name_to_entity[prim.GetName()] = ent
 
+    extruder_entity = world.create_entity()
+    world.add_component(extruder_entity, ExtruderComponent())
+
     # Process distance joints
     for prim in scene_root.GetChildren():
         if prim.GetTypeName() == 'DistancePhysicsJoint':
@@ -400,6 +432,7 @@ def setup_scene(world: World):
         world.register_system(AngularMovementSystem())
 
         # 4. Update derived geometry and cable state
+        world.register_system(ExtruderSystem())
         world.register_system(XPBDDistanceConstraintSystem())
         world.register_system(CableAttachmentUpdateSystem())
         world.register_system(CableAttachmentCacheSystem())
