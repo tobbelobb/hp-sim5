@@ -4,183 +4,165 @@
     <title>Slideprinter (Python Backend)</title>
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
-
-    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
-    <meta name="viewport"
-          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-    <!-- Nice free Google font – optional -->
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
-
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
     <style>
-:root {
-  --bg-1: #2d2d2d;
-  --accent-1: #ff452a;
-  --accent-2: #ffb347;
-  --text-main: #fafafa;
-  --text-dim:  #c0c0c0;
-  --radius: 4px;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
-  width: 100dvw;
-  overflow: hidden;               /* **kills the vertical / horizontal scroll**   */
-  background: var(--bg-1);
-  color: var(--text-main);
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
-  touch-action: none;    /* stops double‑tap zoom in most browsers   */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-#gameContainer {
-  width: 100%;            /* fill full page width */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;                /* expand to fill remaining vertical space */
-}
-
-#controls {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  text-align: center;
-  margin-block: 0 8px;    /* remove top margin, keep bottom spacing */
-  padding-block: 12px 0;  /* add vertical padding */
-  background: var(--bg-1); /* ensure background covers underlying content */
-  z-index: 1;             /* stay above canvas */
-  font-size: 0.9rem;
-  color: var(--text-dim);
-}
-
-#controls button {
-  all: unset;                      /* wipe default button styles */
-  cursor: pointer;
-  display: inline-block;
-  margin: 6px auto;
-  border-radius: var(--radius);
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #fff;
-  background: var(--accent-1);
-  box-shadow: 0 3px 8px rgba(0,0,0,.45);
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-#controls button:hover,
-#controls button:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 14px rgba(0,0,0,.55);
-}
-#controls button:active {
-  transform: scale(.97);
-}
-
-canvas {
-  width: 100%;
-  flex: 1;                         /* grow to fill vertical space */
-  display: block;
-  border-radius: var(--radius);
-  touch-action: manipulation;      /* turn off browser panning/zoom so pointermove/up always fire */
-}
-
-#controls button {
-  padding: 10px 16px;
-  font-size: 0.85rem;
-}
+        :root {
+          --bg-1: #2d2d2d;
+          --accent-1: #ff452a;
+          --text-main: #fafafa;
+          --text-dim:  #c0c0c0;
+          --radius: 4px;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100dvh;
+          width: 100dvw;
+          overflow: hidden;
+          background: var(--bg-1);
+          color: var(--text-main);
+          font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+        }
+        #gameContainer {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex: 1;
+        }
+        #controls {
+          position: sticky;
+          top: 0;
+          width: 100%;
+          text-align: center;
+          margin-block: 0 8px;
+          padding-block: 12px 0;
+          background: var(--bg-1);
+          z-index: 1;
+          font-size: 0.9rem;
+          color: var(--text-dim);
+        }
+        #controls button {
+          all: unset;
+          cursor: pointer;
+          display: inline-block;
+          margin: 6px auto;
+          border-radius: var(--radius);
+          font-weight: 600;
+          font-size: 0.95rem;
+          color: #fff;
+          background: var(--accent-1);
+          box-shadow: 0 3px 8px rgba(0,0,0,.45);
+          transition: transform .12s ease, box-shadow .12s ease;
+          padding: 10px 16px;
+          font-size: 0.85rem;
+        }
+        #controls button:hover,
+        #controls button:focus-visible {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 14px rgba(0,0,0,.55);
+        }
+        #controls button:active { transform: scale(.97); }
+        canvas {
+          width: 100%;
+          flex: 1;
+          display: block;
+          border-radius: var(--radius);
+          touch-action: manipulation;
+        }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="controls">
-            <button id="pauseBtn" tabindex="-1">Pause</button>
-            <button id="resetBtn" tabindex="-1">Reset</button>
-            <button id="stepBtn">Step</button>
-            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
-            <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
-                dt: <span id="dt">N/A</span> |
-                Speed: <span id="speed">N/A</span>
-            </div>
+<div id="gameContainer">
+    <div id="controls">
+        <button id="pauseBtn" tabindex="-1">Pause</button>
+        <button id="resetBtn" tabindex="-1">Reset</button>
+        <button id="stepBtn">Step</button>
+        <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+        <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
+            dt: <span id="dt">N/A</span> |
+            Speed: <span id="speed">N/A</span>
         </div>
-        <canvas id="myCanvas"></canvas>
     </div>
+    <canvas id="myCanvas"></canvas>
+</div>
 <script type="module">
-    import {
-      Open as UsdOpen,
-    } from "../../../src/js/usd/stage.js";
-    import { World } from '../../../src/js/cable_joints/ecs.js';
-    import { runGame } from '../../js/slideprinter/runner.js';
-    import { setupScene } from '../../js/slideprinter/setupScene.js';
+import { Open as UsdOpen } from "../../../src/js/usd/stage.js";
+import { World, PositionComponent, PrevFinalPosComponent, OrientationComponent, PrevFinalOrientationComponent } from '../../../src/js/cable_joints/ecs.js';
+import { CableJointComponent, CablePathComponent } from '../../../src/js/cable_joints/cable_joints_core.js';
+import { SpoolTagComponent } from '../../js/slideprinter/slideprinter_common.js';
+import { runGameRemote } from '../../js/slideprinter/runner_remote.js';
+import { setupScene } from '../../js/slideprinter/setupScene.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 
-    function connect() {
-        ws = new WebSocket('ws://localhost:8766');
+const canvas = document.getElementById("myCanvas");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+const stepBtn = document.getElementById("stepBtn");
+let ws;
 
-        ws.onopen = () => {
-            console.log('Connected to Python WebSocket server.');
-            setupCanvas();
-            isPaused = true;
-            pauseBtn.textContent = "Start";
-            pauseBtn.disabled = false;
-            resetBtn.disabled = false;
-            stepBtn.disabled = false;
-        };
+const world = new World();
 
-        ws.onmessage = (event) => {
-            simState = JSON.parse(event.data);
-            if (simState.isPaused !== undefined) {
-                isPaused = simState.isPaused;
-                if (isPaused) {
-                    if (pauseBtn.textContent !== "Start") {
-                        pauseBtn.textContent = "Resume";
-                    }
-                } else {
-                    pauseBtn.textContent = "Pause";
-                }
-            }
-            render();
-        };
-
-        ws.onclose = () => {
-            console.log('Disconnected from server. Reconnecting in 1s...');
-            pauseBtn.textContent = "Reconnecting...";
-            pauseBtn.disabled = true;
-            resetBtn.disabled = true;
-            stepBtn.disabled = true;
-            setTimeout(connect, 1000);
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-        };
+function applyState(world, state) {
+    if (!state) return;
+    const pause = world.getResource('pauseState');
+    if (pause && state.isPaused !== undefined) pause.paused = state.isPaused;
+    const spools = world.query([SpoolTagComponent, PositionComponent]);
+    for (let i = 0; i < spools.length && i < (state.balls?.length || 0); i++) {
+        const b = state.balls[i];
+        const pos = world.getComponent(spools[i], PositionComponent).pos;
+        pos.set(new Vector2(b.x, b.y));
+        const prev = world.getComponent(spools[i], PrevFinalPosComponent);
+        if (prev) prev.pos.set(new Vector2(b.x, b.y));
+        const o = world.getComponent(spools[i], OrientationComponent);
+        if (o && b.angle !== undefined) o.angle = b.angle;
+        const po = world.getComponent(spools[i], PrevFinalOrientationComponent);
+        if (po && b.angle !== undefined) po.angle = b.angle;
     }
+    if (state.cables) {
+        const paths = world.query([CablePathComponent]);
+        for (let i = 0; i < paths.length && i < state.cables.length; i++) {
+            const path = world.getComponent(paths[i], CablePathComponent);
+            const joints = state.cables[i].joints;
+            for (let j = 0; j < path.jointEntities.length && j < joints.length; j++) {
+                const jid = path.jointEntities[j];
+                const joint = world.getComponent(jid, CableJointComponent);
+                const jd = joints[j];
+                joint.attachment_point_a_world.set(new Vector2(jd.pA[0], jd.pA[1]));
+                joint.attachment_point_b_world.set(new Vector2(jd.pB[0], jd.pB[1]));
+            }
+        }
+    }
+}
 
+function connect(stage) {
+    ws = new WebSocket('ws://localhost:8766');
+    ws.onopen = () => {
+        runGameRemote(world, () => setupScene(world, stage, canvas), ws, applyState);
+        pauseBtn.disabled = false;
+        resetBtn.disabled = false;
+        stepBtn.disabled = false;
+    };
+    ws.onclose = () => {
+        pauseBtn.textContent = 'Reconnecting...';
+        pauseBtn.disabled = true; resetBtn.disabled = true; stepBtn.disabled = true;
+        setTimeout(() => connect(stage), 1000);
+    };
+    ws.onerror = (e) => { console.error('WebSocket error', e); };
+}
 
-    // --- Global Setup ---
-    const canvas = document.getElementById("myCanvas");
-    let world = new World();
-
-    const base = import.meta.env.BASE_URL || '/';
-    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
-
-    connect();
-    UsdOpen(usdaPath).then(stage => {
-      if (!stage) {
-          console.error("Failed to load or parse USD file:", usdaPath);
-          return;
-      }
-      runGame(world, () => setupScene(world, stage, canvas));
-    }).catch(error => {
-        console.error("Error during USD loading or game setup:", error);
-    });
+const base = import.meta.env.BASE_URL || '/';
+const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
+let stage;
+UsdOpen(usdaPath).then(s => { stage = s; if (stage) connect(stage); });
 </script>
-
 </body>
 </html>
