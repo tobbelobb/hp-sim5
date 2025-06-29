@@ -1,10 +1,11 @@
 import asyncio
+import asyncio
 import json
 import functools
 import os
 import sys
 from pathlib import Path
-from dataclasses import dataclass
+import dataclasses
 
 import numpy as np
 from pxr import Usd, UsdGeom, UsdShade
@@ -74,6 +75,21 @@ WATCHED_FILES = [
 ]
 
 # --- Server-Side Systems ---
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if dataclasses.is_dataclass(obj):
+            return dataclasses.asdict(obj)
+        if isinstance(obj, Path):
+            return str(obj)
+        return super(NpEncoder, self).default(obj)
+
+
 class RemoteSpoolSystem:
     def __init__(self):
         self.commands = []
@@ -408,137 +424,62 @@ def setup_scene(world: World):
 
 # --- Serialization ---
 
-def world_to_json(world: World) -> str:
-    state = {'balls': [], 'cables': [], 'isPaused': True}
+def world_to_full_state_json(world: World) -> str:
+    state = {
+        'entities': {},
+        'components': {},
+        'resources': {}
+    }
 
-    for ball_id in world.query([SpoolTagComponent, PositionComponent, RadiusComponent]):
-        pos = world.get_component(ball_id, PositionComponent).pos
-        radius = world.get_component(ball_id, RadiusComponent).radius
-        mass = world.get_component(ball_id, MassComponent).mass
-        renderable = world.get_component(ball_id, RenderableComponent)
-        color = renderable.color if renderable else '#888888'
-        ball_data = {'x': pos[0], 'y': pos[1], 'radius': radius, 'mass': mass, 'color': color}
-        orientation_comp = world.get_component(ball_id, OrientationComponent)
-        if orientation_comp:
-            ball_data['angle'] = orientation_comp.angle
-        state['balls'].append(ball_data)
+    # Serialize entities and their component types
+    for entity_id, component_classes in world.entities.items():
+        state['entities'][str(entity_id)] = [c.__name__ for c in component_classes]
 
-    # Anchors
-    for anchor_id in world.query([PositionComponent, RadiusComponent, MassComponent, RenderableComponent]):
-        mass = world.get_component(anchor_id, MassComponent).mass
-        if mass < 0:
-            pos = world.get_component(anchor_id, PositionComponent).pos
-            radius = world.get_component(anchor_id, RadiusComponent).radius
-            render_comp = world.get_component(anchor_id, RenderableComponent)
-            color = render_comp.color if render_comp else '#aaaaaa'
-            state.setdefault('anchors', []).append({
-                'x': pos[0], 'y': pos[1], 'radius': radius, 'color': color
-            })
+    # Serialize component data
+    for component_class, component_map in world.components.items():
+        class_name = component_class.__name__
+        state['components'][class_name] = {}
+        for entity_id, component_instance in component_map.items():
+            comp_dict = dataclasses.asdict(component_instance)
 
-    pause_comp = world.get_resource('pauseState')
-    if pause_comp:
-        state['isPaused'] = pause_comp.paused
+            # Add world-space attachment points for JS client
+            if class_name == 'CableJointComponent':
+                def get_world_space_2d(body_pos, body_angle, local_pos):
+                    c, s = np.cos(body_angle), np.sin(body_angle)
+                    rotated_local = np.array([
+                        local_pos[0] * c - local_pos[1] * s,
+                        local_pos[0] * s + local_pos[1] * c
+                    ])
+                    return body_pos[:2] + rotated_local
 
-    # Distance Constraints
-    for cid in world.query([DistanceConstraintComponent]):
-        constraint = world.get_component(cid, DistanceConstraintComponent)
-        posA = world.get_component(constraint.entityA, PositionComponent).pos
-        posB = world.get_component(constraint.entityB, PositionComponent).pos
-        renderComp = world.get_component(cid, RenderableComponent)
-        color = renderComp.color if renderComp else '#ffffff'
-        state.setdefault('distanceConstraints', []).append({
-            'pA': [posA[0], posA[1]],
-            'pB': [posB[0], posB[1]],
-            'color': color
-        })
+                entity_a = component_instance.entity_a
+                pos_a = world.get_component(entity_a, PositionComponent).pos
+                rot_a_comp = world.get_component(entity_a, OrientationComponent)
+                rot_a = rot_a_comp.angle if rot_a_comp else 0.0
 
-    # Cables
-    path_entities = world.query([CablePathComponent])
-    for pid in path_entities:
-        path = world.get_component(pid, CablePathComponent)
-        if not path.joint_entities:
+                entity_b = component_instance.entity_b
+                pos_b = world.get_component(entity_b, PositionComponent).pos
+                rot_b_comp = world.get_component(entity_b, OrientationComponent)
+                rot_b = rot_b_comp.angle if rot_b_comp else 0.0
+
+                comp_dict['attachment_point_a_world'] = get_world_space_2d(pos_a, rot_a, component_instance.attachment_point_a_local)
+                comp_dict['attachment_point_b_world'] = get_world_space_2d(pos_b, rot_b, component_instance.attachment_point_b_local)
+
+            state['components'][class_name][str(entity_id)] = comp_dict
+
+    # Serialize resources
+    for name, resource in world.resources.items():
+        if name in ['grabbedBall', 'debugRenderPoints']:
             continue
-        cable_render = {'joints': [], 'arcs': [], 'links': []}
-        for jid in path.joint_entities:
-            joint = world.get_component(jid, CableJointComponent)
-            cable_render['joints'].append({
-                'pA': joint.attachment_point_a_world.tolist()[:2],
-                'pB': joint.attachment_point_b_world.tolist()[:2],
-                'restLength': joint.rest_length
-            })
-        # Compute arcs and links for rendering
-        link_types = list(path.link_types)
-        cw = list(path.cw)
-        stored = list(path.stored or [])
-        # Rolling arcs
-        for i in range(1, len(link_types) - 1):
-            if link_types[i] == 'rolling':
-                j_prev = world.get_component(path.joint_entities[i - 1], CableJointComponent)
-                j_next = world.get_component(path.joint_entities[i], CableJointComponent)
-                center_id = j_prev.entity_b
-                center_comp = world.get_component(center_id, PositionComponent)
-                radius_comp = world.get_component(center_id, RadiusComponent)
-                if center_comp and radius_comp:
-                    p1 = j_prev.attachment_point_b_world.tolist()[:2]
-                    p2 = j_next.attachment_point_a_world.tolist()[:2]
-                    center = center_comp.pos.tolist()[:2]
-                    radius = radius_comp.radius
-                    anticlockwise = not cw[i]
-                    dist_prev = np.linalg.norm(j_prev.attachment_point_a_world - j_prev.attachment_point_b_world)
-                    dist_next = np.linalg.norm(j_next.attachment_point_a_world - j_next.attachment_point_b_world)
-                    is_taut = dist_prev > (j_prev.rest_length + 1e-6) and dist_next > (j_next.rest_length + 1e-6)
-                    cable_render['arcs'].append({
-                        'center': center,
-                        'radius': radius,
-                        'p1': p1,
-                        'p2': p2,
-                        'anticlockwise': anticlockwise,
-                        'is_taut': bool(is_taut)
-                    })
-        # Hybrid links and attachments
-        for idx, lt in enumerate(link_types):
-            link_data = {'type': lt}
-            if lt == 'hybrid-attachment':
-                ap = (world.get_component(path.joint_entities[0], CableJointComponent).attachment_point_a_world.tolist()[:2]
-                      if idx == 0 else
-                      world.get_component(path.joint_entities[-1], CableJointComponent).attachment_point_b_world.tolist()[:2])
-                link_data['attachmentPoint'] = ap
-            elif lt == 'hybrid':
-                if idx == 0:
-                    joint = world.get_component(path.joint_entities[0], CableJointComponent)
-                    roller_id = joint.entity_a
-                    attachment_point = joint.attachment_point_a_world
-                else:
-                    joint = world.get_component(path.joint_entities[-1], CableJointComponent)
-                    roller_id = joint.entity_b
-                    attachment_point = joint.attachment_point_b_world
-                center_comp = world.get_component(roller_id, PositionComponent)
-                radius_comp = world.get_component(roller_id, RadiusComponent)
-                if center_comp and radius_comp:
-                    center = center_comp.pos.tolist()[:2]
-                    radius = radius_comp.radius
-                    tangent = attachment_point.tolist()[:2]
-                    stored_len = stored[idx]
-                    cw_flag = cw[idx]
-                    dist = np.linalg.norm(joint.attachment_point_a_world - joint.attachment_point_b_world)
-                    is_taut = dist > (joint.rest_length + 1e-6)
-                    link_data.update({
-                        'center': center,
-                        'radius': radius,
-                        'tangentPoint': tangent,
-                        'storedLength': stored_len,
-                        'cw': cw_flag,
-                        'is_taut': bool(is_taut)
-                    })
-            cable_render['links'].append(link_data)
-        state['cables'].append(cable_render)
+        if name in ['dt', 'gravity', 'pauseState']:
+             state['resources'][name] = dataclasses.asdict(resource) if dataclasses.is_dataclass(resource) else resource
 
-    return json.dumps(state)
+    return json.dumps(state, cls=NpEncoder)
 
 
 # --- WebSocket handler ---
 async def handler(websocket, world, remote_spool_system):
-    await websocket.send(world_to_json(world))
+    await websocket.send(world_to_full_state_json(world))
 
     async for message in websocket:
         data = json.loads(message)
@@ -560,7 +501,7 @@ async def handler(websocket, world, remote_spool_system):
         elif action == 'gcode':
             remote_spool_system.add_command(data['command'])
 
-        await websocket.send(world_to_json(world))
+        await websocket.send(world_to_full_state_json(world))
 
 
 async def main():

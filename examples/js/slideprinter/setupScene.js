@@ -56,8 +56,12 @@ import {
   XPBDDistanceConstraintSystem,
 } from '../../../src/js/cable_joints/commonSystems.js';
 
-export function setupScene(world, stage, canvas) {
-    world.clear();
+export function setupScene(world, stage, canvas, options = {}) {
+    const isRemote = options.remote || false;
+
+    if (!isRemote) {
+        world.clear();
+    }
 
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
@@ -66,14 +70,18 @@ export function setupScene(world, stage, canvas) {
     const cScale = canvas.height / simHeight;
     const simWidth = canvas.width / cScale;
 
-    const physicsScene = stage.GetPrimAtPath("/World/PhysicsScene");
-    const gravityDir = getAttribute(physicsScene, "physics:gravityDirection");
-    const gravityMag = getAttribute(physicsScene, "physics:gravityMagnitude");
-    const gravity = new Vector2(gravityDir[0] * gravityMag, gravityDir[1] * gravityMag);
-    const dt = 1.0 / stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
+    if (!isRemote) {
+        // This block remains unchanged, it's for local simulation.
+        const physicsScene = stage.GetPrimAtPath("/World/PhysicsScene");
+        const gravityDir = getAttribute(physicsScene, "physics:gravityDirection");
+        const gravityMag = getAttribute(physicsScene, "physics:gravityMagnitude");
+        const gravity = new Vector2(gravityDir[0] * gravityMag, gravityDir[1] * gravityMag);
+        const dt = 1.0 / stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
 
-    world.setResource('gravity', gravity);
-    world.setResource('dt', dt);
+        world.setResource('gravity', gravity);
+        world.setResource('dt', dt);
+    }
+
     world.setResource('simWidth', simWidth);
     world.setResource('simHeight', simHeight);
     world.setResource('pauseState', new PauseStateComponent(true));
@@ -81,169 +89,169 @@ export function setupScene(world, stage, canvas) {
     world.setResource('errorState', new SimulationErrorStateComponent(false));
     world.setResource('grabbedBall', null);
 
-    const sceneRoot = stage.GetPrimAtPath("/World/SlideprinterScene");
-    const nameToEntityId = {};
-    const jointPrims = [];
-    const pathPrims = [];
-    const distanceJointPrims = [];
+    if (!isRemote) {
+        // This block remains unchanged, it's for local simulation.
+        const sceneRoot = stage.GetPrimAtPath("/World/SlideprinterScene");
+        const nameToEntityId = {};
+        const jointPrims = [];
+        const pathPrims = [];
+        const distanceJointPrims = [];
 
-    // Discover prims and create body entities in a single pass
-    for (const prim of getChildren(sceneRoot)) {
-        // Check for API schemas to identify paths
-        const apiSchemas = getAttribute(prim, "apiSchemas");
-        if (apiSchemas && apiSchemas.includes("CablePathAPI")) {
-            pathPrims.push(prim);
-        }
+        // Discover prims and create body entities in a single pass
+        for (const prim of getChildren(sceneRoot)) {
+            // Check for API schemas to identify paths
+            const apiSchemas = getAttribute(prim, "apiSchemas");
+            if (apiSchemas && apiSchemas.includes("CablePathAPI")) {
+                pathPrims.push(prim);
+            }
 
-        if (prim.type === 'definition' && prim.defType === 'CableJoint') {
-            jointPrims.push(prim);
-        }
+            if (prim.type === 'definition' && prim.defType === 'CableJoint') {
+                jointPrims.push(prim);
+            }
 
-        if (prim.type === 'definition' && prim.defType === 'DistancePhysicsJoint') {
-            distanceJointPrims.push(prim);
-        }
+            if (prim.type === 'definition' && prim.defType === 'DistancePhysicsJoint') {
+                distanceJointPrims.push(prim);
+            }
 
-        // Check for tags to identify bodies (Spools, Anchors)
-        const tags = getAttribute(prim, "ecs:tags") || [];
-        if (tags.length > 0) {
-            const posArr = getAttribute(prim, "xformOp:translate");
-            if (!posArr) continue;
-            const pos = new Vector2(posArr[0], posArr[1]);
-            const { color, friction, restitution } = materialProperties(stage, prim);
+            // Check for tags to identify bodies (Spools, Anchors)
+            const tags = getAttribute(prim, "ecs:tags") || [];
+            if (tags.length > 0) {
+                const posArr = getAttribute(prim, "xformOp:translate");
+                if (!posArr) continue;
+                const pos = new Vector2(posArr[0], posArr[1]);
+                const { color, friction, restitution } = materialProperties(stage, prim);
 
-            if (tags.includes("Spool")) {
-                const ent = world.createEntity();
-                const radius = getAttribute(prim, "radius");
-                const mass = getAttribute(prim, "physics:mass");
-                const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
-                const velArr = getAttribute(prim, "physics:velocity");
-                const angVelArr = getAttribute(prim, "physics:angularVelocity");
+                if (tags.includes("Spool")) {
+                    const ent = world.createEntity();
+                    const radius = getAttribute(prim, "radius");
+                    const mass = getAttribute(prim, "physics:mass");
+                    const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
+                    const velArr = getAttribute(prim, "physics:velocity");
+                    const angVelArr = getAttribute(prim, "physics:angularVelocity");
 
-                if (radius === null || mass === null || inertiaTensor === null || !velArr || !angVelArr) {
-                    console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
-                    continue;
+                    if (radius === null || mass === null || inertiaTensor === null || !velArr || !angVelArr) {
+                        console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
+                        continue;
+                    }
+                    const inertia = inertiaTensor[2][2];
+                    const vel = new Vector2(velArr[0], velArr[1]);
+                    const angVel = angVelArr[2];
+
+                    world.addComponent(ent, new SpoolTagComponent());
+                    world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                    world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
+                    world.addComponent(ent, new RadiusComponent(radius));
+                    world.addComponent(ent, new MassComponent(mass));
+                    world.addComponent(ent, new RenderableComponent('circle', color || '#a0a0a0'));
+                    world.addComponent(ent, new OrientationComponent(0.0));
+                    world.addComponent(ent, new AngularVelocityComponent(angVel));
+                    world.addComponent(ent, new MomentOfInertiaComponent(inertia));
+                    world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
+                    world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y));
+                    if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
+                    if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                    if (getAttribute(prim, "cable:linkable")) {
+                        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                    }
+                    nameToEntityId[prim.name] = ent;
+                } else if (tags.includes("Anchor")) {
+                    const ent = world.createEntity();
+                    world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                    world.addComponent(ent, new RadiusComponent(0.01));
+                    world.addComponent(ent, new MassComponent(-1.0));
+                    world.addComponent(ent, new RenderableComponent('circle', color || '#aaaaaa'));
+                    if (getAttribute(prim, "cable:linkable")) {
+                        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                    }
+                    nameToEntityId[prim.name] = ent;
                 }
-                const inertia = inertiaTensor[2][2];
-                const vel = new Vector2(velArr[0], velArr[1]);
-                const angVel = angVelArr[2];
-
-                world.addComponent(ent, new SpoolTagComponent());
-                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-                world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
-                world.addComponent(ent, new RadiusComponent(radius));
-                world.addComponent(ent, new MassComponent(mass));
-                world.addComponent(ent, new RenderableComponent('circle', color || '#a0a0a0'));
-                world.addComponent(ent, new OrientationComponent(0.0));
-                world.addComponent(ent, new AngularVelocityComponent(angVel));
-                world.addComponent(ent, new MomentOfInertiaComponent(inertia));
-                world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
-                world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y));
-                if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
-                if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
-                if (getAttribute(prim, "cable:linkable")) {
-                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
-                }
-                nameToEntityId[prim.name] = ent;
-            } else if (tags.includes("Anchor")) {
-                const ent = world.createEntity();
-                world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-                world.addComponent(ent, new RadiusComponent(0.01));
-                world.addComponent(ent, new MassComponent(-1.0));
-                world.addComponent(ent, new RenderableComponent('circle', color || '#aaaaaa'));
-                if (getAttribute(prim, "cable:linkable")) {
-                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
-                }
-                nameToEntityId[prim.name] = ent;
             }
         }
-    }
 
-    // Process discovered DistancePhysicsJoints
-    for (const prim of distanceJointPrims) {
-        const body0PathRel = getRelationship(prim, "physics:body0");
-        const body1PathRel = getRelationship(prim, "physics:body1");
+        // Process discovered DistancePhysicsJoints
+        for (const prim of distanceJointPrims) {
+            const body0PathRel = getRelationship(prim, "physics:body0");
+            const body1PathRel = getRelationship(prim, "physics:body1");
 
-        if (body0PathRel == null || body1PathRel == null || body0PathRel.length === 0 || body1PathRel.length === 0) {
-            continue;
-        }
+            if (body0PathRel == null || body1PathRel == null || body0PathRel.length === 0 || body1PathRel.length === 0) {
+                continue;
+            }
 
-        const body0Name = body0PathRel[0].split('/').pop();
-        const body1Name = body1PathRel[0].split('/').pop();
+            const body0Name = body0PathRel[0].split('/').pop();
+            const body1Name = body1PathRel[0].split('/').pop();
 
-        if (nameToEntityId[body0Name] == null || nameToEntityId[body1Name] == null) {
-            continue;
-        }
+            if (nameToEntityId[body0Name] == null || nameToEntityId[body1Name] == null) {
+                continue;
+            }
 
-        const entityA = nameToEntityId[body0Name];
-        const entityB = nameToEntityId[body1Name];
+            const entityA = nameToEntityId[body0Name];
+            const entityB = nameToEntityId[body1Name];
 
-        const minDistance = getAttribute(prim, "physics:minDistance");
-        const maxDistance = getAttribute(prim, "physics:maxDistance");
+            const minDistance = getAttribute(prim, "physics:minDistance");
+            const maxDistance = getAttribute(prim, "physics:maxDistance");
 
-        if (minDistance !== null && maxDistance !== null) {
-            if (Math.abs(minDistance - maxDistance) < 1e-6) {
-                const restLength = (minDistance + maxDistance) / 2.0;
-                const constraintEntity = world.createEntity();
-                world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
-                world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
+            if (minDistance !== null && maxDistance !== null) {
+                if (Math.abs(minDistance - maxDistance) < 1e-6) {
+                    const restLength = (minDistance + maxDistance) / 2.0;
+                    const constraintEntity = world.createEntity();
+                    world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
+                    world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
+                }
             }
         }
-    }
 
-    // Process discovered CableJoints
-    const jointEntityMap = {};
-    for (const prim of jointPrims) {
-        const body0Path = getRelationship(prim, "physics:body0")[0];
-        const body1Path = getRelationship(prim, "physics:body1")[0];
-        const entityA = nameToEntityId[body0Path.split('/').pop()];
-        const entityB = nameToEntityId[body1Path.split('/').pop()];
-        const restLength = getAttribute(prim, "restLength");
-        const attachAArr = getAttribute(prim, "localPos0");
-        const attachBArr = getAttribute(prim, "localPos1");
+        // Process discovered CableJoints
+        const jointEntityMap = {};
+        for (const prim of jointPrims) {
+            const body0Path = getRelationship(prim, "physics:body0")[0];
+            const body1Path = getRelationship(prim, "physics:body1")[0];
+            const entityA = nameToEntityId[body0Path.split('/').pop()];
+            const entityB = nameToEntityId[body1Path.split('/').pop()];
+            const restLength = getAttribute(prim, "restLength");
+            const attachAArr = getAttribute(prim, "localPos0");
+            const attachBArr = getAttribute(prim, "localPos1");
 
-        if (entityA === null || entityB === null || restLength === null || attachAArr === null || attachBArr === null) {
-            console.warn(`Skipping CableJoint ${prim.name} due to missing data.`);
-            console.log(`entityA: ${entityA}, entityB: ${entityB}, restLength: ${restLength}, attachAArr: ${attachAArr}, attachBarr: ${attachBArr}`);
-            continue;
+            if (entityA === null || entityB === null || restLength === null || attachAArr === null || attachBArr === null) {
+                console.warn(`Skipping CableJoint ${prim.name} due to missing data.`);
+                console.log(`entityA: ${entityA}, entityB: ${entityB}, restLength: ${restLength}, attachAArr: ${attachAArr}, attachBarr: ${attachBArr}`);
+                continue;
+            }
+
+            const attachA = new Vector2(attachAArr[0], attachAArr[1]);
+            const attachB = new Vector2(attachBArr[0], attachBArr[1]);
+
+            const joint = world.createEntity();
+            world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
+            world.addComponent(joint, new RenderableComponent('line', linecolor1));
+            jointEntityMap[prim.name] = joint;
         }
 
-        const attachA = new Vector2(attachAArr[0], attachAArr[1]);
-        const attachB = new Vector2(attachBArr[0], attachBArr[1]);
+        // Process discovered CablePaths
+        for (const prim of pathPrims) {
+            const cablePath = world.createEntity();
+            const jointPaths = getRelationship(prim, "cablePath:joints");
+            if (!jointPaths) continue;
 
-        const joint = world.createEntity();
-        world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
-        world.addComponent(joint, new RenderableComponent('line', linecolor1));
-        jointEntityMap[prim.name] = joint;
-    }
+            const jointNames = jointPaths.map(p => p.split('/').pop());
+            const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]).filter(Boolean);
+            const linkTypes = getAttribute(prim, "cablePath:linkTypes");
+            const clockwise = getAttribute(prim, "cablePath:clockwise");
+            const stored = getAttribute(prim, "cablePath:stored");
+            const stiffness = getAttribute(prim, "stiffness");
 
-    // Process discovered CablePaths
-    for (const prim of pathPrims) {
-        const cablePath = world.createEntity();
-        const jointPaths = getRelationship(prim, "cablePath:joints");
-        if (!jointPaths) continue;
-
-        const jointNames = jointPaths.map(p => p.split('/').pop());
-        const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]).filter(Boolean);
-        const linkTypes = getAttribute(prim, "cablePath:linkTypes");
-        const clockwise = getAttribute(prim, "cablePath:clockwise");
-        const stored = getAttribute(prim, "cablePath:stored");
-        const stiffness = getAttribute(prim, "stiffness");
-
-        const pathComp = new CablePathComponent(
-          world,
-          jointEntities,
-          linkTypes ? [...linkTypes] : null,
-          clockwise ? [...clockwise] : null,
-          stiffness || Infinity,
-          stored ? [...stored] : null
-        );
-        world.addComponent(cablePath, pathComp);
+            const pathComp = new CablePathComponent(
+              world,
+              jointEntities,
+              linkTypes ? [...linkTypes] : null,
+              clockwise ? [...clockwise] : null,
+              stiffness || Infinity,
+              stored ? [...stored] : null
+            );
+            world.addComponent(cablePath, pathComp);
+        }
     }
 
     if (world.systems.length === 0) {
-      world.registerSystem(new PrevFinalPosSystem());
-      world.registerSystem(new PrevFinalOrientationSystem());
-
       const pauseBtn = document.getElementById("pauseBtn");
       const inputSys = new InputSystem(canvas, world, pauseBtn);
       inputSys.scaleMultiplier = 0.5;
@@ -251,22 +259,22 @@ export function setupScene(world, stage, canvas) {
       inputSys.viewOffsetY = -0.5;
       world.registerSystem(inputSys);
 
-      world.registerSystem(new GravitySystem());
-      world.registerSystem(new MovementSystem());
-      world.registerSystem(new AngularMovementSystem());
-
-      world.registerSystem(new CableAttachmentUpdateSystem());
-      world.registerSystem(new CableAttachmentCacheSystem());
-      world.registerSystem(new CableSlackSystem());
-
-      world.registerSystem(new PBDCableConstraintSolver());
-      world.registerSystem(new PBDResolveCableOverCorrections());
-      world.registerSystem(new XPBDDistanceConstraintSystem());
-
-      world.registerSystem(new CableFrictionSystem());
-
-      world.registerSystem(new PBDVelocityUpdateSystem());
-      world.registerSystem(new PBDAngularVelocityUpdateSystem());
+      if (!isRemote) {
+          world.registerSystem(new PrevFinalPosSystem());
+          world.registerSystem(new PrevFinalOrientationSystem());
+          world.registerSystem(new GravitySystem());
+          world.registerSystem(new MovementSystem());
+          world.registerSystem(new AngularMovementSystem());
+          world.registerSystem(new CableAttachmentUpdateSystem());
+          world.registerSystem(new CableAttachmentCacheSystem());
+          world.registerSystem(new CableSlackSystem());
+          world.registerSystem(new PBDCableConstraintSolver());
+          world.registerSystem(new PBDResolveCableOverCorrections());
+          world.registerSystem(new XPBDDistanceConstraintSystem());
+          world.registerSystem(new CableFrictionSystem());
+          world.registerSystem(new PBDVelocityUpdateSystem());
+          world.registerSystem(new PBDAngularVelocityUpdateSystem());
+      }
 
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
     }
