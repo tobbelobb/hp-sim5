@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from move_commander import MoveCommander
 import json
+import numpy as np
 
 @pytest.fixture
 def gcode_file(tmp_path):
@@ -21,7 +22,20 @@ def test_parse_gcode(mock_get_dt, gcode_file):
 @patch('websockets.connect')
 @patch('asyncio.sleep', new_callable=AsyncMock)
 @patch('move_commander.MoveCommander._get_dt', return_value=0.1)
-async def test_send_commands(mock_get_dt, mock_sleep, mock_connect, gcode_file):
+@patch('move_commander.pos_to_motor_pos_samples_deg')
+async def test_send_commands(mock_pos_to_motor, mock_get_dt, mock_sleep, mock_connect, gcode_file):
+    def mock_kinematics(anchors, pos, low_axis_max_force, use_flex, spool_buildup_factor):
+        # Mock kinematics where angle is proportional to the square of the x-coordinate.
+        # This helps test that we are not just linearly interpolating angles.
+        final_angle_rad = 8.33333281207e-06
+        x = pos[0, 0]
+        angle_rad = final_angle_rad * x**2
+        angle_deg = angle_rad * 180.0 / np.pi
+        # Return shape is (num_samples, num_motors)
+        return np.array([[angle_deg, 0, 0]])
+
+    mock_pos_to_motor.side_effect = mock_kinematics
+
     mock_websocket = AsyncMock()
     mock_connect.return_value.__aenter__.return_value = mock_websocket
 
@@ -37,8 +51,14 @@ async def test_send_commands(mock_get_dt, mock_sleep, mock_connect, gcode_file):
     first_call = json.loads(mock_websocket.send.call_args_list[0].args[0])
     last_call = json.loads(mock_websocket.send.call_args_list[-1].args[0])
 
+    # With our mock, angle_rad = final_angle_rad * x^2
+    # First step is at t=0.1, so x=0.1. angle_rad = final_angle_rad * 0.1^2
+    expected_first_angle = 8.33333281207e-06 * 0.01
+    # Last step is at t=1.0, so x=1.0. angle_rad = final_angle_rad * 1^2
+    expected_last_angle = 8.33333281207e-06
+
     assert first_call['action'] == 'gcode'
-    assert pytest.approx(first_call['command']['A']) == 8.33333281207e-07
+    assert pytest.approx(first_call['command']['A']) == expected_first_angle
     assert last_call['action'] == 'gcode'
-    assert pytest.approx(last_call['command']['A']) == 8.33333281207e-06
-    assert pytest.approx(commander.current_angles_rad[0]) == 8.33333281207e-06
+    assert pytest.approx(last_call['command']['A']) == expected_last_angle
+    assert pytest.approx(commander.current_angles_rad[0]) == expected_last_angle
