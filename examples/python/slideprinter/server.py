@@ -112,13 +112,14 @@ class RemoteSpoolSystem:
 
         command = self.commands.pop(0) if self.commands else None
 
-        if command and 'E' in command:
+        if command and 'E' in command and command['E'] > 0.0:
             extruder_comp = None
             for e in world.query([ExtruderComponent]):
                 extruder_comp = world.get_component(e, ExtruderComponent)
                 break
             if extruder_comp:
-                extruder_comp.total_extruded_length += command['E']
+                extrusion_event = (extruder_comp.center_pos.copy(), command['E'])
+                extruder_comp.extrusions.append(extrusion_event)
 
         for axis, entity_id in self.axis_to_entity.items():
             if command and command['type'] == 'Move' and axis in command:

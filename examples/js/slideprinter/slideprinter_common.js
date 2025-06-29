@@ -14,7 +14,8 @@ import {
 
 export class ExtruderComponent {
     constructor() {
-        this.totalExtrudedLength = 0.0;
+        // Array of [[x,y,z], length]
+        this.extrusions = [];
         this.centerPos = [0.0, 0.0, 0.0];
     }
 }

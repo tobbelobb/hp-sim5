@@ -414,21 +414,27 @@ export class RenderSystem {
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length > 0) {
         const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
-        if (extruderComp && extruderComp.totalExtrudedLength > 0) {
-            const center = extruderComp.centerPos; // this is an array [x, y, z]
-            // Assume totalExtrudedLength is proportional to area. Radius is sqrt(Area/PI).
-            // The scaling factor is chosen empirically to look reasonable.
-            const radius = Math.sqrt(extruderComp.totalExtrudedLength / Math.PI) * 0.01;
-
+        if (extruderComp && extruderComp.extrusions.length > 0) {
             this.c.fillStyle = 'rgba(100, 255, 100, 0.5)';
-            this.c.beginPath();
-            this.c.arc(
-                this.cX(center[0]),
-                this.cY(center[1]),
-                radius * this.effectiveCScale,
-                0, 2 * Math.PI
-            );
-            this.c.fill();
+            for (const extrusion of extruderComp.extrusions) {
+                const pos = extrusion[0]; // [x, y, z] in meters
+                const length = extrusion[1]; // in mm
+
+                // The length is of the filament. The volume is what matters.
+                // Let's assume nozzle diameter is constant, so extruded area is proportional to length.
+                // Radius of blob is proportional to sqrt(length).
+                // The length is in mm, pos is in m. We use a scaling factor to get a reasonable radius in meters.
+                const radius = Math.sqrt(length / Math.PI) * 0.01;
+
+                this.c.beginPath();
+                this.c.arc(
+                    this.cX(pos[0]),
+                    this.cY(pos[1]),
+                    radius * this.effectiveCScale,
+                    0, 2 * Math.PI
+                );
+                this.c.fill();
+            }
         }
     }
 
