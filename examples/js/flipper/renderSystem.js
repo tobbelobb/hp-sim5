@@ -220,12 +220,13 @@ export class RenderSystem {
       for (const entityId of jointEntities) {
         const jointComp = world.getComponent(entityId, CableJointComponent);
         const renderComp = world.getComponent(entityId, RenderableComponent);
-
-        if (renderComp.shape !== 'line') continue;
-
         const pA = jointComp.attachmentPointA_world;
         const pB = jointComp.attachmentPointB_world;
-        this.c.strokeStyle = renderComp.color;
+        if (renderComp) {
+            this.c.strokeStyle = renderComp.color;
+        } else {
+            this.c.strokeStyle = 'yellow';
+        }
         this.c.beginPath();
         // Draw catenary if slack, otherwise straight
         const straightDist = pA.distanceTo(pB);
@@ -278,7 +279,11 @@ export class RenderSystem {
         const tensionNext = distNext > (jNext.restLength + epsilon);
 
         if (tensionPrev && tensionNext) {
-          this.c.strokeStyle = renderComp.color; // or pick your cable colour
+          if (renderComp) {
+              this.c.strokeStyle = renderComp.color;
+          } else {
+              this.c.strokeStyle = 'yellow';
+          }
         } else {
           this.c.strokeStyle = 'orange';
         }
@@ -317,7 +322,11 @@ export class RenderSystem {
           const anticw = !cw0;
           const a2     = cw0 ? a1 - delta_theta : a1 + delta_theta;
           this.c.beginPath();
-          this.c.strokeStyle = renderComp.color;
+          if (renderComp) {
+            this.c.strokeStyle = renderComp.color;
+          } else {
+            this.c.strokeStyle = 'yellow';
+          }
           this.c.arc(
             this.cX(cA.x), this.cY(cA.y),
             rA * this.effectiveCScale,
@@ -352,7 +361,11 @@ export class RenderSystem {
           const a2 = cw1 ? a1 - delta_theta : a1 + delta_theta;
 
           this.c.beginPath();
-          this.c.strokeStyle = renderComp.color;
+          if (renderComp) {
+            this.c.strokeStyle = renderComp.color;
+          } else {
+            this.c.strokeStyle = 'yellow';
+          }
           this.c.arc(
             this.cX(cB.x), this.cY(cB.y),
             rB * this.effectiveCScale,
@@ -373,6 +386,11 @@ export class RenderSystem {
         for (const entityId of distanceConstraintEntities) {
             const renderComp = world.getComponent(entityId, RenderableComponent);
             this.c.strokeStyle = renderComp.color;
+            if (renderComp) {
+              this.c.strokeStyle = renderComp.color;
+            } else {
+              this.c.strokeStyle = 'yellow';
+            }
             const constraint = world.getComponent(entityId, DistanceConstraintComponent);
             const posAComp = world.getComponent(constraint.entityA, PositionComponent);
             const posBComp = world.getComponent(constraint.entityB, PositionComponent);
