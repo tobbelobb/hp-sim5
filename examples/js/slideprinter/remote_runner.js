@@ -160,8 +160,7 @@ export function runRemoteGame(world, internalSetupScene, ws) {
             speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
         }
 
-        const renderSystem = world.systems.find(s => s instanceof RenderSystem);
-        if (renderSystem) renderSystem.update(world, 0);
+        world.update(0);
 
         requestAnimationFrame(gameLoop);
     }
