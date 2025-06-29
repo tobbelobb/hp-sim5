@@ -23,6 +23,7 @@ class MoveCommander:
     def __init__(self, gcode_file, uri):
         self.gcode_file = gcode_file
         self.uri = uri
+        self.last_speed_mm_per_min = 1000.0
         self.commands = self._parse_gcode()
         self.dt = self._get_dt()
         self.current_angles_rad = np.array([0.0, 0.0, 0.0])
@@ -80,7 +81,8 @@ class MoveCommander:
             elif part.startswith('Z'):
                 command['Z'] = float(part[1:])
             elif part.startswith('F'):
-                command['speed'] = float(part[1:])
+                self.last_speed_mm_per_min = float(part[1:])
+        command['speed'] = self.last_speed_mm_per_min
         return command
 
     def _parse_g92_command(self, line):
@@ -155,7 +157,7 @@ class MoveCommander:
                         )
 
                         # G-code speed is in mm/min. Convert to m/s.
-                        speed_mm_per_min = command.get('speed', 1000.0)  # default to 1000 mm/min
+                        speed_mm_per_min = command['speed']
                         speed_mm_per_s = speed_mm_per_min / 60.0
 
                         if distance_mm < 1e-6 or speed_mm_per_s < 1e-6:
