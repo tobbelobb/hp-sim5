@@ -53,7 +53,8 @@ from slideprinter.slideprinter_common import (
     SpoolStateComponent,
     StepperMotorComponent,
     StepperMotorSystem,
-    ExtruderComponent
+    ExtruderComponent,
+    ExtruderSystem
 )
 
 # Files that trigger a server restart when modified
@@ -90,25 +91,6 @@ class NpEncoder(json.JSONEncoder):
             return str(obj)
         return super(NpEncoder, self).default(obj)
 
-
-class ExtruderSystem:
-    def update(self, world, dt):
-        extruder_comp = None
-        for e in world.query([ExtruderComponent]):
-            extruder_comp = world.get_component(e, ExtruderComponent)
-            break
-
-        if not extruder_comp:
-            return
-
-        spool_positions = []
-        spool_entities = world.query([SpoolTagComponent, PositionComponent])
-        for e in spool_entities:
-            pos = world.get_component(e, PositionComponent).pos
-            spool_positions.append(pos)
-
-        if spool_positions:
-            extruder_comp.center_pos = np.mean(spool_positions, axis=0)
 
 
 class RemoteSpoolSystem:
