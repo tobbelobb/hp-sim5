@@ -415,7 +415,6 @@ def setup_scene(world: World):
         world.register_system(AngularMovementSystem())
 
         # 4. Update derived geometry and cable state
-        world.register_system(ExtruderSystem())
         world.register_system(XPBDDistanceConstraintSystem())
         world.register_system(CableAttachmentUpdateSystem())
         world.register_system(CableAttachmentCacheSystem())
@@ -436,6 +435,7 @@ def setup_scene(world: World):
         # Velocity-level solvers (which might also do positional adjustments)
 
         # 9. Game Logic or similar. Counters and stuff
+        world.register_system(ExtruderSystem())
 
 
 # --- Serialization ---
