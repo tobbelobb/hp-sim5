@@ -119,7 +119,7 @@ class RemoteSpoolSystem:
                 break
             if extruder_comp:
                 extrusion_event = (extruder_comp.center_pos.copy(), command['E'])
-                extruder_comp.extrusions.append(extrusion_event)
+                world.get_resource("extrusion_events").append(extrusion_event)
 
         for axis, entity_id in self.axis_to_entity.items():
             if command and command['type'] == 'Move' and axis in command:
@@ -241,6 +241,7 @@ def stage_to_world(world, stage):
     world.set_resource("pauseState", PauseStateComponent(False))
     world.set_resource("debugRenderPoints", {})
     world.set_resource("grabbedBall", None)
+    world.set_resource("extrusion_events", [])
 
     physics_scene = stage.GetPrimAtPath("/World/PhysicsScene")
     if physics_scene:
@@ -478,7 +479,7 @@ def world_to_full_state_json(world: World) -> str:
     for name, resource in world.resources.items():
         if name in ['grabbedBall', 'debugRenderPoints']:
             continue
-        if name in ['dt', 'gravity', 'pauseState']:
+        if name in ['dt', 'gravity', 'pauseState', 'extrusion_events']:
              state['resources'][name] = dataclasses.asdict(resource) if dataclasses.is_dataclass(resource) else resource
 
     return json.dumps(state, cls=NpEncoder)
@@ -486,7 +487,9 @@ def world_to_full_state_json(world: World) -> str:
 
 # --- WebSocket handler ---
 async def handler(websocket, world, remote_spool_system):
-    await websocket.send(world_to_full_state_json(world))
+    state_json = world_to_full_state_json(world)
+    world.get_resource("extrusion_events").clear()
+    await websocket.send(state_json)
 
     async for message in websocket:
         data = json.loads(message)
@@ -508,7 +511,9 @@ async def handler(websocket, world, remote_spool_system):
         elif action == 'gcode':
             remote_spool_system.add_command(data['command'])
 
-        await websocket.send(world_to_full_state_json(world))
+        state_json = world_to_full_state_json(world)
+        world.get_resource("extrusion_events").clear()
+        await websocket.send(state_json)
 
 
 async def main():

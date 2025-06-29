@@ -26,9 +26,6 @@ from cable_joints.ecs import (
 @dataclass
 class ExtruderComponent:
     """Represents the state of the extruder."""
-    # List of (position, length) tuples, where position is in meters
-    # and length is in mm (as per G-code E value).
-    extrusions: list = field(default_factory=list)
     center_pos: np.ndarray = field(default_factory=lambda: np.zeros(3))
 
 

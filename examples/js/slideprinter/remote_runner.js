@@ -23,6 +23,15 @@ const componentRegistry = {
 };
 
 function rebuildWorldFromState(world, state) {
+    let existingExtrusions = [];
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length > 0) {
+        const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+        if (extruderComp) {
+            existingExtrusions = extruderComp.extrusions;
+        }
+    }
+
     world.clear();
 
     if (state.resources) {
@@ -85,6 +94,19 @@ function rebuildWorldFromState(world, state) {
                     }
                 }
                 world.addComponent(entityId, componentInstance);
+            }
+        }
+    }
+
+    const newExtruderEntities = world.query([ExtruderComponent]);
+    if (newExtruderEntities.length > 0) {
+        const extruderComp = world.getComponent(newExtruderEntities[0], ExtruderComponent);
+        if (extruderComp) {
+            extruderComp.extrusions = existingExtrusions;
+            if (state.resources && state.resources.extrusion_events) {
+                for (const event of state.resources.extrusion_events) {
+                    extruderComp.extrusions.push(event);
+                }
             }
         }
     }
@@ -178,6 +200,15 @@ export function runRemoteGame(world, internalSetupScene, ws) {
         e.preventDefault();
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ action: 'reset' }));
+
+            const extruderEntities = world.query([ExtruderComponent]);
+            if (extruderEntities.length > 0) {
+                const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+                if (extruderComp) {
+                    extruderComp.extrusions = [];
+                }
+            }
+
             isPaused = true;
             pauseBtn.textContent = "Start";
             lastTime = 0;
