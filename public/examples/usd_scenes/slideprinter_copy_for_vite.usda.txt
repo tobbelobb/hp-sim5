@@ -15,16 +15,17 @@ def Xform "World"
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Spool"]
+            token[] ecs:tags = ["Spool", "Stepper"]
             rel material:binding = </World/PhysicsScene/SpoolMaterial>
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.0, -0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.005
+            float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            # Typical intertia range for Nema 17 stepper motors are ca 3e-5 to 8e-5.
+            matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -40,16 +41,16 @@ def Xform "World"
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Spool"]
+            token[] ecs:tags = ["Spool", "Stepper"]
             rel material:binding = </World/PhysicsScene/SpoolMaterial>
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.08660254, 0.05, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.005
+            float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -65,16 +66,16 @@ def Xform "World"
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Spool"]
+            token[] ecs:tags = ["Spool", "Stepper"]
             rel material:binding = </World/PhysicsScene/SpoolMaterial>
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (-0.08660254, 0.05, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.005
+            float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
-            matrix3d physics:inertiaTensor = ((2.25e-06, 0, 0), (0, 2.25e-06, 0), (0, 0, 2.25e-06))
+            matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
