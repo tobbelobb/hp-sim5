@@ -58,8 +58,8 @@ function rebuildWorldFromState(world, state) {
                 if (compName === 'CableJointComponent') {
                     componentInstance = new CableJointComponent(
                         compData.entity_a, compData.entity_b, compData.rest_length,
-                        new Vector2(compData.attachment_point_a_local[0], compData.attachment_point_a_local[1]),
-                        new Vector2(compData.attachment_point_b_local[0], compData.attachment_point_b_local[1])
+                        new Vector2(compData.attachment_point_a_world[0], compData.attachment_point_a_world[1]),
+                        new Vector2(compData.attachment_point_b_world[0], compData.attachment_point_b_world[1])
                     );
                     if (compData.attachment_point_a_world) {
                         componentInstance.attachmentPointA_world = new Vector2(compData.attachment_point_a_world[0], compData.attachment_point_a_world[1]);
@@ -111,6 +111,7 @@ export function runRemoteGame(world, internalSetupScene, ws) {
         const state = JSON.parse(event.data);
         rebuildWorldFromState(world, state);
 
+        console.log(world.query([DistanceConstraintComponent]), world.query([RenderableComponent]));
         const serverPauseState = state.resources.pauseState;
         if (serverPauseState) {
             isPaused = serverPauseState.paused;
