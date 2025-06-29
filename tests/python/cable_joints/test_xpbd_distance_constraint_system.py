@@ -22,8 +22,8 @@ def test_xpbd_distance_constraint_converges_to_rest_length():
     world.add_component(b, MassComponent(mass=1.0))
 
     constraint = DistanceConstraintComponent(
-        entityA=a,
-        entityB=b,
+        entity_a=a,
+        entity_b=b,
         rest_length=1.0,
     )
     # Alias fields expected by the system's JS-port implementation

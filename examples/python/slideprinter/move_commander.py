@@ -6,9 +6,21 @@ from pathlib import Path
 import math
 import numpy as np
 
-from .forward_kinematics import slideprinter_forward_transform
-from .kinematics import pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess
-from .guessed_data import guessed_anchors
+import sys
+from pathlib import Path
+
+root_dir = Path(__file__).resolve().parents[3]
+src_python_path = root_dir / "src" / "python"
+if str(src_python_path) not in sys.path:
+    sys.path.insert(0, str(src_python_path))
+
+examples_python_path = root_dir / "examples" / "python"
+if str(examples_python_path) not in sys.path:
+    sys.path.insert(0, str(examples_python_path))
+
+from slideprinter.forward_kinematics import slideprinter_forward_transform
+from slideprinter.kinematics import pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess
+from slideprinter.guessed_data import guessed_anchors
 
 async def _recv_and_discard(websocket):
     """Drain messages from the websocket connection to prevent it from blocking."""
@@ -138,7 +150,7 @@ class MoveCommander:
                                 # G-code is in mm, kinematics uses meters
                                 target_pos_mm[axis] = command[axis]
                                 has_move = True
-                        
+
                         extrusion_delta_mm = command.get('E', 0.0)
 
                         if not has_move and extrusion_delta_mm == 0.0:
@@ -189,7 +201,7 @@ class MoveCommander:
                             interpolated_cmd = {'type': 'Move'}
                             for idx, axis in enumerate(axesABC):
                                 interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
-                            
+
                             if extrusion_per_step > 0.0:
                                 interpolated_cmd['E'] = extrusion_per_step
 
