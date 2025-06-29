@@ -444,26 +444,17 @@ def world_to_full_state_json(world: World) -> str:
 
             # Add world-space attachment points for JS client
             if class_name == 'CableJointComponent':
-                def get_world_space_2d(body_pos, body_angle, local_pos):
-                    c, s = np.cos(body_angle), np.sin(body_angle)
-                    rotated_local = np.array([
-                        local_pos[0] * c - local_pos[1] * s,
-                        local_pos[0] * s + local_pos[1] * c
-                    ])
-                    return body_pos[:2] + rotated_local
-
                 entity_a = component_instance.entity_a
                 pos_a = world.get_component(entity_a, PositionComponent).pos
                 rot_a_comp = world.get_component(entity_a, OrientationComponent)
                 rot_a = rot_a_comp.angle if rot_a_comp else 0.0
+                comp_dict['attachment_point_a_world'] = component_instance.attachment_point_a_world
 
                 entity_b = component_instance.entity_b
                 pos_b = world.get_component(entity_b, PositionComponent).pos
                 rot_b_comp = world.get_component(entity_b, OrientationComponent)
                 rot_b = rot_b_comp.angle if rot_b_comp else 0.0
-
-                comp_dict['attachment_point_a_world'] = get_world_space_2d(pos_a, rot_a, component_instance.attachment_point_a_local)
-                comp_dict['attachment_point_b_world'] = get_world_space_2d(pos_b, rot_b, component_instance.attachment_point_b_local)
+                comp_dict['attachment_point_b_world'] = component_instance.attachment_point_b_world
 
             state['components'][class_name][str(entity_id)] = comp_dict
 
