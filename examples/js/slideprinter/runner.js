@@ -3,7 +3,7 @@ import { RenderSystem } from '../flipper/renderSystem.js';
 import { InputSystem } from './slideprinter_common.js';
 
 
-export function runGame(world, setupScene, sceneData) {
+export function runGame(world, internalSetupScene) {
     const pauseBtn = document.getElementById("pauseBtn");
     const resetBtn = document.getElementById("resetBtn");
     const stepBtn = document.getElementById("stepBtn");
@@ -93,7 +93,7 @@ export function runGame(world, setupScene, sceneData) {
 
     resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        setupScene(sceneData);
+        internalSetupScene();
         for (const sys of world.systems) {
             if (sys instanceof InputSystem) {
                 if (typeof sys.reset === 'function') sys.reset();
@@ -125,7 +125,7 @@ export function runGame(world, setupScene, sceneData) {
         console.log(dumpWorldState(world));
     });
 
-    setupScene(sceneData);
+    internalSetupScene();
     const pauseState = world.getResource('pauseState');
     pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
     requestAnimationFrame(gameLoop);

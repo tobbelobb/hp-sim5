@@ -57,7 +57,7 @@ import {
 } from '../../../src/js/cable_joints/commonSystems.js';
 
 export function setupScene(world, stage, canvas) {
-  world.clear();
+    world.clear();
 
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;

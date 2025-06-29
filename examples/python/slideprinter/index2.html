@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Slideprinter</title>
+    <title>Slideprinter (Python Backend)</title>
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
 
@@ -117,8 +117,51 @@ canvas {
       Open as UsdOpen,
     } from "../../../src/js/usd/stage.js";
     import { World } from '../../../src/js/cable_joints/ecs.js';
-    import { runGame } from './runner.js';
-    import { setupScene } from './setupScene.js';
+    import { runGame } from '../../js/slideprinter/runner.js';
+    import { setupScene } from '../../js/slideprinter/setupScene.js';
+
+    function connect() {
+        ws = new WebSocket('ws://localhost:8766');
+
+        ws.onopen = () => {
+            console.log('Connected to Python WebSocket server.');
+            setupCanvas();
+            isPaused = true;
+            pauseBtn.textContent = "Start";
+            pauseBtn.disabled = false;
+            resetBtn.disabled = false;
+            stepBtn.disabled = false;
+        };
+
+        ws.onmessage = (event) => {
+            simState = JSON.parse(event.data);
+            if (simState.isPaused !== undefined) {
+                isPaused = simState.isPaused;
+                if (isPaused) {
+                    if (pauseBtn.textContent !== "Start") {
+                        pauseBtn.textContent = "Resume";
+                    }
+                } else {
+                    pauseBtn.textContent = "Pause";
+                }
+            }
+            render();
+        };
+
+        ws.onclose = () => {
+            console.log('Disconnected from server. Reconnecting in 1s...');
+            pauseBtn.textContent = "Reconnecting...";
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            stepBtn.disabled = true;
+            setTimeout(connect, 1000);
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+        };
+    }
+
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
@@ -127,6 +170,7 @@ canvas {
     const base = import.meta.env.BASE_URL || '/';
     const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
 
+    connect();
     UsdOpen(usdaPath).then(stage => {
       if (!stage) {
           console.error("Failed to load or parse USD file:", usdaPath);
