@@ -392,8 +392,8 @@ export class RenderSystem {
               this.c.strokeStyle = 'yellow';
             }
             const constraint = world.getComponent(entityId, DistanceConstraintComponent);
-            const posAComp = world.getComponent(constraint.entity_a, PositionComponent);
-            const posBComp = world.getComponent(constraint.entity_b, PositionComponent);
+            const posAComp = world.getComponent(constraint.entityA, PositionComponent);
+            const posBComp = world.getComponent(constraint.entityB, PositionComponent);
 
             if (posAComp && posBComp) {
                 const pA = posAComp.pos;

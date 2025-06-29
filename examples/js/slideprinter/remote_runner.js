@@ -85,10 +85,6 @@ function rebuildWorldFromState(world, state) {
                     }
                 }
                 world.addComponent(entityId, componentInstance);
-                // Ensure distance constraints are rendered even if the server state omitted a RenderableComponent
-                if (componentInstance instanceof DistanceConstraintComponent) {
-                    world.addComponent(entityId, new RenderableComponent('line', 'green'));
-                }
             }
         }
     }
@@ -115,7 +111,6 @@ export function runRemoteGame(world, internalSetupScene, ws) {
         const state = JSON.parse(event.data);
         rebuildWorldFromState(world, state);
 
-        console.log(world.query([DistanceConstraintComponent]), world.query([RenderableComponent]));
         const serverPauseState = state.resources.pauseState;
         if (serverPauseState) {
             isPaused = serverPauseState.paused;

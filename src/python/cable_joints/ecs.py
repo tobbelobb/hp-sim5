@@ -206,8 +206,8 @@ class DistanceConstraintComponent:
     JavaScript implementation while avoiding the reserved keyword.
     """
 
-    entityA: int
-    entityB: int
+    entity_a: int
+    entity_b: int
     rest_length: float
     compliance: float = 0.0
     lambda_val: float = 0.0  # Accumulated Lagrange multiplier

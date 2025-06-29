@@ -118,8 +118,8 @@ class XPBDDistanceConstraintSystem:
         for entity_id in constraint_entities:
             constraint = world.get_component(entity_id, DistanceConstraintComponent)
 
-            entity_a = constraint.entityA
-            entity_b = constraint.entityB
+            entity_a = constraint.entity_a
+            entity_b = constraint.entity_b
 
             pos_a_comp = world.get_component(entity_a, PositionComponent)
             pos_b_comp = world.get_component(entity_b, PositionComponent)

@@ -160,7 +160,7 @@ def split_joints(world):
                     path.link_types.insert(i + 1, 'rolling')
                     path.stored.insert(i + 1, s)
 
-                    # Update original joint (now entityA -> splitter)
+                    # Update original joint (now entity_a -> splitter)
                     joint.entity_b = splitter_id
                     joint.rest_length = new_rest_length_as
                     joint.attachment_point_a_world = new_attachment_point_a_for_joint
