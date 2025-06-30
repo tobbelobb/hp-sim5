@@ -42,7 +42,8 @@ import {
 } from '../flipper/flipper_common.js';
 import {
   InputSystem,
-  SpoolTagComponent
+  SpoolTagComponent,
+  RemoteInputSystem
 } from './slideprinter_common.js';
 import { RenderSystem } from '../flipper/renderSystem.js';
 import {
@@ -253,7 +254,13 @@ export function setupScene(world, stage, canvas, options = {}) {
 
     if (world.systems.length === 0) {
       const pauseBtn = document.getElementById("pauseBtn");
-      const inputSys = new InputSystem(canvas, world, pauseBtn);
+      let inputSys;
+      if (isRemote) {
+          const ws = options.ws;
+          inputSys = new RemoteInputSystem(canvas, world, ws);
+      } else {
+          inputSys = new InputSystem(canvas, world, pauseBtn);
+      }
       inputSys.scaleMultiplier = 0.5;
       inputSys.viewOffsetX = 0.0;
       inputSys.viewOffsetY = -0.5;

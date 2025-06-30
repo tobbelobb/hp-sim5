@@ -232,7 +232,7 @@ export function runRemoteGame(world, internalSetupScene, ws) {
         console.log(dumpWorldState(world));
     });
 
-    internalSetupScene();
+    internalSetupScene(ws);
     pauseBtn.textContent = "Start";
     requestAnimationFrame(gameLoop);
 }

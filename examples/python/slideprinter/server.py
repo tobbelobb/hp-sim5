@@ -77,6 +77,85 @@ WATCHED_FILES = [
 ]
 
 # --- Server-Side Systems ---
+
+class GrabSpoolSystem:
+    def __init__(self):
+        self.events = []
+        self._grab_spring = None  # (ptr_e, joint_e, path_e, spool_e)
+
+    def add_event(self, event):
+        self.events.append(event)
+
+    def update(self, world, dt):
+        if not self.events:
+            return
+        event = self.events.pop(0)
+        event_type = event['type']
+        pos = event['pos']
+
+        if event_type == 'pointerdown':
+            if self._grab_spring:  # Already grabbing
+                return
+
+            closest_spool = -1
+            min_dist_sq = float('inf')
+            for e in world.query([SpoolTagComponent, PositionComponent, RadiusComponent]):
+                spool_pos = world.get_component(e, PositionComponent).pos
+                radius = world.get_component(e, RadiusComponent).radius
+                dist_sq = np.sum((pos - spool_pos) ** 2)
+                if dist_sq < radius ** 2 and dist_sq < min_dist_sq:
+                    min_dist_sq = dist_sq
+                    closest_spool = e
+
+            if closest_spool != -1:
+                ptr_e = world.create_entity()
+                world.add_component(ptr_e, PositionComponent(pos.copy()))
+                world.add_component(ptr_e, CableLinkComponent())
+                world.add_component(ptr_e, MassComponent(-1.0))
+
+                joint_e = world.create_entity()
+                world.add_component(joint_e, CableJointComponent(
+                    entity_a=closest_spool,
+                    entity_b=ptr_e,
+                    rest_length=0.1,
+                    attachment_point_a=np.zeros(3),
+                    attachment_point_b=np.zeros(3)
+                ))
+                world.add_component(joint_e, RenderableComponent('line', '#888888'))
+
+                path_e = world.create_entity()
+                path_comp = create_cable_path_component(
+                    world,
+                    [joint_e],
+                    ['attachment', 'attachment'],
+                    [True, True],
+                    10.0  # stiffness
+                )
+                world.add_component(path_e, path_comp)
+
+                self._grab_spring = (ptr_e, joint_e, path_e, closest_spool)
+                world.set_resource('grabbedBall', closest_spool)
+
+                pause_state = world.get_resource('pauseState')
+                if pause_state:
+                    pause_state.paused = False
+
+        elif event_type == 'pointermove':
+            if self._grab_spring:
+                ptr_e = self._grab_spring[0]
+                ptr_pos = world.get_component(ptr_e, PositionComponent)
+                ptr_pos.pos = pos.copy()
+
+        elif event_type == 'pointerup':
+            if self._grab_spring:
+                ptr_e, joint_e, path_e, spool_e = self._grab_spring
+                world.destroy_entity(path_e)
+                world.destroy_entity(joint_e)
+                world.destroy_entity(ptr_e)
+                self._grab_spring = None
+                world.set_resource('grabbedBall', None)
+
+
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -408,6 +487,7 @@ def setup_scene(world: World):
         world.register_system(PrevFinalOrientationSystem())
 
         # 2. Handle user input and non-physics state changes
+        world.register_system(GrabSpoolSystem())
         world.register_system(RemoteSpoolSystem())
         world.register_system(StepperMotorSystem())
 
@@ -486,7 +566,7 @@ def world_to_full_state_json(world: World) -> str:
 
 
 # --- WebSocket handler ---
-async def handler(websocket, world, remote_spool_system):
+async def handler(websocket, world, remote_spool_system, grab_spool_system):
     state_json = world_to_full_state_json(world)
     world.get_resource("extrusion_events").clear()
     await websocket.send(state_json)
@@ -510,6 +590,12 @@ async def handler(websocket, world, remote_spool_system):
             pause_state.paused = data['paused']
         elif action == 'gcode':
             remote_spool_system.add_command(data['command'])
+        elif action == 'input':
+            if grab_spool_system:
+                pos = np.array([data['x'], data['y'], 0.0])
+                event_type = data['type']
+                if event_type in ['pointerdown', 'pointermove', 'pointerup']:
+                    grab_spool_system.add_event({'type': event_type, 'pos': pos})
 
         state_json = world_to_full_state_json(world)
         world.get_resource("extrusion_events").clear()
@@ -527,10 +613,11 @@ async def main():
     world = World()
     setup_scene(world)
     remote_spool_system = world.get_system(RemoteSpoolSystem)
+    grab_spool_system = world.get_system(GrabSpoolSystem)
 
     print(f"Starting Slideprinter server on ws://localhost:{args.port}")
 
-    serve_handler = functools.partial(handler, world=world, remote_spool_system=remote_spool_system)
+    serve_handler = functools.partial(handler, world=world, remote_spool_system=remote_spool_system, grab_spool_system=grab_spool_system)
     async with websockets.serve(serve_handler, "localhost", args.port):
         asyncio.create_task(watch_and_restart(WATCHED_FILES))
         await asyncio.Future()  # run forever

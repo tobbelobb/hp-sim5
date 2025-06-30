@@ -22,6 +22,90 @@ export class ExtruderComponent {
 
 export class SpoolTagComponent {}
 
+// --- System: Remote Input ---
+export class RemoteInputSystem {
+     runInPause = true;
+
+     constructor(canvas, world, ws) {
+         this.canvas = canvas;
+         this.world = world;
+         this.ws = ws;
+         this.scaleMultiplier = 1.0;
+         this.viewOffsetX = 0.0;
+         this.viewOffsetY = 0.0;
+
+         this.handlePointerDown = this.handlePointerDown.bind(this);
+         this.handlePointerMove = this.handlePointerMove.bind(this);
+         this.handlePointerUp = this.handlePointerUp.bind(this);
+
+         document.addEventListener('pointerdown', this.handlePointerDown);
+         document.addEventListener('pointermove', this.handlePointerMove);
+         document.addEventListener('pointerup', this.handlePointerUp);
+     }
+
+     toSimCoords(canvasX, canvasY) {
+        const rect = this.canvas.getBoundingClientRect();
+        const baseScale = this.canvas.height / this.world.getResource('simHeight');
+        const scale = baseScale * this.scaleMultiplier;
+        const pixelX = canvasX - rect.left;
+        const pixelY = canvasY - rect.top;
+        const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+        const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+        return { x: simX, y: simY };
+     }
+
+     handlePointerDown(event) {
+         event.preventDefault();
+         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+             const { x, y } = this.toSimCoords(event.clientX, event.clientY);
+
+             let isGrabClick = false;
+             for (const spoolId of this.world.query([SpoolTagComponent, PositionComponent, RadiusComponent])) {
+                 const pos = this.world.getComponent(spoolId, PositionComponent).pos;
+                 const radius = this.world.getComponent(spoolId, RadiusComponent).radius;
+                 const dx = x - pos.x;
+                 const dy = y - pos.y;
+                 if (dx * dx + dy * dy <= radius * radius) {
+                     isGrabClick = true;
+                     break;
+                 }
+             }
+
+             if (isGrabClick) {
+                 const pauseState = this.world.getResource('pauseState');
+                 if (pauseState && pauseState.paused) {
+                     pauseState.paused = false;
+                     const pauseBtn = document.getElementById("pauseBtn");
+                     if (pauseBtn) pauseBtn.textContent = "Pause";
+                     this.ws.send(JSON.stringify({ action: 'pause', paused: false }));
+                 }
+             }
+
+             this.ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x, y }));
+         }
+     }
+
+     handlePointerMove(event) {
+         event.preventDefault();
+         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+             const { x, y } = this.toSimCoords(event.clientX, event.clientY);
+             this.ws.send(JSON.stringify({ action: 'input', type: 'pointermove', x, y }));
+         }
+     }
+
+     handlePointerUp(event) {
+         event.preventDefault();
+         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+             const { x, y } = this.toSimCoords(event.clientX, event.clientY);
+             this.ws.send(JSON.stringify({ action: 'input', type: 'pointerup', x, y }));
+         }
+     }
+
+     update(world, dt) {
+        // This system doesn't run per-step logic, only handles events.
+     }
+}
+
 // --- System: Input --- (Simplified Click Handling)
 export class InputSystem {
      runInPause = true; // Input should work even when paused to unpause/interact
