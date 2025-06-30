@@ -17,7 +17,7 @@ This project simulates cables using a Position‑Based Dynamics (PBD) solver bui
 1. Make sure Python 3.10+ is installed.
 2. Install the optional dependencies:
    ```bash
-   pip install numpy pytest websockets warp-lang[extras]
+   pip install numpy pytest websockets warp-lang[extras] pytest-asyncio
    ```
 3. Start the demo server and open the HTML front end:
    ```bash
