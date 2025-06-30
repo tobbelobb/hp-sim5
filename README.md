@@ -26,6 +26,22 @@ This project simulates cables using a Position‑Based Dynamics (PBD) solver bui
    ```
 4. To run the Warp version use `python -m examples.python.flipper.server --warp` and open `examples/python/flipper/index_warp.html`.
 
+### Running the Slideprinter demo
+1. Start the frontend:
+   ```bash
+   npx vite
+   ```
+2. In another terminal start the slideprinter server:
+   ```bash
+   python -m examples.python.slideprinter.server
+   ```
+3. Open <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html> in your browser.
+4. Issue move commands:
+   ```bash
+   python -m examples.python.slideprinter.move_commander examples/python/slideprinter/tighten.gcode
+   python -m examples.python.slideprinter.move_commander examples/python/slideprinter/draw_squares.gcode
+   ```
+
 ### Running the tests
 JavaScript tests use Jest and Python tests use pytest.
 
