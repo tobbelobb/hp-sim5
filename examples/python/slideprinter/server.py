@@ -118,8 +118,8 @@ class GrabSpoolSystem:
                     entity_a=closest_spool,
                     entity_b=ptr_e,
                     rest_length=0.1,
-                    attachment_point_a=np.zeros(3),
-                    attachment_point_b=np.zeros(3)
+                    attachment_point_a_world=np.zeros(3),
+                    attachment_point_b_world=np.zeros(3)
                 ))
                 world.add_component(joint_e, RenderableComponent('line', '#888888'))
 
