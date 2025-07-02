@@ -3,8 +3,9 @@ import { guessed_anchors } from './guessedData.js';
 
 
 class MoveCommander {
-    constructor(uri) {
+    constructor({uri = null, commandHandler = null} = {}) {
         this.uri = uri;
+        this.commandHandler = commandHandler;
         this.websocket = null;
         this.last_speed_mm_per_min = 1000.0;
         this.commands = [];
@@ -20,6 +21,9 @@ class MoveCommander {
     }
 
     async connect() {
+        if (!this.uri) {
+            return;
+        }
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
             return;
         }
@@ -28,7 +32,7 @@ class MoveCommander {
             this.websocket.onopen = () => {
                 console.log("MoveCommander connected to websocket.");
                 // Start a task to drain incoming messages, like in the Python version
-                this.websocket.onmessage = (event) => { /* discard */ };
+                this.websocket.onmessage = () => { /* discard */ };
                 resolve();
             };
             this.websocket.onerror = (err) => {
@@ -106,7 +110,11 @@ class MoveCommander {
 
     async sendCommand(command) {
         const message = { action: 'gcode', command: command };
-        this.websocket.send(JSON.stringify(message));
+        if (this.websocket) {
+            this.websocket.send(JSON.stringify(message));
+        } else if (this.commandHandler) {
+            this.commandHandler(message);
+        }
     }
 
     async run(gcode) {
@@ -249,8 +257,10 @@ class MoveCommander {
     }
 }
 
-const uri = "ws://localhost:8768";
-const commander = new MoveCommander(uri);
+const commander = new MoveCommander({
+    uri: null,
+    commandHandler: (msg) => postMessage(msg)
+});
 
 self.onmessage = function(e) {
     if (e.data.type === 'start' && e.data.gcode) {
