@@ -21,7 +21,7 @@ class MoveCommander {
     }
 
     async connect() {
-        if (!this.uri) {
+        if (this.commandHandler || !this.uri) {
             return;
         }
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
@@ -262,10 +262,12 @@ const commander = new MoveCommander({
     commandHandler: (msg) => postMessage(msg)
 });
 
-self.onmessage = function(e) {
-    if (e.data.type === 'start' && e.data.gcode) {
-        commander.run(e.data.gcode);
-    } else if (e.data.type === 'set_dt' && e.data.dt) {
-        commander.dt = e.data.dt;
-    }
-};
+    self.onmessage = function(e) {
+        if (e.data.type === 'start' && e.data.gcode) {
+            commander.run(e.data.gcode);
+        } else if (e.data.type === 'set_dt' && e.data.dt) {
+            commander.dt = e.data.dt;
+        }
+    };
+}
+export default MoveCommander;
