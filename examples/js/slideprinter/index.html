@@ -161,18 +161,8 @@ canvas {
         console.log('Your browser does not support Web Workers.');
     }
 
-    const base = import.meta.env.BASE_URL || '/';
-    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
-
-    UsdOpen(usdaPath).then(stage => {
-      if (!stage) {
-          console.error("Failed to load or parse USD file:", usdaPath);
-          return;
-      }
-      runGame(world, () => setupScene(world, stage, canvas));
-    }).catch(error => {
-        console.error("Error during USD loading or game setup:", error);
-    });
+    const ws = new WebSocket("ws://localhost:8766");
+    runGame(world, () => setupScene(world, null, canvas, { remote: true, ws: ws }));
 </script>
 
 </body>
