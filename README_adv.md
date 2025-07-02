@@ -28,12 +28,17 @@ A physics engine for simulating cables, built on a Position-Based Dynamics (PBD)
    - `npx vite`
    - You might have to do `npm install` the first time?
    - Open for example http://localhost:5173/flipper.html in browser. Or:
- - Js based demos are also available at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/flipper), [tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads), [tobbelobb.github.io/hp-sim5/flipper_with_attached_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_attached_beads)
- - Slideprinter demo at `examples/python/slideprinter/index.html`. Start `npx vite` and in another terminal run
-   `python -m examples.python.slideprinter.server`. Then you can move it with
-   `python -m examples.python.slideprinter.move_commander`.
-   The move commander and server understand G1, G6 and G92 commands, acting as
-   the firmware for the current Python Slideprinter.
+- Js based demos are also available at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/flipper), [tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads), [tobbelobb.github.io/hp-sim5/flipper_with_attached_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_attached_beads)
+- Slideprinter demo at `examples/python/slideprinter/index.html`. Start `npx vite` and in another terminal run
+  `python -m examples.python.slideprinter.server`. Then you can move it with
+  `python -m examples.python.slideprinter.move_commander`.
+  The move commander and server understand G1, G6 and G92 commands, acting as
+  the firmware for the current Python Slideprinter.
+ - To try the JS front end alone, start `npx vite` and open `slideprinter.html`.
+   Upload a G-code file to run the JS `MoveCommander` locally without any WebSocket.
+   The Python `move_commander` can also send commands over WebSocket (`ws://localhost:8768`).
+   `MoveCommander` constructors in both languages now accept optional `anchors_mm`,
+   `spool_radius_mm`, `low_axis_max_force`, `use_flex` and `spool_buildup_factor` arguments.
 
   ## 3. Python Port
   A complete Python port of the cable joints engine is available in the `src/python/cable_joints/` directory, mirroring the JavaScript implementation with equivalent ECS, geometry, and PBD systems.

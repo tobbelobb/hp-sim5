@@ -31,16 +31,21 @@ This project simulates cables using a Position‑Based Dynamics (PBD) solver bui
    ```bash
    npx vite
    ```
-2. In another terminal start the slideprinter server:
+2. For a pure JavaScript run open <http://localhost:5173/hp-sim5/slideprinter.html> and use the **Load G-code** button to drive the local MoveCommander worker.
+3. To connect a Python backend start the slideprinter server:
    ```bash
    python -m examples.python.slideprinter.server
    ```
-3. Open <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html> in your browser.
-4. Issue move commands:
+   and open <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>.
+4. Issue move commands from Python (connects via WebSocket):
    ```bash
    python -m examples.python.slideprinter.move_commander examples/python/slideprinter/tighten.gcode
    python -m examples.python.slideprinter.move_commander examples/python/slideprinter/draw_squares.gcode
    ```
+   The `MoveCommander` constructor now accepts optional `anchors_mm`,
+   `spool_radius_mm`, `low_axis_max_force`, `use_flex` and
+   `spool_buildup_factor` parameters for fine‑tuning, mirroring the Python
+   implementation.
 
 ### Running the tests
 JavaScript tests use Jest and Python tests use pytest.
