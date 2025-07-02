@@ -2,8 +2,8 @@ import { pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess, norm, subt
 import { guessed_anchors } from './guessedData.js';
 
 
-export class MoveCommander {
-    constructor(uri = null, commandHandler = null) {
+class MoveCommander {
+    constructor({uri = null, commandHandler = null} = {}) {
         this.uri = uri;
         this.commandHandler = commandHandler;
         this.websocket = null;
@@ -31,8 +31,8 @@ export class MoveCommander {
         return new Promise((resolve, reject) => {
             this.websocket.onopen = () => {
                 console.log("MoveCommander connected to websocket.");
-                // Drain incoming messages like in the Python version
-                this.websocket.onmessage = () => {};
+                // Start a task to drain incoming messages, like in the Python version
+                this.websocket.onmessage = () => { /* discard */ };
                 resolve();
             };
             this.websocket.onerror = (err) => {
@@ -257,9 +257,10 @@ export class MoveCommander {
     }
 }
 
-if (typeof self !== 'undefined' && typeof document === 'undefined') {
-    const uri = "ws://localhost:8768";
-    const commander = new MoveCommander(uri);
+const commander = new MoveCommander({
+    uri: null,
+    commandHandler: (msg) => postMessage(msg)
+});
 
     self.onmessage = function(e) {
         if (e.data.type === 'start' && e.data.gcode) {
