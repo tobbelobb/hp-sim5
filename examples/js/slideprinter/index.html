@@ -137,11 +137,8 @@ canvas {
         moveCommanderWorker.onmessage = (e) => {
             if (e.data.type === 'done') {
                 console.log('G-code processing finished.');
-                return;
-            }
-            const remoteSpoolSystem = world.getSystem(RemoteSpoolSystem);
-            if (remoteSpoolSystem) {
-                remoteSpoolSystem.addCommand(e.data);
+            } else if (e.data.type === 'error') {
+                console.error('G-code processing failed:', e.data.message);
             }
         };
 

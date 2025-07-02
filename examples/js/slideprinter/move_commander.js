@@ -1,7 +1,32 @@
 class MoveCommander {
-    constructor() {
+    constructor(uri) {
+        this.uri = uri;
+        this.websocket = null;
         this.currentPosition = { A: 0, B: 0, C: 0 }; // Assuming spools are A, B, C
         this.feedRate = 1500; // mm/min
+    }
+
+    async connect() {
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            return;
+        }
+        this.websocket = new WebSocket(this.uri);
+        return new Promise((resolve, reject) => {
+            this.websocket.onopen = () => {
+                console.log("MoveCommander connected to websocket.");
+                resolve();
+            };
+            this.websocket.onerror = (err) => {
+                console.error("MoveCommander websocket error:", err);
+                reject(err);
+            };
+            this.websocket.onmessage = (event) => {
+                // The server sends world state, we can ignore it in the commander.
+            };
+            this.websocket.onclose = () => {
+                console.log("MoveCommander websocket closed.");
+            };
+        });
     }
 
     parseGCode(gcode) {
@@ -37,7 +62,7 @@ class MoveCommander {
                 }
             } else if (command === 'G92') { // Set Position
                 const move = { type: 'Add to reference' };
-                 let hasMove = false;
+                let hasMove = false;
                 for (let i = 1; i < parts.length; i++) {
                     const arg = parts[i];
                     const axis = arg.charAt(0).toUpperCase();
@@ -57,18 +82,31 @@ class MoveCommander {
     }
 
     async run(gcode) {
-        const commands = this.parseGCode(gcode);
-        for (const command of commands) {
-            // A real implementation would calculate move duration and wait.
-            // For now, just post them. A small delay can simulate processing.
-            postMessage(command);
-            await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay between commands
+        try {
+            await this.connect();
+            const commands = this.parseGCode(gcode);
+            for (const command of commands) {
+                const message = {
+                    action: 'gcode',
+                    command: command
+                };
+                this.websocket.send(JSON.stringify(message));
+                await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay between commands
+            }
+            postMessage({ type: 'done' });
+        } catch (e) {
+            console.error("MoveCommander failed to run:", e);
+            postMessage({ type: 'error', message: e.message });
+        } finally {
+            if (this.websocket) {
+                this.websocket.close();
+            }
         }
-        postMessage({ type: 'done' });
     }
 }
 
-const commander = new MoveCommander();
+const uri = "ws://localhost:8766";
+const commander = new MoveCommander(uri);
 
 self.onmessage = function(e) {
     if (e.data.type === 'start' && e.data.gcode) {
