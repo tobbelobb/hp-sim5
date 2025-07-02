@@ -43,7 +43,10 @@ import {
 import {
   InputSystem,
   SpoolTagComponent,
-  RemoteInputSystem
+  RemoteInputSystem,
+  SpoolStateComponent,
+  StepperMotorComponent,
+  StepperMotorSystem
 } from './slideprinter_common.js';
 import { RenderSystem } from '../flipper/renderSystem.js';
 import {
@@ -139,6 +142,8 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const angVel = angVelArr[2];
 
                     world.addComponent(ent, new SpoolTagComponent());
+                    world.addComponent(ent, new SpoolStateComponent());
+                    world.addComponent(ent, new StepperMotorComponent());
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
                     world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
                     world.addComponent(ent, new RadiusComponent(radius));
@@ -273,10 +278,10 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // 2. Handle non-physics state changes
           //world.registerSystem(new RemoteSpoolSystem())
-          //world.registerSystem(StepperMotorSystem())
 
           // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
           world.registerSystem(new GravitySystem());
+          world.registerSystem(new StepperMotorSystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
 

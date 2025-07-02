@@ -5,6 +5,9 @@ import {
     VelocityComponent,
     PrevFinalPosComponent,
     RenderableComponent,
+    OrientationComponent,
+    AngularVelocityComponent,
+    MomentOfInertiaComponent,
 } from '../../../src/js/cable_joints/ecs.js';
 import {
     CableLinkComponent,
@@ -21,6 +24,61 @@ export class ExtruderComponent {
 }
 
 export class SpoolTagComponent {}
+
+export class SpoolStateComponent {
+    constructor(axis = null) {
+        this.axis = axis;
+    }
+}
+
+// Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
+// TODO: This should be specced in the slideprinter.usda file, not hard coded in a .py file
+export class StepperMotorComponent {
+    constructor(
+        commanded_angle = 0.0,
+        delta_angle = 0.0,
+        holding_torque = 0.5, // Nm. Within the typical range for Nema 17 motors
+        num_pole_pairs = 50,    // For a 1.8 deg/step motor
+        damping_coeff = 0.01  // Gotten by trial and error. For stepper inertia 5e-05
+    ) {
+        this.commanded_angle = commanded_angle;
+        this.delta_angle = delta_angle;
+        this.holding_torque = holding_torque;
+        this.num_pole_pairs = num_pole_pairs;
+        this.damping_coeff = damping_coeff;
+    }
+}
+
+// Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
+export class StepperMotorSystem {
+    update(world, dt) {
+        const query = [
+            StepperMotorComponent,
+            OrientationComponent,
+            AngularVelocityComponent,
+            MomentOfInertiaComponent,
+        ];
+        for (const e of world.query(query)) {
+            const stepper = world.getComponent(e, StepperMotorComponent);
+            const orient = world.getComponent(e, OrientationComponent);
+            const angVel = world.getComponent(e, AngularVelocityComponent);
+            const inertia = world.getComponent(e, MomentOfInertiaComponent);
+
+            // Calculate restoring torque based on angular error
+            const error = orient.angle - (stepper.commanded_angle - stepper.delta_angle);
+            const restoring_torque = -stepper.holding_torque * Math.sin(stepper.num_pole_pairs * error);
+
+            // Add damping to help the motor settle
+            const damping_torque = -stepper.damping_coeff * angVel.angular_velocity;
+
+            const total_torque = restoring_torque + damping_torque;
+
+            // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
+            const angular_acceleration = total_torque / inertia.inertia;
+            angVel.angular_velocity += angular_acceleration * dt;
+        }
+    }
+}
 
 // --- System: Remote Input ---
 export class RemoteInputSystem {
