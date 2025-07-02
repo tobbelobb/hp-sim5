@@ -169,6 +169,9 @@ canvas {
           console.error("Failed to load or parse USD file:", usdaPath);
           return;
       }
+      if (moveCommanderWorker && stage.dt) {
+          moveCommanderWorker.postMessage({ type: 'set_dt', dt: stage.dt });
+      }
       const ws = new WebSocket("ws://localhost:8766");
       runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
     }).catch(error => {
