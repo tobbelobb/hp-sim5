@@ -128,7 +128,6 @@ canvas {
     const canvas = document.getElementById("myCanvas");
     let world = new World();
     let moveCommanderWorker;
-    const ws = new WebSocket("ws://localhost:8766");
 
     // Setup MoveCommander worker
     if (window.Worker) {
@@ -153,7 +152,7 @@ canvas {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const gcode = e.target.result;
-                    moveCommanderWorker.postMessage({ type: 'start', gcode, ws });
+                    moveCommanderWorker.postMessage({ type: 'start', gcode });
                 };
                 reader.readAsText(file);
             }
@@ -170,7 +169,8 @@ canvas {
           console.error("Failed to load or parse USD file:", usdaPath);
           return;
       }
-      runGame(world, () => setupScene(world, stage, canvas, {remote : false; ws : ws}));
+      const ws = new WebSocket("ws://localhost:8766");
+      runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
     }).catch(error => {
         console.error("Error during USD loading or game setup:", error);
     });

@@ -16,6 +16,7 @@ class MoveCommander {
         this.low_axis_max_force = 20.0;
         this.use_flex = false;
         this.spool_buildup_factor = 0.0;
+
     }
 
     async connect() {
