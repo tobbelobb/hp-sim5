@@ -173,7 +173,6 @@ canvas {
       if (moveCommanderWorker && timeCodesPerSecond) {
           moveCommanderWorker.postMessage({ type: 'set_dt', dt: 1.0/timeCodesPerSecond });
       }
-      const ws = new WebSocket("ws://localhost:8766");
 
       ws.addEventListener('message', (event) => {
           const data = JSON.parse(event.data);

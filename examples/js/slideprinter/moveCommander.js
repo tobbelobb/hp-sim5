@@ -249,7 +249,7 @@ class MoveCommander {
     }
 }
 
-const uri = "ws://localhost:8766";
+const uri = "ws://localhost:8768";
 const commander = new MoveCommander(uri);
 
 self.onmessage = function(e) {
