@@ -63,7 +63,7 @@ import {
   XPBDDistanceConstraintSystem,
 } from '../../../src/js/cable_joints/commonSystems.js';
 
-export function setupSene(world, stage, canvas, options = {}) {
+export function setupScene(world, stage, canvas, options = {}) {
     const isRemote = options.remote || false;
 
     if (!isRemote) {
@@ -272,7 +272,7 @@ export function setupSene(world, stage, canvas, options = {}) {
           const ws = options.ws;
           inputSys = new RemoteInputSystem(canvas, world, ws);
       } else {
-          inputSys = new InputSystem(canvas, world, pauseBtn, ws);
+          inputSys = new InputSystem(canvas, world, pauseBtn);
       }
       inputSys.scaleMultiplier = 0.5;
       inputSys.viewOffsetX = 0.0;

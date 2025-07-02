@@ -169,8 +169,9 @@ canvas {
           console.error("Failed to load or parse USD file:", usdaPath);
           return;
       }
-      if (moveCommanderWorker && stage.dt) {
-          moveCommanderWorker.postMessage({ type: 'set_dt', dt: stage.dt });
+      const timeCodesPerSecond = stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
+      if (moveCommanderWorker && timeCodesPerSecond) {
+          moveCommanderWorker.postMessage({ type: 'set_dt', dt: 1.0/timeCodesPerSecond });
       }
       const ws = new WebSocket("ws://localhost:8766");
       runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
