@@ -47,7 +47,9 @@ import {
   RemoteSpoolSystem,
   SpoolStateComponent,
   StepperMotorComponent,
-  StepperMotorSystem
+  StepperMotorSystem,
+  ExtruderComponent,
+  ExtruderSystem
 } from './slideprinter_common.js';
 import { RenderSystem } from '../flipper/renderSystem.js';
 import {
@@ -93,6 +95,7 @@ export function setupScene(world, stage, canvas, options = {}) {
     world.setResource('debugRenderPoints', {});
     world.setResource('errorState', new SimulationErrorStateComponent(false));
     world.setResource('grabbedBall', null);
+    world.setResource('extrusion_events', []);
 
     if (!isRemote) {
         // This block remains unchanged, it's for local simulation.
@@ -143,7 +146,8 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const angVel = angVelArr[2];
 
                     world.addComponent(ent, new SpoolTagComponent());
-                    world.addComponent(ent, new SpoolStateComponent());
+                    const axisName = prim.name.slice(-1).toUpperCase();
+                    world.addComponent(ent, new SpoolStateComponent(axisName));
                     world.addComponent(ent, new StepperMotorComponent());
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
                     world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
@@ -256,6 +260,9 @@ export function setupScene(world, stage, canvas, options = {}) {
             );
             world.addComponent(cablePath, pathComp);
         }
+
+        const extruderEntity = world.createEntity();
+        world.addComponent(extruderEntity, new ExtruderComponent());
     }
 
     if (world.systems.length === 0) {
@@ -307,7 +314,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           // Velocity-level solvers (which might also do positional adjustments)
 
           // 9. Game Logic or similar. Counters and stuff
-          //world.registerSystem(new ExtruderSystem())
+          world.registerSystem(new ExtruderSystem());
       }
 
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));

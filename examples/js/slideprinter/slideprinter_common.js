@@ -19,7 +19,34 @@ export class ExtruderComponent {
     constructor() {
         // Array of [[x,y,z], length]
         this.extrusions = [];
-        this.centerPos = [0.0, 0.0, 0.0];
+        this.centerPos = new Vector2(0.0, 0.0);
+    }
+}
+
+export class ExtruderSystem {
+    update(world, dt) {
+        let extruderComp = null;
+        for (const e of world.query([ExtruderComponent])) {
+            extruderComp = world.getComponent(e, ExtruderComponent);
+            break;
+        }
+
+        if (!extruderComp) {
+            return;
+        }
+
+        const spoolPositions = [];
+        const spoolEntities = world.query([SpoolTagComponent, PositionComponent]);
+        for (const e of spoolEntities) {
+            const pos = world.getComponent(e, PositionComponent).pos;
+            spoolPositions.push(pos);
+        }
+
+        if (spoolPositions.length > 0) {
+            const sum = new Vector2();
+            spoolPositions.forEach(p => sum.add(p));
+            extruderComp.centerPos = sum.scale(1 / spoolPositions.length);
+        }
     }
 }
 
@@ -105,6 +132,21 @@ export class RemoteSpoolSystem {
         const command = this.commands.shift();
         if (!command) {
             return;
+        }
+
+        if (command.E !== undefined && command.E > 0.0) {
+            let extruderComp = null;
+            for (const e of world.query([ExtruderComponent])) {
+                extruderComp = world.getComponent(e, ExtruderComponent);
+                break;
+            }
+            if (extruderComp) {
+                const extrusionEvents = world.getResource("extrusion_events");
+                if (extrusionEvents) {
+                    const extrusionEvent = [extruderComp.centerPos.clone(), command.E];
+                    extrusionEvents.push(extrusionEvent);
+                }
+            }
         }
 
         for (const axis in this.axisToEntity) {

@@ -104,7 +104,10 @@ canvas {
             <button id="pauseBtn" tabindex="-1">Pause</button>
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
-            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+            <button id="dumpBtn" tabindex="-1">Dump State</button>
+            <input type="file" id="gcodeFile" accept=".gcode" style="display: none;" />
+            <button id="loadGcodeBtn" tabindex="-1">Load G-code</button>
+            <br />
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
                 dt: <span id="dt">N/A</span> |
                 Speed: <span id="speed">N/A</span>
@@ -119,10 +122,47 @@ canvas {
     import { World } from '../../../src/js/cable_joints/ecs.js';
     import { runGame } from './runner.js';
     import { setupScene } from './setupScene.js';
+    import { RemoteSpoolSystem } from './slideprinter_common.js';
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
     let world = new World();
+    let moveCommanderWorker;
+
+    // Setup MoveCommander worker
+    if (window.Worker) {
+        const base = import.meta.env.BASE_URL || '/';
+        const workerPath = `${base}examples/js/slideprinter/move_commander.js`;
+        moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+        moveCommanderWorker.onmessage = (e) => {
+            if (e.data.type === 'done') {
+                console.log('G-code processing finished.');
+                return;
+            }
+            const remoteSpoolSystem = world.getSystem(RemoteSpoolSystem);
+            if (remoteSpoolSystem) {
+                remoteSpoolSystem.addCommand(e.data);
+            }
+        };
+
+        const loadGcodeBtn = document.getElementById('loadGcodeBtn');
+        const gcodeFileInput = document.getElementById('gcodeFile');
+
+        loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
+        gcodeFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const gcode = e.target.result;
+                    moveCommanderWorker.postMessage({ type: 'start', gcode });
+                };
+                reader.readAsText(file);
+            }
+        });
+    } else {
+        console.log('Your browser does not support Web Workers.');
+    }
 
     const base = import.meta.env.BASE_URL || '/';
     const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
