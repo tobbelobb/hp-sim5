@@ -267,20 +267,41 @@ export function setupScene(world, stage, canvas, options = {}) {
       world.registerSystem(inputSys);
 
       if (!isRemote) {
+          // 1. Cache state from previous step
           world.registerSystem(new PrevFinalPosSystem());
           world.registerSystem(new PrevFinalOrientationSystem());
+
+          // 2. Handle non-physics state changes
+          //world.registerSystem(new RemoteSpoolSystem())
+          //world.registerSystem(StepperMotorSystem())
+
+          // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
           world.registerSystem(new GravitySystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
+
+          // 4. Update derived geometry and cable state
           world.registerSystem(new CableAttachmentUpdateSystem());
           world.registerSystem(new CableAttachmentCacheSystem());
           world.registerSystem(new CableSlackSystem());
+
+          // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
           world.registerSystem(new PBDResolveCableOverCorrections());
           world.registerSystem(new XPBDDistanceConstraintSystem());
+
+          // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
           world.registerSystem(new CableFrictionSystem());
+
+          // 7. UPDATE VELOCITY: Derive final velocities from the position changes
           world.registerSystem(new PBDVelocityUpdateSystem());
           world.registerSystem(new PBDAngularVelocityUpdateSystem());
+
+          // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
+          // Velocity-level solvers (which might also do positional adjustments)
+
+          // 9. Game Logic or similar. Counters and stuff
+          //world.registerSystem(new ExtruderSystem())
       }
 
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));

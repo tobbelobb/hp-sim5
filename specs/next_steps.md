@@ -9,6 +9,7 @@ Once working, attempt to connect it to a firmware loop in a basic way
    It reads a gcode file and sends commands to simulated slideprinter, along with which timesteps the movements should happen.
    Extent examples/python/slideprinter/server.py WebSocket handler.
 
+ - Do that also in the js slideprinter
 
  - Stream G-code or step commands from Klipper to move the slideprinter in sim.
 
