@@ -2,9 +2,10 @@ import { pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess, norm, subt
 import { guessed_anchors } from './guessedData.js';
 
 
-class MoveCommander {
-    constructor(uri) {
+export class MoveCommander {
+    constructor(uri = null, commandHandler = null) {
         this.uri = uri;
+        this.commandHandler = commandHandler;
         this.websocket = null;
         this.last_speed_mm_per_min = 1000.0;
         this.commands = [];
@@ -20,6 +21,9 @@ class MoveCommander {
     }
 
     async connect() {
+        if (this.commandHandler || !this.uri) {
+            return;
+        }
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
             return;
         }
@@ -27,8 +31,8 @@ class MoveCommander {
         return new Promise((resolve, reject) => {
             this.websocket.onopen = () => {
                 console.log("MoveCommander connected to websocket.");
-                // Start a task to drain incoming messages, like in the Python version
-                this.websocket.onmessage = (event) => { /* discard */ };
+                // Drain incoming messages like in the Python version
+                this.websocket.onmessage = () => {};
                 resolve();
             };
             this.websocket.onerror = (err) => {
@@ -106,7 +110,11 @@ class MoveCommander {
 
     async sendCommand(command) {
         const message = { action: 'gcode', command: command };
-        this.websocket.send(JSON.stringify(message));
+        if (this.websocket) {
+            this.websocket.send(JSON.stringify(message));
+        } else if (this.commandHandler) {
+            this.commandHandler(message);
+        }
     }
 
     async run(gcode) {
@@ -249,13 +257,16 @@ class MoveCommander {
     }
 }
 
-const uri = "ws://localhost:8768";
-const commander = new MoveCommander(uri);
+if (typeof self !== 'undefined' && typeof document === 'undefined') {
+    const uri = "ws://localhost:8768";
+    const commander = new MoveCommander(uri);
 
-self.onmessage = function(e) {
-    if (e.data.type === 'start' && e.data.gcode) {
-        commander.run(e.data.gcode);
-    } else if (e.data.type === 'set_dt' && e.data.dt) {
-        commander.dt = e.data.dt;
-    }
-};
+    self.onmessage = function(e) {
+        if (e.data.type === 'start' && e.data.gcode) {
+            commander.run(e.data.gcode);
+        } else if (e.data.type === 'set_dt' && e.data.dt) {
+            commander.dt = e.data.dt;
+        }
+    };
+}
+export default MoveCommander;

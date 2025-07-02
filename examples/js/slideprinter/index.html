@@ -123,14 +123,40 @@ canvas {
     import { runGame } from './runner.js';
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
+    import MoveCommander from './moveCommander.js';
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
     let world = new World();
     let moveCommanderWorker;
+    let commander;
+    let ws = null;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('python') === '1') {
+        ws = new WebSocket('ws://localhost:8766');
+    }
 
-    // Setup MoveCommander worker
-    if (window.Worker) {
+    const loadGcodeBtn = document.getElementById('loadGcodeBtn');
+    const gcodeFileInput = document.getElementById('gcodeFile');
+
+    loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
+
+    if (ws === null) {
+        commander = new MoveCommander(null, (msg) => {
+            const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+            if (remoteSpoolSystem) {
+                remoteSpoolSystem.addCommand(msg.command);
+            }
+        });
+
+        gcodeFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const gcode = await file.text();
+                commander.run(gcode);
+            }
+        });
+    } else if (window.Worker) {
         const base = import.meta.env.BASE_URL || '/';
         const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
         moveCommanderWorker = new Worker(workerPath, { type: 'module' });
@@ -142,10 +168,6 @@ canvas {
             }
         };
 
-        const loadGcodeBtn = document.getElementById('loadGcodeBtn');
-        const gcodeFileInput = document.getElementById('gcodeFile');
-
-        loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
         gcodeFileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -173,16 +195,21 @@ canvas {
       if (moveCommanderWorker && timeCodesPerSecond) {
           moveCommanderWorker.postMessage({ type: 'set_dt', dt: 1.0/timeCodesPerSecond });
       }
+      if (commander && timeCodesPerSecond) {
+          commander.dt = 1.0/timeCodesPerSecond;
+      }
 
-      ws.addEventListener('message', (event) => {
-          const data = JSON.parse(event.data);
-          if (data && data.action === 'gcode') {
-              const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
-              if (remoteSpoolSystem) {
-                  remoteSpoolSystem.addCommand(data.command);
+      if (ws) {
+          ws.addEventListener('message', (event) => {
+              const data = JSON.parse(event.data);
+              if (data && data.action === 'gcode') {
+                  const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                  if (remoteSpoolSystem) {
+                      remoteSpoolSystem.addCommand(data.command);
+                  }
               }
-          }
-      });
+          });
+      }
 
       runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
     }).catch(error => {
