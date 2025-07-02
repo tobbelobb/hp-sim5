@@ -119,7 +119,7 @@ canvas {
             pauseBtn.disabled = false;
             resetBtn.disabled = false;
             stepBtn.disabled = false;
-            runRemoteGame(world, (ws) => setupScene(world, null, canvas, { remote: true, ws: ws }), ws);
+            runRemoteGame(world, (ws) => setupScene(world, null, canvas, { remote: true, ws: ws }));
         };
 
         ws.onclose = () => {

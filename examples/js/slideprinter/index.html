@@ -128,11 +128,12 @@ canvas {
     const canvas = document.getElementById("myCanvas");
     let world = new World();
     let moveCommanderWorker;
+    const ws = new WebSocket("ws://localhost:8766");
 
     // Setup MoveCommander worker
     if (window.Worker) {
         const base = import.meta.env.BASE_URL || '/';
-        const workerPath = `${base}examples/js/slideprinter/move_commander.js`;
+        const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
         moveCommanderWorker = new Worker(workerPath, { type: 'module' });
         moveCommanderWorker.onmessage = (e) => {
             if (e.data.type === 'done') {
@@ -152,7 +153,7 @@ canvas {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const gcode = e.target.result;
-                    moveCommanderWorker.postMessage({ type: 'start', gcode });
+                    moveCommanderWorker.postMessage({ type: 'start', gcode, ws });
                 };
                 reader.readAsText(file);
             }
@@ -161,8 +162,18 @@ canvas {
         console.log('Your browser does not support Web Workers.');
     }
 
-    const ws = new WebSocket("ws://localhost:8766");
-    runGame(world, () => setupScene(world, null, canvas, { remote: true, ws: ws }));
+    const base = import.meta.env.BASE_URL || '/';
+    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
+
+    UsdOpen(usdaPath).then(stage => {
+      if (!stage) {
+          console.error("Failed to load or parse USD file:", usdaPath);
+          return;
+      }
+      runGame(world, () => setupScene(world, stage, canvas, {remote : false; ws : ws}));
+    }).catch(error => {
+        console.error("Error during USD loading or game setup:", error);
+    });
 </script>
 
 </body>
