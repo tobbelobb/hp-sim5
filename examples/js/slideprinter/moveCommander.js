@@ -1,22 +1,4 @@
-// --- Math Helpers ---
-function norm(arr) {
-    return Math.sqrt(arr.reduce((sum, val) => sum + val * val, 0));
-}
-function subtract(a, b) {
-    return a.map((val, i) => val - b[i]);
-}
-function add(a, b) {
-    return a.map((val, i) => val + b[i]);
-}
-function scale(a, s) {
-    return a.map(val => val * s);
-}
-
-// --- Kinematics Placeholder ---
-function pos_to_motor_pos_samples_deg(anchors_mm, pos_mm, low_axis_max_force, use_flex, spool_buildup_factor) {
-    console.error("Kinematics (pos_to_motor_pos_samples_deg) not implemented in JS. G1 and G92 commands will not work correctly.");
-    return [[0, 0, 0]]; // Return dummy data
-}
+import { pos_to_motor_pos_samples_deg, guessed_anchors, spool_r_in_origin_first_guess, norm, subtract, add, scale } from './kinematics.js';
 
 
 class MoveCommander {
@@ -27,9 +9,9 @@ class MoveCommander {
         this.commands = [];
         this.dt = 1.0 / 200.0; // Fallback from Python version
         this.current_angles_rad = [0.0, 0.0, 0.0];
-        this.anchors_mm = []; // Requires data from guessed_data.py
+        this.anchors_mm = guessed_anchors;
         this.current_pos_mm = { 'X': 0.0, 'Y': 0.0, 'Z': 0.0 };
-        this.spool_radius_mm = 10.0; // Placeholder, requires data from guessed_data.py
+        this.spool_radius_mm = spool_r_in_origin_first_guess;
         this.low_axis_max_force = 20.0;
         this.use_flex = false;
         this.spool_buildup_factor = 0.0;
@@ -143,6 +125,12 @@ class MoveCommander {
                         }
                     });
 
+                    const extrusion_delta_mm = command.E || 0.0;
+
+                    if (!has_move && extrusion_delta_mm === 0.0) {
+                        continue;
+                    }
+
                     const start_pos_mm_arr = axesXYZ.map(ax => this.current_pos_mm[ax]);
                     const target_pos_mm_arr = axesXYZ.map(ax => target_pos_mm[ax]);
                     const distance_mm = norm(subtract(target_pos_mm_arr, start_pos_mm_arr));
@@ -151,16 +139,51 @@ class MoveCommander {
                     const num_steps = duration_s > 0 ? Math.ceil(duration_s / this.dt) : 0;
 
                     if (num_steps > 0) {
+                        console.log(`Executing G1 move to ${JSON.stringify(target_pos_mm)} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
+                        const extrusion_per_step = extrusion_delta_mm / num_steps;
+                        let final_angles_rad = null;
+
                         for (let i = 1; i <= num_steps; i++) {
                             const t = i / num_steps;
                             const interp_pos_mm_arr = add(start_pos_mm_arr, scale(subtract(target_pos_mm_arr, start_pos_mm_arr), t));
                             const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, [interp_pos_mm_arr], this.low_axis_max_force, this.use_flex, this.spool_buildup_factor);
                             const interp_angles_rad = scale(motor_positions_deg[0], Math.PI / 180.0);
+                            final_angles_rad = interp_angles_rad;
 
                             const interpolated_cmd = { type: 'Move' };
                             axesABC.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles_rad[idx]);
+
+                            if (extrusion_per_step > 0.0) {
+                                interpolated_cmd['E'] = extrusion_per_step;
+                            }
+
                             await this.sendCommand(interpolated_cmd);
                             await new Promise(resolve => setTimeout(resolve, this.dt * 1000));
+                        }
+
+                        if (final_angles_rad) {
+                            this.current_angles_rad = final_angles_rad;
+                        }
+                    } else { // num_steps === 0
+                        let target_angles_rad;
+                        if (has_move) {
+                            const pos_mm = [axesXYZ.map(ax => target_pos_mm[ax])];
+                            const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, pos_mm, this.low_axis_max_force, this.use_flex, this.spool_buildup_factor);
+                            target_angles_rad = scale(motor_positions_deg[0], Math.PI / 180.0);
+                            this.current_angles_rad = target_angles_rad;
+                        } else {
+                            target_angles_rad = this.current_angles_rad;
+                        }
+
+                        const cmd = { type: 'Move' };
+                        axesABC.forEach((axis, idx) => cmd[axis] = target_angles_rad[idx]);
+
+                        if (extrusion_delta_mm > 0.0) {
+                            cmd['E'] = extrusion_delta_mm;
+                        }
+
+                        if (has_move || extrusion_delta_mm > 0.0) {
+                            await this.sendCommand(cmd);
                         }
                     }
                     this.current_pos_mm = target_pos_mm;
@@ -182,25 +205,34 @@ class MoveCommander {
 
                 } else if (command.type === 'G6') {
                     const line_deltas_mm = [command.A || 0, command.B || 0, command.C || 0];
-                    const delta_angles_rad = scale(line_deltas_mm, 1.0 / this.spool_radius_mm);
+                    // In python, spool_radius_mm is an array, so this is element-wise division.
+                    // Here, spool_radius_mm is an array, so we need to do it element-wise.
+                    const delta_angles_rad = line_deltas_mm.map((delta, i) => delta / this.spool_radius_mm[i]);
                     const target_angles_rad = add(this.current_angles_rad, delta_angles_rad);
                     const line_distance_mm = norm(line_deltas_mm);
                     const speed_mm_per_s = (command.speed || 1000.0) / 60.0;
                     const duration_s = line_distance_mm / speed_mm_per_s;
                     const num_steps = Math.ceil(duration_s / this.dt);
 
+                    console.log(`Executing G6 move with deltas ${line_deltas_mm} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
+
+                    const deltas_rad = subtract(target_angles_rad, this.current_angles_rad);
                     if (num_steps > 0) {
-                        const deltas_rad_step = subtract(target_angles_rad, this.current_angles_rad);
                         for (let i = 1; i <= num_steps; i++) {
                             const t = i / num_steps;
                             const interpolated_cmd = { type: 'Move' };
-                            const interp_angles = add(this.current_angles_rad, scale(deltas_rad_step, t));
+                            const interp_angles = add(this.current_angles_rad, scale(deltas_rad, t));
                             axesABC.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles[idx]);
                             await this.sendCommand(interpolated_cmd);
                             await new Promise(resolve => setTimeout(resolve, this.dt * 1000));
                         }
                     }
+
                     this.current_angles_rad = target_angles_rad;
+
+                    const cmd = { type: 'Add to reference' };
+                    axesABC.forEach((axis, idx) => cmd[axis] = deltas_rad[idx]);
+                    await this.sendCommand(cmd);
                 }
             }
             postMessage({ type: 'done' });
