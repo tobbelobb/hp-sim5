@@ -44,6 +44,7 @@ import {
   InputSystem,
   SpoolTagComponent,
   RemoteInputSystem,
+  RemoteSpoolSystem,
   SpoolStateComponent,
   StepperMotorComponent,
   StepperMotorSystem
@@ -277,7 +278,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new PrevFinalOrientationSystem());
 
           // 2. Handle non-physics state changes
-          //world.registerSystem(new RemoteSpoolSystem())
+          world.registerSystem(new RemoteSpoolSystem());
           world.registerSystem(new StepperMotorSystem());
 
           // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions

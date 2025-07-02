@@ -80,6 +80,51 @@ export class StepperMotorSystem {
     }
 }
 
+export class RemoteSpoolSystem {
+    constructor() {
+        this.commands = [];
+        this.axisToEntity = {};
+    }
+
+    addCommand(command) {
+        this.commands.push(command);
+    }
+
+    update(world, dt) {
+        // Cache axis-to-entity mapping if not already done
+        if (Object.keys(this.axisToEntity).length === 0) {
+            const spoolEntities = world.query([SpoolTagComponent, SpoolStateComponent]);
+            for (const e of spoolEntities) {
+                const state = world.getComponent(e, SpoolStateComponent);
+                if (state.axis) {
+                    this.axisToEntity[state.axis] = e;
+                }
+            }
+        }
+
+        const command = this.commands.shift();
+        if (!command) {
+            return;
+        }
+
+        for (const axis in this.axisToEntity) {
+            const entityId = this.axisToEntity[axis];
+            if (command && command.type === 'Move' && command[axis] !== undefined) {
+                const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                if (stepperComp) {
+                    stepperComp.commandedAngle = command[axis];
+                }
+            }
+            if (command && command.type === 'Add to reference' && command[axis] !== undefined) {
+                const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                if (stepperComp) {
+                    stepperComp.deltaAngle += command[axis];
+                }
+            }
+        }
+    }
+}
+
 // --- System: Remote Input ---
 export class RemoteInputSystem {
      runInPause = true;
