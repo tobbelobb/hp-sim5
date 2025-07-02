@@ -35,17 +35,17 @@ export class SpoolStateComponent {
 // TODO: This should be specced in the slideprinter.usda file, not hard coded in a .py file
 export class StepperMotorComponent {
     constructor(
-        commanded_angle = 0.0,
-        delta_angle = 0.0,
-        holding_torque = 0.5, // Nm. Within the typical range for Nema 17 motors
-        num_pole_pairs = 50,    // For a 1.8 deg/step motor
-        damping_coeff = 0.01  // Gotten by trial and error. For stepper inertia 5e-05
+        commandedAngle = 0.0,
+        deltaAngle = 0.0,
+        holdingTorque = 0.5, // Nm. Within the typical range for Nema 17 motors
+        numPolePairs = 50,   // For a 1.8 deg/step motor
+        dampingCoeff = 0.01  // Gotten by trial and error. For stepper inertia 5e-05
     ) {
-        this.commanded_angle = commanded_angle;
-        this.delta_angle = delta_angle;
-        this.holding_torque = holding_torque;
-        this.num_pole_pairs = num_pole_pairs;
-        this.damping_coeff = damping_coeff;
+        this.commandedAngle = commandedAngle;
+        this.deltaAngle = deltaAngle;
+        this.holdingTorque = holdingTorque;
+        this.numPolePairs = numPolePairs;
+        this.dampingCoeff = dampingCoeff;
     }
 }
 
@@ -65,17 +65,17 @@ export class StepperMotorSystem {
             const inertia = world.getComponent(e, MomentOfInertiaComponent);
 
             // Calculate restoring torque based on angular error
-            const error = orient.angle - (stepper.commanded_angle - stepper.delta_angle);
-            const restoring_torque = -stepper.holding_torque * Math.sin(stepper.num_pole_pairs * error);
+            const error = orient.angle - (stepper.commandedAngle - stepper.deltaAngle);
+            const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
 
             // Add damping to help the motor settle
-            const damping_torque = -stepper.damping_coeff * angVel.angular_velocity;
+            const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
 
-            const total_torque = restoring_torque + damping_torque;
+            const totalTorque = restoringTorque + dampingTorque;
 
             // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
-            const angular_acceleration = total_torque / inertia.inertia;
-            angVel.angular_velocity += angular_acceleration * dt;
+            const angularAcceleration = totalTorque / inertia.inertia;
+            angVel.angularVelocity += angularAcceleration * dt;
         }
     }
 }

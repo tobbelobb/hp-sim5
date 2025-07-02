@@ -1,6 +1,9 @@
 
 
 
+/read examples/python/slideprinter/slideprinter_common.py
+/add examples/js/slideprinter/slideprinter_common.js examples/js/slideprinter/setupScene.js
+
 I have two implementations of virtually the same program, Slideprinter, a simulation of a cable driven robot rendered in the browser. The python implementation has many features that the js implementation is currently lacking:
  - Spools are stepper motors applying force, not just freely rotating.
    See StepperMotorSystem and StepperMotorComponent in @examples/python/slideprinter/slideprinter_common.py

@@ -278,10 +278,10 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // 2. Handle non-physics state changes
           //world.registerSystem(new RemoteSpoolSystem())
+          world.registerSystem(new StepperMotorSystem());
 
           // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
           world.registerSystem(new GravitySystem());
-          world.registerSystem(new StepperMotorSystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
 
