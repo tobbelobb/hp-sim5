@@ -1,4 +1,5 @@
-import { pos_to_motor_pos_samples_deg, guessed_anchors, spool_r_in_origin_first_guess, norm, subtract, add, scale } from './kinematics.js';
+import { pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess, norm, subtract, add, scale } from './kinematics.js';
+import { guessed_anchors } from './guessedData.js';
 
 
 class MoveCommander {
