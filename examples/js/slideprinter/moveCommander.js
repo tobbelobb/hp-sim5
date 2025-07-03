@@ -27,6 +27,14 @@ class MoveCommander {
             return;
         }
         this.websocket = new WebSocket(this.uri);
+
+        this.closePromise = new Promise(resolveClose => {
+            this.websocket.onclose = () => {
+                console.log("worker: MoveCommander websocket closed.");
+                resolveClose();
+            };
+        });
+
         return new Promise((resolve, reject) => {
             this.websocket.onopen = () => {
                 console.log("worker: MoveCommander connected to websocket.");
@@ -37,9 +45,6 @@ class MoveCommander {
             this.websocket.onerror = (err) => {
                 console.error("worker: MoveCommander websocket error:", err);
                 reject(err);
-            };
-            this.websocket.onclose = () => {
-                console.log("worker: MoveCommander websocket closed.");
             };
         });
     }
@@ -153,6 +158,7 @@ class MoveCommander {
                         let final_angles_rad = null;
 
                         for (let i = 1; i <= num_steps; i++) {
+                            const loop_start_time = performance.now();
                             const t = i / num_steps;
                             const interp_pos_mm_arr = add(start_pos_mm_arr, scale(subtract(target_pos_mm_arr, start_pos_mm_arr), t));
                             const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, [interp_pos_mm_arr], this.low_axis_max_force, this.use_flex, this.spool_buildup_factor);
@@ -167,8 +173,13 @@ class MoveCommander {
                             }
 
                             await this.sendCommand(interpolated_cmd);
-                            // TODO: Some logic here that keeps host/microcontroller clocks and feedrates in sync
-                            //await new Promise(resolve => setTimeout(resolve, this.dt * 1000));
+                            if (this.uri) {
+                                const elapsed_ms = performance.now() - loop_start_time;
+                                const wait_time_ms = this.dt * 1000 - elapsed_ms;
+                                if (wait_time_ms > 0) {
+                                    await new Promise(resolve => setTimeout(resolve, wait_time_ms));
+                                }
+                            }
                         }
 
                         if (final_angles_rad) {
@@ -229,12 +240,19 @@ class MoveCommander {
                     const deltas_rad = subtract(target_angles_rad, this.current_angles_rad);
                     if (num_steps > 0) {
                         for (let i = 1; i <= num_steps; i++) {
+                            const loop_start_time = performance.now();
                             const t = i / num_steps;
                             const interpolated_cmd = { type: 'Move' };
                             const interp_angles = add(this.current_angles_rad, scale(deltas_rad, t));
                             axesABC.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles[idx]);
                             await this.sendCommand(interpolated_cmd);
-                            await new Promise(resolve => setTimeout(resolve, this.dt * 1000));
+                            if (this.uri) {
+                                const elapsed_ms = performance.now() - loop_start_time;
+                                const wait_time_ms = this.dt * 1000 - elapsed_ms;
+                                if (wait_time_ms > 0) {
+                                    await new Promise(resolve => setTimeout(resolve, wait_time_ms));
+                                }
+                            }
                         }
                     }
 
@@ -251,7 +269,8 @@ class MoveCommander {
             postMessage({ type: 'error', message: e.message });
         } finally {
             if (this.websocket) {
-                this.websocket.close();
+                console.log("worker: All commands sent. Waiting for server to finish.");
+                await this.closePromise;
             }
         }
     }

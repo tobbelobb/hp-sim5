@@ -179,6 +179,7 @@ class MoveCommander:
                             final_angles_rad = None
 
                             for i in range(1, num_steps + 1):
+                                loop_start_time = asyncio.get_event_loop().time()
                                 t = i / num_steps
                                 interp_pos_mm_arr = start_pos_mm_arr + (target_pos_mm_arr - start_pos_mm_arr) * t
                                 pos_mm = np.array([interp_pos_mm_arr])
@@ -200,8 +201,10 @@ class MoveCommander:
                                     interpolated_cmd['E'] = extrusion_per_step
 
                                 await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
-                                # TODO: Some logic here that keeps host/microcontroller clocks and feedrates in sync
-                                # await asyncio.sleep(self.dt)
+                                elapsed = asyncio.get_event_loop().time() - loop_start_time
+                                wait_time = self.dt - elapsed
+                                if wait_time > 0:
+                                    await asyncio.sleep(wait_time)
 
                             if final_angles_rad is not None:
                                 self.current_angles_rad = final_angles_rad
@@ -288,13 +291,17 @@ class MoveCommander:
 
                         deltas_rad = target_angles_rad - self.current_angles_rad
                         for i in range(1, num_steps + 1):
+                            loop_start_time = asyncio.get_event_loop().time()
                             t = i / num_steps
                             interpolated_cmd = {'type': 'Move'}
                             for idx, axis in enumerate(axesABC):
                                 interpolated_cmd[axis] = self.current_angles_rad[idx] + deltas_rad[idx] * t
 
                             await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
-                            await asyncio.sleep(self.dt)
+                            elapsed = asyncio.get_event_loop().time() - loop_start_time
+                            wait_time = self.dt - elapsed
+                            if wait_time > 0:
+                                await asyncio.sleep(wait_time)
 
                         cmd = {'type': 'Add to reference'}
                         for idx, axis in enumerate(axesABC):
@@ -305,12 +312,13 @@ class MoveCommander:
                             'command': cmd
                         }))
 
-                print("All commands sent.")
-                await asyncio.sleep(0.1) # Allow server to process and respond
+                print("All commands sent. Waiting for server to finish.")
+                await recv_task
             finally:
-                recv_task.cancel()
-                # Wait for the task to acknowledge cancellation
-                await asyncio.gather(recv_task, return_exceptions=True)
+                if not recv_task.done():
+                    recv_task.cancel()
+                    # Wait for the task to acknowledge cancellation
+                    await asyncio.gather(recv_task, return_exceptions=True)
 
 if __name__ == '__main__':
     import argparse
