@@ -316,6 +316,15 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new ExtruderSystem());
       }
 
-      world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY, 0.2));
+      const renderSystem = new RenderSystem(
+          canvas,
+          cScale,
+          simHeight,
+          inputSys.scaleMultiplier,
+          inputSys.viewOffsetX,
+          inputSys.viewOffsetY,
+          0.2
+      );
+      world.setResource('renderSystem', renderSystem);
     }
 }
