@@ -117,9 +117,9 @@ export function runRemoteGame(world, internalSetupScene, ws) {
 
     let lastTime = 0;
     let accumulator = 0.0;
-    let speedSamples = [];
-    const numSpeedSamples = 60;
     let frameCounter = 0;
+    let startTime = 0;
+    let totalSim = 0;
     let isPaused = true;
     let dt = 1 / 200;
     let maxAccumulator = dt * 500;
@@ -165,16 +165,19 @@ export function runRemoteGame(world, internalSetupScene, ws) {
             }
         }
 
-        if (frameSec > 1e-6 && stepsToTake > 0) {
-            const currentSpeed = (stepsToTake * dt) / frameSec;
-            speedSamples.push(currentSpeed);
-            if (speedSamples.length > numSpeedSamples) speedSamples.shift();
+        if (stepsToTake > 0) {
+            totalSim += stepsToTake * dt;
         }
 
         frameCounter++;
-        if (frameCounter % 10 === 0 && speedEl && speedSamples.length > 0) {
-            const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
-            speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+        if (frameCounter % 10 === 0 && speedEl) {
+            if (startTime > 0) {
+                const elapsed = (performance.now() - startTime) / 1000;
+                if (elapsed > 0) {
+                    const avgSpeed = totalSim / elapsed;
+                    speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+                }
+            }
         }
 
         world.update(0);
@@ -189,6 +192,10 @@ export function runRemoteGame(world, internalSetupScene, ws) {
     pauseBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (ws && ws.readyState === WebSocket.OPEN) {
+            if (isPaused && pauseBtn.textContent === "Start") {
+                startTime = performance.now();
+                totalSim = 0;
+            }
             isPaused = !isPaused;
             ws.send(JSON.stringify({ action: 'pause', paused: isPaused }));
             if (!isPaused) lastTime = performance.now();
@@ -212,10 +219,11 @@ export function runRemoteGame(world, internalSetupScene, ws) {
             pauseBtn.textContent = "Start";
             lastTime = 0;
             accumulator = 0;
-            speedSamples = [];
             frameCounter = 0;
             if (speedEl) speedEl.textContent = 'N/A';
             if (dtEl) dtEl.textContent = 'N/A';
+            startTime = 0;
+            totalSim = 0;
         }
     });
 
@@ -223,6 +231,7 @@ export function runRemoteGame(world, internalSetupScene, ws) {
         e.preventDefault();
         if (isPaused && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ action: 'step', steps: 1 }));
+            totalSim += dt;
         }
     });
 

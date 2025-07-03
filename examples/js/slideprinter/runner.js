@@ -13,9 +13,9 @@ export function runGame(world, internalSetupScene) {
     let lastTime = 0;
     let accumulator = 0.0;
     let doStep = false;
-    let speedSamples = [];
-    const numSpeedSamples = 60;
     let frameCounter = 0;
+    let startTime = 0;
+    let totalSim = 0;
 
     function gameLoop(currentTime) {
         const dt = world.getResource('dt');
@@ -54,18 +54,17 @@ export function runGame(world, internalSetupScene) {
             }
         }
 
-        if (frameSec > 1e-6 && simTimeProcessed > 0) {
-            const currentSpeed = simTimeProcessed / frameSec;
-            speedSamples.push(currentSpeed);
-            if (speedSamples.length > numSpeedSamples) {
-                speedSamples.shift();
-            }
-        }
+        totalSim += simTimeProcessed;
 
         frameCounter++;
-        if (frameCounter % 10 === 0 && speedEl && speedSamples.length > 0) {
-            const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
-            speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+        if (frameCounter % 10 === 0 && speedEl) {
+            if (startTime > 0) {
+                const elapsed = (performance.now() - startTime) / 1000;
+                if (elapsed > 0) {
+                    const avgSpeed = totalSim / elapsed;
+                    speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+                }
+            }
         }
 
 
@@ -81,6 +80,10 @@ export function runGame(world, internalSetupScene) {
         e.preventDefault();
         const pauseState = world.getResource('pauseState');
         if (pauseState) {
+            if (pauseBtn.textContent === "Start") {
+                startTime = performance.now();
+                totalSim = 0;
+            }
             pauseState.paused = !pauseState.paused;
             pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
             if (!pauseState.paused) {
@@ -100,9 +103,10 @@ export function runGame(world, internalSetupScene) {
         }
         lastTime = 0;
         accumulator = 0;
-        speedSamples = [];
         frameCounter = 0;
         if (speedEl) speedEl.textContent = 'N/A';
+        startTime = 0;
+        totalSim = 0;
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
