@@ -1,5 +1,4 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
-import { RenderSystem } from '../flipper/renderSystem.js';
 import { InputSystem } from './slideprinter_common.js';
 
 
@@ -70,7 +69,7 @@ export function runGame(world, internalSetupScene) {
         }
 
 
-        const renderSystem = world.systems.find(s => s instanceof RenderSystem);
+        const renderSystem = world.getResource('renderSystem');
         if (renderSystem) {
             renderSystem.update(world, 0);
         }

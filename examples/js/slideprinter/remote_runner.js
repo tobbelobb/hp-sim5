@@ -1,5 +1,4 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
-import { RenderSystem } from '../flipper/renderSystem.js';
 import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
     PositionComponent, VelocityComponent, RadiusComponent, MassComponent,
@@ -179,6 +178,10 @@ export function runRemoteGame(world, internalSetupScene, ws) {
         }
 
         world.update(0);
+        const renderSystem = world.getResource('renderSystem');
+        if (renderSystem) {
+            renderSystem.update(world, 0);
+        }
 
         requestAnimationFrame(gameLoop);
     }
