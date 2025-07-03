@@ -7,7 +7,6 @@ class MoveCommander {
         this.uri = uri;
         this.websocket = null;
         this.last_speed_mm_per_min = 1000.0;
-        this.commands = [];
         this.dt = 1.0 / 200.0; // Fallback from Python version
         this.current_angles_rad = [0.0, 0.0, 0.0];
         this.anchors_mm = guessed_anchors;
@@ -16,7 +15,12 @@ class MoveCommander {
         this.low_axis_max_force = 20.0;
         this.use_flex = false;
         this.spool_buildup_factor = 0.0;
-
+        this.absolute_extrusion = false;
+        this.last_e = 0.0;
+        this.gcodeLines = [];
+        this.currentLineIndex = 0;
+        this.isPaused = false;
+        this.resolveResume = null;
     }
 
     async connect() {
@@ -49,23 +53,6 @@ class MoveCommander {
         });
     }
 
-    _parse_gcode(gcode) {
-        const commands = [];
-        const lines = gcode.split('\n');
-        for (const line of lines) {
-            if (line.startsWith('G1')) {
-                const command = this._parse_g1_command(line);
-                if (command) commands.push(command);
-            } else if (line.startsWith('G6')) {
-                const command = this._parse_g6_command(line);
-                if (command) commands.push(command);
-            } else if (line.startsWith('G92')) {
-                const command = this._parse_g92_command(line);
-                if (command) commands.push(command);
-            }
-        }
-        return commands;
-    }
 
     _parse_g1_command(line) {
         const parts = line.trim().split(/\s+/);
@@ -122,14 +109,39 @@ class MoveCommander {
     }
 
     async run(gcode) {
+        this.gcodeLines = gcode.split('\n');
+        this.currentLineIndex = 0;
         try {
             await this.connect();
-            this.commands = this._parse_gcode(gcode);
             const axesABC = ['A', 'B', 'C'];
             const axesXYZ = ['X', 'Y', 'Z'];
 
-            for (const command of this.commands) {
-                if (command.type === 'G1') {
+            while (this.currentLineIndex < this.gcodeLines.length) {
+                if (this.isPaused) {
+                    await new Promise(resolve => { this.resolveResume = resolve; });
+                }
+
+                const line = this.gcodeLines[this.currentLineIndex];
+                this.currentLineIndex++;
+
+                let command;
+                if (line.startsWith('G1')) {
+                    command = this._parse_g1_command(line);
+                } else if (line.startsWith('G6')) {
+                    command = this._parse_g6_command(line);
+                } else if (line.startsWith('G92')) {
+                    command = this._parse_g92_command(line);
+                } else if (line.startsWith('M82')) {
+                    command = { type: 'M82' };
+                }
+
+                if (!command) {
+                    continue;
+                }
+
+                if (command.type === 'M82') {
+                    this.absolute_extrusion = true;
+                } else if (command.type === 'G1') {
                     const target_pos_mm = { ...this.current_pos_mm };
                     let has_move = false;
                     axesXYZ.forEach(axis => {
@@ -139,7 +151,17 @@ class MoveCommander {
                         }
                     });
 
-                    const extrusion_delta_mm = command.E || 0.0;
+                    let extrusion_delta_mm;
+                    if (this.absolute_extrusion) {
+                        if ('E' in command) {
+                            extrusion_delta_mm = command.E - this.last_e;
+                            this.last_e = command.E;
+                        } else {
+                            extrusion_delta_mm = 0.0;
+                        }
+                    } else {
+                        extrusion_delta_mm = command.E || 0.0;
+                    }
 
                     if (!has_move && extrusion_delta_mm === 0.0) {
                         continue;
@@ -319,5 +341,15 @@ self.addEventListener('message', async (e) => {
     case 'set_uri':
       commander.uri = e.data.uri;
       break;
+    case 'pause':
+        commander.isPaused = true;
+        break;
+    case 'resume':
+        commander.isPaused = false;
+        if (commander.resolveResume) {
+            commander.resolveResume();
+            commander.resolveResume = null;
+        }
+        break;
   }
 });
