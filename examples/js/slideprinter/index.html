@@ -122,6 +122,18 @@ canvas {
                 <option value="movements.gcode">movements.gcode</option>
                 <option value="tighten.gcode">tighten.gcode</option>
             </select>
+            <span style="margin-left: 1em;">
+                <label for="websocketIn">websocket in</label>
+                <input type="checkbox" id="websocketIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketOut">websocket out</label>
+                <input type="checkbox" id="websocketOut">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketPort">port</label>
+                <input type="text" id="websocketPort" value="8766" style="width: 4em;">
+            </span>
             <br />
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
                 dt: <span id="dt">N/A</span> |
@@ -146,9 +158,16 @@ canvas {
     let moveCommanderWorker;
     let commander;
     let ws = null;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('python') === '1') {
-        ws = new WebSocket('ws://localhost:8766');
+    const websocketInToggle = document.getElementById('websocketIn');
+    const websocketOutToggle = document.getElementById('websocketOut');
+    const websocketPortInput = document.getElementById('websocketPort');
+
+    const websocket_in = websocketInToggle.checked;
+    const websocket_out = websocketOutToggle.checked;
+    const port = websocketPortInput.value;
+
+    if (websocket_in) {
+        ws = new WebSocket(`ws://localhost:${port}`);
     }
 
     const loadGcodeBtn = document.getElementById('loadGcodeBtn');
@@ -157,13 +176,18 @@ canvas {
 
     loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
 
-    if (ws === null) {
-        commander = new MoveCommander({uri: null, commandHandler: (msg) => {
-            const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
-            if (remoteSpoolSystem) {
-                remoteSpoolSystem.addCommand(msg.command);
+    const moveCommanderURI = websocket_out ? `ws://localhost:${port}` : null;
+
+    if (!websocket_in) {
+        commander = new MoveCommander({
+            uri: moveCommanderURI,
+            commandHandler: moveCommanderURI ? null : (msg) => {
+                const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                if (remoteSpoolSystem) {
+                    remoteSpoolSystem.addCommand(msg.command);
+                }
             }
-        }});
+        });
 
         gcodeFileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
@@ -187,6 +211,9 @@ canvas {
         const base = import.meta.env.BASE_URL || '/';
         const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
         moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+        if (moveCommanderURI) {
+            moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
+        }
         moveCommanderWorker.onmessage = (e) => {
             if (e.data.type === 'done') {
                 console.log('G-code processing finished.');

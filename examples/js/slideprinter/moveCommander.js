@@ -267,6 +267,11 @@ self.onmessage = function(e) {
         commander.run(e.data.gcode);
     } else if (e.data.type === 'set_dt' && e.data.dt) {
         commander.dt = e.data.dt;
+    } else if (e.data.type === 'set_uri') {
+        commander.uri = e.data.uri;
+        if (commander.uri) {
+            commander.commandHandler = null;
+        }
     }
 };
 
