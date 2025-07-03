@@ -285,7 +285,7 @@ self.onmessage = async function(e) {
     if (e.data.type === 'start' && e.data.gcode) {
         commander.run(e.data.gcode);
     } else if (e.data.type === 'filename_upload' && e.data.filename) {
-        console.log("worker: got filename", e.data.filename);
+        console.log("worker: got filename_upload", e.data.filename);
         const reader = new FileReader();
         reader.onload = (e) => {
             const gcode = e.target.result;
@@ -293,6 +293,7 @@ self.onmessage = async function(e) {
         }
         reader.readAsText(e.data.filename);
     } else if (e.data.type === 'filename_fetch' && e.data.filename) {
+        console.log("worker: got filename_fetch", e.data.filename);
         try {
             const response = await fetch(e.data.filename);
             const gcode = await response.text();

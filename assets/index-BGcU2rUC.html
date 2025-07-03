@@ -207,6 +207,7 @@ canvas {
                 if (filename == null) {
                   return;
                 }
+                console.log("main: sending filename_upload:", filename);
                 moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
             });
             presetGcodeSelect.addEventListener('change', async () => {
@@ -214,6 +215,7 @@ canvas {
                 if (filename == null) {
                   return;
                 }
+                console.log("main: sending filename_fetch:", filename);
                 moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
             });
         }
