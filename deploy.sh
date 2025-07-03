@@ -29,12 +29,16 @@ cd "$REPO_DIR"
 
 mkdir -p public/examples/js/slideprinter
 cp examples/js/slideprinter/moveCommander.js public/examples/js/slideprinter/moveCommander.js
+cp examples/js/slideprinter/kinematics.js public/examples/js/slideprinter/kinematics.js
+cp examples/js/slideprinter/guessedData.js public/examples/js/slideprinter/guessedData.js
 
 echo "🔧 Building project with Vite..."
 run rm -rf dist
 run npx vite build
 
 rm public/examples/js/slideprinter/moveCommander.js
+rm public/examples/js/slideprinter/kinematics.js
+rm public/examples/js/slideprinter/guessedData.js
 
 # If the worktree directory already exists, remove it first
 if [ -d "${WORKTREE_DIR}" ]; then

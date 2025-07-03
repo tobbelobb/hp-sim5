@@ -4,7 +4,7 @@
     defaultPrim = "SlideprinterScene"
     metersPerUnit = 1
     startTimeCode = 0
-    timeCodesPerSecond = 500
+    timeCodesPerSecond = 1000
     upAxis = "Y"
 )
 
