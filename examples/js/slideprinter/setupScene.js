@@ -95,7 +95,6 @@ export function setupScene(world, stage, canvas, options = {}) {
     world.setResource('debugRenderPoints', {});
     world.setResource('errorState', new SimulationErrorStateComponent(false));
     world.setResource('grabbedBall', null);
-    world.setResource('extrusion_events', []);
 
     if (!isRemote) {
         // This block remains unchanged, it's for local simulation.
