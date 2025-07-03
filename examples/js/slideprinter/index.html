@@ -157,6 +157,7 @@ canvas {
     let moveCommanderWorker;
     let commander;
     let ws = null;
+    let workerReferenceSet = false;
     const websocketInToggle = document.getElementById('websocketIn');
     const websocketOutToggle = document.getElementById('websocketOut');
     const websocketPortInput = document.getElementById('websocketPort');
@@ -197,6 +198,10 @@ canvas {
                 } else if (e.data.action === 'gcode') {
                     const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
                     if (remoteSpoolSystem != null) {
+                        if (!workerReferenceSet) {
+                            remoteSpoolSystem.worker = moveCommanderWorker;
+                            workerReferenceSet = true;
+                        }
                         remoteSpoolSystem.addCommand(e.data.command);
                     }
                 }

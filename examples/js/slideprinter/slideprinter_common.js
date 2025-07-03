@@ -111,6 +111,10 @@ export class RemoteSpoolSystem {
     constructor() {
         this.commands = [];
         this.axisToEntity = {};
+        this.worker = null;
+        this.wasPaused = false;
+        this.highWaterMark = 40;
+        this.lowWaterMark = 20;
     }
 
     addCommand(command) {
@@ -118,6 +122,17 @@ export class RemoteSpoolSystem {
     }
 
     update(world, dt) {
+        if (this.worker) {
+            const queueSize = this.commands.length;
+            if (queueSize > this.highWaterMark && !this.wasPaused) {
+                this.worker.postMessage({ type: 'pause' });
+                this.wasPaused = true;
+            } else if (queueSize < this.lowWaterMark && this.wasPaused) {
+                this.worker.postMessage({ type: 'resume' });
+                this.wasPaused = false;
+            }
+        }
+
         // Cache axis-to-entity mapping if not already done
         if (Object.keys(this.axisToEntity).length === 0) {
             const spoolEntities = world.query([SpoolTagComponent, SpoolStateComponent]);
