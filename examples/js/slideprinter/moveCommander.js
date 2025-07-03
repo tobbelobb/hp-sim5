@@ -285,6 +285,7 @@ self.onmessage = async function(e) {
     if (e.data.type === 'start' && e.data.gcode) {
         commander.run(e.data.gcode);
     } else if (e.data.type === 'filename_upload' && e.data.filename) {
+        console.log("worker: got filename", e.data.filename);
         const reader = new FileReader();
         reader.onload = (e) => {
             const gcode = e.target.result;
