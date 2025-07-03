@@ -13,7 +13,7 @@ export function runGame(world, internalSetupScene) {
 
     let lastTime = 0;
     let accumulator = 0.0;
-    let doStep = true;
+    let doStep = false;
     let speedSamples = [];
     const numSpeedSamples = 60;
     let frameCounter = 0;
@@ -107,7 +107,7 @@ export function runGame(world, internalSetupScene) {
         const pauseState = world.getResource('pauseState');
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
-        doStep = true;
+        doStep = false;
         requestAnimationFrame(gameLoop);
     });
 
