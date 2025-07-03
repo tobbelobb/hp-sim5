@@ -167,7 +167,7 @@ class MoveCommander:
                         duration_s = 0
                         if distance_mm > 1e-6 and speed_mm_per_s > 1e-6:
                             duration_s = distance_mm / speed_mm_per_s
-                        
+
                         num_steps = 0
                         if duration_s > 0:
                             num_steps = math.ceil(duration_s / self.dt)
@@ -200,7 +200,8 @@ class MoveCommander:
                                     interpolated_cmd['E'] = extrusion_per_step
 
                                 await websocket.send(json.dumps({'action': 'gcode', 'command': interpolated_cmd}))
-                                await asyncio.sleep(self.dt)
+                                # TODO: Some logic here that keeps host/microcontroller clocks and feedrates in sync
+                                # await asyncio.sleep(self.dt)
 
                             if final_angles_rad is not None:
                                 self.current_angles_rad = final_angles_rad
@@ -226,7 +227,7 @@ class MoveCommander:
 
                             if extrusion_delta_mm > 0.0:
                                 cmd['E'] = extrusion_delta_mm
-                            
+
                             if has_move or extrusion_delta_mm > 0.0:
                                 await websocket.send(json.dumps({'action': 'gcode', 'command': cmd}))
 

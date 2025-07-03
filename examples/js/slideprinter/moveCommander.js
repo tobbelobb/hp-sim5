@@ -167,7 +167,8 @@ class MoveCommander {
                             }
 
                             await this.sendCommand(interpolated_cmd);
-                            await new Promise(resolve => setTimeout(resolve, this.dt * 1000));
+                            // TODO: Some logic here that keeps host/microcontroller clocks and feedrates in sync
+                            //await new Promise(resolve => setTimeout(resolve, this.dt * 1000));
                         }
 
                         if (final_angles_rad) {
