@@ -167,7 +167,7 @@ canvas {
     const port = websocketPortInput.value;
 
     if (websocket_in || websocket_out) {
-        ws = new WebSocket(`ws://localhost:${port}`);
+        ws = new WebSocket(`wss://localhost:${port}`);
     }
 
     const loadGcodeBtn = document.getElementById('loadGcodeBtn');
@@ -176,7 +176,7 @@ canvas {
 
     loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
 
-    const moveCommanderURI = websocket_out ? `ws://localhost:${port}` : null;
+    const moveCommanderURI = websocket_out ? `wss://localhost:${port}` : null;
     const base = import.meta.env.BASE_URL || '/';
 
     if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
