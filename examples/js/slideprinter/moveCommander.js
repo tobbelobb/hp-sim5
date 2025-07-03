@@ -281,6 +281,7 @@ const commander = new MoveCommander({
 });
 console.log("worker: MoveCommander is up");
 
+
 self.onmessage = async function(e) {
     if (e.data.type === 'start' && e.data.gcode) {
         commander.run(e.data.gcode);
@@ -307,5 +308,3 @@ self.onmessage = async function(e) {
         commander.uri = e.data.uri;
     }
 };
-
-export default MoveCommander;
