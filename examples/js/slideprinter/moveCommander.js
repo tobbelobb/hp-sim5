@@ -281,17 +281,25 @@ const commander = new MoveCommander({
 });
 console.log("worker: MoveCommander is up");
 
-self.onmessage = async function(e) {
-    if (e.data.type === 'start' && e.data.gcode) {
-        commander.run(e.data.gcode);
-    } else if (e.data.type === 'filename_upload' && e.data.filename) {
+
+self.addEventListener('message', async (e) => {
+  switch (e.data.type) {
+    case 'filename_upload':
+      if (e.data.filename) {
+        console.log("worker: got filename_upload", e.data.filename);
         const reader = new FileReader();
         reader.onload = (e) => {
             const gcode = e.target.result;
             commander.run(gcode);
         }
         reader.readAsText(e.data.filename);
-    } else if (e.data.type === 'filename_fetch' && e.data.filename) {
+      } else {
+        console.log("worker: filename_upload message arrived but e.data.filename was: ", e.data.filename);
+      }
+      break;
+    case 'filename_fetch':
+      if (e.data.filename) {
+        console.log("worker: got filename_fetch", e.data.filename);
         try {
             const response = await fetch(e.data.filename);
             const gcode = await response.text();
@@ -299,11 +307,17 @@ self.onmessage = async function(e) {
         } catch (err) {
             console.error('worker: Failed to load built-in G-code:', err);
         }
-    } else if (e.data.type === 'set_dt' && e.data.dt) {
+      } else {
+        console.log("worker: filename_fetch message arrived but e.data.filename was: ", e.data.filename);
+      }
+      break;
+    case 'set_dt':
+      if (e.data.dt != null) {
         commander.dt = e.data.dt;
-    } else if (e.data.type === 'set_uri') {
-        commander.uri = e.data.uri;
-    }
-};
-
-export default MoveCommander;
+      }
+      break;
+    case 'set_uri':
+      commander.uri = e.data.uri;
+      break;
+  }
+});

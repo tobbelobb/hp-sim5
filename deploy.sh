@@ -29,21 +29,12 @@ cd "$REPO_DIR"
 
 mkdir -p public/examples/js/slideprinter
 cp examples/js/slideprinter/moveCommander.js public/examples/js/slideprinter/moveCommander.js
-mkdir -p public/examples/python/slideprinter
-cp examples/python/slideprinter/draw_squares.gcode public/examples/python/slideprinter/draw_squares.gcode
-cp examples/python/slideprinter/movements.gcode public/examples/python/slideprinter/movements.gcode
-cp examples/python/slideprinter/tighten.gcode public/examples/python/slideprinter/tighten.gcode
-cp examples/python/slideprinter/home.gcode public/examples/python/slideprinter/home.gcode
 
 echo "🔧 Building project with Vite..."
 run rm -rf dist
 run npx vite build
 
 rm public/examples/js/slideprinter/moveCommander.js
-rm public/examples/python/slideprinter/draw_squares.gcode
-rm public/examples/python/slideprinter/movements.gcode
-rm public/examples/python/slideprinter/tighten.gcode
-rm public/examples/python/slideprinter/home.gcode
 
 # If the worktree directory already exists, remove it first
 if [ -d "${WORKTREE_DIR}" ]; then
