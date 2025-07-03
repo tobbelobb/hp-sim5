@@ -197,7 +197,6 @@ export class RemoteInputSystem {
      }
 
      handlePointerDown(event) {
-         if (event.target !== this.canvas) return;
          event.preventDefault();
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
@@ -237,7 +236,6 @@ export class RemoteInputSystem {
      }
 
      handlePointerUp(event) {
-         if (event.target !== this.canvas) return;
          event.preventDefault();
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
