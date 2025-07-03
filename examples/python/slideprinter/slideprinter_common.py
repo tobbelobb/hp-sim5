@@ -27,6 +27,7 @@ from cable_joints.ecs import (
 class ExtruderComponent:
     """Represents the state of the extruder."""
     center_pos: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    extrusions: list = field(default_factory=list)
 
 
 class ExtruderSystem:
