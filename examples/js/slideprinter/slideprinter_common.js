@@ -141,7 +141,7 @@ export class RemoteSpoolSystem {
                 break;
             }
             if (extruderComp != null) {
-                const extrusionEvent = [extruderComp.centerPos.clone(), command.E];
+                const extrusionEvent = [[extruderComp.centerPos.x, extruderComp.centerPos.y, 0], command.E];
                 extruderComp.extrusions.push(extrusionEvent);
             }
         }
