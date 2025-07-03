@@ -102,12 +102,8 @@ function rebuildWorldFromState(world, state) {
     if (newExtruderEntities.length > 0) {
         const extruderComp = world.getComponent(newExtruderEntities[0], ExtruderComponent);
         if (extruderComp) {
-            extruderComp.extrusions = existingExtrusions;
-            if (state.resources && state.resources.extrusion_events) {
-                for (const event of state.resources.extrusion_events) {
-                    extruderComp.extrusions.push(event);
-                }
-            }
+            const incremental = extruderComp.extrusions || [];
+            extruderComp.extrusions = existingExtrusions.concat(incremental);
         }
     }
 }
