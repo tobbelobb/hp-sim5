@@ -27,7 +27,9 @@ DIST_DIR="$REPO_DIR/dist"
 
 cd "$REPO_DIR"
 
+mkdir -p public/examples/js/slideprinter
 cp examples/js/slideprinter/moveCommander.js public/examples/js/slideprinter/moveCommander.js
+mkdir -p public/examples/python/slideprinter
 cp examples/python/slideprinter/draw_squares.gcode public/examples/python/slideprinter/draw_squares.gcode
 cp examples/python/slideprinter/movements.gcode public/examples/python/slideprinter/movements.gcode
 cp examples/python/slideprinter/tighten.gcode public/examples/python/slideprinter/tighten.gcode
