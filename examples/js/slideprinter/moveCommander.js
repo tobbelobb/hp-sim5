@@ -262,12 +262,12 @@ const commander = new MoveCommander({
     commandHandler: (msg) => postMessage(msg)
 });
 
-    self.onmessage = function(e) {
-        if (e.data.type === 'start' && e.data.gcode) {
-            commander.run(e.data.gcode);
-        } else if (e.data.type === 'set_dt' && e.data.dt) {
-            commander.dt = e.data.dt;
-        }
-    };
-}
+self.onmessage = function(e) {
+    if (e.data.type === 'start' && e.data.gcode) {
+        commander.run(e.data.gcode);
+    } else if (e.data.type === 'set_dt' && e.data.dt) {
+        commander.dt = e.data.dt;
+    }
+};
+
 export default MoveCommander;

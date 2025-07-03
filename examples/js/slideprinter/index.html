@@ -158,12 +158,12 @@ canvas {
     loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
 
     if (ws === null) {
-        commander = new MoveCommander(null, (msg) => {
+        commander = new MoveCommander({uri: null, commandHandler: (msg) => {
             const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
             if (remoteSpoolSystem) {
                 remoteSpoolSystem.addCommand(msg.command);
             }
-        });
+        }});
 
         gcodeFileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
