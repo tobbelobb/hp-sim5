@@ -204,7 +204,7 @@ class MoveCommander:
                                 elapsed = asyncio.get_event_loop().time() - loop_start_time
                                 wait_time = self.dt - elapsed
                                 if wait_time > 0:
-                                    await asyncio.sleep(wait_time)
+                                    await asyncio.sleep(wait_time/1.25) # This is just a heuristic
 
                             if final_angles_rad is not None:
                                 self.current_angles_rad = final_angles_rad
@@ -311,9 +311,6 @@ class MoveCommander:
                             'action': 'gcode',
                             'command': cmd
                         }))
-
-                print("All commands sent. Waiting for server to finish.")
-                await recv_task
             finally:
                 if not recv_task.done():
                     recv_task.cancel()

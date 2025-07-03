@@ -58,7 +58,7 @@ export function runGame(world, internalSetupScene) {
 
         frameCounter++;
         if (frameCounter % 10 === 0 && speedEl) {
-            if (startTime > 0) {
+            if (startTime >= 0) {
                 const elapsed = (performance.now() - startTime) / 1000;
                 if (elapsed > 0) {
                     const avgSpeed = totalSim / elapsed;

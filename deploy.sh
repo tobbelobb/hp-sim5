@@ -27,10 +27,14 @@ DIST_DIR="$REPO_DIR/dist"
 
 cd "$REPO_DIR"
 
+cp examples/js/slideprinter/moveCommander.js public/examples/js/slideprinter/moveCommander.js
+
 echo "🔧 Building project with Vite..."
 run rm -rf dist
 run npx vite build
-#
+
+rm public/examples/js/slideprinter/moveCommander.js
+
 # If the worktree directory already exists, remove it first
 if [ -d "${WORKTREE_DIR}" ]; then
   echo "⚠️  Worktree directory already exists at ${WORKTREE_DIR} - removing..."
