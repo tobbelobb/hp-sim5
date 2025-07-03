@@ -279,6 +279,7 @@ class MoveCommander {
 const commander = new MoveCommander({
     uri: null,
 });
+console.log("worker: MoveCommander is up");
 
 self.onmessage = async function(e) {
     if (e.data.type === 'start' && e.data.gcode) {

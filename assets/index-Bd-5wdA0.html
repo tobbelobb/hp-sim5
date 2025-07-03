@@ -188,6 +188,7 @@ canvas {
         if (window.Worker) {
             const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
             moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+            console.log("main: moveCommanderWorker is up");
 
             moveCommanderWorker.onmessage = (e) => {
                 if (e.data.type === 'done') {
