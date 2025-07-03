@@ -130,7 +130,7 @@ export class RemoteSpoolSystem {
         }
 
         const command = this.commands.shift();
-        if (!command) {
+        if (command === undefined) {
             return;
         }
 
@@ -140,9 +140,9 @@ export class RemoteSpoolSystem {
                 extruderComp = world.getComponent(e, ExtruderComponent);
                 break;
             }
-            if (extruderComp) {
+            if (extruderComp != null) {
                 const extrusionEvents = world.getResource("extrusion_events");
-                if (extrusionEvents) {
+                if (extrusionEvents != null) {
                     const extrusionEvent = [extruderComp.centerPos.clone(), command.E];
                     extrusionEvents.push(extrusionEvent);
                 }
@@ -153,11 +153,11 @@ export class RemoteSpoolSystem {
             const entityId = this.axisToEntity[axis];
             if (command && command.type === 'Move' && command[axis] !== undefined) {
                 const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                if (stepperComp) {
+                if (stepperComp != null) {
                     stepperComp.commandedAngle = command[axis];
                 }
             }
-            if (command && command.type === 'Add to reference' && command[axis] !== undefined) {
+            if (command != null && command.type === 'Add to reference' && command[axis] !== undefined) {
                 const stepperComp = world.getComponent(entityId, StepperMotorComponent);
                 if (stepperComp) {
                     stepperComp.deltaAngle += command[axis];

@@ -91,7 +91,7 @@ export function setupScene(world, stage, canvas, options = {}) {
 
     world.setResource('simWidth', simWidth);
     world.setResource('simHeight', simHeight);
-    world.setResource('pauseState', new PauseStateComponent(true));
+    world.setResource('pauseState', new PauseStateComponent(false));
     world.setResource('debugRenderPoints', {});
     world.setResource('errorState', new SimulationErrorStateComponent(false));
     world.setResource('grabbedBall', null);

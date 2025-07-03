@@ -144,7 +144,7 @@ canvas {
     </div>
 <script type="module">
     import {
-      Open as UsdOpen,
+        Open as UsdOpen,
     } from "../../../src/js/usd/stage.js";
     import { World } from '../../../src/js/cable_joints/ecs.js';
     import { runGame } from './runner.js';
@@ -166,7 +166,7 @@ canvas {
     const websocket_out = websocketOutToggle.checked;
     const port = websocketPortInput.value;
 
-    if (websocket_in) {
+    if (websocket_in || websocket_out) {
         ws = new WebSocket(`ws://localhost:${port}`);
     }
 
@@ -177,78 +177,93 @@ canvas {
     loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
 
     const moveCommanderURI = websocket_out ? `ws://localhost:${port}` : null;
-
-    if (!websocket_in) {
-        commander = new MoveCommander({
-            uri: moveCommanderURI,
-            commandHandler: moveCommanderURI ? null : (msg) => {
-                const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
-                if (remoteSpoolSystem) {
-                    remoteSpoolSystem.addCommand(msg.command);
-                }
-            }
-        });
-
-        gcodeFileInput.addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const gcode = await file.text();
-                commander.run(gcode);
-            }
-        });
-        presetGcodeSelect.addEventListener('change', async () => {
-            const fileName = presetGcodeSelect.value;
-            if (!fileName) return;
-            try {
-                const response = await fetch(`${import.meta.env.BASE_URL || '/'}examples/gcode/${fileName}`);
-                const gcode = await response.text();
-                commander.run(gcode);
-            } catch (err) {
-                console.error('Failed to load built-in G-code:', err);
-            }
-        });
-    } else if (window.Worker) {
-        const base = import.meta.env.BASE_URL || '/';
-        const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
-        moveCommanderWorker = new Worker(workerPath, { type: 'module' });
-        if (moveCommanderURI) {
-            moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
-        }
-        moveCommanderWorker.onmessage = (e) => {
-            if (e.data.type === 'done') {
-                console.log('G-code processing finished.');
-            } else if (e.data.type === 'error') {
-                console.error('G-code processing failed:', e.data.message);
-            }
-        };
-
-        gcodeFileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const gcode = e.target.result;
-                    moveCommanderWorker.postMessage({ type: 'start', gcode });
-                };
-                reader.readAsText(file);
-            }
-        });
-        presetGcodeSelect.addEventListener('change', async () => {
-            const fileName = presetGcodeSelect.value;
-            if (!fileName) return;
-            try {
-                const response = await fetch(`${base}examples/gcode/${fileName}`);
-                const gcode = await response.text();
-                moveCommanderWorker.postMessage({ type: 'start', gcode });
-            } catch (err) {
-                console.error('Failed to load built-in G-code:', err);
-            }
-        });
-    } else {
-        console.log('Your browser does not support Web Workers.');
-    }
-
     const base = import.meta.env.BASE_URL || '/';
+
+    if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
+        // Create no websocket in this case. The websocket_in && websocket_out case is
+        // simulated by sending the same data to web worker with postMessage.
+        // Create MoveCommander in web worker. Don't give it a websocket uri.
+        // In this case MoveCommander gets its gcode file from the main page and sends
+        // back segmented MoveCommander commands via postMessage.
+        if (window.Worker) {
+            const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
+            moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+
+            moveCommanderWorker.onmessage = (e) => {
+                if (e.data.type === 'done') {
+                    console.log('main: G-code processing finished.');
+                } else if (e.data.type === 'error') {
+                    console.error('main: G-code processing failed:', e.data.message);
+                } else if (e.data.action === 'gcode') {
+                    const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                    if (remoteSpoolSystem != null) {
+                        remoteSpoolSystem.addCommand(e.data.command);
+                    }
+                }
+            };
+            gcodeFileInput.addEventListener('change', (event) => {
+                const filename = event.target.files[0];
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
+            });
+            presetGcodeSelect.addEventListener('change', async () => {
+                const filename = `${base}examples/gcode/${presetGcodeSelect.value}`
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
+            });
+        }
+    } else if (websocket_in) {
+        // Don't create a local js MoveCommander.
+        // The move commands will come from some other source.
+        // Listen for commands in the websocket.
+        if (ws) {
+            ws.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data != null && data.action === 'gcode') {
+                    const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                    if (remoteSpoolSystem != null) {
+                        remoteSpoolSystem.addCommand(data.command);
+                    }
+                }
+            });
+        }
+    } else if (websocket_out) {
+        // Create MoveCommander in web worker. Give it the websocket uri as an argument.
+        // The MoveCommander gets its gcode file from the main page via postMessage,
+        // and creates segmented MoveCommander commands that it sends out via the websocket.
+        if (window.Worker) {
+            const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
+            moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+            if (moveCommanderURI) {
+                moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
+            }
+            moveCommanderWorker.onmessage = (e) => {
+                if (e.data.type === 'done') {
+                    console.log('main: G-code processing finished.');
+                } else if (e.data.type === 'error') {
+                    console.error('main: G-code processing failed:', e.data.message);
+                }
+            };
+            gcodeFileInput.addEventListener('change', (event) => {
+                const filename = event.target.files[0];
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
+            });
+            presetGcodeSelect.addEventListener('change', async () => {
+                const filename = `${base}examples/gcode/${presetGcodeSelect.value}`
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
+            });
+        }
+    }
     const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
 
     UsdOpen(usdaPath).then(stage => {
@@ -262,18 +277,6 @@ canvas {
       }
       if (commander && timeCodesPerSecond) {
           commander.dt = 1.0/timeCodesPerSecond;
-      }
-
-      if (ws) {
-          ws.addEventListener('message', (event) => {
-              const data = JSON.parse(event.data);
-              if (data && data.action === 'gcode') {
-                  const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
-                  if (remoteSpoolSystem) {
-                      remoteSpoolSystem.addCommand(data.command);
-                  }
-              }
-          });
       }
 
       runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));

@@ -3,9 +3,8 @@ import { guessed_anchors } from './guessedData.js';
 
 
 class MoveCommander {
-    constructor({uri = null, commandHandler = null} = {}) {
+    constructor({uri = null} = {}) {
         this.uri = uri;
-        this.commandHandler = commandHandler;
         this.websocket = null;
         this.last_speed_mm_per_min = 1000.0;
         this.commands = [];
@@ -21,7 +20,7 @@ class MoveCommander {
     }
 
     async connect() {
-        if (this.commandHandler || !this.uri) {
+        if (this.uri == null) {
             return;
         }
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
@@ -30,17 +29,17 @@ class MoveCommander {
         this.websocket = new WebSocket(this.uri);
         return new Promise((resolve, reject) => {
             this.websocket.onopen = () => {
-                console.log("MoveCommander connected to websocket.");
-                // Start a task to drain incoming messages, like in the Python version
+                console.log("worker: MoveCommander connected to websocket.");
+                // Start a task to drain incoming messages
                 this.websocket.onmessage = () => { /* discard */ };
                 resolve();
             };
             this.websocket.onerror = (err) => {
-                console.error("MoveCommander websocket error:", err);
+                console.error("worker: MoveCommander websocket error:", err);
                 reject(err);
             };
             this.websocket.onclose = () => {
-                console.log("MoveCommander websocket closed.");
+                console.log("worker: MoveCommander websocket closed.");
             };
         });
     }
@@ -112,8 +111,8 @@ class MoveCommander {
         const message = { action: 'gcode', command: command };
         if (this.websocket) {
             this.websocket.send(JSON.stringify(message));
-        } else if (this.commandHandler) {
-            this.commandHandler(message);
+        } else {
+            postMessage(message);
         }
     }
 
@@ -149,7 +148,7 @@ class MoveCommander {
                     const num_steps = duration_s > 0 ? Math.ceil(duration_s / this.dt) : 0;
 
                     if (num_steps > 0) {
-                        console.log(`Executing G1 move to ${JSON.stringify(target_pos_mm)} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
+                        console.log(`worker: Executing G1 move to ${JSON.stringify(target_pos_mm)} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
                         const extrusion_per_step = extrusion_delta_mm / num_steps;
                         let final_angles_rad = null;
 
@@ -224,7 +223,7 @@ class MoveCommander {
                     const duration_s = line_distance_mm / speed_mm_per_s;
                     const num_steps = Math.ceil(duration_s / this.dt);
 
-                    console.log(`Executing G6 move with deltas ${line_deltas_mm} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
+                    console.log(`worker: Executing G6 move with deltas ${line_deltas_mm} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
 
                     const deltas_rad = subtract(target_angles_rad, this.current_angles_rad);
                     if (num_steps > 0) {
@@ -247,7 +246,7 @@ class MoveCommander {
             }
             postMessage({ type: 'done' });
         } catch (e) {
-            console.error("MoveCommander failed to run:", e);
+            console.error("worker: MoveCommander failed to run:", e);
             postMessage({ type: 'error', message: e.message });
         } finally {
             if (this.websocket) {
@@ -259,19 +258,30 @@ class MoveCommander {
 
 const commander = new MoveCommander({
     uri: null,
-    commandHandler: (msg) => postMessage(msg)
 });
 
-self.onmessage = function(e) {
+self.onmessage = async function(e) {
     if (e.data.type === 'start' && e.data.gcode) {
         commander.run(e.data.gcode);
+    } else if (e.data.type === 'filename_upload' && e.data.filename) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const gcode = e.target.result;
+            commander.run(gcode);
+        }
+        reader.readAsText(e.data.filename);
+    } else if (e.data.type === 'filename_fetch' && e.data.filename) {
+        try {
+            const response = await fetch(e.data.filename);
+            const gcode = await response.text();
+            commander.run(gcode);
+        } catch (err) {
+            console.error('worker: Failed to load built-in G-code:', err);
+        }
     } else if (e.data.type === 'set_dt' && e.data.dt) {
         commander.dt = e.data.dt;
     } else if (e.data.type === 'set_uri') {
         commander.uri = e.data.uri;
-        if (commander.uri) {
-            commander.commandHandler = null;
-        }
     }
 };
 
