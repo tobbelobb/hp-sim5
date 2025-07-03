@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  Start with:  npx vite
+  Open http://localhost:5173/hp-sim5/slideprinter.html
+  Upload a G-code file to run the JS MoveCommander locally.
+  To drive it from Python instead run
+    python -m examples.python.slideprinter.move_commander <file>
+  which connects via WebSocket.
+-->
 <html>
 <head>
     <title>Slideprinter</title>
@@ -15,35 +23,32 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
 
     <style>
-/* =========  BASIC COLOUR THEME  ========= */
 :root {
-  --bg-1: #2d2d2d;        /* page background */
-  --accent-1: #ff452a;    /* flipper + button gradient start */
-  --accent-2: #ffb347;    /* flipper + button gradient end   */
+  --bg-1: #2d2d2d;
+  --accent-1: #ff452a;
+  --accent-2: #ffb347;
   --text-main: #fafafa;
   --text-dim:  #c0c0c0;
   --radius: 4px;
 }
 
-/* =========  PAGE LAYOUT  ========= */
 html, body {
   margin: 0;
   padding: 0;
   height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
   width: 100dvw;
-  overflow: hidden;               /* **kills the vertical / horizontal scroll**   */
+  overflow-y: auto;               /* **kills the vertical / horizontal scroll**   */
   background: var(--bg-1);
   color: var(--text-main);
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
-  touch-action: none;     /* **stops double‑tap zoom in most browsers**   */
+  touch-action: none;    /* stops double‑tap zoom in most browsers   */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
 }
 
-/* =========  CONTAINER  ========= */
 #gameContainer {
   width: 100%;            /* fill full page width */
   display: flex;
@@ -52,7 +57,6 @@ html, body {
   flex: 1;                /* expand to fill remaining vertical space */
 }
 
-/* =========  CONTROL BAR  ========= */
 #controls {
   position: sticky;
   top: 0;
@@ -88,30 +92,27 @@ html, body {
   transform: scale(.97);
 }
 
-/* =========  CANVAS  ========= */
 canvas {
   width: 100%;
-  /* removed fixed aspect ratio to fill available screen height */
   flex: 1;                         /* grow to fill vertical space */
   display: block;
   border-radius: var(--radius);
   touch-action: manipulation;      /* turn off browser panning/zoom so pointermove/up always fire */
 }
 
-/* =========  SMALL‑SCREEN TWEAKS  ========= */
 #controls button {
   padding: 10px 16px;
   font-size: 0.85rem;
 }
     </style>
-  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-CKoV_Buo.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-BuCop6-2.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/USDA_File-HP1M6q7m.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-kerxVC-m.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Ce4z-NwI.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-BJCodFvY.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/debugUtils-IobIgzXq.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-ByqNN3N6.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-DzRZaiEw.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-051LwU-e.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-D4Ek8iuH.js">
 </head>
 <body>
     <div id="gameContainer">
@@ -119,7 +120,29 @@ canvas {
             <button id="pauseBtn" tabindex="-1">Pause</button>
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
-            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+            <button id="dumpBtn" tabindex="-1">Dump State</button>
+            <input type="file" id="gcodeFile" accept=".gcode" style="display: none;" />
+            <button id="loadGcodeBtn" tabindex="-1">Load G-code</button>
+            <select id="presetGcode" style="margin-left: 6px;">
+                <option value="">Built-in G-code</option>
+                <option value="draw_squares.gcode">draw_squares.gcode</option>
+                <option value="home.gcode">home.gcode</option>
+                <option value="movements.gcode">movements.gcode</option>
+                <option value="tighten.gcode">tighten.gcode</option>
+            </select>
+            <span style="margin-left: 1em;">
+                <label for="websocketIn">websocket in</label>
+                <input type="checkbox" id="websocketIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketOut">websocket out</label>
+                <input type="checkbox" id="websocketOut">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketPort">port</label>
+                <input type="text" id="websocketPort" value="8766" style="width: 4em;">
+            </span>
+            <br />
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
                 dt: <span id="dt">N/A</span> |
                 Speed: <span id="speed">N/A</span>

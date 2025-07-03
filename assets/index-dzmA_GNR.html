@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<!--
+  Start with:  npx vite
+  Open http://localhost:5173/hp-sim5/slideprinter.html
+  Upload a G-code file to run the JS MoveCommander locally.
+  To drive it from Python instead run
+    python -m examples.python.slideprinter.move_commander <file>
+  which connects via WebSocket.
+-->
+<html>
+<head>
+    <title>Slideprinter</title>
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+
+    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Nice free Google font – optional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
+    <style>
+:root {
+  --bg-1: #2d2d2d;
+  --accent-1: #ff452a;
+  --accent-2: #ffb347;
+  --text-main: #fafafa;
+  --text-dim:  #c0c0c0;
+  --radius: 4px;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
+  width: 100dvw;
+  overflow-y: auto;               /* **kills the vertical / horizontal scroll**   */
+  background: var(--bg-1);
+  color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
+  touch-action: none;    /* stops double‑tap zoom in most browsers   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#gameContainer {
+  width: 100%;            /* fill full page width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;                /* expand to fill remaining vertical space */
+}
+
+#controls {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  margin-block: 0 8px;    /* remove top margin, keep bottom spacing */
+  padding-block: 12px 0;  /* add vertical padding */
+  background: var(--bg-1); /* ensure background covers underlying content */
+  z-index: 1;             /* stay above canvas */
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+#controls button {
+  all: unset;                      /* wipe default button styles */
+  cursor: pointer;
+  display: inline-block;
+  margin: 6px auto;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+#controls button:hover,
+#controls button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active {
+  transform: scale(.97);
+}
+
+canvas {
+  width: 100%;
+  flex: 1;                         /* grow to fill vertical space */
+  display: block;
+  border-radius: var(--radius);
+  touch-action: manipulation;      /* turn off browser panning/zoom so pointermove/up always fire */
+}
+
+#controls button {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="controls">
+            <button id="pauseBtn" tabindex="-1">Pause</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button>
+            <input type="file" id="gcodeFile" accept=".gcode" style="display: none;" />
+            <button id="loadGcodeBtn" tabindex="-1">Load G-code</button>
+            <select id="presetGcode" style="margin-left: 6px;">
+                <option value="">Built-in G-code</option>
+                <option value="draw_squares.gcode">draw_squares.gcode</option>
+                <option value="home.gcode">home.gcode</option>
+                <option value="movements.gcode">movements.gcode</option>
+                <option value="tighten.gcode">tighten.gcode</option>
+            </select>
+            <span style="margin-left: 1em;">
+                <label for="websocketIn">websocket in</label>
+                <input type="checkbox" id="websocketIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketOut">websocket out</label>
+                <input type="checkbox" id="websocketOut">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketPort">port</label>
+                <input type="text" id="websocketPort" value="8766" style="width: 4em;">
+            </span>
+            <br />
+            <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
+                dt: <span id="dt">N/A</span> |
+                Speed: <span id="speed">N/A</span>
+            </div>
+        </div>
+        <canvas id="myCanvas"></canvas>
+    </div>
+<script type="module">
+    import {
+        Open as UsdOpen,
+    } from "../../../src/js/usd/stage.js";
+    import { World } from '../../../src/js/cable_joints/ecs.js';
+    import { runGame } from './runner.js';
+    import { setupScene } from './setupScene.js';
+    import { RemoteSpoolSystem } from './slideprinter_common.js';
+    import MoveCommander from './moveCommander.js';
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+    let world = new World();
+    let moveCommanderWorker;
+    let commander;
+    let ws = null;
+    const websocketInToggle = document.getElementById('websocketIn');
+    const websocketOutToggle = document.getElementById('websocketOut');
+    const websocketPortInput = document.getElementById('websocketPort');
+
+    const websocket_in = websocketInToggle.checked;
+    const websocket_out = websocketOutToggle.checked;
+    const port = websocketPortInput.value;
+
+    if (websocket_in || websocket_out) {
+        ws = new WebSocket(`ws://localhost:${port}`);
+    }
+
+    const loadGcodeBtn = document.getElementById('loadGcodeBtn');
+    const gcodeFileInput = document.getElementById('gcodeFile');
+    const presetGcodeSelect = document.getElementById('presetGcode');
+
+    loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
+
+    const moveCommanderURI = websocket_out ? `ws://localhost:${port}` : null;
+    const base = import.meta.env.BASE_URL || '/';
+
+    if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
+        // Create no websocket in this case. The websocket_in && websocket_out case is
+        // simulated by sending the same data to web worker with postMessage.
+        // Create MoveCommander in web worker. Don't give it a websocket uri.
+        // In this case MoveCommander gets its gcode file from the main page and sends
+        // back segmented MoveCommander commands via postMessage.
+        if (window.Worker) {
+            const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
+            moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+
+            moveCommanderWorker.onmessage = (e) => {
+                if (e.data.type === 'done') {
+                    console.log('main: G-code processing finished.');
+                } else if (e.data.type === 'error') {
+                    console.error('main: G-code processing failed:', e.data.message);
+                } else if (e.data.action === 'gcode') {
+                    const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                    if (remoteSpoolSystem != null) {
+                        remoteSpoolSystem.addCommand(e.data.command);
+                    }
+                }
+            };
+            gcodeFileInput.addEventListener('change', (event) => {
+                const filename = event.target.files[0];
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
+            });
+            presetGcodeSelect.addEventListener('change', async () => {
+                const filename = `${base}examples/gcode/${presetGcodeSelect.value}`
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
+            });
+        }
+    } else if (websocket_in) {
+        // Don't create a local js MoveCommander.
+        // The move commands will come from some other source.
+        // Listen for commands in the websocket.
+        if (ws) {
+            ws.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data != null && data.action === 'gcode') {
+                    const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                    if (remoteSpoolSystem != null) {
+                        remoteSpoolSystem.addCommand(data.command);
+                    }
+                }
+            });
+        }
+    } else if (websocket_out) {
+        // Create MoveCommander in web worker. Give it the websocket uri as an argument.
+        // The MoveCommander gets its gcode file from the main page via postMessage,
+        // and creates segmented MoveCommander commands that it sends out via the websocket.
+        if (window.Worker) {
+            const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
+            moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+            if (moveCommanderURI) {
+                moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
+            }
+            moveCommanderWorker.onmessage = (e) => {
+                if (e.data.type === 'done') {
+                    console.log('main: G-code processing finished.');
+                } else if (e.data.type === 'error') {
+                    console.error('main: G-code processing failed:', e.data.message);
+                }
+            };
+            gcodeFileInput.addEventListener('change', (event) => {
+                const filename = event.target.files[0];
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
+            });
+            presetGcodeSelect.addEventListener('change', async () => {
+                const filename = `${base}examples/gcode/${presetGcodeSelect.value}`
+                if (filename == null) {
+                  return;
+                }
+                moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
+            });
+        }
+    }
+    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
+
+    UsdOpen(usdaPath).then(stage => {
+      if (!stage) {
+          console.error("Failed to load or parse USD file:", usdaPath);
+          return;
+      }
+      const timeCodesPerSecond = stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
+      if (moveCommanderWorker && timeCodesPerSecond) {
+          moveCommanderWorker.postMessage({ type: 'set_dt', dt: 1.0/timeCodesPerSecond });
+      }
+      if (commander && timeCodesPerSecond) {
+          commander.dt = 1.0/timeCodesPerSecond;
+      }
+
+      runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
+    }).catch(error => {
+        console.error("Error during USD loading or game setup:", error);
+    });
+</script>
+
+</body>
+</html>
