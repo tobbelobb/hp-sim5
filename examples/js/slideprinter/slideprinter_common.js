@@ -197,6 +197,7 @@ export class RemoteInputSystem {
      }
 
      handlePointerDown(event) {
+         if (event.target !== this.canvas) return;
          event.preventDefault();
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
@@ -236,6 +237,7 @@ export class RemoteInputSystem {
      }
 
      handlePointerUp(event) {
+         if (event.target !== this.canvas) return;
          event.preventDefault();
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
@@ -287,6 +289,7 @@ export class InputSystem {
      }
 
      handlePointerDown(event) {
+         if (event.target !== this.canvas) return;
          event.preventDefault();
          const rect = this.canvas.getBoundingClientRect();
          const baseScale = this.canvas.height / this.world.getResource('simHeight');
@@ -350,6 +353,7 @@ export class InputSystem {
      }
 
      handlePointerUp(event) {
+         if (event.target !== this.canvas) return;
          event.preventDefault();
          this.canvas.releasePointerCapture(event.pointerId);
 
