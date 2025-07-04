@@ -13,10 +13,48 @@ import { setupScene } from '../../../examples/js/flipper/setupScene.js';
 import { Open } from '../../../src/js/usd/stage.js';
 
 // Minimal DOM stubs for systems that expect browser APIs
+function createMockCanvas() {
+  const width = 460;
+  const height = Math.round(width * 1.7);
+  return {
+    clientWidth: width,
+    clientHeight: height,
+    width,
+    height,
+    style: {},
+    setAttribute: () => {},
+    focus: () => {},
+    addEventListener: () => {},
+    getContext: () => ({
+      beginPath() {},
+      arc() {},
+      closePath() {},
+      fill() {},
+      stroke() {},
+      moveTo() {},
+      lineTo() {},
+      fillRect() {},
+      save() {},
+      restore() {},
+      translate() {},
+      rotate() {},
+      clearRect() {},
+      drawImage() {}
+    }),
+    getBoundingClientRect: () => ({ left: 0, top: 0 })
+  };
+}
+
 const mockDocument = {
   addEventListener: () => {},
   removeEventListener: () => {},
-  getElementById: () => ({ textContent: '' })
+  getElementById: () => ({ textContent: '' }),
+  createElement: (tag) => {
+    if (tag === 'canvas') {
+      return createMockCanvas();
+    }
+    return {};
+  }
 };
 
 describe('Flipper Node Simulation', () => {
@@ -29,34 +67,7 @@ describe('Flipper Node Simulation', () => {
   });
 
   function createCanvas() {
-    const width = 460;
-    const height = Math.round(width * 1.7);
-    return {
-      clientWidth: width,
-      clientHeight: height,
-      width,
-      height,
-      style: {},
-      setAttribute: () => {},
-      focus: () => {},
-      addEventListener: () => {},
-      getContext: () => ({
-        beginPath() {},
-        arc() {},
-        closePath() {},
-        fill() {},
-        stroke() {},
-        moveTo() {},
-        lineTo() {},
-        fillRect() {},
-        save() {},
-        restore() {},
-        translate() {},
-        rotate() {},
-        clearRect() {}
-      }),
-      getBoundingClientRect: () => ({ left: 0, top: 0 })
-    };
+    return createMockCanvas();
   }
 
   function getGameState(world) {
