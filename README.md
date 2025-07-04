@@ -1,6 +1,8 @@
 # hp-sim5 - Hangprinter Simulator
 
-hp-sim5 simulates the physics of Hangprinter.
+![Demo](slideprinter_Hangprinter_logo_wiggling_and_losing_steps2.gif)
+
+hp-sim5 simulates the physics of [Hangprinter](https://hangprinter.org).
 hp-sim5 currently simulates:
 
  - How lines behave
@@ -8,7 +10,7 @@ hp-sim5 currently simulates:
  - How motors behave
  - etc etc
 
-The goal is to reproduce real world Hangprintes as closely as possible.
+The goal is to reproduce real world Hangprints as closely as possible.
 
 The `Slideprinter` demo reproduces infills with resonance patterns, ringing after
 sharp corners, slack lines along smooth curves and even lost steps from overly
@@ -28,7 +30,9 @@ Intended uses:
    with advanced control and AI.
 
 hp-sim5 have two fully functional, equivalent implementations; one in JavaScript and one in Python.
-hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of Matthias Müller.
+hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
+Müller](https://matthias-research.github.io/pages/index.html).
+
 For a deeper dive into the physics engine and the classic flipper demo see
 `README_adv.md`.
 
