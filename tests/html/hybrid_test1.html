@@ -129,6 +129,8 @@ canvas {
       OrientationComponent,
       AngularVelocityComponent,
       MomentOfInertiaComponent,
+      PrevFinalPosComponent,
+      PrevFinalOrientationComponent,
       RenderableComponent,
       RadiusComponent
     } from '../../src/js/cable_joints/ecs.js';
@@ -147,11 +149,16 @@ canvas {
 
 
     import {
+      PrevFinalPosSystem,
+      PrevFinalOrientationSystem,
       GravitySystem,
       MovementSystem,
       AngularMovementSystem,
+      PBDVelocityUpdateSystem,
+      PBDAngularVelocityUpdateSystem,
     } from '../../src/js/cable_joints/commonSystems.js';
 
+    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints/cable_attachment_cache_system.js';
     import {
       PauseStateComponent,
     } from '../../examples/js/flipper/flipper_common.js';
@@ -327,12 +334,14 @@ canvas {
         const spoolA = world.createEntity();
         world.addComponent(spoolA, new SpoolTagComponent());
         world.addComponent(spoolA, new PositionComponent(-0.25, -0.5));
+        world.addComponent(spoolA, new PrevFinalPosComponent(-0.25, -0.5));
         world.addComponent(spoolA, new VelocityComponent(0.0, 0.0));
         world.addComponent(spoolA, new RadiusComponent(spoolRadius));
         world.addComponent(spoolA, new MassComponent(spoolMass));
         world.addComponent(spoolA, new GravityAffectedComponent());
         world.addComponent(spoolA, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(spoolA, new OrientationComponent(0.0));
+        world.addComponent(spoolA, new PrevFinalOrientationComponent(0.0));
         world.addComponent(spoolA, new AngularVelocityComponent(0.0));
         world.addComponent(spoolA, new MomentOfInertiaComponent(spoolInertia));
 
@@ -378,12 +387,14 @@ canvas {
         const spoolB = world.createEntity();
         world.addComponent(spoolB, new SpoolTagComponent());
         world.addComponent(spoolB, new PositionComponent(0.25, -0.5));
+        world.addComponent(spoolB, new PrevFinalPosComponent(0.25, -0.5));
         world.addComponent(spoolB, new VelocityComponent(0.0, 0.0));
         world.addComponent(spoolB, new RadiusComponent(spoolRadius));
         world.addComponent(spoolB, new MassComponent(spoolMass));
         world.addComponent(spoolB, new GravityAffectedComponent());
         world.addComponent(spoolB, new RenderableComponent('circle', '#a0a0a0'));
         world.addComponent(spoolB, new OrientationComponent(0.0));
+        world.addComponent(spoolB, new PrevFinalOrientationComponent(0.0));
         world.addComponent(spoolB, new AngularVelocityComponent(0.0));
         world.addComponent(spoolB, new MomentOfInertiaComponent(spoolInertia));
 
@@ -434,12 +445,22 @@ canvas {
           inputSys.viewOffsetX = 0.0;
           inputSys.viewOffsetY = -0.3;
           world.registerSystem(inputSys);
-          world.registerSystem(new GravitySystem());      // Applies gravity acceleration
-          world.registerSystem(new MovementSystem());     // Updates position based on velocity
-          world.registerSystem(new AngularMovementSystem()); // Updates angle based on angular velocity
+
+          world.registerSystem(new PrevFinalPosSystem());
+          world.registerSystem(new PrevFinalOrientationSystem());
+          world.registerSystem(new GravitySystem());
+          world.registerSystem(new MovementSystem());
+          world.registerSystem(new AngularMovementSystem());
+
           world.registerSystem(new CableAttachmentUpdateSystem());
+          world.registerSystem(new CableAttachmentCacheSystem());
+
           world.registerSystem(new RenderSystem(canvas, cScale, simHeight, inputSys.scaleMultiplier, inputSys.viewOffsetX, inputSys.viewOffsetY));
           world.registerSystem(new PBDCableConstraintSolver());
+          //world.registerSystem(new PBDResolveCableOverCorrections());
+
+          world.registerSystem(new PBDVelocityUpdateSystem());
+          world.registerSystem(new PBDAngularVelocityUpdateSystem());
         }
 
         // Update button text based on initial pause state
