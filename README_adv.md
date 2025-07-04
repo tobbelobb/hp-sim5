@@ -1,108 +1,94 @@
-# Cable Joints Physics Engine (JavaScript & Python)
+# hp-sim5 Advanced Guide
 
-A physics engine for simulating cables, built on a Position-Based Dynamics (PBD) approach with an Entity-Component-System (ECS) core. It is implemented in JavaScript and Python. It's long term purpose is to simulate a cable driven robot (Hangprinter) in a way that can be integrated into Isaac Lab, Omniverse, Warp etc.
+This guide expands on the main `README.md`.  It covers how to run the Python
+equivalents of the demos, describes the Flipper example and gives an
+overview of the XPBD‑based cable joints library that powers the simulator.
 
- ## 1. Purpose
+## Slideprinter Demo Advanced
+Both the js and Python implementations of the Slideprinter demo consist of a "firmware" called MoveCommander and a simulated "3d printer" called Slideprinter.
+Communication between them goes via (real or simulated) websockets.
+This means the Python MoveCommander can in principle command the js Slideprinter and vice versa.
+This demo frequently breaks and depends on fiddling with port numbers, so is not presented in the main README.md.
+But in principle it should work all the time for the js and Python ports to be fully equivalent.
+
+
+## XPBD Physics Engine and Cable Joints Library
+The simulator is built on a physics engine implementing (extended) Position‑Based Dynamics (XPBD).
+Cable segments slide over wheels, wrap, and maintain tension through constraints solved with XPBD.
+The engine lives under `src/js/cable_joints/` with a line‑for‑line Python port in `src/python/cable_joints/`.
+These modules form a small but powerful library that can be used outside of the Slideprinter app for custom robotics experiments.
+
+### Physics Engine Purpose
  - A physics engine for cables interacting with rolling wheels and other obstacles.
  - Position-Based Dynamics (PBD) solver ensuring cable length constraints.
  - Supports generic ECS-based entities/components/systems.
- - Includes interactive demos (e.g., pin-ball flipper) and unit tests.
+ - Includes interactive demos such as the Slideprinter and Flipper, along with
+   various integration-, functional-, and unit tests.
 
-## 2. Top-Level Structure (JavaScript version)
- - `package.json` / `package-lock.json`
-   - No runtime dependencies; Jest for javascript unit tests.
-   - `npm test` runs the full Jest suite under `tests/`.
- - `cable_joints/`
-   - Modular ES modules: `vector2.js`, `geometry.js`, `ecs.js`, `commonSystems.js`, `createCablePaths.js`, `debugUtils.js`, `renderSystem.js`.
-   - UMD bundle: `cable_joints_core.js` - main library (geometry, ECS core, systems, solver, renderer).
-   - `cable_joints.html` - browser demo harness.
-   - `cable_joints_test.html` - in-browser smoke tests.
-   - `hybrid/` - experimental hybrid examples.
- - `tests/` - Jest tests for geometry, components, systems, and solver logic.
- - Root HTML js based demos:
-   - `flipper.html` - pin-ball/flipper basic demo.
-   - `flipper_with_attached_beads.html`
-   - `flipper_with_sliding_beads.html`
- - How to run js demos:
-   - `cd hp-sim5`
-   - `npx vite`
-   - You might have to do `npm install` the first time?
-   - Open for example http://localhost:5173/flipper.html in browser. Or:
-- Js based demos are also available at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/flipper), [tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_sliding_beads), [tobbelobb.github.io/hp-sim5/flipper_with_attached_beads](https://tobbelobb.github.io/hp-sim5/flipper_with_attached_beads)
-- Slideprinter demo at `examples/python/slideprinter/index.html`. Start `npx vite` and in another terminal run
-  `python -m examples.python.slideprinter.server`. Then you can move it with
-  `python -m examples.python.slideprinter.move_commander`.
-  The move commander and server understand G1, G6 and G92 commands, acting as
-  the firmware for the current Python Slideprinter.
- - To try the JS front end alone, start `npx vite` and open `slideprinter.html`.
-   Upload a G-code file to run the JS `MoveCommander` locally without any WebSocket.
-   The Python `move_commander` can also send commands over WebSocket (`ws://localhost:8768`).
-   `MoveCommander` constructors in both languages now accept optional `anchors_mm`,
-   `spool_radius_mm`, `low_axis_max_force`, `use_flex` and `spool_buildup_factor` arguments.
-
-  ## 3. Python Port
-  A complete Python port of the cable joints engine is available in the `src/python/cable_joints/` directory, mirroring the JavaScript implementation with equivalent ECS, geometry, and PBD systems.
-  - Directory structure:
-    - Core modules: `src/python/cable_joints/vector2.py`, `src/python/cable_joints/geometry.py`, `src/python/cable_joints/ecs.py`, `src/python/cable_joints/common_systems.py`, `src/python/cable_joints/create_cable_paths.py`, `src/python/cable_joints/pbd_cable_constraint_solver.py`, and related components.
-    - `tests/python/` - pytest-based test suite covering the port.
+## Python Port
+A complete Python port of the cable joints engine is available in the `src/python/cable_joints/` directory.
   - Dependencies:
     - numpy
     - pytest
     - websockets
     - warp-lang[extras]
+    - pytest-asyncio
   - Usage:
-    1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras]`
-    2. Run Python tests: `python -m pytest tests/python`
-    3. (Optional) Run the Python-driven flipper demo:
-      - Start server: `python -m examples.python.flipper.server`
-      - Open `examples/python/flipper/index.html` in a browser.
-    4. (Optional) To play the (non-warp) and js driven flipper both at the same time, to test
-        their equivalence, first start the `npx vite` to start the js engine, then `python -m examples.python.flipper.server`
-        to start the Python engine. Then open flipper_overlay.html in a browser.
-    5. (Optional) Run the Python-with-Warp-driven flipper demo on cpu:
-      - Start server: `python -m examples.python.flipper.server --warp`
-      - Open `examples/python/flipper/index_warp.html` in a browser.
-    6. (Optional) Run the Python-with-Warp-driven flipper demo on gpu:
-      - Start server: `python -m examples.python.flipper.server --warp --device cuda:0`
-      - Open `examples/python/flipper/index_warp.html` in a browser.
+    1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras] pytest-asyncio`
+    2. Run Python tests: `python -m pytest`
+
+### Warp Version of Cable Joints
+Warp is a Python library that can do many cool things.
+In our case it helps us offload physics solvers to the GPU.
+We plan to use it for other things in the future.
+Warp can run on CPU or GPU, so there are two demos in one here:
+
+Run the demo of the current Warp version of the Python Cable Joints library on the CPU:
+ - Start the flipper server in Warp mode
+  ```bash
+  # Assumes npx vite is already running
+  python -m examples.python.flipper.server --warp
+  ```
+ - Visit <http://localhost:5173/hp-sim5/examples/python/flipper/index_warp.html>
+
+For a GPU demo give `server` a `--device cuda:0` flag:
+```bash
+python -m examples.python.flipper.server --warp --device cuda:0
+```
+
+### Flipper Overlay
+You can play the (non-warp) and js driven flipper both at the same time.
+This is fun and usefult for testing js/Python equivalence.
+
+ - Start the python flipper server
+  ```bash
+  # Assumes npx vite is already running
+  python -m examples.python.flipper.server
+  ```
+
+## Further Tests and Demos
+### Cable Joints Visual "Unit Tests"
+ - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/cable_joints_test.html>
+ - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints_test.html>
+
+## 3D Visual Tests
+ - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/3d_tests.html>
+ - Locally: <http://localhost:5173/hp-sim5/tests/html/3d_tests.html>
+
+## Hybrid Attachment Visual Test
+ - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/hybrid_test1.html>
+ - Locally: <http://localhost:5173/hp-sim5/tests/html/hybrid_test1.html>
+
+## Cable Joints 3d Visual Test
+ - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/cable_joints_3d.html>
+ - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints_3d.html>
+
+## Cable Joints Hanging Visual Test
+ - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/cable_joints.html>
+ - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints.html>
 
 
-  ## 4. Core Library (`cable_joints_core.js`)
- ### a. Geometry Utilities
- - `Vector2` - 2D vector operations (add, subtract, dot, normalize, etc.).
- - `closestPointOnSegment`, `lineSegmentCircleIntersection`, `rightOfLine`.
- - Tangent-point algorithms:
-   - `tangentFromPointToCircle`, `tangentFromCircleToPoint`, `tangentFromCircleToCircle`.
- - `signedArcLengthOnWheel` - compute signed arc length around a wheel.
-
- ### b. ECS Core
- - `World` - entity/component storage, resources, system registration, update loop.
- - Add/get/remove/query components on entities.
-
- ### c. Components
- - `PositionComponent`, `VelocityComponent`.
- - `MassComponent`, `RestitutionComponent`, `RadiusComponent`.
- - Tags: `BallTagComponent`, `ObstacleTagComponent`, `GravityAffectedComponent`, etc.
- - `CableJointComponent` - segment constraint between two entities with rest length.
- - `CablePathComponent` - aggregates cable joints, link types (`attachment`, `rolling`, `hybrid`, `hybrid-attachment`, `pinhole`), arc-length storage, and total rest length.
- - Render, pause, error, and input-log components.
-
- ### d. Systems
- - `GravitySystem` - applies gravity.
- - `MovementSystem` - integrates positions by velocities.
- - `PBDBallBallCollisions` / `PBDBallObstacleCollisions` - PBD-based collision resolution.
- - `CableAttachmentUpdateSystem` - computes and updates tangent points when cables wrap around wheels.
- - `PBDCableConstraintSolver` - enforces total cable-length constraint via PBD gradient-based corrections.
- - `InputReplaySystem` - feeds recorded user inputs into the simulation.
- - `RenderSystem` - draws entities and cables onto an HTML5 canvas.
-
-## 5. Unit Tests (`tests/`)
- - Geometry: segment-circle intersection, closest point, tangent functions, signed arc length, left/right of line.
- - Components: `CablePathComponent` constructor behavior.
- - Systems: gravity, movement, ball-ball/obstacle collisions.
- - Tangent-point cases: all combinations of circle-to-circle (TT, TF, FT, FF).
-
--## 6. 3D Visualization
-- `tests/html/3d_tests.html` demonstrates rendering cable joint points using Three.js.
-- Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers and now live under `src/js/cable_joints_3d/`.
-- The Python side includes `src/python/cable_joints_3d/vector3.py` and `src/python/cable_joints_3d/geometry3.py` for analogous 3D helpers.
+## 6. 3D Visualization
+ `tests/html/3d_tests.html` demonstrates rendering cable joint points using Three.js.
+ Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers and now live under `src/js/cable_joints_3d/`.
+ The Python side includes `src/python/cable_joints_3d/vector3.py` and `src/python/cable_joints_3d/geometry3.py` for analogous 3D helpers.

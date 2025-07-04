@@ -1,68 +1,74 @@
-# Cable Joints Physics Engine
+# hp-sim5 - Hangprinter Simulator
 
-This project simulates cables using a Position‑Based Dynamics (PBD) solver built on top of a small Entity‑Component‑System (ECS) framework.  Both JavaScript and Python implementations are provided.  The long‑term goal is to drive a Hangprinter style robot in environments such as Omniverse or Isaac Lab.
+hp-sim5 simulates the physics of Hangprinter.
+hp-sim5 currently simulates:
+
+ - How lines behave
+ - How spools behave
+ - How motors behave
+ - etc etc
+
+The goal is to reproduce real world Hangprintes as closely as possible.
+
+The `Slideprinter` demo reproduces infills with resonance patterns, ringing after
+sharp corners, slack lines along smooth curves and even lost steps from overly
+aggressive moves.  All these issues become easier to understand and fix with
+this tool.
+
+Try the live demos:
+
+- A 2d Hangprinter called Slideprinter at [tobbelobb.github.io/hp-sim5/slideprinter](https://tobbelobb.github.io/hp-sim5/examples/js/slideprinter/index.html)
+- A flipper game that tests the Cable Physics engine at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html)
+
+Intended uses:
+ - **Hardware design** -- reduce guesswork when building new machines.
+ - **Digital twin** -- run the simulator before and during prints to optimise
+   speed and quality while avoiding catastrophes.
+ - **Software design** -- enables rapid firmware development and experiments
+   with advanced control and AI.
+
+hp-sim5 have two fully functional, equivalent implementations; one in JavaScript and one in Python.
+hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of Matthias Müller.
+For a deeper dive into the physics engine and the classic flipper demo see
+`README_adv.md`.
 
 ## Quick Start
 
-### Running the JavaScript demos
-1. Install Node.js (v18 or later recommended).
+### Running Demos Locally
+1. Install Node.js
 2. In this repository run:
    ```bash
    npm install        # only needed the first time
-   npx vite
+   npx vite           # Needed every time to serve the html and js
    ```
-3. Open <http://localhost:5173/hp-sim5/flipper> in your browser.
+3. Open <http://localhost:5173/hp-sim5/slideprinter> in your browser.
+   There's also <http://localhost:5173/hp-sim5/flipper> for the flipper demo.
+4. Hack away!
 
-### Running the Python demos
+### Running the basic Python demos
 1. Make sure Python 3.10+ is installed.
 2. Install the optional dependencies:
    ```bash
    pip install numpy pytest websockets warp-lang[extras] pytest-asyncio
    ```
-3. Start the demo server and open the HTML front end:
-   ```bash
-   python -m examples.python.flipper.server
-   # then visit examples/python/flipper/index.html in your browser
-   ```
-4. To run the Warp version use `python -m examples.python.flipper.server --warp` and open `examples/python/flipper/index_warp.html`.
+3. Flipper:
+   - Start the demo server
+     ```bash
+     python -m examples.python.flipper.server
+     ```
+   - Visit <http://localhost:5173/hp-sim5/examples/python/flipper/index.html>
+4. Slideprinter:
+   - Start the demo server
+     ```bash
+     python -m examples.python.slideprinter.server
+     ```
+   - Visit <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>
+   - Send some gcode commands with the Python Move Comander:
+     ```bash
+     python -m examples.python.slideprinter.move_commander public/examples/gcode/draw_squares.gcode
+     ```
 
-### Running the Slideprinter demo
-1. Start the frontend:
-   ```bash
-   npx vite
-   ```
-2. For a pure JavaScript run open <http://localhost:5173/hp-sim5/slideprinter.html> and use the **Load G-code** button to drive the local MoveCommander worker.
-3. To connect a Python backend start the slideprinter server:
-   ```bash
-   python -m examples.python.slideprinter.server
-   ```
-   and open <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>.
-4. Issue move commands from Python (connects via WebSocket):
-   ```bash
-   python -m examples.python.slideprinter.move_commander examples/python/slideprinter/tighten.gcode
-   python -m examples.python.slideprinter.move_commander examples/python/slideprinter/draw_squares.gcode
-   ```
-   The `MoveCommander` constructor now accepts optional `anchors_mm`,
-   `spool_radius_mm`, `low_axis_max_force`, `use_flex` and
-   `spool_buildup_factor` parameters for fine‑tuning, mirroring the Python
-   implementation.
-
-### Running the tests
-JavaScript tests use Jest and Python tests use pytest.
-
-```bash
-npm test             # runs tests under tests/
-python -m pytest tests/python  # runs tests for the Python port
-```
-
-## Project Layout
-- **src/js/cable_joints/** – JavaScript source modules
-- **src/python/cable_joints/** – Python port mirroring the JS implementation
-- **tests/js/** – Jest unit and integration tests
-- **tests/python/** – pytest suite for the Python port
-- **src/js/cable_joints_3d/** – experimental 3D viewer using Three.js
-
-## 3D Visualization
-`tests/html/3d_tests.html` shows cable joint points in 3D using Three.js.  Equivalent helpers live in `src/python/cable_joints_3d/vector3.py` and `src/python/cable_joints_3d/geometry3.py`.
-
-For more details on the physics algorithms see the papers in `ai_docs/`.
+## hp-sim5 context: the Hangprinter Project
+hp-sim5 is part of an effort to automate the Hangprinter Project.
+We want to automate everything except the actual users,
+and digitize everything except the finished working machines and their output.
