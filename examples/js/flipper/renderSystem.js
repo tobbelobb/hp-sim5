@@ -42,6 +42,12 @@ export class RenderSystem {
     // Store potential obstacles for catenary drawing
     this.cableLinkObstacles = [];
     this.sag_multiplier = sag_multiplier;
+
+    this.extrusionCanvas = document.createElement('canvas');
+    this.extrusionCanvas.width = this.canvas.width;
+    this.extrusionCanvas.height = this.canvas.height;
+    this.extrusionCtx = this.extrusionCanvas.getContext('2d');
+    this.drawnExtrusionCount = 0;
   }
 
   // Coordinate transformation helpers using instance properties
@@ -129,6 +135,7 @@ export class RenderSystem {
     // effectiveCScale is also an instance property (this.effectiveCScale)
 
     this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.c.drawImage(this.extrusionCanvas, 0, 0);
 
     // --- Query for Cable Link Obstacles ---
     this.cableLinkObstacles = [];
@@ -414,9 +421,10 @@ export class RenderSystem {
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length > 0) {
         const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
-        if (extruderComp && extruderComp.extrusions.length > 0) {
-            this.c.fillStyle = 'rgba(100, 255, 100, 0.5)';
-            for (const extrusion of extruderComp.extrusions) {
+        if (extruderComp && extruderComp.extrusions.length > this.drawnExtrusionCount) {
+            this.extrusionCtx.fillStyle = 'rgba(100, 255, 100, 0.5)';
+            for (let i = this.drawnExtrusionCount; i < extruderComp.extrusions.length; i++) {
+                const extrusion = extruderComp.extrusions[i];
                 const pos = extrusion[0]; // [x, y, z] in meters
                 const length = extrusion[1]; // in mm
 
@@ -426,15 +434,16 @@ export class RenderSystem {
                 // The length is in mm, pos is in m. We use a scaling factor to get a reasonable radius in meters.
                 const radius = Math.sqrt(length / Math.PI) * 0.01;
 
-                this.c.beginPath();
-                this.c.arc(
+                this.extrusionCtx.beginPath();
+                this.extrusionCtx.arc(
                     this.cX(pos[0]),
                     this.cY(pos[1]),
                     radius * this.effectiveCScale,
                     0, 2 * Math.PI
                 );
-                this.c.fill();
+                this.extrusionCtx.fill();
             }
+            this.drawnExtrusionCount = extruderComp.extrusions.length;
         }
     }
 
