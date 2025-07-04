@@ -41,6 +41,7 @@ class MoveCommander {
         this.last_e = 0.0;
         this.isPaused = false;
         this.resolveResume = null;
+        this.accumulated_wait_ms = 0.0;
     }
 
     async connect() {
@@ -137,7 +138,6 @@ class MoveCommander {
             const lineIterator = makeLineIterator(stream);
             for await (const line of lineIterator) {
                 if (this.isPaused) {
-                    console.log("worker: is paused");
                     await new Promise(resolve => { this.resolveResume = resolve; });
                 }
 
@@ -192,7 +192,7 @@ class MoveCommander {
                     const num_steps = duration_s > 0 ? Math.ceil(duration_s / this.dt) : 0;
 
                     if (num_steps > 0) {
-                        console.log(`worker: Executing G1 move to ${JSON.stringify(target_pos_mm)} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
+                        // console.log(`worker: Executing G1 move to ${JSON.stringify(target_pos_mm)} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
                         const extrusion_per_step = extrusion_delta_mm / num_steps;
                         let final_angles_rad = null;
 
@@ -210,14 +210,16 @@ class MoveCommander {
                             if (extrusion_per_step > 0.0) {
                                 interpolated_cmd['E'] = extrusion_per_step;
                             }
-
                             await this.sendCommand(interpolated_cmd);
-                            if (this.uri) {
-                                const elapsed_ms = performance.now() - loop_start_time;
-                                const wait_time_ms = this.dt * 1000 - elapsed_ms;
-                                if (wait_time_ms > 0) {
-                                    await new Promise(resolve => setTimeout(resolve, wait_time_ms));
-                                }
+
+                            const elapsed_ms = performance.now() - loop_start_time;
+                            const wait_time_ms = this.dt * 1000 - elapsed_ms;
+                            if (wait_time_ms > 0) {
+                                this.accumulated_wait_ms += wait_time_ms;
+                            }
+                            if (this.accumulated_wait_ms > 10.0) {
+                                await new Promise(resolve => setTimeout(resolve, this.accumulated_wait_ms));
+                                this.accumulated_wait_ms = 0.0;
                             }
                         }
 
@@ -274,7 +276,7 @@ class MoveCommander {
                     const duration_s = line_distance_mm / speed_mm_per_s;
                     const num_steps = Math.ceil(duration_s / this.dt);
 
-                    console.log(`worker: Executing G6 move with deltas ${line_deltas_mm} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
+                    // console.log(`worker: Executing G6 move with deltas ${line_deltas_mm} (mm) over ${duration_s.toFixed(2)}s in ${num_steps} time steps.`);
 
                     const deltas_rad = subtract(target_angles_rad, this.current_angles_rad);
                     if (num_steps > 0) {
@@ -285,12 +287,15 @@ class MoveCommander {
                             const interp_angles = add(this.current_angles_rad, scale(deltas_rad, t));
                             axesABC.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles[idx]);
                             await this.sendCommand(interpolated_cmd);
-                            if (this.uri) {
-                                const elapsed_ms = performance.now() - loop_start_time;
-                                const wait_time_ms = this.dt * 1000 - elapsed_ms;
-                                if (wait_time_ms > 0) {
-                                    await new Promise(resolve => setTimeout(resolve, wait_time_ms));
-                                }
+
+                            const elapsed_ms = performance.now() - loop_start_time;
+                            const wait_time_ms = this.dt * 1000 - elapsed_ms;
+                            if (wait_time_ms > 0) {
+                                this.accumulated_wait_ms += wait_time_ms;
+                            }
+                            if (this.accumulated_wait_ms > 10.0) {
+                                await new Promise(resolve => setTimeout(resolve, this.accumulated_wait_ms));
+                                this.accumulated_wait_ms = 0.0;
                             }
                         }
                     }
