@@ -432,7 +432,7 @@ export class RenderSystem {
                 // Let's assume nozzle diameter is constant, so extruded area is proportional to length.
                 // Radius of blob is proportional to sqrt(length).
                 // The length is in mm, pos is in m. We use a scaling factor to get a reasonable radius in meters.
-                const radius = Math.sqrt(length / Math.PI) * 0.01;
+                const radius = Math.sqrt(length / Math.PI) * 0.01 * 0.5;
 
                 this.extrusionCtx.beginPath();
                 this.extrusionCtx.arc(

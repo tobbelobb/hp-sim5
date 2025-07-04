@@ -273,9 +273,9 @@ export function setupScene(world, stage, canvas, options = {}) {
       } else {
           inputSys = new InputSystem(canvas, world, pauseBtn);
       }
-      inputSys.scaleMultiplier = 0.5;
+      inputSys.scaleMultiplier = 1.1;
       inputSys.viewOffsetX = 0.0;
-      inputSys.viewOffsetY = -0.5;
+      inputSys.viewOffsetY = -0.0;
       world.registerSystem(inputSys);
 
       if (!isRemote) {
