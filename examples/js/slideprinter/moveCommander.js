@@ -2,6 +2,28 @@ import { pos_to_motor_pos_samples_deg, spool_r_in_origin_first_guess, norm, subt
 import { guessed_anchors } from './guessedData.js';
 
 
+async function* makeLineIterator(stream) {
+    const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+    let buffer = '';
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            if (buffer.length > 0) {
+                yield buffer;
+            }
+            break;
+        }
+        buffer += value;
+        let eolIndex;
+        while ((eolIndex = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, eolIndex);
+            buffer = buffer.slice(eolIndex + 1);
+            yield line;
+        }
+    }
+}
+
+
 class MoveCommander {
     constructor({uri = null} = {}) {
         this.uri = uri;
@@ -17,8 +39,6 @@ class MoveCommander {
         this.spool_buildup_factor = 0.0;
         this.absolute_extrusion = false;
         this.last_e = 0.0;
-        this.gcodeLines = [];
-        this.currentLineIndex = 0;
         this.isPaused = false;
         this.resolveResume = null;
     }
@@ -108,22 +128,18 @@ class MoveCommander {
         }
     }
 
-    async run(gcode) {
-        this.gcodeLines = gcode.split('\n');
-        this.currentLineIndex = 0;
+    async run(stream) {
         try {
             await this.connect();
             const axesABC = ['A', 'B', 'C'];
             const axesXYZ = ['X', 'Y', 'Z'];
 
-            while (this.currentLineIndex < this.gcodeLines.length) {
+            const lineIterator = makeLineIterator(stream);
+            for await (const line of lineIterator) {
                 if (this.isPaused) {
                     console.log("worker: is paused");
                     await new Promise(resolve => { this.resolveResume = resolve; });
                 }
-
-                const line = this.gcodeLines[this.currentLineIndex];
-                this.currentLineIndex++;
 
                 let command;
                 if (line.startsWith('G1')) {
@@ -310,12 +326,8 @@ self.addEventListener('message', async (e) => {
     case 'filename_upload':
       if (e.data.filename) {
         console.log("worker: got filename_upload", e.data.filename);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const gcode = e.target.result;
-            commander.run(gcode);
-        }
-        reader.readAsText(e.data.filename);
+        const stream = e.data.filename.stream();
+        commander.run(stream);
       } else {
         console.log("worker: filename_upload message arrived but e.data.filename was: ", e.data.filename);
       }
@@ -325,8 +337,7 @@ self.addEventListener('message', async (e) => {
         console.log("worker: got filename_fetch", e.data.filename);
         try {
             const response = await fetch(e.data.filename);
-            const gcode = await response.text();
-            commander.run(gcode);
+            commander.run(response.body);
         } catch (err) {
             console.error('worker: Failed to load built-in G-code:', err);
         }
