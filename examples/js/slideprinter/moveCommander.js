@@ -118,6 +118,7 @@ class MoveCommander {
 
             while (this.currentLineIndex < this.gcodeLines.length) {
                 if (this.isPaused) {
+                    console.log("worker: is paused");
                     await new Promise(resolve => { this.resolveResume = resolve; });
                 }
 
