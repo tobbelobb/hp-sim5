@@ -152,6 +152,25 @@ canvas {
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
 
+    // --- Screen Wake Lock ---
+    let wakeLock = null;
+    const requestWakeLock = async () => {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) { /* The request can fail, e.g., if the page is not visible. */ }
+        }
+    };
+    const handleVisibilityChange = async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // A wake lock can only be requested after a user interaction.
+    document.getElementById('controls').addEventListener('click', requestWakeLock, { once: true });
+
+
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
     let world = new World();
