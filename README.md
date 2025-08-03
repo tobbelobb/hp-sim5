@@ -2,7 +2,7 @@
 
 ![Demo](slideprinter_Hangprinter_logo_wiggling_and_losing_steps2.gif)
 
-hp-sim5 simulates the physics of [Hangprinter](https://hangprinter.org).
+hp-sim5 simulates the physics of [Hangprinter](https://hangprinter.org). Contributions are welcome.
 hp-sim5 currently simulates:
 
  - How lines behave
