@@ -135,6 +135,14 @@ canvas {
                 <label for="websocketPort">port</label>
                 <input type="text" id="websocketPort" value="8766" style="width: 4em;">
             </span>
+            <span style="margin-left: 1em;">
+                <label for="klipperRawIn">Klipper raw in</label>
+                <input type="checkbox" id="klipperRawIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="klipperRawPort">port</label>
+                <input type="text" id="klipperRawPort" value="8770" style="width: 4em;">
+            </span>
             <br />
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
                 dt: <span id="dt">N/A</span> |
@@ -151,6 +159,7 @@ canvas {
     import { runGame } from './runner.js';
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
+    import { connectKlipperRaw } from './klipperHandler.js';
 
     // --- Screen Wake Lock ---
     let wakeLock = null;
@@ -177,17 +186,28 @@ canvas {
     let moveCommanderWorker;
     let commander;
     let ws = null;
+    let klipperRaw = null;
     let workerReferenceSet = false;
     const websocketInToggle = document.getElementById('websocketIn');
     const websocketOutToggle = document.getElementById('websocketOut');
     const websocketPortInput = document.getElementById('websocketPort');
+    const klipperRawInToggle = document.getElementById('klipperRawIn');
+    const klipperRawPortInput = document.getElementById('klipperRawPort');
 
     const websocket_in = websocketInToggle.checked;
     const websocket_out = websocketOutToggle.checked;
     const port = websocketPortInput.value;
+    const klipperRawIn = klipperRawInToggle.checked;
+    const klipperRawPort = klipperRawPortInput.value;
 
     if (websocket_in || websocket_out) {
         ws = new WebSocket(`wss://localhost:${port}`);
+    }
+
+    if (klipperRawIn) {
+        const scheme = (location.protocol === 'https:') ? 'wss' : 'ws';
+        const url = `${scheme}://localhost:${klipperRawPort}`;
+        klipperRaw = connectKlipperRaw(url);
     }
 
     const loadGcodeBtn = document.getElementById('loadGcodeBtn');
