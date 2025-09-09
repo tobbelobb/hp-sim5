@@ -5,7 +5,7 @@
 # "simulavr software emulation".
 
 
-~/klippy-env/bin/python ./klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i /home/torbjorn/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -l ~/repos/hp-sim5/attic/klipper.log -v
+~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -l ~/repos/hp-sim5/attic/klipper.log -v
 
 # Then have the logs rolling in another terminal with
 tail -f ~/repos/hp-sim5/attic/klipper.log
@@ -21,6 +21,6 @@ tail -f ~/repos/hp-sim5/attic/klipper.log
 # $ ls ./build/pysimulavr/_pysimulavr.*.so
 # Then simulate avr with
 
-PYTHONPATH=/home/torbjorn/repos/simulavr/build/pysimulavr ./scripts/avrsim.py out/klipper.elf
+PYTHONPATH=/home/torbjorn/repos/simulavr/build/pysimulavr /home/torbjorn/repos/klipper/scripts/avrsim.py /home/torbjorn/repos/klipper/out/klipper.elf
 
 # This will continuously hog one cpu core which is not ideal but no show stopper either
