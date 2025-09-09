@@ -1,0 +1,9 @@
+I haven't been in this codebase for a while. I remember the broader goal of automating the Hangprinter Project. I tried simulating Hangprinter in IsaacSim which failed because I couldn't simulate lines or cables there, and Hangprinter is a cable driven robot. So I made a library for simulating that. I made it in js and python simultaneously. The Python part in order to be compatible with IsaacSim and Warp later on, and js because it let me publish simulations online to my followers and stuff.
+
+When I left off I was working on connecting real firmware with the simulated machine. So I wanted Klipper to read the gcode file and send the movement commands to the Slideprinter. In a Klipper repo directory did make menuconfig -> "Linux Process", and then `make`. I think what I wanted was a klippy exectuable that I could use to as a first step just use batch mode and get a test.txt file with a human readable list of micro-controller commands.
+
+Help me build and run the `klippy` executable. I can't find it even though I successfully ran `make`. I think only `out/klipper.elf` was created, which I don't know how to use. See ai_docs/Klipper_installation.md and ai_docs/Klipper_on_rpi.md for more on how to build the klippy executable I'm after.
+
+With klippy and a log of readable commands (test.txt) in place, I could step up the simulated Slideprinter by reacting to those commands instead og the current raw-gcode move commander behavior. See ai_docs/Klipper_Debugging_tools.md for more on batch mode.
+
+I need a stubbed slideprinter config file to get started with batch mode. See ai_docs/Klipper_configuration_reference.md and maybe parts of ai_docs/Klipper_various_advanced_config_features.md to learn how to put that together based on the existing Winch kinematics.
