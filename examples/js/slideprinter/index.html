@@ -204,11 +204,35 @@ canvas {
         ws = new WebSocket(`wss://localhost:${port}`);
     }
 
-    if (klipperRawIn) {
+    const connectKlipperRawNow = () => {
         const scheme = (location.protocol === 'https:') ? 'wss' : 'ws';
-        const url = `${scheme}://localhost:${klipperRawPort}`;
-        klipperRaw = connectKlipperRaw(url);
+        const url = `${scheme}://localhost:${klipperRawPortInput.value}`;
+        try {
+            klipperRaw = connectKlipperRaw(url);
+        } catch (e) {
+            console.error('Failed to connect Klipper raw WS:', e);
+        }
+    };
+
+    // Connect immediately if pre-checked at load
+    if (klipperRawIn) {
+        connectKlipperRawNow();
     }
+
+    // React to user toggling the checkbox
+    klipperRawInToggle.addEventListener('change', () => {
+        if (klipperRawInToggle.checked) {
+            if (!klipperRaw) connectKlipperRawNow();
+        } else {
+            if (klipperRaw) { klipperRaw.close(); klipperRaw = null; }
+        }
+    });
+
+    // Reconnect on port changes when enabled
+    klipperRawPortInput.addEventListener('change', () => {
+        if (klipperRaw) { klipperRaw.close(); klipperRaw = null; }
+        if (klipperRawInToggle.checked) connectKlipperRawNow();
+    });
 
     const loadGcodeBtn = document.getElementById('loadGcodeBtn');
     const gcodeFileInput = document.getElementById('gcodeFile');

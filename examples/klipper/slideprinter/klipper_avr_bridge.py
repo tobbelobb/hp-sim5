@@ -87,7 +87,7 @@ class WSRawBroadcaster:
             await asyncio.gather(*senders, return_exceptions=True)
 
 
-async def ws_handler(ws: WebSocketServerProtocol, _path: str, broadcaster: WSRawBroadcaster):
+async def ws_handler(ws: WebSocketServerProtocol, broadcaster: WSRawBroadcaster):
     # Accept connections; if clients send binary/text, ignore for now.
     broadcaster.clients.add(ws)
     try:
@@ -373,7 +373,7 @@ async def main_async(argv=None):
 
     # WS server
     ws_server = websockets.serve(
-        lambda ws, path: ws_handler(ws, path, broadcaster),
+        lambda ws: ws_handler(ws, broadcaster),
         host=args.ws_host,
         port=args.ws_port,
         max_size=None,
@@ -388,9 +388,6 @@ async def main_async(argv=None):
             data = await ws_queue.get()
             try:
                 if data:
-                    # Truncate hex print for readability
-                    hx = data.hex()
-                    print(f"MCU link bytes: {hx[:128]}{'…' if len(hx) > 128 else ''}")
                     await broadcaster.broadcast(data)
             finally:
                 ws_queue.task_done()
@@ -431,4 +428,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
