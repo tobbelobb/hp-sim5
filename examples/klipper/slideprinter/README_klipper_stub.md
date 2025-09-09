@@ -17,6 +17,18 @@ Recommended: single merged bridge
    - Defaults: PTY at `/tmp/pseudoserial`, WS at `localhost:8770`.
    - Options: `--machine`, `--speed`, `--rate`, `--baud`, `--port`,
      `--trace`, `--tracefile`, `--ws-host`, `--ws-port`.
+   - Optional Klipper parsing (to also forward parsed messages as JSON):
+
+     ```bash
+     PYTHONPATH=/path/to/simulavr/build/pysimulavr \
+       /path/to/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py \
+       --klipper-py /path/to/klipper/klippy \
+       --dict /path/to/hp-sim5/examples/klipper/avr/klipper.dict \
+       /path/to/klipper.elf
+     ```
+
+     - When enabled and available, the bridge emits JSON text frames with
+       `{ action: 'klipper_parsed', lines: [...] }`, which the browser logs.
 
 Alternative: PTY-only bridge (no simulavr)
 - If you want to test with a raw PTY and no AVR sim, you can still use:
@@ -42,10 +54,16 @@ Open the slideprinter demo and enable logging
 - Run `npx vite` for the site (and Python slideprinter server if needed).
 - Open the slideprinter demo in your browser.
 - In the top bar:
-  - Check "Klipper raw in" (this now connects immediately on toggle).
+  - Check "Klipper raw in" (connects immediately on toggle).
   - Leave port as `8770` (or your WS port).
-- You should see `KlipperHandler: … bytes: …` lines in the browser console when
-  Klipper is active and sending MCU bytes.
+- You should see `KlipperHandler: … bytes: …` logs for raw frames. If parsing is
+  enabled, you'll also see `KlipperParsed: …` lines for decoded MCU messages.
+
+Naive translation to Move commands (experimental)
+- If parsing is enabled, the page attempts a simple translation from MCU
+  `queue_step` messages into Move commands for axes A/B/C/D (first four oids
+  discovered). It assumes 200 steps/rev and 16 microsteps (configurable in
+  code). This is only for early visualization and is not yet config-driven.
 
 Next steps
 - Once raw bytes flow, we can add translation in JS or Python to convert the MCU

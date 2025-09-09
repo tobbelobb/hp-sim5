@@ -44,6 +44,7 @@ import termios
 import threading
 import time
 from pathlib import Path
+import json
 
 try:
     import pysimulavr
@@ -57,6 +58,9 @@ try:
 except Exception as e:
     websockets = None
     WebSocketServerProtocol = object  # type: ignore
+
+# Optional Klipper msgproto (imported later after args allow sys.path tweaks)
+msgproto = None
 
 
 SERIALBITS = 10  # 8N1
@@ -366,14 +370,29 @@ async def main_async(argv=None):
     parser.add_argument("-f", "--tracefile", default=deffile, help="Trace VCD filename")
     parser.add_argument("--ws-host", default="localhost", help="WebSocket bind host")
     parser.add_argument("--ws-port", type=int, default=8770, help="WebSocket port")
+    parser.add_argument("--dict", dest="dict_path", default=str(Path(__file__).resolve().parents[1] / "avr/klipper.dict"),
+                        help="Path to Klipper MCU dictionary (klipper.dict)")
+    parser.add_argument("--klipper-py", dest="klipper_py_path", default=None,
+                        help="Path to Klipper repo (to import msgproto). Optional.")
 
     args = parser.parse_args(argv)
 
     broadcaster = WSRawBroadcaster()
 
+    # Attempt to import Klipper's msgproto if path provided / available
+    global msgproto
+    if args.klipper_py_path:
+        sys.path.insert(0, args.klipper_py_path)
+    try:
+        import msgproto as _mp  # type: ignore
+        msgproto = _mp
+    except Exception:
+        msgproto = None
+        print("Note: Could not import klipper 'msgproto'. Parsed message output disabled.")
+
     # WS server
     ws_server = websockets.serve(
-        lambda ws: ws_handler(ws, broadcaster),
+        lambda ws, _path: ws_handler(ws, broadcaster),
         host=args.ws_host,
         port=args.ws_port,
         max_size=None,
@@ -384,11 +403,48 @@ async def main_async(argv=None):
     ws_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
     async def pump_queue_to_ws():
+        # Optional parsed message setup
+        mp = None
+        parse_buf = bytearray()
+        if msgproto is not None and args.dict_path and os.path.exists(args.dict_path):
+            try:
+                with open(args.dict_path, 'rb') as dfile:
+                    dictionary = dfile.read()
+                mp = msgproto.MessageParser()
+                mp.process_identify(dictionary, decompress=False)
+                print(f"Loaded Klipper dictionary from: {args.dict_path}")
+            except Exception as e:
+                print(f"Warning: Failed to initialize msgproto parser: {e}")
+                mp = None
+
         while True:
             data = await ws_queue.get()
             try:
                 if data:
+                    # Broadcast raw bytes
                     await broadcaster.broadcast(data)
+
+                    # If parser available, also broadcast parsed text as JSON
+                    if mp is not None:
+                        parse_buf += data
+                        while True:
+                            l = mp.check_packet(parse_buf)
+                            if l == 0:
+                                break
+                            if l < 0:
+                                # Invalid data: keep the indicated tail
+                                parse_buf[:] = parse_buf[-l:]
+                                continue
+                            try:
+                                msgs = mp.dump(parse_buf[:l])
+                                payload = {
+                                    'action': 'klipper_parsed',
+                                    'lines': msgs[1:],
+                                }
+                                await broadcaster.broadcast(json.dumps(payload))
+                            except Exception:
+                                pass
+                            parse_buf = parse_buf[l:]
             finally:
                 ws_queue.task_done()
 

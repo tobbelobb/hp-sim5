@@ -207,8 +207,12 @@ canvas {
     const connectKlipperRawNow = () => {
         const scheme = (location.protocol === 'https:') ? 'wss' : 'ws';
         const url = `${scheme}://localhost:${klipperRawPortInput.value}`;
+        const onCommand = (cmd) => {
+            const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+            if (remoteSpoolSystem) remoteSpoolSystem.addCommand(cmd);
+        };
         try {
-            klipperRaw = connectKlipperRaw(url);
+            klipperRaw = connectKlipperRaw(url, onCommand);
         } catch (e) {
             console.error('Failed to connect Klipper raw WS:', e);
         }
