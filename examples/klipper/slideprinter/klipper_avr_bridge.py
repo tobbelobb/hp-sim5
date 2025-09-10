@@ -505,9 +505,33 @@ async def main_async(argv=None):
                                 if lines:
                                     if args.parse_debug:
                                         print(f"Parsed packet: {l} bytes -> {len(lines)} line(s). First: {lines[0][:120]}")
+                                    # Inject deterministic stepper names (A-D) based on fixed OID mapping.
+                                    # Ignore extruder and any other steppers beyond oid=3.
+                                    oid_to_name = {0: 'stepper_a', 1: 'stepper_b', 2: 'stepper_c', 3: 'stepper_d'}
+                                    out_lines: list[str] = []
+                                    for ln in lines:
+                                        s = ln
+                                        try:
+                                            s = str(s)
+                                        except Exception:
+                                            pass
+                                        if 'config_stepper ' in s:
+                                            try:
+                                                rest = s.split('config_stepper ', 1)[1]
+                                                oid = None
+                                                for part in rest.split():
+                                                    if part.startswith('oid='):
+                                                        oid = int(part[4:])
+                                                        break
+                                                if oid is not None and oid in oid_to_name and ' name=' not in s:
+                                                    s = f"{s} name={oid_to_name[oid]}"
+                                            except Exception:
+                                                # On any parsing error, leave the line unchanged
+                                                pass
+                                        out_lines.append(s)
                                     payload = {
                                         'action': 'klipper_parsed',
-                                        'lines': lines,
+                                        'lines': out_lines,
                                     }
                                     await broadcaster.broadcast(json.dumps(payload))
                             except Exception as e:
