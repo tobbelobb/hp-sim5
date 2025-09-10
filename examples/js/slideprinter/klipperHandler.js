@@ -21,6 +21,26 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   const microsteps = 16;     // default microsteps
   const stepAngle = (2 * Math.PI) / (stepsPerRev * microsteps);
 
+  // --- Pacing to emulate Klipper MCU timing ---
+  // AVR default clock; Klipper queue_step 'interval' is in clock ticks
+  const clockHz = 16_000_000;
+  const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
+  const bufferAheadMs = 100.0;   // try to stay ~100ms ahead
+  const pacerIntervalMs = 2.0;   // coalesce updates at ~500Hz
+  let pacerTimer = null;
+  let startedBaseTimeMs = null;
+
+  // Per-axis queued segments and scheduler state
+  // Segment: { intervalTicks, addTicks, remaining, dirSign }
+  const axisState = new Map(axisOrder.map(a => [a, {
+    segments: [],
+    nextWakeTimeMs: null,
+    intervalTicks: null,
+    addTicks: 0,
+    remaining: 0,
+    dirSign: 1,
+  }]));
+
   const ensureAxisForOid = (oid) => {
     if (oidToAxis.has(oid)) return oidToAxis.get(oid);
     const used = new Set(oidToAxis.values());
@@ -42,6 +62,91 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       }
     }
     return out;
+  };
+
+  // Start/update pacer that applies due steps and emits coalesced Move updates
+  const ensurePacerRunning = () => {
+    if (pacerTimer !== null) return;
+    pacerTimer = setInterval(() => {
+      try {
+        const now = performance.now();
+        const move = { type: 'Move' };
+        let any = false;
+
+        for (const axis of axisOrder) {
+          const st = axisState.get(axis);
+          if (!st) continue;
+
+          let stepsApplied = 0;
+          while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
+            // Apply one step at scheduled time
+            stepsApplied += st.dirSign;
+
+            // Advance scheduling within/after segment
+            st.remaining -= 1;
+            if (st.remaining > 0) {
+              st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
+              st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
+            } else {
+              const nextSeg = st.segments.shift();
+              if (nextSeg) {
+                st.intervalTicks = Math.max(1, nextSeg.intervalTicks);
+                st.addTicks = nextSeg.addTicks;
+                st.remaining = nextSeg.remaining;
+                st.dirSign = nextSeg.dirSign;
+                st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
+              } else {
+                st.nextWakeTimeMs = null;
+                st.intervalTicks = null;
+                st.addTicks = 0;
+                st.remaining = 0;
+              }
+            }
+          }
+
+          if (stepsApplied !== 0) {
+            const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
+            axisAngles.set(axis, newAngle);
+            move[axis] = newAngle;
+            any = true;
+          }
+        }
+
+        if (any && typeof onCommand === 'function'){
+          console.log(move);
+          onCommand(move);
+        }
+      } catch (e) {
+        console.error('KlipperHandler pacer error:', e);
+      }
+    }, pacerIntervalMs);
+  };
+
+  const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
+    const st = axisState.get(axis);
+    if (!st) return;
+
+    // Direction approximation: preserve legacy behavior (sign(add))
+    const dirSign = (addTicks >= 0) ? 1 : -1;
+    const seg = {
+      intervalTicks: Math.max(1, Number(intervalTicks) || 1),
+      addTicks: Number(addTicks) || 0,
+      remaining: Math.max(0, Number(count) || 0),
+      dirSign,
+    };
+
+    if (st.nextWakeTimeMs === null) {
+      if (startedBaseTimeMs === null) startedBaseTimeMs = performance.now() + bufferAheadMs;
+      st.intervalTicks = seg.intervalTicks;
+      st.addTicks = seg.addTicks;
+      st.remaining = seg.remaining;
+      st.dirSign = seg.dirSign;
+      st.nextWakeTimeMs = startedBaseTimeMs + ticksToMs(st.intervalTicks);
+    } else {
+      st.segments.push(seg);
+    }
+
+    ensurePacerRunning();
   };
 
   const handleParsedLine = (line) => {
@@ -66,14 +171,9 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
       const count = Number(kv.count) || 0;
-      const add = ('add' in kv) ? Number(kv.add) : 1;
-      const delta = stepAngle * count * (add >= 0 ? 1 : -1);
-      const newAngle = (axisAngles.get(axis) || 0) + delta;
-      axisAngles.set(axis, newAngle);
-      if (typeof onCommand === 'function') {
-        console.log(`newAngle for ${axis}: ${newAngle}`);
-        onCommand({ type: 'Move', [axis]: newAngle });
-      }
+      const interval = Number(kv.interval) || 1;
+      const add = ('add' in kv) ? Number(kv.add) : 0;
+      enqueueSegment(axis, interval, count, add);
       return;
     }
     // TODO: handle set_position / sync variants -> Add to reference
@@ -98,7 +198,6 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
     } else if (typeof event.data === 'string') {
       // Try to parse JSON payloads emitted by the Python bridge
       try {
-        console.log(event.data);
         const msg = JSON.parse(event.data);
         if (msg && msg.action === 'klipper_parsed' && Array.isArray(msg.lines)) {
           for (const line of msg.lines) handleParsedLine(line);
@@ -119,6 +218,10 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
 
   ws.onclose = () => {
     console.log('KlipperHandler: connection closed');
+    if (pacerTimer !== null) {
+      clearInterval(pacerTimer);
+      pacerTimer = null;
+    }
   };
 
   return {
