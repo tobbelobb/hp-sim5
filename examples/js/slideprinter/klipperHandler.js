@@ -2,10 +2,9 @@
 // This is a first step to confirm we receive MCU bytes from Klipper.
 
 // Minimal translator from parsed Klipper MCU messages -> Move commands.
-// Assumptions:
-//  - Maps first four stepper oids seen to axes A,B,C,D.
-//  - Interprets 'queue_step oid=N count=K add={-1|1}' as K steps in the
-//    indicated direction; updates absolute angle per axis by stepAngle*K*add.
+ // Assumptions:
+ //  - Uses a fixed mapping: oid 0->A, 1->B, 2->C, 3->D.
+ //  - Direction is set by 'set_next_step_dir'. 'add' adjusts interval (acceleration), not direction.
 //  - stepAngle = 2*pi / (stepsPerRev * microsteps).
 // This is a naive approximation intended for early visualization only.
 
@@ -15,7 +14,6 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
 
   // Simple stepper mapping and position tracking
   const axisOrder = ['A', 'B', 'C', 'D'];
-  const oidToAxis = new Map();
   const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
   const stepsPerRev = 200;   // default full steps per rev
   const microsteps = 16;     // default microsteps
@@ -42,11 +40,9 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   }]));
 
   const ensureAxisForOid = (oid) => {
-    if (oidToAxis.has(oid)) return oidToAxis.get(oid);
-    const used = new Set(oidToAxis.values());
-    const axis = axisOrder.find(a => !used.has(a));
-    if (axis) oidToAxis.set(oid, axis);
-    return axis;
+    const n = Number(oid);
+    if (!Number.isInteger(n) || n < 0 || n >= axisOrder.length) return undefined;
+    return axisOrder[n];
   };
 
   const parseKv = (line) => {
@@ -161,7 +157,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       const kv = parseKv(sliceAfter('config_stepper'));
       const axis = ensureAxisForOid(kv.oid);
       if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
-      else console.log(`Klipper failed to map iod: ${kv.oid}`);
+      else console.log(`Klipper failed to map oid: ${kv.oid}`);
       return;
     }
     if (has('set_next_step_dir')) {
