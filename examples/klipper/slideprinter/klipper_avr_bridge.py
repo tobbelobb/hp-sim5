@@ -392,7 +392,7 @@ async def main_async(argv=None):
 
     # WS server
     ws_server = websockets.serve(
-        lambda ws, _path: ws_handler(ws, broadcaster),
+        lambda ws: ws_handler(ws, broadcaster),
         host=args.ws_host,
         port=args.ws_port,
         max_size=None,
@@ -412,10 +412,12 @@ async def main_async(argv=None):
                     dictionary = dfile.read()
                 mp = msgproto.MessageParser()
                 mp.process_identify(dictionary, decompress=False)
-                print(f"Loaded Klipper dictionary from: {args.dict_path}")
+                print(f"Loaded Klipper dictionary from: {args.dict_path} ({len(dictionary)} bytes)")
             except Exception as e:
                 print(f"Warning: Failed to initialize msgproto parser: {e}")
                 mp = None
+        else:
+            print("Note: Parser not initialized (no msgproto or missing dict). Only raw bytes will be forwarded.")
 
         while True:
             data = await ws_queue.get()
@@ -433,17 +435,44 @@ async def main_async(argv=None):
                                 break
                             if l < 0:
                                 # Invalid data: keep the indicated tail
-                                parse_buf[:] = parse_buf[-l:]
+                                tail = -l
+                                print(f"Parser resync: keeping tail {tail} bytes (buffer={len(parse_buf)})")
+                                parse_buf[:] = parse_buf[-tail:]
                                 continue
                             try:
                                 msgs = mp.dump(parse_buf[:l])
-                                payload = {
-                                    'action': 'klipper_parsed',
-                                    'lines': msgs[1:],
-                                }
-                                await broadcaster.broadcast(json.dumps(payload))
-                            except Exception:
-                                pass
+                                # Normalize to a list of human-readable lines
+                                lines: list[str] = []
+                                def _collect(obj):
+                                    if obj is None:
+                                        return
+                                    if isinstance(obj, (bytes, bytearray)):
+                                        for ln in obj.decode('utf-8', errors='ignore').splitlines():
+                                            if ln.strip():
+                                                lines.append(ln)
+                                    elif isinstance(obj, str):
+                                        for ln in obj.splitlines():
+                                            if ln.strip():
+                                                lines.append(ln)
+                                    elif isinstance(obj, (list, tuple)):
+                                        for it in obj:
+                                            _collect(it)
+                                    else:
+                                        s = str(obj)
+                                        for ln in s.splitlines():
+                                            if ln.strip():
+                                                lines.append(ln)
+                                _collect(msgs)
+
+                                if lines:
+                                    print(f"Parsed packet: {l} bytes -> {len(lines)} line(s). First: {lines[0][:120]}")
+                                    payload = {
+                                        'action': 'klipper_parsed',
+                                        'lines': lines,
+                                    }
+                                    await broadcaster.broadcast(json.dumps(payload))
+                            except Exception as e:
+                                print(f"Parser error: {e}")
                             parse_buf = parse_buf[l:]
             finally:
                 ws_queue.task_done()

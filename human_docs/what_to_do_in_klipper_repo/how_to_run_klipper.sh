@@ -21,6 +21,6 @@ tail -f ~/repos/hp-sim5/attic/klipper.log
 # $ ls ./build/pysimulavr/_pysimulavr.*.so
 # Then simulate avr with
 
-PYTHONPATH=/home/torbjorn/repos/simulavr/build/pysimulavr /home/torbjorn/repos/klipper/scripts/avrsim.py /home/torbjorn/repos/klipper/out/klipper.elf
+PYTHONPATH=/home/torbjorn/repos/simulavr/build/pysimulavr /home/torbjorn/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py /home/torbjorn/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict /home/torbjorn/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py /home/torbjorn/repos/klipper/klippy/
 
 # This will continuously hog one cpu core which is not ideal but no show stopper either

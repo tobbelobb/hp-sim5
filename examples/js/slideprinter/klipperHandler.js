@@ -45,17 +45,24 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   };
 
   const handleParsedLine = (line) => {
+    // Be tolerant to prefixes (e.g. "tx: queue_step ...", "mcu: config_stepper ...")
+    const has = (name) => line.includes(name + ' ');
+    const sliceAfter = (name) => {
+      const i = line.indexOf(name);
+      return i >= 0 ? line.slice(i + name.length) : '';
+    };
+
     // Example formats we anticipate:
     //  "queue_step oid=4 interval=123 count=10 add=1"
     //  "config_stepper oid=4 step_pin=P.. dir_pin=P.."
-    if (line.startsWith('config_stepper')) {
-      const kv = parseKv(line);
+    if (has('config_stepper')) {
+      const kv = parseKv(sliceAfter('config_stepper'));
       const axis = ensureAxisForOid(kv.oid);
       if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
       return;
     }
-    if (line.startsWith('queue_step')) {
-      const kv = parseKv(line);
+    if (has('queue_step')) {
+      const kv = parseKv(sliceAfter('queue_step'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
       const count = Number(kv.count) || 0;
