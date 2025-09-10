@@ -243,19 +243,49 @@ class TerminalIO:
       schedules WS broadcast of the same bytes.
     """
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, ws_queue: asyncio.Queue[bytes]):
+    def __init__(self, loop: asyncio.AbstractEventLoop, ws_queue: asyncio.Queue[bytes], *,
+                 ws_raw_batch_ms: int = 5, ws_raw_disable: bool = False):
         self.fd = -1
         self.loop = loop
         self.ws_queue = ws_queue
+        # Raw WS batching to reduce overhead
+        self._raw_disable = ws_raw_disable
+        self._batch_ms = max(0, ws_raw_batch_ms) / 1000.0
+        self._accum = bytearray()
+        self._accum_lock = threading.Lock()
+        self._flush_scheduled = False
 
     def run(self, fd: int):
         self.fd = fd
 
+    def _flush_now(self):
+        # Runs in event loop
+        with self._accum_lock:
+            payload = bytes(self._accum)
+            self._accum.clear()
+            self._flush_scheduled = False
+        if payload and not self._raw_disable:
+            self.ws_queue.put_nowait(payload)
+
+    def _schedule_flush(self):
+        # Runs in event loop
+        if self._flush_scheduled:
+            return
+        self._flush_scheduled = True
+        if self._batch_ms > 0:
+            self.loop.call_later(self._batch_ms, self._flush_now)
+        else:
+            self.loop.call_soon(self._flush_now)
+
     def _mirror_ws(self, data: bytes):
         if not data:
             return
-        # Thread-safe queue put into asyncio loop
-        self.loop.call_soon_threadsafe(self.ws_queue.put_nowait, data)
+        if self._raw_disable:
+            return
+        # Accumulate in thread-safe buffer and schedule a single flush soon
+        with self._accum_lock:
+            self._accum.extend(data)
+        self.loop.call_soon_threadsafe(self._schedule_flush)
 
     def write(self, data: bytes):
         # Bytes from AVR TX go to PTY and WS
@@ -315,7 +345,7 @@ def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, ws_queu
     if options.pacing_rate:
         _ = Pacing(options.pacing_rate)
 
-    io = TerminalIO(loop, ws_queue)
+    io = TerminalIO(loop, ws_queue, ws_raw_batch_ms=options.ws_raw_batch_ms, ws_raw_disable=options.ws_raw_disable)
 
     # RX from device (TXD) on D1
     rxpin = SerialRxPin(options.baud, io)
@@ -370,6 +400,12 @@ async def main_async(argv=None):
     parser.add_argument("-f", "--tracefile", default=deffile, help="Trace VCD filename")
     parser.add_argument("--ws-host", default="localhost", help="WebSocket bind host")
     parser.add_argument("--ws-port", type=int, default=8770, help="WebSocket port")
+    parser.add_argument("--ws-raw-batch-ms", type=int, default=5,
+                        help="Batch raw-byte WS frames for N ms before sending (reduces overhead)")
+    parser.add_argument("--ws-raw-disable", action="store_true",
+                        help="Do not mirror raw bytes to WS (only parsed JSON if available)")
+    parser.add_argument("--parse-debug", action="store_true",
+                        help="Print parser resync and packet summaries to stdout")
     parser.add_argument("--dict", dest="dict_path", default=str(Path(__file__).resolve().parents[1] / "avr/klipper.dict"),
                         help="Path to Klipper MCU dictionary (klipper.dict)")
     parser.add_argument("--klipper-py", dest="klipper_py_path", default=None,
@@ -423,8 +459,9 @@ async def main_async(argv=None):
             data = await ws_queue.get()
             try:
                 if data:
-                    # Broadcast raw bytes
-                    await broadcaster.broadcast(data)
+                    # Broadcast raw bytes (optional)
+                    if not args.ws_raw_disable:
+                        await broadcaster.broadcast(data)
 
                     # If parser available, also broadcast parsed text as JSON
                     if mp is not None:
@@ -436,7 +473,8 @@ async def main_async(argv=None):
                             if l < 0:
                                 # Invalid data: keep the indicated tail
                                 tail = -l
-                                print(f"Parser resync: keeping tail {tail} bytes (buffer={len(parse_buf)})")
+                                if args.parse_debug:
+                                    print(f"Parser resync: keeping tail {tail} bytes (buffer={len(parse_buf)})")
                                 parse_buf[:] = parse_buf[-tail:]
                                 continue
                             try:
@@ -465,14 +503,16 @@ async def main_async(argv=None):
                                 _collect(msgs)
 
                                 if lines:
-                                    print(f"Parsed packet: {l} bytes -> {len(lines)} line(s). First: {lines[0][:120]}")
+                                    if args.parse_debug:
+                                        print(f"Parsed packet: {l} bytes -> {len(lines)} line(s). First: {lines[0][:120]}")
                                     payload = {
                                         'action': 'klipper_parsed',
                                         'lines': lines,
                                     }
                                     await broadcaster.broadcast(json.dumps(payload))
                             except Exception as e:
-                                print(f"Parser error: {e}")
+                                if args.parse_debug:
+                                    print(f"Parser error: {e}")
                             parse_buf = parse_buf[l:]
             finally:
                 ws_queue.task_done()
