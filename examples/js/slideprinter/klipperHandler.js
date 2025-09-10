@@ -31,7 +31,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   let startedBaseTimeMs = null;
 
   // Per-axis queued segments and scheduler state
-  // Segment: { intervalTicks, addTicks, remaining, dirSign }
+  // Segment: { intervalTicks, addTicks, remaining }
   const axisState = new Map(axisOrder.map(a => [a, {
     segments: [],
     nextWakeTimeMs: null,
@@ -160,6 +160,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
     // Example formats we anticipate:
     //  "queue_step oid=4 interval=123 count=10 add=1"
     //  "config_stepper oid=4 step_pin=P.. dir_pin=P.."
+    console.log(line);
     if (has('config_stepper')) {
       const kv = parseKv(sliceAfter('config_stepper'));
       const axis = ensureAxisForOid(kv.oid);

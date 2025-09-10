@@ -1,0 +1,1461 @@
+klipperHandler.js:184 KlipperHandler: connected to ws://localhost:8770
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify_response offset=80 data=b'\xed\xe4d\xf2\xd4\xe7E\x16\x7f\x11\xad\xcc\xebJ\xc2\xd06M\xcf\xbc\xbf\xfd\xb0^\x7f\xe7\xcd\xdf\x86o\xa7\xdeS^\xf5]^H\xec\xfd'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify offset=120 count=40
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify_response offset=120 data=b'\xf0\xe8]\xa8\xe6w^\xf06\x88\xde\x06S?\x9a\xfa\xc1\x1c\x96J\xeb\xb2L\xaa\x0c\x16\xf9}\x92d\xd2\x0f\x82i\x9ct]\x92\xee\xe2'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify offset=160 count=40
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify_response offset=160 data=b'\xa2N\xb28\x15E\x117m\xfd$\xbc:\xcf\xde\xbdI\xbdQw\xcc\xdd\x93\xb3\xe5\xfcd\x92\x14E\x9d&\x1duJ/\xad\xfb\xaa\xe3'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify offset=200 count=40
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify_response offset=200 data=b'1\xe4\xb9\xeb\x80\xd98I?\xeb\x95\xecx\x189\x04Y\xa6\t\x9aZ\xd2O^\xbd{\xd3{M\x0f{\xf6\rOpV\xfc\xad\x17\xed'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify offset=240 count=40
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify_response offset=240 data=b'\x8bY\x13\x18\xf8\x8c\xd4\xad\x90]\xdc\xe5\xe9g\xc9\xad\xaeM*Y\xe6]\xacw\xf5\xf2\n$\xa8\xf6_\x80$\n\x91\xb4\xb1\xdc\xf5]'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify offset=280 count=40
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify_response offset=280 data=b'V?W\x93\xb3\x00\x85Sm\xf2m\xac\xe4\xa2\xb7\x90M\xae\x0e\xedeI\x97\xc4\xadH\xb2\x97\x98\x99\x84\xa3F\xce\xbc}1\x0b\xe7\x87'
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify offset=320 count=40
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify_response offset=320 data=b'\xf3&g\xd1\xcaRUIQo\xe3\xbc2\xa7V+\xcd,\x07\xea\xa8\x9a\x82\x9b\xb1#?\xbb\x1cu\x8av\xb8\xd8@vs\xcba\x96'
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify offset=360 count=40
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify_response offset=360 data=b'o\xf3.)\xe2\xba\xefF\x13\xbe$E/\xe8\x88b\x93\xf4E\x17\x9b\x8e2\xd9\xc7Y\xdf&\x1d\xe8\x1e\xf1\xe9/\xccz\x024\xa9\xab'
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify offset=400 count=40
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify_response offset=400 data=b'\x9b\xc1Z\xe9`\xf3\xc0n\xbe\xcb\xc2p\xb14bm\xa5\x92\xa1\'\xf4G\x16\x9a\xaf\xb9\xf9\x8a\xcc\xd7\xc2|\x89"y1\x97\r\xd2\xb5'
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify offset=440 count=40
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify_response offset=440 data=b'\x92\xdb\xed\x17\xfe^o\xb1Mr\x90\xda.\xa9*Q\xd0\xd9\xe0\xdcz\r\x99\x16\x9f\xed%\xda\x05\xf2 \xf5\xf4\xad\x85NwZ\x06\xd3'
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify offset=480 count=40
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify_response offset=480 data=b'U\xb8\xd4K\x03\x99\xb9\xdc\xc5\xd2\x90\x15Y\xeaG~p\x8cj\x15\x8c\xa9\xe2\xe7\xbc\xdb\x81"tO\x87\xf4\x1ev3\x7f8\xd7\xb7s'
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify offset=520 count=40
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify_response offset=520 data=b's\x19d\xcfV3d<\xfc\x8c\xbb\x97\x86\xee\r\x08\xe1\xecy\xa3;\x80O\x87\x83\xe3\xb6.k\x19o\xf2\x02\xf4\xc9\xb0}\x1a\xcc\xcd'
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify offset=560 count=40
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify_response offset=560 data=b'\xac\xb2\xe9W\xc1|zT\x06\x96\xaa\x12u\x93\xefE1\xd20\xb2\x1d\x99\xff\x17x\xd9\xf5\xe0\xb0\xba\x185\xcb\xb1X)\xa0\x0b.\xcc'
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify offset=600 count=40
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify_response offset=600 data=b'\xde\xeb<4\x8b6\xcf\xe5\x11\xadM_\xc0\x8a\xed\x1aJgw\xfdX\x8b\xa1\xe7@\x8dC\xcb\xb1=\xb6^\x1f\xa9\xa5H\x91X*1'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify offset=640 count=40
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify_response offset=640 data=b'X\x93\x03\xc3\x1e\xf3\x81~\xae\xcb\xbf\x88x\x97ow4a\xb6t\xe9\xc1\xea\xb7\x858\xe2Q\xcc\x98\xbd\xa6\xd5|0S{\xa8c\x93'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify offset=680 count=40
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify_response offset=680 data=b'\xd5P\\\xca\xed\xbb7\x7f\x07\xa7>\x9b\r\xe6\xa2\x82\xa1\xce\xa7\xd2\xe8\xf4\xccZ\xaf\xec\x16+\xeb\xe6Ry\xc44<\t\x1a\xa5?_'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify offset=720 count=40
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify_response offset=720 data=b'\xaa4\x1e\x9a\x9e\x97\x96Y<\xb6\xc6\xb9#\xa9N`\x083\xacCS\xe9\xb4\x97\xe5\xad\xfed\xc7L\xc4\x96\xaa/\xa4p\x16\r\xec\xc1'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify offset=760 count=40
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify_response offset=760 data=b'\xba\x9dh\xcb\x1a\xfc^sT\xa2\xee\xb0\x15jd\xfdPW\xa6}\xd2\x1aUj\xf7\xf1\x81\xd3\xf4:\xd3\x89\x8a\xda\xe5\xa5\xe0\xa3Y;'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify offset=800 count=40
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify_response offset=800 data=b'\xecZ\x94\x87\x15\xeb\xf4d\x92\x89\xa7\x1e\xd4\xbf\x86\xe0\xbd\xd2-XeK\xaa\xcf\xf7\xe3\x1b2\x8c"^\xddf\xa2\xc5\xfd \x08\xb6\xec'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify offset=840 count=40
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify_response offset=840 data=b'\\\x03M\xf0\xdc\xe6\x9d8\xa0@\x1dgB`E\x94\xa2\xdd\x8a*}\x89\xd1\x0b\x03\x13\xd0\xc5\x1e9\xde\xd5\xa58\x88\x912)\x1b\xd7'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify offset=880 count=40
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify_response offset=880 data=b'^T\xdbD\xc8a\x0c\x05\xd6m\x14\xe0\xe3\x1a\x19\xb7\xf9v\x0bN\x02\x0e!kvQ\xe8&\xf4\xe6\x14\xa1\x81\xa7\xa4\x13F@\x01\xd8'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify offset=920 count=40
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify_response offset=920 data=b'\xf2&\x87\xd8\x07\x1e f\x19zi\x9b\xb2\xff>\x99l\xc1\xf8\x89O\x10\xb2j\x11\rx\x16n\xf6\r\xde\x02\x98\xed\xc9D\x05\x120'
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify offset=960 count=40
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify_response offset=960 data=b'\xd0\n\x9cX\x99\x998\x89\xdf,\xe7\xc8\x1f\x91\xe1\x15xN\x14Wdp\x1d\x141\xfe,\x06\x82m\xd0\x0b\xf2e*}\x12d\x8b\x1e'
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify offset=1000 count=40
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify_response offset=1000 data=b'\xf6\xc5\x85P\xb1}\xc5\x84\xe8\xe3\xc0Q\xbb\x1e\x14\x9a\xe4\xff@X\xf8\x8b\xf7,$+}\xe8\xdbY\xf2\xd9\x9d\x08&j\xcc2K\x1c'
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify offset=1040 count=40
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify_response offset=1040 data=b'\x05v\x8cf\xb0T\x14\xf2RJ\xab\xc6\x82\x08A\x10y&\xaa.\xdf\x00\xb4\xdal`G2o\x838\x80\x13\x1d\xb5`\xac\x7fE\xc1'
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify offset=1080 count=40
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify_response offset=1080 data=b'\xba\x1dl\xb8\xab\x8b\x8c\x1a\xdfV\x19O\xb4m=P\xa1\x1501\x96\xb4\xbb\xcd\xff\xb9\xe0k\xd8\x10\xf5\x08\x9c"\x89\xe54X\x1c\xee'
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify offset=1120 count=40
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify_response offset=1120 data=b'yL}O\x83\xe5!!\xde\x0b\xc0\xcc\xaduC\xc9Ft/lP\x12\x83\xd9\xbb7\xf9\xb83\xd9cg\x97\xb4\xca\xf0$5\xd5a'
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify offset=1160 count=40
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify_response offset=1160 data=b'\xb6mR\x12\x93\xf4\x11\x83\xef\xd4\xd6\x99#\x0f`(:\xba\x92Z\x1b\xf6\xe6\x813\xd27\x99e\x9dA\xf5\xaew.{\x0e~\x82\xcf'
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify offset=1200 count=40
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify_response offset=1200 data=b'8B\xba\x039\x81v\x87#:\x92Ioc\xc9\xd2Yh\x00}G\x0bE\xcb\x11\xddx\xa1ha\x08\xc6\xe8\xf8O:\xaf\xd2:/'
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify offset=1240 count=40
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify_response offset=1240 data=b'\x15\xfcm\x8b\xae\x0c\xb0\x91H?;\x98z\xe6k\x1eF\x90\xdap\xd0\xd4p\xf3\xe3\xfd\x9d\xb87\xd7\x0b\x0c@\xe8X\xa8\xd3\x01\xd5X'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify offset=1280 count=40
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify_response offset=1280 data=b'\x12\x8b\x95\x1e\x1e#\xce\xd1:\x8b\xc5\x98\xf0`\xa9HS\x8cP\xe9\x98\xa3\xe5\x88\x8e\x8cn\xa4\xffK\xc3\xd7\x10\x80\x8e\xb9\xf2\x87d\x07'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify offset=1320 count=40
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify_response offset=1320 data=b'<\x99\xd3\x8f\xb0\xe4x\x9dpDw\xb0\x90Q\xbd\x03t\xf5\r\xb3\x070\x95o\xf8\xbaWf\x07^y$$8\xb1\x11\xf01\xc0\xf1'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify offset=1360 count=40
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify_response offset=1360 data=b'\xca&\x8e\xda\r\xb4\x8e\x1b\x00t \xfee\x8e\xd2E\xac3\xbd8\x96\x9a\x99=j\x17\x14\xfbf\xca\x08\x13\x1br\xa3\xe9\xe0\xd7CM'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify offset=1400 count=40
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify_response offset=1400 data=b'\x8c\xa8\xca\xb3\xb9\x85h\x19Hh\x17\xbf\xa3p\x01\xbf\xe0g\x02p&\x04\xc7\xd1\xe5\x84\xea\x9b\x16\xe0\x10=\xde\x10f\xc0\xb5"\x8d{'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify offset=1440 count=40
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify_response offset=1440 data=b'\x88Qb\t\x8c\xcf\x0e\x88\xe8\x08\x04\xe2\xcd\x9a\x03D\x0f\x93"\x9eT\x89\xbdb\x01\x80\xa3\x89_y\xcb\xd8\xc2g"-\x90?\xc8\x0e'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify offset=1480 count=40
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify_response offset=1480 data=b'@,\xc8\x8a\xcdup.\xe3w\xbdr\xe5\xa2\x7f\x90\x91\xd8l0Q\x8b\x01\r\xaa|\x00\xb3\xf5\xd1\x12j\x8a\t\x06\xdc\x8c\xf3l\xaf'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify offset=1520 count=40
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify_response offset=1520 data=b'r\xab)\x85\x83Z\xfa\xea7P\xbf3\xf5\x1b\xb2\x9bG,9^\xda1\xc6\x83\x85q\x8c\x97\xc6/_-\x822\xb1\xc9\x05VC6'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify offset=1560 count=40
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify_response offset=1560 data=b'\xd6\xa7\xd9`\xb0\x9a1\x9d\x13N\x9c\xd1Y\xa8G\x07\xb8\x05\xbb\x14n)\xebL8\xf8\x05\xa6Dv\xca\x10\xb4\x94\xb9\xac5T)k'
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify offset=1600 count=40
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify_response offset=1600 data=b'\x99\x1f\xcb7\xf4rc\xfc\x1f)6_?\xc8\x0c\xec\x823\x9ao\x01\xc3\xf9rHu\x1c\x17\xce\x17HE\xb9K\x8c\xe0\x13bh\xee'
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify offset=1640 count=40
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify_response offset=1640 data=b'\\-\xa8\xe5\xca\x12\x10\xe4E\x13\xe5\x18~\x14\xad\xc0\x0c\xd8Xe\x1e\x03Y\x13 3\x80\x91\x839\xdc\xbf\x9a\x8dBTx\xe5\x88\xd5'
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify offset=1680 count=40
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify_response offset=1680 data=b'--]\xe7f4\xa2\xa9[\x05\xa7\xd9EQ\xdb\x18\x82\xd879\xa0\x0f\x17\xbc\xaf\xccJ\xa3S\xb8D \x14\x86\x16\xc7\x9c\x95c\xe7'
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify offset=1720 count=40
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify_response offset=1720 data=b'\xe1W\x9d%a\x95\xf1\xfcr\x1d\xdf\x9c\xff\x82\xb9\x0f&q\x17\x8f\xf7\xf1\xed\xf5\x87{\xf4\xdb\x93\xb3\xc9\xedEtr{1\x87\xbf\xc5'
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify offset=1760 count=40
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify_response offset=1760 data=b'\xc4\x19\xec\x9eip==\xb9]\xfb0\xb0~\xffq\xfdS\xfc\xfd\xdd\xd5\xcf\xe8\x12\xa6\xf4\xefdr\xb3~\x04\xaa\xa4+\xc56\x89\xc2'
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify offset=1800 count=40
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify_response offset=1800 data=b'\xb0\x01\xc2\xdbO7\xbc[\x80\xe1\xf8\xeej}u\xfd\xaf\xab\xf8\xd3\xf5\x87\xcb\x8f\x9f\xf0\xda\x02\xec\xbc\xbf\xba\x83N\xe6B\xb4yR\xe0'
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify offset=1840 count=40
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify_response offset=1840 data=b'^\x97\xb0\xd7%\xee\x05\xa3\xd7\xe7\xef\xe3\x8b\xf3\xc7K\\\x86\xb7\xba\x7f8\x7f\xb8\x8f\xef\x1fo\xee\x7f\x86\x91\xfb+\x1c\x89\xb0\xfb\xea\xf6'
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify offset=1880 count=40
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify_response offset=1880 data=b'\xf6\xea.\xfex\xfbp}s\xfd\xef\xab\xcb\xf8\xf1\x03\xf61\xa2\xd6\xa3\xf8\x1b_||\xf81\xbe\xba\xfc\x01\xa6\xfa_1W\xea!{'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify offset=1920 count=40
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify_response offset=1920 data=b'\xa3r\x04\x15c\xdd\xf2\r\xb6\x01\xac\x13\xea&1M\xbf2z\x07"\x1c#\xe9`\xdf\xa0\xc6\x83#\xef\xaf\xef\x83K8(l\x0e\x9f'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify offset=1960 count=40
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify_response offset=1960 data=b'\xb3\xcb\x1fy30.\x1c\xbd=\x9fN\xce\xfe3=Y\xfe\n\x82\xba\xc0\xef%\x7f\xaf\xf1\x1b\\-5.\xb1\x01~\x7f\xf9\xeb\xd7\x81'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify offset=2000 count=40
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify_response offset=2000 data=b'\x0bQ[$\xfel6\xa3\x1d\x129\x9f\x86\x8b\x8c\xd8,\xbbh\xe9G\x94\x82\xe2g\x10IJ\xd5\xbaB\xcc\xa7~\xf0\x04\xe2R\x8b\xa9'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify offset=2040 count=40
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify_response offset=2040 data=b'#\x98c\xa1\xcf\xcaQ\x81[\xc8\x94\xc1\xa5)\x95\xf1H\xb56\x8c\xd5\xb8\x8cx^P\xe5\xd5\xd3Yd\xc6!e\x9dT^Uw\xe0'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify offset=2080 count=40
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify_response offset=2080 data=b'\x15\xe1\xaf\xde\x80\xf7\x7f.\xd9\xf5{\xa4\xf1\xde\xf3.\x87o\xd6\\\xe95`{\xb0\x13\xc7,=\xb7\x97\x82\xf0A\xeb{\x9b\xba\xf5@'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify offset=2120 count=40
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify_response offset=2120 data=b'\x89\xfe\xa9\xdb\xb9\xc4\xd1\x8c\xfa\xa9Kr2\x05S\xff\xdaa\xcc\xf4d\xbe\x05\x86 \xf7I:\xa4N\x14\x9b\x1cP81V\xc4\x12I'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify offset=2160 count=40
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify_response offset=2160 data=b'\xd1`8}\xe7^\x8a\xae\xb44p**O\xd7L\xcc|P\xd95W\xed\xbd&iAa9\xd1\xa1\xccX\x0f\xb4\x02\xa2\xbc\xec\xa8'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify offset=2200 count=40
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify_response offset=2200 data=b'\xf2\xfe}\x02\xe7\xcd\xbc\xae\xf6\xc8\xcf`A\x93\xdc\x03\xa7\xbb\xdfs\x9dK\xc7\xaa\xbc\xca\xc4\xde+\x92\x16m\x1e\x8eP\rJ_\\i'
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify offset=2240 count=40
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify_response offset=2240 data=b"\xfe\xf1\x17\x84\xb3XL\xfd\x87*\xa6\x0en\xc7\xf3OC.\xe9_\x07k\xef\xc3\xf9\xfa'\x06\xd3\xd8\x02\xb3\xb9{\xd0}S\xb7\xef\xee"
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify offset=2280 count=40
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify_response offset=2280 data=b'\xea\xfcR\r\xa0\xf7\xc1\x81\x07vt\xec\xd8\xae\x19+y\xba\x14n+\xfa\x0cY86i*\xf5\xacA\xc5\x03\xdb\x07d(\xb2\xa4\x14'
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify offset=2320 count=40
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify_response offset=2320 data=b'pd\xae!\xe9\xc1\xb2\x86`\xaf\xa4\xe6aU\x12\xfd\x96\x1d65LS\xb5\xe4\x1c\xfe`\\\xe5Zf\xff\x99\xc3:\\\xb4\xc7V\x83'
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify offset=2360 count=40
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify_response offset=2360 data=b'U\x1d\xdd\x8b\xd5C\xed\x1d\xd1\xa5:\xfd\n\xc7\xa2E\xab\x89\xe1rH@\xb9\xb7=\x93\xe4j\x9b\xa6\x18\x00Uw\x15\xb8\x8d\x9bd\x8f'
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify offset=2400 count=40
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify_response offset=2400 data=b'7\xb6\xd4\x02\xe5@}#\xa4L\xe0\nE\x95B\xe0\xd5\x8a\x85\x03\xb9D\xad\x97\x90%e}\x81E,\x98\x8c \xccS\xbe\x9fT@'
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify offset=2440 count=40
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify_response offset=2440 data=b'|\x11x\x13\x88\xbf^\x9f\xb0K\xda\x8c\x8cRQc\x8d\xf2\x06\xc5O\xc0\xd4\x83\xafvS\xd4\xcf\x8cl?\x805&\x1e\x1f\x07\xdd\x00'
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify offset=2480 count=40
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify_response offset=2480 data=b"y.\x0c\xda\xee\x00\xd8'\x0fD\xa3\x19y\xd50\xfc\xe3W\x0f\x1a\xaa\x90S\xdb\xbd\xa0\x18a\xac\x14\x12yL\xb5K`=\xc1\xb3m"
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify offset=2520 count=40
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify_response offset=2520 data=b'\x00[\x00\x97 l\x81\x0e\x06a\xc7\x9dP\x87B\xa3B\x0f\x00\xdb\xa0\xa8\xe1\x1a\xd0\xe20\xce\xdcS\x8a\xaf\xcc\xa1\x15\xf8R\x87\xb3\xb1'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify offset=2560 count=40
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify_response offset=2560 data=b'~}o\xe6\x1e\x08\xce{\xce\x8b\x02\xa2q\n[\r\xea\xd3\x8c/\xecL#\xbco\xcc@<z\x0f\x8e\x84\xaf\x97xC\x8a\xbc\xecK'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify offset=2600 count=40
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify_response offset=2600 data=b'\xdd\xa7\xed\x06\x19\xd6Eez\x05\x83\xc5\xc8\xf5\x90\x1bu\x1f\xc4\xee\x95/\xea\xea\xda\xdb$tp>4\xa6\x05\x0f\xae\xb6\xa14\x81\x90'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify offset=2640 count=40
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify_response offset=2640 data=b'\xaa\xee\x1c\xfc\x1eHT8\x13\x80\x88\x14\x14\x1a\x1e+\xd97\x08F\x04\xfb%\n\x06\xf8z\xf3)\xe9\xd2]VoY\xc0\x7f\xe1z-'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify offset=2680 count=40
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify_response offset=2680 data=b'\xbd.B|\xeb\xab\xcf\xb00:5~|r\xfa\xa5\x1d\xc0\td>\xe0\xf5$8k4n\x809\xd2K%_=>\xfaa\x94E'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify offset=2720 count=40
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify_response offset=2720 data=b'\x9b\xa0\xdd{\xcb\rgJv\x94\r\x8a\x13\x05\xd3\x8b\x96;\x9cc+\xf5\xec\xc5\xeb\xaa\x00\xc7\xff\x05XJ\x9e\n\xed\xcf\x8d@WX'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 identify offset=2760 count=40
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify_response offset=2760 data=b'\x01\xdd\x8b,.\xfb\xe2\xcc\xd1{\xac*\x8f\xea=\x18H\x0c\x13X\xdcA~;\xed\x1f\xb1\xba\x89@\xb9\xf0F\xdc\x02!\xbd\xc4\x9a\x18'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 identify offset=2800 count=40
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify_response offset=2800 data=b'\xa4\xdeg3\xae<K,\xf0\xa1\xfbf5Na\x98\x8e\xe1\xa6\x1b\xa4\x04`\x15\xc0\nht^\x01\xee\xd5\xd1\x96p\xa9*\x9e\x13n'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 identify offset=2840 count=40
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify_response offset=2840 data=b'\xc6\xcb\xa5\xd0\xc1\xcf\n\x83"\x96;\x88\x05\xa7#\xc8\x11wb\xbb\xc5w\n\x15\xf0\xd8+ ^\x06ppP\xcbGt\x00\xf0n\xe6'
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 identify offset=2880 count=40
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify_response offset=2880 data=b"/\xe7s\xc2 \xaa\x11\x11\x08\xe1F4'\xdd\x85F\x14-\xe0{\xf6\x95\x90R\nj\x01\xf3'\xf8>\xfe\xc3\xed\xfb/\xb3\te\xb6"
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 identify offset=2920 count=40
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify_response offset=2920 data=b'\r\xf8B\xc1\xcf\xe1\xba\xf44\xcc\xb6(\xf3<\x96[\x9fb\x0c\xd7\x8f\xd2\x83)\x89SX\xe2\xa4\x8c\xd3\x8aS|\x13\xa2\x0c\xda\x82\xf8'
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 identify offset=2960 count=40
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify_response offset=2960 data=b'S\xdf<\x14y\x88\xe6\xe8\x8bp>\x15\xc7\xb1Ok\x10\xe5P\xa06\xb1\xc9\xd9q:\xbd\xe7P\xc1\xea[|\xab)\xea#v\xf6\x9f'
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 identify offset=3000 count=40
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify_response offset=3000 data=b'\xdb\x17\t\t\xc6k\x1e\x18N}\xa7\xa2?XyW\x97\xe0\xdf\x0f\xf7p\x1f\x0cp\xfe\xcc\x16\xc7c-i\xa7\xdeCm%\x98\x95-'
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 identify offset=3040 count=40
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify_response offset=3040 data=b'?;\xa4\xa6\x0e\xcd\x99\xd9[$\xc5B\xb5\x15\x897\x86\x8fJ*\x08\x9a^\xadf9\x07\xd0*\xeb\xc8cv\xa4\xce\xebN\x86\xddy'
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 identify offset=3080 count=40
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify_response offset=3080 data=b'\xbeN\x95\xdcu\x9c\xc2\x05\xa2\x1aS\x92U\xb2\xd5\xe9s\x9f\xa6T\x98G1\x81\xdf\x82\xe3\xba\x8fD\xa7\\\xf4@/\x06p\x19rc'
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 identify offset=3120 count=40
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify_response offset=3120 data=b'7I\x95\x88Y\xaaT\x8cj\xba>b&w\xce\xa0^fkC\xaa\xa2\xa5SA.\xab\xb8K>\xf5\x14\x023.x\x02b\x05G'
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 identify offset=3160 count=40
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify_response offset=3160 data=b'\x16k_%\xb5\xd2\xc1^6\x82\xe8\x02\xed+Wq\xb4\x10q\xa0\x10nA\xcd\xd5\x8c`\x98\xf7\xff\x91"\x91\x9bC\xb4K\x18\xff\x14'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 identify offset=3200 count=40
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify_response offset=3200 data=b'!\x1f\xf2%\xad\x01\xc8\xbeT?\xf27\xf5\x060\xb5\xc9\xfc(\xd3\xe7\xea9\xd6S\x10\x1d\x0e\xdc\xd1\xf0J\x8fz\x89\x9e\xe3!\xdfs'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 identify offset=3240 count=40
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify_response offset=3240 data=b'h\xf3\xff\xc33`\xe6O\xfc/\xdc\x94\xde*]\x9aT\xc7\xd4\xed\xf0\xad\x039\r\xd0\xdbRB\xc1\xaf\xd1\xfd`t\x05\xdeP\xfdW'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 identify offset=3280 count=40
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify_response offset=3280 data=b'"\xf0\x86\xabY\x18%\x99\xbf\x9a|\xfd\x1f\xd6\xbcH\x08'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 identify offset=3297 count=40
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 identify_response offset=3297 data=b''
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 get_uptime
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 uptime high=0 clock=128761629
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 clock clock=129675169
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 clock clock=130517743
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 clock clock=131321616
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 clock clock=132202914
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 clock clock=133051946
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 clock clock=133900976
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 clock clock=134743558
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 clock clock=135560325
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 get_config
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 config is_config=0 crc=0 is_shutdown=0 move_count=0
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 queue_step oid=3 interval=54963 count=4 add=3000
+klipperHandler.js:163 queue_step oid=2 interval=11232 count=17 add=129
+klipperHandler.js:163 queue_step oid=0 interval=4877 count=37 add=26
+klipperHandler.js:163 queue_step oid=4 interval=5362 count=31 add=30
+klipperHandler.js:163 queue_step oid=1 interval=7205 count=20 add=64
+klipperHandler.js:163 queue_step oid=2 interval=13706 count=7 add=204
+klipperHandler.js:163 queue_step oid=3 interval=68478 count=2 add=9576
+klipperHandler.js:163 queue_step oid=0 interval=6004 count=15 add=23
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 queue_step oid=4 interval=6450 count=15 add=32
+klipperHandler.js:163 queue_step oid=1 interval=8901 count=28 add=-65
+klipperHandler.js:163 queue_step oid=2 interval=13060 count=19 add=-143
+klipperHandler.js:163 queue_step oid=0 interval=6007 count=42 add=-29
+klipperHandler.js:163 queue_step oid=4 interval=6549 count=39 add=-34
+klipperHandler.js:163 queue_step oid=3 interval=74197 count=3 add=-4801
+klipperHandler.js:163 queue_step oid=2 interval=10522 count=20 add=-85
+klipperHandler.js:163 queue_step oid=1 interval=7171 count=32 add=-38
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 queue_step oid=0 interval=4851 count=48 add=-17
+klipperHandler.js:163 queue_step oid=4 interval=5288 count=44 add=-20
+klipperHandler.js:163 queue_step oid=3 interval=60345 count=4 add=-2705
+klipperHandler.js:163 queue_step oid=2 interval=8901 count=25 add=-50
+klipperHandler.js:163 queue_step oid=1 interval=6026 count=35 add=-23
+klipperHandler.js:163 queue_step oid=0 interval=4097 count=44 add=-11
+klipperHandler.js:163 queue_step oid=4 interval=4473 count=37 add=-13
+klipperHandler.js:163 queue_step oid=3 interval=49713 count=3 add=-1465
+klipperHandler.js:163 queue_step oid=2 interval=7823 count=27 add=0
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 queue_step oid=0 interval=3706 count=64 add=0
+klipperHandler.js:163 queue_step oid=4 interval=4087 count=204 add=0
+klipperHandler.js:163 queue_step oid=1 interval=5371 count=40 add=0
+klipperHandler.js:163 queue_step oid=3 interval=46124 count=4 add=-99
+klipperHandler.js:163 queue_step oid=3 interval=47224 count=2 add=1836
+klipperHandler.js:163 queue_step oid=2 interval=7343 count=86 add=-1
+klipperHandler.js:163 queue_step oid=1 interval=5561 count=84 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3660 count=162 add=0
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 analog_in_state oid=5 next_clock=192800000 value=4504
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 queue_step oid=3 interval=48408 count=11 add=-246
+klipperHandler.js:163 queue_step oid=1 interval=5489 count=32 add=5
+klipperHandler.js:163 queue_step oid=3 interval=46058 count=3 add=1604
+klipperHandler.js:163 queue_step oid=0 interval=3744 count=58 add=10
+klipperHandler.js:163 queue_step oid=4 interval=4168 count=48 add=14
+klipperHandler.js:163 queue_step oid=2 interval=7451 count=20 add=38
+klipperHandler.js:163 queue_step oid=1 interval=5763 count=21 add=28
+klipperHandler.js:163 queue_step oid=3 interval=51756 count=2 add=5987
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 analog_in_state oid=8 next_clock=193280000 value=4504
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 queue_step oid=1 interval=6589 count=31 add=43
+klipperHandler.js:163 queue_step oid=2 interval=7707 count=27 add=62
+klipperHandler.js:163 queue_step oid=4 interval=4904 count=37 add=22
+klipperHandler.js:163 queue_step oid=3 interval=59696 count=2 add=3357
+klipperHandler.js:163 queue_step oid=0 interval=4397 count=37 add=17
+klipperHandler.js:163 queue_step oid=3 interval=68902 count=2 add=2286
+klipperHandler.js:163 queue_step oid=1 interval=8457 count=34 add=-49
+klipperHandler.js:163 queue_step oid=2 interval=8574 count=33 add=-51
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 queue_step oid=0 interval=4790 count=55 add=-16
+klipperHandler.js:163 queue_step oid=4 interval=5445 count=51 add=-20
+klipperHandler.js:163 queue_step oid=3 interval=66083 count=4 add=-3329
+klipperHandler.js:163 queue_step oid=1 interval=6872 count=36 add=-30
+klipperHandler.js:163 queue_step oid=2 interval=6992 count=33 add=-32
+klipperHandler.js:163 queue_step oid=0 interval=3963 count=60 add=-10
+klipperHandler.js:163 queue_step oid=4 interval=4484 count=49 add=-13
+klipperHandler.js:163 queue_step oid=3 interval=53955 count=3 add=-2075
+klipperHandler.js:163 queue_step oid=2 interval=6037 count=12 add=-56
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 queue_step oid=0 interval=3402 count=30 add=-7
+klipperHandler.js:163 queue_step oid=1 interval=5996 count=45 add=-1
+klipperHandler.js:163 queue_step oid=4 interval=3884 count=32 add=-5
+klipperHandler.js:163 queue_step oid=3 interval=52264 count=4 add=-453
+klipperHandler.js:163 queue_step oid=2 interval=5544 count=38 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3270 count=71 add=0
+klipperHandler.js:163 queue_step oid=4 interval=3785 count=880 add=0
+klipperHandler.js:163 queue_step oid=3 interval=51109 count=2 add=2589
+klipperHandler.js:163 queue_step oid=2 interval=5362 count=93 add=0
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 queue_step oid=1 interval=6148 count=65 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3250 count=157 add=0
+klipperHandler.js:163 queue_step oid=3 interval=52830 count=9 add=-358
+klipperHandler.js:163 queue_step oid=1 interval=6055 count=22 add=8
+klipperHandler.js:163 queue_step oid=2 interval=5259 count=27 add=-6
+klipperHandler.js:163 queue_step oid=3 interval=53386 count=15 add=-383
+klipperHandler.js:163 queue_step oid=1 interval=6403 count=74 add=-1
+klipperHandler.js:163 queue_step oid=0 interval=3232 count=275 add=0
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 queue_step oid=2 interval=5188 count=65 add=-1
+klipperHandler.js:163 queue_step oid=2 interval=5170 count=65 add=-1
+klipperHandler.js:163 queue_step oid=1 interval=6368 count=63 add=-1
+klipperHandler.js:163 queue_step oid=3 interval=47872 count=2 add=0
+klipperHandler.js:163 queue_step oid=2 interval=5198 count=38 add=-8
+klipperHandler.js:163 queue_step oid=3 interval=48535 count=2 add=2161
+klipperHandler.js:163 queue_step oid=1 interval=6608 count=69 add=-1
+klipperHandler.js:163 queue_step oid=0 interval=3216 count=285 add=0
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 analog_in_state oid=5 next_clock=197600000 value=4504
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 analog_in_state oid=8 next_clock=198080000 value=4504
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 queue_step oid=3 interval=49913 count=18 add=-308
+klipperHandler.js:163 queue_step oid=2 interval=4962 count=79 add=0
+klipperHandler.js:163 queue_step oid=1 interval=6577 count=72 add=-1
+klipperHandler.js:163 queue_step oid=2 interval=4936 count=90 add=0
+klipperHandler.js:163 queue_step oid=3 interval=47766 count=17 add=-280
+klipperHandler.js:163 queue_step oid=1 interval=6836 count=75 add=-1
+klipperHandler.js:163 queue_step oid=2 interval=4776 count=120 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3201 count=253 add=0
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 queue_step oid=1 interval=6796 count=54 add=-1
+klipperHandler.js:163 queue_step oid=2 interval=4753 count=64 add=0
+klipperHandler.js:163 queue_step oid=3 interval=43273 count=2 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3187 count=190 add=0
+klipperHandler.js:163 queue_step oid=4 interval=3786 count=183 add=0
+klipperHandler.js:163 queue_step oid=3 interval=44971 count=3 add=449
+klipperHandler.js:163 queue_step oid=1 interval=7114 count=73 add=-1
+klipperHandler.js:163 queue_step oid=2 interval=4603 count=113 add=0
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 queue_step oid=3 interval=45064 count=9 add=-218
+klipperHandler.js:163 queue_step oid=1 interval=7363 count=23 add=5
+klipperHandler.js:163 queue_step oid=3 interval=45481 count=4 add=125
+klipperHandler.js:163 queue_step oid=2 interval=4433 count=39 add=4
+klipperHandler.js:163 queue_step oid=0 interval=3120 count=53 add=5
+klipperHandler.js:163 queue_step oid=4 interval=3913 count=40 add=7
+klipperHandler.js:163 queue_step oid=1 interval=7601 count=11 add=52
+klipperHandler.js:163 queue_step oid=3 interval=47458 count=2 add=4263
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 queue_step oid=2 interval=4781 count=53 add=-2
+klipperHandler.js:163 queue_step oid=0 interval=3442 count=192 add=0
+klipperHandler.js:163 queue_step oid=1 interval=8626 count=75 add=-1
+klipperHandler.js:163 queue_step oid=3 interval=52988 count=12 add=-310
+klipperHandler.js:163 queue_step oid=4 interval=4117 count=141 add=0
+klipperHandler.js:163 queue_step oid=2 interval=4711 count=85 add=0
+klipperHandler.js:163 queue_step oid=2 interval=4594 count=48 add=17
+klipperHandler.js:163 queue_step oid=4 interval=4188 count=51 add=15
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 queue_step oid=3 interval=50962 count=4 add=1925
+klipperHandler.js:163 queue_step oid=0 interval=3515 count=56 add=10
+klipperHandler.js:163 queue_step oid=1 interval=8738 count=24 add=63
+klipperHandler.js:163 queue_step oid=2 interval=5471 count=33 add=28
+klipperHandler.js:163 queue_step oid=0 interval=4113 count=46 add=17
+klipperHandler.js:163 queue_step oid=3 interval=58698 count=4 add=3361
+klipperHandler.js:163 queue_step oid=1 interval=10349 count=18 add=108
+klipperHandler.js:163 queue_step oid=4 interval=5004 count=36 add=25
+klipperHandler.js:163 queue_step oid=2 interval=6450 count=27 add=49
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 queue_step oid=0 interval=4959 count=32 add=29
+klipperHandler.js:163 queue_step oid=4 interval=5965 count=28 add=44
+klipperHandler.js:163 queue_step oid=1 interval=12382 count=14 add=197
+klipperHandler.js:163 queue_step oid=3 interval=74199 count=2 add=6351
+klipperHandler.js:163 queue_step oid=2 interval=7871 count=19 add=89
+klipperHandler.js:163 queue_step oid=0 interval=5972 count=24 add=52
+klipperHandler.js:163 queue_step oid=4 interval=7311 count=19 add=79
+klipperHandler.js:163 queue_step oid=1 interval=15309 count=10 add=375
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 queue_step oid=3 interval=88356 count=2 add=12323
+klipperHandler.js:163 queue_step oid=2 interval=9694 count=13 add=172
+klipperHandler.js:163 queue_step oid=0 interval=7354 count=16 add=97
+klipperHandler.js:163 queue_step oid=4 interval=8951 count=14 add=152
+klipperHandler.js:163 queue_step oid=1 interval=19519 count=6 add=731
+klipperHandler.js:163 queue_step oid=3 interval=119219 count=1 add=0
+klipperHandler.js:163 queue_step oid=2 interval=12061 count=6 add=346
+klipperHandler.js:163 queue_step oid=0 interval=9150 count=9 add=143
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 queue_step oid=4 interval=11481 count=6 add=171
+klipperHandler.js:163 queue_step oid=1 interval=24489 count=2 add=6433
+klipperHandler.js:163 queue_step oid=3 interval=160967 count=2 add=-29223
+klipperHandler.js:163 queue_step oid=2 interval=12803 count=11 add=-258
+klipperHandler.js:163 queue_step oid=0 interval=9653 count=18 add=-125
+klipperHandler.js:163 queue_step oid=4 interval=11467 count=16 add=-174
+klipperHandler.js:163 queue_step oid=1 interval=29960 count=6 add=-1200
+klipperHandler.js:116 {type: 'Move', A: 0.001963495408493621, B: 0.009817477042468103, C: 0.02552544031041707, D: 0.02159844949342983}
+klipperHandler.js:116 {type: 'Move', A: 0.003926990816987242, B: 0.019634954084936207, C: 0.0471238898038469, D: 0.04319689898685966}
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 queue_step oid=2 interval=10203 count=16 add=-132
+klipperHandler.js:163 queue_step oid=0 interval=7491 count=25 add=-63
+klipperHandler.js:163 queue_step oid=4 interval=8876 count=19 add=-92
+klipperHandler.js:163 queue_step oid=1 interval=23205 count=8 add=-599
+klipperHandler.js:163 queue_step oid=2 interval=8258 count=21 add=-72
+klipperHandler.js:163 queue_step oid=3 interval=110770 count=2 add=-12925
+klipperHandler.js:163 queue_step oid=4 interval=7256 count=26 add=-51
+klipperHandler.js:163 queue_step oid=0 interval=6019 count=32 add=-35
+klipperHandler.js:116 {type: 'Move', A: 0.005890486225480863, B: 0.02945243112740431, C: 0.07068583470577035, D: 0.06479534848028949}
+klipperHandler.js:116 {type: 'Move', A: 0.007853981633974483, B: 0.039269908169872414, C: 0.09032078879070655, D: 0.08246680715673207}
+klipperHandler.js:116 {type: 'Move', A: 0.009817477042468103, B: 0.04516039439535328, C: 0.09228428419920018, D: 0.07853981633974483}
+klipperHandler.js:116 {type: 'Move', A: 0.011780972450961723, B: 0.035342917352885174, C: 0.07068583470577035, D: 0.056941366846315}
+klipperHandler.js:116 {type: 'Move', B: 0.02552544031041707, C: 0.047123889803846894, D: 0.03730641276137879}
+klipperHandler.js:116 {type: 'Move', A: 0.009817477042468103, B: 0.013744467859455345, C: 0.021598449493429824, D: 0.01374446785945534}
+klipperHandler.js:116 {type: 'Move', A: 0.007853981633974483, B: 0.00196349540849362, C: -0.003926990816987247, D: -0.00981747704246811}
+klipperHandler.js:116 {type: 'Move', A: 0.005890486225480863, B: -0.009817477042468105, C: -0.03141592653589794, D: -0.037306412761378804}
+klipperHandler.js:116 {type: 'Move', A: 0.003926990816987242, B: -0.023561944901923454, C: -0.06086835766330226, D: -0.06283185307179587}
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:116 {type: 'Move', A: 0, B: -0.03926990816987242, C: -0.09228428419920019, D: -0.09228428419920018}
+klipperHandler.js:116 {type: 'Move', A: -0.001963495408493621, B: -0.053014376029327764, C: -0.12566370614359174, D: -0.12173671532660449}
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 analog_in_state oid=5 next_clock=202400000 value=4504
+klipperHandler.js:116 {type: 'Move', A: -0.003926990816987242, B: -0.06872233929727672, C: -0.1590431280879833, D: -0.13744467859455345}
+klipperHandler.js:116 {type: 'Move', A: -0.007853981633974483, B: -0.07264933011426397, C: -0.12959069696057898, D: -0.10602875205865551}
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 queue_step oid=1 interval=18670 count=11 add=-318
+klipperHandler.js:163 queue_step oid=2 interval=6827 count=31 add=-40
+klipperHandler.js:163 queue_step oid=3 interval=87521 count=3 add=-6685
+klipperHandler.js:163 queue_step oid=4 interval=6013 count=37 add=-29
+klipperHandler.js:163 queue_step oid=0 interval=4990 count=38 add=-21
+klipperHandler.js:163 queue_step oid=1 interval=15287 count=16 add=-176
+klipperHandler.js:163 queue_step oid=2 interval=5649 count=43 add=-23
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 clock clock=197873843
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:116 {type: 'Move', A: -0.009817477042468103, B: -0.056941366846315004, C: -0.09424777960769382, D: -0.0765763209312512}
+klipperHandler.js:116 {type: 'Move', A: -0.011780972450961723, B: -0.039269908169872414, C: -0.06086835766330226, D: -0.04516039439535327}
+klipperHandler.js:116 {type: 'Move', A: -0.015707963267948967, B: -0.027488935718910687, C: -0.0274889357189107, D: -0.015707963267948957}
+klipperHandler.js:116 {type: 'Move', A: -0.013744467859455347, B: -0.043196898986859654, C: 0.0058904862254808565, D: 0.015707963267948977}
+klipperHandler.js:116 {type: 'Move', A: -0.011780972450961727, B: -0.060868357663302244, C: 0.04123340357836603, D: 0.04712388980384691}
+klipperHandler.js:116 {type: 'Move', A: -0.015707963267948967, B: -0.07853981633974483, C: 0.07461282552275758, D: 0.07657632093125122}
+klipperHandler.js:116 {type: 'Move', A: -0.017671458676442587, B: -0.09621127501618741, C: 0.10995574287564275, D: 0.10799224746714915}
+klipperHandler.js:116 {type: 'Move', A: -0.019634954084936207, B: -0.11191923828413639, C: 0.1433351648200343, D: 0.13744467859455348}
+klipperHandler.js:116 {type: 'Move', A: -0.023561944901923447, B: -0.12959069696057898, C: 0.17867808217291947, D: 0.17082410053894503}
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 analog_in_state oid=8 next_clock=202880000 value=4504
+klipperHandler.js:116 {type: 'Move', A: -0.025525440310417067, B: -0.14726215563702158, C: 0.21205750411731103, D: 0.20027653166634934}
+klipperHandler.js:116 {type: 'Move', A: -0.027488935718910687, B: -0.16493361431346418, C: 0.2474004214701962, D: 0.22972896279375365}
+klipperHandler.js:116 {type: 'Move', A: -0.03141592653589793, B: -0.18064157758141314, C: 0.2807798434145877, D: 0.2611448893296516}
+klipperHandler.js:116 {type: 'Move', A: -0.03337942194439155, B: -0.19045905462388124, C: 0.3141592653589793, D: 0.2905973204570559}
+klipperHandler.js:116 {type: 'Move', A: -0.02945243112740431, B: -0.17278759594743864, C: 0.34557519189487723, D: 0.3180862561759666}
+klipperHandler.js:116 {type: 'Move', A: -0.02748893571891069, B: -0.15707963267948968, C: 0.37502762302228154, D: 0.3455751918948773}
+klipperHandler.js:116 {type: 'Move', A: -0.02552544031041707, B: -0.14137166941154072, C: 0.40644354955817946, D: 0.3711006322052944}
+klipperHandler.js:116 {type: 'Move', A: -0.02356194490192345, B: -0.12762720155208537, C: 0.43196898986859655, D: 0.3946625771072178}
+klipperHandler.js:116 {type: 'Move', A: -0.02159844949342983, B: -0.11191923828413641, C: 0.45945792558750725, D: 0.4162610266006476}
+klipperHandler.js:116 {type: 'Move', A: -0.01963495408493621, B: -0.10602875205865556, C: 0.45356743936202637, D: 0.4044800541496859}
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 queue_step oid=0 interval=4250 count=50 add=-13
+klipperHandler.js:163 queue_step oid=4 interval=5021 count=42 add=-18
+klipperHandler.js:163 queue_step oid=3 interval=69597 count=3 add=-3788
+klipperHandler.js:163 queue_step oid=1 interval=12592 count=21 add=-103
+klipperHandler.js:163 queue_step oid=2 interval=4719 count=52 add=-14
+klipperHandler.js:163 queue_step oid=0 interval=3640 count=70 add=-8
+klipperHandler.js:163 queue_step oid=4 interval=4311 count=56 add=-11
+klipperHandler.js:163 queue_step oid=3 interval=58606 count=4 add=-2347
+klipperHandler.js:116 {type: 'Move', A: -0.01767145867644259, B: -0.11977321991811091, C: 0.42607850364311567, D: 0.3809181092477625}
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:116 {type: 'Move', A: -0.01570796326794897, B: -0.13548118318605987, C: 0.39662607251571136, D: 0.3534291735288518}
+klipperHandler.js:116 {type: 'Move', A: -0.01767145867644259, B: -0.15315264186250246, C: 0.36717364138830705, D: 0.3279037332184347}
+klipperHandler.js:116 {type: 'Move', A: -0.01963495408493621, B: -0.17082410053894506, C: 0.3337942194439155, D: 0.2984513020910304}
+klipperHandler.js:116 {type: 'Move', A: -0.02159844949342983, B: -0.19045905462388127, C: 0.30041479749952393, D: 0.26899887096362607}
+klipperHandler.js:116 {type: 'Move', A: -0.02356194490192345, B: -0.20813051330032387, C: 0.26507188014663874, D: 0.23758294442772815}
+klipperHandler.js:116 {type: 'Move', A: -0.027488935718910694, B: -0.2297289627937537, C: 0.22776546738525993, D: 0.2042035224833366}
+klipperHandler.js:116 {type: 'Move', A: -0.029452431127404314, B: -0.2513274122871835, C: 0.19045905462388113, D: 0.17278759594743864}
+klipperHandler.js:116 {type: 'Move', A: -0.031415926535897934, B: -0.23561944901923457, C: 0.21794799034279183, D: 0.186532063806894}
+klipperHandler.js:116 {type: 'Move', A: -0.03337942194439156, B: -0.21402099952580472, C: 0.25721789851266424, D: 0.22187498115977916}
+klipperHandler.js:116 {type: 'Move', A: -0.03534291735288518, B: -0.19045905462388127, C: 0.29452431127404305, D: 0.2552544031041707}
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 queue_step oid=1 interval=10549 count=14 add=-60
+klipperHandler.js:163 queue_step oid=2 interval=4023 count=34 add=-4
+klipperHandler.js:163 queue_step oid=0 interval=3142 count=457 add=0
+klipperHandler.js:163 queue_step oid=4 interval=3785 count=376 add=0
+klipperHandler.js:163 queue_step oid=3 interval=51597 count=3 add=2084
+klipperHandler.js:163 queue_step oid=1 interval=9968 count=7 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3936 count=31 add=-4
+klipperHandler.js:163 queue_step oid=1 interval=10724 count=82 add=-3
+klipperHandler.js:116 {type: 'Move', B: -0.16886060513045142, C: 0.33183072403542185, D: 0.2866703296400686}
+klipperHandler.js:116 {type: 'Move', A: -0.03337942194439156, B: -0.14333516482003436, C: 0.3730641276137879, D: 0.32004975158446014}
+klipperHandler.js:116 {type: 'Move', A: -0.03534291735288518, B: -0.12173671532660453, C: 0.4103705403751667, D: 0.3534291735288517}
+klipperHandler.js:116 {type: 'Move', A: -0.037306412761378804, B: -0.09817477042468108, C: 0.4476769531365455, D: 0.3868085954732433}
+klipperHandler.js:116 {type: 'Move', A: -0.041233403578366044, B: -0.07461282552275762, C: 0.4869468613064179, D: 0.4201880174176349}
+klipperHandler.js:116 {type: 'Move', A: -0.04319689898685967, B: -0.05105088062083417, C: 0.5262167694762903, D: 0.4535674393620265}
+klipperHandler.js:116 {type: 'Move', A: -0.04516039439535329, B: -0.027488935718910718, C: 0.5635231822376691, D: 0.4849833658979244}
+klipperHandler.js:116 {type: 'Move', A: -0.047123889803846915, B: -0.003926990816987268, C: 0.6047565858160351, D: 0.5203262832508095}
+klipperHandler.js:116 {type: 'Move', A: -0.051050880620834155, B: -0.015707963267948995, C: 0.6420629985774139, D: 0.5537057051952011}
+klipperHandler.js:116 {type: 'Move', A: -0.05301437602932778, B: -0.03926990816987244, C: 0.6813329067472863, D: 0.5851216317310991}
+klipperHandler.js:116 {type: 'Move', A: -0.0549778714378214, B: -0.0647953484802895, C: 0.7206028149171587, D: 0.6204645490839843}
+klipperHandler.js:116 {type: 'Move', A: -0.056941366846315025, B: -0.09032078879070657, C: 0.7598727230870311, D: 0.6518804756198823}
+klipperHandler.js:116 {type: 'Move', A: -0.05890486225480865, B: -0.11388273369263002, C: 0.7971791358484099, D: 0.6852598975642739}
+klipperHandler.js:116 {type: 'Move', A: -0.0628318530717959, B: -0.13744467859455348, C: 0.8364490440182824, D: 0.7186393195086654}
+klipperHandler.js:116 {type: 'Move', A: -0.06479534848028952, B: -0.16297011890497054, C: 0.8757189521881548, D: 0.752018741453057}
+klipperHandler.js:116 {type: 'Move', A: -0.06675884388878314, B: -0.186532063806894, C: 0.9149888603580272, D: 0.7853981633974486}
+klipperHandler.js:116 {type: 'Move', A: -0.07068583470577039, B: -0.21009400870881745, C: 0.952295273119406, D: 0.8187775853418402}
+klipperHandler.js:116 {type: 'Move', A: -0.07264933011426401, B: -0.2356194490192345, C: 0.9915651812892784, D: 0.8501935118777382}
+klipperHandler.js:116 {type: 'Move', A: -0.07461282552275764, B: -0.2611448893296516, C: 1.030835089459151, D: 0.8855364292306234}
+klipperHandler.js:116 {type: 'Move', A: -0.07657632093125126, B: -0.284706834231575, C: 1.0701049976290233, D: 0.9169523557665213}
+klipperHandler.js:116 {type: 'Move', A: -0.0805033117482385, B: -0.3082687791334984, C: 1.1093749057988957, D: 0.9503317777109129}
+klipperHandler.js:116 {type: 'Move', A: -0.07853981633974488, B: -0.3337942194439155, C: 1.1486448139687682, D: 0.9856746950637981}
+klipperHandler.js:116 {type: 'Move', A: -0.07657632093125126, B: -0.35735616434583894, C: 1.1859512267301469, D: 1.017090621599696}
+klipperHandler.js:116 {type: 'Move', A: -0.07264933011426401, B: -0.37895461383926876, C: 1.2252211349000193, D: 1.0504700435440875}
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 queue_step oid=3 interval=54696 count=15 add=-402
+klipperHandler.js:163 queue_step oid=2 interval=3866 count=137 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3852 count=143 add=0
+klipperHandler.js:163 queue_step oid=3 interval=48827 count=6 add=-297
+klipperHandler.js:163 queue_step oid=1 interval=10517 count=27 add=-3
+klipperHandler.js:163 queue_step oid=3 interval=49406 count=4 add=-73
+klipperHandler.js:163 queue_step oid=1 interval=10971 count=20 add=10
+klipperHandler.js:163 queue_step oid=2 interval=3782 count=48 add=1
+klipperHandler.js:116 {type: 'Move', A: -0.07461282552275764, B: -0.35146567812035806, C: 1.2644910430698917, D: 1.083849465488479}
+klipperHandler.js:116 {type: 'Move', A: -0.07657632093125126, B: -0.32594023780994097, C: 1.303760951239764, D: 1.1172288874328704}
+klipperHandler.js:116 {type: 'Move', A: -0.0805033117482385, B: -0.30237829290801754, C: 1.3430308594096365, D: 1.1506083093772619}
+klipperHandler.js:116 {type: 'Move', A: -0.08246680715673213, B: -0.27685285259760045, C: 1.382300767579509, D: 1.1839877313216534}
+klipperHandler.js:116 {type: 'Move', A: -0.08443030256522575, B: -0.25132741228718336, C: 1.4215706757493813, D: 1.2173671532660448}
+klipperHandler.js:116 {type: 'Move', A: -0.088357293382213, B: -0.2258019719767663, C: 1.45887708851076, D: 1.2487830798019428}
+klipperHandler.js:116 {type: 'Move', A: -0.09032078879070662, B: -0.20027653166634923, C: 1.5001104920891262, D: 1.284125997154828}
+klipperHandler.js:116 {type: 'Move', A: -0.09228428419920025, B: -0.17475109135593217, C: 1.5393804002589986, D: 1.3175054190992195}
+klipperHandler.js:116 {type: 'Move', A: -0.0962112750161875, B: -0.1492256510455151, C: 1.5766868130203773, D: 1.3489213456351175}
+klipperHandler.js:116 {type: 'Move', A: -0.09817477042468112, B: -0.12370021073509804, C: 1.6159567211902497, D: 1.382300767579509}
+klipperHandler.js:116 {type: 'Move', A: -0.10013826583317474, B: -0.09817477042468098, C: 1.655226629360122, D: 1.4156801895239004}
+klipperHandler.js:116 {type: 'Move', A: -0.10406525665016199, B: -0.07264933011426392, C: 1.6944965375299945, D: 1.4490596114682919}
+klipperHandler.js:116 {type: 'Move', A: -0.10602875205865561, B: -0.047123889803846845, C: 1.733766445699867, D: 1.4824390334126833}
+klipperHandler.js:116 {type: 'Move', A: -0.10995574287564286, B: -0.021598449493429775, C: 1.7730363538697393, D: 1.5158184553570748}
+klipperHandler.js:116 {type: 'Move', A: -0.11191923828413648, B: 0.005890486225480919, C: 1.8123062620396118, D: 1.5491978773014663}
+klipperHandler.js:116 {type: 'Move', A: -0.1138827336926301, B: 0.03141592653589799, C: 1.8515761702094842, D: 1.5825772992458578}
+klipperHandler.js:116 {type: 'Move', A: -0.11780972450961735, B: 0.05890486225480868, C: 1.8928095737878503, D: 1.6159567211902492}
+klipperHandler.js:116 {type: 'Move', A: -0.11977321991811098, B: 0.08443030256522575, C: 1.930115986549229, D: 1.6493361431346407}
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:116 {type: 'Move', A: -0.12370021073509822, B: 0.10995574287564283, C: 1.9693858947191014, D: 1.6827155650790322}
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 queue_step oid=4 interval=3868 count=40 add=5
+klipperHandler.js:163 queue_step oid=0 interval=3207 count=44 add=4
+klipperHandler.js:163 queue_step oid=3 interval=49760 count=2 add=5760
+klipperHandler.js:163 queue_step oid=2 interval=3968 count=50 add=-1
+klipperHandler.js:163 queue_step oid=1 interval=11623 count=3 add=0
+klipperHandler.js:163 queue_step oid=1 interval=12861 count=10 add=35
+klipperHandler.js:163 queue_step oid=3 interval=56367 count=2 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3278 count=44 add=5
+klipperHandler.js:163 queue_step oid=4 interval=3925 count=45 add=10
+klipperHandler.js:116 {type: 'Move', A: -0.12566370614359185, B: 0.13744467859455353, C: 2.0106192982974673, D: 1.7160949870234237}
+klipperHandler.js:116 {type: 'Move', A: -0.12762720155208546, B: 0.1629701189049706, C: 2.0479257110588462, D: 1.7475109135593216}
+klipperHandler.js:116 {type: 'Move', A: -0.1315541923690727, B: 0.1904590546238813, C: 2.0871956192287184, D: 1.7808903355037131}
+klipperHandler.js:116 {type: 'Move', A: -0.1335176877775663, B: 0.21598449493429836, C: 2.126465527398591, D: 1.8142697574481046}
+klipperHandler.js:116 {type: 'Move', A: -0.13744467859455356, B: 0.24150993524471542, C: 2.1657354355684637, D: 1.847649179392496}
+klipperHandler.js:116 {type: 'Move', A: -0.13940817400304717, B: 0.2689988709636261, C: 2.2050053437383363, D: 1.8810286013368875}
+klipperHandler.js:116 {type: 'Move', B: 0.2945243112740432, C: 2.244275251908209, D: 1.914408023281279}
+klipperHandler.js:116 {type: 'Move', A: -0.13744467859455356, B: 0.3220132469929539, C: 2.2835451600780816, D: 1.9477874452256705}
+klipperHandler.js:116 {type: 'Move', A: -0.1335176877775663, B: 0.3495021827118646, C: 2.3228150682479543, D: 1.9792033717615685}
+klipperHandler.js:116 {type: 'Move', A: -0.1315541923690727, B: 0.3750276230222817, C: 2.362084976417827, D: 2.01258279370596}
+klipperHandler.js:116 {type: 'Move', A: -0.1335176877775663, B: 0.4025165587411924, C: 2.4013548845876995, D: 2.0459622156503516}
+klipperHandler.js:116 {type: 'Move', A: -0.13744467859455356, B: 0.4300054944601031, C: 2.440624792757572, D: 2.079341637594743}
+klipperHandler.js:116 {type: 'Move', A: -0.13940817400304717, B: 0.4574944301790138, C: 2.479894700927445, D: 2.1127210595391346}
+klipperHandler.js:116 {type: 'Move', A: -0.14333516482003442, B: 0.4849833658979245, C: 2.5191646090973174, D: 2.146100481483526}
+klipperHandler.js:116 {type: 'Move', A: -0.14529866022852803, B: 0.5124723016168352, C: 2.55843451726719, D: 2.1794799034279175}
+klipperHandler.js:116 {type: 'Move', A: -0.14922565104551527, B: 0.5399612373357459, C: 2.599667920845556, D: 2.212859325372309}
+klipperHandler.js:116 {type: 'Move', A: -0.14726215563702166, B: 0.5694136684631502, C: 2.638937829015428, D: 2.2462387473167005}
+klipperHandler.js:116 {type: 'Move', A: -0.14529866022852805, B: 0.5949391087735673, C: 2.676244241776807, D: 2.2776546738525982}
+klipperHandler.js:116 {type: 'Move', A: -0.1413716694115408, B: 0.5988660995905545, C: 2.713550654538186, D: 2.309070600388496}
+klipperHandler.js:116 {type: 'Move', A: -0.1394081740030472, B: 0.5713771638716438, C: 2.750857067299565, D: 2.3385230315159005}
+klipperHandler.js:116 {type: 'Move', A: -0.1374446785945536, B: 0.5458517235612268, C: 2.78619998465245, D: 2.369938958051798}
+klipperHandler.js:116 {type: 'Move', A: -0.14137166941154083, B: 0.5183627878423162, C: 2.823506397413829, D: 2.3993913891792027}
+klipperHandler.js:116 {type: 'Move', A: -0.14333516482003444, B: 0.5203262832508098, C: 2.860812810175208, D: 2.4308073157151004}
+klipperHandler.js:116 {type: 'Move', A: -0.14529866022852805, B: 0.5478152189697204, C: 2.896155727528093, D: 2.460259746842505}
+klipperHandler.js:116 {type: 'Move', A: -0.14726215563702166, B: 0.575304154688631, C: 2.933462140289472, D: 2.4916756733784027}
+klipperHandler.js:116 {type: 'Move', A: -0.1511891464540089, B: 0.6008295949990481, C: 2.970768553050851, D: 2.5230915999143004}
+klipperHandler.js:116 {type: 'Move', A: -0.15315264186250252, B: 0.6283185307179587, C: 3.006111470403736, D: 2.552544031041705}
+klipperHandler.js:116 {type: 'Move', A: -0.15511613727099613, B: 0.6538439710283758, C: 3.043417883165115, D: 2.5819964621691094}
+klipperHandler.js:116 {type: 'Move', A: -0.15707963267948974, B: 0.6813329067472864, C: 3.0787608005180003, D: 2.613412388705007}
+klipperHandler.js:116 {type: 'Move', A: -0.16100662349647699, B: 0.7068583470577035, C: 3.1141037178708855, D: 2.6428648198324116}
+klipperHandler.js:116 {type: 'Move', A: -0.15904312808798338, B: 0.7323837873681205, C: 3.147483139815277, D: 2.6703537555513224}
+klipperHandler.js:116 {type: 'Move', A: -0.15707963267948977, B: 0.7559457322700439, C: 3.1788990663511747, D: 2.6958791958617394}
+klipperHandler.js:116 {type: 'Move', A: -0.15511613727099616, B: 0.7795076771719673, C: 3.2103149928870724, D: 2.7214046361721564}
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 queue_step oid=1 interval=12976 count=12 add=144
+klipperHandler.js:163 queue_step oid=2 interval=4036 count=37 add=10
+klipperHandler.js:163 queue_step oid=3 interval=57487 count=2 add=2451
+klipperHandler.js:163 queue_step oid=0 interval=3609 count=31 add=4
+klipperHandler.js:163 queue_step oid=4 interval=4505 count=34 add=-9
+klipperHandler.js:163 queue_step oid=3 interval=66526 count=4 add=-364
+klipperHandler.js:163 queue_step oid=1 interval=16598 count=8 add=-110
+klipperHandler.js:163 queue_step oid=2 interval=4185 count=41 add=-3
+klipperHandler.js:116 {type: 'Move', A: -0.15315264186250255, B: 0.8011061266653972, C: 3.237803928605983, D: 2.7449665810740798}
+klipperHandler.js:116 {type: 'Move', A: -0.15118914645400894, B: 0.822704576158827, C: 3.265292864324894, D: 2.76656503056751}
+klipperHandler.js:116 {type: 'Move', A: -0.14922565104551533, B: 0.8423395302437632, C: 3.290818304635311, D: 2.78816348006094}
+klipperHandler.js:116 {type: 'Move', A: -0.14726215563702172, B: 0.8600109889202058, C: 3.316343744945728, D: 2.807798434145876}
+klipperHandler.js:116 {type: 'Move', A: -0.1452986602285281, B: 0.8776824475966484, C: 3.337942194439158, D: 2.8254698928223188}
+klipperHandler.js:116 {type: 'Move', A: -0.1433351648200345, B: 0.8933904108645974, C: 3.359540643932588, D: 2.8431413514987613}
+klipperHandler.js:116 {type: 'Move', A: -0.1413716694115409, B: 0.9071348787240527, C: 3.3772121026090307, D: 2.8588493147667102}
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:116 {type: 'Move', B: 0.9208793465835081, C: 3.396847056693967, D: 2.8725937826261654}
+klipperHandler.js:116 {type: 'Move', A: -0.13940817400304728, B: 0.9346238144429635, C: 3.410591524553422, D: 2.8843747550771273}
+klipperHandler.js:116 {type: 'Move', A: -0.13744467859455367, B: 0.9444412914854317, C: 3.426299487821371, D: 2.896155727528089}
+klipperHandler.js:116 {type: 'Move', B: 0.9542587685278998, C: 3.438080460272333, D: 2.907936699979051}
+klipperHandler.js:116 {type: 'Move', A: -0.13548118318606006, B: 0.9562222639363934, C: 3.432189974046852, D: 2.896155727528089}
+klipperHandler.js:116 {type: 'Move', B: 0.9444412914854317, C: 3.4164820107789033, D: 2.8843747550771273}
+klipperHandler.js:116 {type: 'Move', B: 0.9326603190344699, C: 3.4007740475109545, D: 2.870630287217672}
+klipperHandler.js:116 {type: 'Move', A: -0.13744467859455367, B: 0.9189158511750145, C: 3.383102588834512, D: 2.8549223239497232}
+klipperHandler.js:116 {type: 'Move', B: 0.9032078879070655, C: 3.3634676347495756, D: 2.8372508652732806}
+klipperHandler.js:116 {type: 'Move', A: -0.13940817400304728, B: 0.8874999246391165, C: 3.3418691852561455, D: 2.819579406596838}
+klipperHandler.js:116 {type: 'Move', A: -0.1413716694115409, B: 0.8698284659626739, C: 3.318307240354222, D: 2.7999444525119017}
+klipperHandler.js:116 {type: 'Move', B: 0.8521570072862313, C: 3.294745295452299, D: 2.7803094984269654}
+klipperHandler.js:116 {type: 'Move', A: -0.1433351648200345, B: 0.8325220532012951, C: 3.269219855141882, D: 2.7587110489335354}
+klipperHandler.js:116 {type: 'Move', A: -0.1452986602285281, B: 0.8109236037078653, C: 3.241730919422971, D: 2.735149104031612}
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 queue_step oid=0 interval=3573 count=93 add=0
+klipperHandler.js:163 queue_step oid=4 interval=4287 count=58 add=0
+klipperHandler.js:163 queue_step oid=1 interval=15962 count=15 add=0
+klipperHandler.js:163 queue_step oid=2 interval=4118 count=46 add=0
+klipperHandler.js:163 queue_step oid=3 interval=64366 count=2 add=0
+klipperHandler.js:163 queue_step oid=1 interval=16237 count=11 add=233
+klipperHandler.js:163 queue_step oid=0 interval=3641 count=53 add=12
+klipperHandler.js:163 queue_step oid=3 interval=66080 count=2 add=3379
+klipperHandler.js:116 {type: 'Move', A: -0.14726215563702172, B: 0.7873616588059419, C: 3.2122784882955666, D: 2.709623663721195}
+klipperHandler.js:116 {type: 'Move', B: 0.7637997139040185, C: 3.178899066351175, D: 2.6821347280022843}
+klipperHandler.js:116 {type: 'Move', A: -0.14922565104551533, B: 0.7382742735936014, C: 3.1494466352237707, D: 2.656609287691867}
+klipperHandler.js:116 {type: 'Move', A: -0.15118914645400894, B: 0.7127488332831844, C: 3.1141037178708855, D: 2.6291203519729565}
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 queue_step oid=4 interval=4391 count=46 add=16
+klipperHandler.js:163 queue_step oid=2 interval=4210 count=45 add=15
+klipperHandler.js:163 queue_step oid=3 interval=74766 count=2 add=8107
+klipperHandler.js:163 queue_step oid=1 interval=21746 count=3 add=271
+klipperHandler.js:163 queue_step oid=2 interval=4675 count=59 add=-14
+klipperHandler.js:163 queue_step oid=0 interval=4165 count=66 add=-11
+klipperHandler.js:163 queue_step oid=4 interval=4944 count=51 add=-16
+klipperHandler.js:163 queue_step oid=1 interval=21285 count=14 add=-282
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:116 {type: 'Move', A: -0.15315264186250255, B: 0.6852598975642737, C: 3.0787608005180003, D: 2.5977044254370587}
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 queue_step oid=3 interval=76485 count=3 add=-4407
+klipperHandler.js:163 queue_step oid=4 interval=4171 count=47 add=-10
+klipperHandler.js:163 queue_step oid=2 interval=3892 count=53 add=-9
+klipperHandler.js:163 queue_step oid=0 interval=3476 count=52 add=-7
+klipperHandler.js:163 queue_step oid=3 interval=63691 count=3 add=2101
+klipperHandler.js:163 queue_step oid=1 interval=17521 count=4 add=-148
+klipperHandler.js:163 queue_step oid=1 interval=19176 count=7 add=67
+klipperHandler.js:163 queue_step oid=0 interval=3187 count=174 add=0
+klipperHandler.js:116 {type: 'Move', A: -0.15511613727099616, B: 0.6558074664368694, C: 3.0414543877566214, D: 2.566288498901161}
+klipperHandler.js:116 {type: 'Move', A: -0.15707963267948977, B: 0.626355035309465, C: 3.0041479749952424, D: 2.534872572365263}
+klipperHandler.js:116 {type: 'Move', A: -0.161006623496477, B: 0.594939108773567, C: 3.006111470403736, D: 2.5446900494077314}
+klipperHandler.js:116 {type: 'Move', A: -0.16297011890497062, B: 0.5635231822376691, C: 3.045381378573609, D: 2.578069471352123}
+klipperHandler.js:116 {type: 'Move', A: -0.161006623496477, B: 0.5301437602932775, C: 3.0866147821519747, D: 2.6114488932965143}
+klipperHandler.js:116 {type: 'Move', A: -0.1590431280879834, B: 0.49872783375737956, C: 3.125884690321847, D: 2.644828315240906}
+klipperHandler.js:116 {type: 'Move', A: -0.1570796326794898, B: 0.5163992924338221, C: 3.167118093900213, D: 2.6782077371852973}
+klipperHandler.js:116 {type: 'Move', A: -0.16100662349647704, B: 0.5478152189697201, C: 3.206388002070085, D: 2.7115871591296887}
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 queue_step oid=4 interval=3786 count=278 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3498 count=120 add=0
+klipperHandler.js:163 queue_step oid=3 interval=66519 count=5 add=-676
+klipperHandler.js:163 queue_step oid=1 interval=19270 count=16 add=-6
+klipperHandler.js:163 queue_step oid=3 interval=67217 count=2 add=922
+klipperHandler.js:163 queue_step oid=1 interval=20695 count=3 add=640
+klipperHandler.js:163 queue_step oid=2 interval=3459 count=196 add=0
+klipperHandler.js:163 queue_step oid=1 interval=21526 count=28 add=-20
+klipperHandler.js:116 {type: 'Move', A: -0.16297011890497065, B: 0.5811946409141117, C: 3.2456579102399576, D: 2.74496658107408}
+klipperHandler.js:116 {type: 'Move', A: -0.16493361431346426, B: 0.6145740628585032, C: 3.2868913138183236, D: 2.7783460030184717}
+klipperHandler.js:116 {type: 'Move', A: -0.16689710972195787, B: 0.6459899893944012, C: 3.3261612219881957, D: 2.8097619295543694}
+klipperHandler.js:116 {type: 'Move', A: -0.16886060513045148, B: 0.6793694113387928, C: 3.3673946255665617, D: 2.8451048469072546}
+klipperHandler.js:116 {type: 'Move', A: -0.17278759594743873, B: 0.7107853378746908, C: 3.406664533736434, D: 2.8765207734431524}
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 queue_step oid=3 interval=66788 count=8 add=-736
+klipperHandler.js:163 queue_step oid=0 interval=3198 count=196 add=0
+klipperHandler.js:163 queue_step oid=3 interval=63742 count=2 add=2006
+klipperHandler.js:163 queue_step oid=4 interval=3784 count=295 add=0
+klipperHandler.js:163 queue_step oid=1 interval=22729 count=3 add=754
+klipperHandler.js:163 queue_step oid=2 interval=3426 count=140 add=0
+klipperHandler.js:163 queue_step oid=1 interval=23735 count=18 add=-22
+klipperHandler.js:116 {type: 'Move', A: -0.17475109135593234, B: 0.7441647598190824, C: 3.4459344419063065, D: 2.909900195387544}
+klipperHandler.js:116 {type: 'Move', A: -0.17671458676442595, B: 0.7755806863549803, C: 3.485204350076179, D: 2.9432796173319353}
+klipperHandler.js:116 {type: 'Move', A: -0.17867808217291956, B: 0.8089601082993719, C: 3.526437753654545, D: 2.976659039276327}
+klipperHandler.js:116 {type: 'Move', A: -0.1826050729899068, B: 0.8423395302437635, C: 3.5657076618244172, D: 3.0100384612207183}
+klipperHandler.js:116 {type: 'Move', A: -0.1845685683984004, B: 0.8737554567796615, C: 3.60497756999429, D: 3.0434178831651097}
+klipperHandler.js:116 {type: 'Move', A: -0.18653206380689402, B: 0.9071348787240531, C: 3.646210973572656, D: 3.0767973051095012}
+klipperHandler.js:116 {type: 'Move', A: -0.19045905462388127, B: 0.9405143006684447, C: 3.6874443771510217, D: 3.1121402224623864}
+klipperHandler.js:116 {type: 'Move', A: -0.19242255003237488, B: 0.9719302272043426, C: 3.7267142853208943, D: 3.143556148998284}
+klipperHandler.js:116 {type: 'Move', A: -0.1943860454408685, B: 1.005309649148734, C: 3.765984193490767, D: 3.174972075534182}
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785573, B: 1.0386890710931256, C: 3.807217597069133, D: 3.210314992887067}
+klipperHandler.js:116 {type: 'Move', A: -0.20027653166634934, B: 1.072068493037517, C: 3.846487505239005, D: 3.2436944148314586}
+klipperHandler.js:116 {type: 'Move', A: -0.20224002707484295, B: 1.103484419573415, C: 3.8857574134088777, D: 3.2751103413673563}
+klipperHandler.js:116 {type: 'Move', A: -0.2061670178918302, B: 1.1329368507008193, C: 3.9250273215787503, D: 3.306526267903254}
+klipperHandler.js:116 {type: 'Move', A: -0.2042035224833366, B: 1.1015209241649213, C: 3.9623337343401293, D: 3.337942194439152}
+klipperHandler.js:116 {type: 'Move', A: -0.20224002707484298, B: 1.0701049976290233, C: 3.999640147101508, D: 3.3693581209750496}
+klipperHandler.js:116 {type: 'Move', A: -0.20027653166634937, B: 1.0386890710931254, C: 4.036946559862887, D: 3.4007740475109474}
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785576, B: 1.0661780068120361, C: 4.072289477215772, D: 3.428262983229858}
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:116 {type: 'Move', A: -0.19634954084936215, B: 1.0956304379394404, C: 4.1076323945686575, D: 3.3988105521024536}
+klipperHandler.js:116 {type: 'Move', A: -0.19438604544086854, B: 1.0936669425309467, C: 4.141011816513049, D: 3.369358120975049}
+klipperHandler.js:116 {type: 'Move', A: -0.19634954084936215, B: 1.0622510159950487, C: 4.176354733865934, D: 3.3831025888345043}
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 analog_in_state oid=5 next_clock=207200000 value=4504
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785576, B: 1.0327985848676444, C: 4.211697651218819, D: 3.412555019961909}
+klipperHandler.js:116 {type: 'Move', A: -0.20027653166634937, B: 1.056360529769568, C: 4.2470405685717045, D: 3.4420074510893133}
+klipperHandler.js:116 {type: 'Move', A: -0.20224002707484298, B: 1.087776456305466, C: 4.28238348592459, D: 3.4714598822167178}
+klipperHandler.js:116 {type: 'Move', A: -0.20027653166634937, B: 1.1172288874328702, C: 4.315762907868981, D: 3.4989488179356285}
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785576, B: 1.1466813185602744, C: 4.349142329813373, D: 3.5244742582460455}
+klipperHandler.js:116 {type: 'Move', A: -0.19634954084936215, B: 1.1741702542791852, C: 4.38055825634927, D: 3.5519631939649563}
+klipperHandler.js:116 {type: 'Move', A: -0.19438604544086854, B: 1.201659189998096, C: 4.394302724208726, D: 3.55392668937345}
+klipperHandler.js:116 {type: 'Move', A: -0.19242255003237493, B: 1.1879147221386406, C: 4.362886797672828, D: 3.528401249063033}
+klipperHandler.js:116 {type: 'Move', A: -0.19045905462388132, B: 1.1584622910112363, C: 4.329507375728436, D: 3.5009123133441222}
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 queue_step oid=3 interval=64476 count=6 add=-648
+klipperHandler.js:163 queue_step oid=0 interval=3211 count=143 add=0
+klipperHandler.js:163 queue_step oid=3 interval=65516 count=3 add=-87
+klipperHandler.js:163 queue_step oid=1 interval=26734 count=3 add=586
+klipperHandler.js:163 queue_step oid=2 interval=3392 count=127 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3228 count=128 add=0
+klipperHandler.js:163 queue_step oid=1 interval=27394 count=13 add=-28
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 analog_in_state oid=8 next_clock=207680000 value=4504
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 queue_step oid=3 interval=63918 count=4 add=-478
+klipperHandler.js:163 queue_step oid=1 interval=35593 count=4 add=261
+klipperHandler.js:163 queue_step oid=3 interval=70659 count=3 add=-589
+klipperHandler.js:163 queue_step oid=2 interval=3332 count=54 add=1
+klipperHandler.js:163 queue_step oid=0 interval=3261 count=46 add=0
+klipperHandler.js:163 queue_step oid=1 interval=35711 count=2 add=1073
+klipperHandler.js:163 queue_step oid=4 interval=3892 count=30 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3420 count=49 add=-4
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 queue_step oid=2 interval=3496 count=42 add=-6
+klipperHandler.js:163 queue_step oid=1 interval=47761 count=2 add=8172
+klipperHandler.js:163 queue_step oid=3 interval=79273 count=2 add=-314
+klipperHandler.js:163 queue_step oid=4 interval=3784 count=434 add=0
+klipperHandler.js:163 queue_step oid=1 interval=54848 count=1 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3321 count=61 add=-1
+klipperHandler.js:163 queue_step oid=0 interval=3307 count=156 add=0
+klipperHandler.js:163 queue_step oid=1 interval=92287 count=2 add=1554
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 queue_step oid=3 interval=89131 count=5 add=-1651
+klipperHandler.js:163 queue_step oid=2 interval=3287 count=104 add=0
+klipperHandler.js:163 queue_step oid=1 interval=91442 count=3 add=-1473
+klipperHandler.js:163 queue_step oid=3 interval=86298 count=2 add=6463
+klipperHandler.js:163 queue_step oid=1 interval=226759 count=2 add=11645
+klipperHandler.js:163 queue_step oid=0 interval=3339 count=164 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3259 count=170 add=0
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 queue_step oid=3 interval=89960 count=4 add=-1751
+klipperHandler.js:163 set_next_step_dir oid=1 dir=0
+klipperHandler.js:163 queue_step oid=1 interval=267474 count=1 add=0
+klipperHandler.js:163 queue_step oid=3 interval=87268 count=2 add=6498
+klipperHandler.js:163 queue_step oid=0 interval=3369 count=212 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3239 count=223 add=0
+klipperHandler.js:163 queue_step oid=3 interval=90874 count=6 add=-1813
+klipperHandler.js:163 queue_step oid=1 interval=578811 count=1 add=0
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 queue_step oid=4 interval=3786 count=277 add=0
+klipperHandler.js:163 queue_step oid=3 interval=80160 count=2 add=10046
+klipperHandler.js:163 queue_step oid=1 interval=125319 count=3 add=5474
+klipperHandler.js:163 queue_step oid=0 interval=3405 count=158 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3219 count=170 add=0
+klipperHandler.js:163 queue_step oid=3 interval=88543 count=5 add=-1722
+klipperHandler.js:163 queue_step oid=1 interval=127993 count=1 add=0
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 queue_step oid=3 interval=90210 count=2 add=2266
+klipperHandler.js:163 queue_step oid=1 interval=65788 count=5 add=903
+klipperHandler.js:163 queue_step oid=0 interval=3448 count=87 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3202 count=82 add=0
+klipperHandler.js:163 queue_step oid=3 interval=89782 count=2 add=-1108
+klipperHandler.js:163 queue_step oid=2 interval=3277 count=51 add=7
+klipperHandler.js:163 queue_step oid=4 interval=3891 count=50 add=9
+klipperHandler.js:163 queue_step oid=0 interval=3521 count=77 add=9
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 queue_step oid=3 interval=90522 count=2 add=17136
+klipperHandler.js:163 queue_step oid=1 interval=73832 count=2 add=-8642
+klipperHandler.js:163 queue_step oid=1 interval=44780 count=5 add=1913
+klipperHandler.js:163 queue_step oid=2 interval=3522 count=61 add=11
+klipperHandler.js:163 queue_step oid=3 interval=122562 count=2 add=9286
+klipperHandler.js:163 queue_step oid=4 interval=4271 count=51 add=17
+klipperHandler.js:163 queue_step oid=0 interval=4276 count=43 add=16
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 queue_step oid=1 interval=55475 count=2 add=-16873
+klipperHandler.js:163 queue_step oid=2 interval=4334 count=22 add=0
+klipperHandler.js:163 queue_step oid=4 interval=5278 count=49 add=-19
+klipperHandler.js:163 queue_step oid=3 interval=178366 count=2 add=-27904
+klipperHandler.js:163 queue_step oid=1 interval=35100 count=8 add=-728
+klipperHandler.js:163 queue_step oid=0 interval=4778 count=54 add=-15
+klipperHandler.js:163 queue_step oid=2 interval=4180 count=68 add=-11
+klipperHandler.js:163 queue_step oid=4 interval=4402 count=55 add=-12
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 queue_step oid=0 interval=4022 count=51 add=-10
+klipperHandler.js:163 queue_step oid=1 interval=29422 count=7 add=-427
+klipperHandler.js:163 queue_step oid=2 interval=3469 count=54 add=-7
+klipperHandler.js:163 queue_step oid=3 interval=129947 count=2 add=13552
+klipperHandler.js:163 queue_step oid=4 interval=3785 count=564 add=0
+klipperHandler.js:163 queue_step oid=0 interval=3606 count=63 add=1
+klipperHandler.js:163 queue_step oid=2 interval=3159 count=103 add=0
+klipperHandler.js:163 queue_step oid=1 interval=24163 count=2 add=-1646
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 queue_step oid=1 interval=22219 count=20 add=34
+klipperHandler.js:163 queue_step oid=3 interval=146594 count=2 add=-7910
+klipperHandler.js:163 queue_step oid=0 interval=3642 count=87 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3149 count=278 add=0
+klipperHandler.js:163 queue_step oid=3 interval=137240 count=2 add=23906
+klipperHandler.js:163 queue_step oid=1 interval=20389 count=3 add=-619
+klipperHandler.js:163 queue_step oid=0 interval=3705 count=136 add=0
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 queue_step oid=1 interval=19425 count=23 add=19
+klipperHandler.js:163 queue_step oid=3 interval=149764 count=2 add=-8434
+klipperHandler.js:163 queue_step oid=3 interval=171736 count=2 add=-4853
+klipperHandler.js:163 queue_step oid=1 interval=16959 count=38 add=12
+klipperHandler.js:163 queue_step oid=0 interval=3779 count=172 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3142 count=286 add=0
+klipperHandler.js:163 queue_step oid=3 interval=154380 count=2 add=-9230
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 queue_step oid=3 interval=176914 count=2 add=0
+klipperHandler.js:163 queue_step oid=1 interval=14961 count=29 add=10
+klipperHandler.js:163 queue_step oid=0 interval=3867 count=111 add=0
+klipperHandler.js:163 queue_step oid=3 interval=169978 count=1 add=0
+klipperHandler.js:163 queue_step oid=4 interval=3887 count=57 add=1
+klipperHandler.js:163 queue_step oid=2 interval=3245 count=67 add=0
+klipperHandler.js:163 queue_step oid=1 interval=15687 count=2 add=0
+klipperHandler.js:163 queue_step oid=0 interval=4031 count=39 add=3
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 analog_in_state oid=5 next_clock=212000000 value=4504
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 analog_in_state oid=8 next_clock=212480000 value=4504
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 queue_step oid=1 interval=13627 count=19 add=17
+klipperHandler.js:163 queue_step oid=3 interval=236704 count=2 add=31143
+klipperHandler.js:163 queue_step oid=0 interval=4046 count=38 add=5
+klipperHandler.js:163 queue_step oid=2 interval=3253 count=34 add=3
+klipperHandler.js:163 queue_step oid=4 interval=3848 count=48 add=10
+klipperHandler.js:163 queue_step oid=1 interval=14289 count=12 add=166
+klipperHandler.js:163 queue_step oid=2 interval=3432 count=51 add=8
+klipperHandler.js:163 queue_step oid=0 interval=4308 count=43 add=15
+klipperHandler.js:163 seq: 1e
+klipperHandler.js:163 queue_step oid=4 interval=4449 count=24 add=5
+klipperHandler.js:163 queue_step oid=1 interval=13897 count=23 add=-106
+klipperHandler.js:163 queue_step oid=2 interval=3697 count=74 add=-8
+klipperHandler.js:163 queue_step oid=4 interval=4402 count=64 add=-11
+klipperHandler.js:163 queue_step oid=0 interval=4751 count=57 add=-13
+klipperHandler.js:163 queue_step oid=3 interval=336237 count=1 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3148 count=195 add=0
+klipperHandler.js:163 queue_step oid=1 interval=11726 count=51 add=4
+klipperHandler.js:163 queue_step oid=0 interval=4101 count=144 add=0
+klipperHandler.js:163 seq: 1f
+klipperHandler.js:163 queue_step oid=4 interval=3787 count=159 add=0
+klipperHandler.js:163 queue_step oid=3 interval=254430 count=1 add=0
+klipperHandler.js:163 queue_step oid=3 interval=216810 count=1 add=0
+klipperHandler.js:163 queue_step oid=3 interval=285084 count=1 add=0
+klipperHandler.js:163 queue_step oid=0 interval=4151 count=29 add=13
+klipperHandler.js:163 queue_step oid=1 interval=12102 count=8 add=127
+klipperHandler.js:163 queue_step oid=2 interval=3213 count=52 add=7
+klipperHandler.js:163 queue_step oid=4 interval=3870 count=52 add=11
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 #unknown b'\x05\x10\x9e\x81~'
+klipperHandler.js:163 seq: 10
+klipperHandler.js:163 queue_step oid=1 interval=11557 count=18 add=120
+klipperHandler.js:163 queue_step oid=0 interval=4632 count=43 add=18
+klipperHandler.js:163 queue_step oid=2 interval=3627 count=47 add=10
+klipperHandler.js:163 queue_step oid=4 interval=4537 count=29 add=12
+klipperHandler.js:163 queue_step oid=3 interval=1031206 count=1 add=0
+klipperHandler.js:163 queue_step oid=1 interval=12123 count=22 add=-92
+klipperHandler.js:163 queue_step oid=0 interval=5592 count=46 add=-20
+klipperHandler.js:163 queue_step oid=2 interval=3923 count=80 add=-9
+klipperHandler.js:163 queue_step oid=4 interval=4684 count=65 add=-13
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 #unknown b'\x05\x11\x8f\x08~'
+klipperHandler.js:163 seq: 11
+klipperHandler.js:163 queue_step oid=0 interval=4720 count=35 add=-12
+klipperHandler.js:163 queue_step oid=1 interval=10199 count=16 add=-52
+klipperHandler.js:163 queue_step oid=4 interval=3891 count=29 add=-6
+klipperHandler.js:163 queue_step oid=2 interval=3237 count=39 add=-3
+klipperHandler.js:163 queue_step oid=0 interval=4417 count=36 add=0
+klipperHandler.js:163 queue_step oid=1 interval=9621 count=15 add=0
+klipperHandler.js:163 queue_step oid=4 interval=3785 count=543 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3179 count=253 add=0
+klipperHandler.js:163 queue_step oid=1 interval=8957 count=64 add=2
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 #unknown b'\x05\x12\xbd\x93~'
+klipperHandler.js:163 seq: 12
+klipperHandler.js:163 queue_step oid=0 interval=4531 count=124 add=0
+klipperHandler.js:163 set_next_step_dir oid=3 dir=0
+klipperHandler.js:163 queue_step oid=3 interval=1729466 count=1 add=0
+klipperHandler.js:163 queue_step oid=0 interval=4643 count=91 add=0
+klipperHandler.js:163 queue_step oid=1 interval=8625 count=47 add=2
+klipperHandler.js:163 queue_step oid=2 interval=3192 count=138 add=0
+klipperHandler.js:163 queue_step oid=1 interval=8316 count=29 add=0
+klipperHandler.js:163 queue_step oid=0 interval=4759 count=51 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3213 count=96 add=0
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 #unknown b'\x05\x13\xac\x1a~'
+klipperHandler.js:163 seq: 13
+klipperHandler.js:163 queue_step oid=1 interval=7769 count=82 add=1
+klipperHandler.js:163 queue_step oid=0 interval=4943 count=110 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3221 count=148 add=0
+klipperHandler.js:163 queue_step oid=0 interval=4982 count=20 add=0
+klipperHandler.js:163 queue_step oid=1 interval=7315 count=27 add=36
+klipperHandler.js:163 queue_step oid=0 interval=5082 count=29 add=14
+klipperHandler.js:163 queue_step oid=2 interval=3263 count=74 add=8
+klipperHandler.js:163 queue_step oid=4 interval=3834 count=59 add=11
+klipperHandler.js:163 queue_step oid=0 interval=5537 count=21 add=27
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 #unknown b'\x05\x14\xd8\xa5~'
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 queue_step oid=1 interval=8488 count=9 add=24
+klipperHandler.js:163 queue_step oid=1 interval=8044 count=35 add=-35
+klipperHandler.js:163 queue_step oid=0 interval=6229 count=44 add=-22
+klipperHandler.js:163 queue_step oid=3 interval=366416 count=1 add=0
+klipperHandler.js:163 queue_step oid=4 interval=4338 count=57 add=-11
+klipperHandler.js:163 queue_step oid=2 interval=3710 count=65 add=-8
+klipperHandler.js:163 queue_step oid=4 interval=3785 count=423 add=0
+klipperHandler.js:163 queue_step oid=0 interval=5409 count=20 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3277 count=70 add=0
+klipperHandler.js:163 seq: 14
+klipperHandler.js:163 analog_in_state oid=5 next_clock=216800000 value=4504
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 #unknown b'\x05\x15\xc9,~'
+klipperHandler.js:163 seq: 15
+klipperHandler.js:163 queue_step oid=1 interval=7062 count=15 add=-14
+klipperHandler.js:163 queue_step oid=0 interval=5585 count=67 add=0
+klipperHandler.js:163 queue_step oid=1 interval=6678 count=56 add=1
+klipperHandler.js:163 queue_step oid=3 interval=283388 count=2 add=-21504
+klipperHandler.js:163 queue_step oid=2 interval=3290 count=95 add=0
+klipperHandler.js:163 queue_step oid=0 interval=5790 count=69 add=0
+klipperHandler.js:163 queue_step oid=1 interval=6451 count=78 add=1
+klipperHandler.js:163 queue_step oid=2 interval=3308 count=178 add=0
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 #unknown b'\x05\x16\xfb\xb7~'
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 queue_step oid=3 interval=284471 count=2 add=1818
+klipperHandler.js:163 queue_step oid=0 interval=5828 count=36 add=0
+klipperHandler.js:163 queue_step oid=1 interval=6512 count=16 add=-4
+klipperHandler.js:163 queue_step oid=0 interval=6039 count=64 add=0
+klipperHandler.js:163 queue_step oid=1 interval=6270 count=61 add=1
+klipperHandler.js:163 queue_step oid=2 interval=3331 count=123 add=0
+klipperHandler.js:163 queue_step oid=3 interval=279187 count=2 add=-29995
+klipperHandler.js:163 queue_step oid=0 interval=6235 count=24 add=7
+klipperHandler.js:163 seq: 16
+klipperHandler.js:163 analog_in_state oid=8 next_clock=217280000 value=4504
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 #unknown b'\x05\x17\xea>~'
+klipperHandler.js:163 seq: 17
+klipperHandler.js:163 queue_step oid=1 interval=6025 count=26 add=9
+klipperHandler.js:163 queue_step oid=2 interval=3351 count=35 add=4
+klipperHandler.js:163 queue_step oid=4 interval=3835 count=56 add=11
+klipperHandler.js:163 queue_step oid=0 interval=6493 count=33 add=35
+klipperHandler.js:163 queue_step oid=1 interval=6346 count=34 add=33
+klipperHandler.js:163 queue_step oid=2 interval=3539 count=57 add=10
+klipperHandler.js:163 queue_step oid=3 interval=256397 count=1 add=0
+klipperHandler.js:163 queue_step oid=4 interval=4493 count=44 add=18
+klipperHandler.js:163 queue_step oid=0 interval=8042 count=28 add=70
+klipperHandler.js:163 seq: 18
+klipperHandler.js:163 get_clock
+klipperHandler.js:163 queue_step oid=1 interval=7084 count=32 add=54
+klipperHandler.js:163 queue_step oid=2 interval=4192 count=44 add=16
+klipperHandler.js:163 queue_step oid=3 interval=293185 count=1 add=0
+klipperHandler.js:163 queue_step oid=4 interval=5356 count=31 add=30
+klipperHandler.js:163 queue_step oid=2 interval=4954 count=34 add=27
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 clock clock=213075885
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 emergency_stop
+klipperHandler.js:163 seq: 19
+klipperHandler.js:163 queue_step oid=0 interval=10106 count=17 add=122
+klipperHandler.js:163 queue_step oid=1 interval=8944 count=18 add=91
+klipperHandler.js:163 queue_step oid=4 interval=6452 count=16 add=33
+klipperHandler.js:163 queue_step oid=2 interval=6079 count=13 add=16
+klipperHandler.js:163 queue_step oid=1 interval=9830 count=17 add=-95
+klipperHandler.js:163 queue_step oid=0 interval=13630 count=14 add=-173
+klipperHandler.js:163 queue_step oid=3 interval=182189 count=2 add=-20993
+klipperHandler.js:163 queue_step oid=4 interval=6613 count=38 add=-35
+klipperHandler.js:116 {type: 'Move', A: -0.19242255003237493, B: 1.0917034471224532, C: 4.252931054797185, D: 3.4341534694553393}
+klipperHandler.js:163 seq: 1a
+klipperHandler.js:163 queue_step oid=2 interval=5989 count=40 add=-29
+klipperHandler.js:163 queue_step oid=1 interval=8329 count=27 add=-54
+klipperHandler.js:163 queue_step oid=0 interval=11397 count=19 add=-100
+klipperHandler.js:163 queue_step oid=4 interval=5350 count=41 add=-21
+klipperHandler.js:163 queue_step oid=2 interval=4882 count=49 add=-17
+klipperHandler.js:163 queue_step oid=3 interval=147383 count=2 add=-8240
+klipperHandler.js:163 queue_step oid=1 interval=6974 count=33 add=-33
+klipperHandler.js:163 queue_step oid=0 interval=9611 count=26 add=-59
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 config_analog_in oid=82 pin=?4294967294
+klipperHandler.js:163 seq: 1b
+klipperHandler.js:163 queue_step oid=4 interval=4542 count=54 add=-13
+klipperHandler.js:163 queue_step oid=2 interval=4110 count=53 add=-11
+klipperHandler.js:163 queue_step oid=1 interval=5957 count=27 add=-20
+klipperHandler.js:163 queue_step oid=0 interval=8149 count=17 add=-30
+klipperHandler.js:163 queue_step oid=3 interval=135231 count=2 add=-28212
+klipperHandler.js:163 queue_step oid=2 interval=3558 count=31 add=3
+klipperHandler.js:163 queue_step oid=4 interval=3896 count=35 add=2
+klipperHandler.js:163 queue_step oid=1 interval=5698 count=24 add=-22
+klipperHandler.js:163 queue_step oid=0 interval=7856 count=8 add=123
+klipperHandler.js:163 seq: 1c
+klipperHandler.js:163 queue_step oid=2 interval=3671 count=36 add=-3
+klipperHandler.js:163 queue_step oid=0 interval=8422 count=32 add=0
+klipperHandler.js:163 queue_step oid=4 interval=3879 count=233 add=0
+klipperHandler.js:163 queue_step oid=1 interval=5317 count=44 add=0
+klipperHandler.js:163 queue_step oid=3 interval=109335 count=2 add=0
+klipperHandler.js:163 queue_step oid=2 interval=3618 count=53 add=0
+klipperHandler.js:163 queue_step oid=0 interval=8997 count=50 add=3
+klipperHandler.js:163 queue_step oid=1 interval=5152 count=67 add=0
+klipperHandler.js:163 queue_step oid=3 interval=96140 count=4 add=2912
+klipperHandler.js:163 seq: 1d
+klipperHandler.js:163 config_adxl345 oid=4294967268 spi_oid=4294967294
+klipperHandler.js:116 {type: 'Move', A: -0.19438604544086854, B: 1.0642145114035424, C: 4.221515128261287, D: 3.4086280291449222}
+klipperHandler.js:116 {type: 'Move', A: -0.19634954084936215, B: 1.030835089459151, C: 4.184208715499908, D: 3.3772121026090245}
+klipperHandler.js:116 {type: 'Move', A: -0.19438604544086854, B: 0.9954921721062657, C: 4.19598968795087, D: 3.4027375429194415}
+klipperHandler.js:116 {type: 'Move', A: -0.19242255003237493, B: 1.015127126191202, C: 4.235259596120742, D: 3.436116964863833}
+klipperHandler.js:116 {type: 'Move', A: -0.19045905462388132, B: 1.0524335389525807, C: 4.276492999699109, D: 3.471459882216718}
+klipperHandler.js:116 {type: 'Move', A: -0.19242255003237493, B: 1.087776456305466, C: 4.315762907868981, D: 3.502875808752616}
+klipperHandler.js:116 {type: 'Move', A: -0.19438604544086854, B: 1.1231193736583511, C: 4.355032816038854, D: 3.5362552306970074}
+klipperHandler.js:116 {type: 'Move', A: -0.19634954084936215, B: 1.1584622910112363, C: 4.3943027242087265, D: 3.569634652641399}
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785576, B: 1.195768703772615, C: 4.433572632378599, D: 3.6030140745857904}
+klipperHandler.js:116 {type: 'Move', A: -0.20027653166634937, B: 1.2311116211255002, C: 4.472842540548472, D: 3.636393496530182}
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785576, B: 1.2664545384783854, C: 4.512112448718344, D: 3.6697729184745733}
+klipperHandler.js:116 {type: 'Move', A: -0.19634954084936215, B: 1.303760951239764, C: 4.551382356888217, D: 3.701188845010471}
+klipperHandler.js:116 {type: 'Move', A: -0.19831303625785576, B: 1.3391038685926493, C: 4.59065226505809, D: 3.7345682669548625}
+klipperHandler.js:116 {type: 'Move', A: -0.20027653166634937, B: 1.376410281354028, C: 4.629922173227962, D: 3.767947688899254}
+klipperHandler.js:116 {type: 'Move', A: -0.20224002707484298, B: 1.4117531987069132, C: 4.669192081397835, D: 3.8013271108436455}
+klipperHandler.js:116 {type: 'Move', A: -0.2042035224833366, B: 1.4490596114682919, C: 4.708461989567708, D: 3.834706532788037}
+klipperHandler.js:116 {type: 'Move', A: -0.2061670178918302, B: 1.484402528821177, C: 4.74773189773758, D: 3.8680859547324284}
+klipperHandler.js:116 {type: 'Move', A: -0.2081305133003238, B: 1.5217089415825558, C: 4.787001805907453, D: 3.90146537667682}
+klipperHandler.js:116 {type: 'Move', A: -0.21009400870881742, B: 1.5590153543439345, C: 4.828235209485819, D: 3.9348447986212114}
+klipperHandler.js:116 {type: 'Move', A: -0.21205750411731103, B: 1.5943582716968197, C: 4.865541622247198, D: 3.968224220565603}
+klipperHandler.js:116 {type: 'Move', A: -0.21009400870881742, B: 1.6297011890497048, C: 4.904811530417071, D: 4.001603642509995}
+klipperHandler.js:116 {type: 'Move', A: -0.2081305133003238, B: 1.6670076018110835, C: 4.944081438586943, D: 4.034983064454386}
+klipperHandler.js:116 {type: 'Move', A: -0.21009400870881742, B: 1.7043140145724622, C: 4.983351346756816, D: 4.068362486398778}
+klipperHandler.js:116 {type: 'Move', A: -0.21205750411731103, B: 1.741620427333841, C: 5.022621254926689, D: 4.101741908343169}
+klipperHandler.js:116 {type: 'Move', A: -0.21402099952580464, B: 1.7789268400952196, C: 5.061891163096561, D: 4.135121330287561}
+klipperHandler.js:116 {type: 'Move', A: -0.21598449493429825, B: 1.8142697574481048, C: 5.101161071266434, D: 4.168500752231952}
+klipperHandler.js:116 {type: 'Move', A: -0.21794799034279186, B: 1.8515761702094835, C: 5.140430979436307, D: 4.19991667876785}
+klipperHandler.js:116 {type: 'Move', A: -0.21991148575128547, B: 1.8888825829708622, C: 5.179700887606179, D: 4.233296100712241}
+klipperHandler.js:116 {type: 'Move', A: -0.22187498115977908, B: 1.926188995732241, C: 5.218970795776052, D: 4.266675522656633}
+klipperHandler.js:116 {type: 'Move', A: -0.2238384765682727, B: 1.961531913085126, C: 5.2582407039459245, D: 4.300054944601024}
+klipperHandler.js:116 {type: 'Move', A: -0.2258019719767663, B: 1.9988383258465048, C: 5.295547116707303, D: 4.333434366545416}
+klipperHandler.js:116 {type: 'Move', A: -0.2277654673852599, B: 2.0361447386078835, C: 5.334817024877176, D: 4.366813788489807}
+klipperHandler.js:116 {type: 'Move', A: -0.22972896279375352, B: 2.0734511513692624, C: 5.374086933047049, D: 4.400193210434199}
+klipperHandler.js:116 {type: 'Move', A: -0.23169245820224713, B: 2.1107575641306413, C: 5.413356841216921, D: 4.43357263237859}
+klipperHandler.js:116 {type: 'Move', A: -0.23365595361074074, B: 2.1461004814835265, C: 5.4506632539783, D: 4.464988558914488}
+klipperHandler.js:116 {type: 'Move', A: -0.23561944901923434, B: 2.185370389653399, C: 5.489933162148173, D: 4.500331476267373}
+klipperHandler.js:116 {type: 'Move', A: -0.23758294442772795, B: 2.222676802414778, C: 5.509568116233109, D: 4.531747402803271}
+klipperHandler.js:116 {type: 'Move', A: -0.23954643983622156, B: 2.2187498115977906, C: 5.474225198880224, D: 4.563163329339169}
+klipperHandler.js:116 {type: 'Move', B: 2.179479903427918, C: 5.434955290710351, D: 4.598506246692054}
+klipperHandler.js:116 {type: 'Move', A: -0.24150993524471517, B: 2.142173490666539, C: 5.4486997585698065, D: 4.629922173227952}
+klipperHandler.js:116 {type: 'Move', A: -0.24347343065320878, B: 2.10486707790516, C: 5.487969666739679, D: 4.663301595172343}
+klipperHandler.js:116 {type: 'Move', A: -0.2454369260617024, B: 2.0655971697352875, C: 5.525276079501058, D: 4.696681017116735}
+klipperHandler.js:116 {type: 'Move', A: -0.247400421470196, B: 2.045962215650351, C: 5.564545987670931, D: 4.73202393446962}
+klipperHandler.js:116 {type: 'Move', B: 2.0813051330032364, C: 5.60185240043231, D: 4.7634398610055175}
+klipperHandler.js:116 {type: 'Move', A: -0.2493639168786896, B: 2.120575041173109, C: 5.6391588131936885, D: 4.796819282949909}
+klipperHandler.js:116 {type: 'Move', A: -0.25132741228718325, B: 2.157881453934488, C: 5.676465225955067, D: 4.8301987048943005}
+klipperHandler.js:116 {type: 'Move', A: -0.25329090769567686, B: 2.1971513621043606, C: 5.71573513412494, D: 4.863578126838692}
+klipperHandler.js:116 {type: 'Move', B: 2.236421270274233, C: 5.753041546886319, D: 4.896957548783083}
+klipperHandler.js:116 {type: 'Move', A: -0.25132741228718325, B: 2.273727683035612, C: 5.792311455056192, D: 4.930336970727475}
+klipperHandler.js:116 {type: 'Move', A: -0.24936391687868964, B: 2.3129975912054848, C: 5.8296178678175705, D: 4.963716392671866}
+klipperHandler.js:116 {type: 'Move', B: 2.3503040039668637, C: 5.864960785170456, D: 4.995132319207764}
+klipperHandler.js:116 {type: 'Move', A: -0.25132741228718325, B: 2.3895739121367363, C: 5.904230693340328, D: 5.028511741152156}
+klipperHandler.js:116 {type: 'Move', A: -0.25329090769567686, B: 2.428843820306609, C: 5.941537106101707, D: 5.061891163096547}
+klipperHandler.js:116 {type: 'Move', A: -0.25525440310417047, B: 2.4681137284764816, C: 5.978843518863086, D: 5.0952705850409385}
+klipperHandler.js:116 {type: 'Move', B: 2.5054201412378605, C: 6.018113427032959, D: 5.12865000698533}
+klipperHandler.js:116 {type: 'Move', A: -0.2572178985126641, B: 2.544690049407733, C: 6.055419839794338, D: 5.1620294289297215}
+klipperHandler.js:116 {type: 'Move', A: -0.25525440310417047, B: 2.5839599575776058, C: 6.092726252555717, D: 5.195408850874113}
+klipperHandler.js:116 {type: 'Move', B: 2.6212663703389847, C: 6.128069169908602, D: 5.2287882728185044}
+klipperHandler.js:116 {type: 'Move', A: -0.25329090769567686, B: 2.6605362785088573, C: 6.1673390780784745, D: 5.262167694762896}
+klipperHandler.js:116 {type: 'Move', A: -0.25525440310417047, B: 2.69980618667873, C: 6.204645490839853, D: 5.295547116707287}
+klipperHandler.js:116 {type: 'Move', A: -0.2572178985126641, B: 2.7390760948486026, C: 6.241951903601232, D: 5.328926538651679}
+klipperHandler.js:116 {type: 'Move', B: 2.7763825076099815, C: 6.279258316362611, D: 5.36230596059607}
+klipperHandler.js:116 {type: 'Move', A: -0.2591813939211577, B: 2.815652415779854, C: 6.314601233715496, D: 5.393721887131968}
+klipperHandler.js:116 {type: 'Move', A: -0.2611448893296513, B: 2.854922323949727, C: 6.353871141885369, D: 5.42710130907636}
+klipperHandler.js:116 {type: 'Move', A: -0.2631083847381449, B: 2.8941922321195994, C: 6.391177554646748, D: 5.460480731020751}
+klipperHandler.js:116 {type: 'Move', B: 2.9314986448809783, C: 6.428483967408127, D: 5.4938601529651425}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 2.970768553050851, C: 6.465790380169506, D: 5.527239574909534}
+klipperHandler.js:116 {type: 'Move', A: -0.2631083847381449, B: 3.0100384612207236, C: 6.501133297522391, D: 5.5606189968539255}
+klipperHandler.js:116 {type: 'Move', A: -0.2611448893296513, B: 3.0493083693905962, C: 6.53843971028377, D: 5.593998418798317}
+klipperHandler.js:116 {type: 'Move', B: 3.086614782151975, C: 6.575746123045149, D: 5.625414345334215}
+klipperHandler.js:116 {type: 'Move', A: -0.2631083847381449, B: 3.125884690321848, C: 6.611089040398034, D: 5.658793767278606}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 3.1651545984917204, C: 6.650358948567907, D: 5.694136684631491}
+klipperHandler.js:116 {type: 'Move', A: -0.2670353755551321, B: 3.204424506661593, C: 6.685701865920792, D: 5.727516106575883}
+klipperHandler.js:116 {type: 'Move', B: 3.2436944148314657, C: 6.723008278682171, D: 5.758932033111781}
+klipperHandler.js:116 {type: 'Move', A: -0.26899887096362574, B: 3.2829643230013383, C: 6.76031469144355, D: 5.792311455056172}
+klipperHandler.js:116 {type: 'Move', A: -0.27096236637211935, B: 3.322234231171211, C: 6.797621104204929, D: 5.8256908770005635}
+klipperHandler.js:116 {type: 'Move', A: -0.26899887096362574, B: 3.3615041393410836, C: 6.832964021557814, D: 5.859070298944955}
+klipperHandler.js:116 {type: 'Move', B: 3.3988105521024625, C: 6.868306938910699, D: 5.8924497208893465}
+klipperHandler.js:116 {type: 'Move', A: -0.2670353755551321, B: 3.4400439556808284, C: 6.905613351672078, D: 5.925829142833738}
+klipperHandler.js:116 {type: 'Move', A: -0.26899887096362574, B: 3.4773503684422074, C: 6.940956269024963, D: 5.957245069369636}
+klipperHandler.js:116 {type: 'Move', B: 3.5166202766120795, C: 6.976299186377848, D: 5.9886609959055335}
+klipperHandler.js:116 {type: 'Move', A: -0.27096236637211935, B: 3.555890184781952, C: 7.0116421037307335, D: 6.020076922441431}
+klipperHandler.js:116 {type: 'Move', A: -0.26899887096362574, B: 3.5912331021348374, C: 7.045021525675125, D: 6.049529353568835}
+klipperHandler.js:116 {type: 'Move', B: 3.6265760194877226, C: 7.074473956802529, D: 6.078981784696239}
+klipperHandler.js:116 {type: 'Move', A: -0.2670353755551321, B: 3.6579919460236203, C: 7.103926387929933, D: 6.104507225006657}
+klipperHandler.js:116 {type: 'Move', B: 3.691371367968012, C: 7.133378819057337, D: 6.131996160725567}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 3.7227872945039095, C: 7.160867754776247, D: 6.147704123993516}
+klipperHandler.js:116 {type: 'Move', B: 3.7502762302228203, C: 7.182466204269677, D: 6.1221786836830985}
+klipperHandler.js:116 {type: 'Move', A: -0.2631083847381449, B: 3.7581302118567947, C: 7.154977268550767, D: 6.096653243372681}
+klipperHandler.js:116 {type: 'Move', B: 3.726714285320897, C: 7.127488332831857, D: 6.069164307653771}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 3.6952983587849992, C: 7.098035901704453, D: 6.04167537193486}
+klipperHandler.js:116 {type: 'Move', B: 3.6619189368406078, C: 7.066619975168555, D: 6.012222940807456}
+klipperHandler.js:116 {type: 'Move', B: 3.622649028670735, C: 7.03127705781567, D: 5.978843518863065}
+klipperHandler.js:116 {type: 'Move', A: -0.2670353755551321, B: 3.58730611131785, C: 6.999861131279772, D: 5.947427592327167}
+klipperHandler.js:116 {type: 'Move', B: 3.5480362031479773, C: 6.990043654237304, D: 5.980807014271559}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 3.5519631939649647, C: 7.0253865715901895, D: 6.01418643621595}
+klipperHandler.js:116 {type: 'Move', B: 3.5912331021348374, C: 7.060729488943075, D: 6.0475658581603415}
+klipperHandler.js:116 {type: 'Move', A: -0.2631083847381449, B: 3.6324665057132033, C: 7.09607240629596, D: 6.080945280104733}
+klipperHandler.js:116 {type: 'Move', B: 3.6717364138830755, C: 7.129451828240351, D: 6.1143247020491245}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 3.711006322052948, C: 7.162831250184743, D: 6.145740628585022}
+klipperHandler.js:116 {type: 'Move', B: 3.7502762302228208, C: 7.198174167537628, D: 6.179120050529414}
+klipperHandler.js:116 {type: 'Move', B: 3.7915096338011867, C: 7.233517084890513, D: 6.214462967882299}
+klipperHandler.js:116 {type: 'Move', A: -0.2670353755551321, B: 3.830779541971059, C: 7.266896506834905, D: 6.245878894418197}
+klipperHandler.js:116 {type: 'Move', B: 3.8700494501409315, C: 7.300275928779296, D: 6.279258316362588}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 3.9112828537192974, C: 7.335618846132181, D: 6.31263773830698}
+klipperHandler.js:116 {type: 'Move', B: 3.9505527618891696, C: 7.368998268076573, D: 6.346017160251371}
+klipperHandler.js:116 {type: 'Move', A: -0.2631083847381449, B: 3.9917861654675355, C: 7.404341185429458, D: 6.3793965821957626}
+klipperHandler.js:116 {type: 'Move', B: 4.029092578228914, C: 7.435757111965356, D: 6.412776004140154}
+klipperHandler.js:116 {type: 'Move', B: 4.07032598180728, C: 7.471100029318241, D: 6.4461554260845455}
+klipperHandler.js:116 {type: 'Move', A: -0.2650718801466385, B: 4.111559385385647, C: 7.5044794512626325, D: 6.479534848028937}
+klipperHandler.js:116 {type: 'Move', B: 4.148865798147026, C: 7.537858873207024, D: 6.510950774564835}
+klipperHandler.js:116 {type: 'Move', A: -0.2670353755551321, B: 4.190099201725392, C: 7.573201790559909, D: 6.54629369191772}
+klipperHandler.js:116 {type: 'Move', B: 4.229369109895265, C: 7.604617717095807, D: 6.577709618453618}
+klipperHandler.js:116 {type: 'Move', A: -0.26899887096362574, B: 4.268639018065137, C: 7.637997139040198, D: 6.611089040398009}
+klipperHandler.js:116 {type: 'Move', B: 4.309872421643504, C: 7.67137656098459, D: 6.644468462342401}
+klipperHandler.js:116 {type: 'Move', B: 4.35110582522187, C: 7.704755982928981, D: 6.677847884286792}
+klipperHandler.js:116 {type: 'Move', A: -0.27096236637211935, B: 4.390375733391743, C: 7.738135404873373, D: 6.711227306231184}
+klipperHandler.js:116 {type: 'Move', B: 4.429645641561615, C: 7.771514826817764, D: 6.744606728175575}
+klipperHandler.js:116 {type: 'Move', A: -0.27292586178061295, B: 4.470879045139982, C: 7.804894248762156, D: 6.7779861501199665}
+klipperHandler.js:116 {type: 'Move', B: 4.510148953309854, C: 7.838273670706547, D: 6.811365572064358}
+klipperHandler.js:116 {type: 'Move', B: 4.551382356888221, C: 7.871653092650939, D: 6.8447449940087495}
+klipperHandler.js:116 {type: 'Move', A: -0.27488935718910656, B: 4.590652265058093, C: 7.90503251459533, D: 6.878124415953141}
+klipperHandler.js:116 {type: 'Move', B: 4.629922173227966, C: 7.936448441131228, D: 6.911503837897532}
+klipperHandler.js:116 {type: 'Move', A: -0.27292586178061295, B: 4.6691920813978385, C: 7.967864367667126, D: 6.94291976443343}
+klipperHandler.js:116 {type: 'Move', B: 4.710425484976205, C: 8.001243789611518, D: 6.978262681786315}
+klipperHandler.js:116 {type: 'Move', B: 4.7496953931460775, C: 8.032659716147416, D: 7.009678608322213}
+klipperHandler.js:116 {type: 'Move', A: -0.27096236637211935, B: 4.78896530131595, C: 8.066039138091808, D: 7.043058030266605}
+klipperHandler.js:116 {type: 'Move', B: 4.8301987048943165, C: 8.097455064627706, D: 7.076437452210996}
+klipperHandler.js:221 KlipperHandler: connection closed
