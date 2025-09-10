@@ -47,17 +47,33 @@ SIMULAVR_FREQ = 10 ** 9
 
 
 class WSRawBroadcaster:
-    def __init__(self):
+    def __init__(self, history_messages: int = 5000):
         self.clients: set[WebSocketServerProtocol] = set()
+        # Store recent parsed-message frames to replay to late-joining clients
+        self.history: list[str] = []
+        self.history_messages = max(0, history_messages)
 
     async def register(self, ws: WebSocketServerProtocol):
+        # Add client and replay recent history
         self.clients.add(ws)
         try:
+            if self.history:
+                for payload in self.history:
+                    try:
+                        await ws.send(payload)
+                    except Exception:
+                        break
             await ws.wait_closed()
         finally:
             self.clients.discard(ws)
 
-    async def broadcast(self, payload: bytes):
+    async def broadcast(self, payload: str, *, add_to_history: bool = True):
+        # Optionally append to history
+        if add_to_history and self.history_messages > 0:
+            self.history.append(payload)
+            if len(self.history) > self.history_messages:
+                del self.history[:len(self.history) - self.history_messages]
+        # Send to all current clients
         if not self.clients:
             return
         senders = []
@@ -71,13 +87,8 @@ class WSRawBroadcaster:
 
 
 async def ws_handler(ws: WebSocketServerProtocol, broadcaster: WSRawBroadcaster):
-    # Accept connections; if clients send binary/text, ignore for now.
-    broadcaster.clients.add(ws)
-    try:
-        async for _ in ws:
-            pass
-    finally:
-        broadcaster.clients.discard(ws)
+    # Accept connection and replay recent history, ignore incoming frames
+    await broadcaster.register(ws)
 
 
 class Tracing:
@@ -379,6 +390,8 @@ async def main_async(argv=None):
                         help="Batch raw-byte WS frames for N ms before sending (reduces overhead)")
     parser.add_argument("--parse-debug", action="store_true",
                         help="Print parser resync and packet summaries to stdout")
+    parser.add_argument("--ws-history-messages", type=int, default=5000,
+                        help="Buffer and replay the most recent N parsed frames to new WS clients (0 disables)")
     parser.add_argument("--dict", dest="dict_path", default=str(Path(__file__).resolve().parents[1] / "avr/klipper.dict"),
                         help="Path to Klipper MCU dictionary (klipper.dict)")
     parser.add_argument("--klipper-py", dest="klipper_py_path", default=None,
@@ -386,7 +399,7 @@ async def main_async(argv=None):
 
     args = parser.parse_args(argv)
 
-    broadcaster = WSRawBroadcaster()
+    broadcaster = WSRawBroadcaster(history_messages=args.ws_history_messages)
 
     # Attempt to import Klipper's msgproto if path provided / available
     global msgproto
@@ -498,11 +511,20 @@ async def main_async(argv=None):
                                                 # On any parsing error, leave the line unchanged
                                                 pass
                                         out_lines.append(s)
-                                    payload = {
-                                        'action': 'klipper_parsed',
-                                        'lines': out_lines,
-                                    }
-                                    await broadcaster.broadcast(json.dumps(payload))
+                                    # Filter out noisy handshake chatter that floods the WS and isn't needed for visualization
+                                    def _is_noise_line(s: str) -> bool:
+                                        s = s.strip()
+                                        if not s:
+                                            return True
+                                        cmd = s.split()[0]
+                                        return cmd in ('identify', 'identify_response', 'get_clock', 'clock', 'allocate_oids', 'emergency_stop')
+                                    filtered_lines = [s for s in out_lines if not _is_noise_line(s)]
+                                    if filtered_lines:
+                                        payload = {
+                                            'action': 'klipper_parsed',
+                                            'lines': filtered_lines,
+                                        }
+                                        await broadcaster.broadcast(json.dumps(payload), add_to_history=True)
                             except Exception as e:
                                 if args.parse_debug:
                                     print(f"Parser error: {e}")

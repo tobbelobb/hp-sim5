@@ -6,7 +6,9 @@
  //  - Uses a fixed mapping: oid 0->A, 1->B, 2->C, 3->D.
  //  - Direction is set by 'set_next_step_dir'. 'add' adjusts interval (acceleration), not direction.
 //  - stepAngle = 2*pi / (stepsPerRev * microsteps).
-// This is a naive approximation intended for early visualization only.
+ // This is a naive approximation intended for early visualization only.
+
+const DEBUG = false;
 
 export function connectKlipperRaw(url, onCommand /* function(command) */) {
   const ws = new WebSocket(url);
@@ -153,7 +155,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
     //  "queue_step oid=4 interval=123 count=10 add=1"
     //  "config_stepper oid=4 step_pin=P.. dir_pin=P.."
     if (has('config_stepper')) {
-      console.log(line);
+      if (DEBUG) console.log(line);
       const kv = parseKv(sliceAfter('config_stepper'));
       const axis = ensureAxisForOid(kv.oid);
       if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
@@ -161,7 +163,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       return;
     }
     if (has('set_next_step_dir')) {
-      console.log(line);
+      if (DEBUG) console.log(line);
       const kv = parseKv(sliceAfter('set_next_step_dir'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
@@ -173,7 +175,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       return;
     }
     if (has('set_position')) {
-      console.log(line);
+      if (DEBUG) console.log(line);
       const kv = parseKv(sliceAfter('set_position'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
@@ -198,7 +200,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       return;
     }
     if (has('queue_step')) {
-      console.log(line);
+      if (DEBUG) console.log(line);
       const kv = parseKv(sliceAfter('queue_step'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
@@ -238,7 +240,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       } catch (_) {
         // Not JSON; fall through to plain text logging
       }
-      console.log(`KlipperHandler (text): ${event.data.slice(0, 200)}${event.data.length > 200 ? '…' : ''}`);
+      if (DEBUG) console.log(`KlipperHandler (text): ${event.data.slice(0, 200)}${event.data.length > 200 ? '…' : ''}`);
     } else {
       console.log('KlipperHandler: received frame of unknown type');
     }
