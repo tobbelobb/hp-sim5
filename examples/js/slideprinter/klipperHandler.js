@@ -93,7 +93,6 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
                 st.intervalTicks = Math.max(1, nextSeg.intervalTicks);
                 st.addTicks = nextSeg.addTicks;
                 st.remaining = nextSeg.remaining;
-                st.dirSign = nextSeg.dirSign;
                 st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
               } else {
                 st.nextWakeTimeMs = null;
@@ -126,13 +125,11 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
     const st = axisState.get(axis);
     if (!st) return;
 
-    // Direction approximation: preserve legacy behavior (sign(add))
-    const dirSign = (addTicks >= 0) ? 1 : -1;
+    // Direction is provided by 'set_next_step_dir'; do not infer from 'add'
     const seg = {
       intervalTicks: Math.max(1, Number(intervalTicks) || 1),
       addTicks: Number(addTicks) || 0,
       remaining: Math.max(0, Number(count) || 0),
-      dirSign,
     };
 
     if (st.nextWakeTimeMs === null) {
@@ -140,7 +137,6 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       st.intervalTicks = seg.intervalTicks;
       st.addTicks = seg.addTicks;
       st.remaining = seg.remaining;
-      st.dirSign = seg.dirSign;
       st.nextWakeTimeMs = startedBaseTimeMs + ticksToMs(st.intervalTicks);
     } else {
       st.segments.push(seg);
@@ -167,6 +163,41 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
       return;
     }
+    if (has('set_next_step_dir')) {
+      const kv = parseKv(sliceAfter('set_next_step_dir'));
+      const axis = ensureAxisForOid(kv.oid);
+      if (!axis) return;
+      const st = axisState.get(axis);
+      if (!st) return;
+      const dir = Number(kv.dir);
+      st.dirSign = (dir === 0) ? -1 : 1;
+      console.log(`Klipper dir: oid ${kv.oid} axis ${axis} dirSign ${st.dirSign}`);
+      return;
+    }
+    if (has('set_position')) {
+      const kv = parseKv(sliceAfter('set_position'));
+      const axis = ensureAxisForOid(kv.oid);
+      if (!axis) return;
+      const steps = Number(kv.pos);
+      if (!Number.isFinite(steps)) return;
+      const newAngle = steps * stepAngle;
+      const currentAngle = axisAngles.get(axis) || 0;
+      const delta = newAngle - currentAngle;
+      axisAngles.set(axis, newAngle);
+      // Reset scheduler for this axis to avoid stale queued steps
+      const st = axisState.get(axis);
+      if (st) {
+        st.segments.length = 0;
+        st.nextWakeTimeMs = null;
+        st.intervalTicks = null;
+        st.addTicks = 0;
+        st.remaining = 0;
+      }
+      if (typeof onCommand === 'function') {
+        onCommand({ type: 'Add to reference', [axis]: delta });
+      }
+      return;
+    }
     if (has('queue_step')) {
       const kv = parseKv(sliceAfter('queue_step'));
       const axis = ensureAxisForOid(kv.oid);
@@ -177,7 +208,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       enqueueSegment(axis, interval, count, add);
       return;
     }
-    // TODO: handle set_position / sync variants -> Add to reference
+    // TODO: handle sync variants -> Add to reference
   };
 
   ws.onopen = () => {
