@@ -25,7 +25,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   // AVR default clock; Klipper queue_step 'interval' is in clock ticks
   const clockHz = 16_000_000;
   const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
-  const bufferAheadMs = 1000.0;   // try to stay ahead
+  const bufferAheadMs = 0.0;   // try to stay ahead
   const pacerIntervalMs = 2.0;   // coalesce updates at ~500Hz
   let pacerTimer = null;
   let startedBaseTimeMs = null;
@@ -112,7 +112,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
         }
 
         if (any && typeof onCommand === 'function'){
-          console.log(move);
+          //console.log(move);
           onCommand(move);
         }
       } catch (e) {
@@ -156,14 +156,16 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
     // Example formats we anticipate:
     //  "queue_step oid=4 interval=123 count=10 add=1"
     //  "config_stepper oid=4 step_pin=P.. dir_pin=P.."
-    console.log(line);
     if (has('config_stepper')) {
+      console.log(line);
       const kv = parseKv(sliceAfter('config_stepper'));
       const axis = ensureAxisForOid(kv.oid);
       if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
+      else console.log(`Klipper failed to map iod: ${kv.oid}`);
       return;
     }
     if (has('set_next_step_dir')) {
+      console.log(line);
       const kv = parseKv(sliceAfter('set_next_step_dir'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
@@ -175,6 +177,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       return;
     }
     if (has('set_position')) {
+      console.log(line);
       const kv = parseKv(sliceAfter('set_position'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;
@@ -199,6 +202,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       return;
     }
     if (has('queue_step')) {
+      console.log(line);
       const kv = parseKv(sliceAfter('queue_step'));
       const axis = ensureAxisForOid(kv.oid);
       if (!axis) return;

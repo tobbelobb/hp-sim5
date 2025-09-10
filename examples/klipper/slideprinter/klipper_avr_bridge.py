@@ -6,28 +6,7 @@ Klipper AVR Bridge (SimulAVR + WebSocket)
 Purpose
   - Emulate an AVR MCU using pysimulavr, exposing a PTY that Klipper can open.
   - Forward ALL serial-link bytes (both directions) to connected WebSocket
-    clients as raw binary frames (no parsing).
-
-Rationale
-  Merges the prior two-step chain (simulavr -> UDP -> WS) into one script.
-
-Usage
-  PYTHONPATH=/path/to/simulavr/build/pysimulavr \
-    /path/to/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py \
-    /path/to/klipper.elf
-
-  Optional flags:
-    --machine atmega644     AVR device (default: atmega644)
-    --speed 16000000        CPU clock in Hz (default: 16000000)
-    --rate 0.0              Real-time pacing (0 disables)
-    --baud 250000           UART baud rate (default: 250000)
-    --port /tmp/pseudoserial  PTY symlink Klipper opens (default as shown)
-    --trace <signals>       Enable VCD tracing (use '?' to list)
-    --tracefile file.vcd    VCD output path
-    --ws-host localhost     WebSocket bind host (default: localhost)
-    --ws-port 8770          WebSocket port (default: 8770)
-
-Clients connect to: ws://<ws-host>:<ws-port>
+    clients as raw binary frames (incl parsing).
 """
 
 from __future__ import annotations
@@ -163,7 +142,7 @@ class SerialRxPin(pysimulavr.PySimulationMember, pysimulavr.Pin):
     """AVR TXD -> Terminal.write(data)
 
     Captures bits from the device TX pin and emits whole bytes to the
-    terminal, which writes them to the PTY and mirrors to WS.
+    terminal, which writes to WS.
     """
 
     def __init__(self, baud, terminal):
@@ -237,19 +216,17 @@ class SerialTxPin(pysimulavr.PySimulationMember, pysimulavr.Pin):
 class TerminalIO:
     """PTY-backed terminal with WS mirroring.
 
-    - write(data): AVR->Host direction (device TX). Writes to PTY master and
-      schedules WS broadcast of the same bytes.
+    - write(data): AVR->Host direction (device TX). Writes to PTY master.
     - read(): Host->AVR direction (host TX). Reads from PTY master and
       schedules WS broadcast of the same bytes.
     """
 
     def __init__(self, loop: asyncio.AbstractEventLoop, ws_queue: asyncio.Queue[bytes], *,
-                 ws_raw_batch_ms: int = 5, ws_raw_disable: bool = False):
+                 ws_raw_batch_ms: int = 5):
         self.fd = -1
         self.loop = loop
         self.ws_queue = ws_queue
         # Raw WS batching to reduce overhead
-        self._raw_disable = ws_raw_disable
         self._batch_ms = max(0, ws_raw_batch_ms) / 1000.0
         self._accum = bytearray()
         self._accum_lock = threading.Lock()
@@ -264,7 +241,7 @@ class TerminalIO:
             payload = bytes(self._accum)
             self._accum.clear()
             self._flush_scheduled = False
-        if payload and not self._raw_disable:
+        if payload:
             self.ws_queue.put_nowait(payload)
 
     def _schedule_flush(self):
@@ -280,15 +257,13 @@ class TerminalIO:
     def _mirror_ws(self, data: bytes):
         if not data:
             return
-        if self._raw_disable:
-            return
         # Accumulate in thread-safe buffer and schedule a single flush soon
         with self._accum_lock:
             self._accum.extend(data)
         self.loop.call_soon_threadsafe(self._schedule_flush)
 
     def write(self, data: bytes):
-        # Bytes from AVR TX go to PTY and WS
+        # Bytes from AVR TX go to PTY
         if self.fd >= 0 and data:
             os.write(self.fd, data)
             self._mirror_ws(data)
@@ -345,7 +320,7 @@ def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, ws_queu
     if options.pacing_rate:
         _ = Pacing(options.pacing_rate)
 
-    io = TerminalIO(loop, ws_queue, ws_raw_batch_ms=options.ws_raw_batch_ms, ws_raw_disable=options.ws_raw_disable)
+    io = TerminalIO(loop, ws_queue, ws_raw_batch_ms=options.ws_raw_batch_ms)
 
     # RX from device (TXD) on D1
     rxpin = SerialRxPin(options.baud, io)
@@ -400,10 +375,8 @@ async def main_async(argv=None):
     parser.add_argument("-f", "--tracefile", default=deffile, help="Trace VCD filename")
     parser.add_argument("--ws-host", default="localhost", help="WebSocket bind host")
     parser.add_argument("--ws-port", type=int, default=8770, help="WebSocket port")
-    parser.add_argument("--ws-raw-batch-ms", type=int, default=5,
+    parser.add_argument("--ws-raw-batch-ms", type=int, default=2,
                         help="Batch raw-byte WS frames for N ms before sending (reduces overhead)")
-    parser.add_argument("--ws-raw-disable", action="store_true",
-                        help="Do not mirror raw bytes to WS (only parsed JSON if available)")
     parser.add_argument("--parse-debug", action="store_true",
                         help="Print parser resync and packet summaries to stdout")
     parser.add_argument("--dict", dest="dict_path", default=str(Path(__file__).resolve().parents[1] / "avr/klipper.dict"),
@@ -459,11 +432,7 @@ async def main_async(argv=None):
             data = await ws_queue.get()
             try:
                 if data:
-                    # Broadcast raw bytes (optional)
-                    if not args.ws_raw_disable:
-                        await broadcaster.broadcast(data)
-
-                    # If parser available, also broadcast parsed text as JSON
+                    # If parser available, broadcast parsed text as JSON
                     if mp is not None:
                         parse_buf += data
                         while True:
