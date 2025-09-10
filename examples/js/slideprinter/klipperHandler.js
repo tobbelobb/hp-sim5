@@ -71,6 +71,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       const newAngle = (axisAngles.get(axis) || 0) + delta;
       axisAngles.set(axis, newAngle);
       if (typeof onCommand === 'function') {
+        console.log(`newAngle for ${axis}: ${newAngle}`);
         onCommand({ type: 'Move', [axis]: newAngle });
       }
       return;
@@ -94,10 +95,10 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       if (bytes.length > maxLen) {
         hex += '…';
       }
-      console.log(`KlipperHandler: ${bytes.length} bytes: ${hex}`);
     } else if (typeof event.data === 'string') {
       // Try to parse JSON payloads emitted by the Python bridge
       try {
+        console.log(event.data);
         const msg = JSON.parse(event.data);
         if (msg && msg.action === 'klipper_parsed' && Array.isArray(msg.lines)) {
           for (const line of msg.lines) handleParsedLine(line);
