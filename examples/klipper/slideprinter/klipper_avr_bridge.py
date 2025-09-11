@@ -468,33 +468,6 @@ async def main_async(argv=None):
     args = parser.parse_args(argv)
 
     broadcaster = WSRawBroadcaster(history_messages=args.ws_history_messages)
-    parsed_lines_queue: asyncio.Queue[str] = asyncio.Queue()
-
-    async def parsed_lines_batcher():
-        batch_interval_s = 0.005  # 5ms
-        while True:
-            await asyncio.sleep(batch_interval_s)
-
-            if parsed_lines_queue.empty():
-                continue
-
-            batch = []
-            while not parsed_lines_queue.empty():
-                try:
-                    line = parsed_lines_queue.get_nowait()
-                    batch.append(line)
-                    parsed_lines_queue.task_done()
-                except asyncio.QueueEmpty:
-                    break
-
-            if not batch:
-                continue
-
-            payload = {
-                'action': 'klipper_parsed',
-                'lines': batch,
-            }
-            await broadcaster.broadcast(json.dumps(payload), add_to_history=True)
 
     # Attempt to import Klipper's msgproto if path provided / available
     global msgproto
@@ -519,7 +492,7 @@ async def main_async(argv=None):
     # Queue for serial bytes from simulavr thread -> parser task
     parser_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
-    async def pump_parser_queue_to_ws(parsed_lines_queue: asyncio.Queue[str]):
+    async def pump_parser_queue(broadcaster: WSRawBroadcaster):
         # Optional parsed message setup
         mp = None
         parse_buf = bytearray()
@@ -622,8 +595,11 @@ async def main_async(argv=None):
                                         return cmd in ('identify', 'identify_response', 'get_clock', 'clock', 'allocate_oids', 'emergency_stop')
                                     filtered_lines = [s for s in out_lines if not _is_noise_line(s)]
                                     if filtered_lines:
-                                        for s in filtered_lines:
-                                            await parsed_lines_queue.put(s)
+                                        payload = {
+                                            'action': 'klipper_parsed',
+                                            'lines': filtered_lines,
+                                        }
+                                        await broadcaster.broadcast(json.dumps(payload), add_to_history=True)
                             except Exception as e:
                                 if args.parse_debug:
                                     print(f"Parser error: {e}")
@@ -633,8 +609,7 @@ async def main_async(argv=None):
 
     # Start server and pump task
     async with ws_server:
-        pump_task = asyncio.create_task(pump_parser_queue_to_ws(parsed_lines_queue))
-        batcher_task = asyncio.create_task(parsed_lines_batcher())
+        pump_task = asyncio.create_task(pump_parser_queue(broadcaster))
 
         # Run simulavr in a dedicated thread to avoid blocking the loop
         loop = asyncio.get_running_loop()
@@ -653,13 +628,8 @@ async def main_async(argv=None):
         await stop
 
         pump_task.cancel()
-        batcher_task.cancel()
         try:
             await pump_task
-        except asyncio.CancelledError:
-            pass
-        try:
-            await batcher_task
         except asyncio.CancelledError:
             pass
 
