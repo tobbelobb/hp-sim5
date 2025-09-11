@@ -8,7 +8,7 @@
 //  - stepAngle = 2*pi / (stepsPerRev * microsteps).
  // This is a naive approximation intended for early visualization only.
 
-const DEBUG = false;
+const DEBUG = true;
 
 export function connectKlipperRaw(url, onCommand /* function(command) */) {
   const ws = new WebSocket(url);
@@ -171,7 +171,6 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
       if (!st) return;
       const dir = Number(kv.dir);
       st.dirSign = (dir === 0) ? -1 : 1;
-      console.log(`Klipper dir: oid ${kv.oid} axis ${axis} dirSign ${st.dirSign}`);
       return;
     }
     if (has('set_position')) {
