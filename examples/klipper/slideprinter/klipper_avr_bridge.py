@@ -24,6 +24,7 @@ import threading
 import time
 from pathlib import Path
 import json
+from typing import Optional, TextIO
 
 try:
     import pysimulavr
@@ -90,6 +91,43 @@ async def ws_handler(ws: WebSocketServerProtocol, broadcaster: WSRawBroadcaster)
     # Accept connection and replay recent history, ignore incoming frames
     await broadcaster.register(ws)
 
+
+class RawLogger:
+    """Thread-safe raw byte logger with direction tagging.
+
+    Directions:
+      - 'H2A': Host -> AVR (what Klipper writes)
+      - 'A2H': AVR -> Host (what the MCU writes)
+    """
+
+    def __init__(self, fp: TextIO):
+        self._fp: TextIO = fp
+        self._lock = threading.Lock()
+        self._t0 = time.monotonic()
+        # Emit a small banner to help alignment
+        try:
+            self._fp.write("# raw-log start: ts=seconds_since_start direction len | hex | ascii\n")
+            self._fp.flush()
+        except Exception:
+            pass
+
+    def _hex(self, data: bytes) -> str:
+        return " ".join(f"{b:02X}" for b in data)
+
+    def _ascii(self, data: bytes) -> str:
+        return "".join(chr(b) if 32 <= b < 127 else '.' for b in data)
+
+    def log(self, direction: str, data: bytes):
+        if not data:
+            return
+        ts = time.monotonic() - self._t0
+        line = f"[{ts:9.6f}] {direction} {len(data)}: {self._hex(data)} |{self._ascii(data)}|\n"
+        with self._lock:
+            self._fp.write(line)
+            try:
+                self._fp.flush()
+            except Exception:
+                pass
 
 class Tracing:
     def __init__(self, filename, signals):
@@ -237,10 +275,11 @@ class TerminalIO:
     """
 
     def __init__(self, loop: asyncio.AbstractEventLoop, ws_queue: asyncio.Queue[bytes], *,
-                 ws_raw_batch_ms: int = 5):
+                 ws_raw_batch_ms: int = 5, raw_logger=None):
         self.fd = -1
         self.loop = loop
         self.ws_queue = ws_queue
+        self._raw_logger = raw_logger
         # Raw WS batching to reduce overhead
         self._batch_ms = max(0, ws_raw_batch_ms) / 1000.0
         self._accum = bytearray()
@@ -282,12 +321,22 @@ class TerminalIO:
         if self.fd >= 0 and data:
             os.write(self.fd, data)
             self._mirror_ws(data)
+            if self._raw_logger is not None:
+                try:
+                    self._raw_logger.log('A2H', data)
+                except Exception:
+                    pass
 
     def read(self) -> bytes:
         try:
             data = os.read(self.fd, 64)
             if data:
                 self._mirror_ws(data)
+                if self._raw_logger is not None:
+                    try:
+                        self._raw_logger.log('H2A', data)
+                    except Exception:
+                        pass
             return data
         except os.error as e:
             if e.errno not in (errno.EAGAIN, errno.EWOULDBLOCK):
@@ -335,7 +384,22 @@ def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, ws_queu
     if options.pacing_rate:
         _ = Pacing(options.pacing_rate)
 
-    io = TerminalIO(loop, ws_queue, ws_raw_batch_ms=options.ws_raw_batch_ms)
+    # Optional raw logger
+    raw_logger = None
+    if getattr(options, 'raw_log', None):
+        path = options.raw_log
+        try:
+            if path == '-' or path.lower() == 'stdout':
+                raw_logger = RawLogger(sys.stdout)
+            else:
+                # Open in append text mode to allow multiple runs
+                fp = open(path, 'a', buffering=1)
+                raw_logger = RawLogger(fp)
+        except Exception as e:
+            print(f"Warning: failed to open raw log '{path}': {e}")
+            raw_logger = None
+
+    io = TerminalIO(loop, ws_queue, ws_raw_batch_ms=options.ws_raw_batch_ms, raw_logger=raw_logger)
 
     # RX from device (TXD) on D1
     rxpin = SerialRxPin(options.baud, io)
@@ -371,6 +435,12 @@ def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, ws_queu
             os.unlink(options.port)
         except Exception:
             pass
+        # Close raw logger file if not stdout
+        try:
+            if raw_logger is not None and raw_logger._fp not in (sys.stdout, sys.stderr):
+                raw_logger._fp.close()
+        except Exception:
+            pass
 
 
 async def main_async(argv=None):
@@ -396,6 +466,8 @@ async def main_async(argv=None):
                         help="Print parser resync and packet summaries to stdout")
     parser.add_argument("--ws-history-messages", type=int, default=5000,
                         help="Buffer and replay the most recent N parsed frames to new WS clients (0 disables)")
+    parser.add_argument("--raw-log", dest="raw_log", default=None,
+                        help="Log raw serial bytes with direction to this file (use '-' for stdout)")
     parser.add_argument("--dict", dest="dict_path", default=str(Path(__file__).resolve().parents[1] / "avr/klipper.dict"),
                         help="Path to Klipper MCU dictionary (klipper.dict)")
     parser.add_argument("--klipper-py", dest="klipper_py_path", default=None,
