@@ -335,7 +335,8 @@ class TerminalIO:
 
     def read(self) -> bytes:
         try:
-            data = os.read(self.fd, 64)
+            # Read a reasonably large chunk to reduce tiny fragments
+            data = os.read(self.fd, 1024)
             if data:
                 self._eof_sent = False  # Reset on new data
                 self.loop.call_soon_threadsafe(self.parser_queue.put_nowait, data)
@@ -557,6 +558,20 @@ async def main_async(argv=None):
         else:
             print("Note: Parser not initialized (no msgproto or missing dict). Only raw bytes will be forwarded.")
 
+        # Helper: try to locate a valid packet anywhere in the buffer
+        def _scan_for_packet(buf: bytearray) -> tuple[int, int] | None:
+            if not buf:
+                return None
+            # Slide across the buffer and run check_packet on each suffix
+            # to find the earliest valid frame.
+            for i in range(max(0, len(buf) - 1024), len(buf)):
+                l = mp.check_packet(buf[i:]) if mp is not None else 0
+                if l > 0 and i + l <= len(buf):
+                    return (i, l)
+            return None
+
+        synced_once = False
+
         while True:
             data = await parser_queue.get()
             try:
@@ -576,12 +591,24 @@ async def main_async(argv=None):
                             if l == 0:
                                 break
                             if l < 0:
-                                # Invalid data: keep the indicated tail
-                                tail = -l
-                                if args.parse_debug:
-                                    print(f"Parser resync: keeping tail {tail} bytes (buffer={len(parse_buf)})")
-                                parse_buf[:] = parse_buf[-tail:]
-                                continue
+                                # On initial sync attempts, search the buffer for
+                                # the first valid frame instead of dropping down to
+                                # a 1-byte tail repeatedly.
+                                found = _scan_for_packet(parse_buf)
+                                if found is not None:
+                                    start, l2 = found
+                                    if start:
+                                        if args.parse_debug:
+                                            print(f"Parser resync: found frame at offset {start} len={l2} (buffer={len(parse_buf)})")
+                                        # Drop bytes before the frame
+                                        parse_buf[:] = parse_buf[start:]
+                                    l = l2
+                                else:
+                                    if args.parse_debug:
+                                        print(f"Parser resync: no frame found in buffer={len(parse_buf)}; keeping buffer for more data")
+                                    # Avoid discarding; wait for more data
+                                    break
+                            # We have a valid packet of length l at start 0
                             try:
                                 msgs = mp.dump(parse_buf[:l])
                                 # Normalize to a list of human-readable lines
