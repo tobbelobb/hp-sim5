@@ -6,7 +6,7 @@ const error = (...args) => postMessage({ type: 'error', args });
 
 // --- Globals for worker state ---
 let ws = null;
-let DEBUG = true;
+let DEBUG = false;
 let firstSeqSeen = null; // Debug: first server seq index we receive
 
 const axisOrder = ['A', 'B', 'C', 'D'];
@@ -17,7 +17,7 @@ const stepAngle = (2 * Math.PI) / (stepsPerRev * microsteps);
 
 const clockHz = 16_000_000; // Match bridge default
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
-const bufferAheadMs = 0.0; // Buffer to smooth out network jitter
+const bufferAheadMs = 5.0; // Buffer to smooth out network jitter
 const pacerIntervalMs = 2.0;
 let pacerTimer = null;
 let startedBaseTimeMs = null;
