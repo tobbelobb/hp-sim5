@@ -23,7 +23,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
 
   // --- Pacing to emulate Klipper MCU timing ---
   // AVR default clock; Klipper queue_step 'interval' is in clock ticks
-  const clockHz = 16_000_000;
+  const clockHz = 8_000_000;
   const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
   const bufferAheadMs = 0.0;   // try to stay ahead
   const pacerIntervalMs = 2.0;   // coalesce updates at ~500Hz
