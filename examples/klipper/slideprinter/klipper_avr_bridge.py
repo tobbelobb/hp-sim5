@@ -130,22 +130,26 @@ class Pacing(pysimulavr.PySimulationMember):
         self.sc = pysimulavr.SystemClock.Instance()
         self.pacing_rate = 1.0 / (rate * SIMULAVR_FREQ)
         self.next_check_clock = 0
-        self.rel_time = time.time()
-        self.best_offset = 0.0
+        # Anchor wall-clock to simulated clock using monotonic time
+        self.start_monotonic = time.monotonic()
         self.delay = SIMULAVR_FREQ // 10000
         self.sc.Add(self)
 
     def DoStep(self, trueHwStep):
-        curtime = time.time()
+        # Compute how far simulated time is ahead/behind wall-time
+        curtime = time.monotonic()
         clock = self.sc.GetCurrentTime()
-        offset = clock * self.pacing_rate - (curtime - self.rel_time)
-        self.best_offset = max(self.best_offset, offset)
-        if offset > 0.000050:
-            time.sleep(offset - 0.000040)
+        target_time = self.start_monotonic + clock * self.pacing_rate
+        offset = target_time - curtime
+        # If running ahead of real time, sleep to realign; otherwise, don't stall
+        if offset > 0:
+            # Cap sleep to avoid oversleep on long offsets
+            time.sleep(min(offset, 0.005))
+        # Periodically re-anchor to eliminate accumulated drift
         if clock >= self.next_check_clock:
-            self.rel_time -= min(self.best_offset, 0.0)
+            # Make target_time align with current monotonic time
+            self.start_monotonic = time.monotonic() - clock * self.pacing_rate
             self.next_check_clock = clock + self.delay * 500
-            self.best_offset = -999999999.0
         return self.delay
 
 
