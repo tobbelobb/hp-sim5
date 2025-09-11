@@ -1,5 +1,5 @@
 // KlipperHandler: Connects to a raw-bytes WebSocket via a worker.
-const DEBUG = false; // Note: most logging is now in the worker.
+const DEBUG = true; // Note: most logging is now in the worker.
 
 export function connectKlipperRaw(url, onCommand /* function(command) */) {
   // Use a URL object to construct a path relative to this module's location.

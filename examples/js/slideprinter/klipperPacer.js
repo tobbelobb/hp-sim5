@@ -131,6 +131,7 @@ const handleParsedLine = (line) => {
     const i = line.indexOf(name);
     return i >= 0 ? line.slice(i + name.length) : '';
   };
+  log(line);
 
   if (has('config_stepper')) {
     const kv = parseKv(sliceAfter('config_stepper'));
