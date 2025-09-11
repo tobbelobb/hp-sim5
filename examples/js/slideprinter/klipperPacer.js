@@ -29,6 +29,8 @@ const axisState = new Map(axisOrder.map(a => [a, {
   addTicks: 0,
   remaining: 0,
   dirSign: 1,
+  // Direction used for the currently executing segment
+  activeDirSign: 1,
 }]));
 
 const ensureAxisForOid = (oid) => {
@@ -64,7 +66,8 @@ const pacerLoop = () => {
 
       let stepsApplied = 0;
       while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
-        stepsApplied += st.dirSign;
+        // Step using the direction captured for the active segment
+        stepsApplied += st.activeDirSign;
         st.remaining -= 1;
         if (st.remaining > 0) {
           st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
@@ -75,6 +78,7 @@ const pacerLoop = () => {
             st.intervalTicks = Math.max(1, nextSeg.intervalTicks);
             st.addTicks = nextSeg.addTicks;
             st.remaining = nextSeg.remaining;
+            st.activeDirSign = nextSeg.dirSign;
             st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
           } else {
             st.nextWakeTimeMs = null;
@@ -84,7 +88,6 @@ const pacerLoop = () => {
           }
         }
       }
-
       if (stepsApplied !== 0) {
         const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
         axisAngles.set(axis, newAngle);
@@ -113,6 +116,7 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
     intervalTicks: Math.max(1, Number(intervalTicks) || 1),
     addTicks: Number(addTicks) || 0,
     remaining: Math.max(0, Number(count) || 0),
+    dirSign: st.dirSign,
   };
 
   if (st.nextWakeTimeMs === null) {
@@ -120,6 +124,7 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
     st.intervalTicks = seg.intervalTicks;
     st.addTicks = seg.addTicks;
     st.remaining = seg.remaining;
+    st.activeDirSign = seg.dirSign;
     st.nextWakeTimeMs = startedBaseTimeMs + ticksToMs(st.intervalTicks);
   } else {
     st.segments.push(seg);
@@ -170,6 +175,8 @@ const handleParsedLine = (line) => {
       st.intervalTicks = null;
       st.addTicks = 0;
       st.remaining = 0;
+      // After a set_position, align the active direction with the latest pending direction
+      st.activeDirSign = st.dirSign;
     }
     postMessage({ type: 'move', command: { type: 'Add to reference', [axis]: delta } });
     return;

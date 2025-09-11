@@ -187,6 +187,7 @@ canvas {
     let commander;
     let ws = null;
     let klipperRaw = null;
+    let simDtSec = null; // Filled from USD timeCodesPerSecond
     let workerReferenceSet = false;
     const websocketInToggle = document.getElementById('websocketIn');
     const websocketOutToggle = document.getElementById('websocketOut');
@@ -203,6 +204,7 @@ canvas {
     if (websocket_in || websocket_out) {
         ws = new WebSocket(`wss://localhost:${port}`);
     }
+    let count = 0;
 
     const connectKlipperRawNow = () => {
         const scheme = (location.protocol === 'https:') ? 'wss' : 'ws';
@@ -212,7 +214,8 @@ canvas {
             if (remoteSpoolSystem) remoteSpoolSystem.addCommand(cmd);
         };
         try {
-            klipperRaw = connectKlipperRaw(url, onCommand);
+            // Pass dt if already known; otherwise default to pass-through, and update later.
+            klipperRaw = connectKlipperRaw(url, onCommand, { dt: simDtSec });
         } catch (e) {
             console.error('Failed to connect Klipper raw WS:', e);
         }
@@ -348,10 +351,15 @@ canvas {
       }
       const timeCodesPerSecond = stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
       if (moveCommanderWorker && timeCodesPerSecond) {
-          moveCommanderWorker.postMessage({ type: 'set_dt', dt: 1.0/timeCodesPerSecond });
+          simDtSec = 1.0 / timeCodesPerSecond;
+          moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
       }
       if (commander && timeCodesPerSecond) {
-          commander.dt = 1.0/timeCodesPerSecond;
+          commander.dt = 1.0 / timeCodesPerSecond;
+      }
+      // Update Klipper raw handler with dt if connected
+      if (klipperRaw && timeCodesPerSecond) {
+          klipperRaw.setDt(1.0 / timeCodesPerSecond);
       }
 
       runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
