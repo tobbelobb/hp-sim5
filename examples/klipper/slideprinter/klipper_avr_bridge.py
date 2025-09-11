@@ -54,38 +54,56 @@ class WSRawBroadcaster:
         # Store recent parsed-message frames to replay to late-joining clients
         self.history: list[str] = []
         self.history_messages = max(0, history_messages)
+        self.lock = asyncio.Lock()
 
     async def register(self, ws: WebSocketServerProtocol):
-        # Add client and replay recent history
-        self.clients.add(ws)
+        # Hold lock to get a consistent snapshot of history and add client
+        async with self.lock:
+            self.clients.add(ws)
+            history_snapshot = list(self.history)
+
         try:
-            if self.history:
-                for payload in self.history:
-                    try:
-                        await ws.send(payload)
-                    except Exception:
-                        break
+            # Replay history outside the lock
+            if history_snapshot:
+                for payload in history_snapshot:
+                    await ws.send(payload)
+
+            # Wait for client to close
             await ws.wait_closed()
+        except Exception:
+            # e.g., connection closed during history replay
+            pass
         finally:
-            self.clients.discard(ws)
+            # Remove client, holding lock
+            async with self.lock:
+                self.clients.discard(ws)
 
     async def broadcast(self, payload: str, *, add_to_history: bool = True):
-        # Optionally append to history
-        if add_to_history and self.history_messages > 0:
-            self.history.append(payload)
-            if len(self.history) > self.history_messages:
-                del self.history[:len(self.history) - self.history_messages]
-        # Send to all current clients
-        if not self.clients:
+        async with self.lock:
+            # Add to history buffer
+            if add_to_history and self.history_messages > 0:
+                self.history.append(payload)
+                if len(self.history) > self.history_messages:
+                    del self.history[:len(self.history) - self.history_messages]
+            # Get a snapshot of current clients
+            clients_to_send = list(self.clients)
+
+        # Send to clients outside the lock
+        if not clients_to_send:
             return
-        senders = []
-        for ws in list(self.clients):
-            try:
-                senders.append(ws.send(payload))
-            except Exception:
-                self.clients.discard(ws)
-        if senders:
-            await asyncio.gather(*senders, return_exceptions=True)
+
+        tasks = [ws.send(payload) for ws in clients_to_send]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Clean up clients that failed to send
+        failed_clients = [
+            client for client, result in zip(clients_to_send, results)
+            if isinstance(result, Exception)
+        ]
+        if failed_clients:
+            async with self.lock:
+                for client in failed_clients:
+                    self.clients.discard(client)
 
 
 async def ws_handler(ws: WebSocketServerProtocol, broadcaster: WSRawBroadcaster):
