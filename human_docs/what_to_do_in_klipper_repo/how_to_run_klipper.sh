@@ -1,9 +1,13 @@
 # First compile klipper with simulavr support
-# make menuconfig
+# $ make menuconfig
 # Select
 #  AVR atmega644p, enable "low-level configuration options", and enable
 # "simulavr software emulation".
-
+# Keep 16 MHz as the cpu and clock speed then do
+# $ make
+# The created files are required for the avr simulation we're going to run later
+# cp out klipper.dict ../hp-sim5/examples/klipper/avr/klipper.dict
+# cp out klipper.elf ../hp-sim5/examples/klipper/avr/klipper.elf
 
 ~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
 
@@ -24,8 +28,7 @@ tail -F ~/repos/hp-sim5/attic/klipper.log
 # $ ls ./build/pysimulavr/_pysimulavr.*.so
 # Then simulate avr with
 
-PYTHONPATH=/home/torbjorn/repos/simulavr/build/pysimulavr /home/torbjorn/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py /home/torbjorn/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict /home/torbjorn/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py /home/torbjorn/repos/klipper/klippy/ --rate 0.5
+PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py ~/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py ~/repos/klipper/klippy/ --rate 0.5 --keep-noise --parse-debug
+
 
 # This will continuously hog one cpu core which is not ideal but no show stopper either
-#
-#

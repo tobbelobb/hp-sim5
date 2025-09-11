@@ -504,6 +504,8 @@ async def main_async(argv=None):
                         help="Print parser resync and packet summaries to stdout")
     parser.add_argument("--keep-noise", action="store_true",
                         help="Do not filter handshake/noise lines (identify, clock, allocate_oids, etc)")
+    parser.add_argument("--no-dedup", action="store_true",
+                        help="Disable packet deduplication (keep retransmitted frames)")
     parser.add_argument("--ws-history-messages", type=int, default=5000,
                         help="Buffer and replay the most recent N parsed frames to new WS clients (0 disables)")
     parser.add_argument("--raw-log", dest="raw_log", default=None,
@@ -571,6 +573,11 @@ async def main_async(argv=None):
             return None
 
         synced_once = False
+        # Deduplicate recent packets to avoid processing host retransmissions
+        # (common when early bytes are dropped and ACKs are missed). We keep a
+        # small rolling window of raw packet bytes.
+        recent_packets = collections.deque(maxlen=64)
+        recent_set = set()
 
         while True:
             data = await parser_queue.get()
@@ -610,7 +617,24 @@ async def main_async(argv=None):
                                     break
                             # We have a valid packet of length l at start 0
                             try:
-                                msgs = mp.dump(parse_buf[:l])
+                                raw_pkt = bytes(parse_buf[:l])
+                                if not args.no_dedup and raw_pkt in recent_set:
+                                    if args.parse_debug:
+                                        print(f"Dedup: dropped retransmitted frame len={l}")
+                                    # Consume and skip duplicate
+                                    parse_buf = parse_buf[l:]
+                                    continue
+                                # Track packet in dedup set with bounded history
+                                evicted = None
+                                if recent_packets.maxlen is not None and len(recent_packets) == recent_packets.maxlen:
+                                    # About to evict leftmost on append
+                                    evicted = recent_packets[0]
+                                recent_packets.append(raw_pkt)
+                                recent_set.add(raw_pkt)
+                                if evicted is not None:
+                                    recent_set.discard(evicted)
+
+                                msgs = mp.dump(raw_pkt)
                                 # Normalize to a list of human-readable lines
                                 lines: list[str] = []
                                 def _collect(obj):
