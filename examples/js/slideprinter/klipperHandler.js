@@ -7,7 +7,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   const workerPath = new URL('./klipperPacer.js', import.meta.url).href;
   const worker = new Worker(workerPath, { type: 'module' });
 
-  worker.postMessage({ type: 'connect', url });
+  worker.postMessage({ type: 'connect', url, debug: DEBUG });
 
   worker.onmessage = (e) => {
     const { type, command, args } = e.data;

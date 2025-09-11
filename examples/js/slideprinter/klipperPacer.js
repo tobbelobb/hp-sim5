@@ -6,6 +6,7 @@ const error = (...args) => postMessage({ type: 'error', args });
 
 // --- Globals for worker state ---
 let ws = null;
+let DEBUG = false;
 
 const axisOrder = ['A', 'B', 'C', 'D'];
 const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
@@ -131,7 +132,7 @@ const handleParsedLine = (line) => {
     const i = line.indexOf(name);
     return i >= 0 ? line.slice(i + name.length) : '';
   };
-  log(line);
+  if (DEBUG) log(line);
 
   if (has('config_stepper')) {
     const kv = parseKv(sliceAfter('config_stepper'));
@@ -211,6 +212,7 @@ const connect = (url) => {
 self.onmessage = (e) => {
   const { type, ...data } = e.data;
   if (type === 'connect') {
+    DEBUG = !!data.debug;
     connect(data.url);
   } else if (type === 'close') {
     if (ws) ws.close();

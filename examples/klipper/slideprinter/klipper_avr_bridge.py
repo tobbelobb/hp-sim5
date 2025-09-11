@@ -268,61 +268,28 @@ class SerialTxPin(pysimulavr.PySimulationMember, pysimulavr.Pin):
 
 
 class TerminalIO:
-    """PTY-backed terminal with WS mirroring.
+    """PTY-backed terminal.
 
     - write(data): AVR->Host direction (device TX). Writes to PTY master.
     - read(): Host->AVR direction (host TX). Reads from PTY master and
-      schedules WS broadcast of the same bytes.
+      schedules queueing of the same bytes for parsing.
     """
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, ws_queue: asyncio.Queue[bytes], *,
-                 ws_raw_batch_ms: int = 5, raw_logger=None):
+    def __init__(self, loop: asyncio.AbstractEventLoop, parser_queue: asyncio.Queue[bytes], *,
+                 raw_logger=None):
         self.fd = -1
         self.loop = loop
-        self.ws_queue = ws_queue
+        self.parser_queue = parser_queue
         self._raw_logger = raw_logger
-        # Raw WS batching to reduce overhead
-        self._batch_ms = max(0, ws_raw_batch_ms) / 1000.0
-        self._accum = bytearray()
-        self._accum_lock = threading.Lock()
-        self._flush_scheduled = False
         self._eof_sent = False
 
     def run(self, fd: int):
         self.fd = fd
 
-    def _flush_now(self):
-        # Runs in event loop
-        with self._accum_lock:
-            payload = bytes(self._accum)
-            self._accum.clear()
-            self._flush_scheduled = False
-        if payload:
-            self.ws_queue.put_nowait(payload)
-
-    def _schedule_flush(self):
-        # Runs in event loop
-        if self._flush_scheduled:
-            return
-        self._flush_scheduled = True
-        if self._batch_ms > 0:
-            self.loop.call_later(self._batch_ms, self._flush_now)
-        else:
-            self.loop.call_soon(self._flush_now)
-
-    def _mirror_ws(self, data: bytes):
-        if not data:
-            return
-        # Accumulate in thread-safe buffer and schedule a single flush soon
-        with self._accum_lock:
-            self._accum.extend(data)
-        self.loop.call_soon_threadsafe(self._schedule_flush)
-
     def write(self, data: bytes):
         # Bytes from AVR TX go to PTY
         if self.fd >= 0 and data:
             os.write(self.fd, data)
-            self._mirror_ws(data)
             if self._raw_logger is not None:
                 try:
                     self._raw_logger.log('A2H', data)
@@ -334,7 +301,7 @@ class TerminalIO:
             data = os.read(self.fd, 64)
             if data:
                 self._eof_sent = False  # Reset on new data
-                self._mirror_ws(data)
+                self.loop.call_soon_threadsafe(self.parser_queue.put_nowait, data)
                 if self._raw_logger is not None:
                     try:
                         self._raw_logger.log('H2A', data)
@@ -342,7 +309,7 @@ class TerminalIO:
                         pass
             elif not self._eof_sent:
                 # EOF: forward a sentinel to unblock parser
-                self.loop.call_soon_threadsafe(self.ws_queue.put_nowait, None)
+                self.loop.call_soon_threadsafe(self.parser_queue.put_nowait, None)
                 self._eof_sent = True
             return data
         except os.error as e:
@@ -377,7 +344,7 @@ def create_pty(ptyname: str) -> int:
     return mfd
 
 
-def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, ws_queue: asyncio.Queue[bytes]):
+def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, parser_queue: asyncio.Queue[bytes]):
     # launch simulator
     sc = pysimulavr.SystemClock.Instance()
     trace = Tracing(options.tracefile, options.trace)
@@ -406,7 +373,7 @@ def run_simulavr(options, elffile: str, loop: asyncio.AbstractEventLoop, ws_queu
             print(f"Warning: failed to open raw log '{path}': {e}")
             raw_logger = None
 
-    io = TerminalIO(loop, ws_queue, ws_raw_batch_ms=options.ws_raw_batch_ms, raw_logger=raw_logger)
+    io = TerminalIO(loop, parser_queue, raw_logger=raw_logger)
 
     # RX from device (TXD) on D1
     rxpin = SerialRxPin(options.baud, io)
@@ -531,10 +498,10 @@ async def main_async(argv=None):
         max_queue=None,
     )
 
-    # Queue for mirroring serial bytes from simulavr thread -> WS task
-    ws_queue: asyncio.Queue[bytes] = asyncio.Queue()
+    # Queue for serial bytes from simulavr thread -> parser task
+    parser_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
-    async def pump_queue_to_ws(parsed_lines_queue: asyncio.Queue[str]):
+    async def pump_parser_queue_to_ws(parsed_lines_queue: asyncio.Queue[str]):
         # Optional parsed message setup
         mp = None
         parse_buf = bytearray()
@@ -552,7 +519,7 @@ async def main_async(argv=None):
             print("Note: Parser not initialized (no msgproto or missing dict). Only raw bytes will be forwarded.")
 
         while True:
-            data = await ws_queue.get()
+            data = await parser_queue.get()
             try:
                 if data is None:  # Got EOF sentinel
                     if parse_buf:
@@ -644,17 +611,17 @@ async def main_async(argv=None):
                                     print(f"Parser error: {e}")
                             parse_buf = parse_buf[l:]
             finally:
-                ws_queue.task_done()
+                parser_queue.task_done()
 
     # Start server and pump task
     async with ws_server:
-        pump_task = asyncio.create_task(pump_queue_to_ws(parsed_lines_queue))
+        pump_task = asyncio.create_task(pump_parser_queue_to_ws(parsed_lines_queue))
         batcher_task = asyncio.create_task(parsed_lines_batcher())
 
         # Run simulavr in a dedicated thread to avoid blocking the loop
         loop = asyncio.get_running_loop()
         sim_thread = threading.Thread(
-            target=run_simulavr, args=(args, args.elffile, loop, ws_queue), daemon=True
+            target=run_simulavr, args=(args, args.elffile, loop, parser_queue), daemon=True
         )
         sim_thread.start()
 
