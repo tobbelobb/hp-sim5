@@ -55,18 +55,28 @@ class WSRawBroadcaster:
         self.history: list[str] = []
         self.history_messages = max(0, history_messages)
         self.lock = asyncio.Lock()
+        # Prevent concurrent ws.send() on the same connection which can corrupt
+        # ordering or raise runtime errors in the websockets library.
+        self._send_locks: dict[WebSocketServerProtocol, asyncio.Lock] = {}
 
     async def register(self, ws: WebSocketServerProtocol):
-        # Hold lock to get a consistent snapshot of history and add client
+        # Snapshot history and register client with its own send lock
         async with self.lock:
-            self.clients.add(ws)
             history_snapshot = list(self.history)
+            self.clients.add(ws)
+            self._send_locks[ws] = asyncio.Lock()
 
         try:
-            # Replay history outside the lock
+            # Replay history using the per-client send lock to avoid concurrent sends
             if history_snapshot:
-                for payload in history_snapshot:
-                    await ws.send(payload)
+                lock = self._send_locks.get(ws)
+                if lock is not None:
+                    async with lock:
+                        for payload in history_snapshot:
+                            await ws.send(payload)
+                else:
+                    # Very unlikely: client removed mid-registration
+                    return
 
             # Wait for client to close
             await ws.wait_closed()
@@ -74,9 +84,10 @@ class WSRawBroadcaster:
             # e.g., connection closed during history replay
             pass
         finally:
-            # Remove client, holding lock
+            # Remove client and its lock
             async with self.lock:
                 self.clients.discard(ws)
+                self._send_locks.pop(ws, None)
 
     async def broadcast(self, payload: str, *, add_to_history: bool = True):
         async with self.lock:
@@ -85,25 +96,33 @@ class WSRawBroadcaster:
                 self.history.append(payload)
                 if len(self.history) > self.history_messages:
                     del self.history[:len(self.history) - self.history_messages]
-            # Get a snapshot of current clients
-            clients_to_send = list(self.clients)
+            # Snapshot current clients and their locks
+            clients_to_send = [(ws, self._send_locks.get(ws)) for ws in self.clients]
 
-        # Send to clients outside the lock
         if not clients_to_send:
             return
 
-        tasks = [ws.send(payload) for ws in clients_to_send]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        async def _send(ws: WebSocketServerProtocol, lock: Optional[asyncio.Lock]):
+            try:
+                if lock is None:
+                    # Fallback: send without lock (shouldn't normally happen)
+                    await ws.send(payload)
+                else:
+                    async with lock:
+                        await ws.send(payload)
+                return None
+            except Exception as e:
+                return e
+
+        results = await asyncio.gather(*[_send(ws, lock) for ws, lock in clients_to_send], return_exceptions=False)
 
         # Clean up clients that failed to send
-        failed_clients = [
-            client for client, result in zip(clients_to_send, results)
-            if isinstance(result, Exception)
-        ]
+        failed_clients = [ws for (ws, _), result in zip(clients_to_send, results) if isinstance(result, Exception)]
         if failed_clients:
             async with self.lock:
                 for client in failed_clients:
                     self.clients.discard(client)
+                    self._send_locks.pop(client, None)
 
 
 async def ws_handler(ws: WebSocketServerProtocol, broadcaster: WSRawBroadcaster):
@@ -337,28 +356,54 @@ class TerminalIO:
 
 
 def create_pty(ptyname: str) -> int:
+    """Create a PTY pair and set RAW mode on both ends.
+
+    We explicitly configure the slave side to raw before Klipper opens it to
+    avoid any initial line-discipline transformations that could corrupt the
+    binary protocol (which would cause early parser resync and lost packets).
+    """
     mfd, sfd = pty.openpty()
+    slave_path = os.ttyname(sfd)
+    # Refresh symlink
     try:
         os.unlink(ptyname)
     except os.error:
         pass
-    os.symlink(os.ttyname(sfd), ptyname)
-    # Non-blocking
-    fcntl.fcntl(mfd, fcntl.F_SETFL, fcntl.fcntl(mfd, fcntl.F_GETFL) | os.O_NONBLOCK)
-    # Raw mode
-    tcattr = termios.tcgetattr(mfd)
-    tcattr[0] &= ~(
-        termios.IGNBRK | termios.BRKINT | termios.PARMRK | termios.ISTRIP |
-        termios.INLCR | termios.IGNCR | termios.ICRNL | termios.IXON)
-    tcattr[1] &= ~termios.OPOST
-    tcattr[3] &= ~(
-        termios.ECHO | termios.ECHONL | termios.ICANON | termios.ISIG |
-        termios.IEXTEN)
-    tcattr[2] &= ~(termios.CSIZE | termios.PARENB)
-    tcattr[2] |= termios.CS8
-    tcattr[6][termios.VMIN] = 0
-    tcattr[6][termios.VTIME] = 0
-    termios.tcsetattr(mfd, termios.TCSAFLUSH, tcattr)
+    os.symlink(slave_path, ptyname)
+
+    # Helper to put an FD into 8N1 raw mode, non-canonical, no echo
+    def _set_raw(fd: int):
+        try:
+            attr = termios.tcgetattr(fd)
+        except termios.error:
+            return
+        # iflag
+        attr[0] &= ~(
+            termios.IGNBRK | termios.BRKINT | termios.PARMRK | termios.ISTRIP |
+            termios.INLCR | termios.IGNCR | termios.ICRNL | termios.IXON)
+        # oflag
+        attr[1] &= ~termios.OPOST
+        # cflag
+        attr[2] &= ~(termios.CSIZE | termios.PARENB)
+        attr[2] |= termios.CS8
+        # lflag
+        attr[3] &= ~(termios.ECHO | termios.ECHONL | termios.ICANON | termios.ISIG | termios.IEXTEN)
+        # cc
+        attr[6][termios.VMIN] = 0
+        attr[6][termios.VTIME] = 0
+        try:
+            termios.tcsetattr(fd, termios.TCSAFLUSH, attr)
+        except termios.error:
+            pass
+
+    # Set RAW on both ends; master also non-blocking for our reader
+    _set_raw(sfd)  # important: configure the end Klipper opens
+    _set_raw(mfd)
+    try:
+        flags = fcntl.fcntl(mfd, fcntl.F_GETFL)
+        fcntl.fcntl(mfd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+    except Exception:
+        pass
     return mfd
 
 
@@ -456,6 +501,8 @@ async def main_async(argv=None):
                         help="Batch raw-byte WS frames for N ms before sending (reduces overhead)")
     parser.add_argument("--parse-debug", action="store_true",
                         help="Print parser resync and packet summaries to stdout")
+    parser.add_argument("--keep-noise", action="store_true",
+                        help="Do not filter handshake/noise lines (identify, clock, allocate_oids, etc)")
     parser.add_argument("--ws-history-messages", type=int, default=5000,
                         help="Buffer and replay the most recent N parsed frames to new WS clients (0 disables)")
     parser.add_argument("--raw-log", dest="raw_log", default=None,
@@ -496,6 +543,7 @@ async def main_async(argv=None):
         # Optional parsed message setup
         mp = None
         parse_buf = bytearray()
+        line_seq = 0  # Monotonic sequence across all emitted lines (for debugging)
         if msgproto is not None and args.dict_path and os.path.exists(args.dict_path):
             try:
                 with open(args.dict_path, 'rb') as dfile:
@@ -593,11 +641,15 @@ async def main_async(argv=None):
                                             return True
                                         cmd = s.split()[0]
                                         return cmd in ('identify', 'identify_response', 'get_clock', 'clock', 'allocate_oids', 'emergency_stop')
-                                    filtered_lines = [s for s in out_lines if not _is_noise_line(s)]
+                                    filtered_lines = out_lines if args.keep_noise else [s for s in out_lines if not _is_noise_line(s)]
                                     if filtered_lines:
+                                        start_idx = line_seq
+                                        line_seq += len(filtered_lines)
                                         payload = {
                                             'action': 'klipper_parsed',
                                             'lines': filtered_lines,
+                                            'seq': start_idx,
+                                            'count': len(filtered_lines),
                                         }
                                         await broadcaster.broadcast(json.dumps(payload), add_to_history=True)
                             except Exception as e:

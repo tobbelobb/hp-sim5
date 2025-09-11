@@ -6,7 +6,8 @@ const error = (...args) => postMessage({ type: 'error', args });
 
 // --- Globals for worker state ---
 let ws = null;
-let DEBUG = false;
+let DEBUG = true;
+let firstSeqSeen = null; // Debug: first server seq index we receive
 
 const axisOrder = ['A', 'B', 'C', 'D'];
 const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
@@ -16,7 +17,7 @@ const stepAngle = (2 * Math.PI) / (stepsPerRev * microsteps);
 
 const clockHz = 16_000_000; // Match bridge default
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
-const bufferAheadMs = 200.0; // Buffer to smooth out network jitter
+const bufferAheadMs = 0.0; // Buffer to smooth out network jitter
 const pacerIntervalMs = 2.0;
 let pacerTimer = null;
 let startedBaseTimeMs = null;
@@ -132,9 +133,9 @@ const handleParsedLine = (line) => {
     const i = line.indexOf(name);
     return i >= 0 ? line.slice(i + name.length) : '';
   };
-  if (DEBUG) log(line);
 
   if (has('config_stepper')) {
+    if (DEBUG) log(line);
     const kv = parseKv(sliceAfter('config_stepper'));
     const axis = ensureAxisForOid(kv.oid);
     if (axis) log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
@@ -142,6 +143,7 @@ const handleParsedLine = (line) => {
     return;
   }
   if (has('set_next_step_dir')) {
+    if (DEBUG) log(line);
     const kv = parseKv(sliceAfter('set_next_step_dir'));
     const axis = ensureAxisForOid(kv.oid);
     if (!axis) return;
@@ -151,6 +153,7 @@ const handleParsedLine = (line) => {
     return;
   }
   if (has('set_position')) {
+    if (DEBUG) log(line);
     const kv = parseKv(sliceAfter('set_position'));
     const axis = ensureAxisForOid(kv.oid);
     if (!axis) return;
@@ -172,6 +175,7 @@ const handleParsedLine = (line) => {
     return;
   }
   if (has('queue_step')) {
+    if (DEBUG) log(line);
     const kv = parseKv(sliceAfter('queue_step'));
     const axis = ensureAxisForOid(kv.oid);
     if (!axis) return;
@@ -191,6 +195,10 @@ const connect = (url) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg && msg.action === 'klipper_parsed' && Array.isArray(msg.lines)) {
+          if (firstSeqSeen === null && typeof msg.seq === 'number') {
+            firstSeqSeen = msg.seq;
+            if (DEBUG) log(`first klipper_parsed seq=${firstSeqSeen} count=${msg.count}`);
+          }
           for (const line of msg.lines) handleParsedLine(line);
           return;
         }

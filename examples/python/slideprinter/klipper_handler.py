@@ -80,6 +80,30 @@ class PTYBridge:
         self.master_fd = master_fd
         self.slave_path = Path(os.ttyname(slave_fd))
 
+        # Put both ends into raw mode to avoid initial line-discipline munging
+        def _set_raw(fd: int):
+            import termios
+            try:
+                attr = termios.tcgetattr(fd)
+            except termios.error:
+                return
+            attr[0] &= ~(
+                termios.IGNBRK | termios.BRKINT | termios.PARMRK | termios.ISTRIP |
+                termios.INLCR | termios.IGNCR | termios.ICRNL | termios.IXON)
+            attr[1] &= ~termios.OPOST
+            attr[2] &= ~(termios.CSIZE | termios.PARENB)
+            attr[2] |= termios.CS8
+            attr[3] &= ~(termios.ECHO | termios.ECHONL | termios.ICANON | termios.ISIG | termios.IEXTEN)
+            attr[6][termios.VMIN] = 0
+            attr[6][termios.VTIME] = 0
+            try:
+                termios.tcsetattr(fd, termios.TCSAFLUSH, attr)
+            except termios.error:
+                pass
+
+        _set_raw(slave_fd)
+        _set_raw(master_fd)
+
         # Refresh symlink
         try:
             if self.symlink_path.exists() or self.symlink_path.is_symlink():
