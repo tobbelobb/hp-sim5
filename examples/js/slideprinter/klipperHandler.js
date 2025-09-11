@@ -27,7 +27,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
   const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
   const bufferAheadMs = 0.0;   // try to stay ahead
   const pacerIntervalMs = 2.0;   // coalesce updates at ~500Hz
-  let pacerTimer = null;
+  let pacerAnimationId = null;
   let startedBaseTimeMs = null;
 
   // Per-axis queued segments and scheduler state
@@ -62,61 +62,63 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
     return out;
   };
 
-  // Start/update pacer that applies due steps and emits coalesced Move updates
-  const ensurePacerRunning = () => {
-    if (pacerTimer !== null) return;
-    pacerTimer = setInterval(() => {
-      try {
-        const now = performance.now();
-        const move = { type: 'Move' };
-        let any = false;
+  const pacerLoop = (now) => {
+    try {
+      const move = { type: 'Move' };
+      let any = false;
 
-        for (const axis of axisOrder) {
-          const st = axisState.get(axis);
-          if (!st) continue;
+      for (const axis of axisOrder) {
+        const st = axisState.get(axis);
+        if (!st) continue;
 
-          let stepsApplied = 0;
-          while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
-            // Apply one step at scheduled time
-            stepsApplied += st.dirSign;
+        let stepsApplied = 0;
+        while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
+          // Apply one step at scheduled time
+          stepsApplied += st.dirSign;
 
-            // Advance scheduling within/after segment
-            st.remaining -= 1;
-            if (st.remaining > 0) {
-              st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
+          // Advance scheduling within/after segment
+          st.remaining -= 1;
+          if (st.remaining > 0) {
+            st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
+            st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
+          } else {
+            const nextSeg = st.segments.shift();
+            if (nextSeg) {
+              st.intervalTicks = Math.max(1, nextSeg.intervalTicks);
+              st.addTicks = nextSeg.addTicks;
+              st.remaining = nextSeg.remaining;
               st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
             } else {
-              const nextSeg = st.segments.shift();
-              if (nextSeg) {
-                st.intervalTicks = Math.max(1, nextSeg.intervalTicks);
-                st.addTicks = nextSeg.addTicks;
-                st.remaining = nextSeg.remaining;
-                st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
-              } else {
-                st.nextWakeTimeMs = null;
-                st.intervalTicks = null;
-                st.addTicks = 0;
-                st.remaining = 0;
-              }
+              st.nextWakeTimeMs = null;
+              st.intervalTicks = null;
+              st.addTicks = 0;
+              st.remaining = 0;
             }
           }
-
-          if (stepsApplied !== 0) {
-            const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
-            axisAngles.set(axis, newAngle);
-            move[axis] = newAngle;
-            any = true;
-          }
         }
 
-        if (any && typeof onCommand === 'function'){
-          //console.log(move);
-          onCommand(move);
+        if (stepsApplied !== 0) {
+          const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
+          axisAngles.set(axis, newAngle);
+          move[axis] = newAngle;
+          any = true;
         }
-      } catch (e) {
-        console.error('KlipperHandler pacer error:', e);
       }
-    }, pacerIntervalMs);
+
+      if (any && typeof onCommand === 'function'){
+        //console.log(move);
+        onCommand(move);
+      }
+    } catch (e) {
+      console.error('KlipperHandler pacer error:', e);
+    }
+    pacerAnimationId = requestAnimationFrame(pacerLoop);
+  };
+
+  // Start/update pacer that applies due steps and emits coalesced Move updates
+  const ensurePacerRunning = () => {
+    if (pacerAnimationId !== null) return;
+    pacerAnimationId = requestAnimationFrame(pacerLoop);
   };
 
   const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
@@ -251,9 +253,9 @@ export function connectKlipperRaw(url, onCommand /* function(command) */) {
 
   ws.onclose = () => {
     console.log('KlipperHandler: connection closed');
-    if (pacerTimer !== null) {
-      clearInterval(pacerTimer);
-      pacerTimer = null;
+    if (pacerAnimationId !== null) {
+      cancelAnimationFrame(pacerAnimationId);
+      pacerAnimationId = null;
     }
   };
 
