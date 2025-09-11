@@ -9,7 +9,7 @@ let ws = null;
 let DEBUG = false;
 let firstSeqSeen = null; // Debug: first server seq index we receive
 
-const axisOrder = ['A', 'B', 'C', 'D'];
+const axisOrder = ['A', 'B', 'C', 'D', 'E'];
 const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
 const stepsPerRev = 200;
 const microsteps = 16;
