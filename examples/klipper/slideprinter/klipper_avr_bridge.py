@@ -285,6 +285,7 @@ class TerminalIO:
         self._accum = bytearray()
         self._accum_lock = threading.Lock()
         self._flush_scheduled = False
+        self._eof_sent = False
 
     def run(self, fd: int):
         self.fd = fd
@@ -331,12 +332,17 @@ class TerminalIO:
         try:
             data = os.read(self.fd, 64)
             if data:
+                self._eof_sent = False  # Reset on new data
                 self._mirror_ws(data)
                 if self._raw_logger is not None:
                     try:
                         self._raw_logger.log('H2A', data)
                     except Exception:
                         pass
+            elif not self._eof_sent:
+                # EOF: forward a sentinel to unblock parser
+                self.loop.call_soon_threadsafe(self.ws_queue.put_nowait, None)
+                self._eof_sent = True
             return data
         except os.error as e:
             if e.errno not in (errno.EAGAIN, errno.EWOULDBLOCK):
@@ -520,6 +526,13 @@ async def main_async(argv=None):
         while True:
             data = await ws_queue.get()
             try:
+                if data is None:  # Got EOF sentinel
+                    if parse_buf:
+                        if args.parse_debug:
+                            print(f"Parser EOF, discarding partial buffer ({len(parse_buf)} bytes)")
+                        parse_buf.clear()
+                    continue
+
                 if data:
                     # If parser available, broadcast parsed text as JSON
                     if mp is not None:
