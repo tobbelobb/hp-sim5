@@ -1,3 +1,20 @@
+#### Option 1: Make a Linux process that presents itself to Klipper as an mcu.
+#  - Put a script in the middle that forwards pty messages between Klipper and the "mcu"
+#    while also mirroring the Klipper->mcu messages to the websocket.
+#
+# First make sure you have the simulated gpio pins on your computer:
+./make-fake-pin-chip.sh
+
+# Then launch the "mcu" with
+
+~/repos/hp-sim5/examples/klipper/slideprinter/klipper_linux_mcu_bridge.py --raw-path /tmp/klipper_host_mcu_raw --host-path /tmp/klipper_host_mcu --mcu-bin ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict --klipper-py ~/repos/klipper/klippy/
+
+# Then launch klippy with
+
+~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg -i ~/repos/hp-sim5/public/examples/gcode/movements.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+
+#### Option 2: Simulate the whole avr and mirror the incoming messages on to the websocket.
+#
 # First compile klipper with simulavr support
 # $ make menuconfig
 # Select
