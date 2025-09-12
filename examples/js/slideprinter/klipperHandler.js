@@ -48,11 +48,16 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
 
     somethingArrived = true;
     if (cmd && cmd.type === 'Move') {
-      // Keep the latest absolute angles for this window
+      // Keep the latest absolute angles (A-D) but SUM extrusions (E) within the window
       if (!pendingMove) pendingMove = { type: 'Move' };
       for (const k of Object.keys(cmd)) {
         if (k === 'type') continue;
-        pendingMove[k] = cmd[k];
+        if (k === 'E') {
+          const prev = pendingMove.E || 0;
+          pendingMove.E = prev + (cmd.E || 0);
+        } else {
+          pendingMove[k] = cmd[k];
+        }
       }
     } else if (cmd && cmd.type === 'Add to reference') {
       // Sum deltas per axis for this window

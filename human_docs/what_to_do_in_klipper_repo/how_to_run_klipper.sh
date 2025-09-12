@@ -9,11 +9,6 @@
 # cp out klipper.dict ../hp-sim5/examples/klipper/avr/klipper.dict
 # cp out klipper.elf ../hp-sim5/examples/klipper/avr/klipper.elf
 
-~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
-
-# Then
-tail -F ~/repos/hp-sim5/attic/klipper.log
-
 # We also need to run simulavr
 # Install it like so:
 # $ git clone git://git.savannah.nongnu.org/simulavr.git
@@ -32,3 +27,11 @@ PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/sl
 
 
 # This will continuously hog one cpu core which is not ideal but no show stopper either
+# It creates a processes that klipper will think is a real avr microcontroller, which is great for our purposes.
+# Now that the mcu is running, start klipper and make it push some movements through.
+
+# First run this in another terminal to make sure we're capturing klippers log output
+tail -F ~/repos/hp-sim5/attic/klipper.log
+# Then run klipper itself
+~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+

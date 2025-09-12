@@ -14,6 +14,13 @@ const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
 const stepsPerRev = 200;
 const microsteps = 16;
 const stepAngle = (2 * Math.PI) / (stepsPerRev * microsteps);
+// Treat oid 4 as the extruder stepper and convert its steps to filament mm.
+// Use rotation_distance from the example config (33.5 mm per full rotation).
+// mm per microstep = rotation_distance / (stepsPerRev * microsteps)
+const EXTRUDER_OID = 4; // assumed stable mapping
+const EXTRUDER_AXIS = 'E';
+const EXTRUDER_ROTATION_DISTANCE_MM = 33.5;
+const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * microsteps);
 
 const clockHz = 16_000_000; // Match bridge default
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
@@ -91,7 +98,12 @@ const pacerLoop = () => {
       if (stepsApplied !== 0) {
         const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
         axisAngles.set(axis, newAngle);
-        move[axis] = newAngle;
+        if (axis === EXTRUDER_AXIS) {
+          const e_mm = stepsApplied * EXTRUDER_MM_PER_STEP;
+          move[axis] = e_mm;
+        } else {
+          move[axis] = newAngle;
+        }
         any = true;
       }
     }
