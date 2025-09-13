@@ -470,6 +470,14 @@ async def main_async(argv=None):
             return 3
         await asyncio.sleep(0.05)
 
+    # The MCU process, running as root, creates a PTY slave owned by root.
+    # Chmod it to be world-readable/writable so this script can open it.
+    try:
+        chmod_proc = await asyncio.create_subprocess_exec('sudo', 'chmod', '666', args.raw_path)
+        await chmod_proc.wait()
+    except Exception as e:
+        print(f"Warning: could not chmod {args.raw_path}: {e}")
+
     raw_fd = open_tty_rw(args.raw_path)
 
     # WebSocket server + parser setup
@@ -616,6 +624,13 @@ async def main_async(argv=None):
         os.unlink(args.host_path)
     except Exception:
         pass
+    if os.path.exists(args.raw_path):
+        try:
+            # This path is created by klipper_mcu running as root.
+            rm_proc = await asyncio.create_subprocess_exec('sudo', 'rm', '-f', args.raw_path)
+            await rm_proc.wait()
+        except Exception:
+            pass
 
 
 def main():
