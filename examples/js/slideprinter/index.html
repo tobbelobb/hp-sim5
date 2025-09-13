@@ -17,6 +17,22 @@
     <meta name="viewport"
           content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
+    <!-- Content Security Policy: lock down scripts while allowing required features
+         - Forbids eval/new Function (no 'unsafe-eval')
+         - Allows module workers and blob URLs for Worker()
+         - Allows WebSocket to localhost
+         - Allows Google Fonts stylesheet and font files
+         - Allows data: URIs for the inline SVG favicon -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      worker-src 'self' blob:;
+      connect-src 'self' ws: wss:;
+      img-src 'self' data:;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com data:;
+    ">
+
     <!-- Nice free Google font – optional -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet"
