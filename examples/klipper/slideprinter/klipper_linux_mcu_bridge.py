@@ -411,7 +411,7 @@ async def main_async(argv=None):
     parser.add_argument('--no-ws', action='store_true', help='Disable WebSocket server')
     # Keep the default coalescing window tiny so parsed lines are visible
     # almost immediately even if packets arrive in bursts.
-    parser.add_argument('--batch-ms', type=float, default=0.02,
+    parser.add_argument('--batch-ms', type=float, default=0.05,
                         help='Coalescing window for WS flush (seconds).')
     parser.add_argument('--max-bytes', type=int, default=16*1024,
                         help='Flush to WS when buffered payload exceeds this size.')
@@ -485,7 +485,7 @@ async def main_async(argv=None):
     if not args.no_ws:
         ws_server = websockets.serve(lambda ws: ws_mgr.register(ws),
                                      host=args.ws_host, port=args.ws_port,
-                                     max_size=None, max_queue=None)
+                                     max_size=None, max_queue=None, compression=None)
     else:
         ws_server = None
 
