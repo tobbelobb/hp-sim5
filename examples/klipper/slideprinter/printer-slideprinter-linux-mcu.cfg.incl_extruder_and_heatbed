@@ -52,5 +52,47 @@ anchor_x: 0
 anchor_y: 0
 anchor_z: 2000
 
+
+## Extruder (atmega644p-friendly pins; generic simulavr values)
+[extruder]
+step_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio12
+dir_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio13
+enable_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio14
+microsteps: 16
+rotation_distance: 33.500
+nozzle_diameter: 0.400
+filament_diameter: 1.750
+# Heater output uses a PWM-capable pin on Linux MCU. Placeholder kept
+# as a regular GPIO here; see make-fake-pin-chip.sh for notes on Linux
+# hardware PWM (pwmchipX/pwmY) if you need it.
+heater_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio15
+sensor_type: EPCOS 100K B57560G104F
+# Analog temperature sensor input via Linux IIO (analogN)
+# The script make-fake-pin-chip.sh replaces this placeholder with
+# a name like "analog0" after creating an IIO dummy device.
+sensor_pin: REPLACE_ME_WITH_FAKE_ANALOG_PIN_0
+control: pid
+pid_Kp: 22.2
+pid_Ki: 1.08
+pid_Kd: 114
+min_temp: 0
+min_extrude_temp: 0
+max_temp: 275
+
+## Bed heater (atmega644p-friendly pins)
+[heater_bed]
+# Heater output uses a PWM-capable pin on Linux MCU. Placeholder kept
+# as a regular GPIO here; see make-fake-pin-chip.sh for notes on Linux
+# hardware PWM (pwmchipX/pwmY) if you need it.
+heater_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio17
+sensor_type: EPCOS 100K B57560G104F
+# Analog temperature sensor input via Linux IIO (analogN)
+# The script make-fake-pin-chip.sh replaces this placeholder with
+# a name like "analog1" after creating an IIO dummy device.
+sensor_pin: REPLACE_ME_WITH_FAKE_ANALOG_PIN_1
+control: watermark
+min_temp: 0
+max_temp: 130
+
 [force_move]
 enable_force_move: True
