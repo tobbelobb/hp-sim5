@@ -128,11 +128,8 @@ def create_pty_symlink(symlink_path: str) -> int:
     _set_raw(mfd)
     _set_nonblocking(mfd)
     # Link slave to the desired symlink path (replacing any existing link)
-    try:
-        if os.path.islink(symlink_path) or os.path.exists(symlink_path):
-            os.unlink(symlink_path)
-    except Exception:
-        pass
+    if os.path.lexists(symlink_path):
+        os.unlink(symlink_path)
     tname = os.ttyname(sfd)
     # Make PTY slave world-readable/writable for Klippy
     try:
@@ -622,10 +619,26 @@ async def main_async(argv=None):
 
 
 def main():
+    # After a crash, the terminal may be left in raw mode.
+    # To prevent this, save original terminal settings and restore on exit.
+    orig_termios = None
+    if sys.stdin.isatty():
+        try:
+            orig_termios = termios.tcgetattr(sys.stdin.fileno())
+        except termios.error:
+            pass
+
     try:
         asyncio.run(main_async())
     except KeyboardInterrupt:
         pass
+    finally:
+        if orig_termios:
+            try:
+                # Restore terminal settings
+                termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, orig_termios)
+            except termios.error:
+                pass
 
 
 if __name__ == '__main__':
