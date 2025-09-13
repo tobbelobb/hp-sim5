@@ -22,7 +22,7 @@ const EXTRUDER_AXIS = 'E';
 const EXTRUDER_ROTATION_DISTANCE_MM = 33.5;
 const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * microsteps);
 
-const clockHz = 16_000_000; // Match bridge default
+const clockHz = 50_000_000; // Match bridge default
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
 const bufferAheadMs = 5.0; // Buffer to smooth out network jitter
 const pacerIntervalMs = 2.0;
