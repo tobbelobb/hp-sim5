@@ -28,6 +28,8 @@ const bufferAheadMs = 5.0; // Buffer to smooth out network jitter
 const pacerIntervalMs = 2.0;
 let pacerTimer = null;
 let startedBaseTimeMs = null;
+let firstTickOffset = null;     // Global baseline: min first-interval across all axes
+let hasEmittedAnyStep = false;  // Lock baseline once stepping begins
 
 const axisState = new Map(axisOrder.map(a => [a, {
   segments: [],
@@ -96,6 +98,7 @@ const pacerLoop = () => {
         }
       }
       if (stepsApplied !== 0) {
+        hasEmittedAnyStep = true; // lock baseline thereafter
         const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
         axisAngles.set(axis, newAngle);
         if (axis === EXTRUDER_AXIS) {
@@ -121,6 +124,28 @@ const ensurePacerRunning = () => {
   pacerTimer = setInterval(pacerLoop, pacerIntervalMs);
 };
 
+const maybeAdjustBaseline = (firstIntervalTicks) => {
+  if (hasEmittedAnyStep) return; // don't rebase after we start
+  const fi = Math.max(1, Number(firstIntervalTicks) || 1);
+  if (firstTickOffset === null) {
+    firstTickOffset = fi;
+    return;
+  }
+  if (fi < firstTickOffset) {
+    const old = firstTickOffset;
+    firstTickOffset = fi;
+    // Shift all scheduled wake times earlier by the delta so the earliest
+    // planned step happens near startedBaseTimeMs.
+    if (startedBaseTimeMs !== null) {
+      const shiftMs = ticksToMs(old - fi);
+      for (const axis of axisOrder) {
+        const st = axisState.get(axis);
+        if (st && st.nextWakeTimeMs !== null) st.nextWakeTimeMs -= shiftMs;
+      }
+    }
+  }
+};
+
 const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
   const st = axisState.get(axis);
   if (!st) return;
@@ -132,12 +157,17 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
   };
 
   if (st.nextWakeTimeMs === null) {
+    // Establish global baseline so the earliest queued step across axes starts soon.
+    maybeAdjustBaseline(seg.intervalTicks);
     if (startedBaseTimeMs === null) startedBaseTimeMs = performance.now() + bufferAheadMs;
+
+    // Schedule first step relative to global baseline (subtract earliest offset).
+    const baseTicks = firstTickOffset === null ? seg.intervalTicks : Math.max(1, seg.intervalTicks - firstTickOffset);
     st.intervalTicks = seg.intervalTicks;
     st.addTicks = seg.addTicks;
     st.remaining = seg.remaining;
     st.activeDirSign = seg.dirSign;
-    st.nextWakeTimeMs = startedBaseTimeMs + ticksToMs(st.intervalTicks);
+    st.nextWakeTimeMs = startedBaseTimeMs + ticksToMs(baseTicks);
   } else {
     st.segments.push(seg);
   }
