@@ -168,36 +168,53 @@ class ParsedMirror:
         self.bytes_acc = 0
         self._flush_task: Optional[asyncio.Task] = None
         self._seq = 0
+        self._lock = asyncio.Lock()
 
     async def feed(self, data: bytes):
         if not data:
             return
-        self.buf.extend(data)
-        # Parse all complete packets currently in buffer
-        while True:
-            l = self.mp.check_packet(self.buf)
-            if l <= 0:
-                break
-            pkt = bytes(self.buf[:l])
-            # Decode to lines (may be multiple commands in a block)
-            try:
-                decoded_lines = self.mp.dump(pkt)
-            except Exception:
-                decoded_lines = []
-            # Filter subset
-            for ln in decoded_lines:
-                name = ln.split()[0] if ln else ''
-                if name in self.allowed:
-                    self.lines.append(ln)
-                    self.bytes_acc += len(ln) + 1
-            # Consume packet
-            del self.buf[:l]
-            # Flush immediately at packet boundary if anything collected
+        out_messages: List[dict] = []
+        async with self._lock:
+            self.buf.extend(data)
+            # Parse all complete packets currently in buffer
+            while True:
+                l = self.mp.check_packet(self.buf)
+                if l <= 0:
+                    break
+                pkt = bytes(self.buf[:l])
+                # Decode to lines (may be multiple commands in a block)
+                try:
+                    decoded_lines = self.mp.dump(pkt)
+                except Exception:
+                    decoded_lines = []
+                # Filter subset
+                for ln in decoded_lines:
+                    name = ln.split()[0] if ln else ''
+                    if name in self.allowed:
+                        self.lines.append(ln)
+                        self.bytes_acc += len(ln) + 1
+                # Consume packet
+                del self.buf[:l]
+                # Flush immediately at packet boundary if anything collected
+                if self.lines:
+                    payload = {
+                        'action': 'klipper_parsed',
+                        'lines': self.lines,
+                        'seq': self._seq,
+                        'count': len(self.lines),
+                    }
+                    self._seq += len(self.lines)
+                    # reset buffers
+                    self.lines = []
+                    self.bytes_acc = 0
+                    out_messages.append(payload)
+            # If more lines were appended but not full packets, schedule near-term flush
             if self.lines:
-                await self._maybe_flush(immediate=True)
-        # If no full packet yet, ensure a near-term flush is scheduled
-        if self.lines:
-            await self._maybe_flush(immediate=False)
+                if self._flush_task is None or self._flush_task.done():
+                    self._flush_task = asyncio.create_task(self._delayed_flush())
+        # Send outside lock to avoid blocking parsing
+        for payload in out_messages:
+            await self.ws.broadcast_json(payload)
 
     async def _maybe_flush(self, *, immediate: bool):
         if immediate or self.bytes_acc >= self.max_bytes:
@@ -214,18 +231,20 @@ class ParsedMirror:
             pass
 
     async def _flush(self):
-        if not self.lines:
-            return
-        payload = {
-            'action': 'klipper_parsed',
-            'lines': self.lines,
-            'seq': self._seq,
-            'count': len(self.lines),
-        }
-        self._seq += len(self.lines)
-        self.lines = []
-        self.bytes_acc = 0
-        await self.ws.broadcast_json(payload)
+        payload = None
+        async with self._lock:
+            if self.lines:
+                payload = {
+                    'action': 'klipper_parsed',
+                    'lines': self.lines,
+                    'seq': self._seq,
+                    'count': len(self.lines),
+                }
+                self._seq += len(self.lines)
+                self.lines = []
+                self.bytes_acc = 0
+        if payload is not None:
+            await self.ws.broadcast_json(payload)
 
 
 # ----------------------------- Bridge core ----------------------------------
@@ -367,6 +386,7 @@ ALLOWED_COMMANDS = {
     'query_analog_in',
     'queue_digital_out',
     'set_next_step_dir',
+    'reset_step_clock',
     'set_position',
     'queue_step',
 }

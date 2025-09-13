@@ -8,6 +8,7 @@ const error = (...args) => postMessage({ type: 'error', args });
 let ws = null;
 let DEBUG = false;
 let firstSeqSeen = null; // Debug: first server seq index we receive
+let expectedSeq = null;  // Debug: detect gaps in parsed-line stream
 
 const axisOrder = ['A', 'B', 'C', 'D', 'E'];
 const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
@@ -24,8 +25,8 @@ const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * micr
 
 let clockHz = 50_000_000; // Default; will auto-update from bridge
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
-const bufferAheadMs = 5.0; // Buffer to smooth out network jitter
-const pacerIntervalMs = 2.0; // engine can consume at max 500 Hz
+const bufferAheadMs = 15.0; // Buffer to smooth out network jitter
+const pacerIntervalMs = 1.0; // engine can consume at max 500 Hz
 let pacerTimer = null;       // setInterval handle for pacer
 let startedBaseTimeMs = null;
 let firstTickOffset = null;     // Global baseline: min first-interval across all axes
@@ -251,6 +252,13 @@ const connect = (url) => {
           if (firstSeqSeen === null && typeof msg.seq === 'number') {
             firstSeqSeen = msg.seq;
             if (DEBUG) log(`first klipper_parsed seq=${firstSeqSeen} count=${msg.count}`);
+          }
+          if (typeof msg.seq === 'number' && typeof msg.count === 'number') {
+            if (expectedSeq === null) expectedSeq = msg.seq;
+            if (msg.seq !== expectedSeq && DEBUG) {
+              error(`seq discontinuity: expected ${expectedSeq}, got ${msg.seq}`);
+            }
+            expectedSeq = msg.seq + msg.count;
           }
           for (const line of msg.lines) handleParsedLine(line);
           return;
