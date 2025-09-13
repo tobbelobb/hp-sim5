@@ -30,6 +30,7 @@ import signal
 import sys
 import termios
 import time
+import re
 from typing import List, Optional, Set
 
 # Optional Klipper msgproto import (supports parsing commands using klipper.dict)
@@ -392,6 +393,8 @@ async def main_async(argv=None):
                         help='Coalescing window for WS flush (seconds).')
     parser.add_argument('--max-bytes', type=int, default=16*1024,
                         help='Flush to WS when buffered payload exceeds this size.')
+    parser.add_argument('--klippy-log', default=None,
+                        help='Optional path to Klippy log (klippy.log). If set, the bridge tails it and broadcasts measured freq as {action:"klipper_clock", clock_hz:<number>} to WS clients.')
     args = parser.parse_args(argv)
 
     if websockets is None and not args.no_ws:
@@ -505,6 +508,57 @@ async def main_async(argv=None):
 
     print(f"Ready: Klippy can connect to {args.host_path}. WS on {args.ws_host}:{args.ws_port}.")
 
+    # Optional: tail Klippy log for measured freq updates
+    tail_task = None
+    if args.klippy_log and not args.no_ws:
+        log_path = args.klippy_log
+
+        async def tail_klippy_log(path: str, ws: WSManager):
+            last_clock = None
+            file_inode = None
+            f = None
+            try:
+                while True:
+                    try:
+                        st = os.stat(path)
+                        if file_inode is None or st.st_ino != file_inode:
+                            if f:
+                                try:
+                                    f.close()
+                                except Exception:
+                                    pass
+                            f = open(path, 'r', errors='ignore')
+                            file_inode = st.st_ino
+                            # Read from beginning to catch an earlier freq line
+                            f.seek(0, os.SEEK_SET)
+                    except FileNotFoundError:
+                        # File not ready yet – wait and retry
+                        await asyncio.sleep(0.5)
+                        continue
+
+                    line = f.readline()
+                    if not line:
+                        await asyncio.sleep(0.25)
+                        continue
+                    m = re.search(r"freq=(\d+(?:\.\d+)?)", line)
+                    if m:
+                        try:
+                            val = float(m.group(1))
+                            # Broadcast only on change
+                            if val > 0 and val != last_clock:
+                                last_clock = val
+                                await ws.broadcast_json({'action': 'klipper_clock', 'clock_hz': val})
+                        except Exception:
+                            pass
+            finally:
+                if f:
+                    try:
+                        f.close()
+                    except Exception:
+                        pass
+
+        tail_task = asyncio.create_task(tail_klippy_log(log_path, ws_mgr))
+
     # Run servers and wait for stop
     if ws_server is not None:
         async with ws_server:
@@ -521,6 +575,12 @@ async def main_async(argv=None):
         t.cancel()
         try:
             await t
+        except Exception:
+            pass
+    if tail_task is not None:
+        tail_task.cancel()
+        try:
+            await tail_task
         except Exception:
             pass
     try:

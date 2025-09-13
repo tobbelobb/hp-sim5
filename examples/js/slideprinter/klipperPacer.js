@@ -22,7 +22,7 @@ const EXTRUDER_AXIS = 'E';
 const EXTRUDER_ROTATION_DISTANCE_MM = 33.5;
 const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * microsteps);
 
-const clockHz = 50_000_000; // Match bridge default
+let clockHz = 50_000_000; // Default; will auto-update from bridge
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
 const bufferAheadMs = 5.0; // Buffer to smooth out network jitter
 const pacerIntervalMs = 2.0; // engine can consume at max 500 Hz
@@ -253,6 +253,23 @@ const connect = (url) => {
             if (DEBUG) log(`first klipper_parsed seq=${firstSeqSeen} count=${msg.count}`);
           }
           for (const line of msg.lines) handleParsedLine(line);
+          return;
+        } else if (msg && msg.action === 'klipper_clock' && typeof msg.clock_hz === 'number' && isFinite(msg.clock_hz) && msg.clock_hz > 0) {
+          const oldHz = clockHz;
+          const newHz = msg.clock_hz;
+          if (DEBUG) log(`clock update: ${oldHz} -> ${newHz}`);
+          if (newHz !== oldHz) {
+            // Scale any pending nextWakeTimeMs so remaining time adjusts smoothly
+            const now = performance.now();
+            const scale = oldHz / newHz;
+            for (const axis of axisOrder) {
+              const st = axisState.get(axis);
+              if (!st || st.nextWakeTimeMs === null) continue;
+              const rem = Math.max(0, st.nextWakeTimeMs - now);
+              st.nextWakeTimeMs = now + rem * scale;
+            }
+            clockHz = newHz;
+          }
           return;
         }
       } catch (_) { /* not json, fall through */ }
