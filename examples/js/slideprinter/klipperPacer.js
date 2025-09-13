@@ -25,8 +25,8 @@ const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * micr
 const clockHz = 50_000_000; // Match bridge default
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
 const bufferAheadMs = 5.0; // Buffer to smooth out network jitter
-const pacerIntervalMs = 2.0;
-let pacerTimer = null;
+const pacerIntervalMs = 2.0; // engine can consume at max 500 Hz
+let pacerTimer = null;       // setInterval handle for pacer
 let startedBaseTimeMs = null;
 let firstTickOffset = null;     // Global baseline: min first-interval across all axes
 let hasEmittedAnyStep = false;  // Lock baseline once stepping begins
@@ -114,6 +114,8 @@ const pacerLoop = () => {
     if (any) {
       postMessage({ type: 'move', command: move });
     }
+
+    // Fixed-rate pacer; next wake is handled by setInterval
   } catch (e) {
     error('KlipperPacer pacer error:', e);
   }
@@ -221,6 +223,8 @@ const handleParsedLine = (line) => {
       st.activeDirSign = st.dirSign;
     }
     postMessage({ type: 'move', command: { type: 'Add to reference', [axis]: delta } });
+    // Ensure pacer is running; fixed-rate loop will pick up new schedule
+    ensurePacerRunning();
     return;
   }
   if (has('queue_step')) {
