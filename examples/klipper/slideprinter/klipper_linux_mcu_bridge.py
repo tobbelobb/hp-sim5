@@ -134,6 +134,11 @@ def create_pty_symlink(symlink_path: str) -> int:
     except Exception:
         pass
     tname = os.ttyname(sfd)
+    # Make PTY slave world-readable/writable for Klippy
+    try:
+        os.chmod(tname, 0o666)
+    except Exception as e:
+        print(f"Warning: could not chmod PTY slave {tname}: {e}")
     os.symlink(tname, symlink_path)
     return mfd
 
@@ -444,7 +449,10 @@ async def main_async(argv=None):
             mcu_bin = str(elf)
         else:
             mcu_bin = shutil.which('klipper_mcu') or 'klipper_mcu'
-    cmd = [mcu_bin, '-I', args.raw_path]
+    cmd = [mcu_bin, '-r', '-I', args.raw_path]
+    # The -r (realtime) flag requires root. Use sudo if not already root.
+    if os.geteuid() != 0:
+        cmd.insert(0, 'sudo')
     print(f"Launching: {' '.join(shlex.quote(c) for c in cmd)}")
     mcu_proc = await asyncio.create_subprocess_exec(*cmd,
                                                     stdout=asyncio.subprocess.PIPE,
