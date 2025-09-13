@@ -366,6 +366,7 @@ ALLOWED_COMMANDS = {
     'query_analog_in',
     'queue_digital_out',
     'set_next_step_dir',
+    'set_position',
     'queue_step',
 }
 
@@ -385,7 +386,9 @@ async def main_async(argv=None):
     parser.add_argument('--ws-host', default='127.0.0.1', help='WebSocket bind host')
     parser.add_argument('--ws-port', type=int, default=8770, help='WebSocket port')
     parser.add_argument('--no-ws', action='store_true', help='Disable WebSocket server')
-    parser.add_argument('--batch-ms', type=float, default=1,
+    # Keep the default coalescing window tiny so parsed lines are visible
+    # almost immediately even if packets arrive in bursts.
+    parser.add_argument('--batch-ms', type=float, default=0.001,
                         help='Coalescing window for WS flush (seconds).')
     parser.add_argument('--max-bytes', type=int, default=16*1024,
                         help='Flush to WS when buffered payload exceeds this size.')
@@ -539,4 +542,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
