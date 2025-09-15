@@ -127,6 +127,7 @@ def create_pty_symlink(symlink_path: str) -> int:
     _set_raw(sfd)
     _set_raw(mfd)
     _set_nonblocking(mfd)
+    _set_nonblocking(sfd)
     # Link slave to the desired symlink path (replacing any existing link)
     if os.path.lexists(symlink_path):
         os.unlink(symlink_path)
@@ -158,13 +159,9 @@ class ParsedMirror:
     exceeds 16KiB, flush immediately.
     """
 
-    def __init__(self, ws: WSManager, mp, allowed_cmds: Set[str], *,
-                 batch_ms: float = 0.001, max_bytes: int = 16 * 1024):
+    def __init__(self, ws: WSManager, mp):
         self.ws = ws
         self.mp = mp
-        self.allowed = allowed_cmds
-        self.batch_ms = batch_ms
-        self.max_bytes = max_bytes
         self.buf = bytearray()
         self.lines: List[str] = []
         self.bytes_acc = 0
@@ -192,9 +189,8 @@ class ParsedMirror:
                 # Filter subset
                 for ln in decoded_lines:
                     name = ln.split()[0] if ln else ''
-                    if name in self.allowed:
-                        self.lines.append(ln)
-                        self.bytes_acc += len(ln) + 1
+                    self.lines.append(ln)
+                    self.bytes_acc += len(ln) + 1
                 # Consume packet
                 del self.buf[:l]
                 # Flush immediately at packet boundary if anything collected
@@ -213,24 +209,10 @@ class ParsedMirror:
             # If more lines were appended but not full packets, schedule near-term flush
             if self.lines:
                 if self._flush_task is None or self._flush_task.done():
-                    self._flush_task = asyncio.create_task(self._delayed_flush())
+                    self._flush_task = asyncio.create_task(self._flush())
         # Send outside lock to avoid blocking parsing
         for payload in out_messages:
             await self.ws.broadcast_json(payload)
-
-    async def _maybe_flush(self, *, immediate: bool):
-        if immediate or self.bytes_acc >= self.max_bytes:
-            await self._flush()
-            return
-        if self._flush_task is None or self._flush_task.done():
-            self._flush_task = asyncio.create_task(self._delayed_flush())
-
-    async def _delayed_flush(self):
-        try:
-            await asyncio.sleep(self.batch_ms)
-            await self._flush()
-        except asyncio.CancelledError:
-            pass
 
     async def _flush(self):
         payload = None
@@ -378,21 +360,6 @@ class FDBridge:
 
 # ------------------------------- Main ---------------------------------------
 
-ALLOWED_COMMANDS = {
-    'allocate_oids',
-    'config_analog_in',
-    'config_digital_out',
-    'set_digital_out_pwm_cycle',
-    'config_stepper',
-    'finalize_config',
-    'query_analog_in',
-    'queue_digital_out',
-    'set_next_step_dir',
-    'reset_step_clock',
-    'set_position',
-    'queue_step',
-}
-
 
 async def main_async(argv=None):
     parser = argparse.ArgumentParser(description="Linux MCU PTY bridge + WebSocket mirror")
@@ -408,18 +375,11 @@ async def main_async(argv=None):
                         help='Path to Klipper repo directory (to import msgproto). Optional.')
     parser.add_argument('--ws-host', default='127.0.0.1', help='WebSocket bind host')
     parser.add_argument('--ws-port', type=int, default=8770, help='WebSocket port')
-    parser.add_argument('--no-ws', action='store_true', help='Disable WebSocket server')
-    # Keep the default coalescing window tiny so parsed lines are visible
-    # almost immediately even if packets arrive in bursts.
-    parser.add_argument('--batch-ms', type=float, default=0.05,
-                        help='Coalescing window for WS flush (seconds).')
-    parser.add_argument('--max-bytes', type=int, default=16*1024,
-                        help='Flush to WS when buffered payload exceeds this size.')
     parser.add_argument('--klippy-log', default=None,
                         help='Optional path to Klippy log (klippy.log). If set, the bridge tails it and broadcasts measured freq as {action:"klipper_clock", clock_hz:<number>} to WS clients.')
     args = parser.parse_args(argv)
 
-    if websockets is None and not args.no_ws:
+    if websockets is None:
         print("Error: The 'websockets' package is required. pip install websockets")
         return 2
 
@@ -446,14 +406,12 @@ async def main_async(argv=None):
             mcu_bin = str(elf)
         else:
             mcu_bin = shutil.which('klipper_mcu') or 'klipper_mcu'
-    cmd = [mcu_bin, '-r', '-I', args.raw_path]
+    cmd = [mcu_bin, '-I', args.raw_path]
     # The -r (realtime) flag requires root. Use sudo if not already root.
     if os.geteuid() != 0:
         cmd.insert(0, 'sudo')
     print(f"Launching: {' '.join(shlex.quote(c) for c in cmd)}")
-    mcu_proc = await asyncio.create_subprocess_exec(*cmd,
-                                                    stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.PIPE)
+    mcu_proc = await asyncio.create_subprocess_exec(*cmd)
 
     # Create host-facing PTY and symlink
     master_fd = create_pty_symlink(args.host_path)
@@ -482,12 +440,8 @@ async def main_async(argv=None):
 
     # WebSocket server + parser setup
     ws_mgr = WSManager()
-    if not args.no_ws:
-        ws_server = websockets.serve(lambda ws: ws_mgr.register(ws),
-                                     host=args.ws_host, port=args.ws_port,
-                                     max_size=None, max_queue=None, compression=None)
-    else:
-        ws_server = None
+    ws_server = websockets.serve(lambda ws: ws_mgr.register(ws),
+                                 host=args.ws_host, port=args.ws_port)
 
     # Initialize msgproto parser from dictionary
     parser_obj: Optional[ParsedMirror] = None
@@ -497,9 +451,7 @@ async def main_async(argv=None):
                 dictionary = f.read()
             mp = _msgproto.MessageParser()
             mp.process_identify(dictionary, decompress=False)
-            parser_obj = ParsedMirror(ws_mgr, mp, ALLOWED_COMMANDS,
-                                      batch_ms=args.batch_ms,
-                                      max_bytes=args.max_bytes)
+            parser_obj = ParsedMirror(ws_mgr, mp)
             print(f"Loaded Klipper dictionary: {args.dict_path} ({len(dictionary)} bytes)")
         except Exception as e:
             print(f"Warning: Failed to initialize msgproto parser: {e}")
@@ -545,7 +497,7 @@ async def main_async(argv=None):
 
     # Optional: tail Klippy log for measured freq updates
     tail_task = None
-    if args.klippy_log and not args.no_ws:
+    if args.klippy_log:
         log_path = args.klippy_log
 
         async def tail_klippy_log(path: str, ws: WSManager):

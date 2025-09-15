@@ -21,8 +21,6 @@ const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * micr
 
 let clockHz = 50_000_000; // Default; will auto-update from bridge
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
-const bufferAheadMs = 15.0; // Buffer to smooth out network jitter
-const pacerIntervalMs = 1.0; // engine can consume at max 500 Hz
 let pacerTimer = null;       // setInterval handle for pacer
 let startedBaseTimeMs = null;
 let firstTickOffset = null;     // Global baseline: min first-interval across all axes
@@ -119,30 +117,12 @@ const pacerLoop = () => {
 };
 
 const ensurePacerRunning = () => {
-  if (pacerTimer !== null) return;
-  pacerTimer = setInterval(pacerLoop, pacerIntervalMs);
+  pacerTimer = setInterval(pacerLoop);
 };
 
 const maybeAdjustBaseline = (firstIntervalTicks) => {
-  if (hasEmittedAnyStep) return; // don't rebase after we start
-  const fi = Math.max(1, Number(firstIntervalTicks) || 1);
-  if (firstTickOffset === null) {
-    firstTickOffset = fi;
-    return;
-  }
-  if (fi < firstTickOffset) {
-    const old = firstTickOffset;
-    firstTickOffset = fi;
-    // Shift all scheduled wake times earlier by the delta so the earliest
-    // planned step happens near startedBaseTimeMs.
-    if (startedBaseTimeMs !== null) {
-      const shiftMs = ticksToMs(old - fi);
-      for (const axis of axisOrder) {
-        const st = axisState.get(axis);
-        if (st && st.nextWakeTimeMs !== null) st.nextWakeTimeMs -= shiftMs;
-      }
-    }
-  }
+  const fi = Number(firstIntervalTicks);
+  firstTickOffset = fi;
 };
 
 const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
@@ -158,7 +138,7 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
   if (st.nextWakeTimeMs === null) {
     // Establish global baseline so the earliest queued step across axes starts soon.
     maybeAdjustBaseline(seg.intervalTicks);
-    if (startedBaseTimeMs === null) startedBaseTimeMs = performance.now() + bufferAheadMs;
+    if (startedBaseTimeMs === null) startedBaseTimeMs = performance.now();
 
     // Schedule first step relative to global baseline (subtract earliest offset).
     const baseTicks = firstTickOffset === null ? seg.intervalTicks : Math.max(1, seg.intervalTicks - firstTickOffset);
@@ -294,7 +274,6 @@ const connect = (url) => {
 self.onmessage = (e) => {
   const { type, ...data } = e.data;
   if (type === 'connect') {
-    DEBUG = !!data.debug;
     connect(data.url);
   } else if (type === 'close') {
     if (ws) ws.close();

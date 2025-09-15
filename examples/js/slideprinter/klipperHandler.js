@@ -9,7 +9,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   const workerPath = new URL('./klipperPacer.js', import.meta.url).href;
   const worker = new Worker(workerPath, { type: 'module' });
 
-  worker.postMessage({ type: 'connect', url, debug: DEBUG });
+  worker.postMessage({ type: 'connect', url });
 
   // --- Batching support ---
   let dtSec = (options && typeof options.dt === 'number') ? options.dt : 0;
