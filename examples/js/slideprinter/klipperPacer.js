@@ -19,6 +19,18 @@ const EXTRUDER_AXIS = 'E';
 const EXTRUDER_ROTATION_DISTANCE_MM = 33.5;
 const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * microsteps);
 
+// Throttle outgoing Move messages to avoid overwhelming the browser.
+// Pacer will run at this interval and emit at most once per interval.
+const PACER_INTERVAL_MS = 4;
+const MIN_EMIT_INTERVAL_MS = PACER_INTERVAL_MS;
+
+// Aggregation buffer across pacer ticks
+let lastEmitMs = 0;
+let aggMove = { type: 'Move' };
+let aggFirstStepTimeMs = null;
+let aggLastStepTimeMs = null;
+let aggHasAny = false;
+
 let clockHz = 50_000_000; // Default; will auto-update from bridge
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
 let pacerTimer = null;       // setInterval handle for pacer
@@ -61,7 +73,6 @@ const parseKv = (line) => {
 const pacerLoop = () => {
   try {
     const now = performance.now();
-    const move = { type: 'Move' };
     let any = false;
     let loopMinStepTimeMs = Infinity;
     let loopMaxStepTimeMs = -Infinity;
@@ -103,26 +114,49 @@ const pacerLoop = () => {
         axisAngles.set(axis, newAngle);
         if (axis === EXTRUDER_AXIS) {
           const e_mm = stepsApplied * EXTRUDER_MM_PER_STEP;
-          move[axis] = e_mm;
+          aggMove.E = (aggMove.E || 0) + e_mm;
         } else {
-          move[axis] = newAngle;
+          aggMove[axis] = newAngle;
         }
         if (lastStepTimeMs !== null) {
           if (lastStepTimeMs < loopMinStepTimeMs) loopMinStepTimeMs = lastStepTimeMs;
           if (lastStepTimeMs > loopMaxStepTimeMs) loopMaxStepTimeMs = lastStepTimeMs;
+          if (aggFirstStepTimeMs === null || lastStepTimeMs < aggFirstStepTimeMs) aggFirstStepTimeMs = lastStepTimeMs;
+          if (aggLastStepTimeMs === null || lastStepTimeMs > aggLastStepTimeMs) aggLastStepTimeMs = lastStepTimeMs;
         }
+        aggHasAny = true;
         any = true;
       }
     }
 
     if (any) {
-      const atMs = (loopMaxStepTimeMs > -Infinity) ? loopMaxStepTimeMs : now;
-      const spanMs = (loopMinStepTimeMs < Infinity && loopMaxStepTimeMs > -Infinity)
-        ? Math.max(0, loopMaxStepTimeMs - loopMinStepTimeMs)
-        : 0;
-      move.at = atMs;
-      move.span = spanMs;
-      postMessage({ type: 'move', command: move });
+      // Extend aggregation window with this loop's min/max if available
+      if (loopMinStepTimeMs < Infinity) {
+        if (aggFirstStepTimeMs === null || loopMinStepTimeMs < aggFirstStepTimeMs) aggFirstStepTimeMs = loopMinStepTimeMs;
+      }
+      if (loopMaxStepTimeMs > -Infinity) {
+        if (aggLastStepTimeMs === null || loopMaxStepTimeMs > aggLastStepTimeMs) aggLastStepTimeMs = loopMaxStepTimeMs;
+      }
+    }
+
+    // Throttled emit
+    if (aggHasAny) {
+      const sinceLast = now - lastEmitMs;
+      if (sinceLast >= MIN_EMIT_INTERVAL_MS) {
+        const atMs = (aggLastStepTimeMs != null) ? aggLastStepTimeMs : now;
+        const spanMs = (aggFirstStepTimeMs != null && aggLastStepTimeMs != null)
+          ? Math.max(0, aggLastStepTimeMs - aggFirstStepTimeMs)
+          : 0;
+        aggMove.at = atMs;
+        aggMove.span = spanMs;
+        postMessage({ type: 'move', command: aggMove });
+        // Reset aggregation
+        aggMove = { type: 'Move' };
+        aggFirstStepTimeMs = null;
+        aggLastStepTimeMs = null;
+        aggHasAny = false;
+        lastEmitMs = now;
+      }
     }
 
     // Fixed-rate pacer; next wake is handled by setInterval
@@ -132,7 +166,9 @@ const pacerLoop = () => {
 };
 
 const ensurePacerRunning = () => {
-  pacerTimer = setInterval(pacerLoop);
+  if (pacerTimer == null) {
+    pacerTimer = setInterval(pacerLoop, PACER_INTERVAL_MS);
+  }
 };
 
 const maybeAdjustBaseline = (firstIntervalTicks) => {
