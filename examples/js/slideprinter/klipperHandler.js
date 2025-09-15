@@ -22,7 +22,10 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
 
   // Pending commands, sorted by 'at' (ms, performance.now() timebase)
   const pending = [];
-  let nextDeadlineMs = null;
+  let nextDeadlineMs = null; // latest computed earliest deadline among pending (for info)
+  let currentSleepDeadlineMs = null; // deadline currently armed in timing worker
+  let sleepArmed = false; // whether worker is currently sleeping for a deadline
+  const EARLY_EPS_MS = 0.05; // only preempt if earlier by >= 0.05ms to reduce churn
 
   const insertSorted = (cmd) => {
     let lo = 0, hi = pending.length;
@@ -36,25 +39,40 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   const scheduleNextSleep = () => {
     if (pending.length === 0) {
       nextDeadlineMs = null;
+      currentSleepDeadlineMs = null;
+      sleepArmed = false;
       return;
     }
-    const now = performance.now();
-    nextDeadlineMs = pending[0].at;
-    const ms = Math.max(0, nextDeadlineMs - now);
-    timingWorker.postMessage({ type: 'sleep', ms });
+    const earliest = pending[0].at;
+    nextDeadlineMs = earliest;
+    if (!sleepArmed) {
+      const now = performance.now();
+      const ms = Math.max(0, earliest - now);
+      timingWorker.postMessage({ type: 'sleep', ms });
+      currentSleepDeadlineMs = earliest;
+      sleepArmed = true;
+    }
+    // If already armed and a new earlier deadline arrives, we will only
+    // preempt via SAB in schedule(); a new 'sleep' will be sent after wakeup.
   };
 
   const schedule = (cmd) => {
     if (!cmd || typeof cmd !== 'object') return;
     if (!Number.isFinite(cmd.at)) cmd.at = performance.now();
     insertSorted(cmd);
-    if (nextDeadlineMs === null || cmd.at < nextDeadlineMs) {
-      // Preempt current wait to an earlier deadline
+    if (!sleepArmed) {
+      // Nothing armed yet: issue initial sleep
+      scheduleNextSleep();
+      return;
+    }
+    // If an earlier deadline just arrived, preempt the current wait.
+    const earliest = pending[0].at;
+    if (currentSleepDeadlineMs === null || earliest + EARLY_EPS_MS < currentSleepDeadlineMs) {
       try {
         Atomics.store(sabI32, 0, 1);
         Atomics.notify(sabI32, 0, 1);
       } catch (_) {}
-      scheduleNextSleep();
+      // Do not send a new 'sleep' message here; we'll arm after the worker wakes.
     }
   };
 
@@ -67,6 +85,9 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
         const cmd = pending.shift();
         try { onCommand(cmd); } catch (_) {}
       }
+      // Previous sleep has completed or was preempted: allow re-arming.
+      sleepArmed = false;
+      currentSleepDeadlineMs = null;
       scheduleNextSleep();
     }
   };
