@@ -33,6 +33,9 @@
       font-src https://fonts.gstatic.com data:;
     ">
 
+    <meta http-equiv="Cross-Origin-Opener-Policy:" content="same-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy:" content="require-corp">
+
     <!-- Nice free Google font – optional -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet"
@@ -220,7 +223,6 @@ canvas {
     if (websocket_in || websocket_out) {
         ws = new WebSocket(`wss://localhost:${port}`);
     }
-    let count = 0;
 
     const connectKlipperRawNow = () => {
         const scheme = (location.protocol === 'https:') ? 'wss' : 'ws';

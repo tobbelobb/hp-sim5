@@ -10,6 +10,12 @@ export default defineConfig(async () => {
   return {
     base: '/hp-sim5/',
     build: { rollupOptions: { input: inputs } },
+    server: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
+      }
+    },
     assetsInclude: ['**/*.usda', '**/*.usda.txt']
   };
 });
