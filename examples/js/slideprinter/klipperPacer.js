@@ -1,9 +1,5 @@
 // This is a worker script for Klipper pacing.
 
-// --- Logging helpers ---
-const log = (...args) => postMessage({ type: 'log', args });
-const error = (...args) => postMessage({ type: 'error', args });
-
 // --- Globals for worker state ---
 let ws = null;
 let DEBUG = false;
@@ -118,7 +114,7 @@ const pacerLoop = () => {
 
     // Fixed-rate pacer; next wake is handled by setInterval
   } catch (e) {
-    error('KlipperPacer pacer error:', e);
+    console.error('KlipperPacer pacer error:', e);
   }
 };
 
@@ -185,15 +181,15 @@ const handleParsedLine = (line) => {
   };
 
   if (has('config_stepper')) {
-    if (DEBUG) log(line);
+    if (DEBUG) console.log(line);
     const kv = parseKv(sliceAfter('config_stepper'));
     const axis = ensureAxisForOid(kv.oid);
-    if (axis) log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
-    else log(`Klipper failed to map oid: ${kv.oid}`);
+    if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
+    else console.log(`Klipper failed to map oid: ${kv.oid}`);
     return;
   }
   if (has('set_next_step_dir')) {
-    if (DEBUG) log(line);
+    if (DEBUG) console.log(line);
     const kv = parseKv(sliceAfter('set_next_step_dir'));
     const axis = ensureAxisForOid(kv.oid);
     if (!axis) return;
@@ -203,7 +199,7 @@ const handleParsedLine = (line) => {
     return;
   }
   if (has('set_position')) {
-    if (DEBUG) log(line);
+    if (DEBUG) console.log(line);
     const kv = parseKv(sliceAfter('set_position'));
     const axis = ensureAxisForOid(kv.oid);
     if (!axis) return;
@@ -229,7 +225,7 @@ const handleParsedLine = (line) => {
     return;
   }
   if (has('queue_step')) {
-    if (DEBUG) log(line);
+    if (DEBUG) console.log(line);
     const kv = parseKv(sliceAfter('queue_step'));
     const axis = ensureAxisForOid(kv.oid);
     if (!axis) return;
@@ -251,12 +247,12 @@ const connect = (url) => {
         if (msg && msg.action === 'klipper_parsed' && Array.isArray(msg.lines)) {
           if (firstSeqSeen === null && typeof msg.seq === 'number') {
             firstSeqSeen = msg.seq;
-            if (DEBUG) log(`first klipper_parsed seq=${firstSeqSeen} count=${msg.count}`);
+            if (DEBUG) console.log(`first klipper_parsed seq=${firstSeqSeen} count=${msg.count}`);
           }
           if (typeof msg.seq === 'number' && typeof msg.count === 'number') {
             if (expectedSeq === null) expectedSeq = msg.seq;
             if (msg.seq !== expectedSeq && DEBUG) {
-              error(`seq discontinuity: expected ${expectedSeq}, got ${msg.seq}`);
+              console.error(`seq discontinuity: expected ${expectedSeq}, got ${msg.seq}`);
             }
             expectedSeq = msg.seq + msg.count;
           }
@@ -265,7 +261,7 @@ const connect = (url) => {
         } else if (msg && msg.action === 'klipper_clock' && typeof msg.clock_hz === 'number' && isFinite(msg.clock_hz) && msg.clock_hz > 0) {
           const oldHz = clockHz;
           const newHz = msg.clock_hz;
-          if (DEBUG) log(`clock update: ${oldHz} -> ${newHz}`);
+          if (DEBUG) console.log(`clock update: ${oldHz} -> ${newHz}`);
           if (newHz !== oldHz) {
             // Scale any pending nextWakeTimeMs so remaining time adjusts smoothly
             const now = performance.now();
@@ -281,12 +277,12 @@ const connect = (url) => {
           return;
         }
       } catch (_) { /* not json, fall through */ }
-      log(`unhandled text: ${event.data.slice(0, 100)}`);
+      console.log(`unhandled text: ${event.data.slice(0, 100)}`);
     }
   };
-  ws.onerror = (err) => error('websocket error:', err);
+  ws.onerror = (err) => console.error('websocket error:', err);
   ws.onclose = () => {
-    log('connection closed');
+    console.log('connection closed');
     if (pacerTimer) {
       clearInterval(pacerTimer);
       pacerTimer = null;

@@ -79,10 +79,6 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     const { type, command, args } = e.data;
     if (type === 'move') {
       if (typeof onCommand === 'function') handleCommand(command);
-    } else if (type === 'log' && DEBUG) {
-      console.log('KlipperPacer:', ...args);
-    } else if (type === 'error') {
-      console.error('KlipperPacer:', ...args);
     } else if (type === 'closed') {
       console.log('KlipperHandler: worker indicated connection closed');
     }
