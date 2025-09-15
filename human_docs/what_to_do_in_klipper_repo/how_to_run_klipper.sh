@@ -40,7 +40,7 @@
 # $ ls ./build/pysimulavr/_pysimulavr.*.so
 # Then simulate avr with
 
-PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py ~/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py ~/repos/klipper/klippy/ --rate 0.5 --keep-noise --parse-debug
+PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py ~/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py ~/repos/klipper/klippy/ --rate 1.0 --keep-noise --parse-debug
 
 
 # This will continuously hog one cpu core which is not ideal but no show stopper either
@@ -51,4 +51,3 @@ PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/sl
 tail -F ~/repos/hp-sim5/attic/klipper.log
 # Then run klipper itself
 ~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
-

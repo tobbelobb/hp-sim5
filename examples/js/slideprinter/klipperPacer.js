@@ -33,7 +33,8 @@ let aggHasAny = false;
 
 let clockHz = 50_000_000; // Default; will auto-update from bridge
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
-let pacerTimer = null;       // setInterval handle for pacer
+let pacerTimer = null;       // setTimeout handle for pacer
+let pacerNextDeadlineMs = null; // Absolute deadline for the next pacer wakeup
 let startedBaseTimeMs = null;
 let firstTickOffset = null;     // Global baseline: min first-interval across all axes
 let hasEmittedAnyStep = false;  // Lock baseline once stepping begins
@@ -159,15 +160,36 @@ const pacerLoop = () => {
       }
     }
 
-    // Fixed-rate pacer; next wake is handled by setInterval
+    // Fixed-rate pacer; next wake is scheduled explicitly after this loop
   } catch (e) {
     console.error('KlipperPacer pacer error:', e);
   }
 };
 
+const scheduleNextPacer = (now = performance.now()) => {
+  if (pacerNextDeadlineMs === null) {
+    pacerNextDeadlineMs = now + PACER_INTERVAL_MS;
+  } else {
+    while (pacerNextDeadlineMs <= now) {
+      pacerNextDeadlineMs += PACER_INTERVAL_MS;
+    }
+  }
+  const delay = Math.max(0, pacerNextDeadlineMs - now);
+  pacerTimer = setTimeout(pacerTick, delay);
+};
+
+const pacerTick = () => {
+  pacerTimer = null;
+  pacerLoop();
+  scheduleNextPacer();
+};
+
 const ensurePacerRunning = () => {
   if (pacerTimer == null) {
-    pacerTimer = setInterval(pacerLoop, PACER_INTERVAL_MS);
+    const now = performance.now();
+    // Reset baseline so first schedule is anchored to the current clock value
+    pacerNextDeadlineMs = now;
+    scheduleNextPacer(now);
   }
 };
 
@@ -315,9 +337,10 @@ const connect = (url) => {
   ws.onclose = () => {
     console.log('connection closed');
     if (pacerTimer) {
-      clearInterval(pacerTimer);
+      clearTimeout(pacerTimer);
       pacerTimer = null;
     }
+    pacerNextDeadlineMs = null;
     postMessage({ type: 'closed' });
   };
 };
