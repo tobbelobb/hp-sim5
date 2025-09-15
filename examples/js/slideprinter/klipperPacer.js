@@ -243,7 +243,7 @@ const handleParsedLine = (line) => {
 
 const connect = (url) => {
   ws = new WebSocket(url);
-  ws.onopen = () => log(`connected to ${url}`);
+  ws.onopen = () => console.log(`connected to ${url}`);
   ws.onmessage = (event) => {
     if (typeof event.data === 'string') {
       try {
