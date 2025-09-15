@@ -371,6 +371,10 @@ def create_pty(ptyname: str) -> int:
     except os.error:
         pass
     os.symlink(slave_path, ptyname)
+    try:
+        os.chmod(slave_path, 0o666)
+    except Exception as e:
+        print(f"Warning: could not chmod PTY slave {slave_path}: {e}")
 
     # Helper to put an FD into 8N1 raw mode, non-canonical, no echo
     def _set_raw(fd: int):
@@ -487,13 +491,19 @@ async def main_async(argv=None):
         sys.exit(2)
 
     parser = argparse.ArgumentParser(description="SimulAVR PTY + WebSocket raw-bytes bridge")
-    parser.add_argument("elffile", type=str, help="Path to AVR ELF (e.g., klipper.elf)")
+    parser.add_argument("elf_path", nargs="?", default=None, help="Path to AVR ELF (e.g., klipper.elf)")
+    parser.add_argument("--elf", "--mcu-bin", dest="elffile", default=None,
+                        help="Alias for positional ELF path (for drop-in compat)")
     parser.add_argument("-m", "--machine", default="atmega644", help="AVR device type")
     parser.add_argument("-s", "--speed", type=int, default=16000000, help="CPU speed (Hz)")
     parser.add_argument("-r", "--rate", dest="pacing_rate", type=float, default=0.0, help="Real-time pacing rate")
     parser.add_argument("-b", "--baud", type=int, default=250000, help="UART baud rate")
     parser.add_argument("-t", "--trace", default=None, help="Signals to trace (? for list)")
-    parser.add_argument("-p", "--port", default="/tmp/pseudoserial", help="PTY symlink path for Klipper")
+    parser.add_argument("-p", "--port", default="/tmp/klipper_host_mcu", help="PTY symlink path for Klipper")
+    parser.add_argument("--host-path", dest="host_path", default=None,
+                        help="Alias for --port (matches linux mcu bridge)")
+    parser.add_argument("--raw-path", dest="raw_path", default=None,
+                        help="Unused compatibility flag (linux bridge passthrough)")
     deffile = Path(sys.argv[0]).with_suffix(".vcd").name
     parser.add_argument("-f", "--tracefile", default=deffile, help="Trace VCD filename")
     parser.add_argument("--ws-host", default="127.0.0.1", help="WebSocket bind host")
@@ -514,8 +524,31 @@ async def main_async(argv=None):
                         help="Path to Klipper MCU dictionary (klipper.dict)")
     parser.add_argument("--klipper-py", dest="klipper_py_path", default=None,
                         help="Path to Klipper repo (to import msgproto). Optional.")
+    parser.add_argument("--klippy-log", dest="klippy_log", default=None,
+                        help="Ignored placeholder for drop-in CLI compatibility.")
 
     args = parser.parse_args(argv)
+
+    if args.host_path:
+        args.port = args.host_path
+    if args.raw_path:
+        print("Note: --raw-path is ignored when using the simulavr bridge.")
+    if args.klippy_log:
+        print("Note: --klippy-log is ignored; clock updates come from parsed traffic.")
+
+    elffile = args.elffile or args.elf_path
+    if not elffile:
+        candidates = [
+            Path("out/klipper.elf"),
+            Path(__file__).resolve().parents[1] / "avr/klipper.elf",
+        ]
+        for cand in candidates:
+            if cand.exists():
+                elffile = str(cand)
+                break
+    if not elffile:
+        parser.error("No AVR ELF provided; pass path via positional argument or --elf.")
+    args.elffile = elffile
 
     broadcaster = WSRawBroadcaster(history_messages=args.ws_history_messages)
 
@@ -547,6 +580,7 @@ async def main_async(argv=None):
         mp = None
         parse_buf = bytearray()
         line_seq = 0  # Monotonic sequence across all emitted lines (for debugging)
+        last_clock_hz: Optional[float] = None
         if msgproto is not None and args.dict_path and os.path.exists(args.dict_path):
             try:
                 with open(args.dict_path, 'rb') as dfile:
@@ -674,6 +708,25 @@ async def main_async(argv=None):
                                             'count': len(filtered_lines),
                                         }
                                         await broadcaster.broadcast(json.dumps(payload), add_to_history=True)
+                                        # Emit clock updates when we see set_clock packets
+                                        clock_val = None
+                                        for line in filtered_lines:
+                                            if 'set_clock' not in line:
+                                                continue
+                                            for part in line.split():
+                                                if part.startswith('clock='):
+                                                    try:
+                                                        val = float(part.split('=', 1)[1])
+                                                    except ValueError:
+                                                        continue
+                                                    if val > 0:
+                                                        clock_val = val
+                                                    break
+                                            if clock_val is not None:
+                                                break
+                                        if clock_val is not None and (last_clock_hz is None or abs(clock_val - last_clock_hz) > 1e-6):
+                                            last_clock_hz = clock_val
+                                            await broadcaster.broadcast(json.dumps({'action': 'klipper_clock', 'clock_hz': clock_val}), add_to_history=True)
                             except Exception as e:
                                 if args.parse_debug:
                                     print(f"Parser error: {e}")
