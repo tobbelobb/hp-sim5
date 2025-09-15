@@ -519,12 +519,14 @@ async def main_async(argv=None):
     async def _drain_stream(prefix: str, stream: Optional[asyncio.StreamReader]):
         if stream is None:
             return
+        loop = asyncio.get_running_loop()
         try:
             while True:
                 line = await stream.readline()
                 if not line:
                     break
-                sys.stdout.write(f"[{prefix}] {line.decode(errors='replace')}")
+                msg = f"[{prefix}] {line.decode(errors='replace')}"
+                await loop.run_in_executor(None, sys.stdout.write, msg)
         except asyncio.CancelledError:
             pass
 
