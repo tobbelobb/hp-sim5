@@ -11,68 +11,68 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
 
   worker.postMessage({ type: 'connect', url });
 
-  // --- Batching support ---
-  let dtSec = (options && typeof options.dt === 'number') ? options.dt : 0;
-  let flushTimer = null;
-  let pendingMove = null;          // { type: 'Move', A: angle, ... } (latest within window)
-  let pendingAddRef = null;        // { type: 'Add to reference', A: dAngle, ... } (sum within window)
-  let somethingArrived = false;    // Track if anything came in this window
+  // --- High-precision timing scheduler (Atomics.wait-based) ---
+  const timingWorkerPath = new URL('./timingScheduler.js', import.meta.url).href;
+  const timingWorker = new Worker(timingWorkerPath, { type: 'module' });
 
-  const scheduleFlush = () => {
-    if (!(dtSec > 0)) return; // no batching
-    if (flushTimer !== null) return;
-    // Use setTimeout so idle periods don't fire unnecessarily.
-    flushTimer = setTimeout(() => {
-      flushTimer = null;
-      if (!somethingArrived) return;
-      // Emit accumulated Add-to-reference first, then final Move
-      if (pendingAddRef && Object.keys(pendingAddRef).some(k => k !== 'type')) {
-        try { onCommand(pendingAddRef); } catch (_) {}
+  // Shared futex used to preempt sleeps
+  const sab = new SharedArrayBuffer(4);
+  const sabI32 = new Int32Array(sab);
+  timingWorker.postMessage({ type: 'init', sab });
+
+  // Pending commands, sorted by 'at' (ms, performance.now() timebase)
+  const pending = [];
+  let nextDeadlineMs = null;
+
+  const insertSorted = (cmd) => {
+    let lo = 0, hi = pending.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pending[mid].at <= cmd.at) lo = mid + 1; else hi = mid;
+    }
+    pending.splice(lo, 0, cmd);
+  };
+
+  const scheduleNextSleep = () => {
+    if (pending.length === 0) {
+      nextDeadlineMs = null;
+      return;
+    }
+    const now = performance.now();
+    nextDeadlineMs = pending[0].at;
+    const ms = Math.max(0, nextDeadlineMs - now);
+    timingWorker.postMessage({ type: 'sleep', ms });
+  };
+
+  const schedule = (cmd) => {
+    if (!cmd || typeof cmd !== 'object') return;
+    if (!Number.isFinite(cmd.at)) cmd.at = performance.now();
+    insertSorted(cmd);
+    if (nextDeadlineMs === null || cmd.at < nextDeadlineMs) {
+      // Preempt current wait to an earlier deadline
+      try {
+        Atomics.store(sabI32, 0, 1);
+        Atomics.notify(sabI32, 0, 1);
+      } catch (_) {}
+      scheduleNextSleep();
+    }
+  };
+
+  timingWorker.onmessage = (e) => {
+    const { type } = e.data || {};
+    if (type === 'wakeup') {
+      const now = performance.now();
+      // Flush all due commands
+      while (pending.length && pending[0].at <= now) {
+        const cmd = pending.shift();
+        try { onCommand(cmd); } catch (_) {}
       }
-      if (pendingMove && Object.keys(pendingMove).some(k => k !== 'type')) {
-        try { onCommand(pendingMove); } catch (_) {}
-      }
-      // Reset window state
-      pendingMove = null;
-      pendingAddRef = null;
-      somethingArrived = false;
-    }, Math.max(1, Math.floor(dtSec * 1000)));
+      scheduleNextSleep();
+    }
   };
 
   const handleCommand = (cmd) => {
-    if (!(dtSec > 0)) {
-      // No batching – pass through immediately
-      onCommand(cmd);
-      return;
-    }
-
-    somethingArrived = true;
-    if (cmd && cmd.type === 'Move') {
-      // Keep the latest absolute angles (A-D) but SUM extrusions (E) within the window
-      if (!pendingMove) pendingMove = { type: 'Move' };
-      for (const k of Object.keys(cmd)) {
-        if (k === 'type') continue;
-        if (k === 'E') {
-          const prev = pendingMove.E || 0;
-          pendingMove.E = prev + (cmd.E || 0);
-        } else {
-          pendingMove[k] = cmd[k];
-        }
-      }
-    } else if (cmd && cmd.type === 'Add to reference') {
-      // Sum deltas per axis for this window
-      if (!pendingAddRef) pendingAddRef = { type: 'Add to reference' };
-      for (const k of Object.keys(cmd)) {
-        if (k === 'type') continue;
-        const prev = pendingAddRef[k] || 0;
-        pendingAddRef[k] = prev + cmd[k];
-      }
-    } else {
-      // Unknown command kinds: pass through
-      onCommand(cmd);
-    }
-
-    scheduleFlush();
+    schedule(cmd);
   };
 
   worker.onmessage = (e) => {
@@ -91,25 +91,16 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   // Return an object that allows the caller to terminate the connection/worker.
   return {
     worker,
-    setDt: (newDt) => {
-      const v = Number(newDt);
-      if (Number.isFinite(v) && v >= 0) {
-        dtSec = v;
-        // Reset any in-flight timer so the new dt takes effect immediately
-        if (flushTimer !== null) {
-          clearTimeout(flushTimer);
-          flushTimer = null;
-        }
-        // If we already have pending data, schedule a new flush with updated dt
-        if (somethingArrived) scheduleFlush();
-      }
+    setDt: (_newDt) => {
+      // No-op: timing is driven by per-command 'at' timestamps now
     },
     close: () => {
-      if (flushTimer !== null) {
-        clearTimeout(flushTimer);
-        flushTimer = null;
-      }
-      worker.postMessage({ type: 'close' });
+      try { worker.postMessage({ type: 'close' }); } catch (_) {}
+      try { timingWorker.postMessage({ type: 'shutdown' }); } catch (_) {}
+      try {
+        Atomics.store(sabI32, 0, 1);
+        Atomics.notify(sabI32, 0, 1);
+      } catch (_) {}
     },
   };
 }

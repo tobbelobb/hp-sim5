@@ -63,15 +63,20 @@ const pacerLoop = () => {
     const now = performance.now();
     const move = { type: 'Move' };
     let any = false;
+    let loopMinStepTimeMs = Infinity;
+    let loopMaxStepTimeMs = -Infinity;
 
     for (const axis of axisOrder) {
       const st = axisState.get(axis);
       if (!st) continue;
 
       let stepsApplied = 0;
+      let lastStepTimeMs = null;
       while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
+        const thisStepTimeMs = st.nextWakeTimeMs;
         // Step using the direction captured for the active segment
         stepsApplied += st.activeDirSign;
+        lastStepTimeMs = thisStepTimeMs;
         st.remaining -= 1;
         if (st.remaining > 0) {
           st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
@@ -102,11 +107,21 @@ const pacerLoop = () => {
         } else {
           move[axis] = newAngle;
         }
+        if (lastStepTimeMs !== null) {
+          if (lastStepTimeMs < loopMinStepTimeMs) loopMinStepTimeMs = lastStepTimeMs;
+          if (lastStepTimeMs > loopMaxStepTimeMs) loopMaxStepTimeMs = lastStepTimeMs;
+        }
         any = true;
       }
     }
 
     if (any) {
+      const atMs = (loopMaxStepTimeMs > -Infinity) ? loopMaxStepTimeMs : now;
+      const spanMs = (loopMinStepTimeMs < Infinity && loopMaxStepTimeMs > -Infinity)
+        ? Math.max(0, loopMaxStepTimeMs - loopMinStepTimeMs)
+        : 0;
+      move.at = atMs;
+      move.span = spanMs;
       postMessage({ type: 'move', command: move });
     }
 
@@ -199,7 +214,7 @@ const handleParsedLine = (line) => {
       // After a set_position, align the active direction with the latest pending direction
       st.activeDirSign = st.dirSign;
     }
-    postMessage({ type: 'move', command: { type: 'Add to reference', [axis]: delta } });
+    postMessage({ type: 'move', command: { type: 'Add to reference', [axis]: delta, at: performance.now() } });
     // Ensure pacer is running; fixed-rate loop will pick up new schedule
     ensurePacerRunning();
     return;
