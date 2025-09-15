@@ -496,7 +496,7 @@ async def main_async(argv=None):
     parser.add_argument("-p", "--port", default="/tmp/pseudoserial", help="PTY symlink path for Klipper")
     deffile = Path(sys.argv[0]).with_suffix(".vcd").name
     parser.add_argument("-f", "--tracefile", default=deffile, help="Trace VCD filename")
-    parser.add_argument("--ws-host", default="localhost", help="WebSocket bind host")
+    parser.add_argument("--ws-host", default="127.0.0.1", help="WebSocket bind host")
     parser.add_argument("--ws-port", type=int, default=8770, help="WebSocket port")
     parser.add_argument("--ws-raw-batch-ms", type=int, default=2,
                         help="Batch raw-byte WS frames for N ms before sending (reduces overhead)")
@@ -506,7 +506,7 @@ async def main_async(argv=None):
                         help="Do not filter handshake/noise lines (identify, clock, allocate_oids, etc)")
     parser.add_argument("--no-dedup", action="store_true",
                         help="Disable packet deduplication (keep retransmitted frames)")
-    parser.add_argument("--ws-history-messages", type=int, default=5000,
+    parser.add_argument("--ws-history-messages", type=int, default=0,
                         help="Buffer and replay the most recent N parsed frames to new WS clients (0 disables)")
     parser.add_argument("--raw-log", dest="raw_log", default=None,
                         help="Log raw serial bytes with direction to this file (use '-' for stdout)")
@@ -618,7 +618,7 @@ async def main_async(argv=None):
                             # We have a valid packet of length l at start 0
                             try:
                                 raw_pkt = bytes(parse_buf[:l])
-                                if not args.no_dedup and raw_pkt in recent_set:
+                                if False and raw_pkt in recent_set:
                                     if args.parse_debug:
                                         print(f"Dedup: dropped retransmitted frame len={l}")
                                     # Consume and skip duplicate
@@ -661,38 +661,9 @@ async def main_async(argv=None):
                                 if lines:
                                     if args.parse_debug:
                                         print(f"Parsed packet: {l} bytes -> {len(lines)} line(s). First: {lines[0][:120]}")
-                                    # Inject deterministic stepper names (A-D) based on fixed OID mapping.
-                                    # Ignore extruder and any other steppers beyond oid=3.
-                                    oid_to_name = {0: 'stepper_a', 1: 'stepper_b', 2: 'stepper_c', 3: 'stepper_d'}
-                                    out_lines: list[str] = []
-                                    for ln in lines:
-                                        s = ln
-                                        try:
-                                            s = str(s)
-                                        except Exception:
-                                            pass
-                                        if 'config_stepper ' in s:
-                                            try:
-                                                rest = s.split('config_stepper ', 1)[1]
-                                                oid = None
-                                                for part in rest.split():
-                                                    if part.startswith('oid='):
-                                                        oid = int(part[4:])
-                                                        break
-                                                if oid is not None and oid in oid_to_name and ' name=' not in s:
-                                                    s = f"{s} name={oid_to_name[oid]}"
-                                            except Exception:
-                                                # On any parsing error, leave the line unchanged
-                                                pass
-                                        out_lines.append(s)
-                                    # Filter out noisy handshake chatter that floods the WS and isn't needed for visualization
-                                    def _is_noise_line(s: str) -> bool:
-                                        s = s.strip()
-                                        if not s:
-                                            return True
-                                        cmd = s.split()[0]
-                                        return cmd in ('identify', 'identify_response', 'get_clock', 'clock', 'allocate_oids', 'emergency_stop')
-                                    filtered_lines = out_lines if args.keep_noise else [s for s in out_lines if not _is_noise_line(s)]
+                                    # Output lines as-is to match linux mcu bridge behavior (no renaming or filtering)
+                                    out_lines = [str(s) for s in lines]
+                                    filtered_lines = out_lines
                                     if filtered_lines:
                                         start_idx = line_seq
                                         line_seq += len(filtered_lines)
