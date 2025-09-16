@@ -12,6 +12,7 @@ Usage::
 
 Optionally specify ``--output`` to write a PNG (or any matplotlib-supported
 format). Without ``--output`` the plot window is displayed interactively.
+The plot shows only the A-axis velocity derived from finite differences.
 """
 
 from __future__ import annotations
@@ -108,38 +109,44 @@ def _build_time_vector(entries: List[Dict], unit: str) -> List[float]:
     return times
 
 
+def _compute_velocity(times: np.ndarray, values: np.ndarray) -> np.ndarray:
+    velocity = np.full_like(values, np.nan, dtype=float)
+    mask = np.isfinite(times) & np.isfinite(values)
+    if np.count_nonzero(mask) >= 2:
+        vel_valid = np.gradient(values[mask], times[mask])
+        velocity[mask] = vel_valid
+    return velocity
+
+
 def plot_move_log(entries: List[Dict], output: Path | None, time_unit: str) -> None:
     axis_series = _build_series(entries)
-    if not axis_series:
-        raise ValueError("No axis data found in log entries")
+    if 'A' not in axis_series:
+        raise ValueError("Axis 'A' not found in log entries")
 
     times = _build_time_vector(entries, time_unit)
     if len(times) != len(entries):
         raise ValueError("Mismatch between timestamps and entries count")
+    times_arr = np.asarray(times, dtype=float)
+
+    values = np.asarray(axis_series['A'], dtype=float)
+    if values.shape[0] != times_arr.shape[0]:
+        min_len = min(values.shape[0], times_arr.shape[0])
+        values = values[:min_len]
+        times_arr = times_arr[:min_len]
+
+    velocities = _compute_velocity(times_arr, values)
 
     unit_map = _extract_units(entries)
-    axis_names = sorted(axis_series.keys())
+    unit_label = unit_map.get('A', unit_map.get('spool', 'radians'))
+    time_unit_label = {"seconds": "s", "milliseconds": "ms"}.get(time_unit, time_unit)
 
-    fig, axes_arr = plt.subplots(len(axis_names), 1, sharex=True, figsize=(10, 2.5 * len(axis_names)))
-    if isinstance(axes_arr, np.ndarray):
-        axes_iter = list(axes_arr.ravel())
-    else:
-        axes_iter = [axes_arr]
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(times_arr, velocities, linewidth=0.9, color='tab:red')
+    ax.set_xlabel(f"Time ({time_unit})")
+    ax.set_ylabel(f"A velocity ({unit_label}/{time_unit_label})")
+    ax.grid(True, which="both", linestyle="--", linewidth=0.4, alpha=0.5)
+    ax.set_title("A-axis Velocity")
 
-    for ax_obj, axis_name in zip(axes_iter, axis_names):
-        values = axis_series[axis_name]
-        if len(values) != len(times):
-            # Pad with NaNs to align with timestamps.
-            padded = list(values)
-            if len(values) < len(times):
-                padded.extend([float("nan")] * (len(times) - len(values)))
-            values = padded
-        ax_obj.plot(times, values, linewidth=0.9)
-        unit_label = unit_map.get(axis_name, unit_map.get("spool", "radians"))
-        ax_obj.set_ylabel(f"{axis_name} ({unit_label})")
-        ax_obj.grid(True, which="both", linestyle="--", linewidth=0.4, alpha=0.5)
-
-    axes_iter[-1].set_xlabel(f"Time ({time_unit})")
     fig.tight_layout()
 
     if output:
