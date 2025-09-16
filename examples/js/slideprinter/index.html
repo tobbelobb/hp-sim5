@@ -142,6 +142,10 @@ canvas {
                 <option value="tighten.gcode">tighten.gcode</option>
                 <option value="Hangprinter_logo2.gcode">Hangprinter_logo2.gcode</option>
             </select>
+            <select id="presetMcuCommands" style="margin-left: 6px;">
+                <option value="">MCU command log</option>
+                <option value="Hangprinter_logo2_no_extrusions.txt">Hangprinter_logo2_no_extrusions.txt</option>
+            </select>
             <span style="margin-left: 1em;">
                 <label for="websocketIn">websocket in</label>
                 <input type="checkbox" id="websocketIn">
@@ -203,11 +207,11 @@ canvas {
     const canvas = document.getElementById("myCanvas");
     let world = new World();
     let moveCommanderWorker;
+    let klipperCommanderWorker;
     let commander;
     let ws = null;
     let klipperRaw = null;
     let simDtSec = null; // Filled from USD timeCodesPerSecond
-    let workerReferenceSet = false;
     const websocketInToggle = document.getElementById('websocketIn');
     const websocketOutToggle = document.getElementById('websocketOut');
     const websocketPortInput = document.getElementById('websocketPort');
@@ -262,6 +266,7 @@ canvas {
     const loadGcodeBtn = document.getElementById('loadGcodeBtn');
     const gcodeFileInput = document.getElementById('gcodeFile');
     const presetGcodeSelect = document.getElementById('presetGcode');
+    const presetMcuSelect = document.getElementById('presetMcuCommands');
 
     loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
 
@@ -287,9 +292,8 @@ canvas {
                 } else if (e.data.action === 'gcode') {
                     const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
                     if (remoteSpoolSystem != null) {
-                        if (!workerReferenceSet) {
+                        if (remoteSpoolSystem.worker !== moveCommanderWorker) {
                             remoteSpoolSystem.worker = moveCommanderWorker;
-                            workerReferenceSet = true;
                         }
                         remoteSpoolSystem.addCommand(e.data.command);
                     }
@@ -360,6 +364,54 @@ canvas {
             });
         }
     }
+
+    const ensureKlipperCommanderWorker = () => {
+        if (klipperCommanderWorker) {
+            return klipperCommanderWorker;
+        }
+        if (!window.Worker) {
+            console.warn('Web Workers are not supported in this browser.');
+            return null;
+        }
+        const workerPath = `${base}examples/js/slideprinter/klipperCommander.js`;
+        klipperCommanderWorker = new Worker(workerPath, { type: 'module' });
+        console.log('main: klipperCommanderWorker is up');
+        klipperCommanderWorker.onmessage = (e) => {
+            if (e.data.type === 'done') {
+                console.log('main: MCU command playback finished.');
+            } else if (e.data.type === 'error') {
+                console.error('main: MCU command playback failed:', e.data.message);
+            } else if (e.data.action === 'gcode') {
+                const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
+                if (remoteSpoolSystem != null) {
+                    if (remoteSpoolSystem.worker !== klipperCommanderWorker) {
+                        remoteSpoolSystem.worker = klipperCommanderWorker;
+                    }
+                    remoteSpoolSystem.addCommand(e.data.command);
+                }
+            }
+        };
+        return klipperCommanderWorker;
+    };
+
+    if (presetMcuSelect) {
+        presetMcuSelect.addEventListener('change', () => {
+            const value = presetMcuSelect.value;
+            if (!value) {
+                return;
+            }
+            const worker = ensureKlipperCommanderWorker();
+            if (!worker) {
+                return;
+            }
+            if (simDtSec != null) {
+                worker.postMessage({ type: 'set_dt', dt: simDtSec });
+            }
+            const filename = `${base}examples/mcu_commands/${value}`;
+            console.log('main: starting MCU command playback', filename);
+            worker.postMessage({ type: 'filename_fetch', filename });
+        });
+    }
     const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
 
     UsdOpen(usdaPath).then(stage => {
@@ -368,16 +420,20 @@ canvas {
           return;
       }
       const timeCodesPerSecond = stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
-      if (moveCommanderWorker && timeCodesPerSecond) {
+      if (timeCodesPerSecond) {
           simDtSec = 1.0 / timeCodesPerSecond;
-          moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
-      }
-      if (commander && timeCodesPerSecond) {
-          commander.dt = 1.0 / timeCodesPerSecond;
-      }
-      // Update Klipper raw handler with dt if connected
-      if (klipperRaw && timeCodesPerSecond) {
-          klipperRaw.setDt(1.0 / timeCodesPerSecond);
+          if (moveCommanderWorker) {
+              moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+          }
+          if (klipperCommanderWorker) {
+              klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+          }
+          if (commander) {
+              commander.dt = simDtSec;
+          }
+          if (klipperRaw) {
+              klipperRaw.setDt(simDtSec);
+          }
       }
 
       runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
