@@ -188,6 +188,24 @@ canvas {
     import { RemoteSpoolSystem } from './slideprinter_common.js';
     import { connectKlipperRaw } from './klipperHandler.js';
 
+    const searchParams = new URLSearchParams(window.location.search);
+    const logMoveParamKeys = ['--log-move', 'log-move', 'logMove'];
+    let logMoveEnabled = false;
+    let logMoveFilename = null;
+    for (const key of logMoveParamKeys) {
+        if (!searchParams.has(key)) continue;
+        const raw = searchParams.get(key);
+        const normalized = typeof raw === 'string' ? raw.toLowerCase() : '';
+        if (raw === null || raw === '' || normalized === 'true' || raw === '1') {
+            logMoveEnabled = true;
+        } else if (normalized === 'false' || normalized === '0') {
+            logMoveEnabled = false;
+        } else {
+            logMoveEnabled = true;
+            logMoveFilename = raw;
+        }
+    }
+
     // --- Screen Wake Lock ---
     let wakeLock = null;
     const requestWakeLock = async () => {
@@ -241,7 +259,19 @@ canvas {
         };
         try {
             // Pass dt if already known; otherwise default to pass-through, and update later.
-            klipperRaw = connectKlipperRaw(url, onCommand, { dt: simDtSec });
+            klipperRaw = connectKlipperRaw(url, onCommand, {
+                dt: simDtSec,
+                logMove: logMoveEnabled,
+                logMoveFilename: logMoveFilename || undefined,
+            });
+            if (logMoveEnabled && typeof window !== 'undefined') {
+                window.downloadKlipperMoveLog = () => {
+                    if (klipperRaw && typeof klipperRaw.downloadMoveLog === 'function') {
+                        return klipperRaw.downloadMoveLog();
+                    }
+                    return null;
+                };
+            }
         } catch (e) {
             console.error('Failed to connect Klipper raw WS:', e);
         }
@@ -257,13 +287,25 @@ canvas {
         if (klipperRawInToggle.checked) {
             if (!klipperRaw) connectKlipperRawNow();
         } else {
-            if (klipperRaw) { klipperRaw.close(); klipperRaw = null; }
+            if (klipperRaw) {
+                klipperRaw.close();
+                klipperRaw = null;
+            }
+            if (logMoveEnabled && typeof window !== 'undefined' && 'downloadKlipperMoveLog' in window) {
+                try { delete window.downloadKlipperMoveLog; } catch (_) { window.downloadKlipperMoveLog = undefined; }
+            }
         }
     });
 
     // Reconnect on port changes when enabled
     klipperRawPortInput.addEventListener('change', () => {
-        if (klipperRaw) { klipperRaw.close(); klipperRaw = null; }
+        if (klipperRaw) {
+            klipperRaw.close();
+            klipperRaw = null;
+        }
+        if (logMoveEnabled && typeof window !== 'undefined' && 'downloadKlipperMoveLog' in window) {
+            try { delete window.downloadKlipperMoveLog; } catch (_) { window.downloadKlipperMoveLog = undefined; }
+        }
         if (klipperRawInToggle.checked) connectKlipperRawNow();
     });
 

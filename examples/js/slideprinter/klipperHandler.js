@@ -9,7 +9,13 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   const workerPath = new URL('./klipperPacer.js', import.meta.url).href;
   const worker = new Worker(workerPath, { type: 'module' });
 
-  worker.postMessage({ type: 'connect', url });
+  const logMove = Boolean(options.logMove);
+  const logMoveFilename = typeof options.logMoveFilename === 'string' && options.logMoveFilename.trim()
+    ? options.logMoveFilename.trim()
+    : 'klipper_move_log.jsonl';
+  const moveLogLines = logMove ? [] : null;
+
+  worker.postMessage({ type: 'connect', url, logMove });
 
   // --- High-precision timing scheduler (Atomics.wait-based) ---
   const timingWorkerPath = new URL('./timingScheduler.js', import.meta.url).href;
@@ -96,9 +102,53 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     schedule(cmd);
   };
 
+  const announceLogHelp = () => {
+    if (!logMove || !moveLogLines) return;
+    if (announceLogHelp._done) return;
+    announceLogHelp._done = true;
+    if (typeof console !== 'undefined') {
+      console.log('[KlipperRaw] move logging enabled; call handle.downloadMoveLog() to save JSONL file.');
+    }
+  };
+
+  const downloadMoveLog = () => {
+    if (!logMove || !moveLogLines || moveLogLines.length === 0) return null;
+    if (typeof Blob === 'undefined' || typeof URL === 'undefined') {
+      return moveLogLines.join('\n');
+    }
+    const blob = new Blob(moveLogLines.map((line) => `${line}\n`), {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    if (typeof document !== 'undefined') {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = logMoveFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    }
+    return url;
+  };
+
   worker.onmessage = (e) => {
-    const { type, command, args } = e.data;
+    const { type, command, args, logEntry } = e.data;
     if (type === 'move') {
+      if (logMove && moveLogLines && logEntry) {
+        try {
+          const serialized = JSON.stringify(logEntry);
+          moveLogLines.push(serialized);
+          if (typeof console !== 'undefined') {
+            console.debug('[KlipperRaw][move]', serialized);
+          }
+          announceLogHelp();
+        } catch (err) {
+          if (typeof console !== 'undefined') {
+            console.warn('Failed to serialize move log entry', err);
+          }
+        }
+      }
       if (typeof onCommand === 'function') handleCommand(command);
     } else if (type === 'closed') {
       console.log('KlipperHandler: worker indicated connection closed');
@@ -115,6 +165,8 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     setDt: (_newDt) => {
       // No-op: timing is driven by per-command 'at' timestamps now
     },
+    getMoveLogLines: () => (logMove && moveLogLines ? [...moveLogLines] : []),
+    downloadMoveLog,
     close: () => {
       try { worker.postMessage({ type: 'close' }); } catch (_) {}
       try { timingWorker.postMessage({ type: 'shutdown' }); } catch (_) {}
