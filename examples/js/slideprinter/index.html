@@ -17,6 +17,25 @@
     <meta name="viewport"
           content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
+    <!-- Content Security Policy: lock down scripts while allowing required features
+         - Forbids eval/new Function (no 'unsafe-eval')
+         - Allows module workers and blob URLs for Worker()
+         - Allows WebSocket to localhost
+         - Allows Google Fonts stylesheet and font files
+         - Allows data: URIs for the inline SVG favicon -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      worker-src 'self' blob:;
+      connect-src 'self' ws: wss:;
+      img-src 'self' data:;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com data:;
+    ">
+
+    <meta http-equiv="Cross-Origin-Opener-Policy:" content="same-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy:" content="require-corp">
+
     <!-- Nice free Google font – optional -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet"
@@ -105,15 +124,15 @@ canvas {
   font-size: 0.85rem;
 }
     </style>
-  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-BrfgYgwY.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-Cvk52eLu.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/debugUtils-gCnat-iY.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-Belgn0U2.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-CQGvY-ir.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_slack_system-BJqIPL_y.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-D4KYEb9A.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-DNlBGAG4.js">
 </head>
 <body>
     <div id="gameContainer">
@@ -131,6 +150,14 @@ canvas {
                 <option value="movements.gcode">movements.gcode</option>
                 <option value="tighten.gcode">tighten.gcode</option>
                 <option value="Hangprinter_logo2.gcode">Hangprinter_logo2.gcode</option>
+                <option value="Hangprinter_logo6.gcode">Hangprinter_logo6.gcode</option>
+            </select>
+            <select id="presetMcuCommands" style="margin-left: 6px;">
+                <option value="">MCU command log</option>
+                <option value="Hangprinter_logo2_no_extrusions.txt">Hangprinter_logo2_no_extrusions.txt</option>
+                <option value="Hangprinter_logo2.txt">Hangprinter_logo2.txt</option>
+                <option value="Hangprinter_logo6.txt">Hangprinter_logo6.txt</option>
+                <option value="draw_squares.txt">draw_squares.txt</option>
             </select>
             <span style="margin-left: 1em;">
                 <label for="websocketIn">websocket in</label>
@@ -143,6 +170,14 @@ canvas {
             <span style="margin-left: 1em;">
                 <label for="websocketPort">port</label>
                 <input type="text" id="websocketPort" value="8766" style="width: 4em;">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="klipperRawIn">Klipper raw in</label>
+                <input type="checkbox" id="klipperRawIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="klipperRawPort">port</label>
+                <input type="text" id="klipperRawPort" value="8770" style="width: 4em;">
             </span>
             <br />
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">

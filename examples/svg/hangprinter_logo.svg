@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 27.9.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Layer_1"
+   x="0px"
+   y="0px"
+   viewBox="0 0 50 57"
+   style="enable-background:new 0 0 50 57;"
+   xml:space="preserve"
+   sodipodi:docname="hangprinter_logo.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs29" /><sodipodi:namedview
+   id="namedview27"
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1.0"
+   inkscape:pageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   showgrid="false"
+   inkscape:zoom="11.313709"
+   inkscape:rotation="-1"
+   inkscape:cx="38.058594"
+   inkscape:cy="48.262309"
+   inkscape:window-width="2560"
+   inkscape:window-height="1376"
+   inkscape:window-x="0"
+   inkscape:window-y="27"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="layer3" />
+<style
+   type="text/css"
+   id="style2">
+	.st0{opacity:0.6;}
+	.st1{fill:#F2F4ED;}
+</style>
+<g
+   id="g8">
+	<g
+   class="st0"
+   id="g6">
+		
+	</g>
+</g>
+<text
+   transform="matrix(1 0 0 1 960 539.5)"
+   id="text24"><tspan
+     x="0"
+     y="0"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan10">float halfway_delta[4];</tspan><tspan
+     x="0"
+     y="14.4"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan12">float halfway[3];</tspan><tspan
+     x="0"
+     y="28.8"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan14">for(int8_t i = 0; i &lt; 3; i++){</tspan><tspan
+     x="0"
+     y="43.2"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan16">halfway[i] = current_position[i] + 0.5*difference[i];</tspan><tspan
+     x="0"
+     y="57.6"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan18">}</tspan><tspan
+     x="0"
+     y="72"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan20">calculate_delta(halfway, halfway_delta);</tspan><tspan
+     x="0"
+     y="86.4"
+     style="font-family:'MyriadPro-Regular'; font-size:12px;"
+     id="tspan22">update_axis_steps_per_unit(delta, halfway_delta);</tspan></text>
+<g
+   inkscape:groupmode="layer"
+   id="layer2"
+   inkscape:label="Layer 1"
+   style="display:none"
+   sodipodi:insensitive="true"><path
+     class="st1"
+     d="m 16.15,39.79 c 1.39,-3.06 0.03,-3.08 -3.02,-2.76 -0.64,0.07 -1.3,0.19 -2.07,0.38 -3.83,0.92 -3.68,1.37 -3.88,-1.64 -0.2,-3.14 0.2,-2.69 1.71,-2.51 1.46,0.17 6.62,0.59 8.03,-0.41 1.41,-1.01 2.59,-4.82 3.68,-10.45 0.45,-2.31 1.96,-1.71 2.73,-1.15 0.35,0.25 0.51,0.67 0.5,1.1 -0.02,0.81 -0.26,2.42 -0.91,4.7 0,0 -1.59,4.12 -1.09,5.19 0.49,1.07 6.4,-0.21 6.9,-0.6 0.9,-0.7 1.9,-2.12 0.8,-6.11 0,0 -1.12,-2.55 1.85,-3.17 2.33,-0.49 2.79,-0.35 3.09,0.13 0.2,0.32 0.3,0.69 0.32,1.07 0.1,1.75 -0.82,4.35 -1.26,6.06 -0.5,1.92 -4.3,14.62 -4.1,18.71 0.14,2.97 1.3,3.68 2.18,3.81 0.38,0.06 1.05,-0.07 1.42,-0.21 1.93,-0.73 5.36,-2.15 8.88,-6.59 3.81,-4.8 6.91,-12.39 -0.21,-22 C 34.35,13.42 26.28,5.2 26.28,5.2 c 0,0 -12.1,12.04 -16.52,18.24 -4.43,6.19 -9.85,15.61 -1.06,24.01 3.83,3.67 9.13,3.97 10.17,5.53 0.64,0.96 0.77,3.35 -2.98,3.29 C 12.14,56.22 5.88,53.1 2.71,47.37 -0.46,41.63 -1.11,33.81 2.47,27.28 6.04,20.75 15.39,11.28 18.81,7.82 22.23,4.35 26.27,0 26.27,0 c 0,0 13.62,14.73 14.03,15.24 0.41,0.5 9.49,10.11 9.65,18.5 0.16,8.39 -3.25,13.59 -10.59,19.18 -7.34,5.59 -13.64,3.86 -13.79,3.73 -0.15,-0.13 -3.56,0.04 -0.35,-9.39 3.2,-9.43 2.7,-10.61 1.65,-10.87 -1.05,-0.26 -3.48,-0.21 -4.76,0.16 -1.28,0.37 -1.56,0.95 -2.21,3.4 -1.12,4.22 -1.38,5.94 -3.18,4.97 -1.56,-0.83 -1.75,-2.55 -0.57,-5.13 z"
+     id="path4"
+     style="fill:none;stroke:#000000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" /></g><g
+   inkscape:groupmode="layer"
+   id="layer3"
+   inkscape:label="Layer 2"
+   style="display:inline"><path
+     class="st1"
+     d="m 16.15,39.79 c 1.285001,-2.820002 -0.162574,-3.016735 -2.007577,-2.821735 -1.845002,0.195001 -1.90248,0.175961 -4.2024857,0.730962 C 7.6399312,38.254229 7.3800002,38.845003 7.18,35.77 6.9799998,32.694997 7.4049986,33.085 8.89,33.26 c 1.485001,0.175 6.619996,0.595003 8.03,-0.41 1.410004,-1.005003 2.65405,-5.38053 3.42405,-9.35053 0.77,-3.970001 2.295953,-2.731053 2.855958,-2.32605 C 23.760012,21.578423 23.845,21.73 23.83,22.35 c -0.015,0.62 -0.585,3.56 -0.91,4.7 -0.325,1.14 -1.585004,4.119992 -1.09,5.19 0.495004,1.070008 6.406373,-0.228455 7.106373,-0.773455 0.700001,-0.545001 1.553445,-2.367712 0.921861,-4.561394 C 29.22665,24.711469 28.779439,22.945574 31.38,22.36 c 2.600561,-0.585574 3.328877,-0.152677 3.41,1.2 0.08112,1.352677 -0.79,4.244998 -1.26,6.06 -0.47,1.815002 -4.224289,15.113663 -4.128897,18.448454 0.09539,3.334792 1.729715,4.546012 3.423702,3.933507 C 34.518793,51.389455 38.245,49.96 41.91,45.34 45.575,40.72 48.935,33.105 41.7,23.34 34.465,13.575 26.28,5.2 26.28,5.2 26.28,5.2 12.74283,18.686169 8.4024574,25.173192 4.0620847,31.660216 1.4543994,41.177893 7.8290371,46.616289 14.203675,52.054686 18.03,51.72 18.87,52.98 c 0.84,1.26 0.770003,3.345 -2.98,3.29 C 12.139997,56.215 5.8800002,53.105 2.71,47.37 -0.46000022,41.635 -1.1050006,33.810001 2.47,27.28 6.0450006,20.749999 15.389999,11.285001 18.81,7.82 22.230001,4.3549991 26.27,0 26.27,0 c 0,0 13.619995,14.734994 14.03,15.24 0.410005,0.505006 9.712825,10.419599 9.696875,18.865865 -0.01595,8.446266 -4.031424,13.720678 -9.666024,17.941594 C 34.69625,56.268375 20.713146,61.203282 24.174803,50.769115 27.636459,40.334948 28.435988,36.77503 26.87,36.39 c -1.565988,-0.38503 -3.48,-0.21 -4.76,0.16 -1.28,0.37 -1.325,0.065 -2.21,3.4 -0.885,3.335 -1.278915,5.940605 -2.958921,5.040602 C 15.261073,44.090599 14.864999,42.610002 16.15,39.79 Z"
+     id="path5500"
+     style="display:inline;fill:none;stroke:#bd0000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     sodipodi:nodetypes="zzzzzzzzzzzzzzzzzzzzczzzzzzzczzzzzzzzz" /></g></svg>
