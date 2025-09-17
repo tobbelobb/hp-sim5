@@ -30,8 +30,8 @@ import signal
 import sys
 import termios
 import time
-import re
-from typing import List, Optional, Set
+from collections import deque
+from typing import Callable, List, Optional, Set
 
 # Optional Klipper msgproto import (supports parsing commands using klipper.dict)
 _msgproto = None
@@ -151,6 +151,29 @@ def open_tty_rw(path: str) -> int:
 
 # ----------------------------- Parser / Mirror ------------------------------
 
+def _iter_lines(obj):
+    if obj is None:
+        return
+    if isinstance(obj, (bytes, bytearray)):
+        try:
+            text = obj.decode('utf-8', errors='replace')
+        except Exception:
+            text = ''
+        for line in text.splitlines():
+            yield line
+        return
+    if isinstance(obj, str):
+        for line in obj.splitlines():
+            yield line
+        return
+    if isinstance(obj, (list, tuple)):
+        for item in obj:
+            yield from _iter_lines(item)
+        return
+    for line in str(obj).splitlines():
+        yield line
+
+
 class ParsedMirror:
     """Parses host->MCU packets, filters commands, and mirrors to WS.
 
@@ -159,7 +182,7 @@ class ParsedMirror:
     exceeds 16KiB, flush immediately.
     """
 
-    def __init__(self, ws: WSManager, mp):
+    def __init__(self, ws: WSManager, mp, *, line_hook: Optional[Callable[[str, Optional[float]], None]] = None):
         self.ws = ws
         self.mp = mp
         self.buf = bytearray()
@@ -168,8 +191,9 @@ class ParsedMirror:
         self._flush_task: Optional[asyncio.Task] = None
         self._seq = 0
         self._lock = asyncio.Lock()
+        self._line_hook = line_hook
 
-    async def feed(self, data: bytes):
+    async def feed(self, data: bytes, timestamp: Optional[float] = None):
         if not data:
             return
         out_messages: List[dict] = []
@@ -187,10 +211,15 @@ class ParsedMirror:
                 except Exception:
                     decoded_lines = []
                 # Filter subset
-                for ln in decoded_lines:
-                    name = ln.split()[0] if ln else ''
+                for raw_ln in _iter_lines(decoded_lines):
+                    ln = str(raw_ln)
                     self.lines.append(ln)
                     self.bytes_acc += len(ln) + 1
+                    if self._line_hook is not None and ln:
+                        try:
+                            self._line_hook(ln, timestamp)
+                        except Exception as e:
+                            print(f"Warning: line_hook error: {e}")
                 # Consume packet
                 del self.buf[:l]
                 # Flush immediately at packet boundary if anything collected
@@ -231,6 +260,104 @@ class ParsedMirror:
             await self.ws.broadcast_json(payload)
 
 
+class LineParser:
+    def __init__(self, mp, *, line_hook: Optional[Callable[[str, Optional[float]], None]] = None):
+        self.mp = mp
+        self.buf = bytearray()
+        self._lock = asyncio.Lock()
+        self._line_hook = line_hook
+
+    async def feed(self, data: bytes, timestamp: Optional[float] = None):
+        if not data:
+            return
+        async with self._lock:
+            self.buf.extend(data)
+            while True:
+                l = self.mp.check_packet(self.buf)
+                if l <= 0:
+                    break
+                pkt = bytes(self.buf[:l])
+                try:
+                    decoded_lines = self.mp.dump(pkt)
+                except Exception:
+                    decoded_lines = []
+                for raw_ln in _iter_lines(decoded_lines):
+                    ln = str(raw_ln)
+                    if self._line_hook is not None and ln:
+                        try:
+                            self._line_hook(ln, timestamp)
+                        except Exception as e:
+                            print(f"Warning: line_hook error: {e}")
+                del self.buf[:l]
+
+
+class ClockSyncTracker:
+    def __init__(self, ws: WSManager, loop: asyncio.AbstractEventLoop):
+        self.ws = ws
+        self.loop = loop
+        self._pending_requests: deque[float] = deque(maxlen=32)
+        self._last_sample: Optional[tuple[float, float]] = None
+        self._last_freq: Optional[float] = None
+
+    def handle_host_line(self, line: str, timestamp: Optional[float]):
+        if not line or not line.startswith('get_clock'):
+            return
+        ts = timestamp if timestamp is not None else time.monotonic()
+        self._pending_requests.append(ts)
+
+    def handle_mcu_line(self, line: str, timestamp: Optional[float]):
+        if not line or not line.startswith('clock'):
+            return
+        clk_val = self._extract_clock_value(line)
+        if clk_val is None:
+            return
+        host_ts = timestamp if timestamp is not None else time.monotonic()
+        req_ts = self._pending_requests.popleft() if self._pending_requests else None
+        freq = self._update_frequency(clk_val, host_ts)
+        payload = {
+            'action': 'klipper_clock',
+            'mcu_clock': clk_val,
+            'host_time': host_ts,
+        }
+        if req_ts is not None:
+            payload['request_host_time'] = req_ts
+            payload['round_trip'] = max(0.0, host_ts - req_ts)
+        if freq is not None:
+            payload['clock_hz'] = freq
+        self.loop.create_task(self.ws.broadcast_json(payload))
+
+    def _extract_clock_value(self, line: str) -> Optional[float]:
+        for part in line.split():
+            if part.startswith('clock='):
+                value = part.split('=', 1)[1]
+                try:
+                    return float(value)
+                except ValueError:
+                    return None
+        return None
+
+    def _update_frequency(self, clk_val: float, host_ts: float) -> Optional[float]:
+        if self._last_sample is None:
+            self._last_sample = (clk_val, host_ts)
+            return None
+        prev_clk, prev_ts = self._last_sample
+        delta_clk = clk_val - prev_clk
+        if delta_clk <= 0:
+            delta_clk += 2 ** 32
+            if delta_clk <= 0:
+                self._last_sample = (clk_val, host_ts)
+                return self._last_freq
+        delta_t = host_ts - prev_ts
+        if delta_t <= 0:
+            self._last_sample = (clk_val, host_ts)
+            return self._last_freq
+        freq = delta_clk / delta_t
+        if freq > 0:
+            self._last_freq = freq
+        self._last_sample = (clk_val, host_ts)
+        return self._last_freq
+
+
 # ----------------------------- Bridge core ----------------------------------
 
 class FDBridge:
@@ -241,11 +368,13 @@ class FDBridge:
     """
 
     def __init__(self, loop: asyncio.AbstractEventLoop, fd_a: int, fd_b: int,
-                 parser: Optional[ParsedMirror] = None):
+                 parser_ab: Optional[ParsedMirror] = None,
+                 parser_ba: Optional['LineParser'] = None):
         self.loop = loop
         self.fd_a = fd_a
         self.fd_b = fd_b
-        self.parser = parser
+        self.parser_ab = parser_ab
+        self.parser_ba = parser_ba
         # Pending output buffers
         self.ab_buf = bytearray()  # A -> B
         self.ba_buf = bytearray()  # B -> A
@@ -291,9 +420,10 @@ class FDBridge:
         self.ab_buf += data
         self._ensure_writer_b()
         # Feed parser (host->MCU path)
-        if self.parser is not None:
+        if self.parser_ab is not None:
             # Schedule feed without blocking reader
-            asyncio.ensure_future(self.parser.feed(data))
+            ts = time.monotonic()
+            asyncio.ensure_future(self.parser_ab.feed(data, ts))
 
     def _on_read_b(self):
         try:
@@ -308,6 +438,9 @@ class FDBridge:
             return
         self.ba_buf += data
         self._ensure_writer_a()
+        if self.parser_ba is not None:
+            ts = time.monotonic()
+            asyncio.ensure_future(self.parser_ba.feed(data, ts))
 
     def _ensure_writer_a(self):
         if self._a_writer:
@@ -376,12 +509,15 @@ async def main_async(argv=None):
     parser.add_argument('--ws-host', default='127.0.0.1', help='WebSocket bind host')
     parser.add_argument('--ws-port', type=int, default=8770, help='WebSocket port')
     parser.add_argument('--klippy-log', default=None,
-                        help='Optional path to Klippy log (klippy.log). If set, the bridge tails it and broadcasts measured freq as {action:"klipper_clock", clock_hz:<number>} to WS clients.')
+                        help='Deprecated: retained for compatibility. Clock info now comes via get_clock/clock exchange.')
     args = parser.parse_args(argv)
 
     if websockets is None:
         print("Error: The 'websockets' package is required. pip install websockets")
         return 2
+
+    if args.klippy_log:
+        print("Note: --klippy-log is deprecated; live clock data is broadcast automatically.")
 
     # Import msgproto if available
     global _msgproto
@@ -442,20 +578,26 @@ async def main_async(argv=None):
     ws_mgr = WSManager()
     ws_server = websockets.serve(lambda ws: ws_mgr.register(ws),
                                  host=args.ws_host, port=args.ws_port)
+    loop = asyncio.get_running_loop()
 
-    # Initialize msgproto parser from dictionary
     parser_obj: Optional[ParsedMirror] = None
+    mcu_line_parser: Optional[LineParser] = None
     if _msgproto is not None and args.dict_path and os.path.exists(args.dict_path):
         try:
             with open(args.dict_path, 'rb') as f:
                 dictionary = f.read()
-            mp = _msgproto.MessageParser()
-            mp.process_identify(dictionary, decompress=False)
-            parser_obj = ParsedMirror(ws_mgr, mp)
+            mp_host = _msgproto.MessageParser()
+            mp_host.process_identify(dictionary, decompress=False)
+            mp_mcu = _msgproto.MessageParser()
+            mp_mcu.process_identify(dictionary, decompress=False)
+            clock_tracker = ClockSyncTracker(ws_mgr, loop)
+            parser_obj = ParsedMirror(ws_mgr, mp_host, line_hook=clock_tracker.handle_host_line)
+            mcu_line_parser = LineParser(mp_mcu, line_hook=clock_tracker.handle_mcu_line)
             print(f"Loaded Klipper dictionary: {args.dict_path} ({len(dictionary)} bytes)")
         except Exception as e:
             print(f"Warning: Failed to initialize msgproto parser: {e}")
             parser_obj = None
+            mcu_line_parser = None
     else:
         if _msgproto is None:
             print("Note: msgproto unavailable; WS mirror will still run but without parsed lines.")
@@ -463,8 +605,7 @@ async def main_async(argv=None):
             print(f"Note: dictionary not found: {args.dict_path}")
 
     # Start forwarding
-    loop = asyncio.get_running_loop()
-    bridge = FDBridge(loop, master_fd, raw_fd, parser=parser_obj)
+    bridge = FDBridge(loop, master_fd, raw_fd, parser_ab=parser_obj, parser_ba=mcu_line_parser)
     bridge.start()
 
     # Consume klipper_mcu stdout/stderr (avoid filling pipes)
@@ -495,57 +636,6 @@ async def main_async(argv=None):
 
     print(f"Ready: Klippy can connect to {args.host_path}. WS on {args.ws_host}:{args.ws_port}.")
 
-    # Optional: tail Klippy log for measured freq updates
-    tail_task = None
-    if args.klippy_log:
-        log_path = args.klippy_log
-
-        async def tail_klippy_log(path: str, ws: WSManager):
-            last_clock = None
-            file_inode = None
-            f = None
-            try:
-                while True:
-                    try:
-                        st = os.stat(path)
-                        if file_inode is None or st.st_ino != file_inode:
-                            if f:
-                                try:
-                                    f.close()
-                                except Exception:
-                                    pass
-                            f = open(path, 'r', errors='ignore')
-                            file_inode = st.st_ino
-                            # Read from beginning to catch an earlier freq line
-                            f.seek(0, os.SEEK_SET)
-                    except FileNotFoundError:
-                        # File not ready yet – wait and retry
-                        await asyncio.sleep(0.5)
-                        continue
-
-                    line = f.readline()
-                    if not line:
-                        await asyncio.sleep(0.25)
-                        continue
-                    m = re.search(r"freq=(\d+(?:\.\d+)?)", line)
-                    if m:
-                        try:
-                            val = float(m.group(1))
-                            # Broadcast only on change
-                            if val > 0 and val != last_clock:
-                                last_clock = val
-                                await ws.broadcast_json({'action': 'klipper_clock', 'clock_hz': val})
-                        except Exception:
-                            pass
-            finally:
-                if f:
-                    try:
-                        f.close()
-                    except Exception:
-                        pass
-
-        tail_task = asyncio.create_task(tail_klippy_log(log_path, ws_mgr))
-
     # Run servers and wait for stop
     if ws_server is not None:
         async with ws_server:
@@ -562,12 +652,6 @@ async def main_async(argv=None):
         t.cancel()
         try:
             await t
-        except Exception:
-            pass
-    if tail_task is not None:
-        tail_task.cancel()
-        try:
-            await tail_task
         except Exception:
             pass
     try:
