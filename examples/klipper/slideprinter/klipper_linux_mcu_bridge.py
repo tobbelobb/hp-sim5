@@ -406,7 +406,7 @@ async def main_async(argv=None):
             mcu_bin = str(elf)
         else:
             mcu_bin = shutil.which('klipper_mcu') or 'klipper_mcu'
-    cmd = [mcu_bin, '-I', args.raw_path]
+    cmd = [mcu_bin, '-r', '-I', args.raw_path]
     # The -r (realtime) flag requires root. Use sudo if not already root.
     if os.geteuid() != 0:
         cmd.insert(0, 'sudo')
