@@ -35,13 +35,105 @@ let aggHasAny = false;
 let LOG_MOVE = false;
 let moveLogSeq = 0;
 
-let clockHz = 50_000_000; // Default; will auto-update from bridge
-const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
+const FULL_WRAP = 0x100000000;
+const HALF_WRAP = FULL_WRAP / 2;
+
+const wrap32 = (value) => {
+  if (!Number.isFinite(value)) return 0;
+  let v = value % FULL_WRAP;
+  if (v < 0) v += FULL_WRAP;
+  return v;
+};
+
+class ClockModel {
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+    this.clockHz = 50_000_000;
+    this.lastRawTick = null;
+    this.lastMcuTick = null;
+    this.sampleWorkerMs = null;
+  }
+
+  ticksToMs(ticks) {
+    return (ticks / this.clockHz) * 1000.0;
+  }
+
+  getLastRawTick() {
+    return this.lastRawTick;
+  }
+
+  currentMcuTick() {
+    return this.lastMcuTick;
+  }
+
+  isReady() {
+    return this.lastRawTick !== null && this.lastMcuTick !== null &&
+      this.sampleWorkerMs !== null;
+  }
+
+  updateFromMessage(msg, receiveMs) {
+    if (msg && typeof msg.clock_hz === 'number' && Number.isFinite(msg.clock_hz) && msg.clock_hz > 0) {
+      this.clockHz = msg.clock_hz;
+    }
+    const clockVal = Number(msg?.mcu_clock);
+    if (!Number.isFinite(clockVal)) {
+      return;
+    }
+    const unwrapped = this._updateUnwrapped(clockVal);
+    if (!Number.isFinite(unwrapped)) {
+      return;
+    }
+    this.lastMcuTick = unwrapped;
+    this.sampleWorkerMs = receiveMs;
+  }
+
+  _updateUnwrapped(rawTick) {
+    if (!Number.isFinite(rawTick)) {
+      return null;
+    }
+    if (this.lastRawTick === null || this.lastMcuTick === null) {
+      this.lastRawTick = rawTick;
+      this.lastMcuTick = rawTick;
+      return this.lastMcuTick;
+    }
+    let diff = rawTick - this.lastRawTick;
+    if (diff > HALF_WRAP) diff -= FULL_WRAP;
+    else if (diff < -HALF_WRAP) diff += FULL_WRAP;
+    this.lastRawTick = rawTick;
+    this.lastMcuTick += diff;
+    return this.lastMcuTick;
+  }
+
+  mapRawClock(rawTick) {
+    if (!Number.isFinite(rawTick)) {
+      return null;
+    }
+    if (this.lastRawTick === null || this.lastMcuTick === null) {
+      return null;
+    }
+    let diff = rawTick - this.lastRawTick;
+    if (diff > HALF_WRAP) diff -= FULL_WRAP;
+    else if (diff < -HALF_WRAP) diff += FULL_WRAP;
+    return this.lastMcuTick + diff;
+  }
+
+  mcuToWorkerMs(rawTick) {
+    const mapped = this.mapRawClock(rawTick);
+    if (mapped === null || this.sampleWorkerMs === null || this.lastMcuTick === null) {
+      return null;
+    }
+    const deltaTicks = mapped - this.lastMcuTick;
+    return this.sampleWorkerMs + (deltaTicks / this.clockHz) * 1000.0;
+  }
+}
+
+const clockModel = new ClockModel();
+const ticksToMs = (ticks) => clockModel.ticksToMs(ticks);
 let pacerTimer = null;       // setTimeout handle for pacer
 let pacerNextDeadlineMs = null; // Absolute deadline for the next pacer wakeup
-let startedBaseTimeMs = null;
-let firstTickOffset = null;     // Global baseline: min first-interval across all axes
-let hasEmittedAnyStep = false;  // Lock baseline once stepping begins
 
 const axisState = new Map(axisOrder.map(a => [a, {
   segments: [],
@@ -52,6 +144,8 @@ const axisState = new Map(axisOrder.map(a => [a, {
   dirSign: 1,
   // Direction used for the currently executing segment
   activeDirSign: 1,
+  baseClockRaw: null,
+  nextStepClockRaw: null,
 }]));
 
 const ensureAxisForOid = (oid) => {
@@ -119,13 +213,19 @@ const pacerLoop = () => {
       let lastStepTimeMs = null;
       while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
         const thisStepTimeMs = st.nextWakeTimeMs;
-        // Step using the direction captured for the active segment
+        const stepRaw = st.nextStepClockRaw;
         stepsApplied += st.activeDirSign;
         lastStepTimeMs = thisStepTimeMs;
         st.remaining -= 1;
+        if (stepRaw !== null) {
+          st.baseClockRaw = wrap32(stepRaw);
+        }
         if (st.remaining > 0) {
           st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
-          st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
+          const nextRaw = stepRaw !== null ? wrap32(stepRaw + st.intervalTicks) : null;
+          st.nextStepClockRaw = nextRaw;
+          const mapped = nextRaw !== null ? clockModel.mcuToWorkerMs(nextRaw) : null;
+          st.nextWakeTimeMs = mapped !== null ? mapped : thisStepTimeMs + ticksToMs(st.intervalTicks);
         } else {
           const nextSeg = st.segments.shift();
           if (nextSeg) {
@@ -133,17 +233,21 @@ const pacerLoop = () => {
             st.addTicks = nextSeg.addTicks;
             st.remaining = nextSeg.remaining;
             st.activeDirSign = nextSeg.dirSign;
-            st.nextWakeTimeMs += ticksToMs(st.intervalTicks);
+            const baseRaw = st.baseClockRaw !== null ? st.baseClockRaw : ensureBaseClockRaw(st);
+            const nextRaw = wrap32(baseRaw + st.intervalTicks);
+            st.nextStepClockRaw = nextRaw;
+            const mapped = clockModel.mcuToWorkerMs(nextRaw);
+            st.nextWakeTimeMs = mapped !== null ? mapped : thisStepTimeMs + ticksToMs(st.intervalTicks);
           } else {
             st.nextWakeTimeMs = null;
             st.intervalTicks = null;
             st.addTicks = 0;
             st.remaining = 0;
+            st.nextStepClockRaw = null;
           }
         }
       }
       if (stepsApplied !== 0) {
-        hasEmittedAnyStep = true; // lock baseline thereafter
         const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
         axisAngles.set(axis, newAngle);
         if (axis === EXTRUDER_AXIS) {
@@ -232,9 +336,12 @@ const ensurePacerRunning = () => {
   }
 };
 
-const maybeAdjustBaseline = (firstIntervalTicks) => {
-  const fi = Number(firstIntervalTicks);
-  firstTickOffset = fi;
+const ensureBaseClockRaw = (st) => {
+  if (st.baseClockRaw !== null) return st.baseClockRaw;
+  const lastRaw = clockModel.getLastRawTick();
+  const fallback = Number.isFinite(lastRaw) ? lastRaw : 0;
+  st.baseClockRaw = wrap32(fallback);
+  return st.baseClockRaw;
 };
 
 const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
@@ -247,18 +354,19 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
     dirSign: st.dirSign,
   };
 
-  if (st.nextWakeTimeMs === null) {
-    // Establish global baseline so the earliest queued step across axes starts soon.
-    maybeAdjustBaseline(seg.intervalTicks);
-    if (startedBaseTimeMs === null) startedBaseTimeMs = performance.now();
+  if (seg.remaining <= 0) return;
 
-    // Schedule first step relative to global baseline (subtract earliest offset).
-    const baseTicks = firstTickOffset === null ? seg.intervalTicks : Math.max(1, seg.intervalTicks - firstTickOffset);
+  if (st.nextWakeTimeMs === null) {
+    const baseRaw = ensureBaseClockRaw(st);
+    const firstStepRaw = wrap32(baseRaw + seg.intervalTicks);
     st.intervalTicks = seg.intervalTicks;
     st.addTicks = seg.addTicks;
     st.remaining = seg.remaining;
     st.activeDirSign = seg.dirSign;
-    st.nextWakeTimeMs = startedBaseTimeMs + ticksToMs(baseTicks);
+    st.nextStepClockRaw = firstStepRaw;
+    const mapped = clockModel.mcuToWorkerMs(firstStepRaw);
+    const now = performance.now();
+    st.nextWakeTimeMs = mapped !== null ? mapped : now + ticksToMs(seg.intervalTicks);
   } else {
     st.segments.push(seg);
   }
@@ -290,6 +398,25 @@ const handleParsedLine = (line) => {
     st.dirSign = (Number(kv.dir) === 0) ? -1 : 1;
     return;
   }
+  if (has('reset_step_clock')) {
+    if (DEBUG) console.log(line);
+    const kv = parseKv(sliceAfter('reset_step_clock'));
+    const axis = ensureAxisForOid(kv.oid);
+    if (!axis) return;
+    const st = axisState.get(axis);
+    if (!st) return;
+    const clk = Number(kv.clock);
+    if (!Number.isFinite(clk)) return;
+    st.baseClockRaw = wrap32(clk);
+    st.nextStepClockRaw = null;
+    st.nextWakeTimeMs = null;
+    st.intervalTicks = null;
+    st.addTicks = 0;
+    st.remaining = 0;
+    st.segments.length = 0;
+    st.activeDirSign = st.dirSign;
+    return;
+  }
   if (has('set_position')) {
     if (DEBUG) console.log(line);
     const kv = parseKv(sliceAfter('set_position'));
@@ -311,6 +438,8 @@ const handleParsedLine = (line) => {
       st.intervalTicks = null;
       st.addTicks = 0;
       st.remaining = 0;
+      st.baseClockRaw = null;
+      st.nextStepClockRaw = null;
       // After a set_position, align the active direction with the latest pending direction
       st.activeDirSign = st.dirSign;
     }
@@ -353,21 +482,18 @@ const connect = (url) => {
           }
           for (const line of msg.lines) handleParsedLine(line);
           return;
-        } else if (msg && msg.action === 'klipper_clock' && typeof msg.clock_hz === 'number' && isFinite(msg.clock_hz) && msg.clock_hz > 0) {
-          const oldHz = clockHz;
-          const newHz = msg.clock_hz;
-          if (DEBUG) console.log(`clock update: ${oldHz} -> ${newHz}`);
-          if (newHz !== oldHz) {
-            // Scale any pending nextWakeTimeMs so remaining time adjusts smoothly
-            const now = performance.now();
-            const scale = oldHz / newHz;
+        } else if (msg && msg.action === 'klipper_clock') {
+          const receiveMs = performance.now();
+          clockModel.updateFromMessage(msg, receiveMs);
+          if (clockModel.isReady()) {
             for (const axis of axisOrder) {
               const st = axisState.get(axis);
-              if (!st || st.nextWakeTimeMs === null) continue;
-              const rem = Math.max(0, st.nextWakeTimeMs - now);
-              st.nextWakeTimeMs = now + rem * scale;
+              if (!st || st.nextStepClockRaw === null || st.nextWakeTimeMs === null) continue;
+              const mapped = clockModel.mcuToWorkerMs(st.nextStepClockRaw);
+              if (mapped !== null) {
+                st.nextWakeTimeMs = mapped;
+              }
             }
-            clockHz = newHz;
           }
           return;
         }
@@ -383,6 +509,24 @@ const connect = (url) => {
       pacerTimer = null;
     }
     pacerNextDeadlineMs = null;
+    clockModel.reset();
+    for (const axis of axisOrder) {
+      const st = axisState.get(axis);
+      if (!st) continue;
+      st.segments.length = 0;
+      st.nextWakeTimeMs = null;
+      st.intervalTicks = null;
+      st.addTicks = 0;
+      st.remaining = 0;
+      st.dirSign = 1;
+      st.activeDirSign = 1;
+      st.baseClockRaw = null;
+      st.nextStepClockRaw = null;
+    }
+    aggMove = { type: 'Move' };
+    aggFirstStepTimeMs = null;
+    aggLastStepTimeMs = null;
+    aggHasAny = false;
     postMessage({ type: 'closed' });
   };
 };
