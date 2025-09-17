@@ -18,10 +18,11 @@ const EXTRUDER_OID = 4; // assumed stable mapping
 const EXTRUDER_AXIS = 'E';
 const EXTRUDER_ROTATION_DISTANCE_MM = 33.5;
 const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * microsteps);
+let extruderPosMm = 0;
 
 // Throttle outgoing Move messages to avoid overwhelming the browser.
 // Pacer will run at this interval and emit at most once per interval.
-const PACER_INTERVAL_MS = 4;
+const PACER_INTERVAL_MS = 0.50;
 const MIN_EMIT_INTERVAL_MS = PACER_INTERVAL_MS;
 
 // Aggregation buffer across pacer ticks
@@ -30,6 +31,9 @@ let aggMove = { type: 'Move' };
 let aggFirstStepTimeMs = null;
 let aggLastStepTimeMs = null;
 let aggHasAny = false;
+
+let LOG_MOVE = false;
+let moveLogSeq = 0;
 
 let clockHz = 50_000_000; // Default; will auto-update from bridge
 const ticksToMs = (ticks) => (ticks / clockHz) * 1000.0;
@@ -69,6 +73,35 @@ const parseKv = (line) => {
     }
   }
   return out;
+};
+
+const buildMoveLogEntry = (move, atMs, spanMs) => {
+  try {
+    const commandCopy = { ...move };
+    const axes = {};
+    for (const axis of axisOrder) {
+      if (axis === EXTRUDER_AXIS) {
+        axes[axis] = extruderPosMm;
+      } else {
+        axes[axis] = axisAngles.get(axis) || 0;
+      }
+    }
+    const entry = {
+      seq: moveLogSeq++,
+      at_ms: atMs,
+      span_ms: spanMs,
+      axes,
+      axis_units: {
+        spool: 'radians',
+        [EXTRUDER_AXIS]: 'millimeters',
+      },
+      command: commandCopy,
+    };
+    return entry;
+  } catch (err) {
+    console.error('Failed to build move log entry:', err);
+    return null;
+  }
 };
 
 const pacerLoop = () => {
@@ -115,6 +148,7 @@ const pacerLoop = () => {
         axisAngles.set(axis, newAngle);
         if (axis === EXTRUDER_AXIS) {
           const e_mm = stepsApplied * EXTRUDER_MM_PER_STEP;
+          extruderPosMm += e_mm;
           aggMove.E = (aggMove.E || 0) + e_mm;
         } else {
           aggMove[axis] = newAngle;
@@ -150,7 +184,12 @@ const pacerLoop = () => {
           : 0;
         aggMove.at = atMs;
         aggMove.span = spanMs;
-        postMessage({ type: 'move', command: aggMove });
+        const logEntry = LOG_MOVE ? buildMoveLogEntry(aggMove, atMs, spanMs) : null;
+        if (LOG_MOVE && logEntry) {
+          postMessage({ type: 'move', command: aggMove, logEntry });
+        } else {
+          postMessage({ type: 'move', command: aggMove });
+        }
         // Reset aggregation
         aggMove = { type: 'Move' };
         aggFirstStepTimeMs = null;
@@ -262,6 +301,9 @@ const handleParsedLine = (line) => {
     const currentAngle = axisAngles.get(axis) || 0;
     const delta = newAngle - currentAngle;
     axisAngles.set(axis, newAngle);
+    if (axis === EXTRUDER_AXIS) {
+      extruderPosMm = steps * EXTRUDER_MM_PER_STEP;
+    }
     const st = axisState.get(axis);
     if (st) {
       st.segments.length = 0;
@@ -348,6 +390,13 @@ const connect = (url) => {
 self.onmessage = (e) => {
   const { type, ...data } = e.data;
   if (type === 'connect') {
+    LOG_MOVE = Boolean(data.logMove);
+    if (LOG_MOVE) {
+      moveLogSeq = 0;
+      try {
+        console.log('KlipperPacer move logging enabled');
+      } catch (_) { /* console may be unavailable in some worker contexts */ }
+    }
     connect(data.url);
   } else if (type === 'close') {
     if (ws) ws.close();
