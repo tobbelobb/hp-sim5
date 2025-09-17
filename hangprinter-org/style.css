@@ -2,7 +2,7 @@
 
 @font-face {
     font-family: Manrope;
-    src: url("/assets/fonts/Manrope-VariableFont_wght.ttf");
+    src: url("./assets/fonts/Manrope-VariableFont_wght.ttf");
 }
 
 :root {
