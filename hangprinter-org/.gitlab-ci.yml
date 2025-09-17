@@ -1,0 +1,18 @@
+# Only create pipeline if Gitlab user tobben triggered it
+workflow:
+  rules:
+    - if: $GITLAB_USER_LOGIN == "tobben"
+
+# Below here is a template
+# https://gitlab.com/pages/plain-html
+pages:
+  stage: deploy
+  script:
+    - mkdir .public
+    - cp -r * .public
+    - mv .public public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master

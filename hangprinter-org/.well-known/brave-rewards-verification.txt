@@ -1,0 +1,4 @@
+This is a Brave Rewards publisher verification file.
+
+Domain: hangprinter.org
+Token: ba9b5d2be5bcaeaa4848db50e2facfdf99a305e902576af415292499ab54c951

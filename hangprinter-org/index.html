@@ -1,0 +1,501 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <meta name="author" content="Torbjorn Ludvigsen">
+  <meta name="keywords" content="Hangprinter, open source, hardware, technology, software, Reprap, development">
+  <meta name="description" content="Hangprinter">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hangprinter">
+  <meta property="og:url" content="https://hangprinter.org">
+  <meta property="og:description" content="Cable Driven RepRap">
+  <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@tobbelobb">
+  <meta name="twitter:creator" content="@tobbelobb">
+  <meta name="twitter:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  </meta>
+  <link rel="stylesheet" href="./style.css?v=0" type="text/css">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+  <link rel="manifest" href="./site.webmanifest">
+  <link rel="mask-icon" href="./safari-pinned-tab.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#00aba9">
+  <meta name="theme-color" content="#ffffff">
+  <title>Hangprinter</title>
+</head>
+
+<body>
+  <div class="masthead">
+    <h3 class="masthead-brand">
+      <a href="/">
+        <img class="logotype" src="/images/hangprinter_logotype.svg" />
+        <!-- <img src="./logo-orange.svg" style="height:50px;width:50px;" /> -->
+      </a>
+    </h3>
+    <nav>
+      <ul>
+        <li>
+          <div class="dropdown">
+            <button class="dropbtn">Documentation</button>
+            <div class="dropdown-content">
+              <div class="link-column">
+                <p>Here you can find the complete resources for the latest and previous versions of the Hangprinter.
+                </p>
+                <div class="links">
+                  <a href="/doc/v4/">Hangprinter Version 4</a>
+                  <a href="/doc/v3/">Hangprinter Version 3</a>
+                </div>
+              </div>
+              <div class="img-column">
+                <img src="/images/menu_img_1.png" alt="">
+                <img src="/images/menu_img_2.png" alt="">
+                <img src="/images/menu_img_3.png" alt="">
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/FAQ">FAQ</a></li>
+        <li><a href="/resources">Resources</a></li>
+        <li><a href="/newsletter">Newsletter</a></li>
+        <li><a id="donate" href="/donate/">Donate</a></li>
+      </ul>
+    </nav>
+
+    <div class="burger">
+      <img src="/images/menu.svg" alt="">
+    </div>
+  </div>
+
+  <div class="blur-overlay"></div>
+  <nav id="mobile-menu">
+    <ul>
+      <li><span>Documentation</span>
+        <div class="sublinks">
+          <a href="/doc/v4/">Hangprinter V4</a>
+          <a href="/doc/v3/">Hangprinter V3</a>
+        </div>
+      </li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/FAQ">FAQ</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="/newsletter">Newsletter</a></li>
+      <li><a href="/donate/">Donate</a></li>
+    </ul>
+  </nav>
+
+  <div id="FrontPageMain">
+    <img class="front-image" src="/images/1_hero_banner.jpg" alt="">
+
+    <div class="content">
+      <h1>Frameless Freeform Fabrication.</h1>
+      <p>Welcome to the community.</p>
+    </div>
+
+
+    <!-- ========== OLD CONTENT ========== -->
+    <!-- <img class="front-image" src="./hangprinter4_small.jpeg" onclick="fun()" /> -->
+    <!-- <h1>Hangprinter</h1>
+    <h2>Cable Driven RepRap</h2>
+    <h3>
+      Print big at low cost
+    </h3> -->
+  </div>
+
+  <div class="img-block left">
+    <video autoplay playsinline loop muted src="/images/video-1.mp4"></video>
+    <div class="content">
+      <!-- <span>So what is Hangprinter ?</span> -->
+      <h2>Hangprinter is an open-source precision robot. The <em>line-</em><em>driven</em> <em>design</em> makes it
+        cheap, light, and scalable.
+      </h2>
+    </div>
+  </div>
+
+  <div class="img-block right red">
+    <video class="square" autoplay playsinline loop muted src="/images/3_basic-movement.mp4"></video>
+    <div class="content">
+      <h2>What Does Line-Driven Mean?</h2>
+      <p>The tool head is held in place by lines. The lines are anchored either to a light frame, a crane or a hoist
+        system or directly to the ceiling and floor of a room. Precision movements are controlled by adjusting the
+        lengths of the lines with tightly synchronized motors.</p>
+    </div>
+  </div>
+
+  <div class="text-block">
+    <div class="text-col">
+      <h2>Benefits of No-Frame</h2>
+      <p>The lightweight, compact format makes Hangprinter easy to transport and tidy away. The setup is quick since the
+        anchors can be almost anywhere around the build volume. There are no ground preparation or alignment
+        requirements. Quick-release anchors enable economical multi-usage of space. It frees up the area for other
+        purposes as soon as the job is done.</p>
+    </div>
+    <div class="text-col">
+      <h2>How? Torque Mode</h2>
+      <p>A special motor mode lets the user set a constant pull in the lines with any desired force. It is used to
+        tighten
+        lines or wind them onto or out from the spools. When winding out, the pull is set to almost zero, allowing the
+        operator to attach the quick-release anchors. When preparing for print, torque mode ensures the optimal initial
+        line tightness. When tidying, torque mode can create a slight pull that makes the lines follow the hand
+        movements
+        of the operator.</p>
+    </div>
+  </div>
+
+  <video playsinline controls src="/images/2_everyday-use.mp4" poster="/images/2_everyday-use.jpg"
+    class="full-width"></video>
+
+  <div class="img-block left">
+    <video class="square" autoplay playsinline loop muted src="/images/4_position-management.mp4"></video>
+    <div class="content">
+      <h2 id="anchor-test">Position Management</h2>
+      <p>High precision is achieved by directly measuring and compensating in software. The most useful measurements
+        currently come from our custom-built hp-mark computer vision system. It measures the tool's position and
+        orientation by keeping track of a set of markers.</p>
+    </div>
+  </div>
+
+  <div class="img-block right red">
+    <video class="square" autoplay playsinline loop muted src="/images/5_auto-calibration.mp4"></video>
+    <div class="content">
+      <h2>Auto-calibration</h2>
+      <p>The auto-calibration process creates configuration values and checks config quality, ensuring that the
+        software's expectations match measured physical reality. The routine is run only once and is divided into two
+        steps:</p>
+      <ul>
+        <li>
+          Gather measurement data, like line forces, tool head positions, and motor rotations.
+        </li>
+        <li>
+          Compute the remaining physical attributes of the machine, like anchor positions, cable thickness and
+          flexibility, and spool radii.
+        </li>
+      </ul>
+      </p>
+    </div>
+  </div>
+
+  <div class="card-block">
+    <img src="/images/card-block-background.png" alt="" class="background-img">
+    <div class="card">
+      <video autoplay playsinline loop muted src="/images/6_flex-compensation.mp4"></video>
+      <div class="content">
+        <h2>Flex Compensation</h2>
+        <p>Even our super stiff lines extend slightly due to the gravitational pull on the extruder. If left unaccounted
+          for, this would cause sagging and precision loss. The flex compensation treats lines as if they were very
+          tight springs. It uses these “springs” and some math to apply just the right amount of pull in every direction
+          at all times.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <video autoplay playsinline loop muted src="/images/7_line-collision-detector.mp4"></video>
+      <div class="content">
+        <h2>Line Collision Detector</h2>
+        <p>Since some lines point downward during printing, there is a risk of collision with wider prints during
+          operation. Our line collision detector performs checks to determine in advance whether such collisions will
+          occur. The detector lets operators plan and avoid surprises.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="img-block left">
+    <video autoplay playsinline loop muted src="/images/8_compatibility.mp4"></video>
+    <div class="content">
+      <h2>Compatible</h2>
+      <p>Hangprinter works with any slicer, extruder, sensor, print bed, or other 3D printing peripheral. It runs a
+        widely used firmware called ReprapFirmware. Many experienced 3D printer operators will feel at home instantly,
+        software updates are frequent and the documentation is generally good.</p>
+    </div>
+  </div>
+
+  <div class="img-block green right">
+    <video class="square" autoplay playsinline loop muted src="/images/9_safety.mp4"></video>
+    <div class="content">
+      <h2>Safety.</h2>
+      <p>Belts are intended to skip, and lines should slide out of their clamp if tightness gets too high. The enclosed
+        cassettes prevent injuries and avoid spaghetti chaos by containing the lines onto the spools.</p>
+    </div>
+  </div>
+
+  <div class="featured-block">
+    <div class="block-header">
+      <h3>Hangprinter: featured</h3>
+      <a href="/resources/">
+        <span>Follow us</span>
+        <img src="/images/arrow_link.svg" alt="">
+      </a>
+      <div class="divider">
+        <img src="/images/divider.svg" alt="" class="border">
+      </div>
+
+    </div>
+
+    <div class="carousel-container">
+      <div class="featured-carousel">
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F" target="_blank">
+          <img src="/images/featured/Patorobotos_Vase_Lamp.png" alt="">
+        </a>
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F&t=481" target="_blank">
+          <img src="/images/featured/Patorobotos_Vase_Lamp2.png" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/838823627168563204/photo/1" target="_blank">
+          <img src="/images/featured/My_Babel_Tower.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1674557322385915904/photo/2" target="_blank">
+          <img src="/images/featured/My_Huge_Coral.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1524821425303044096/photo/1" target="_blank">
+          <img src="images/featured/My_Plastic_Coffee_Table.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1384018337915572225/photo/1" target="_blank">
+          <img src="images/featured/My_Surface_Quality.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1235466289377873920/photo/1" target="_blank">
+          <img src="images/featured/My_Chair.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1129122437533192192/photo/1" target="_blank">
+          <img src="images/featured/My_Cylinder.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/999200664654897152/photo/1" target="_blank">
+          <img src="images/featured/My_Octopus.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/E3DOnline/status/996773670184996864/photo/1" target="_blank">
+          <img src="images/featured/My_Infill_Art.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/996317648949579776/photo/1" target="_blank">
+          <img src="images/featured/My_Chair_2.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/985559940298354689/photo/1" target="_blank">
+          <img src="images/featured/My_Vertical_Windmill.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/937443287811620871/photo/1" target="_blank">
+          <img src="images/featured/Our_Rome_Vase.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/fredhedenberg/status/1109926894714175488/photo/1" target="_blank">
+          <img src="images/featured/Freds_Canoe.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1459456994843279360/photo/1" target="_blank">
+          <img src="images/featured/Jimmys_Art.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/velmukelmu/status/1165345314297057281/photo/1" target="_blank">
+          <img src="images/featured/Attes_Shoe.jpeg" alt="">
+        </a>
+        <a href="https://en.bloft.fi/projects-8" target="_blank">
+          <img src="images/featured/Attes_Sara_Robot.webp" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/1" target="_blank">
+          <img src="images/featured/Attes_Vase.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/3" target="_blank">
+          <img src="images/featured/Attes_Vase_2.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/3Dgec/status/1078258644855201792/photo/1" target="_blank">
+          <img src="images/featured/Gecs_Multi_Unit.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1107071841195003934"
+          target="_blank">
+          <img src="images/featured/Janik_Vases.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1095533685287174185"
+          target="_blank">
+          <img src="images/featured/Sogis_Rocket.png" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/999379554395234464" target="_blank">
+          <img src="images/featured/Sogis_Surface_Quality.jpg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/987363360905506856" target="_blank">
+          <img src="images/featured/Sogis_Deer.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=2180193542263116&set=g.176856636157837" target="_blank">
+          <img src="images/featured/Sogis_Trex.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=10216434673957236&set=g.176856636157837" target="_blank">
+          <img src="images/featured/Lucas_Esteban_Campas_Vase.jpg" alt="">
+        </a>
+
+        <!-- COPY OF THE BLOCKS IN THE CAROUSEL, THEY SHOULD BE IN THE SAME ORDER, ESPECIALLY THE 1ST ONE -->
+
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F" target="_blank">
+          <img src="/images/featured/Patorobotos_Vase_Lamp.png" alt="">
+        </a>
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F&t=481" target="_blank">
+          <img src="/images/featured/Patorobotos_Vase_Lamp2.png" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/838823627168563204/photo/1" target="_blank">
+          <img src="/images/featured/My_Babel_Tower.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1674557322385915904/photo/2" target="_blank">
+          <img src="/images/featured/My_Huge_Coral.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1524821425303044096/photo/1" target="_blank">
+          <img src="images/featured/My_Plastic_Coffee_Table.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1384018337915572225/photo/1" target="_blank">
+          <img src="images/featured/My_Surface_Quality.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1235466289377873920/photo/1" target="_blank">
+          <img src="images/featured/My_Chair.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1129122437533192192/photo/1" target="_blank">
+          <img src="images/featured/My_Cylinder.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/999200664654897152/photo/1" target="_blank">
+          <img src="images/featured/My_Octopus.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/E3DOnline/status/996773670184996864/photo/1" target="_blank">
+          <img src="images/featured/My_Infill_Art.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/996317648949579776/photo/1" target="_blank">
+          <img src="images/featured/My_Chair_2.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/985559940298354689/photo/1" target="_blank">
+          <img src="images/featured/My_Vertical_Windmill.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/937443287811620871/photo/1" target="_blank">
+          <img src="images/featured/Our_Rome_Vase.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/fredhedenberg/status/1109926894714175488/photo/1" target="_blank">
+          <img src="images/featured/Freds_Canoe.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1459456994843279360/photo/1" target="_blank">
+          <img src="images/featured/Jimmys_Art.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/velmukelmu/status/1165345314297057281/photo/1" target="_blank">
+          <img src="images/featured/Attes_Shoe.jpeg" alt="">
+        </a>
+        <a href="https://en.bloft.fi/projects-8" target="_blank">
+          <img src="images/featured/Attes_Sara_Robot.webp" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/1" target="_blank">
+          <img src="images/featured/Attes_Vase.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/3" target="_blank">
+          <img src="images/featured/Attes_Vase_2.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/3Dgec/status/1078258644855201792/photo/1" target="_blank">
+          <img src="images/featured/Gecs_Multi_Unit.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1107071841195003934"
+          target="_blank">
+          <img src="images/featured/Janik_Vases.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1095533685287174185"
+          target="_blank">
+          <img src="images/featured/Sogis_Rocket.png" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/999379554395234464" target="_blank">
+          <img src="images/featured/Sogis_Surface_Quality.jpg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/987363360905506856" target="_blank">
+          <img src="images/featured/Sogis_Deer.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=2180193542263116&set=g.176856636157837" target="_blank">
+          <img src="images/featured/Sogis_Trex.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=10216434673957236&set=g.176856636157837" target="_blank">
+          <img src="images/featured/Lucas_Esteban_Campas_Vase.jpg" alt="">
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <img class="logo" src="/images/hangprinter_logo.svg" alt="">
+
+    <div class="link-container">
+      <div class="link-column">
+        <span>The Project</span>
+        <a href="/donate">Donate</a>
+        <a href="/doc/v3/">Hangprinter v3</a>
+        <a href="/doc/v4/">Hangprinter v4</a>
+      </div>
+
+      <div class="link-column">
+        <span>Follow</span>
+        <a href="https://www.facebook.com/groups/hangprinter">Facebook</a>
+        <a href="https://twitter.com/tobbelobb">X</a>
+        <a href="https://www.youtube.com/channel/UCw1Nz0VCw4z-dfq4WjSkFzQ">Youtube</a>
+        <a href="https://torbjornludvigsen.com/blog">Dev Blog</a>
+      </div>
+
+      <div class="link-column">
+        <span>Community</span>
+        <a href="https://discord.gg/KAV7x3hgRX">Discord Channel</a>
+        <a href="/resources/">Relevant Repos</a>
+        <a href="/newsletter/">Newsletter</a>
+      </div>
+    </div>
+
+    <span class="copyright">© Torbjørn Ludvigsen 2023. All rights reserved.</span>
+  </footer>
+
+  <div id="there-you-go"></div>
+  <script>
+    var img = document.getElementById('FrontPageMain');
+    var dx = Math.random() * 8 - 4.0;
+    var dy = Math.random() * 8 - 4.0;
+    var offsetY = window.innerHeight > 760 ? 150 : 60;
+    if (window.innerWidth < 387) {
+      offsetY -= 60;
+    }
+    function fun() {
+      var bodyRect = document.body.getBoundingClientRect();
+      var elemRect = img.getBoundingClientRect();
+      img.style.position = "fixed";
+      var left = elemRect.left;
+      var top = elemRect.top - offsetY;
+      offsetY = 0;
+      counter = 1000;
+      interval = 20; // ms
+      countDown = document.getElementById('there-you-go');
+      countDown.style.width = "100%";
+      countDown.style.textAlign = "center";
+      countDown.style.top = bodyRect.bottom / 2;
+      countDown.innerHTML = "<h1>progress 0%...</h1>";
+      document.body.appendChild(countDown);
+      window.setTimeout(wanderAround, interval);
+      var leftOffset = window.innerWidth > 430 ? -400 : -300;
+      var rightOffset = window.innerWidth > 430 ? -200 : -100;
+      var topOffset = window.innerHeight > 760 ? -180 : -60;
+      var bottomOffset = window.innerHeight > 760 ? -375 : -235;
+      function wanderAround() {
+        countDown.innerHTML = "<h1>progress " + Math.floor((1.0 - counter / 1001) * 100) + "%...</h1>";
+        img.style.left = left + "px";
+        img.style.top = top + "px";
+        --counter;
+        if (counter < 0) {
+          countDown.innerHTML = "<h1>There you go.</h1>";
+          return;
+        }
+        else {
+          // Animate a bit more
+          left += dx;
+          if (left > bodyRect.right + leftOffset || left < rightOffset) {
+            dx = -dx;
+          }
+
+          top += dy;
+          if (top < topOffset || top > bodyRect.bottom + bottomOffset) {
+            dy = -dy;
+          }
+          img.style.left = left + "px";
+          img.style.top = top + "px";
+
+          // Re-trigger ourselves
+          window.setTimeout(wanderAround, interval);
+        }
+      }
+      wanderAround();
+    }
+  </script>
+  <script data-goatcounter="https://hangprinter.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  <script src="/assets/script.js"></script>
+</body>
+
+</html>

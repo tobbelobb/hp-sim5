@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <meta name="author" content="Torbjorn Ludvigsen">
+    <meta name="keywords" content="Hangprinter, open source, hardware, technology, software, Reprap, development">
+    <meta name="description" content="Hangprinter">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Hangprinter">
+    <meta property="og:url" content="https://hangprinter.org/contribute">
+    <meta property="og:description" content="Cable Driven RepRap">
+    <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@tobbelobb">
+    <meta name="twitter:creator" content="@tobbelobb">
+    <link rel="stylesheet" href="../style.css?v=0" type="text/css">
+    <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+    <link rel="manifest" href="../site.webmanifest">
+    <link rel="mask-icon" href="../safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#00aba9">
+    <meta name="theme-color" content="#ffffff">
+
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu" rel="stylesheet">
+    <title>Hangprinter|Gitlab</title>
+  </head>
+  <body style="width:100%;">
+    <div class="masthead">
+      <h3 class="masthead-brand">
+        <a href="../" style="text-decoration:none;color:#000;">
+          <img src="../safari-pinned-tab.svg" style="height:50px;width:50px;" />
+        </a>
+      </h3>
+      <nav>
+        <ul>
+          <li>
+            <div class="dropdown">
+              <button class="dropbtn">Documentation</button>
+              <div class="dropdown-content">
+                <a href="../doc/v3">Hangprinter version 3</a>
+                <a href="../doc/v4">Hangprinter version 4</a>
+              </div>
+            </div>
+          </li>
+          <li><a href="../contribute">Contribute</a></li>
+          <li><a href="../about">About</a></li>
+          <li><a href="../FAQ">FAQ</a></li>
+          <li><a href="../resources">Resources</a></li>
+          <li><a href="../newsletter">Newsletter</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div id="SiteName" style="text-align:center;font-size:20px;">
+      Hangprinter.org Contribution Guide via Gitlab
+    </div>
+    <div id="MainContent">
+      <p>
+        Hangprinter.org's sources, as well as the rest of the Hangprinter Project, is hosted on Gitlab.
+        This guide shows how to submit an improvement to a Hangprinter documentation page.
+      </p>
+      <h2>Step 1: Get a Gitlab Account</h2>
+      <p>
+        Navigate to <a href="https://gitlab.com/users/sign_in">gitlab.com's sign in page</a>, and find the "register now" link.
+      </p>
+      <figure>
+        <a href="./media/register_now.png" target="_blank">
+          <img src="./media/register_now_small.png" alt="" width="500" height="269">
+        </a>
+        <figcaption>
+          Click the image for a larger version. Works for all images in this guide.
+        </figcaption>
+      </figure>
+      <p>
+        Fill in your details in the registration page, like this:
+      </p>
+      <figure>
+        <a href="./media/user_registration.png" target="_blank">
+          <img src="./media/user_registration_small.png" alt="" width="500" height="268">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        After you click "Register" you will receive an email that asks you to verify.
+        Follow the "Confirm your account" link in this email.
+      </p>
+      <figure>
+        <a href="./media/confirm_account.png" target="_blank">
+          <img src="./media/confirm_account_small.png" alt="" width="500" height="299">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        After this, you should be able to go back to <a href="https://gitlab.com/users/sign_in">gitlab.com's sign in page</a>
+        and sign in with your new username and password.
+      </p>
+      <p>
+        Upon signing in, you'll might also receive an email from Gitlab with subject "Fix your pipelines by validating your account".
+        Pipelines are an advanced Gitlab feature, and you don't need to fix them.
+        You can safely ignore this email.
+      </p>
+      <figure>
+        <a href="./media/validate_your_account.png" target="_blank">
+          <img src="./media/validate_your_account_small.png" alt="" width="500" height="225">
+        </a>
+        <figcaption>
+          Don't worry about pipelines or runners. Ignore this email.
+        </figcaption>
+      </figure>
+      <h2>Step 2: Create a Fork</h2>
+      <p>
+        In this example, we'll make a change to the documentation shown on hangprinter.org/doc/v4.
+        Head over to the repo where it's hosted: <a href="https://gitlab.com/tobben/hangprinter-org">https://gitlab.com/tobben/hangprinter-org</a>.
+      </p>
+      <p>
+        There's a lot of details on the repo page, but all we need for now is to click the button saying "Fork".
+      </p>
+      <figure>
+        <a href="./media/fork_button.png" target="_blank">
+          <img src="./media/fork_button_small.png" alt="" width="500" height="268">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        We'll land on a page with many choices.
+        We choose our namespace in the drop-down menu (there will be only one), select public visibility, and click "Fork project".
+      </p>
+      <figure>
+        <a href="./media/fork_choices.png" target="_blank">
+          <img src="./media/fork_choices_small.png" alt="" width="500" height="269">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        ... which brings us to another repo page.
+        This our forked repo.
+        The word "fork" just means "registered copy".
+      </p>
+      <h2>Step 3: Make Your Change</h2>
+      <p>
+        In our forked repo, we click the "doc" directory.
+      </p>
+      <figure>
+        <a href="./media/the_doc_dir.png" target="_blank">
+          <img src="./media/the_doc_dir_small.png" alt="" width="500" height="269">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        We want to make a change to hangprinter.org/doc/v4, so we click the "v4" directory.
+      </p>
+      <figure>
+        <a href="./media/the_v4_dir.png" target="_blank">
+          <img src="./media/the_v4_dir_small.png" alt="" width="500" height="267">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        The file we want to change, the one that shows up at hangprinter.org/doc/v4, is called index.html.
+        We click it to view its contents.
+      </p>
+      <figure>
+        <a href="./media/the_index_file.png" target="_blank">
+          <img src="./media/the_index_file_small.png" alt="" width="500" height="267">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        We will see all the text that our web browsers receives when we surf to hangprinter.org/doc/v4.
+        To the human eye it looks a bit cryptic at first.
+        However, this is the file that we need to change.
+      </p>
+      <p>
+        We click the button saying "Open in Web IDE".
+      </p>
+      <figure>
+        <a href="./media/open_in_web_ide.png" target="_blank">
+          <img src="./media/open_in_web_ide_small.png" alt="" width="500" height="268">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        The Web IDE is basically a text editor inside your browser.
+      </p>
+      <figure>
+        <a href="./media/the_web_ide.png" target="_blank">
+          <img src="./media/the_web_ide_small.png" alt="" width="500" height="267">
+        </a>
+        <figcaption>
+          The Web IDE.
+        </figcaption>
+      </figure>
+      <p>
+        Say we found and fixed a little error in the doc/v4 text.
+        On line 131, it said "spacers that are twice as long".
+        It should really say "spacers that are more than twice as long".
+      </p>
+      <p>
+        We add the words "more than" in the right place, and press the "Commit" button.
+      </p>
+      <figure>
+        <a href="./media/more_than.png" target="_blank">
+          <img src="./media/more_than_small.png" alt="" width="500" height="267">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        This brings up a page that lets you review your change.
+        Scrolling down to line 131 indeed shows that the words "more than" have been added.
+      </p>
+      <p>
+        Once we've reviewed my own change enough, we press "Commit" down in the bottom left corner.
+        Make sure the "Start a new merge request" checkbox is ticked.
+      </p>
+      <figure>
+        <a href="./media/press_commit_again.png" target="_blank">
+          <img src="./media/press_commit_again_small.png" alt="" width="500" height="268">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        Upon clicking "Commit", a merge request is created.
+        This might trigger Gitlab to send us two emails with subjects
+        "Fix your pipelines by validating your account" and "hangprinter-org | Failed pipeline for tobben_test_user-master-patch-03896 | 71e13f86".
+        We can safely ignore these emails.
+      </p>
+      <h2>Step 4: Create the Merge Request</h2>
+      <p>
+        Since we chose "Start a new merge request" in the previous screen we arrive directly at the
+        merge request creation screen.
+      </p>
+      <p>
+        There's nothing in particular we need to do here.
+        So we just press "Create merge request".
+      </p>
+      <figure>
+        <a href="./media/create_merge_request.png" target="_blank">
+          <img src="./media/create_merge_request_small.png" alt="" width="500" height="267">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        Aaaand, we're done.🎉🎉🎉
+        All that's left is to wait for me (in my role as the project maintainer) to approve your merge request.
+        After I've approved, the merge request page looks like this:
+      </p>
+      <figure>
+        <a href="./media/merged.png" target="_blank">
+          <img src="./media/merged_small.png" alt="" width="500" height="269">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        Among all the clutter there, you might see that the merge triggered a pipeline.
+        It will run for 2 minutes and succeed.
+        After that, the change is live and published.
+        Here's a screenshot of hangprinter.org/doc/v4 a few minutes later.
+      </p>
+      <figure>
+        <a href="./media/live.png" target="_blank">
+          <img src="./media/live_small.png" alt="" width="500" height="274">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure>
+      <p>
+        Thanks for following along, and good luck with your doc changes!
+        If you want to do more advanced things in the repos, don't hesitate to get in touch.
+      </p>
+      <h2>Why Gitlab?</h2>
+      <p>
+        This same contribution procedure applies to all Hangprinter related repos, code and documentation alike.
+        It's a bit bulky in the smallest use case, like the one above, and it's a bit of a hassle to do on a smartphone (but it works!).
+        The upside is that it scales up incredibly well, and all you need is a web browser, which is quite powerful.
+      </p>
+      <!--p>
+        Gitlab provides both uniformity and the flexibility that Hangprinter needs as it grows in scale and complexity.
+        The "runners" and "pipelines" that confuse newcomers are
+        the same things that software engineers need and love.
+     </p>
+     <h2>Why Not Github?</h2>
+     <p>
+       Github is more user friendly but also has less sophisticated tools for continuous integration.
+     </p>
+     <p>
+       Github is also owned by Microsoft, who have the power to shut it down if they want.
+       I like Microsoft and trust them somewhat, like most people do.
+       Gitlab, on the other hand, gives us legal rights to their product for eternity.
+     </p>
+     <p>
+       In the long run, law is better than trust.
+       It's worth sacrificing a little bit of usability for, but not a lot.
+     </p>
+     <p>
+       For the ease-of-use, and for redundancy, we mirror all Gitlab repos to Github.
+       Consumers can fork and clone up-to-date Hangprinter source from Github if they want, but not contribute back via Github.
+     </p>
+     <p>
+       Both Github and Gitlab sit somewhere between the newcomer's workflow dream, which would be Dropbox or Google Drive,
+       and the software engineer's workflow dream, which would involve Gerrit, Jenkins, Docker, and Kubernetes in some combination.
+     </p>
+     <p>
+       The conflicting needs of flexibility and usability are at the heart of the Hangprinter Project.
+       Hangprinter v3 was very simple to build, but too simple to be economically useful.
+       Since version 4, Hangprinter is very complex and there are high thresholds for newcomers that we need to knock down.
+       I hope this article brought down one of them.
+     </p-->
+    </div>
+    <script data-goatcounter="https://hangprinter.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://hangprinter.org</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/doc</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/doc/v3</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/doc/v4</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/contribute</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/about</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/resources</loc>
+  </url>
+  <url>
+    <loc>https://hangprinter.org/newsletter</loc>
+  </url>
+</urlset>
