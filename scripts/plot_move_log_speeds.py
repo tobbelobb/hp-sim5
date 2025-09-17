@@ -8,7 +8,7 @@ and feed the JSONL file to this script.
 
 Usage::
 
-    python -m examples.python.slideprinter.plot_move_log --input path/to/log.jsonl
+    python plot_move_log.py --input path/to/log.jsonl
 
 Optionally specify ``--output`` to write a PNG (or any matplotlib-supported
 format). Without ``--output`` the plot window is displayed interactively.
