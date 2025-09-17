@@ -22,7 +22,7 @@ let extruderPosMm = 0;
 
 // Throttle outgoing Move messages to avoid overwhelming the browser.
 // Pacer will run at this interval and emit at most once per interval.
-const PACER_INTERVAL_MS = 4;
+const PACER_INTERVAL_MS = 0.50;
 const MIN_EMIT_INTERVAL_MS = PACER_INTERVAL_MS;
 
 // Aggregation buffer across pacer ticks
