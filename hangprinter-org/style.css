@@ -383,10 +383,11 @@ iframe {
     gap: 18px;
 }
 
-.primary-controls {
+.sim-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px 24px;
+    align-items: center;
 }
 
 .sim-controls button {
@@ -402,6 +403,12 @@ iframe {
     transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
+.sim-play {
+    padding: 12px 28px;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+}
+
 .sim-controls button:hover,
 .sim-controls button:focus-visible {
     transform: translateY(-1px);
@@ -409,46 +416,32 @@ iframe {
 }
 
 .sim-controls button:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline: 2px solid rgba(255, 255, 255, 0.85);
     outline-offset: 2px;
 }
 
-#dumpBtn {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.secondary-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px 28px;
-}
-
-.secondary-column {
+.preset-picker {
     display: flex;
     flex-direction: column;
     gap: 8px;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.72);
+    color: rgba(255, 255, 255, 0.78);
 }
 
-.secondary-column select {
+.preset-picker select {
     padding: 10px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--white);
+    border: 1px solid rgba(22, 22, 22, 0.28);
+    background: #f5f7fa;
+    color: #1f1f27;
     font-size: 14px;
     min-width: 220px;
     appearance: none;
 }
 
-.secondary-column select:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.7);
+.preset-picker select:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
     outline-offset: 2px;
-}
-
-.secondary-column button {
-    align-self: flex-start;
 }
 
 .sim-stats {
@@ -516,7 +509,7 @@ iframe {
 }
 
 @media screen and (max-width: 720px) {
-    .primary-controls {
+    .sim-actions {
         justify-content: center;
     }
 
@@ -525,16 +518,11 @@ iframe {
         text-align: center;
     }
 
-    .secondary-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .secondary-column select {
+    .preset-picker {
         width: 100%;
     }
 
-    .secondary-column button {
+    .preset-picker select {
         width: 100%;
     }
 

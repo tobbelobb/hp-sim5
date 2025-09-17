@@ -360,8 +360,12 @@ export class InputSystem {
            this.world.setResource('grabbedBall', closestBall);
 
            const pauseState = this.world.getResource('pauseState');
-           pauseState.paused = false;
-           this.pauseBtn.textContent = "Pause";
+           if (pauseState) {
+             pauseState.paused = false;
+           }
+           if (this.pauseBtn) {
+             this.pauseBtn.textContent = "Pause";
+           }
            return;
          }
      }

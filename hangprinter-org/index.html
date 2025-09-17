@@ -111,34 +111,20 @@
       <div class="sim-text">
         <span class="eyebrow">Try it in your browser</span>
         <h2>Interactive Slideprinter Simulation</h2>
-        <p>Watch the virtual tool head follow Hangprinter moves. Pick a built-in demo or upload your own G-code to explore the cable-driven motion system.</p>
+        <p>Watch the virtual tool head follow Hangprinter moves. Pick a built-in demo and replay the motion directly in your browser.</p>
       </div>
 
       <div class="sim-app" aria-live="polite">
         <div id="controls" class="sim-controls">
-          <div class="primary-controls">
-            <button id="pauseBtn" type="button">Pause</button>
-            <button id="resetBtn" type="button">Reset</button>
-            <button id="stepBtn" type="button">Step</button>
-            <button id="dumpBtn" type="button" title="Dump current simulation state to the console">Dump State</button>
-          </div>
-
-          <div class="secondary-controls">
-            <label class="secondary-column" for="presetGcode">
-              <span>Built-in demo</span>
-              <select id="presetGcode">
-                <option value="Hangprinter_logo6.gcode" selected>Hangprinter logo (fast)</option>
-                <option value="Hangprinter_logo2.gcode">Hangprinter logo (detailed)</option>
-                <option value="draw_squares.gcode">Calibration squares</option>
-                <option value="tighten.gcode">Cable tightening routine</option>
+          <div class="sim-actions">
+            <button id="playBtn" type="button" class="sim-play">Play</button>
+            <label class="preset-picker" for="presetMcu">
+              <span>Select demo</span>
+              <select id="presetMcu">
+                <option value="hangprinterLogo" selected>Hangprinter Logo</option>
+                <option value="straightMoves">Straight movements</option>
               </select>
             </label>
-
-            <div class="secondary-column">
-              <span>Upload a path</span>
-              <button id="loadGcodeBtn" type="button">Choose G-code</button>
-              <input type="file" id="gcodeFile" accept=".gcode" hidden>
-            </div>
           </div>
 
           <div class="sim-stats" aria-live="polite">
@@ -250,54 +236,6 @@
       </div>
     </div>
   </div>
-
-  <section class="sim-block" id="slideprinter-demo">
-    <div class="sim-inner">
-      <div class="sim-text">
-        <span class="eyebrow">Try it in your browser</span>
-        <h2>Interactive Slideprinter Simulation</h2>
-        <p>Watch the virtual tool head follow Hangprinter moves. Pick a built-in demo or upload your own G-code to explore the cable-driven motion system.</p>
-      </div>
-
-      <div class="sim-app" aria-live="polite">
-        <div id="controls" class="sim-controls">
-          <div class="primary-controls">
-            <button id="pauseBtn" type="button">Pause</button>
-            <button id="resetBtn" type="button">Reset</button>
-            <button id="stepBtn" type="button">Step</button>
-            <button id="dumpBtn" type="button" title="Dump current simulation state to the console">Dump State</button>
-          </div>
-
-          <div class="secondary-controls">
-            <label class="secondary-column" for="presetGcode">
-              <span>Built-in demo</span>
-              <select id="presetGcode">
-                <option value="Hangprinter_logo6.gcode" selected>Hangprinter logo (fast)</option>
-                <option value="Hangprinter_logo2.gcode">Hangprinter logo (detailed)</option>
-                <option value="draw_squares.gcode">Calibration squares</option>
-                <option value="tighten.gcode">Cable tightening routine</option>
-              </select>
-            </label>
-
-            <div class="secondary-column">
-              <span>Upload a path</span>
-              <button id="loadGcodeBtn" type="button">Choose G-code</button>
-              <input type="file" id="gcodeFile" accept=".gcode" hidden>
-            </div>
-          </div>
-
-          <div class="sim-stats" aria-live="polite">
-            <span>dt: <span id="dt">N/A</span></span>
-            <span>Speed: <span id="speed">N/A</span></span>
-          </div>
-        </div>
-
-        <div class="canvas-frame">
-          <canvas id="myCanvas" role="img" aria-label="Hangprinter Slideprinter simulation"></canvas>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <div class="img-block left">
     <video autoplay playsinline loop muted src="./images/8_compatibility.mp4"></video>

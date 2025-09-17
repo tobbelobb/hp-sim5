@@ -1,11 +1,10 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
 import { InputSystem } from './slideprinter_common.js';
 
-
 export function runGame(world, internalSetupScene) {
-    const pauseBtn = document.getElementById("pauseBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const stepBtn = document.getElementById("stepBtn");
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const stepBtn = document.getElementById('stepBtn');
     const dumpBtn = document.getElementById('dumpBtn');
     const dtEl = document.getElementById('dt');
     const speedEl = document.getElementById('speed');
@@ -16,13 +15,28 @@ export function runGame(world, internalSetupScene) {
     let frameCounter = 0;
     let startTime = 0;
     let totalSim = 0;
+    let hasStarted = false;
+
+    const getPauseState = () => world.getResource('pauseState');
+
+    const updatePauseButtonLabel = () => {
+        const pauseState = getPauseState();
+        if (!pauseBtn || !pauseState) {
+            return;
+        }
+        if (!pauseState.paused) {
+            pauseBtn.textContent = 'Pause';
+        } else {
+            pauseBtn.textContent = hasStarted ? 'Resume' : 'Start';
+        }
+    };
 
     function gameLoop(currentTime) {
         const dt = world.getResource('dt');
         if (dtEl && dtEl.textContent === 'N/A') {
             dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
         }
-        const pauseState = world.getResource('pauseState');
+        const pauseState = getPauseState();
 
         if (lastTime === 0) {
             lastTime = currentTime;
@@ -67,7 +81,6 @@ export function runGame(world, internalSetupScene) {
             }
         }
 
-
         const renderSystem = world.getResource('renderSystem');
         if (renderSystem) {
             renderSystem.update(world, 0);
@@ -76,25 +89,7 @@ export function runGame(world, internalSetupScene) {
         requestAnimationFrame(gameLoop);
     }
 
-    pauseBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pauseState = world.getResource('pauseState');
-        if (pauseState) {
-            if (pauseBtn.textContent === "Start") {
-                startTime = performance.now();
-                totalSim = 0;
-            }
-            pauseState.paused = !pauseState.paused;
-            pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
-            if (!pauseState.paused) {
-                lastTime = performance.now();
-                requestAnimationFrame(gameLoop);
-            }
-        }
-    });
-
-    resetBtn.addEventListener('click', (e) => {
-        e.preventDefault();
+    function resetGame({ autoPause = true } = {}) {
         internalSetupScene();
         for (const sys of world.systems) {
             if (sys instanceof InputSystem) {
@@ -105,31 +100,79 @@ export function runGame(world, internalSetupScene) {
         accumulator = 0;
         frameCounter = 0;
         if (speedEl) speedEl.textContent = 'N/A';
-        startTime = 0;
         totalSim = 0;
-        const pauseState = world.getResource('pauseState');
-        if (pauseState) pauseState.paused = true;
-        pauseBtn.textContent = "Start";
-        doStep = false;
-        requestAnimationFrame(gameLoop);
-    });
-
-    stepBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pauseState = world.getResource('pauseState');
-        if (pauseState && pauseState.paused) {
-            doStep = true;
-            requestAnimationFrame(gameLoop);
+        const pauseState = getPauseState();
+        if (autoPause) {
+            startTime = 0;
+            hasStarted = false;
+            if (pauseState) {
+                pauseState.paused = true;
+            }
+        } else {
+            startTime = performance.now();
+            hasStarted = true;
+            if (pauseState) {
+                pauseState.paused = false;
+            }
+            lastTime = performance.now();
         }
-    });
+        doStep = false;
+        updatePauseButtonLabel();
+        requestAnimationFrame(gameLoop);
+    }
 
-    dumpBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log(dumpWorldState(world));
-    });
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pauseState = getPauseState();
+            if (!pauseState) {
+                return;
+            }
+            if (pauseState.paused) {
+                pauseState.paused = false;
+                if (!hasStarted) {
+                    startTime = performance.now();
+                    totalSim = 0;
+                    hasStarted = true;
+                }
+                lastTime = performance.now();
+                updatePauseButtonLabel();
+                requestAnimationFrame(gameLoop);
+            } else {
+                pauseState.paused = true;
+                updatePauseButtonLabel();
+            }
+        });
+    }
 
-    internalSetupScene();
-    const pauseState = world.getResource('pauseState');
-    pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
-    requestAnimationFrame(gameLoop);
+    if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            resetGame({ autoPause: true });
+        });
+    }
+
+    if (stepBtn) {
+        stepBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pauseState = getPauseState();
+            if (pauseState && pauseState.paused) {
+                doStep = true;
+                requestAnimationFrame(gameLoop);
+            }
+        });
+    }
+
+    if (dumpBtn) {
+        dumpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log(dumpWorldState(world));
+        });
+    }
+
+    resetGame({ autoPause: false });
+
+    return {
+        reset: resetGame,
+    };
 }

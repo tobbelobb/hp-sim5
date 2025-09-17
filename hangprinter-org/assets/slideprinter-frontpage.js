@@ -4,46 +4,59 @@ import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem } from '../../examples/js/slideprinter/slideprinter_common.js';
 
-const DEFAULT_PRESET = 'Hangprinter_logo6.gcode';
+const PRESETS = {
+  hangprinterLogo: {
+    label: 'Hangprinter Logo',
+    file: new URL('../../examples/mcu_commands/Hangprinter_logo6.txt', import.meta.url).href,
+  },
+  straightMoves: {
+    label: 'Straight movements',
+    file: new URL('../../examples/mcu_commands/draw_squares.txt', import.meta.url).href,
+  },
+};
+
+const DEFAULT_PRESET_KEY = 'hangprinterLogo';
 
 function initFrontpageSlideprinter() {
   const canvas = document.getElementById('myCanvas');
-  const controls = document.getElementById('controls');
-  if (!canvas || !controls) {
+  const controlsRoot = document.getElementById('controls');
+  if (!canvas || !controlsRoot) {
     return;
   }
 
-  const resetBtn = document.getElementById('resetBtn');
-  const loadGcodeBtn = document.getElementById('loadGcodeBtn');
-  const gcodeInput = document.getElementById('gcodeFile');
-  const presetSelect = document.getElementById('presetGcode');
+  const playBtn = document.getElementById('playBtn');
+  const presetSelect = document.getElementById('presetMcu');
 
   const world = new World();
-  let moveCommanderWorker = null;
+  let klipperCommanderWorker = null;
   let simDtSec = null;
   let stageReady = false;
-  let currentPreset = presetSelect?.value || DEFAULT_PRESET;
-  let lastUploadedFile = null;
+  let currentPresetKey = presetSelect?.value || DEFAULT_PRESET_KEY;
+  let gameControls = null;
 
-  const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
-  const gcodeBaseUrl = new URL('../../examples/gcode/', import.meta.url);
+  if (presetSelect && !PRESETS[presetSelect.value]) {
+    presetSelect.value = DEFAULT_PRESET_KEY;
+    currentPresetKey = DEFAULT_PRESET_KEY;
+  }
+
+  const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
   const usdaUrl = new URL('../../examples/usd_scenes/slideprinter_copy_for_vite.usda.txt', import.meta.url);
 
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
   }
 
-  function ensureWorker() {
-    if (moveCommanderWorker) {
-      return moveCommanderWorker;
+  function ensureKlipperWorker() {
+    if (klipperCommanderWorker) {
+      return klipperCommanderWorker;
     }
-    moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
-    moveCommanderWorker.onmessage = (event) => {
+    klipperCommanderWorker = new Worker(klipperCommanderModuleUrl, { type: 'module' });
+    klipperCommanderWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
       }
       if (event.data.type === 'done') {
-        console.log('Slideprinter demo: G-code playback finished.');
+        console.log('Slideprinter demo: MCU log playback finished.');
         return;
       }
       if (event.data.type === 'error') {
@@ -53,17 +66,17 @@ function initFrontpageSlideprinter() {
       if (event.data.action === 'gcode') {
         const remoteSystem = getRemoteSystem();
         if (remoteSystem) {
-          if (remoteSystem.worker !== moveCommanderWorker) {
-            remoteSystem.worker = moveCommanderWorker;
+          if (remoteSystem.worker !== klipperCommanderWorker) {
+            remoteSystem.worker = klipperCommanderWorker;
           }
           remoteSystem.addCommand(event.data.command);
         }
       }
     };
     if (simDtSec != null) {
-      moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+      klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
-    return moveCommanderWorker;
+    return klipperCommanderWorker;
   }
 
   function resetRemoteQueue() {
@@ -72,83 +85,52 @@ function initFrontpageSlideprinter() {
       return;
     }
     remoteSystem.commands.length = 0;
-    remoteSystem.worker = moveCommanderWorker;
+    remoteSystem.worker = klipperCommanderWorker;
     remoteSystem.wasPaused = false;
   }
 
-  function queuePreset(presetName) {
-    if (!presetName) {
+  function playPreset(presetKey) {
+    const preset = PRESETS[presetKey];
+    if (!preset) {
+      console.warn('Slideprinter demo: unknown preset key', presetKey);
       return;
     }
-    currentPreset = presetName;
+    currentPresetKey = presetKey;
+    if (!stageReady) {
+      return;
+    }
+
     const remoteSystem = getRemoteSystem();
-    if (!stageReady || !remoteSystem) {
+    if (!remoteSystem) {
       return;
     }
-    const worker = ensureWorker();
+
+    if (gameControls && typeof gameControls.reset === 'function') {
+      gameControls.reset({ autoPause: false });
+    }
+
+    const worker = ensureKlipperWorker();
     resetRemoteQueue();
     if (simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
-    const presetUrl = new URL(presetName, gcodeBaseUrl);
-    worker.postMessage({ type: 'filename_fetch', filename: presetUrl.href });
-  }
-
-  function queueFile(file) {
-    if (!file) {
-      return;
-    }
-    lastUploadedFile = file;
-    const remoteSystem = getRemoteSystem();
-    if (!stageReady || !remoteSystem) {
-      return;
-    }
-    const worker = ensureWorker();
-    resetRemoteQueue();
-    if (simDtSec != null) {
-      worker.postMessage({ type: 'set_dt', dt: simDtSec });
-    }
-    worker.postMessage({ type: 'filename_upload', filename: file });
-  }
-
-  function replayCurrentSelection() {
-    if (lastUploadedFile) {
-      queueFile(lastUploadedFile);
-    } else {
-      queuePreset(currentPreset || DEFAULT_PRESET);
-    }
-  }
-
-  if (loadGcodeBtn && gcodeInput) {
-    loadGcodeBtn.addEventListener('click', () => gcodeInput.click());
-    gcodeInput.addEventListener('change', (event) => {
-      const file = event.target.files?.[0];
-      if (file) {
-        presetSelect?.blur();
-        queueFile(file);
-      }
-    });
+    worker.postMessage({ type: 'filename_fetch', filename: preset.file });
   }
 
   if (presetSelect) {
     presetSelect.addEventListener('change', () => {
       const value = presetSelect.value;
-      if (!value) {
-        return;
+      if (PRESETS[value]) {
+        currentPresetKey = value;
       }
-      lastUploadedFile = null;
-      queuePreset(value);
     });
   }
 
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      // allow runGame to recreate the scene, then queue the current job again
-      window.setTimeout(replayCurrentSelection, 0);
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      playPreset(currentPresetKey || DEFAULT_PRESET_KEY);
     });
   }
-
-  const defaultPreset = presetSelect?.value || DEFAULT_PRESET;
 
   UsdOpen(usdaUrl.href)
     .then((stage) => {
@@ -161,20 +143,23 @@ function initFrontpageSlideprinter() {
       const timeCodesPerSecond = assignment?.value;
       if (timeCodesPerSecond) {
         simDtSec = 1.0 / timeCodesPerSecond;
-        if (moveCommanderWorker) {
-          moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+        if (klipperCommanderWorker) {
+          klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
         }
       }
 
-      runGame(world, () => setupScene(world, stage, canvas, { remote: false }));
+      const sceneInitializer = () => setupScene(world, stage, canvas, { remote: false });
+      gameControls = runGame(world, sceneInitializer);
       stageReady = true;
+
+      // Kick off the default demo once rendering is ready.
       requestAnimationFrame(() => {
-        queuePreset(defaultPreset);
+        playPreset(currentPresetKey || DEFAULT_PRESET_KEY);
       });
     })
     .catch((error) => {
       console.error('Slideprinter demo initialisation failed:', error);
-      controls.innerHTML = '<p class="sim-error">Unable to start the simulation. Please reload the page.</p>';
+      controlsRoot.innerHTML = '<p class="sim-error">Unable to start the simulation. Please reload the page.</p>';
     });
 }
 
