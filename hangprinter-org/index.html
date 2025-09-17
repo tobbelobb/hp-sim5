@@ -1,0 +1,535 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <meta name="author" content="Torbjorn Ludvigsen">
+  <meta name="keywords" content="Hangprinter, open source, hardware, technology, software, Reprap, development">
+  <meta name="description" content="Hangprinter">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hangprinter">
+  <meta property="og:url" content="https://hangprinter.org">
+  <meta property="og:description" content="Cable Driven RepRap">
+  <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@tobbelobb">
+  <meta name="twitter:creator" content="@tobbelobb">
+  <meta name="twitter:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/hp-sim5/assets/apple-touch-icon-B8x-JXqf.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/hp-sim5/assets/favicon-32x32-W2huB1UF.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/hp-sim5/assets/favicon-16x16-tTxQVbDk.png">
+  <link rel="manifest" href="/hp-sim5/assets/site-B9Ae890R.webmanifest">
+  <link rel="mask-icon" href="/hp-sim5/assets/safari-pinned-tab-Dhz7rSRm.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#00aba9">
+  <meta name="theme-color" content="#ffffff">
+  <title>Hangprinter</title>
+  <script type="module" crossorigin src="/hp-sim5/assets/hangprinter-org/index.html-EFMjefDf.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-C1JNBvr3.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-CDENC8PF.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/runner-CYQlk2y6.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Jd5j8L9z.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-BXB0yrB-.js">
+  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-CShHhJRk.css">
+</head>
+
+<body>
+  <div class="masthead">
+    <h3 class="masthead-brand">
+      <a href="/">
+        <img class="logotype" src="data:image/svg+xml,%3c?xml%20version='1.0'%20encoding='utf-8'?%3e%3c!--%20Generator:%20Adobe%20Illustrator%2027.9.0,%20SVG%20Export%20Plug-In%20.%20SVG%20Version:%206.00%20Build%200)%20--%3e%3csvg%20version='1.1'%20id='Layer_1'%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20x='0px'%20y='0px'%20viewBox='0%200%20161%2015'%20style='enable-background:new%200%200%20161%2015;'%20xml:space='preserve'%3e%3cstyle%20type='text/css'%3e%20.st0{fill:%232C2C2C;}%20%3c/style%3e%3cg%3e%3cg%3e%3cpath%20class='st0'%20d='M3.45,8.48L2.67,9.23v5.42H0V0.35h2.67v5.02l0.78,0.75h5.39l0.78-0.75V0.35h2.67v14.3H9.63V9.23L8.84,8.48%20H3.45z'/%3e%3cpath%20class='st0'%20d='M28.44,14.65h-2.88l-1.49-3.89h-6.38l-1.49,3.89h-2.83l5.84-14.3h3.43L28.44,14.65z%20M18.74,8.1l0.47,0.45%20h3.32l0.5-0.48l-1.75-4.54h-0.78L18.74,8.1z'/%3e%3cpath%20class='st0'%20d='M41.81,0.35v14.3h-3.06L32.79,4.31H32v10.33h-2.49V0.35h3.61l5.42,9.56h0.78V0.35H41.81z'/%3e%3cpath%20class='st0'%20d='M56.62,14.65h-2.54V13.8l-0.42-0.25C52.8,14.47,51.52,15,50.19,15c-1.91,0-3.48-0.7-4.71-2.13%20c-1.23-1.43-1.86-3.21-1.86-5.37s0.68-3.94,2.01-5.37C46.97,0.7,48.64,0,50.63,0c2.7,0,4.58,1.15,6.15,3.76l-2.2,1.61%20c-1.33-2.08-2.49-2.86-3.98-2.86c-2.59,0-4.16,1.96-4.16,4.99c0,3.04,1.6,5.07,4.19,5.07c1.05,0,2.07-0.53,3.45-1.93V9.11h-3.85%20V6.9h6.38V14.65z'/%3e%3cpath%20class='st0'%20d='M66.04,9.16h-3.56v5.49h-2.67V0.35h6.23c3.87,0,6.04,1.61,6.04,4.41C72.09,7.58,69.94,9.16,66.04,9.16z%20M62.48,3.46V6.8h3.51c2.2,0,3.35-0.7,3.35-2.03s-1.15-2.06-3.35-2.06h-2.72L62.48,3.46z'/%3e%3cpath%20class='st0'%20d='M79.86,9.16h-2.93v5.49h-2.67V0.35h6.23c3.87,0,6.04,1.61,6.04,4.41c0,2.08-1.15,3.49-3.32,4.06v0.58l4,5.24%20h-3.19L79.86,9.16z%20M80.43,2.71h-2.72l-0.78,0.75V6.8h3.51c2.2,0,3.35-0.7,3.35-2.03S82.63,2.71,80.43,2.71z'/%3e%3cpath%20class='st0'%20d='M96,3.46v8.08l0.79,0.75h3.3v2.36H89.3v-2.36h3.3l0.78-0.75V3.46L92.6,2.71h-3.3V0.35h10.78v2.36h-3.3%20L96,3.46z'/%3e%3cpath%20class='st0'%20d='M115.6,0.35v14.3h-3.06l-5.97-10.33h-0.78v10.33h-2.49V0.35h3.61l5.42,9.56h0.78V0.35H115.6z'/%3e%3cpath%20class='st0'%20d='M131.17,2.71h-4.81l-0.79,0.75v11.19h-2.72V3.46l-0.78-0.75h-4.82V0.35h13.92V2.71z'/%3e%3cpath%20class='st0'%20d='M135.93,8.48v3.06l0.79,0.75h8.63v2.36h-12.06V0.35h11.8v2.36h-8.37l-0.79,0.75v2.66h8.01v2.36H135.93z'/%3e%3cpath%20class='st0'%20d='M153.65,9.16h-2.93v5.49h-2.67V0.35h6.23c3.87,0,6.05,1.61,6.05,4.41c0,2.08-1.15,3.49-3.32,4.06v0.58l4,5.24%20h-3.19L153.65,9.16z%20M154.22,2.71h-2.72l-0.79,0.75V6.8h3.51c2.2,0,3.35-0.7,3.35-2.03S156.42,2.71,154.22,2.71z'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e" />
+        <!-- <img src="./logo-orange.svg" style="height:50px;width:50px;" /> -->
+      </a>
+    </h3>
+    <nav>
+      <ul>
+        <li>
+          <div class="dropdown">
+            <button class="dropbtn">Documentation</button>
+            <div class="dropdown-content">
+              <div class="link-column">
+                <p>Here you can find the complete resources for the latest and previous versions of the Hangprinter.
+                </p>
+                <div class="links">
+                  <a href="/doc/v4/">Hangprinter Version 4</a>
+                  <a href="/doc/v3/">Hangprinter Version 3</a>
+                </div>
+              </div>
+              <div class="img-column">
+                <img src="/hp-sim5/assets/menu_img_1-DjU7A7cZ.png" alt="">
+                <img src="/hp-sim5/assets/menu_img_2-JOYifvE6.png" alt="">
+                <img src="/hp-sim5/assets/menu_img_3-BTyXjhcP.png" alt="">
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/FAQ">FAQ</a></li>
+        <li><a href="/resources">Resources</a></li>
+        <li><a href="/newsletter">Newsletter</a></li>
+        <li><a id="donate" href="/donate/">Donate</a></li>
+      </ul>
+    </nav>
+
+    <div class="burger">
+      <img src="data:image/svg+xml,%3c?xml%20version='1.0'%20encoding='utf-8'?%3e%3c!--%20Generator:%20Adobe%20Illustrator%2028.0.0,%20SVG%20Export%20Plug-In%20.%20SVG%20Version:%206.00%20Build%200)%20--%3e%3csvg%20version='1.1'%20id='Layer_1'%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20x='0px'%20y='0px'%20viewBox='0%200%204.3%2018.1'%20style='enable-background:new%200%200%204.3%2018.1;'%20xml:space='preserve'%3e%3cstyle%20type='text/css'%3e%20.st0{fill:%232C2C2C;}%20%3c/style%3e%3cg%3e%3ccircle%20class='st0'%20cx='2.1'%20cy='2.1'%20r='2.1'/%3e%3ccircle%20class='st0'%20cx='2.1'%20cy='9.1'%20r='2.1'/%3e%3ccircle%20class='st0'%20cx='2.1'%20cy='16'%20r='2.1'/%3e%3c/g%3e%3c/svg%3e" alt="">
+    </div>
+  </div>
+
+  <div class="blur-overlay"></div>
+  <nav id="mobile-menu">
+    <ul>
+      <li><span>Documentation</span>
+        <div class="sublinks">
+          <a href="/doc/v4/">Hangprinter V4</a>
+          <a href="/doc/v3/">Hangprinter V3</a>
+        </div>
+      </li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/FAQ">FAQ</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="/newsletter">Newsletter</a></li>
+      <li><a href="/donate/">Donate</a></li>
+    </ul>
+  </nav>
+
+  <div id="FrontPageMain">
+    <img class="front-image" src="/hp-sim5/assets/1_hero_banner-DlpzmriV.jpg" alt="">
+
+    <div class="content">
+      <h1>Frameless Freeform Fabrication.</h1>
+      <p>Welcome to the community.</p>
+    </div>
+
+
+    <!-- ========== OLD CONTENT ========== -->
+    <!-- <img class="front-image" src="./hangprinter4_small.jpeg" onclick="fun()" /> -->
+    <!-- <h1>Hangprinter</h1>
+    <h2>Cable Driven RepRap</h2>
+    <h3>
+      Print big at low cost
+    </h3> -->
+  </div>
+
+  <section class="sim-block" id="slideprinter-demo">
+    <div class="sim-inner">
+      <div class="sim-text">
+        <span class="eyebrow">Try it in your browser</span>
+        <h2>Interactive Slideprinter Simulation</h2>
+        <p>Watch the virtual tool head follow Hangprinter moves. Run a built-in print or upload your own G-code to explore the cable-driven motion system.</p>
+      </div>
+
+      <div class="sim-app" aria-live="polite">
+        <div id="controls" class="sim-controls">
+          <div class="sim-buttons">
+            <button id="printLogoBtn" type="button" class="sim-play">Print Logo</button>
+            <button id="printSquareBtn" type="button">Print Square</button>
+            <button id="uploadBtn" type="button" class="sim-upload">Upload G-code</button>
+          </div>
+          <input type="file" id="gcodeFile" accept=".gcode" hidden>
+        </div>
+
+        <div class="canvas-frame">
+          <canvas id="myCanvas" role="img" aria-label="Hangprinter Slideprinter simulation"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="img-block left">
+    <video autoplay playsinline loop muted src="/hp-sim5/assets/video-1-Cj12tBmJ.mp4"></video>
+    <div class="content">
+      <!-- <span>So what is Hangprinter ?</span> -->
+      <h2>Hangprinter is an open-source precision robot. The <em>line-</em><em>driven</em> <em>design</em> makes it
+        cheap, light, and scalable.
+      </h2>
+    </div>
+  </div>
+
+  <div class="img-block right red">
+    <video class="square" autoplay playsinline loop muted src="/hp-sim5/assets/3_basic-movement-CMEeSMhQ.mp4"></video>
+    <div class="content">
+      <h2>What Does Line-Driven Mean?</h2>
+      <p>The tool head is held in place by lines. The lines are anchored either to a light frame, a crane or a hoist
+        system or directly to the ceiling and floor of a room. Precision movements are controlled by adjusting the
+        lengths of the lines with tightly synchronized motors.</p>
+    </div>
+  </div>
+
+  <div class="text-block">
+    <div class="text-col">
+      <h2>Benefits of No-Frame</h2>
+      <p>The lightweight, compact format makes Hangprinter easy to transport and tidy away. The setup is quick since the
+        anchors can be almost anywhere around the build volume. There are no ground preparation or alignment
+        requirements. Quick-release anchors enable economical multi-usage of space. It frees up the area for other
+        purposes as soon as the job is done.</p>
+    </div>
+    <div class="text-col">
+      <h2>How? Torque Mode</h2>
+      <p>A special motor mode lets the user set a constant pull in the lines with any desired force. It is used to
+        tighten
+        lines or wind them onto or out from the spools. When winding out, the pull is set to almost zero, allowing the
+        operator to attach the quick-release anchors. When preparing for print, torque mode ensures the optimal initial
+        line tightness. When tidying, torque mode can create a slight pull that makes the lines follow the hand
+        movements
+        of the operator.</p>
+    </div>
+  </div>
+
+  <video playsinline controls src="/hp-sim5/assets/2_everyday-use-B09rd8xQ.mp4" poster="/hp-sim5/assets/2_everyday-use-5vdFLd9H.jpg"
+    class="full-width"></video>
+
+  <div class="img-block left">
+    <video class="square" autoplay playsinline loop muted src="/hp-sim5/assets/4_position-management-C-dI-AAX.mp4"></video>
+    <div class="content">
+      <h2 id="anchor-test">Position Management</h2>
+      <p>High precision is achieved by directly measuring and compensating in software. The most useful measurements
+        currently come from our custom-built hp-mark computer vision system. It measures the tool's position and
+        orientation by keeping track of a set of markers.</p>
+    </div>
+  </div>
+
+  <div class="img-block right red">
+    <video class="square" autoplay playsinline loop muted src="/hp-sim5/assets/5_auto-calibration-BNvgiK_r.mp4"></video>
+    <div class="content">
+      <h2>Auto-calibration</h2>
+      <p>The auto-calibration process creates configuration values and checks config quality, ensuring that the
+        software's expectations match measured physical reality. The routine is run only once and is divided into two
+        steps:</p>
+      <ul>
+        <li>
+          Gather measurement data, like line forces, tool head positions, and motor rotations.
+        </li>
+        <li>
+          Compute the remaining physical attributes of the machine, like anchor positions, cable thickness and
+          flexibility, and spool radii.
+        </li>
+      </ul>
+      </p>
+    </div>
+  </div>
+
+  <div class="card-block">
+    <img src="/hp-sim5/assets/card-block-background-D4QkKTko.png" alt="" class="background-img">
+    <div class="card">
+      <video autoplay playsinline loop muted src="/hp-sim5/assets/6_flex-compensation-ZbNbIDWM.mp4"></video>
+      <div class="content">
+        <h2>Flex Compensation</h2>
+        <p>Even our super stiff lines extend slightly due to the gravitational pull on the extruder. If left unaccounted
+          for, this would cause sagging and precision loss. The flex compensation treats lines as if they were very
+          tight springs. It uses these “springs” and some math to apply just the right amount of pull in every direction
+          at all times.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <video autoplay playsinline loop muted src="/hp-sim5/assets/7_line-collision-detector-l9aiNRr-.mp4"></video>
+      <div class="content">
+        <h2>Line Collision Detector</h2>
+        <p>Since some lines point downward during printing, there is a risk of collision with wider prints during
+          operation. Our line collision detector performs checks to determine in advance whether such collisions will
+          occur. The detector lets operators plan and avoid surprises.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="img-block left">
+    <video autoplay playsinline loop muted src="/hp-sim5/assets/8_compatibility-Dd1qM9Ix.mp4"></video>
+    <div class="content">
+      <h2>Compatible</h2>
+      <p>Hangprinter works with any slicer, extruder, sensor, print bed, or other 3D printing peripheral. It runs a
+        widely used firmware called ReprapFirmware. Many experienced 3D printer operators will feel at home instantly,
+        software updates are frequent and the documentation is generally good.</p>
+    </div>
+  </div>
+
+  <div class="img-block green right">
+    <video class="square" autoplay playsinline loop muted src="/hp-sim5/assets/9_safety-DQQp7tkg.mp4"></video>
+    <div class="content">
+      <h2>Safety.</h2>
+      <p>Belts are intended to skip, and lines should slide out of their clamp if tightness gets too high. The enclosed
+        cassettes prevent injuries and avoid spaghetti chaos by containing the lines onto the spools.</p>
+    </div>
+  </div>
+
+  <div class="featured-block">
+    <div class="block-header">
+      <h3>Hangprinter: featured</h3>
+      <a href="/resources/">
+        <span>Follow us</span>
+        <img src="data:image/svg+xml,%3c?xml%20version='1.0'%20encoding='utf-8'?%3e%3c!--%20Generator:%20Adobe%20Illustrator%2027.9.0,%20SVG%20Export%20Plug-In%20.%20SVG%20Version:%206.00%20Build%200)%20--%3e%3csvg%20version='1.1'%20id='Layer_1'%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20x='0px'%20y='0px'%20viewBox='0%200%2016%2017'%20style='enable-background:new%200%200%2016%2017;'%20xml:space='preserve'%3e%3cstyle%20type='text/css'%3e%20.st0{fill:%232C2C2C;}%20%3c/style%3e%3cg%3e%3cpolygon%20class='st0'%20points='12.83,1.99%200.06,15.33%201.46,16.79%2014.25,3.44%2014.27,13.78%2015.94,13.8%2015.94,0.21%202.89,0.21%202.93,2.01%20'/%3e%3c/g%3e%3c/svg%3e" alt="">
+      </a>
+      <div class="divider">
+        <img src="/hp-sim5/assets/divider-D_LccR8X.svg" alt="" class="border">
+      </div>
+
+    </div>
+
+    <div class="carousel-container">
+      <div class="featured-carousel">
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F" target="_blank">
+          <img src="/hp-sim5/assets/Patorobotos_Vase_Lamp-t_U40T7s.png" alt="">
+        </a>
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F&t=481" target="_blank">
+          <img src="/hp-sim5/assets/Patorobotos_Vase_Lamp2-DBN5rOLh.png" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/838823627168563204/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Babel_Tower-BSW5xxRL.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1674557322385915904/photo/2" target="_blank">
+          <img src="/hp-sim5/assets/My_Huge_Coral-B0lxusK3.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1524821425303044096/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Plastic_Coffee_Table-BB85PS0U.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1384018337915572225/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Surface_Quality-BnLObDVu.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1235466289377873920/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Chair-BDVHEiGl.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1129122437533192192/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Cylinder-B7SNxPAN.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/999200664654897152/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Octopus-DanAhVmq.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/E3DOnline/status/996773670184996864/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Infill_Art-CkGMsUlB.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/996317648949579776/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Chair_2-DPnpOxN9.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/985559940298354689/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Vertical_Windmill-BKovq6Mk.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/937443287811620871/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Our_Rome_Vase-CXPOar4L.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/fredhedenberg/status/1109926894714175488/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Freds_Canoe-2pku7Hr4.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1459456994843279360/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Jimmys_Art-C27g712H.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/velmukelmu/status/1165345314297057281/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Shoe-BAkJAqIt.jpeg" alt="">
+        </a>
+        <a href="https://en.bloft.fi/projects-8" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Sara_Robot-BroH7wZy.webp" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Vase-DmCguIUg.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/3" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Vase_2-3BaAwGbu.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/3Dgec/status/1078258644855201792/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Gecs_Multi_Unit-G0Q1LKjd.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1107071841195003934"
+          target="_blank">
+          <img src="/hp-sim5/assets/Janik_Vases-CC4YD1kh.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1095533685287174185"
+          target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Rocket-DmUOncmn.png" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/999379554395234464" target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Surface_Quality-BRbf7G-N.jpg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/987363360905506856" target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Deer-CmusOmsW.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=2180193542263116&set=g.176856636157837" target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Trex-bApoIBvX.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=10216434673957236&set=g.176856636157837" target="_blank">
+          <img src="/hp-sim5/assets/Lucas_Esteban_Campas_Vase-Bplc7J2l.jpg" alt="">
+        </a>
+
+        <!-- COPY OF THE BLOCKS IN THE CAROUSEL, THEY SHOULD BE IN THE SAME ORDER, ESPECIALLY THE 1ST ONE -->
+
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F" target="_blank">
+          <img src="/hp-sim5/assets/Patorobotos_Vase_Lamp-t_U40T7s.png" alt="">
+        </a>
+        <a href="https://youtu.be/dkQro8Z7b5k?si=RPH5wr3HhKbAcy_F&t=481" target="_blank">
+          <img src="/hp-sim5/assets/Patorobotos_Vase_Lamp2-DBN5rOLh.png" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/838823627168563204/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Babel_Tower-BSW5xxRL.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1674557322385915904/photo/2" target="_blank">
+          <img src="/hp-sim5/assets/My_Huge_Coral-B0lxusK3.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1524821425303044096/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Plastic_Coffee_Table-BB85PS0U.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1384018337915572225/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Surface_Quality-BnLObDVu.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1235466289377873920/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Chair-BDVHEiGl.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1129122437533192192/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Cylinder-B7SNxPAN.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/999200664654897152/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Octopus-DanAhVmq.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/E3DOnline/status/996773670184996864/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Infill_Art-CkGMsUlB.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/996317648949579776/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Chair_2-DPnpOxN9.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/985559940298354689/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/My_Vertical_Windmill-BKovq6Mk.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/937443287811620871/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Our_Rome_Vase-CXPOar4L.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/fredhedenberg/status/1109926894714175488/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Freds_Canoe-2pku7Hr4.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/tobbelobb/status/1459456994843279360/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Jimmys_Art-C27g712H.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/velmukelmu/status/1165345314297057281/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Shoe-BAkJAqIt.jpeg" alt="">
+        </a>
+        <a href="https://en.bloft.fi/projects-8" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Sara_Robot-BroH7wZy.webp" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Vase-DmCguIUg.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/BloftLab/status/1375513416828297217/photo/3" target="_blank">
+          <img src="/hp-sim5/assets/Attes_Vase_2-3BaAwGbu.jpeg" alt="">
+        </a>
+        <a href="https://twitter.com/3Dgec/status/1078258644855201792/photo/1" target="_blank">
+          <img src="/hp-sim5/assets/Gecs_Multi_Unit-G0Q1LKjd.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1107071841195003934"
+          target="_blank">
+          <img src="/hp-sim5/assets/Janik_Vases-CC4YD1kh.jpeg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/1095533685287174185"
+          target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Rocket-DmUOncmn.png" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/999379554395234464" target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Surface_Quality-BRbf7G-N.jpg" alt="">
+        </a>
+        <a href="https://discord.com/channels/742749488543957033/967128740754776175/987363360905506856" target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Deer-CmusOmsW.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=2180193542263116&set=g.176856636157837" target="_blank">
+          <img src="/hp-sim5/assets/Sogis_Trex-bApoIBvX.jpg" alt="">
+        </a>
+        <a href="https://www.facebook.com/photo/?fbid=10216434673957236&set=g.176856636157837" target="_blank">
+          <img src="/hp-sim5/assets/Lucas_Esteban_Campas_Vase-Bplc7J2l.jpg" alt="">
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <img class="logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI3LjkuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA1MCA1NyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNTAgNTc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7b3BhY2l0eTowLjY7fQoJLnN0MXtmaWxsOiNGMkY0RUQ7fQo8L3N0eWxlPgo8Zz4KCTxnIGNsYXNzPSJzdDAiPgoJCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xNi4xNSwzOS43OWMxLjM5LTMuMDYsMC4wMy0zLjA4LTMuMDItMi43NmMtMC42NCwwLjA3LTEuMywwLjE5LTIuMDcsMC4zOGMtMy44MywwLjkyLTMuNjgsMS4zNy0zLjg4LTEuNjQKCQkJYy0wLjItMy4xNCwwLjItMi42OSwxLjcxLTIuNTFjMS40NiwwLjE3LDYuNjIsMC41OSw4LjAzLTAuNDFjMS40MS0xLjAxLDIuNTktNC44MiwzLjY4LTEwLjQ1YzAuNDUtMi4zMSwxLjk2LTEuNzEsMi43My0xLjE1CgkJCWMwLjM1LDAuMjUsMC41MSwwLjY3LDAuNSwxLjFjLTAuMDIsMC44MS0wLjI2LDIuNDItMC45MSw0LjdjMCwwLTEuNTksNC4xMi0xLjA5LDUuMTljMC40OSwxLjA3LDYuNC0wLjIxLDYuOS0wLjYKCQkJYzAuOS0wLjcsMS45LTIuMTIsMC44LTYuMTFjMCwwLTEuMTItMi41NSwxLjg1LTMuMTdjMi4zMy0wLjQ5LDIuNzktMC4zNSwzLjA5LDAuMTNjMC4yLDAuMzIsMC4zLDAuNjksMC4zMiwxLjA3CgkJCWMwLjEsMS43NS0wLjgyLDQuMzUtMS4yNiw2LjA2Yy0wLjUsMS45Mi00LjMsMTQuNjItNC4xLDE4LjcxYzAuMTQsMi45NywxLjMsMy42OCwyLjE4LDMuODFjMC4zOCwwLjA2LDEuMDUtMC4wNywxLjQyLTAuMjEKCQkJYzEuOTMtMC43Myw1LjM2LTIuMTUsOC44OC02LjU5YzMuODEtNC44LDYuOTEtMTIuMzktMC4yMS0yMkMzNC4zNSwxMy40MiwyNi4yOCw1LjIsMjYuMjgsNS4yUzE0LjE4LDE3LjI0LDkuNzYsMjMuNDQKCQkJQzUuMzMsMjkuNjMtMC4wOSwzOS4wNSw4LjcsNDcuNDVjMy44MywzLjY3LDkuMTMsMy45NywxMC4xNyw1LjUzYzAuNjQsMC45NiwwLjc3LDMuMzUtMi45OCwzLjI5Yy0zLjc1LTAuMDUtMTAuMDEtMy4xNy0xMy4xOC04LjkKCQkJYy0zLjE3LTUuNzQtMy44Mi0xMy41Ni0wLjI0LTIwLjA5YzMuNTctNi41MywxMi45Mi0xNiwxNi4zNC0xOS40NkMyMi4yMyw0LjM1LDI2LjI3LDAsMjYuMjcsMHMxMy42MiwxNC43MywxNC4wMywxNS4yNAoJCQljMC40MSwwLjUsOS40OSwxMC4xMSw5LjY1LDE4LjVjMC4xNiw4LjM5LTMuMjUsMTMuNTktMTAuNTksMTkuMThjLTcuMzQsNS41OS0xMy42NCwzLjg2LTEzLjc5LDMuNzMKCQkJYy0wLjE1LTAuMTMtMy41NiwwLjA0LTAuMzUtOS4zOWMzLjItOS40MywyLjctMTAuNjEsMS42NS0xMC44N2MtMS4wNS0wLjI2LTMuNDgtMC4yMS00Ljc2LDAuMTZjLTEuMjgsMC4zNy0xLjU2LDAuOTUtMi4yMSwzLjQKCQkJYy0xLjEyLDQuMjItMS4zOCw1Ljk0LTMuMTgsNC45N0MxNS4xNiw0NC4wOSwxNC45Nyw0Mi4zNywxNi4xNSwzOS43OUwxNi4xNSwzOS43OXoiLz4KCTwvZz4KPC9nPgo8dGV4dCB0cmFuc2Zvcm09Im1hdHJpeCgxIDAgMCAxIDk2MCA1MzkuNSkiPjx0c3BhbiB4PSIwIiB5PSIwIiBzdHlsZT0iZm9udC1mYW1pbHk6J015cmlhZFByby1SZWd1bGFyJzsgZm9udC1zaXplOjEycHg7Ij5mbG9hdCBoYWxmd2F5X2RlbHRhWzRdOzwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjE0LjQiIHN0eWxlPSJmb250LWZhbWlseTonTXlyaWFkUHJvLVJlZ3VsYXInOyBmb250LXNpemU6MTJweDsiPmZsb2F0IGhhbGZ3YXlbM107PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iMjguOCIgc3R5bGU9ImZvbnQtZmFtaWx5OidNeXJpYWRQcm8tUmVndWxhcic7IGZvbnQtc2l6ZToxMnB4OyI+Zm9yKGludDhfdCBpID0gMDsgaSAmbHQ7IDM7IGkrKyl7PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iNDMuMiIgc3R5bGU9ImZvbnQtZmFtaWx5OidNeXJpYWRQcm8tUmVndWxhcic7IGZvbnQtc2l6ZToxMnB4OyI+aGFsZndheVtpXSA9IGN1cnJlbnRfcG9zaXRpb25baV0gKyAwLjUqZGlmZmVyZW5jZVtpXTs8L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSI1Ny42IiBzdHlsZT0iZm9udC1mYW1pbHk6J015cmlhZFByby1SZWd1bGFyJzsgZm9udC1zaXplOjEycHg7Ij59PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iNzIiIHN0eWxlPSJmb250LWZhbWlseTonTXlyaWFkUHJvLVJlZ3VsYXInOyBmb250LXNpemU6MTJweDsiPmNhbGN1bGF0ZV9kZWx0YShoYWxmd2F5LCBoYWxmd2F5X2RlbHRhKTs8L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSI4Ni40IiBzdHlsZT0iZm9udC1mYW1pbHk6J015cmlhZFByby1SZWd1bGFyJzsgZm9udC1zaXplOjEycHg7Ij51cGRhdGVfYXhpc19zdGVwc19wZXJfdW5pdChkZWx0YSwgaGFsZndheV9kZWx0YSk7PC90c3Bhbj48L3RleHQ+Cjwvc3ZnPgo=" alt="">
+
+    <div class="link-container">
+      <div class="link-column">
+        <span>The Project</span>
+        <a href="/donate">Donate</a>
+        <a href="/doc/v3/">Hangprinter v3</a>
+        <a href="/doc/v4/">Hangprinter v4</a>
+      </div>
+
+      <div class="link-column">
+        <span>Follow</span>
+        <a href="https://www.facebook.com/groups/hangprinter">Facebook</a>
+        <a href="https://twitter.com/tobbelobb">X</a>
+        <a href="https://www.youtube.com/channel/UCw1Nz0VCw4z-dfq4WjSkFzQ">Youtube</a>
+        <a href="https://torbjornludvigsen.com/blog">Dev Blog</a>
+      </div>
+
+      <div class="link-column">
+        <span>Community</span>
+        <a href="https://discord.gg/KAV7x3hgRX">Discord Channel</a>
+        <a href="/resources/">Relevant Repos</a>
+        <a href="/newsletter/">Newsletter</a>
+      </div>
+    </div>
+
+    <span class="copyright">© Torbjørn Ludvigsen 2023. All rights reserved.</span>
+  </footer>
+
+  <div id="there-you-go"></div>
+  <script>
+    var img = document.getElementById('FrontPageMain');
+    var dx = Math.random() * 8 - 4.0;
+    var dy = Math.random() * 8 - 4.0;
+    var offsetY = window.innerHeight > 760 ? 150 : 60;
+    if (window.innerWidth < 387) {
+      offsetY -= 60;
+    }
+    function fun() {
+      var bodyRect = document.body.getBoundingClientRect();
+      var elemRect = img.getBoundingClientRect();
+      img.style.position = "fixed";
+      var left = elemRect.left;
+      var top = elemRect.top - offsetY;
+      offsetY = 0;
+      counter = 1000;
+      interval = 20; // ms
+      countDown = document.getElementById('there-you-go');
+      countDown.style.width = "100%";
+      countDown.style.textAlign = "center";
+      countDown.style.top = bodyRect.bottom / 2;
+      countDown.innerHTML = "<h1>progress 0%...</h1>";
+      document.body.appendChild(countDown);
+      window.setTimeout(wanderAround, interval);
+      var leftOffset = window.innerWidth > 430 ? -400 : -300;
+      var rightOffset = window.innerWidth > 430 ? -200 : -100;
+      var topOffset = window.innerHeight > 760 ? -180 : -60;
+      var bottomOffset = window.innerHeight > 760 ? -375 : -235;
+      function wanderAround() {
+        countDown.innerHTML = "<h1>progress " + Math.floor((1.0 - counter / 1001) * 100) + "%...</h1>";
+        img.style.left = left + "px";
+        img.style.top = top + "px";
+        --counter;
+        if (counter < 0) {
+          countDown.innerHTML = "<h1>There you go.</h1>";
+          return;
+        }
+        else {
+          // Animate a bit more
+          left += dx;
+          if (left > bodyRect.right + leftOffset || left < rightOffset) {
+            dx = -dx;
+          }
+
+          top += dy;
+          if (top < topOffset || top > bodyRect.bottom + bottomOffset) {
+            dy = -dy;
+          }
+          img.style.left = left + "px";
+          img.style.top = top + "px";
+
+          // Re-trigger ourselves
+          window.setTimeout(wanderAround, interval);
+        }
+      }
+      wanderAround();
+    }
+  </script>
+  <script data-goatcounter="https://hangprinter.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  <script src="./assets/script.js"></script>
+</body>
+
+</html>

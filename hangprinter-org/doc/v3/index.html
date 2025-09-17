@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <meta name="author" content="Torbjorn Ludvigsen">
+  <meta name="keywords" content="Hangprinter, open source, hardware, technology, software, Reprap, development">
+  <meta name="description" content="Hangprinter">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hangprinter">
+  <meta property="og:url" content="https://hangprinter.org/doc/v3">
+  <meta property="og:description" content="Cable Driven RepRap">
+  <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@tobbelobb">
+  <meta name="twitter:creator" content="@tobbelobb">
+  <!-- <link rel="stylesheet" href="../../style.css?v=0" type="text/css"> -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/hp-sim5/assets/apple-touch-icon-B8x-JXqf.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/hp-sim5/assets/favicon-32x32-W2huB1UF.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/hp-sim5/assets/favicon-16x16-tTxQVbDk.png">
+  <link rel="manifest" href="/hp-sim5/assets/site-B9Ae890R.webmanifest">
+  <link rel="mask-icon" href="/hp-sim5/assets/safari-pinned-tab-Dhz7rSRm.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#00aba9">
+  <meta name="theme-color" content="#ffffff">
+  <title>Hangprinter|HP3 Manual</title>
+  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-CShHhJRk.css">
+</head>
+
+<body style="width:100%;">
+  <div class="masthead">
+    <h3 class="masthead-brand">
+      <a href="/">
+        <img class="logotype" src="/images/hangprinter_logotype.svg" />
+        <!-- <img src="./logo-orange.svg" style="height:50px;width:50px;" /> -->
+      </a>
+    </h3>
+    <nav>
+      <ul>
+        <li>
+          <div class="dropdown">
+            <button class="dropbtn">Documentation</button>
+            <div class="dropdown-content">
+              <div class="link-column">
+                <p>Here you can find the complete resources for the latest and previous versions of the Hangprinter.
+                </p>
+                <div class="links">
+                  <a href="/doc/v4/">Hangprinter Version 4</a>
+                  <a href="/doc/v3/">Hangprinter Version 3</a>
+                </div>
+              </div>
+              <div class="img-column">
+                <img src="/images/menu_img_1.png" alt="">
+                <img src="/images/menu_img_2.png" alt="">
+                <img src="/images/menu_img_3.png" alt="">
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/FAQ">FAQ</a></li>
+        <li><a href="/resources">Resources</a></li>
+        <li><a href="/newsletter">Newsletter</a></li>
+        <li><a id="donate" href="/donate/">Donate</a></li>
+      </ul>
+    </nav>
+
+    <div class="burger">
+      <img src="/images/menu.svg" alt="">
+    </div>
+  </div>
+
+  <div class="blur-overlay"></div>
+  <nav id="mobile-menu">
+    <ul>
+      <li><span>Documentation</span>
+        <div class="sublinks">
+          <a href="/doc/v4/">Hangprinter V4</a>
+          <a href="/doc/v3/">Hangprinter V3</a>
+        </div>
+      </li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/FAQ">FAQ</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="/newsletter">Newsletter</a></li>
+      <li><a href="/donate/">Donate</a></li>
+    </ul>
+  </nav>
+
+  <div id="MainContent" class="half-width">
+    <h3 id="SiteName" style="text-align:left">
+      Hangprinter v3 Manual
+    </h3>
+    <a href="https://gitlab.com/tobben/hangprinter-org/edit/master/doc/v3/index.html">📝 Edit on Gitlab</a>
+    <h3>Status Of This Document</h3>
+    <ul>
+      <li>Sourcing is well described, but currently requires users to leave this page</li>
+      <li>Hardware assembly is well described</li>
+      <li>Getting Smart Stepper up and runnning is not well described</li>
+      <li>Mounting the Hangprinter is not well described</li>
+      <li>Calibrating anchor positions and spool buildup is not well described</li>
+    </ul>
+    <h3>
+      Table of contents:
+    </h3>
+    <ul>
+      <li><a href="#Sourcing">Sourcing and Preparing Wiring Loom</a></li>
+      <li><a href="#Hardware_assembly">Hardware Assembly</a></li>
+      <li><a href="#SmartStepper_and_wiring">SmartStepper and Wiring</a></li>
+      <li><a href="#Mounting">Mounting</a></li>
+      <li><a href="#Calibrating_anchors_and_spool_buildup">Calibrating Anchors and Spool Buildup</a></li>
+    </ul>
+    <h3 id="Sourcing">Sourcing and Preparing Wiring Loom</h3>
+    <figure>
+      <a href="https://docs.google.com/spreadsheets/d/1lOPZoF1P2OSdJcijZRVrwAEVFh3LLAnf6-s6k-hlbZU/edit#gid=0"
+        target="_blank">
+        <img src="/hp-sim5/assets/check-list-C-ybqFQ7.png" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Please see the <a
+          href="https://docs.google.com/spreadsheets/d/1lOPZoF1P2OSdJcijZRVrwAEVFh3LLAnf6-s6k-hlbZU/edit#gid=0"
+          target="_blank">bill of materials</a> (a Google Docs spreadsheet).
+      </figcaption>
+
+    </figure>
+    </p>
+    <h3 id="Hardware_assembly">Hardware Assembly</h3>
+    <figure>
+      <a href="./media/000.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_000-MtcvIu5e.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Welcome to Hangprinter version 3 hardware assembly.
+        Please click on the pictures to see larger versions.
+        The below instructions assume you have completed the sourcing step.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/001.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_001-CcIyYBBz.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Hardware for a non-SmartStepper build, excluding USB cable and screws.
+        Note that the rectangular sheet material is for building ABC anchors.
+        They should be a stack of three.
+        The white printed parts will be in contact with motors.
+        Print them in a heat resistant plastic in case your motors ever run warm.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/002.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_002-inAvOuHB.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Push spools and spool gears onto the 608 bearings.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/003.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_003-CRbiPuLf.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Repeat for all spools and spool gears.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/004.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_004-CkWr4lXP.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Push spools with 608 bearings onto spool cores.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/005.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_005-DpPpbvya.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Now grab your spacers.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/006.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_006-DC6KQG1i.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        ... and check that they push fit nicely onto your spool cores.
+
+      </figcaption>
+
+    </figure>
+    <p>
+      Now might be a good time to measure your spools' radii with a pair of calipers.
+      Note the radii onto the spools themselves.
+      This will be needed for firmware calibration later on.
+
+    </p>
+    <p>
+      It might also be a good time to attach lines to your spools.
+      Nine lines are required to drive the printer.
+      By default, three of them are 4m long, the remaining six are 7.5m long.
+      Attach the 4m ones onto one spool.
+      Attach pairs of 7.5m ones onto the remaining three spools.
+
+    </p>
+    <p>
+      A more detailed guide on choosing line lengths is found <a
+        href="http://forums.reprap.org/read.php?1,792937,809736#msg-809736" target="blank_">here</a>.
+      If you use custom line lengths or line thickness, you need to specifiy this in firmware settings later on.
+
+    </p>
+    <p>
+      This is how you tie your line to your spool:
+
+    </p>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_0.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_0-CGXiD0uE.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Thread a loop in through the right spool wall hole and back out of the left hole.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_1.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_1-CwRDZYad.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Thread your line through the right hole again.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_2.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_2-COCW50rR.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Tighten from the inside. Leave plenty of loose thread on the inside.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_3.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_3-BPZfDh2M.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Make a simple hitch around the left leg of your loop.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_4.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_4-b78io8_N.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Close-up of the same hitch.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_5.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_5-DPFwxw-o.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Make another hitch above the previous one.
+        Make three hitches in total, so one more after this one.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_6.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_6-CFWc13jK.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Tighten your hitches by pulling the loop's left leg and the line's loose end.
+        Then pull from the spools outside to see if you knot holds.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/Hangprinter_Hitch_7.JPG" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_Hitch_7-CSC4jypj.JPG" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The outside of your spool should now look like this.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/008.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_008-BoMFXgfT.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Check that the spool gears fit nicely onto the spools.
+        Note that the two spool+spool gears are mounted upside down in this picture.
+        The hatches in the spool gear spokes are there to allow space for the four screw heads later.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/010.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_010-BfVliSCs.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Insert PTFE tube into anchor linerollers and cut flush with front.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/011.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_011-DiEgWq5I.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Do the same with D-linerollers.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/012.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_012-CKzMifMy.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        PTFE tubes should fit tightly in D-linerollers. Push them in the like this.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/013.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_013-CNoR8W0w.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        PTFE tubes inserted.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/014.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_014-CZzXKy2C.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Mount v-groove 623 bearings into all linerollers.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/015.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_015-D-kJGyk3.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Now grap your motors and motor gears.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/016.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_016-BeFIxO8j.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The motor gears have D-shaped holes and a notch to help you align them with the motors shafts.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/017.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_017-hO-Wm8ZF.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Hammer the motor gear gently in place with many small hits of a light, soft, and rounded object.
+        Don't hit hard.
+        If your motor gear holes are too tight, drill/file it wider, or just print new ones.
+        If your motor gear holes are too wide, insert nuts from below and tighten with set-screws.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/018.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_018-J30-NMrt.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Gap between motor gear and motor should be ca 1 mm.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/019.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_019-C2el9k4q.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Now grab your motor brackets.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/020.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_020-D3K32U09.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Insert the three screws in their holes first.
+        It will be more fiddly to do later.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/021.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_021-vXQGj00x.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Mount motor brackets onto motors.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/022.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_022-ijE3JUES.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Now put together your electronics.
+        It's recommended to use SmartSteppers on the A, B, C, and D-motors, even though stepsticks are shown in the
+        picture.
+        See <a href="#SmartStepper_assembly" target="_blank">SmartStepper assembly instructions</a>.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/023.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_023-Dx7_EQMw.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Insert your drivers' step/dir into the RAMPS board's step/dir outputs.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/024.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_024-Dbe4h4jy.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Mount your RAMPS shield tightly onto your Arduino Mega.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/025.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_025-LFAZKIeV.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Grab your mover parts.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/026.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_026-CSKmzwQd.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Your 40cm beam should be pushed right up to the root of the separator wall.
+        This is important in order to get the correct width of your mover triangle.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/027.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_027-D8PotgQd.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Attach with zipties loosely.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/028.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_028-BlRRTPPR.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Ensure beams are flush with the root of the separator wall.
+        Then tighten as hard as you can without snapping the zipties.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/029.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_029-GiaqltgI.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The finished triangle should feel reasonably stiff.
+        It will not experience great forces during print, but it should not change dimensions easily.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/030.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_030-rf-jQk0b.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Leave a few mm of ziptie, so you can after-tighten them later if needed.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/031.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_031-ClhO3hIa.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        If you use wooden beams, you can drill a mounting hole right through your triangle side and your cross beam.
+        If you use carbon fibre beams, attach cross beam with zipties instead, like shown in <a
+          href="./media/ziptied_crossbeam.jpg" target="_blank">this linked picture</a>.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/032.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_032-D0Q5l-E-.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Use washers on both sides of the M3 screw.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/033.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_033-Cz1xcIrf.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Make the screw quite tight. If your wood is soft, the washer should slightly sink into the wood.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/034.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_034-DQk5Id2P.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Now grab your beam sliders.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/035.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_035-CLm9bU0G.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The ABC-beam sliders should be ziptied quite tightly.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/036.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_036-C4illbM-.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The D-beam sliders should be ziptied loosely at first.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/037.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_037-aOIOuIlL.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Tighten D-beam sliders by wedging them farther into the ziptie, pointing towards the closest corner.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/038.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_038-CGUPh5C1.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Put ABC-sliders and D-sliders in opposite ends of each triangle side.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/039.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_039-D5tgVuc2.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Route a ziptie over your crossbeam and through your extruder holder as shown.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/040.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_040-cvfUTeek.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Use two zipties like shown in the picture, or use one longer ziptie.
+        Tighten as hard as you can.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/041.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_041-BEhWxIk3.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Add two more zipties, in straight loops around the beam.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/042.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_042-DQb10PnK.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Use the printed wedge to tighten the long ziptie(s).
+        Your extruder holder should now be very tightly attached to your cross beam.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/043.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_043-BW7iawyb.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The ribbon cable is ziptied to the extruder holder for strain relief.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/044.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_044-Kjpv3SiI.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Mount your extruder+hot end of choice and put away the finished mover.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/045.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_045-iEknK-73.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Grab your template 2d-prints.
+        Double-check that they are printed at 100% scale by comparing sizes of 2d-printed outlines with the bases of
+        your 3d-printed
+        parts.
+        <a href="./media/print_template_to_scale.JPG" target="_blank">Image of successful double-check</a>.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/046.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_046-RrMDAcJY.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Place them so lines shine through. Ideally on a window or a glass table.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/047.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_047-zMtYQqp3.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Align the overlaps perfectly on top of each other.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/048.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_048-DNKy0zxa.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Tape together.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/049.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_049-DCmsc_bX.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Place your finished 2d-template on your ceiling plate.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/050.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_050-D6hrk_kQ.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Screw the template flat onto the ceiling plate.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/051.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_051-CHr_CUI0.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Hammer in markings through the centers of all the little circles.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/052.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_052-5CMbnKzM.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The template with all the markings hammered looks like this.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/053.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_053-Ck6nbxLn.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        The ceiling plate below should have visible marks like this.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/054.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_054-CMOR_IgY.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Now mount your prepared spools and linerollers.
+        Mind the orientation of the linerollers so line can enter like specified on the template.
+        Marking the spools with names A, B, C, and D, as specified on the template is useful.
+        Don't forget the long screws through the center of the spool cores.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/055.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_055-DCS_fKKk.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        A bit of play in the gears is harmless because the lines will pre-tension the gears anyways.
+        Gears that mesh badly or roll unevenly because of a too tight fit might cause problems later on.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/056.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_056-B-vNEKRp.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Pointing motor wires away from their spool center is nice, but not critical.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+      <a href="./media/057.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_057-DYYqfiMD.jpg" alt="" width="500" height="333">
+      </a>
+
+      <figcaption>
+        Clamp down the motor wires as close to the motor bracket as you can.
+
+      </figcaption>
+
+    </figure>
+    <figure>
+
+      <video width="500" height="333" controls="yes">
+
+        <source src="/hp-sim5/assets/mounting_parts_onto_ceiling_plate-B-Zggk5g.webm" type="video/webm">
+        </source>
+        Your browser does not support the video tag.
+
+      </video>
+
+      <figcaption>
+        Video of mounting parts to the ceiling plate.
+
+      </figcaption>
+
+    </figure>
+    <h3 id="SmartStepper_and_wiring">SmartStepper And Wiring</h3>
+    <p>
+      Please use the firmware found in the
+      <a href="https://gitlab.com/tobben/hangprinter/tree/Openscad_version_3/firmware/SmartStepper_subtree">Hangprinter
+        repo</a>.
+      For how to upload it, please refer to
+      <a href="http://misfittech.net/nema-17-smart-stepper/">Misfittech's own documentation</a>.
+    </p>
+    <p>
+      We don't have a complete wiring diagram with SmartSteppers, so please look at the following wiring diagram,
+      but note that the external 12V -&gt; 5V level shifter is not needed, as this component is built into the
+      SmartSteppers.
+
+    </p>
+    <figure>
+      <a href="./media/Hangprinter_electronics_diagram_Mechaduino_RAMPS1.4_V2.3.jpg" target="_blank">
+        <img src="/hp-sim5/assets/small_Hangprinter_electronics_diagram_Mechaduino_RAMPS1.4_V2.3-B6JOhehE.jpg" alt="" width="500"
+          height="354">
+      </a>
+
+      <figcaption>
+
+      </figcaption>
+
+    </figure>
+    <p>
+      ... and wire in the SmartSteppers like this:
+
+    </p>
+    <figure>
+      <a href="./media/SmartStepperWires.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/small_SmartStepperWires-Cqk1a1Xx.jpeg" alt="" width="500" height="667">
+      </a>
+
+      <figcaption>
+        SmartStepper wiring.
+
+      </figcaption>
+
+    </figure>
+    <h3 id="Mounting">Mounting</h3>
+    <p>
+      The only sources for Mounting instructions are videos:
+    </p>
+    <ul>
+      <li><a href="https://www.youtube.com/watch?v=iOwjbu2UMlQ&feature=youtu.be&t=3h54m43s">HP3 Build With tobben &
+          Thomas Sanladerer (link directly into mounting)</a></li>
+      <li><a href="https://reprap.org/wiki/Links_Into_Hangprinter_v3_Build_Video#">Annoteted Links Into the tobben &
+          Thomas Sanladerer HP3 Build Video</a></li>
+      <li><a href="https://www.youtube.com/watch?v=VBc7Zab64do&list=PLB_0YGFjbOnbQ_zPnpLAjwgnE2ryhKScB">HP3 Build With
+          Chris Riley</a></li>
+    </ul>
+    <h3 id="Calibrating_anchors_and_spool_buildup">Calibrating Anchors and Spool Buildup</h3>
+    <p>
+      If you're doing it manually (no SmartStepper), then look at <a
+        href="https://reprap.org/wiki/Links_Into_Hangprinter_v3_Build_Video#Now_going_into_an_hour_of_measuring_this">this</a>.
+      Also look at the video sources of <a
+        href="https://www.youtube.com/watch?v=VBc7Zab64do&list=PLB_0YGFjbOnbQ_zPnpLAjwgnE2ryhKScB">Chris Riley</a> and
+      <a href="https://www.youtube.com/watch?v=Jk4fhQvNoaM&list=PLDJMid0lOOYmSWYimgOW-Q9OKyIp0OFyK">Thomas
+        Sanladerer</a>.
+    </p>
+    <p>
+      If you're using SmartStepper, then tobben has prepared a script that hopefully lets you avoid having to measure
+      anchor positions manually: <a
+        href="https://gitlab.com/tobben/auto-calibration-simulation-for-hangprinter">here</a>. It is a bit hard to use,
+      be sure to read te README, and to file an issue if you find a bug or improvement.
+    </p>
+    <p>
+      You can also submit merge requests and issues towards this documentation directly,
+      <a href="https://gitlab.com/tobben/hangprinter-org">here</a>.
+    </p>
+    <p>
+      <br />
+      Building, mounting, calibrating, and running a HP3 is hard.
+      You are not alone.
+      Be sure to check out the <a href="../../resources">resources</a>, there are some quite good ones.
+      <br />
+      - tobben 👷
+      <br /><br /><br />
+    </p>
+    <p>
+      The raw text source of this manual is published under the <a
+        href="https://github.com/tobbelobb/hangprinter/blob/Openscad_version_3/LICENSE" target="_blank">GPL-2.0
+        license</a>, and is being maintained in the <a href="https://gitlab.com/tobben/hangprinter-org"
+        target="_blank">hangprinter-org repo</a>. All images and videos are also published under the GPL-2.0, except the
+      wiring diagram, which is published under the GPLv3
+      license.
+    </p>
+  </div>
+
+  <footer>
+    <img class="logo" src="/images/hangprinter_logo.svg" alt="">
+
+    <div class="link-container">
+      <div class="link-column">
+        <span>The Project</span>
+        <a href="#">Donate</a>
+        <a href="/doc/v3/">Hangprinter v3</a>
+        <a href="/doc/v4/">Hangprinter v4</a>
+      </div>
+
+      <div class="link-column">
+        <span>Follow</span>
+        <a href="https://www.facebook.com/groups/hangprinter">Facebook</a>
+        <a href="https://twitter.com/tobbelobb">X</a>
+        <a href="https://www.youtube.com/channel/UCw1Nz0VCw4z-dfq4WjSkFzQ">Youtube</a>
+        <a href="https://torbjornludvigsen.com/blog">Dev Blog</a>
+      </div>
+
+      <div class="link-column">
+        <span>Community</span>
+        <a href="https://discord.gg/KAV7x3hgRX">Discord Channel</a>
+        <a href="/resources/">Relevant Repos</a>
+        <a href="/newsletter/">Newsletter</a>
+      </div>
+    </div>
+
+    <span class="copyright">© Torbjørn Ludvigsen 2023. All rights reserved.</span>
+  </footer>
+  <script data-goatcounter="https://hangprinter.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  <script src="/assets/script.js"></script>
+</body>
+
+</html>

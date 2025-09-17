@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <meta name="author" content="Torbjorn Ludvigsen">
+  <meta name="keywords" content="Hangprinter, open source, hardware, technology, software, Reprap, development">
+  <meta name="description" content="Hangprinter">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hangprinter">
+  <meta property="og:url" content="https://hangprinter.org/doc/v4">
+  <meta property="og:description" content="Cable Driven RepRap">
+  <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@tobbelobb">
+  <meta name="twitter:creator" content="@tobbelobb">
+  <link rel="apple-touch-icon" sizes="180x180" href="/hp-sim5/assets/apple-touch-icon-B8x-JXqf.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/hp-sim5/assets/favicon-32x32-W2huB1UF.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/hp-sim5/assets/favicon-16x16-tTxQVbDk.png">
+  <link rel="manifest" href="/hp-sim5/assets/site-B9Ae890R.webmanifest">
+  <link rel="mask-icon" href="/hp-sim5/assets/safari-pinned-tab-Dhz7rSRm.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#00aba9">
+  <meta name="theme-color" content="#ffffff">
+  <title>Hangprinter|HP4 Manual</title>
+  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-CShHhJRk.css">
+</head>
+
+<body style="width:100%;">
+  <div class="masthead">
+    <h3 class="masthead-brand">
+      <a href="/">
+        <img class="logotype" src="/images/hangprinter_logotype.svg" />
+        <!-- <img src="./logo-orange.svg" style="height:50px;width:50px;" /> -->
+      </a>
+    </h3>
+    <nav>
+      <ul>
+        <li>
+          <div class="dropdown">
+            <button class="dropbtn">Documentation</button>
+            <div class="dropdown-content">
+              <div class="link-column">
+                <p>Here you can find the complete resources for the latest and previous versions of the Hangprinter.
+                </p>
+                <div class="links">
+                  <a href="/doc/v4/">Hangprinter Version 4</a>
+                  <a href="/doc/v3/">Hangprinter Version 3</a>
+                </div>
+              </div>
+              <div class="img-column">
+                <img src="/images/menu_img_1.png" alt="">
+                <img src="/images/menu_img_2.png" alt="">
+                <img src="/images/menu_img_3.png" alt="">
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/FAQ">FAQ</a></li>
+        <li><a href="/resources">Resources</a></li>
+        <li><a href="/newsletter">Newsletter</a></li>
+        <li><a id="donate" href="/donate/">Donate</a></li>
+      </ul>
+    </nav>
+
+    <div class="burger">
+      <img src="/images/menu.svg" alt="">
+    </div>
+  </div>
+
+  <div class="blur-overlay"></div>
+  <nav id="mobile-menu">
+    <ul>
+      <li><span>Documentation</span>
+        <div class="sublinks">
+          <a href="/doc/v4/">Hangprinter V4</a>
+          <a href="/doc/v3/">Hangprinter V3</a>
+        </div>
+      </li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/FAQ">FAQ</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="/newsletter">Newsletter</a></li>
+      <li><a href="/donate/">Donate</a></li>
+    </ul>
+  </nav>
+
+  <div id="MainContent" class="half-width">
+    <h3 id="SiteName" style="text-align:left">
+      Hangprinter v4 Manual
+    </h3>
+    <a href="https://gitlab.com/tobben/hangprinter-org/edit/master/doc/v4/index.html">📝Edit on Gitlab</a>
+    <h3>Status and Prerequisites Of This Document</h3>
+    <p>
+      Before reading this documentation, get a rough overview of <a
+        href="https://torbjornludvigsen.com/blog/2022/#hangprinter_project_78">HP4's features</a>.
+    </p>
+    <p>
+      This documentation might still have gaping holes here and there.
+      Please help improving it by following the
+      <a href="../../gitlab-contribution-guide">contribution guide</a>.
+    </p>
+    <p>
+      If you're building a v4, say hi and connect with other builders in the <a
+        href="https://discord.gg/KAV7x3hgRX">discord channel</a>.
+    </p>
+    <h3>Table of Contents</h3>
+    <ul>
+      <li><a href="#Sourcing">Sourcing</a></li>
+      <li><a href="#Hardware_assembly">Hardware Assembly</a></li>
+      <li><a href="#Wiring">Wiring</a></li>
+      <li><a href="#Firmwares_and_Software_Configuration">Firmwares and Software Configuration</a></li>
+      <li><a href="#Planning_Line_Lengths">Planning Line Lengths</a></li>
+      <li><a href="#Mounting">Mounting</a></li>
+      <li><a href="#Calibrating_anchors_and_spool_buildup">Calibrating Anchors and Spool Buildup</a></li>
+      <li><a href="#Slicing_and_Usage">Slicing and Usage</a></li>
+      <li><a href="#Final_Words">Final Words</a></li>
+    </ul>
+    <h3 id="Sourcing">Sourcing and Preparing Wiring Loom</h3>
+    <figure>
+      <a href="https://docs.google.com/spreadsheets/d/1_mMTEF9ZFapn_3FrBvEydh70IPTaQG9gKZ7IVj9G2uM/edit?usp=sharing"
+        target="_blank">
+        <img src="/hp-sim5/assets/check-list-C-ybqFQ7.png" alt="" width="500" height="333">
+      </a>
+      <figcaption>
+        Please see the <a
+          href="https://docs.google.com/spreadsheets/d/1_mMTEF9ZFapn_3FrBvEydh70IPTaQG9gKZ7IVj9G2uM/edit?usp=sharing"
+          target="_blank">Bill of Materials</a> (a Google Docs spreadsheet).
+      </figcaption>
+    </figure>
+    </p>
+    <h3 id="Hardware_assembly">Hardware Assembly</h3>
+    <p>
+      In the <a href="https://gitlab.com/tobben/hangprinter/-/tree/version_4/">repo</a>, there's an Openscad file called
+      <code>layout.scad</code>.
+      Open that file with Openscad.
+      It shows all the parts, including where and how they're supposed to be mounted.
+    </p>
+    <figure>
+      <a href="./media/layout.png" target="_blank">
+        <img src="/hp-sim5/assets/layout_small-Tyr9en_8.png" alt="" width="500" height="429">
+      </a>
+      <figcaption>
+        This view of the ceiling unit greets you when you open the <code>layout.scad</code> file with Openscad.
+        Rotate the view (inside Openscad) by clicking and dragging with your mouse.
+        Zoom by scrolling your scroll wheel.
+      </figcaption>
+    </figure>
+    <p>
+      If you want help with positioning parts on the ceiling unit in the most compact and standard way possible,
+      2d print out the <a
+        href="https://gitlab.com/tobben/hangprinter/-/raw/version_4/layout_a4.pdf?inline=false">layout_a4.pdf</a>
+      and use it as a template.
+    </p>
+    <p>
+      As for the circuit boards and the power supply, place them out in a configuration similar to this:
+    </p>
+    <figure>
+      <a href="./media/pcb_and_psu_placement.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/pcb_and_psu_placement_small--XPXNDP2.jpeg" alt="" width="500" height="343">
+      </a>
+      <figcaption>
+        Click the image to open a larger version.
+        Works for all images in this manual.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="./media/believe.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/believe_small-FjJPUw-h.jpeg" alt="" width="500" height="507">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      Hot tips for circuit board placement:
+    </p>
+    <ul>
+      <li>Use the spacers shipped with the ODrives also for the Duet3.</li>
+      <li>The Raspberry Pi uses 3d printed spacers that are more than twice as long: <a
+          href="https://gitlab.com/tobben/hangprinter/-/blob/version_4/stl/pi_mount.stl">pi_mount</a>.</li>
+      <li>Make sure that the Duet3's USB port and SD slot are not covered by a 1XD card.</li>
+      <li>Make sure the Pi's HDMI1 port is not covered by the Duet3.</li>
+    </ul>
+    <h4 id="motor_brackets">Motor Brackets</h4>
+    <p>
+      It can be tricky to get the nuts into the right places on the motor brackets.
+      It's recommended to use a nylock nut to secure the encoder in place.
+    </p>
+
+    <h4 id="sand_edge">Areas That Must Be Smooth</h4>
+    <p>
+      The line is easy to fray, and 3d-printing sometimes leaves sharp and pointy edges.
+      It's therefore recommended to sand down the inside of the spool disc, like this:
+    </p>
+    <figure>
+      <a href="./media/sand_edge.JPG" target="_blank">
+        <img src="/hp-sim5/assets/sand_edge_small-XICAeTw9.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+      Also sand the GT2 spool gear's inside, since it will also rub against the line.
+      </figcaption>
+    </figure>
+    <h4 id="rotate_straight">Make Sure Spools Rotate Without Wobble</h4>
+    <p>
+      First of all, press a bearing into each spool, and rotate each spool separately on your 8mm spool core rod.
+    </p>
+    <figure>
+      <video width="500" height="890" controls="controls">
+        <source src="/hp-sim5/assets/MOV_1449-FyZYlodt.mp4" type="video/mp4">
+        </source>
+        <!--source src="movie.ogg" type="video/ogg"-->
+        Your browser does not support the video tag.
+      </video>
+      <figcaption>
+        This one is straight enough.
+      </figcaption>
+    </figure>
+    <p>
+      If a spool has warped, it's useless.
+      Otherwise, if it rotates straight enough, move on to the next step: snapping on the GT2 spool gear.
+    </p>
+    <p>
+      The spool and the GT2 spool gear snap together with a very tight tolerance.
+      When you press fit them together, you can usually hear a sharp "tick" each time the two parts' layer lines mesh in
+      place.
+    </p>
+    <p>
+      A common problem is that the GT2 spool gear is so tight, that it warps the whole spool, and/or doesn't mesh with
+      the same layer line all around the spool.
+      Check this with a similar test as before.
+    </p>
+    <figure>
+      <video width="500" height="890" controls="controls">
+        <source src="/hp-sim5/assets/MOV_1450-iDdL9zqo.mp4" type="video/mp4">
+        </source>
+        <!--source src="movie.ogg" type="video/ogg"-->
+        Your browser does not support the video tag.
+      </video>
+      <figcaption>
+        This one wobbles too much.
+      </figcaption>
+    </figure>
+    <p>
+      If you see wobbly rotation like in the video above, you must take off your GT2 gear from your spool and file/sand
+      down sharp edges and layer lines.
+    </p>
+    <p>
+      Take off any squeezed out edge from top/bottom layers on both GT2 spool gear, and on the spool itself.
+      In some cases, I also widen the pocket on the top of the spool, where the inner tooth of the GT2 spool gear sinks
+      into.
+    </p>
+    <figure>
+      <a href="./media/widen_pocket.JPG" target="_blank">
+        <img src="/hp-sim5/assets/widen_pocket_small-CqZ9njc2.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      Sometimes it helps to separate the spool's parts, rotate them relative to each other, and re-assemble.
+      A tiny warp in one spool part might cancel out an equal tiny warp in another spool part, or amplify it,
+      depending on how the parts are rotated before press fitting them together.
+    </p>
+    <p>
+      Getting all spools to rotate straight will help your machine become more silent, because it won't rub into the
+      inner walls of the spool cover.
+      It will also make your machine more safe, because it will help the spool cover casettes fully enclose your spools
+      so that line can't escape and get tangled into the motor.
+    </p>
+    <h3>Getting Encoders To Rotate Without Rubbing</h3>
+    <p>
+      The encoders must be mounted perfectly straight onto the motor shaft, so that the motor can rotate freely.
+      If you hear a rubbing sound from the encoder when you rotate the motor, then you should adjust the encoder's
+      placement.
+    </p>
+    <p>
+      The motor bracket tries to help you fixate the encoder perfectly.
+      But sometimes the encoder ends up with a degree or so of rotation that the bracket won't let you adjust easily.
+      In those cases, I adjust the rotational position of the encoder like this:
+    </p>
+    <figure>
+      <a href="./media/trick_for_encoder_tilt.JPG" target="_blank">
+        <img src="/hp-sim5/assets/trick_for_encoder_tilt_small-CXV_znvI.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        A nose wire strip or zip tie or similar may be used to increase the thickness of one of the encoder holders'
+        arms in one spot.
+        Its placement along the vertical holder arm adjusts the encoder's rotational position.
+      </figcaption>
+    </figure>
+    <h3 id="Wiring">Wiring</h3>
+    <p>
+      Warning: The motor wires must be connected in the exact order shown below.
+      Otherwise torque mode would run backwards and create chaos.
+      Also, auto-calibration wouldn't work because signs would be reversed.
+    </p>
+    <figure>
+      <a href="./media/motor_wire_order.png" target="_blank">
+        <img src="/hp-sim5/assets/motor_wire_order_small-CPOrweTN.png" alt="" width="500" height="343">
+      </a>
+      <figcaption>
+        Note the order of motor wires.
+        Because of a limitation in RepRapFirmware for the time being (March 2022), we must
+        connect the motor wires in exactly this order.
+      </figcaption>
+    </figure>
+    <h4 id="risk_of_step_dir_noise">Risk of Signal Noise On Step/Dir</h4>
+    <p>
+      Another Warning: The step/dir inputs of the ODrive v3s are not opto-decoupled.
+      This means we will have some signal noise in the all-important step/dir signal wires.
+    </p>
+    <p>
+      The amount of signal noise depends on the area of the loop described below:
+    </p>
+    <figure>
+      <a href="./media/step_dir_ground_loop.JPG" target="_blank">
+        <img src="/hp-sim5/assets/step_dir_ground_loop_small-BmNlT0NH.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        A loop of conductive material is marked in red.
+        It follows the GND wire between the 1XD board and the ODrive board, crosses over the ODrive board into one of
+        the step/dir wires,
+        enters the 1XD board, and crosses over the 1XD board to the 1XD's GND connection.
+      </figcaption>
+    </figure>
+    <p>
+      Because both the ODrive and the 1XD boards are connected to GND, there will exist ground loops like the one
+      described above.
+      Try to make them as small as possible in terms of area.
+      This is best done by connecting the ODrive's GND and the 1XD's GND together, like shown in the image above.
+    </p>
+    <p>
+      The risk of step/dir signal noise is inherent in the ODrive v3 design.
+      I have never had problems with this in practice but I always connect the two GNDs together just in case.
+    </p>
+    <p>
+      The step/dir wires themselves are connected to ODrives 7/8 and 1/2 GPIO pairs (see your ODrive config file) in on
+      end.
+      In the other end, they connect to the 1XD board's D0_STEP(+) and D0_DIR(+) logic pins. (See <a
+        href="https://docs.duet3d.com/en/Duet3D_hardware/Duet_3_family/Duet_3_Expansion_1XD#wiring-diagram">1XD wiring diagram</a>.)
+    </p>
+    <h4>1XD Termination Jumpers</h4>
+    <p>
+      Check 1XD's termination jumpers, that are shown in the 1XD wiring diagram. Only 1XD nr 40 (the A-motor's 1XD
+      board, at the farthest physical end of the CAN bus) should have it's termination jumpers in place.
+      The three other 1XD boards should not have termination jumpers.
+    </p>
+    <p>
+      For all other wiring see
+    </p>
+    <ul>
+      <li><a href="https://docs.duet3d.com/en/User_manual/Overview/Getting_started_Duet_3_MB6HC">Duet 3 docs</a>,</li>
+      <li><a href="https://docs.duet3d.com/en/Duet3D_hardware/Duet_3_family/Duet_3_Expansion_1XD">1XD expansion board docs</a>,</li>
+      <li><a href="https://docs.odriverobotics.com/v/0.5.6/getting-started.html">ODrive docs</a>.</li>
+    </ul>
+    <h4>The Two CAN Buses</h4>
+    <p>
+      The Duet3 has two CAN buses coming out of its RJ11 (6P4C) contact.
+      These two CAN buses live separately, in two different pairs of wires.
+    </p>
+    <p>
+      The two centermost conductors in the 6P4C contact carry the main CAN bus.
+      It transfers step/dir signals from the Duet3 to the 1XDs.
+    </p>
+    <figure>
+      <a href="./media/1XD_addresses.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/1XD_addresses_small-BUDxuxlC.jpeg" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        The main CAN bus goes inside the white wire, from the Duet3 to board 43, to board 42, to board 41, to board 40.
+        Board 40 should have termination jumpers on. The other 1XD boards should not.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="./media/easier_to_see2.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/easier_to_see2_small-BjIEWPH9.jpeg" alt="" width="500" height="889">
+      </a>
+      <figcaption>
+        The main CAN bus goes inside the white wire, from the Duet3 to board 43, to board 42, to board 41, to board 40.
+        Board 40 should have termination jumpers on. The other 1XD boards should not.
+      </figcaption>
+    </figure>
+    <p>
+      The rightmost and leftmost pins are not in use in 6P4C contacts.
+      So we have two remaining conductors that are not used by the main CAN bus.
+      The two remaining conductors carry the ODrives' CAN bus.
+    </p>
+    <figure>
+      <a href="./media/signal_wire_guy2.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/signal_wire_guy2_small-DmeNeJpH.jpeg" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        The jumper wires carry the ODrives' CAN signal from the telephone cable into the ODrive.
+      </figcaption>
+    </figure>
+    <p>
+      The ODrives' CAN bus also goes inside the white wire, at least on my machine.
+      It goes from the Duet3, through board 43, branches off into one ODrive, the other branch continues through board
+      42, through board 41, and ends in the second ODrive (left one on the image below).
+      The 1XD boards does not and can not read the ODrives' CAN bus. It just passes straight through the 1XD boards.
+    </p>
+    <p>
+      With the ODrive CAN bus wired up, make sure you set the termination resistors correctly:
+    </p>
+    <figure>
+      <a href="./media/term_R_ODrives.jpeg" target="_blank">
+        <img src="/hp-sim5/assets/term_R_ODrives_small-M3YA4rPS.jpeg" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        There are little switches inside the red circles, that flip CAN termination resistors on and off.
+      </figcaption>
+    </figure>
+    <h3 id="Firmwares_and_Software_Configuration">Firmwares and Software Configuration</h3>
+    <h4>The Duet3 Board</h4>
+    <p>
+      Note: Most users will not have to think about versions of ReprapFirmware, or installing ReprapFirmware directly.
+      All that is handled by the DuetPi operating system on the Raspberry Pi.
+      Here follows some details anyways, just for your information.
+    </p>
+    <p>
+      There is Hangprinter v4 support in official RepRapFirmware <a
+        href="https://github.com/Duet3D/RepRapFirmware/releases">Release 3.3</a> and onwards.
+    </p>
+    <p>
+      At the time of writing this (March 30, 2022), it's recommended to use the latest official release:
+      <a href="https://github.com/Duet3D/RepRapFirmware/releases">Release 3.4</a>.
+    </p>
+    <p>
+      In addition to ReprapFirmware's official releases, beta releases and so on, I (tobben) always publish my latest
+      RepRapFirmware build here:
+      <a
+        href="https://gitlab.com/tobben/hangprinter/-/blob/version_4/firmware/RepRapFirmware/Duet3/Duet3Firmware_MB6HC.bin">link</a>.
+      My personal builds are only meant to be used during debugging, beta testing of new features, or in other
+      exceptional circumstances.
+    </p>
+    <h4>The Raspberry Pi Board</h4>
+    <p>
+      The SD card shipped with the Duet3 MB6HC boards already have DuetPi on them.
+    </p>
+    <h5>How Connect To Wifi</h5>
+    <p>
+      Insert the SD card into your laptop. Create a new file in the <code>boot</code> partition called
+      <code>wpa_supplicant.conf</code>.
+      Fill the file with your network details, similar to this:
+    </p>
+    <p class="codeblock">
+      <code>
+          update_config=1<br />
+          ctrl_interface=/var/run/wpa_supplicant<br />
+<br />
+          network={<br />
+            ssid="YOUR_NETWORKS_SSID"<br />
+            psk="YOUR_NETWORKS_PASSPHRASE"<br />
+          }
+      </code>
+    </p>
+    <h5>How Enable SSH and Camera on the Raspberry</h5>
+    <p>
+      Insert your SD card into your Raspberry Pi.
+      Connect a display, a keyboard, and a mouse to your Raspberry Pi, and power it up.
+    </p>
+    <p>
+      Press F11 to get rid of the DuetWebControl interface.
+      Find the <code>Preferences</code> -&gt; <code>Raspberry Pi Configuration</code>
+      in the topleft system menu.
+      One of the tabs there lets you enable both SSH and Camera.
+    </p>
+    <p>
+      You can now shut down your Rapsberry Pi.
+      Disconnect the display, keyboard, and mouse.
+      Connect your Raspberry Pi to the Duet3 MB6HC board with the ribbon cable that is included in the Duet3 MB6HC
+      package.
+    </p>
+    <h5>How Update Duet3 and Rpi Software</h5>
+    <p>
+      Power up your Raspberry Pi (probably with a separate USB-C power supply) and your Duet3 MB6HC board (probably with
+      a 24V power supply).
+    </p>
+    <p>
+      Ssh into your Raspberry Pi, like this
+    </p>
+    <p class="codeblock">
+      <code>$ ssh pi@duet3.local</code>
+    </p>
+    <p>
+      If you use a non-official release of ReprapFirmware (a beta, a release candidate, or a tobben-build), it's
+      recommended to enable
+      the <a href="https://docs.duet3d.com/en/User_manual/Machine_configuration/DSF_RPi#switch-to-unstable-packages">unstable
+        software repository</a>.
+      Most users should use not use the unstable software repository.
+      <!--In case you already have the DuetPi operating system on your Raspberry, and want to change from the stable to the unstable repository,
+      use these commands</a>.
+       https://github.com/Duet3D/DuetSoftwareFramework/wiki/SBC-Setup-Guide#unstable-package-feed
+      If your Raspberry Pi have the Raspberry Pi OS (previously Raspbian), then follow <a href="https://duet3d.dozuki.com/Wiki/Getting_Started_With_Duet_3#Section_Raspbian_Setup_Guide"></a>
+      to get the DuetPi operating system, and see the <a href="https://duet3d.dozuki.com/Wiki/Getting_Started_With_Duet_3#Section_Software_Installation">Software Installation Section</a>
+      on how you enable the unstable instead of the stable software repository.-->
+    </p>
+    <p>
+      Whether you enabled the unstable software repository or not, you can now upgrade the software on the Raspberry Pi
+      and the Duet3 board simultaneously, like this
+    </p>
+    <p class="codeblock">
+      <code>$ sudo apt update &amp;&amp; sudo apt upgrade</code>
+    </p>
+    <p>
+      Congrats, your Raspberry Pi is good to go.
+      Type <code>exit</code> in your ssh window and hit enter to close the ssh connection.
+      If you're going to set up the computer vision system (hp-mark), there will be some more Raspberry Pi related
+      things to set up later.
+    </p>
+    <p>
+      Use a web browser and type <code>http://duet3.local/</code> in the address bar.
+      The Duet Web Interface should show up.
+    </p>
+    <p>
+      Your machine will not work as a Hangprinter yet.
+      It needs to be configured first, with a proper <code>confing.g</code> file in your System Directory.
+      You can have a look at my <a
+        href="https://gitlab.com/tobben/hangprinter/-/blob/version_4/firmware/RepRapFirmware/Duet3/config.g">example
+        config.g for RepRapFirmware</a> for reference.
+    </p>
+    <p>
+      The config.g file includes calibration values (M669) that are tricky to get right.
+      We'll get back to the M669 calibration values later in this manual.
+    </p>
+    <h4>The ODrive (v3) Boards</h4>
+    <p>
+      Use the <a href="https://odriverobotics.com/shop/usb-isolator">USB isolator</a> between your laptop and your
+      ODrive.
+    </p>
+    <p>
+      These instructions are for ODrivefirmware v0.5.5 (lastest release at time of writing, Sep 21, 2022).
+      New boards bought after Sep 21, 2022 should come with v0.5.5 pre-flashed.
+    </p>
+    <p>
+      Install <code>odrivetool</code> v0.6.3: If you're on Ubuntu, something like this should work:
+    </p>
+    <p class="codeblock">
+      <code>$ sudo apt install python3 python3-pip<br />$ sudo pip3 install odrive==0.6.3</code>
+    </p>
+    <p>
+      Otherwise refer to ODrive docs on how to install <code>odrivetool</code> v0.6.3 <a
+        href="https://docs.odriverobotics.com/v/0.5.6/getting-started.html#install-odrivetool">here</a>.
+    </p>
+    <p>
+      If your board has an old (&lt;0.5.5) firmware version, upgrade it with
+    </p>
+    <p class="codeblock">
+      <code>$ odrivetool dfu</code>
+    </p>
+    <p>
+      If it gets stuck at "Putting device XXXXXXXXXXXX into DFU mode...", it can help to stop it with Ctrl+C and simply
+      try again.
+    </p>
+    <p>
+      If it gets stuck every time, pull the power plug, flip the switch on the ODrive board from RUN to DFU, and try
+      again. Just remember to flip it back to RUN afterwards.
+    </p>
+    <p>
+      To configure your AB board (connected to the A- and B-motors),
+      do a config restore of the AB config found in the Hangprinter repo:
+    </p>
+    <p class="codeblock">
+      <code>$ odrivetool restore-config &lt;/path/to&gt;/hangprinter/firmware/ODrive/odrive-config-AB.json</code>
+    </p>
+    <p>
+      This will set most configuration values about right.
+      However, there are a few you need to change.
+    </p>
+    <p>
+      You must measure the correct value with a multimeter over your break resistor.
+      Open up <code>odrivetool</code> and set
+    </p>
+    <p class="codeblock">
+      <code>odrv0.config.brake_resistance = your_measured_value</code>
+    </p>
+    <p>
+      Also, you need to do a full calibration sequence of both axes. Copy these lines into <code>odrivetool</code>
+      one-by-one
+      and hit Enter in between each.
+    </p>
+    <p class="codeblock">
+      <code>
+        odrv0.axis0.requested_state = AXIS_STATE_IDLE<br />
+        odrv0.axis1.requested_state = AXIS_STATE_IDLE<br />
+        odrv0.save_configuration()<br />
+        odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE<br />
+        odrv0.axis1.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE<br />
+        odrv0.axis0.motor.config.pre_calibrated = True<br />
+        odrv0.axis1.motor.config.pre_calibrated = True<br />
+        odrv0.axis0.encoder.config.pre_calibrated = True<br />
+        odrv0.axis1.encoder.config.pre_calibrated = True<br />
+        odrv0.axis0.requested_state = AXIS_STATE_IDLE<br />
+        odrv0.axis1.requested_state = AXIS_STATE_IDLE<br />
+        odrv0.save_configuration()<br />
+      </code>
+    </p>
+    <p>
+      Repeat the process for the CD board (the ODrive connected to the C- and D-motors).
+    </p>
+    <p>
+      If everything went well and your motors woke up with a silent rotation before entering closed loop position mode,
+      then you're ready to do the (optional) anticogging calibration.
+    </p>
+    <p>
+      The anticogging feature makes your torque mode feel smoother if it's enabled and working.
+      It's not critical for the functioning of the Hangprinter.
+    </p>
+    <p>
+      Please refer to the bottom part of my <a
+        href="https://gitlab.com/tobben/hangprinter/-/tree/version_4/firmware/ODrive">configure_odrive.py ODrivefirmware
+        configuration file</a> for details on how I do anticogging calibration.
+    </p>
+    <h3 id="Planning_Line_Lengths">Planning Line Lengths</h3>
+    <p>
+      There are nine different lines in a Hangprinter v4.
+      Please refer to the <a href="#Line_Routing">line routing video below</a> if you're unsure about
+      how these lines are mounted.
+    </p>
+    <p>
+      Before winding lines onto each spool, we need to cut them to length.
+      Finding the right lengths is a bit complicated.
+    </p>
+    <h4>Why Not Just Fill The Spools Up With Lots Of Line?</h4>
+    <p>
+      The lines build up in unpredictable layers on the spools.
+      So to maximize precision and accuracy of your machine, you want as little lines on the spools as possible.
+    </p>
+    <h4>Why Not Use Minimal Line Lengths?</h4>
+    <p>
+      If too little line is mounted, then the effector's reachable volume is limited.
+      If the effector moves too far from the origin, so that there's no line left on the spool,
+      then we get a spool exhaustion event, which would be very bad news.
+      Lines would get wound onto the spool when they were supposed to be wound off,
+      the machine would loose positional control, all motors would work against each other, and parts would quickly
+      start to break.
+    </p>
+    <p>
+      There's no software safety mechanisms that prevent spool exhaustion events from getting hairy.
+    </p>
+    <h4>Backing Line, A Possible Safety For Very Large Hangprinters</h4>
+    <p>
+      Some very large Hangprinters can not zero out the risk of spool exhaustion by simply adding more thick line to the
+      spool.
+      That's because their anchors are so far apart, the spools would overflow by all the thick line required.
+    </p>
+    <p>
+      A possible way to get the best of both worlds is to use "backing line", like fly fishers use on their reels.
+    </p>
+    <p>
+      The backing line is a thinner line, wound onto the spools before the "main line" (in our case 1.1 mm RobeLine) is
+      wound on.
+      The backing is connected to the main line with a knot that is small enough to travel easily through line guiding
+      mechanisms such as
+      rod rings, or in Hangprinter's case ceramic eyelets and line deflectors.
+    </p>
+    <p>
+      Fly fishers use the Albright knot to connect main line and backing line.
+      It should match our Hangprinter needs quite good as well:
+    </p>
+    <figure>
+      <div class='embed-container'>
+        <iframe src='https://www.youtube.com/embed/Po9K8qCrQ7I' frameborder='0' allowfullscreen='true'>
+        </iframe>
+      </div>
+    </figure>
+    <h4>Required Length For D-lines</h4>
+    <p>
+      There are three D-lines.
+      They have the same length.
+    </p>
+    <p>
+      To guarantee no spool exhaustion event occurs, you need to know which of the ABC-anchors that has
+      the largest distance to the D-anchor. Call this distance <i>D_max</i>.
+    </p>
+    <p>
+      The D-lines are quadrupled, so you need 4 x <i>D_max</i>.
+    </p>
+    <p>
+      Also, add 40 cm for line internal to the ceiling unit, wrappings around bearings, and for termination knots.
+      So we get:
+    </p>
+    <p>
+      D lines length = 4 x <i>D_max</i> + 40 cm.
+    </p>
+    <p>
+      If you plan on using backing, try tying an Albright knot first, and make sure your knot gets easily through
+      the eyelets of your line verticalizer.
+      If it does, I recommend you make the innermost <i>D_max</i> length or less of your line into a backing line.
+    </p>
+    <h4>Required Length For ABC-lines</h4>
+    <p>
+      For each of the three ABC-anchors there are two lines of equal length.
+      For the rest of this section, I'll use the A-lines as a driving example.
+      The procedure is analogous for the B-lines and C-lines.
+    </p>
+    <p>
+      To guarantee no spool exhaustion event occurs, you need to know the largest distance between
+      your A-anchor and any of the other anchors.
+    </p>
+    <p>
+      The farthest other anchor is often the D-anchor.
+    </p>
+    <p>
+      Anyways, call the farthest distance <i>A_max</i>.
+      The A-lines are doubled, so you need 2 x <i>A_max</i>.
+    </p>
+    <p>
+      There's also one part of the A-lines that's always suspended between the A-anchor and the D-anchor.
+      Let's call this length <i>AD</i>.
+      This part of the line is not doubled.
+    </p>
+    <p>
+      Also, add 40 cm for line internal to the ceiling unit, wrappings around bearings, and for termination knots.
+      So we get:
+    </p>
+    <p>
+      A lines length = 2 x <i>A_max</i> + <i>AD</i> + 40 cm.
+    </p>
+    <p>
+      If you plan on using backing, try tying an Albright knot first, and make sure your knot gets easily through
+      your tilted line deflector.
+      If it does, I recommend you make the innermost <i>AD</i> length or less of your line into a backing line.
+    </p>
+    <h3 id="Mounting">Mounting</h3>
+    <p>
+      This part hasn't changed between HP3 and HP4, except the optional hoisting system, which is described <a
+        href="#hoisting">later in this document</a>.
+      A beefed up version of the hoisting system could let you avoid having to use a ladder, if you want to take the
+      ceiling unit down again later.
+    </p>
+    <p>
+      All other HP4 and HP3 principles are the same, so
+      I'm linking to old HP3 documentation for now:
+    </p>
+    <ul>
+      <li><a href="https://www.youtube.com/watch?v=iOwjbu2UMlQ&feature=youtu.be&t=3h54m43s">HP3 Build With tobben &
+          Thomas Sanladerer (link directly into mounting)</a></li>
+    </ul>
+    <p>
+      Make sure anchors are rigid. Also, make sure your lines form nice <a
+        href="https://en.wikipedia.org/wiki/Parallelogram">Parallelograms</a> (two pairs of parallel sides).
+    </p>
+    <h4 id="Line_Routing">Line Routing</h4>
+    <figure>
+      <div class='embed-container'>
+        <iframe src='https://www.youtube.com/embed/QUyifkpk6KY' frameborder='0' allowfullscreen='true'>
+        </iframe>
+      </div>
+    </figure>
+    <p>
+      The video above is slightly out of date.
+      Instead of each ABC line tying together like shown in the line routing video, they are terminated at the snail.
+    </p>
+    <p>
+      Also, the routing of the D-lines are not detailed in the video.
+      Route them like this:
+    </p>
+    <figure>
+      <a href="./media/routing_1.png" target="_blank">
+        <img src="/hp-sim5/assets/routing_1_small-C0wtArta.png" alt="" width="500" height="381">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="./media/routing_2.png" target="_blank">
+        <img src="/hp-sim5/assets/routing_2_small-DyrW2LJ_.png" alt="" width="500" height="497">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="./media/routing_3.png" target="_blank">
+        <img src="/hp-sim5/assets/routing_3_small-QzRE3jlx.png" alt="" width="500" height="466">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      The three renderings above all show the corner closest to the B-motor on the ceiling unit.
+      Mirror the setup at the opposite corner (closest to C-motor).
+      The corner between the ODrives is a little bit easier because lines can be kept closer to vertical there but it
+      also follows the same pattern.
+    </p>
+    <p>
+      The pair of lines farthest from the center are close to vertical.
+      The pair of lines closer to the middle are slightly tilted, to enter the second bearing in the line verticalizer.
+    </p>
+    <h4 id="line_termination">Line Termination</h4>
+    <p>
+      I use the <a href="https://en.wikipedia.org/wiki/Figure-eight_knot">eight shaped stop knot</a> to attach the line
+      to the spool, like this:
+    </p>
+    <!--figure>
+        <a href="./media/eight_shaped_stop_knot.JPG" target="_blank">
+          <img src="./media/eight_shaped_stop_knot_small.JPG" alt="" width="500" height="281">
+        </a>
+        <figcaption>
+        </figcaption>
+      </figure-->
+    <figure>
+      <a href="./media/eight_shaped_stop_knot2.JPG" target="_blank">
+        <img src="/hp-sim5/assets/eight_shaped_stop_knot2_small-BBFq-1OV.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      The ABC-lines are all terminated in the clamp at the top of the snaily snail:
+    </p>
+    <figure>
+      <a href="./media/line_attachment_snaily_snail.JPG" target="_blank">
+        <img src="/hp-sim5/assets/line_attachment_snaily_snail_small-DYltAH5M.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        The clamp is a safety mechanism.
+        In case of a sudden high force in the line (if someone trips in a line), the clamp is supposed to release the
+        line.
+        It's therefore important that the line protruding on the back side of the clamp is short.
+        It's also important that all braiding is combed out near the end of the line so that the line can be clamped down
+        flat,
+        and no knot or tangle can form on the back side of the clamp, and prevent the safety mechanism from releasing the
+        line.
+      </figcaption>
+    </figure>
+    <figure>
+      <video width="500" height="889" controls="controls">
+        <source src="/hp-sim5/assets/snail_line_release-CaPn8Xhz.mp4" type="video/mp4" />
+        <!--source src="movie.ogg" type="video/ogg"-->
+        Your browser does not support the video tag.
+      </video>
+      <figcaption>
+        Video showing the line release mechanism in action.
+      </figcaption>
+    </figure>
+    <p>
+      The D-lines are terminated in the ceiling unit.
+      I terminate them with a wood screw, like this:
+    </p>
+    <figure>
+      <a href="./media/D_line_termination.JPG" target="_blank">
+        <img src="/hp-sim5/assets/D_line_termination_small-CxD2IMDw.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      However, if the effector is very light on my particular machine, I sometimes use triple instead of quadruple
+      D-lines.
+      This lets me terminate the D-lines on the effector instead.
+    </p>
+    <p>
+      If you plan on doing the same, make sure to change your <code>config.g</code> accordingly.
+      The line saying <code>M666 U2:2:2:4</code> needs to be changed to <code>M666 U2:2:2:3</code>.
+      Also, you'll have to make a similar 4-&gt;3 change inside <code>simulation.py</code> when you do your
+      auto-calibration later.
+    </p>
+    <h4 id="hoisting">Optional Hoisting System</h4>
+    <p>
+      Screwing the ceiling unit onto the ceiling can be a bit challenging.
+      I therefore added a hoisting system to my own HP4.
+      See it in <a href="https://twitter.com/tobbelobb/status/1428025129406238723">this tweet</a> and <a
+        href="https://youtu.be/coI8I0QsQFI">this video</a>.
+      The little CAD models I used are shared <a href="https://gitlab.com/tobben/hoistit/">here</a>.
+    </p>
+    <figure>
+      <a href="./media/hoistit.JPG" target="_blank">
+        <img src="/hp-sim5/assets/hoistit_small-DBu281Lp.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+        The optional hoisting system. Note that the top bearings here are U-groove M4 core bearings (sry, just what I
+        had lying around).
+        The bearings on the ceiling plate is 623 vgroove bearings, like are used in other places in the Hangprinter v4
+        design.
+      </figcaption>
+    </figure>
+    <h3 id="Calibrating_anchors_and_spool_buildup">Calibrating Anchors and Spool Buildup (M669)</h3>
+    <p>
+      This has changed a lot between HP3 and HP4.
+      A computer vision system called hp-mark has been developed to assist, and largely automate, the calibration
+      process.
+      The system has been built and proved, see this video:
+    </p>
+    <figure>
+      <div class='embed-container'>
+        <iframe src='https://www.youtube.com/embed/As3Y5J2NTGA' frameborder='0' allowfullscreen='true'>
+        </iframe>
+      </div>
+    </figure>
+    <h4>Replicating What's Going On In That Video</h4>
+    <p>
+      Ok, this will be a bit messy.
+      hp-mark is still in beta, and requires the user to be comfortable doing a few things via the Unix terminal.
+      Our main goal is to be able to run the script called <a
+        href="https://gitlab.com/tobben/hp-mark/-/blob/master/use/get_auto_calibration_data_automatically.sh">get_auto_calibration_data_automatically.sh</a>.
+    </p>
+    <p>
+      The computer vision system is called hp-mark.
+      It consists of
+    </p>
+    <ul>
+      <li>A camera with LED lights around it,</li>
+      <li>A Raspberry Pi who controls the camera and the LEDs,</li>
+      <li>Twelve retro-reflective markers,</li>
+      <li>A computer program called hpm</li>
+      <li>A main computer who gets images from the Raspberry Pi, and uses hpm to analyze the images.</li>
+    </ul>
+    <p>
+      See the <a href="https://gitlab.com/tobben/hp-mark">hp-mark repo</a>,
+      and in particular the <code>README.md</code> and the <code>doc</code> directory for more guidance on how to set up
+      hp-mark.
+      The rest of this section will describe how to use hp-mark correctly with Hangprinter v4.
+    </p>
+    <p>
+      The get_auto_calibration_data_automatically.sh script is executed on the main computer.
+      It expects your camera-connected Raspberry to be available
+      at the ip called <code>rpi</code> in your <code>/etc/hosts</code> file.
+      It's also assuming your Duet3 connected Raspberry to be called <code>duet3</code> in your <code>/etc/hosts</code>.
+    </p>
+    <p>
+      It's fine if <code>duet3</code> and <code>rpi</code> are actually the same Raspberry Pi board.
+      Just configure them to the same ip address.
+    </p>
+    <p>
+      The Raspberry Pi needs the camera to be connected and calibrated (as described in the <a
+        href="https://gitlab.com/tobben/hp-mark">hp-mark repo</a>), and it needs ssh to be enabled.
+      Enabling ssh on a Raspberry pi might involve having to connect it to a display, and seek out Preferences -&gt;
+      Raspberry Pi Configuration in a graphical user interface.
+    </p>
+    <p>
+      The get_auto_calibration_data_automatically.sh script also
+      needs a version of raspistill that matches your lens, or else your images' colors will be <a
+        href="https://www.arducam.com/docs/cameras-for-raspberry-pi/native-raspberry-pi-cameras/lens-shading-calibration/">tinted</a>.
+      To get the one I use (matching my Arducam lo-distortion 45 deg lens), do
+    </p>
+    <p class="codeblock">
+      <code>
+          $ ssh pi@rpi<br />
+          $ mkdir -p repos<br />
+          $ cd repos<br />
+          $ git clone https://github.com/ArduCAM/NativePiCamera.git<br />
+          $ cd NativePiCamera/bin<br />
+          $ chmod u+x raspistill_CS_lens<br />
+      </code>
+    </p>
+    <p>
+      The duet3 official image is one comes with the camera disabled by default.
+      To enable it do
+    </p>
+    <p class="codeblock">
+      <code>
+          $ sudo raspi-config<br />
+          $ [Interface Options] -&gt; [Camera] -&gt; [Enable] -&gt; [Reboot yes]
+      </code>
+    </p>
+    <p>
+      We also have some LED rings around the lens (I have 20. Don's use more than 20, since the Rpi's 5V pin can't
+      output much current).
+      To light up the LEDs, I used these pins on the camera-connected Raspberry:
+    </p>
+    <figure>
+      <a href="./media/LED_pinout.png" target="_blank">
+        <img src="/hp-sim5/assets/LED_pinout-cZJrILyH.png" alt="" width="497" height="494">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <h4>If rpi and duet3 Are One And the Same Board In Your Setup</h4>
+    <p>
+      The Duet3 doesn't use any of pins 4, 6, or 12, although its connector covers them up.
+      To work around the connector, you can created a distance between Rpi and the connector with nine short jumper
+      wires like this:
+    </p>
+    <figure>
+      <a href="./media/Bypass_connector_3.JPG" target="_blank">
+        <img src="/hp-sim5/assets/Bypass_connector_3_small-C4Ohuwn3.JPG" alt="" width="500" height="281">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="./media/Duetpins2.png" target="_blank">
+        <img src="/hp-sim5/assets/Duetpins2-K8LHv2t3.png" alt="" width="498" height="123">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      Connect the Raspberry's pins 17-25 with the Duet, as they would have been connected through the standard
+      connector.
+      Power the Raspberry Pi with a separate wallplug power supply.
+      The official Raspberry Pi Power supply is recommended.
+    </p>
+    <h4>Anyways...</h4>
+    <p>
+      Here's how you get code that lights up the LEDs:
+    </p>
+    <p class="codeblock">
+      <code>
+          $ ssh pi@rpi<br />
+          $ mkdir -p repos<br />
+          $ cd repos<br />
+          $ git clone https://gitlab.com/tobben/rpi_ws281x.git<br />
+          $ sudo apt install python3-pip<br />
+          $ sudo pip3 install rpi_ws281x<br />
+      </code>
+    </p>
+    <h4>Test If Camera Usage Works</h4>
+    <p>
+      On your main computer, try to take an image and analyze it:
+    </p>
+    <p class="codeblock">
+      <code>
+          $ cd &lt;path-to&gt;/hp-mark/use<br />
+          $ ./use_ssh.sh --show result
+      </code>
+    </p>
+    <p>
+      If everything worked, the LEDs should have flashed, an image should be taken, downloaded, analyzed by your hpm
+      program,
+      and the result (an image) should be shown on the screen, like this:
+    </p>
+    <figure>
+      <a href="./media/result.png" target="_blank">
+        <img src="/hp-sim5/assets/result_small-BAbvCge4.png" alt="" width="500" height="376">
+      </a>
+      <figcaption>
+      </figcaption>
+    </figure>
+    <p>
+      The console output should be similar to this:
+    </p>
+    <p class="codeblock">
+      <code>
+          $ ./use_ssh.sh --show result<br />
+/home/pi/repos/hp-mark/use<br />
+Captured image remotely: /home/pi/repos/hp-mark/use/images/DiUBh.jpg.<br />
+Copies home:<br />
+DiUBh.jpg 100% 4512KB   4.9MB/s   00:00<br />
+/home/tobben/repos/hp-mark/use<br />
+Will execute:<br />
+../hpm/hpm/hpm ../hpm/hpm/example-cam-params/loDistCamParams2.xml ../hpm/hpm/example-marker-params/my-marker-params.xml ./images/DiUBh.jpg --show result<br />
+[5.22761, -28.5536, 6.5542];<br />
+      </code>
+    </p>
+    <p>
+      At the time of writing (March 30, 2022), there are two under-documented but highly useful features in hp-mark.
+    </p>
+    <p>
+      One is the <code>--bed-reference</code> feature.
+      It let's you had a set of six markers on the print bed, analogous to the six you already have on the effector.
+      Measure their positions, and include them in <code>my-marker-params.xml</code>, just like you did with the
+      effector markers.
+      They give you much more stable measurements in case your camera has moved slightly since your last
+      <code>--camera-calibration</code>.
+    </p>
+    <p>
+      The other useful feature is called <code>--try-hard</code>.
+      It makes measurements a bit slower, but more stable.
+    </p>
+    <p>
+      Do <code>../hpm/hpm/hpm --help</code> for definitive up-to-date info about your executable's features.
+    </p>
+    <h4>Double Check Torque Mode</h4>
+    <p>
+      The get_auto_calibration_data_automatically.sh script will use your camera to take measurements, and wait for you
+      to move your
+      effector around between measurements.
+      For moving your effector my hand, it's very useful to have the motors in torque mode.
+      You'll probably want to have the
+      <a href="https://gitlab.com/tobben/hangprinter/-/blob/version_4/firmware/RepRapFirmware/Duet3/macros/Torque">Torque_mode
+        macros</a>
+      installed into your macro folder on the Duet3.
+    </p>
+    <p>
+      Play with the torque mode scripts in the web interface before running the full calibration script.
+      For example, in the web interface, go to the console and to
+      set motor A in torque mode, with 0.02 Nm of torque.
+      Feel the spool gently with your and confirm that the motor tries to pull line inwards onto the spool
+    </p>
+    <p class="codeblock">
+      <code>
+          M98 P"/macros/Torque/Torque_mode_all" A0.02
+      </code>
+    </p>
+    <p>
+      Repeat for all motors ABCD.
+      (In ReprapFirmware 3.5, the unit of the argument A&lt;arg&gt; will change from Nm to just N.
+      It will print the Nm applied into the WebGui console.)
+    </p>
+    <h4>Getting To The Actual Calibration</h4>
+    <p>
+      With camera and torque mode macro in place, if all the stars align, it should be possible for you to collect the
+      calibration data like this:
+    </p>
+    <p class="codeblock">
+      <code>$ cd path/to/hp-mark/use<br />
+            $ ./get_auto_calibration_data_automatically.sh --show result --bed-reference --try-hard
+      </code>
+    </p>
+    <p>
+      The <code>--show result</code> option will make hpm stop and show you each measurement when it's done, and wait
+      for you to press
+      Enter before it continues.
+    </p>
+    <figure>
+      <a href="./media/result_hp_mark.png" target="_blank">
+        <img src="/hp-sim5/assets/result_hp_mark_small-CcnIUfz_.png" alt="" width="500" height="376">
+      </a>
+      <figcaption>
+        Example of a successful data point collection with the <code>--show result</code> option enabled.
+      </figcaption>
+    </figure>
+    <p>
+      After collecting 25 data points (don't worry if a few were unsuccessful or printed a warning), it prints out the
+      data it has collected
+      in a format that copy/paste friendly for the next script we're going to use: <a
+        href="https://gitlab.com/tobben/auto-calibration-simulation-for-hangprinter/-/blob/hp_mark_adjusted/simulation.py">simulation.py</a>.
+    </p>
+    <p>
+      For detailed documentation on how to use the script, see its
+      <a href="https://gitlab.com/tobben/auto-calibration-simulation-for-hangprinter/-/tree/hp_mark_adjusted">repo</a>.
+    </p>
+    <p>
+      Hopefully it will output a
+      perfect set of M669 and M666 commands, to copy/paste into your <a
+        href="https://gitlab.com/tobben/hangprinter/-/blob/version_4/firmware/RepRapFirmware/Duet3/config.g">config.g</a>.
+    </p>
+    <p>
+      For anyone who have reached this far: I salute you.
+      Reach me via Discord and tell me you need the auto calibration stuff, and I'll up-prioritize automating further
+      and documenting better.
+    </p>
+    <h3 id="Slicing_and_Usage">Slicing and Usage</h3>
+    <p>
+      I've published the Prusa Slicer configs that I use at <a
+        href="https://gitlab.com/tobben/prusaslicer-configs">gitlab.com/tobben/prusaslicer-configs</a>.
+    </p>
+    <h4>Avoid Line Collisions</h4>
+    <p>
+      Before you start a large print, it's recommended to check if your model fits the print volume or not.
+      This is done with <a href="https://gitlab.com/hangprinter/line-collision-detector">line-collision-detector</a>, a
+      tool that is developed specifically for Hangprinter build volume verification.
+    </p>
+    <figure>
+      <a href="./media/debug_stl.png" target="_blank">
+        <img src="/hp-sim5/assets/debug_stl_small-DtTG40Vc.png" alt="" width="500" height="395">
+      </a>
+      <figcaption>
+        line-collision-detector spits out a debug stl like this one upon detecting collision (if you asked for it).
+      </figcaption>
+    </figure>
+    <p>
+      Please note that many slicers will auto center the model before slicing it.
+      line-collision-detector will not do that.
+      Since you probably want to check if the centered version of your model collides with lines or not, it's
+      recommended to first import your model in the slicer, and then export it from the slicer as an stl, and then run
+      it through the line-collision-detector.
+    </p>
+    <br /><br /><br />
+    <h3 id="Final_Words">Final Words</h3>
+    <p>
+      Building, mounting, calibrating, and running a HP4 is a big undertaking, and many of the steps are sparsely
+      documented, but you are not alone.
+      Be sure to check out the <a href="../../resources">resources</a>, there are some quite good ones.
+    </p>
+    <p>
+      If you spot an error or a missing link in the documentation, then please fix it and contribute the fix back to the
+      repo.
+      But also, do come by the Discord and say hi, or have a chat via Gitlab merge request or issue.
+    </p>
+    <p>
+      - tobben 👷
+    </p>
+    <br /><br /><br /><br /><br /><br /><br />
+    </p>
+    <p>
+      The raw text source of this manual is published under the <a
+        href="https://gitlab.com/tobben/hangprinter/-/blob/version_4/LICENSE" target="_blank">GPL-2.0 license</a>, and
+      is being maintained in the <a href="https://gitlab.com/tobben/hangprinter-org" target="_blank">hangprinter-org
+        repo</a>. All images and videos are also published under the GPL-2.0.
+    </p>
+  </div>
+
+  <footer>
+    <img class="logo" src="/images/hangprinter_logo.svg" alt="">
+
+    <div class="link-container">
+      <div class="link-column">
+        <span>The Project</span>
+        <a href="#">Donate</a>
+        <a href="/doc/v3/">Hangprinter v3</a>
+        <a href="/doc/v4/">Hangprinter v4</a>
+      </div>
+
+      <div class="link-column">
+        <span>Follow</span>
+        <a href="https://www.facebook.com/groups/hangprinter">Facebook</a>
+        <a href="https://twitter.com/tobbelobb">X</a>
+        <a href="https://www.youtube.com/channel/UCw1Nz0VCw4z-dfq4WjSkFzQ">Youtube</a>
+        <a href="https://torbjornludvigsen.com/blog">Dev Blog</a>
+      </div>
+
+      <div class="link-column">
+        <span>Community</span>
+        <a href="https://discord.gg/KAV7x3hgRX">Discord Channel</a>
+        <a href="/resources/">Relevant Repos</a>
+        <a href="/newsletter/">Newsletter</a>
+      </div>
+    </div>
+
+    <span class="copyright">© Torbjørn Ludvigsen 2023. All rights reserved.</span>
+  </footer>
+  <script data-goatcounter="https://hangprinter.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  <script src="/assets/script.js"></script>
+</body>
+
+</html>
