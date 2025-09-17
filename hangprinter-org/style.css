@@ -321,6 +321,238 @@ iframe {
     margin: 0;
 }
 
+.sim-block {
+    background: var(--dark-grey);
+    color: var(--white);
+    padding: 120px clamp(24px, 6vw, 140px);
+}
+
+.sim-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 72px);
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.sim-text {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sim-text .eyebrow {
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.sim-text h2 {
+    width: auto;
+    font-size: clamp(32px, 5vw, 52px);
+    line-height: 1.08;
+    margin: 0;
+    color: inherit;
+}
+
+.sim-text p {
+    max-width: 540px;
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.sim-app {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 24px;
+    padding: clamp(20px, 4vw, 32px);
+    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.35);
+}
+
+.sim-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.primary-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.sim-controls button {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--red);
+    color: var(--white);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.sim-controls button:hover,
+.sim-controls button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.3);
+}
+
+.sim-controls button:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+#dumpBtn {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.secondary-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 28px;
+}
+
+.secondary-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.secondary-column select {
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--white);
+    font-size: 14px;
+    min-width: 220px;
+    appearance: none;
+}
+
+.secondary-column select:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+.secondary-column button {
+    align-self: flex-start;
+}
+
+.sim-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.sim-stats span span {
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.sim-error {
+    margin: 0;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(222, 86, 67, 0.18);
+    border: 1px solid rgba(222, 86, 67, 0.38);
+    color: #ffd9d4;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.canvas-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    min-height: 360px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.35);
+    position: relative;
+}
+
+.canvas-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 60%);
+}
+
+#myCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+@media screen and (max-width: 1100px) {
+    .sim-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .sim-text {
+        text-align: center;
+        align-items: center;
+    }
+
+    .sim-text p {
+        max-width: 640px;
+    }
+}
+
+@media screen and (max-width: 720px) {
+    .primary-controls {
+        justify-content: center;
+    }
+
+    .sim-controls button {
+        flex: 1 1 45%;
+        text-align: center;
+    }
+
+    .secondary-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .secondary-column select {
+        width: 100%;
+    }
+
+    .secondary-column button {
+        width: 100%;
+    }
+
+    .sim-app {
+        padding: 24px;
+    }
+}
+
+@media screen and (max-width: 540px) {
+    .sim-block {
+        padding: 80px 20px;
+    }
+
+    .canvas-frame {
+        min-height: 280px;
+        border-radius: 16px;
+    }
+}
 .img-block {
     display: flex;
     width: 100%;

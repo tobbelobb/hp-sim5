@@ -17,7 +17,6 @@
   <meta name="twitter:site" content="@tobbelobb">
   <meta name="twitter:creator" content="@tobbelobb">
   <meta name="twitter:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
-  </meta>
   <link rel="stylesheet" href="./style.css?v=0" type="text/css">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -106,6 +105,54 @@
       Print big at low cost
     </h3> -->
   </div>
+
+  <section class="sim-block" id="slideprinter-demo">
+    <div class="sim-inner">
+      <div class="sim-text">
+        <span class="eyebrow">Try it in your browser</span>
+        <h2>Interactive Slideprinter Simulation</h2>
+        <p>Watch the virtual tool head follow Hangprinter moves. Pick a built-in demo or upload your own G-code to explore the cable-driven motion system.</p>
+      </div>
+
+      <div class="sim-app" aria-live="polite">
+        <div id="controls" class="sim-controls">
+          <div class="primary-controls">
+            <button id="pauseBtn" type="button">Pause</button>
+            <button id="resetBtn" type="button">Reset</button>
+            <button id="stepBtn" type="button">Step</button>
+            <button id="dumpBtn" type="button" title="Dump current simulation state to the console">Dump State</button>
+          </div>
+
+          <div class="secondary-controls">
+            <label class="secondary-column" for="presetGcode">
+              <span>Built-in demo</span>
+              <select id="presetGcode">
+                <option value="Hangprinter_logo6.gcode" selected>Hangprinter logo (fast)</option>
+                <option value="Hangprinter_logo2.gcode">Hangprinter logo (detailed)</option>
+                <option value="draw_squares.gcode">Calibration squares</option>
+                <option value="tighten.gcode">Cable tightening routine</option>
+              </select>
+            </label>
+
+            <div class="secondary-column">
+              <span>Upload a path</span>
+              <button id="loadGcodeBtn" type="button">Choose G-code</button>
+              <input type="file" id="gcodeFile" accept=".gcode" hidden>
+            </div>
+          </div>
+
+          <div class="sim-stats" aria-live="polite">
+            <span>dt: <span id="dt">N/A</span></span>
+            <span>Speed: <span id="speed">N/A</span></span>
+          </div>
+        </div>
+
+        <div class="canvas-frame">
+          <canvas id="myCanvas" role="img" aria-label="Hangprinter Slideprinter simulation"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="img-block left">
     <video autoplay playsinline loop muted src="/images/video-1.mp4"></video>
@@ -203,6 +250,54 @@
       </div>
     </div>
   </div>
+
+  <section class="sim-block" id="slideprinter-demo">
+    <div class="sim-inner">
+      <div class="sim-text">
+        <span class="eyebrow">Try it in your browser</span>
+        <h2>Interactive Slideprinter Simulation</h2>
+        <p>Watch the virtual tool head follow Hangprinter moves. Pick a built-in demo or upload your own G-code to explore the cable-driven motion system.</p>
+      </div>
+
+      <div class="sim-app" aria-live="polite">
+        <div id="controls" class="sim-controls">
+          <div class="primary-controls">
+            <button id="pauseBtn" type="button">Pause</button>
+            <button id="resetBtn" type="button">Reset</button>
+            <button id="stepBtn" type="button">Step</button>
+            <button id="dumpBtn" type="button" title="Dump current simulation state to the console">Dump State</button>
+          </div>
+
+          <div class="secondary-controls">
+            <label class="secondary-column" for="presetGcode">
+              <span>Built-in demo</span>
+              <select id="presetGcode">
+                <option value="Hangprinter_logo6.gcode" selected>Hangprinter logo (fast)</option>
+                <option value="Hangprinter_logo2.gcode">Hangprinter logo (detailed)</option>
+                <option value="draw_squares.gcode">Calibration squares</option>
+                <option value="tighten.gcode">Cable tightening routine</option>
+              </select>
+            </label>
+
+            <div class="secondary-column">
+              <span>Upload a path</span>
+              <button id="loadGcodeBtn" type="button">Choose G-code</button>
+              <input type="file" id="gcodeFile" accept=".gcode" hidden>
+            </div>
+          </div>
+
+          <div class="sim-stats" aria-live="polite">
+            <span>dt: <span id="dt">N/A</span></span>
+            <span>Speed: <span id="speed">N/A</span></span>
+          </div>
+        </div>
+
+        <div class="canvas-frame">
+          <canvas id="myCanvas" role="img" aria-label="Hangprinter Slideprinter simulation"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="img-block left">
     <video autoplay playsinline loop muted src="/images/8_compatibility.mp4"></video>
@@ -436,6 +531,7 @@
   </footer>
 
   <div id="there-you-go"></div>
+  <script type="module" src="./assets/slideprinter-frontpage.js"></script>
   <script>
     var img = document.getElementById('FrontPageMain');
     var dx = Math.random() * 8 - 4.0;
