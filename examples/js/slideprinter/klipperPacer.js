@@ -54,8 +54,7 @@ class ClockModel {
     this.clockHz = 50_000_000;
     this.lastRawTick = null;
     this.lastMcuTick = null;
-    this.baseHostTimeMs = null;
-    this.hostToWorkerOffsetMs = null;
+    this.sampleWorkerMs = null;
   }
 
   ticksToMs(ticks) {
@@ -72,46 +71,23 @@ class ClockModel {
 
   isReady() {
     return this.lastRawTick !== null && this.lastMcuTick !== null &&
-      this.baseHostTimeMs !== null && this.hostToWorkerOffsetMs !== null;
+      this.sampleWorkerMs !== null;
   }
 
   updateFromMessage(msg, receiveMs) {
     if (msg && typeof msg.clock_hz === 'number' && Number.isFinite(msg.clock_hz) && msg.clock_hz > 0) {
       this.clockHz = msg.clock_hz;
     }
-    const measurementHostMs = this._computeMeasurementHostMs(msg);
     const clockVal = Number(msg?.mcu_clock);
-    if (typeof measurementHostMs !== 'number' || !Number.isFinite(measurementHostMs) || !Number.isFinite(clockVal)) {
+    if (!Number.isFinite(clockVal)) {
       return;
     }
     const unwrapped = this._updateUnwrapped(clockVal);
     if (!Number.isFinite(unwrapped)) {
       return;
     }
-    this.baseHostTimeMs = measurementHostMs;
     this.lastMcuTick = unwrapped;
-    const offsetCandidate = receiveMs - measurementHostMs;
-    if (Number.isFinite(offsetCandidate)) {
-      if (this.hostToWorkerOffsetMs === null) {
-        this.hostToWorkerOffsetMs = offsetCandidate;
-      } else {
-        this.hostToWorkerOffsetMs = this.hostToWorkerOffsetMs * 0.9 + offsetCandidate * 0.1;
-      }
-    }
-  }
-
-  _computeMeasurementHostMs(msg) {
-    if (!msg) return null;
-    const hostTime = Number(msg.host_time);
-    const req = Number(msg.request_host_time);
-    const rtt = Number(msg.round_trip);
-    if (Number.isFinite(req) && Number.isFinite(rtt)) {
-      return (req + rtt / 2) * 1000.0;
-    }
-    if (Number.isFinite(hostTime)) {
-      return hostTime * 1000.0;
-    }
-    return null;
+    this.sampleWorkerMs = receiveMs;
   }
 
   _updateUnwrapped(rawTick) {
@@ -146,15 +122,11 @@ class ClockModel {
 
   mcuToWorkerMs(rawTick) {
     const mapped = this.mapRawClock(rawTick);
-    if (mapped === null || this.baseHostTimeMs === null || this.hostToWorkerOffsetMs === null) {
+    if (mapped === null || this.sampleWorkerMs === null || this.lastMcuTick === null) {
       return null;
     }
     const deltaTicks = mapped - this.lastMcuTick;
-    const hostMs = this.baseHostTimeMs + (deltaTicks / this.clockHz) * 1000.0;
-    if (!Number.isFinite(hostMs)) {
-      return null;
-    }
-    return hostMs + this.hostToWorkerOffsetMs;
+    return this.sampleWorkerMs + (deltaTicks / this.clockHz) * 1000.0;
   }
 }
 
