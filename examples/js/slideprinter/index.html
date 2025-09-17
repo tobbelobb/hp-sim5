@@ -318,6 +318,8 @@ canvas {
 
     const moveCommanderURI = websocket_out ? `wss://localhost:${port}` : null;
     const base = import.meta.env.BASE_URL || '/';
+    const moveCommanderModuleUrl = new URL('./moveCommander.js', import.meta.url);
+    const klipperCommanderModuleUrl = new URL('./klipperCommander.js', import.meta.url);
 
     if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
         // Create no websocket in this case. The websocket_in && websocket_out case is
@@ -326,8 +328,7 @@ canvas {
         // In this case MoveCommander gets its gcode file from the main page and sends
         // back segmented MoveCommander commands via postMessage.
         if (window.Worker) {
-            const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
-            moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+            moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
             console.log("main: moveCommanderWorker is up");
 
             moveCommanderWorker.onmessage = (e) => {
@@ -382,8 +383,7 @@ canvas {
         // The MoveCommander gets its gcode file from the main page via postMessage,
         // and creates segmented MoveCommander commands that it sends out via the websocket.
         if (window.Worker) {
-            const workerPath = `${base}examples/js/slideprinter/moveCommander.js`;
-            moveCommanderWorker = new Worker(workerPath, { type: 'module' });
+            moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
             if (moveCommanderURI) {
                 moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
             }
@@ -419,8 +419,7 @@ canvas {
             console.warn('Web Workers are not supported in this browser.');
             return null;
         }
-        const workerPath = `${base}examples/js/slideprinter/klipperCommander.js`;
-        klipperCommanderWorker = new Worker(workerPath, { type: 'module' });
+        klipperCommanderWorker = new Worker(klipperCommanderModuleUrl, { type: 'module' });
         console.log('main: klipperCommanderWorker is up');
         klipperCommanderWorker.onmessage = (e) => {
             if (e.data.type === 'done') {

@@ -1,4 +1,6 @@
 // KlipperHandler: Connects to a raw-bytes WebSocket via a worker.
+import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
+
 const DEBUG = false; // Note: most logging is now in the worker.
 
 // options: { dt?: number } where dt is in seconds. If provided and > 0,
@@ -6,8 +8,8 @@ const DEBUG = false; // Note: most logging is now in the worker.
 export function connectKlipperRaw(url, onCommand /* function(command) */, options = {}) {
   // Use a URL object to construct a path relative to this module's location.
   // This is more robust than hardcoding paths, especially with bundlers/vite.
-  const workerPath = new URL('./klipperPacer.js', import.meta.url).href;
-  const worker = new Worker(workerPath, { type: 'module' });
+  const workerUrl = new URL('./klipperPacer.js', import.meta.url);
+  const worker = new Worker(workerUrl, { type: 'module' });
 
   const logMove = Boolean(options.logMove);
   const logMoveFilename = typeof options.logMoveFilename === 'string' && options.logMoveFilename.trim()
@@ -18,8 +20,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   worker.postMessage({ type: 'connect', url, logMove });
 
   // --- High-precision timing scheduler (Atomics.wait-based) ---
-  const timingWorkerPath = new URL('./timingScheduler.js', import.meta.url).href;
-  const timingWorker = new Worker(timingWorkerPath, { type: 'module' });
+  const timingWorker = new Worker(timingSchedulerWorkerUrl, { type: 'module' });
 
   // Shared futex used to preempt sleeps
   const sab = new SharedArrayBuffer(4);
