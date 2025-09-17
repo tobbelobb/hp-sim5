@@ -111,26 +111,17 @@
       <div class="sim-text">
         <span class="eyebrow">Try it in your browser</span>
         <h2>Interactive Slideprinter Simulation</h2>
-        <p>Watch the virtual tool head follow Hangprinter moves. Pick a built-in demo and replay the motion directly in your browser.</p>
+        <p>Watch the virtual tool head follow Hangprinter moves. Run a built-in print or upload your own G-code to explore the cable-driven motion system.</p>
       </div>
 
       <div class="sim-app" aria-live="polite">
         <div id="controls" class="sim-controls">
-          <div class="sim-actions">
-            <button id="playBtn" type="button" class="sim-play">Play</button>
-            <label class="preset-picker" for="presetMcu">
-              <span>Select demo</span>
-              <select id="presetMcu">
-                <option value="hangprinterLogo" selected>Hangprinter Logo</option>
-                <option value="straightMoves">Straight movements</option>
-              </select>
-            </label>
+          <div class="sim-buttons">
+            <button id="printLogoBtn" type="button" class="sim-play">Print Logo</button>
+            <button id="printSquareBtn" type="button">Print Square</button>
+            <button id="uploadBtn" type="button" class="sim-upload">Upload G-code</button>
           </div>
-
-          <div class="sim-stats" aria-live="polite">
-            <span>dt: <span id="dt">N/A</span></span>
-            <span>Speed: <span id="speed">N/A</span></span>
-          </div>
+          <input type="file" id="gcodeFile" accept=".gcode" hidden>
         </div>
 
         <div class="canvas-frame">

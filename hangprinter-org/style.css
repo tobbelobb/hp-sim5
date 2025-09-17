@@ -383,7 +383,7 @@ iframe {
     gap: 18px;
 }
 
-.sim-actions {
+.sim-buttons {
     display: flex;
     flex-wrap: wrap;
     gap: 16px 24px;
@@ -409,6 +409,16 @@ iframe {
     letter-spacing: 0.02em;
 }
 
+.sim-upload {
+    background: #ffb347;
+    color: #1f1f27;
+}
+
+.sim-upload:hover,
+.sim-upload:focus-visible {
+    background: #ffc46a;
+}
+
 .sim-controls button:hover,
 .sim-controls button:focus-visible {
     transform: translateY(-1px);
@@ -418,43 +428,6 @@ iframe {
 .sim-controls button:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.85);
     outline-offset: 2px;
-}
-
-.preset-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.78);
-}
-
-.preset-picker select {
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(22, 22, 22, 0.28);
-    background: #f5f7fa;
-    color: #1f1f27;
-    font-size: 14px;
-    min-width: 220px;
-    appearance: none;
-}
-
-.preset-picker select:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.85);
-    outline-offset: 2px;
-}
-
-.sim-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
-}
-
-.sim-stats span span {
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.85);
 }
 
 .sim-error {
@@ -509,21 +482,13 @@ iframe {
 }
 
 @media screen and (max-width: 720px) {
-    .sim-actions {
+    .sim-buttons {
         justify-content: center;
     }
 
     .sim-controls button {
         flex: 1 1 45%;
         text-align: center;
-    }
-
-    .preset-picker {
-        width: 100%;
-    }
-
-    .preset-picker select {
-        width: 100%;
     }
 
     .sim-app {
