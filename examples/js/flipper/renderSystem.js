@@ -173,7 +173,7 @@ export class RenderSystem {
 
 
     // Base line width and debug radius (adjust as needed)
-    const baseLineWidth = 2.5;
+    const baseLineWidth = 2.0;
     const baseDebugRadius = 3;
 
     // Render Border
@@ -408,7 +408,7 @@ export class RenderSystem {
     const distanceConstraintEntities = world.query([DistanceConstraintComponent]);
     if (distanceConstraintEntities.length > 0) {
         this.c.save();
-        this.c.lineWidth = 4;
+        this.c.lineWidth = 3 * this.viewScaleMultiplier;
 
         for (const entityId of distanceConstraintEntities) {
             const renderComp = world.getComponent(entityId, RenderableComponent);
@@ -587,7 +587,7 @@ export class RenderSystem {
               }
               // Note: Middle hybrid links are not typically expected.
 
-              const markerRadius = 4 * this.viewScaleMultiplier;
+              const markerRadius = 1.5 * this.viewScaleMultiplier;
 
               if (path.linkTypes[i] === 'hybrid-attachment') {
                 // Draw RED dot at the fixed attachment point
