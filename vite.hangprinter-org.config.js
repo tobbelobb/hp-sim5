@@ -46,7 +46,7 @@ export default defineConfig(async () => {
     // Important bits for a standalone site at a custom domain:
     root,
     base: '/',                   // no '/hp-sim5/' — serve from the domain root
-    publicDir: false,            // (optional) no global public dir for this sub-build
+    publicDir: resolve(__dirname, 'public'), // reuse shared static assets (usd scenes etc.)
     build: {
       outDir: resolve(__dirname, 'dist-hangprinter-org'), // separate output
       emptyOutDir: true,
