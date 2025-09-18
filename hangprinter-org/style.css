@@ -394,7 +394,7 @@ iframe {
 .sim-secondary-group button {
     border: none;
     border-radius: 999px;
-    padding: 10px 20px;
+    padding: 7px 14px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -429,17 +429,27 @@ iframe {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    align-items: flex-end;
+    align-items: stretch;
     pointer-events: none;
 }
 
 .sim-secondary-group button {
     pointer-events: auto;
+    background: rgba(50,50,50,0.7);
+}
+
+.sim-secondary-group button::after {
+    content: "Resume";
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    display: block;
 }
 
 .sim-zoom {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
 }
 
