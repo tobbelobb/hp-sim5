@@ -243,7 +243,7 @@ export class RenderSystem {
       if (path.jointEntities.length < 1) continue;
       const jointEntities = path.jointEntities;
       // Scale line width by zoom using instance property
-      this.c.lineWidth = baseLineWidth * this.viewScaleMultiplier;
+      this.c.lineWidth = baseLineWidth * this.effectiveCScale/250;
       for (const entityId of jointEntities) {
         const jointComp = world.getComponent(entityId, CableJointComponent);
         const renderComp = world.getComponent(entityId, RenderableComponent);
@@ -408,7 +408,7 @@ export class RenderSystem {
     const distanceConstraintEntities = world.query([DistanceConstraintComponent]);
     if (distanceConstraintEntities.length > 0) {
         this.c.save();
-        this.c.lineWidth = 3 * this.viewScaleMultiplier;
+        this.c.lineWidth = 3 * this.effectiveCScale/250;
 
         for (const entityId of distanceConstraintEntities) {
             const renderComp = world.getComponent(entityId, RenderableComponent);
@@ -500,7 +500,7 @@ export class RenderSystem {
                 // Draw a line indicating orientation (e.g., from center to top edge)
                 if (orientationComp) { // Only draw if it can rotate
                     this.c.strokeStyle = '#000000'; // Black line
-                    this.c.lineWidth = 1 * this.viewScaleMultiplier;
+                    this.c.lineWidth = 1 * this.effectiveCScale/250;
                     this.c.beginPath();
                     this.c.moveTo(0, 0); // Center
                     this.c.lineTo(0, -cr); // To top edge in local rotated coords
@@ -587,7 +587,7 @@ export class RenderSystem {
               }
               // Note: Middle hybrid links are not typically expected.
 
-              const markerRadius = 1.5 * this.viewScaleMultiplier;
+              const markerRadius = 1.5 * this.effectiveCScale/250;
 
               if (path.linkTypes[i] === 'hybrid-attachment') {
                 // Draw RED dot at the fixed attachment point
