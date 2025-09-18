@@ -191,6 +191,12 @@ export class RemoteInputSystem {
          this.scaleMultiplier = 1.0;
          this.viewOffsetX = 0.0;
          this.viewOffsetY = 0.0;
+         this.interactionMode = 'select';
+         this.isPanning = false;
+         this.panPointerId = null;
+         this.panLastX = 0;
+         this.panLastY = 0;
+         this.onViewChange = null;
 
          this.handlePointerDown = this.handlePointerDown.bind(this);
          this.handlePointerMove = this.handlePointerMove.bind(this);
@@ -199,6 +205,30 @@ export class RemoteInputSystem {
          document.addEventListener('pointerdown', this.handlePointerDown);
          document.addEventListener('pointermove', this.handlePointerMove);
          document.addEventListener('pointerup', this.handlePointerUp);
+     }
+
+     setInteractionMode(mode) {
+         this.interactionMode = mode === 'pan' ? 'pan' : 'select';
+         if (this.interactionMode !== 'pan') {
+             this.isPanning = false;
+             this.panPointerId = null;
+         }
+     }
+
+     setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
+         if (typeof scaleMultiplier === 'number') {
+             this.scaleMultiplier = scaleMultiplier;
+         }
+         if (typeof offsetX === 'number') {
+             this.viewOffsetX = offsetX;
+         }
+         if (typeof offsetY === 'number') {
+             this.viewOffsetY = offsetY;
+         }
+     }
+
+     setViewChangeListener(listener) {
+         this.onViewChange = typeof listener === 'function' ? listener : null;
      }
 
      toSimCoords(canvasX, canvasY) {
@@ -214,6 +244,26 @@ export class RemoteInputSystem {
 
      handlePointerDown(event) {
          event.preventDefault();
+         const onCanvas = event.target === this.canvas;
+         if (onCanvas && this.interactionMode === 'pan') {
+             this.isPanning = true;
+             this.panPointerId = event.pointerId;
+             this.panLastX = event.clientX;
+             this.panLastY = event.clientY;
+             if (typeof this.canvas.setPointerCapture === 'function') {
+                 try {
+                     this.canvas.setPointerCapture(event.pointerId);
+                 } catch (err) {
+                     // ignore capture errors
+                 }
+             }
+             return;
+         }
+
+         if (!onCanvas) {
+             return;
+         }
+
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
 
@@ -239,11 +289,48 @@ export class RemoteInputSystem {
                  }
              }
 
-             this.ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x, y }));
-         }
-     }
+            this.ws.send(JSON.stringify({ action: 'input', type: 'pointerdown', x, y }));
+        }
+        if (typeof this.canvas.setPointerCapture === 'function') {
+            try {
+                this.canvas.setPointerCapture(event.pointerId);
+            } catch (err) {
+                // ignore capture errors
+            }
+        }
+    }
 
      handlePointerMove(event) {
+         if (this.interactionMode === 'pan') {
+             if (!this.isPanning || this.panPointerId !== event.pointerId) {
+                 return;
+             }
+             event.preventDefault();
+             const baseScale = this.canvas.height / this.world.getResource('simHeight');
+             const scale = baseScale * this.scaleMultiplier;
+             if (scale <= 0) {
+                 return;
+             }
+             const deltaX = event.clientX - this.panLastX;
+             const deltaY = event.clientY - this.panLastY;
+             this.panLastX = event.clientX;
+             this.panLastY = event.clientY;
+             this.viewOffsetX -= deltaX / scale;
+             this.viewOffsetY += deltaY / scale;
+             if (this.onViewChange) {
+                 this.onViewChange({
+                     scale: this.scaleMultiplier,
+                     offsetX: this.viewOffsetX,
+                     offsetY: this.viewOffsetY,
+                 });
+             }
+             return;
+         }
+
+         if (event.target !== this.canvas) {
+             return;
+         }
+
          event.preventDefault();
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
@@ -253,9 +340,35 @@ export class RemoteInputSystem {
 
      handlePointerUp(event) {
          event.preventDefault();
+         if (this.interactionMode === 'pan') {
+             if (this.isPanning && this.panPointerId === event.pointerId) {
+                 this.isPanning = false;
+                 this.panPointerId = null;
+                 if (typeof this.canvas.releasePointerCapture === 'function') {
+                     try {
+                         this.canvas.releasePointerCapture(event.pointerId);
+                     } catch (err) {
+                         // ignore release errors
+                     }
+                 }
+             }
+             return;
+         }
+
+         if (event.target !== this.canvas) {
+             return;
+         }
+
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
              this.ws.send(JSON.stringify({ action: 'input', type: 'pointerup', x, y }));
+         }
+         if (typeof this.canvas.releasePointerCapture === 'function') {
+             try {
+                 this.canvas.releasePointerCapture(event.pointerId);
+             } catch (err) {
+                 // ignore release errors
+             }
          }
      }
 
@@ -280,6 +393,12 @@ export class InputSystem {
          this.scaleMultiplier = 1.0;
          this.viewOffsetX = 0.0;
          this.viewOffsetY = 0.0;
+         this.interactionMode = 'select';
+         this.isPanning = false;
+         this.panPointerId = null;
+         this.panLastX = 0;
+         this.panLastY = 0;
+         this.onViewChange = null;
          this.canvas.setAttribute('tabindex', '0');
          this.canvas.style.outline = 'none';
          this.canvas.focus();
@@ -288,11 +407,37 @@ export class InputSystem {
          this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
      }
 
+     setInteractionMode(mode) {
+         this.interactionMode = mode === 'pan' ? 'pan' : 'select';
+         if (this.interactionMode !== 'pan' && this.isPanning) {
+             this.isPanning = false;
+             this.panPointerId = null;
+         }
+     }
+
+     setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
+         if (typeof scaleMultiplier === 'number') {
+             this.scaleMultiplier = scaleMultiplier;
+         }
+         if (typeof offsetX === 'number') {
+             this.viewOffsetX = offsetX;
+         }
+         if (typeof offsetY === 'number') {
+             this.viewOffsetY = offsetY;
+         }
+     }
+
+     setViewChangeListener(listener) {
+         this.onViewChange = typeof listener === 'function' ? listener : null;
+     }
+
      reset() {
         this.clicks = [];
         this.releases = [];
         this.eventLog = [];
         this.frame = 0;
+        this.isPanning = false;
+        this.panPointerId = null;
         if (this.grabSpring) {
             const { ptrE, jointE, pathE } = this.grabSpring;
             this.world.destroyEntity(pathE);
@@ -305,6 +450,20 @@ export class InputSystem {
      handlePointerDown(event) {
          if (event.target !== this.canvas) return;
          event.preventDefault();
+         if (this.interactionMode === 'pan') {
+             this.isPanning = true;
+             this.panPointerId = event.pointerId;
+             this.panLastX = event.clientX;
+             this.panLastY = event.clientY;
+             if (typeof this.canvas.setPointerCapture === 'function') {
+                 try {
+                     this.canvas.setPointerCapture(event.pointerId);
+                 } catch (err) {
+                     // Ignore browsers that disallow capture here.
+                 }
+             }
+             return;
+         }
          const rect = this.canvas.getBoundingClientRect();
          const baseScale = this.canvas.height / this.world.getResource('simHeight');
          const scale = baseScale * this.scaleMultiplier;
@@ -373,6 +532,20 @@ export class InputSystem {
      handlePointerUp(event) {
          if (event.target !== this.canvas) return;
          event.preventDefault();
+         if (this.interactionMode === 'pan') {
+             if (this.isPanning && this.panPointerId === event.pointerId) {
+                 this.isPanning = false;
+                 this.panPointerId = null;
+                 if (typeof this.canvas.releasePointerCapture === 'function') {
+                     try {
+                         this.canvas.releasePointerCapture(event.pointerId);
+                     } catch (err) {
+                         // Ignore errors when capture was not set.
+                     }
+                 }
+             }
+             return;
+         }
          this.canvas.releasePointerCapture(event.pointerId);
 
          if (this.grabSpring) {
@@ -402,19 +575,49 @@ export class InputSystem {
      }
 
      handlePointerMove(event) {
-       event.preventDefault();
-       if (this.grabSpring === null) return;
+      if (event.target !== this.canvas) {
+          return;
+      }
 
-       const rect = this.canvas.getBoundingClientRect();
-       const baseScale = this.canvas.height / this.world.getResource('simHeight');
-       const scale = baseScale * this.scaleMultiplier;
-       const pixelX = event.clientX - rect.left;
-       const pixelY = event.clientY - rect.top;
-       const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
-       const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+      if (this.interactionMode === 'pan') {
+          if (!this.isPanning || this.panPointerId !== event.pointerId) {
+              return;
+          }
+          event.preventDefault();
+          const baseScale = this.canvas.height / this.world.getResource('simHeight');
+          const scale = baseScale * this.scaleMultiplier;
+          if (scale <= 0) {
+              return;
+          }
+          const deltaX = event.clientX - this.panLastX;
+          const deltaY = event.clientY - this.panLastY;
+          this.panLastX = event.clientX;
+          this.panLastY = event.clientY;
+          this.viewOffsetX -= deltaX / scale;
+          this.viewOffsetY += deltaY / scale;
+          if (this.onViewChange) {
+              this.onViewChange({
+                  scale: this.scaleMultiplier,
+                  offsetX: this.viewOffsetX,
+                  offsetY: this.viewOffsetY,
+              });
+          }
+          return;
+      }
 
-       const { ptrE } = this.grabSpring;
-       const pos = this.world.getComponent(ptrE, PositionComponent).pos;
-       pos.set(new Vector2(simX, simY));
+      event.preventDefault();
+      if (this.grabSpring === null) return;
+
+      const rect = this.canvas.getBoundingClientRect();
+      const baseScale = this.canvas.height / this.world.getResource('simHeight');
+      const scale = baseScale * this.scaleMultiplier;
+      const pixelX = event.clientX - rect.left;
+      const pixelY = event.clientY - rect.top;
+      const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+      const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+
+      const { ptrE } = this.grabSpring;
+      const pos = this.world.getComponent(ptrE, PositionComponent).pos;
+      pos.set(new Vector2(simX, simY));
      }
 }

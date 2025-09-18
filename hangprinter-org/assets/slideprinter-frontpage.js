@@ -10,7 +10,11 @@ const MCU_PRESETS = {
 };
 
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
-const VIEW_SCALE = 1.25;
+const DEFAULT_VIEW_SCALE = 1.25;
+const MIN_VIEW_SCALE = 0.6;
+const MAX_VIEW_SCALE = 2.5;
+const ZOOM_FACTOR = 1.2;
+const ZOOM_EPSILON = 1e-3;
 
 function initFrontpageSlideprinter() {
   const canvas = document.getElementById('myCanvas');
@@ -23,6 +27,11 @@ function initFrontpageSlideprinter() {
   const printSquareBtn = document.getElementById('printSquareBtn');
   const uploadBtn = document.getElementById('uploadBtn');
   const gcodeInput = document.getElementById('gcodeFile');
+  const resetBtn = document.getElementById('resetBtn');
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const panModeBtn = document.getElementById('panModeBtn');
+  const secondaryControls = document.getElementById('simSecondaryControls');
 
   const world = new World();
   let klipperCommanderWorker = null;
@@ -31,6 +40,11 @@ function initFrontpageSlideprinter() {
   let stageReady = false;
   let currentPresetKey = DEFAULT_PRESET_KEY;
   let gameControls = null;
+  let currentViewScale = DEFAULT_VIEW_SCALE;
+  let currentViewOffsetX = 0;
+  let currentViewOffsetY = 0;
+  let panModeActive = false;
+  let viewListenerSystem = null;
 
   const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
@@ -40,16 +54,187 @@ function initFrontpageSlideprinter() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
   }
 
-  function applyViewZoom() {
-    const inputSystem = world.systems.find((sys) => sys instanceof InputSystem);
-    if (inputSystem) {
-      inputSystem.scaleMultiplier = VIEW_SCALE;
-    }
+  function getInputSystem() {
+    return world.systems.find((sys) => sys instanceof InputSystem) || null;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function syncRenderSystem(viewState, { clearExtrusions = false } = {}) {
     const renderSystem = world.getResource('renderSystem');
-    if (renderSystem) {
-      renderSystem.viewScaleMultiplier = VIEW_SCALE;
-      renderSystem.effectiveCScale = renderSystem.baseCScale * renderSystem.viewScaleMultiplier;
+    if (!renderSystem || typeof renderSystem.setViewTransform !== 'function') {
+      return;
     }
+    renderSystem.setViewTransform(viewState);
+    if (clearExtrusions && typeof renderSystem.clearExtrusions === 'function') {
+      renderSystem.clearExtrusions();
+    }
+  }
+
+  function updateZoomButtonState() {
+    if (zoomInBtn) {
+      const atMax = currentViewScale >= MAX_VIEW_SCALE - ZOOM_EPSILON;
+      zoomInBtn.disabled = atMax;
+      zoomInBtn.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+    }
+    if (zoomOutBtn) {
+      const atMin = currentViewScale <= MIN_VIEW_SCALE + ZOOM_EPSILON;
+      zoomOutBtn.disabled = atMin;
+      zoomOutBtn.setAttribute('aria-disabled', atMin ? 'true' : 'false');
+    }
+  }
+
+  function applyViewStateFromController(partial = {}, options = {}) {
+    if (typeof partial.scale === 'number') {
+      currentViewScale = clamp(partial.scale, MIN_VIEW_SCALE, MAX_VIEW_SCALE);
+    }
+    if (typeof partial.offsetX === 'number') {
+      currentViewOffsetX = partial.offsetX;
+    }
+    if (typeof partial.offsetY === 'number') {
+      currentViewOffsetY = partial.offsetY;
+    }
+
+    const inputSystem = getInputSystem();
+    if (inputSystem && typeof inputSystem.setViewTransform === 'function') {
+      inputSystem.setViewTransform({
+        scaleMultiplier: currentViewScale,
+        offsetX: currentViewOffsetX,
+        offsetY: currentViewOffsetY,
+      });
+    }
+
+    syncRenderSystem(
+      {
+        scaleMultiplier: currentViewScale,
+        offsetX: currentViewOffsetX,
+        offsetY: currentViewOffsetY,
+      },
+      options
+    );
+
+    updateZoomButtonState();
+  }
+
+  function handleInputViewChange(viewState = {}) {
+    if (typeof viewState.scale === 'number') {
+      currentViewScale = clamp(viewState.scale, MIN_VIEW_SCALE, MAX_VIEW_SCALE);
+    }
+    if (typeof viewState.offsetX === 'number') {
+      currentViewOffsetX = viewState.offsetX;
+    }
+    if (typeof viewState.offsetY === 'number') {
+      currentViewOffsetY = viewState.offsetY;
+    }
+
+    syncRenderSystem(
+      {
+        scaleMultiplier: currentViewScale,
+        offsetX: currentViewOffsetX,
+        offsetY: currentViewOffsetY,
+      },
+      { clearExtrusions: true }
+    );
+
+    updateZoomButtonState();
+  }
+
+  function attachInputViewListener() {
+    const inputSystem = getInputSystem();
+    if (!inputSystem || typeof inputSystem.setViewChangeListener !== 'function') {
+      return;
+    }
+    if (viewListenerSystem && viewListenerSystem !== inputSystem && typeof viewListenerSystem.setViewChangeListener === 'function') {
+      viewListenerSystem.setViewChangeListener(null);
+    }
+    if (viewListenerSystem !== inputSystem) {
+      inputSystem.setViewChangeListener(handleInputViewChange);
+      viewListenerSystem = inputSystem;
+    }
+  }
+
+  function reapplyViewState(options = {}) {
+    attachInputViewListener();
+    applyViewStateFromController(
+      {
+        scale: currentViewScale,
+        offsetX: currentViewOffsetX,
+        offsetY: currentViewOffsetY,
+      },
+      options
+    );
+    const inputSystem = getInputSystem();
+    if (inputSystem && typeof inputSystem.setInteractionMode === 'function') {
+      inputSystem.setInteractionMode(panModeActive ? 'pan' : 'select');
+    }
+  }
+
+  function resetViewStateDefaults() {
+    currentViewScale = DEFAULT_VIEW_SCALE;
+    currentViewOffsetX = 0;
+    currentViewOffsetY = 0;
+  }
+
+  function showSecondaryControls() {
+    if (secondaryControls && secondaryControls.classList.contains('sim-hidden')) {
+      secondaryControls.classList.remove('sim-hidden');
+    }
+  }
+
+  function setPanMode(active) {
+    panModeActive = Boolean(active);
+    if (panModeBtn) {
+      panModeBtn.setAttribute('aria-pressed', panModeActive ? 'true' : 'false');
+      panModeBtn.classList.toggle('is-active', panModeActive);
+    }
+    const inputSystem = getInputSystem();
+    if (inputSystem && typeof inputSystem.setInteractionMode === 'function') {
+      inputSystem.setInteractionMode(panModeActive ? 'pan' : 'select');
+    }
+  }
+
+  function adjustZoom(multiplier) {
+    const targetScale = clamp(currentViewScale * multiplier, MIN_VIEW_SCALE, MAX_VIEW_SCALE);
+    if (Math.abs(targetScale - currentViewScale) < ZOOM_EPSILON) {
+      return;
+    }
+    applyViewStateFromController({ scale: targetScale }, { clearExtrusions: true });
+  }
+
+  function stopAndClearWorkers() {
+    stopInactiveWorkers(null);
+    resetRemoteQueue(null);
+    if (moveCommanderWorker) {
+      try {
+        moveCommanderWorker.terminate();
+      } catch (err) {
+        console.warn('Slideprinter demo: unable to terminate move worker cleanly.', err);
+      }
+      moveCommanderWorker = null;
+    }
+    if (klipperCommanderWorker) {
+      try {
+        klipperCommanderWorker.terminate();
+      } catch (err) {
+        console.warn('Slideprinter demo: unable to terminate klipper worker cleanly.', err);
+      }
+      klipperCommanderWorker = null;
+    }
+  }
+
+  function handleUserReset() {
+    if (!gameControls || typeof gameControls.reset !== 'function') {
+      return;
+    }
+    stopAndClearWorkers();
+    gameControls.reset({ autoPause: true });
+    resetViewStateDefaults();
+    setPanMode(false);
+    reapplyViewState({ clearExtrusions: true });
+    currentPresetKey = DEFAULT_PRESET_KEY;
+    showSecondaryControls();
   }
 
   function ensureKlipperWorker() {
@@ -140,8 +325,9 @@ function initFrontpageSlideprinter() {
     resetRemoteQueue(worker);
     if (gameControls && typeof gameControls.reset === 'function') {
       gameControls.reset({ autoPause: false });
+      reapplyViewState({ clearExtrusions: true });
     }
-    applyViewZoom();
+    showSecondaryControls();
     return true;
   }
 
@@ -198,6 +384,41 @@ function initFrontpageSlideprinter() {
     });
   }
 
+  if (resetBtn) {
+    resetBtn.addEventListener(
+      'click',
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        handleUserReset();
+      },
+      { capture: true }
+    );
+  }
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      adjustZoom(ZOOM_FACTOR);
+    });
+  }
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      adjustZoom(1 / ZOOM_FACTOR);
+    });
+  }
+
+  if (panModeBtn) {
+    panModeBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      setPanMode(!panModeActive);
+    });
+  }
+
+  updateZoomButtonState();
+
   UsdOpen(usdaUrl.href)
     .then((stage) => {
       if (!stage) {
@@ -222,7 +443,9 @@ function initFrontpageSlideprinter() {
       if (gameControls && typeof gameControls.reset === 'function') {
         gameControls.reset({ autoPause: true });
       }
-      applyViewZoom();
+      resetViewStateDefaults();
+      reapplyViewState({ clearExtrusions: true });
+      setPanMode(false);
       stageReady = true;
     })
     .catch((error) => {

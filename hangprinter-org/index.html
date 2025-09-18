@@ -111,19 +111,21 @@
             <button id="printLogoBtn" type="button" class="sim-play">Print Logo</button>
             <button id="printSquareBtn" type="button">Print Square</button>
             <button id="uploadBtn" type="button" class="sim-upload">Upload G-code</button>
-            <button id="pauseBtn" type="button" class="sim-secondary sim-hidden">Pause</button>
-            <button id="resetBtn" type="button" class="sim-secondary sim-hidden">Reset</button>
-            <div id="viewTools" class="sim-zoom sim-hidden" role="group" aria-label="View controls">
-              <button id="zoomInBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom in">+</button>
-              <button id="zoomOutBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom out">−</button>
-              <button id="panModeBtn" type="button" class="sim-secondary sim-zoom-btn" aria-pressed="false">Pan</button>
-            </div>
           </div>
           <input type="file" id="gcodeFile" accept=".gcode" hidden>
         </div>
 
         <div class="canvas-frame">
           <canvas id="myCanvas" role="img" aria-label="Hangprinter Slideprinter simulation"></canvas>
+          <div id="simSecondaryControls" class="sim-secondary-group sim-hidden" aria-label="Simulation controls">
+            <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
+            <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
+            <div id="viewTools" class="sim-zoom" role="group" aria-label="View controls">
+              <button id="zoomInBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom in">+</button>
+              <button id="zoomOutBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom out">−</button>
+              <button id="panModeBtn" type="button" class="sim-secondary sim-zoom-btn" aria-pressed="false">Pan</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -130,6 +130,25 @@ export class RenderSystem {
   }
 
 
+  setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
+    if (typeof scaleMultiplier === 'number' && isFinite(scaleMultiplier) && scaleMultiplier > 0) {
+      this.viewScaleMultiplier = scaleMultiplier;
+      this.effectiveCScale = this.baseCScale * this.viewScaleMultiplier;
+    }
+    if (typeof offsetX === 'number' && isFinite(offsetX)) {
+      this.viewOffsetX_sim = offsetX;
+    }
+    if (typeof offsetY === 'number' && isFinite(offsetY)) {
+      this.viewOffsetY_sim = offsetY;
+    }
+  }
+
+  clearExtrusions() {
+    this.extrusionCtx.clearRect(0, 0, this.extrusionCanvas.width, this.extrusionCanvas.height);
+    this.drawnExtrusionCount = 0;
+  }
+
+
   update(world, dt) {
     // Viewport settings are now instance properties (this.viewScaleMultiplier, etc.)
     // effectiveCScale is also an instance property (this.effectiveCScale)
