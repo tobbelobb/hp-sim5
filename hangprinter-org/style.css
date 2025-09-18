@@ -390,6 +390,13 @@ iframe {
     align-items: center;
 }
 
+.sim-start-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    align-items: center;
+}
+
 .sim-controls button,
 .sim-secondary-group button {
     border: none;
@@ -457,6 +464,35 @@ iframe {
     padding: 10px 14px;
     min-width: 42px;
     text-align: center;
+}
+
+.sim-fullscreen {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.18);
+    color: rgba(15, 15, 20, 0.88);
+}
+
+.sim-fullscreen:hover,
+.sim-fullscreen:focus-visible {
+    background: rgba(255, 255, 255, 0.28);
+    color: rgba(15, 15, 20, 0.9);
+}
+
+.sim-buttons.is-printing .sim-start {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.sim-buttons.is-printing .sim-start:hover,
+.sim-buttons.is-printing .sim-start:focus-visible {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.sim-buttons.is-printing .sim-start {
+    pointer-events: auto;
 }
 
 .sim-zoom-btn[aria-pressed="true"],
@@ -536,6 +572,34 @@ iframe {
     width: 100%;
     height: 100%;
     display: block;
+}
+
+.sim-app:fullscreen,
+.sim-app:-webkit-full-screen,
+.sim-app.is-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    border-radius: 0;
+    padding: clamp(12px, 4vw, 32px);
+    box-shadow: none;
+}
+
+.sim-app:fullscreen .canvas-frame,
+.sim-app:-webkit-full-screen .canvas-frame,
+.sim-app.is-fullscreen .canvas-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    min-height: 0;
+}
+
+.sim-app:fullscreen #myCanvas,
+.sim-app:-webkit-full-screen #myCanvas,
+.sim-app.is-fullscreen #myCanvas {
+    width: 100%;
+    height: 100%;
 }
 
 @media screen and (max-width: 1100px) {

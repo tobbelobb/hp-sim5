@@ -108,9 +108,12 @@
       <div class="sim-app" aria-live="polite">
         <div id="controls" class="sim-controls">
           <div class="sim-buttons">
-            <button id="printLogoBtn" type="button" class="sim-play">Print Logo</button>
-            <button id="printSquareBtn" type="button">Print Square</button>
-            <button id="uploadBtn" type="button" class="sim-upload">Upload G-code</button>
+            <div class="sim-start-buttons">
+              <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
+              <button id="printSquareBtn" type="button" class="sim-start">Print Square</button>
+              <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload G-code</button>
+            </div>
+            <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
           </div>
           <input type="file" id="gcodeFile" accept=".gcode" hidden>
         </div>
