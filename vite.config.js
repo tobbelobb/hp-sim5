@@ -10,6 +10,7 @@ export default defineConfig(async () => {
       'node_modules/**',
       'attic/**',
       'dist/**',
+      'dist-hangprinter-org/**',
       'examples/js/flipper/flipper_with_sliding_beads.html',
       'examples/js/flipper/flipper_with_attached_beads.html'
     ],
