@@ -336,6 +336,11 @@ iframe {
     margin: 0 auto;
 }
 
+/* Allow grid children to shrink within narrow viewports */
+.sim-inner > * {
+    min-width: 0;
+}
+
 .sim-text {
     display: flex;
     flex-direction: column;
@@ -375,12 +380,14 @@ iframe {
     border-radius: 24px;
     padding: clamp(20px, 4vw, 32px);
     box-shadow: 0 40px 120px rgba(0, 0, 0, 0.35);
+    max-width: 100%;
 }
 
 .sim-controls {
     display: flex;
     flex-direction: column;
     gap: 18px;
+    min-width: 0;
 }
 
 .sim-buttons {
