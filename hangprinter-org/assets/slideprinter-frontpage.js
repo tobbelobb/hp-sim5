@@ -34,6 +34,7 @@ function initFrontpageSlideprinter() {
   const secondaryControls = document.getElementById('simSecondaryControls');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const simApp = canvas.closest('.sim-app');
+  const initialTouchAction = canvas ? canvas.style.touchAction || '' : '';
   const simButtons = controlsRoot.querySelector('.sim-buttons');
   const startButtons = simButtons ? Array.from(simButtons.querySelectorAll('.sim-start')) : [];
 
@@ -328,6 +329,9 @@ function initFrontpageSlideprinter() {
     if (panModeBtn) {
       panModeBtn.setAttribute('aria-pressed', panModeActive ? 'true' : 'false');
       panModeBtn.classList.toggle('is-active', panModeActive);
+    }
+    if (canvas) {
+      canvas.style.touchAction = panModeActive ? 'none' : initialTouchAction;
     }
     const inputSystem = getInputSystem();
     if (inputSystem && typeof inputSystem.setInteractionMode === 'function') {

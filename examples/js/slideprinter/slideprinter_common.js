@@ -404,6 +404,7 @@ export class InputSystem {
          this.canvas.focus();
          document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
          document.addEventListener('pointerup', this.handlePointerUp.bind(this));
+         document.addEventListener('pointercancel', this.handlePointerCancel.bind(this));
          this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
      }
 
@@ -568,6 +569,10 @@ export class InputSystem {
            this.grabSpring = null;
            this.world.setResource('grabbedBall', null);
          }
+     }
+
+     handlePointerCancel(event) {
+         this.handlePointerUp(event);
      }
 
      update(world, dt) {
