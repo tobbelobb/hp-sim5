@@ -2,7 +2,7 @@ let burger = document.querySelector(".burger")
 let mobileMenu = document.querySelector("#mobile-menu")
 let blurOverlay = document.querySelector(".blur-overlay")
 
-menuIsClosed = true
+let menuIsClosed = true
 
 burger.addEventListener("click", async () => {
 

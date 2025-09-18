@@ -8,6 +8,7 @@ export default defineConfig(async () => {
     ignore: [
       'node_modules/**',
       'attic/**',
+      'dist/**',
       'examples/js/flipper/flipper_with_sliding_beads.html',
       'examples/js/flipper/flipper_with_attached_beads.html'
     ],
