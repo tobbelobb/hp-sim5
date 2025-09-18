@@ -1,6 +1,7 @@
 // vite.config.js
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import { resolve, join } from 'path';
+import { promises as fs } from 'fs';
 import fg from 'fast-glob';
 
 export default defineConfig(async () => {
@@ -38,6 +39,24 @@ export default defineConfig(async () => {
     },
   });
 
+  const copyHangprinterMediaPlugin = () => ({
+    name: 'copy-hangprinter-media',
+    closeBundle: async () => {
+      const srcRoot = resolve(__dirname, 'hangprinter-org');
+      const distRoot = resolve(__dirname, 'dist/hangprinter-org');
+      const mediaDirs = await fg('**/media', {
+        cwd: srcRoot,
+        onlyDirectories: true,
+      });
+      await Promise.all(mediaDirs.map(async (dir) => {
+        const from = join(srcRoot, dir);
+        const to = join(distRoot, dir);
+        await fs.mkdir(to, { recursive: true });
+        await fs.cp(from, to, { recursive: true });
+      }));
+    },
+  });
+
   return {
     base: '/hp-sim5/',
     build: { rollupOptions: { input: inputs } },
@@ -47,7 +66,7 @@ export default defineConfig(async () => {
     preview: {
       headers: commonHeaders,
     },
-    plugins: [coiHeadersPlugin()],
+    plugins: [coiHeadersPlugin(), copyHangprinterMediaPlugin()],
     assetsInclude: ['**/*.usda', '**/*.usda.txt'],
   };
 });
