@@ -88,22 +88,22 @@ export class StepperMotorSystem {
         for (const e of world.query(query)) {
             const stepper = world.getComponent(e, StepperMotorComponent);
             const orient = world.getComponent(e, OrientationComponent);
-            // const angVel = world.getComponent(e, AngularVelocityComponent);
-            // const inertia = world.getComponent(e, MomentOfInertiaComponent);
+            const angVel = world.getComponent(e, AngularVelocityComponent);
+            const inertia = world.getComponent(e, MomentOfInertiaComponent);
 
-            // // Calculate restoring torque based on angular error
-            // const error = orient.angle - (stepper.commandedAngle - stepper.deltaAngle);
-            // const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
+            // Calculate restoring torque based on angular error
+            const error = orient.angle - (stepper.commandedAngle - stepper.deltaAngle);
+            const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
 
-            // // Add damping to help the motor settle
-            // const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
+            // Add damping to help the motor settle
+            const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
 
-            // const totalTorque = restoringTorque + dampingTorque;
+            const totalTorque = restoringTorque + dampingTorque;
 
-            // // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
-            // const angularAcceleration = totalTorque / inertia.inertia;
-            // angVel.angularVelocity += angularAcceleration * dt;
-            orient.angle = stepper.commandedAngle;
+            // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
+            const angularAcceleration = totalTorque / inertia.inertia;
+            angVel.angularVelocity += angularAcceleration * dt;
+            //orient.angle = stepper.commandedAngle;
         }
     }
 }
