@@ -140,6 +140,7 @@ queue_step oid=3 interval=133792 count=4 add=8827
 queue_step oid=2 interval=48249 count=10 add=1137
 queue_step oid=1 interval=19358 count=23 add=177
 queue_step oid=0 interval=24458 count=18 add=275
+queue_digital_out oid=13 clock=86502051 on_ticks=1
 set_next_step_dir oid=4 dir=1
 queue_step oid=4 interval=86727358 count=1 add=0
 queue_step oid=1 interval=23663 count=17 add=348
@@ -174,7 +175,6 @@ queue_step oid=1 interval=598880 count=1 add=0
 set_next_step_dir oid=0 dir=0
 queue_step oid=0 interval=181267 count=2 add=31993
 queue_step oid=2 interval=543140 count=1 add=0
-queue_digital_out oid=13 clock=86502051 on_ticks=1
 queue_step oid=4 interval=191985 count=1 add=0
 queue_step oid=0 interval=122512 count=2 add=-25047
 queue_step oid=1 interval=209056 count=1 add=0
@@ -2284,3 +2284,27 @@ queue_step oid=1 interval=15532 count=36 add=97
 queue_step oid=0 interval=25629 count=19 add=325
 queue_step oid=2 interval=71734 count=7 add=2630
 queue_step oid=1 interval=19277 count=23 add=178
+queue_step oid=0 interval=32265 count=12 add=634
+queue_step oid=1 interval=23583 count=17 add=351
+queue_step oid=2 interval=92881 count=4 add=4872
+queue_step oid=0 interval=40246 count=9 add=1322
+queue_step oid=1 interval=29834 count=12 add=736
+queue_step oid=2 interval=116185 count=3 add=10523
+queue_step oid=0 interval=53800 count=5 add=2821
+queue_step oid=2 interval=153677 count=2 add=25309
+queue_step oid=1 interval=39858 count=6 add=1583
+queue_step oid=1 interval=49849 count=5 add=3528
+queue_step oid=0 interval=70033 count=3 add=6897
+queue_step oid=2 interval=219305 count=1 add=0
+queue_step oid=0 interval=92547 count=2 add=16169
+queue_step oid=2 interval=318623 count=1 add=0
+queue_step oid=1 interval=71771 count=2 add=8871
+queue_step oid=1 interval=91576 count=2 add=22829
+queue_step oid=0 interval=132793 count=1 add=0
+queue_step oid=0 interval=192875 count=1 add=0
+queue_step oid=1 interval=165032 count=1 add=0
+queue_digital_out oid=7 clock=1264798106 on_ticks=0
+queue_digital_out oid=8 clock=1264798106 on_ticks=0
+queue_digital_out oid=9 clock=1264798106 on_ticks=0
+queue_digital_out oid=10 clock=1264798106 on_ticks=0
+queue_digital_out oid=13 clock=1264798106 on_ticks=0
