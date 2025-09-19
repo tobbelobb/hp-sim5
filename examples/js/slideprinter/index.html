@@ -124,13 +124,13 @@ canvas {
   font-size: 0.85rem;
 }
     </style>
-  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-BgOz6-K1.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-DqlRZH9S.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-C1JNBvr3.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-BtjHtLxs.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/runner-ZphnrfEk.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-CcW5AYGp.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Jd5j8L9z.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-cBTL8oaL.js">
@@ -142,8 +142,8 @@ canvas {
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button>
-            <input type="file" id="gcodeFile" accept=".gcode" style="display: none;" />
-            <button id="loadGcodeBtn" tabindex="-1">Load G-code</button>
+            <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial" style="display: none;" />
+            <button id="loadGcodeBtn" tabindex="-1">Upload File</button>
             <select id="presetGcode" style="margin-left: 6px;">
                 <option value="">Built-in G-code</option>
                 <option value="draw_squares.gcode">draw_squares.gcode</option>
@@ -159,6 +159,11 @@ canvas {
                 <option value="Hangprinter_logo2.txt">Hangprinter_logo2.txt</option>
                 <option value="Hangprinter_logo6.txt">Hangprinter_logo6.txt</option>
                 <option value="draw_squares.txt">draw_squares.txt</option>
+            </select>
+            <select id="presetSerialMcuCommands" style="margin-left: 6px;">
+                <option value="">Serial MCU commands</option>
+                <option value="Hangprinter_logo6.serial">Hangprinter_logo6.serial</option>
+                <option value="draw_squares.serial">draw_squares.serial</option>
             </select>
             <span style="margin-left: 1em;">
                 <label for="websocketIn">websocket in</label>

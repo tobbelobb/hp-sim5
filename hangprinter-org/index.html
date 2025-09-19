@@ -25,18 +25,18 @@
   <meta name="msapplication-TileColor" content="#00aba9">
   <meta name="theme-color" content="#ffffff">
   <title>Hangprinter</title>
-  <script type="module" crossorigin src="/hp-sim5/assets/hangprinter-org/index.html-CO1OR5la.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/hangprinter-org/index.html-mTxtj4L2.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-C1JNBvr3.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-BtjHtLxs.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/runner-ZphnrfEk.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-CcW5AYGp.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Jd5j8L9z.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-cBTL8oaL.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/script-RKMEleFc.js">
-  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-qDbFuc-M.css">
+  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/style-qDbFuc-M.css">
 </head>
 
 <body>
@@ -122,11 +122,11 @@
             <div class="sim-start-buttons">
               <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
               <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
-              <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload G-code</button>
+              <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
             </div>
             <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
           </div>
-          <input type="file" id="gcodeFile" accept=".gcode" hidden>
+          <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial" hidden>
         </div>
 
         <div class="canvas-frame">
