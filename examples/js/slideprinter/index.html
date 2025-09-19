@@ -132,8 +132,8 @@ canvas {
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button>
-            <input type="file" id="gcodeFile" accept=".gcode" style="display: none;" />
-            <button id="loadGcodeBtn" tabindex="-1">Load G-code</button>
+            <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial" style="display: none;" />
+            <button id="loadGcodeBtn" tabindex="-1">Upload File</button>
             <select id="presetGcode" style="margin-left: 6px;">
                 <option value="">Built-in G-code</option>
                 <option value="draw_squares.gcode">draw_squares.gcode</option>
@@ -149,6 +149,11 @@ canvas {
                 <option value="Hangprinter_logo2.txt">Hangprinter_logo2.txt</option>
                 <option value="Hangprinter_logo6.txt">Hangprinter_logo6.txt</option>
                 <option value="draw_squares.txt">draw_squares.txt</option>
+            </select>
+            <select id="presetSerialMcuCommands" style="margin-left: 6px;">
+                <option value="">Serial MCU commands</option>
+                <option value="Hangprinter_logo6.serial">Hangprinter_logo6.serial</option>
+                <option value="draw_squares.serial">draw_squares.serial</option>
             </select>
             <span style="margin-left: 1em;">
                 <label for="websocketIn">websocket in</label>
@@ -187,6 +192,7 @@ canvas {
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
     import { connectKlipperRaw } from './klipperHandler.js';
+    import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
 
     const searchParams = new URLSearchParams(window.location.search);
     const logMoveParamKeys = ['--log-move', 'log-move', 'logMove'];
@@ -263,6 +269,9 @@ canvas {
                 dt: simDtSec,
                 logMove: logMoveEnabled,
                 logMoveFilename: logMoveFilename || undefined,
+                onWorkerError: (msg) => {
+                    console.error('Klipper raw worker error:', msg);
+                },
             });
             if (logMoveEnabled && typeof window !== 'undefined') {
                 window.downloadKlipperMoveLog = () => {
@@ -313,6 +322,7 @@ canvas {
     const gcodeFileInput = document.getElementById('gcodeFile');
     const presetGcodeSelect = document.getElementById('presetGcode');
     const presetMcuSelect = document.getElementById('presetMcuCommands');
+    const presetSerialMcuSelect = document.getElementById('presetSerialMcuCommands');
 
     loadGcodeBtn.addEventListener('click', () => gcodeFileInput.click());
 
@@ -352,7 +362,7 @@ canvas {
                   return;
                 }
                 console.log("main: sending filename_upload:", filename);
-                moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
+                handleUploadedFile(filename);
             });
             presetGcodeSelect.addEventListener('change', async () => {
                 const filename = `${base}examples/gcode/${presetGcodeSelect.value}`
@@ -360,7 +370,7 @@ canvas {
                   return;
                 }
                 console.log("main: sending filename_fetch:", filename);
-                moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
+                handlePresetFilename(filename);
             });
         }
     } else if (websocket_in) {
@@ -399,14 +409,14 @@ canvas {
                 if (filename == null) {
                   return;
                 }
-                moveCommanderWorker.postMessage({ type: 'filename_upload', filename });
+                handleUploadedFile(filename);
             });
             presetGcodeSelect.addEventListener('change', async () => {
                 const filename = `${base}examples/gcode/${presetGcodeSelect.value}`
                 if (filename == null) {
                   return;
                 }
-                moveCommanderWorker.postMessage({ type: 'filename_fetch', filename });
+                handlePresetFilename(filename);
             });
         }
     }
@@ -439,22 +449,69 @@ canvas {
         return klipperCommanderWorker;
     };
 
+    const sendWorkToFormat = (format, message) => {
+        if (format === FileFormat.GCODE) {
+            if (!moveCommanderWorker) {
+                console.warn('G-code worker unavailable for upload.');
+                return;
+            }
+            if (simDtSec != null) {
+                moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+            }
+            moveCommanderWorker.postMessage(message);
+            return;
+        }
+        if (isMcuFormat(format)) {
+            const worker = ensureKlipperCommanderWorker();
+            if (!worker) {
+                console.warn('Unable to start KlipperCommander worker.');
+                return;
+            }
+            if (simDtSec != null) {
+                worker.postMessage({ type: 'set_dt', dt: simDtSec });
+            }
+            worker.postMessage(message);
+            return;
+        }
+        console.warn('Unsupported file type. Expected .gcode, .txt, or .serial.');
+    };
+
+    const handleUploadedFile = (file) => {
+        if (!file) {
+            return;
+        }
+        const format = detectFileFormat(file.name);
+        sendWorkToFormat(format, { type: 'filename_upload', filename: file });
+    };
+
+    const handlePresetFilename = (filename) => {
+        if (!filename) {
+            return;
+        }
+        const format = detectFileFormat(filename) || FileFormat.MCU_TEXT;
+        sendWorkToFormat(format, { type: 'filename_fetch', filename });
+    };
+
     if (presetMcuSelect) {
         presetMcuSelect.addEventListener('change', () => {
             const value = presetMcuSelect.value;
             if (!value) {
                 return;
             }
-            const worker = ensureKlipperCommanderWorker();
-            if (!worker) {
-                return;
-            }
-            if (simDtSec != null) {
-                worker.postMessage({ type: 'set_dt', dt: simDtSec });
-            }
             const filename = `${base}examples/mcu_commands/${value}`;
             console.log('main: starting MCU command playback', filename);
-            worker.postMessage({ type: 'filename_fetch', filename });
+            handlePresetFilename(filename);
+        });
+    }
+    if (presetSerialMcuSelect) {
+        presetSerialMcuSelect.addEventListener('change', () => {
+            const value = presetSerialMcuSelect.value;
+            if (!value) {
+                return;
+            }
+            const filename = `${base}examples/mcu_commands/${value}`;
+            console.log('main: starting serial MCU command playback', filename);
+            handlePresetFilename(filename);
         });
     }
     const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;

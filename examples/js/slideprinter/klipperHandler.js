@@ -16,6 +16,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     ? options.logMoveFilename.trim()
     : 'klipper_move_log.jsonl';
   const moveLogLines = logMove ? [] : null;
+  const onWorkerError = typeof options.onWorkerError === 'function' ? options.onWorkerError : null;
 
   worker.postMessage({ type: 'connect', url, logMove });
 
@@ -134,7 +135,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   };
 
   worker.onmessage = (e) => {
-    const { type, command, args, logEntry } = e.data;
+    const { type, command, logEntry, message } = e.data || {};
     if (type === 'move') {
       if (logMove && moveLogLines && logEntry) {
         try {
@@ -153,6 +154,17 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       if (typeof onCommand === 'function') handleCommand(command);
     } else if (type === 'closed') {
       console.log('KlipperHandler: worker indicated connection closed');
+    } else if (type === 'error') {
+      const msg = typeof message === 'string' && message ? message : 'Klipper worker reported an error.';
+      if (typeof onWorkerError === 'function') {
+        try {
+          onWorkerError(msg);
+        } catch (err) {
+          console.error('KlipperHandler onWorkerError callback threw an error:', err);
+        }
+      } else if (typeof console !== 'undefined') {
+        console.error('KlipperHandler worker error:', msg);
+      }
     }
   };
 

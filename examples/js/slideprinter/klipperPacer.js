@@ -1,3 +1,5 @@
+import { createKlipperSerialDecoder, SerialLineDecoder, decodeBase64Chunk } from './klipperSerialParser.js';
+
 // This is a worker script for Klipper pacing.
 
 // --- Globals for worker state ---
@@ -34,6 +36,16 @@ let aggHasAny = false;
 
 let LOG_MOVE = false;
 let moveLogSeq = 0;
+
+const serialDecoder = createKlipperSerialDecoder();
+let serialLineDecoder = null;
+
+const ensureSerialDecoder = () => {
+  if (!serialLineDecoder) {
+    serialLineDecoder = new SerialLineDecoder(serialDecoder);
+  }
+  return serialLineDecoder;
+};
 
 const FULL_WRAP = 0x100000000;
 const HALF_WRAP = FULL_WRAP / 2;
@@ -461,8 +473,54 @@ const handleParsedLine = (line) => {
   }
 };
 
+const processSerialLines = (lines) => {
+  if (!Array.isArray(lines) || lines.length === 0) return;
+  for (const line of lines) {
+    if (typeof line === 'string' && line.length > 0) {
+      handleParsedLine(line);
+    }
+  }
+};
+
+const feedSerialChunk = (chunk) => {
+  try {
+    const decoder = ensureSerialDecoder();
+    const lines = decoder.push(chunk);
+    if (lines.length) {
+      processSerialLines(lines);
+    }
+  } catch (err) {
+    console.error('KlipperPacer serial decode failed', err);
+    try {
+      postMessage({ type: 'error', message: err?.message || 'Serial decode failed' });
+    } catch (_) {}
+  }
+};
+
+const handleBinaryPayload = (payload) => {
+  if (!payload) return;
+  if (typeof Blob !== 'undefined' && payload instanceof Blob) {
+    payload.arrayBuffer().then((buf) => feedSerialChunk(new Uint8Array(buf))).catch((err) => {
+      console.error('KlipperPacer failed to read Blob payload', err);
+      try {
+        postMessage({ type: 'error', message: err?.message || 'Failed to read Blob payload' });
+      } catch (_) {}
+    });
+    return;
+  }
+  if (payload instanceof ArrayBuffer) {
+    feedSerialChunk(new Uint8Array(payload));
+    return;
+  }
+  if (ArrayBuffer.isView(payload)) {
+    feedSerialChunk(new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength));
+  }
+};
+
 const connect = (url) => {
+  serialLineDecoder = null;
   ws = new WebSocket(url);
+  ws.binaryType = 'arraybuffer';
   ws.onopen = () => console.log(`connected to ${url}`);
   ws.onmessage = (event) => {
     if (typeof event.data === 'string') {
@@ -482,6 +540,12 @@ const connect = (url) => {
           }
           for (const line of msg.lines) handleParsedLine(line);
           return;
+        } else if (msg && msg.action === 'klipper_serial') {
+          const chunk = decodeBase64Chunk(msg.data || msg.chunk || msg.payload);
+          if (chunk) {
+            feedSerialChunk(chunk);
+          }
+          return;
         } else if (msg && msg.action === 'klipper_clock') {
           const receiveMs = performance.now();
           clockModel.updateFromMessage(msg, receiveMs);
@@ -499,6 +563,8 @@ const connect = (url) => {
         }
       } catch (_) { /* not json, fall through */ }
       console.log(`unhandled text: ${event.data.slice(0, 100)}`);
+    } else {
+      handleBinaryPayload(event.data);
     }
   };
   ws.onerror = (err) => console.error('websocket error:', err);
@@ -527,6 +593,11 @@ const connect = (url) => {
     aggFirstStepTimeMs = null;
     aggLastStepTimeMs = null;
     aggHasAny = false;
+    if (serialLineDecoder) {
+      const remaining = serialLineDecoder.flush();
+      processSerialLines(remaining);
+    }
+    serialLineDecoder = null;
     postMessage({ type: 'closed' });
   };
 };

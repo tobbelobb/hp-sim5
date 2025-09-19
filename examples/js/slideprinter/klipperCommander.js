@@ -1,3 +1,8 @@
+import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
+import { iterateSerialLines, createKlipperSerialDecoder } from './klipperSerialParser.js';
+
+const serialDecoder = createKlipperSerialDecoder();
+
 const STEP_PIN_AXIS_MAP = {
     'gpiochip1/gpio0': 'A',
     'gpiochip1/gpio3': 'B',
@@ -77,8 +82,10 @@ class KlipperCommander {
         return Math.max(1, Math.round(MCU_CLOCK_HZ * this.dt));
     }
 
-    async _parseStream(stream) {
-        const lineIterator = makeLineIterator(stream);
+    async _parseStream(stream, format = FileFormat.MCU_TEXT) {
+        const lineIterator = format === FileFormat.MCU_SERIAL
+            ? iterateSerialLines(stream, serialDecoder)
+            : makeLineIterator(stream);
         const axisByOid = new Map();
         const axisStates = new Map(); // axis -> { dir, lastTick, baseAngle }
         const spoolAxisOrder = [];
@@ -111,7 +118,7 @@ class KlipperCommander {
         };
 
         for await (const rawLine of lineIterator) {
-            const line = rawLine.trim();
+            const line = typeof rawLine === 'string' ? rawLine.trim() : '';
             if (line.length === 0 || line.startsWith('#')) {
                 continue;
             }
@@ -289,9 +296,9 @@ class KlipperCommander {
         }
     }
 
-    async run(stream) {
+    async run(stream, format = FileFormat.MCU_TEXT) {
         try {
-            const parsed = await this._parseStream(stream);
+            const parsed = await this._parseStream(stream, format);
             await this._emitTimeline(parsed);
             postMessage({ type: 'done' });
         } catch (e) {
@@ -308,9 +315,15 @@ self.addEventListener('message', async (e) => {
     switch (type) {
         case 'filename_upload': {
             const file = e.data.filename;
-            if (file && file.stream) {
-                commander.run(file.stream());
+            if (!file || !file.stream) {
+                break;
             }
+            const format = detectFileFormat(file.name);
+            if (!isMcuFormat(format)) {
+                postMessage({ type: 'error', message: 'Unsupported file type for KlipperCommander' });
+                break;
+            }
+            commander.run(file.stream(), format);
             break;
         }
         case 'filename_fetch': {
@@ -323,7 +336,8 @@ self.addEventListener('message', async (e) => {
                 if (!response.ok || !response.body) {
                     throw new Error(`Failed to fetch ${filename}`);
                 }
-                await commander.run(response.body);
+                const format = detectFileFormat(filename) || FileFormat.MCU_TEXT;
+                await commander.run(response.body, format);
             } catch (err) {
                 console.error('KlipperCommander fetch failed:', err);
                 postMessage({ type: 'error', message: err.message });

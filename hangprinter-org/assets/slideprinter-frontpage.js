@@ -3,10 +3,17 @@ import { World } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem } from '../../examples/js/slideprinter/slideprinter_common.js';
+import { detectFileFormat, FileFormat, isMcuFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 
 const MCU_PRESETS = {
-  hangprinterLogo: new URL('../../examples/mcu_commands/Hangprinter_logo6.txt', import.meta.url).href,
-  straightMoves: new URL('../../examples/mcu_commands/draw_squares.txt', import.meta.url).href,
+  hangprinterLogo: {
+    url: new URL('../../examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
+    format: FileFormat.MCU_SERIAL,
+  },
+  straightMoves: {
+    url: new URL('../../examples/mcu_commands/draw_squares.serial', import.meta.url).href,
+    format: FileFormat.MCU_SERIAL,
+  },
 };
 
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
@@ -498,28 +505,46 @@ function initFrontpageSlideprinter() {
     if (!stageReady) {
       return;
     }
-    const presetUrl = MCU_PRESETS[presetKey];
-    if (!presetUrl) {
+    const preset = MCU_PRESETS[presetKey];
+    if (!preset || !preset.url) {
       console.warn('Slideprinter demo: unknown preset', presetKey);
       return;
     }
+    const format = preset.format || detectFileFormat(preset.url);
+    let worker = null;
+    if (format === FileFormat.GCODE) {
+      worker = ensureMoveWorker();
+    } else if (isMcuFormat(format)) {
+      worker = ensureKlipperWorker();
+    } else {
+      console.warn('Slideprinter demo: unsupported preset format', format);
+      return;
+    }
     currentPresetKey = presetKey;
-    const worker = ensureKlipperWorker();
     if (!startSimulationWithWorker(worker)) {
       return;
     }
     if (simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
-    worker.postMessage({ type: 'filename_fetch', filename: presetUrl });
+    worker.postMessage({ type: 'filename_fetch', filename: preset.url });
   }
 
-  function queueGcodeFile(file) {
+  function queueUploadedFile(file) {
     ensureReadyForNewJob();
     if (!stageReady || !file) {
       return;
     }
-    const worker = ensureMoveWorker();
+    const format = detectFileFormat(file.name);
+    let worker = null;
+    if (format === FileFormat.GCODE) {
+      worker = ensureMoveWorker();
+    } else if (isMcuFormat(format)) {
+      worker = ensureKlipperWorker();
+    } else {
+      console.warn('Slideprinter demo: unsupported upload format', file?.name || 'unknown');
+      return;
+    }
     if (!startSimulationWithWorker(worker)) {
       return;
     }
@@ -542,7 +567,7 @@ function initFrontpageSlideprinter() {
     gcodeInput.addEventListener('change', (event) => {
       const file = event.target.files?.[0];
       if (file) {
-        queueGcodeFile(file);
+        queueUploadedFile(file);
         gcodeInput.value = '';
       }
     });
