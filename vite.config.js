@@ -62,9 +62,10 @@ export default defineConfig(async () => {
         await fs.cp(from, to, { recursive: true });
       }));
 
+      // Copy slideprinter helper modules that the workers import directly
       const slideprinterSrc = resolve(__dirname, 'examples/js/slideprinter');
       const slideprinterDist = resolve(__dirname, 'dist/assets');
-      for (const file of ['kinematics.js', 'guessedData.js']) {
+      for (const file of ['kinematics.js', 'guessedData.js', 'fileFormatUtils.js', 'klipperSerialParser.js']) {
         await fs.copyFile(join(slideprinterSrc, file), join(slideprinterDist, file));
       }
     },
