@@ -405,9 +405,10 @@ export class InputSystem {
          this.touchActionBeforeGrab = null;
          this.activeGrabPointerId = null;
          this.scrollBlockerAttached = false;
-         this.touchMoveListenerOptions = { passive: false };
+         this.touchMoveListenerOptions = { passive: false, capture: true };
+         this.globalTouchOverrides = null;
          this.preventScrollDuringGrab = (event) => {
-             if (this.activeGrabPointerId !== null) {
+             if (this.activeGrabPointerId !== null && event.cancelable) {
                  event.preventDefault();
              }
          };
@@ -472,9 +473,56 @@ export class InputSystem {
                  document.addEventListener('touchmove', this.preventScrollDuringGrab, this.touchMoveListenerOptions);
                  this.scrollBlockerAttached = true;
              }
+             this.applyGlobalTouchOverrides(true);
          } else if (this.scrollBlockerAttached) {
              document.removeEventListener('touchmove', this.preventScrollDuringGrab, this.touchMoveListenerOptions);
              this.scrollBlockerAttached = false;
+             this.applyGlobalTouchOverrides(false);
+         } else if (this.globalTouchOverrides) {
+             this.applyGlobalTouchOverrides(false);
+         }
+     }
+
+     applyGlobalTouchOverrides(activate) {
+         if (typeof document === 'undefined') {
+             return;
+         }
+         const docEl = document.documentElement;
+         const body = document.body;
+         if (!docEl || !body) {
+             return;
+         }
+
+         if (activate) {
+             if (!this.globalTouchOverrides) {
+                 this.globalTouchOverrides = {
+                     bodyTouchAction: body.style.touchAction,
+                     bodyOverflow: body.style.overflow,
+                     bodyOverscroll: body.style.overscrollBehavior,
+                     docTouchAction: docEl.style.touchAction,
+                     docOverscroll: docEl.style.overscrollBehavior,
+                 };
+             }
+             body.style.touchAction = 'none';
+             body.style.overflow = 'hidden';
+             if (body.style.overscrollBehavior !== undefined) {
+                 body.style.overscrollBehavior = 'none';
+             }
+             docEl.style.touchAction = 'none';
+             if (docEl.style.overscrollBehavior !== undefined) {
+                 docEl.style.overscrollBehavior = 'none';
+             }
+         } else if (this.globalTouchOverrides) {
+             body.style.touchAction = this.globalTouchOverrides.bodyTouchAction;
+             body.style.overflow = this.globalTouchOverrides.bodyOverflow;
+             if (body.style.overscrollBehavior !== undefined) {
+                 body.style.overscrollBehavior = this.globalTouchOverrides.bodyOverscroll;
+             }
+             docEl.style.touchAction = this.globalTouchOverrides.docTouchAction;
+             if (docEl.style.overscrollBehavior !== undefined) {
+                 docEl.style.overscrollBehavior = this.globalTouchOverrides.docOverscroll;
+             }
+             this.globalTouchOverrides = null;
          }
      }
 
