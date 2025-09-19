@@ -1,3 +1,11 @@
+#!/usr/bin/env bash
+#
+# Observe: this script assumes there's a ../hangprinter-org repo
+# to copy files into and commit inside. If that repo isn't there
+# then this script won't make sense.
+
+set -euo pipefail
+
 npx vite build --config vite.hangprinter-org.config.js
 
 rsync -av --delete \
@@ -30,3 +38,13 @@ rsync -av --delete \
   --exclude='logo_orange.svg' \
   --exclude='hangprinter4_small.jpeg' \
   dist-hangprinter-org/ ../hangprinter-org/
+
+# Get latest commit message + short hash from hp-sim5
+COMMIT_HASH=$(git rev-parse --short=6 HEAD)
+COMMIT_MSG=$(git log -1 --pretty=%B)
+FULL_MSG="hp-sim5 ${COMMIT_HASH}: ${COMMIT_MSG}"
+
+# Commit in hangprinter-org repo
+cd ../hangprinter-org
+git add .
+git commit -m "$FULL_MSG" || echo "No changes to commit."
