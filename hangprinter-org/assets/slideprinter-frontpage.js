@@ -264,6 +264,7 @@ function initFrontpageSlideprinter() {
       document.msFullscreenElement ||
       null;
     const isActive = fullscreenElement === simApp;
+    const wasActive = fullscreenActive;
     fullscreenActive = isActive;
     if (simApp) {
       simApp.classList.toggle('is-fullscreen', isActive);
@@ -271,6 +272,15 @@ function initFrontpageSlideprinter() {
     if (fullscreenBtn) {
       fullscreenBtn.textContent = isActive ? 'Exit Fullscreen' : 'Fullscreen';
       fullscreenBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      if (fullscreenBtn.disabled) {
+        fullscreenBtn.disabled = false;
+      }
+      fullscreenBtn.removeAttribute('disabled');
+      fullscreenBtn.removeAttribute('aria-disabled');
+    }
+    if (wasActive !== isActive) {
+      const fullscreenZoomFactor = isActive ? 0.5 : 2.0;
+      adjustZoom(fullscreenZoomFactor);
     }
     requestAnimationFrame(() => {
       syncCanvasDimensions();
