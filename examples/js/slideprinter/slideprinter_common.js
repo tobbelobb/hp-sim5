@@ -402,6 +402,15 @@ export class InputSystem {
          this.canvas.setAttribute('tabindex', '0');
          this.canvas.style.outline = 'none';
          this.canvas.focus();
+         this.touchActionBeforeGrab = null;
+         this.activeGrabPointerId = null;
+         this.scrollBlockerAttached = false;
+         this.touchMoveListenerOptions = { passive: false };
+         this.preventScrollDuringGrab = (event) => {
+             if (this.activeGrabPointerId !== null) {
+                 event.preventDefault();
+             }
+         };
          document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
          document.addEventListener('pointerup', this.handlePointerUp.bind(this));
          document.addEventListener('pointercancel', this.handlePointerCancel.bind(this));
@@ -439,6 +448,12 @@ export class InputSystem {
         this.frame = 0;
         this.isPanning = false;
         this.panPointerId = null;
+        this.activeGrabPointerId = null;
+        this.setTouchScrollBlockActive(false);
+        if (this.touchActionBeforeGrab !== null) {
+            this.canvas.style.touchAction = this.touchActionBeforeGrab;
+            this.touchActionBeforeGrab = null;
+        }
         if (this.grabSpring) {
             const { ptrE, jointE, pathE } = this.grabSpring;
             this.world.destroyEntity(pathE);
@@ -446,6 +461,21 @@ export class InputSystem {
             this.world.destroyEntity(ptrE);
             this.grabSpring = null;
         }
+     }
+
+     setTouchScrollBlockActive(active) {
+         if (typeof window === 'undefined' || !('ontouchstart' in window)) {
+             return;
+         }
+         if (active) {
+             if (!this.scrollBlockerAttached) {
+                 document.addEventListener('touchmove', this.preventScrollDuringGrab, this.touchMoveListenerOptions);
+                 this.scrollBlockerAttached = true;
+             }
+         } else if (this.scrollBlockerAttached) {
+             document.removeEventListener('touchmove', this.preventScrollDuringGrab, this.touchMoveListenerOptions);
+             this.scrollBlockerAttached = false;
+         }
      }
 
      handlePointerDown(event) {
@@ -494,6 +524,14 @@ export class InputSystem {
          }
 
          if (closestBall !== null) {
+           if ((event.pointerType === 'touch' || event.pointerType === 'pen') && this.interactionMode !== 'pan') {
+             if (this.touchActionBeforeGrab === null) {
+               this.touchActionBeforeGrab = this.canvas.style.touchAction;
+             }
+             this.canvas.style.touchAction = 'none';
+             this.activeGrabPointerId = event.pointerId;
+             this.setTouchScrollBlockActive(true);
+           }
            const ptrE = this.world.createEntity();
            this.world.addComponent(ptrE, new PositionComponent(simX, simY));
            this.world.addComponent(ptrE, new CableLinkComponent(simX, simY));
@@ -526,6 +564,13 @@ export class InputSystem {
            if (this.pauseBtn) {
              this.pauseBtn.textContent = "Pause";
            }
+           if (typeof this.canvas.setPointerCapture === 'function') {
+             try {
+               this.canvas.setPointerCapture(event.pointerId);
+             } catch (err) {
+               // Ignore browsers that disallow capture here.
+             }
+           }
            return;
          }
      }
@@ -546,8 +591,14 @@ export class InputSystem {
                  }
              }
              return;
-         }
-         this.canvas.releasePointerCapture(event.pointerId);
+        }
+        if (typeof this.canvas.releasePointerCapture === 'function') {
+            try {
+                this.canvas.releasePointerCapture(event.pointerId);
+            } catch (err) {
+                // Ignore errors if capture was never set.
+            }
+        }
 
          if (this.grabSpring) {
            const { ptrE, jointE, pathE, ballE } = this.grabSpring;
@@ -568,6 +619,14 @@ export class InputSystem {
            this.world.destroyEntity(ptrE);
            this.grabSpring = null;
            this.world.setResource('grabbedBall', null);
+           if (this.touchActionBeforeGrab !== null && this.interactionMode !== 'pan') {
+             this.canvas.style.touchAction = this.touchActionBeforeGrab;
+             this.touchActionBeforeGrab = null;
+           }
+         }
+         if (this.activeGrabPointerId === event.pointerId) {
+           this.activeGrabPointerId = null;
+           this.setTouchScrollBlockActive(false);
          }
      }
 
