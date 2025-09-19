@@ -13,12 +13,14 @@ BASENAME="$(basename "$GCODE_FILE" .gcode)"
   ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg \
   -i "$GCODE_FILE" \
   -o "${BASENAME}.serial" \
-  -v -d out/klipper.dict
+  -v -d ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict
 
 ~/klippy-env/bin/python ~/repos/klipper/klippy/parsedump.py \
-  ~/repos/klipper/out/klipper.dict \
+  ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict \
   "${BASENAME}.serial" \
   > ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.txt
+
+gio trash "${BASENAME}.serial"
 
 head ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.txt -n 6000 > ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.shorter.txt
 
