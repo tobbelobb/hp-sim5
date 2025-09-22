@@ -18,8 +18,8 @@ const MCU_PRESETS = {
 
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
 const DEFAULT_VIEW_SCALE = 1.8;
-const MIN_VIEW_SCALE = 0.1;
-const MAX_VIEW_SCALE = 15;
+const MIN_VIEW_SCALE = 0.01;
+const MAX_VIEW_SCALE = 100;
 const ZOOM_FACTOR = 1.2;
 const ZOOM_EPSILON = 1e-3;
 
