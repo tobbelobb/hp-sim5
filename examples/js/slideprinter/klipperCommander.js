@@ -58,6 +58,7 @@ class KlipperCommander {
         this.accumulatedWaitMs = 0.0;
         this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
         this.speedScale = 1.0;
+        this.fastMode = false;
         this._resetState();
     }
 
@@ -271,8 +272,13 @@ class KlipperCommander {
         if (waitMs > 0) {
             this.accumulatedWaitMs += waitMs;
         }
-        if (this.accumulatedWaitMs > 10.0) {
-            await new Promise((resolve) => setTimeout(resolve, this.accumulatedWaitMs));
+        // In fast mode, scale down the effective wait by the playback speed
+        // so we still yield to the event loop without starving the queue.
+        const waitScale = this.fastMode ? Math.max(1, this.speedScale) : 1;
+        const thresholdMs = 10.0;
+        if (this.accumulatedWaitMs > thresholdMs) {
+            const sleepMs = Math.max(0, this.accumulatedWaitMs / waitScale);
+            await new Promise((resolve) => setTimeout(resolve, sleepMs));
             this.accumulatedWaitMs = 0.0;
         }
     }
@@ -433,6 +439,14 @@ self.addEventListener('message', async (e) => {
         case 'set_speed_scale': {
             commander.setSpeedScale(e.data.value);
             commander.accumulatedWaitMs = 0.0;
+            break;
+        }
+        case 'set_fast_mode': {
+            commander.fastMode = Boolean(e.data.enable);
+            if (!commander.fastMode) {
+                // Reset any over-accumulated wait when leaving fast mode
+                commander.accumulatedWaitMs = 0.0;
+            }
             break;
         }
         case 'pause': {

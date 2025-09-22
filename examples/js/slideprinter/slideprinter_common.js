@@ -114,8 +114,12 @@ export class RemoteSpoolSystem {
         this.axisToEntity = {};
         this.worker = null;
         this.wasPaused = false;
-        this.highWaterMark = 40;
-        this.lowWaterMark = 20;
+        // Base queue watermarks. Actual watermarks scale with playback speed.
+        this.baseHighWaterMark = 80;
+        this.baseLowWaterMark = 40;
+        this.highWaterMark = this.baseHighWaterMark;
+        this.lowWaterMark = this.baseLowWaterMark;
+        this.fastModeActive = false;
     }
 
     addCommand(command) {
@@ -123,8 +127,26 @@ export class RemoteSpoolSystem {
     }
 
     update(world, dt) {
+        // Scale queue targets with playback speed to avoid underflows at high speeds
+        const timeScale = Number(world.getResource('timeScale')) || 1;
+        const scaleFactor = Math.max(1, timeScale);
+        const targetHigh = Math.max(this.baseHighWaterMark, Math.ceil(this.baseHighWaterMark * scaleFactor));
+        const targetLow = Math.max(this.baseLowWaterMark, Math.ceil(this.baseLowWaterMark * scaleFactor * 0.75));
+        if (targetHigh !== this.highWaterMark || targetLow !== this.lowWaterMark) {
+            this.highWaterMark = targetHigh;
+            this.lowWaterMark = Math.min(targetHigh - 1, targetLow);
+        }
+
         if (this.worker) {
             const queueSize = this.commands.length;
+            // Engage fast mode when the queue runs low; disengage when recovered
+            if (!this.fastModeActive && queueSize < this.lowWaterMark) {
+                this.worker.postMessage({ type: 'set_fast_mode', enable: true });
+                this.fastModeActive = true;
+            } else if (this.fastModeActive && queueSize >= Math.max(this.lowWaterMark, Math.floor(this.highWaterMark * 0.7))) {
+                this.worker.postMessage({ type: 'set_fast_mode', enable: false });
+                this.fastModeActive = false;
+            }
             if (queueSize > this.highWaterMark && !this.wasPaused) {
                 this.worker.postMessage({ type: 'pause' });
                 this.wasPaused = true;
