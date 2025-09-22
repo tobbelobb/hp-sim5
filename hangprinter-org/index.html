@@ -25,18 +25,18 @@
   <meta name="msapplication-TileColor" content="#00aba9">
   <meta name="theme-color" content="#ffffff">
   <title>Hangprinter</title>
-  <script type="module" crossorigin src="/hp-sim5/assets/hangprinter-org/index.html-JOd-PWrD.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/hangprinter-org/index.html-COk2CHeZ.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-C1JNBvr3.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-BtjHtLxs.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-Bd1_vknL.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-Bm0P3ZyJ.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Jd5j8L9z.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-cBTL8oaL.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/script-RKMEleFc.js">
-  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-BEiMrnTS.css">
+  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-BkrQNnkZ.css">
 </head>
 
 <body>
@@ -140,11 +140,17 @@
               <button id="panModeBtn" type="button" class="sim-secondary sim-zoom-btn" aria-pressed="false">Pan</button>
             </div>
             <div id="speedControls" class="sim-speed" role="group" aria-label="Playback speed">
-              <button id="speedHalfBtn" type="button" class="sim-secondary sim-speed-btn" aria-pressed="false">0.5x</button>
-              <button id="speed1xBtn" type="button" class="sim-secondary sim-speed-btn" aria-pressed="true">1x</button>
-              <button id="speed2xBtn" type="button" class="sim-secondary sim-speed-btn" aria-pressed="false">2x</button>
+              <button id="speedSlowerBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Set playback to half speed">
+                <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
+                <span class="sim-speed-text">0.5x</span>
+              </button>
+              <button id="speedFasterBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Double the playback speed">
+                <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
+                <span class="sim-speed-text">2x</span>
+              </button>
             </div>
           </div>
+          <div id="speedStatus" class="sim-speed-status sim-hidden" role="status" aria-live="polite"></div>
         </div>
       </div>
     </div>

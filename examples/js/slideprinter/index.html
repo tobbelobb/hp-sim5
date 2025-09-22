@@ -123,14 +123,75 @@ canvas {
   padding: 10px 16px;
   font-size: 0.85rem;
 }
+
+#canvasWrapper {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
+}
+
+#canvasWrapper canvas {
+  flex: 1;
+}
+
+.speed-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  box-shadow: 0 3px 8px rgba(0,0,0,.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.speed-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+.speed-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.speed-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.speed-status {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.72);
+  border-radius: 999px;
+  color: rgba(220, 220, 220, 0.92);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.speed-status.hidden {
+  display: none;
+}
     </style>
-  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-UUyedRPk.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-YaQD7vVb.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-C1JNBvr3.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-BtjHtLxs.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-Bd1_vknL.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-Bm0P3ZyJ.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Jd5j8L9z.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-cBTL8oaL.js">
@@ -190,14 +251,22 @@ canvas {
                 dt: <span id="dt">N/A</span> |
                 Speed: <span id="speed">N/A</span>
             </div>
-            <div id="speedControls" role="group" aria-label="Playback speed" style="margin-top: 6px; display: inline-flex; gap: 8px; align-items: center;">
+            <div id="speedControls" role="group" aria-label="Playback speed" style="margin-top: 6px; display: inline-flex; gap: 12px; align-items: center;">
                 <span>Playback:</span>
-                <button id="speedHalfBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">0.5x</button>
-                <button id="speed1xBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">1x</button>
-                <button id="speed2xBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">2x</button>
+                <button id="speedSlowerBtn" type="button" class="speed-btn" aria-label="Set playback to half speed">
+                    <span aria-hidden="true" class="speed-icon">&#x23E9;</span>
+                    <span class="speed-text">0.5x</span>
+                </button>
+                <button id="speedFasterBtn" type="button" class="speed-btn" aria-label="Double the playback speed">
+                    <span aria-hidden="true" class="speed-icon">&#x23E9;</span>
+                    <span class="speed-text">2x</span>
+                </button>
             </div>
         </div>
-        <canvas id="myCanvas"></canvas>
+        <div id="canvasWrapper">
+            <canvas id="myCanvas"></canvas>
+            <div id="speedStatus" class="speed-status hidden" role="status" aria-live="polite"></div>
+        </div>
     </div>
 
 </body>
