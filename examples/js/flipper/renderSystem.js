@@ -213,6 +213,13 @@ export class RenderSystem {
     if (n <= 0) return;
 
     this.extrusionCtx.save();
+    this.extrusionCtx.beginPath();
+    for (let r = 0; r < rects.length; r++) {
+      const R = rects[r];
+      this.extrusionCtx.rect(R.x, R.y, R.w, R.h);
+    }
+    this.extrusionCtx.clip();
+
     this.extrusionCtx.fillStyle = 'rgba(100, 255, 100, 0.5)';
     for (let i = 0; i < n; i++) {
       const extrusion = extruderComp.extrusions[i];
