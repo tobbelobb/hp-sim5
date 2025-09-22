@@ -480,18 +480,44 @@ iframe {
     flex-direction: column;
     gap: 8px;
     pointer-events: auto;
-    margin-top: 4px;
+    margin-top: 8px;
 }
 
-.sim-speed-btn {
-    text-align: center;
-    padding: 8px 14px;
+.sim-speed-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
-.sim-speed-btn[aria-pressed="true"],
-.sim-speed-btn.is-active {
-    background: rgba(255, 255, 255, 0.32);
-    color: #1f1f27;
+.sim-speed-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.sim-speed-text {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.sim-speed-status {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 18px;
+    background: rgba(15, 15, 18, 0.72);
+    color: rgba(220, 220, 220, 0.92);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    pointer-events: none;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.sim-speed-status.sim-hidden {
+    display: none;
 }
 
 .sim-fullscreen {

@@ -38,21 +38,15 @@ function initFrontpageSlideprinter() {
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const panModeBtn = document.getElementById('panModeBtn');
-  const speedHalfBtn = document.getElementById('speedHalfBtn');
-  const speed1xBtn = document.getElementById('speed1xBtn');
-  const speed2xBtn = document.getElementById('speed2xBtn');
+  const speedSlowerBtn = document.getElementById('speedSlowerBtn');
+  const speedFasterBtn = document.getElementById('speedFasterBtn');
   const secondaryControls = document.getElementById('simSecondaryControls');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const speedStatusEl = document.getElementById('speedStatus');
   const simApp = canvas.closest('.sim-app');
   const initialTouchAction = canvas ? canvas.style.touchAction || '' : '';
   const simButtons = controlsRoot.querySelector('.sim-buttons');
   const startButtons = simButtons ? Array.from(simButtons.querySelectorAll('.sim-start')) : [];
-
-  const speedButtons = [
-    { button: speedHalfBtn, value: 0.5 },
-    { button: speed1xBtn, value: 1.0 },
-    { button: speed2xBtn, value: 2.0 },
-  ];
 
   const world = new World();
   let klipperCommanderWorker = null;
@@ -70,6 +64,7 @@ function initFrontpageSlideprinter() {
   let secondaryControlsEverShown = false;
   let fullscreenActive = false;
   let currentTimeScale = 1.0;
+  let speedStatusArmed = false;
 
   const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
@@ -152,7 +147,7 @@ function initFrontpageSlideprinter() {
   }
 
   function setSpeedButtonsEnabled(enabled) {
-    speedButtons.forEach(({ button }) => {
+    [speedSlowerBtn, speedFasterBtn].forEach((button) => {
       if (!button) {
         return;
       }
@@ -165,15 +160,26 @@ function initFrontpageSlideprinter() {
     });
   }
 
-  function updateSpeedButtonSelection(scale) {
-    speedButtons.forEach(({ button, value }) => {
-      if (!button) {
-        return;
-      }
-      const isActive = Math.abs(scale - value) < 1e-3;
-      button.classList.toggle('is-active', isActive);
-      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    });
+  function formatTimeScale(scale) {
+    if (!Number.isFinite(scale) || scale <= 0) {
+      return '1';
+    }
+    if (scale >= 100) {
+      return scale.toFixed(0);
+    }
+    if (scale >= 10) {
+      return parseFloat(scale.toFixed(1)).toString();
+    }
+    const rounded = parseFloat(scale.toFixed(2));
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toString();
+  }
+
+  function showSpeedStatus(scale) {
+    if (!speedStatusEl) {
+      return;
+    }
+    speedStatusEl.textContent = `current speed: ${formatTimeScale(scale)}x realtime`;
+    speedStatusEl.classList.remove('sim-hidden');
   }
 
   function applyTimeScaleToWorkers(scale) {
@@ -188,8 +194,10 @@ function initFrontpageSlideprinter() {
 
   function handleTimeScaleChange(scale) {
     currentTimeScale = scale;
-    updateSpeedButtonSelection(scale);
     applyTimeScaleToWorkers(scale);
+    if (speedStatusArmed) {
+      showSpeedStatus(scale);
+    }
   }
 
   function applyViewStateFromController(partial = {}, options = {}) {
@@ -631,7 +639,6 @@ function initFrontpageSlideprinter() {
 
   setPrintActive(false);
   setSpeedButtonsEnabled(false);
-  updateSpeedButtonSelection(currentTimeScale);
 
   if (resetBtn) {
     resetBtn.addEventListener(
@@ -666,18 +673,35 @@ function initFrontpageSlideprinter() {
     });
   }
 
-  speedButtons.forEach(({ button, value }) => {
-    if (!button) {
-      return;
-    }
-    button.addEventListener('click', (event) => {
+  if (speedSlowerBtn) {
+    speedSlowerBtn.addEventListener('click', (event) => {
       event.preventDefault();
       if (!stageReady || !gameControls || typeof gameControls.setTimeScale !== 'function') {
         return;
       }
-      gameControls.setTimeScale(value);
+      const currentScale = typeof gameControls.getTimeScale === 'function' ? gameControls.getTimeScale() : currentTimeScale;
+      const nextScale = currentScale / 2;
+      speedStatusArmed = true;
+      gameControls.setTimeScale(nextScale);
+      const appliedScale = typeof gameControls.getTimeScale === 'function' ? gameControls.getTimeScale() : nextScale;
+      showSpeedStatus(appliedScale);
     });
-  });
+  }
+
+  if (speedFasterBtn) {
+    speedFasterBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (!stageReady || !gameControls || typeof gameControls.setTimeScale !== 'function') {
+        return;
+      }
+      const currentScale = typeof gameControls.getTimeScale === 'function' ? gameControls.getTimeScale() : currentTimeScale;
+      const nextScale = currentScale * 2;
+      speedStatusArmed = true;
+      gameControls.setTimeScale(nextScale);
+      const appliedScale = typeof gameControls.getTimeScale === 'function' ? gameControls.getTimeScale() : nextScale;
+      showSpeedStatus(appliedScale);
+    });
+  }
 
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener('click', (event) => {
@@ -726,7 +750,6 @@ function initFrontpageSlideprinter() {
       syncCanvasDimensions();
       stageReady = true;
       setSpeedButtonsEnabled(true);
-      updateSpeedButtonSelection(currentTimeScale);
     })
     .catch((error) => {
       console.error('Slideprinter demo initialisation failed:', error);

@@ -11,10 +11,18 @@ export function runGame(world, internalSetupScene, options = {}) {
 
     const {
         initialTimeScale = 1.0,
-        minTimeScale = 0.1,
-        maxTimeScale = 8.0,
         onTimeScaleChange,
     } = options;
+
+    function sanitizeTimeScale(value, fallback) {
+        if (!Number.isFinite(value)) {
+            return fallback;
+        }
+        if (value <= 0) {
+            return fallback;
+        }
+        return value;
+    }
 
     let lastTime = 0;
     let accumulator = 0.0;
@@ -23,17 +31,10 @@ export function runGame(world, internalSetupScene, options = {}) {
     let startTime = 0;
     let totalSim = 0;
     let hasStarted = false;
-    let targetTimeScale = clampTimeScale(initialTimeScale);
+    let targetTimeScale = sanitizeTimeScale(initialTimeScale, 1.0);
     world.setResource('timeScale', targetTimeScale);
 
     const getPauseState = () => world.getResource('pauseState');
-
-    function clampTimeScale(value) {
-        if (!Number.isFinite(value)) {
-            return 1.0;
-        }
-        return Math.min(maxTimeScale, Math.max(minTimeScale, value));
-    }
 
     const updatePauseButtonLabel = () => {
         const pauseState = getPauseState();
@@ -138,7 +139,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     }
 
     function setTimeScale(scale) {
-        const clamped = clampTimeScale(scale);
+        const clamped = sanitizeTimeScale(scale, targetTimeScale);
         if (Math.abs(clamped - targetTimeScale) < 1e-6) {
             return;
         }
