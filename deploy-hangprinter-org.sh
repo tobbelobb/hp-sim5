@@ -48,3 +48,4 @@ FULL_MSG="hp-sim5 ${COMMIT_HASH}: ${COMMIT_MSG}"
 cd ../hangprinter-org
 git add .
 git commit -m "$FULL_MSG" || echo "No changes to commit."
+git push
