@@ -56,11 +56,14 @@ class KlipperCommander {
         this.isPaused = false;
         this.resolveResume = null;
         this.accumulatedWaitMs = 0.0;
+        this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
+        this._resetState();
     }
 
     setDt(dt) {
         if (Number.isFinite(dt) && dt > 0) {
             this.dt = dt;
+            this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
         }
     }
 
@@ -78,44 +81,192 @@ class KlipperCommander {
         this.resolveResume = null;
     }
 
-    _ticksPerBucket() {
-        return Math.max(1, Math.round(MCU_CLOCK_HZ * this.dt));
+    _computeTicksPerBucket(dt) {
+        return Math.max(1, Math.round(MCU_CLOCK_HZ * dt));
+    }
+
+    _resetState() {
+        this.axisByOid = new Map();
+        this.usedAxes = new Set();
+        this.axisStates = new Map();
+        this.spoolAxisOrder = [];
+        this.activeAxes = new Set();
+        this.bucketSteps = new Map();
+        this.bucketExtrusion = new Map();
+        this.bucketAddToReference = new Map();
+        this.axisAngles = new Map();
+        this.nextBucketToEmit = 0;
+        this.maxBucketSeen = -1;
+        this.accumulatedWaitMs = 0.0;
+    }
+
+    _ensureAxisState(axis) {
+        if (!axis) {
+            return null;
+        }
+        let state = this.axisStates.get(axis);
+        if (!state) {
+            state = {
+                dir: 1,
+                lastTick: 0,
+                baseAngle: 0,
+                active: false,
+                hasSteps: false,
+            };
+            this.axisStates.set(axis, state);
+        }
+        return state;
+    }
+
+    _ensureBucketMap(axis) {
+        let map = this.bucketSteps.get(axis);
+        if (!map) {
+            map = new Map();
+            this.bucketSteps.set(axis, map);
+        }
+        return map;
+    }
+
+    _markAxisActive(axis) {
+        const state = this._ensureAxisState(axis);
+        if (!state) {
+            return;
+        }
+        state.active = true;
+        this.activeAxes.add(axis);
+        if (!this.axisAngles.has(axis)) {
+            this.axisAngles.set(axis, state.baseAngle || 0);
+        }
+    }
+
+    _readyBucketThreshold(force = false) {
+        if (force) {
+            return this.maxBucketSeen + 1;
+        }
+        if (this.maxBucketSeen < 0) {
+            return null;
+        }
+        if (this.activeAxes.size === 0) {
+            return null;
+        }
+        let hasBlockingAxis = false;
+        let minBucket = Infinity;
+        for (const axis of this.activeAxes) {
+            const state = this.axisStates.get(axis);
+            if (!state) {
+                continue;
+            }
+            if (!state.hasSteps && state.lastTick === 0) {
+                continue;
+            }
+            hasBlockingAxis = true;
+            const bucket = Math.floor(state.lastTick / this.ticksPerBucket);
+            if (bucket < minBucket) {
+                minBucket = bucket;
+            }
+        }
+        if (!hasBlockingAxis) {
+            return this.maxBucketSeen + 1;
+        }
+        return minBucket;
+    }
+
+    async _flushReadyBuckets(force = false) {
+        const threshold = this._readyBucketThreshold(force);
+        if (threshold == null) {
+            return;
+        }
+        const upperBound = Math.min(threshold, this.maxBucketSeen + 1);
+        while (this.nextBucketToEmit < upperBound) {
+            await this._emitBucket(this.nextBucketToEmit);
+            this.nextBucketToEmit += 1;
+        }
+    }
+
+    async _emitBucket(bucketIdx) {
+        await this._waitWhilePaused();
+
+        const loopStart = performance.now();
+
+        const addRefEntry = this.bucketAddToReference.get(bucketIdx);
+        if (addRefEntry) {
+            const addCmd = { type: 'Add to reference' };
+            let hasDelta = false;
+            for (const [axis, delta] of Object.entries(addRefEntry)) {
+                if (!Number.isFinite(delta) || delta === 0) {
+                    continue;
+                }
+                addCmd[axis] = delta;
+                hasDelta = true;
+            }
+            if (hasDelta) {
+                await this.sendCommand(addCmd);
+            }
+            this.bucketAddToReference.delete(bucketIdx);
+        }
+
+        let changed = false;
+        const moveCmd = { type: 'Move' };
+
+        for (const axis of this.spoolAxisOrder) {
+            const state = this.axisStates.get(axis);
+            if (!this.axisAngles.has(axis)) {
+                this.axisAngles.set(axis, state?.baseAngle || 0);
+            }
+            const axisMap = this.bucketSteps.get(axis);
+            const deltaSteps = axisMap ? axisMap.get(bucketIdx) || 0 : 0;
+            if (deltaSteps !== 0) {
+                const current = this.axisAngles.get(axis) || 0;
+                const newAngle = current + deltaSteps * STEP_ANGLE_RAD;
+                this.axisAngles.set(axis, newAngle);
+                changed = true;
+            }
+            moveCmd[axis] = this.axisAngles.get(axis) || 0;
+            if (axisMap) {
+                axisMap.delete(bucketIdx);
+                if (axisMap.size === 0) {
+                    this.bucketSteps.delete(axis);
+                }
+            }
+        }
+
+        const extrusionDelta = this.bucketExtrusion.get(bucketIdx) || 0;
+        if (extrusionDelta !== 0) {
+            moveCmd.E = extrusionDelta;
+            changed = true;
+        }
+        if (this.bucketExtrusion.has(bucketIdx)) {
+            this.bucketExtrusion.delete(bucketIdx);
+        }
+
+        if (!changed && bucketIdx === 0) {
+            for (const axis of this.spoolAxisOrder) {
+                if ((this.axisAngles.get(axis) || 0) !== 0) {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        if (changed) {
+            await this.sendCommand(moveCmd);
+        }
+
+        const elapsedMs = performance.now() - loopStart;
+        const waitMs = this.dt * 1000 - elapsedMs;
+        if (waitMs > 0) {
+            this.accumulatedWaitMs += waitMs;
+        }
+        if (this.accumulatedWaitMs > 10.0) {
+            await new Promise((resolve) => setTimeout(resolve, this.accumulatedWaitMs));
+            this.accumulatedWaitMs = 0.0;
+        }
     }
 
     async _parseStream(stream, format = FileFormat.MCU_TEXT) {
         const lineIterator = format === FileFormat.MCU_SERIAL
             ? iterateSerialLines(stream, serialDecoder)
             : makeLineIterator(stream);
-        const axisByOid = new Map();
-        const axisStates = new Map(); // axis -> { dir, lastTick, baseAngle }
-        const spoolAxisOrder = [];
-        const bucketSteps = new Map(); // axis -> Map<bucketIdx, stepDelta>
-        const bucketExtrusion = new Map(); // bucketIdx -> extrusion mm
-        const bucketAddToReference = new Map(); // bucketIdx -> { axis: deltaAngle }
-        let maxBucket = 0;
-        const usedAxes = new Set();
-        const ticksPerBucket = this._ticksPerBucket();
-
-        const ensureAxisState = (axis) => {
-            if (!axisStates.has(axis)) {
-                axisStates.set(axis, { dir: 1, lastTick: 0, baseAngle: 0 });
-            }
-            return axisStates.get(axis);
-        };
-
-        const ensureBucketMap = (axis) => {
-            if (!bucketSteps.has(axis)) {
-                bucketSteps.set(axis, new Map());
-            }
-            return bucketSteps.get(axis);
-        };
-
-        const registerAxis = (axis) => {
-            if (axis !== 'E' && !spoolAxisOrder.includes(axis)) {
-                spoolAxisOrder.push(axis);
-            }
-            ensureAxisState(axis);
-        };
 
         for await (const rawLine of lineIterator) {
             const line = typeof rawLine === 'string' ? rawLine.trim() : '';
@@ -130,176 +281,93 @@ class KlipperCommander {
                     continue;
                 }
                 let axis = STEP_PIN_AXIS_MAP[kv.step_pin];
-                if (!axis || usedAxes.has(axis)) {
-                    axis = DEFAULT_AXIS_ORDER.find(candidate => !usedAxes.has(candidate)) || null;
+                if (!axis || this.usedAxes.has(axis)) {
+                    axis = DEFAULT_AXIS_ORDER.find((candidate) => !this.usedAxes.has(candidate)) || null;
                 }
                 if (axis) {
-                    usedAxes.add(axis);
-                    axisByOid.set(oid, axis);
-                    registerAxis(axis);
+                    this.usedAxes.add(axis);
+                    this.axisByOid.set(oid, axis);
+                    if (axis !== 'E' && !this.spoolAxisOrder.includes(axis)) {
+                        this.spoolAxisOrder.push(axis);
+                    }
+                    this._ensureAxisState(axis);
                 }
                 continue;
             }
 
             if (line.startsWith('set_next_step_dir')) {
                 const kv = parseKvPairs(line.slice('set_next_step_dir'.length));
-                const axis = axisByOid.get(kv.oid);
+                const axis = this.axisByOid.get(kv.oid);
                 if (!axis) {
                     continue;
                 }
-                const state = ensureAxisState(axis);
+                const state = this._ensureAxisState(axis);
                 state.dir = (Number(kv.dir) === 0) ? -1 : 1;
                 continue;
             }
 
             if (line.startsWith('set_position')) {
                 const kv = parseKvPairs(line.slice('set_position'.length));
-                const axis = axisByOid.get(kv.oid);
+                const axis = this.axisByOid.get(kv.oid);
                 if (!axis) {
                     continue;
                 }
-                const state = ensureAxisState(axis);
+                const state = this._ensureAxisState(axis);
                 const newAngle = Number(kv.pos || 0) * STEP_ANGLE_RAD;
                 const delta = newAngle - state.baseAngle;
                 if (delta !== 0) {
-                    const bucketIdx = Math.floor(state.lastTick / ticksPerBucket);
-                    const entry = bucketAddToReference.get(bucketIdx) || {};
+                    const bucketIdx = Math.floor(state.lastTick / this.ticksPerBucket);
+                    const entry = this.bucketAddToReference.get(bucketIdx) || {};
                     entry[axis] = (entry[axis] || 0) + delta;
-                    bucketAddToReference.set(bucketIdx, entry);
-                    state.baseAngle = newAngle;
+                    this.bucketAddToReference.set(bucketIdx, entry);
+                    this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
                 }
+                state.baseAngle = newAngle;
+                this._markAxisActive(axis);
+                await this._flushReadyBuckets();
                 continue;
             }
 
             if (line.startsWith('queue_step')) {
                 const kv = parseKvPairs(line.slice('queue_step'.length));
-                const axis = axisByOid.get(kv.oid);
+                const axis = this.axisByOid.get(kv.oid);
                 if (!axis) {
                     continue;
                 }
-                const state = ensureAxisState(axis);
+                const state = this._ensureAxisState(axis);
                 let interval = Number(kv.interval) || 1;
                 const count = Number(kv.count) || 0;
                 const add = ('add' in kv) ? Number(kv.add) || 0 : 0;
                 if (count <= 0) {
                     continue;
                 }
-                const bucketMap = ensureBucketMap(axis);
                 for (let i = 0; i < count; i += 1) {
                     interval = Math.max(1, interval);
                     state.lastTick += interval;
-                    const bucketIdx = Math.floor(state.lastTick / ticksPerBucket);
-                    maxBucket = Math.max(maxBucket, bucketIdx);
+                    const bucketIdx = Math.floor(state.lastTick / this.ticksPerBucket);
+                    this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
                     if (axis === 'E') {
-                        const current = bucketExtrusion.get(bucketIdx) || 0;
-                        bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP);
+                        const current = this.bucketExtrusion.get(bucketIdx) || 0;
+                        this.bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP);
                     } else {
-                        const prev = bucketMap.get(bucketIdx) || 0;
-                        bucketMap.set(bucketIdx, prev + state.dir);
+                        const bucketMap = this._ensureBucketMap(axis);
+                        bucketMap.set(bucketIdx, (bucketMap.get(bucketIdx) || 0) + state.dir);
                     }
                     interval = Math.max(1, interval + add);
                 }
+                state.hasSteps = true;
+                this._markAxisActive(axis);
+                await this._flushReadyBuckets();
                 continue;
-            }
-        }
-
-        return {
-            spoolAxisOrder,
-            axisStates,
-            bucketSteps,
-            bucketExtrusion,
-            bucketAddToReference,
-            maxBucket,
-        };
-    }
-
-    async _emitTimeline({
-        spoolAxisOrder,
-        axisStates,
-        bucketSteps,
-        bucketExtrusion,
-        bucketAddToReference,
-        maxBucket,
-    }) {
-        if (spoolAxisOrder.length === 0 && bucketExtrusion.size === 0) {
-            return;
-        }
-
-        this.accumulatedWaitMs = 0.0;
-
-        const axisAngles = {};
-        for (const axis of spoolAxisOrder) {
-            axisAngles[axis] = axisStates.get(axis)?.baseAngle || 0;
-        }
-
-        const addRefMax = bucketAddToReference.size > 0 ? Math.max(...bucketAddToReference.keys()) : 0;
-        const totalBuckets = Math.max(maxBucket, addRefMax);
-
-        for (let bucketIdx = 0; bucketIdx <= totalBuckets; bucketIdx += 1) {
-            await this._waitWhilePaused();
-
-            const loopStart = performance.now();
-
-            const addRefEntry = bucketAddToReference.get(bucketIdx);
-            if (addRefEntry) {
-                const addCmd = { type: 'Add to reference' };
-                let hasDelta = false;
-                for (const axis of Object.keys(addRefEntry)) {
-                    const delta = addRefEntry[axis];
-                    if (!Number.isFinite(delta) || delta === 0) {
-                        continue;
-                    }
-                    addCmd[axis] = delta;
-                    hasDelta = true;
-                }
-                if (hasDelta) {
-                    await this.sendCommand(addCmd);
-                }
-            }
-
-            let changed = false;
-            const moveCmd = { type: 'Move' };
-
-            for (const axis of spoolAxisOrder) {
-                const axisBucket = bucketSteps.get(axis);
-                const deltaSteps = axisBucket ? (axisBucket.get(bucketIdx) || 0) : 0;
-                if (deltaSteps !== 0) {
-                    axisAngles[axis] += deltaSteps * STEP_ANGLE_RAD;
-                    changed = true;
-                }
-                moveCmd[axis] = axisAngles[axis];
-            }
-
-            const extrusionDelta = bucketExtrusion.get(bucketIdx) || 0;
-            if (extrusionDelta !== 0) {
-                moveCmd.E = extrusionDelta;
-                changed = true;
-            }
-
-            if (!changed && bucketIdx === 0) {
-                changed = spoolAxisOrder.some(axis => axisAngles[axis] !== 0);
-            }
-
-            if (changed) {
-                await this.sendCommand(moveCmd);
-            }
-
-            const elapsedMs = performance.now() - loopStart;
-            const waitMs = this.dt * 1000 - elapsedMs;
-            if (waitMs > 0) {
-                this.accumulatedWaitMs += waitMs;
-            }
-            if (this.accumulatedWaitMs > 10.0) {
-                await new Promise(resolve => setTimeout(resolve, this.accumulatedWaitMs));
-                this.accumulatedWaitMs = 0.0;
             }
         }
     }
 
     async run(stream, format = FileFormat.MCU_TEXT) {
+        this._resetState();
         try {
-            const parsed = await this._parseStream(stream, format);
-            await this._emitTimeline(parsed);
+            await this._parseStream(stream, format);
+            await this._flushReadyBuckets(true);
             postMessage({ type: 'done' });
         } catch (e) {
             console.error('KlipperCommander failed:', e);
