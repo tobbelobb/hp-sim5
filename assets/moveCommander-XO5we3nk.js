@@ -43,6 +43,7 @@ class MoveCommander {
         this.resolveResume = null;
         this.accumulated_wait_ms = 0.0;
         this.speedScale = 1.0;
+        this.fastMode = false;
     }
 
     async connect() {
@@ -231,8 +232,12 @@ class MoveCommander {
                             if (wait_time_ms > 0) {
                                 this.accumulated_wait_ms += wait_time_ms;
                             }
-                            if (this.accumulated_wait_ms > 10.0) {
-                                await new Promise(resolve => setTimeout(resolve, this.accumulated_wait_ms));
+                            // In fast mode, scale down the effective wait by the playback speed
+                            const waitScale = this.fastMode ? Math.max(1, this.speedScale) : 1;
+                            const threshold_ms = 10.0;
+                            if (this.accumulated_wait_ms > threshold_ms) {
+                                const sleep_ms = Math.max(0, this.accumulated_wait_ms / waitScale);
+                                await new Promise(resolve => setTimeout(resolve, sleep_ms));
                                 this.accumulated_wait_ms = 0.0;
                             }
                         }
@@ -307,8 +312,11 @@ class MoveCommander {
                             if (wait_time_ms > 0) {
                                 this.accumulated_wait_ms += wait_time_ms;
                             }
-                            if (this.accumulated_wait_ms > 10.0) {
-                                await new Promise(resolve => setTimeout(resolve, this.accumulated_wait_ms));
+                            const waitScale = this.fastMode ? Math.max(1, this.speedScale) : 1;
+                            const threshold_ms = 10.0;
+                            if (this.accumulated_wait_ms > threshold_ms) {
+                                const sleep_ms = Math.max(0, this.accumulated_wait_ms / waitScale);
+                                await new Promise(resolve => setTimeout(resolve, sleep_ms));
                                 this.accumulated_wait_ms = 0.0;
                             }
                         }
@@ -372,6 +380,12 @@ self.addEventListener('message', async (e) => {
     case 'set_speed_scale':
       commander.setSpeedScale(e.data.value);
       commander.accumulated_wait_ms = 0.0;
+      break;
+    case 'set_fast_mode':
+      commander.fastMode = Boolean(e.data.enable);
+      if (!commander.fastMode) {
+        commander.accumulated_wait_ms = 0.0;
+      }
       break;
     case 'set_uri':
       commander.uri = e.data.uri;
