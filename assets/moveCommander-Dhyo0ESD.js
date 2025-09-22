@@ -42,6 +42,7 @@ class MoveCommander {
         this.isPaused = false;
         this.resolveResume = null;
         this.accumulated_wait_ms = 0.0;
+        this.speedScale = 1.0;
     }
 
     async connect() {
@@ -118,6 +119,19 @@ class MoveCommander {
             }
         }
         return command;
+    }
+
+    setSpeedScale(value) {
+        if (!Number.isFinite(value) || value <= 0) {
+            this.speedScale = 1.0;
+            return;
+        }
+        this.speedScale = value;
+    }
+
+    _targetWaitMs() {
+        const scale = this.speedScale > 0 ? this.speedScale : 1.0;
+        return (this.dt / scale) * 1000;
     }
 
     async sendCommand(command) {
@@ -213,7 +227,7 @@ class MoveCommander {
                             await this.sendCommand(interpolated_cmd);
 
                             const elapsed_ms = performance.now() - loop_start_time;
-                            const wait_time_ms = this.dt * 1000 - elapsed_ms;
+                            const wait_time_ms = this._targetWaitMs() - elapsed_ms;
                             if (wait_time_ms > 0) {
                                 this.accumulated_wait_ms += wait_time_ms;
                             }
@@ -289,7 +303,7 @@ class MoveCommander {
                             await this.sendCommand(interpolated_cmd);
 
                             const elapsed_ms = performance.now() - loop_start_time;
-                            const wait_time_ms = this.dt * 1000 - elapsed_ms;
+                            const wait_time_ms = this._targetWaitMs() - elapsed_ms;
                             if (wait_time_ms > 0) {
                                 this.accumulated_wait_ms += wait_time_ms;
                             }
@@ -354,6 +368,10 @@ self.addEventListener('message', async (e) => {
       if (e.data.dt != null) {
         commander.dt = e.data.dt;
       }
+      break;
+    case 'set_speed_scale':
+      commander.setSpeedScale(e.data.value);
+      commander.accumulated_wait_ms = 0.0;
       break;
     case 'set_uri':
       commander.uri = e.data.uri;

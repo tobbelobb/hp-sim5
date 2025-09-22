@@ -180,6 +180,12 @@ canvas {
                 dt: <span id="dt">N/A</span> |
                 Speed: <span id="speed">N/A</span>
             </div>
+            <div id="speedControls" role="group" aria-label="Playback speed" style="margin-top: 6px; display: inline-flex; gap: 8px; align-items: center;">
+                <span>Playback:</span>
+                <button id="speedHalfBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">0.5x</button>
+                <button id="speed1xBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">1x</button>
+                <button id="speed2xBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">2x</button>
+            </div>
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
@@ -237,9 +243,20 @@ canvas {
     let moveCommanderWorker;
     let klipperCommanderWorker;
     let commander;
+    let gameControls = null;
+    let stageReady = false;
     let ws = null;
     let klipperRaw = null;
     let simDtSec = null; // Filled from USD timeCodesPerSecond
+    let currentTimeScale = 1.0;
+    const speedHalfBtn = document.getElementById('speedHalfBtn');
+    const speed1xBtn = document.getElementById('speed1xBtn');
+    const speed2xBtn = document.getElementById('speed2xBtn');
+    const speedButtons = [
+        { button: speedHalfBtn, value: 0.5 },
+        { button: speed1xBtn, value: 1.0 },
+        { button: speed2xBtn, value: 2.0 },
+    ];
     const websocketInToggle = document.getElementById('websocketIn');
     const websocketOutToggle = document.getElementById('websocketOut');
     const websocketPortInput = document.getElementById('websocketPort');
@@ -251,6 +268,70 @@ canvas {
     const port = websocketPortInput.value;
     const klipperRawIn = klipperRawInToggle.checked;
     const klipperRawPort = klipperRawPortInput.value;
+
+    const setSpeedButtonsEnabled = (enabled) => {
+        speedButtons.forEach(({ button }) => {
+            if (!button) {
+                return;
+            }
+            button.disabled = !enabled;
+            if (!enabled) {
+                button.setAttribute('aria-disabled', 'true');
+            } else {
+                button.removeAttribute('aria-disabled');
+            }
+        });
+    };
+
+    const updateSpeedButtonSelection = (scale) => {
+        speedButtons.forEach(({ button, value }) => {
+            if (!button) {
+                return;
+            }
+            const isActive = Math.abs(scale - value) < 1e-3;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            if (isActive) {
+                button.style.backgroundColor = '#ff452a';
+                button.style.color = '#fff';
+            } else {
+                button.style.backgroundColor = '';
+                button.style.color = '';
+            }
+        });
+    };
+
+    const applyTimeScaleToWorkers = (scale) => {
+        const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
+        if (moveCommanderWorker) {
+            moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+        }
+        if (klipperCommanderWorker) {
+            klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+        }
+    };
+
+    const handleTimeScaleChange = (scale) => {
+        currentTimeScale = scale;
+        updateSpeedButtonSelection(scale);
+        applyTimeScaleToWorkers(scale);
+    };
+
+    setSpeedButtonsEnabled(false);
+    updateSpeedButtonSelection(currentTimeScale);
+
+    speedButtons.forEach(({ button, value }) => {
+        if (!button) {
+            return;
+        }
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (!stageReady || !gameControls || typeof gameControls.setTimeScale !== 'function') {
+                return;
+            }
+            gameControls.setTimeScale(value);
+        });
+    });
 
     if (websocket_in || websocket_out) {
         ws = new WebSocket(`wss://localhost:${port}`);
@@ -340,6 +421,10 @@ canvas {
         if (window.Worker) {
             moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
             console.log("main: moveCommanderWorker is up");
+            if (simDtSec != null) {
+                moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+            }
+            moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
 
             moveCommanderWorker.onmessage = (e) => {
                 if (e.data.type === 'done') {
@@ -397,6 +482,10 @@ canvas {
             if (moveCommanderURI) {
                 moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
             }
+            if (simDtSec != null) {
+                moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+            }
+            moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
             moveCommanderWorker.onmessage = (e) => {
                 if (e.data.type === 'done') {
                     console.log('main: G-code processing finished.');
@@ -446,6 +535,10 @@ canvas {
                 }
             }
         };
+        if (simDtSec != null) {
+            klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+        }
+        klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
         return klipperCommanderWorker;
     };
 
@@ -458,6 +551,7 @@ canvas {
             if (simDtSec != null) {
                 moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
             }
+            moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
             moveCommanderWorker.postMessage(message);
             return;
         }
@@ -470,6 +564,7 @@ canvas {
             if (simDtSec != null) {
                 worker.postMessage({ type: 'set_dt', dt: simDtSec });
             }
+            worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
             worker.postMessage(message);
             return;
         }
@@ -526,9 +621,11 @@ canvas {
           simDtSec = 1.0 / timeCodesPerSecond;
           if (moveCommanderWorker) {
               moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+              moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
           if (klipperCommanderWorker) {
               klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+              klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
           if (commander) {
               commander.dt = simDtSec;
@@ -537,8 +634,13 @@ canvas {
               klipperRaw.setDt(simDtSec);
           }
       }
-
-      runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}));
+      gameControls = runGame(world, () => setupScene(world, stage, canvas, {remote : false, ws : ws}), {
+          initialTimeScale: currentTimeScale,
+          onTimeScaleChange: handleTimeScaleChange,
+      });
+      stageReady = true;
+      setSpeedButtonsEnabled(true);
+      updateSpeedButtonSelection(currentTimeScale);
     }).catch(error => {
         console.error("Error during USD loading or game setup:", error);
     });

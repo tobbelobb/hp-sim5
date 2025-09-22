@@ -124,13 +124,13 @@ canvas {
   font-size: 0.85rem;
 }
     </style>
-  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-DDKXj1t2.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/slideprinter/index.html-UUyedRPk.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BdDIjER9.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-DYCWqrVW.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-C1JNBvr3.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-BtjHtLxs.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-CcW5AYGp.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-Bd1_vknL.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DHV6zjIe.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-Jd5j8L9z.js">
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-cBTL8oaL.js">
@@ -189,6 +189,12 @@ canvas {
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
                 dt: <span id="dt">N/A</span> |
                 Speed: <span id="speed">N/A</span>
+            </div>
+            <div id="speedControls" role="group" aria-label="Playback speed" style="margin-top: 6px; display: inline-flex; gap: 8px; align-items: center;">
+                <span>Playback:</span>
+                <button id="speedHalfBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">0.5x</button>
+                <button id="speed1xBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">1x</button>
+                <button id="speed2xBtn" type="button" style="padding: 6px 10px; border-radius: 6px; font-weight: 600;">2x</button>
             </div>
         </div>
         <canvas id="myCanvas"></canvas>
