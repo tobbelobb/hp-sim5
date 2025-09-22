@@ -148,6 +148,98 @@ export class RenderSystem {
     this.drawnExtrusionCount = 0;
   }
 
+  // Shift already drawn extrusions when panning without redrawing everything.
+  // deltaOffsetX_sim and deltaOffsetY_sim are in simulation units (change in view offsets).
+  // Only use when zoom (scale) is unchanged.
+  shiftExtrusionsForPan(world, deltaOffsetX_sim, deltaOffsetY_sim) {
+    if (!this.extrusionCanvas || !this.extrusionCtx) return;
+    if (!Number.isFinite(deltaOffsetX_sim) && !Number.isFinite(deltaOffsetY_sim)) return;
+
+    const scale = this.effectiveCScale; // pixels per sim unit at current zoom
+    const dxPx = -deltaOffsetX_sim * scale;
+    const dyPx =  deltaOffsetY_sim * scale;
+
+    if (Math.abs(dxPx) < 0.5 && Math.abs(dyPx) < 0.5) {
+      // Negligible shift; skip to avoid extra work.
+      return;
+    }
+
+    const w = this.extrusionCanvas.width | 0;
+    const h = this.extrusionCanvas.height | 0;
+    if (w <= 0 || h <= 0) return;
+
+    // Copy old buffer shifted into a temp canvas
+    const tmp = document.createElement('canvas');
+    tmp.width = w;
+    tmp.height = h;
+    const tctx = tmp.getContext('2d');
+    tctx.clearRect(0, 0, w, h);
+    tctx.drawImage(this.extrusionCanvas, dxPx, dyPx);
+
+    // Swap back into the extrusion canvas
+    this.extrusionCtx.clearRect(0, 0, w, h);
+    this.extrusionCtx.drawImage(tmp, 0, 0);
+
+    // Determine newly exposed regions (up to four edge strips)
+    const rects = [];
+    if (dxPx > 0) {
+      const rw = Math.min(dxPx, w);
+      if (rw > 0) rects.push({ x: 0, y: 0, w: rw, h }); // left strip
+    } else if (dxPx < 0) {
+      const rw = Math.min(-dxPx, w);
+      if (rw > 0) rects.push({ x: w - rw, y: 0, w: rw, h }); // right strip
+    }
+    if (dyPx > 0) {
+      const rh = Math.min(dyPx, h);
+      if (rh > 0) rects.push({ x: 0, y: 0, w: w, h: rh }); // top strip
+    } else if (dyPx < 0) {
+      const rh = Math.min(-dyPx, h);
+      if (rh > 0) rects.push({ x: 0, y: h - rh, w: w, h: rh }); // bottom strip
+    }
+
+    if (rects.length === 0) return;
+
+    // Backfill previously-drawn extrusions that were offscreen and now come into view.
+    // We iterate already-rendered history only (up to drawnExtrusionCount).
+    // This avoids re-rendering everything while making the newly exposed strips correct.
+    // Note: Uses current view transform (this.viewOffset*, this.effectiveCScale),
+    // so the caller should update setViewTransform before or after consistently.
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length === 0) return;
+    const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+    if (!extruderComp || !Array.isArray(extruderComp.extrusions)) return;
+
+    const n = Math.min(this.drawnExtrusionCount, extruderComp.extrusions.length) | 0;
+    if (n <= 0) return;
+
+    this.extrusionCtx.save();
+    this.extrusionCtx.fillStyle = 'rgba(100, 255, 100, 0.5)';
+    for (let i = 0; i < n; i++) {
+      const extrusion = extruderComp.extrusions[i];
+      if (!extrusion) continue;
+      const pos = extrusion[0]; // [x, y, z]
+      const length = extrusion[1]; // filament length -> area proxy
+
+      const radiusSim = Math.sqrt(length / Math.PI) * 0.01 * 0.5;
+      const px = this.cX(pos[0]);
+      const py = this.cY(pos[1]);
+      const pr = radiusSim * this.effectiveCScale;
+
+      // Quick reject: only draw if inside any uncovered strip
+      for (let r = 0; r < rects.length; r++) {
+        const R = rects[r];
+        if (px + pr < R.x || px - pr > R.x + R.w || py + pr < R.y || py - pr > R.y + R.h) {
+          continue;
+        }
+        this.extrusionCtx.beginPath();
+        this.extrusionCtx.arc(px, py, pr, 0, 2 * Math.PI);
+        this.extrusionCtx.fill();
+        break;
+      }
+    }
+    this.extrusionCtx.restore();
+  }
+
 
   update(world, dt) {
     // Viewport settings are now instance properties (this.viewScaleMultiplier, etc.)

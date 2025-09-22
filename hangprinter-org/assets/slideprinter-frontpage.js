@@ -233,24 +233,50 @@ function initFrontpageSlideprinter() {
   }
 
   function handleInputViewChange(viewState = {}) {
-    if (typeof viewState.scale === 'number') {
-      currentViewScale = clamp(viewState.scale, MIN_VIEW_SCALE, MAX_VIEW_SCALE);
-    }
-    if (typeof viewState.offsetX === 'number') {
-      currentViewOffsetX = viewState.offsetX;
-    }
-    if (typeof viewState.offsetY === 'number') {
-      currentViewOffsetY = viewState.offsetY;
-    }
+    // Derive proposed new view state, compute deltas
+    const nextScale = typeof viewState.scale === 'number' ? clamp(viewState.scale, MIN_VIEW_SCALE, MAX_VIEW_SCALE) : currentViewScale;
+    const nextOffsetX = typeof viewState.offsetX === 'number' ? viewState.offsetX : currentViewOffsetX;
+    const nextOffsetY = typeof viewState.offsetY === 'number' ? viewState.offsetY : currentViewOffsetY;
 
-    syncRenderSystem(
-      {
-        scaleMultiplier: currentViewScale,
-        offsetX: currentViewOffsetX,
-        offsetY: currentViewOffsetY,
-      },
-      { clearExtrusions: true }
-    );
+    const scaleChanged = Math.abs(nextScale - currentViewScale) > ZOOM_EPSILON;
+    const dOffsetX = nextOffsetX - currentViewOffsetX;
+    const dOffsetY = nextOffsetY - currentViewOffsetY;
+
+    // Update internal state first
+    currentViewScale = nextScale;
+    currentViewOffsetX = nextOffsetX;
+    currentViewOffsetY = nextOffsetY;
+
+    const renderSystem = world.getResource('renderSystem');
+
+    if (!scaleChanged && renderSystem && typeof renderSystem.shiftExtrusionsForPan === 'function') {
+      // Fast path for pure panning: update transform without clearing and shift cached extrusions
+      syncRenderSystem(
+        {
+          scaleMultiplier: currentViewScale,
+          offsetX: currentViewOffsetX,
+          offsetY: currentViewOffsetY,
+        },
+        { clearExtrusions: false }
+      );
+      // Shift the cached extrusions layer and backfill newly exposed strips
+      try {
+        renderSystem.shiftExtrusionsForPan(world, dOffsetX, dOffsetY);
+      } catch (_) {
+        // Fallback safety: if shifting fails for any reason, clear to stay correct
+        renderSystem.clearExtrusions?.();
+      }
+    } else {
+      // Zoom changed or renderer missing: use safe path (clear and redraw as before)
+      syncRenderSystem(
+        {
+          scaleMultiplier: currentViewScale,
+          offsetX: currentViewOffsetX,
+          offsetY: currentViewOffsetY,
+        },
+        { clearExtrusions: true }
+      );
+    }
 
     updateZoomButtonState();
   }
