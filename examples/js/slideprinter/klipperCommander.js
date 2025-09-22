@@ -57,6 +57,7 @@ class KlipperCommander {
         this.resolveResume = null;
         this.accumulatedWaitMs = 0.0;
         this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
+        this.speedScale = 1.0;
         this._resetState();
     }
 
@@ -65,6 +66,14 @@ class KlipperCommander {
             this.dt = dt;
             this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
         }
+    }
+
+    setSpeedScale(scale) {
+        if (!Number.isFinite(scale) || scale <= 0) {
+            this.speedScale = 1.0;
+            return;
+        }
+        this.speedScale = scale;
     }
 
     async sendCommand(command) {
@@ -83,6 +92,11 @@ class KlipperCommander {
 
     _computeTicksPerBucket(dt) {
         return Math.max(1, Math.round(MCU_CLOCK_HZ * dt));
+    }
+
+    _targetWaitMs() {
+        const scale = this.speedScale > 0 ? this.speedScale : 1.0;
+        return (this.dt / scale) * 1000;
     }
 
     _resetState() {
@@ -253,7 +267,7 @@ class KlipperCommander {
         }
 
         const elapsedMs = performance.now() - loopStart;
-        const waitMs = this.dt * 1000 - elapsedMs;
+        const waitMs = this._targetWaitMs() - elapsedMs;
         if (waitMs > 0) {
             this.accumulatedWaitMs += waitMs;
         }
@@ -414,6 +428,11 @@ self.addEventListener('message', async (e) => {
         }
         case 'set_dt': {
             commander.setDt(e.data.dt);
+            break;
+        }
+        case 'set_speed_scale': {
+            commander.setSpeedScale(e.data.value);
+            commander.accumulatedWaitMs = 0.0;
             break;
         }
         case 'pause': {

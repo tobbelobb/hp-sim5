@@ -1,13 +1,20 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
 import { InputSystem } from './slideprinter_common.js';
 
-export function runGame(world, internalSetupScene) {
+export function runGame(world, internalSetupScene, options = {}) {
     const pauseBtn = document.getElementById('pauseBtn');
     const resetBtn = document.getElementById('resetBtn');
     const stepBtn = document.getElementById('stepBtn');
     const dumpBtn = document.getElementById('dumpBtn');
     const dtEl = document.getElementById('dt');
     const speedEl = document.getElementById('speed');
+
+    const {
+        initialTimeScale = 1.0,
+        minTimeScale = 0.1,
+        maxTimeScale = 8.0,
+        onTimeScaleChange,
+    } = options;
 
     let lastTime = 0;
     let accumulator = 0.0;
@@ -16,8 +23,17 @@ export function runGame(world, internalSetupScene) {
     let startTime = 0;
     let totalSim = 0;
     let hasStarted = false;
+    let targetTimeScale = clampTimeScale(initialTimeScale);
+    world.setResource('timeScale', targetTimeScale);
 
     const getPauseState = () => world.getResource('pauseState');
+
+    function clampTimeScale(value) {
+        if (!Number.isFinite(value)) {
+            return 1.0;
+        }
+        return Math.min(maxTimeScale, Math.max(minTimeScale, value));
+    }
 
     const updatePauseButtonLabel = () => {
         const pauseState = getPauseState();
@@ -41,7 +57,7 @@ export function runGame(world, internalSetupScene) {
         if (lastTime === 0) {
             lastTime = currentTime;
         }
-        const speedScale = 1.0;
+        const speedScale = targetTimeScale;
         let frameSec = speedScale * (currentTime - lastTime) / 1000;
         let simTimeProcessed = 0;
 
@@ -121,6 +137,34 @@ export function runGame(world, internalSetupScene) {
         requestAnimationFrame(gameLoop);
     }
 
+    function setTimeScale(scale) {
+        const clamped = clampTimeScale(scale);
+        if (Math.abs(clamped - targetTimeScale) < 1e-6) {
+            return;
+        }
+        targetTimeScale = clamped;
+        world.setResource('timeScale', targetTimeScale);
+        lastTime = 0;
+        frameCounter = 0;
+        totalSim = 0;
+        if (speedEl) {
+            speedEl.textContent = 'N/A';
+        }
+        const pauseState = getPauseState();
+        if (pauseState && !pauseState.paused) {
+            startTime = performance.now();
+        } else {
+            startTime = 0;
+        }
+        if (typeof onTimeScaleChange === 'function') {
+            onTimeScaleChange(targetTimeScale);
+        }
+    }
+
+    function getTimeScale() {
+        return targetTimeScale;
+    }
+
     if (pauseBtn) {
         pauseBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -171,8 +215,13 @@ export function runGame(world, internalSetupScene) {
     }
 
     resetGame({ autoPause: false });
+    if (typeof onTimeScaleChange === 'function') {
+        onTimeScaleChange(targetTimeScale);
+    }
 
     return {
         reset: resetGame,
+        setTimeScale,
+        getTimeScale,
     };
 }

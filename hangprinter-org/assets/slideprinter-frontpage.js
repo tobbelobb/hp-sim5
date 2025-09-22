@@ -38,12 +38,21 @@ function initFrontpageSlideprinter() {
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const panModeBtn = document.getElementById('panModeBtn');
+  const speedHalfBtn = document.getElementById('speedHalfBtn');
+  const speed1xBtn = document.getElementById('speed1xBtn');
+  const speed2xBtn = document.getElementById('speed2xBtn');
   const secondaryControls = document.getElementById('simSecondaryControls');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const simApp = canvas.closest('.sim-app');
   const initialTouchAction = canvas ? canvas.style.touchAction || '' : '';
   const simButtons = controlsRoot.querySelector('.sim-buttons');
   const startButtons = simButtons ? Array.from(simButtons.querySelectorAll('.sim-start')) : [];
+
+  const speedButtons = [
+    { button: speedHalfBtn, value: 0.5 },
+    { button: speed1xBtn, value: 1.0 },
+    { button: speed2xBtn, value: 2.0 },
+  ];
 
   const world = new World();
   let klipperCommanderWorker = null;
@@ -60,6 +69,7 @@ function initFrontpageSlideprinter() {
   let printActive = false;
   let secondaryControlsEverShown = false;
   let fullscreenActive = false;
+  let currentTimeScale = 1.0;
 
   const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
@@ -139,6 +149,47 @@ function initFrontpageSlideprinter() {
         zoomOutBtn.removeAttribute('aria-disabled');
       }
     }
+  }
+
+  function setSpeedButtonsEnabled(enabled) {
+    speedButtons.forEach(({ button }) => {
+      if (!button) {
+        return;
+      }
+      button.disabled = !enabled;
+      if (!enabled) {
+        button.setAttribute('aria-disabled', 'true');
+      } else {
+        button.removeAttribute('aria-disabled');
+      }
+    });
+  }
+
+  function updateSpeedButtonSelection(scale) {
+    speedButtons.forEach(({ button, value }) => {
+      if (!button) {
+        return;
+      }
+      const isActive = Math.abs(scale - value) < 1e-3;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  function applyTimeScaleToWorkers(scale) {
+    const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
+    if (klipperCommanderWorker) {
+      klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    }
+    if (moveCommanderWorker) {
+      moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    }
+  }
+
+  function handleTimeScaleChange(scale) {
+    currentTimeScale = scale;
+    updateSpeedButtonSelection(scale);
+    applyTimeScaleToWorkers(scale);
   }
 
   function applyViewStateFromController(partial = {}, options = {}) {
@@ -429,6 +480,7 @@ function initFrontpageSlideprinter() {
     if (simDtSec != null) {
       klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
+    klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
     return klipperCommanderWorker;
   }
 
@@ -463,6 +515,7 @@ function initFrontpageSlideprinter() {
     if (simDtSec != null) {
       moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
+    moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
     return moveCommanderWorker;
   }
 
@@ -492,6 +545,9 @@ function initFrontpageSlideprinter() {
     }
     stopInactiveWorkers(worker);
     resetRemoteQueue(worker);
+    if (worker) {
+      worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+    }
     if (gameControls && typeof gameControls.reset === 'function') {
       gameControls.reset({ autoPause: false });
       reapplyViewState({ clearExtrusions: true });
@@ -574,6 +630,8 @@ function initFrontpageSlideprinter() {
   }
 
   setPrintActive(false);
+  setSpeedButtonsEnabled(false);
+  updateSpeedButtonSelection(currentTimeScale);
 
   if (resetBtn) {
     resetBtn.addEventListener(
@@ -607,6 +665,19 @@ function initFrontpageSlideprinter() {
       setPanMode(!panModeActive);
     });
   }
+
+  speedButtons.forEach(({ button, value }) => {
+    if (!button) {
+      return;
+    }
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (!stageReady || !gameControls || typeof gameControls.setTimeScale !== 'function') {
+        return;
+      }
+      gameControls.setTimeScale(value);
+    });
+  });
 
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener('click', (event) => {
@@ -642,7 +713,10 @@ function initFrontpageSlideprinter() {
       }
 
       const sceneInitializer = () => setupScene(world, stage, canvas, { remote: false });
-      gameControls = runGame(world, sceneInitializer);
+      gameControls = runGame(world, sceneInitializer, {
+        initialTimeScale: currentTimeScale,
+        onTimeScaleChange: handleTimeScaleChange,
+      });
       if (gameControls && typeof gameControls.reset === 'function') {
         gameControls.reset({ autoPause: true });
       }
@@ -651,6 +725,8 @@ function initFrontpageSlideprinter() {
       setPanMode(false);
       syncCanvasDimensions();
       stageReady = true;
+      setSpeedButtonsEnabled(true);
+      updateSpeedButtonSelection(currentTimeScale);
     })
     .catch((error) => {
       console.error('Slideprinter demo initialisation failed:', error);

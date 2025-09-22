@@ -475,6 +475,25 @@ iframe {
     text-align: center;
 }
 
+.sim-speed {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: auto;
+    margin-top: 4px;
+}
+
+.sim-speed-btn {
+    text-align: center;
+    padding: 8px 14px;
+}
+
+.sim-speed-btn[aria-pressed="true"],
+.sim-speed-btn.is-active {
+    background: rgba(255, 255, 255, 0.32);
+    color: #1f1f27;
+}
+
 .sim-fullscreen {
     margin-left: auto;
     background: rgba(255, 255, 255, 0.18);
