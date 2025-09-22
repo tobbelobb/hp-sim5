@@ -435,6 +435,11 @@ function initFrontpageSlideprinter() {
     if (canvas) {
       canvas.style.touchAction = panModeActive ? 'none' : initialTouchAction;
     }
+    // Show a hand cursor over the sim-app when panning is enabled
+    if (simApp) {
+      // Use 'grab' which renders as a hand on modern browsers
+      simApp.style.cursor = panModeActive ? 'grab' : '';
+    }
     const inputSystem = getInputSystem();
     if (inputSystem && typeof inputSystem.setInteractionMode === 'function') {
       inputSystem.setInteractionMode(panModeActive ? 'pan' : 'select');
