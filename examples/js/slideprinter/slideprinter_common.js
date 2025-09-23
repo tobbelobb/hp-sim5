@@ -651,7 +651,16 @@ export class InputSystem {
          if (this.interactionMode === 'pan') {
              if (this.isPanning && this.panPointerId === event.pointerId) {
                  this.isPanning = false;
-                 // TODO: Redraw the visible circles here.
+                 if (this.onViewChange) {
+                     this.onViewChange(
+                         {
+                             scale: this.scaleMultiplier,
+                             offsetX: this.viewOffsetX,
+                             offsetY: this.viewOffsetY,
+                         },
+                         { forceRedraw: true }
+                     );
+                 }
                  this.panPointerId = null;
                  if (typeof this.canvas.releasePointerCapture === 'function') {
                      try {

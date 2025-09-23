@@ -232,12 +232,13 @@ function initFrontpageSlideprinter() {
     updateZoomButtonState();
   }
 
-  function handleInputViewChange(viewState = {}) {
+  function handleInputViewChange(viewState = {}, options = {}) {
     // Derive proposed new view state, compute deltas
     const nextScale = typeof viewState.scale === 'number' ? clamp(viewState.scale, MIN_VIEW_SCALE, MAX_VIEW_SCALE) : currentViewScale;
     const nextOffsetX = typeof viewState.offsetX === 'number' ? viewState.offsetX : currentViewOffsetX;
     const nextOffsetY = typeof viewState.offsetY === 'number' ? viewState.offsetY : currentViewOffsetY;
 
+    const forceRedraw = options?.forceRedraw || false;
     const scaleChanged = Math.abs(nextScale - currentViewScale) > ZOOM_EPSILON;
     const dOffsetX = nextOffsetX - currentViewOffsetX;
     const dOffsetY = nextOffsetY - currentViewOffsetY;
@@ -249,7 +250,7 @@ function initFrontpageSlideprinter() {
 
     const renderSystem = world.getResource('renderSystem');
 
-    if (!scaleChanged && renderSystem && typeof renderSystem.shiftExtrusionsForPan === 'function') {
+    if (!scaleChanged && !forceRedraw && renderSystem && typeof renderSystem.shiftExtrusionsForPan === 'function') {
       // Fast path for pure panning: update transform without clearing and shift cached extrusions
       syncRenderSystem(
         {
