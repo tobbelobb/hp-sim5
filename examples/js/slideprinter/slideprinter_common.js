@@ -552,6 +552,10 @@ export class InputSystem {
      handlePointerDown(event) {
          if (event.target !== this.canvas) return;
          event.preventDefault();
+         if ((event.pointerType === 'touch' || event.pointerType === 'pen') && this.interactionMode !== 'pan') {
+             this.activeGrabPointerId = event.pointerId;
+             this.setTouchScrollBlockActive(true);
+         }
          if (this.interactionMode === 'pan') {
              this.isPanning = true;
              this.panPointerId = event.pointerId;
@@ -600,8 +604,6 @@ export class InputSystem {
                this.touchActionBeforeGrab = this.canvas.style.touchAction;
              }
              this.canvas.style.touchAction = 'none';
-             this.activeGrabPointerId = event.pointerId;
-             this.setTouchScrollBlockActive(true);
            }
            const ptrE = this.world.createEntity();
            this.world.addComponent(ptrE, new PositionComponent(simX, simY));
