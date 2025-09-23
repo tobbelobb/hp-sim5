@@ -696,7 +696,7 @@ canvas {
             handlePresetFilename(filename);
         });
     }
-    const usdaPath = `${base}examples/usd_scenes/slideprinter_copy_for_vite.usda.txt`;
+    const usdaPath = new URL('../usd_scenes/slideprinter.usda', import.meta.url).href;
 
     UsdOpen(usdaPath).then(stage => {
       if (!stage) {
