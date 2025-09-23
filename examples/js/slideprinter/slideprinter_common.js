@@ -424,6 +424,7 @@ export class InputSystem {
          this.canvas.setAttribute('tabindex', '0');
          this.canvas.style.outline = 'none';
          this.canvas.focus();
+         this.canvas.style.touchAction = 'none';
          this.touchActionBeforeGrab = null;
          this.activeGrabPointerId = null;
          this.scrollBlockerAttached = false;
