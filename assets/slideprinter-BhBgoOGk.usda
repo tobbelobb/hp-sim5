@@ -87,34 +87,14 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def DistancePhysicsJoint "DistanceJointAB"
+        # Group the three spools into a rigid cluster for simulation
+        def RigidGroup "SpoolTriangle"
         {
-            rel physics:body0 = </World/SlideprinterScene/SpoolA>
-            rel physics:body1 = </World/SlideprinterScene/SpoolB>
-            point3f physics:localPos0 = (0, 0, 0)
-            point3f physics:localPos1 = (0, 0, 0)
-            float physics:minDistance = 0.173205
-            float physics:maxDistance = 0.173205
-        }
-
-        def DistancePhysicsJoint "DistanceJointBC"
-        {
-            rel physics:body0 = </World/SlideprinterScene/SpoolB>
-            rel physics:body1 = </World/SlideprinterScene/SpoolC>
-            point3f physics:localPos0 = (0, 0, 0)
-            point3f physics:localPos1 = (0, 0, 0)
-            float physics:minDistance = 0.173205
-            float physics:maxDistance = 0.173205
-        }
-
-        def DistancePhysicsJoint "DistanceJointCA"
-        {
-            rel physics:body0 = </World/SlideprinterScene/SpoolC>
-            rel physics:body1 = </World/SlideprinterScene/SpoolA>
-            point3f physics:localPos0 = (0, 0, 0)
-            point3f physics:localPos1 = (0, 0, 0)
-            float physics:minDistance = 0.173205
-            float physics:maxDistance = 0.173205
+            rel rigidGroup:members = [
+                </World/SlideprinterScene/SpoolA>,
+                </World/SlideprinterScene/SpoolB>,
+                </World/SlideprinterScene/SpoolC>
+            ]
         }
 
         def CableJoint "JointA"
