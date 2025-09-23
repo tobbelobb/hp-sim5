@@ -21,6 +21,7 @@ import {
   SimulationErrorStateComponent,
   RenderableComponent,
   DistanceConstraintComponent,
+  RigidGroupComponent,
 } from "../../../src/js/cable_joints/ecs.js";
 import {
   CableLinkComponent,
@@ -61,6 +62,7 @@ import {
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem,
   XPBDDistanceConstraintSystem,
+  RigidGroupSystem,
 } from '../../../src/js/cable_joints/commonSystems.js';
 
 export function setupScene(world, stage, canvas, options = {}) {
@@ -103,6 +105,7 @@ export function setupScene(world, stage, canvas, options = {}) {
         const jointPrims = [];
         const pathPrims = [];
         const distanceJointPrims = [];
+        const rigidGroupPrims = [];
 
         // Discover prims and create body entities in a single pass
         for (const prim of getChildren(sceneRoot)) {
@@ -118,6 +121,16 @@ export function setupScene(world, stage, canvas, options = {}) {
 
             if (prim.type === 'definition' && prim.defType === 'DistancePhysicsJoint') {
                 distanceJointPrims.push(prim);
+            }
+
+            // Detect rigid groups either by explicit defType or a members rel
+            if (prim.type === 'definition' && (prim.defType === 'RigidGroup')) {
+                rigidGroupPrims.push(prim);
+            } else {
+                const maybeMembers = getRelationship(prim, 'rigidGroup:members');
+                if (maybeMembers && maybeMembers.length > 0) {
+                    rigidGroupPrims.push(prim);
+                }
             }
 
             // Check for tags to identify bodies (Spools, Anchors)
@@ -178,7 +191,25 @@ export function setupScene(world, stage, canvas, options = {}) {
             }
         }
 
-        // Process discovered DistancePhysicsJoints
+        // Build rigid groups first (if any)
+        const entityToRigidGroup = {};
+        for (const prim of rigidGroupPrims) {
+            const memberPaths = getRelationship(prim, 'rigidGroup:members');
+            if (!memberPaths || memberPaths.length === 0) continue;
+            const memberNames = memberPaths.map(p => p.split('/').pop());
+            const memberEntities = memberNames
+                .map(name => nameToEntityId[name])
+                .filter(id => id !== undefined);
+            if (memberEntities.length >= 2) {
+                const groupEnt = world.createEntity();
+                world.addComponent(groupEnt, new RigidGroupComponent(memberEntities, 1.0));
+                for (const e of memberEntities) {
+                    entityToRigidGroup[e] = groupEnt;
+                }
+            }
+        }
+
+        // Process discovered DistancePhysicsJoints (skip those internal to a rigid group)
         for (const prim of distanceJointPrims) {
             const body0PathRel = getRelationship(prim, "physics:body0");
             const body1PathRel = getRelationship(prim, "physics:body1");
@@ -202,10 +233,13 @@ export function setupScene(world, stage, canvas, options = {}) {
 
             if (minDistance !== null && maxDistance !== null) {
                 if (Math.abs(minDistance - maxDistance) < 1e-6) {
-                    const restLength = (minDistance + maxDistance) / 2.0;
-                    const constraintEntity = world.createEntity();
-                    world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
-                    world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
+                    // Skip if both bodies belong to the same rigid group
+                    if (!entityToRigidGroup[entityA] || entityToRigidGroup[entityA] !== entityToRigidGroup[entityB]) {
+                        const restLength = (minDistance + maxDistance) / 2.0;
+                        const constraintEntity = world.createEntity();
+                        world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
+                        world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
+                    }
                 }
             }
         }
@@ -300,6 +334,8 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
           world.registerSystem(new PBDResolveCableOverCorrections());
+          // Enforce rigid motion for grouped spools (if any)
+          world.registerSystem(new RigidGroupSystem());
           world.registerSystem(new XPBDDistanceConstraintSystem());
 
           // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension

@@ -8,6 +8,7 @@ import {
   DistanceConstraintComponent,
   AngularVelocityComponent
 } from '../../../src/js/cable_joints/ecs.js';
+import { RigidGroupComponent } from '../../../src/js/cable_joints/ecs.js';
 
 import {
   CableLinkComponent,
@@ -502,6 +503,31 @@ export class RenderSystem {
       }
     }
     this.c.lineWidth = 1;
+
+    // Render Rigid Group visual edges (green lines between sequential members)
+    const rigidGroups = world.query([RigidGroupComponent]);
+    if (rigidGroups.length > 0) {
+      this.c.save();
+      this.c.lineWidth = 3 * this.effectiveCScale/250;
+      this.c.strokeStyle = 'green';
+      for (const gid of rigidGroups) {
+        const group = world.getComponent(gid, RigidGroupComponent);
+        const members = group?.members || [];
+        const n = members.length | 0;
+        for (let i = 0; i < n; i++) {
+          const a = members[i];
+          const b = members[(i + 1) % n];
+          const pA = world.getComponent(a, PositionComponent)?.pos;
+          const pB = world.getComponent(b, PositionComponent)?.pos;
+          if (!pA || !pB) continue;
+          this.c.beginPath();
+          this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+          this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+          this.c.stroke();
+        }
+      }
+      this.c.restore();
+    }
 
     // Render Distance Constraints
     const distanceConstraintEntities = world.query([DistanceConstraintComponent]);

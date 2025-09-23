@@ -10,7 +10,8 @@ import {
   MomentOfInertiaComponent,
   AngularVelocityComponent,
   DistanceConstraintComponent,
-  PrevFinalOrientationComponent
+  PrevFinalOrientationComponent,
+  RigidGroupComponent
 } from './ecs.js';
 
 export class PrevFinalOrientationSystem {
@@ -189,6 +190,82 @@ export class XPBDDistanceConstraintSystem {
         if (velBComp && dt > epsilon) {
             // velBComp.vel.add(dpB, 1.0 / dt); // This would be for PBD velocity update
         }
+      }
+    }
+  }
+}
+
+// Enforce rigid motion of grouped bodies via 2D shape matching (best-fit rigid transform).
+// References: Müller et al. 2005 (shape matching), PBDBodies (rigid body constraints),
+// but implemented as a single-shot Jacobi-style correction per group to avoid order bias.
+export class RigidGroupSystem {
+  runInPause = false;
+
+  _computeCOM(world, members) {
+    let sumMass = 0.0;
+    const com = new Vector2(0, 0);
+    for (const id of members) {
+      const pos = world.getComponent(id, PositionComponent)?.pos;
+      const m = world.getComponent(id, MassComponent)?.mass ?? 0.0;
+      if (!pos || !(m > 0)) continue;
+      com.add(pos.clone().scale(m));
+      sumMass += m;
+    }
+    if (sumMass > 0) com.scale(1.0 / sumMass);
+    return { com, sumMass };
+  }
+
+  update(world, dt) {
+    const groupEntities = world.query([RigidGroupComponent]);
+    if (!groupEntities || groupEntities.length === 0) return;
+
+    for (const gid of groupEntities) {
+      const group = world.getComponent(gid, RigidGroupComponent);
+      const members = group.members || [];
+      if (members.length < 2) continue;
+
+      // Initialize rest offsets once from current configuration
+      if (!group.restLocal) {
+        const { com } = this._computeCOM(world, members);
+        group.restLocal = members.map((id) => {
+          const pos = world.getComponent(id, PositionComponent)?.pos;
+          return pos ? pos.clone().subtract(com) : new Vector2(0, 0);
+        });
+      }
+
+      // Current COM and relative positions
+      const { com, sumMass } = this._computeCOM(world, members);
+      if (!(sumMass > 0)) continue;
+
+      // Compute best-fit rotation (2D) mapping restLocal -> currentRel using weighted Procrustes
+      let Sx = 0.0; // sum m (r.x*p.x + r.y*p.y)
+      let Sy = 0.0; // sum m (r.x*p.y - r.y*p.x)
+      for (let i = 0; i < members.length; i++) {
+        const id = members[i];
+        const pos = world.getComponent(id, PositionComponent)?.pos;
+        const m = world.getComponent(id, MassComponent)?.mass ?? 0.0;
+        if (!pos || !(m > 0)) continue;
+        const p = pos.clone().subtract(com);
+        const r = group.restLocal[i] || new Vector2(0, 0);
+        Sx += m * (r.x * p.x + r.y * p.y);
+        Sy += m * (r.x * p.y - r.y * p.x);
+      }
+
+      const angle = Math.atan2(Sy, Sx);
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+
+      // Target positions under best-fit rigid transform
+      const stiffness = Math.max(0, Math.min(1, group.stiffness ?? 1.0));
+      for (let i = 0; i < members.length; i++) {
+        const id = members[i];
+        const posComp = world.getComponent(id, PositionComponent);
+        if (!posComp) continue;
+        const r = group.restLocal[i] || new Vector2(0, 0);
+        const qx = c * r.x - s * r.y + com.x;
+        const qy = s * r.x + c * r.y + com.y;
+        const dp = new Vector2(qx - posComp.pos.x, qy - posComp.pos.y).scale(stiffness);
+        posComp.pos.add(dp);
       }
     }
   }

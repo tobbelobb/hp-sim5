@@ -177,3 +177,14 @@ export class DistanceConstraintComponent {
   }
 }
 
+// Groups multiple bodies to move as a single rigid cluster using shape matching.
+// - members: array of entityIds
+// - restLocal: array of Vector2 offsets (initialized on first update)
+// - stiffness: [0..1], how strongly to enforce rigidity (1 = hard constraint)
+export class RigidGroupComponent {
+  constructor(members = [], stiffness = 1.0) {
+    this.members = members;
+    this.restLocal = null; // filled with Vector2 per member
+    this.stiffness = stiffness;
+  }
+}
