@@ -8,6 +8,7 @@ import {
     OrientationComponent,
     AngularVelocityComponent,
     MomentOfInertiaComponent,
+    RigidGroupComponent,
 } from '../../../src/js/cable_joints/ecs.js';
 import {
     CableLinkComponent,
@@ -85,14 +86,34 @@ export class StepperMotorSystem {
             AngularVelocityComponent,
             MomentOfInertiaComponent,
         ];
+
+        // Build a quick lookup: entityId -> group angle (if in a rigid group)
+        const groupAngleByMember = new Map();
+        try {
+            const groups = world.query([RigidGroupComponent]);
+            for (const gid of groups) {
+                const group = world.getComponent(gid, RigidGroupComponent);
+                const angle = group?.prevAngle || 0.0;
+                const members = group?.members || [];
+                for (const m of members) {
+                    groupAngleByMember.set(m, angle);
+                }
+            }
+        } catch(_e) {
+            // RigidGroupComponent may not be present; ignore
+        }
         for (const e of world.query(query)) {
             const stepper = world.getComponent(e, StepperMotorComponent);
             const orient = world.getComponent(e, OrientationComponent);
             const angVel = world.getComponent(e, AngularVelocityComponent);
             const inertia = world.getComponent(e, MomentOfInertiaComponent);
 
-            // Calculate restoring torque based on angular error
-            const error = orient.angle - (stepper.commandedAngle - stepper.deltaAngle);
+            // Calculate restoring torque based on angular error.
+            // Make the stepper act in the group's local frame so rigid-group rotation
+            // does not fight the motor controller. Target in world = groupAngle + commanded.
+            const groupAngle = groupAngleByMember.get(e) || 0.0;
+            const targetWorldAngle = groupAngle + (stepper.commandedAngle - stepper.deltaAngle);
+            const error = orient.angle - targetWorldAngle;
             const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
 
             // Add damping to help the motor settle

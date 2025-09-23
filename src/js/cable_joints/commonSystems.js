@@ -267,6 +267,32 @@ export class RigidGroupSystem {
         const dp = new Vector2(qx - posComp.pos.x, qy - posComp.pos.y).scale(stiffness);
         posComp.pos.add(dp);
       }
+
+      // Apply group rotation to each member's local orientation
+      let deltaAngle = angle - (group.prevAngle || 0.0);
+      // normalize to [-pi, pi] for shortest rotation
+      while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+      while (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+      if (Math.abs(deltaAngle) > 0) {
+        for (let i = 0; i < members.length; i++) {
+          const id = members[i];
+          const o = world.getComponent(id, OrientationComponent);
+          if (o) {
+            o.angle += deltaAngle;
+          }
+        }
+      }
+
+      // Optional debug output if enabled
+      try {
+        if (world.getResource && world.getResource('debugAngles')) {
+          const first = members[0];
+          const o0 = world.getComponent(first, OrientationComponent);
+          console.log('[RigidGroupSystem]', { angle, deltaAngle, o0: o0 ? o0.angle : null });
+        }
+      } catch(_) {}
+
+      group.prevAngle = angle;
     }
   }
 }

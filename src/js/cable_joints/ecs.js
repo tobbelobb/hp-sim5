@@ -186,5 +186,6 @@ export class RigidGroupComponent {
     this.members = members;
     this.restLocal = null; // filled with Vector2 per member
     this.stiffness = stiffness;
+    this.prevAngle = 0.0; // last solved absolute group angle
   }
 }
