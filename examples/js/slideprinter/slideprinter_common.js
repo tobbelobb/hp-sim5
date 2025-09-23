@@ -437,7 +437,7 @@ export class InputSystem {
          document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
          document.addEventListener('pointerup', this.handlePointerUp.bind(this));
          document.addEventListener('pointercancel', this.handlePointerCancel.bind(this));
-         this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
+         document.addEventListener('pointermove', this.handlePointerMove.bind(this));
      }
 
      setInteractionMode(mode) {
