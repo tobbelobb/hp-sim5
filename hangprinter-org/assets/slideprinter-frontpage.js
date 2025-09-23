@@ -486,6 +486,7 @@ function initFrontpageSlideprinter() {
     setPanMode(false);
     reapplyViewState({ clearExtrusions: true });
     currentPresetKey = DEFAULT_PRESET_KEY;
+    handleTimeScaleChange(1.0);
   }
 
   function ensureKlipperWorker() {
