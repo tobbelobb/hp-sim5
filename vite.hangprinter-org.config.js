@@ -54,7 +54,14 @@ export default defineConfig(async () => {
       assetsDir: 'assets'
     },
     // Keep your special formats working:
-    assetsInclude: ['**/*.usda', '**/*.usda.txt'],
+    assetsInclude: [
+      '**/*.usda',
+      '**/*.usda.txt',
+      '**/*.usdc',
+      '**/*.gcode',
+      '**/*.serial',
+      '**/*.txt',
+    ],
     plugins: [copyExtrasPlugin()],
   };
 });

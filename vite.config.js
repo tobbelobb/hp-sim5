@@ -77,6 +77,13 @@ export default defineConfig(async () => {
     server: {},
     preview: {},
     plugins: [coiHeadersPlugin(), copyHangprinterExtrasPlugin()],
-    assetsInclude: ['**/*.usda', '**/*.usda.txt'],
+    assetsInclude: [
+      '**/*.usda',
+      '**/*.usda.txt',
+      '**/*.usdc',
+      '**/*.gcode',
+      '**/*.serial',
+      '**/*.txt',
+    ],
   };
 });

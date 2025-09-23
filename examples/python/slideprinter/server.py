@@ -211,41 +211,6 @@ class RemoteSpoolSystem:
                     stepper_comp.delta_angle += command[axis]
 
 
-def _copy_usd_on_change(changed_file: Path, root_dir: Path):
-    """Copy slideprinter.usda to the public dir for vite when it changes."""
-    try:
-        source_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
-        if changed_file.resolve() != source_path.resolve():
-            return
-
-        dest_path = (
-            root_dir
-            / "public"
-            / "examples"
-            / "usd_scenes"
-            / "slideprinter_copy_for_vite.usda.txt"
-        )
-        lock_path = dest_path.parent / (dest_path.name + ".lock")
-
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-        try:
-            lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            return
-        else:
-            try:
-                import shutil
-                shutil.copy(source_path, dest_path)
-                print(
-                    f"Copied {source_path.relative_to(root_dir)} to {dest_path.relative_to(root_dir)}"
-                )
-            finally:
-                os.close(lock_fd)
-                os.remove(lock_path)
-    except Exception as e:  # pragma: no cover - best effort only
-        print(f"Could not copy {changed_file}: {e}", file=sys.stderr)
-
 
 async def watch_and_restart(files, interval=1.0):
     """Monitor *files* and restart the process if any change."""

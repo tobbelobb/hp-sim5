@@ -98,43 +98,6 @@ WATCHED_FILES = [
 
 ]
 
-def _copy_usd_on_change(changed_file: Path, root_dir: Path):
-    """If changed_file is the flipper scene, copy it to the public dir for vite.
-
-    This is done atomically with a lock file to support multiple server processes.
-    This function is designed to fail silently if the copy is not possible.
-    """
-    try:
-        source_path = root_dir / "examples" / "usd_scenes" / "flipper_scene.usda"
-        if changed_file.resolve() != source_path.resolve():
-            return
-
-        dest_path = root_dir / "public" / "examples" / "usd_scenes" / "flipper_scene_copy_for_vite.usda.txt"
-        lock_path = dest_path.parent / (dest_path.name + ".lock")
-
-        # Ensure destination directory exists
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Attempt to acquire lock.
-        try:
-            lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            # Another process has the lock. It will handle the copy.
-            return
-        else:
-            # We got the lock.
-            try:
-                import shutil
-                shutil.copy(source_path, dest_path)
-                print(f"Copied {source_path.relative_to(root_dir)} to {dest_path.relative_to(root_dir)}")
-            finally:
-                os.close(lock_fd)
-                os.remove(lock_path)
-    except Exception as e:
-        # Fail silently, but log to stderr for debugging.
-        print(f"Could not copy {changed_file}: {e}", file=sys.stderr)
-
-
 async def watch_and_restart(files, interval=1.0):
     """Monitor *files* and restart the process if any change."""
     mtimes = {}
