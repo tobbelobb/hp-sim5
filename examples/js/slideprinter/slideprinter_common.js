@@ -651,6 +651,7 @@ export class InputSystem {
          if (this.interactionMode === 'pan') {
              if (this.isPanning && this.panPointerId === event.pointerId) {
                  this.isPanning = false;
+                 // TODO: Redraw the visible circles here.
                  this.panPointerId = null;
                  if (typeof this.canvas.releasePointerCapture === 'function') {
                      try {
@@ -670,34 +671,34 @@ export class InputSystem {
             }
         }
 
-         if (this.grabSpring) {
-           const { ptrE, jointE, pathE, ballE } = this.grabSpring;
+        if (this.grabSpring) {
+          const { ptrE, jointE, pathE, ballE } = this.grabSpring;
 
-           const posComp = this.world.getComponent(ballE, PositionComponent);
-           const velComp = this.world.getComponent(ballE, VelocityComponent);
-           const prevFinalPosComp = this.world.getComponent(ballE, PrevFinalPosComponent);
-           const dt = this.world.getResource('dt');
+          const posComp = this.world.getComponent(ballE, PositionComponent);
+          const velComp = this.world.getComponent(ballE, VelocityComponent);
+          const prevFinalPosComp = this.world.getComponent(ballE, PrevFinalPosComponent);
+          const dt = this.world.getResource('dt');
 
-           if (velComp && posComp && prevFinalPosComp && dt > 1e-9) {
-             velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0/dt));
-           } else if (velComp) {
-             velComp.vel.set(new Vector2(0,0));
-           }
+          if (velComp && posComp && prevFinalPosComp && dt > 1e-9) {
+            velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0/dt));
+          } else if (velComp) {
+            velComp.vel.set(new Vector2(0,0));
+          }
 
-           this.world.destroyEntity(pathE);
-           this.world.destroyEntity(jointE);
-           this.world.destroyEntity(ptrE);
-           this.grabSpring = null;
-           this.world.setResource('grabbedBall', null);
-           if (this.touchActionBeforeGrab !== null && this.interactionMode !== 'pan') {
-             this.canvas.style.touchAction = this.touchActionBeforeGrab;
-             this.touchActionBeforeGrab = null;
-           }
-         }
-         if (this.activeGrabPointerId === event.pointerId) {
-           this.activeGrabPointerId = null;
-           this.setTouchScrollBlockActive(false);
-         }
+          this.world.destroyEntity(pathE);
+          this.world.destroyEntity(jointE);
+          this.world.destroyEntity(ptrE);
+          this.grabSpring = null;
+          this.world.setResource('grabbedBall', null);
+          if (this.touchActionBeforeGrab !== null && this.interactionMode !== 'pan') {
+            this.canvas.style.touchAction = this.touchActionBeforeGrab;
+            this.touchActionBeforeGrab = null;
+          }
+        }
+        if (this.activeGrabPointerId === event.pointerId) {
+          this.activeGrabPointerId = null;
+          this.setTouchScrollBlockActive(false);
+        }
      }
 
      handlePointerCancel(event) {
