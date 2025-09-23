@@ -113,6 +113,7 @@ class KlipperCommander {
         this.nextBucketToEmit = 0;
         this.maxBucketSeen = -1;
         this.accumulatedWaitMs = 0.0;
+        this.lastYieldTime = 0;
     }
 
     _ensureAxisState(axis) {
@@ -272,14 +273,18 @@ class KlipperCommander {
         if (waitMs > 0) {
             this.accumulatedWaitMs += waitMs;
         }
-        // In fast mode, scale down the effective wait by the playback speed
-        // so we still yield to the event loop without starving the queue.
         const waitScale = this.fastMode ? Math.max(1, this.speedScale) : 1;
         const thresholdMs = 10.0;
+
         if (this.accumulatedWaitMs > thresholdMs) {
             const sleepMs = Math.max(0, this.accumulatedWaitMs / waitScale);
             await new Promise((resolve) => setTimeout(resolve, sleepMs));
             this.accumulatedWaitMs = 0.0;
+            this.lastYieldTime = performance.now();
+        } else if (!this.lastYieldTime || performance.now() - this.lastYieldTime > 50) {
+            // If running behind, still yield every ~50ms to prevent blocking.
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            this.lastYieldTime = performance.now();
         }
     }
 
