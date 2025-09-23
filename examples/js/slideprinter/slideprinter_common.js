@@ -574,7 +574,7 @@ export class InputSystem {
          const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
          const clickVec = new Vector2(simX, simY);
 
-         const cmOnScreen = 0.5;
+         const cmOnScreen = 1.0;
          const dpi = 96;
          const pixelsPerCm = dpi / 2.54;
          const extraPixels = cmOnScreen * pixelsPerCm;
