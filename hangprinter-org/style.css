@@ -606,6 +606,9 @@ iframe {
     overflow: hidden;
     background: rgba(0, 0, 0, 0.35);
     position: relative;
+    /* Prevent scroll chaining and browser gestures starting inside the sim */
+    overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .canvas-frame::after {
@@ -620,6 +623,12 @@ iframe {
     width: 100%;
     height: 100%;
     display: block;
+    /* Ensure touch interactions stay within the canvas and don’t scroll the page */
+    touch-action: none;
+    -ms-touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .sim-app:fullscreen,

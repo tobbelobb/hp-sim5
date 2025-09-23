@@ -552,6 +552,14 @@ export class InputSystem {
      handlePointerDown(event) {
          if (event.target !== this.canvas) return;
          event.preventDefault();
+         // Capture pointer immediately to avoid losing the gesture to page scroll
+         if (typeof this.canvas.setPointerCapture === 'function') {
+             try {
+                 this.canvas.setPointerCapture(event.pointerId);
+             } catch (err) {
+                 // Ignore browsers that disallow capture here.
+             }
+         }
          if ((event.pointerType === 'touch' || event.pointerType === 'pen') && this.interactionMode !== 'pan') {
              this.activeGrabPointerId = event.pointerId;
              this.setTouchScrollBlockActive(true);
@@ -561,13 +569,6 @@ export class InputSystem {
              this.panPointerId = event.pointerId;
              this.panLastX = event.clientX;
              this.panLastY = event.clientY;
-             if (typeof this.canvas.setPointerCapture === 'function') {
-                 try {
-                     this.canvas.setPointerCapture(event.pointerId);
-                 } catch (err) {
-                     // Ignore browsers that disallow capture here.
-                 }
-             }
              return;
          }
          const rect = this.canvas.getBoundingClientRect();
@@ -579,7 +580,8 @@ export class InputSystem {
          const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
          const clickVec = new Vector2(simX, simY);
 
-         const cmOnScreen = 1.0;
+         // Make touch targeting a bit more forgiving
+         const cmOnScreen = (event.pointerType === 'touch' || event.pointerType === 'pen') ? 1.5 : 1.0;
          const dpi = 96;
          const pixelsPerCm = dpi / 2.54;
          const extraPixels = cmOnScreen * pixelsPerCm;
