@@ -358,13 +358,39 @@ def stage_to_world(world, stage):
 
         if "Pinhole" in tags:
             ent = world.create_entity()
+            radius_attr = prim.GetAttribute("radius")
+            mass_attr = prim.GetAttribute("physics:mass")
+            inertia_attr = prim.GetAttribute("physics:inertiaTensor")
+            vel_attr = prim.GetAttribute("physics:velocity")
+            ang_vel_attr = prim.GetAttribute("physics:angularVelocity")
+
+            if (radius_attr is None or mass_attr is None or inertia_attr is None or
+                    vel_attr is None or ang_vel_attr is None):
+                continue
+
+            radius = radius_attr.Get()
+            mass = mass_attr.Get()
+            inertia_tensor = inertia_attr.Get()
+            inertia = inertia_tensor[2][2]
+            vel = np.array(vel_attr.Get(), dtype=float)
+            ang_vel_vec = ang_vel_attr.Get()
+            ang_vel = ang_vel_vec[2] if len(ang_vel_vec) >= 3 else 0.0
+
             world.add_component(ent, PositionComponent(pos.copy()))
-            world.add_component(ent, RadiusComponent(0.005))
-            world.add_component(ent, MassComponent(-1.0))
+            world.add_component(ent, VelocityComponent(vel))
+            world.add_component(ent, RadiusComponent(radius))
+            world.add_component(ent, MassComponent(mass))
             world.add_component(ent, RenderableComponent("circle", color or '#cccccc'))
+            world.add_component(ent, OrientationComponent(0.0))
+            world.add_component(ent, AngularVelocityComponent(ang_vel))
+            world.add_component(ent, MomentOfInertiaComponent(inertia))
+            world.add_component(ent, PrevFinalPosComponent(pos.copy()))
+            world.add_component(ent, PrevFinalOrientationComponent(0.0))
             world.add_component(ent, CableLinkComponent())
             if fric is not None:
                 world.add_component(ent, CoefficientOfFrictionComponent(fric))
+            if rest is not None:
+                world.add_component(ent, RestitutionComponent(rest))
             name_to_entity[prim.GetName()] = ent
 
     extruder_entity = world.create_entity()

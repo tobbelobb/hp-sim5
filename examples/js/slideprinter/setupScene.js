@@ -189,13 +189,37 @@ export function setupScene(world, stage, canvas, options = {}) {
                     nameToEntityId[prim.name] = ent;
                 } else if (tags.includes("Pinhole")) {
                     const ent = world.createEntity();
+                    const radius = getAttribute(prim, "radius");
+                    const mass = getAttribute(prim, "physics:mass");
+                    const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
+                    const velArr = getAttribute(prim, "physics:velocity");
+                    const angVelArr = getAttribute(prim, "physics:angularVelocity");
+
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-                    world.addComponent(ent, new RadiusComponent(0.005));
-                    world.addComponent(ent, new MassComponent(-1.0));
+                    if (velArr !== null) {
+                        const vel = new Vector2(velArr[0], velArr[1]);
+                        world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
+                    }
+                    if (radius !== null) {
+                        world.addComponent(ent, new RadiusComponent(radius));
+                    }
+                    world.addComponent(ent, new MassComponent(mass));
                     world.addComponent(ent, new RenderableComponent('circle', color || '#cccccc'));
-                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
-                    if (friction !== null) {
-                        world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                    if (angVelArr !== null) {
+                        world.addComponent(ent, new OrientationComponent(0.0));
+                        world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
+                        const angVel = angVelArr[2];
+                        world.addComponent(ent, new AngularVelocityComponent(angVel));
+                    }
+                    if (inertiaTensor !== null) {
+                        const inertia = inertiaTensor[2][2];
+                        world.addComponent(ent, new MomentOfInertiaComponent(inertia));
+                    }
+                    world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y));
+                    if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
+                    if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                    if (getAttribute(prim, "cable:linkable")) {
+                        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
                     nameToEntityId[prim.name] = ent;
                 }

@@ -37,11 +37,17 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Xform "PinholeA" ()
+        def Circle "PinholeA" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
         {
             token[] ecs:tags = ["Pinhole"]
+            custom bool cable:linkable = 1
+            double radius = 0.01
             double3 xformOp:translate = (0.0, -0.2, 0.0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float physics:mass = 0.001
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
@@ -70,11 +76,17 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Xform "PinholeB" ()
+        def Circle "PinholeB" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
         {
             token[] ecs:tags = ["Pinhole"]
+            custom bool cable:linkable = 1
+            double radius = 0.01
             double3 xformOp:translate = (0.1732208773, 0.0999726347, 0.0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float physics:mass = 0.001
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
@@ -103,11 +115,17 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Xform "PinholeC" ()
+        def Circle "PinholeC" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
         {
             token[] ecs:tags = ["Pinhole"]
+            custom bool cable:linkable = 1
+            double radius = 0.01
             double3 xformOp:translate = (-0.1732208773, 0.0999726347, 0.0)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            float physics:mass = 0.001
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
@@ -117,7 +135,10 @@ def Xform "World"
             rel rigidGroup:members = [
                 </World/SlideprinterScene/SpoolA>,
                 </World/SlideprinterScene/SpoolB>,
-                </World/SlideprinterScene/SpoolC>
+                </World/SlideprinterScene/SpoolC>,
+                </World/SlideprinterScene/PinholeA>,
+                </World/SlideprinterScene/PinholeB>,
+                </World/SlideprinterScene/PinholeC>
             ]
         }
 
