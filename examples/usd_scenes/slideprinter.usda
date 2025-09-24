@@ -37,6 +37,14 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
+        def Xform "PinholeA" ()
+        {
+            token[] ecs:tags = ["Pinhole"]
+            double3 xformOp:translate = (0.0, -0.2, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
         def Circle "SpoolB" (
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
@@ -97,13 +105,22 @@ def Xform "World"
             ]
         }
 
-        def CableJoint "JointA"
+        def CableJoint "JointA_0"
         {
             custom point3d localPos0 = (0.0, -2.1, 0.0)
-            custom point3d localPos1 = (-0.029997, -0.10045, 0.0)
+            custom point3d localPos1 = (0.0, -0.2, 0.0)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorA>
+            custom rel physics:body1 = </World/SlideprinterScene/PinholeA>
+            custom double restLength = 1.9
+        }
+
+        def CableJoint "JointA_1"
+        {
+            custom point3d localPos0 = (0.0, -0.2, 0.0)
+            custom point3d localPos1 = (-0.029997, -0.10045, 0.0)
+            custom rel physics:body0 = </World/SlideprinterScene/PinholeA>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolA>
-            custom double restLength = 1.999775
+            custom double restLength = 0.12
         }
 
         def CableJoint "JointB"
@@ -128,10 +145,10 @@ def Xform "World"
             apiSchemas = ["CablePathAPI"]
         )
         {
-            custom bool[] cablePath:clockwise = [1, 1]
-            custom rel cablePath:joints = [</World/SlideprinterScene/JointA>]
-            custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
-            custom double[] cablePath:stored = [0, 0.942478]
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom rel cablePath:joints = [</World/SlideprinterScene/JointA_0>, </World/SlideprinterScene/JointA_1>]
+            custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
+            custom double[] cablePath:stored = [0, 0, 0.942478]
             custom double cablePath:totalLength = 2.942253
             custom double stiffness = 20000.0
         }
@@ -140,11 +157,11 @@ def Xform "World"
             apiSchemas = ["CablePathAPI"]
         )
         {
-            custom bool[] cablePath:clockwise = [1, 1]
+            custom bool[] cablePath:clockwise = [1, 1, 1]
             custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/SlideprinterScene/JointB>]
-            custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
-            custom double[] cablePath:stored = [0, 0.942478]
+            custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
+            custom double[] cablePath:stored = [0, 0, 0.942478]
             custom double cablePath:totalLength = 2.892808
             custom double stiffness = 20000.0
         }
@@ -153,11 +170,11 @@ def Xform "World"
             apiSchemas = ["CablePathAPI"]
         )
         {
-            custom bool[] cablePath:clockwise = [1, 1]
+            custom bool[] cablePath:clockwise = [1, 1, 1]
             custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/SlideprinterScene/JointC>]
-            custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
-            custom double[] cablePath:stored = [0, 0.942478]
+            custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
+            custom double[] cablePath:stored = [0, 0, 0.942478]
             custom double cablePath:totalLength = 2.892808
             custom double stiffness = 20000.0
         }

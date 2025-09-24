@@ -271,6 +271,29 @@ export class RenderSystem {
     }
     // --- End Obstacle Query ---
 
+    // Visualize orientation for entities with OrientationComponent
+    {
+      const oriEntities = world.query([OrientationComponent, PositionComponent, RadiusComponent]);
+      if (oriEntities.length > 0) {
+        this.c.save();
+        this.c.strokeStyle = '#00AAFF';
+        this.c.lineWidth = 2 * this.effectiveCScale/250;
+        for (const e of oriEntities) {
+          const pos = world.getComponent(e, PositionComponent)?.pos;
+          const r   = world.getComponent(e, RadiusComponent)?.radius;
+          const o   = world.getComponent(e, OrientationComponent)?.angle;
+          if (!pos || !(r > 0) || typeof o !== 'number') continue;
+          const tipX = pos.x + r * Math.cos(o);
+          const tipY = pos.y + r * Math.sin(o);
+          this.c.beginPath();
+          this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
+          this.c.lineTo(this.cX(tipX), this.cY(tipY));
+          this.c.stroke();
+        }
+        this.c.restore();
+      }
+    }
+
 
     // Base line width and debug radius (adjust as needed)
     const baseLineWidth = 2.0;
