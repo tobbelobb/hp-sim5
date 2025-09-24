@@ -42,7 +42,6 @@ def Xform "World"
         )
         {
             token[] ecs:tags = ["Pinhole"]
-            custom bool cable:linkable = 1
             double radius = 0.01
             double3 xformOp:translate = (0.0, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
@@ -81,7 +80,6 @@ def Xform "World"
         )
         {
             token[] ecs:tags = ["Pinhole"]
-            custom bool cable:linkable = 1
             double radius = 0.01
             double3 xformOp:translate = (0.173205080756888, 0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
@@ -120,7 +118,6 @@ def Xform "World"
         )
         {
             token[] ecs:tags = ["Pinhole"]
-            custom bool cable:linkable = 1
             double radius = 0.01
             double3 xformOp:translate = (-0.173205080756888, 0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
