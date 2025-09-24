@@ -356,6 +356,17 @@ def stage_to_world(world, stage):
                 world.add_component(ent, CableLinkComponent())
             name_to_entity[prim.GetName()] = ent
 
+        if "Pinhole" in tags:
+            ent = world.create_entity()
+            world.add_component(ent, PositionComponent(pos.copy()))
+            world.add_component(ent, RadiusComponent(0.005))
+            world.add_component(ent, MassComponent(-1.0))
+            world.add_component(ent, RenderableComponent("circle", color or '#cccccc'))
+            world.add_component(ent, CableLinkComponent())
+            if fric is not None:
+                world.add_component(ent, CoefficientOfFrictionComponent(fric))
+            name_to_entity[prim.GetName()] = ent
+
     extruder_entity = world.create_entity()
     world.add_component(extruder_entity, ExtruderComponent())
 

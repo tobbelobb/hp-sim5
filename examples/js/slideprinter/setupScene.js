@@ -187,6 +187,17 @@ export function setupScene(world, stage, canvas, options = {}) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
                     nameToEntityId[prim.name] = ent;
+                } else if (tags.includes("Pinhole")) {
+                    const ent = world.createEntity();
+                    world.addComponent(ent, new PositionComponent(pos.x, pos.y));
+                    world.addComponent(ent, new RadiusComponent(0.005));
+                    world.addComponent(ent, new MassComponent(-1.0));
+                    world.addComponent(ent, new RenderableComponent('circle', color || '#cccccc'));
+                    world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
+                    if (friction !== null) {
+                        world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                    }
+                    nameToEntityId[prim.name] = ent;
                 }
             }
         }
