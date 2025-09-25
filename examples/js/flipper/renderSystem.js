@@ -537,7 +537,7 @@ export class RenderSystem {
         const group = world.getComponent(gid, RigidGroupComponent);
         const members = group?.members || [];
         const n = members.length | 0;
-        for (const i of [[3, 4], [4, 5], [5, 3]]) {
+        for (const i of [[3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 3]]) {
           const a = members[i[0]];
           const b = members[i[1] % n];
           const pA = world.getComponent(a, PositionComponent)?.pos;
