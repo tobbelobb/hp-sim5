@@ -54,7 +54,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "PinholeAR" (
@@ -67,7 +67,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "SpoolB" (
@@ -113,7 +113,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "PinholeBR" (
@@ -126,7 +126,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "SpoolC" (
@@ -172,7 +172,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "PinholeCR" (
@@ -185,7 +185,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         # Group the three spools into a rigid cluster for simulation
@@ -404,6 +404,19 @@ def Xform "World"
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2
             float physics:restitution = 0.5
+        }
+
+        def Material "PinholeMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            def Shader "Shader"
+            {
+                color3f inputs:diffuseColor = (0.5, 0.0, 0.5)
+            }
+            float physics:staticFriction = 0.005
+            float physics:dynamicFriction = 0.005
+            float physics:restitution = 0.025
         }
 
         def Material "AnchorMaterial" (
