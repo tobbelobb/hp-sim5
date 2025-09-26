@@ -67,8 +67,10 @@ import {
 
 export function setupScene(world, stage, canvas, options = {}) {
     const isRemote = options.remote || false;
+    const append = Boolean(options.append);
+    const palette = options.palette || null;
 
-    if (!isRemote) {
+    if (!isRemote && !append) {
         world.clear();
     }
 
@@ -79,7 +81,7 @@ export function setupScene(world, stage, canvas, options = {}) {
     const cScale = canvas.height / simHeight;
     const simWidth = canvas.width / cScale;
 
-    if (!isRemote) {
+    if (!isRemote && !append) {
         // This block remains unchanged, it's for local simulation.
         const physicsScene = stage.GetPrimAtPath("/World/PhysicsScene");
         const gravityDir = getAttribute(physicsScene, "physics:gravityDirection");
@@ -91,12 +93,14 @@ export function setupScene(world, stage, canvas, options = {}) {
         world.setResource('dt', dt);
     }
 
-    world.setResource('simWidth', simWidth);
-    world.setResource('simHeight', simHeight);
-    world.setResource('pauseState', new PauseStateComponent(false));
-    world.setResource('debugRenderPoints', {});
-    world.setResource('errorState', new SimulationErrorStateComponent(false));
-    world.setResource('grabbedBall', null);
+    if (!append) {
+        world.setResource('simWidth', simWidth);
+        world.setResource('simHeight', simHeight);
+        world.setResource('pauseState', new PauseStateComponent(false));
+        world.setResource('debugRenderPoints', {});
+        world.setResource('errorState', new SimulationErrorStateComponent(false));
+        world.setResource('grabbedBall', null);
+    }
 
     if (!isRemote) {
         // This block remains unchanged, it's for local simulation.
@@ -165,7 +169,8 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
                     world.addComponent(ent, new RadiusComponent(radius));
                     world.addComponent(ent, new MassComponent(mass));
-                    world.addComponent(ent, new RenderableComponent('circle', color || '#a0a0a0'));
+                    const spoolColor = palette?.spool ?? color ?? '#a0a0a0';
+                    world.addComponent(ent, new RenderableComponent('circle', spoolColor));
                     world.addComponent(ent, new OrientationComponent(0.0));
                     world.addComponent(ent, new AngularVelocityComponent(angVel));
                     world.addComponent(ent, new MomentOfInertiaComponent(inertia));
@@ -182,7 +187,8 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
                     world.addComponent(ent, new RadiusComponent(0.01));
                     world.addComponent(ent, new MassComponent(-1.0));
-                    world.addComponent(ent, new RenderableComponent('circle', color || '#aaaaaa'));
+                    const anchorColor = palette?.anchor ?? color ?? '#aaaaaa';
+                    world.addComponent(ent, new RenderableComponent('circle', anchorColor));
                     if (getAttribute(prim, "cable:linkable")) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
@@ -204,7 +210,8 @@ export function setupScene(world, stage, canvas, options = {}) {
                         world.addComponent(ent, new RadiusComponent(radius));
                     }
                     world.addComponent(ent, new MassComponent(mass));
-                    world.addComponent(ent, new RenderableComponent('circle', color || '#cccccc'));
+                    const pinholeColor = palette?.pinhole ?? color ?? '#cccccc';
+                    world.addComponent(ent, new RenderableComponent('circle', pinholeColor));
                     if (angVelArr !== null) {
                         world.addComponent(ent, new OrientationComponent(0.0));
                         world.addComponent(ent, new PrevFinalOrientationComponent(0.0));
@@ -273,7 +280,8 @@ export function setupScene(world, stage, canvas, options = {}) {
                         const restLength = (minDistance + maxDistance) / 2.0;
                         const constraintEntity = world.createEntity();
                         world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
-                        world.addComponent(constraintEntity, new RenderableComponent('line', 'green'));
+                        const distanceColor = palette?.distanceConstraint ?? 'green';
+                        world.addComponent(constraintEntity, new RenderableComponent('line', distanceColor));
                     }
                 }
             }
@@ -301,7 +309,8 @@ export function setupScene(world, stage, canvas, options = {}) {
 
             const joint = world.createEntity();
             world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
-            world.addComponent(joint, new RenderableComponent('line', linecolor1));
+            const cableColor = palette?.cable ?? linecolor1;
+            world.addComponent(joint, new RenderableComponent('line', cableColor));
             jointEntityMap[prim.name] = joint;
         }
 
@@ -329,8 +338,16 @@ export function setupScene(world, stage, canvas, options = {}) {
             world.addComponent(cablePath, pathComp);
         }
 
-        const extruderEntity = world.createEntity();
-        world.addComponent(extruderEntity, new ExtruderComponent());
+        const existingExtruder = world.query([ExtruderComponent]);
+        if (existingExtruder.length === 0) {
+            const extruderEntity = world.createEntity();
+            world.addComponent(extruderEntity, new ExtruderComponent());
+        }
+
+        const remoteSpoolSystem = world.systems.find((system) => system instanceof RemoteSpoolSystem);
+        if (remoteSpoolSystem && typeof remoteSpoolSystem.resetAxisMapping === 'function') {
+            remoteSpoolSystem.resetAxisMapping();
+        }
     }
 
     if (world.systems.length === 0) {

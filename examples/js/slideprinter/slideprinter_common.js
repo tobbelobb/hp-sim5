@@ -143,6 +143,10 @@ export class RemoteSpoolSystem {
         this.fastModeActive = false;
     }
 
+    resetAxisMapping() {
+        this.axisToEntity = {};
+    }
+
     addCommand(command) {
         this.commands.push(command);
     }
@@ -183,7 +187,10 @@ export class RemoteSpoolSystem {
             for (const e of spoolEntities) {
                 const state = world.getComponent(e, SpoolStateComponent);
                 if (state.axis) {
-                    this.axisToEntity[state.axis] = e;
+                    if (!this.axisToEntity[state.axis]) {
+                        this.axisToEntity[state.axis] = [];
+                    }
+                    this.axisToEntity[state.axis].push(e);
                 }
             }
         }
@@ -206,17 +213,19 @@ export class RemoteSpoolSystem {
         }
 
         for (const axis in this.axisToEntity) {
-            const entityId = this.axisToEntity[axis];
-            if (command && command.type === 'Move' && command[axis] !== undefined) {
-                const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                if (stepperComp != null) {
-                    stepperComp.commandedAngle = command[axis];
+            const entityIds = Array.isArray(this.axisToEntity[axis]) ? this.axisToEntity[axis] : [this.axisToEntity[axis]];
+            for (const entityId of entityIds) {
+                if (command && command.type === 'Move' && command[axis] !== undefined) {
+                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    if (stepperComp != null) {
+                        stepperComp.commandedAngle = command[axis];
+                    }
                 }
-            }
-            if (command != null && command.type === 'Add to reference' && command[axis] !== undefined) {
-                const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                if (stepperComp) {
-                    stepperComp.deltaAngle += command[axis];
+                if (command != null && command.type === 'Add to reference' && command[axis] !== undefined) {
+                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    if (stepperComp) {
+                        stepperComp.deltaAngle += command[axis];
+                    }
                 }
             }
         }

@@ -2,6 +2,7 @@ export const FileFormat = {
   GCODE: 'gcode',
   MCU_TEXT: 'mcu-text',
   MCU_SERIAL: 'mcu-serial',
+  USD_STAGE: 'usd-stage',
 };
 
 const EXTENSION_MAP = new Map([
@@ -10,6 +11,7 @@ const EXTENSION_MAP = new Map([
   ['.txt', FileFormat.MCU_TEXT],
   ['.log', FileFormat.MCU_TEXT],
   ['.serial', FileFormat.MCU_SERIAL],
+  ['.usda', FileFormat.USD_STAGE],
 ]);
 
 export function detectFileFormat(name) {

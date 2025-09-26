@@ -16,6 +16,8 @@ const MCU_PRESETS = {
   },
 };
 
+const MACHINE_TINTS = ['#ff6b6b', '#4cd964', '#4a90e2', '#d96bff', '#ffb347'];
+
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
 const DEFAULT_VIEW_SCALE = 1.8;
 const MIN_VIEW_SCALE = 0.01;
@@ -49,6 +51,7 @@ function initFrontpageSlideprinter() {
   const startButtons = simButtons ? Array.from(simButtons.querySelectorAll('.sim-start')) : [];
 
   const world = new World();
+  const machines = [];
   let klipperCommanderWorker = null;
   let moveCommanderWorker = null;
   let simDtSec = null;
@@ -80,6 +83,141 @@ function initFrontpageSlideprinter() {
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function hexToRgb(hex) {
+    if (typeof hex !== 'string') {
+      return null;
+    }
+    const cleaned = hex.trim().toLowerCase();
+    const match = cleaned.match(/^#?([0-9a-f]{6})$/);
+    if (!match) {
+      return null;
+    }
+    const value = parseInt(match[1], 16);
+    return {
+      r: (value >> 16) & 0xff,
+      g: (value >> 8) & 0xff,
+      b: value & 0xff,
+    };
+  }
+
+  function rgbToHex({ r, g, b }) {
+    const clampChannel = (channel) => Math.min(255, Math.max(0, Math.round(channel)));
+    const toHex = (channel) => clampChannel(channel).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  function mixColors(baseHex, tintHex, amount = 0.5) {
+    const base = hexToRgb(baseHex);
+    const tint = hexToRgb(tintHex);
+    if (!base || !tint) {
+      return baseHex;
+    }
+    const mixFactor = Math.min(Math.max(Number.isFinite(amount) ? amount : 0.5, 0), 1);
+    return rgbToHex({
+      r: base.r * (1 - mixFactor) + tint.r * mixFactor,
+      g: base.g * (1 - mixFactor) + tint.g * mixFactor,
+      b: base.b * (1 - mixFactor) + tint.b * mixFactor,
+    });
+  }
+
+  function createTintPalette(tintHex) {
+    if (!tintHex) {
+      return null;
+    }
+    return {
+      spool: mixColors('#a0a0a0', tintHex, 0.65),
+      anchor: mixColors('#aaaaaa', tintHex, 0.55),
+      pinhole: mixColors('#cccccc', tintHex, 0.5),
+      cable: mixColors('#ffff00', tintHex, 0.6),
+      distanceConstraint: mixColors('#00ff00', tintHex, 0.55),
+    };
+  }
+
+  function getTintColorForMachine(currentCount) {
+    if (currentCount < 1) {
+      return null;
+    }
+    const index = (currentCount - 1) % MACHINE_TINTS.length;
+    return MACHINE_TINTS[index] || null;
+  }
+
+  function extractTimeCodesPerSecond(stage) {
+    const assignments = stage?.ast?.descriptor?.assignments;
+    if (!Array.isArray(assignments)) {
+      return null;
+    }
+    const match = assignments.find(
+      (entry) => entry?.type === 'assignment' && entry?.identifier === 'timeCodesPerSecond'
+    );
+    return match?.value ?? null;
+  }
+
+  function registerMachine(stage, { tintColor = null, name = null } = {}) {
+    if (!stage) {
+      return;
+    }
+    const palette = tintColor ? createTintPalette(tintColor) : null;
+    machines.push({ stage, palette, tintColor, name: name || null });
+  }
+
+  function rebuildScene() {
+    if (!canvas || machines.length === 0) {
+      return;
+    }
+    let isFirst = true;
+    for (const machine of machines) {
+      const sceneOptions = {
+        remote: false,
+        append: !isFirst,
+        palette: machine.palette || null,
+      };
+      setupScene(world, machine.stage, canvas, sceneOptions);
+      isFirst = false;
+    }
+  }
+
+  async function addUsdMachineFromFile(file) {
+    if (!file) {
+      return;
+    }
+    const label = file.name || 'uploaded.usda';
+    let sourceText = null;
+    try {
+      sourceText = await file.text();
+    } catch (error) {
+      console.error(`Slideprinter demo: failed to read USDA file ${label}:`, error);
+      return;
+    }
+
+    let stage = null;
+    try {
+      stage = await UsdOpen(sourceText);
+    } catch (error) {
+      console.error(`Slideprinter demo: unable to parse USDA file ${label}:`, error);
+      return;
+    }
+
+    const tintColor = getTintColorForMachine(machines.length);
+    registerMachine(stage, { tintColor, name: label });
+
+    const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
+    if (timeCodesPerSecond) {
+      const uploadedDt = 1.0 / timeCodesPerSecond;
+      if (simDtSec == null) {
+        simDtSec = uploadedDt;
+      } else if (Math.abs(uploadedDt - simDtSec) > 1e-6) {
+        console.warn(
+          `Slideprinter demo: USDA file ${label} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
+        );
+      }
+    }
+
+    rebuildScene();
+    syncCanvasDimensions();
+    updateZoomButtonState();
+    reapplyViewState({ clearExtrusions: true });
   }
 
   function setSecondaryControlsVisible(active) {
@@ -627,12 +765,18 @@ function initFrontpageSlideprinter() {
     worker.postMessage({ type: 'filename_fetch', filename: preset.url });
   }
 
-  function queueUploadedFile(file) {
-    ensureReadyForNewJob();
+  async function queueUploadedFile(file) {
     if (!stageReady || !file) {
       return;
     }
     const format = detectFileFormat(file.name);
+    if (format === FileFormat.USD_STAGE) {
+      ensureReadyForNewJob();
+      await addUsdMachineFromFile(file);
+      return;
+    }
+
+    ensureReadyForNewJob();
     let worker = null;
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
@@ -664,7 +808,9 @@ function initFrontpageSlideprinter() {
     gcodeInput.addEventListener('change', (event) => {
       const file = event.target.files?.[0];
       if (file) {
-        queueUploadedFile(file);
+        queueUploadedFile(file).catch((error) => {
+          console.error('Slideprinter demo: upload handling failed.', error);
+        });
         gcodeInput.value = '';
       }
     });
@@ -755,10 +901,7 @@ function initFrontpageSlideprinter() {
       if (!stage) {
         throw new Error('Slideprinter demo: failed to load USD stage.');
       }
-      const assignment = stage.ast?.descriptor?.assignments?.find(
-        (entry) => entry.type === 'assignment' && entry.identifier === 'timeCodesPerSecond'
-      );
-      const timeCodesPerSecond = assignment?.value;
+      const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
       if (timeCodesPerSecond) {
         simDtSec = 1.0 / timeCodesPerSecond;
         if (klipperCommanderWorker) {
@@ -769,7 +912,10 @@ function initFrontpageSlideprinter() {
         }
       }
 
-      const sceneInitializer = () => setupScene(world, stage, canvas, { remote: false });
+      machines.splice(0, machines.length);
+      registerMachine(stage, { name: 'slideprinter.usda' });
+
+      const sceneInitializer = () => rebuildScene();
       gameControls = runGame(world, sceneInitializer, {
         initialTimeScale: currentTimeScale,
         onTimeScaleChange: handleTimeScaleChange,
