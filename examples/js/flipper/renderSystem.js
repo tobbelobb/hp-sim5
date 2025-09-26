@@ -537,16 +537,44 @@ export class RenderSystem {
         const group = world.getComponent(gid, RigidGroupComponent);
         const members = group?.members || [];
         const n = members.length | 0;
-        for (const i of [[3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 3]]) {
-          const a = members[i[0]];
-          const b = members[i[1] % n];
-          const pA = world.getComponent(a, PositionComponent)?.pos;
-          const pB = world.getComponent(b, PositionComponent)?.pos;
-          if (!pA || !pB) continue;
-          this.c.beginPath();
-          this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-          this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-          this.c.stroke();
+        if (n === 9) {
+          for (const i of [[3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 3]]) {
+            const a = members[i[0]];
+            const b = members[i[1] % n];
+            const pA = world.getComponent(a, PositionComponent)?.pos;
+            const pB = world.getComponent(b, PositionComponent)?.pos;
+            if (!pA || !pB) continue;
+            this.c.beginPath();
+            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+            this.c.stroke();
+          }
+        }
+        if (n === 6) {
+          for (const i of [[3, 4], [4, 5], [5, 3]]) {
+            const a = members[i[0]];
+            const b = members[i[1] % n];
+            const pA = world.getComponent(a, PositionComponent)?.pos;
+            const pB = world.getComponent(b, PositionComponent)?.pos;
+            if (!pA || !pB) continue;
+            this.c.beginPath();
+            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+            this.c.stroke();
+          }
+        }
+        if (n === 3) {
+          for (const i of [[0, 1], [1, 2], [2, 0]]) {
+            const a = members[i[0]];
+            const b = members[i[1] % n];
+            const pA = world.getComponent(a, PositionComponent)?.pos;
+            const pB = world.getComponent(b, PositionComponent)?.pos;
+            if (!pA || !pB) continue;
+            this.c.beginPath();
+            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+            this.c.stroke();
+          }
         }
         //for (const i of [[0, 1], [1, 2], [2, 0]]) {
         //  const a = members[i[0]];
