@@ -161,6 +161,12 @@ export class RenderableComponent {
     this.color = color;
   }
 }
+
+export class MachineTagComponent {
+  constructor(machineId = '') {
+    this.id = machineId;
+  }
+}
 export class CoefficientOfFrictionComponent {
   constructor(mu = 0.1) { // Default static friction coefficient
     this.mu = mu; // Coefficient of static friction

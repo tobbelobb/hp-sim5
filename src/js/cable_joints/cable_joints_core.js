@@ -20,7 +20,8 @@ import {
   AngularVelocityComponent,
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
-  RenderableComponent
+  RenderableComponent,
+  MachineTagComponent
 } from './ecs.js';
 
 import {
@@ -29,6 +30,25 @@ import {
 } from './commonSystems.js';
 
 export const linecolor1 = '#FFFF00';
+
+function getMachineId(world, entityId) {
+  if (entityId == null) {
+    return '';
+  }
+  const tag = world.getComponent(entityId, MachineTagComponent);
+  return tag ? tag.id : '';
+}
+
+function ensureMachineTag(world, entityId, machineId) {
+  if (!entityId) {
+    return;
+  }
+  const existing = world.getComponent(entityId, MachineTagComponent);
+  if (existing) {
+    return;
+  }
+  world.addComponent(entityId, new MachineTagComponent(machineId));
+}
 
 export class CableLinkComponent {
   constructor(x = 0, y = 0, angle = 0.0) {
@@ -427,6 +447,7 @@ export function _splitJoints(world) {
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
+    const pathMachine = getMachineId(world, pathId);
     if (path.jointEntities.length < 1) continue;
     for (let i = 0; i < path.jointEntities.length; i++) {
       const jointId = path.jointEntities[i];
@@ -438,6 +459,9 @@ export function _splitJoints(world) {
         if (splitterId === joint.entityA || splitterId === joint.entityB) {
           continue;
         }
+        if (getMachineId(world, splitterId) !== pathMachine) {
+          continue;
+        }
         const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
         const radiusSplitter = world.getComponent(splitterId, RadiusComponent)?.radius;
         if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
@@ -445,6 +469,7 @@ export function _splitJoints(world) {
           const entityA = joint.entityA;
           const entityB = joint.entityB;
           const newJointId = world.createEntity();
+          ensureMachineTag(world, newJointId, pathMachine);
 
           // Get components for Entity A
           const posA = world.getComponent(entityA, PositionComponent).pos;

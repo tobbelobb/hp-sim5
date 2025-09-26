@@ -1,4 +1,4 @@
-import { Open as UsdOpen } from '../../src/js/usd/stage.js';
+import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
 import { World } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
@@ -143,6 +143,63 @@ function initFrontpageSlideprinter() {
     return MACHINE_TINTS[index] || null;
   }
 
+  function getParentPath(path) {
+    if (typeof path !== 'string') {
+      return null;
+    }
+    const trimmed = path.trim();
+    if (!trimmed || trimmed === '/') {
+      return null;
+    }
+    const separatorIndex = trimmed.lastIndexOf('/');
+    if (separatorIndex <= 0) {
+      return '/';
+    }
+    return trimmed.slice(0, separatorIndex);
+  }
+
+  function findScenePrimPath(stage) {
+    if (!stage) {
+      return '/World/SlideprinterScene';
+    }
+
+    const defaultPrimName = stage?.ast?.descriptor?.defaultPrim;
+    if (typeof defaultPrimName === 'string' && defaultPrimName.length > 0) {
+      const defaultCandidates = [`/${defaultPrimName}`, `/World/${defaultPrimName}`];
+      for (const candidate of defaultCandidates) {
+        const prim = stage.GetPrimAtPath(candidate);
+        if (prim) {
+          return candidate;
+        }
+      }
+    }
+
+    try {
+      for (const [path, prim] of stage.Traverse()) {
+        if (!path || !prim || prim.type !== 'definition') {
+          continue;
+        }
+        const tags = getAttribute(prim, 'ecs:tags');
+        if (Array.isArray(tags) && tags.includes('Spool')) {
+          const parentPath = getParentPath(path);
+          if (parentPath && stage.GetPrimAtPath(parentPath)) {
+            return parentPath;
+          }
+        }
+        if (prim.defType === 'CableJoint') {
+          const parentPath = getParentPath(path);
+          if (parentPath && stage.GetPrimAtPath(parentPath)) {
+            return parentPath;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Slideprinter demo: failed to derive scene root, falling back to default.', error);
+    }
+
+    return '/World/SlideprinterScene';
+  }
+
   function extractTimeCodesPerSecond(stage) {
     const assignments = stage?.ast?.descriptor?.assignments;
     if (!Array.isArray(assignments)) {
@@ -156,10 +213,21 @@ function initFrontpageSlideprinter() {
 
   function registerMachine(stage, { tintColor = null, name = null } = {}) {
     if (!stage) {
-      return;
+      return null;
     }
+    const machineId = `machine-${machines.length}`;
+    const scenePrimPath = findScenePrimPath(stage);
     const palette = tintColor ? createTintPalette(tintColor) : null;
-    machines.push({ stage, palette, tintColor, name: name || null });
+    const machine = {
+      id: machineId,
+      stage,
+      palette,
+      tintColor,
+      name: name || null,
+      scenePrimPath,
+    };
+    machines.push(machine);
+    return machine;
   }
 
   function rebuildScene() {
@@ -172,6 +240,8 @@ function initFrontpageSlideprinter() {
         remote: false,
         append: !isFirst,
         palette: machine.palette || null,
+        scenePrimPath: machine.scenePrimPath,
+        namespace: machine.id,
       };
       setupScene(world, machine.stage, canvas, sceneOptions);
       isFirst = false;

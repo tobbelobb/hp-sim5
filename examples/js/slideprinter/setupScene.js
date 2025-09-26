@@ -22,6 +22,7 @@ import {
   RenderableComponent,
   DistanceConstraintComponent,
   RigidGroupComponent,
+  MachineTagComponent,
 } from "../../../src/js/cable_joints/ecs.js";
 import {
   CableLinkComponent,
@@ -69,6 +70,42 @@ export function setupScene(world, stage, canvas, options = {}) {
     const isRemote = options.remote || false;
     const append = Boolean(options.append);
     const palette = options.palette || null;
+    const namespace = typeof options.namespace === 'string' && options.namespace.length > 0 ? options.namespace : null;
+    const scenePrimPath = typeof options.scenePrimPath === 'string' && options.scenePrimPath.length > 0
+        ? options.scenePrimPath
+        : '/World/SlideprinterScene';
+
+    const sceneRootPath = scenePrimPath.endsWith('/') ? scenePrimPath.slice(0, -1) : scenePrimPath;
+    const sceneRoot = !isRemote ? stage?.GetPrimAtPath(scenePrimPath) : null;
+
+    if (!isRemote && !sceneRoot) {
+        console.warn(`setupScene: Unable to find scene root at ${scenePrimPath}.`);
+        return;
+    }
+
+    const machineId = namespace || 'default';
+
+    function scopedKey(relativeName) {
+        const key = relativeName || '';
+        return namespace ? `${namespace}::${key}` : key;
+    }
+
+    function scopedKeyFromPath(fullPath) {
+        if (typeof fullPath !== 'string') {
+            return scopedKey(fullPath);
+        }
+        let relative = fullPath;
+        if (sceneRootPath && fullPath.startsWith(sceneRootPath)) {
+            relative = fullPath.slice(sceneRootPath.length);
+            if (relative.startsWith('/')) {
+                relative = relative.slice(1);
+            }
+        } else if (fullPath.startsWith('/')) {
+            relative = fullPath.slice(1);
+        }
+        const sanitized = relative.replace(/\//g, '::');
+        return scopedKey(sanitized || relative);
+    }
 
     if (!isRemote && !append) {
         world.clear();
@@ -104,7 +141,6 @@ export function setupScene(world, stage, canvas, options = {}) {
 
     if (!isRemote) {
         // This block remains unchanged, it's for local simulation.
-        const sceneRoot = stage.GetPrimAtPath("/World/SlideprinterScene");
         const nameToEntityId = {};
         const jointPrims = [];
         const pathPrims = [];
@@ -144,9 +180,11 @@ export function setupScene(world, stage, canvas, options = {}) {
                 if (!posArr) continue;
                 const pos = new Vector2(posArr[0], posArr[1]);
                 const { color, friction, restitution } = materialProperties(stage, prim);
+                const primKey = scopedKey(prim.name);
 
                 if (tags.includes("Spool")) {
                     const ent = world.createEntity();
+                    world.addComponent(ent, new MachineTagComponent(machineId));
                     const radius = getAttribute(prim, "radius");
                     const mass = getAttribute(prim, "physics:mass");
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
@@ -181,9 +219,10 @@ export function setupScene(world, stage, canvas, options = {}) {
                     if (getAttribute(prim, "cable:linkable")) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
-                    nameToEntityId[prim.name] = ent;
+                    nameToEntityId[primKey] = ent;
                 } else if (tags.includes("Anchor")) {
                     const ent = world.createEntity();
+                    world.addComponent(ent, new MachineTagComponent(machineId));
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
                     world.addComponent(ent, new RadiusComponent(0.01));
                     world.addComponent(ent, new MassComponent(-1.0));
@@ -192,9 +231,10 @@ export function setupScene(world, stage, canvas, options = {}) {
                     if (getAttribute(prim, "cable:linkable")) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
-                    nameToEntityId[prim.name] = ent;
+                    nameToEntityId[primKey] = ent;
                 } else if (tags.includes("Pinhole")) {
                     const ent = world.createEntity();
+                    world.addComponent(ent, new MachineTagComponent(machineId));
                     const radius = getAttribute(prim, "radius");
                     const mass = getAttribute(prim, "physics:mass");
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
@@ -228,7 +268,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     if (getAttribute(prim, "cable:linkable")) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
-                    nameToEntityId[prim.name] = ent;
+                    nameToEntityId[primKey] = ent;
                 }
             }
         }
@@ -238,13 +278,13 @@ export function setupScene(world, stage, canvas, options = {}) {
         for (const prim of rigidGroupPrims) {
             const memberPaths = getRelationship(prim, 'rigidGroup:members');
             if (!memberPaths || memberPaths.length === 0) continue;
-            const memberNames = memberPaths.map(p => p.split('/').pop());
-            const memberEntities = memberNames
-                .map(name => nameToEntityId[name])
+            const memberEntities = memberPaths
+                .map(path => nameToEntityId[scopedKeyFromPath(path)])
                 .filter(id => id !== undefined);
             if (memberEntities.length >= 2) {
                 const groupEnt = world.createEntity();
                 world.addComponent(groupEnt, new RigidGroupComponent(memberEntities, 1.0));
+                world.addComponent(groupEnt, new MachineTagComponent(machineId));
                 for (const e of memberEntities) {
                     entityToRigidGroup[e] = groupEnt;
                 }
@@ -260,15 +300,15 @@ export function setupScene(world, stage, canvas, options = {}) {
                 continue;
             }
 
-            const body0Name = body0PathRel[0].split('/').pop();
-            const body1Name = body1PathRel[0].split('/').pop();
+            const body0Key = scopedKeyFromPath(body0PathRel[0]);
+            const body1Key = scopedKeyFromPath(body1PathRel[0]);
 
-            if (nameToEntityId[body0Name] == null || nameToEntityId[body1Name] == null) {
+            if (nameToEntityId[body0Key] == null || nameToEntityId[body1Key] == null) {
                 continue;
             }
 
-            const entityA = nameToEntityId[body0Name];
-            const entityB = nameToEntityId[body1Name];
+            const entityA = nameToEntityId[body0Key];
+            const entityB = nameToEntityId[body1Key];
 
             const minDistance = getAttribute(prim, "physics:minDistance");
             const maxDistance = getAttribute(prim, "physics:maxDistance");
@@ -279,6 +319,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     if (!entityToRigidGroup[entityA] || entityToRigidGroup[entityA] !== entityToRigidGroup[entityB]) {
                         const restLength = (minDistance + maxDistance) / 2.0;
                         const constraintEntity = world.createEntity();
+                        world.addComponent(constraintEntity, new MachineTagComponent(machineId));
                         world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
                         const distanceColor = palette?.distanceConstraint ?? 'green';
                         world.addComponent(constraintEntity, new RenderableComponent('line', distanceColor));
@@ -292,8 +333,8 @@ export function setupScene(world, stage, canvas, options = {}) {
         for (const prim of jointPrims) {
             const body0Path = getRelationship(prim, "physics:body0")[0];
             const body1Path = getRelationship(prim, "physics:body1")[0];
-            const entityA = nameToEntityId[body0Path.split('/').pop()];
-            const entityB = nameToEntityId[body1Path.split('/').pop()];
+            const entityA = nameToEntityId[scopedKeyFromPath(body0Path)];
+            const entityB = nameToEntityId[scopedKeyFromPath(body1Path)];
             const restLength = getAttribute(prim, "restLength");
             const attachAArr = getAttribute(prim, "localPos0");
             const attachBArr = getAttribute(prim, "localPos1");
@@ -308,10 +349,11 @@ export function setupScene(world, stage, canvas, options = {}) {
             const attachB = new Vector2(attachBArr[0], attachBArr[1]);
 
             const joint = world.createEntity();
+            world.addComponent(joint, new MachineTagComponent(machineId));
             world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
             const cableColor = palette?.cable ?? linecolor1;
             world.addComponent(joint, new RenderableComponent('line', cableColor));
-            jointEntityMap[prim.name] = joint;
+            jointEntityMap[scopedKey(prim.name)] = joint;
         }
 
         // Process discovered CablePaths
@@ -320,7 +362,7 @@ export function setupScene(world, stage, canvas, options = {}) {
             const jointPaths = getRelationship(prim, "cablePath:joints");
             if (!jointPaths) continue;
 
-            const jointNames = jointPaths.map(p => p.split('/').pop());
+            const jointNames = jointPaths.map((p) => scopedKeyFromPath(p));
             const jointEntities = jointNames.map(jointName => jointEntityMap[jointName]).filter(Boolean);
             const linkTypes = getAttribute(prim, "cablePath:linkTypes");
             const clockwise = getAttribute(prim, "cablePath:clockwise");
@@ -336,6 +378,7 @@ export function setupScene(world, stage, canvas, options = {}) {
               stored ? [...stored] : null
             );
             world.addComponent(cablePath, pathComp);
+            world.addComponent(cablePath, new MachineTagComponent(machineId));
         }
 
         const existingExtruder = world.query([ExtruderComponent]);
