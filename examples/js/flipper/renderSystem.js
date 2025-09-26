@@ -6,7 +6,8 @@ import {
   RenderableComponent,
   OrientationComponent,
   DistanceConstraintComponent,
-  AngularVelocityComponent
+  AngularVelocityComponent,
+  MachineTagComponent
 } from '../../../src/js/cable_joints/ecs.js';
 import { RigidGroupComponent } from '../../../src/js/cable_joints/ecs.js';
 
@@ -82,7 +83,7 @@ export class RenderSystem {
 
   // Draw catenary curve for slack cable segment between pA and pB with given length,
   // avoiding obstacles.  New: sagDir (unit Vector2) says which way to sag.
-  _drawCatenary(jointId, pA, pB, length, obstacles, sagDir = new Vector2(0, -1), segments = 20) {
+  _drawCatenary(jointId, pA, pB, length, obstacles, machineId = '', sagDir = new Vector2(0, -1), segments = 20) {
       const ctx = this.c;
       const dx = pB.x - pA.x, dy = pB.y - pA.y;
       const D  = Math.hypot(dx, dy);
@@ -104,6 +105,9 @@ export class RenderSystem {
 
         // 2) obstacle‐avoidance
         for (const obs of obstacles) {
+          if (obs.machineId !== machineId) {
+            continue;
+          }
           const v = pt.clone().subtract(obs.pos);
           const d2 = v.lengthSq(), r2 = obs.radius * obs.radius;
           if (d2 < r2) {
@@ -262,10 +266,12 @@ export class RenderSystem {
     for (const entityId of linkEntities) {
         const posComp = world.getComponent(entityId, PositionComponent);
         const radiusComp = world.getComponent(entityId, RadiusComponent);
+        const machineTag = world.getComponent(entityId, MachineTagComponent);
         if (posComp && radiusComp) {
             this.cableLinkObstacles.push({
                 pos: posComp.pos.clone(), // Use current position
-                radius: radiusComp.radius
+                radius: radiusComp.radius,
+                machineId: machineTag?.id || ''
             });
         }
     }
@@ -364,6 +370,7 @@ export class RenderSystem {
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
+      const pathMachineId = world.getComponent(pathId, MachineTagComponent)?.id || '';
       const jointEntities = path.jointEntities;
       // Scale line width by zoom using instance property
       this.c.lineWidth = baseLineWidth * this.effectiveCScale/250;
@@ -382,7 +389,7 @@ export class RenderSystem {
         const straightDist = pA.distanceTo(pB);
         if (jointComp.restLength > straightDist + 1e-6) {
           this.c.strokeStyle = 'orange';
-          this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles);
+          this._drawCatenary(entityId, pA, pB, jointComp.restLength, this.cableLinkObstacles, pathMachineId);
         } else {
           this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
           this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
