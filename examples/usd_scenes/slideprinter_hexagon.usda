@@ -11,6 +11,8 @@
 def Xform "World"
 {
     def Xform "SlideprinterScene" {
+        custom color3f machine:tintColor = (0.29803922, 0.85098039, 0.39215686)
+        custom color3f machine:extrusionColor = (0.29803922, 0.85098039, 0.39215686)
         def Circle "SpoolA" (
             apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )

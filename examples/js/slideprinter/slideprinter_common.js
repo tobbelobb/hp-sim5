@@ -222,6 +222,7 @@ export class RemoteSpoolSystem {
         const commandType = command?.type || '';
         const touchedMachines = new Set();
         const colorByMachine = new Map();
+        const globalMachineColors = world.getResource('machineColors');
 
         for (const axis in this.axisToEntity) {
             const entityIds = Array.isArray(this.axisToEntity[axis]) ? this.axisToEntity[axis] : [this.axisToEntity[axis]];
@@ -232,9 +233,21 @@ export class RemoteSpoolSystem {
                 if (axisValue !== undefined) {
                     touchedMachines.add(machineId);
                     if (!colorByMachine.has(machineId)) {
-                        const renderComp = world.getComponent(entityId, RenderableComponent);
-                        if (renderComp?.color) {
-                            colorByMachine.set(machineId, renderComp.color);
+                        let chosenColor = null;
+                        if (globalMachineColors && typeof globalMachineColors.get === 'function') {
+                            const record = globalMachineColors.get(machineId);
+                            if (record && typeof record.extrusionColor === 'string' && record.extrusionColor.length > 0) {
+                                chosenColor = record.extrusionColor;
+                            }
+                        }
+                        if (!chosenColor) {
+                            const renderComp = world.getComponent(entityId, RenderableComponent);
+                            if (renderComp?.color) {
+                                chosenColor = renderComp.color;
+                            }
+                        }
+                        if (chosenColor) {
+                            colorByMachine.set(machineId, chosenColor);
                         }
                     }
                 }
@@ -276,7 +289,13 @@ export class RemoteSpoolSystem {
 
                 for (const machineId of machineIds) {
                     const center = extruderComp.machineCenters?.[machineId] || extruderComp.centerPos;
-                    const color = colorByMachine.get(machineId) || null;
+                    let color = colorByMachine.get(machineId) || null;
+                    if (!color && globalMachineColors && typeof globalMachineColors.get === 'function') {
+                        const record = globalMachineColors.get(machineId);
+                        if (record && typeof record.extrusionColor === 'string' && record.extrusionColor.length > 0) {
+                            color = record.extrusionColor;
+                        }
+                    }
                     const extrusionEvent = {
                         pos: [center.x, center.y, 0],
                         length: command.E,

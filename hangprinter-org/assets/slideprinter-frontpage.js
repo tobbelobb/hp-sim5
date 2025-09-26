@@ -16,8 +16,6 @@ const MCU_PRESETS = {
   },
 };
 
-const MACHINE_TINTS = ['#ff6b6b', '#4cd964', '#4a90e2', '#d96bff', '#ffb347'];
-
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
 const DEFAULT_VIEW_SCALE = 1.8;
 const MIN_VIEW_SCALE = 0.01;
@@ -122,6 +120,53 @@ function initFrontpageSlideprinter() {
     });
   }
 
+  function colorArrayToHex(colorArr) {
+    if (!Array.isArray(colorArr) || colorArr.length < 3) {
+      return null;
+    }
+    const numeric = colorArr.map((value) => Number(value));
+    const hasFinite = numeric.every((num) => Number.isFinite(num));
+    if (!hasFinite) {
+      return null;
+    }
+    const maxComponent = Math.max(...numeric.map((num) => Math.abs(num)));
+    const scale = maxComponent > 1 ? 255 : 1;
+    const clamp = (num) => {
+      if (scale === 255) {
+        return Math.min(Math.max(num, 0), 255);
+      }
+      if (num <= 0) return 0;
+      if (num >= 1) return 1;
+      return num;
+    };
+    const toHex = (num) => {
+      const clamped = clamp(num);
+      const scaled = scale === 255 ? clamped : clamped * 255;
+      return Math.round(scaled).toString(16).padStart(2, '0');
+    };
+    return `#${toHex(colorArr[0])}${toHex(colorArr[1])}${toHex(colorArr[2])}`;
+  }
+
+  function extractMachineColors(stage, scenePrimPath) {
+    const result = { tintColor: null, extrusionColor: null };
+    if (!stage || !scenePrimPath) {
+      return result;
+    }
+    const prim = stage.GetPrimAtPath(scenePrimPath);
+    if (!prim) {
+      return result;
+    }
+    const tintValue = getAttribute(prim, 'machine:tintColor') ?? getAttribute(prim, 'machine:tint');
+    const extrusionValue = getAttribute(prim, 'machine:extrusionColor');
+    if (tintValue) {
+      result.tintColor = colorArrayToHex(tintValue);
+    }
+    if (extrusionValue) {
+      result.extrusionColor = colorArrayToHex(extrusionValue);
+    }
+    return result;
+  }
+
   function createTintPalette(tintHex) {
     if (!tintHex) {
       return null;
@@ -133,14 +178,6 @@ function initFrontpageSlideprinter() {
       cable: mixColors('#ffff00', tintHex, 0.6),
       distanceConstraint: mixColors('#00ff00', tintHex, 0.55),
     };
-  }
-
-  function getTintColorForMachine(currentCount) {
-    if (currentCount < 1) {
-      return null;
-    }
-    const index = (currentCount - 1) % MACHINE_TINTS.length;
-    return MACHINE_TINTS[index] || null;
   }
 
   function getParentPath(path) {
@@ -211,18 +248,20 @@ function initFrontpageSlideprinter() {
     return match?.value ?? null;
   }
 
-  function registerMachine(stage, { tintColor = null, name = null } = {}) {
+  function registerMachine(stage, { name = null } = {}) {
     if (!stage) {
       return null;
     }
     const machineId = `machine-${machines.length}`;
     const scenePrimPath = findScenePrimPath(stage);
+    const { tintColor, extrusionColor } = extractMachineColors(stage, scenePrimPath);
     const palette = tintColor ? createTintPalette(tintColor) : null;
     const machine = {
       id: machineId,
       stage,
       palette,
       tintColor,
+      extrusionColor,
       name: name || null,
       scenePrimPath,
     };
@@ -242,6 +281,8 @@ function initFrontpageSlideprinter() {
         palette: machine.palette || null,
         scenePrimPath: machine.scenePrimPath,
         namespace: machine.id,
+        tintColor: machine.tintColor || null,
+        extrusionColor: machine.extrusionColor || null,
       };
       setupScene(world, machine.stage, canvas, sceneOptions);
       isFirst = false;
@@ -269,8 +310,7 @@ function initFrontpageSlideprinter() {
       return;
     }
 
-    const tintColor = getTintColorForMachine(machines.length);
-    registerMachine(stage, { tintColor, name: label });
+    registerMachine(stage, { name: label });
 
     const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
     if (timeCodesPerSecond) {

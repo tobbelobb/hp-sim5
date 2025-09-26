@@ -85,6 +85,19 @@ export function setupScene(world, stage, canvas, options = {}) {
 
     const machineId = namespace || 'default';
 
+    let machineColors = world.getResource('machineColors');
+    if (!machineColors || typeof machineColors.set !== 'function') {
+        machineColors = new Map();
+        world.setResource('machineColors', machineColors);
+    }
+    if (!append) {
+        machineColors.clear();
+    }
+    machineColors.set(machineId, {
+        tintColor: options.tintColor || null,
+        extrusionColor: options.extrusionColor || null,
+    });
+
     function scopedKey(relativeName) {
         const key = relativeName || '';
         return namespace ? `${namespace}::${key}` : key;

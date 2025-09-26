@@ -158,6 +158,9 @@ def Xform "World"
             custom double cablePath:totalLength = 2.842240939208
             custom double stiffness = 20000.0
         }
+
+        custom color3f machine:tintColor = (0.5, 0.0, 0.5)
+        custom color3f machine:extrusionColor = (0.4, 1.0, 0.4)
     }
 
     def PhysicsScene "PhysicsScene"
@@ -168,10 +171,6 @@ def Xform "World"
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )
         {
-            def Shader "Shader"
-            {
-                color3f inputs:diffuseColor = (0.5, 0.0, 0.5)
-            }
             float physics:staticFriction = 0.2
             float physics:dynamicFriction = 0.2
             float physics:restitution = 0.5
