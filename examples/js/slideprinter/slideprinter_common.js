@@ -9,6 +9,7 @@ import {
     AngularVelocityComponent,
     MomentOfInertiaComponent,
     RigidGroupComponent,
+    MachineTagComponent,
 } from '../../../src/js/cable_joints/ecs.js';
 import {
     CableLinkComponent,
@@ -18,9 +19,10 @@ import {
 
 export class ExtruderComponent {
     constructor() {
-        // Array of [[x,y,z], length]
+        // Array of { pos: [x,y,z], length, machineId, color }
         this.extrusions = [];
         this.centerPos = new Vector2(0.0, 0.0);
+        this.machineCenters = {};
     }
 }
 
@@ -36,17 +38,34 @@ export class ExtruderSystem {
             return;
         }
 
-        const spoolPositions = [];
         const spoolEntities = world.query([SpoolTagComponent, PositionComponent]);
+        const sumByMachine = {};
+        const countByMachine = {};
+
         for (const e of spoolEntities) {
             const pos = world.getComponent(e, PositionComponent).pos;
-            spoolPositions.push(pos);
+            const machineTag = world.getComponent(e, MachineTagComponent);
+            const machineId = machineTag?.id || 'default';
+            if (!sumByMachine[machineId]) {
+                sumByMachine[machineId] = new Vector2();
+                countByMachine[machineId] = 0;
+            }
+            sumByMachine[machineId].add(pos);
+            countByMachine[machineId] += 1;
         }
 
-        if (spoolPositions.length > 0) {
-            const sum = new Vector2();
-            spoolPositions.forEach(p => sum.add(p));
-            extruderComp.centerPos = sum.scale(1 / spoolPositions.length);
+        const machineCenters = {};
+        const machineIds = Object.keys(sumByMachine);
+        for (const machineId of machineIds) {
+            const sum = sumByMachine[machineId];
+            const count = countByMachine[machineId] || 1;
+            machineCenters[machineId] = sum.clone().scale(1 / count);
+        }
+
+        if (machineIds.length > 0) {
+            extruderComp.machineCenters = machineCenters;
+            const primaryMachine = machineIds[0];
+            extruderComp.centerPos = machineCenters[primaryMachine].clone();
         }
     }
 }
@@ -200,6 +219,41 @@ export class RemoteSpoolSystem {
             return;
         }
 
+        const commandType = command?.type || '';
+        const touchedMachines = new Set();
+        const colorByMachine = new Map();
+
+        for (const axis in this.axisToEntity) {
+            const entityIds = Array.isArray(this.axisToEntity[axis]) ? this.axisToEntity[axis] : [this.axisToEntity[axis]];
+            for (const entityId of entityIds) {
+                const machineTag = world.getComponent(entityId, MachineTagComponent);
+                const machineId = machineTag?.id || 'default';
+                const axisValue = command[axis];
+                if (axisValue !== undefined) {
+                    touchedMachines.add(machineId);
+                    if (!colorByMachine.has(machineId)) {
+                        const renderComp = world.getComponent(entityId, RenderableComponent);
+                        if (renderComp?.color) {
+                            colorByMachine.set(machineId, renderComp.color);
+                        }
+                    }
+                }
+
+                if (command && commandType === 'Move' && axisValue !== undefined) {
+                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    if (stepperComp != null) {
+                        stepperComp.commandedAngle = axisValue;
+                    }
+                }
+                if (command != null && commandType === 'Add to reference' && axisValue !== undefined) {
+                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    if (stepperComp) {
+                        stepperComp.deltaAngle += axisValue;
+                    }
+                }
+            }
+        }
+
         if (command.E !== undefined && command.E > 0.0) {
             let extruderComp = null;
             for (const e of world.query([ExtruderComponent])) {
@@ -207,25 +261,29 @@ export class RemoteSpoolSystem {
                 break;
             }
             if (extruderComp != null) {
-                const extrusionEvent = [[extruderComp.centerPos.x, extruderComp.centerPos.y, 0], command.E];
-                extruderComp.extrusions.push(extrusionEvent);
-            }
-        }
+                let machineIds = touchedMachines.size > 0
+                    ? Array.from(touchedMachines)
+                    : [];
 
-        for (const axis in this.axisToEntity) {
-            const entityIds = Array.isArray(this.axisToEntity[axis]) ? this.axisToEntity[axis] : [this.axisToEntity[axis]];
-            for (const entityId of entityIds) {
-                if (command && command.type === 'Move' && command[axis] !== undefined) {
-                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                    if (stepperComp != null) {
-                        stepperComp.commandedAngle = command[axis];
+                if (machineIds.length === 0) {
+                    const centerKeys = Object.keys(extruderComp.machineCenters || {});
+                    if (centerKeys.length > 0) {
+                        machineIds = [centerKeys[0]];
+                    } else {
+                        machineIds = ['default'];
                     }
                 }
-                if (command != null && command.type === 'Add to reference' && command[axis] !== undefined) {
-                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                    if (stepperComp) {
-                        stepperComp.deltaAngle += command[axis];
-                    }
+
+                for (const machineId of machineIds) {
+                    const center = extruderComp.machineCenters?.[machineId] || extruderComp.centerPos;
+                    const color = colorByMachine.get(machineId) || null;
+                    const extrusionEvent = {
+                        pos: [center.x, center.y, 0],
+                        length: command.E,
+                        machineId,
+                        color,
+                    };
+                    extruderComp.extrusions.push(extrusionEvent);
                 }
             }
         }

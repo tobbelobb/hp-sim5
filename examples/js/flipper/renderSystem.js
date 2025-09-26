@@ -225,12 +225,12 @@ export class RenderSystem {
     }
     this.extrusionCtx.clip();
 
-    this.extrusionCtx.fillStyle = 'rgba(100, 255, 100, 0.5)';
     for (let i = 0; i < n; i++) {
       const extrusion = extruderComp.extrusions[i];
       if (!extrusion) continue;
-      const pos = extrusion[0]; // [x, y, z]
-      const length = extrusion[1]; // filament length -> area proxy
+      const pos = Array.isArray(extrusion) ? extrusion[0] : extrusion.pos;
+      const length = Array.isArray(extrusion) ? extrusion[1] : extrusion.length;
+      const color = Array.isArray(extrusion) ? null : extrusion.color;
 
       const radiusSim = Math.sqrt(length / Math.PI) * 0.01 * 0.5;
       const px = this.cX(pos[0]);
@@ -243,6 +243,7 @@ export class RenderSystem {
         if (px + pr < R.x || px - pr > R.x + R.w || py + pr < R.y || py - pr > R.y + R.h) {
           continue;
         }
+        this.extrusionCtx.fillStyle = this._colorWithAlpha(color, 0.5);
         this.extrusionCtx.beginPath();
         this.extrusionCtx.arc(px, py, pr, 0, 2 * Math.PI);
         this.extrusionCtx.fill();
@@ -632,21 +633,24 @@ export class RenderSystem {
 
     // Render Extruder circle if present
     const extruderEntities = world.query([ExtruderComponent]);
+    let maxExtrusions = this.drawnExtrusionCount;
     if (extruderEntities.length > 0) {
-        const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
-        if (extruderComp && extruderComp.extrusions.length > this.drawnExtrusionCount) {
-            this.extrusionCtx.fillStyle = 'rgba(100, 255, 100, 0.5)';
+        for (const extruderEntity of extruderEntities) {
+            const extruderComp = world.getComponent(extruderEntity, ExtruderComponent);
+            if (!extruderComp || !Array.isArray(extruderComp.extrusions)) {
+                continue;
+            }
             for (let i = this.drawnExtrusionCount; i < extruderComp.extrusions.length; i++) {
                 const extrusion = extruderComp.extrusions[i];
-                const pos = extrusion[0]; // [x, y, z] in meters
-                const length = extrusion[1]; // in mm
-
-                // The length is of the filament. The volume is what matters.
-                // Let's assume nozzle diameter is constant, so extruded area is proportional to length.
-                // Radius of blob is proportional to sqrt(length).
-                // The length is in mm, pos is in m. We use a scaling factor to get a reasonable radius in meters.
+                if (!extrusion) {
+                    continue;
+                }
+                const pos = Array.isArray(extrusion) ? extrusion[0] : extrusion.pos;
+                const length = Array.isArray(extrusion) ? extrusion[1] : extrusion.length;
+                const color = Array.isArray(extrusion) ? null : extrusion.color;
                 const radius = Math.sqrt(length / Math.PI) * 0.01 * 0.5;
 
+                this.extrusionCtx.fillStyle = this._colorWithAlpha(color, 0.5);
                 this.extrusionCtx.beginPath();
                 this.extrusionCtx.arc(
                     this.cX(pos[0]),
@@ -656,8 +660,11 @@ export class RenderSystem {
                 );
                 this.extrusionCtx.fill();
             }
-            this.drawnExtrusionCount = extruderComp.extrusions.length;
+            if (extruderComp.extrusions.length > maxExtrusions) {
+                maxExtrusions = extruderComp.extrusions.length;
+            }
         }
+        this.drawnExtrusionCount = maxExtrusions;
     }
 
 
@@ -868,5 +875,38 @@ export class RenderSystem {
         }
         this.c.restore();
     }
+  }
+
+  _colorWithAlpha(color, alpha = 1) {
+    if (typeof color !== 'string' || color.length === 0) {
+      return `rgba(100, 255, 100, ${alpha})`;
+    }
+    if (color.startsWith('rgba')) {
+      const parts = color.match(/\d+(?:\.\d+)?/g);
+      if (parts && parts.length >= 3) {
+        const [r, g, b] = parts;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+    }
+    if (color.startsWith('rgb(')) {
+      const parts = color.match(/\d+(?:\.\d+)?/g);
+      if (parts && parts.length >= 3) {
+        const [r, g, b] = parts;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+    }
+    if (color.startsWith('#')) {
+      let hex = color.slice(1);
+      if (hex.length === 3) {
+        hex = hex.split('').map((c) => c + c).join('');
+      }
+      if (hex.length === 6) {
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+    }
+    return color;
   }
 }
