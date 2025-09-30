@@ -20,7 +20,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (0.0, -0.2, 0.0)
+            double3 xformOp:translate = (0.00279243606, -0.199980504801, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
@@ -46,7 +46,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (0.173205080756, 0.1, 0.0)
+            double3 xformOp:translate = (0.171791979386, 0.102408572974, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
@@ -71,7 +71,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (-0.173205080756, 0.1, 0.0)
+            double3 xformOp:translate = (-0.174584415453, 0.097571931827, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
@@ -99,28 +99,28 @@ def Xform "World"
         def CableJoint "JointA"
         {
             custom point3d localPos0 = (0.0, -2.1, 0.0)
-            custom point3d localPos1 = (-0.02999626015, -0.20047368421, 0.0)
+            custom point3d localPos1 = (-0.027204487935455, -0.200410098029484, 0.0)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorA>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolA>
-            custom double restLength = 1.899763143131
+            custom double restLength = 1.898784693019
         }
 
         def CableJoint "JointB"
         {
             custom point3d localPos0 = (1.818653347947321, 1.05, 0.0)
-            custom point3d localPos1 = (0.188613433393, 0.074259318792, 0.0)
+            custom point3d localPos1 = (0.187162480036190,  0.076645271365691, 0.0)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorB>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolB>
-            custom double restLength = 1.899763143131
+            custom double restLength = 1.898784693019
         }
 
         def CableJoint "JointC"
         {
             custom point3d localPos0 = (-1.818653347947321, 1.05, 0.0)
-            custom point3d localPos1 = (-0.158617173239, 0.126214365417, 0.0)
+            custom point3d localPos1 = (-0.159957992100736, 0.123764826663793, 0.0)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorC>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolC>
-            custom double restLength = 1.899763143131
+            custom double restLength = 1.898784693019
         }
 
         def Xform "CablePathA" (
@@ -131,7 +131,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointA>]
             custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
             custom double[] cablePath:stored = [0, 0.942477796076938]
-            custom double cablePath:totalLength = 2.842240939208
+            custom double cablePath:totalLength = 2.842262489095938
             custom double stiffness = 20000.0
         }
 
@@ -143,7 +143,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointB>]
             custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
             custom double[] cablePath:stored = [0, 0.942477796076938]
-            custom double cablePath:totalLength = 2.842240939208
+            custom double cablePath:totalLength = 2.842262489095938
             custom double stiffness = 20000.0
         }
 
@@ -155,7 +155,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointC>]
             custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
             custom double[] cablePath:stored = [0, 0.942477796076938]
-            custom double cablePath:totalLength = 2.842240939208
+            custom double cablePath:totalLength = 2.842262489095938
             custom double stiffness = 20000.0
         }
 
