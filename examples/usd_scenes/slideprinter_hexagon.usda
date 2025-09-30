@@ -11,10 +11,8 @@
 def Xform "World"
 {
     def Xform "SlideprinterScene" {
-        custom color3f machine:tintColor = (0.29803922, 0.85098039, 0.39215686)
-        custom color3f machine:extrusionColor = (0.29803922, 0.85098039, 0.39215686)
         def Circle "SpoolA" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -47,7 +45,7 @@ def Xform "World"
         }
 
         def Circle "PinholeAL" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -60,7 +58,7 @@ def Xform "World"
         }
 
         def Circle "PinholeAR" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -73,7 +71,7 @@ def Xform "World"
         }
 
         def Circle "SpoolB" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -106,7 +104,7 @@ def Xform "World"
         }
 
         def Circle "PinholeBL" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -119,7 +117,7 @@ def Xform "World"
         }
 
         def Circle "PinholeBR" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -132,7 +130,7 @@ def Xform "World"
         }
 
         def Circle "SpoolC" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -165,7 +163,7 @@ def Xform "World"
         }
 
         def Circle "PinholeCL" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -178,7 +176,7 @@ def Xform "World"
         }
 
         def Circle "PinholeCR" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -389,6 +387,8 @@ def Xform "World"
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
         }
+        custom color3f machine:tintColor = (0.29803922, 0.85098039, 0.39215686)
+        custom color3f machine:extrusionColor = (0.29803922, 0.85098039, 0.39215686)
     }
 
     def PhysicsScene "PhysicsScene"
@@ -412,10 +412,6 @@ def Xform "World"
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )
         {
-            def Shader "Shader"
-            {
-                color3f inputs:diffuseColor = (0.5, 0.0, 0.5)
-            }
             float physics:staticFriction = 0.005
             float physics:dynamicFriction = 0.005
             float physics:restitution = 0.025

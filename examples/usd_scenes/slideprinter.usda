@@ -12,7 +12,7 @@ def Xform "World"
 {
     def Xform "SlideprinterScene" {
         def Circle "SpoolA" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -38,7 +38,7 @@ def Xform "World"
         }
 
         def Circle "SpoolB" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -63,7 +63,7 @@ def Xform "World"
         }
 
         def Circle "SpoolC" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -160,7 +160,7 @@ def Xform "World"
         }
 
         custom color3f machine:tintColor = (0.5, 0.0, 0.5)
-        custom color3f machine:extrusionColor = (0.4, 1.0, 0.4)
+        custom color3f machine:extrusionColor = (0.7, 0.0, 0.7)
     }
 
     def PhysicsScene "PhysicsScene"

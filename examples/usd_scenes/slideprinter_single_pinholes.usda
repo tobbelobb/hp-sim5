@@ -11,10 +11,8 @@
 def Xform "World"
 {
     def Xform "SlideprinterScene" {
-        custom color3f machine:tintColor = (1, 0.70196078, 0.27843137)
-        custom color3f machine:extrusionColor = (1, 0.70196078, 0.27843137)
         def Circle "SpoolA" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -40,7 +38,7 @@ def Xform "World"
         }
 
         def Circle "PinholeA" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -53,7 +51,7 @@ def Xform "World"
         }
 
         def Circle "SpoolB" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -78,7 +76,7 @@ def Xform "World"
         }
 
         def Circle "PinholeB" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -91,7 +89,7 @@ def Xform "World"
         }
 
         def Circle "SpoolC" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Spool", "Stepper"]
@@ -116,7 +114,7 @@ def Xform "World"
         }
 
         def Circle "PinholeC" (
-            apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
             token[] ecs:tags = ["Pinhole"]
@@ -232,6 +230,8 @@ def Xform "World"
             custom double cablePath:totalLength = 2.937871716218633
             custom double stiffness = 20000.0
         }
+        custom color3f machine:tintColor = (1, 0.70196078, 0.27843137)
+        custom color3f machine:extrusionColor = (1, 0.70196078, 0.27843137)
     }
 
     def PhysicsScene "PhysicsScene"
