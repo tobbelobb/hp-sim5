@@ -16,6 +16,25 @@ const MCU_PRESETS = {
   },
 };
 
+const PRESET_GCODE_MAP = Object.freeze({
+  hangprinterLogo: {
+    url: new URL('../../public/examples/gcode/Hangprinter_logo6.gcode', import.meta.url).href,
+    label: 'Hangprinter Logo (G-code)',
+    color: '#ff7a18',
+  },
+  straightMoves: {
+    url: new URL('../../public/examples/gcode/draw_squares.gcode', import.meta.url).href,
+    label: 'Draw Squares (G-code)',
+    color: '#00b2ff',
+  },
+});
+
+const GCODE_MM_TO_SIM_SCALE = 0.001;
+const GCODE_EXTRUSION_EPSILON = 1e-6;
+const GCODE_MOVE_EPSILON = 1e-9;
+const GCODE_INLINE_COMMENT_RE = /\(.*?\)/g;
+const referencePathCache = new Map();
+
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
 const DEFAULT_VIEW_SCALE = 1.0;
 const MIN_VIEW_SCALE = 0.01;
@@ -50,6 +69,7 @@ function initHpSim() {
   const speedFasterBtn = document.getElementById('speedFasterBtn');
   const secondaryControls = document.getElementById('simSecondaryControls');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const referenceToggleBtn = document.getElementById('referenceToggleBtn');
   const speedStatusEl = document.getElementById('speedStatus');
   const simApp = canvas.closest('.sim-app');
   const initialTouchAction = canvas ? canvas.style.touchAction || '' : '';
@@ -95,6 +115,79 @@ function initHpSim() {
   let fullscreenActive = false;
   let currentTimeScale = 1.0;
   let speedStatusArmed = false;
+  const referenceOverlayState = {
+    segments: null,
+    metadata: null,
+    color: '#1e90ff',
+    visible: false,
+    dirty: false,
+    key: null,
+  };
+
+  function updateReferenceToggleUI() {
+    if (!referenceToggleBtn) {
+      return;
+    }
+    const hasData = Array.isArray(referenceOverlayState.segments) && referenceOverlayState.segments.length > 0;
+    referenceToggleBtn.disabled = !hasData;
+    referenceToggleBtn.setAttribute('aria-pressed', referenceOverlayState.visible ? 'true' : 'false');
+    if (hasData && referenceOverlayState.metadata?.label) {
+      referenceToggleBtn.setAttribute('title', `Reference: ${referenceOverlayState.metadata.label}`);
+      referenceToggleBtn.setAttribute('aria-label', `Toggle reference path: ${referenceOverlayState.metadata.label}`);
+    } else {
+      referenceToggleBtn.removeAttribute('title');
+      referenceToggleBtn.setAttribute('aria-label', 'Toggle reference path visibility');
+    }
+    if (!hasData) {
+      referenceToggleBtn.textContent = 'Show Reference Path';
+    } else {
+      referenceToggleBtn.textContent = referenceOverlayState.visible ? 'Hide Reference Path' : 'Show Reference Path';
+    }
+  }
+
+  function syncReferenceOverlayToRenderSystem({ force = false } = {}) {
+    const renderSystem = world.getResource('renderSystem');
+    if (!renderSystem || typeof renderSystem.setReferencePaths !== 'function') {
+      return;
+    }
+    if (!force && !referenceOverlayState.dirty) {
+      return;
+    }
+    renderSystem.setReferencePaths(referenceOverlayState.segments || [], {
+      color: referenceOverlayState.color,
+      metadata: referenceOverlayState.metadata,
+      visible: referenceOverlayState.visible,
+    });
+    referenceOverlayState.dirty = false;
+  }
+
+  function setReferenceSegments(segments, { metadata = null, color = null } = {}) {
+    referenceOverlayState.segments = Array.isArray(segments) ? segments : null;
+    referenceOverlayState.metadata = metadata;
+    referenceOverlayState.key = metadata?.key || null;
+    if (typeof color === 'string' && color.length > 0) {
+      referenceOverlayState.color = color;
+    } else if (!referenceOverlayState.color) {
+      referenceOverlayState.color = '#1e90ff';
+    }
+    referenceOverlayState.dirty = true;
+    if (!referenceOverlayState.segments) {
+      referenceOverlayState.visible = false;
+    }
+    updateReferenceToggleUI();
+    syncReferenceOverlayToRenderSystem({ force: true });
+  }
+
+  function setReferenceVisibility(visible) {
+    const target = Boolean(visible);
+    if (referenceOverlayState.visible === target) {
+      return;
+    }
+    referenceOverlayState.visible = target;
+    referenceOverlayState.dirty = true;
+    updateReferenceToggleUI();
+    syncReferenceOverlayToRenderSystem({ force: true });
+  }
 
   const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
@@ -172,6 +265,390 @@ function initHpSim() {
       return Math.round(scaled).toString(16).padStart(2, '0');
     };
     return `#${toHex(colorArr[0])}${toHex(colorArr[1])}${toHex(colorArr[2])}`;
+  }
+
+  function createEmptyBounds() {
+    return {
+      minX: Infinity,
+      minY: Infinity,
+      minZ: Infinity,
+      maxX: -Infinity,
+      maxY: -Infinity,
+      maxZ: -Infinity,
+    };
+  }
+
+  function updateBoundsWithPoint(bounds, point) {
+    if (!bounds || !Array.isArray(point) || point.length < 3) {
+      return;
+    }
+    const [x, y, z] = point;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+      return;
+    }
+    bounds.minX = Math.min(bounds.minX, x);
+    bounds.minY = Math.min(bounds.minY, y);
+    bounds.minZ = Math.min(bounds.minZ, z);
+    bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.maxY = Math.max(bounds.maxY, y);
+    bounds.maxZ = Math.max(bounds.maxZ, z);
+  }
+
+  function finalizeBounds(bounds) {
+    if (!bounds || !Number.isFinite(bounds.minX)) {
+      return null;
+    }
+    return {
+      minX: bounds.minX,
+      minY: bounds.minY,
+      minZ: bounds.minZ,
+      maxX: bounds.maxX,
+      maxY: bounds.maxY,
+      maxZ: bounds.maxZ,
+    };
+  }
+
+  function sanitizeGcodeLine(rawLine) {
+    if (typeof rawLine !== 'string') {
+      return '';
+    }
+    let line = rawLine.trim();
+    if (!line || line.startsWith(';')) {
+      return '';
+    }
+    line = line.replace(GCODE_INLINE_COMMENT_RE, '');
+    const commentIndex = line.indexOf(';');
+    if (commentIndex >= 0) {
+      line = line.slice(0, commentIndex);
+    }
+    return line.trim();
+  }
+
+  function parseGcodeText(text) {
+    if (typeof text !== 'string' || text.length === 0) {
+      return { segments: [], bounds: null };
+    }
+    const bounds = createEmptyBounds();
+    const segments = [];
+    const state = {
+      position: { X: 0, Y: 0, Z: 0 },
+      extruder: 0,
+      positionAbsolute: true,
+      extrusionAbsolute: true,
+      feedRate: null,
+    };
+
+    const lines = text.split(/\r?\n/);
+    for (const rawLine of lines) {
+      const line = sanitizeGcodeLine(rawLine);
+      if (!line) {
+        continue;
+      }
+      const tokens = line.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) {
+        continue;
+      }
+      const primaryToken = tokens[0].toUpperCase();
+      const codeLetter = primaryToken.charAt(0);
+      const codeNumber = Number.parseInt(primaryToken.substring(1), 10);
+
+      if (codeLetter === 'M' && codeNumber === 82) {
+        state.extrusionAbsolute = true;
+        continue;
+      }
+      if (codeLetter === 'M' && codeNumber === 83) {
+        state.extrusionAbsolute = false;
+        continue;
+      }
+      if (codeLetter === 'G' && codeNumber === 90) {
+        state.positionAbsolute = true;
+        continue;
+      }
+      if (codeLetter === 'G' && codeNumber === 91) {
+        state.positionAbsolute = false;
+        continue;
+      }
+      if (codeLetter === 'G' && codeNumber === 92) {
+        const newPos = { ...state.position };
+        let newExtruder = state.extruder;
+        for (let i = 1; i < tokens.length; i += 1) {
+          const token = tokens[i];
+          if (!token) continue;
+          const letter = token.charAt(0).toUpperCase();
+          const value = Number.parseFloat(token.substring(1));
+          if (!Number.isFinite(value)) {
+            continue;
+          }
+          if (letter === 'X' || letter === 'Y' || letter === 'Z') {
+            newPos[letter] = value;
+          } else if (letter === 'E') {
+            newExtruder = value;
+          }
+        }
+        state.position = newPos;
+        state.extruder = newExtruder;
+        continue;
+      }
+
+      const isMoveCommand = codeLetter === 'G' && (codeNumber === 0 || codeNumber === 1);
+      if (!isMoveCommand) {
+        continue;
+      }
+
+      const startPos = { ...state.position };
+      const nextPos = { ...state.position };
+      let rawExtrusionValue = null;
+      let feedRate = state.feedRate;
+
+      for (let i = 1; i < tokens.length; i += 1) {
+        const token = tokens[i];
+        if (!token || token.length < 2) {
+          continue;
+        }
+        const letter = token.charAt(0).toUpperCase();
+        const value = Number.parseFloat(token.substring(1));
+        if (!Number.isFinite(value)) {
+          continue;
+        }
+        if (letter === 'X' || letter === 'Y' || letter === 'Z') {
+          if (state.positionAbsolute) {
+            nextPos[letter] = value;
+          } else {
+            nextPos[letter] = state.position[letter] + value;
+          }
+        } else if (letter === 'E') {
+          rawExtrusionValue = value;
+        } else if (letter === 'F') {
+          feedRate = value;
+        }
+      }
+
+      let extrusionDelta = 0;
+      let nextExtruder = state.extruder;
+      if (rawExtrusionValue != null) {
+        if (state.extrusionAbsolute) {
+          extrusionDelta = rawExtrusionValue - state.extruder;
+          nextExtruder = rawExtrusionValue;
+        } else {
+          extrusionDelta = rawExtrusionValue;
+          nextExtruder = state.extruder + rawExtrusionValue;
+        }
+      }
+
+      const deltaX = nextPos.X - startPos.X;
+      const deltaY = nextPos.Y - startPos.Y;
+      const deltaZ = nextPos.Z - startPos.Z;
+      const moveDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+
+      if (extrusionDelta > GCODE_EXTRUSION_EPSILON && moveDistance > GCODE_MOVE_EPSILON) {
+        const segment = {
+          start: [startPos.X, startPos.Y, startPos.Z],
+          end: [nextPos.X, nextPos.Y, nextPos.Z],
+          extrusion: extrusionDelta,
+          feedRate: Number.isFinite(feedRate) ? feedRate : null,
+          length: moveDistance,
+        };
+        segments.push(segment);
+        updateBoundsWithPoint(bounds, segment.start);
+        updateBoundsWithPoint(bounds, segment.end);
+      }
+
+      state.position = nextPos;
+      state.extruder = nextExtruder;
+      state.feedRate = feedRate;
+    }
+
+    return {
+      segments,
+      bounds: finalizeBounds(bounds),
+    };
+  }
+
+  function convertParsedSegmentsToSimulation(parsed, { scale = GCODE_MM_TO_SIM_SCALE } = {}) {
+    if (!parsed || !Array.isArray(parsed.segments)) {
+      return { segments: [], bounds: null };
+    }
+    const segments = parsed.segments.map((segment) => {
+      const start = [
+        segment.start[0] * scale,
+        segment.start[1] * scale,
+        segment.start[2] * scale,
+      ];
+      const end = [
+        segment.end[0] * scale,
+        segment.end[1] * scale,
+        segment.end[2] * scale,
+      ];
+      return {
+        start,
+        end,
+        extrusion: segment.extrusion,
+        feedRate: segment.feedRate,
+        length: segment.length * scale,
+      };
+    });
+
+    const bounds = parsed.bounds
+      ? {
+          minX: parsed.bounds.minX * scale,
+          minY: parsed.bounds.minY * scale,
+          minZ: parsed.bounds.minZ * scale,
+          maxX: parsed.bounds.maxX * scale,
+          maxY: parsed.bounds.maxY * scale,
+          maxZ: parsed.bounds.maxZ * scale,
+        }
+      : null;
+
+    return { segments, bounds };
+  }
+
+  async function fetchGcodeText(url) {
+    const response = await fetch(url, { cache: 'no-cache' });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch G-code from ${url}: ${response.status}`);
+    }
+    return response.text();
+  }
+
+  async function loadReferencePath(cacheKey, loader, {
+    metadataOverrides = {},
+    color = null,
+    setActive = false,
+    makeVisible = false,
+  } = {}) {
+    if (cacheKey && referencePathCache.has(cacheKey)) {
+      const cached = referencePathCache.get(cacheKey);
+      if (setActive) {
+        setReferenceSegments(cached.segments, { metadata: cached.metadata, color: cached.color || color || cached.metadata?.color });
+        if (makeVisible) {
+          setReferenceVisibility(true);
+        }
+      }
+      return cached;
+    }
+
+    const text = await loader();
+    const parsed = parseGcodeText(text);
+    const converted = convertParsedSegmentsToSimulation(parsed);
+    let totalLengthMm = 0;
+    let totalExtrusionMm = 0;
+    for (const segment of parsed.segments) {
+      totalLengthMm += segment.length;
+      totalExtrusionMm += segment.extrusion;
+    }
+
+    const metadata = {
+      ...metadataOverrides,
+      bounds: converted.bounds,
+      originalBounds: parsed.bounds,
+      segmentCount: converted.segments.length,
+      units: {
+        source: 'mm',
+        simulation: 'm',
+        scale: GCODE_MM_TO_SIM_SCALE,
+      },
+      totals: {
+        lengthSim: totalLengthMm * GCODE_MM_TO_SIM_SCALE,
+        extrusion: totalExtrusionMm,
+      },
+    };
+    if (!metadata.key && cacheKey) {
+      metadata.key = cacheKey;
+    }
+    if (color && typeof color === 'string') {
+      metadata.color = color;
+    }
+    const record = {
+      segments: converted.segments,
+      metadata,
+      color: color || metadata.color || '#1e90ff',
+    };
+
+    if (cacheKey) {
+      referencePathCache.set(cacheKey, record);
+    }
+
+    if (setActive) {
+      setReferenceSegments(record.segments, { metadata: record.metadata, color: record.color });
+      if (makeVisible) {
+        setReferenceVisibility(true);
+      }
+    }
+
+    return record;
+  }
+
+  async function loadReferencePathForPreset(presetKey, { setActive = true } = {}) {
+    const descriptor = PRESET_GCODE_MAP[presetKey];
+    if (!descriptor || !descriptor.url) {
+      return null;
+    }
+    const cacheKey = `preset:${presetKey}`;
+    try {
+      return await loadReferencePath(cacheKey, () => fetchGcodeText(descriptor.url), {
+        metadataOverrides: {
+          key: cacheKey,
+          label: descriptor.label || presetKey,
+          source: {
+            type: 'preset',
+            presetKey,
+            href: descriptor.url,
+          },
+        },
+        color: descriptor.color,
+        setActive,
+      });
+    } catch (error) {
+      console.error('hp-sim: failed to load preset G-code reference', presetKey, error);
+      return null;
+    }
+  }
+
+  async function loadReferencePathFromFile(file, { setActive = true, makeVisible = false } = {}) {
+    if (!file) {
+      return null;
+    }
+    const cacheKey = `upload:${file.name}:${file.size}:${file.lastModified}`;
+    const fallbackColor = '#2dd4bf';
+    try {
+      return await loadReferencePath(cacheKey, () => file.text(), {
+        metadataOverrides: {
+          key: cacheKey,
+          label: file.name,
+          source: {
+            type: 'upload',
+            name: file.name,
+            size: file.size,
+          },
+          uploadedAt: Date.now(),
+        },
+        color: fallbackColor,
+        setActive,
+        makeVisible,
+      });
+    } catch (error) {
+      console.error('hp-sim: failed to parse uploaded G-code reference', error);
+      return null;
+    }
+  }
+
+  async function handleFileUpload(file) {
+    if (!file) {
+      return;
+    }
+    const detectedFormat = detectFileFormat(file.name);
+    if (detectedFormat === FileFormat.GCODE) {
+      const wantsSimulation = window.confirm('Do you want to simulate a print of this G-code?\nPress OK to simulate, or Cancel to draw the toolpath only.');
+      if (!wantsSimulation) {
+        ensureReadyForNewJob();
+      }
+      await loadReferencePathFromFile(file, { setActive: true, makeVisible: !wantsSimulation });
+      if (wantsSimulation) {
+        await queueUploadedFile(file, detectedFormat);
+      }
+      return;
+    }
+    await queueUploadedFile(file, detectedFormat);
   }
 
   function extractMachineColors(stage, scenePrimPath) {
@@ -687,6 +1164,7 @@ function initHpSim() {
       return;
     }
     renderSystem.setViewTransform(viewState);
+    syncReferenceOverlayToRenderSystem({ force: true });
     if (clearExtrusions && typeof renderSystem.clearExtrusions === 'function') {
       renderSystem.clearExtrusions();
     }
@@ -894,6 +1372,17 @@ function initHpSim() {
         }
         if (renderSystem.extrusionCanvas.height !== canvas.height) {
           renderSystem.extrusionCanvas.height = canvas.height;
+        }
+        renderSystem.referenceDirty = true;
+      }
+      if (renderSystem.referenceCanvas) {
+        if (renderSystem.referenceCanvas.width !== canvas.width) {
+          renderSystem.referenceCanvas.width = canvas.width;
+          renderSystem.referenceDirty = true;
+        }
+        if (renderSystem.referenceCanvas.height !== canvas.height) {
+          renderSystem.referenceCanvas.height = canvas.height;
+          renderSystem.referenceDirty = true;
         }
       }
     }
@@ -1194,6 +1683,9 @@ function initHpSim() {
       console.warn('Slideprinter demo: unknown preset', presetKey);
       return;
     }
+    loadReferencePathForPreset(presetKey, { setActive: true }).catch((error) => {
+      console.warn('hp-sim: failed to prepare reference path for preset', presetKey, error);
+    });
     const format = preset.format || detectFileFormat(preset.url);
     let worker = null;
     if (format === FileFormat.GCODE) {
@@ -1214,11 +1706,11 @@ function initHpSim() {
     worker.postMessage({ type: 'filename_fetch', filename: preset.url });
   }
 
-  async function queueUploadedFile(file) {
+  async function queueUploadedFile(file, formatOverride = null) {
     if (!file) {
       return;
     }
-    const format = detectFileFormat(file.name);
+    const format = formatOverride ?? detectFileFormat(file.name);
     if (format === FileFormat.USD_STAGE) {
       ensureReadyForNewJob();
       await addUsdMachineFromFile(file);
@@ -1257,12 +1749,24 @@ function initHpSim() {
     printSquareBtn.addEventListener('click', () => playPreset('straightMoves'));
   }
 
+  if (referenceToggleBtn) {
+    referenceToggleBtn.addEventListener('click', () => {
+      if (!Array.isArray(referenceOverlayState.segments) || referenceOverlayState.segments.length === 0) {
+        return;
+      }
+      setReferenceVisibility(!referenceOverlayState.visible);
+    });
+    updateReferenceToggleUI();
+  } else {
+    updateReferenceToggleUI();
+  }
+
   if (uploadBtn && gcodeInput) {
     uploadBtn.addEventListener('click', () => gcodeInput.click());
     gcodeInput.addEventListener('change', (event) => {
       const file = event.target.files?.[0];
       if (file) {
-        queueUploadedFile(file).catch((error) => {
+        handleFileUpload(file).catch((error) => {
           console.error('Slideprinter demo: upload handling failed.', error);
         });
         gcodeInput.value = '';

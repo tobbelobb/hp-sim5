@@ -50,6 +50,17 @@ export class RenderSystem {
     this.extrusionCanvas.height = this.canvas.height;
     this.extrusionCtx = this.extrusionCanvas.getContext('2d');
     this.drawnExtrusionCount = 0;
+
+    this.referenceCanvas = document.createElement('canvas');
+    this.referenceCanvas.width = this.canvas.width;
+    this.referenceCanvas.height = this.canvas.height;
+    this.referenceCtx = this.referenceCanvas.getContext('2d');
+    this.referencePaths = [];
+    this.referenceMetadata = null;
+    this.referenceColor = '#1e90ff';
+    this.referenceRequestedVisible = false;
+    this.referenceVisible = false;
+    this.referenceDirty = false;
   }
 
   // Coordinate transformation helpers using instance properties
@@ -136,6 +147,10 @@ export class RenderSystem {
 
 
   setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
+    const prevMultiplier = this.viewScaleMultiplier;
+    const prevOffsetX = this.viewOffsetX_sim;
+    const prevOffsetY = this.viewOffsetY_sim;
+    const prevEffectiveScale = this.effectiveCScale;
     if (typeof scaleMultiplier === 'number' && isFinite(scaleMultiplier) && scaleMultiplier > 0) {
       this.viewScaleMultiplier = scaleMultiplier;
       this.effectiveCScale = this.baseCScale * this.viewScaleMultiplier;
@@ -146,6 +161,92 @@ export class RenderSystem {
     if (typeof offsetY === 'number' && isFinite(offsetY)) {
       this.viewOffsetY_sim = offsetY;
     }
+    const scaleChanged = Math.abs(prevMultiplier - this.viewScaleMultiplier) > 1e-9
+      || Math.abs(prevEffectiveScale - this.effectiveCScale) > 1e-9;
+    const offsetChanged = Math.abs(prevOffsetX - this.viewOffsetX_sim) > 1e-9
+      || Math.abs(prevOffsetY - this.viewOffsetY_sim) > 1e-9;
+    if (scaleChanged || offsetChanged) {
+      this.referenceDirty = true;
+    }
+    this._updateReferenceVisibility();
+  }
+
+  setReferencePaths(segments, options = {}) {
+    this.referencePaths = Array.isArray(segments) ? segments : [];
+    if (options && typeof options === 'object') {
+      if (options.metadata !== undefined) {
+        this.referenceMetadata = options.metadata || null;
+      }
+      if (typeof options.visible === 'boolean') {
+        this.referenceRequestedVisible = options.visible;
+      }
+      if (typeof options.color === 'string' && options.color.length > 0) {
+        this.referenceColor = options.color;
+      }
+    }
+    this.referenceDirty = true;
+    this._updateReferenceVisibility();
+  }
+
+  _updateReferenceVisibility() {
+    const hasData = Array.isArray(this.referencePaths) && this.referencePaths.length > 0;
+    this.referenceVisible = Boolean(this.referenceRequestedVisible) && hasData;
+  }
+
+  _redrawReferencePaths() {
+    if (!this.referenceCanvas || !this.referenceCtx) {
+      this.referenceDirty = false;
+      return;
+    }
+    const width = this.referenceCanvas.width | 0;
+    const height = this.referenceCanvas.height | 0;
+    if (width <= 0 || height <= 0) {
+      this.referenceDirty = false;
+      return;
+    }
+
+    const ctx = this.referenceCtx;
+    ctx.clearRect(0, 0, width, height);
+
+    if (!this.referenceVisible) {
+      this.referenceDirty = false;
+      return;
+    }
+
+    const segments = Array.isArray(this.referencePaths) ? this.referencePaths : [];
+    if (segments.length === 0) {
+      this.referenceDirty = false;
+      return;
+    }
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = this._colorWithAlpha(this.referenceColor, 1.0);
+    const baseWidthPx = Math.max(0.75/2, (0.5 * this.effectiveCScale) / 250);
+    ctx.lineWidth = baseWidthPx;
+
+    for (const segment of segments) {
+      if (!segment || !segment.start || !segment.end) {
+        continue;
+      }
+      const start = segment.start;
+      const end = segment.end;
+      const x1 = this.cX(start[0]);
+      const y1 = this.cY(start[1]);
+      const x2 = this.cX(end[0]);
+      const y2 = this.cY(end[1]);
+      if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(x2) || !Number.isFinite(y2)) {
+        continue;
+      }
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+    this.referenceDirty = false;
   }
 
   clearExtrusions() {
@@ -259,7 +360,6 @@ export class RenderSystem {
     // effectiveCScale is also an instance property (this.effectiveCScale)
 
     this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.c.drawImage(this.extrusionCanvas, 0, 0);
 
     // --- Query for Cable Link Obstacles ---
     this.cableLinkObstacles = [];
@@ -739,6 +839,15 @@ export class RenderSystem {
     //    this.c.restore();
     //}
 
+    if (this.referenceDirty) {
+      this._redrawReferencePaths();
+    }
+    if (this.referenceVisible && this.referenceCanvas) {
+      this.c.drawImage(this.referenceCanvas, 0, 0);
+    }
+    if (this.extrusionCanvas) {
+      this.c.drawImage(this.extrusionCanvas, 0, 0);
+    }
 
     // Render Debug Points
     const debugPoints = world.getResource('debugRenderPoints');
@@ -849,11 +958,9 @@ export class RenderSystem {
               }
             }
           }
-        }
       }
     }
-
-
+  }
     if (debugPoints) {
         // Keep debug points a constant pixel size
         const scaledDebugRadius = baseDebugRadius;
