@@ -1563,6 +1563,7 @@ function initHpSim() {
     resetViewStateDefaults();
     setPanMode(false);
     reapplyViewState({ clearExtrusions: true });
+    setReferenceVisibility(false);
     currentPresetKey = DEFAULT_PRESET_KEY;
   }
 

@@ -839,20 +839,7 @@ export class RenderSystem {
     //    this.c.restore();
     //}
 
-    if (this.referenceDirty) {
-      this._redrawReferencePaths();
-    }
-    if (this.referenceVisible && this.referenceCanvas) {
-      this.c.drawImage(this.referenceCanvas, 0, 0);
-    }
-    if (this.extrusionCanvas) {
-      this.c.drawImage(this.extrusionCanvas, 0, 0);
-    }
-
-    // Render Debug Points
-    const debugPoints = world.getResource('debugRenderPoints');
-
-    // Draw special markers for hybrid links AFTER debugPoints is defined
+    // Draw special markers for hybrid links before overlays so reference paths render above them.
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
 
@@ -958,9 +945,23 @@ export class RenderSystem {
               }
             }
           }
+        }
       }
     }
-  }
+
+    if (this.referenceDirty) {
+      this._redrawReferencePaths();
+    }
+    if (this.referenceVisible && this.referenceCanvas) {
+      this.c.drawImage(this.referenceCanvas, 0, 0);
+    }
+    if (this.extrusionCanvas) {
+      this.c.drawImage(this.extrusionCanvas, 0, 0);
+    }
+
+    // Render Debug Points
+    const debugPoints = world.getResource('debugRenderPoints');
+
     if (debugPoints) {
         // Keep debug points a constant pixel size
         const scaledDebugRadius = baseDebugRadius;
