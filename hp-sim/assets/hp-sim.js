@@ -62,6 +62,7 @@ function initHpSim() {
   const uploadBtn = document.getElementById('uploadBtn');
   const gcodeInput = document.getElementById('gcodeFile');
   const resetBtn = document.getElementById('resetBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const panModeBtn = document.getElementById('panModeBtn');
@@ -82,6 +83,8 @@ function initHpSim() {
   const customMachinesSection = document.getElementById('customMachinesSection');
   const customMachinesList = document.getElementById('customMachinesList');
   const machinesRemoveAllBtn = document.getElementById('machinesRemoveAllBtn');
+  const printStatusEl = document.getElementById('printStatus');
+  const replayStatusEl = document.getElementById('replayStatus');
 
   const usdaCatalog = new Map(
     AVAILABLE_USDAS.map((entry) => [
@@ -123,6 +126,50 @@ function initHpSim() {
     dirty: false,
     key: null,
   };
+  const sceneChangeState = {
+    context: null,
+    pausedForSceneChange: false,
+    replayInProgress: false,
+  };
+
+  function cloneCommandList(list) {
+    if (!Array.isArray(list) || list.length === 0) {
+      return [];
+    }
+    return list.map((cmd) => ({ ...cmd }));
+  }
+
+  function showPrintStatus(message) {
+    if (!printStatusEl) {
+      return;
+    }
+    printStatusEl.textContent = message;
+    printStatusEl.classList.remove('sim-hidden');
+  }
+
+  function hidePrintStatus() {
+    if (!printStatusEl) {
+      return;
+    }
+    printStatusEl.textContent = '';
+    printStatusEl.classList.add('sim-hidden');
+  }
+
+  function showReplayStatus(message = 'Replaying extrusions...') {
+    if (!replayStatusEl) {
+      return;
+    }
+    replayStatusEl.textContent = message;
+    replayStatusEl.classList.remove('sim-hidden');
+  }
+
+  function hideReplayStatus() {
+    if (!replayStatusEl) {
+      return;
+    }
+    replayStatusEl.textContent = '';
+    replayStatusEl.classList.add('sim-hidden');
+  }
 
   function updateReferenceToggleUI() {
     if (!referenceToggleBtn) {
@@ -974,7 +1021,159 @@ function initHpSim() {
     }
   }
 
-  function refreshSceneAfterMachineChange({ clearExtrusions = false, resetView = false } = {}) {
+  function beginSceneChange({ newMachineAdded = false } = {}) {
+    if (sceneChangeState.context) {
+      if (newMachineAdded) {
+        sceneChangeState.context.newMachineAdded = true;
+      }
+      return sceneChangeState.context;
+    }
+    const remoteSystem = getRemoteSystem();
+    const wasPrinting = Boolean(printActive && remoteSystem);
+    let playbackState = null;
+    if (wasPrinting && remoteSystem && typeof remoteSystem.getPlaybackState === 'function') {
+      try {
+        playbackState = remoteSystem.getPlaybackState();
+      } catch (err) {
+        console.warn('hp-sim: unable to capture playback state before scene change.', err);
+      }
+    }
+    if (wasPrinting) {
+      try {
+        if (moveCommanderWorker) {
+          moveCommanderWorker.postMessage({ type: 'pause' });
+        }
+        if (klipperCommanderWorker) {
+          klipperCommanderWorker.postMessage({ type: 'pause' });
+        }
+      } catch (err) {
+        console.warn('hp-sim: unable to pause workers during scene change.', err);
+      }
+      const pauseState = world.getResource('pauseState');
+      if (pauseState) {
+        pauseState.paused = true;
+      }
+      if (!sceneChangeState.pausedForSceneChange) {
+        showPrintStatus('Print paused due to change of scene');
+      }
+      sceneChangeState.pausedForSceneChange = true;
+      if (pauseBtn) {
+        pauseBtn.textContent = 'Resume';
+      }
+    }
+    const context = {
+      wasPrinting,
+      playbackState,
+      worker: remoteSystem ? remoteSystem.worker : null,
+      newMachineAdded: Boolean(newMachineAdded),
+    };
+    sceneChangeState.context = context;
+    return context;
+  }
+
+  async function runReplayLoop(targetCount) {
+    if (!Number.isFinite(targetCount) || targetCount <= 0) {
+      return;
+    }
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      return;
+    }
+    const pauseState = world.getResource('pauseState');
+    const previousPause = pauseState ? pauseState.paused : false;
+    if (pauseState) {
+      pauseState.paused = false;
+    }
+    const dtResource = world.getResource('dt');
+    const stepDt =
+      typeof dtResource === 'number' && Number.isFinite(dtResource) && dtResource > 0
+        ? dtResource
+        : typeof simDtSec === 'number' && Number.isFinite(simDtSec) && simDtSec > 0
+        ? simDtSec
+        : 1 / 120;
+    const maxIterations = Math.max(targetCount * 4, targetCount + 200);
+    let iterations = 0;
+    while (remoteSystem.history.length < targetCount && iterations < maxIterations) {
+      world.update(stepDt);
+      iterations += 1;
+      if (iterations % 500 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    }
+    if (pauseState) {
+      pauseState.paused = previousPause;
+    }
+    if (remoteSystem.history.length < targetCount) {
+      console.warn(
+        `hp-sim: replay stopped early after ${remoteSystem.history.length} commands, expected ${targetCount}.`
+      );
+    }
+  }
+
+  async function restorePrintAfterSceneChange(sceneChange) {
+    sceneChangeState.replayInProgress = false;
+    if (!sceneChange || !sceneChange.wasPrinting) {
+      sceneChangeState.context = null;
+      return;
+    }
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      sceneChangeState.context = null;
+      return;
+    }
+    const playbackState = sceneChange.playbackState || { history: [], queue: [] };
+    const historyClone = cloneCommandList(playbackState.history);
+    const queueClone = cloneCommandList(playbackState.queue);
+    const needsReplay = historyClone.length > 0;
+
+    remoteSystem.worker = null;
+    remoteSystem.wasPaused = false;
+
+    if (needsReplay) {
+      sceneChangeState.replayInProgress = true;
+      remoteSystem.history = [];
+      remoteSystem.commands = cloneCommandList(historyClone).concat(queueClone);
+      const showReplay = Boolean(sceneChange.newMachineAdded);
+      if (showReplay) {
+        showReplayStatus();
+      }
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        await runReplayLoop(historyClone.length);
+      } finally {
+        if (showReplay) {
+          hideReplayStatus();
+        }
+      }
+      remoteSystem.history = historyClone;
+      remoteSystem.commands = queueClone;
+    } else {
+      remoteSystem.history = historyClone;
+      remoteSystem.commands = queueClone;
+    }
+
+    remoteSystem.worker = sceneChange.worker || null;
+    remoteSystem.wasPaused = false;
+    sceneChangeState.replayInProgress = false;
+    const pauseState = world.getResource('pauseState');
+    if (pauseState && !pauseState.paused) {
+      hidePrintStatus();
+      sceneChangeState.pausedForSceneChange = false;
+      try {
+        if (moveCommanderWorker) {
+          moveCommanderWorker.postMessage({ type: 'resume' });
+        }
+        if (klipperCommanderWorker) {
+          klipperCommanderWorker.postMessage({ type: 'resume' });
+        }
+      } catch (err) {
+        console.warn('hp-sim: unable to resume workers after scene change.', err);
+      }
+    }
+    sceneChangeState.context = null;
+  }
+
+  async function refreshSceneAfterMachineChange({ clearExtrusions = false, resetView = false, sceneChange = null } = {}) {
     if (machines.length === 0) {
       world.clear();
       if (canvas) {
@@ -992,6 +1191,12 @@ function initHpSim() {
       stageReady = false;
       setSpeedButtonsEnabled(false);
       updateZoomButtonState();
+      hideReplayStatus();
+      hidePrintStatus();
+      sceneChangeState.context = null;
+      sceneChangeState.pausedForSceneChange = false;
+      stopAndClearWorkers();
+      setPrintActive(false);
       return;
     }
 
@@ -1009,33 +1214,34 @@ function initHpSim() {
       panModeBtn.removeAttribute('aria-disabled');
     }
     reapplyViewState({ clearExtrusions });
+    if (sceneChange) {
+      await restorePrintAfterSceneChange(sceneChange);
+    }
   }
 
-  function removeMachine(machineId) {
+  async function removeMachine(machineId) {
     const index = machines.findIndex((machine) => machine.id === machineId);
     if (index === -1) {
       return;
     }
     machines.splice(index, 1);
-    setPrintActive(false);
-    stopAndClearWorkers();
+    const sceneChange = beginSceneChange({ newMachineAdded: false });
     updateMachineMenuUI();
     if (machines.length === 0) {
-      refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true });
+      await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
       return;
     }
-    refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: false });
+    await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: false, sceneChange });
   }
 
-  function removeAllMachines() {
+  async function removeAllMachines() {
     if (machines.length === 0) {
       return;
     }
     machines.splice(0, machines.length);
+    const sceneChange = beginSceneChange({ newMachineAdded: false });
     updateMachineMenuUI();
-    setPrintActive(false);
-    stopAndClearWorkers();
-    refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true });
+    await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
   }
 
   async function addUsdMachineFromFile(file) {
@@ -1076,7 +1282,12 @@ function initHpSim() {
       }
     }
 
-    refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: machines.length === 1 });
+    const sceneChange = beginSceneChange({ newMachineAdded: true });
+    await refreshSceneAfterMachineChange({
+      clearExtrusions: true,
+      resetView: machines.length === 1,
+      sceneChange,
+    });
   }
 
   async function addUsdaFromCatalog(sourceKey, { resetView = false } = {}) {
@@ -1122,7 +1333,12 @@ function initHpSim() {
       }
     }
 
-    refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: resetView || machines.length === 1 });
+    const sceneChange = beginSceneChange({ newMachineAdded: true });
+    await refreshSceneAfterMachineChange({
+      clearExtrusions: true,
+      resetView: resetView || machines.length === 1,
+      sceneChange,
+    });
     return machine;
   }
 
@@ -1150,6 +1366,12 @@ function initHpSim() {
     printActive = Boolean(active);
     updateMainButtonsState();
     setSecondaryControlsVisible(printActive && machines.length > 0);
+    if (!printActive) {
+      sceneChangeState.context = null;
+      sceneChangeState.pausedForSceneChange = false;
+      hideReplayStatus();
+      hidePrintStatus();
+    }
   }
 
   function ensureReadyForNewJob() {
@@ -1651,7 +1873,12 @@ function initHpSim() {
     if (!remoteSystem) {
       return;
     }
-    remoteSystem.commands.length = 0;
+    if (typeof remoteSystem.clearPlaybackState === 'function') {
+      remoteSystem.clearPlaybackState();
+    } else {
+      remoteSystem.commands.length = 0;
+      remoteSystem.history = [];
+    }
     remoteSystem.worker = activeWorker;
     remoteSystem.wasPaused = false;
   }
@@ -1671,6 +1898,10 @@ function initHpSim() {
       reapplyViewState({ clearExtrusions: true });
     }
     setPrintActive(true);
+    hideReplayStatus();
+    hidePrintStatus();
+    sceneChangeState.context = null;
+    sceneChangeState.pausedForSceneChange = false;
     return true;
   }
 
@@ -1823,7 +2054,7 @@ function initHpSim() {
         updateMachineMenuUI();
         return;
       }
-      removeMachine(machine.id);
+      void removeMachine(machine.id);
     });
   }
 
@@ -1842,14 +2073,14 @@ function initHpSim() {
         return;
       }
       event.preventDefault();
-      removeMachine(machineId);
+      void removeMachine(machineId);
     });
   }
 
   if (machinesRemoveAllBtn) {
     machinesRemoveAllBtn.addEventListener('click', (event) => {
       event.preventDefault();
-      removeAllMachines();
+      void removeAllMachines();
     });
   }
 
@@ -1944,6 +2175,32 @@ function initHpSim() {
       initialTimeScale: currentTimeScale,
       onTimeScaleChange: handleTimeScaleChange,
     });
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', () => {
+        setTimeout(() => {
+          const pauseState = world.getResource('pauseState');
+          if (
+            sceneChangeState.pausedForSceneChange &&
+            pauseState &&
+            !pauseState.paused &&
+            !sceneChangeState.replayInProgress
+          ) {
+            hidePrintStatus();
+            sceneChangeState.pausedForSceneChange = false;
+            try {
+              if (moveCommanderWorker) {
+                moveCommanderWorker.postMessage({ type: 'resume' });
+              }
+              if (klipperCommanderWorker) {
+                klipperCommanderWorker.postMessage({ type: 'resume' });
+              }
+            } catch (err) {
+              console.warn('hp-sim: unable to resume workers after user request.', err);
+            }
+          }
+        }, 0);
+      });
+    }
     if (gameControls && typeof gameControls.reset === 'function') {
       gameControls.reset({ autoPause: true });
     }

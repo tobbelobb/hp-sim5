@@ -160,6 +160,9 @@ export class RemoteSpoolSystem {
         this.highWaterMark = this.baseHighWaterMark;
         this.lowWaterMark = this.baseLowWaterMark;
         this.fastModeActive = false;
+        this.history = [];
+        this.onCommandExecuted = null;
+        this.onExtrusion = null;
     }
 
     resetAxisMapping() {
@@ -168,6 +171,33 @@ export class RemoteSpoolSystem {
 
     addCommand(command) {
         this.commands.push(command);
+    }
+
+    clearPlaybackState() {
+        this.history = [];
+        this.commands.length = 0;
+    }
+
+    getPlaybackState() {
+        return {
+            history: this.history.map((cmd) => ({ ...cmd })),
+            queue: this.commands.map((cmd) => ({ ...cmd })),
+        };
+    }
+
+    setPlaybackState(state = {}) {
+        const nextHistory = Array.isArray(state.history) ? state.history : [];
+        const nextQueue = Array.isArray(state.queue) ? state.queue : [];
+        this.history = nextHistory.map((cmd) => ({ ...cmd }));
+        this.commands = nextQueue.map((cmd) => ({ ...cmd }));
+    }
+
+    setCommandExecutedListener(listener) {
+        this.onCommandExecuted = typeof listener === 'function' ? listener : null;
+    }
+
+    setExtrusionListener(listener) {
+        this.onExtrusion = typeof listener === 'function' ? listener : null;
     }
 
     update(world, dt) {
@@ -217,6 +247,15 @@ export class RemoteSpoolSystem {
         const command = this.commands.shift();
         if (command === undefined) {
             return;
+        }
+        const recordedCommand = { ...command };
+        this.history.push(recordedCommand);
+        if (this.onCommandExecuted) {
+            try {
+                this.onCommandExecuted(recordedCommand);
+            } catch (err) {
+                console.warn('RemoteSpoolSystem: command listener threw', err);
+            }
         }
 
         const commandType = command?.type || '';
@@ -303,6 +342,13 @@ export class RemoteSpoolSystem {
                         color,
                     };
                     extruderComp.extrusions.push(extrusionEvent);
+                    if (this.onExtrusion) {
+                        try {
+                            this.onExtrusion({ ...extrusionEvent });
+                        } catch (err) {
+                            console.warn('RemoteSpoolSystem: extrusion listener threw', err);
+                        }
+                    }
                 }
             }
         }
