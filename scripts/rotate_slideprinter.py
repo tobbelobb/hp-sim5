@@ -59,7 +59,7 @@ def rotation_matrix(angle_rad: float) -> np.ndarray:
     ])
 
 
-def compute_positions(angle_deg: float) -> RotationResult:
+def compute_positions(angle_deg: float, tightness: float) -> RotationResult:
     """Compute rotated spool centers and tangent points."""
     angle_rad = math.radians(angle_deg)
     rot = rotation_matrix(angle_rad)
@@ -73,7 +73,7 @@ def compute_positions(angle_deg: float) -> RotationResult:
     for key in BASE_CENTERS:
         tangent = tangent_from_point_to_circle(ANCHORS[key], centers[key], RADIUS, cw=True)["a_circle"]
         tangents[key] = tangent
-        rest_lengths[key] = float(np.linalg.norm(tangent - ANCHORS[key]))
+        rest_lengths[key] = float(np.linalg.norm(tangent - ANCHORS[key]) - tightness)
 
     return RotationResult(centers=centers, tangents=tangents, rest_lengths=rest_lengths)
 
@@ -142,6 +142,12 @@ def apply_updates(lines: Iterable[str], result: RotationResult) -> Iterable[str]
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--angle", type=float, required=True, help="Rotation around +Z in degrees (0 => Spool A at (0,-0.2)).")
+    parser.add_argument(
+        "--line-tightness",
+        type=float,
+        default=0.0,
+        help="Amount (meters) subtracted from each CableJoint restLength to preload the cables.",
+    )
     parser.add_argument("--usd", type=Path, default=USD_PATH, help="Path to slideprinter.usda (defaults to repo copy).")
     parser.add_argument("--dry-run", action="store_true", help="Print the computed transforms without editing the file.")
     args = parser.parse_args(argv)
@@ -150,7 +156,7 @@ def main(argv: list[str] | None = None) -> None:
     if not usd_path.exists():
         raise FileNotFoundError(f"USD file not found: {usd_path}")
 
-    result = compute_positions(args.angle)
+    result = compute_positions(args.angle, args.line_tightness)
 
     if args.dry_run:
         for key in sorted(result.centers):
