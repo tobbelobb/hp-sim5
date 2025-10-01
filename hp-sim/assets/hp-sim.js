@@ -17,7 +17,7 @@ const MCU_PRESETS = {
 };
 
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
-const DEFAULT_VIEW_SCALE = 1.8;
+const DEFAULT_VIEW_SCALE = 1.0;
 const MIN_VIEW_SCALE = 0.01;
 const MAX_VIEW_SCALE = 100;
 const ZOOM_FACTOR = 1.2;
@@ -25,9 +25,8 @@ const ZOOM_EPSILON = 1e-3;
 
 const AVAILABLE_USDAS = Object.freeze([
   { file: 'slideprinter.usda', label: 'Slideprinter (default)' },
-  { file: 'slideprinter_small.usda', label: 'Slideprinter (small)' },
-  { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon anchors)' },
-  { file: 'slideprinter_hexagon_pure_distancejoints.usda', label: 'Slideprinter (hexagon + distance joints)' },
+  { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },
+  { file: 'slideprinter_hexagon_pure_distancejoints.usda', label: 'Slideprinter (hexagon, pure distance joints)' },
   { file: 'slideprinter_pure_distancejoints.usda', label: 'Slideprinter (distance joints)' },
   { file: 'slideprinter_single_pinholes.usda', label: 'Slideprinter (single pinholes)' },
 ]);
