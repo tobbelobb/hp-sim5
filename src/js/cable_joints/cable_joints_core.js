@@ -90,8 +90,6 @@ export class CableJointComponent {
     this.restLength = restLength; // dn - the dynamic maximum length
     this.attachmentPointA_world = attachmentPointA_world.clone();
     this.attachmentPointB_world = attachmentPointB_world.clone();
-    this.attachmentPointA_local = null;
-    this.attachmentPointB_local = null;
   }
 
   static fromWorld(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -99,32 +97,13 @@ export class CableJointComponent {
   }
 
   static fromLocal(world, entityA, entityB, restLength, attachmentPointA_local, attachmentPointB_local) {
-    const component = new CableJointComponent(
+    return new CableJointComponent(
       entityA,
       entityB,
       restLength,
-      attachmentPointA_local,
-      attachmentPointB_local
+      _computeWorldAttachment(world, entityA, attachmentPointA_local),
+      _computeWorldAttachment(world, entityB, attachmentPointB_local)
     );
-    component.attachmentPointA_local = attachmentPointA_local.clone();
-    component.attachmentPointB_local = attachmentPointB_local.clone();
-    component.refreshWorldAttachments(world);
-    return component;
-  }
-
-  refreshWorldAttachments(world) {
-    if (this.attachmentPointA_local) {
-      const worldA = _computeWorldAttachment(world, this.entityA, this.attachmentPointA_local);
-      if (worldA) {
-        this.attachmentPointA_world = worldA;
-      }
-    }
-    if (this.attachmentPointB_local) {
-      const worldB = _computeWorldAttachment(world, this.entityB, this.attachmentPointB_local);
-      if (worldB) {
-        this.attachmentPointB_world = worldB;
-      }
-    }
   }
 }
 

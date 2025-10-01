@@ -61,16 +61,10 @@ class CableJointComponent:
     rest_length: float
     attachment_point_a_world: np.ndarray
     attachment_point_b_world: np.ndarray
-    attachment_point_a_local: np.ndarray | None = None
-    attachment_point_b_local: np.ndarray | None = None
 
     def __post_init__(self):
         self.attachment_point_a_world = _as_vec3(self.attachment_point_a_world)
         self.attachment_point_b_world = _as_vec3(self.attachment_point_b_world)
-        if self.attachment_point_a_local is not None:
-            self.attachment_point_a_local = _as_vec3(self.attachment_point_a_local)
-        if self.attachment_point_b_local is not None:
-            self.attachment_point_b_local = _as_vec3(self.attachment_point_b_local)
 
     @classmethod
     def from_world(
@@ -109,19 +103,7 @@ class CableJointComponent:
             rest_length=rest_length,
             attachment_point_a_world=world_a,
             attachment_point_b_world=world_b,
-            attachment_point_a_local=local_a,
-            attachment_point_b_local=local_b,
         )
-
-    def refresh_world_attachments(self, world) -> None:
-        if self.attachment_point_a_local is not None:
-            updated_a = _compute_world_attachment(world, self.entity_a, self.attachment_point_a_local)
-            if updated_a is not None:
-                self.attachment_point_a_world = updated_a
-        if self.attachment_point_b_local is not None:
-            updated_b = _compute_world_attachment(world, self.entity_b, self.attachment_point_b_local)
-            if updated_b is not None:
-                self.attachment_point_b_world = updated_b
 
 @dataclass
 class CablePathComponent:
