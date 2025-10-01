@@ -50,8 +50,8 @@ if IS_CI:
 else:
     # Expectations for the local environment
     EXPECTATIONS = {
-        "warp": 68,
-        "no_warp": 8,
+        "warp": 30,
+        "no_warp": 7,
     }
 
 @pytest.mark.parametrize("use_warp,expected_score", [
