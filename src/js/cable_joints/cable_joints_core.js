@@ -50,6 +50,31 @@ function ensureMachineTag(world, entityId, machineId) {
   world.addComponent(entityId, new MachineTagComponent(machineId));
 }
 
+function _computeWorldAttachment(world, entityId, localPoint) {
+  if (!localPoint) {
+    return null;
+  }
+  const localVec = localPoint.clone();
+  if (!world) {
+    return localVec;
+  }
+
+  const posComp = world.getComponent(entityId, PositionComponent);
+  if (!posComp || !posComp.pos) {
+    return localVec;
+  }
+
+  const orientationComp = world.getComponent(entityId, OrientationComponent);
+  const angle = orientationComp?.angle ?? 0.0;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  const rotatedX = localVec.x * cos - localVec.y * sin;
+  const rotatedY = localVec.x * sin + localVec.y * cos;
+
+  return new Vector2(posComp.pos.x + rotatedX, posComp.pos.y + rotatedY);
+}
+
 export class CableLinkComponent {
   constructor(x = 0, y = 0, angle = 0.0) {
     this.prevCableAttachmentTimePos = new Vector2(x, y);
@@ -65,6 +90,41 @@ export class CableJointComponent {
     this.restLength = restLength; // dn - the dynamic maximum length
     this.attachmentPointA_world = attachmentPointA_world.clone();
     this.attachmentPointB_world = attachmentPointB_world.clone();
+    this.attachmentPointA_local = null;
+    this.attachmentPointB_local = null;
+  }
+
+  static fromWorld(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
+    return new CableJointComponent(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world);
+  }
+
+  static fromLocal(world, entityA, entityB, restLength, attachmentPointA_local, attachmentPointB_local) {
+    const component = new CableJointComponent(
+      entityA,
+      entityB,
+      restLength,
+      attachmentPointA_local,
+      attachmentPointB_local
+    );
+    component.attachmentPointA_local = attachmentPointA_local.clone();
+    component.attachmentPointB_local = attachmentPointB_local.clone();
+    component.refreshWorldAttachments(world);
+    return component;
+  }
+
+  refreshWorldAttachments(world) {
+    if (this.attachmentPointA_local) {
+      const worldA = _computeWorldAttachment(world, this.entityA, this.attachmentPointA_local);
+      if (worldA) {
+        this.attachmentPointA_world = worldA;
+      }
+    }
+    if (this.attachmentPointB_local) {
+      const worldB = _computeWorldAttachment(world, this.entityB, this.attachmentPointB_local);
+      if (worldB) {
+        this.attachmentPointB_world = worldB;
+      }
+    }
   }
 }
 

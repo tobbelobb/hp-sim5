@@ -312,7 +312,17 @@ def stage_to_world(world, stage):
             attach_b = np.array(jp.GetAttribute("localPos1").Get())
             rest_len = jp.GetAttribute("restLength").Get()
             ent = world.create_entity()
-            world.add_component(ent, CableJointComponent(name_to_entity[body0], name_to_entity[body1], rest_len, attach_a, attach_b))
+            world.add_component(
+                ent,
+                CableJointComponent.from_local(
+                    world,
+                    name_to_entity[body0],
+                    name_to_entity[body1],
+                    rest_len,
+                    attach_a,
+                    attach_b,
+                ),
+            )
             joint_entities[jp.GetPath()] = ent
 
         ordered = [joint_entities[p] for p in joint_paths if p in joint_entities]

@@ -109,6 +109,6 @@ describe('Flipper Node Simulation', () => {
 
     console.warn = originalWarn; // restore after test
     expect(settled).toBe(false);
-    expect(state.score).toBe(17);
+    expect(state.score).toBe(12);
   });
 });

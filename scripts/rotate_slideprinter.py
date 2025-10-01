@@ -87,6 +87,7 @@ def apply_updates(lines: Iterable[str], result: RotationResult) -> Iterable[str]
     """Yield updated USD lines with rotated centers and tangents."""
     replacements_done = {
         "spools": set(),
+        "local_pos0": set(),
         "tangents": set(),
         "rests": set(),
     }
@@ -117,8 +118,12 @@ def apply_updates(lines: Iterable[str], result: RotationResult) -> Iterable[str]
             line = f"            double3 xformOp:translate = {format_vec(vec)}\n"
             replacements_done["spools"].add(current_spool)
             current_spool = None
+        elif current_joint and "custom point3d localPos0" in stripped:
+            zero_vec = np.zeros(3, dtype=float)
+            line = f"            custom point3d localPos0 = {format_vec(zero_vec)}\n"
+            replacements_done["local_pos0"].add(current_joint)
         elif current_joint and "custom point3d localPos1" in stripped:
-            vec = result.tangents[current_joint]
+            vec = result.tangents[current_joint] - result.centers[current_joint]
             line = f"            custom point3d localPos1 = {format_vec(vec)}\n"
             replacements_done["tangents"].add(current_joint)
         elif current_joint and "custom double restLength" in stripped:
@@ -130,12 +135,18 @@ def apply_updates(lines: Iterable[str], result: RotationResult) -> Iterable[str]
         yield line
 
     missing_spools = {"A", "B", "C"} - replacements_done["spools"]
+    missing_local0 = {"A", "B", "C"} - replacements_done["local_pos0"]
     missing_tangents = {"A", "B", "C"} - replacements_done["tangents"]
     missing_rests = {"A", "B", "C"} - replacements_done["rests"]
-    if missing_spools or missing_tangents or missing_rests:
+    if missing_spools or missing_local0 or missing_tangents or missing_rests:
         raise RuntimeError(
             "Failed to update all targets in USD. "
-            f"Missing spools: {sorted(missing_spools)}, tangents: {sorted(missing_tangents)}, restLengths: {sorted(missing_rests)}"
+            "Missing spools: {sp}, localPos0: {lp0}, tangents: {tan}, restLengths: {rest}".format(
+                sp=sorted(missing_spools),
+                lp0=sorted(missing_local0),
+                tan=sorted(missing_tangents),
+                rest=sorted(missing_rests),
+            )
         )
 
 

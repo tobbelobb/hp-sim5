@@ -454,7 +454,8 @@ def stage_to_world(world, stage):
             ent = world.create_entity()
             world.add_component(
                 ent,
-                CableJointComponent(
+                CableJointComponent.from_local(
+                    world,
                     name_to_entity[body0_name],
                     name_to_entity[body1_name],
                     float(jp.GetAttribute("restLength").Get()),

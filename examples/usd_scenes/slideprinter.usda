@@ -98,8 +98,8 @@ def Xform "World"
 
         def CableJoint "JointA"
         {
-            custom point3d localPos0 = (0.0, -2.1, 0.0)
-            custom point3d localPos1 = (0.000010606910977, -0.197735422520087, 0.000000000000000)
+            custom point3d localPos0 = (0.0, 0.0, 0.0)
+            custom point3d localPos1 = (-0.029999999999534, 0.000000167278166, 0.000000000000000)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorA>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolA>
             custom double restLength = 1.902264577509485
@@ -107,8 +107,8 @@ def Xform "World"
 
         def CableJoint "JointB"
         {
-            custom point3d localPos0 = (1.818653347947321, 1.05, 0.0)
-            custom point3d localPos1 = (0.171238595674956, 0.098876897114405, 0.000000000000000)
+            custom point3d localPos0 = (0.0, 0.0, 0.0)
+            custom point3d localPos1 = (0.014999855132626, -0.025980845752212, 0.000000000000000)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorB>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolB>
             custom double restLength = 1.902264577509485
@@ -116,8 +116,8 @@ def Xform "World"
 
         def CableJoint "JointC"
         {
-            custom point3d localPos0 = (-1.818653347947321, 1.05, 0.0)
-            custom point3d localPos1 = (-0.171249202585933, 0.098858525405682, 0.000000000000000)
+            custom point3d localPos0 = (0.0, 0.0, 0.0)
+            custom point3d localPos1 = (0.015000144866908, 0.025980678474047, 0.000000000000000)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorC>
             custom rel physics:body1 = </World/SlideprinterScene/SpoolC>
             custom double restLength = 1.902264577509485

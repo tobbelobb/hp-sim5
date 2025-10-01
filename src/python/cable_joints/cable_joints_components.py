@@ -1,8 +1,9 @@
+import math
 import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Dict
 
-from .ecs import PositionComponent, RadiusComponent
+from .ecs import PositionComponent, RadiusComponent, OrientationComponent
 from .geometry import signed_arc_length_on_wheel
 
 @dataclass
@@ -15,6 +16,40 @@ class CableLinkComponent:
     prev_cable_attachment_time_pos: np.ndarray = field(default_factory=lambda: np.zeros(3, dtype=float))
     prev_cable_attachment_time_angle: float = 0.0
 
+def _as_vec3(value) -> np.ndarray:
+    arr = np.zeros(3, dtype=float)
+    src = np.array(value, dtype=float).reshape(-1)
+    limit = min(src.size, 3)
+    arr[:limit] = src[:limit]
+    return arr
+
+
+def _compute_world_attachment(world, entity_id, local_point: np.ndarray) -> np.ndarray:
+    if local_point is None:
+        return None
+
+    local_vec = _as_vec3(local_point)
+    pos_comp = world.get_component(entity_id, PositionComponent) if world else None
+    if pos_comp is None or pos_comp.pos is None:
+        return local_vec
+
+    angle = 0.0
+    orientation_comp = world.get_component(entity_id, OrientationComponent) if world else None
+    if orientation_comp is not None:
+        angle = float(orientation_comp.angle)
+
+    cos_a = math.cos(angle)
+    sin_a = math.sin(angle)
+
+    rotated = np.array([
+        local_vec[0] * cos_a - local_vec[1] * sin_a,
+        local_vec[0] * sin_a + local_vec[1] * cos_a,
+        local_vec[2],
+    ], dtype=float)
+
+    return pos_comp.pos + rotated
+
+
 @dataclass
 class CableJointComponent:
     """
@@ -24,10 +59,69 @@ class CableJointComponent:
     entity_a: int
     entity_b: int
     rest_length: float
-    # These are numpy arrays. The caller is responsible for passing copies
-    # if the original arrays should not be modified.
     attachment_point_a_world: np.ndarray
     attachment_point_b_world: np.ndarray
+    attachment_point_a_local: np.ndarray | None = None
+    attachment_point_b_local: np.ndarray | None = None
+
+    def __post_init__(self):
+        self.attachment_point_a_world = _as_vec3(self.attachment_point_a_world)
+        self.attachment_point_b_world = _as_vec3(self.attachment_point_b_world)
+        if self.attachment_point_a_local is not None:
+            self.attachment_point_a_local = _as_vec3(self.attachment_point_a_local)
+        if self.attachment_point_b_local is not None:
+            self.attachment_point_b_local = _as_vec3(self.attachment_point_b_local)
+
+    @classmethod
+    def from_world(
+        cls,
+        entity_a: int,
+        entity_b: int,
+        rest_length: float,
+        attachment_point_a_world,
+        attachment_point_b_world,
+    ) -> "CableJointComponent":
+        return cls(
+            entity_a=entity_a,
+            entity_b=entity_b,
+            rest_length=rest_length,
+            attachment_point_a_world=attachment_point_a_world,
+            attachment_point_b_world=attachment_point_b_world,
+        )
+
+    @classmethod
+    def from_local(
+        cls,
+        world,
+        entity_a: int,
+        entity_b: int,
+        rest_length: float,
+        attachment_point_a_local,
+        attachment_point_b_local,
+    ) -> "CableJointComponent":
+        local_a = _as_vec3(attachment_point_a_local)
+        local_b = _as_vec3(attachment_point_b_local)
+        world_a = _compute_world_attachment(world, entity_a, local_a)
+        world_b = _compute_world_attachment(world, entity_b, local_b)
+        return cls(
+            entity_a=entity_a,
+            entity_b=entity_b,
+            rest_length=rest_length,
+            attachment_point_a_world=world_a,
+            attachment_point_b_world=world_b,
+            attachment_point_a_local=local_a,
+            attachment_point_b_local=local_b,
+        )
+
+    def refresh_world_attachments(self, world) -> None:
+        if self.attachment_point_a_local is not None:
+            updated_a = _compute_world_attachment(world, self.entity_a, self.attachment_point_a_local)
+            if updated_a is not None:
+                self.attachment_point_a_world = updated_a
+        if self.attachment_point_b_local is not None:
+            updated_b = _compute_world_attachment(world, self.entity_b, self.attachment_point_b_local)
+            if updated_b is not None:
+                self.attachment_point_b_world = updated_b
 
 @dataclass
 class CablePathComponent:

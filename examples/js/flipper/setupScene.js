@@ -262,11 +262,19 @@ export function setupScene(world, stage, canvas) {
                 continue;
             }
 
-            const attachA = new Vector2(attachAArr[0], attachAArr[1]);
-            const attachB = new Vector2(attachBArr[0], attachBArr[1]);
+            const attachALocal = new Vector2(attachAArr[0], attachAArr[1]);
+            const attachBLocal = new Vector2(attachBArr[0], attachBArr[1]);
 
             const joint = world.createEntity();
-            world.addComponent(joint, new CableJointComponent(entityA, entityB, restLength, attachA, attachB));
+            const jointComponent = CableJointComponent.fromLocal(
+              world,
+              entityA,
+              entityB,
+              restLength,
+              attachALocal,
+              attachBLocal
+            );
+            world.addComponent(joint, jointComponent);
             world.addComponent(joint, new RenderableComponent('line', linecolor1));
             jointEntityMap[jointPrim.name] = joint;
         }
