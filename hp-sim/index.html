@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HP Simulation</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="sim-shell">
+        <div class="sim-app" aria-live="polite">
+          <div id="controls" class="sim-controls">
+            <div class="sim-buttons">
+              <div class="sim-start-buttons">
+                <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
+                <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
+                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
+              </div>
+              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
+            </div>
+            <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial,.usda" hidden>
+            <div class="usda-controls" role="group" aria-label="USD scene management">
+              <label class="usda-select">
+                <span>Select USDA</span>
+                <select id="usdaSelect" aria-label="Available USDA scenes"></select>
+              </label>
+              <button id="addUsdaBtn" type="button" class="sim-secondary">Add Scene</button>
+            </div>
+            <div class="usda-list" aria-live="polite">
+              <div class="usda-list-header">
+                <h2>Loaded Scenes</h2>
+                <button id="removeAllUsdasBtn" type="button" class="sim-tertiary">Remove All</button>
+              </div>
+              <ul id="loadedUsdas" class="usda-items"></ul>
+            </div>
+          </div>
+
+          <div class="canvas-frame">
+            <canvas id="myCanvas" role="img" aria-label="Hangprinter simulation"></canvas>
+            <div id="simSecondaryControls" class="sim-secondary-group sim-hidden" aria-label="Simulation controls">
+              <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
+              <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
+              <div id="viewTools" class="sim-zoom" role="group" aria-label="View controls">
+                <button id="zoomInBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom in">+</button>
+                <button id="zoomOutBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom out">−</button>
+                <button id="panModeBtn" type="button" class="sim-secondary sim-zoom-btn" aria-pressed="false">Pan</button>
+              </div>
+              <div id="speedControls" class="sim-speed" role="group" aria-label="Playback speed">
+                <button id="speedSlowerBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Set playback to half speed">
+                  <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
+                  <span class="sim-speed-text">0.5x</span>
+                </button>
+                <button id="speedFasterBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Double the playback speed">
+                  <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
+                  <span class="sim-speed-text">2x</span>
+                </button>
+              </div>
+            </div>
+            <div id="speedStatus" class="sim-speed-status sim-hidden" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./assets/hp-sim.js"></script>
+  </body>
+</html>
