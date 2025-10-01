@@ -1067,11 +1067,15 @@ function initHpSim() {
     setPrintActive(false);
     stopAndClearWorkers();
     gameControls.reset({ autoPause: true });
+    if (typeof gameControls.setTimeScale === 'function') {
+      gameControls.setTimeScale(1.0);
+    } else {
+      handleTimeScaleChange(1.0);
+    }
     resetViewStateDefaults();
     setPanMode(false);
     reapplyViewState({ clearExtrusions: true });
     currentPresetKey = DEFAULT_PRESET_KEY;
-    handleTimeScaleChange(1.0);
   }
 
   function ensureKlipperWorker() {
