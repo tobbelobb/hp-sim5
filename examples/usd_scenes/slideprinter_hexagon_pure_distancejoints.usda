@@ -532,7 +532,6 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointAL_0>, </World/SlideprinterScene/JointAL_1>]
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 0.942477796076938]
-            custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
         }
 
@@ -544,7 +543,6 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointAR_0>, </World/SlideprinterScene/JointAR_1>]
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 0.942477796076938]
-            custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
         }
 
@@ -557,7 +555,6 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointBL_0>, </World/SlideprinterScene/JointBL_1>]
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 0.942477796076938]
-            custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
         }
 
