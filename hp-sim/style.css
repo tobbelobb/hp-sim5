@@ -243,109 +243,156 @@ body {
   display: none !important;
 }
 
-.usda-controls {
-  display: grid;
-  grid-template-columns: minmax(200px, 1fr) auto;
-  gap: 16px;
-  align-items: end;
-}
-
-.usda-select {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-  color: rgba(244, 246, 255, 0.72);
-}
-
-.usda-select select {
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(20, 22, 38, 0.92);
-  color: #f5f7ff;
-  font-size: 15px;
-}
-
-.usda-select select:disabled {
-  opacity: 0.6;
-}
-
-.usda-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: rgba(12, 14, 26, 0.6);
-  padding: 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.usda-list-header {
+.sim-machines {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
 }
 
-.usda-list-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+.sim-machines-toggle {
+  white-space: nowrap;
 }
 
-.usda-items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.sim-machines[data-open='true'] .sim-machines-toggle {
+  background: rgba(255, 255, 255, 0.3);
+  color: #151526;
+}
+
+.sim-machines-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: clamp(220px, 28vw, 340px);
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(18, 20, 36, 0.96);
+  box-shadow: 0 28px 64px rgba(4, 6, 16, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 20;
+  backdrop-filter: blur(18px);
+}
+
+.sim-machines-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.usda-items li {
+.sim-machines-section-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(244, 246, 255, 0.6);
+}
+
+.sim-machines-options,
+.sim-machines-custom {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-machines-option {
+  margin: 0;
+}
+
+.sim-machines-option-label {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(30, 34, 54, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(34, 37, 56, 0.82);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 
-.usda-item-empty {
+.sim-machines-option-label:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(44, 48, 68, 0.9);
+}
+
+.sim-machines-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #ff5c83;
+}
+
+.sim-machines-option-text {
+  flex: 1;
+  color: rgba(244, 246, 255, 0.9);
+}
+
+.sim-machines-custom-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(24, 28, 46, 0.6);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(34, 37, 56, 0.65);
   font-size: 14px;
-  color: rgba(233, 236, 255, 0.6);
 }
 
-.usda-items li span {
+.sim-machines-custom-name {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: rgba(244, 246, 255, 0.9);
 }
 
-.usda-items button {
-  white-space: nowrap;
+.sim-machines-remove {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.sim-machines-remove-all {
+  align-self: flex-start;
+  padding: 8px 16px;
+  font-size: 13px;
 }
 
 @media (max-width: 900px) {
-  .usda-controls {
-    grid-template-columns: 1fr;
-  }
-
   .sim-buttons {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
+  }
+
+  .sim-machines {
+    width: 100%;
+  }
+
+  .sim-machines-toggle {
+    width: 100%;
+  }
+
+  .sim-machines-menu {
+    position: relative;
+    top: 12px;
+    right: auto;
+    left: 0;
+    width: 100%;
+    max-height: min(60vh, 360px);
+    box-shadow: 0 18px 42px rgba(4, 6, 16, 0.45);
   }
 
   .sim-fullscreen {
     margin-left: 0;
+    align-self: flex-end;
   }
 }
 

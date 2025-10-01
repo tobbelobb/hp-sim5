@@ -30,7 +30,6 @@ const AVAILABLE_USDAS = Object.freeze([
   { file: 'slideprinter_hexagon_pure_distancejoints.usda', label: 'Slideprinter (hexagon + distance joints)' },
   { file: 'slideprinter_pure_distancejoints.usda', label: 'Slideprinter (distance joints)' },
   { file: 'slideprinter_single_pinholes.usda', label: 'Slideprinter (single pinholes)' },
-  { file: 'flipper_scene.usda', label: 'Flipper scene' },
 ]);
 
 function initHpSim() {
@@ -57,10 +56,13 @@ function initHpSim() {
   const initialTouchAction = canvas ? canvas.style.touchAction || '' : '';
   const simButtons = controlsRoot.querySelector('.sim-buttons');
   const startButtons = simButtons ? Array.from(simButtons.querySelectorAll('.sim-start')) : [];
-  const usdaSelect = document.getElementById('usdaSelect');
-  const addUsdaBtn = document.getElementById('addUsdaBtn');
-  const loadedUsdaList = document.getElementById('loadedUsdas');
-  const removeAllUsdasBtn = document.getElementById('removeAllUsdasBtn');
+  const machinesContainer = simButtons ? simButtons.querySelector('.sim-machines') : null;
+  const machinesToggle = document.getElementById('machinesToggle');
+  const machinesMenu = document.getElementById('machinesMenu');
+  const presetMachinesList = document.getElementById('presetMachinesList');
+  const customMachinesSection = document.getElementById('customMachinesSection');
+  const customMachinesList = document.getElementById('customMachinesList');
+  const machinesRemoveAllBtn = document.getElementById('machinesRemoveAllBtn');
 
   const usdaCatalog = new Map(
     AVAILABLE_USDAS.map((entry) => [
@@ -72,6 +74,8 @@ function initHpSim() {
     ])
   );
   const defaultUsdaKey = 'slideprinter.usda';
+  const presetOptionInputs = new Map();
+  let machineMenuOpen = false;
 
   const world = new World();
   const machines = [];
@@ -295,8 +299,7 @@ function initHpSim() {
       sourceUrl: sourceUrl || null,
     };
     machines.push(machine);
-    updateLoadedScenesUI();
-    updateUsdaSelectOptions();
+    updateMachineMenuUI();
     return machine;
   }
 
@@ -320,94 +323,178 @@ function initHpSim() {
     }
   }
 
-  function updateLoadedScenesUI() {
-    if (!loadedUsdaList) {
+  function buildPresetMachineOptions() {
+    if (!presetMachinesList) {
       return;
     }
-    loadedUsdaList.innerHTML = '';
-    if (machines.length === 0) {
-      const emptyItem = document.createElement('li');
-      emptyItem.textContent = 'No scenes loaded.';
-      emptyItem.className = 'usda-item-empty';
-      loadedUsdaList.appendChild(emptyItem);
-      if (removeAllUsdasBtn) {
-        removeAllUsdasBtn.disabled = true;
-        removeAllUsdasBtn.setAttribute('aria-disabled', 'true');
-      }
-      return;
-    }
-
-    for (const machine of machines) {
+    presetMachinesList.innerHTML = '';
+    presetOptionInputs.clear();
+    for (const [key, entry] of usdaCatalog.entries()) {
       const item = document.createElement('li');
-      const label = document.createElement('span');
-      label.textContent = machine.name || machine.sourceKey || machine.id;
-      label.title = machine.sourceUrl || machine.sourceKey || machine.id;
+      item.className = 'sim-machines-option';
+      const label = document.createElement('label');
+      label.className = 'sim-machines-option-label';
+      label.dataset.sourceKey = key;
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'sim-machines-checkbox';
+      checkbox.dataset.sourceKey = key;
+      checkbox.value = key;
+
+      const text = document.createElement('span');
+      text.className = 'sim-machines-option-text';
+      text.textContent = entry.label;
+
+      label.appendChild(checkbox);
+      label.appendChild(text);
       item.appendChild(label);
+      presetMachinesList.appendChild(item);
+      presetOptionInputs.set(key, checkbox);
+    }
+  }
+
+  function syncPresetMachineSelections() {
+    if (presetOptionInputs.size === 0) {
+      buildPresetMachineOptions();
+    }
+    for (const [key, checkbox] of presetOptionInputs.entries()) {
+      const isLoaded = machines.some((machine) => machine.sourceKey === key);
+      checkbox.checked = isLoaded;
+    }
+  }
+
+  function syncCustomMachineList() {
+    if (!customMachinesSection || !customMachinesList) {
+      return;
+    }
+    customMachinesList.innerHTML = '';
+    const uploads = machines.filter((machine) => !machine.sourceKey);
+    if (uploads.length === 0) {
+      customMachinesSection.classList.add('sim-hidden');
+      return;
+    }
+    customMachinesSection.classList.remove('sim-hidden');
+    for (const machine of uploads) {
+      const item = document.createElement('li');
+      item.className = 'sim-machines-custom-item';
+
+      const name = document.createElement('span');
+      name.className = 'sim-machines-custom-name';
+      const displayName = machine.name || 'Uploaded scene';
+      name.textContent = displayName;
+      name.title = machine.sourceUrl || machine.name || machine.id;
+      item.appendChild(name);
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.className = 'sim-tertiary';
+      removeBtn.className = 'sim-tertiary sim-machines-remove';
       removeBtn.textContent = 'Remove';
       removeBtn.dataset.machineId = machine.id;
       item.appendChild(removeBtn);
 
-      loadedUsdaList.appendChild(item);
-    }
-
-    if (removeAllUsdasBtn) {
-      removeAllUsdasBtn.disabled = machines.length === 0;
-      if (removeAllUsdasBtn.disabled) {
-        removeAllUsdasBtn.setAttribute('aria-disabled', 'true');
-      } else {
-        removeAllUsdasBtn.removeAttribute('aria-disabled');
-      }
+      customMachinesList.appendChild(item);
     }
   }
 
-  function updateUsdaSelectOptions() {
-    if (!usdaSelect) {
+  function updateMachinesToggleAccessibility() {
+    if (!machinesToggle) {
       return;
     }
-    const previousValue = usdaSelect.value;
-    usdaSelect.innerHTML = '';
-    let firstEnabledValue = null;
+    const count = machines.length;
+    const label = count === 0 ? 'Machines (no scenes loaded)' : `Machines (${count} scenes loaded)`;
+    machinesToggle.setAttribute('aria-label', label);
+  }
 
-    for (const [key, entry] of usdaCatalog.entries()) {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = entry.label;
-      const isLoaded = machines.some((machine) => machine.sourceKey === key);
-      if (isLoaded) {
-        option.disabled = true;
-        option.textContent += ' (loaded)';
-      }
-      if (!option.disabled && firstEnabledValue == null) {
-        firstEnabledValue = key;
-      }
-      usdaSelect.appendChild(option);
+  function updateRemoveAllButtonState() {
+    if (!machinesRemoveAllBtn) {
+      return;
     }
-
-    let nextValue = '';
-    if (previousValue && Array.from(usdaSelect.options).some((opt) => opt.value === previousValue && !opt.disabled)) {
-      nextValue = previousValue;
-    } else if (firstEnabledValue) {
-      nextValue = firstEnabledValue;
-    }
-
-    if (nextValue) {
-      usdaSelect.value = nextValue;
+    const disabled = machines.length === 0;
+    machinesRemoveAllBtn.disabled = disabled;
+    if (disabled) {
+      machinesRemoveAllBtn.setAttribute('aria-disabled', 'true');
     } else {
-      usdaSelect.selectedIndex = -1;
+      machinesRemoveAllBtn.removeAttribute('aria-disabled');
     }
+  }
 
-    if (addUsdaBtn) {
-      const hasEnabledOption = Array.from(usdaSelect.options).some((opt) => !opt.disabled);
-      addUsdaBtn.disabled = !hasEnabledOption;
-      if (!hasEnabledOption) {
-        addUsdaBtn.setAttribute('aria-disabled', 'true');
-      } else {
-        addUsdaBtn.removeAttribute('aria-disabled');
-      }
+  function updateMachineMenuUI() {
+    syncPresetMachineSelections();
+    syncCustomMachineList();
+    updateRemoveAllButtonState();
+    updateMachinesToggleAccessibility();
+  }
+
+  function openMachineMenu() {
+    if (!machinesMenu || !machinesToggle) {
+      return;
+    }
+    if (machineMenuOpen) {
+      return;
+    }
+    machineMenuOpen = true;
+    machinesMenu.classList.remove('sim-hidden');
+    machinesToggle.setAttribute('aria-expanded', 'true');
+    if (machinesContainer) {
+      machinesContainer.setAttribute('data-open', 'true');
+    }
+    const firstFocusable = machinesMenu.querySelector('input, button');
+    if (firstFocusable instanceof HTMLElement) {
+      firstFocusable.focus({ preventScroll: true });
+    } else if (machinesMenu instanceof HTMLElement) {
+      machinesMenu.focus({ preventScroll: true });
+    }
+    document.addEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
+    document.addEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
+    document.addEventListener('keydown', handleMachineMenuKeydown, true);
+  }
+
+  function closeMachineMenu({ focusToggle = false } = {}) {
+    if (!machinesMenu || !machinesToggle) {
+      return;
+    }
+    if (!machineMenuOpen) {
+      return;
+    }
+    machineMenuOpen = false;
+    machinesMenu.classList.add('sim-hidden');
+    machinesToggle.setAttribute('aria-expanded', 'false');
+    if (machinesContainer) {
+      machinesContainer.setAttribute('data-open', 'false');
+    }
+    document.removeEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
+    document.removeEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
+    document.removeEventListener('keydown', handleMachineMenuKeydown, true);
+    if (focusToggle) {
+      machinesToggle.focus({ preventScroll: true });
+    }
+  }
+
+  function handleMachineMenuOutsideInteraction(event) {
+    if (!machineMenuOpen || !machinesMenu) {
+      return;
+    }
+    const target = event.target;
+    if (!(target instanceof Node)) {
+      return;
+    }
+    if (machinesMenu.contains(target)) {
+      return;
+    }
+    if (machinesToggle && machinesToggle.contains(target)) {
+      return;
+    }
+    closeMachineMenu();
+  }
+
+  function handleMachineMenuKeydown(event) {
+    if (!machineMenuOpen) {
+      return;
+    }
+    if (event.key === 'Escape' || event.key === 'Esc') {
+      event.preventDefault();
+      closeMachineMenu({ focusToggle: true });
     }
   }
 
@@ -456,8 +543,7 @@ function initHpSim() {
     machines.splice(index, 1);
     setPrintActive(false);
     stopAndClearWorkers();
-    updateLoadedScenesUI();
-    updateUsdaSelectOptions();
+    updateMachineMenuUI();
     if (machines.length === 0) {
       refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true });
       return;
@@ -470,8 +556,7 @@ function initHpSim() {
       return;
     }
     machines.splice(0, machines.length);
-    updateLoadedScenesUI();
-    updateUsdaSelectOptions();
+    updateMachineMenuUI();
     setPrintActive(false);
     stopAndClearWorkers();
     refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true });
@@ -1182,23 +1267,60 @@ function initHpSim() {
     });
   }
 
-  updateLoadedScenesUI();
-  updateUsdaSelectOptions();
+  buildPresetMachineOptions();
+  updateMachineMenuUI();
 
-  if (addUsdaBtn && usdaSelect) {
-    addUsdaBtn.addEventListener('click', () => {
-      const selectedKey = usdaSelect.value;
-      if (!selectedKey) {
-        return;
+  if (machinesMenu) {
+    machinesMenu.setAttribute('tabindex', '-1');
+  }
+
+  if (machinesToggle) {
+    machinesToggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (machineMenuOpen) {
+        closeMachineMenu();
+      } else {
+        openMachineMenu();
       }
-      addUsdaFromCatalog(selectedKey, { resetView: machines.length === 0 }).catch((error) => {
-        console.error('hp-sim: failed to add USDA preset from catalog.', error);
-      });
     });
   }
 
-  if (loadedUsdaList) {
-    loadedUsdaList.addEventListener('click', (event) => {
+  if (presetMachinesList) {
+    presetMachinesList.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
+        return;
+      }
+      const sourceKey = target.dataset?.sourceKey;
+      if (!sourceKey) {
+        return;
+      }
+      const shouldLoad = target.checked;
+      if (shouldLoad) {
+        target.disabled = true;
+        addUsdaFromCatalog(sourceKey, { resetView: machines.length === 0 })
+          .catch((error) => {
+            console.error('hp-sim: failed to add USDA preset from catalog.', error);
+            target.checked = false;
+          })
+          .finally(() => {
+            target.disabled = false;
+            updateMachineMenuUI();
+          });
+        return;
+      }
+
+      const machine = machines.find((entry) => entry.sourceKey === sourceKey);
+      if (!machine) {
+        updateMachineMenuUI();
+        return;
+      }
+      removeMachine(machine.id);
+    });
+  }
+
+  if (customMachinesList) {
+    customMachinesList.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof Element)) {
         return;
@@ -1216,8 +1338,8 @@ function initHpSim() {
     });
   }
 
-  if (removeAllUsdasBtn) {
-    removeAllUsdasBtn.addEventListener('click', (event) => {
+  if (machinesRemoveAllBtn) {
+    machinesRemoveAllBtn.addEventListener('click', (event) => {
       event.preventDefault();
       removeAllMachines();
     });

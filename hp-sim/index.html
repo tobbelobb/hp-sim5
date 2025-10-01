@@ -17,23 +17,32 @@
                 <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
                 <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
               </div>
+              <div class="sim-machines" data-open="false">
+                <button
+                  id="machinesToggle"
+                  type="button"
+                  class="sim-secondary sim-machines-toggle"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  aria-controls="machinesMenu"
+                >
+                  Machines
+                </button>
+                <div id="machinesMenu" class="sim-machines-menu sim-hidden" aria-labelledby="machinesToggle">
+                  <div class="sim-machines-section">
+                    <span class="sim-machines-section-title">Preset Scenes</span>
+                    <ul id="presetMachinesList" class="sim-machines-options"></ul>
+                  </div>
+                  <div id="customMachinesSection" class="sim-machines-section sim-machines-section-custom sim-hidden">
+                    <span class="sim-machines-section-title">Uploads</span>
+                    <ul id="customMachinesList" class="sim-machines-custom"></ul>
+                  </div>
+                  <button id="machinesRemoveAllBtn" type="button" class="sim-tertiary sim-machines-remove-all">Remove All</button>
+                </div>
+              </div>
               <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
             </div>
             <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial,.usda" hidden>
-            <div class="usda-controls" role="group" aria-label="USD scene management">
-              <label class="usda-select">
-                <span>Select USDA</span>
-                <select id="usdaSelect" aria-label="Available USDA scenes"></select>
-              </label>
-              <button id="addUsdaBtn" type="button" class="sim-secondary">Add Scene</button>
-            </div>
-            <div class="usda-list" aria-live="polite">
-              <div class="usda-list-header">
-                <h2>Loaded Scenes</h2>
-                <button id="removeAllUsdasBtn" type="button" class="sim-tertiary">Remove All</button>
-              </div>
-              <ul id="loadedUsdas" class="usda-items"></ul>
-            </div>
           </div>
 
           <div class="canvas-frame">
