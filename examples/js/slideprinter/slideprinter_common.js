@@ -169,6 +169,23 @@ export class RemoteSpoolSystem {
         this.axisToEntity = {};
     }
 
+    _ensureAxisMapping(world) {
+        if (Object.keys(this.axisToEntity).length !== 0) {
+            return;
+        }
+        const spoolEntities = world.query([SpoolTagComponent, SpoolStateComponent]);
+        for (const e of spoolEntities) {
+            const state = world.getComponent(e, SpoolStateComponent);
+            if (!state?.axis) {
+                continue;
+            }
+            if (!this.axisToEntity[state.axis]) {
+                this.axisToEntity[state.axis] = [];
+            }
+            this.axisToEntity[state.axis].push(e);
+        }
+    }
+
     addCommand(command) {
         this.commands.push(command);
     }
@@ -198,6 +215,144 @@ export class RemoteSpoolSystem {
 
     setExtrusionListener(listener) {
         this.onExtrusion = typeof listener === 'function' ? listener : null;
+    }
+
+    _processCommand(world, command, options = {}) {
+        if (!command) {
+            return;
+        }
+        const { recordHistory = true, emitEvents = true } = options;
+        const recordedCommand = { ...command };
+        if (recordHistory) {
+            this.history.push(recordedCommand);
+        }
+        if (emitEvents && this.onCommandExecuted) {
+            try {
+                this.onCommandExecuted(recordedCommand);
+            } catch (err) {
+                console.warn('RemoteSpoolSystem: command listener threw', err);
+            }
+        }
+
+        const commandType = command?.type || '';
+        const touchedMachines = new Set();
+        const colorByMachine = new Map();
+        const globalMachineColors = world.getResource('machineColors');
+
+        for (const axis of Object.keys(this.axisToEntity)) {
+            const axisValue = command[axis];
+            if (axisValue === undefined) {
+                continue;
+            }
+            const mapping = this.axisToEntity[axis];
+            if (!mapping || (Array.isArray(mapping) && mapping.length === 0)) {
+                continue;
+            }
+            const entityIds = Array.isArray(mapping) ? mapping : [mapping];
+            for (const entityId of entityIds) {
+                if (entityId == null) {
+                    continue;
+                }
+                const machineTag = world.getComponent(entityId, MachineTagComponent);
+                const machineId = machineTag?.id || null;
+                if (!machineId) {
+                    continue;
+                }
+                touchedMachines.add(machineId);
+                if (!colorByMachine.has(machineId)) {
+                    let chosenColor = null;
+                    if (globalMachineColors && typeof globalMachineColors.get === 'function') {
+                        const record = globalMachineColors.get(machineId);
+                        if (record && typeof record.extrusionColor === 'string' && record.extrusionColor.length > 0) {
+                            chosenColor = record.extrusionColor;
+                        }
+                    }
+                    if (!chosenColor) {
+                        const renderComp = world.getComponent(entityId, RenderableComponent);
+                        if (renderComp?.color) {
+                            chosenColor = renderComp.color;
+                        }
+                    }
+                    if (chosenColor) {
+                        colorByMachine.set(machineId, chosenColor);
+                    }
+                }
+
+                if (commandType === 'Move') {
+                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    if (stepperComp != null) {
+                        stepperComp.commandedAngle = axisValue;
+                    }
+                }
+                if (commandType === 'Add to reference') {
+                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    if (stepperComp) {
+                        stepperComp.deltaAngle += axisValue;
+                    }
+                }
+            }
+        }
+
+        if (command.E !== undefined && command.E > 0.0) {
+            let extruderComp = null;
+            for (const e of world.query([ExtruderComponent])) {
+                extruderComp = world.getComponent(e, ExtruderComponent);
+                break;
+            }
+            if (extruderComp != null) {
+                let machineIds = touchedMachines.size > 0 ? Array.from(touchedMachines) : [];
+
+                if (machineIds.length === 0) {
+                    const centerKeys = Object.keys(extruderComp.machineCenters || {});
+                    if (centerKeys.length > 0) {
+                        machineIds = [centerKeys[0]];
+                    }
+                }
+
+                for (const machineId of machineIds) {
+                    if (!machineId) {
+                        continue;
+                    }
+                    const center = extruderComp.machineCenters?.[machineId] || extruderComp.centerPos;
+                    let color = colorByMachine.get(machineId) || null;
+                    if (!color && globalMachineColors && typeof globalMachineColors.get === 'function') {
+                        const record = globalMachineColors.get(machineId);
+                        if (record && typeof record.extrusionColor === 'string' && record.extrusionColor.length > 0) {
+                            color = record.extrusionColor;
+                        }
+                    }
+                    if (!center) {
+                        continue;
+                    }
+                    const extrusionEvent = {
+                        pos: [center.x, center.y, 0],
+                        length: command.E,
+                        machineId,
+                        color,
+                    };
+                    extruderComp.extrusions.push(extrusionEvent);
+                    if (emitEvents && this.onExtrusion) {
+                        try {
+                            this.onExtrusion({ ...extrusionEvent });
+                        } catch (err) {
+                            console.warn('RemoteSpoolSystem: extrusion listener threw', err);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    replayHistory(world, commands, options = {}) {
+        if (!Array.isArray(commands) || commands.length === 0) {
+            return;
+        }
+        const { recordHistory = false, emitEvents = false } = options;
+        this.resetAxisMapping();
+        this._ensureAxisMapping(world);
+        for (const command of commands) {
+            this._processCommand(world, command, { recordHistory, emitEvents });
+        }
     }
 
     update(world, dt) {
@@ -230,128 +385,13 @@ export class RemoteSpoolSystem {
             }
         }
 
-        // Cache axis-to-entity mapping if not already done
-        if (Object.keys(this.axisToEntity).length === 0) {
-            const spoolEntities = world.query([SpoolTagComponent, SpoolStateComponent]);
-            for (const e of spoolEntities) {
-                const state = world.getComponent(e, SpoolStateComponent);
-                if (state.axis) {
-                    if (!this.axisToEntity[state.axis]) {
-                        this.axisToEntity[state.axis] = [];
-                    }
-                    this.axisToEntity[state.axis].push(e);
-                }
-            }
-        }
+        this._ensureAxisMapping(world);
 
         const command = this.commands.shift();
         if (command === undefined) {
             return;
         }
-        const recordedCommand = { ...command };
-        this.history.push(recordedCommand);
-        if (this.onCommandExecuted) {
-            try {
-                this.onCommandExecuted(recordedCommand);
-            } catch (err) {
-                console.warn('RemoteSpoolSystem: command listener threw', err);
-            }
-        }
-
-        const commandType = command?.type || '';
-        const touchedMachines = new Set();
-        const colorByMachine = new Map();
-        const globalMachineColors = world.getResource('machineColors');
-
-        for (const axis in this.axisToEntity) {
-            const entityIds = Array.isArray(this.axisToEntity[axis]) ? this.axisToEntity[axis] : [this.axisToEntity[axis]];
-            for (const entityId of entityIds) {
-                const machineTag = world.getComponent(entityId, MachineTagComponent);
-                const machineId = machineTag?.id || 'default';
-                const axisValue = command[axis];
-                if (axisValue !== undefined) {
-                    touchedMachines.add(machineId);
-                    if (!colorByMachine.has(machineId)) {
-                        let chosenColor = null;
-                        if (globalMachineColors && typeof globalMachineColors.get === 'function') {
-                            const record = globalMachineColors.get(machineId);
-                            if (record && typeof record.extrusionColor === 'string' && record.extrusionColor.length > 0) {
-                                chosenColor = record.extrusionColor;
-                            }
-                        }
-                        if (!chosenColor) {
-                            const renderComp = world.getComponent(entityId, RenderableComponent);
-                            if (renderComp?.color) {
-                                chosenColor = renderComp.color;
-                            }
-                        }
-                        if (chosenColor) {
-                            colorByMachine.set(machineId, chosenColor);
-                        }
-                    }
-                }
-
-                if (command && commandType === 'Move' && axisValue !== undefined) {
-                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                    if (stepperComp != null) {
-                        stepperComp.commandedAngle = axisValue;
-                    }
-                }
-                if (command != null && commandType === 'Add to reference' && axisValue !== undefined) {
-                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
-                    if (stepperComp) {
-                        stepperComp.deltaAngle += axisValue;
-                    }
-                }
-            }
-        }
-
-        if (command.E !== undefined && command.E > 0.0) {
-            let extruderComp = null;
-            for (const e of world.query([ExtruderComponent])) {
-                extruderComp = world.getComponent(e, ExtruderComponent);
-                break;
-            }
-            if (extruderComp != null) {
-                let machineIds = touchedMachines.size > 0
-                    ? Array.from(touchedMachines)
-                    : [];
-
-                if (machineIds.length === 0) {
-                    const centerKeys = Object.keys(extruderComp.machineCenters || {});
-                    if (centerKeys.length > 0) {
-                        machineIds = [centerKeys[0]];
-                    } else {
-                        machineIds = ['default'];
-                    }
-                }
-
-                for (const machineId of machineIds) {
-                    const center = extruderComp.machineCenters?.[machineId] || extruderComp.centerPos;
-                    let color = colorByMachine.get(machineId) || null;
-                    if (!color && globalMachineColors && typeof globalMachineColors.get === 'function') {
-                        const record = globalMachineColors.get(machineId);
-                        if (record && typeof record.extrusionColor === 'string' && record.extrusionColor.length > 0) {
-                            color = record.extrusionColor;
-                        }
-                    }
-                    const extrusionEvent = {
-                        pos: [center.x, center.y, 0],
-                        length: command.E,
-                        machineId,
-                        color,
-                    };
-                    extruderComp.extrusions.push(extrusionEvent);
-                    if (this.onExtrusion) {
-                        try {
-                            this.onExtrusion({ ...extrusionEvent });
-                        } catch (err) {
-                            console.warn('RemoteSpoolSystem: extrusion listener threw', err);
-                        }
-                    }
-                }
-            }
-        }
+        this._processCommand(world, command, { recordHistory: true, emitEvents: true });
     }
 }
 

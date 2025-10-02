@@ -61,6 +61,7 @@ export class RenderSystem {
     this.referenceRequestedVisible = false;
     this.referenceVisible = false;
     this.referenceDirty = false;
+    this.drawingSuspended = false;
   }
 
   // Coordinate transformation helpers using instance properties
@@ -186,6 +187,10 @@ export class RenderSystem {
     }
     this.referenceDirty = true;
     this._updateReferenceVisibility();
+  }
+
+  setDrawingSuspended(suspended) {
+    this.drawingSuspended = Boolean(suspended);
   }
 
   _updateReferenceVisibility() {
@@ -356,6 +361,9 @@ export class RenderSystem {
 
 
   update(world, dt) {
+    if (this.drawingSuspended) {
+      return;
+    }
     // Viewport settings are now instance properties (this.viewScaleMultiplier, etc.)
     // effectiveCScale is also an instance property (this.effectiveCScale)
 

@@ -2,7 +2,7 @@ import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
 import { World } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
-import { RemoteSpoolSystem, InputSystem } from '../../examples/js/slideprinter/slideprinter_common.js';
+import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 
 const MCU_PRESETS = {
@@ -130,6 +130,8 @@ function initHpSim() {
     context: null,
     pausedForSceneChange: false,
     replayInProgress: false,
+    targetHistoryLength: 0,
+    wasPaused: null,
   };
 
   function cloneCommandList(list) {
@@ -1030,6 +1032,10 @@ function initHpSim() {
     }
     const remoteSystem = getRemoteSystem();
     const wasPrinting = Boolean(printActive && remoteSystem);
+    const pauseState = world.getResource('pauseState');
+    sceneChangeState.wasPaused = pauseState ? pauseState.paused : null;
+    sceneChangeState.targetHistoryLength = remoteSystem ? remoteSystem.history.length : 0;
+    sceneChangeState.replayInProgress = false;
     let playbackState = null;
     if (wasPrinting && remoteSystem && typeof remoteSystem.getPlaybackState === 'function') {
       try {
@@ -1049,7 +1055,6 @@ function initHpSim() {
       } catch (err) {
         console.warn('hp-sim: unable to pause workers during scene change.', err);
       }
-      const pauseState = world.getResource('pauseState');
       if (pauseState) {
         pauseState.paused = true;
       }
@@ -1066,12 +1071,14 @@ function initHpSim() {
       playbackState,
       worker: remoteSystem ? remoteSystem.worker : null,
       newMachineAdded: Boolean(newMachineAdded),
+      targetHistoryLength: sceneChangeState.targetHistoryLength,
+      wasPaused: sceneChangeState.wasPaused,
     };
     sceneChangeState.context = context;
     return context;
   }
 
-  async function runReplayLoop(targetCount) {
+  async function runReplayLoop(targetCount, { renderSystem = null } = {}) {
     if (!Number.isFinite(targetCount) || targetCount <= 0) {
       return;
     }
@@ -1079,11 +1086,11 @@ function initHpSim() {
     if (!remoteSystem) {
       return;
     }
-    const pauseState = world.getResource('pauseState');
-    const previousPause = pauseState ? pauseState.paused : false;
-    if (pauseState) {
-      pauseState.paused = false;
+    sceneChangeState.replayInProgress = true;
+    if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
+      renderSystem.setDrawingSuspended(true);
     }
+    const pauseState = world.getResource('pauseState');
     const dtResource = world.getResource('dt');
     const stepDt =
       typeof dtResource === 'number' && Number.isFinite(dtResource) && dtResource > 0
@@ -1093,15 +1100,22 @@ function initHpSim() {
         : 1 / 120;
     const maxIterations = Math.max(targetCount * 4, targetCount + 200);
     let iterations = 0;
-    while (remoteSystem.history.length < targetCount && iterations < maxIterations) {
-      world.update(stepDt);
-      iterations += 1;
-      if (iterations % 500 === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+    try {
+      if (pauseState) {
+        pauseState.paused = false;
       }
-    }
-    if (pauseState) {
-      pauseState.paused = previousPause;
+      while (remoteSystem.history.length < targetCount && iterations < maxIterations) {
+        world.update(stepDt);
+        iterations += 1;
+        if (iterations % 500 === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      }
+    } finally {
+      if (pauseState) {
+        pauseState.paused = true;
+      }
+      sceneChangeState.replayInProgress = false;
     }
     if (remoteSystem.history.length < targetCount) {
       console.warn(
@@ -1124,52 +1138,65 @@ function initHpSim() {
     const playbackState = sceneChange.playbackState || { history: [], queue: [] };
     const historyClone = cloneCommandList(playbackState.history);
     const queueClone = cloneCommandList(playbackState.queue);
-    const needsReplay = historyClone.length > 0;
+    const renderSystem = world.getResource('renderSystem');
+    const pauseState = world.getResource('pauseState');
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length > 0) {
+      const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+      if (extruderComp && Array.isArray(extruderComp.extrusions)) {
+        extruderComp.extrusions = [];
+      }
+    }
+    const showReplay = Boolean(sceneChange.newMachineAdded && historyClone.length > 0);
+    if (showReplay) {
+      showReplayStatus();
+    }
 
     remoteSystem.worker = null;
     remoteSystem.wasPaused = false;
-
-    if (needsReplay) {
-      sceneChangeState.replayInProgress = true;
-      remoteSystem.history = [];
-      remoteSystem.commands = cloneCommandList(historyClone).concat(queueClone);
-      const showReplay = Boolean(sceneChange.newMachineAdded);
-      if (showReplay) {
-        showReplayStatus();
-      }
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        await runReplayLoop(historyClone.length);
-      } finally {
-        if (showReplay) {
-          hideReplayStatus();
-        }
-      }
-      remoteSystem.history = historyClone;
-      remoteSystem.commands = queueClone;
-    } else {
-      remoteSystem.history = historyClone;
-      remoteSystem.commands = queueClone;
+    remoteSystem.history = [];
+    remoteSystem.commands = cloneCommandList(historyClone).concat(queueClone);
+    if (typeof remoteSystem.resetAxisMapping === 'function') {
+      remoteSystem.resetAxisMapping();
     }
 
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (historyClone.length > 0) {
+        await runReplayLoop(historyClone.length, { renderSystem });
+      }
+    } finally {
+      if (showReplay) {
+        hideReplayStatus();
+      }
+    }
+
+    remoteSystem.history = historyClone;
+    remoteSystem.commands = queueClone;
     remoteSystem.worker = sceneChange.worker || null;
     remoteSystem.wasPaused = false;
-    sceneChangeState.replayInProgress = false;
-    const pauseState = world.getResource('pauseState');
-    if (pauseState && !pauseState.paused) {
-      hidePrintStatus();
-      sceneChangeState.pausedForSceneChange = false;
-      try {
-        if (moveCommanderWorker) {
-          moveCommanderWorker.postMessage({ type: 'resume' });
-        }
-        if (klipperCommanderWorker) {
-          klipperCommanderWorker.postMessage({ type: 'resume' });
-        }
-      } catch (err) {
-        console.warn('hp-sim: unable to resume workers after scene change.', err);
+
+    if (renderSystem) {
+      if (typeof renderSystem.setDrawingSuspended === 'function') {
+        renderSystem.setDrawingSuspended(false);
+      }
+      if (typeof renderSystem.clearExtrusions === 'function') {
+        renderSystem.clearExtrusions();
+      }
+      if ('drawnExtrusionCount' in renderSystem) {
+        renderSystem.drawnExtrusionCount = 0;
+      }
+      if (typeof renderSystem.update === 'function') {
+        renderSystem.update(world, 0);
       }
     }
+
+    if (pauseState) {
+      pauseState.paused = true;
+    }
+    sceneChangeState.pausedForSceneChange = true;
+    sceneChangeState.targetHistoryLength = 0;
+    sceneChangeState.wasPaused = null;
     sceneChangeState.context = null;
   }
 
@@ -1195,6 +1222,8 @@ function initHpSim() {
       hidePrintStatus();
       sceneChangeState.context = null;
       sceneChangeState.pausedForSceneChange = false;
+      sceneChangeState.targetHistoryLength = 0;
+      sceneChangeState.wasPaused = null;
       stopAndClearWorkers();
       setPrintActive(false);
       return;
