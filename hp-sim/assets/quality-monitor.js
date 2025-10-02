@@ -52,6 +52,141 @@ function formatPercent(value) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+class StreamingQuantile {
+  constructor(probability) {
+    const clamped = clamp(Number(probability), 0, 1);
+    this._prob = clamped > 0 && clamped < 1 ? clamped : 0.95;
+    this.reset();
+  }
+
+  reset() {
+    this._count = 0;
+    this._initialized = false;
+    this._initial = [];
+    this._q = [0, 0, 0, 0, 0];
+    this._n = [0, 0, 0, 0, 0];
+    this._np = [0, 0, 0, 0, 0];
+    this._dn = [0, 0, 0, 0, 0];
+  }
+
+  observe(value) {
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    this._count += 1;
+    if (!this._initialized) {
+      this._initial.push(value);
+      this._initial.sort((a, b) => a - b);
+      if (this._initial.length === 5) {
+        this._initializeMarkers();
+      }
+      return;
+    }
+
+    let k;
+    if (value < this._q[0]) {
+      this._q[0] = value;
+      k = 0;
+    } else if (value < this._q[1]) {
+      k = 0;
+    } else if (value < this._q[2]) {
+      k = 1;
+    } else if (value < this._q[3]) {
+      k = 2;
+    } else if (value <= this._q[4]) {
+      k = 3;
+    } else {
+      this._q[4] = value;
+      k = 3;
+    }
+
+    for (let i = k + 1; i < 5; i += 1) {
+      this._n[i] += 1;
+    }
+    for (let i = 0; i < 5; i += 1) {
+      this._np[i] += this._dn[i];
+    }
+
+    for (let i = 1; i <= 3; i += 1) {
+      const delta = this._np[i] - this._n[i];
+      const shouldIncrement = delta >= 1 && this._n[i + 1] - this._n[i] > 1;
+      const shouldDecrement = delta <= -1 && this._n[i - 1] - this._n[i] < -1;
+      if (!shouldIncrement && !shouldDecrement) {
+        continue;
+      }
+      const direction = delta >= 0 ? 1 : -1;
+      const candidate = this._parabolic(i, direction);
+      if (candidate > this._q[i - 1] && candidate < this._q[i + 1]) {
+        this._q[i] = candidate;
+      } else {
+        this._q[i] = this._linear(i, direction);
+      }
+      this._n[i] += direction;
+    }
+  }
+
+  getEstimate() {
+    if (this._count === 0) {
+      return NaN;
+    }
+    if (!this._initialized) {
+      const arr = this._initial;
+      if (arr.length === 0) {
+        return NaN;
+      }
+      if (arr.length === 1) {
+        return arr[0];
+      }
+      const rank = this._prob * (arr.length - 1);
+      const lower = Math.floor(rank);
+      const upper = Math.min(arr.length - 1, lower + 1);
+      const weight = rank - lower;
+      if (upper === lower) {
+        return arr[lower];
+      }
+      return arr[lower] + (arr[upper] - arr[lower]) * weight;
+    }
+    return this._q[2];
+  }
+
+  _initializeMarkers() {
+    if (this._initial.length < 5) {
+      return;
+    }
+    const sorted = this._initial;
+    this._q = sorted.slice(0, 5);
+    this._n = [1, 2, 3, 4, 5];
+    const p = this._prob;
+    this._np = [1, 1 + 2 * p, 1 + 4 * p, 3 + 2 * p, 5];
+    this._dn = [0, p / 2, p, (1 + p) / 2, 1];
+    this._initialized = true;
+  }
+
+  _parabolic(i, direction) {
+    const q = this._q;
+    const n = this._n;
+    const denom = n[i + 1] - n[i - 1];
+    if (denom === 0) {
+      return q[i];
+    }
+    const forwardDen = n[i + 1] - n[i];
+    const backwardDen = n[i] - n[i - 1];
+    const forward = forwardDen === 0 ? 0 : direction * (n[i] - n[i - 1] + direction) * (q[i + 1] - q[i]) / forwardDen;
+    const backward = backwardDen === 0 ? 0 : direction * (n[i + 1] - n[i] - direction) * (q[i] - q[i - 1]) / backwardDen;
+    return q[i] + (forward + backward) / denom;
+  }
+
+  _linear(i, direction) {
+    const q = this._q;
+    const n = this._n;
+    const denom = n[i + direction] - n[i];
+    if (denom === 0) {
+      return q[i];
+    }
+    return q[i] + (direction * (q[i + direction] - q[i])) / denom;
+  }
+}
+
 export class QualityMonitor {
   constructor({ hudElement = null } = {}) {
     this.hudElement = hudElement || null;
@@ -61,7 +196,6 @@ export class QualityMonitor {
     this.cornerData = [];
     this.referenceBounds = null;
 
-    this.extrusions = [];
     this.lastSegmentIndex = 0;
     this.pendingExtrusions = [];
     this.enabled = true;
@@ -69,7 +203,7 @@ export class QualityMonitor {
     this.straightStats = {
       count: 0,
       sumSquares: 0,
-      absErrors: [],
+      percentile95: new StreamingQuantile(0.95),
     };
 
     this.coverageGrid = null;
@@ -118,7 +252,6 @@ export class QualityMonitor {
   }
 
   reset({ keepReference = false } = {}) {
-    this.extrusions = [];
     this.lastSegmentIndex = 0;
     this.pendingExtrusions = [];
     this.metricsDirty = true;
@@ -127,7 +260,9 @@ export class QualityMonitor {
 
     this.straightStats.count = 0;
     this.straightStats.sumSquares = 0;
-    this.straightStats.absErrors = [];
+    if (this.straightStats.percentile95) {
+      this.straightStats.percentile95.reset();
+    }
 
     for (const corner of this.cornerData) {
       corner.samples = [];
@@ -258,8 +393,6 @@ export class QualityMonitor {
       return;
     }
 
-    this.extrusions.push({ x, y, length });
-
     this._accumulateStraightError(projection);
     this._accumulateCornerSamples(projection);
     this._updateCoverageForExtrusion(x, y, length);
@@ -276,11 +409,11 @@ export class QualityMonitor {
     if (this.pendingExtrusions.length === 0) {
       return;
     }
-    const backlog = this.pendingExtrusions.slice();
-    this.pendingExtrusions.length = 0;
-    for (const event of backlog) {
-      this._recordExtrusionActive(event);
+    const backlog = this.pendingExtrusions;
+    for (let i = 0; i < backlog.length; i += 1) {
+      this._recordExtrusionActive(backlog[i]);
     }
+    backlog.length = 0;
   }
 
   refreshHud(force = false) {
@@ -610,7 +743,9 @@ export class QualityMonitor {
     const err = projection.normalError;
     this.straightStats.count += 1;
     this.straightStats.sumSquares += err * err;
-    this.straightStats.absErrors.push(Math.abs(err));
+    if (this.straightStats.percentile95) {
+      this.straightStats.percentile95.observe(Math.abs(err));
+    }
   }
 
   _accumulateCornerSamples(projection) {
@@ -638,10 +773,11 @@ export class QualityMonitor {
     const stats = this.straightStats;
     const rmse = stats.count > 0 ? Math.sqrt(stats.sumSquares / stats.count) : NaN;
     let p95 = NaN;
-    if (stats.absErrors.length > 0) {
-      const sorted = stats.absErrors.slice().sort((a, b) => a - b);
-      const idx = Math.min(sorted.length - 1, Math.floor(0.95 * (sorted.length - 1)));
-      p95 = sorted[idx];
+    if (stats.percentile95) {
+      const estimate = stats.percentile95.getEstimate();
+      if (Number.isFinite(estimate)) {
+        p95 = estimate;
+      }
     }
 
     const radiusValues = [];
