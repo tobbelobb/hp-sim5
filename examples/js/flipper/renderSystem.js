@@ -228,7 +228,7 @@ export class RenderSystem {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = this._colorWithAlpha(this.referenceColor, 1.0);
-    const baseWidthPx = Math.max(0.75/2, (0.5 * this.effectiveCScale) / 250);
+    const baseWidthPx = Math.max(0.1875, (0.25 * this.effectiveCScale) / 250);
     ctx.lineWidth = baseWidthPx;
 
     for (const segment of segments) {
