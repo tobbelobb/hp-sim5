@@ -63,6 +63,8 @@ export class QualityMonitor {
 
     this.extrusions = [];
     this.lastSegmentIndex = 0;
+    this.pendingExtrusions = [];
+    this.enabled = true;
 
     this.straightStats = {
       count: 0,
@@ -118,6 +120,7 @@ export class QualityMonitor {
   reset({ keepReference = false } = {}) {
     this.extrusions = [];
     this.lastSegmentIndex = 0;
+    this.pendingExtrusions = [];
     this.metricsDirty = true;
     this.metrics = null;
     this.extrusionsSinceHud = 0;
@@ -171,52 +174,135 @@ export class QualityMonitor {
   }
 
   recordExtrusion(extrusionEvent) {
-    if (!extrusionEvent || !extrusionEvent.pos || this.segmentData.length === 0) {
+    if (!extrusionEvent) {
       return;
     }
-    const pos = Array.isArray(extrusionEvent.pos)
+    if (!this.enabled) {
+      const normalized = this._normalizeExtrusionEvent(extrusionEvent);
+      if (normalized) {
+        this.pendingExtrusions.push(normalized);
+      }
+      return;
+    }
+    this._recordExtrusionActive(extrusionEvent);
+  }
+
+  setEnabled(flag) {
+    const next = Boolean(flag);
+    if (this.enabled === next) {
+      return;
+    }
+    this.enabled = next;
+    if (this.enabled) {
+      this._drainPendingExtrusions();
+      this.refreshHud(true);
+    } else if (this.hudElement) {
+      this.hudElement.classList.add('sim-hidden');
+    }
+  }
+
+  runFinalCheck() {
+    if (this.segmentData.length === 0) {
+      return;
+    }
+    this._drainPendingExtrusions();
+    this.metricsDirty = true;
+    this.refreshHud(true);
+    this.extrusionsSinceHud = 0;
+  }
+
+  _normalizeExtrusionEvent(extrusionEvent) {
+    if (!extrusionEvent) {
+      return null;
+    }
+    if (typeof extrusionEvent.x === 'number' && typeof extrusionEvent.y === 'number') {
+      const x = Number(extrusionEvent.x);
+      const y = Number(extrusionEvent.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return null;
+      }
+      const length = Number.isFinite(extrusionEvent.length) ? Number(extrusionEvent.length) : 0;
+      return { x, y, length };
+    }
+
+    const posSource = Array.isArray(extrusionEvent.pos)
       ? extrusionEvent.pos
-      : [extrusionEvent.pos?.x, extrusionEvent.pos?.y];
-    if (pos.length < 2) {
-      return;
+      : extrusionEvent.pos && typeof extrusionEvent.pos === 'object'
+        ? [extrusionEvent.pos.x, extrusionEvent.pos.y]
+        : null;
+    if (!posSource || posSource.length < 2) {
+      return null;
     }
-    const x = Number(pos[0]);
-    const y = Number(pos[1]);
+    const x = Number(posSource[0]);
+    const y = Number(posSource[1]);
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return null;
+    }
+    const length = Number.isFinite(extrusionEvent.length)
+      ? Number(extrusionEvent.length)
+      : 0;
+    return { x, y, length };
+  }
+
+  _recordExtrusionActive(extrusionEvent) {
+    if (this.segmentData.length === 0) {
       return;
     }
+    const normalized = this._normalizeExtrusionEvent(extrusionEvent);
+    if (!normalized) {
+      return;
+    }
+    const { x, y, length } = normalized;
     const projection = this._projectToPath(x, y);
     if (!projection) {
       return;
     }
 
-    this.extrusions.push({ x, y, length: extrusionEvent.length || 0 });
+    this.extrusions.push({ x, y, length });
 
     this._accumulateStraightError(projection);
     this._accumulateCornerSamples(projection);
-    this._updateCoverageForExtrusion(x, y, extrusionEvent.length || 0);
+    this._updateCoverageForExtrusion(x, y, length);
 
     this.metricsDirty = true;
     this.extrusionsSinceHud += 1;
-    if (this.extrusionsSinceHud >= this.hudUpdateInterval) {
+    if (this.enabled && this.extrusionsSinceHud >= this.hudUpdateInterval) {
       this.refreshHud();
       this.extrusionsSinceHud = 0;
     }
   }
 
-  refreshHud() {
-    if (!this.hudElement) {
-      this.metricsDirty = false;
+  _drainPendingExtrusions() {
+    if (this.pendingExtrusions.length === 0) {
       return;
     }
+    const backlog = this.pendingExtrusions.slice();
+    this.pendingExtrusions.length = 0;
+    for (const event of backlog) {
+      this._recordExtrusionActive(event);
+    }
+  }
+
+  refreshHud(force = false) {
     if (this.segmentData.length === 0) {
-      this.hudElement.textContent = 'Quality metrics available once a reference path is loaded.';
-      this.hudElement.classList.add('sim-hidden');
+      this.metrics = null;
+      this.metricsDirty = false;
+      if (this.hudElement) {
+        this.hudElement.textContent = 'Quality metrics available once a reference path is loaded.';
+        this.hudElement.classList.add('sim-hidden');
+      }
       return;
     }
     if (this.metricsDirty) {
       this.metrics = this._computeMetrics();
       this.metricsDirty = false;
+    }
+    if (!this.hudElement) {
+      return;
+    }
+    if (!force && !this.enabled) {
+      this.hudElement.classList.add('sim-hidden');
+      return;
     }
     const metrics = this.metrics;
     if (!metrics) {
@@ -669,4 +755,3 @@ export class QualityMonitor {
     return clamp(score, 0, 100);
   }
 }
-

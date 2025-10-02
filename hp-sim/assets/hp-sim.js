@@ -87,6 +87,7 @@ function initHpSim() {
   const printStatusEl = document.getElementById('printStatus');
   const replayStatusEl = document.getElementById('replayStatus');
   const qualityHudEl = document.getElementById('qualityHud');
+  const qualityToggle = document.getElementById('qualityToggle');
 
   const usdaCatalog = new Map(
     AVAILABLE_USDAS.map((entry) => [
@@ -123,6 +124,20 @@ function initHpSim() {
   const qualityMonitor = qualityHudEl ? new QualityMonitor({ hudElement: qualityHudEl }) : null;
   if (qualityMonitor) {
     qualityMonitor.refreshHud();
+    if (qualityToggle) {
+      qualityMonitor.setEnabled(qualityToggle.checked);
+    }
+  }
+
+  if (qualityToggle) {
+    if (!qualityMonitor) {
+      qualityToggle.checked = false;
+      qualityToggle.disabled = true;
+    } else {
+      qualityToggle.addEventListener('change', () => {
+        qualityMonitor.setEnabled(qualityToggle.checked);
+      });
+    }
   }
   const referenceOverlayState = {
     segments: null,
@@ -338,6 +353,9 @@ function initHpSim() {
     if (remoteSystem) {
       qualityMonitor.attachRemoteSystem(remoteSystem);
       qualityMonitor.refreshHud();
+      if (qualityToggle) {
+        qualityMonitor.setEnabled(qualityToggle.checked);
+      }
     }
   }
 
@@ -1973,6 +1991,9 @@ function initHpSim() {
         const remoteSystem = getRemoteSystem();
         if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
           setPrintActive(false);
+          if (qualityMonitor) {
+            qualityMonitor.runFinalCheck();
+          }
         }
         return;
       }
@@ -2008,6 +2029,9 @@ function initHpSim() {
         const remoteSystem = getRemoteSystem();
         if (remoteSystem && remoteSystem.worker === moveCommanderWorker) {
           setPrintActive(false);
+          if (qualityMonitor) {
+            qualityMonitor.runFinalCheck();
+          }
         }
         return;
       }

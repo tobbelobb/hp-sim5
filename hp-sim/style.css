@@ -264,6 +264,34 @@ body {
   bottom: 24px;
 }
 
+.sim-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(244, 246, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 12px 24px rgba(3, 5, 12, 0.35);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sim-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #7ae2ff;
+  cursor: pointer;
+}
+
+.sim-toggle span {
+  white-space: nowrap;
+}
+
 .quality-hud {
   position: absolute;
   top: 24px;
