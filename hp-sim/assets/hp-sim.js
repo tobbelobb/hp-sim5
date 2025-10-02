@@ -4,6 +4,7 @@ import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
+import { QualityMonitor } from './quality-monitor.js';
 
 const MCU_PRESETS = {
   hangprinterLogo: {
@@ -85,6 +86,7 @@ function initHpSim() {
   const machinesRemoveAllBtn = document.getElementById('machinesRemoveAllBtn');
   const printStatusEl = document.getElementById('printStatus');
   const replayStatusEl = document.getElementById('replayStatus');
+  const qualityHudEl = document.getElementById('qualityHud');
 
   const usdaCatalog = new Map(
     AVAILABLE_USDAS.map((entry) => [
@@ -118,6 +120,10 @@ function initHpSim() {
   let fullscreenActive = false;
   let currentTimeScale = 1.0;
   let speedStatusArmed = false;
+  const qualityMonitor = qualityHudEl ? new QualityMonitor({ hudElement: qualityHudEl }) : null;
+  if (qualityMonitor) {
+    qualityMonitor.refreshHud();
+  }
   const referenceOverlayState = {
     segments: null,
     metadata: null,
@@ -301,6 +307,9 @@ function initHpSim() {
       referenceOverlayState.visible = false;
     }
     updateReferenceToggleUI();
+    if (qualityMonitor) {
+      qualityMonitor.setReferenceSegments(referenceOverlayState.segments, referenceOverlayState.metadata);
+    }
     syncReferenceOverlayToRenderSystem({ force: true });
   }
 
@@ -319,6 +328,17 @@ function initHpSim() {
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
+  }
+
+  function attachQualityMonitorToRemoteSystem() {
+    if (!qualityMonitor) {
+      return;
+    }
+    const remoteSystem = getRemoteSystem();
+    if (remoteSystem) {
+      qualityMonitor.attachRemoteSystem(remoteSystem);
+      qualityMonitor.refreshHud();
+    }
   }
 
   function getInputSystem() {
@@ -923,6 +943,7 @@ function initHpSim() {
       setupScene(world, machine.stage, canvas, sceneOptions);
       isFirst = false;
     }
+    attachQualityMonitorToRemoteSystem();
   }
 
   function buildPresetMachineOptions() {
@@ -1931,6 +1952,9 @@ function initHpSim() {
     resetViewStateDefaults();
     setPanMode(false);
     reapplyViewState({ clearExtrusions: true });
+    if (qualityMonitor) {
+      qualityMonitor.reset({ keepReference: true });
+    }
     setReferenceVisibility(false);
     currentPresetKey = DEFAULT_PRESET_KEY;
   }
@@ -2042,6 +2066,9 @@ function initHpSim() {
     if (gameControls && typeof gameControls.reset === 'function') {
       gameControls.reset({ autoPause: false });
       reapplyViewState({ clearExtrusions: true });
+    }
+    if (qualityMonitor) {
+      qualityMonitor.reset({ keepReference: true });
     }
     setPrintActive(true);
     hideReplayStatus();

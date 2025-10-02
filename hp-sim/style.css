@@ -264,6 +264,56 @@ body {
   bottom: 24px;
 }
 
+.quality-hud {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(10, 12, 24, 0.85);
+  color: rgba(240, 244, 255, 0.92);
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 0 18px 34px rgba(5, 6, 12, 0.32);
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.quality-hud__score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.quality-hud__score strong {
+  font-size: 20px;
+  color: #7ae2ff;
+  letter-spacing: 0.02em;
+}
+
+.quality-hud__metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.quality-hud__metric span:first-child {
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.quality-hud__metric span:last-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .sim-hidden {
   display: none !important;
 }
