@@ -537,6 +537,7 @@ body {
     justify-content: center;
     width: 100%;
     min-height: 52px;
+    white-space: nowrap;
   }
 
   .sim-toggle {
@@ -545,10 +546,6 @@ body {
     width: 100%;
     min-height: 52px;
     gap: 6px;
-  }
-
-  .sim-toggle span {
-    white-space: normal;
   }
 
   .sim-toggle input[type='checkbox'] {

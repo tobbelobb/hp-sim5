@@ -90,6 +90,32 @@ function initHpSim() {
   const asapStatusEl = document.getElementById('asapStatus');
   const qualityHudEl = document.getElementById('qualityHud');
   const qualityToggle = document.getElementById('qualityToggle');
+  const qualityToggleWrapper = document.getElementById('qualityToggleWrapper');
+  const qualityToggleLabel = qualityToggleWrapper ? qualityToggleWrapper.querySelector('span') : null;
+  const supportsMatchMedia = typeof window.matchMedia === 'function';
+  const mobileLayoutQuery = supportsMatchMedia ? window.matchMedia('(max-width: 600px)') : null;
+  const isMobileLayout = () => (mobileLayoutQuery ? mobileLayoutQuery.matches : window.innerWidth <= 600);
+  const QUALITY_LABELS = {
+    desktop: 'Live Quality Checks',
+    mobile: 'Live QC',
+  };
+  const REFERENCE_LABELS = {
+    show: {
+      desktop: 'Show Reference Path',
+      mobile: 'Show Reference',
+    },
+    hide: {
+      desktop: 'Hide Reference Path',
+      mobile: 'Hide Reference',
+    },
+  };
+  const MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS = 3000;
+  let secondaryControlsHideTimeout = null;
+  let lastMobileLayoutMatches = isMobileLayout();
+
+  if (qualityToggle) {
+    qualityToggle.checked = false;
+  }
 
   const usdaCatalog = new Map(
     AVAILABLE_USDAS.map((entry) => [
@@ -149,6 +175,8 @@ function initHpSim() {
     dirty: false,
     key: null,
   };
+  updateQualityToggleLabel();
+  updateReferenceToggleUI();
   const sceneChangeState = {
     context: null,
     pausedForSceneChange: false,
@@ -315,6 +343,14 @@ function initHpSim() {
     asapStatusEl.classList.add('sim-hidden');
   }
 
+  function getReferenceToggleText({ hasData, visible }) {
+    const variant = isMobileLayout() ? 'mobile' : 'desktop';
+    if (!hasData) {
+      return REFERENCE_LABELS.show[variant];
+    }
+    return visible ? REFERENCE_LABELS.hide[variant] : REFERENCE_LABELS.show[variant];
+  }
+
   function updateReferenceToggleUI() {
     if (!referenceToggleBtn) {
       return;
@@ -329,11 +365,10 @@ function initHpSim() {
       referenceToggleBtn.removeAttribute('title');
       referenceToggleBtn.setAttribute('aria-label', 'Toggle reference path visibility');
     }
-    if (!hasData) {
-      referenceToggleBtn.textContent = 'Show Reference Path';
-    } else {
-      referenceToggleBtn.textContent = referenceOverlayState.visible ? 'Hide Reference Path' : 'Show Reference Path';
-    }
+    referenceToggleBtn.textContent = getReferenceToggleText({
+      hasData,
+      visible: referenceOverlayState.visible,
+    });
   }
 
   function syncReferenceOverlayToRenderSystem({ force = false } = {}) {
@@ -350,6 +385,14 @@ function initHpSim() {
       visible: referenceOverlayState.visible,
     });
     referenceOverlayState.dirty = false;
+  }
+
+  function updateQualityToggleLabel() {
+    if (!qualityToggleLabel) {
+      return;
+    }
+    const variant = isMobileLayout() ? 'mobile' : 'desktop';
+    qualityToggleLabel.textContent = QUALITY_LABELS[variant];
   }
 
   function setReferenceSegments(segments, { metadata = null, color = null } = {}) {
@@ -1406,7 +1449,7 @@ function initHpSim() {
       }
       clearSceneFrameSnapshot();
       resetViewStateDefaults();
-      setPanMode(false);
+      setPanMode(isMobileLayout());
       if (panModeBtn) {
         panModeBtn.disabled = true;
         panModeBtn.setAttribute('aria-disabled', 'true');
@@ -1571,9 +1614,44 @@ function initHpSim() {
     return machine;
   }
 
+  function hideSecondaryControlsForMobile() {
+    if (!secondaryControls) {
+      return;
+    }
+    secondaryControls.classList.add('sim-hidden');
+    if (secondaryControlsHideTimeout) {
+      clearTimeout(secondaryControlsHideTimeout);
+      secondaryControlsHideTimeout = null;
+    }
+  }
+
+  function showSecondaryControlsForMobile() {
+    if (!secondaryControls || !isMobileLayout()) {
+      return;
+    }
+    secondaryControls.classList.remove('sim-hidden');
+    secondaryControlsEverShown = true;
+    if (secondaryControlsHideTimeout) {
+      clearTimeout(secondaryControlsHideTimeout);
+    }
+    secondaryControlsHideTimeout = window.setTimeout(() => {
+      hideSecondaryControlsForMobile();
+    }, MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS);
+  }
+
   function setSecondaryControlsVisible(active) {
     if (!secondaryControls) {
       return;
+    }
+    if (isMobileLayout()) {
+      if (!active) {
+        hideSecondaryControlsForMobile();
+      }
+      return;
+    }
+    if (secondaryControlsHideTimeout) {
+      clearTimeout(secondaryControlsHideTimeout);
+      secondaryControlsHideTimeout = null;
     }
     if (active) {
       secondaryControls.classList.remove('sim-hidden');
@@ -1603,6 +1681,25 @@ function initHpSim() {
       hideAsapStatus();
     }
     updateFinishAsapButtonState();
+  }
+
+  function handleLayoutChange() {
+    const matches = isMobileLayout();
+    updateQualityToggleLabel();
+    updateReferenceToggleUI();
+    if (matches) {
+      hideSecondaryControlsForMobile();
+      if (!lastMobileLayoutMatches && !panModeActive) {
+        setPanMode(true);
+      }
+    } else {
+      if (secondaryControlsHideTimeout) {
+        clearTimeout(secondaryControlsHideTimeout);
+        secondaryControlsHideTimeout = null;
+      }
+      setSecondaryControlsVisible(printActive && machines.length > 0);
+    }
+    lastMobileLayoutMatches = matches;
   }
 
   function ensureReadyForNewJob() {
@@ -2026,7 +2123,7 @@ function initHpSim() {
       handleTimeScaleChange(1.0);
     }
     resetViewStateDefaults();
-    setPanMode(false);
+    setPanMode(isMobileLayout());
     reapplyViewState({ clearExtrusions: true });
     if (qualityMonitor) {
       qualityMonitor.reset({ keepReference: true });
@@ -2571,6 +2668,22 @@ function initHpSim() {
     });
   }
 
+  if (canvas) {
+    canvas.addEventListener('pointerdown', () => {
+      if (isMobileLayout()) {
+        showSecondaryControlsForMobile();
+      }
+    });
+  }
+
+  if (secondaryControls) {
+    secondaryControls.addEventListener('pointerdown', () => {
+      if (isMobileLayout()) {
+        showSecondaryControlsForMobile();
+      }
+    });
+  }
+
   setPrintActive(false);
   setSpeedButtonsEnabled(false);
   updateFinishAsapButtonState();
@@ -2655,7 +2768,20 @@ function initHpSim() {
   document.addEventListener('fullscreenchange', handleFullscreenChange);
   document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
   document.addEventListener('msfullscreenchange', handleFullscreenChange);
-  window.addEventListener('resize', syncCanvasDimensions);
+  window.addEventListener('resize', () => {
+    syncCanvasDimensions();
+    handleLayoutChange();
+  });
+
+  if (mobileLayoutQuery) {
+    if (typeof mobileLayoutQuery.addEventListener === 'function') {
+      mobileLayoutQuery.addEventListener('change', handleLayoutChange);
+    } else if (typeof mobileLayoutQuery.addListener === 'function') {
+      mobileLayoutQuery.addListener(handleLayoutChange);
+    }
+  }
+
+  handleLayoutChange();
 
   updateZoomButtonState();
 
@@ -2701,7 +2827,7 @@ function initHpSim() {
     }
     resetViewStateDefaults();
     reapplyViewState({ clearExtrusions: true });
-    setPanMode(false);
+    setPanMode(isMobileLayout());
     syncCanvasDimensions();
   };
 
