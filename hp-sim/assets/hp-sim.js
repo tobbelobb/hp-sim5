@@ -1100,7 +1100,7 @@ function initHpSim() {
     }
   }
 
-  function beginSceneChange({ newMachineAdded = false } = {}) {
+  async function beginSceneChange({ newMachineAdded = false } = {}) {
     if (sceneChangeState.context) {
       if (newMachineAdded) {
         sceneChangeState.context.newMachineAdded = true;
@@ -1115,14 +1115,7 @@ function initHpSim() {
     sceneChangeState.wasPaused = pauseState ? pauseState.paused : null;
     sceneChangeState.targetHistoryLength = remoteSystem ? remoteSystem.history.length : 0;
     sceneChangeState.replayInProgress = false;
-    let playbackState = null;
-    if (wasPrinting && remoteSystem && typeof remoteSystem.getPlaybackState === 'function') {
-      try {
-        playbackState = remoteSystem.getPlaybackState();
-      } catch (err) {
-        console.warn('hp-sim: unable to capture playback state before scene change.', err);
-      }
-    }
+
     if (wasPrinting) {
       try {
         if (moveCommanderWorker) {
@@ -1144,7 +1137,32 @@ function initHpSim() {
       if (pauseBtn) {
         pauseBtn.textContent = 'Resume';
       }
+
+      if (remoteSystem) {
+        let settleAttempts = 0;
+        let previousLength = remoteSystem.commands.length;
+        const maxAttempts = 6;
+        while (settleAttempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          const currentLength = remoteSystem.commands.length;
+          if (currentLength === previousLength) {
+            break;
+          }
+          previousLength = currentLength;
+          settleAttempts += 1;
+        }
+      }
     }
+
+    let playbackState = null;
+    if (wasPrinting && remoteSystem && typeof remoteSystem.getPlaybackState === 'function') {
+      try {
+        playbackState = remoteSystem.getPlaybackState();
+      } catch (err) {
+        console.warn('hp-sim: unable to capture playback state before scene change.', err);
+      }
+    }
+
     const context = {
       wasPrinting,
       playbackState,
@@ -1353,7 +1371,7 @@ function initHpSim() {
       return;
     }
     machines.splice(index, 1);
-    const sceneChange = beginSceneChange({ newMachineAdded: false });
+    const sceneChange = await beginSceneChange({ newMachineAdded: false });
     updateMachineMenuUI();
     if (machines.length === 0) {
       await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
@@ -1367,7 +1385,7 @@ function initHpSim() {
       return;
     }
     machines.splice(0, machines.length);
-    const sceneChange = beginSceneChange({ newMachineAdded: false });
+    const sceneChange = await beginSceneChange({ newMachineAdded: false });
     updateMachineMenuUI();
     await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
   }
@@ -1410,7 +1428,7 @@ function initHpSim() {
       }
     }
 
-    const sceneChange = beginSceneChange({ newMachineAdded: true });
+    const sceneChange = await beginSceneChange({ newMachineAdded: true });
     await refreshSceneAfterMachineChange({
       clearExtrusions: true,
       resetView: machines.length === 1,
@@ -1461,7 +1479,7 @@ function initHpSim() {
       }
     }
 
-    const sceneChange = beginSceneChange({ newMachineAdded: true });
+    const sceneChange = await beginSceneChange({ newMachineAdded: true });
     await refreshSceneAfterMachineChange({
       clearExtrusions: true,
       resetView: resetView || machines.length === 1,
