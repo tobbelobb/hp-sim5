@@ -2035,72 +2035,63 @@ function initHpSim() {
     currentPresetKey = DEFAULT_PRESET_KEY;
   }
 
-  function computeAsapStepDt() {
-    const dtResource = world.getResource('dt');
-    if (typeof dtResource === 'number' && Number.isFinite(dtResource) && dtResource > 0) {
-      return dtResource;
+  function waitForAnimationFrames(count = 1) {
+    const target = Math.max(0, Math.floor(count));
+    if (target <= 0) {
+      return Promise.resolve();
     }
-    if (typeof simDtSec === 'number' && Number.isFinite(simDtSec) && simDtSec > 0) {
-      return simDtSec;
-    }
-    return 1 / 120;
+    return new Promise((resolve) => {
+      let remaining = target;
+      const step = () => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          resolve();
+          return;
+        }
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
   }
 
   async function runAsapFastForward(remoteSystem) {
     if (!remoteSystem) {
       return;
     }
-    const stepDt = computeAsapStepDt();
-    const yieldInterval = 800;
-    const maxIterations = 5_000_000;
-    let iterations = 0;
-    let stalledIterations = 0;
-    let lastHistoryCount = Array.isArray(remoteSystem.history) ? remoteSystem.history.length : 0;
+
+    const checkIntervalMs = 25;
+    const maxIdleChecks = 10;
+    const maxDurationMs = 10 * 60 * 1000;
+    const startTime = performance.now();
+    let idleChecks = 0;
 
     while (asapState.active) {
-      world.update(stepDt);
-      iterations += 1;
+      const queueLen = Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0;
+      const printing = printActive;
+      const workerActive = Boolean(remoteSystem.worker);
 
-      const currentHistory = Array.isArray(remoteSystem.history) ? remoteSystem.history.length : 0;
-      if (currentHistory > lastHistoryCount) {
-        lastHistoryCount = currentHistory;
-        stalledIterations = 0;
+      if (!printing && queueLen === 0) {
+        idleChecks += 1;
+        if (idleChecks >= maxIdleChecks) {
+          break;
+        }
       } else {
-        stalledIterations += 1;
+        idleChecks = 0;
       }
 
-      const queueHasCommands = Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length > 0 : false;
-      if (!printActive && !queueHasCommands) {
+      if (!workerActive && queueLen === 0) {
         break;
       }
 
-      if (iterations % yieldInterval === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      if (stalledIterations > 200000) {
-        console.warn('hp-sim: Finish ASAP detected stalled progress; exiting early.');
+      if (performance.now() - startTime > maxDurationMs) {
+        console.warn('hp-sim: Finish ASAP exceeded expected duration; continuing to finalize.');
         break;
       }
-      if (iterations >= maxIterations) {
-        console.warn('hp-sim: Finish ASAP reached iteration limit; exiting early.');
-        break;
-      }
+
+      await new Promise((resolve) => setTimeout(resolve, checkIntervalMs));
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    if (!asapState.active) {
-      return;
-    }
-
-    const settleSteps = 240;
-    for (let i = 0; i < settleSteps; i += 1) {
-      world.update(stepDt);
-      if ((i + 1) % yieldInterval === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-    }
+    await waitForAnimationFrames(8);
   }
 
   async function finalizeAsapMode() {
@@ -2245,7 +2236,7 @@ function initHpSim() {
     }
 
     const previousScale = Math.max(1, asapState.previousTimeScale || 1);
-    const asapScale = Math.min(2048, previousScale * 16);
+    const asapScale = Math.min(512, Math.max(256, previousScale * 8));
     speedStatusArmed = false;
     if (gameControls && typeof gameControls.setTimeScale === 'function') {
       gameControls.setTimeScale(asapScale);
