@@ -110,7 +110,10 @@ function initHpSim() {
     },
   };
   const MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS = 3000;
+  const MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS = 150;
+  const MOBILE_MACHINES_MENU_MARGIN_PX = 12;
   let secondaryControlsHideTimeout = null;
+  let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
 
   if (qualityToggle) {
@@ -1154,6 +1157,79 @@ function initHpSim() {
     updateMachinesToggleAccessibility();
   }
 
+  function clearMachineMenuInlinePosition() {
+    if (!machinesMenu) {
+      return;
+    }
+    machinesMenu.style.left = '';
+    machinesMenu.style.right = '';
+    machinesMenu.style.transform = '';
+  }
+
+  function positionMachineMenuForMobile() {
+    if (!machinesMenu || !machinesToggle) {
+      return;
+    }
+    if (!isMobileLayout()) {
+      clearMachineMenuInlinePosition();
+      return;
+    }
+    const parentRect = machinesContainer?.getBoundingClientRect() ?? machinesMenu.parentElement?.getBoundingClientRect();
+    const toggleRect = machinesToggle.getBoundingClientRect();
+    const menuRect = machinesMenu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    if (!parentRect || !menuRect || !Number.isFinite(viewportWidth) || viewportWidth <= 0) {
+      return;
+    }
+    const menuWidth = menuRect.width;
+    if (!Number.isFinite(menuWidth) || menuWidth <= 0) {
+      return;
+    }
+    const parentLeft = parentRect.left || 0;
+    const toggleCenter = toggleRect.left + toggleRect.width / 2;
+    const maxTargetLeft = Math.max(
+      MOBILE_MACHINES_MENU_MARGIN_PX,
+      viewportWidth - menuWidth - MOBILE_MACHINES_MENU_MARGIN_PX
+    );
+    let targetLeft = toggleCenter - menuWidth / 2;
+    if (!Number.isFinite(targetLeft)) {
+      targetLeft = MOBILE_MACHINES_MENU_MARGIN_PX;
+    }
+    targetLeft = Math.max(MOBILE_MACHINES_MENU_MARGIN_PX, Math.min(targetLeft, maxTargetLeft));
+    const relativeLeft = targetLeft - parentLeft;
+    machinesMenu.style.left = `${relativeLeft}px`;
+    machinesMenu.style.right = 'auto';
+    machinesMenu.style.transform = 'none';
+  }
+
+  function syncMachineMenuPlacement() {
+    if (!machinesMenu) {
+      return;
+    }
+    if (!machineMenuOpen) {
+      if (!isMobileLayout()) {
+        clearMachineMenuInlinePosition();
+      }
+      return;
+    }
+    if (isMobileLayout()) {
+      positionMachineMenuForMobile();
+      return;
+    }
+    clearMachineMenuInlinePosition();
+  }
+
+  function scheduleMachineMenuPlacementSync() {
+    const syncPlacement = () => {
+      syncMachineMenuPlacement();
+    };
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(syncPlacement);
+    } else {
+      window.setTimeout(syncPlacement, 0);
+    }
+  }
+
   function openMachineMenu() {
     if (!machinesMenu || !machinesToggle) {
       return;
@@ -1167,6 +1243,7 @@ function initHpSim() {
     if (machinesContainer) {
       machinesContainer.setAttribute('data-open', 'true');
     }
+    scheduleMachineMenuPlacementSync();
     const firstFocusable = machinesMenu.querySelector('input, button');
     if (firstFocusable instanceof HTMLElement) {
       firstFocusable.focus({ preventScroll: true });
@@ -1191,6 +1268,7 @@ function initHpSim() {
     if (machinesContainer) {
       machinesContainer.setAttribute('data-open', 'false');
     }
+    clearMachineMenuInlinePosition();
     document.removeEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
     document.removeEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
     document.removeEventListener('keydown', handleMachineMenuKeydown, true);
@@ -1614,11 +1692,46 @@ function initHpSim() {
     return machine;
   }
 
+  function clearSecondaryControlsInteractionDelay() {
+    if (secondaryControlsInteractionEnableTimeout != null) {
+      window.clearTimeout(secondaryControlsInteractionEnableTimeout);
+      secondaryControlsInteractionEnableTimeout = null;
+    }
+  }
+
+  function setSecondaryControlsInteractive(enabled) {
+    if (!secondaryControls) {
+      return;
+    }
+    secondaryControls.dataset.interactive = enabled ? 'true' : 'false';
+  }
+
+  function scheduleSecondaryControlsInteractionEnable() {
+    if (!secondaryControls) {
+      return;
+    }
+    clearSecondaryControlsInteractionDelay();
+    if (MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS <= 0) {
+      setSecondaryControlsInteractive(true);
+      return;
+    }
+    secondaryControlsInteractionEnableTimeout = window.setTimeout(() => {
+      secondaryControlsInteractionEnableTimeout = null;
+      setSecondaryControlsInteractive(true);
+    }, MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS);
+  }
+
+  if (secondaryControls) {
+    setSecondaryControlsInteractive(false);
+  }
+
   function hideSecondaryControlsForMobile() {
     if (!secondaryControls) {
       return;
     }
     secondaryControls.classList.add('sim-hidden');
+    clearSecondaryControlsInteractionDelay();
+    setSecondaryControlsInteractive(false);
     if (secondaryControlsHideTimeout) {
       clearTimeout(secondaryControlsHideTimeout);
       secondaryControlsHideTimeout = null;
@@ -1629,6 +1742,10 @@ function initHpSim() {
     if (!secondaryControls || !isMobileLayout()) {
       return;
     }
+    const wasHidden = secondaryControls.classList.contains('sim-hidden');
+    if (wasHidden) {
+      setSecondaryControlsInteractive(false);
+    }
     secondaryControls.classList.remove('sim-hidden');
     secondaryControlsEverShown = true;
     if (secondaryControlsHideTimeout) {
@@ -1637,6 +1754,11 @@ function initHpSim() {
     secondaryControlsHideTimeout = window.setTimeout(() => {
       hideSecondaryControlsForMobile();
     }, MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS);
+    if (wasHidden) {
+      scheduleSecondaryControlsInteractionEnable();
+    } else {
+      setSecondaryControlsInteractive(true);
+    }
   }
 
   function setSecondaryControlsVisible(active) {
@@ -1646,6 +1768,8 @@ function initHpSim() {
     if (isMobileLayout()) {
       if (!active) {
         hideSecondaryControlsForMobile();
+      } else if (!secondaryControls.classList.contains('sim-hidden')) {
+        setSecondaryControlsInteractive(true);
       }
       return;
     }
@@ -1656,11 +1780,17 @@ function initHpSim() {
     if (active) {
       secondaryControls.classList.remove('sim-hidden');
       secondaryControlsEverShown = true;
+      clearSecondaryControlsInteractionDelay();
+      setSecondaryControlsInteractive(true);
       return;
     }
     if (!secondaryControlsEverShown) {
       secondaryControls.classList.add('sim-hidden');
+      setSecondaryControlsInteractive(false);
+      return;
     }
+    clearSecondaryControlsInteractionDelay();
+    setSecondaryControlsInteractive(true);
   }
 
   function updateMainButtonsState() {
@@ -1698,6 +1828,15 @@ function initHpSim() {
         secondaryControlsHideTimeout = null;
       }
       setSecondaryControlsVisible(printActive && machines.length > 0);
+    }
+    if (machineMenuOpen) {
+      if (matches) {
+        scheduleMachineMenuPlacementSync();
+      } else {
+        clearMachineMenuInlinePosition();
+      }
+    } else if (!matches) {
+      clearMachineMenuInlinePosition();
     }
     lastMobileLayoutMatches = matches;
   }
