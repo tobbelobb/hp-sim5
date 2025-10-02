@@ -264,6 +264,10 @@ body {
   bottom: 24px;
 }
 
+#asapStatus {
+  bottom: 24px;
+}
+
 .sim-toggle {
   display: inline-flex;
   align-items: center;

@@ -64,6 +64,7 @@ function initHpSim() {
   const gcodeInput = document.getElementById('gcodeFile');
   const resetBtn = document.getElementById('resetBtn');
   const pauseBtn = document.getElementById('pauseBtn');
+  const finishAsapBtn = document.getElementById('finishAsapBtn');
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const panModeBtn = document.getElementById('panModeBtn');
@@ -86,6 +87,7 @@ function initHpSim() {
   const machinesRemoveAllBtn = document.getElementById('machinesRemoveAllBtn');
   const printStatusEl = document.getElementById('printStatus');
   const replayStatusEl = document.getElementById('replayStatus');
+  const asapStatusEl = document.getElementById('asapStatus');
   const qualityHudEl = document.getElementById('qualityHud');
   const qualityToggle = document.getElementById('qualityToggle');
 
@@ -155,6 +157,19 @@ function initHpSim() {
     wasPaused: null,
     frameSnapshot: null,
     frameSnapshotNeedsApply: false,
+    renderSuspended: false,
+  };
+
+  const asapState = {
+    active: false,
+    finishingPromise: null,
+    previousTimeScale: null,
+    previousQualityEnabled: null,
+    previousQualityToggleDisabled: null,
+    previousQualityToggleChecked: null,
+    previousPauseState: null,
+    prevPauseDisabled: null,
+    prevResetDisabled: null,
     renderSuspended: false,
   };
 
@@ -230,6 +245,19 @@ function initHpSim() {
     sceneChangeState.frameSnapshot = null;
   }
 
+  function setButtonDisabled(button, disabled) {
+    if (!button) {
+      return;
+    }
+    const shouldDisable = Boolean(disabled);
+    button.disabled = shouldDisable;
+    if (shouldDisable) {
+      button.setAttribute('aria-disabled', 'true');
+    } else {
+      button.removeAttribute('aria-disabled');
+    }
+  }
+
   function suspendRenderSystemForSceneChange() {
     const renderSystem = world.getResource('renderSystem');
     if (!renderSystem || typeof renderSystem.setDrawingSuspended !== 'function') {
@@ -269,6 +297,22 @@ function initHpSim() {
     }
     replayStatusEl.textContent = '';
     replayStatusEl.classList.add('sim-hidden');
+  }
+
+  function showAsapStatus(message = 'Finishing print ASAP...') {
+    if (!asapStatusEl) {
+      return;
+    }
+    asapStatusEl.textContent = message;
+    asapStatusEl.classList.remove('sim-hidden');
+  }
+
+  function hideAsapStatus() {
+    if (!asapStatusEl) {
+      return;
+    }
+    asapStatusEl.textContent = '';
+    asapStatusEl.classList.add('sim-hidden');
   }
 
   function updateReferenceToggleUI() {
@@ -1556,7 +1600,9 @@ function initHpSim() {
       sceneChangeState.pausedForSceneChange = false;
       hideReplayStatus();
       hidePrintStatus();
+      hideAsapStatus();
     }
+    updateFinishAsapButtonState();
   }
 
   function ensureReadyForNewJob() {
@@ -1613,6 +1659,14 @@ function initHpSim() {
         button.removeAttribute('aria-disabled');
       }
     });
+  }
+
+  function updateFinishAsapButtonState() {
+    if (!finishAsapBtn) {
+      return;
+    }
+    const shouldDisable = !printActive || asapState.active;
+    setButtonDisabled(finishAsapBtn, shouldDisable);
   }
 
   function formatTimeScale(scale) {
@@ -1959,6 +2013,10 @@ function initHpSim() {
     if (machines.length === 0) {
       return;
     }
+    if (asapState.active) {
+      console.warn('hp-sim: Reset ignored while Finish ASAP is active.');
+      return;
+    }
     setPrintActive(false);
     stopAndClearWorkers();
     gameControls.reset({ autoPause: true });
@@ -1975,6 +2033,247 @@ function initHpSim() {
     }
     setReferenceVisibility(false);
     currentPresetKey = DEFAULT_PRESET_KEY;
+  }
+
+  function computeAsapStepDt() {
+    const dtResource = world.getResource('dt');
+    if (typeof dtResource === 'number' && Number.isFinite(dtResource) && dtResource > 0) {
+      return dtResource;
+    }
+    if (typeof simDtSec === 'number' && Number.isFinite(simDtSec) && simDtSec > 0) {
+      return simDtSec;
+    }
+    return 1 / 120;
+  }
+
+  async function runAsapFastForward(remoteSystem) {
+    if (!remoteSystem) {
+      return;
+    }
+    const stepDt = computeAsapStepDt();
+    const yieldInterval = 800;
+    const maxIterations = 5_000_000;
+    let iterations = 0;
+    let stalledIterations = 0;
+    let lastHistoryCount = Array.isArray(remoteSystem.history) ? remoteSystem.history.length : 0;
+
+    while (asapState.active) {
+      world.update(stepDt);
+      iterations += 1;
+
+      const currentHistory = Array.isArray(remoteSystem.history) ? remoteSystem.history.length : 0;
+      if (currentHistory > lastHistoryCount) {
+        lastHistoryCount = currentHistory;
+        stalledIterations = 0;
+      } else {
+        stalledIterations += 1;
+      }
+
+      const queueHasCommands = Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length > 0 : false;
+      if (!printActive && !queueHasCommands) {
+        break;
+      }
+
+      if (iterations % yieldInterval === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      if (stalledIterations > 200000) {
+        console.warn('hp-sim: Finish ASAP detected stalled progress; exiting early.');
+        break;
+      }
+      if (iterations >= maxIterations) {
+        console.warn('hp-sim: Finish ASAP reached iteration limit; exiting early.');
+        break;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    if (!asapState.active) {
+      return;
+    }
+
+    const settleSteps = 240;
+    for (let i = 0; i < settleSteps; i += 1) {
+      world.update(stepDt);
+      if ((i + 1) % yieldInterval === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    }
+  }
+
+  async function finalizeAsapMode() {
+    const remoteSystem = getRemoteSystem();
+    const renderSystem = world.getResource('renderSystem');
+    const previousQualityEnabled = asapState.previousQualityEnabled;
+    const previousQualityToggleDisabled = asapState.previousQualityToggleDisabled;
+    const previousQualityToggleChecked = asapState.previousQualityToggleChecked;
+    const previousPauseState = asapState.previousPauseState;
+    const previousTimeScale = asapState.previousTimeScale;
+    const prevPauseDisabled = asapState.prevPauseDisabled;
+    const prevResetDisabled = asapState.prevResetDisabled;
+
+    if (remoteSystem && remoteSystem.worker) {
+      try {
+        remoteSystem.worker.postMessage({ type: 'set_fast_mode', enable: false });
+      } catch (_err) {
+        /* noop */
+      }
+    }
+
+    if (asapState.renderSuspended && renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
+      renderSystem.setDrawingSuspended(false);
+      if (typeof renderSystem.update === 'function') {
+        renderSystem.update(world, 0);
+      }
+    }
+
+    const pauseState = world.getResource('pauseState');
+    if (pauseState != null && typeof previousPauseState === 'boolean') {
+      pauseState.paused = previousPauseState;
+    }
+
+    if (pauseBtn && prevPauseDisabled !== null) {
+      setButtonDisabled(pauseBtn, prevPauseDisabled);
+    }
+    if (resetBtn && prevResetDisabled !== null) {
+      setButtonDisabled(resetBtn, prevResetDisabled);
+    }
+
+    if (qualityToggle) {
+      qualityToggle.disabled = Boolean(previousQualityToggleDisabled);
+      if (qualityToggle.disabled) {
+        qualityToggle.setAttribute('aria-disabled', 'true');
+      } else {
+        qualityToggle.removeAttribute('aria-disabled');
+      }
+      if (previousQualityToggleChecked != null) {
+        qualityToggle.checked = previousQualityToggleChecked;
+      }
+    }
+
+    if (qualityMonitor && previousQualityEnabled !== null) {
+      qualityMonitor.setEnabled(previousQualityEnabled);
+      if (previousQualityEnabled) {
+        qualityMonitor.refreshHud(true);
+      }
+    }
+
+    if (previousTimeScale != null) {
+      if (gameControls && typeof gameControls.setTimeScale === 'function') {
+        speedStatusArmed = false;
+        gameControls.setTimeScale(previousTimeScale);
+      } else {
+        handleTimeScaleChange(previousTimeScale);
+      }
+    }
+
+    hideAsapStatus();
+
+    asapState.active = false;
+    asapState.finishingPromise = null;
+    asapState.previousTimeScale = null;
+    asapState.previousQualityEnabled = null;
+    asapState.previousQualityToggleDisabled = null;
+    asapState.previousQualityToggleChecked = null;
+    asapState.previousPauseState = null;
+    asapState.prevPauseDisabled = null;
+    asapState.prevResetDisabled = null;
+    asapState.renderSuspended = false;
+
+    updateFinishAsapButtonState();
+  }
+
+  async function triggerFinishAsap() {
+    if (asapState.active) {
+      return asapState.finishingPromise;
+    }
+    if (!printActive) {
+      showAsapStatus('Finish ASAP is available only while printing.');
+      setTimeout(() => {
+        if (!asapState.active) {
+          hideAsapStatus();
+        }
+      }, 1500);
+      return null;
+    }
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      console.warn('hp-sim: Finish ASAP requested but remote system is unavailable.');
+      return null;
+    }
+
+    asapState.active = true;
+    asapState.previousTimeScale =
+      typeof gameControls?.getTimeScale === 'function'
+        ? gameControls.getTimeScale()
+        : currentTimeScale;
+    asapState.previousQualityEnabled = qualityMonitor ? Boolean(qualityMonitor.enabled) : null;
+    asapState.previousQualityToggleDisabled = qualityToggle ? qualityToggle.disabled : null;
+    asapState.previousQualityToggleChecked = qualityToggle ? qualityToggle.checked : null;
+    const pauseState = world.getResource('pauseState');
+    asapState.previousPauseState = pauseState ? pauseState.paused : null;
+    asapState.prevPauseDisabled = pauseBtn ? pauseBtn.disabled : null;
+    asapState.prevResetDisabled = resetBtn ? resetBtn.disabled : null;
+
+    if (pauseState) {
+      pauseState.paused = false;
+    }
+
+    setButtonDisabled(pauseBtn, true);
+    setButtonDisabled(resetBtn, true);
+
+    hideReplayStatus();
+    showAsapStatus();
+
+    if (qualityMonitor && qualityMonitor.enabled) {
+      qualityMonitor.setEnabled(false);
+    }
+    if (qualityToggle) {
+      qualityToggle.checked = false;
+      qualityToggle.disabled = true;
+      qualityToggle.setAttribute('aria-disabled', 'true');
+    }
+
+    const renderSystem = world.getResource('renderSystem');
+    if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
+      renderSystem.setDrawingSuspended(true);
+      asapState.renderSuspended = true;
+    } else {
+      asapState.renderSuspended = false;
+    }
+
+    const previousScale = Math.max(1, asapState.previousTimeScale || 1);
+    const asapScale = Math.min(2048, previousScale * 16);
+    speedStatusArmed = false;
+    if (gameControls && typeof gameControls.setTimeScale === 'function') {
+      gameControls.setTimeScale(asapScale);
+    } else {
+      handleTimeScaleChange(asapScale);
+    }
+
+    if (remoteSystem.worker) {
+      try {
+        remoteSystem.worker.postMessage({ type: 'set_fast_mode', enable: true });
+      } catch (err) {
+        console.warn('hp-sim: unable to enable fast mode for worker.', err);
+      }
+    }
+
+    updateFinishAsapButtonState();
+
+    asapState.finishingPromise = (async () => {
+      try {
+        await runAsapFastForward(remoteSystem);
+      } catch (error) {
+        console.error('hp-sim: Finish ASAP failed.', error);
+      } finally {
+        await finalizeAsapMode();
+      }
+    })();
+
+    return asapState.finishingPromise;
   }
 
   function ensureKlipperWorker() {
@@ -2283,6 +2582,7 @@ function initHpSim() {
 
   setPrintActive(false);
   setSpeedButtonsEnabled(false);
+  updateFinishAsapButtonState();
 
   if (resetBtn) {
     resetBtn.addEventListener(
@@ -2294,6 +2594,13 @@ function initHpSim() {
       },
       { capture: true }
     );
+  }
+
+  if (finishAsapBtn) {
+    finishAsapBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      void triggerFinishAsap();
+    });
   }
 
   if (zoomInBtn) {
