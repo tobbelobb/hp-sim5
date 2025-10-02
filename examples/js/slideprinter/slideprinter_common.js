@@ -293,6 +293,11 @@ export class RemoteSpoolSystem {
             }
         }
 
+        const touchedList = Array.from(touchedMachines);
+        if (recordHistory && touchedList.length > 0) {
+            recordedCommand.__touchedMachines = touchedList;
+        }
+
         if (command.E !== undefined && command.E > 0.0) {
             let extruderComp = null;
             for (const e of world.query([ExtruderComponent])) {
@@ -300,20 +305,33 @@ export class RemoteSpoolSystem {
                 break;
             }
             if (extruderComp != null) {
+                const recordedMachines = Array.isArray(command.__touchedMachines)
+                    ? command.__touchedMachines
+                    : null;
                 let machineIds = touchedMachines.size > 0 ? Array.from(touchedMachines) : [];
+                if (machineIds.length === 0 && recordedMachines && recordedMachines.length > 0) {
+                    machineIds = recordedMachines.slice();
+                }
 
-                if (machineIds.length === 0) {
-                    const centerKeys = Object.keys(extruderComp.machineCenters || {});
-                    if (centerKeys.length > 0) {
-                        machineIds = [centerKeys[0]];
-                    }
+                const machineCenters = extruderComp.machineCenters || {};
+                const centerKeys = Object.keys(machineCenters);
+
+                if (machineIds.length === 0 && centerKeys.length === 1) {
+                    machineIds = [centerKeys[0]];
                 }
 
                 for (const machineId of machineIds) {
                     if (!machineId) {
                         continue;
                     }
-                    const center = extruderComp.machineCenters?.[machineId] || extruderComp.centerPos;
+                    let center = machineCenters[machineId];
+                    if (!center) {
+                        if (centerKeys.length === 0 && extruderComp.centerPos) {
+                            center = extruderComp.centerPos;
+                        } else {
+                            continue;
+                        }
+                    }
                     let color = colorByMachine.get(machineId) || null;
                     if (!color && globalMachineColors && typeof globalMachineColors.get === 'function') {
                         const record = globalMachineColors.get(machineId);

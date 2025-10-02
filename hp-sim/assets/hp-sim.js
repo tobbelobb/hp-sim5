@@ -132,6 +132,9 @@ function initHpSim() {
     replayInProgress: false,
     targetHistoryLength: 0,
     wasPaused: null,
+    frameSnapshot: null,
+    frameSnapshotNeedsApply: false,
+    renderSuspended: false,
   };
 
   function cloneCommandList(list) {
@@ -139,6 +142,80 @@ function initHpSim() {
       return [];
     }
     return list.map((cmd) => ({ ...cmd }));
+  }
+
+  function captureSceneFrameSnapshot() {
+    if (!canvas) {
+      return;
+    }
+    const width = canvas.width | 0;
+    const height = canvas.height | 0;
+    if (width <= 0 || height <= 0) {
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+    let snapshot = sceneChangeState.frameSnapshot;
+    if (!snapshot) {
+      snapshot = document.createElement('canvas');
+      sceneChangeState.frameSnapshot = snapshot;
+    }
+    if (snapshot.width !== width) {
+      snapshot.width = width;
+    }
+    if (snapshot.height !== height) {
+      snapshot.height = height;
+    }
+    const snapshotCtx = snapshot.getContext('2d');
+    if (!snapshotCtx) {
+      sceneChangeState.frameSnapshot = null;
+      sceneChangeState.frameSnapshotNeedsApply = false;
+      return;
+    }
+    snapshotCtx.clearRect(0, 0, snapshot.width, snapshot.height);
+    snapshotCtx.drawImage(canvas, 0, 0, width, height);
+    sceneChangeState.frameSnapshotNeedsApply = true;
+  }
+
+  function applySceneFrameSnapshot() {
+    if (!sceneChangeState.frameSnapshotNeedsApply) {
+      return;
+    }
+    if (!canvas) {
+      sceneChangeState.frameSnapshotNeedsApply = false;
+      return;
+    }
+    const snapshot = sceneChangeState.frameSnapshot;
+    if (!snapshot) {
+      sceneChangeState.frameSnapshotNeedsApply = false;
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      sceneChangeState.frameSnapshotNeedsApply = false;
+      return;
+    }
+    if (canvas.width > 0 && canvas.height > 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(snapshot, 0, 0, canvas.width, canvas.height);
+    }
+    sceneChangeState.frameSnapshotNeedsApply = false;
+  }
+
+  function clearSceneFrameSnapshot() {
+    sceneChangeState.frameSnapshotNeedsApply = false;
+    sceneChangeState.frameSnapshot = null;
+  }
+
+  function suspendRenderSystemForSceneChange() {
+    const renderSystem = world.getResource('renderSystem');
+    if (!renderSystem || typeof renderSystem.setDrawingSuspended !== 'function') {
+      return;
+    }
+    renderSystem.setDrawingSuspended(true);
+    sceneChangeState.renderSuspended = true;
   }
 
   function showPrintStatus(message) {
@@ -1030,6 +1107,8 @@ function initHpSim() {
       }
       return sceneChangeState.context;
     }
+    captureSceneFrameSnapshot();
+    suspendRenderSystemForSceneChange();
     const remoteSystem = getRemoteSystem();
     const wasPrinting = Boolean(printActive && remoteSystem);
     const pauseState = world.getResource('pauseState');
@@ -1126,20 +1205,33 @@ function initHpSim() {
 
   async function restorePrintAfterSceneChange(sceneChange) {
     sceneChangeState.replayInProgress = false;
+    const renderSystem = world.getResource('renderSystem');
+    const pauseState = world.getResource('pauseState');
     if (!sceneChange || !sceneChange.wasPrinting) {
+      if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
+        renderSystem.setDrawingSuspended(false);
+      }
+      sceneChangeState.renderSuspended = false;
+      if (renderSystem && typeof renderSystem.update === 'function') {
+        renderSystem.update(world, 0);
+      }
+      clearSceneFrameSnapshot();
       sceneChangeState.context = null;
       return;
     }
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
+      if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
+        renderSystem.setDrawingSuspended(false);
+      }
+      sceneChangeState.renderSuspended = false;
+      clearSceneFrameSnapshot();
       sceneChangeState.context = null;
       return;
     }
     const playbackState = sceneChange.playbackState || { history: [], queue: [] };
     const historyClone = cloneCommandList(playbackState.history);
     const queueClone = cloneCommandList(playbackState.queue);
-    const renderSystem = world.getResource('renderSystem');
-    const pauseState = world.getResource('pauseState');
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length > 0) {
       const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
@@ -1194,6 +1286,8 @@ function initHpSim() {
     if (pauseState) {
       pauseState.paused = true;
     }
+    sceneChangeState.renderSuspended = false;
+    clearSceneFrameSnapshot();
     sceneChangeState.pausedForSceneChange = true;
     sceneChangeState.targetHistoryLength = 0;
     sceneChangeState.wasPaused = null;
@@ -1209,6 +1303,7 @@ function initHpSim() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
       }
+      clearSceneFrameSnapshot();
       resetViewStateDefaults();
       setPanMode(false);
       if (panModeBtn) {
@@ -1243,6 +1338,10 @@ function initHpSim() {
       panModeBtn.removeAttribute('aria-disabled');
     }
     reapplyViewState({ clearExtrusions });
+    if (sceneChangeState.renderSuspended || sceneChangeState.frameSnapshotNeedsApply) {
+      suspendRenderSystemForSceneChange();
+    }
+    applySceneFrameSnapshot();
     if (sceneChange) {
       await restorePrintAfterSceneChange(sceneChange);
     }
