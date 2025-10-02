@@ -505,11 +505,84 @@ body {
 
 @media (max-width: 600px) {
   .layout {
-    padding: 20px;
+    padding: 0px;
   }
 
   .canvas-frame {
     border-radius: 20px;
+  }
+
+  .sim-app {
+    border-radius: 0;
+    gap: 12px;
+    width: 100vw;
+    padding: clamp(10px, 1vw, 12px);
+  }
+
+  .sim-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(52px, auto);
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .sim-start-buttons {
+    display: contents;
+  }
+
+  .sim-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .sim-toggle {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 52px;
+    gap: 6px;
+  }
+
+  .sim-toggle span {
+    white-space: normal;
+  }
+
+  .sim-toggle input[type='checkbox'] {
+    flex-shrink: 0;
+  }
+
+  .sim-machines {
+    width: 100%;
+  }
+
+  .sim-machines-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sim-machines-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(90vw, 340px);
+    min-width: 0;
+    max-height: none;
+    overflow-y: visible;
+    box-shadow: 0 24px 52px rgba(4, 6, 16, 0.5);
+  }
+
+  .sim-machines-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  #fullscreenBtn {
+    display: none;
   }
 
   .sim-controls button,
