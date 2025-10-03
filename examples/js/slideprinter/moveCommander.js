@@ -46,7 +46,9 @@ class MoveCommander {
         this.fastMode = false;
         this.asapMode = false;
         this.asapYieldCounter = 0;
-        this.asapYieldInterval = 256;
+        this.asapYieldInterval = 512;
+        this.asapYieldBudgetMs = 24;
+        this.lastYieldTime = 0;
     }
 
     async connect() {
@@ -141,6 +143,7 @@ class MoveCommander {
         this.asapMode = next;
         this.asapYieldCounter = 0;
         this.accumulated_wait_ms = 0.0;
+        this.lastYieldTime = performance.now();
     }
 
     _targetWaitMs() {
@@ -243,8 +246,16 @@ class MoveCommander {
                             const elapsed_ms = performance.now() - loop_start_time;
                             if (this.asapMode) {
                                 this.asapYieldCounter += 1;
+                                if (!this.lastYieldTime) {
+                                    this.lastYieldTime = performance.now();
+                                }
                                 if (this.asapYieldCounter >= this.asapYieldInterval) {
-                                    await new Promise(resolve => setTimeout(resolve, 0));
+                                    const now = performance.now();
+                                    if (now - this.lastYieldTime >= this.asapYieldBudgetMs) {
+                                        await new Promise(resolve => setTimeout(resolve, 0));
+                                        this.lastYieldTime = performance.now();
+                                        this.accumulated_wait_ms = 0.0;
+                                    }
                                     this.asapYieldCounter = 0;
                                 }
                                 continue;
@@ -331,8 +342,16 @@ class MoveCommander {
                             const elapsed_ms = performance.now() - loop_start_time;
                             if (this.asapMode) {
                                 this.asapYieldCounter += 1;
+                                if (!this.lastYieldTime) {
+                                    this.lastYieldTime = performance.now();
+                                }
                                 if (this.asapYieldCounter >= this.asapYieldInterval) {
-                                    await new Promise(resolve => setTimeout(resolve, 0));
+                                    const now = performance.now();
+                                    if (now - this.lastYieldTime >= this.asapYieldBudgetMs) {
+                                        await new Promise(resolve => setTimeout(resolve, 0));
+                                        this.lastYieldTime = performance.now();
+                                        this.accumulated_wait_ms = 0.0;
+                                    }
                                     this.asapYieldCounter = 0;
                                 }
                                 continue;

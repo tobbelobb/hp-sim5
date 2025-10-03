@@ -152,7 +152,24 @@ export class StepperMotorSystem {
 
 export class RemoteSpoolSystem {
     constructor() {
-        this.commands = [];
+        this._commands = [];
+        this.commandHead = 0;
+        this.commandCompactThreshold = 1024;
+        Object.defineProperty(this, 'commands', {
+            configurable: true,
+            enumerable: true,
+            get: () => this._commands,
+            set: (value) => {
+                if (Array.isArray(value)) {
+                    this._commands = value;
+                } else if (value && typeof value.length === 'number') {
+                    this._commands = Array.from(value);
+                } else {
+                    this._commands = [];
+                }
+                this.commandHead = 0;
+            },
+        });
         this.axisToEntity = {};
         this.worker = null;
         this.wasPaused = false;
@@ -191,18 +208,19 @@ export class RemoteSpoolSystem {
     }
 
     addCommand(command) {
-        this.commands.push(command);
+        this._commands.push(command);
     }
 
     clearPlaybackState() {
         this.history = [];
-        this.commands.length = 0;
+        this._commands.length = 0;
+        this.commandHead = 0;
     }
 
     getPlaybackState() {
         return {
             history: this.history.map((cmd) => ({ ...cmd })),
-            queue: this.commands.map((cmd) => ({ ...cmd })),
+            queue: this._commands.slice(this.commandHead).map((cmd) => ({ ...cmd })),
         };
     }
 
@@ -210,7 +228,8 @@ export class RemoteSpoolSystem {
         const nextHistory = Array.isArray(state.history) ? state.history : [];
         const nextQueue = Array.isArray(state.queue) ? state.queue : [];
         this.history = nextHistory.map((cmd) => ({ ...cmd }));
-        this.commands = nextQueue.map((cmd) => ({ ...cmd }));
+        this._commands = nextQueue.map((cmd) => ({ ...cmd }));
+        this.commandHead = 0;
     }
 
     setCommandExecutedListener(listener) {
@@ -219,6 +238,36 @@ export class RemoteSpoolSystem {
 
     setExtrusionListener(listener) {
         this.onExtrusion = typeof listener === 'function' ? listener : null;
+    }
+
+    getQueueLength() {
+        const available = this._commands.length - this.commandHead;
+        return available > 0 ? available : 0;
+    }
+
+    clearCommandQueue() {
+        this._commands.length = 0;
+        this.commandHead = 0;
+    }
+
+    _compactCommands(force = false) {
+        if (this.commandHead === 0) {
+            return;
+        }
+        const remaining = this._commands.length - this.commandHead;
+        if (!force) {
+            const thresholdReached = this.commandHead >= this.commandCompactThreshold;
+            const moreConsumedThanRemaining = this.commandHead >= remaining;
+            if (!thresholdReached && !moreConsumedThanRemaining) {
+                return;
+            }
+        }
+        if (remaining > 0) {
+            this._commands.splice(0, this.commandHead);
+        } else {
+            this._commands.length = 0;
+        }
+        this.commandHead = 0;
     }
 
     _processCommand(world, command, options = {}) {
@@ -242,6 +291,9 @@ export class RemoteSpoolSystem {
         const touchedMachines = new Set();
         const colorByMachine = new Map();
         const globalMachineColors = world.getResource('machineColors');
+        const machineStore = world.getComponentStore ? world.getComponentStore(MachineTagComponent) : null;
+        const renderStore = world.getComponentStore ? world.getComponentStore(RenderableComponent) : null;
+        const stepperStore = world.getComponentStore ? world.getComponentStore(StepperMotorComponent) : null;
 
         for (const axis of Object.keys(this.axisToEntity)) {
             const axisValue = command[axis];
@@ -257,7 +309,7 @@ export class RemoteSpoolSystem {
                 if (entityId == null) {
                     continue;
                 }
-                const machineTag = world.getComponent(entityId, MachineTagComponent);
+                const machineTag = machineStore ? machineStore.get(entityId) : world.getComponent(entityId, MachineTagComponent);
                 const machineId = machineTag?.id || null;
                 if (!machineId) {
                     continue;
@@ -272,7 +324,7 @@ export class RemoteSpoolSystem {
                         }
                     }
                     if (!chosenColor) {
-                        const renderComp = world.getComponent(entityId, RenderableComponent);
+                        const renderComp = renderStore ? renderStore.get(entityId) : world.getComponent(entityId, RenderableComponent);
                         if (renderComp?.color) {
                             chosenColor = renderComp.color;
                         }
@@ -283,13 +335,13 @@ export class RemoteSpoolSystem {
                 }
 
                 if (commandType === 'Move') {
-                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    const stepperComp = stepperStore ? stepperStore.get(entityId) : world.getComponent(entityId, StepperMotorComponent);
                     if (stepperComp != null) {
                         stepperComp.commandedAngle = axisValue;
                     }
                 }
                 if (commandType === 'Add to reference') {
-                    const stepperComp = world.getComponent(entityId, StepperMotorComponent);
+                    const stepperComp = stepperStore ? stepperStore.get(entityId) : world.getComponent(entityId, StepperMotorComponent);
                     if (stepperComp) {
                         stepperComp.deltaAngle += axisValue;
                     }
@@ -303,10 +355,19 @@ export class RemoteSpoolSystem {
         }
 
         if (command.E !== undefined && command.E > 0.0) {
+            const extruderStore = world.getComponentStore ? world.getComponentStore(ExtruderComponent) : null;
             let extruderComp = null;
-            for (const e of world.query([ExtruderComponent])) {
-                extruderComp = world.getComponent(e, ExtruderComponent);
-                break;
+            if (extruderStore && extruderStore.size > 0) {
+                const iter = extruderStore.values();
+                const first = iter.next();
+                if (!first.done) {
+                    extruderComp = first.value;
+                }
+            } else {
+                for (const e of world.query([ExtruderComponent])) {
+                    extruderComp = world.getComponent(e, ExtruderComponent);
+                    break;
+                }
             }
             if (extruderComp != null) {
                 const recordedMachines = Array.isArray(command.__touchedMachines)
@@ -418,8 +479,8 @@ export class RemoteSpoolSystem {
             this.lowWaterMark = Math.min(targetHigh - 1, targetLow);
         }
 
+        const queueSize = this.getQueueLength();
         if (this.worker && !this.asapModeActive) {
-            const queueSize = this.commands.length;
             // Engage fast mode when the queue runs low; disengage when recovered
             if (!this.fastModeActive && queueSize < this.lowWaterMark) {
                 this.worker.postMessage({ type: 'set_fast_mode', enable: true });
@@ -449,10 +510,14 @@ export class RemoteSpoolSystem {
 
         this._ensureAxisMapping(world);
 
-        const command = this.commands.shift();
+        const command = this._commands[this.commandHead];
         if (command === undefined) {
+            this._compactCommands(true);
             return;
         }
+        this._commands[this.commandHead] = undefined;
+        this.commandHead += 1;
+        this._compactCommands();
         this._processCommand(world, command, { recordHistory: true, emitEvents: true });
     }
 }

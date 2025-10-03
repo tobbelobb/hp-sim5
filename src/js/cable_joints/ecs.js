@@ -33,6 +33,10 @@ export class World {
     return componentMap ? componentMap.get(entityId) : undefined;
   }
 
+  getComponentStore(componentClass) {
+    return this.components.get(componentClass) || null;
+  }
+
   hasComponent(entityId, componentClass) {
     const componentMap = this.components.get(componentClass);
     return componentMap ? componentMap.has(entityId) : false;
@@ -58,26 +62,36 @@ export class World {
   }
 
   query(componentClasses) {
-    const entities = [];
-    if (componentClasses.length === 0) return [];
+    if (!Array.isArray(componentClasses) || componentClasses.length === 0) {
+      return [];
+    }
 
-    // Start with entities having the first component
-    const firstComponentMap = this.components.get(componentClasses[0]);
-    if (!firstComponentMap) return [];
+    const stores = [];
+    for (const componentClass of componentClasses) {
+      const store = this.components.get(componentClass);
+      if (!store) {
+        return [];
+      }
+      stores.push(store);
+    }
 
-    for (const entityId of firstComponentMap.keys()) {
-      let hasAll = true;
-      for (let i = 1; i < componentClasses.length; i++) {
-        if (!this.hasComponent(entityId, componentClasses[i])) {
-          hasAll = false;
-          break;
+    if (stores.length === 1) {
+      return Array.from(stores[0].keys());
+    }
+
+    stores.sort((a, b) => a.size - b.size);
+    const [primary, ...others] = stores;
+    const result = [];
+
+    outer: for (const entityId of primary.keys()) {
+      for (let i = 0; i < others.length; i += 1) {
+        if (!others[i].has(entityId)) {
+          continue outer;
         }
       }
-      if (hasAll) {
-        entities.push(entityId);
-      }
+      result.push(entityId);
     }
-    return entities;
+    return result;
   }
 
   registerSystem(system) {

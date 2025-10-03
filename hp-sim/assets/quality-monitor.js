@@ -197,7 +197,11 @@ export class QualityMonitor {
     this.referenceBounds = null;
 
     this.lastSegmentIndex = 0;
-    this.pendingExtrusions = [];
+    this.pendingExtrusionCount = 0;
+    this.pendingExtrusionCapacity = 0;
+    this.pendingExtrusionsX = new Float64Array(0);
+    this.pendingExtrusionsY = new Float64Array(0);
+    this.pendingExtrusionsLength = new Float64Array(0);
     this.enabled = true;
 
     this.straightStats = {
@@ -253,7 +257,7 @@ export class QualityMonitor {
 
   reset({ keepReference = false } = {}) {
     this.lastSegmentIndex = 0;
-    this.pendingExtrusions = [];
+    this.pendingExtrusionCount = 0;
     this.metricsDirty = true;
     this.metrics = null;
     this.extrusionsSinceHud = 0;
@@ -315,7 +319,7 @@ export class QualityMonitor {
     if (!this.enabled) {
       const normalized = this._normalizeExtrusionEvent(extrusionEvent);
       if (normalized) {
-        this.pendingExtrusions.push(normalized);
+        this._queueNormalizedExtrusion(normalized.x, normalized.y, normalized.length);
       }
       return;
     }
@@ -379,15 +383,42 @@ export class QualityMonitor {
     return { x, y, length };
   }
 
-  _recordExtrusionActive(extrusionEvent) {
-    if (this.segmentData.length === 0) {
+  _ensurePendingExtrusionCapacity(minCount) {
+    if (this.pendingExtrusionCapacity >= minCount) {
       return;
     }
-    const normalized = this._normalizeExtrusionEvent(extrusionEvent);
-    if (!normalized) {
+    let nextCapacity = this.pendingExtrusionCapacity > 0 ? this.pendingExtrusionCapacity : 256;
+    while (nextCapacity < minCount) {
+      nextCapacity *= 2;
+    }
+    const nextX = new Float64Array(nextCapacity);
+    const nextY = new Float64Array(nextCapacity);
+    const nextLength = new Float64Array(nextCapacity);
+    if (this.pendingExtrusionCount > 0) {
+      nextX.set(this.pendingExtrusionsX.subarray(0, this.pendingExtrusionCount));
+      nextY.set(this.pendingExtrusionsY.subarray(0, this.pendingExtrusionCount));
+      nextLength.set(this.pendingExtrusionsLength.subarray(0, this.pendingExtrusionCount));
+    }
+    this.pendingExtrusionsX = nextX;
+    this.pendingExtrusionsY = nextY;
+    this.pendingExtrusionsLength = nextLength;
+    this.pendingExtrusionCapacity = nextCapacity;
+  }
+
+  _queueNormalizedExtrusion(x, y, length) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
       return;
     }
-    const { x, y, length } = normalized;
+    const safeLength = Number.isFinite(length) ? length : 0;
+    const index = this.pendingExtrusionCount;
+    this._ensurePendingExtrusionCapacity(index + 1);
+    this.pendingExtrusionsX[index] = x;
+    this.pendingExtrusionsY[index] = y;
+    this.pendingExtrusionsLength[index] = safeLength;
+    this.pendingExtrusionCount = index + 1;
+  }
+
+  _recordNormalizedExtrusion(x, y, length) {
     const projection = this._projectToPath(x, y);
     if (!projection) {
       return;
@@ -405,15 +436,29 @@ export class QualityMonitor {
     }
   }
 
-  _drainPendingExtrusions() {
-    if (this.pendingExtrusions.length === 0) {
+  _recordExtrusionActive(extrusionEvent) {
+    if (this.segmentData.length === 0) {
       return;
     }
-    const backlog = this.pendingExtrusions;
-    for (let i = 0; i < backlog.length; i += 1) {
-      this._recordExtrusionActive(backlog[i]);
+    const normalized = this._normalizeExtrusionEvent(extrusionEvent);
+    if (!normalized) {
+      return;
     }
-    backlog.length = 0;
+    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.length);
+  }
+
+  _drainPendingExtrusions() {
+    if (this.pendingExtrusionCount === 0) {
+      return;
+    }
+    const count = this.pendingExtrusionCount;
+    const xs = this.pendingExtrusionsX;
+    const ys = this.pendingExtrusionsY;
+    const lengths = this.pendingExtrusionsLength;
+    for (let i = 0; i < count; i += 1) {
+      this._recordNormalizedExtrusion(xs[i], ys[i], lengths[i]);
+    }
+    this.pendingExtrusionCount = 0;
   }
 
   refreshHud(force = false) {

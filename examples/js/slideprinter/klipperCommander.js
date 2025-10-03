@@ -61,7 +61,8 @@ class KlipperCommander {
         this.fastMode = false;
         this.asapMode = false;
         this.asapYieldCounter = 0;
-        this.asapYieldInterval = 256;
+        this.asapYieldInterval = 512;
+        this.asapYieldBudgetMs = 24;
         this._resetState();
     }
 
@@ -285,10 +286,17 @@ class KlipperCommander {
 
         if (this.asapMode) {
             this.asapYieldCounter += 1;
-            if (this.asapYieldCounter >= this.asapYieldInterval) {
-                await new Promise((resolve) => setTimeout(resolve, 0));
-                this.asapYieldCounter = 0;
+            if (!this.lastYieldTime) {
                 this.lastYieldTime = performance.now();
+            }
+            if (this.asapYieldCounter >= this.asapYieldInterval) {
+                const now = performance.now();
+                if (now - this.lastYieldTime >= this.asapYieldBudgetMs) {
+                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    this.lastYieldTime = performance.now();
+                    this.accumulatedWaitMs = 0.0;
+                }
+                this.asapYieldCounter = 0;
             }
             return;
         }

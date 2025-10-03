@@ -826,7 +826,11 @@ function initFrontpageSlideprinter() {
     if (!remoteSystem) {
       return;
     }
-    remoteSystem.commands.length = 0;
+    if (typeof remoteSystem.clearCommandQueue === 'function') {
+      remoteSystem.clearCommandQueue();
+    } else {
+      remoteSystem.commands.length = 0;
+    }
     remoteSystem.worker = activeWorker;
     remoteSystem.wasPaused = false;
   }

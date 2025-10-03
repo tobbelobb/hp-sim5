@@ -3,8 +3,10 @@ import { InputSystem } from './slideprinter_common.js';
 
 const ASAP_THRESHOLD_SCALE = 50;
 const ASAP_RENDER_STRIDE = 10;
-const ASAP_BATCH_STEPS = 256;
-const ASAP_PAUSED_DELAY_MS = 16;
+const ASAP_SLICE_BUDGET_MS = 28;
+const ASAP_MIN_STEPS_PER_SLICE = 64;
+const ASAP_INPUT_CHECK_MASK = 0x3f;
+const ASAP_PAUSED_DELAY_MS = 12;
 const SPEED_UPDATE_PERIOD = 10;
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
 
@@ -184,7 +186,15 @@ export function runGame(world, internalSetupScene, options = {}) {
         }
 
         let stepsRun = 0;
-        while (stepsRun < ASAP_BATCH_STEPS) {
+        const sliceDeadline = performance.now() + ASAP_SLICE_BUDGET_MS;
+        const checkInput = typeof navigator !== 'undefined'
+            && navigator !== null
+            && navigator.scheduling
+            && typeof navigator.scheduling.isInputPending === 'function'
+            ? () => navigator.scheduling.isInputPending()
+            : null;
+
+        while (true) {
             if (pauseState.paused && !doStep) {
                 break;
             }
@@ -201,6 +211,14 @@ export function runGame(world, internalSetupScene, options = {}) {
             }
             if (pauseState.paused) {
                 break;
+            }
+            if (stepsRun >= ASAP_MIN_STEPS_PER_SLICE) {
+                if (performance.now() >= sliceDeadline) {
+                    break;
+                }
+                if (checkInput && (stepsRun & ASAP_INPUT_CHECK_MASK) === 0 && checkInput()) {
+                    break;
+                }
             }
         }
 

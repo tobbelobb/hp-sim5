@@ -1344,11 +1344,14 @@ function initHpSim() {
 
       if (remoteSystem) {
         let settleAttempts = 0;
-        let previousLength = remoteSystem.commands.length;
+        const getQueueLength = typeof remoteSystem.getQueueLength === 'function'
+          ? () => remoteSystem.getQueueLength()
+          : () => (Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0);
+        let previousLength = getQueueLength();
         const maxAttempts = 6;
         while (settleAttempts < maxAttempts) {
           await new Promise((resolve) => setTimeout(resolve, 0));
-          const currentLength = remoteSystem.commands.length;
+          const currentLength = getQueueLength();
           if (currentLength === previousLength) {
             break;
           }
@@ -2301,8 +2304,12 @@ function initHpSim() {
     const startTime = performance.now();
     let idleChecks = 0;
 
+    const queueLengthAccessor = typeof remoteSystem.getQueueLength === 'function'
+      ? () => remoteSystem.getQueueLength()
+      : () => (Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0);
+
     while (asapState.active) {
-      const queueLen = Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0;
+      const queueLen = queueLengthAccessor();
       const printing = printActive;
       const workerActive = Boolean(remoteSystem.worker);
 
@@ -2604,7 +2611,11 @@ function initHpSim() {
     if (typeof remoteSystem.clearPlaybackState === 'function') {
       remoteSystem.clearPlaybackState();
     } else {
-      remoteSystem.commands.length = 0;
+      if (typeof remoteSystem.clearCommandQueue === 'function') {
+        remoteSystem.clearCommandQueue();
+      } else if (Array.isArray(remoteSystem.commands)) {
+        remoteSystem.commands.length = 0;
+      }
       remoteSystem.history = [];
     }
     remoteSystem.worker = activeWorker;
