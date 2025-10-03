@@ -211,7 +211,6 @@ export class QualityMonitor {
       arcLength: 0,
       isStraight: false,
     };
-    this._drainPromise = null;
     this.enabled = true;
 
     this.straightStats = {
@@ -271,7 +270,6 @@ export class QualityMonitor {
     this.metricsDirty = true;
     this.metrics = null;
     this.extrusionsSinceHud = 0;
-    this._drainPromise = null;
 
     this.straightStats.count = 0;
     this.straightStats.sumSquares = 0;
@@ -344,18 +342,8 @@ export class QualityMonitor {
     }
     this.enabled = next;
     if (this.enabled) {
-      const drainPromise = this._drainPendingExtrusions();
-      if (drainPromise && typeof drainPromise.then === 'function') {
-        drainPromise
-          .then(() => {
-            this.refreshHud(true);
-          })
-          .catch((err) => {
-            console.error('QualityMonitor: failed draining queued extrusions on enable.', err);
-          });
-      } else {
-        this.refreshHud(true);
-      }
+      this._drainPendingExtrusions();
+      this.refreshHud(true);
     } else if (this.hudElement) {
       this.hudElement.classList.add('sim-hidden');
     }
@@ -363,20 +351,12 @@ export class QualityMonitor {
 
   runFinalCheck() {
     if (this.segmentData.length === 0) {
-      return Promise.resolve();
+      return;
     }
-    const drainPromise = this._drainPendingExtrusions();
-    if (!drainPromise || typeof drainPromise.then !== 'function') {
-      this.metricsDirty = true;
-      this.refreshHud(true);
-      this.extrusionsSinceHud = 0;
-      return Promise.resolve();
-    }
-    return drainPromise.then(() => {
-      this.metricsDirty = true;
-      this.refreshHud(true);
-      this.extrusionsSinceHud = 0;
-    });
+    this._drainPendingExtrusions();
+    this.metricsDirty = true;
+    this.refreshHud(true);
+    this.extrusionsSinceHud = 0;
   }
 
   _normalizeExtrusionEvent(extrusionEvent) {
@@ -487,64 +467,26 @@ export class QualityMonitor {
     }
   }
 
-  _drainPendingExtrusions(options = {}) {
-    if (this._drainPromise) {
-      return this._drainPromise;
+  _drainPendingExtrusions() {
+    const count = this.pendingExtrusionCount | 0;
+    if (count === 0) {
+      return;
     }
-
-    const { chunkSize = 4096, budgetMs = 24 } = options || {};
-    const runDrain = async () => {
-      const total = this.pendingExtrusionCount | 0;
-      if (total === 0) {
-        return 0;
+    const xs = this.pendingExtrusionsX;
+    const ys = this.pendingExtrusionsY;
+    const lengths = this.pendingExtrusionsLength;
+    const record = this._recordNormalizedExtrusion;
+    let processed = 0;
+    for (let i = 0; i < count; i += 1) {
+      const x = xs[i];
+      const y = ys[i];
+      const length = lengths[i];
+      if (record.call(this, x, y, length)) {
+        processed += 1;
       }
-      const xs = this.pendingExtrusionsX;
-      const ys = this.pendingExtrusionsY;
-      const lengths = this.pendingExtrusionsLength;
-      const record = this._recordNormalizedExtrusion;
-      let processed = 0;
-      let index = 0;
-      const getNow = typeof performance !== 'undefined' && typeof performance.now === 'function'
-        ? () => performance.now()
-        : () => Date.now();
-      const useChunking = this._canYieldToMainLoop() && total > chunkSize;
-
-      while (index < total) {
-        const sliceStart = getNow();
-        const sliceEnd = useChunking ? Math.min(index + chunkSize, total) : total;
-        for (let i = index; i < sliceEnd; i += 1) {
-          const x = xs[i];
-          const y = ys[i];
-          const length = lengths[i];
-          if (record.call(this, x, y, length)) {
-            processed += 1;
-          }
-        }
-        index = sliceEnd;
-        if (!useChunking) {
-          break;
-        }
-        if (index < total && (getNow() - sliceStart) >= budgetMs && this._shouldYieldToMainLoop()) {
-          await this._yieldToMainLoop();
-        }
-      }
-
-      this.pendingExtrusionCount = 0;
-      this._onExtrusionsProcessed(processed);
-      return processed;
-    };
-
-    const pending = runDrain();
-    this._drainPromise = pending
-      .then((result) => {
-        this._drainPromise = null;
-        return result;
-      })
-      .catch((error) => {
-        this._drainPromise = null;
-        throw error;
-      });
-    return this._drainPromise;
+    }
+    this.pendingExtrusionCount = 0;
+    this._onExtrusionsProcessed(processed);
   }
 
   refreshHud(force = false) {
@@ -865,31 +807,6 @@ export class QualityMonitor {
       return true;
     }
     return false;
-  }
-
-  _canYieldToMainLoop() {
-    return typeof requestAnimationFrame === 'function' || typeof setTimeout === 'function';
-  }
-
-  _shouldYieldToMainLoop() {
-    if (typeof navigator !== 'undefined' && navigator?.scheduling?.isInputPending) {
-      try {
-        return navigator.scheduling.isInputPending();
-      } catch (_err) {
-        return true;
-      }
-    }
-    return true;
-  }
-
-  _yieldToMainLoop() {
-    if (typeof requestAnimationFrame === 'function') {
-      return new Promise((resolve) => requestAnimationFrame(resolve));
-    }
-    if (typeof setTimeout === 'function') {
-      return new Promise((resolve) => setTimeout(resolve, 0));
-    }
-    return Promise.resolve();
   }
 
   _accumulateStraightError(projection) {
