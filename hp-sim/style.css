@@ -15,6 +15,10 @@ body {
   color: #f5f7ff;
 }
 
+button {
+  font: inherit;
+}
+
 body {
   display: flex;
 }
