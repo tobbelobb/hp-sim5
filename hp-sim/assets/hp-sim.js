@@ -2533,7 +2533,12 @@ function initHpSim() {
         if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
           setPrintActive(false);
           if (qualityMonitor) {
-            qualityMonitor.runFinalCheck();
+            const finalCheck = qualityMonitor.runFinalCheck();
+            if (finalCheck && typeof finalCheck.catch === 'function') {
+              finalCheck.catch((err) => {
+                console.error('hp-sim: quality monitor final check failed (klipper worker).', err);
+              });
+            }
           }
         }
         return;
@@ -2571,7 +2576,12 @@ function initHpSim() {
         if (remoteSystem && remoteSystem.worker === moveCommanderWorker) {
           setPrintActive(false);
           if (qualityMonitor) {
-            qualityMonitor.runFinalCheck();
+            const finalCheck = qualityMonitor.runFinalCheck();
+            if (finalCheck && typeof finalCheck.catch === 'function') {
+              finalCheck.catch((err) => {
+                console.error('hp-sim: quality monitor final check failed (move worker).', err);
+              });
+            }
           }
         }
         return;
