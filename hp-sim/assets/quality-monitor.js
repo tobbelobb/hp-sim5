@@ -202,15 +202,6 @@ export class QualityMonitor {
     this.pendingExtrusionsX = new Float64Array(0);
     this.pendingExtrusionsY = new Float64Array(0);
     this.pendingExtrusionsLength = new Float64Array(0);
-    this._projectionScratch = {
-      segmentIndex: 0,
-      normalError: 0,
-      tangentialError: 0,
-      point: new Float64Array(2),
-      t: 0,
-      arcLength: 0,
-      isStraight: false,
-    };
     this.enabled = true;
 
     this.straightStats = {
@@ -427,31 +418,22 @@ export class QualityMonitor {
     this.pendingExtrusionCount = index + 1;
   }
 
-  _onExtrusionsProcessed(processedCount) {
-    if (!Number.isFinite(processedCount) || processedCount <= 0) {
-      return;
-    }
-    this.metricsDirty = true;
-    this.extrusionsSinceHud += processedCount;
-    if (!this.enabled || this.hudUpdateInterval <= 0) {
-      return;
-    }
-    if (this.extrusionsSinceHud >= this.hudUpdateInterval) {
-      this.refreshHud();
-      this.extrusionsSinceHud %= this.hudUpdateInterval;
-    }
-  }
-
   _recordNormalizedExtrusion(x, y, length) {
-    const scratch = this._projectionScratch;
-    if (!scratch || !this._projectToPathIntoScratch(x, y, scratch)) {
-      return false;
+    const projection = this._projectToPath(x, y);
+    if (!projection) {
+      return;
     }
 
-    this._accumulateStraightError(scratch);
-    this._accumulateCornerSamples(scratch);
+    this._accumulateStraightError(projection);
+    this._accumulateCornerSamples(projection);
     this._updateCoverageForExtrusion(x, y, length);
-    return true;
+
+    this.metricsDirty = true;
+    this.extrusionsSinceHud += 1;
+    if (this.enabled && this.extrusionsSinceHud >= this.hudUpdateInterval) {
+      this.refreshHud();
+      this.extrusionsSinceHud = 0;
+    }
   }
 
   _recordExtrusionActive(extrusionEvent) {
@@ -462,31 +444,21 @@ export class QualityMonitor {
     if (!normalized) {
       return;
     }
-    if (this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.length)) {
-      this._onExtrusionsProcessed(1);
-    }
+    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.length);
   }
 
   _drainPendingExtrusions() {
-    const count = this.pendingExtrusionCount | 0;
-    if (count === 0) {
+    if (this.pendingExtrusionCount === 0) {
       return;
     }
+    const count = this.pendingExtrusionCount;
     const xs = this.pendingExtrusionsX;
     const ys = this.pendingExtrusionsY;
     const lengths = this.pendingExtrusionsLength;
-    const record = this._recordNormalizedExtrusion;
-    let processed = 0;
     for (let i = 0; i < count; i += 1) {
-      const x = xs[i];
-      const y = ys[i];
-      const length = lengths[i];
-      if (record.call(this, x, y, length)) {
-        processed += 1;
-      }
+      this._recordNormalizedExtrusion(xs[i], ys[i], lengths[i]);
     }
     this.pendingExtrusionCount = 0;
-    this._onExtrusionsProcessed(processed);
   }
 
   refreshHud(force = false) {
@@ -747,12 +719,12 @@ export class QualityMonitor {
     }
   }
 
-  _projectToPathIntoScratch(x, y, scratch) {
-    if (!scratch || this.segmentData.length === 0) {
-      return false;
+  _projectToPath(x, y) {
+    if (this.segmentData.length === 0) {
+      return null;
     }
+    let best = null;
     let bestDistSq = Infinity;
-    let bestIndex = -1;
     const segments = this.segmentData;
     const count = segments.length;
     const searchRadius = 6;
@@ -777,19 +749,20 @@ export class QualityMonitor {
       const dx = x - nx;
       const dy = y - ny;
       const distSq = dx * dx + dy * dy;
-      if (distSq >= bestDistSq) {
-        return;
+      if (distSq < bestDistSq) {
+        const normalError = dx * seg.normal[0] + dy * seg.normal[1];
+        const tangentialError = dx * seg.tangent[0] + dy * seg.tangent[1];
+        bestDistSq = distSq;
+        best = {
+          segmentIndex: index,
+          normalError,
+          tangentialError,
+          point: [nx, ny],
+          t,
+          arcLength: seg.cumulativeStart + t * seg.length,
+          isStraight: seg.isStraight,
+        };
       }
-      bestDistSq = distSq;
-      bestIndex = index;
-      scratch.segmentIndex = index;
-      scratch.normalError = dx * seg.normal[0] + dy * seg.normal[1];
-      scratch.tangentialError = dx * seg.tangent[0] + dy * seg.tangent[1];
-      scratch.point[0] = nx;
-      scratch.point[1] = ny;
-      scratch.t = t;
-      scratch.arcLength = seg.cumulativeStart + t * seg.length;
-      scratch.isStraight = Boolean(seg.isStraight);
     };
 
     const startIdx = Math.max(0, hint - searchRadius);
@@ -797,16 +770,15 @@ export class QualityMonitor {
     for (let i = startIdx; i <= endIdx; i += 1) {
       evaluateSegment(i);
     }
-    if (bestIndex === -1) {
+    if (!best) {
       for (let i = 0; i < count; i += 1) {
         evaluateSegment(i);
       }
     }
-    if (bestIndex !== -1) {
-      this.lastSegmentIndex = bestIndex;
-      return true;
+    if (best) {
+      this.lastSegmentIndex = best.segmentIndex;
     }
-    return false;
+    return best;
   }
 
   _accumulateStraightError(projection) {
