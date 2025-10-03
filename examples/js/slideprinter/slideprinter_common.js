@@ -17,6 +17,8 @@ import {
     CablePathComponent,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 
+const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
+
 export class ExtruderComponent {
     constructor() {
         // Array of { pos: [x,y,z], length, machineId, color }
@@ -163,6 +165,8 @@ export class RemoteSpoolSystem {
         this.history = [];
         this.onCommandExecuted = null;
         this.onExtrusion = null;
+        this.playbackMode = 'linear';
+        this.asapModeActive = false;
     }
 
     resetAxisMapping() {
@@ -375,6 +379,36 @@ export class RemoteSpoolSystem {
 
     update(world, dt) {
         // Scale queue targets with playback speed to avoid underflows at high speeds
+        const playbackState = world.getResource(SIMULATION_PLAYBACK_RESOURCE) || null;
+        const desiredPlaybackMode = playbackState?.mode === 'asap' ? 'asap' : 'linear';
+        if (desiredPlaybackMode !== this.playbackMode) {
+            this.playbackMode = desiredPlaybackMode;
+            this.asapModeActive = desiredPlaybackMode === 'asap';
+            if (this.worker) {
+                try {
+                    this.worker.postMessage({ type: 'set_asap_mode', enable: this.asapModeActive });
+                } catch (err) {
+                    console.warn('RemoteSpoolSystem: unable to toggle ASAP mode on worker.', err);
+                }
+                if (this.asapModeActive) {
+                    try {
+                        this.worker.postMessage({ type: 'set_fast_mode', enable: false });
+                    } catch (_err) {
+                        /* noop */
+                    }
+                    try {
+                        this.worker.postMessage({ type: 'resume' });
+                    } catch (_err) {
+                        /* noop */
+                    }
+                }
+            }
+            if (!this.asapModeActive) {
+                this.fastModeActive = false;
+                this.wasPaused = false;
+            }
+        }
+
         const timeScale = Number(world.getResource('timeScale')) || 1;
         const scaleFactor = Math.max(1, timeScale);
         const targetHigh = Math.max(this.baseHighWaterMark, Math.ceil(this.baseHighWaterMark * scaleFactor));
@@ -384,7 +418,7 @@ export class RemoteSpoolSystem {
             this.lowWaterMark = Math.min(targetHigh - 1, targetLow);
         }
 
-        if (this.worker) {
+        if (this.worker && !this.asapModeActive) {
             const queueSize = this.commands.length;
             // Engage fast mode when the queue runs low; disengage when recovered
             if (!this.fastModeActive && queueSize < this.lowWaterMark) {
@@ -398,6 +432,16 @@ export class RemoteSpoolSystem {
                 this.worker.postMessage({ type: 'pause' });
                 this.wasPaused = true;
             } else if (queueSize < this.lowWaterMark && this.wasPaused) {
+                this.worker.postMessage({ type: 'resume' });
+                this.wasPaused = false;
+            }
+        }
+        if (this.worker && this.asapModeActive) {
+            if (this.fastModeActive) {
+                this.worker.postMessage({ type: 'set_fast_mode', enable: false });
+                this.fastModeActive = false;
+            }
+            if (this.wasPaused) {
                 this.worker.postMessage({ type: 'resume' });
                 this.wasPaused = false;
             }

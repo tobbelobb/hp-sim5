@@ -59,6 +59,9 @@ class KlipperCommander {
         this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
         this.speedScale = 1.0;
         this.fastMode = false;
+        this.asapMode = false;
+        this.asapYieldCounter = 0;
+        this.asapYieldInterval = 256;
         this._resetState();
     }
 
@@ -75,6 +78,17 @@ class KlipperCommander {
             return;
         }
         this.speedScale = scale;
+    }
+
+    setAsapMode(enable) {
+        const next = Boolean(enable);
+        if (this.asapMode === next) {
+            return;
+        }
+        this.asapMode = next;
+        this.asapYieldCounter = 0;
+        this.accumulatedWaitMs = 0.0;
+        this.lastYieldTime = performance.now();
     }
 
     async sendCommand(command) {
@@ -114,6 +128,7 @@ class KlipperCommander {
         this.maxBucketSeen = -1;
         this.accumulatedWaitMs = 0.0;
         this.lastYieldTime = 0;
+        this.asapYieldCounter = 0;
     }
 
     _ensureAxisState(axis) {
@@ -266,6 +281,16 @@ class KlipperCommander {
 
         if (changed) {
             await this.sendCommand(moveCmd);
+        }
+
+        if (this.asapMode) {
+            this.asapYieldCounter += 1;
+            if (this.asapYieldCounter >= this.asapYieldInterval) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+                this.asapYieldCounter = 0;
+                this.lastYieldTime = performance.now();
+            }
+            return;
         }
 
         const elapsedMs = performance.now() - loopStart;
@@ -444,6 +469,10 @@ self.addEventListener('message', async (e) => {
         case 'set_speed_scale': {
             commander.setSpeedScale(e.data.value);
             commander.accumulatedWaitMs = 0.0;
+            break;
+        }
+        case 'set_asap_mode': {
+            commander.setAsapMode(e.data.enable);
             break;
         }
         case 'set_fast_mode': {

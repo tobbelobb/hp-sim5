@@ -1,6 +1,13 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
 import { InputSystem } from './slideprinter_common.js';
 
+const ASAP_THRESHOLD_SCALE = 50;
+const ASAP_RENDER_STRIDE = 10;
+const ASAP_BATCH_STEPS = 256;
+const ASAP_PAUSED_DELAY_MS = 16;
+const SPEED_UPDATE_PERIOD = 10;
+const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
+
 export function runGame(world, internalSetupScene, options = {}) {
     const pauseBtn = document.getElementById('pauseBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -24,15 +31,15 @@ export function runGame(world, internalSetupScene, options = {}) {
         return value;
     }
 
-    let lastTime = 0;
-    let accumulator = 0.0;
-    let doStep = false;
-    let frameCounter = 0;
-    let startTime = 0;
-    let totalSim = 0;
-    let hasStarted = false;
-    let targetTimeScale = sanitizeTimeScale(initialTimeScale, 1.0);
-    world.setResource('timeScale', targetTimeScale);
+    const sanitizeRenderOverride = (value) => {
+        if (value == null) {
+            return null;
+        }
+        if (!Number.isFinite(value)) {
+            return Number.POSITIVE_INFINITY;
+        }
+        return Math.max(1, Math.floor(value));
+    };
 
     const getPauseState = () => world.getResource('pauseState');
 
@@ -48,13 +55,82 @@ export function runGame(world, internalSetupScene, options = {}) {
         }
     };
 
-    function gameLoop(currentTime) {
+    const updatePlaybackResource = () => {
+        world.setResource(SIMULATION_PLAYBACK_RESOURCE, {
+            mode: playbackMode,
+            renderEveryNth: renderStride,
+            asapThreshold: ASAP_THRESHOLD_SCALE,
+        });
+    };
+
+    const recomputeRenderStride = () => {
+        const base = renderStrideBase;
+        const next = renderStrideOverride != null ? renderStrideOverride : base;
+        const normalized = Number.isFinite(next) ? Math.max(1, Math.floor(next)) : Number.POSITIVE_INFINITY;
+        if (renderStride !== normalized) {
+            renderStride = normalized;
+            renderCounter = 0;
+        }
+        updatePlaybackResource();
+    };
+
+    const setPlaybackMode = (mode) => {
+        const normalized = mode === 'asap' ? 'asap' : 'linear';
+        if (normalized === playbackMode) {
+            return false;
+        }
+        playbackMode = normalized;
+        renderStrideBase = playbackMode === 'asap' ? ASAP_RENDER_STRIDE : 1;
+        lastTime = 0;
+        accumulator = 0;
+        renderCounter = 0;
+        recomputeRenderStride();
+        stopLoops();
+        updatePlaybackResource();
+        return true;
+    };
+
+    const maybeRender = () => {
+        const renderSystem = world.getResource('renderSystem');
+        if (!renderSystem || renderSystem.drawingSuspended) {
+            return;
+        }
+        if (renderStride === Number.POSITIVE_INFINITY) {
+            return;
+        }
+        renderCounter += 1;
+        if (renderStride > 1 && renderCounter < renderStride) {
+            return;
+        }
+        renderCounter = 0;
+        renderSystem.update(world, 0);
+    };
+
+    const updateSpeedMeter = () => {
+        if (!speedEl) {
+            return;
+        }
+        if (!hasStarted || startTime <= 0) {
+            speedEl.textContent = 'N/A';
+            return;
+        }
+        const elapsed = (performance.now() - startTime) / 1000;
+        if (elapsed > 0) {
+            const avgSpeed = totalSim / elapsed;
+            speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+        }
+    };
+
+    const runLinearFrame = (currentTime) => {
         const dt = world.getResource('dt');
         if (dtEl && dtEl.textContent === 'N/A') {
             dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
         }
         const pauseState = getPauseState();
-
+        if (!pauseState) {
+            maybeRender();
+            return;
+        }
         if (lastTime === 0) {
             lastTime = currentTime;
         }
@@ -69,12 +145,15 @@ export function runGame(world, internalSetupScene, options = {}) {
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {
                 if (!pauseState.paused || doStep) {
-                    if (doStep) pauseState.paused = false;
+                    if (doStep) {
+                        pauseState.paused = false;
+                    }
                     world.update(dt);
                     simTimeProcessed += dt;
                     if (doStep) {
                         pauseState.paused = true;
                         doStep = false;
+                        break;
                     }
                 }
                 if (pauseState.paused) {
@@ -86,37 +165,119 @@ export function runGame(world, internalSetupScene, options = {}) {
         }
 
         totalSim += simTimeProcessed;
+        frameCounter += 1;
+        if (frameCounter % SPEED_UPDATE_PERIOD === 0) {
+            updateSpeedMeter();
+        }
+        maybeRender();
+    };
 
-        frameCounter++;
-        if (frameCounter % 10 === 0 && speedEl) {
-            if (startTime >= 0) {
-                const elapsed = (performance.now() - startTime) / 1000;
-                if (elapsed > 0) {
-                    const avgSpeed = totalSim / elapsed;
-                    speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
-                }
+    const runAsapBatch = () => {
+        const dt = world.getResource('dt');
+        if (dtEl && dtEl.textContent === 'N/A') {
+            dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
+        }
+        const pauseState = getPauseState();
+        if (!pauseState) {
+            maybeRender();
+            return ASAP_PAUSED_DELAY_MS;
+        }
+
+        let stepsRun = 0;
+        while (stepsRun < ASAP_BATCH_STEPS) {
+            if (pauseState.paused && !doStep) {
+                break;
+            }
+            if (doStep) {
+                pauseState.paused = false;
+            }
+            world.update(dt);
+            totalSim += dt;
+            stepsRun += 1;
+            if (doStep) {
+                pauseState.paused = true;
+                doStep = false;
+                break;
+            }
+            if (pauseState.paused) {
+                break;
             }
         }
 
-        const renderSystem = world.getResource('renderSystem');
-        if (renderSystem) {
-            renderSystem.update(world, 0);
+        frameCounter += 1;
+        if (frameCounter % SPEED_UPDATE_PERIOD === 0) {
+            updateSpeedMeter();
         }
+        maybeRender();
 
-        requestAnimationFrame(gameLoop);
-    }
+        if (pauseState.paused && !doStep) {
+            return ASAP_PAUSED_DELAY_MS;
+        }
+        return 0;
+    };
 
-    function resetGame({ autoPause = true } = {}) {
+    const startLinearLoop = (token) => {
+        const step = (time) => {
+            if (token !== loopToken) {
+                return;
+            }
+            runLinearFrame(time);
+            rafHandle = requestAnimationFrame(step);
+        };
+        rafHandle = requestAnimationFrame(step);
+    };
+
+    const startAsapLoop = (token) => {
+        const iterate = () => {
+            if (token !== loopToken) {
+                return;
+            }
+            const delay = runAsapBatch();
+            if (token !== loopToken) {
+                return;
+            }
+            asapTimer = setTimeout(iterate, delay);
+        };
+        iterate();
+    };
+
+    const startActiveLoop = () => {
+        const currentToken = loopToken;
+        if (playbackMode === 'asap') {
+            startAsapLoop(currentToken);
+        } else {
+            startLinearLoop(currentToken);
+        }
+    };
+
+    const stopLoops = () => {
+        if (rafHandle != null) {
+            cancelAnimationFrame(rafHandle);
+            rafHandle = null;
+        }
+        if (asapTimer != null) {
+            clearTimeout(asapTimer);
+            asapTimer = null;
+        }
+        loopToken += 1;
+    };
+
+    const resetGame = ({ autoPause = true } = {}) => {
         internalSetupScene();
         for (const sys of world.systems) {
             if (sys instanceof InputSystem) {
-                if (typeof sys.reset === 'function') sys.reset();
+                if (typeof sys.reset === 'function') {
+                    sys.reset();
+                }
             }
         }
         lastTime = 0;
         accumulator = 0;
         frameCounter = 0;
-        if (speedEl) speedEl.textContent = 'N/A';
+        renderCounter = 0;
+        if (speedEl) {
+            speedEl.textContent = 'N/A';
+        }
         totalSim = 0;
         const pauseState = getPauseState();
         if (autoPause) {
@@ -135,18 +296,33 @@ export function runGame(world, internalSetupScene, options = {}) {
         }
         doStep = false;
         updatePauseButtonLabel();
-        requestAnimationFrame(gameLoop);
-    }
+        stopLoops();
+        startActiveLoop();
+    };
 
-    function setTimeScale(scale) {
+    const setRenderEveryNth = (value) => {
+        const sanitized = sanitizeRenderOverride(value);
+        if (renderStrideOverride === sanitized) {
+            return;
+        }
+        renderStrideOverride = sanitized;
+        renderCounter = 0;
+        recomputeRenderStride();
+    };
+
+    const setTimeScale = (scale) => {
         const clamped = sanitizeTimeScale(scale, targetTimeScale);
-        if (Math.abs(clamped - targetTimeScale) < 1e-6) {
+        const desiredMode = clamped >= ASAP_THRESHOLD_SCALE ? 'asap' : 'linear';
+        const modeChanged = setPlaybackMode(desiredMode);
+        if (Math.abs(clamped - targetTimeScale) < 1e-6 && !modeChanged) {
             return;
         }
         targetTimeScale = clamped;
         world.setResource('timeScale', targetTimeScale);
         lastTime = 0;
+        accumulator = 0;
         frameCounter = 0;
+        renderCounter = 0;
         totalSim = 0;
         if (speedEl) {
             speedEl.textContent = 'N/A';
@@ -160,11 +336,12 @@ export function runGame(world, internalSetupScene, options = {}) {
         if (typeof onTimeScaleChange === 'function') {
             onTimeScaleChange(targetTimeScale);
         }
-    }
+        if (modeChanged) {
+            startActiveLoop();
+        }
+    };
 
-    function getTimeScale() {
-        return targetTimeScale;
-    }
+    const getTimeScale = () => targetTimeScale;
 
     if (pauseBtn) {
         pauseBtn.addEventListener('click', (e) => {
@@ -182,7 +359,8 @@ export function runGame(world, internalSetupScene, options = {}) {
                 }
                 lastTime = performance.now();
                 updatePauseButtonLabel();
-                requestAnimationFrame(gameLoop);
+                stopLoops();
+                startActiveLoop();
             } else {
                 pauseState.paused = true;
                 updatePauseButtonLabel();
@@ -203,7 +381,8 @@ export function runGame(world, internalSetupScene, options = {}) {
             const pauseState = getPauseState();
             if (pauseState && pauseState.paused) {
                 doStep = true;
-                requestAnimationFrame(gameLoop);
+                stopLoops();
+                startActiveLoop();
             }
         });
     }
@@ -215,6 +394,27 @@ export function runGame(world, internalSetupScene, options = {}) {
         });
     }
 
+    let targetTimeScale = sanitizeTimeScale(initialTimeScale, 1.0);
+    world.setResource('timeScale', targetTimeScale);
+
+    let lastTime = 0;
+    let accumulator = 0.0;
+    let doStep = false;
+    let frameCounter = 0;
+    let renderCounter = 0;
+    let startTime = 0;
+    let totalSim = 0;
+    let hasStarted = false;
+    let playbackMode = 'linear';
+    let renderStrideBase = 1;
+    let renderStrideOverride = null;
+    let renderStride = 1;
+    let rafHandle = null;
+    let asapTimer = null;
+    let loopToken = 0;
+
+    recomputeRenderStride();
+    setPlaybackMode(targetTimeScale >= ASAP_THRESHOLD_SCALE ? 'asap' : 'linear');
     resetGame({ autoPause: false });
     if (typeof onTimeScaleChange === 'function') {
         onTimeScaleChange(targetTimeScale);
@@ -224,5 +424,6 @@ export function runGame(world, internalSetupScene, options = {}) {
         reset: resetGame,
         setTimeScale,
         getTimeScale,
+        setRenderEveryNth,
     };
 }

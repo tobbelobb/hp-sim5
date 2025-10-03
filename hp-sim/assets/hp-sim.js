@@ -2341,9 +2341,13 @@ function initHpSim() {
     const prevPauseDisabled = asapState.prevPauseDisabled;
     const prevResetDisabled = asapState.prevResetDisabled;
 
+    if (typeof gameControls?.setRenderEveryNth === 'function') {
+      gameControls.setRenderEveryNth(null);
+    }
+
     if (remoteSystem && remoteSystem.worker) {
       try {
-        remoteSystem.worker.postMessage({ type: 'set_fast_mode', enable: false });
+        remoteSystem.worker.postMessage({ type: 'set_asap_mode', enable: false });
       } catch (_err) {
         /* noop */
       }
@@ -2480,11 +2484,15 @@ function initHpSim() {
       handleTimeScaleChange(asapScale);
     }
 
+    if (typeof gameControls?.setRenderEveryNth === 'function') {
+      gameControls.setRenderEveryNth(Number.POSITIVE_INFINITY);
+    }
+
     if (remoteSystem.worker) {
       try {
-        remoteSystem.worker.postMessage({ type: 'set_fast_mode', enable: true });
+        remoteSystem.worker.postMessage({ type: 'set_asap_mode', enable: true });
       } catch (err) {
-        console.warn('hp-sim: unable to enable fast mode for worker.', err);
+        console.warn('hp-sim: unable to enable ASAP mode for worker.', err);
       }
     }
 

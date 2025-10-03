@@ -44,6 +44,9 @@ class MoveCommander {
         this.accumulated_wait_ms = 0.0;
         this.speedScale = 1.0;
         this.fastMode = false;
+        this.asapMode = false;
+        this.asapYieldCounter = 0;
+        this.asapYieldInterval = 256;
     }
 
     async connect() {
@@ -128,6 +131,16 @@ class MoveCommander {
             return;
         }
         this.speedScale = value;
+    }
+
+    setAsapMode(enable) {
+        const next = Boolean(enable);
+        if (this.asapMode === next) {
+            return;
+        }
+        this.asapMode = next;
+        this.asapYieldCounter = 0;
+        this.accumulated_wait_ms = 0.0;
     }
 
     _targetWaitMs() {
@@ -228,6 +241,14 @@ class MoveCommander {
                             await this.sendCommand(interpolated_cmd);
 
                             const elapsed_ms = performance.now() - loop_start_time;
+                            if (this.asapMode) {
+                                this.asapYieldCounter += 1;
+                                if (this.asapYieldCounter >= this.asapYieldInterval) {
+                                    await new Promise(resolve => setTimeout(resolve, 0));
+                                    this.asapYieldCounter = 0;
+                                }
+                                continue;
+                            }
                             const wait_time_ms = this._targetWaitMs() - elapsed_ms;
                             if (wait_time_ms > 0) {
                                 this.accumulated_wait_ms += wait_time_ms;
@@ -308,6 +329,14 @@ class MoveCommander {
                             await this.sendCommand(interpolated_cmd);
 
                             const elapsed_ms = performance.now() - loop_start_time;
+                            if (this.asapMode) {
+                                this.asapYieldCounter += 1;
+                                if (this.asapYieldCounter >= this.asapYieldInterval) {
+                                    await new Promise(resolve => setTimeout(resolve, 0));
+                                    this.asapYieldCounter = 0;
+                                }
+                                continue;
+                            }
                             const wait_time_ms = this._targetWaitMs() - elapsed_ms;
                             if (wait_time_ms > 0) {
                                 this.accumulated_wait_ms += wait_time_ms;
@@ -380,6 +409,9 @@ self.addEventListener('message', async (e) => {
     case 'set_speed_scale':
       commander.setSpeedScale(e.data.value);
       commander.accumulated_wait_ms = 0.0;
+      break;
+    case 'set_asap_mode':
+      commander.setAsapMode(e.data.enable);
       break;
     case 'set_fast_mode':
       commander.fastMode = Boolean(e.data.enable);
