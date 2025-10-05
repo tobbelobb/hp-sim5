@@ -1,7 +1,6 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
 import { InputSystem, RemoteSpoolSystem } from './slideprinter_common.js';
 
-const ASAP_THRESHOLD_SCALE = 50;
 const ASAP_RENDER_STRIDE = 10;
 const ASAP_SLICE_BUDGET_MS = 28;
 const ASAP_MIN_STEPS_PER_SLICE = 64;
@@ -61,7 +60,6 @@ export function runGame(world, internalSetupScene, options = {}) {
         world.setResource(SIMULATION_PLAYBACK_RESOURCE, {
             mode: playbackMode,
             renderEveryNth: renderStride,
-            asapThreshold: ASAP_THRESHOLD_SCALE,
         });
     };
 
@@ -361,7 +359,7 @@ export function runGame(world, internalSetupScene, options = {}) {
 
     const setTimeScale = (scale) => {
         const clamped = sanitizeTimeScale(scale, targetTimeScale);
-        const desiredMode = clamped >= ASAP_THRESHOLD_SCALE ? 'asap' : 'linear';
+        const desiredMode = 'linear';
         const modeChanged = setPlaybackMode(desiredMode);
         if (Math.abs(clamped - targetTimeScale) < 1e-6 && !modeChanged) {
             return;
@@ -463,7 +461,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     let loopToken = 0;
 
     recomputeRenderStride();
-    setPlaybackMode(targetTimeScale >= ASAP_THRESHOLD_SCALE ? 'asap' : 'linear');
+    setPlaybackMode('linear');
     resetGame({ autoPause: false });
     if (typeof onTimeScaleChange === 'function') {
         onTimeScaleChange(targetTimeScale);
