@@ -50,7 +50,7 @@ function parseKvPairs(text) {
     return out;
 }
 
-class KlipperCommander {
+export class KlipperCommander {
     constructor() {
         this.dt = 1 / 500; // Default to 500 Hz pacing
         this.isPaused = false;
