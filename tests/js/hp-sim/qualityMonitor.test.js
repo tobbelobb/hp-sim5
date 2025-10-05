@@ -42,6 +42,32 @@ describe('QualityMonitor _projectToPath', () => {
     expect(monitor.lastSegmentIndex).toBe(1);
   });
 
+  test('deferred draining of queued extrusions yields identical metrics', () => {
+    const monitor = createMonitor();
+    const extrusions = Array.from({ length: 50 }, (_, i) => ({
+      pos: [0.002 * i, i < 25 ? 0 : 0.01],
+      length: 0.0005,
+    }));
+
+    const eagerMonitor = createMonitor();
+    for (const extrusion of extrusions) {
+      eagerMonitor.recordExtrusion(extrusion);
+    }
+    eagerMonitor.runFinalCheck();
+
+    monitor.setEnabled(true);
+    for (let i = 0; i < extrusions.length; i += 1) {
+      if (i === 20) {
+        monitor.setEnabled(false);
+      }
+      monitor.recordExtrusion(extrusions[i]);
+    }
+    monitor.setEnabled(true);
+    monitor.runFinalCheck();
+
+    expect(monitor.metrics).toEqual(eagerMonitor.metrics);
+  });
+
   test('search window finds distant segments when hint is far away', () => {
     const monitor = createMonitor();
 

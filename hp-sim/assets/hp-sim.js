@@ -202,6 +202,7 @@ function initHpSim() {
     prevPauseDisabled: null,
     prevResetDisabled: null,
     renderSuspended: false,
+    pendingFinalCheck: false,
   };
 
   function cloneCommandList(list) {
@@ -2420,6 +2421,13 @@ function initHpSim() {
     asapState.prevResetDisabled = null;
     asapState.renderSuspended = false;
 
+    const shouldRunFinalCheck = asapState.pendingFinalCheck;
+    asapState.pendingFinalCheck = false;
+
+    if (shouldRunFinalCheck && qualityMonitor) {
+      qualityMonitor.runFinalCheck();
+    }
+
     updateFinishAsapButtonState();
   }
 
@@ -2443,6 +2451,7 @@ function initHpSim() {
     }
 
     asapState.active = true;
+    asapState.pendingFinalCheck = false;
     asapState.previousTimeScale =
       typeof gameControls?.getTimeScale === 'function'
         ? gameControls.getTimeScale()
@@ -2534,7 +2543,11 @@ function initHpSim() {
           remoteSystem.worker = null;
           setPrintActive(false);
           if (qualityMonitor) {
-            qualityMonitor.runFinalCheck();
+            if (asapState.active) {
+              asapState.pendingFinalCheck = true;
+            } else {
+              qualityMonitor.runFinalCheck();
+            }
           }
         }
         return;
@@ -2573,7 +2586,11 @@ function initHpSim() {
           remoteSystem.worker = null;
           setPrintActive(false);
           if (qualityMonitor) {
-            qualityMonitor.runFinalCheck();
+            if (asapState.active) {
+              asapState.pendingFinalCheck = true;
+            } else {
+              qualityMonitor.runFinalCheck();
+            }
           }
         }
         return;

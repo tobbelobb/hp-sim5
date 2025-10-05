@@ -171,7 +171,6 @@ export class RemoteSpoolSystem {
             },
         });
         this.axisToEntity = {};
-        this.worker = null;
         this.wasPaused = false;
         // Base queue watermarks. Actual watermarks scale with playback speed.
         this.baseHighWaterMark = 80;
@@ -184,6 +183,26 @@ export class RemoteSpoolSystem {
         this.onExtrusion = null;
         this.playbackMode = 'linear';
         this.asapModeActive = false;
+        this._worker = null;
+        Object.defineProperty(this, 'worker', {
+            configurable: true,
+            enumerable: true,
+            get: () => this._worker,
+            set: (value) => {
+                this._worker = value || null;
+                if (!this._worker || typeof this._worker.postMessage !== 'function') {
+                    return;
+                }
+                try {
+                    this._worker.postMessage({
+                        type: 'set_asap_mode',
+                        enable: this.asapModeActive,
+                    });
+                } catch (err) {
+                    console.warn('RemoteSpoolSystem: unable to sync ASAP mode on worker.', err);
+                }
+            },
+        });
     }
 
     resetAxisMapping() {

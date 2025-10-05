@@ -126,4 +126,20 @@ describe('game loop remote queue synchronisation', () => {
     const stepperComp = world.getComponentStore(StepperMotorComponent).values().next().value;
     expect(stepperComp.commandedAngle).toBeCloseTo(0.1, 12);
   });
+
+  test('assigning a worker replays the current ASAP mode to the worker', () => {
+    const worker = { postMessage: jest.fn() };
+
+    remoteSystem.asapModeActive = true;
+    remoteSystem.worker = worker;
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'set_asap_mode', enable: true });
+
+    worker.postMessage.mockClear();
+
+    remoteSystem.worker = null;
+    remoteSystem.asapModeActive = false;
+    remoteSystem.worker = worker;
+
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'set_asap_mode', enable: false });
+  });
 });
