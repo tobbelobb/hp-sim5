@@ -1,5 +1,5 @@
 import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
-import { InputSystem } from './slideprinter_common.js';
+import { InputSystem, RemoteSpoolSystem } from './slideprinter_common.js';
 
 const ASAP_THRESHOLD_SCALE = 50;
 const ASAP_RENDER_STRIDE = 10;
@@ -123,6 +123,31 @@ export function runGame(world, internalSetupScene, options = {}) {
         }
     };
 
+    let cachedRemoteSystem = null;
+    const getRemoteSystem = () => {
+        if (cachedRemoteSystem && world.systems.includes(cachedRemoteSystem)) {
+            return cachedRemoteSystem;
+        }
+        cachedRemoteSystem = world.systems.find((system) => system instanceof RemoteSpoolSystem) || null;
+        return cachedRemoteSystem;
+    };
+
+    const remoteQueueReady = () => {
+        const remoteSystem = getRemoteSystem();
+        if (!remoteSystem) {
+            return true;
+        }
+        const queueLength = typeof remoteSystem.getQueueLength === 'function'
+            ? remoteSystem.getQueueLength()
+            : (Array.isArray(remoteSystem.commands)
+                ? Math.max(0, remoteSystem.commands.length - (remoteSystem.commandHead || 0))
+                : 0);
+        if (queueLength > 0) {
+            return true;
+        }
+        return !remoteSystem.worker;
+    };
+
     const runLinearFrame = (currentTime) => {
         const dt = world.getResource('dt');
         if (dtEl && dtEl.textContent === 'N/A') {
@@ -146,6 +171,9 @@ export function runGame(world, internalSetupScene, options = {}) {
             const maxAccum = dt * maxSteps;
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {
+                if (!remoteQueueReady()) {
+                    break;
+                }
                 if (!pauseState.paused || doStep) {
                     if (doStep) {
                         pauseState.paused = false;
@@ -195,6 +223,9 @@ export function runGame(world, internalSetupScene, options = {}) {
             : null;
 
         while (true) {
+            if (!remoteQueueReady()) {
+                return ASAP_PAUSED_DELAY_MS;
+            }
             if (pauseState.paused && !doStep) {
                 break;
             }

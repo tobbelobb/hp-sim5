@@ -2531,6 +2531,7 @@ function initHpSim() {
         console.log('Slideprinter demo: MCU log playback finished.');
         const remoteSystem = getRemoteSystem();
         if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+          remoteSystem.worker = null;
           setPrintActive(false);
           if (qualityMonitor) {
             qualityMonitor.runFinalCheck();
@@ -2569,6 +2570,7 @@ function initHpSim() {
         console.log('Slideprinter demo: G-code playback finished.');
         const remoteSystem = getRemoteSystem();
         if (remoteSystem && remoteSystem.worker === moveCommanderWorker) {
+          remoteSystem.worker = null;
           setPrintActive(false);
           if (qualityMonitor) {
             qualityMonitor.runFinalCheck();
