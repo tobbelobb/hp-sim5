@@ -204,12 +204,15 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
 
-                    if (radius === null || mass === null || inertiaTensor === null || !velArr || !angVelArr) {
+                    if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
                         console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
                         continue;
                     }
                     const inertia = inertiaTensor[2][2];
-                    const vel = new Vector2(velArr[0], velArr[1]);
+                    const vel =
+                      Array.isArray(velArr) && velArr.length >= 2
+                        ? new Vector2(velArr[0], velArr[1])
+                        : new Vector2(0, 0);
                     const angVel = angVelArr[2];
 
                     world.addComponent(ent, new SpoolTagComponent());

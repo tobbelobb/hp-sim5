@@ -352,6 +352,16 @@ function initHpSim() {
     renderSuspended: false,
   };
 
+  let sceneChangeQueue = Promise.resolve();
+
+  function enqueueSceneChange(task) {
+    const run = sceneChangeQueue.then(() => task());
+    sceneChangeQueue = run.catch((error) => {
+      console.error('hp-sim: scene change task failed', error);
+    });
+    return run;
+  }
+
   const asapState = {
     active: false,
     finishingPromise: null,
@@ -1978,33 +1988,37 @@ function initHpSim() {
     }
   }
 
-  async function removeMachine(machineId) {
-    const index = machines.findIndex((machine) => machine.id === machineId);
-    if (index === -1) {
-      return;
-    }
-    const [removedMachine] = machines.splice(index, 1);
-    if (removedMachine) {
-      removeQualityMonitor(removedMachine.id);
-    }
-    const sceneChange = await beginSceneChange({ newMachineAdded: false });
-    updateMachineMenuUI();
-    if (machines.length === 0) {
-      await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
-      return;
-    }
-    await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: false, sceneChange });
+  function removeMachine(machineId) {
+    return enqueueSceneChange(async () => {
+      const index = machines.findIndex((machine) => machine.id === machineId);
+      if (index === -1) {
+        return;
+      }
+      const [removedMachine] = machines.splice(index, 1);
+      if (removedMachine) {
+        removeQualityMonitor(removedMachine.id);
+      }
+      const sceneChange = await beginSceneChange({ newMachineAdded: false });
+      updateMachineMenuUI();
+      if (machines.length === 0) {
+        await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
+        return;
+      }
+      await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: false, sceneChange });
+    });
   }
 
-  async function removeAllMachines() {
-    if (machines.length === 0) {
-      return;
-    }
-    machines.splice(0, machines.length);
-    clearQualityMonitors();
-    const sceneChange = await beginSceneChange({ newMachineAdded: false });
-    updateMachineMenuUI();
-    await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
+  function removeAllMachines() {
+    return enqueueSceneChange(async () => {
+      if (machines.length === 0) {
+        return;
+      }
+      machines.splice(0, machines.length);
+      clearQualityMonitors();
+      const sceneChange = await beginSceneChange({ newMachineAdded: false });
+      updateMachineMenuUI();
+      await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
+    });
   }
 
   async function addUsdMachineFromFile(file) {
@@ -2028,28 +2042,30 @@ function initHpSim() {
       return;
     }
 
-    const machine = registerMachine(stage, { name: label, sourceKey: null, sourceUrl: null });
-    if (!machine) {
-      return;
-    }
-
-    const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
-    if (timeCodesPerSecond) {
-      const uploadedDt = 1.0 / timeCodesPerSecond;
-      if (simDtSec == null) {
-        simDtSec = uploadedDt;
-      } else if (Math.abs(uploadedDt - simDtSec) > 1e-6) {
-        console.warn(
-          `Slideprinter demo: USDA file ${label} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
-        );
+    return enqueueSceneChange(async () => {
+      const machine = registerMachine(stage, { name: label, sourceKey: null, sourceUrl: null });
+      if (!machine) {
+        return;
       }
-    }
 
-    const sceneChange = await beginSceneChange({ newMachineAdded: true });
-    await refreshSceneAfterMachineChange({
-      clearExtrusions: true,
-      resetView: machines.length === 1,
-      sceneChange,
+      const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
+      if (timeCodesPerSecond) {
+        const uploadedDt = 1.0 / timeCodesPerSecond;
+        if (simDtSec == null) {
+          simDtSec = uploadedDt;
+        } else if (Math.abs(uploadedDt - simDtSec) > 1e-6) {
+          console.warn(
+            `Slideprinter demo: USDA file ${label} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
+          );
+        }
+      }
+
+      const sceneChange = await beginSceneChange({ newMachineAdded: true });
+      await refreshSceneAfterMachineChange({
+        clearExtrusions: true,
+        resetView: machines.length === 1,
+        sceneChange,
+      });
     });
   }
 
@@ -2057,11 +2073,6 @@ function initHpSim() {
     if (!sourceKey || !usdaCatalog.has(sourceKey)) {
       return null;
     }
-    const existing = machines.find((machine) => machine.sourceKey === sourceKey);
-    if (existing) {
-      return existing;
-    }
-
     const entry = usdaCatalog.get(sourceKey);
     let stage = null;
     try {
@@ -2075,34 +2086,41 @@ function initHpSim() {
       return null;
     }
 
-    const machine = registerMachine(stage, {
-      name: entry.label,
-      sourceKey,
-      sourceUrl: entry.url,
-    });
-    if (!machine) {
-      return null;
-    }
-
-    const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
-    if (timeCodesPerSecond) {
-      const presetDt = 1.0 / timeCodesPerSecond;
-      if (simDtSec == null) {
-        simDtSec = presetDt;
-      } else if (Math.abs(presetDt - simDtSec) > 1e-6) {
-        console.warn(
-          `hp-sim: USDA preset ${sourceKey} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
-        );
+    return enqueueSceneChange(async () => {
+      const existing = machines.find((machine) => machine.sourceKey === sourceKey);
+      if (existing) {
+        return existing;
       }
-    }
 
-    const sceneChange = await beginSceneChange({ newMachineAdded: true });
-    await refreshSceneAfterMachineChange({
-      clearExtrusions: true,
-      resetView: resetView || machines.length === 1,
-      sceneChange,
+      const machine = registerMachine(stage, {
+        name: entry.label,
+        sourceKey,
+        sourceUrl: entry.url,
+      });
+      if (!machine) {
+        return null;
+      }
+
+      const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
+      if (timeCodesPerSecond) {
+        const presetDt = 1.0 / timeCodesPerSecond;
+        if (simDtSec == null) {
+          simDtSec = presetDt;
+        } else if (Math.abs(presetDt - simDtSec) > 1e-6) {
+          console.warn(
+            `hp-sim: USDA preset ${sourceKey} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
+          );
+        }
+      }
+
+      const sceneChange = await beginSceneChange({ newMachineAdded: true });
+      await refreshSceneAfterMachineChange({
+        clearExtrusions: true,
+        resetView: resetView || machines.length === 1,
+        sceneChange,
+      });
+      return machine;
     });
-    return machine;
   }
 
   function clearSecondaryControlsInteractionDelay() {
