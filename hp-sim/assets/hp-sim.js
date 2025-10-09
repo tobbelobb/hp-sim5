@@ -162,24 +162,175 @@ function initHpSim() {
   let fullscreenActive = false;
   let currentTimeScale = 1.0;
   let speedStatusArmed = false;
-  const qualityMonitor = qualityHudEl ? new QualityMonitor({ hudElement: qualityHudEl }) : null;
-  if (qualityMonitor) {
-    qualityMonitor.refreshHud();
-    if (qualityToggle) {
-      qualityMonitor.setEnabled(qualityToggle.checked);
+  const machineQualityMonitors = new Map();
+  let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+
+  function forEachQualityMonitor(callback) {
+    if (typeof callback !== 'function') {
+      return;
+    }
+    for (const entry of machineQualityMonitors.values()) {
+      if (!entry?.monitor) {
+        continue;
+      }
+      callback(entry.monitor, entry);
     }
   }
 
-  if (qualityToggle) {
-    if (!qualityMonitor) {
-      qualityToggle.checked = false;
-      qualityToggle.disabled = true;
+  function updateQualityHudVisibility() {
+    if (!qualityHudEl) {
+      return;
+    }
+    const hasVisibleMonitor = Array.from(machineQualityMonitors.values()).some((entry) => {
+      const hudEl = entry?.monitor?.hudElement;
+      return hudEl instanceof HTMLElement && !hudEl.classList.contains('sim-hidden');
+    });
+    if (hasVisibleMonitor) {
+      qualityHudEl.classList.remove('sim-hidden');
     } else {
-      qualityToggle.addEventListener('change', () => {
-        qualityMonitor.setEnabled(qualityToggle.checked);
-      });
+      qualityHudEl.classList.add('sim-hidden');
     }
   }
+
+  function getMachineDisplayName(machine) {
+    if (!machine) {
+      return 'Machine';
+    }
+    if (machine.name) {
+      return machine.name;
+    }
+    if (machine.sourceKey && usdaCatalog.has(machine.sourceKey)) {
+      const entry = usdaCatalog.get(machine.sourceKey);
+      if (entry?.label) {
+        return entry.label;
+      }
+    }
+    return machine.id || 'Machine';
+  }
+
+  function ensureQualityMonitorForMachine(machine) {
+    if (!machine || !qualityHudEl) {
+      return null;
+    }
+    const existing = machineQualityMonitors.get(machine.id);
+    if (existing?.monitor) {
+      existing.monitor.setMachineContext({
+        id: machine.id,
+        label: getMachineDisplayName(machine),
+        tintColor: machine.tintColor || null,
+      });
+      existing.monitor.setEnabled(qualityEnabled);
+      return existing.monitor;
+    }
+    const card = document.createElement('div');
+    card.className = 'quality-hud__card sim-hidden';
+    card.dataset.machineId = machine.id;
+    qualityHudEl.appendChild(card);
+    const monitor = new QualityMonitor({ hudElement: card });
+    monitor.setVisibilityCallback(updateQualityHudVisibility);
+    monitor.setMachineContext({
+      id: machine.id,
+      label: getMachineDisplayName(machine),
+      tintColor: machine.tintColor || null,
+    });
+    monitor.setEnabled(qualityEnabled);
+    machineQualityMonitors.set(machine.id, { monitor });
+    if (referenceOverlayState.segments) {
+      monitor.setReferenceSegments(referenceOverlayState.segments, referenceOverlayState.metadata);
+    }
+    updateQualityHudVisibility();
+    return monitor;
+  }
+
+  function removeQualityMonitor(machineId) {
+    const entry = machineQualityMonitors.get(machineId);
+    if (!entry) {
+      return;
+    }
+    const monitor = entry.monitor;
+    const hudElement = monitor?.hudElement || null;
+    if (monitor) {
+      monitor.setVisibilityCallback(null);
+      monitor.detachRemoteSystem();
+    }
+    if (hudElement instanceof HTMLElement && hudElement.parentElement) {
+      hudElement.parentElement.removeChild(hudElement);
+    }
+    if (monitor) {
+      monitor.dispose();
+    }
+    machineQualityMonitors.delete(machineId);
+    updateQualityHudVisibility();
+  }
+
+  function clearQualityMonitors() {
+    for (const machineId of Array.from(machineQualityMonitors.keys())) {
+      removeQualityMonitor(machineId);
+    }
+  }
+
+  function refreshAllQualityMonitors(force = false) {
+    forEachQualityMonitor((monitor) => monitor.refreshHud(force));
+  }
+
+  function setQualityEnabledState(enabled, { fromToggle = false } = {}) {
+    const next = Boolean(enabled);
+    if (qualityEnabled === next) {
+      if (!fromToggle && qualityToggle) {
+        qualityToggle.checked = next;
+      }
+      updateQualityHudVisibility();
+      return;
+    }
+    qualityEnabled = next;
+    forEachQualityMonitor((monitor) => monitor.setEnabled(next));
+    if (!fromToggle && qualityToggle) {
+      qualityToggle.checked = next;
+    }
+    updateQualityHudVisibility();
+  }
+
+  function attachQualityMonitorsToRemoteSystem() {
+    if (machineQualityMonitors.size === 0) {
+      return;
+    }
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      return;
+    }
+    forEachQualityMonitor((monitor) => {
+      monitor.attachRemoteSystem(remoteSystem);
+      monitor.refreshHud();
+    });
+    if (qualityToggle) {
+      setQualityEnabledState(qualityToggle.checked, { fromToggle: true });
+    }
+  }
+
+  function resetQualityMonitors(options = {}) {
+    forEachQualityMonitor((monitor) => monitor.reset(options));
+  }
+
+  function runFinalQualityChecks() {
+    forEachQualityMonitor((monitor) => monitor.runFinalCheck());
+  }
+
+  if (qualityToggle) {
+    if (!qualityHudEl) {
+      qualityToggle.checked = false;
+      qualityToggle.disabled = true;
+      qualityToggle.setAttribute('aria-disabled', 'true');
+      qualityEnabled = false;
+    } else {
+      qualityToggle.addEventListener('change', () => {
+        setQualityEnabledState(qualityToggle.checked, { fromToggle: true });
+      });
+      qualityEnabled = Boolean(qualityToggle.checked);
+    }
+  } else {
+    qualityEnabled = false;
+  }
+
   const referenceOverlayState = {
     segments: null,
     metadata: null,
@@ -423,9 +574,9 @@ function initHpSim() {
       referenceOverlayState.visible = false;
     }
     updateReferenceToggleUI();
-    if (qualityMonitor) {
-      qualityMonitor.setReferenceSegments(referenceOverlayState.segments, referenceOverlayState.metadata);
-    }
+    forEachQualityMonitor((monitor) => {
+      monitor.setReferenceSegments(referenceOverlayState.segments, referenceOverlayState.metadata);
+    });
     syncReferenceOverlayToRenderSystem({ force: true });
   }
 
@@ -444,20 +595,6 @@ function initHpSim() {
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
-  }
-
-  function attachQualityMonitorToRemoteSystem() {
-    if (!qualityMonitor) {
-      return;
-    }
-    const remoteSystem = getRemoteSystem();
-    if (remoteSystem) {
-      qualityMonitor.attachRemoteSystem(remoteSystem);
-      qualityMonitor.refreshHud();
-      if (qualityToggle) {
-        qualityMonitor.setEnabled(qualityToggle.checked);
-      }
-    }
   }
 
   function getInputSystem() {
@@ -1055,6 +1192,7 @@ function initHpSim() {
       }
     }
     machines.push(machine);
+    ensureQualityMonitorForMachine(machine);
     updateMachineMenuUI();
     return machine;
   }
@@ -1077,7 +1215,7 @@ function initHpSim() {
       setupScene(world, machine.stage, canvas, sceneOptions);
       isFirst = false;
     }
-    attachQualityMonitorToRemoteSystem();
+    attachQualityMonitorsToRemoteSystem();
   }
 
   function createColorChip() {
@@ -1105,6 +1243,21 @@ function initHpSim() {
       const entry = usdaCatalog.get(sourceKey);
       if (entry) {
         entry.tintColor = tintHex ?? null;
+      }
+    }
+    if (sourceKey) {
+      for (const machine of machines) {
+        if (machine.sourceKey === sourceKey) {
+          machine.tintColor = tintHex ?? null;
+          const monitorEntry = machineQualityMonitors.get(machine.id);
+          if (monitorEntry?.monitor) {
+            monitorEntry.monitor.setMachineContext({
+              id: machine.id,
+              label: getMachineDisplayName(machine),
+              tintColor: machine.tintColor,
+            });
+          }
+        }
       }
     }
     const chip = presetOptionColorChips.get(sourceKey);
@@ -1772,6 +1925,8 @@ function initHpSim() {
 
   async function refreshSceneAfterMachineChange({ clearExtrusions = false, resetView = false, sceneChange = null } = {}) {
     if (machines.length === 0) {
+      clearQualityMonitors();
+      updateQualityHudVisibility();
       world.clear();
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -1828,7 +1983,10 @@ function initHpSim() {
     if (index === -1) {
       return;
     }
-    machines.splice(index, 1);
+    const [removedMachine] = machines.splice(index, 1);
+    if (removedMachine) {
+      removeQualityMonitor(removedMachine.id);
+    }
     const sceneChange = await beginSceneChange({ newMachineAdded: false });
     updateMachineMenuUI();
     if (machines.length === 0) {
@@ -1843,6 +2001,7 @@ function initHpSim() {
       return;
     }
     machines.splice(0, machines.length);
+    clearQualityMonitors();
     const sceneChange = await beginSceneChange({ newMachineAdded: false });
     updateMachineMenuUI();
     await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
@@ -2518,9 +2677,7 @@ function initHpSim() {
     resetViewStateDefaults();
     setPanMode(isMobileLayout());
     reapplyViewState({ clearExtrusions: true });
-    if (qualityMonitor) {
-      qualityMonitor.reset({ keepReference: true });
-    }
+    resetQualityMonitors({ keepReference: true });
     setReferenceVisibility(false);
     currentPresetKey = DEFAULT_PRESET_KEY;
   }
@@ -2642,11 +2799,15 @@ function initHpSim() {
       }
     }
 
-    if (qualityMonitor && previousQualityEnabled !== null) {
-      qualityMonitor.setEnabled(previousQualityEnabled);
+    if (previousQualityEnabled !== null) {
+      setQualityEnabledState(previousQualityEnabled);
       if (previousQualityEnabled) {
-        qualityMonitor.refreshHud(true);
+        refreshAllQualityMonitors(true);
+      } else {
+        updateQualityHudVisibility();
       }
+    } else {
+      updateQualityHudVisibility();
     }
 
     if (previousTimeScale != null) {
@@ -2674,8 +2835,8 @@ function initHpSim() {
     const shouldRunFinalCheck = asapState.pendingFinalCheck;
     asapState.pendingFinalCheck = false;
 
-    if (shouldRunFinalCheck && qualityMonitor) {
-      qualityMonitor.runFinalCheck();
+    if (shouldRunFinalCheck) {
+      runFinalQualityChecks();
     }
 
     updateFinishAsapButtonState();
@@ -2706,7 +2867,7 @@ function initHpSim() {
       typeof gameControls?.getTimeScale === 'function'
         ? gameControls.getTimeScale()
         : currentTimeScale;
-    asapState.previousQualityEnabled = qualityMonitor ? Boolean(qualityMonitor.enabled) : null;
+    asapState.previousQualityEnabled = qualityEnabled;
     asapState.previousQualityToggleDisabled = qualityToggle ? qualityToggle.disabled : null;
     asapState.previousQualityToggleChecked = qualityToggle ? qualityToggle.checked : null;
     const pauseState = world.getResource('pauseState');
@@ -2724,8 +2885,10 @@ function initHpSim() {
     hideReplayStatus();
     showAsapStatus();
 
-    if (qualityMonitor && qualityMonitor.enabled) {
-      qualityMonitor.setEnabled(false);
+    if (qualityEnabled) {
+      setQualityEnabledState(false);
+    } else {
+      updateQualityHudVisibility();
     }
     if (qualityToggle) {
       qualityToggle.checked = false;
@@ -2792,12 +2955,10 @@ function initHpSim() {
         if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
           remoteSystem.worker = null;
           setPrintActive(false);
-          if (qualityMonitor) {
-            if (asapState.active) {
-              asapState.pendingFinalCheck = true;
-            } else {
-              qualityMonitor.runFinalCheck();
-            }
+          if (asapState.active) {
+            asapState.pendingFinalCheck = true;
+          } else {
+            runFinalQualityChecks();
           }
         }
         return;
@@ -2835,12 +2996,10 @@ function initHpSim() {
         if (remoteSystem && remoteSystem.worker === moveCommanderWorker) {
           remoteSystem.worker = null;
           setPrintActive(false);
-          if (qualityMonitor) {
-            if (asapState.active) {
-              asapState.pendingFinalCheck = true;
-            } else {
-              qualityMonitor.runFinalCheck();
-            }
+          if (asapState.active) {
+            asapState.pendingFinalCheck = true;
+          } else {
+            runFinalQualityChecks();
           }
         }
         return;
@@ -2905,9 +3064,7 @@ function initHpSim() {
       gameControls.reset({ autoPause: false });
       reapplyViewState({ clearExtrusions: true });
     }
-    if (qualityMonitor) {
-      qualityMonitor.reset({ keepReference: true });
-    }
+    resetQualityMonitors({ keepReference: true });
     setPrintActive(true);
     hideReplayStatus();
     hidePrintStatus();

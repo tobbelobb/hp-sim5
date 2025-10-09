@@ -310,7 +310,11 @@ body {
   left: 24px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.quality-hud__card {
   min-width: 220px;
   padding: 14px 18px;
   border-radius: 14px;
@@ -321,6 +325,36 @@ body {
   box-shadow: 0 18px 34px rgba(5, 6, 12, 0.32);
   pointer-events: none;
   transition: opacity 120ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  --quality-accent: #7ae2ff;
+}
+
+.quality-hud__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.quality-hud__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: rgba(240, 244, 255, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(240, 244, 255, 0.5);
+}
+
+.quality-hud__swatch--empty {
+  background: rgba(240, 244, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(240, 244, 255, 0.18);
+}
+
+.quality-hud__title {
+  font-size: 13px;
+  letter-spacing: 0.01em;
 }
 
 .quality-hud__score {
@@ -333,7 +367,7 @@ body {
 
 .quality-hud__score strong {
   font-size: 20px;
-  color: #7ae2ff;
+  color: var(--quality-accent, #7ae2ff);
   letter-spacing: 0.02em;
 }
 

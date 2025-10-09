@@ -1,5 +1,8 @@
 const DEG_TO_RAD = Math.PI / 180;
 
+const DEFAULT_HUD_ACCENT = '#7ae2ff';
+const REMOTE_SYSTEM_BINDINGS = new WeakMap();
+
 function clamp(value, min, max) {
   if (!Number.isFinite(value)) {
     return min;
@@ -50,6 +53,29 @@ function formatPercent(value) {
     return '--';
   }
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function escapeHtml(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeHexColor(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
 }
 
 class StreamingQuantile {
@@ -191,6 +217,14 @@ export class QualityMonitor {
   constructor({ hudElement = null } = {}) {
     this.hudElement = hudElement || null;
 
+    this.machineId = null;
+    this.machineLabel = null;
+    this.machineTintColor = null;
+    this.hudAccentColor = DEFAULT_HUD_ACCENT;
+
+    this.visibilityCallback = null;
+    this._lastHudHidden = null;
+
     this.referenceSegments = [];
     this.segmentData = [];
     this.cornerData = [];
@@ -237,6 +271,39 @@ export class QualityMonitor {
     this.hudUpdateInterval = 12;
   }
 
+  setVisibilityCallback(callback) {
+    this.visibilityCallback = typeof callback === 'function' ? callback : null;
+    this._notifyHudVisibility();
+  }
+
+  _notifyHudVisibility() {
+    if (!this.hudElement || !this.visibilityCallback) {
+      return;
+    }
+    const hidden = this.hudElement.classList.contains('sim-hidden');
+    if (this._lastHudHidden === hidden) {
+      return;
+    }
+    this._lastHudHidden = hidden;
+    try {
+      this.visibilityCallback(!hidden);
+    } catch (_err) {
+      // Silently ignore callback errors
+    }
+  }
+
+  setMachineContext({ id = null, label = null, tintColor = null } = {}) {
+    this.machineId = typeof id === 'string' && id.length > 0 ? id : null;
+    this.machineLabel = typeof label === 'string' && label.length > 0 ? label : null;
+    const sanitizedTint = sanitizeHexColor(tintColor);
+    this.machineTintColor = sanitizedTint;
+    this.hudAccentColor = sanitizedTint || DEFAULT_HUD_ACCENT;
+    if (this.hudElement) {
+      this.hudElement.style.setProperty('--quality-accent', this.hudAccentColor);
+    }
+    this.refreshHud(true);
+  }
+
   attachRemoteSystem(system) {
     if (!system || typeof system.setExtrusionListener !== 'function') {
       return;
@@ -244,15 +311,45 @@ export class QualityMonitor {
     if (this.remoteSystem === system) {
       return;
     }
-    if (this.remoteSystem) {
-      try {
-        this.remoteSystem.setExtrusionListener(null);
-      } catch (_err) {
-        // best effort
+    this.detachRemoteSystem();
+    let binding = REMOTE_SYSTEM_BINDINGS.get(system);
+    if (!binding) {
+      binding = {
+        monitors: new Set(),
+        listener: (event) => {
+          for (const monitor of binding.monitors) {
+            try {
+              monitor.boundExtrusionListener(event);
+            } catch (err) {
+              console.warn('QualityMonitor: extrusion listener error', err);
+            }
+          }
+        },
+      };
+      REMOTE_SYSTEM_BINDINGS.set(system, binding);
+      system.setExtrusionListener(binding.listener);
+    }
+    binding.monitors.add(this);
+    this.remoteSystem = system;
+  }
+
+  detachRemoteSystem() {
+    if (!this.remoteSystem) {
+      return;
+    }
+    const binding = REMOTE_SYSTEM_BINDINGS.get(this.remoteSystem);
+    if (binding) {
+      binding.monitors.delete(this);
+      if (binding.monitors.size === 0) {
+        try {
+          this.remoteSystem.setExtrusionListener(null);
+        } catch (_err) {
+          // best effort
+        }
+        REMOTE_SYSTEM_BINDINGS.delete(this.remoteSystem);
       }
     }
-    this.remoteSystem = system;
-    this.remoteSystem.setExtrusionListener(this.boundExtrusionListener);
+    this.remoteSystem = null;
   }
 
   reset({ keepReference = false } = {}) {
@@ -291,6 +388,12 @@ export class QualityMonitor {
     this.refreshHud();
   }
 
+  dispose() {
+    this.detachRemoteSystem();
+    this.setVisibilityCallback(null);
+    this.hudElement = null;
+  }
+
   clearReference() {
     this.reset({ keepReference: false });
   }
@@ -316,6 +419,12 @@ export class QualityMonitor {
     if (!extrusionEvent) {
       return;
     }
+    if (this.machineId) {
+      const eventMachineId = typeof extrusionEvent.machineId === 'string' ? extrusionEvent.machineId : null;
+      if (!eventMachineId || eventMachineId !== this.machineId) {
+        return;
+      }
+    }
     if (!this.enabled) {
       const normalized = this._normalizeExtrusionEvent(extrusionEvent);
       if (normalized) {
@@ -337,6 +446,7 @@ export class QualityMonitor {
       this.refreshHud(true);
     } else if (this.hudElement) {
       this.hudElement.classList.add('sim-hidden');
+      this._notifyHudVisibility();
     }
   }
 
@@ -468,6 +578,7 @@ export class QualityMonitor {
       if (this.hudElement) {
         this.hudElement.textContent = 'Quality metrics available once a reference path is loaded.';
         this.hudElement.classList.add('sim-hidden');
+        this._notifyHudVisibility();
       }
       return;
     }
@@ -480,12 +591,14 @@ export class QualityMonitor {
     }
     if (!force && !this.enabled) {
       this.hudElement.classList.add('sim-hidden');
+      this._notifyHudVisibility();
       return;
     }
     const metrics = this.metrics;
     if (!metrics) {
       this.hudElement.textContent = 'Collecting metrics...';
       this.hudElement.classList.remove('sim-hidden');
+      this._notifyHudVisibility();
       return;
     }
     const {
@@ -500,7 +613,21 @@ export class QualityMonitor {
       score,
     } = metrics;
 
+    const headerLabel = escapeHtml(this.machineLabel || this.machineId || 'Machine');
+    const accent = sanitizeHexColor(this.machineTintColor) || this.hudAccentColor || DEFAULT_HUD_ACCENT;
+    if (this.hudElement) {
+      this.hudElement.style.setProperty('--quality-accent', accent);
+    }
+
     const lines = [];
+    lines.push(
+      `<div class="quality-hud__header">` +
+        `<span class="quality-hud__swatch${this.machineTintColor ? '' : ' quality-hud__swatch--empty'}"${
+          this.machineTintColor ? ` style="background-color: ${accent};"` : ''
+        }></span>` +
+        `<span class="quality-hud__title">${headerLabel}</span>` +
+      `</div>`
+    );
     lines.push(`<div class="quality-hud__score">Quality <strong>${score.toFixed(0)}</strong></div>`);
     lines.push(`<div class="quality-hud__metric"><span>RMSE_n (straight)</span><span>${formatLengthMm(rmseStraight)}</span></div>`);
     lines.push(`<div class="quality-hud__metric"><span>95th |e_n|</span><span>${formatLengthMm(p95Straight)}</span></div>`);
@@ -511,6 +638,7 @@ export class QualityMonitor {
 
     this.hudElement.innerHTML = lines.join('');
     this.hudElement.classList.remove('sim-hidden');
+    this._notifyHudVisibility();
   }
 
   _prepareSegmentData() {
