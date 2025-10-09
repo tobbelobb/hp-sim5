@@ -31,44 +31,44 @@ def Xform "World"
 
         def Xform "AnchorAL" ()
         {
-            token[] ecs:tags = ["Pinhole"]
-            double radius = 0.01
+            token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (-0.346410161513775, -2.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
         def Xform "AnchorAR" ()
         {
-            token[] ecs:tags = ["Pinhole"]
-            double radius = 0.01
+            token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (0.346410161513775, -2.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
         def Circle "AttachAL" (
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Anchor"]
+            token[] ecs:tags = ["Pinhole"]
+            double radius = 0.01
             double3 xformOp:translate = (-0.346410161513775, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "AttachAR" (
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
-            token[] ecs:tags = ["Anchor"]
+            token[] ecs:tags = ["Pinhole"]
+            double radius = 0.01
             double3 xformOp:translate = (0.346410161513775, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.001
             vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "SpoolB" (
