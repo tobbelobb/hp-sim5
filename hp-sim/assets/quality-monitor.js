@@ -460,6 +460,13 @@ export class QualityMonitor {
     this.extrusionsSinceHud = 0;
   }
 
+  getMetrics() {
+    if (!this.metrics) {
+      return null;
+    }
+    return { ...this.metrics };
+  }
+
   _normalizeExtrusionEvent(extrusionEvent) {
     if (!extrusionEvent) {
       return null;

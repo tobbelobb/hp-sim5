@@ -42,6 +42,7 @@ const MIN_VIEW_SCALE = 0.01;
 const MAX_VIEW_SCALE = 200;
 const ZOOM_FACTOR = 1.2;
 const ZOOM_EPSILON = 1e-3;
+const QUALITY_HISTORY_MAX_ENTRIES = 20;
 
 const AVAILABLE_USDAS = Object.freeze([
   { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit (default)' },
@@ -90,6 +91,10 @@ function initHpSim() {
   const replayStatusEl = document.getElementById('replayStatus');
   const asapStatusEl = document.getElementById('asapStatus');
   const qualityHudEl = document.getElementById('qualityHud');
+  const qualityHistoryHud = document.getElementById('qualityHistoryHud');
+  const qualityHistoryToggleBtn = document.getElementById('qualityHistoryToggle');
+  const qualityHistoryList = document.getElementById('qualityHistoryList');
+  const secondaryToggleBtn = document.getElementById('secondaryToggleBtn');
   const qualityToggle = document.getElementById('qualityToggle');
   const qualityToggleWrapper = document.getElementById('qualityToggleWrapper');
   const qualityToggleLabel = qualityToggleWrapper ? qualityToggleWrapper.querySelector('span') : null;
@@ -165,6 +170,14 @@ function initHpSim() {
   let speedStatusArmed = false;
   const machineQualityMonitors = new Map();
   let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+  let secondaryControlsUserPreference = null;
+  let secondaryControlsAutoActive = false;
+  let jobSequenceCounter = 0;
+  let activeJobId = null;
+  let lastRecordedJobId = null;
+  let currentJobDescriptor = null;
+  const qualityHistoryRecords = [];
+  let qualityHistoryExpanded = false;
 
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
@@ -191,6 +204,108 @@ function initHpSim() {
     } else {
       qualityHudEl.classList.add('sim-hidden');
     }
+  }
+
+  function getJobLabel(descriptor) {
+    if (!descriptor) {
+      return 'Unknown Job';
+    }
+    if (typeof descriptor.label === 'string' && descriptor.label.trim().length > 0) {
+      return descriptor.label;
+    }
+    if (typeof descriptor.name === 'string' && descriptor.name.trim().length > 0) {
+      return descriptor.name;
+    }
+    if (typeof descriptor.key === 'string' && descriptor.key.trim().length > 0) {
+      return descriptor.key;
+    }
+    return 'Program';
+  }
+
+  function beginNewJob(descriptor = null) {
+    jobSequenceCounter += 1;
+    activeJobId = jobSequenceCounter;
+    currentJobDescriptor = descriptor ? { ...descriptor } : null;
+  }
+
+  function resetJobTracking() {
+    activeJobId = null;
+    currentJobDescriptor = null;
+  }
+
+  function updateQualityHistoryUI() {
+    if (!qualityHistoryHud || !qualityHistoryToggleBtn || !qualityHistoryList) {
+      return;
+    }
+    if (qualityHistoryRecords.length === 0) {
+      qualityHistoryHud.classList.add('sim-hidden');
+      qualityHistoryToggleBtn.setAttribute('aria-expanded', 'false');
+      qualityHistoryToggleBtn.textContent = 'Quality History ▼';
+      qualityHistoryList.classList.add('sim-hidden');
+      qualityHistoryList.innerHTML = '';
+      qualityHistoryExpanded = false;
+      return;
+    }
+    const arrow = qualityHistoryExpanded ? '▲' : '▼';
+    qualityHistoryHud.classList.remove('sim-hidden');
+    qualityHistoryToggleBtn.textContent = `Quality History (${qualityHistoryRecords.length}) ${arrow}`;
+    qualityHistoryToggleBtn.setAttribute('aria-expanded', qualityHistoryExpanded ? 'true' : 'false');
+    if (qualityHistoryExpanded) {
+      const items = qualityHistoryRecords.map((record) => {
+        const combinedLabel = `${record.machineLabel}, ${record.jobLabel}`;
+        const safeLabel = escapeHtml(combinedLabel);
+        const scoreText = Number.isFinite(record.score) ? Math.round(record.score).toString() : '--';
+        return `<div class="quality-history__item"><span class="quality-history__label">${safeLabel}</span><span class="quality-history__score">${scoreText}</span></div>`;
+      });
+      qualityHistoryList.innerHTML = items.join('');
+      qualityHistoryList.classList.remove('sim-hidden');
+    } else {
+      qualityHistoryList.classList.add('sim-hidden');
+    }
+  }
+
+  function recordQualityHistoryEntry() {
+    if (activeJobId == null || lastRecordedJobId === activeJobId) {
+      return;
+    }
+    const jobLabel = getJobLabel(currentJobDescriptor);
+    const timestamp = Date.now();
+    let added = false;
+    for (const [machineId, entry] of machineQualityMonitors.entries()) {
+      const monitor = entry?.monitor;
+      if (!monitor) {
+        continue;
+      }
+      const metrics = typeof monitor.getMetrics === 'function' ? monitor.getMetrics() : monitor.metrics;
+      const score = metrics?.score;
+      if (!Number.isFinite(score)) {
+        continue;
+      }
+      const machine = machines.find((machineEntry) => machineEntry.id === machineId);
+      const machineLabel = getMachineDisplayName(machine);
+      qualityHistoryRecords.push({
+        machineId,
+        jobLabel,
+        machineLabel,
+        score,
+        timestamp,
+      });
+      added = true;
+    }
+    if (added) {
+      qualityHistoryRecords.sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return b.timestamp - a.timestamp;
+      });
+      if (qualityHistoryRecords.length > QUALITY_HISTORY_MAX_ENTRIES) {
+        qualityHistoryRecords.length = QUALITY_HISTORY_MAX_ENTRIES;
+      }
+      updateQualityHistoryUI();
+    }
+    lastRecordedJobId = activeJobId;
+    resetJobTracking();
   }
 
   function getMachineDisplayName(machine) {
@@ -314,6 +429,7 @@ function initHpSim() {
 
   function runFinalQualityChecks() {
     forEachQualityMonitor((monitor) => monitor.runFinalCheck());
+    recordQualityHistoryEntry();
   }
 
   if (qualityToggle) {
@@ -614,6 +730,18 @@ function initHpSim() {
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function escapeHtml(value) {
+    if (typeof value !== 'string') {
+      return '';
+    }
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function hexToRgb(hex) {
@@ -2174,8 +2302,11 @@ function initHpSim() {
     setSecondaryControlsInteractive(false);
   }
 
-  function hideSecondaryControlsForMobile() {
+  function hideSecondaryControlsForMobile({ force = false } = {}) {
     if (!secondaryControls) {
+      return;
+    }
+    if (!force && secondaryControlsUserPreference === true) {
       return;
     }
     secondaryControls.classList.add('sim-hidden');
@@ -2187,8 +2318,11 @@ function initHpSim() {
     }
   }
 
-  function showSecondaryControlsForMobile() {
+  function showSecondaryControlsForMobile({ persist = false } = {}) {
     if (!secondaryControls || !isMobileLayout()) {
+      return;
+    }
+    if (!persist && secondaryControlsUserPreference === false) {
       return;
     }
     const wasHidden = secondaryControls.classList.contains('sim-hidden');
@@ -2200,46 +2334,79 @@ function initHpSim() {
     if (secondaryControlsHideTimeout) {
       clearTimeout(secondaryControlsHideTimeout);
     }
-    secondaryControlsHideTimeout = window.setTimeout(() => {
-      hideSecondaryControlsForMobile();
-    }, MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS);
-    if (wasHidden) {
-      scheduleSecondaryControlsInteractionEnable();
-    } else {
+    if (persist || secondaryControlsUserPreference === true) {
+      secondaryControlsHideTimeout = null;
       setSecondaryControlsInteractive(true);
+    } else {
+      secondaryControlsHideTimeout = window.setTimeout(() => {
+        hideSecondaryControlsForMobile();
+      }, MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS);
+      if (wasHidden) {
+        scheduleSecondaryControlsInteractionEnable();
+      } else {
+        setSecondaryControlsInteractive(true);
+      }
     }
   }
 
-  function setSecondaryControlsVisible(active) {
+  function computeSecondaryControlsDesired() {
+    if (secondaryControlsUserPreference === true) {
+      return true;
+    }
+    if (secondaryControlsUserPreference === false) {
+      return false;
+    }
+    return secondaryControlsAutoActive;
+  }
+
+  function updateSecondaryToggleButton() {
+    if (!secondaryToggleBtn) {
+      return;
+    }
+    const shouldShow = computeSecondaryControlsDesired();
+    const hasPreference = secondaryControlsUserPreference !== null;
+    secondaryToggleBtn.setAttribute('aria-expanded', shouldShow ? 'true' : 'false');
+    const baseTitle = shouldShow ? 'Collapse secondary controls' : 'Expand secondary controls';
+    secondaryToggleBtn.title = hasPreference ? `${baseTitle} (Alt-click to reset)` : baseTitle;
+  }
+
+  function applySecondaryControlsVisibility() {
+    const shouldShow = computeSecondaryControlsDesired();
     if (!secondaryControls) {
+      updateSecondaryToggleButton();
       return;
     }
     if (isMobileLayout()) {
-      if (!active) {
-        hideSecondaryControlsForMobile();
-      } else if (!secondaryControls.classList.contains('sim-hidden')) {
-        setSecondaryControlsInteractive(true);
+      if (shouldShow) {
+        showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
+      } else {
+        hideSecondaryControlsForMobile({ force: true });
       }
+      updateSecondaryToggleButton();
       return;
     }
     if (secondaryControlsHideTimeout) {
       clearTimeout(secondaryControlsHideTimeout);
       secondaryControlsHideTimeout = null;
     }
-    if (active) {
+    if (shouldShow) {
       secondaryControls.classList.remove('sim-hidden');
       secondaryControlsEverShown = true;
       clearSecondaryControlsInteractionDelay();
       setSecondaryControlsInteractive(true);
-      return;
-    }
-    if (!secondaryControlsEverShown) {
+    } else if (secondaryControlsUserPreference === false || !secondaryControlsEverShown) {
       secondaryControls.classList.add('sim-hidden');
       setSecondaryControlsInteractive(false);
-      return;
+    } else {
+      clearSecondaryControlsInteractionDelay();
+      setSecondaryControlsInteractive(true);
     }
-    clearSecondaryControlsInteractionDelay();
-    setSecondaryControlsInteractive(true);
+    updateSecondaryToggleButton();
+  }
+
+  function setSecondaryControlsVisible(active) {
+    secondaryControlsAutoActive = Boolean(active);
+    applySecondaryControlsVisibility();
   }
 
   function updateMainButtonsState() {
@@ -2267,7 +2434,6 @@ function initHpSim() {
     updateQualityToggleLabel();
     updateReferenceToggleUI();
     if (matches) {
-      hideSecondaryControlsForMobile();
       if (!lastMobileLayoutMatches && !panModeActive) {
         setPanMode(true);
       }
@@ -2276,8 +2442,8 @@ function initHpSim() {
         clearTimeout(secondaryControlsHideTimeout);
         secondaryControlsHideTimeout = null;
       }
-      setSecondaryControlsVisible(printActive && machines.length > 0);
     }
+    applySecondaryControlsVisibility();
     if (machineMenuOpen) {
       if (matches) {
         scheduleMachineMenuPlacementSync();
@@ -2659,15 +2825,85 @@ function initHpSim() {
     }
   }
 
-  function adjustZoom(multiplier) {
+  function getCanvasBaseScale() {
+    if (!canvas) {
+      return null;
+    }
+    const simHeight = world.getResource('simHeight');
+    if (!Number.isFinite(simHeight) || simHeight <= 0) {
+      return null;
+    }
+    return canvas.height / simHeight;
+  }
+
+  function applyZoomAtScale(targetScale, anchor = null) {
     if (!stageReady || machines.length === 0) {
       return;
     }
-    const targetScale = clamp(currentViewScale * multiplier, MIN_VIEW_SCALE, MAX_VIEW_SCALE);
-    if (Math.abs(targetScale - currentViewScale) < ZOOM_EPSILON) {
+    const clampedScale = clamp(targetScale, MIN_VIEW_SCALE, MAX_VIEW_SCALE);
+    if (Math.abs(clampedScale - currentViewScale) < ZOOM_EPSILON) {
       return;
     }
-    applyViewStateFromController({ scale: targetScale }, { clearExtrusions: true });
+    let nextOffsetX = currentViewOffsetX;
+    let nextOffsetY = currentViewOffsetY;
+    if (anchor && canvas) {
+      const baseScale = getCanvasBaseScale();
+      if (baseScale && baseScale > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const pixelX = anchor.x - rect.left;
+        const pixelY = anchor.y - rect.top;
+        const prevScale = baseScale * currentViewScale;
+        if (prevScale > 0) {
+          const worldX = (pixelX - canvas.width / 2) / prevScale + currentViewOffsetX;
+          const worldY = (canvas.height / 2 - pixelY) / prevScale + currentViewOffsetY;
+          const nextScale = baseScale * clampedScale;
+          if (nextScale > 0) {
+            nextOffsetX = worldX - (pixelX - canvas.width / 2) / nextScale;
+            nextOffsetY = worldY - (canvas.height / 2 - pixelY) / nextScale;
+          }
+        }
+      }
+    }
+    applyViewStateFromController(
+      {
+        scale: clampedScale,
+        offsetX: nextOffsetX,
+        offsetY: nextOffsetY,
+      },
+      { clearExtrusions: true }
+    );
+  }
+
+  function normalizeWheelDelta(delta, deltaMode) {
+    if (!Number.isFinite(delta)) {
+      return 0;
+    }
+    if (deltaMode === 1) {
+      return delta * 40;
+    }
+    if (deltaMode === 2) {
+      return delta * 800;
+    }
+    return delta;
+  }
+
+  function handleCanvasWheel(event) {
+    if (!stageReady || machines.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    const normalized = normalizeWheelDelta(event.deltaY, event.deltaMode);
+    if (normalized === 0) {
+      return;
+    }
+    const intensity = Math.min(4, Math.max(0.05, Math.abs(normalized) / 240));
+    const factor = Math.pow(ZOOM_FACTOR, intensity);
+    const multiplier = normalized < 0 ? factor : 1 / factor;
+    applyZoomAtScale(currentViewScale * multiplier, { x: event.clientX, y: event.clientY });
+  }
+
+  function adjustZoom(multiplier) {
+    applyZoomAtScale(currentViewScale * multiplier);
   }
 
   function stopAndClearWorkers() {
@@ -2704,6 +2940,7 @@ function initHpSim() {
     }
     setPrintActive(false);
     stopAndClearWorkers();
+    resetJobTracking();
     gameControls.reset({ autoPause: true });
     if (typeof gameControls.setTimeScale === 'function') {
       gameControls.setTimeScale(1.0);
@@ -3086,7 +3323,7 @@ function initHpSim() {
     remoteSystem.wasPaused = false;
   }
 
-  function startSimulationWithWorker(worker) {
+  function startSimulationWithWorker(worker, jobDescriptor = null) {
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
       return false;
@@ -3106,6 +3343,8 @@ function initHpSim() {
     hidePrintStatus();
     sceneChangeState.context = null;
     sceneChangeState.pausedForSceneChange = false;
+    resetJobTracking();
+    beginNewJob(jobDescriptor);
     return true;
   }
 
@@ -3133,7 +3372,12 @@ function initHpSim() {
       return;
     }
     currentPresetKey = presetKey;
-    if (!startSimulationWithWorker(worker)) {
+    const jobDescriptor = {
+      type: 'preset',
+      key: presetKey,
+      label: PRESET_GCODE_MAP[presetKey]?.label || presetKey,
+    };
+    if (!startSimulationWithWorker(worker, jobDescriptor)) {
       return;
     }
     if (simDtSec != null) {
@@ -3168,7 +3412,13 @@ function initHpSim() {
       console.warn('Slideprinter demo: unsupported upload format', file?.name || 'unknown');
       return;
     }
-    if (!startSimulationWithWorker(worker)) {
+    const jobDescriptor = {
+      type: 'upload',
+      name: file?.name || 'Uploaded File',
+      label: file?.name || 'Uploaded File',
+      format,
+    };
+    if (!startSimulationWithWorker(worker, jobDescriptor)) {
       return;
     }
     if (simDtSec != null) {
@@ -3298,23 +3548,121 @@ function initHpSim() {
 
   if (canvas) {
     canvas.addEventListener('pointerdown', () => {
-      if (isMobileLayout()) {
-        showSecondaryControlsForMobile();
+      if (isMobileLayout() && secondaryControlsUserPreference !== false) {
+        showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
     });
+    canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
   }
 
   if (secondaryControls) {
     secondaryControls.addEventListener('pointerdown', () => {
-      if (isMobileLayout()) {
-        showSecondaryControlsForMobile();
+      if (isMobileLayout() && secondaryControlsUserPreference !== false) {
+        showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
     });
   }
 
+  if (secondaryToggleBtn) {
+    secondaryToggleBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (event.altKey || event.metaKey) {
+        secondaryControlsUserPreference = null;
+      } else {
+        const isCurrentlyVisible =
+          secondaryControls instanceof HTMLElement ? !secondaryControls.classList.contains('sim-hidden') : computeSecondaryControlsDesired();
+        secondaryControlsUserPreference = isCurrentlyVisible ? false : true;
+      }
+      applySecondaryControlsVisibility();
+    });
+  }
+
+  if (qualityHistoryToggleBtn) {
+    qualityHistoryToggleBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (qualityHistoryRecords.length === 0) {
+        return;
+      }
+      qualityHistoryExpanded = !qualityHistoryExpanded;
+      updateQualityHistoryUI();
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+    if (event.repeat) {
+      return;
+    }
+    const target = event.target;
+    if (target) {
+      const tagName = target.tagName ? target.tagName.toUpperCase() : '';
+      const isEditable =
+        target.isContentEditable ||
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        tagName === 'SELECT';
+      if (isEditable) {
+        return;
+      }
+    }
+    let handled = false;
+    const key = event.key;
+    switch (key) {
+      case 'r':
+      case 'R':
+        if (resetBtn && !resetBtn.disabled) {
+          resetBtn.click();
+          handled = true;
+        }
+        break;
+      case ' ':
+      case 'Spacebar':
+        if (pauseBtn && !pauseBtn.disabled) {
+          pauseBtn.click();
+          handled = true;
+        }
+        break;
+      case '>':
+        if (speedFasterBtn && !speedFasterBtn.disabled) {
+          speedFasterBtn.click();
+          handled = true;
+        }
+        break;
+      case '<':
+        if (speedSlowerBtn && !speedSlowerBtn.disabled) {
+          speedSlowerBtn.click();
+          handled = true;
+        }
+        break;
+      case 's':
+      case 'S':
+        if (referenceToggleBtn) {
+          referenceToggleBtn.click();
+          handled = true;
+        }
+        break;
+      case 'q':
+      case 'Q':
+        if (qualityToggle && !qualityToggle.disabled) {
+          qualityToggle.click();
+          handled = true;
+        }
+        break;
+      default:
+        break;
+    }
+    if (handled) {
+      event.preventDefault();
+    }
+  });
+
   setPrintActive(false);
   setSpeedButtonsEnabled(false);
   updateFinishAsapButtonState();
+  updateSecondaryToggleButton();
+  updateQualityHistoryUI();
 
   if (resetBtn) {
     resetBtn.addEventListener(

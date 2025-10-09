@@ -611,10 +611,10 @@ export class RemoteInputSystem {
          this.viewOffsetY = 0.0;
          this.interactionMode = 'select';
          this.isPanning = false;
-         this.panPointerId = null;
-         this.panLastX = 0;
-         this.panLastY = 0;
-         this.onViewChange = null;
+        this.panPointerId = null;
+        this.panLastX = 0;
+        this.panLastY = 0;
+        this.onViewChange = null;
 
          this.handlePointerDown = this.handlePointerDown.bind(this);
          this.handlePointerMove = this.handlePointerMove.bind(this);
@@ -825,6 +825,9 @@ export class InputSystem {
          this.activeGrabPointerId = null;
          this.scrollBlockerAttached = false;
          this.touchMoveListenerOptions = { passive: false, capture: true };
+         this.activePointers = new Map();
+         this.pinchActive = false;
+         this.pinchLastDistance = 0;
          this.globalTouchOverrides = null;
          this.preventScrollDuringGrab = (event) => {
              if (this.activeGrabPointerId !== null && event.cancelable) {
@@ -840,8 +843,7 @@ export class InputSystem {
      setInteractionMode(mode) {
          this.interactionMode = mode === 'pan' ? 'pan' : 'select';
          if (this.interactionMode !== 'pan' && this.isPanning) {
-             this.isPanning = false;
-             this.panPointerId = null;
+             this.cancelPan();
          }
      }
 
@@ -870,6 +872,9 @@ export class InputSystem {
         this.panPointerId = null;
         this.activeGrabPointerId = null;
         this.setTouchScrollBlockActive(false);
+        this.activePointers.clear();
+        this.pinchActive = false;
+        this.pinchLastDistance = 0;
         if (this.touchActionBeforeGrab !== null) {
             this.canvas.style.touchAction = this.touchActionBeforeGrab;
             this.touchActionBeforeGrab = null;
@@ -945,10 +950,170 @@ export class InputSystem {
          }
      }
 
+     shouldStartAuxPan(event) {
+         if (!event || event.pointerType !== 'mouse') {
+             return false;
+         }
+         return event.button === 1;
+     }
+
+     beginPan(event) {
+         this.isPanning = true;
+         this.panPointerId = event.pointerId;
+         this.panLastX = event.clientX;
+         this.panLastY = event.clientY;
+     }
+
+     cancelPan() {
+         if (!this.isPanning) {
+             return;
+         }
+         if (typeof this.canvas.releasePointerCapture === 'function' && this.panPointerId !== null) {
+             try {
+                 this.canvas.releasePointerCapture(this.panPointerId);
+             } catch (_err) {
+                 // Ignore release errors.
+             }
+        }
+        this.isPanning = false;
+        this.panPointerId = null;
+     }
+
+     trackPointerDown(event) {
+         if (!event || event.pointerType !== 'touch') {
+             return;
+         }
+         this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+         if (this.activePointers.size >= 2) {
+             this.beginPinch();
+         }
+     }
+
+     trackPointerMove(event) {
+         if (event.pointerType === 'touch' && this.activePointers.has(event.pointerId)) {
+             this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+         }
+     }
+
+     trackPointerEnd(event) {
+         if (event.pointerType === 'touch') {
+             this.activePointers.delete(event.pointerId);
+             if (this.activePointers.size < 2) {
+                 this.endPinch();
+             }
+         }
+     }
+
+     computePinchMetrics() {
+         if (this.activePointers.size < 2) {
+             return null;
+         }
+         const iterator = this.activePointers.values();
+         const first = iterator.next().value;
+         const second = iterator.next().value;
+         if (!first || !second) {
+             return null;
+         }
+         const dx = first.x - second.x;
+         const dy = first.y - second.y;
+         const distance = Math.hypot(dx, dy);
+         if (!(distance > 0)) {
+             return null;
+         }
+         const centerX = (first.x + second.x) * 0.5;
+         const centerY = (first.y + second.y) * 0.5;
+         return { distance, centerX, centerY };
+     }
+
+     beginPinch() {
+         if (this.pinchActive || this.activePointers.size < 2) {
+             return;
+         }
+         const metrics = this.computePinchMetrics();
+         if (!metrics) {
+             return;
+         }
+         this.cancelPan();
+         this.pinchActive = true;
+         this.pinchLastDistance = metrics.distance;
+     }
+
+     updatePinchGesture() {
+         if (!this.pinchActive) {
+             return;
+         }
+         const metrics = this.computePinchMetrics();
+         if (!metrics) {
+             return;
+         }
+         const { distance, centerX, centerY } = metrics;
+         if (!(distance > 0)) {
+             return;
+         }
+         if (this.pinchLastDistance <= 0) {
+             this.pinchLastDistance = distance;
+             return;
+         }
+         const delta = distance / this.pinchLastDistance;
+         if (!Number.isFinite(delta) || delta <= 0) {
+             this.pinchLastDistance = distance;
+             return;
+         }
+         const simHeight = this.world.getResource('simHeight');
+         if (!Number.isFinite(simHeight) || simHeight === 0) {
+             this.pinchLastDistance = distance;
+             return;
+         }
+         const baseScale = this.canvas.height / simHeight;
+         if (!Number.isFinite(baseScale) || baseScale <= 0) {
+             this.pinchLastDistance = distance;
+             return;
+         }
+         const rect = this.canvas.getBoundingClientRect();
+         const prevScale = baseScale * this.scaleMultiplier;
+         if (!(prevScale > 0)) {
+             this.pinchLastDistance = distance;
+             return;
+         }
+         const pixelX = centerX - rect.left;
+         const pixelY = centerY - rect.top;
+         const simX = (pixelX - this.canvas.width / 2) / prevScale + this.viewOffsetX;
+         const simY = (this.canvas.height / 2 - pixelY) / prevScale + this.viewOffsetY;
+         const nextScaleMultiplier = this.scaleMultiplier * delta;
+         const nextScale = baseScale * nextScaleMultiplier;
+         if (!(nextScale > 0)) {
+             this.pinchLastDistance = distance;
+             return;
+         }
+         const nextOffsetX = simX - (pixelX - this.canvas.width / 2) / nextScale;
+         const nextOffsetY = simY - (this.canvas.height / 2 - pixelY) / nextScale;
+         this.scaleMultiplier = nextScaleMultiplier;
+         this.viewOffsetX = nextOffsetX;
+         this.viewOffsetY = nextOffsetY;
+         if (this.onViewChange) {
+             this.onViewChange(
+                 {
+                     scale: nextScaleMultiplier,
+                     offsetX: nextOffsetX,
+                     offsetY: nextOffsetY,
+                 },
+                 { gesture: 'pinch' }
+             );
+         }
+         this.pinchLastDistance = distance;
+     }
+
+     endPinch() {
+         if (!this.pinchActive) {
+             return;
+         }
+         this.pinchActive = false;
+         this.pinchLastDistance = 0;
+     }
+
      handlePointerDown(event) {
          if (event.target !== this.canvas) return;
          event.preventDefault();
-         // Capture pointer immediately to avoid losing the gesture to page scroll
          if (typeof this.canvas.setPointerCapture === 'function') {
              try {
                  this.canvas.setPointerCapture(event.pointerId);
@@ -956,15 +1121,19 @@ export class InputSystem {
                  // Ignore browsers that disallow capture here.
              }
          }
+         this.trackPointerDown(event);
+         const pinchEngaged = this.pinchActive;
+         const wantsAuxPan = this.shouldStartAuxPan(event);
+         const usePanMode = this.interactionMode === 'pan' || wantsAuxPan;
          if ((event.pointerType === 'touch' || event.pointerType === 'pen') && this.interactionMode !== 'pan') {
              this.activeGrabPointerId = event.pointerId;
              this.setTouchScrollBlockActive(true);
          }
-         if (this.interactionMode === 'pan') {
-             this.isPanning = true;
-             this.panPointerId = event.pointerId;
-             this.panLastX = event.clientX;
-             this.panLastY = event.clientY;
+         if (pinchEngaged) {
+             return;
+         }
+         if (usePanMode) {
+             this.beginPan(event);
              return;
          }
          const rect = this.canvas.getBoundingClientRect();
@@ -1047,39 +1216,41 @@ export class InputSystem {
      }
 
      handlePointerUp(event) {
-         if (event.target !== this.canvas) return;
-         event.preventDefault();
-         if (this.interactionMode === 'pan') {
-             if (this.isPanning && this.panPointerId === event.pointerId) {
-                 this.isPanning = false;
-                 if (this.onViewChange) {
-                     this.onViewChange(
-                         {
-                             scale: this.scaleMultiplier,
-                             offsetX: this.viewOffsetX,
-                             offsetY: this.viewOffsetY,
-                         },
-                         { forceRedraw: true }
-                     );
-                 }
-                 this.panPointerId = null;
-                 if (typeof this.canvas.releasePointerCapture === 'function') {
-                     try {
-                         this.canvas.releasePointerCapture(event.pointerId);
-                     } catch (err) {
-                         // Ignore errors when capture was not set.
-                     }
+         const wasPanPointer = this.isPanning && this.panPointerId === event.pointerId;
+         this.trackPointerEnd(event);
+         if (wasPanPointer) {
+             event.preventDefault();
+             if (this.onViewChange) {
+                 this.onViewChange(
+                     {
+                         scale: this.scaleMultiplier,
+                         offsetX: this.viewOffsetX,
+                         offsetY: this.viewOffsetY,
+                     },
+                     { forceRedraw: true }
+                 );
+             }
+             this.cancelPan();
+             return;
+         }
+         if (event.target !== this.canvas) {
+             if (typeof this.canvas.releasePointerCapture === 'function') {
+                 try {
+                     this.canvas.releasePointerCapture(event.pointerId);
+                 } catch (_err) {
+                     // Ignore errors if capture was never set.
                  }
              }
              return;
-        }
-        if (typeof this.canvas.releasePointerCapture === 'function') {
-            try {
-                this.canvas.releasePointerCapture(event.pointerId);
-            } catch (err) {
-                // Ignore errors if capture was never set.
-            }
-        }
+         }
+         event.preventDefault();
+         if (typeof this.canvas.releasePointerCapture === 'function') {
+             try {
+                 this.canvas.releasePointerCapture(event.pointerId);
+             } catch (_err) {
+                 // Ignore errors if capture was never set.
+             }
+         }
 
         if (this.grabSpring) {
           const { ptrE, jointE, pathE, ballE } = this.grabSpring;
@@ -1120,49 +1291,56 @@ export class InputSystem {
      }
 
      handlePointerMove(event) {
-      if (event.target !== this.canvas) {
-          return;
-      }
-
-      if (this.interactionMode === 'pan') {
-          if (!this.isPanning || this.panPointerId !== event.pointerId) {
-              return;
-          }
-          event.preventDefault();
-          const baseScale = this.canvas.height / this.world.getResource('simHeight');
-          const scale = baseScale * this.scaleMultiplier;
-          if (scale <= 0) {
-              return;
-          }
-          const deltaX = event.clientX - this.panLastX;
-          const deltaY = event.clientY - this.panLastY;
-          this.panLastX = event.clientX;
-          this.panLastY = event.clientY;
-          this.viewOffsetX -= deltaX / scale;
-          this.viewOffsetY += deltaY / scale;
-          if (this.onViewChange) {
-              this.onViewChange({
-                  scale: this.scaleMultiplier,
-                  offsetX: this.viewOffsetX,
-                  offsetY: this.viewOffsetY,
-              });
-          }
-          return;
-      }
-
-      event.preventDefault();
-      if (this.grabSpring === null) return;
-
-      const rect = this.canvas.getBoundingClientRect();
-      const baseScale = this.canvas.height / this.world.getResource('simHeight');
-      const scale = baseScale * this.scaleMultiplier;
-      const pixelX = event.clientX - rect.left;
-      const pixelY = event.clientY - rect.top;
-      const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
-      const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
-
-      const { ptrE } = this.grabSpring;
-      const pos = this.world.getComponent(ptrE, PositionComponent).pos;
-      pos.set(new Vector2(simX, simY));
+         if (event.pointerType === 'touch') {
+             this.trackPointerMove(event);
+         }
+         const isPanPointer = this.isPanning && this.panPointerId === event.pointerId;
+         if (this.pinchActive) {
+             event.preventDefault();
+             this.updatePinchGesture();
+             return;
+         }
+         if (isPanPointer) {
+             event.preventDefault();
+             const baseScale = this.canvas.height / this.world.getResource('simHeight');
+             const scale = baseScale * this.scaleMultiplier;
+             if (scale <= 0) {
+                 return;
+             }
+             const deltaX = event.clientX - this.panLastX;
+             const deltaY = event.clientY - this.panLastY;
+             this.panLastX = event.clientX;
+             this.panLastY = event.clientY;
+             this.viewOffsetX -= deltaX / scale;
+             this.viewOffsetY += deltaY / scale;
+             if (this.onViewChange) {
+                 this.onViewChange({
+                     scale: this.scaleMultiplier,
+                     offsetX: this.viewOffsetX,
+                     offsetY: this.viewOffsetY,
+                 });
+             }
+             return;
+         }
+         if (event.target !== this.canvas) {
+             return;
+         }
+         if (this.interactionMode === 'pan') {
+             return;
+         }
+         event.preventDefault();
+         if (this.grabSpring === null) {
+             return;
+         }
+         const rect = this.canvas.getBoundingClientRect();
+         const baseScale = this.canvas.height / this.world.getResource('simHeight');
+         const scale = baseScale * this.scaleMultiplier;
+         const pixelX = event.clientX - rect.left;
+         const pixelY = event.clientY - rect.top;
+         const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
+         const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+         const { ptrE } = this.grabSpring;
+         const pos = this.world.getComponent(ptrE, PositionComponent).pos;
+         pos.set(new Vector2(simX, simY));
      }
 }

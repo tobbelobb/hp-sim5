@@ -55,6 +55,27 @@
           <div class="canvas-frame">
             <canvas id="myCanvas" role="img" aria-label="Hangprinter simulation"></canvas>
             <div id="qualityHud" class="quality-hud sim-hidden" role="status" aria-live="polite"></div>
+            <div id="qualityHistoryHud" class="quality-history sim-hidden" role="status" aria-live="polite">
+              <button
+                id="qualityHistoryToggle"
+                type="button"
+                class="quality-history__toggle"
+                aria-expanded="false"
+                aria-controls="qualityHistoryList"
+              >
+                Quality History ▼
+              </button>
+              <div id="qualityHistoryList" class="quality-history__list sim-hidden"></div>
+            </div>
+            <button
+              id="secondaryToggleBtn"
+              type="button"
+              class="sim-secondary-toggle"
+              aria-expanded="false"
+              aria-controls="simSecondaryControls"
+            >
+              ▼
+            </button>
             <div id="simSecondaryControls" class="sim-secondary-group sim-hidden" aria-label="Simulation controls">
               <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
               <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
