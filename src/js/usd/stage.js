@@ -1,4 +1,46 @@
-import { parse as parseUsda } from "@kroxilon/usda-parser";
+const USD_PARSER_PACKAGE_ENTRY = '@kroxilon/usda-parser/lib/usda-parser.peggy.js';
+const USD_PARSER_VENDOR_RELATIVE_URL = './assets/vendor/usda-parser/index.js';
+
+let parseUsdaPromise = null;
+
+async function loadParseUsda() {
+  if (parseUsdaPromise) {
+    return parseUsdaPromise;
+  }
+
+  const importAttempts = [];
+
+  importAttempts.push(async () => import(USD_PARSER_PACKAGE_ENTRY));
+
+  if (typeof window !== 'undefined' && window.location && typeof window.location.href === 'string') {
+    try {
+      const vendorUrl = new URL(USD_PARSER_VENDOR_RELATIVE_URL, window.location.href);
+      importAttempts.push(async () => import(vendorUrl.href));
+    } catch (_err) {
+      // Ignore URL resolution issues – we'll fall through to the next attempt.
+    }
+  }
+
+  parseUsdaPromise = (async () => {
+    let lastError = null;
+    for (const attempt of importAttempts) {
+      try {
+        const module = await attempt();
+        if (module && typeof module.parse === 'function') {
+          return module.parse;
+        }
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (lastError) {
+      throw lastError;
+    }
+    throw new Error('Failed to load @kroxilon/usda-parser module.');
+  })();
+
+  return parseUsdaPromise;
+}
 
 /**
  * Open() – the JavaScript twin of Usd.Stage.Open().
@@ -6,6 +48,7 @@ import { parse as parseUsda } from "@kroxilon/usda-parser";
  * returns a Stage-like object with GetPrimAtPath(), Traverse(), and the raw AST.
  */
 export async function Open(pathOrSource) {
+  const parseUsda = await loadParseUsda();
   const source = isUsdText(pathOrSource)
     ? pathOrSource                              // already the file text
     : await fetch(pathOrSource).then(async (r) => {
