@@ -1805,6 +1805,10 @@ function initHpSim() {
       return;
     }
     sceneChangeState.replayInProgress = true;
+    const previousPauseDisabled = pauseBtn ? pauseBtn.disabled : null;
+    if (pauseBtn) {
+      setButtonDisabled(pauseBtn, true);
+    }
     if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
       renderSystem.setDrawingSuspended(true);
     }
@@ -1830,6 +1834,10 @@ function initHpSim() {
         }
       }
     } finally {
+      if (pauseBtn) {
+        const restoreDisabled = previousPauseDisabled != null ? previousPauseDisabled : false;
+        setButtonDisabled(pauseBtn, restoreDisabled);
+      }
       if (pauseState) {
         pauseState.paused = true;
       }
@@ -1878,7 +1886,7 @@ function initHpSim() {
         extruderComp.extrusions = [];
       }
     }
-    const showReplay = Boolean(sceneChange.newMachineAdded && historyClone.length > 0);
+    const showReplay = Boolean(sceneChange.wasPrinting && historyClone.length > 0);
     if (showReplay) {
       showReplayStatus();
     }
