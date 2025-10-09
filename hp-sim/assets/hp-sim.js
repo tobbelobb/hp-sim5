@@ -37,7 +37,7 @@ const GCODE_INLINE_COMMENT_RE = /\(.*?\)/g;
 const referencePathCache = new Map();
 
 const DEFAULT_PRESET_KEY = 'hangprinterLogo';
-const DEFAULT_VIEW_SCALE = 1.0;
+const DEFAULT_VIEW_SCALE = 0.3;
 const MIN_VIEW_SCALE = 0.01;
 const MAX_VIEW_SCALE = 100;
 const ZOOM_FACTOR = 1.2;

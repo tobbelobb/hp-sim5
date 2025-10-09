@@ -209,10 +209,6 @@ export function setupScene(world, stage, canvas, options = {}) {
                         continue;
                     }
                     const inertia = inertiaTensor[2][2];
-                    const vel =
-                      Array.isArray(velArr) && velArr.length >= 2
-                        ? new Vector2(velArr[0], velArr[1])
-                        : new Vector2(0, 0);
                     const angVel = angVelArr[2];
 
                     world.addComponent(ent, new SpoolTagComponent());
@@ -220,7 +216,10 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new SpoolStateComponent(axisName));
                     world.addComponent(ent, new StepperMotorComponent());
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
-                    world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
+                    if (velArr !== null) {
+                      const vel = new Vector2(velArr[0], velArr[1]);
+                      world.addComponent(ent, new VelocityComponent(vel.x, vel.y));
+                    }
                     world.addComponent(ent, new RadiusComponent(radius));
                     world.addComponent(ent, new MassComponent(mass));
                     const spoolColor = palette?.spool ?? color ?? '#a0a0a0';
