@@ -126,11 +126,16 @@ function initHpSim() {
       {
         ...entry,
         url: new URL(`../../examples/usd_scenes/${entry.file}`, import.meta.url).href,
+        tintColor: null,
+        tintColorLoaded: false,
+        tintColorPromise: null,
       },
     ])
   );
   const defaultUsdaKey = 'slideprinter.usda';
   const presetOptionInputs = new Map();
+  const presetOptionLabels = new Map();
+  const presetOptionColorChips = new Map();
   let machineMenuOpen = false;
 
   const world = new World();
@@ -1029,6 +1034,21 @@ function initHpSim() {
       sourceKey: sourceKey || null,
       sourceUrl: sourceUrl || null,
     };
+    if (sourceKey && usdaCatalog.has(sourceKey)) {
+      const entry = usdaCatalog.get(sourceKey);
+      if (entry) {
+        if (tintColor) {
+          entry.tintColor = tintColor;
+          entry.tintColorLoaded = true;
+          entry.tintColorPromise = null;
+          applyPresetMachineTint(sourceKey, tintColor);
+        } else if (!entry.tintColorLoaded) {
+          entry.tintColorLoaded = true;
+          entry.tintColorPromise = null;
+          applyPresetMachineTint(sourceKey, null);
+        }
+      }
+    }
     machines.push(machine);
     updateMachineMenuUI();
     return machine;
@@ -1055,12 +1075,89 @@ function initHpSim() {
     attachQualityMonitorToRemoteSystem();
   }
 
+  function createColorChip() {
+    const chip = document.createElement('span');
+    chip.className = 'sim-machines-option-color';
+    chip.setAttribute('aria-hidden', 'true');
+    return chip;
+  }
+
+  function applyColorChipTint(chip, tintHex) {
+    if (!chip) {
+      return;
+    }
+    if (typeof tintHex === 'string' && tintHex.trim().length > 0) {
+      chip.style.backgroundColor = tintHex;
+      chip.classList.remove('sim-machines-option-color--empty');
+    } else {
+      chip.style.removeProperty('background-color');
+      chip.classList.add('sim-machines-option-color--empty');
+    }
+  }
+
+  function applyPresetMachineTint(sourceKey, tintHex) {
+    if (sourceKey && usdaCatalog.has(sourceKey)) {
+      const entry = usdaCatalog.get(sourceKey);
+      if (entry) {
+        entry.tintColor = tintHex ?? null;
+      }
+    }
+    const chip = presetOptionColorChips.get(sourceKey);
+    if (chip) {
+      applyColorChipTint(chip, tintHex);
+    }
+    const label = presetOptionLabels.get(sourceKey);
+    if (label) {
+      if (tintHex) {
+        label.dataset.tintColor = tintHex;
+      } else {
+        label.removeAttribute('data-tint-color');
+      }
+    }
+  }
+
+  function loadPresetTintColor(sourceKey) {
+    if (!sourceKey || !usdaCatalog.has(sourceKey)) {
+      return Promise.resolve(null);
+    }
+    const entry = usdaCatalog.get(sourceKey);
+    if (!entry) {
+      return Promise.resolve(null);
+    }
+    if (entry.tintColorLoaded) {
+      applyPresetMachineTint(sourceKey, entry.tintColor);
+      return Promise.resolve(entry.tintColor);
+    }
+    if (entry.tintColorPromise) {
+      return entry.tintColorPromise;
+    }
+    entry.tintColorPromise = (async () => {
+      try {
+        const stage = await UsdOpen(entry.url);
+        const scenePrimPath = findScenePrimPath(stage);
+        const { tintColor } = extractMachineColors(stage, scenePrimPath);
+        entry.tintColor = tintColor || null;
+      } catch (error) {
+        console.warn(`hp-sim: unable to read tint color for USDA preset ${sourceKey}.`, error);
+        entry.tintColor = null;
+      } finally {
+        entry.tintColorLoaded = true;
+        entry.tintColorPromise = null;
+        applyPresetMachineTint(sourceKey, entry.tintColor);
+      }
+      return entry.tintColor;
+    })();
+    return entry.tintColorPromise;
+  }
+
   function buildPresetMachineOptions() {
     if (!presetMachinesList) {
       return;
     }
     presetMachinesList.innerHTML = '';
     presetOptionInputs.clear();
+    presetOptionLabels.clear();
+    presetOptionColorChips.clear();
     for (const [key, entry] of usdaCatalog.entries()) {
       const item = document.createElement('li');
       item.className = 'sim-machines-option';
@@ -1074,15 +1171,26 @@ function initHpSim() {
       checkbox.dataset.sourceKey = key;
       checkbox.value = key;
 
+      const colorChip = createColorChip();
+      applyColorChipTint(colorChip, entry.tintColor);
+
       const text = document.createElement('span');
       text.className = 'sim-machines-option-text';
       text.textContent = entry.label;
 
       label.appendChild(checkbox);
+      label.appendChild(colorChip);
       label.appendChild(text);
       item.appendChild(label);
       presetMachinesList.appendChild(item);
       presetOptionInputs.set(key, checkbox);
+      presetOptionLabels.set(key, label);
+      presetOptionColorChips.set(key, colorChip);
+      if (!entry.tintColorLoaded) {
+        loadPresetTintColor(key).catch((error) => {
+          console.warn(`hp-sim: tint color preload failed for ${key}.`, error);
+        });
+      }
     }
   }
 
@@ -1111,12 +1219,20 @@ function initHpSim() {
       const item = document.createElement('li');
       item.className = 'sim-machines-custom-item';
 
+      const info = document.createElement('div');
+      info.className = 'sim-machines-custom-info';
+
+      const colorChip = createColorChip();
+      applyColorChipTint(colorChip, machine.tintColor);
+
       const name = document.createElement('span');
       name.className = 'sim-machines-custom-name';
       const displayName = machine.name || 'Uploaded scene';
       name.textContent = displayName;
       name.title = machine.sourceUrl || machine.name || machine.id;
-      item.appendChild(name);
+      info.appendChild(colorChip);
+      info.appendChild(name);
+      item.appendChild(info);
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
