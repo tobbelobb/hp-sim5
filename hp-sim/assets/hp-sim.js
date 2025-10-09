@@ -112,6 +112,7 @@ function initHpSim() {
   const MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS = 3000;
   const MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS = 150;
   const MOBILE_MACHINES_MENU_MARGIN_PX = 12;
+  const MACHINE_MENU_HOVER_CLOSE_DELAY_MS = 3000;
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
@@ -137,6 +138,10 @@ function initHpSim() {
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
   let machineMenuOpen = false;
+  let machineMenuHoverCloseTimeout = null;
+  let machineMenuHoverTrackingEnabled = false;
+  let machineMenuPointerInside = false;
+  let machineMenuFocusInside = false;
 
   const world = new World();
   const machines = [];
@@ -1347,6 +1352,137 @@ function initHpSim() {
     }
   }
 
+  function isHoverCapableDesktop() {
+    if (supportsMatchMedia) {
+      try {
+        const query = window.matchMedia('(hover: hover) and (pointer: fine)');
+        return query.matches;
+      } catch (error) {
+        console.warn('hp-sim: unable to evaluate hover media query.', error);
+      }
+    }
+    return !isMobileLayout();
+  }
+
+  function isPointerWithinMachineMenu() {
+    const targets = [machinesMenu, machinesToggle];
+    for (const element of targets) {
+      if (element instanceof HTMLElement && typeof element.matches === 'function' && element.matches(':hover')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function clearMachineMenuHoverTimeout() {
+    if (machineMenuHoverCloseTimeout !== null) {
+      window.clearTimeout(machineMenuHoverCloseTimeout);
+      machineMenuHoverCloseTimeout = null;
+    }
+  }
+
+  function scheduleMachineMenuHoverClose() {
+    if (!machineMenuHoverTrackingEnabled) {
+      return;
+    }
+    clearMachineMenuHoverTimeout();
+    machineMenuHoverCloseTimeout = window.setTimeout(() => {
+      machineMenuHoverCloseTimeout = null;
+      if (!machineMenuHoverTrackingEnabled || !machineMenuOpen || machineMenuPointerInside || machineMenuFocusInside) {
+        return;
+      }
+      const activeElement = document.activeElement;
+      if (machinesMenu && activeElement instanceof Node && machinesMenu.contains(activeElement)) {
+        machineMenuFocusInside = true;
+        return;
+      }
+      closeMachineMenu();
+    }, MACHINE_MENU_HOVER_CLOSE_DELAY_MS);
+  }
+
+  function startMachineMenuHoverTracking() {
+    if (!machinesContainer) {
+      machineMenuHoverTrackingEnabled = false;
+      clearMachineMenuHoverTimeout();
+      return;
+    }
+    machineMenuHoverTrackingEnabled = isHoverCapableDesktop();
+    if (!machineMenuHoverTrackingEnabled) {
+      clearMachineMenuHoverTimeout();
+      return;
+    }
+    machineMenuPointerInside = isPointerWithinMachineMenu();
+    if (machineMenuPointerInside || machineMenuFocusInside) {
+      clearMachineMenuHoverTimeout();
+      return;
+    }
+    scheduleMachineMenuHoverClose();
+  }
+
+  function stopMachineMenuHoverTracking() {
+    machineMenuHoverTrackingEnabled = false;
+    machineMenuPointerInside = false;
+    machineMenuFocusInside = false;
+    clearMachineMenuHoverTimeout();
+  }
+
+  function handleMachineMenuMouseEnter() {
+    if (!machineMenuHoverTrackingEnabled) {
+      machineMenuPointerInside = true;
+      return;
+    }
+    machineMenuPointerInside = true;
+    clearMachineMenuHoverTimeout();
+  }
+
+  function handleMachineMenuMouseLeave(event) {
+    if (!machineMenuHoverTrackingEnabled) {
+      return;
+    }
+    const nextTarget = event?.relatedTarget;
+    if (
+      nextTarget instanceof Node &&
+      ((machinesMenu && machinesMenu.contains(nextTarget)) || (machinesToggle && machinesToggle.contains(nextTarget)))
+    ) {
+      return;
+    }
+    machineMenuPointerInside = false;
+    scheduleMachineMenuHoverClose();
+  }
+
+  function handleMachineMenuFocusIn() {
+    machineMenuFocusInside = true;
+    clearMachineMenuHoverTimeout();
+  }
+
+  function handleMachineMenuFocusOut(event) {
+    const nextTarget = event?.relatedTarget;
+    if (
+      nextTarget instanceof Node &&
+      ((machinesMenu && machinesMenu.contains(nextTarget)) || (machinesToggle && machinesToggle.contains(nextTarget)))
+    ) {
+      return;
+    }
+    machineMenuFocusInside = false;
+    if (machineMenuHoverTrackingEnabled) {
+      scheduleMachineMenuHoverClose();
+    }
+  }
+
+  function addMachineMenuOutsideListeners() {
+    document.addEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
+    document.addEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
+    document.addEventListener('click', handleMachineMenuOutsideInteraction, true);
+    document.addEventListener('keydown', handleMachineMenuKeydown, true);
+  }
+
+  function removeMachineMenuOutsideListeners() {
+    document.removeEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
+    document.removeEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
+    document.removeEventListener('click', handleMachineMenuOutsideInteraction, true);
+    document.removeEventListener('keydown', handleMachineMenuKeydown, true);
+  }
+
   function openMachineMenu() {
     if (!machinesMenu || !machinesToggle) {
       return;
@@ -1367,9 +1503,8 @@ function initHpSim() {
     } else if (machinesMenu instanceof HTMLElement) {
       machinesMenu.focus({ preventScroll: true });
     }
-    document.addEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
-    document.addEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
-    document.addEventListener('keydown', handleMachineMenuKeydown, true);
+    addMachineMenuOutsideListeners();
+    startMachineMenuHoverTracking();
   }
 
   function closeMachineMenu({ focusToggle = false } = {}) {
@@ -1386,9 +1521,8 @@ function initHpSim() {
       machinesContainer.setAttribute('data-open', 'false');
     }
     clearMachineMenuInlinePosition();
-    document.removeEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
-    document.removeEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
-    document.removeEventListener('keydown', handleMachineMenuKeydown, true);
+    removeMachineMenuOutsideListeners();
+    stopMachineMenuHoverTracking();
     if (focusToggle) {
       machinesToggle.focus({ preventScroll: true });
     }
@@ -2888,6 +3022,10 @@ function initHpSim() {
 
   if (machinesMenu) {
     machinesMenu.setAttribute('tabindex', '-1');
+    machinesMenu.addEventListener('mouseenter', handleMachineMenuMouseEnter);
+    machinesMenu.addEventListener('mouseleave', handleMachineMenuMouseLeave);
+    machinesMenu.addEventListener('focusin', handleMachineMenuFocusIn);
+    machinesMenu.addEventListener('focusout', handleMachineMenuFocusOut);
   }
 
   if (machinesToggle) {
@@ -2899,6 +3037,10 @@ function initHpSim() {
         openMachineMenu();
       }
     });
+    machinesToggle.addEventListener('mouseenter', handleMachineMenuMouseEnter);
+    machinesToggle.addEventListener('mouseleave', handleMachineMenuMouseLeave);
+    machinesToggle.addEventListener('focusin', handleMachineMenuFocusIn);
+    machinesToggle.addEventListener('focusout', handleMachineMenuFocusOut);
   }
 
   if (presetMachinesList) {
