@@ -3,6 +3,7 @@ import path from 'path';
 import { World, MachineTagComponent } from '../../../src/js/cable_joints/ecs.js';
 import { setupScene } from '../../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, ExtruderComponent } from '../../../examples/js/slideprinter/slideprinter_common.js';
+import { QualityMonitor } from '../../../hp-sim/assets/quality-monitor.js';
 import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
 
 const usdPath = path.resolve(process.cwd(), 'examples/usd_scenes/slideprinter.usda');
@@ -80,6 +81,24 @@ beforeAll(async () => {
 
 const cloneCommandList = (list) => (Array.isArray(list) ? list.map((cmd) => ({ ...cmd })) : []);
 
+function buildOffsetReferenceSegments(extrusions, offset = 0.02) {
+  if (!Array.isArray(extrusions) || extrusions.length < 2) {
+    return [
+      { start: [0, offset, 0], end: [1, offset, 0] },
+    ];
+  }
+  const segments = [];
+  for (let i = 0; i < extrusions.length - 1; i += 1) {
+    const start = extrusions[i]?.pos || [0, 0, 0];
+    const end = extrusions[i + 1]?.pos || start;
+    segments.push({
+      start: [Number(start[0]) || 0, (Number(start[1]) || 0) + offset, 0],
+      end: [Number(end[0]) || 0, (Number(end[1]) || 0) + offset, 0],
+    });
+  }
+  return segments;
+}
+
 async function runReplayLoop(world, remoteSystem, targetCount, dt) {
   if (!Number.isFinite(targetCount) || targetCount <= 0) {
     return;
@@ -95,7 +114,8 @@ async function runReplayLoop(world, remoteSystem, targetCount, dt) {
   }
 }
 
-async function restorePrintState(world, remoteSystem, historyClone, queueClone, dt) {
+async function restorePrintState(world, remoteSystem, historyClone, queueClone, dt, options = {}) {
+  const { qualityMonitors = [] } = options;
   const historyCopy = cloneCommandList(historyClone);
   const queueCopy = cloneCommandList(queueClone);
   const extruderEntity = world.query([ExtruderComponent])[0];
@@ -110,12 +130,22 @@ async function restorePrintState(world, remoteSystem, historyClone, queueClone, 
   remoteSystem.history = [];
   remoteSystem.commands = cloneCommandList(historyCopy).concat(cloneCommandList(queueCopy));
   remoteSystem.resetAxisMapping();
+  for (const monitor of qualityMonitors) {
+    if (monitor && typeof monitor.reset === 'function') {
+      monitor.reset({ keepReference: true });
+    }
+  }
   await Promise.resolve();
   if (historyCopy.length > 0) {
     await runReplayLoop(world, remoteSystem, historyCopy.length, dt);
   }
   remoteSystem.history = historyCopy;
   remoteSystem.commands = queueCopy;
+  for (const monitor of qualityMonitors) {
+    if (monitor && typeof monitor.runFinalCheck === 'function') {
+      monitor.runFinalCheck();
+    }
+  }
 }
 
 describe('machine toggles with replay', () => {
@@ -168,9 +198,16 @@ describe('machine toggles with replay', () => {
     const remoteSystem = world.systems.find((system) => system instanceof RemoteSpoolSystem);
     expect(remoteSystem).toBeDefined();
 
-    remoteSystem.addCommand({ type: 'Move', A: 0.12, B: -0.08, C: 0.05, D: -0.03, E: 0.004 });
     const dt = world.getResource('dt') || 1 / 120;
-    world.update(dt);
+    const initialCommands = [
+      { type: 'Move', A: 0.12, B: -0.08, C: 0.05, D: -0.03, E: 0.004 },
+      { type: 'Move', A: 0.16, B: -0.09, C: 0.06, D: -0.035, E: 0.005 },
+      { type: 'Move', A: 0.2, B: -0.11, C: 0.08, D: -0.04, E: 0.006 },
+    ];
+    for (const command of initialCommands) {
+      remoteSystem.addCommand(command);
+      world.update(dt);
+    }
     expect(remoteSystem.history.length).toBeGreaterThan(0);
 
     const extruderEntityInitial = world.query([ExtruderComponent])[0];
@@ -182,6 +219,24 @@ describe('machine toggles with replay', () => {
     }));
 
     const playbackState = remoteSystem.getPlaybackState();
+
+    const machineExtrusions = originalExtrusions.filter((entry) => typeof entry.machineId === 'string');
+    expect(machineExtrusions.length).toBeGreaterThan(0);
+    const survivingMachineIds = new Set(['machine-1', 'machine-2']);
+    const preferred = machineExtrusions.find((entry) => survivingMachineIds.has(entry.machineId));
+    const targetMachineId = preferred ? preferred.machineId : machineExtrusions[0].machineId;
+    const filteredExtrusions = machineExtrusions.filter((entry) => entry.machineId === targetMachineId);
+    expect(filteredExtrusions.length).toBeGreaterThan(0);
+    const referenceSegments = buildOffsetReferenceSegments(filteredExtrusions);
+    const qualityMonitor = new QualityMonitor();
+    qualityMonitor.setMachineContext({ id: targetMachineId, label: targetMachineId });
+    qualityMonitor.setReferenceSegments(referenceSegments);
+    qualityMonitor.setEnabled(true);
+    filteredExtrusions.forEach((extrusion) => qualityMonitor.recordExtrusion(extrusion));
+    qualityMonitor.runFinalCheck();
+    const baselineMetrics = qualityMonitor.metrics;
+    expect(baselineMetrics).not.toBeNull();
+    qualityMonitor.attachRemoteSystem(remoteSystem);
 
     world.clear();
     setupScene(world, stage, canvas, { namespace: 'machine-1', append: false });
@@ -198,8 +253,8 @@ describe('machine toggles with replay', () => {
     };
 
     await Promise.all([
-      enqueue(() => restorePrintState(world, remoteSystem, historyClone, queueClone, dt)),
-      enqueue(() => restorePrintState(world, remoteSystem, historyClone, queueClone, dt)),
+      enqueue(() => restorePrintState(world, remoteSystem, historyClone, queueClone, dt, { qualityMonitors: [qualityMonitor] })),
+      enqueue(() => restorePrintState(world, remoteSystem, historyClone, queueClone, dt, { qualityMonitors: [qualityMonitor] })),
     ]);
 
     const expectedMachines = new Set(['machine-1', 'machine-2']);
@@ -219,6 +274,7 @@ describe('machine toggles with replay', () => {
     const expectedExtrusions = originalExtrusions.filter(
       (entry) => entry.machineId === 'machine-1' || entry.machineId === 'machine-2'
     );
+    expect(expectedExtrusions.length).toBeGreaterThan(0);
     expect(extruderAfter.extrusions).toHaveLength(expectedExtrusions.length);
     extruderAfter.extrusions.forEach((entry, index) => {
       const expected = expectedExtrusions[index];
@@ -229,5 +285,21 @@ describe('machine toggles with replay', () => {
       expect(entry.length).toBeCloseTo(expected.length, 6);
       expect(entry.machineId).toBe(expected.machineId);
     });
+
+    qualityMonitor.runFinalCheck();
+    const replayMetrics = qualityMonitor.metrics;
+    expect(replayMetrics).not.toBeNull();
+    if (baselineMetrics && replayMetrics) {
+      const keysToCheck = ['rmseStraight', 'p95Straight', 'coverage', 'iou', 'score'];
+      for (const key of keysToCheck) {
+        const before = baselineMetrics[key];
+        const after = replayMetrics[key];
+        if (Number.isFinite(before) && Number.isFinite(after)) {
+          expect(after).toBeCloseTo(before, 6);
+        } else {
+          expect(after).toBe(before);
+        }
+      }
+    }
   });
 });

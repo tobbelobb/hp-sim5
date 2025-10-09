@@ -1854,6 +1854,11 @@ function initHpSim() {
     sceneChangeState.replayInProgress = false;
     const renderSystem = world.getResource('renderSystem');
     const pauseState = world.getResource('pauseState');
+    const shouldResetQuality =
+      Boolean(sceneChange?.wasPrinting) && machineQualityMonitors.size > 0;
+    if (shouldResetQuality) {
+      resetQualityMonitors({ keepReference: true });
+    }
     if (!sceneChange || !sceneChange.wasPrinting) {
       if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
         renderSystem.setDrawingSuspended(false);
@@ -1914,6 +1919,10 @@ function initHpSim() {
     remoteSystem.commands = queueClone;
     remoteSystem.worker = sceneChange.worker || null;
     remoteSystem.wasPaused = false;
+    if (shouldResetQuality) {
+      runFinalQualityChecks();
+      refreshAllQualityMonitors(true);
+    }
 
     if (renderSystem) {
       if (typeof renderSystem.setDrawingSuspended === 'function') {
