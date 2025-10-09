@@ -247,7 +247,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y));
                     }
                     nameToEntityId[primKey] = ent;
-                } else if (tags.includes("Pinhole")) {
+                } else if (tags.includes("Pinhole") || tags.includes("Attachment")) {
                     const ent = world.createEntity();
                     world.addComponent(ent, new MachineTagComponent(machineId));
                     const radius = getAttribute(prim, "radius");
