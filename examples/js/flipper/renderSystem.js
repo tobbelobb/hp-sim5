@@ -643,7 +643,7 @@ export class RenderSystem {
     }
     this.c.lineWidth = 1;
 
-    // Render Rigid Group visual edges (green lines between sequential members)
+    // Render Rigid Group visual edges
     const rigidGroups = world.query([RigidGroupComponent]);
     if (rigidGroups.length > 0) {
       this.c.save();
@@ -652,57 +652,62 @@ export class RenderSystem {
       for (const gid of rigidGroups) {
         const group = world.getComponent(gid, RigidGroupComponent);
         const members = group?.members || [];
-        const n = members.length | 0;
-        if (n === 9) {
-          for (const i of [[3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 3]]) {
-            const a = members[i[0]];
-            const b = members[i[1] % n];
-            const pA = world.getComponent(a, PositionComponent)?.pos;
-            const pB = world.getComponent(b, PositionComponent)?.pos;
-            if (!pA || !pB) continue;
-            this.c.beginPath();
-            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-            this.c.stroke();
+        const n = members.length;
+        if (n < 2) {
+          continue;
+        }
+        const memberPositions = members.map((entityId) => world.getComponent(entityId, PositionComponent)?.pos || null);
+        const segments = Array.isArray(group?.renderSegments) ? group.renderSegments : null;
+        const edges = [];
+        const seen = new Set();
+        const addEdge = (aIdx, bIdx) => {
+          if (!Number.isInteger(aIdx) || !Number.isInteger(bIdx)) {
+            return;
+          }
+          if (aIdx < 0 || bIdx < 0 || aIdx >= n || bIdx >= n || aIdx === bIdx) {
+            return;
+          }
+          const key = aIdx < bIdx ? `${aIdx}:${bIdx}` : `${bIdx}:${aIdx}`;
+          if (seen.has(key)) {
+            return;
+          }
+          seen.add(key);
+          edges.push([aIdx, bIdx]);
+        };
+
+        if (segments && segments.length > 0) {
+          for (const segment of segments) {
+            if (!Array.isArray(segment) || segment.length < 2) {
+              continue;
+            }
+            for (let i = 0; i < segment.length - 1; i += 1) {
+              addEdge(segment[i], segment[i + 1]);
+            }
+            const first = segment[0];
+            const last = segment[segment.length - 1];
+            if (segment.length > 2 && first !== last) {
+              addEdge(last, first);
+            }
+          }
+        } else {
+          for (let i = 0; i < n; i += 1) {
+            for (let j = i + 1; j < n; j += 1) {
+              addEdge(i, j);
+            }
           }
         }
-        if (n === 6) {
-          for (const i of [[3, 4], [4, 5], [5, 3]]) {
-            const a = members[i[0]];
-            const b = members[i[1] % n];
-            const pA = world.getComponent(a, PositionComponent)?.pos;
-            const pB = world.getComponent(b, PositionComponent)?.pos;
-            if (!pA || !pB) continue;
-            this.c.beginPath();
-            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-            this.c.stroke();
+
+        for (const [aIdx, bIdx] of edges) {
+          const pA = memberPositions[aIdx];
+          const pB = memberPositions[bIdx];
+          if (!pA || !pB) {
+            continue;
           }
+          this.c.beginPath();
+          this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
+          this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
+          this.c.stroke();
         }
-        if (n === 3) {
-          for (const i of [[0, 1], [1, 2], [2, 0]]) {
-            const a = members[i[0]];
-            const b = members[i[1] % n];
-            const pA = world.getComponent(a, PositionComponent)?.pos;
-            const pB = world.getComponent(b, PositionComponent)?.pos;
-            if (!pA || !pB) continue;
-            this.c.beginPath();
-            this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-            this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-            this.c.stroke();
-          }
-        }
-        //for (const i of [[0, 1], [1, 2], [2, 0]]) {
-        //  const a = members[i[0]];
-        //  const b = members[i[1] % n];
-        //  const pA = world.getComponent(a, PositionComponent)?.pos;
-        //  const pB = world.getComponent(b, PositionComponent)?.pos;
-        //  if (!pA || !pB) continue;
-        //  this.c.beginPath();
-        //  this.c.moveTo(this.cX(pA.x), this.cY(pA.y));
-        //  this.c.lineTo(this.cX(pB.x), this.cY(pB.y));
-        //  this.c.stroke();
-        //}
       }
       this.c.restore();
     }

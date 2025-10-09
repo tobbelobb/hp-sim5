@@ -82,6 +82,7 @@ export function setupScene(world, stage, canvas, options = {}) {
         console.warn(`setupScene: Unable to find scene root at ${scenePrimPath}.`);
         return;
     }
+    const extruderCenterPaths = !isRemote ? getRelationship(sceneRoot, 'machine:extrusionCenters') : null;
 
     const machineId = namespace || 'default';
 
@@ -97,6 +98,72 @@ export function setupScene(world, stage, canvas, options = {}) {
         tintColor: options.tintColor || null,
         extrusionColor: options.extrusionColor || null,
     });
+
+    function normalizeToPlainArray(value) {
+        if (Array.isArray(value)) {
+            return value;
+        }
+        if (value && typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView && ArrayBuffer.isView(value)) {
+            return Array.from(value);
+        }
+        return value;
+    }
+
+    function parseRigidGroupRenderSegments(rawValue) {
+        if (rawValue === null || rawValue === undefined) {
+            return null;
+        }
+        let parsed = rawValue;
+        if (typeof parsed === 'string') {
+            const trimmed = parsed.trim();
+            if (!trimmed) {
+                return null;
+            }
+            try {
+                parsed = JSON.parse(trimmed);
+            } catch (err) {
+                console.warn('setupScene: failed to parse rigidGroup:renderIndices JSON', err);
+                return null;
+            }
+        }
+        parsed = normalizeToPlainArray(parsed);
+        if (!Array.isArray(parsed)) {
+            return null;
+        }
+
+        const segments = [];
+        const pushSequence = (sequence) => {
+            const flattened = normalizeToPlainArray(sequence);
+            if (!Array.isArray(flattened)) {
+                return;
+            }
+            const indices = [];
+            for (const value of flattened) {
+                const asNumber = Number(value);
+                if (Number.isInteger(asNumber)) {
+                    indices.push(asNumber);
+                }
+            }
+            if (indices.length >= 2) {
+                segments.push(indices);
+            }
+        };
+
+        const hasNested = parsed.some((entry) => {
+            const normalized = normalizeToPlainArray(entry);
+            return Array.isArray(normalized);
+        });
+
+        if (hasNested) {
+            for (const entry of parsed) {
+                pushSequence(entry);
+            }
+        } else {
+            pushSequence(parsed);
+        }
+
+        return segments.length > 0 ? segments : null;
+    }
 
     function scopedKey(relativeName) {
         const key = relativeName || '';
@@ -290,6 +357,15 @@ export function setupScene(world, stage, canvas, options = {}) {
 
         // Build rigid groups first (if any)
         const entityToRigidGroup = {};
+        const extruderCenterEntityIds = (() => {
+            const rels = normalizeToPlainArray(extruderCenterPaths);
+            if (!Array.isArray(rels) || rels.length === 0) {
+                return [];
+            }
+            return rels
+                .map((path) => nameToEntityId[scopedKeyFromPath(path)])
+                .filter((id) => id !== undefined);
+        })();
         for (const prim of rigidGroupPrims) {
             const memberPaths = getRelationship(prim, 'rigidGroup:members');
             if (!memberPaths || memberPaths.length === 0) continue;
@@ -298,7 +374,10 @@ export function setupScene(world, stage, canvas, options = {}) {
                 .filter(id => id !== undefined);
             if (memberEntities.length >= 2) {
                 const groupEnt = world.createEntity();
-                world.addComponent(groupEnt, new RigidGroupComponent(memberEntities, 1.0));
+                const renderIndicesAttr = getAttribute(prim, 'rigidGroup:renderIndices');
+                const renderSegments = parseRigidGroupRenderSegments(renderIndicesAttr);
+                const groupComponent = new RigidGroupComponent(memberEntities, 1.0, renderSegments);
+                world.addComponent(groupEnt, groupComponent);
                 world.addComponent(groupEnt, new MachineTagComponent(machineId));
                 for (const e of memberEntities) {
                     entityToRigidGroup[e] = groupEnt;
@@ -408,6 +487,25 @@ export function setupScene(world, stage, canvas, options = {}) {
         if (existingExtruder.length === 0) {
             const extruderEntity = world.createEntity();
             world.addComponent(extruderEntity, new ExtruderComponent());
+        }
+        {
+            let extruderComp = null;
+            for (const extruderEntity of world.query([ExtruderComponent])) {
+                extruderComp = world.getComponent(extruderEntity, ExtruderComponent);
+                if (extruderComp) {
+                    break;
+                }
+            }
+            if (extruderComp) {
+                if (!extruderComp.centerSources || typeof extruderComp.centerSources !== 'object') {
+                    extruderComp.centerSources = {};
+                }
+                if (extruderCenterEntityIds.length > 0) {
+                    extruderComp.centerSources[machineId] = extruderCenterEntityIds.slice();
+                } else if (extruderComp.centerSources[machineId]) {
+                    delete extruderComp.centerSources[machineId];
+                }
+            }
         }
 
         const remoteSpoolSystem = world.systems.find((system) => system instanceof RemoteSpoolSystem);

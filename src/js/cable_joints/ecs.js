@@ -202,10 +202,11 @@ export class DistanceConstraintComponent {
 // - restLocal: array of Vector2 offsets (initialized on first update)
 // - stiffness: [0..1], how strongly to enforce rigidity (1 = hard constraint)
 export class RigidGroupComponent {
-  constructor(members = [], stiffness = 1.0) {
+  constructor(members = [], stiffness = 1.0, renderSegments = null) {
     this.members = members;
     this.restLocal = null; // filled with Vector2 per member
     this.stiffness = stiffness;
     this.prevAngle = 0.0; // last solved absolute group angle
+    this.renderSegments = Array.isArray(renderSegments) ? renderSegments : null;
   }
 }

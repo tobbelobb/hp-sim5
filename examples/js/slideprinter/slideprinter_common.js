@@ -25,6 +25,7 @@ export class ExtruderComponent {
         this.extrusions = [];
         this.centerPos = new Vector2(0.0, 0.0);
         this.machineCenters = {};
+        this.centerSources = {};
     }
 }
 
@@ -43,31 +44,87 @@ export class ExtruderSystem {
         const spoolEntities = world.query([SpoolTagComponent, PositionComponent]);
         const sumByMachine = {};
         const countByMachine = {};
-
         for (const e of spoolEntities) {
-            const pos = world.getComponent(e, PositionComponent).pos;
+            const pos = world.getComponent(e, PositionComponent)?.pos;
+            if (!pos) {
+                continue;
+            }
             const machineTag = world.getComponent(e, MachineTagComponent);
             const machineId = machineTag?.id || 'default';
-            if (!sumByMachine[machineId]) {
-                sumByMachine[machineId] = new Vector2();
+            let sum = sumByMachine[machineId];
+            if (!sum) {
+                sum = new Vector2();
+                sumByMachine[machineId] = sum;
                 countByMachine[machineId] = 0;
             }
-            sumByMachine[machineId].add(pos);
+            sum.add(pos);
             countByMachine[machineId] += 1;
         }
 
         const machineCenters = {};
-        const machineIds = Object.keys(sumByMachine);
-        for (const machineId of machineIds) {
-            const sum = sumByMachine[machineId];
-            const count = countByMachine[machineId] || 1;
-            machineCenters[machineId] = sum.clone().scale(1 / count);
+        const centerSources = extruderComp.centerSources && typeof extruderComp.centerSources === 'object'
+            ? extruderComp.centerSources
+            : {};
+        const sourceMachineIds = Object.keys(centerSources);
+
+        const resolveAverage = (entityIds) => {
+            if (!Array.isArray(entityIds) || entityIds.length === 0) {
+                return null;
+            }
+            const sum = new Vector2();
+            let count = 0;
+            for (const entityId of entityIds) {
+                const pos = world.getComponent(entityId, PositionComponent)?.pos;
+                if (pos) {
+                    sum.add(pos);
+                    count += 1;
+                }
+            }
+            if (count === 0) {
+                return null;
+            }
+            return sum.clone().scale(1 / count);
+        };
+
+        for (const machineId of sourceMachineIds) {
+            const targetIds = centerSources[machineId];
+            let center = resolveAverage(targetIds);
+            if (!center && sumByMachine[machineId] && (countByMachine[machineId] ?? 0) > 0) {
+                center = sumByMachine[machineId].clone().scale(1 / countByMachine[machineId]);
+            }
+            if (center) {
+                machineCenters[machineId] = center;
+            }
         }
 
+        if (sourceMachineIds.length === 0) {
+            for (const machineId of Object.keys(sumByMachine)) {
+                const count = countByMachine[machineId] ?? 0;
+                if (count > 0) {
+                    machineCenters[machineId] = sumByMachine[machineId].clone().scale(1 / count);
+                }
+            }
+        } else {
+            for (const machineId of Object.keys(sumByMachine)) {
+                if (machineCenters[machineId]) {
+                    continue;
+                }
+                const count = countByMachine[machineId] ?? 0;
+                if (count > 0) {
+                    machineCenters[machineId] = sumByMachine[machineId].clone().scale(1 / count);
+                }
+            }
+        }
+
+        const machineIds = Object.keys(machineCenters);
         if (machineIds.length > 0) {
             extruderComp.machineCenters = machineCenters;
-            const primaryMachine = machineIds[0];
-            extruderComp.centerPos = machineCenters[primaryMachine].clone();
+            const preferredOrder = sourceMachineIds.length > 0 ? sourceMachineIds : machineIds;
+            let chosenId = preferredOrder.find((id) => machineCenters[id]) || null;
+            if (!chosenId) {
+                chosenId = machineIds[0];
+            }
+            extruderComp.centerPos = machineCenters[chosenId].clone();
         }
     }
 }
