@@ -2891,7 +2891,13 @@ function initHpSim() {
     if (!stageReady || machines.length === 0) {
       return;
     }
-    event.preventDefault();
+    if (event && event.cancelable) {
+      try {
+        event.preventDefault();
+      } catch (_err) {
+        // Some browsers throw if preventDefault is called on a non-cancelable event.
+      }
+    }
     const normalized = normalizeWheelDelta(event.deltaY, event.deltaMode);
     if (normalized === 0) {
       return;
@@ -3552,7 +3558,11 @@ function initHpSim() {
         showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
     });
-    canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+    try {
+      canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+    } catch (_err) {
+      canvas.addEventListener('wheel', handleCanvasWheel, false);
+    }
   }
 
   if (secondaryControls) {

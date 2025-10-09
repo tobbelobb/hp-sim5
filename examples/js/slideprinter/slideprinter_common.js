@@ -17,6 +17,17 @@ import {
     CablePathComponent,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 
+const preventDefaultSafely = (event) => {
+    if (!event || !event.cancelable) {
+        return;
+    }
+    try {
+        event.preventDefault();
+    } catch (_err) {
+        // Some mobile browsers throw when preventDefault is used on non-cancelable events.
+    }
+};
+
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
 
 export class ExtruderComponent {
@@ -660,9 +671,9 @@ export class RemoteInputSystem {
         return { x: simX, y: simY };
      }
 
-     handlePointerDown(event) {
-         event.preventDefault();
-         const onCanvas = event.target === this.canvas;
+    handlePointerDown(event) {
+        preventDefaultSafely(event);
+        const onCanvas = event.target === this.canvas;
          if (onCanvas && this.interactionMode === 'pan') {
              this.isPanning = true;
              this.panPointerId = event.pointerId;
@@ -723,7 +734,7 @@ export class RemoteInputSystem {
              if (!this.isPanning || this.panPointerId !== event.pointerId) {
                  return;
              }
-             event.preventDefault();
+             preventDefaultSafely(event);
              const baseScale = this.canvas.height / this.world.getResource('simHeight');
              const scale = baseScale * this.scaleMultiplier;
              if (scale <= 0) {
@@ -749,7 +760,7 @@ export class RemoteInputSystem {
              return;
          }
 
-         event.preventDefault();
+         preventDefaultSafely(event);
          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
              const { x, y } = this.toSimCoords(event.clientX, event.clientY);
              this.ws.send(JSON.stringify({ action: 'input', type: 'pointermove', x, y }));
@@ -757,7 +768,7 @@ export class RemoteInputSystem {
      }
 
      handlePointerUp(event) {
-         event.preventDefault();
+         preventDefaultSafely(event);
          if (this.interactionMode === 'pan') {
              if (this.isPanning && this.panPointerId === event.pointerId) {
                  this.isPanning = false;
@@ -831,7 +842,7 @@ export class InputSystem {
          this.globalTouchOverrides = null;
          this.preventScrollDuringGrab = (event) => {
              if (this.activeGrabPointerId !== null && event.cancelable) {
-                 event.preventDefault();
+                 preventDefaultSafely(event);
              }
          };
          document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
@@ -1113,7 +1124,7 @@ export class InputSystem {
 
      handlePointerDown(event) {
          if (event.target !== this.canvas) return;
-         event.preventDefault();
+         preventDefaultSafely(event);
          if (typeof this.canvas.setPointerCapture === 'function') {
              try {
                  this.canvas.setPointerCapture(event.pointerId);
@@ -1219,7 +1230,7 @@ export class InputSystem {
          const wasPanPointer = this.isPanning && this.panPointerId === event.pointerId;
          this.trackPointerEnd(event);
          if (wasPanPointer) {
-             event.preventDefault();
+             preventDefaultSafely(event);
              if (this.onViewChange) {
                  this.onViewChange(
                      {
@@ -1243,7 +1254,7 @@ export class InputSystem {
              }
              return;
          }
-         event.preventDefault();
+         preventDefaultSafely(event);
          if (typeof this.canvas.releasePointerCapture === 'function') {
              try {
                  this.canvas.releasePointerCapture(event.pointerId);
@@ -1296,12 +1307,12 @@ export class InputSystem {
          }
          const isPanPointer = this.isPanning && this.panPointerId === event.pointerId;
          if (this.pinchActive) {
-             event.preventDefault();
+             preventDefaultSafely(event);
              this.updatePinchGesture();
              return;
          }
          if (isPanPointer) {
-             event.preventDefault();
+             preventDefaultSafely(event);
              const baseScale = this.canvas.height / this.world.getResource('simHeight');
              const scale = baseScale * this.scaleMultiplier;
              if (scale <= 0) {
@@ -1328,7 +1339,7 @@ export class InputSystem {
          if (this.interactionMode === 'pan') {
              return;
          }
-         event.preventDefault();
+         preventDefaultSafely(event);
          if (this.grabSpring === null) {
              return;
          }
