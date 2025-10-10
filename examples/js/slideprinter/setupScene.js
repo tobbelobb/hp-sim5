@@ -165,6 +165,18 @@ export function setupScene(world, stage, canvas, options = {}) {
         return segments.length > 0 ? segments : null;
     }
 
+    function readNumericAttribute(primNode, attributeName) {
+        const rawValue = getAttribute(primNode, attributeName);
+        if (typeof rawValue === 'number') {
+            return Number.isFinite(rawValue) ? rawValue : null;
+        }
+        if (rawValue === null || rawValue === undefined) {
+            return null;
+        }
+        const parsed = Number(rawValue);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
     function scopedKey(relativeName) {
         const key = relativeName || '';
         return namespace ? `${namespace}::${key}` : key;
@@ -281,7 +293,20 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new SpoolTagComponent());
                     const axisName = prim.name.slice(-1).toUpperCase();
                     world.addComponent(ent, new SpoolStateComponent(axisName));
-                    world.addComponent(ent, new StepperMotorComponent());
+                    const holdingTorque = readNumericAttribute(prim, "stepper:holdingTorque");
+                    const numPolePairs = readNumericAttribute(prim, "stepper:numPolePairs");
+                    const dampingCoeff = readNumericAttribute(prim, "stepper:dampingCoeff");
+                    const stepperComponent = new StepperMotorComponent();
+                    if (holdingTorque !== null) {
+                        stepperComponent.holdingTorque = holdingTorque;
+                    }
+                    if (numPolePairs !== null) {
+                        stepperComponent.numPolePairs = Math.round(numPolePairs);
+                    }
+                    if (dampingCoeff !== null) {
+                        stepperComponent.dampingCoeff = dampingCoeff;
+                    }
+                    world.addComponent(ent, stepperComponent);
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
                     if (velArr !== null) {
                       const vel = new Vector2(velArr[0], velArr[1]);

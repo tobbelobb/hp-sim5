@@ -26,6 +26,9 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             # Typical intertia range for Nema 17 stepper motors are ca 3e-5 to 8e-5.
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
+            custom double stepper:holdingTorque = 0.5
+            custom int stepper:numPolePairs = 50
+            custom double stepper:dampingCoeff = 0.01
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -64,6 +67,9 @@ def Xform "World"
             float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
+            custom double stepper:holdingTorque = 0.5
+            custom int stepper:numPolePairs = 50
+            custom double stepper:dampingCoeff = 0.01
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -102,6 +108,9 @@ def Xform "World"
             float physics:mass = 0.025
             float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
+            custom double stepper:holdingTorque = 0.5
+            custom int stepper:numPolePairs = 50
+            custom double stepper:dampingCoeff = 0.01
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 

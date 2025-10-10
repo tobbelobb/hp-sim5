@@ -323,6 +323,23 @@ def stage_to_world(world, stage):
             inertia_tensor = prim.GetAttribute("physics:inertiaTensor").Get()
             inertia = inertia_tensor[2][2]
 
+            stepper_kwargs = {}
+            holding_attr = prim.GetAttribute("stepper:holdingTorque")
+            if holding_attr and holding_attr.HasAuthoredValueOpinion():
+                holding_val = holding_attr.Get()
+                if holding_val is not None:
+                    stepper_kwargs["holding_torque"] = float(holding_val)
+            num_pairs_attr = prim.GetAttribute("stepper:numPolePairs")
+            if num_pairs_attr and num_pairs_attr.HasAuthoredValueOpinion():
+                num_pairs_val = num_pairs_attr.Get()
+                if num_pairs_val is not None:
+                    stepper_kwargs["num_pole_pairs"] = int(round(num_pairs_val))
+            damping_attr = prim.GetAttribute("stepper:dampingCoeff")
+            if damping_attr and damping_attr.HasAuthoredValueOpinion():
+                damping_val = damping_attr.Get()
+                if damping_val is not None:
+                    stepper_kwargs["damping_coeff"] = float(damping_val)
+
             world.add_component(ent, SpoolTagComponent())
             axis_name = prim.GetName()[-1] # Assumes names like 'SpoolA'
             world.add_component(ent, SpoolStateComponent(axis=axis_name))
@@ -344,7 +361,7 @@ def stage_to_world(world, stage):
                 world.add_component(ent, CoefficientOfFrictionComponent(fric))
             name_to_entity[prim.GetName()] = ent
             if "Stepper" in tags:
-                world.add_component(ent, StepperMotorComponent())
+                world.add_component(ent, StepperMotorComponent(**stepper_kwargs))
 
         if "Anchor" in tags:
             ent = world.create_entity()

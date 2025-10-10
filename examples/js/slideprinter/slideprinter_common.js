@@ -137,8 +137,8 @@ export class SpoolStateComponent {
     }
 }
 
-// Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
-// TODO: This should be specced in the slideprinter.usda file, not hard coded in a .py file
+// Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar.
+// Parameters are typically authored in the USD scene and applied when the prim loads.
 export class StepperMotorComponent {
     constructor(
         commandedAngle = 0.0,

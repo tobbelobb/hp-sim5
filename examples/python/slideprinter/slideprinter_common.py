@@ -62,8 +62,8 @@ class SpoolStateComponent:
     axis: str = None
 
 
-# Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
-# TODO: This should be specced in the slideprinter.usda file, not hard coded in a .py file
+# Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar.
+# Parameters are normally supplied from the USD scene at load time.
 @dataclass
 class StepperMotorComponent:
     """Holds the state and physical properties of a stepper motor."""
