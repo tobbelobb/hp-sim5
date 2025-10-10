@@ -7,11 +7,11 @@
 
 # Then launch the "mcu" with
 
-~/repos/hp-sim5/examples/klipper/slideprinter/klipper_linux_mcu_bridge.py --raw-path /tmp/klipper_host_mcu_raw --host-path /tmp/klipper_host_mcu --mcu-bin ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict --klipper-py ~/repos/klipper/klippy/
+~/repos/hp-sim5/examples/klipper/slideprinter/klipper_linux_mcu_bridge.py --raw-path /tmp/klipper_host_mcu_raw --host-path /tmp/klipper_host_mcu --mcu-bin ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict --klipper-py ~/repos/hp-sim5/klipper/klippy/
 
 # Then launch klippy with
 
-~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg -i ~/repos/hp-sim5/public/examples/gcode/movements.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg -i ~/repos/hp-sim5/public/examples/gcode/movements.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
 
 #### Option 2: Simulate the whole avr and mirror the incoming messages on to the websocket.
 #
@@ -40,7 +40,7 @@
 # $ ls ./build/pysimulavr/_pysimulavr.*.so
 # Then simulate avr with
 
-PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py ~/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py ~/repos/klipper/klippy/ --rate 1.0 --keep-noise --parse-debug
+PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/slideprinter/klipper_avr_bridge.py ~/repos/hp-sim5/examples/klipper/avr/klipper.elf --dict ~/repos/hp-sim5/examples/klipper/avr/klipper.dict --klipper-py ~/repos/hp-sim5/klipper/klippy/ --rate 1.0 --keep-noise --parse-debug
 
 
 # This will continuously hog one cpu core which is not ideal but no show stopper either
@@ -50,4 +50,4 @@ PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/sl
 # First run this in another terminal to make sure we're capturing klippers log output
 tail -F ~/repos/hp-sim5/attic/klipper.log
 # Then run klipper itself
-~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log

@@ -1,1 +1,1 @@
-~/klippy-env/bin/python ~/repos/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg -i ~/repos/hp-sim5/public/examples/gcode/Hangprinter_logo6_no_extrusion.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg -i ~/repos/hp-sim5/public/examples/gcode/Hangprinter_logo6_no_extrusion.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
