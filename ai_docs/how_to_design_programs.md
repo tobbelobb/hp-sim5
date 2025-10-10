@@ -130,6 +130,10 @@ Strip away all inessential details at first, write them down and put them away. 
 If the core problem is too big or vague to reason about, split it into sub-problem that can be handled one-by-one.
 Then categorize the sub-problems into "inessential" and "essential" buckets.
 
+For an AI agent, step 0 has often already been carried out by the user.
+The most important problem, the one that we've chosen to focus on, is often already written out in the prompt.
+If not, the AI agent should ask the user to do that.
+
 1. From Problem Analysis to Data Definitions
 
 Goal: Analyze the problem statement, typically stated as a word problem.
