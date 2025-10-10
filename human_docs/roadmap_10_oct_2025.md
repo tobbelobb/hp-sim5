@@ -21,27 +21,34 @@ We need ReprapFirmware to plug into hp-sim5.
  (- Force sensing)
 
 Once a new feature in Klipper, or preferrably several of them, they are tuneable as parameters in the .cfg file.
-The general layout of the machine needs to be statically set by a human, but we can optimize programmatically
-over the following things:
 
- - Mover size
- - Gearing
- - Buildup Factor
- - Pretension
+The general layout of the machine needs, thinks like
+
+ - The number and approximate position of anchors, and
+ - what sensors are available
+
+... need to be statically set by a human, but we can optimize programmatically
+over anything deemed a mechanical- or software-feature (see later in the text) like:
+
+ - Mover size (mechanical)
+ - Gearing (mechanical)
+ - Buildup Factor (software)
+ - Pretension (mechanical)
+ - Flex compensation (software)
 
 
 # ReprapFirmware Support in hp-sim5
 
-The way I see development looking down the line, we really want to use ReprapFirmware in batch mode on the x64
-architecture, on the desktop, so that ReprapFirmware and Klipper get hot-swap interchangeable at the .serial layer.
+We really want to use ReprapFirmware in batch mode on the x64 architecture, on the desktop.
+That way ReprapFirmware and Klipper get hot-swap interchangeable at the .serial layer.
 
 Anything else will make it too hard to
 
  - Simulate real-time behavior of the stepper/step signals. We need signals with already-computed perfect time stamps.
  - Maintain in the deeper abstraction layers. Like the simulated Kalman Filter prototype or stepper timing inside
-   the physics engine should not be implemented separately for steps coming from Klipper and from ReprapFirmware.
+   the physics engine. We can't have separate implementations for for signals coming from Klipper and ReprapFirmware.
 
-From my understanding, the following steps are feasible:
+From my understanding, the following steps towards ReprapFirmware support in hp-sim5 are feasible:
 
  - Compile ReprapFirware or x64.
  - Define all steppers as CAN-connected.
@@ -52,8 +59,10 @@ From my understanding, the following steps are feasible:
    2. .serial -> .can, or
    3. .serial -> .hpsim and .can -> .hpsim
    ... where .hpsim is some format that we define ourselves to work well with hp-sim5.
-   I have not seen a total requirement to do this yet but there might be reasons why
-   we want a self-designed unified interface.
+
+I have not seen a hard requirement to define our own protocol yet.
+There might be reasons why we want a self-designed unified interface later, but try to postpone or avoid that.
+Go for alternative 1 first.
 
 
 # Kalman Filter
