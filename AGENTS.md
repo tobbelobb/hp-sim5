@@ -1,6 +1,6 @@
 # Instructions for Agents
 
-## Research Papers
+## Research Papers Regarding the Simulator
 - The directory `ai_docs/` contains `.md` versions of research papers that inform the physics algorithms used here.
 - **Always read the relevant paper and confirm your approach before changing any physics behavior.**
 - Each subfolder of `ai_docs/` (such as `CableJoints`, `PBDBodies`, `XPBD`, and `smallsteps`) contains the paper in markdown form.
