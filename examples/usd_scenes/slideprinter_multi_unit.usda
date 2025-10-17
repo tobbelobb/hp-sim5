@@ -56,7 +56,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (-0.346410161513775, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
@@ -69,7 +69,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (0.346410161513775, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
@@ -118,7 +118,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (0.0, 0.4, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
@@ -159,7 +159,7 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        # Group the three spools into a rigid cluster for simulation
+        # Group the three attachment points into a rigid cluster for simulation
         def RigidGroup "SpoolTriangle"
         {
             rel rigidGroup:members = [
@@ -168,6 +168,36 @@ def Xform "World"
                 </World/SlideprinterScene/AttachBR>,
             ]
         }
+
+        #def DistancePhysicsJoint "DistanceJointAA"
+        #{
+        #    rel physics:body0 = </World/SlideprinterScene/AttachAL>
+        #    rel physics:body1 = </World/SlideprinterScene/AttachAR>
+        #    point3f physics:localPos0 = (0, 0, 0)
+        #    point3f physics:localPos1 = (0, 0, 0)
+        #    float physics:minDistance = 0.69282032302755
+        #    float physics:maxDistance = 0.69282032302755
+        #}
+
+        #def DistancePhysicsJoint "DistanceJointAB"
+        #{
+        #    rel physics:body0 = </World/SlideprinterScene/AttachAR>
+        #    rel physics:body1 = </World/SlideprinterScene/AttachBR>
+        #    point3f physics:localPos0 = (0, 0, 0)
+        #    point3f physics:localPos1 = (0, 0, 0)
+        #    float physics:minDistance = 0.69282032302755
+        #    float physics:maxDistance = 0.69282032302755
+        #}
+
+        #def DistancePhysicsJoint "DistanceJointBA"
+        #{
+        #    rel physics:body1 = </World/SlideprinterScene/AttachBR>
+        #    rel physics:body0 = </World/SlideprinterScene/AttachAL>
+        #    point3f physics:localPos0 = (0, 0, 0)
+        #    point3f physics:localPos1 = (0, 0, 0)
+        #    float physics:minDistance = 0.69282032302755
+        #    float physics:maxDistance = 0.69282032302755
+        #}
 
         def CableJoint "JointAL_0"
         {
