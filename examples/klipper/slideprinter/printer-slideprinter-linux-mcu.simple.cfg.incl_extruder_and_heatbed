@@ -10,6 +10,15 @@ serial: /tmp/klipper_host_mcu
 kinematics: winch
 max_velocity: 300
 max_accel: 3000
+flex_compensation_enable: false
+winch_mover_weight: 0.006
+winch_spring_constant: 20000.0
+winch_min_force: 5, 5, 5
+winch_max_force: 70, 70, 70
+winch_guy_wire_lengths: 528.3, 528.3, 528.3
+flex_compensation_algorithm: tikhonov
+ignore_gravity: true
+ignore_pretension: false
 
 [stepper_a]
 step_pin: gpiochip1/gpio0
@@ -27,8 +36,8 @@ dir_pin: gpiochip1/gpio4
 enable_pin: gpiochip1/gpio5
 microsteps: 16
 rotation_distance: 188.496
-anchor_x: 1645.448267190434
-anchor_y: 949.9999999999999
+anchor_x: 1645.44826719
+anchor_y: 950
 anchor_z: 0
 
 [stepper_c]
@@ -37,19 +46,9 @@ dir_pin: gpiochip1/gpio7
 enable_pin: gpiochip1/gpio8
 microsteps: 16
 rotation_distance: 188.496
-anchor_x: -1645.448267190434
-anchor_y: 949.9999999999999
+anchor_x: -1645.44826719
+anchor_y: 950
 anchor_z: 0
-
-[stepper_d]
-step_pin: gpiochip1/gpio9
-dir_pin: gpiochip1/gpio10
-enable_pin: gpiochip1/gpio11
-microsteps: 16
-rotation_distance: 188.496
-anchor_x: 0
-anchor_y: 0
-anchor_z: 2000
 
 
 [extruder]

@@ -10,7 +10,8 @@ const STEP_PIN_AXIS_MAP = {
     'gpiochip1/gpio9': 'D',
 };
 
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E'];
+//const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E'];
+const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E'];
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 200 steps/rev, 16 microsteps
 const MCU_CLOCK_HZ = 50_000_000;
 const EXTRUDER_MM_PER_STEP = 33.5 / (200 * 16);
