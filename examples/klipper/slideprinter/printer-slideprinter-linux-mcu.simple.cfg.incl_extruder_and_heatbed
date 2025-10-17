@@ -13,10 +13,10 @@ max_accel: 3000
 flex_compensation_enable: false
 winch_mover_weight: 0.006
 winch_spring_constant: 20000.0
-winch_min_force: 5, 5, 5
-winch_max_force: 70, 70, 70
+winch_min_force: 2.5, 2.5, 2.5
+winch_max_force: 170, 170, 170
 winch_guy_wire_lengths: 528.3, 528.3, 528.3
-flex_compensation_algorithm: tikhonov
+flex_compensation_algorithm: qp
 ignore_gravity: true
 ignore_pretension: false
 
