@@ -12,7 +12,7 @@ max_velocity: 300
 max_accel: 3000
 winch_mover_weight: 0.006
 winch_spring_constant: 20000.0
-winch_min_force: 3.5, 3.5, 3.5
+winch_min_force: 3, 3, 3
 winch_max_force: 170, 170, 170
 winch_guy_wire_lengths: 528.3, 528.3, 528.3
 flex_compensation_algorithm: qp
