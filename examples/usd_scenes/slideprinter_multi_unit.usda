@@ -110,19 +110,6 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Circle "AttachBL" (
-            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
-        )
-        {
-            token[] ecs:tags = ["Attachment"]
-            double radius = 0.01
-            double3 xformOp:translate = (0.346410161513775, -0.2, 0.0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
-            vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
-        }
-
         def Circle "AttachBR" (
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
@@ -172,42 +159,13 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Circle "AttachCL" (
-            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
-        )
-        {
-            token[] ecs:tags = ["Attachment"]
-            double radius = 0.01
-            double3 xformOp:translate = (0.0, 0.4, 0.0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
-            vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
-        }
-
-        def Circle "AttachCR" (
-            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
-        )
-        {
-            token[] ecs:tags = ["Attachment"]
-            double radius = 0.01
-            double3 xformOp:translate = (-0.346410161513775, -0.2, 0.0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
-            vector3f physics:velocity = (0.0, 0.0, 0.0)
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
-        }
-
         # Group the three spools into a rigid cluster for simulation
         def RigidGroup "SpoolTriangle"
         {
             rel rigidGroup:members = [
                 </World/SlideprinterScene/AttachAL>,
                 </World/SlideprinterScene/AttachAR>,
-                </World/SlideprinterScene/AttachBL>,
                 </World/SlideprinterScene/AttachBR>,
-                </World/SlideprinterScene/AttachCL>,
-                </World/SlideprinterScene/AttachCR>
             ]
         }
 
@@ -261,8 +219,8 @@ def Xform "World"
             custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorBL>
-            custom rel physics:body1 = </World/SlideprinterScene/AttachBL>
             custom double restLength = 1.9
+            custom rel physics:body1 = </World/SlideprinterScene/AttachAR>
         }
 
         def CableJoint "JointBR_0"
@@ -297,8 +255,8 @@ def Xform "World"
             custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorCL>
-            custom rel physics:body1 = </World/SlideprinterScene/AttachCL>
             custom double restLength = 1.9
+            custom rel physics:body1 = </World/SlideprinterScene/AttachBR>
         }
 
         def CableJoint "JointCR_0"
@@ -315,8 +273,8 @@ def Xform "World"
             custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom rel physics:body0 = </World/SlideprinterScene/AnchorCR>
-            custom rel physics:body1 = </World/SlideprinterScene/AttachCR>
             custom double restLength = 1.9
+            custom rel physics:body1 = </World/SlideprinterScene/AttachAL>
         }
 
         def Xform "CablePathAL" (
@@ -390,8 +348,8 @@ def Xform "World"
         }
         rel machine:extrusionCenters = [
             </World/SlideprinterScene/AttachAL>,
-            </World/SlideprinterScene/AttachBL>,
-            </World/SlideprinterScene/AttachCL>
+            </World/SlideprinterScene/AttachAR>,
+            </World/SlideprinterScene/AttachBR>
         ]
         custom color3f machine:tintColor = (1.0, 1.0, 1.0)
         custom color3f machine:extrusionColor = (1.0, 1.0, 1.0)

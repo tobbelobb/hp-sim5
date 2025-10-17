@@ -341,6 +341,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     nameToEntityId[primKey] = ent;
                 } else if (tags.includes("Pinhole") || tags.includes("Attachment")) {
                     const ent = world.createEntity();
+                    world.addComponent(ent, new SpoolTagComponent());
                     world.addComponent(ent, new MachineTagComponent(machineId));
                     const radius = getAttribute(prim, "radius");
                     const mass = getAttribute(prim, "physics:mass");
