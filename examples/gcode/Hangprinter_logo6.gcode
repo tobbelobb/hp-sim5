@@ -11,7 +11,8 @@
 
 ;TYPE:Custom
 G28 ; home all axes
-G1 Z5 F5000 ; lift nozzle
+M666 F1 ; Tension the lines
+G1 F5000 ; lift nozzle
 G21 ; set units to millimeters
 G90 ; use absolute coordinates
 M82 ; use absolute distances for extrusion
@@ -23,7 +24,7 @@ M107
 ;HEIGHT:0.6
 G1 E-2 F2400
 G92 E0
-G1 Z.6 F7800
+G1 F7800
 G1 X-229.575 Y203
 G1 E2 F2400
 ;TYPE:Skirt/Brim
@@ -6058,7 +6059,7 @@ G1 X-49.449 Y370.885 E4229.77454
 ;HEIGHT:0.6
 G1 E4227.77454 F2400
 G92 E0
-G1 Z1.2 F7800
+G1 F7800
 G1 X-200.022 Y214.359
 G1 E2 F2400
 ;TYPE:Perimeter
@@ -16039,7 +16040,7 @@ G1 X22.732 Y438.824 E9.0606
 ;HEIGHT:0.6
 G1 E7.0606 F2400
 G92 E0
-G1 Z1.8 F7800
+G1 F7800
 G1 X-153.272 Y-435.165
 G1 E2 F2400
 ;TYPE:Perimeter
