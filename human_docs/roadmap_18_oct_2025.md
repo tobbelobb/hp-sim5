@@ -6,35 +6,90 @@ We need to make sure KlipperCommander sends empty Move commands to further the s
 We want a guarantee that there are no buffering or similar bugs in klippers pacer or commander.
 
 
-# General Strategy
+# General Strategy hp-sim5
 
-We need several firmware features in Klipper.
-We need the same firmware features that are already in ReprapFirmware.
+We need several firmware features in both Klipper and ReprapFirmware.
+We need the full set of features in both.
 We need ReprapFirmware to plug into hp-sim5.
 
  - Buildup Compensation
- - Flex compensation
+ - Flex compensation (The tikhonov and qp algorithms)
  - Forward transforms
  (- Torque mode)
  (- Encoder readings for auto calibration)
  (- hp-mark)
  (- Force sensing)
 
-Once a new feature in Klipper, or preferrably several of them, they are tuneable as parameters in the .cfg file.
+Klipper features should be tuneable as parameters in the .cfg file,
+the ReprapFirmware ones in config.g.
 
-The general layout of the machine needs, thinks like
+Some parameters must be decided by the human building the machine:
 
  - The number and approximate position of anchors, and
  - what sensors are available
 
-... need to be statically set by a human, but we can optimize programmatically
-over anything deemed a mechanical- or software-feature (see later in the text) like:
+The rest we can optimize programmatically, and should be considered features (see later in the text).
+With some lines connected to a central effector we could do extremely fast and accurate movements.
+The level of performance we achieve just depends on the number and quality of our features.
+How much we need to compensate and how well we manage to compensate.
 
- - Mover size (mechanical)
- - Gearing (mechanical)
- - Buildup Factor (software)
- - Pretension (mechanical)
- - Flex compensation (software)
+
+## General Strategy Appendix
+
+Each feature has a mechanical responsibility and a mechanical design decision which prioritizes things like:
+
+ - price
+ - availability
+ - feasability
+ - requirements
+ - ease of manufacture
+ - etc etc
+
+Each feature also has a software part, often thought about as "compensation".
+Eg:
+
+ - Mover size (mechanical design)
+ - Mover size Compensation (implicitly by measuring only between line ends when calibrating)
+ - Gearing (mechanical design)
+ - Gearing Compensation (set as a ratio in config)
+ - Buildup (mechanical design)
+ - Buildup Compensation (software)
+ - Weight (mechanical design)
+ - Weight Compensation (part of flex compensation, part of "input shaping", and acceleration settings)
+ - Pretension (mechanical design)
+ - Pretension compensation (part of flex compensation)
+
+The "uncompensated" Hangprinter in this reference system would be a
+weightless, sizeless particle mover driven around by weightless, frictionless,
+stateless, perfectly stiff lines, powered by idealized motors.
+In that case the only inverse kinematics equation we need is Pythagoras' theorem.
+
+Most new people building their own Hangprinter, asking their first question in the forums even refer
+to the whole Hangprinter kinematics as doing "Compensation".
+"The mover doesn't move straight, the top motor isn't compensating enough."
+The "uncompensated" basic thing in their reference system would be a Cartesian machine.
+It makes sense, the gcode is Cartesian.
+So we add to the list of our design/compensation pairs:
+
+ - Hangprinter motor placement and connections (The mechanical design decision of being a cable driven robot)
+ - Motor placement and connections compensation (usually called Hangprinter kinematics or winch kinematics, the software part. This includes calibration)
+
+As we see already from the text above, compensation quickly builds up layers of compensation upon compensation.
+This becomes hard to make robust, reliable, or even good enough from the start.
+An easier way is most often to make mechanical design decisions that don't allow errors to occur and therefore
+doesn't require much compensation in software.
+
+The Hangprinter philosophy is to not take the easier way, but instead allow
+errors to occur at the mechanical design stage,
+and to try and make up for that in the compensation phase.
+This gives us freedom in the mechanical design space to draw extremely cheap and easy to build machines.
+The mechanical designer should not need to carry an understanding of how the kinematics works,
+only that a kinematics is theoretically possible to control.
+
+We shouldn't even have to specify very much at the mechanical design stage at all.
+Hangprinter wants to make crappy and under-specified hardware work well.
+We make a bet that it's possible to develop super good software, previously unimaginable good software for machine control.
+We just compensate whatever.
 
 
 # ReprapFirmware Support in hp-sim5
@@ -100,32 +155,33 @@ At first we shouldn't bother with extrusions at least.
 
 # Flex Compensation
 
-This feature is already implemented in ReprapFirmware and it's easy to get into Klipper.
+This feature is already implemented in both ReprapFirmware and Klipper.
+However, the ReprapFirmware implementation is a bit broken, it needs to be fixed.
 
-It should be developed right away because it's best tested in the simplified environment that we already have:
+What I call flex compensation really means two things
 
- - 2D
- - No buildup compensation (isolate flex compensation from other problems)
+ - Counteract the stretch that gravity causes in our lines
+ - Counteract the variation in stretch
+   that pretension causes in our lines in different parts of the build volume
 
 
 ## Pretension Testing
 
-There's currently no way in hp-sim5 to manually tighten or loosen lines in the UI,
-in a way that affects a print's quality score.
+There's currently one way in hp-sim5 to set pretension: With M666 F1 right in the gcode.
 There's a full reset before any print.
 This is a good thing, because then the test is more contained inside the combination of
 
- - .cfg/config.gcode,
+ - .cfg/config.g,
  - .gcode file
  - .usda file,
 
 ... Making the test repeatable and batchable.
 
-Pretension can be created either with a custom line in the gcode file, or better: with a custom .usda file.
+Pretension is created with a combination of a manual .cfg setting and custom line in the gcode file.
+It would be good to move it towards a property in the .usda file.
 
-hp-sim5 is currently geared towards handling different .usda files so we could just define
-a series of pretensioned designs in order to test different pretensions.
-This makes sense.
+hp-sim5 is currently geared towards handling different .usda files so we should define
+our differently pretensioned designs as different .usda files.
 
 The amount of pre-tension is part of the mechanical design, not part of the gcode.
 Move an anchor -> change the optimal pre-tension. Anchor location is in .usda.
@@ -214,7 +270,7 @@ To shorten the test loop for Klipper and cfg changes we could
 
 We should probably include klipper right in the hp-sim5 codebase, since we reference it already in our scripts.
 
-This is a precursor to, and should be designed to be easy to buid out to a more fully featured Test Batch Mode.
+This is a precursor to, and should be designed to be easy to build out to a more fully featured Test Batch Mode.
 
 
 ## Test Batch Mode
@@ -222,16 +278,16 @@ This is a precursor to, and should be designed to be easy to buid out to a more 
 At this point we should establish a hierarchy of information/file authority:
 
 The scene/machine description in the .usda file is the primary source of truth.
-A Klipper .cfg file and a ReprapFirmware config.gcode can be generated from a .usda file.
+A Klipper .cfg file and a ReprapFirmware config.g can be generated from a .usda file.
 
 Mechanical features should be specified in the .usda file.
 That means these things should be specified in the .usda file:
 (+ means already there, M669/666 means translates into ReprapFirmware config value ...)
 
  - Motor microsteps,
- - Motor holdingTorque,
- - Motor numPolePairs, (implies motor full steps if stepper motor)
- - Motor dampingCoeff,
+ + Motor holdingTorque,
+ + Motor numPolePairs, (implies motor full steps if stepper motor)
+ + Motor dampingCoeff,
  + Motor rotational inertia,
  + Anchor positions,M669 ABCDIJKLO...
  - Mechanical advantage (numer of times line is routed back-and-forth between pivot/action points)
@@ -261,7 +317,7 @@ The `usda_to_cfg_and_configgcode.py` program should calculate from .usda and arg
  * The number of anchors, M666 N...
  * Motor full steps, M666 J...
 
-The number of defaults, and ECS values set in .js files, even if based on tags in the .usda file, should be minimal or purely related to rendering.
+The number of defaults, and ECS values set in .js files, even if based on tags in the .usda file, should be minimal or purely related to UI or rendering.
 Otherwise such defaults will create bugs by hiding specified mechanical features and software features from the simulator.
 
 A full test and its result depends on:
@@ -269,13 +325,13 @@ A full test and its result depends on:
  - The simulation source code
  - The gcode
  - The .usda file that defines the machine
- - The .cfg/config.gcode file that was sent into klipper
+ - The .cfg/config.g file that was sent into klipper
  - Any bugs in the pacer or klipperCommander, if any
  - Any manual steps we have squeezed in (which we shouldn't)
 
 A test batch is a collection of gcode files and usda files, maybe just bundled up in a common directory.
 A `.usda_with_ranges` file is allowed to specify a parameter as a range,
-to generate even more usda files (and hence .cfg/config.gcode files).
+to generate even more usda files (and hence .cfg/config.g files).
 All pairs of (`gcode_n`, `usda_n`) are tested.
 
 The output is a json with all quality measurements for each test run, ready to be plotted or optimized over.
