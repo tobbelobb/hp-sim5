@@ -105,7 +105,7 @@ Anything else will make it too hard to
 
 From my understanding, the following steps towards ReprapFirmware support in hp-sim5 are feasible:
 
- - Compile ReprapFirware or x64.
+ - Compile ReprapFirmware for x64.
  - Define all steppers as CAN-connected.
  - Find or implement a batch mode in ReprapFirmware that doesn't wait for anything, just computes the steps.
  - Capture the CAN-commands in a binary .can file or something.

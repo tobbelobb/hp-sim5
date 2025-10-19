@@ -1,3 +1,33 @@
 [submodule "klipper"]
 	path = klipper
 	url = git@github.com:tobbelobb/klipper.git
+[submodule "RRF/ReprapFirmware"]
+	path = RRF/ReprapFirmware
+	url = git@github.com:tobbelobb/ReprapFirmware
+[submodule "RRF/CANlib"]
+	path = RRF/CANlib
+	url = git@github.com:Duet3d/CANlib.git
+	branch = 3.6-dev
+[submodule "RRF/CoreN2G"]
+	path = RRF/CoreN2G
+	url = git@github.com:Duet3d/CoreN2G.git
+	branch = 3.7-dev
+[submodule "RRF/FreeRTOS"]
+	path = RRF/FreeRTOS
+	url = git@github.com:Duet3d/FreeRTOS.git
+	branch = 3.7-dev
+[submodule "RRF/RRFLibraries"]
+	path = RRF/RRFLibraries
+	url = git@github.com:Duet3d/RRFLibraries.git
+	branch = 3.7-dev
+[submodule "RRF/LibTinyusb"]
+	path = RRF/LibTinyusb
+	url = git@github.com:Duet3d/LibTinyusb.git
+	branch = master
+[submodule "RRF/RepRapFirmware.wiki"]
+	path = RRF/RepRapFirmware.wiki
+	url = git@github.com:Duet3D/RepRapFirmware.wiki.git
+[submodule "RRF/DuetWebControl"]
+	path = RRF/DuetWebControl
+	url = git@github.com:Duet3D/DuetWebControl
+	branch = v3.7-dev
