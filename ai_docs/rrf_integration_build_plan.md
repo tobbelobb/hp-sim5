@@ -44,6 +44,8 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Remaining blockers before this file compiles cleanly: large device headers (`AsyncSerial.h`, SAM4E peripherals), feature macros (e.g. `SUPPORT_REMOTE_COMMANDS`, `HAS_AUX_DEVICES`) that we should pin to zero for the host build, and a strategy to compartmentalise DueXn expansion logic so it can log instead of touching I2C/GPIO.
 - Added SAME70-specific HAL shims (`host/include/DmacManager.h`, `host/include/pmc/pmc.h`) and aliased ARM-only intrinsics (`__fp16`, `float16_t`) so CANlib headers parse under x86\_64.
 - Current compilation halts in `Pins_Duet3_MB6HC.h`/`Platform.cpp` because MCU-specific enumerations (`TcOutput`, `PwmOutput`, `IRQn`, peripheral IDs) are still undefined and CMSIS/NVIC helpers are absent. Pointer-sized logging in `Platform.cpp` (casting to `uint32_t`) also fails under 64-bit and needs host-side wrappers.
+- Host-only `Pins_Host_MB6HC.h` now mirrors key Duet 3 constants (axes/heater limits, CAN counts, serial devices) while assigning `NoPin` placeholders. `RepRapFirmware.h` pulls in `Features_Host.h` to zero most peripherals before defaults fire, and the host Makefile defines `RRF_HOST_BUILD` so board selection flips automatically.
+- Added first-wave host stubs (`PinDescription.h`, FreeRTOS headers, CMSIS-style NVIC/sys tick shims, generalized `Pin` conversions) and wired them through `Core.h/CoreIO.h`. Early compile of `Platform.cpp` still fails on larger SAME70/CMSIS symbols (`SysTick`, `MCAN*_IRQn`, DMA priorities), legacy macros (`REG_RSTC_SR`), and FreeRTOS task definitions; next step is to extend the shim set so these headers no longer require the real HAL.
 
 
 ## Step 6 — FreeRTOS shim (pending)

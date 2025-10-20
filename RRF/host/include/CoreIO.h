@@ -68,6 +68,11 @@ inline bool IsPinReserved(Pin) noexcept { return false; }
 inline void ConfigurePinAsOutput(Pin, bool = false) noexcept {}
 inline void ConfigurePinAsInput(Pin) noexcept {}
 
+inline AnalogChannelNumber PinToAdcChannel(Pin) noexcept { return 0; }
+
+inline void fastDigitalWriteLow(uint32_t) noexcept {}
+inline void fastDigitalWriteHigh(uint32_t) noexcept {}
+
 inline void pinMode(Pin pin, PinMode mode) noexcept
 {
 	SetPinMode(pin, mode);
@@ -82,6 +87,15 @@ inline bool digitalRead(Pin pin) noexcept
 {
 	return DigitalRead(pin);
 }
+
+class MillisTimer
+{
+public:
+	void Start(uint32_t) noexcept {}
+	bool IsRunning() const noexcept { return false; }
+	bool HasExpired() const noexcept { return false; }
+	void Cancel() noexcept {}
+};
 
 class AtomicCriticalSectionLocker
 {
@@ -105,11 +119,11 @@ private:
 	coreIrqflags_t flags;
 };
 
-inline constexpr Pin PortAPin(unsigned int n) noexcept { return static_cast<Pin>(n); }
-inline constexpr Pin PortBPin(unsigned int n) noexcept { return static_cast<Pin>(32 + n); }
-inline constexpr Pin PortCPin(unsigned int n) noexcept { return static_cast<Pin>(64 + n); }
-inline constexpr Pin PortDPin(unsigned int n) noexcept { return static_cast<Pin>(96 + n); }
-inline constexpr Pin PortEPin(unsigned int n) noexcept { return static_cast<Pin>(128 + n); }
+inline constexpr Pin PortAPin(unsigned int n) noexcept { return Pin{0, static_cast<int>(n)}; }
+inline constexpr Pin PortBPin(unsigned int n) noexcept { return Pin{1, static_cast<int>(n)}; }
+inline constexpr Pin PortCPin(unsigned int n) noexcept { return Pin{2, static_cast<int>(n)}; }
+inline constexpr Pin PortDPin(unsigned int n) noexcept { return Pin{3, static_cast<int>(n)}; }
+inline constexpr Pin PortEPin(unsigned int n) noexcept { return Pin{4, static_cast<int>(n)}; }
 
 union CallbackParameter
 {

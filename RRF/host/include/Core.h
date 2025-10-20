@@ -3,6 +3,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cinttypes>
+#include <cstdlib>
+#include <cstring>
+
+#include "CoreTypes.h"
 
 // Host defaults: no MCU-specific peripherals
 #ifndef SAMC21
@@ -51,7 +55,6 @@
 # define unlikely(x) (x)
 #endif
 
-using Pin = uint32_t;
 using coreIrqflags_t = uint32_t;
 using irqflags_t = coreIrqflags_t;
 
@@ -117,6 +120,28 @@ inline DWT_Type* const DWT = &DWTStorage;
 constexpr uint32_t CoreDebug_DEMCR_TRCENA_Msk = 0;
 constexpr uint32_t CoreDebug_DEMCR_MON_EN_Msk = 0;
 
+struct SysTick_Type
+{
+	uint32_t CTRL{0};
+	uint32_t LOAD{0};
+	uint32_t VAL{0};
+};
+
+inline SysTick_Type SysTickStorage{};
+inline SysTick_Type* const SysTick = &SysTickStorage;
+
+struct SCB_Type
+{
+	uint32_t CCR{0};
+	uint32_t VTOR{0};
+};
+
+inline SCB_Type SCBStorage{};
+inline SCB_Type* const SCB = &SCBStorage;
+
+constexpr uint32_t SysTick_CTRL_TICKINT_Msk = 0;
+constexpr uint32_t SCB_CCR_UNALIGN_TRP_Msk = 0;
+
 inline void __DMB() noexcept {}
 inline void __enable_irq() noexcept {}
 inline void __disable_irq() noexcept {}
@@ -138,3 +163,39 @@ inline bool IsIrqEnabledInFlags(coreIrqflags_t) noexcept { return true; }
 inline uint32_t __get_BASEPRI() noexcept { return 0; }
 inline void __set_BASEPRI(uint32_t) noexcept {}
 inline void __set_BASEPRI_MAX(uint32_t) noexcept {}
+
+inline void memcpyu32(uint32_t *dest, const uint32_t *src, size_t count) noexcept
+{
+	if (dest != nullptr && src != nullptr && count != 0)
+	{
+		std::memcpy(dest, src, count * sizeof(uint32_t));
+	}
+}
+
+inline void __DSB() noexcept {}
+
+inline void NVIC_SetPriority(int, uint32_t) noexcept {}
+inline void NVIC_EnableIRQ(int) noexcept {}
+inline void NVIC_DisableIRQ(int) noexcept {}
+
+constexpr int XDMAC_IRQn = 0;
+constexpr int PIOA_IRQn = 1;
+constexpr int PIOB_IRQn = 2;
+constexpr int PIOC_IRQn = 3;
+constexpr int USBHS_IRQn = 4;
+constexpr int MCAN0_INT0_IRQn = 5;
+constexpr int MCAN1_INT0_IRQn = 6;
+
+constexpr uint32_t REG_RSTC_SR = 0;
+constexpr uint32_t RSTC_SR_RSTTYP_Msk = 0;
+constexpr uint32_t RSTC_SR_RSTTYP_Pos = 0;
+
+constexpr uint32_t SysTick_CTRL_ENABLE_Msk = 0;
+
+inline void NVIC_ClearPendingIRQ(int) noexcept {}
+
+constexpr uint32_t NvicPriorityDMA = 0;
+constexpr uint32_t NvicPriorityPins = 0;
+constexpr uint32_t NvicPriorityUSB = 0;
+constexpr uint32_t NvicPriorityCan = 0;
+constexpr uint32_t NvicPriorityStep = 0;
