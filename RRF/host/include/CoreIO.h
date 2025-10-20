@@ -5,8 +5,8 @@
 #include <cstdint>
 #include <array>
 
-// Provide a generous pin namespace for host builds
-constexpr unsigned int NumTotalPins = 256;
+// Mirror SAME70 layout: ports A-D fully populated plus limited port E
+constexpr unsigned int NumTotalPins = (4 * 32) + 6;
 
 enum class GpioPinFunction : uint8_t
 {
@@ -119,11 +119,15 @@ private:
 	coreIrqflags_t flags;
 };
 
-inline constexpr Pin PortAPin(unsigned int n) noexcept { return Pin{0, static_cast<int>(n)}; }
-inline constexpr Pin PortBPin(unsigned int n) noexcept { return Pin{1, static_cast<int>(n)}; }
-inline constexpr Pin PortCPin(unsigned int n) noexcept { return Pin{2, static_cast<int>(n)}; }
-inline constexpr Pin PortDPin(unsigned int n) noexcept { return Pin{3, static_cast<int>(n)}; }
-inline constexpr Pin PortEPin(unsigned int n) noexcept { return Pin{4, static_cast<int>(n)}; }
+inline constexpr uint32_t GpioPortNumber(Pin p) noexcept { return static_cast<uint32_t>(p) >> 5; }
+inline constexpr uint32_t GpioPinNumber(Pin p) noexcept { return static_cast<uint32_t>(p) & 0x1Fu; }
+inline constexpr uint32_t GpioMask(Pin p) noexcept { return 1u << GpioPinNumber(p); }
+
+inline constexpr Pin PortAPin(unsigned int n) noexcept { return static_cast<Pin>(n); }
+inline constexpr Pin PortBPin(unsigned int n) noexcept { return static_cast<Pin>(32u + n); }
+inline constexpr Pin PortCPin(unsigned int n) noexcept { return static_cast<Pin>(64u + n); }
+inline constexpr Pin PortDPin(unsigned int n) noexcept { return static_cast<Pin>(96u + n); }
+inline constexpr Pin PortEPin(unsigned int n) noexcept { return static_cast<Pin>(128u + n); }
 
 union CallbackParameter
 {

@@ -7,8 +7,10 @@ CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic \
 	-I../CANlib/src \
 	-D__SAME70Q20B__ \
 	-DDUET3_MB6HC=1 \
+	-DDUET3=1 \
 	-DSAME70=1 \
 	-DRRF_HOST_BUILD=1 \
+	-DSRC_MOVEMENT_STEPTIMER_H_=1 \
 	-DUSE_SBC=0
 LDFLAGS :=
 TARGET := host_rrf_bootstrap
@@ -33,6 +35,7 @@ $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/rrf_%.o: ../ReprapFirmware/src/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR):

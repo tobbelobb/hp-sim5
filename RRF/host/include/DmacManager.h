@@ -5,7 +5,8 @@
 
 #include <cstdint>
 
-constexpr unsigned int NumDmaChannelsSupported = 10;
+constexpr unsigned int NumDmaChannelsUsed = 0;
+constexpr unsigned int NumDmaChannelsSupported = 0;
 
 enum class DmaCallbackReason : uint8_t
 {
@@ -94,4 +95,3 @@ namespace DmacManager
 	inline void DisableCompletedInterrupt(DmaChannel) noexcept {}
 	inline uint8_t GetAndClearChannelStatus(DmaChannel) noexcept { return 0; }
 }
-
