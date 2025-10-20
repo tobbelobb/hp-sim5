@@ -198,4 +198,6 @@ constexpr uint32_t NvicPriorityDMA = 0;
 constexpr uint32_t NvicPriorityPins = 0;
 constexpr uint32_t NvicPriorityUSB = 0;
 constexpr uint32_t NvicPriorityCan = 0;
+constexpr uint32_t NvicPriorityHSMCI = 0;
+constexpr uint32_t NvicPriorityWatchdog = 0;
 constexpr uint32_t NvicPriorityStep = 0;

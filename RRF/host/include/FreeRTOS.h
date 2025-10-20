@@ -20,6 +20,10 @@ struct StaticEventGroup_t {};
 #define pdTRUE 1
 #define pdFALSE 0
 
+#ifndef configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 0
+#endif
+
 #define configMINIMAL_STACK_SIZE 256
 
 #define taskENTER_CRITICAL()

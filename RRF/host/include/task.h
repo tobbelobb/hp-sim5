@@ -56,3 +56,8 @@ inline BaseType_t xTaskNotifyWait(uint32_t, uint32_t, uint32_t*, TickType_t) noe
 inline void vTaskNotifyGiveFromISR(TaskHandle_t, BaseType_t*) noexcept {}
 
 inline void vTaskStartScheduler() noexcept {}
+
+inline const StackType_t* pxTaskGetLastStackTop(TaskHandle_t) noexcept
+{
+	return nullptr;
+}

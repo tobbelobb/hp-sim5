@@ -30,7 +30,8 @@ struct CanMessageHeaterTuningCommand;
 
 #ifndef RRF_HOST_HEATER_STATUS_DEFINED
 #define RRF_HOST_HEATER_STATUS_DEFINED
-enum class HeaterStatus : uint8_t { off, standby, active, fault, tuning, offline };
+#include <General/NamedEnum.h>
+NamedEnum(HeaterStatus, uint8_t, off, standby, active, fault, tuning, offline);
 #endif
 
 class Heat : public ObjectModel
