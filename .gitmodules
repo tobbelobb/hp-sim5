@@ -8,7 +8,7 @@
   ignore = untracked
 [submodule "RRF/CANlib"]
 	path = RRF/CANlib
-	url = git@github.com:Duet3d/CANlib.git
+	url = git@github.com:tobbelobb/CANlib.git
 	branch = 3.7-dev
   ignore = untracked
 [submodule "RRF/CoreN2G"]
@@ -23,7 +23,7 @@
   ignore = untracked
 [submodule "RRF/RRFLibraries"]
 	path = RRF/RRFLibraries
-	url = git@github.com:Duet3d/RRFLibraries.git
+	url = git@github.com:tobbelobb/RRFLibraries.git
 	branch = 3.7-dev
   ignore = untracked
 [submodule "RRF/LibTinyusb"]
