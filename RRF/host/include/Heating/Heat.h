@@ -165,7 +165,8 @@ private:
 	bool IsValidHeater(int heater) const noexcept;
 	HeaterState& GetState(int heater) noexcept;
 	const HeaterState& GetState(int heater) const noexcept;
-	bool HeaterMatchesList(int heater, const std::array<int8_t, MaxBedHeaters>& list) const noexcept;
+	template <size_t N>
+	bool HeaterMatchesList(int heater, const std::array<int8_t, N>& list) const noexcept;
 
 	std::array<HeaterState, MaxHeaters> heaterStates{};
 	std::array<int8_t, MaxBedHeaters> bedHeaters{};
@@ -183,7 +184,7 @@ inline Heat::Heat() noexcept
 	chamberHeaters.fill(-1);
 }
 
-inline [[noreturn]] void Heat::HeaterTask() noexcept
+[[noreturn]] inline void Heat::HeaterTask() noexcept
 {
 	std::abort();
 }
@@ -248,7 +249,8 @@ inline const Heat::HeaterState& Heat::GetState(int heater) const noexcept
 	return heaterStates[static_cast<size_t>(heater)];
 }
 
-inline bool Heat::HeaterMatchesList(int heater, const std::array<int8_t, MaxBedHeaters>& list) const noexcept
+template <size_t N>
+inline bool Heat::HeaterMatchesList(int heater, const std::array<int8_t, N>& list) const noexcept
 {
 	if (!IsValidHeater(heater))
 	{
