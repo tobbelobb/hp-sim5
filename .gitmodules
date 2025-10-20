@@ -35,6 +35,11 @@
 	path = RRF/RepRapFirmware.wiki
 	url = git@github.com:Duet3D/RepRapFirmware.wiki.git
   ignore = untracked
+[submodule "RRF/DuetSoftwareFramework"]
+	path = RRF/DuetSoftwareFramework
+	url = git@github.com:Duet3D/DuetSoftwareFramework
+	branch = v3.7-dev
+  ignore = untracked
 [submodule "RRF/DuetWebControl"]
 	path = RRF/DuetWebControl
 	url = git@github.com:Duet3D/DuetWebControl
