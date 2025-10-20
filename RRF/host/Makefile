@@ -2,15 +2,12 @@ CXX := g++
 CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic \
 	-Iinclude \
 	-I../ReprapFirmware/src \
-	-I../ReprapFirmware/src/Hardware/SAM4E \
-	-I../ReprapFirmware/src/DuetNG \
+	-I../ReprapFirmware/src/Hardware/SAME70 \
 	-I../RRFLibraries/src \
 	-I../CANlib/src \
-	-D__SAM4E8E__ \
-	-DDUET_NG=1 \
-	-DSAM4E=1 \
-	-DSAME5x=0 \
-	-DSAME70=0 \
+	-D__SAME70Q20B__ \
+	-DDUET3_MB6HC=1 \
+	-DSAME70=1 \
 	-DUSE_SBC=0 \
 	-DSUPPORT_CAN_EXPANSION=1 \
 	-DSUPPORT_REMOTE_COMMANDS=0 \

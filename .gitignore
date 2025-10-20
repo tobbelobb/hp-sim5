@@ -13,3 +13,6 @@ human_docs/hp-sim5_data_input_flows.jam
 In
 plots
 debug_sessions
+RRF/host/build
+RRF/host/build/*
+*.o

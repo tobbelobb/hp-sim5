@@ -1,9 +1,17 @@
-#include <Hardware/SAM4E/Devices.h>
+#include <Core.h>
 
-AsyncSerial serialUart;
+#ifdef SUPPORT_USB
+#undef SUPPORT_USB
+#endif
+
+#include <Hardware/SAME70/Devices.h>
+
+AsyncSerial serialUart1;
+USARTClass serialUart2;
+#if defined(DUET3_MB6HC)
 AsyncSerial serialWiFi;
+#endif
 SerialCDC serialUSB;
-TwoWire Wire;
 
 void DeviceInit() noexcept {}
 void StopAnalogTask() noexcept {}
