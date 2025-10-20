@@ -42,12 +42,15 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Introduced initial host stubs for `CoreTypes.h`, `Interrupts.h`, `{AnalogIn,AnalogOut}.h`, `UniqueIdBase.h`, cache control, async serial/USB (`AsyncSerial.h`, `SerialCDC.h`, `Wire.h`, `USARTClass.h`), and provided runtime stand-ins via `host/src/devices_stub.cpp`, plus extra include dirs for `Hardware/SAME70` during exploratory compiles.
 - Host stub now mirrors the Duet 3 device namespace (`serialUart1`, `serialUart2`, guarded `serialWiFi`) so firmware sources can pull in the SAME70 board descriptors without size-oriented Duet 2 assumptions.
 - Remaining blockers before this file compiles cleanly: large device headers (`AsyncSerial.h`, SAM4E peripherals), feature macros (e.g. `SUPPORT_REMOTE_COMMANDS`, `HAS_AUX_DEVICES`) that we should pin to zero for the host build, and a strategy to compartmentalise DueXn expansion logic so it can log instead of touching I2C/GPIO.
+- Added SAME70-specific HAL shims (`host/include/DmacManager.h`, `host/include/pmc/pmc.h`) and aliased ARM-only intrinsics (`__fp16`, `float16_t`) so CANlib headers parse under x86\_64.
+- Current compilation halts in `Pins_Duet3_MB6HC.h`/`Platform.cpp` because MCU-specific enumerations (`TcOutput`, `PwmOutput`, `IRQn`, peripheral IDs) are still undefined and CMSIS/NVIC helpers are absent. Pointer-sized logging in `Platform.cpp` (casting to `uint32_t`) also fails under 64-bit and needs host-side wrappers.
 
 
 ## Step 6 — FreeRTOS shim (pending)
 
-- Replace FreeRTOS usage with a cooperative loop: implement small scheduler (std::thread + queues) matching the API points RRF uses (TaskHandle, QueueHandle). Provide adapters in host/rtos/ calling into std::condition_variable.
-- Update Makefile target list to exclude actual FreeRTOS sources but compile host/rtos/freertos_shim.cpp.
+- Replace FreeRTOS usage with a cooperative loop: implement small scheduler (std::thread + queues) matching the API points RRF uses (TaskHandle, QueueHandle). Provide adapters in `host/rtos/` calling into `std::mutex`/`std::condition_variable`.
+- Expose stub headers `FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h` that map firmware invocations onto the shim so compilation succeeds before full behaviour is emulated.
+- Update Makefile target list to exclude actual FreeRTOS sources but compile `host/rtos/freertos_shim.cpp` once the basic interfaces exist.
 
 ## Step 7 - Bring in G-code pipeline (pending)
 

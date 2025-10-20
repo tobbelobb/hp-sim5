@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cinttypes>
 
 // Host defaults: no MCU-specific peripherals
 #ifndef SAMC21
@@ -51,6 +52,8 @@
 #endif
 
 using Pin = uint32_t;
+using coreIrqflags_t = uint32_t;
+using irqflags_t = coreIrqflags_t;
 
 enum PinMode : int
 {
@@ -66,6 +69,14 @@ enum PinMode : int
 };
 
 constexpr uint32_t SystemCoreClockFreq = 100'000'000;
+inline uint32_t SystemCoreClock = SystemCoreClockFreq;
+constexpr uint32_t IRAM_ADDR = 0;
+constexpr uint32_t IRAM_SIZE = 0;
+
+#ifndef __FP16_TYPE_DEFINED
+#define __FP16_TYPE_DEFINED
+using __fp16 = float;
+#endif
 
 extern "C" void AppInit() noexcept;
 extern "C" void AppMain() noexcept;
@@ -112,3 +123,18 @@ inline void __disable_irq() noexcept {}
 inline uint32_t __get_PRIMASK() noexcept { return 0; }
 inline void __set_PRIMASK(uint32_t) noexcept {}
 inline uint32_t __get_IPSR() noexcept { return 0; }
+
+inline uint32_t millis() noexcept { return 0; }
+inline uint64_t millis64() noexcept { return 0; }
+inline uint32_t micros() noexcept { return 0; }
+inline uint64_t micros64() noexcept { return 0; }
+inline void delay(uint32_t) noexcept {}
+inline void delayMicroseconds(uint32_t) noexcept {}
+inline coreIrqflags_t IrqSave() noexcept { return 0; }
+inline void IrqRestore(coreIrqflags_t) noexcept {}
+inline void IrqDisable() noexcept {}
+inline void IrqEnable() noexcept {}
+inline bool IsIrqEnabledInFlags(coreIrqflags_t) noexcept { return true; }
+inline uint32_t __get_BASEPRI() noexcept { return 0; }
+inline void __set_BASEPRI(uint32_t) noexcept {}
+inline void __set_BASEPRI_MAX(uint32_t) noexcept {}

@@ -45,6 +45,7 @@ inline void EnablePulldown(Pin) noexcept {}
 inline void DisablePulldown(Pin) noexcept {}
 
 inline void SetPinMode(Pin, PinMode) noexcept {}
+inline void SetPinMode(Pin, PinMode, bool) noexcept {}
 inline PinMode GetPinMode(Pin) noexcept { return INPUT; }
 
 inline void DigitalWrite(Pin, bool) noexcept {}
@@ -66,6 +67,43 @@ inline bool IsPinReserved(Pin) noexcept { return false; }
 
 inline void ConfigurePinAsOutput(Pin, bool = false) noexcept {}
 inline void ConfigurePinAsInput(Pin) noexcept {}
+
+inline void pinMode(Pin pin, PinMode mode) noexcept
+{
+	SetPinMode(pin, mode);
+}
+
+inline void digitalWrite(Pin pin, bool value) noexcept
+{
+	DigitalWrite(pin, value);
+}
+
+inline bool digitalRead(Pin pin) noexcept
+{
+	return DigitalRead(pin);
+}
+
+class AtomicCriticalSectionLocker
+{
+public:
+	AtomicCriticalSectionLocker() noexcept
+	: flags(IrqSave())
+	{
+	}
+
+	~AtomicCriticalSectionLocker()
+	{
+		IrqRestore(flags);
+	}
+
+	void Cancel() noexcept
+	{
+		IrqRestore(flags);
+	}
+
+private:
+	coreIrqflags_t flags;
+};
 
 inline constexpr Pin PortAPin(unsigned int n) noexcept { return static_cast<Pin>(n); }
 inline constexpr Pin PortBPin(unsigned int n) noexcept { return static_cast<Pin>(32 + n); }
