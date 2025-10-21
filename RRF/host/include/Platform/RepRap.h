@@ -5,6 +5,8 @@
 #include <RepRapFirmware.h>
 #include <General/Bitmap.h>
 #include <ObjectModel/GlobalVariables.h>
+#include <ObjectModel/ObjectModel.h>
+#include <GCodes/GCodeException.h>
 #include <Platform/Platform.h>
 #include <PrintMonitor/PrintMonitor.h>
 #include <Heating/Heat.h>
@@ -39,6 +41,11 @@ public:
 
 	DebugFlags GetDebugFlags(Module) const noexcept { return DebugFlags(); }
 	bool Debug(Module) const noexcept { return false; }
+
+	ExpressionValue GetObjectValueUsingTableNumber(ObjectExplorationContext& context,
+												   const ObjectModelClassDescriptor* classDescriptor,
+												   const char* idString,
+												   uint8_t tableNumber) THROWS(GCodeException);
 
 	void InputsUpdated() noexcept {}
 	void GlobalUpdated() noexcept {}
