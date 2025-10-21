@@ -116,3 +116,19 @@ Potential user actions:
 
 1. Approve creation of host scaffolding directory and stub headers.
 2. Decide whether .duetcan should mirror raw CAN frames or normalized step events.
+
+## Step 6 — FreeRTOS shim
+
+- Added `RRF/host/rtos/freertos_shim.cpp` and matching headers (`FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h`, `RTOSIface/RTOSIface.h`) to satisfy the firmware’s RTOS interface while routing calls to lightweight host implementations.
+- The shim launches detached `std::thread` workers for `xTaskCreate`, exposes stub queues/semaphores, and guards critical sections with a recursive mutex. Threads observe an atomic `deleteRequested` flag so they can terminate cooperatively when firmware code calls `vTaskDelete`.
+- Host Makefile now compiles the shim with the bootstrap sources, allowing `Platform.cpp`/`RepRap.cpp` to link without the embedded FreeRTOS port.
+- Future refinement: provide deterministic scheduling semantics (avoid 24 h sleeps for `portMAX_DELAY`), implement cleanup for task handles, and add unit tests around queue behaviour.
+
+## Step 7 — Virtual SD & G-code pipeline (in progress)
+
+- Introduced filesystem-backed storage shims: `host/include/Storage/{FileStore,FileWriteBuffer,MassStorage}.h` plus `host/storage/HostFileStore.cpp` and `HostMassStorage.cpp` translate firmware file operations onto `std::filesystem`/`std::fstream`. Volume `0:/` now maps to a configurable host root (`MassStorage::SetHostRoot`) with automatic `sys/`, `gcodes/`, and `firmware/` directory creation.
+- Host Makefile pulls in firmware’s `Storage/CRC32.cpp` and RRFLibraries helpers (`StringRef`, `SafeVsnprintf`, `StringFunctions`, `Strnlen`) so `M36`/metadata paths behave like the embedded build. `GetFileInfo` reports size, mtime, and appends a CRC32 token to `generatedBy` pending a cleaner reporting hook.
+- CLI updates in `host/src/main.cpp`: `--vsd <path>` selects the virtual SD root, `--run <file>` records a target gcode (execution still stubbed), and MassStorage initialises the directory skeleton on launch.
+- Began compiling the G-code stack (`GCodeMachineState`, `GCodeInput`, `GCodeQueue`, `GCodes[2–7]`, `GCodeBuffer` parsers). Host shims grew to cover `Stream::readBytes`, tool-change flags (`TFreeBit/TPreBit/TPostBit`), character helpers (`isAlpha/isDigit/isAlnum`), random number placeholder, and a stub stack-pointer accessor.
+- Current link blockers sit in `ExpressionParser`: object-model types (`ExpressionValue`, `GlobalVariables`, `StringHandle`), diagnostics (`SoftwareReset`), and named-enum helpers are still missing from the host target, yielding unresolved externals. Next iteration must stub those pieces (or guard the code paths) before we can instantiate `GCodes` from `main`.
+- Once ExpressionParser links, scrub the remaining `%u` vs `size_t` format warnings and continue trimming unused feature macros (`HAS_WIFI_NETWORKING`, `HAS_AUX_DEVICES`, etc.) so the host focus stays on motion planning and file playback.

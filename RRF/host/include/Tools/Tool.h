@@ -22,6 +22,11 @@ enum class ToolState : uint8_t
 	standby
 };
 
+constexpr uint8_t TFreeBit = 1u << 0;
+constexpr uint8_t TPreBit = 1u << 1;
+constexpr uint8_t TPostBit = 1u << 2;
+constexpr uint8_t DefaultToolChangeParam = TFreeBit | TPreBit | TPostBit;
+
 class Tool
 {
 public:
@@ -46,10 +51,10 @@ public:
 
 	static void Delete(Tool* t) noexcept { delete t; }
 
-	static AxesBitmap GetXAxes(const Tool*) noexcept { return 0; }
-	static AxesBitmap GetYAxes(const Tool*) noexcept { return 0; }
-	static AxesBitmap GetZAxes(const Tool*) noexcept { return 0; }
-	static AxesBitmap GetAxisMapping(const Tool*, unsigned int) noexcept { return 0; }
+	static AxesBitmap GetXAxes(const Tool*) noexcept { return AxesBitmap(); }
+	static AxesBitmap GetYAxes(const Tool*) noexcept { return AxesBitmap(); }
+	static AxesBitmap GetZAxes(const Tool*) noexcept { return AxesBitmap(); }
+	static AxesBitmap GetAxisMapping(const Tool*, unsigned int) noexcept { return AxesBitmap(); }
 	static float GetOffset(const Tool*, size_t) noexcept { return 0.0f; }
 	static void FlagTemperatureFault(int8_t) noexcept {}
 	static GCodeResult ClearTemperatureFault(int8_t, const StringRef&) noexcept { return GCodeResult::warningNotSupported; }
@@ -75,7 +80,7 @@ public:
 
 	float GetOffset(size_t) const noexcept { return 0.0f; }
 	void SetOffset(size_t, float, bool) noexcept {}
-	AxesBitmap GetAxisOffsetsProbed() const noexcept { return 0; }
+	AxesBitmap GetAxisOffsetsProbed() const noexcept { return AxesBitmap(); }
 	size_t DriveCount() const noexcept { return 0; }
 	int GetDrive(size_t) const noexcept { return -1; }
 	bool CanDriveExtruder(bool) const noexcept { return true; }
@@ -85,10 +90,10 @@ public:
 	void DefineMix(const float*) noexcept {}
 	const float* GetMix() const noexcept { return nullptr; }
 	void PrintTool(const StringRef&) const noexcept {}
-	AxesBitmap GetXAxisMap() const noexcept { return 0; }
-	AxesBitmap GetYAxisMap() const noexcept { return 0; }
-	AxesBitmap GetZAxisMap() const noexcept { return 0; }
-	FansBitmap GetFanMapping() const noexcept { return 0; }
+	AxesBitmap GetXAxisMap() const noexcept { return AxesBitmap(); }
+	AxesBitmap GetYAxisMap() const noexcept { return AxesBitmap(); }
+	AxesBitmap GetZAxisMap() const noexcept { return AxesBitmap(); }
+	FansBitmap GetFanMapping() const noexcept { return FansBitmap(); }
 	Filament* GetFilament() const noexcept { return nullptr; }
 	const char* GetFilamentName() const noexcept { return ""; }
 	Tool* Next() const noexcept { return nullptr; }
@@ -146,7 +151,7 @@ public:
 	void ClearExtrusionPending() const noexcept {}
 
 #if SUPPORT_ASYNC_MOVES && PREALLOCATE_TOOL_AXES
-	AxesBitmap GetXYAxesAndExtruders() const noexcept { return 0; }
+	AxesBitmap GetXYAxesAndExtruders() const noexcept { return AxesBitmap(); }
 #endif
 
 	static ReadWriteLock toolListLock;

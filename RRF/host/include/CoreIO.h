@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <array>
+#include <cstring>
 
 // Mirror SAME70 layout: ports A-D fully populated plus limited port E
 constexpr unsigned int NumTotalPins = (4 * 32) + 6;
@@ -128,6 +129,34 @@ inline constexpr Pin PortBPin(unsigned int n) noexcept { return static_cast<Pin>
 inline constexpr Pin PortCPin(unsigned int n) noexcept { return static_cast<Pin>(64u + n); }
 inline constexpr Pin PortDPin(unsigned int n) noexcept { return static_cast<Pin>(96u + n); }
 inline constexpr Pin PortEPin(unsigned int n) noexcept { return static_cast<Pin>(128u + n); }
+
+inline void memcpyi32(int32_t *_ecv_array dst, const int32_t *_ecv_array src, size_t numWords) noexcept
+{
+	memcpyu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
+			  reinterpret_cast<const uint32_t *_ecv_array>(src),
+			  numWords);
+}
+
+inline void memcpyf(float *_ecv_array dst, const float *_ecv_array src, size_t numFloats) noexcept
+{
+	memcpyu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
+			  reinterpret_cast<const uint32_t *_ecv_array>(src),
+			  numFloats);
+}
+
+inline void memmovei32(int32_t *_ecv_array dst, const int32_t *_ecv_array src, size_t numWords) noexcept
+{
+	::memmoveu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
+	             reinterpret_cast<const uint32_t *_ecv_array>(src),
+	             numWords);
+}
+
+inline void memmovef(float *_ecv_array dst, const float *_ecv_array src, size_t numFloats) noexcept
+{
+	::memmoveu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
+	             reinterpret_cast<const uint32_t *_ecv_array>(src),
+	             numFloats);
+}
 
 union CallbackParameter
 {

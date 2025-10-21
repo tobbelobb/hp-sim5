@@ -5,6 +5,8 @@
 #include <cinttypes>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
+#include <cctype>
 
 #include "CoreTypes.h"
 
@@ -170,6 +172,94 @@ inline void memcpyu32(uint32_t *dest, const uint32_t *src, size_t count) noexcep
 	{
 		std::memcpy(dest, src, count * sizeof(uint32_t));
 	}
+}
+
+inline void memmoveu32(uint32_t *dest, const uint32_t *src, size_t count) noexcept
+{
+	if (dest != nullptr && src != nullptr && count != 0)
+	{
+		std::memmove(dest, src, count * sizeof(uint32_t));
+	}
+}
+
+inline bool memequ32(const uint32_t *a, const uint32_t *b, size_t count) noexcept
+{
+	if (a == b)
+	{
+		return true;
+	}
+	if (a == nullptr || b == nullptr)
+	{
+		return false;
+	}
+	return std::memcmp(a, b, count * sizeof(uint32_t)) == 0;
+}
+
+inline void memsetf(float *dest, float val, size_t count) noexcept
+{
+	if (dest == nullptr || count == 0)
+	{
+		return;
+	}
+	std::fill_n(dest, count, val);
+}
+
+inline void memseti32(int32_t *dest, int32_t val, size_t count) noexcept
+{
+	if (dest == nullptr || count == 0)
+	{
+		return;
+	}
+	std::fill_n(dest, count, val);
+}
+
+inline bool memeqf(const float *a, const float *b, size_t count) noexcept
+{
+	if (a == b)
+	{
+		return true;
+	}
+	if (a == nullptr || b == nullptr)
+	{
+		return false;
+	}
+	for (size_t i = 0; i < count; ++i)
+	{
+		if (a[i] != b[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+inline bool isDigit(char c) noexcept
+{
+	return std::isdigit(static_cast<unsigned char>(c)) != 0;
+}
+
+inline bool isAlpha(char c) noexcept
+{
+	return std::isalpha(static_cast<unsigned char>(c)) != 0;
+}
+
+inline bool isAlnum(char c) noexcept
+{
+	return std::isalnum(static_cast<unsigned char>(c)) != 0;
+}
+
+inline long random(long limit) noexcept
+{
+	if (limit <= 0)
+	{
+		return 0;
+	}
+	return static_cast<long>(std::rand() % limit);
+}
+
+inline const uint32_t* GetStackPointer() noexcept
+{
+	return nullptr;
 }
 
 inline void __DSB() noexcept {}
