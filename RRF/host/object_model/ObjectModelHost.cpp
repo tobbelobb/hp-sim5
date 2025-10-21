@@ -267,6 +267,18 @@ void ObjectModel::ReportAsJson(const GCodeBuffer*, OutputBuffer* buf, const char
 	}
 }
 
+void ObjectModel::ReportAsJson(OutputBuffer* buf, ObjectExplorationContext& context, const ObjectModelClassDescriptor* descriptor, uint8_t tableNumber, const char* filter) const THROWS(GCodeException)
+{
+	(void)context;
+	(void)descriptor;
+	(void)tableNumber;
+	(void)filter;
+	if (buf != nullptr)
+	{
+		buf->cat("{}");
+	}
+}
+
 ExpressionValue ObjectModel::GetObjectValueUsingTableNumber(ObjectExplorationContext&, const ObjectModelClassDescriptor*, const char*, uint8_t) const THROWS(GCodeException)
 {
 	return ExpressionValue();

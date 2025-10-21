@@ -2,6 +2,15 @@
 
 #include <Platform/OutputMemory.h>
 
+const ObjectModelTableEntry GlobalVariables::objectModelTable[1] = {};
+const uint8_t GlobalVariables::objectModelTableDescriptor[1] = { 0 };
+const ObjectModelClassDescriptor GlobalVariables::objectModelClassDescriptor = { objectModelTable, objectModelTableDescriptor, nullptr };
+
+const ObjectModelClassDescriptor* GlobalVariables::GetObjectModelClassDescriptor() const noexcept
+{
+	return &objectModelClassDescriptor;
+}
+
 ReadLockedPointer<const VariableSet> GlobalVariables::GetForReading() noexcept
 {
 	return ReadLockedPointer<const VariableSet>(nullptr, &vars);

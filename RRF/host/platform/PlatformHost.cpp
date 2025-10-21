@@ -16,6 +16,8 @@ namespace
 {
 	std::mutex logMutex;
 
+	constexpr const char* DefaultSysDir = "0:/sys";
+
 	constexpr const char* PrefixForType(MessageType type) noexcept
 	{
 		if ((type & ErrorMessageFlag) != 0)
@@ -52,23 +54,9 @@ namespace
 	}
 }
 
-Platform::Platform() noexcept :
-	board(DEFAULT_BOARD_TYPE),
-	active(false),
-	errorCodeBits(0),
-	nextDriveToPoll(0),
-	beepTicksToGo(0),
-	lastFanCheckTime(0)
-#if HAS_MASS_STORAGE || HAS_SBC_INTERFACE || HAS_EMBEDDED_FILES
-	, sysFolder(DEFAULT_SYS_DIR), webFolder(DEFAULT_WEB_DIR)
-#endif
-	, tickState(0),
-	debugCode(0),
-	lastDriverPollMillis(0),
-	filamentWidth(1.75f),
-	powerDownWhenFansStop(false),
-	delayedPowerDown(false)
+Platform::Platform() noexcept
 {
+	sysDir.copy(DefaultSysDir);
 }
 
 void Platform::Init() noexcept {}
@@ -103,7 +91,7 @@ FileStore* Platform::OpenSysFile(const char* filename, OpenMode mode) const noex
 bool Platform::MakeSysFileName(const StringRef& result, const char* filename) const noexcept
 {
 #if HAS_MASS_STORAGE
-	return MassStorage::CombineName(result, GetSysDir().Ptr(), filename);
+	return MassStorage::CombineName(result, GetSysDir().c_str(), filename);
 #else
 	(void)result;
 	(void)filename;
@@ -178,15 +166,14 @@ void Platform::Message(MessageType type, OutputBuffer* buffer) noexcept
 		return;
 	}
 
-	std::string combined;
-	combined.reserve(FormatStringLength);
-	while (buffer != nullptr)
-	{
-		const size_t len = buffer->DataLength();
-		combined.append(buffer->Data(), buffer->Data() + len);
-		buffer = buffer->Next();
-	}
-	Message(type, combined.c_str());
+    std::string combined;
+    combined.reserve(FormatStringLength);
+    while (buffer != nullptr)
+    {
+        combined.append(buffer->Data(), buffer->DataLength());
+        buffer = buffer->Next();
+    }
+    Message(type, combined.c_str());
 }
 
 void Platform::RawMessage(MessageType type, const char* message) noexcept
@@ -200,9 +187,19 @@ void Platform::DebugMessage(const char* fmt, va_list vargs) noexcept
 	MessageV(GenericMessage, fmt, vargs);
 }
 
-bool Platform::FlushMessages() noexcept
+void Platform::SetSysDir(const char* path) noexcept
 {
-	return false;
+	if (path != nullptr)
+	{
+		sysDir.copy(path);
+	}
+	else
+	{
+		sysDir.copy(DefaultSysDir);
+	}
 }
 
-void Platform::StopLogging() noexcept {}
+void Platform::AppendSysDir(const StringRef& result) const noexcept
+{
+	result.copy(sysDir.c_str());
+}

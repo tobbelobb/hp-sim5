@@ -25,6 +25,13 @@ HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	platform/ArrayHandle.cpp \
 	platform/SoftwareReset.cpp \
 	platform/PlatformHost.cpp \
+	platform/RepRapHost.cpp \
+	gcodes/FileGCodeInputHost.cpp \
+	gcodes/GCodeFileInfoHost.cpp \
+	networking/MacAddressHost.cpp \
+	platform/GetFloatFormatStringHost.cpp \
+	platform/TasksHost.cpp \
+	platform/DebugPrintHost.cpp \
 	object_model/ObjectModelHost.cpp \
 	object_model/VariableHost.cpp \
 	object_model/GlobalVariablesHost.cpp \
