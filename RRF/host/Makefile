@@ -19,30 +19,36 @@ TARGET := host_rrf_bootstrap
 
 HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	storage/HostFileStore.cpp \
-	storage/HostMassStorage.cpp
+	storage/HostMassStorage.cpp \
+	platform/Heap.cpp \
+	platform/StringHandle.cpp \
+	platform/ArrayHandle.cpp \
+	platform/SoftwareReset.cpp \
+	platform/PlatformHost.cpp \
+	object_model/ObjectModelHost.cpp \
+	object_model/VariableHost.cpp \
+	object_model/GlobalVariablesHost.cpp \
+	object_model/ObjectExplorationContextHost.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp \
 	../ReprapFirmware/src/Storage/CRC32.cpp \
-	../ReprapFirmware/src/GCodes/GCodeFileInfo.cpp \
-	../ReprapFirmware/src/GCodes/GCodeMachineState.cpp \
-	../ReprapFirmware/src/GCodes/GCodeInput.cpp \
-	../ReprapFirmware/src/GCodes/GCodeQueue.cpp \
+	../ReprapFirmware/src/Storage/CRC16.cpp \
 	../ReprapFirmware/src/GCodes/GCodeException.cpp \
-	../ReprapFirmware/src/GCodes/GCodes.cpp \
-	../ReprapFirmware/src/GCodes/GCodes2.cpp \
-	../ReprapFirmware/src/GCodes/GCodes3.cpp \
-	../ReprapFirmware/src/GCodes/GCodes4.cpp \
-	../ReprapFirmware/src/GCodes/GCodes5.cpp \
-	../ReprapFirmware/src/GCodes/GCodes6.cpp \
-	../ReprapFirmware/src/GCodes/GCodes7.cpp \
+	../ReprapFirmware/src/GCodes/GCodeMachineState.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/GCodeBuffer.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/StringParser.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/BinaryParser.cpp \
-	../ReprapFirmware/src/GCodes/GCodeBuffer/ExpressionParser.cpp
+	../ReprapFirmware/src/GCodes/GCodeBuffer/ExpressionParser.cpp \
+	../ReprapFirmware/src/libc/strptime.cpp
 
 RRFLIB_SRC := ../RRFLibraries/src/General/StringRef.cpp \
 	../RRFLibraries/src/General/SafeVsnprintf.cpp \
 	../RRFLibraries/src/General/StringFunctions.cpp \
-	../RRFLibraries/src/General/Strnlen.cpp
+	../RRFLibraries/src/General/Strnlen.cpp \
+	../RRFLibraries/src/General/NamedEnum.cpp \
+	../RRFLibraries/src/General/NumericConverter.cpp \
+	../RRFLibraries/src/General/SafeStrtod.cpp \
+	../RRFLibraries/src/General/IPAddress.cpp \
+	../RRFLibraries/src/Math/Isqrt.cpp
 
 BUILD_DIR := build
 

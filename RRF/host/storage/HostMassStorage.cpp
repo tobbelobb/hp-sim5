@@ -133,7 +133,7 @@ namespace
 		return system_clock::to_time_t(sctp);
 	}
 
-	bool FillFileInfo(const fs::directory_entry& entry, MassStorage::FileInfo& info) noexcept
+	bool FillFileInfo(const fs::directory_entry& entry, FileInfo& info) noexcept
 	{
 		info.fileName.copy(entry.path().filename().string().c_str());
 		info.isDirectory = entry.is_directory();

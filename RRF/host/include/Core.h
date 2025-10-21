@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ecv_duet3d.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <cinttypes>
@@ -77,6 +79,7 @@ constexpr uint32_t SystemCoreClockFreq = 100'000'000;
 inline uint32_t SystemCoreClock = SystemCoreClockFreq;
 constexpr uint32_t IRAM_ADDR = 0;
 constexpr uint32_t IRAM_SIZE = 0;
+constexpr uint32_t IFLASH_SIZE = 16 * 1024 * 1024;
 
 #ifndef __FP16_TYPE_DEFINED
 #define __FP16_TYPE_DEFINED
