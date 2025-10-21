@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <cstddef>
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -23,21 +26,22 @@ public:
 
 	bool Take(uint32_t timeout = TimeoutUnlimited) noexcept
 	{
-		bool expected = false;
 		if (timeout == 0)
 		{
-			return locked.compare_exchange_strong(expected, true, std::memory_order_acquire);
+			return lock.try_lock();
 		}
-		while (!locked.compare_exchange_strong(expected, true, std::memory_order_acquire))
+		if (timeout == TimeoutUnlimited)
 		{
-			expected = false;
+			lock.lock();
+			return true;
 		}
-		return true;
+		const auto duration = std::chrono::milliseconds(timeout);
+		return lock.try_lock_for(duration);
 	}
 
 	bool Release() noexcept
 	{
-		locked.store(false, std::memory_order_release);
+		lock.unlock();
 		return true;
 	}
 
@@ -46,7 +50,7 @@ public:
 	static constexpr uint32_t TimeoutUnlimited = 0xFFFFFFFFu;
 
 private:
-	std::atomic<bool> locked{false};
+	std::recursive_timed_mutex lock;
 };
 
 class MutexLocker
@@ -108,18 +112,44 @@ public:
 
 	bool Take(uint32_t timeout = TimeoutUnlimited) noexcept
 	{
-		return mutex.Take(timeout);
+		std::unique_lock<std::mutex> lock(mutex);
+		auto ready = [this]() noexcept { return available; };
+		if (!ready())
+		{
+			if (timeout == 0)
+			{
+				return false;
+			}
+			const auto duration = std::chrono::milliseconds(timeout);
+			if (timeout == TimeoutUnlimited)
+			{
+				cv.wait(lock, ready);
+			}
+			else if (!cv.wait_for(lock, duration, ready))
+			{
+				return false;
+			}
+		}
+		available = false;
+		return true;
 	}
 
 	bool Give() noexcept
 	{
-		return mutex.Release();
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			available = true;
+		}
+		cv.notify_one();
+		return true;
 	}
 
 	static constexpr uint32_t TimeoutUnlimited = 0xFFFFFFFFu;
 
 private:
-	Mutex mutex;
+	std::mutex mutex;
+	std::condition_variable cv;
+	bool available{false};
 };
 
 class TaskBase
@@ -132,26 +162,39 @@ public:
 
 	TaskId GetTaskId() const noexcept { return taskId; }
 
-	TaskHandle_t GetFreeRTOSHandle() noexcept
+	TaskHandle_t GetFreeRTOSHandle() noexcept { return handle; }
+
+	void AttachHostHandle(TaskHandle_t h, StackType_t* stackBasePtr, uint32_t stackSizeWords) noexcept
 	{
-		return reinterpret_cast<TaskHandle_t>(this);
+		handle = h;
+		stackPtr = stackBasePtr;
+		stackWords = stackSizeWords;
+		AddToList();
 	}
 
 	void AddToList() noexcept
 	{
 		running = true;
-		taskId = NextTaskId();
+		if (taskId == 0)
+		{
+			taskId = NextTaskId();
+		}
 	}
 
 	void TerminateAndUnlink() noexcept
 	{
+		if (handle != nullptr)
+		{
+			vTaskDelete(handle);
+			handle = nullptr;
+		}
 		running = false;
 	}
 
 	TaskBase* GetNext() noexcept { return nullptr; }
 
-	void Suspend() noexcept {}
-	void Resume() noexcept {}
+	void Suspend() noexcept { vTaskSuspend(handle); }
+	void Resume() noexcept { vTaskResume(handle); }
 
 	void SetPriority(unsigned int) noexcept {}
 
@@ -169,14 +212,24 @@ public:
 	static uint32_t ClearNotifyCount(TaskBase*, uint32_t) noexcept { return 0; }
 	static uint32_t ClearCurrentTaskNotifyCount(uint32_t) noexcept { return 0; }
 
-	static TaskBase* GetCallerTaskHandle() noexcept { return nullptr; }
-	static TaskId GetCallerTaskId() noexcept { return 0; }
+	static TaskBase* GetCallerTaskHandle() noexcept { return HostRTOS::GetCurrentTaskBase(); }
+	static TaskId GetCallerTaskId() noexcept
+	{
+		TaskBase* current = HostRTOS::GetCurrentTaskBase();
+		return (current != nullptr) ? current->GetTaskId() : 0;
+	}
 
-	static void Yield() noexcept {}
+	static void Yield() noexcept { HostRTOS::Yield(); }
 
 	static TaskBase* GetTaskList() noexcept { return nullptr; }
 
-	static const uint32_t* GetCurrentTaskStackBase() noexcept { return nullptr; }
+	static const uint32_t* GetCurrentTaskStackBase() noexcept
+	{
+		TaskBase* current = HostRTOS::GetCurrentTaskBase();
+		return (current != nullptr && current->stackPtr != nullptr)
+			? reinterpret_cast<const uint32_t*>(current->stackPtr)
+			: nullptr;
+	}
 
 	static constexpr uint32_t TimeoutUnlimited = 0xFFFFFFFFu;
 
@@ -187,6 +240,9 @@ private:
 		return counter++;
 	}
 
+	TaskHandle_t handle{nullptr};
+	StackType_t* stackPtr{nullptr};
+	uint32_t stackWords{0};
 	TaskId taskId{0};
 	bool running{false};
 };
@@ -194,12 +250,19 @@ private:
 template<unsigned int StackWords> class Task : public TaskBase
 {
 public:
-	void Create(TaskFunction_t,
-				const char*,
-				void*,
-				unsigned int) noexcept
+	void Create(TaskFunction_t function,
+			const char* name,
+			void* parameters,
+			unsigned int priority) noexcept
 	{
-		AddToList();
+		taskStorage.hostContext = this;
+		(void)xTaskCreateStatic(function,
+							   name,
+							   StackWords,
+							   parameters,
+							   static_cast<UBaseType_t>(priority),
+							   reinterpret_cast<StackType_t*>(stack),
+							   &taskStorage);
 	}
 
 	StaticTask_t* GetTaskMemory() noexcept { return &taskStorage; }
@@ -215,7 +278,7 @@ namespace RTOSIface
 {
 	inline TaskBase* GetCurrentTask() noexcept
 	{
-		return nullptr;
+		return HostRTOS::GetCurrentTaskBase();
 	}
 
 	static inline thread_local unsigned int interruptCriticalSectionNesting = 0;
@@ -234,9 +297,13 @@ namespace RTOSIface
 		return interruptCriticalSectionNesting == 0;
 	}
 
-	inline void EnterTaskCriticalSection() noexcept {}
-	inline bool LeaveTaskCriticalSection() noexcept { return false; }
-	inline void Yield() noexcept {}
+	inline void EnterTaskCriticalSection() noexcept { taskENTER_CRITICAL(); }
+	inline bool LeaveTaskCriticalSection() noexcept
+	{
+		taskEXIT_CRITICAL();
+		return false;
+	}
+	inline void Yield() noexcept { HostRTOS::Yield(); }
 }
 
 class InterruptCriticalSectionLocker

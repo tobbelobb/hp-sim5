@@ -2,62 +2,41 @@
 
 #include "FreeRTOS.h"
 
+#include <cstddef>
+
 using TaskHandle_t = void*;
 using TaskFunction_t = void (*)(void*);
 
-inline TickType_t xTaskGetTickCount() noexcept
-{
-	return 0;
-}
+TickType_t xTaskGetTickCount() noexcept;
+TickType_t xTaskGetTickCountFromISR() noexcept;
+UBaseType_t uxTaskGetNumberOfTasks() noexcept;
+void vTaskDelay(TickType_t ticksToDelay) noexcept;
+void vTaskDelayUntil(TickType_t* lastWakeTime, TickType_t ticksToWait) noexcept;
+TaskHandle_t xTaskCreateStatic(TaskFunction_t function,
+							   const char* name,
+							   uint32_t stackDepth,
+							   void* parameters,
+							   UBaseType_t priority,
+							   StackType_t* stackBuffer,
+							   StaticTask_t* taskBuffer) noexcept;
+void vTaskDelete(TaskHandle_t handle) noexcept;
+void vTaskSuspend(TaskHandle_t handle) noexcept;
+void vTaskResume(TaskHandle_t handle) noexcept;
+BaseType_t xTaskNotify(TaskHandle_t handle, uint32_t value, uint32_t action) noexcept;
+BaseType_t xTaskNotifyFromISR(TaskHandle_t handle,
+							  uint32_t value,
+							  uint32_t action,
+							  BaseType_t* higherPriorityTaskWoken) noexcept;
+BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry,
+						   uint32_t bitsToClearOnExit,
+						   uint32_t* receivedValue,
+						   TickType_t timeout) noexcept;
+void vTaskNotifyGiveFromISR(TaskHandle_t handle, BaseType_t* higherPriorityTaskWoken) noexcept;
+void vTaskStartScheduler() noexcept;
+const StackType_t* pxTaskGetLastStackTop(TaskHandle_t handle) noexcept;
+TaskHandle_t xTaskGetCurrentTaskHandle() noexcept;
+BaseType_t xTaskGetSchedulerState() noexcept;
 
-inline TickType_t xTaskGetTickCountFromISR() noexcept
-{
-	return 0;
-}
-
-inline UBaseType_t uxTaskGetNumberOfTasks() noexcept
-{
-	return 0;
-}
-
-inline void vTaskDelay(const TickType_t) noexcept {}
-inline void vTaskDelayUntil(TickType_t*, TickType_t) noexcept {}
-
-inline TaskHandle_t xTaskCreateStatic(TaskFunction_t,
-									  const char*,
-									  uint32_t,
-									  void*,
-									  UBaseType_t,
-									  StackType_t*,
-									  StaticTask_t*) noexcept
-{
-	return nullptr;
-}
-
-inline void vTaskDelete(TaskHandle_t) noexcept {}
-inline void vTaskSuspend(TaskHandle_t) noexcept {}
-inline void vTaskResume(TaskHandle_t) noexcept {}
-
-inline BaseType_t xTaskNotify(TaskHandle_t, uint32_t, uint32_t) noexcept
-{
-	return pdPASS;
-}
-
-inline BaseType_t xTaskNotifyFromISR(TaskHandle_t, uint32_t, uint32_t, BaseType_t*) noexcept
-{
-	return pdPASS;
-}
-
-inline BaseType_t xTaskNotifyWait(uint32_t, uint32_t, uint32_t*, TickType_t) noexcept
-{
-	return pdPASS;
-}
-
-inline void vTaskNotifyGiveFromISR(TaskHandle_t, BaseType_t*) noexcept {}
-
-inline void vTaskStartScheduler() noexcept {}
-
-inline const StackType_t* pxTaskGetLastStackTop(TaskHandle_t) noexcept
-{
-	return nullptr;
-}
+constexpr BaseType_t taskSCHEDULER_NOT_STARTED = 0;
+constexpr BaseType_t taskSCHEDULER_RUNNING = 1;
+constexpr BaseType_t taskSCHEDULER_SUSPENDED = 2;

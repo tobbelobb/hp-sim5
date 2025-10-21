@@ -63,11 +63,12 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Normalised the remaining `printf` calls that were mixing `%u` with `size_t`/`unsigned long` in `Platform.cpp` and `RepRap.cpp`, casting to explicit host-safe widths where the firmware expects small indices. Host compiles of both translation units now run cleanly wrt `-Wformat`, leaving only the expected macro and unused-parameter diagnostics.
 
 
-## Step 6 — FreeRTOS shim (pending)
+## Step 6 — FreeRTOS shim
 
-- Replace FreeRTOS usage with a cooperative loop: implement small scheduler (std::thread + queues) matching the API points RRF uses (TaskHandle, QueueHandle). Provide adapters in `host/rtos/` calling into `std::mutex`/`std::condition_variable`.
-- Expose stub headers `FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h` that map firmware invocations onto the shim so compilation succeeds before full behaviour is emulated.
-- Update Makefile target list to exclude actual FreeRTOS sources but compile `host/rtos/freertos_shim.cpp` once the basic interfaces exist.
+- Added a host runtime in `RRF/host/rtos/freertos_shim.cpp` that wraps `std::thread`, `std::mutex`, and `std::condition_variable` to emulate the FreeRTOS surfaces we touch today (tasks, queues, binary/recursive semaphores, task notifications, critical sections, tick/time helpers). Tasks spawn immediately as detached threads; handles map back to their `TaskBase` via the `StaticTask_t::hostContext` pointer.
+- Reworked the host headers (`FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h`) so they declare the real shim entry points instead of inline no-ops, and taught `RTOSIface/RTOSIface.h` to use `std::recursive_timed_mutex` and the shimmed APIs for mutexes, binary semaphores, task registration, and critical-section helpers. `TaskBase::AttachHostHandle` now records the native stack pointers so diagnostics like `pxTaskGetLastStackTop()` have data.
+- Updated the host Makefile with `-pthread`, `-I.` for the new headers, automatic object-dir creation, and a new target for `rtos/freertos_shim.cpp`; `make -C RRF/host` builds `build/rtos/freertos_shim.o` and links the bootstrap without pulling in the embedded FreeRTOS sources.
+- Known gaps: threads never stop on `vTaskDelete()` (we only flag `deleteRequested`); `vTaskSuspend()/Resume()` remain no-ops; scheduler state is coarse (`RUNNING` only); indefinite delays sleep for a long wall-clock chunk; queue/semaphore timeouts are millisecond-granularity only. We will need a cooperative loop and teardown logic once more subsystems actually schedule work, but this shim is enough to let higher layers compile and to start wiring the G-code pipeline in Step 7.
 
 ## Step 7 - Bring in G-code pipeline (pending)
 

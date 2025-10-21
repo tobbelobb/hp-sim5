@@ -8,10 +8,25 @@ using UBaseType_t = uint32_t;
 using TickType_t = uint32_t;
 using StackType_t = uint32_t;
 
-struct StaticTask_t {};
-struct StaticQueue_t {};
-struct StaticSemaphore_t {};
-struct StaticEventGroup_t {};
+struct StaticTask_t
+{
+	void* hostContext{nullptr};
+};
+
+struct StaticQueue_t
+{
+	void* hostContext{nullptr};
+};
+
+struct StaticSemaphore_t
+{
+	void* hostContext{nullptr};
+};
+
+struct StaticEventGroup_t
+{
+	void* hostContext{nullptr};
+};
 
 #define pdMS_TO_TICKS(x) static_cast<TickType_t>(x)
 #define portMAX_DELAY 0xFFFFFFFFu
@@ -26,9 +41,11 @@ struct StaticEventGroup_t {};
 
 #define configMINIMAL_STACK_SIZE 256
 
-#define taskENTER_CRITICAL()
-#define taskEXIT_CRITICAL()
+#include <rtos/host_rtos.h>
 
-#define portYIELD()
+#define taskENTER_CRITICAL() ::HostRTOS::EnterCritical()
+#define taskEXIT_CRITICAL() ::HostRTOS::ExitCritical()
+
+#define portYIELD() ::HostRTOS::Yield()
 
 using EventBits_t = uint32_t;

@@ -1,21 +1,23 @@
 CXX := g++
-CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic \
-	-Iinclude \
-	-I../ReprapFirmware/src \
-	-I../ReprapFirmware/src/Hardware/SAME70 \
-	-I../RRFLibraries/src \
-	-I../CANlib/src \
+CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic -pthread \
+    -I. \
+    -Iinclude \
+    -Irtos \
+    -I../ReprapFirmware/src \
+    -I../ReprapFirmware/src/Hardware/SAME70 \
+    -I../RRFLibraries/src \
+    -I../CANlib/src \
 	-D__SAME70Q20B__ \
 	-DDUET3_MB6HC=1 \
 	-DDUET3=1 \
 	-DSAME70=1 \
 	-DRRF_HOST_BUILD=1 \
-	-DSRC_MOVEMENT_STEPTIMER_H_=1 \
-	-DUSE_SBC=0
-LDFLAGS :=
+    -DSRC_MOVEMENT_STEPTIMER_H_=1 \
+    -DUSE_SBC=0
+LDFLAGS := -pthread
 TARGET := host_rrf_bootstrap
 
-HOST_SRC := src/main.cpp src/devices_stub.cpp
+HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp
 
 BUILD_DIR := build
@@ -32,6 +34,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJ_FILES)
 	$(CXX) $(OBJ_FILES) $(LDFLAGS) -o $@
 
 $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/rrf_%.o: ../ReprapFirmware/src/%.cpp | $(BUILD_DIR)

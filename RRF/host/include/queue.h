@@ -4,32 +4,12 @@
 
 using QueueHandle_t = void*;
 
-inline QueueHandle_t xQueueCreateStatic(UBaseType_t,
-										UBaseType_t,
-										uint8_t*,
-										StaticQueue_t*) noexcept
-{
-	return nullptr;
-}
-
-inline BaseType_t xQueueSend(QueueHandle_t, const void*, TickType_t) noexcept
-{
-	return pdPASS;
-}
-
-inline BaseType_t xQueueSendFromISR(QueueHandle_t, const void*, BaseType_t*) noexcept
-{
-	return pdPASS;
-}
-
-inline BaseType_t xQueueReceive(QueueHandle_t, void*, TickType_t) noexcept
-{
-	return pdFAIL;
-}
-
-inline UBaseType_t uxQueueMessagesWaiting(const QueueHandle_t) noexcept
-{
-	return 0;
-}
-
-inline void vQueueDelete(QueueHandle_t) noexcept {}
+QueueHandle_t xQueueCreateStatic(UBaseType_t queueLength,
+								 UBaseType_t itemSize,
+								 uint8_t* queueStorage,
+								 StaticQueue_t* queueBuffer) noexcept;
+BaseType_t xQueueSend(QueueHandle_t queue, const void* item, TickType_t timeout) noexcept;
+BaseType_t xQueueSendFromISR(QueueHandle_t queue, const void* item, BaseType_t* higherPriorityTaskWoken) noexcept;
+BaseType_t xQueueReceive(QueueHandle_t queue, void* buffer, TickType_t timeout) noexcept;
+UBaseType_t uxQueueMessagesWaiting(QueueHandle_t queue) noexcept;
+void vQueueDelete(QueueHandle_t queue) noexcept;
