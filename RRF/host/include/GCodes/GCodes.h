@@ -9,7 +9,6 @@
 #include <General/StringRef.h>
 #include <GCodeResult.h>
 #include <GCodes/GCodeChannel.h>
-#include <GCodes/GCodeMachineState.h>
 
 class GCodeBuffer;
 
@@ -20,63 +19,49 @@ enum class MachineType : uint8_t
 	laser
 };
 
-// Minimal host stub for the GCodes manager.  It exposes just enough surface
-// for the current G-code buffer stack to compile and issue replies.
+// Host-side façade that captures just enough of the firmware GCodes surface for the bootstrapping build.
 class GCodes
 {
 public:
-	GCodes() noexcept = default;
+	GCodes() noexcept;
 
-	MachineType GetMachineType() const noexcept { return machineType; }
-	const char* GetAxisLetters() const noexcept { return axisLetters; }
+	MachineType GetMachineType() const noexcept { return MachineType::fff; }
+	const char* GetAxisLetters() const noexcept { return axisLettersString.data(); }
 
 	void AbortPrint(GCodeBuffer&) noexcept {}
-
 	void HandleReply(GCodeBuffer&, GCodeResult, const char*) noexcept {}
 
-	size_t GetNumInputs() const noexcept { return inputAxesRelative.size(); }
+	// Host helpers ----------------------------------------------------------------
+	void RegisterInput(GCodeBuffer& buffer) noexcept;
+	void ClearInputs() noexcept;
 
-	bool GetAxesRelative(size_t index) const noexcept
-	{
-		return (index < inputAxesRelative.size()) ? inputAxesRelative[index] : false;
-	}
-
-	void SetAxesRelative(size_t index, bool value) noexcept
-	{
-		if (index < inputAxesRelative.size())
-		{
-			inputAxesRelative[index] = value;
-		}
-	}
+	size_t GetNumInputs() const noexcept { return numInputs; }
+	bool GetAxesRelative(size_t index) const noexcept;
+	void SetAxesRelative(size_t index, bool value) noexcept;
 
 	size_t GetAxisCount() const noexcept { return axisCount; }
+	void SetAxisCount(size_t count) noexcept;
 
-	void SetAxisCount(size_t count) noexcept
-	{
-		axisCount = (count <= userPosition.size()) ? count : userPosition.size();
-	}
-
-	float GetUserPosition(size_t axis) const noexcept
-	{
-		return (axis < userPosition.size()) ? userPosition[axis] : 0.0f;
-	}
-
-	void SetUserPosition(size_t axis, float value) noexcept
-	{
-		if (axis < userPosition.size())
-		{
-			userPosition[axis] = value;
-		}
-	}
-
-	void ResetUserPositions() noexcept { userPosition.fill(0.0f); }
+	bool TryGetAxisIndex(char letter, size_t& index) const noexcept;
+	float GetUserPosition(size_t axis) const noexcept;
+	void SetUserPosition(size_t axis, float value) noexcept;
+	void ResetUserPositions() noexcept;
 
 private:
-	MachineType machineType{MachineType::fff};
-	const char* axisLetters{"XYZABC"};
-	std::array<bool, 1> inputAxesRelative{{false}};
-	std::array<float, MaxAxes> userPosition{};
-	size_t axisCount{3};
+	static constexpr size_t kMaxInputs = 4;
+	static constexpr size_t kMaxAxes = 10;
+
+	void UpdateAxisLettersString() noexcept;
+
+	std::array<GCodeBuffer*, kMaxInputs> inputs{};
+	std::array<bool, kMaxInputs> inputAxesRelative{};
+	size_t numInputs{0};
+
+	std::array<char, kMaxAxes> axisLetters{'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'U', 'V', 'W'};
+	std::array<char, kMaxAxes + 1> axisLettersString{};
+	size_t axisCount{7};
+
+	std::array<float, kMaxAxes> userPositions{};
 };
 
 #endif

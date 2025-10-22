@@ -18,28 +18,29 @@ LDFLAGS := -pthread
 TARGET := host_rrf_bootstrap
 
 HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
-	storage/HostFileStore.cpp \
-	storage/HostMassStorage.cpp \
-	platform/Heap.cpp \
-	platform/StringHandle.cpp \
-	platform/ArrayHandle.cpp \
-	platform/SoftwareReset.cpp \
-	platform/PlatformHost.cpp \
-	platform/RepRapHost.cpp \
-	gcodes/FileGCodeInputHost.cpp \
-	gcodes/GCodeFileInfoHost.cpp \
-	networking/MacAddressHost.cpp \
-	platform/GetFloatFormatStringHost.cpp \
-	platform/TasksHost.cpp \
-	platform/DebugPrintHost.cpp \
-	object_model/ObjectModelHost.cpp \
+    storage/HostFileStore.cpp \
+    storage/HostMassStorage.cpp \
+    platform/Heap.cpp \
+    platform/StringHandle.cpp \
+    platform/ArrayHandle.cpp \
+    platform/SoftwareReset.cpp \
+    platform/PlatformHost.cpp \
+    platform/RepRapHost.cpp \
+    platform/GCodesHost.cpp \
+    gcodes/GCodeInputStubs.cpp \
+    gcodes/GCodeFileInfoHost.cpp \
+    networking/MacAddressHost.cpp \
+    platform/GetFloatFormatStringHost.cpp \
+    platform/TasksHost.cpp \
+    platform/DebugPrintHost.cpp \
+    object_model/ObjectModelHost.cpp \
 	object_model/VariableHost.cpp \
 	object_model/GlobalVariablesHost.cpp \
 	object_model/ObjectExplorationContextHost.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp \
-	../ReprapFirmware/src/Storage/CRC32.cpp \
-	../ReprapFirmware/src/Storage/CRC16.cpp \
-	../ReprapFirmware/src/GCodes/GCodeException.cpp \
+    ../ReprapFirmware/src/Storage/CRC32.cpp \
+    ../ReprapFirmware/src/Storage/CRC16.cpp \
+    ../ReprapFirmware/src/GCodes/GCodeException.cpp \
 	../ReprapFirmware/src/GCodes/GCodeMachineState.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/GCodeBuffer.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/StringParser.cpp \
