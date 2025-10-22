@@ -96,6 +96,8 @@ public:
 	bool IsRunning() const noexcept { return false; }
 	bool HasExpired() const noexcept { return false; }
 	void Cancel() noexcept {}
+	bool CheckAndStop(uint32_t) noexcept { return false; }
+	bool CheckNoStop(uint32_t) noexcept { return false; }
 };
 
 class AtomicCriticalSectionLocker

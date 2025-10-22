@@ -9,6 +9,7 @@
 #include <General/StringRef.h>
 #include <GCodeResult.h>
 #include <GCodes/GCodeChannel.h>
+#include <Movement/HomingMode.h>
 
 class GCodeBuffer;
 
@@ -40,12 +41,23 @@ public:
 	void SetAxesRelative(size_t index, bool value) noexcept;
 
 	size_t GetAxisCount() const noexcept { return axisCount; }
+	size_t GetTotalAxes() const noexcept { return axisCount; }
+	size_t GetVisibleAxes() const noexcept { return axisCount; }
 	void SetAxisCount(size_t count) noexcept;
+
+	size_t GetNumExtruders() const noexcept { return numExtruders; }
+	void SetNumExtruders(size_t count) noexcept { numExtruders = count; }
 
 	bool TryGetAxisIndex(char letter, size_t& index) const noexcept;
 	float GetUserPosition(size_t axis) const noexcept;
 	void SetUserPosition(size_t axis, float value) noexcept;
 	void ResetUserPositions() noexcept;
+
+	size_t GetNumScanningProbeReadingsLeftToTake() const noexcept { return 0; }
+	void TakeScanningProbeReading() noexcept {}
+
+	void MoveStoppedByZProbe() noexcept {}
+	void RecordEndstopTriggered(size_t /*axis*/, HomingMode /*mode*/) noexcept {}
 
 private:
 	static constexpr size_t kMaxInputs = 4;
@@ -60,6 +72,7 @@ private:
 	std::array<char, kMaxAxes> axisLetters{'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'U', 'V', 'W'};
 	std::array<char, kMaxAxes + 1> axisLettersString{};
 	size_t axisCount{7};
+	size_t numExtruders{0};
 
 	std::array<float, kMaxAxes> userPositions{};
 };

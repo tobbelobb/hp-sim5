@@ -15,6 +15,11 @@ void Shutdown() noexcept
 {
 }
 
+CanAddress GetCanAddress() noexcept
+{
+	return 0;
+}
+
 void SendMotion(CanMessageBuffer *buf) noexcept
 {
 	if (buf == nullptr)
@@ -37,4 +42,3 @@ void WakeAsyncSenderFromIsr() noexcept
 } // namespace CanInterface
 
 #endif
-

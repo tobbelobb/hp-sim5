@@ -168,6 +168,7 @@ inline bool IsIrqEnabledInFlags(coreIrqflags_t) noexcept { return true; }
 inline uint32_t __get_BASEPRI() noexcept { return 0; }
 inline void __set_BASEPRI(uint32_t) noexcept {}
 inline void __set_BASEPRI_MAX(uint32_t) noexcept {}
+inline bool inInterrupt() noexcept { return false; }
 
 inline void memcpyu32(uint32_t *dest, const uint32_t *src, size_t count) noexcept
 {

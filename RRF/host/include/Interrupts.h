@@ -22,3 +22,9 @@ inline ExintNumber AttachEvent(Pin, InterruptMode, bool) noexcept { return 0; }
 inline void DetachEvent(Pin) noexcept {}
 inline bool ReadDebouncedPin(Pin) noexcept { return false; }
 
+class BasePriorityBooster
+{
+public:
+	explicit BasePriorityBooster(int) noexcept {}
+	~BasePriorityBooster() noexcept = default;
+};

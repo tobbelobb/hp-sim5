@@ -48,6 +48,7 @@ RRF_SRC := ../ReprapFirmware/src/Version.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/StringParser.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/BinaryParser.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/ExpressionParser.cpp \
+	../ReprapFirmware/src/CAN/CanMotion.cpp \
 	../ReprapFirmware/src/libc/strptime.cpp
 
 CANLIB_SRC := ../CANlib/src/CanMessageBuffer.cpp

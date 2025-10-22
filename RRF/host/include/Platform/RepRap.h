@@ -49,6 +49,7 @@ public:
 
 	void InputsUpdated() noexcept {}
 	void GlobalUpdated() noexcept {}
+	void MoveUpdated() noexcept {}
 
 	ReadLockedPointer<const VariableSet> GetGlobalVariablesForReading() noexcept { return globalVariables.GetForReading(); }
 	WriteLockedPointer<VariableSet> GetGlobalVariablesForWriting() noexcept { return globalVariables.GetForWriting(); }

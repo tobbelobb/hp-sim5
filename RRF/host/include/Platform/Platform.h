@@ -18,6 +18,10 @@ class Platform
 public:
 	Platform() noexcept;
 
+	static inline OutputBuffer genericDebugBuffer{};
+	static inline bool shouldTurnOffHeaters{false};
+	static inline bool hasGenericDebug{false};
+
 	void Init() noexcept;
 	void Spin() noexcept;
 	void Exit() noexcept;
