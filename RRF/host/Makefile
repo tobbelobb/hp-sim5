@@ -18,6 +18,8 @@ LDFLAGS := -pthread
 TARGET := host_rrf_bootstrap
 
 HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
+    can/CanCapture.cpp \
+    can/CanInterfaceHost.cpp \
     storage/HostFileStore.cpp \
     storage/HostMassStorage.cpp \
     platform/Heap.cpp \
@@ -48,6 +50,8 @@ RRF_SRC := ../ReprapFirmware/src/Version.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/ExpressionParser.cpp \
 	../ReprapFirmware/src/libc/strptime.cpp
 
+CANLIB_SRC := ../CANlib/src/CanMessageBuffer.cpp
+
 RRFLIB_SRC := ../RRFLibraries/src/General/StringRef.cpp \
 	../RRFLibraries/src/General/SafeVsnprintf.cpp \
 	../RRFLibraries/src/General/StringFunctions.cpp \
@@ -62,8 +66,9 @@ BUILD_DIR := build
 
 HOST_OBJ := $(addprefix $(BUILD_DIR)/,$(HOST_SRC:.cpp=.o))
 RRF_OBJ := $(addprefix $(BUILD_DIR)/rrf_,$(RRF_SRC:../ReprapFirmware/src/%.cpp=%.o))
+CANLIB_OBJ := $(addprefix $(BUILD_DIR)/canlib_,$(CANLIB_SRC:../CANlib/src/%.cpp=%.o))
 RRFLIB_OBJ := $(addprefix $(BUILD_DIR)/rrflib_,$(RRFLIB_SRC:../RRFLibraries/src/%.cpp=%.o))
-OBJ_FILES := $(HOST_OBJ) $(RRF_OBJ) $(RRFLIB_OBJ)
+OBJ_FILES := $(HOST_OBJ) $(RRF_OBJ) $(CANLIB_OBJ) $(RRFLIB_OBJ)
 
 .PHONY: all clean
 
@@ -77,6 +82,10 @@ $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/rrf_%.o: ../ReprapFirmware/src/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/canlib_%.o: ../CANlib/src/%.cpp | $(BUILD_DIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

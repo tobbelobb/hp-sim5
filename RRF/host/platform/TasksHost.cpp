@@ -2,6 +2,23 @@
 
 #include <new>
 
+void *MessageBufferAlloc(size_t sz, std::align_val_t align) noexcept
+{
+	try
+	{
+		return ::operator new(sz, align);
+	}
+	catch (...)
+	{
+		return nullptr;
+	}
+}
+
+void MessageBufferDelete(void *ptr, std::align_val_t align) noexcept
+{
+	::operator delete(ptr, align);
+}
+
 namespace Tasks
 {
 	void Diagnostics(const StringRef& reply) noexcept
@@ -49,4 +66,3 @@ namespace Tasks
 		return nullptr;
 	}
 }
-

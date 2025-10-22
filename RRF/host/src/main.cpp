@@ -1,6 +1,7 @@
 #include <Version.h>
 #include <Storage/MassStorage.h>
 
+#include <CAN/CanCapture.h>
 #include <Platform/RepRap.h>
 #include <Platform/MessageType.h>
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
@@ -23,7 +24,7 @@ namespace
 {
 	void PrintUsage()
 	{
-		std::cout << "Usage: host_rrf_bootstrap [--vsd <path>] [--run <file.gcode>]\n";
+		std::cout << "Usage: host_rrf_bootstrap [--vsd <path>] [--run <file.gcode>] [--can-log <path|disable>]\n";
 	}
 
 	std::string NormaliseRunPath(const std::string& rawPath)
@@ -250,7 +251,10 @@ int main(int argc, char** argv)
 {
 	std::string vsdPath = "host/vsd";
 	std::string runPath;
+	std::string canLogPath;
 	bool showHelp = false;
+	bool canLogProvided = false;
+	bool canLogDisabled = false;
 
 	for (int i = 1; i < argc; ++i)
 	{
@@ -273,6 +277,27 @@ int main(int argc, char** argv)
 			}
 			runPath = argv[++i];
 		}
+		else if (arg == "--can-log")
+		{
+			if (i + 1 >= argc)
+			{
+				std::cerr << "--can-log requires a path or the value 'disable'\n";
+				return 1;
+			}
+			canLogPath = argv[++i];
+			canLogProvided = true;
+			const std::string lower = [] (std::string value) {
+				for (char& ch : value)
+				{
+					ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+				}
+				return value;
+			}(canLogPath);
+			if (lower == "disable" || lower == "none")
+			{
+				canLogDisabled = true;
+			}
+		}
 		else if (arg == "--help" || arg == "-h")
 		{
 			showHelp = true;
@@ -290,9 +315,10 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+	std::filesystem::path absRoot;
 	try
 	{
-		std::filesystem::path absRoot = std::filesystem::absolute(vsdPath);
+		absRoot = std::filesystem::absolute(vsdPath);
 		MassStorage::SetHostRoot(absRoot.string());
 		MassStorage::Init();
 	}
@@ -302,10 +328,66 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
+	std::filesystem::path resolvedCanLog;
+	if (!canLogDisabled)
+	{
+		if (canLogProvided)
+		{
+			std::filesystem::path candidate(canLogPath);
+			if (candidate.is_absolute())
+			{
+				resolvedCanLog = candidate;
+			}
+			else
+			{
+				resolvedCanLog = absRoot / candidate;
+			}
+		}
+		else
+		{
+			resolvedCanLog = absRoot / "logs" / "can_capture.jsonl";
+		}
+	}
+
+	if (!canLogDisabled)
+	{
+		if (!HostCanCapture::Configure(resolvedCanLog))
+		{
+			std::cerr << "Failed to initialise CAN capture sink at " << resolvedCanLog << "\n";
+			return 1;
+		}
+	}
+	else
+	{
+		if (!HostCanCapture::Configure({}))
+		{
+			std::cerr << "Failed to disable CAN capture sink\n";
+			return 1;
+		}
+	}
+
+	const bool captureActive = !canLogDisabled && !resolvedCanLog.empty();
+
+	struct CaptureGuard
+	{
+		~CaptureGuard()
+		{
+			HostCanCapture::Shutdown();
+		}
+	} captureGuard;
+
 	std::cout << "RRF host bootstrap build\n";
 	std::cout << "Version: " << VERSION << "\n";
 	std::cout << "Build date: " << DateText << TimeSuffix << "\n";
 	std::cout << "Virtual SD root: " << MassStorage::GetHostRoot() << "\n";
+	if (captureActive)
+	{
+		std::cout << "CAN capture log: " << resolvedCanLog << "\n";
+	}
+	else
+	{
+		std::cout << "CAN capture disabled\n";
+	}
 
 	if (!runPath.empty())
 	{

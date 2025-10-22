@@ -119,6 +119,7 @@ What we do want is the CAN movement messages, which might include:
 
 These are the pieces we want to log.
 
+- Iteration 8A: added a dedicated host CAN capture sink (`RRF/host/can/CanCapture.cpp`) that serialises every `CanMessageMovementLinearShaped` frame to JSONL. The CLI now accepts `--can-log <path|disable>` and defaults to `<vsd>/logs/can_capture.jsonl`, with shutdown handled via RAII in `host_rrf_bootstrap`. `CanInterface::SendMotion` is stubbed on host (`RRF/host/can/CanInterfaceHost.cpp`) so each queued movement logs and the buffer is freed immediately instead of touching hardware. To support this path the host build now pulls in `CANlib/src/CanMessageBuffer.cpp`, provides aligned `MessageBufferAlloc/Delete` in `platform/TasksHost.cpp`, and keeps `SUPPORT_CAN_EXPANSION` enabled so Duet3 CAN constants/types align with the sink.
 
 
 
