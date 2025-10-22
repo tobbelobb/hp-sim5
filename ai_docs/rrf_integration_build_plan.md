@@ -69,16 +69,59 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Reworked the host headers (`FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h`) so they declare the real shim entry points instead of inline no-ops, and taught `RTOSIface/RTOSIface.h` to use `std::recursive_timed_mutex` and the shimmed APIs for mutexes, binary semaphores, task registration, and critical-section helpers. `TaskBase::AttachHostHandle` now records the native stack pointers so diagnostics like `pxTaskGetLastStackTop()` have data.
 - Updated the host Makefile with `-pthread`, `-I.` for the new headers, automatic object-dir creation, and a new target for `rtos/freertos_shim.cpp`; `make -C RRF/host` builds `build/rtos/freertos_shim.o` and links the bootstrap without pulling in the embedded FreeRTOS sources.
 - Known gaps: threads never stop on `vTaskDelete()` (we only flag `deleteRequested`); `vTaskSuspend()/Resume()` remain no-ops; scheduler state is coarse (`RUNNING` only); indefinite delays sleep for a long wall-clock chunk; queue/semaphore timeouts are millisecond-granularity only. We will need a cooperative loop and teardown logic once more subsystems actually schedule work, but this shim is enough to let higher layers compile and to start wiring the G-code pipeline in Step 7.
+- Added `RRF/host/rtos/freertos_shim.cpp` and matching headers (`FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h`, `RTOSIface/RTOSIface.h`) to satisfy the firmware’s RTOS interface while routing calls to lightweight host implementations.
+- The shim launches detached `std::thread` workers for `xTaskCreate`, exposes stub queues/semaphores, and guards critical sections with a recursive mutex. Threads observe an atomic `deleteRequested` flag so they can terminate cooperatively when firmware code calls `vTaskDelete`.
+- Host Makefile now compiles the shim with the bootstrap sources, allowing `Platform.cpp`/`RepRap.cpp` to link without the embedded FreeRTOS port.
+- Future refinement: provide deterministic scheduling semantics (avoid 24 h sleeps for `portMAX_DELAY`), implement cleanup for task handles, and add unit tests around queue behaviour.
 
-## Step 7 - Bring in G-code pipeline (pending)
+## Step 7 — Virtual SD & G-code pipeline (in progress)
 
+Goals:
 - Compile GCodes/GCodes.cpp#L1, GCodes/GCodeBuffer.cpp#L1, and config helpers.
 - Stub mass-storage calls from Storage module to the host filesystem root; map virtual SD to RRF/host/vsd.
 
-## Step 8 - CAN message capture (pending)
+Progress log:
+- Introduced filesystem-backed storage shims: `host/include/Storage/{FileStore,FileWriteBuffer,MassStorage}.h` plus `host/storage/HostFileStore.cpp` and `HostMassStorage.cpp` translate firmware file operations onto `std::filesystem`/`std::fstream`. Volume `0:/` now maps to a configurable host root (`MassStorage::SetHostRoot`) with automatic `sys/`, `gcodes/`, and `firmware/` directory creation.
+- Host Makefile pulls in firmware’s `Storage/CRC32.cpp` and RRFLibraries helpers (`StringRef`, `SafeVsnprintf`, `StringFunctions`, `Strnlen`) so `M36`/metadata paths behave like the embedded build. `GetFileInfo` reports size, mtime, and appends a CRC32 token to `generatedBy` pending a cleaner reporting hook.
+- CLI updates in `host/src/main.cpp`: `--vsd <path>` selects the virtual SD root, `--run <file>` records a target gcode (execution still stubbed), and MassStorage initialises the directory skeleton on launch.
+- Began compiling the G-code stack (`GCodeMachineState`, `GCodeInput`, `GCodeQueue`, `GCodes[2–7]`, `GCodeBuffer` parsers). Host shims grew to cover `Stream::readBytes`, tool-change flags (`TFreeBit/TPreBit/TPostBit`), character helpers (`isAlpha/isDigit/isAlnum`), random number placeholder, and a stub stack-pointer accessor.
+- Current link blockers sit in `ExpressionParser`: object-model types (`ExpressionValue`, `GlobalVariables`, `StringHandle`), diagnostics (`SoftwareReset`), and named-enum helpers are still missing from the host target, yielding unresolved externals. Next iteration must stub those pieces (or guard the code paths) before we can instantiate `GCodes` from `main`.
+- Once ExpressionParser links, scrub the remaining `%u` vs `size_t` format warnings and continue trimming unused feature macros (`HAS_WIFI_NETWORKING`, `HAS_AUX_DEVICES`, etc.) so the host focus stays on motion planning and file playback.
+- Started object-model host shim: added host overrides for `StringHandle`, `ArrayHandle`, freelist, and heap headers so `ExpressionValue` union compiles on x86_64; provided `SoftwareReset` stub, FreeRTOS-aware queue/sem shims, and storage for virtual SD. Implemented minimal `ObjectExplorationContext`, `VariableSet`, and `GlobalVariables` so `ExpressionParser` can resolve symbol references. Linking still fails because the host build lacks stubs for `reprap` accessors (`GetPlatform()`, global variables), numeric helpers (`NumericConverter`, `fastSqrtf`), and platform queries (`Platform::SysFileExists`); these need either host implementations or conditional code paths before GCodes can execute end-to-end.
+- Iteration 7A: introduced `platform/PlatformHost.cpp` to supply host-side `Platform` ctor/logging/virtual SD helpers and trimmed the Makefile to just the parser-heavy `GCodeBuffer` units plus `GCodeException`/`GCodeMachineState`. Link still fails because we have not yet provided a host `RepRap` singleton (`reprap` and associated `GCodes` facade), `FileGCodeInput`/`OutputBuffer` adapters, or the object-model vtables the parser expects. Next pass will either stub these dependencies or further reduce the firmware source set so the Expression parser can link in isolation.
+- [In progress] Host stubs for RepRap/GCodes: drafted minimal Platform/RepRap/GCodes replacements and began wiring FileGCodeInput host implementations, but ExpressionParser and object-model hooks still pull in heavy dependencies (MassStorage, reprap.GetObjectValueUsingTableNumber, NamedEnumLookup). Build currently fails inside ExpressionParser pending additional guards/stubs.
+- Iteration 7B: wired the parser’s file helpers to the host storage shim by including `Storage/FileStore.h`/`MassStorage.h`, added a host implementation of `RepRap::GetObjectValueUsingTableNumber` that returns neutral values (and warns when unsupported paths are queried), and fixed the RRFLibraries host build by aligning `NamedEnumLookup`’s signature with the firmware ABI. `make -C RRF/host` now links through the ExpressionParser object model surface, unblocking the next wave of G-code execution work.
+- Iteration 7C: taught the host object-model shim to answer the Hangprinter-critical queries `inputs[].axesRelative` and `move.axes[].userPosition` by parsing the selector string inside `RepRap::GetObjectValueUsingTableNumber` (`RRF/host/platform/RepRapHost.cpp#L24`). Stub `GCodes` now tracks per-input relative mode and a small user-position array (`RRF/host/include/GCodes/GCodes.h#L32`), so expressions reading those paths return deterministic data while every other branch remains guarded as “unsupported”.
+- Iteration 7D: replaced the hard-coded `GCodes` placeholders with real state updates driven by the parser. The `--run` CLI path now streams a host-side `FileStore` through `GCodeBuffer`, handles `G90/G91/G92/G0/G1`, toggles `inputs[].axesRelative`, and accumulates `move.axes[].userPosition` in the stub `GCodes` class (`RRF/host/src/main.cpp`, `RRF/host/include/GCodes/GCodes.h`). Executing a sample file under `host_rrf_bootstrap --run` mutates the object-model values as expected, giving us a working loop for later CAN capture work.
 
-- Build CANlib/src sources directly (needs only headers) to keep message formats, and implement a host CanInterface class that writes serialized frames to a file or ring buffer before actual bus access.
-- Mirror the Duet3 expansion behaviour by forcing Platform to enumerate all drives as external over CAN (see ReprapFirmware/src/ExpansionManager.cpp#L1) and route CanMotion::SendMove into our capture sink.
+
+## Step 8 - Move command packet capture
+
+Goals:
+We want to capture and log all the motor movements that the firmware plans and calculates.
+We want them in a format similar to what Klipper uses (the `queue_step` mcu commands, see explanation in ai_docs/Klipper_MCU_Commands.md).
+We have imagined capturing the packets that ReprapFirmware would typically send via the Duet3 CAN protocol, because the physical setup is similar to Klippers.
+Compare these two data flows to see what we mean:
+
+ - Klipper host -> MCU commands via USB protocol -> MCU
+ - ReprapFirmware Duet master -> MCU commands via CAN protocol -> MCU
+
+So we imagine that ReprapFirmware puts the synchronization information as well as the move commands themselves in the CAN packets.
+We really want a thin CAN shim though, we don't want to emulate a full CAN stack.
+See eg "Announcements", "Status Messages", the master broadcasting its time, the CRC checking, and so on in CANlib/doc/Duet3CAN-FDProtocol.md to see examples of the things we'd like to avoid having to emulate.
+
+What we do want is the CAN movement messages, which might include:
+
+ - which driver(s) to step,
+ - how many steps or what step interval to maintain,
+ - acceleration or segment duration, and
+ - a start time tag so all boards move in lockstep.
+
+These are the pieces we want to log.
+
+
+
+
 
 ## Step 9 - Gradual file adds in Makefile (pending)
 
@@ -112,30 +155,7 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Unit-test CAN serialization against CANlib/src/CanMessageFormats.cpp#L1 reference tables.
 - Plan follow-up tasks: integrate timing scale control, implement real-time to simulated-time mapping, expand config coverage, document output format.
 
-Potential user actions:
 
-1. Approve creation of host scaffolding directory and stub headers.
-2. Decide whether .duetcan should mirror raw CAN frames or normalized step events.
+Questions:
 
-## Step 6 — FreeRTOS shim
-
-- Added `RRF/host/rtos/freertos_shim.cpp` and matching headers (`FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h`, `RTOSIface/RTOSIface.h`) to satisfy the firmware’s RTOS interface while routing calls to lightweight host implementations.
-- The shim launches detached `std::thread` workers for `xTaskCreate`, exposes stub queues/semaphores, and guards critical sections with a recursive mutex. Threads observe an atomic `deleteRequested` flag so they can terminate cooperatively when firmware code calls `vTaskDelete`.
-- Host Makefile now compiles the shim with the bootstrap sources, allowing `Platform.cpp`/`RepRap.cpp` to link without the embedded FreeRTOS port.
-- Future refinement: provide deterministic scheduling semantics (avoid 24 h sleeps for `portMAX_DELAY`), implement cleanup for task handles, and add unit tests around queue behaviour.
-
-## Step 7 — Virtual SD & G-code pipeline (in progress)
-
-- Introduced filesystem-backed storage shims: `host/include/Storage/{FileStore,FileWriteBuffer,MassStorage}.h` plus `host/storage/HostFileStore.cpp` and `HostMassStorage.cpp` translate firmware file operations onto `std::filesystem`/`std::fstream`. Volume `0:/` now maps to a configurable host root (`MassStorage::SetHostRoot`) with automatic `sys/`, `gcodes/`, and `firmware/` directory creation.
-- Host Makefile pulls in firmware’s `Storage/CRC32.cpp` and RRFLibraries helpers (`StringRef`, `SafeVsnprintf`, `StringFunctions`, `Strnlen`) so `M36`/metadata paths behave like the embedded build. `GetFileInfo` reports size, mtime, and appends a CRC32 token to `generatedBy` pending a cleaner reporting hook.
-- CLI updates in `host/src/main.cpp`: `--vsd <path>` selects the virtual SD root, `--run <file>` records a target gcode (execution still stubbed), and MassStorage initialises the directory skeleton on launch.
-- Began compiling the G-code stack (`GCodeMachineState`, `GCodeInput`, `GCodeQueue`, `GCodes[2–7]`, `GCodeBuffer` parsers). Host shims grew to cover `Stream::readBytes`, tool-change flags (`TFreeBit/TPreBit/TPostBit`), character helpers (`isAlpha/isDigit/isAlnum`), random number placeholder, and a stub stack-pointer accessor.
-- Current link blockers sit in `ExpressionParser`: object-model types (`ExpressionValue`, `GlobalVariables`, `StringHandle`), diagnostics (`SoftwareReset`), and named-enum helpers are still missing from the host target, yielding unresolved externals. Next iteration must stub those pieces (or guard the code paths) before we can instantiate `GCodes` from `main`.
-- Once ExpressionParser links, scrub the remaining `%u` vs `size_t` format warnings and continue trimming unused feature macros (`HAS_WIFI_NETWORKING`, `HAS_AUX_DEVICES`, etc.) so the host focus stays on motion planning and file playback.
-- Started object-model host shim: added host overrides for `StringHandle`, `ArrayHandle`, freelist, and heap headers so `ExpressionValue` union compiles on x86_64; provided `SoftwareReset` stub, FreeRTOS-aware queue/sem shims, and storage for virtual SD. Implemented minimal `ObjectExplorationContext`, `VariableSet`, and `GlobalVariables` so `ExpressionParser` can resolve symbol references. Linking still fails because the host build lacks stubs for `reprap` accessors (`GetPlatform()`, global variables), numeric helpers (`NumericConverter`, `fastSqrtf`), and platform queries (`Platform::SysFileExists`); these need either host implementations or conditional code paths before GCodes can execute end-to-end.
-- Iteration 7A: introduced `platform/PlatformHost.cpp` to supply host-side `Platform` ctor/logging/virtual SD helpers and trimmed the Makefile to just the parser-heavy `GCodeBuffer` units plus `GCodeException`/`GCodeMachineState`. Link still fails because we have not yet provided a host `RepRap` singleton (`reprap` and associated `GCodes` facade), `FileGCodeInput`/`OutputBuffer` adapters, or the object-model vtables the parser expects. Next pass will either stub these dependencies or further reduce the firmware source set so the Expression parser can link in isolation.
-
-- [In progress] Host stubs for RepRap/GCodes: drafted minimal Platform/RepRap/GCodes replacements and began wiring FileGCodeInput host implementations, but ExpressionParser and object-model hooks still pull in heavy dependencies (MassStorage, reprap.GetObjectValueUsingTableNumber, NamedEnumLookup). Build currently fails inside ExpressionParser pending additional guards/stubs.
-- Iteration 7B: wired the parser’s file helpers to the host storage shim by including `Storage/FileStore.h`/`MassStorage.h`, added a host implementation of `RepRap::GetObjectValueUsingTableNumber` that returns neutral values (and warns when unsupported paths are queried), and fixed the RRFLibraries host build by aligning `NamedEnumLookup`’s signature with the firmware ABI. `make -C RRF/host` now links through the ExpressionParser object model surface, unblocking the next wave of G-code execution work.
-- Iteration 7C: taught the host object-model shim to answer the Hangprinter-critical queries `inputs[].axesRelative` and `move.axes[].userPosition` by parsing the selector string inside `RepRap::GetObjectValueUsingTableNumber` (`RRF/host/platform/RepRapHost.cpp#L24`). Stub `GCodes` now tracks per-input relative mode and a small user-position array (`RRF/host/include/GCodes/GCodes.h#L32`), so expressions reading those paths return deterministic data while every other branch remains guarded as “unsupported”.
-- Iteration 7D: replaced the hard-coded `GCodes` placeholders with real state updates driven by the parser. The `--run` CLI path now streams a host-side `FileStore` through `GCodeBuffer`, handles `G90/G91/G92/G0/G1`, toggles `inputs[].axesRelative`, and accumulates `move.axes[].userPosition` in the stub `GCodes` class (`RRF/host/src/main.cpp`, `RRF/host/include/GCodes/GCodes.h`). Executing a sample file under `host_rrf_bootstrap --run` mutates the object-model values as expected, giving us a working loop for later CAN capture work.
+1. Decide whether .duetcan should mirror raw CAN frames or normalized step events.
