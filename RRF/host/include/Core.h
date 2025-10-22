@@ -2,6 +2,10 @@
 
 #include <ecv_duet3d.h>
 
+#ifdef RRF_HOST_BUILD
+# include <Config/Features_Host.h>
+#endif
+
 #include <cstddef>
 #include <cstdint>
 #include <cinttypes>

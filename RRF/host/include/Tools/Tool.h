@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <RepRapFirmware.h>
+#include <Platform/RepRap.h>
 #include <GCodeResult.h>
 #include <RTOSIface/RTOSIface.h>
 #include <Tools/Filament.h>

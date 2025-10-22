@@ -7,6 +7,10 @@
 #include <General/StringRef.h>
 #include <General/String.h>
 #include <Platform/OutputMemory.h>
+#include <Endstops/EndstopsManager.h>
+
+class RepRap;
+extern RepRap reprap;
 
 #include <cstdarg>
 
@@ -39,12 +43,15 @@ public:
 	void RawMessage(MessageType type, const char* message) noexcept;
 	void DebugMessage(const char* fmt, va_list vargs) noexcept;
 
+	EndstopsManager& GetEndstops() noexcept { return endstops; }
+
 	const String<MaxFilenameLength>& GetSysDir() const noexcept { return sysDir; }
 	void SetSysDir(const char* path) noexcept;
 	void AppendSysDir(const StringRef& result) const noexcept;
 
 private:
 	String<MaxFilenameLength> sysDir;
+	EndstopsManager endstops;
 };
 
 #endif
