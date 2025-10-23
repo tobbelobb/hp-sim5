@@ -1628,3 +1628,539 @@ Assistant (Claude Sonnet 4.5):
 
   All acceptance criteria met! The planner now respects configuration files and produces different, correct outputs based on the config.
 
+-------------------------------------------
+Architect:
+
+<summary>
+This session is being continued from a previous conversation that ran out of context. The conversation is summarized below:
+Analysis:
+This conversation is a continuation of a previous session about implementing RepRapFirmware (RRF) motion planning in a host build. The user explicitly asked me to implement Step 9.2.2 from the RRF integration build plan.
+
+**User's Primary Request:**
+The user provided context showing that Step 9.2.1 was completed in a previous session (minimal deterministic CAN emission), and now wants Step 9.2.2: "Config-aware simplified planner". The user also noted that they fixed the stack smashing bug by
+increasing MaxAxesPlusExtruders from 12 to 32 in Pins_Host_MB6HC.h.
+
+The specific requirements for Step 9.2.2 were:
+- Parse config.g on startup
+- Implement M-code handlers (M92, M201, M203, M566, M584, M569, M669, M666)
+- Build axis→DriverId mapping
+- Use configuration values instead of hardcoded defaults
+- Implement extruder support
+- Acceptance: Different configs produce different outputs, extruder segments appear, determinism preserved
+
+**My Approach:**
+1. First, I created a todo list to track all subtasks
+2. Extended the Move class header to add configuration storage (accelerations, maxFeedrates, jerks, axisDrivers, driverForward arrays)
+3. Updated MoveHost.cpp to initialize these arrays and implement getter/setter methods
+4. Implemented M-code handlers in main.cpp (M92, M201, M203, M566, M584, M569, M669, M666)
+5. Modified ProcessGCode to handle both G and M codes
+6. Updated DDA::Prepare() to use configured values instead of hardcoded ones
+7. Modified DDA::Prepare() to use configured driver mappings from M584
+8. Implemented E parameter handling in ProcessLinearMove (relative extrusion)
+9. Added config.g execution on startup before --run files
+10. Tested with Hangprinter config.g and created alternate Cartesian config
+11. Verified different outputs and determinism
+
+**Key Technical Details:**
+- Configuration storage in Move class with arrays indexed by axis/extruder number
+- DriverId mapping using board.driver notation (40.0 = board 40, driver 0)
+- Driver direction stored in 256-element array indexed by (board*16 + local)
+- Acceleration/speed values retrieved from Move and used in trapezoid calculation
+- Config.g executed automatically from 0:/sys/config.g path
+- M584 parsing handles both CAN addresses (40.0) and local drivers (0)
+
+**Errors Encountered:**
+1. **DriverId.h include error**: Initially added `#include <DriverId.h>` but DriverId is defined in RepRapFirmware.h, so I removed the separate include.
+
+**Files Modified:**
+- RRF/host/include/Movement/Move.h: Added config storage arrays and accessor declarations
+- RRF/host/movement/MoveHost.cpp: Implemented config initialization and accessors
+- RRF/host/movement/DDAHost.cpp: Updated to use configured acceleration/speed values and driver mappings
+- RRF/host/src/main.cpp: Added M-code handlers and config.g execution
+- RRF/host/vsd/sys/config.g: Copied Hangprinter config from ai_docs
+- RRF/host/vsd/sys/config_cartesian.g: Created alternate test config
+- RRF/host/vsd/gcodes/test_hp.g: Created Hangprinter test file
+- RRF/host/vsd/gcodes/test_cartesian.g: Created Cartesian test file
+- ai_docs/rrf_integration_build_plan.md: Updated with Step 9.2.2 completion
+
+**Testing Results:**
+- Hangprinter config: 80 steps/mm, CAN drivers 40-42, produces 400/800 steps
+- Cartesian config: 160/400 steps/mm, local drivers 0-2, produces 2000/1600 steps
+- Determinism verified: movement packets byte-identical across runs
+- All acceptance criteria met
+
+**User Messages:**
+1. Initial message with context summary and request to implement Step 9.2.2
+2. Final /cost and /context commands (tool use, not requests)
+
+**Current State:**
+Step 9.2.2 is COMPLETE. All acceptance criteria have been met and documented in the build plan.
+
+Summary:
+1. Primary Request and Intent:
+   - Continue from previous session where Step 9.2.1 (Minimal deterministic CAN emission) was completed
+   - User fixed stack smashing bug by increasing MaxAxesPlusExtruders from 12 to 32
+   - Implement Step 9.2.2: "Config-aware simplified planner" from ai_docs/rrf_integration_build_plan.md
+   - Requirements:
+     * Parse config.g on startup before --run execution
+     * Implement M-code handlers: M92 (steps/mm), M201 (acceleration), M203 (max speed), M566 (jerk), M584 (axis→driver mapping), M569 (driver direction), M669 (kinematics type), M666 (Hangprinter parameters)
+     * Build axis→DriverId mapping from M584
+     * Use configuration values instead of hardcoded defaults in motion planning
+     * Implement extruder support with E parameter
+   - Acceptance criteria:
+     * With two different config.g files, same test.g produces different, plausible step counts and timing
+     * Extruder segments appear in logs with correct mask
+     * Logs remain byte-identical across repeated runs (deterministic mode)
+
+2. Key Technical Concepts:
+   - **RepRapFirmware (RRF)**: 3D printer firmware being ported to x86_64 host for batch simulation
+   - **Configuration system**: M-codes that set machine parameters (steps/mm, acceleration, speed, jerk)
+   - **DriverId structure**: Represents motor driver with board address and local driver number (e.g., 40.0 = board 40, driver 0)
+   - **M584**: Axis-to-driver mapping command (e.g., X40.0 Y41.0 Z42.0 U43.0 maps axes to CAN addresses)
+   - **M569**: Driver direction/polarity (S1=forward, S0=backward)
+   - **M92**: Steps per millimeter configuration
+   - **M201**: Maximum acceleration (mm/s²)
+   - **M203**: Maximum speed (mm/min, converted to mm/s)
+   - **M566**: Jerk/instant speed change (mm/min)
+   - **M669**: Kinematics type selection (K1=Cartesian, K6=Hangprinter)
+   - **M666**: Hangprinter mechanical parameters
+   - **Trapezoid motion profile**: Acceleration, steady-state, deceleration phases
+   - **Deterministic time simulation**: 48 MHz step clock with simulated tick counter
+   - **CAN motion protocol**: Duet3 CAN-FD protocol for movement commands
+   - **Extruder handling**: Relative extrusion mode (M83)
+
+3. Files and Code Sections:
+
+   - **RRF/host/include/Movement/Move.h** (Extended)
+     - Why: Add configuration storage for all M-code parameters
+     - Changes: Added member arrays and accessor method declarations
+     ```cpp
+     // Step 9.2.2: Configuration accessors
+     float GetAcceleration(size_t drive) const noexcept;
+     void SetAcceleration(size_t drive, float value) noexcept;
+
+     float GetMaxFeedrate(size_t drive) const noexcept;
+     void SetMaxFeedrate(size_t drive, float value) noexcept;
+
+     float GetJerk(size_t drive) const noexcept;
+     void SetJerk(size_t drive, float value) noexcept;
+
+     DriverId GetAxisDriverId(size_t axis) const noexcept;
+     void SetAxisDriverId(size_t axis, const DriverId& driver) noexcept;
+
+     bool GetDriverDirection(const DriverId& driver) const noexcept;
+     void SetDriverDirection(const DriverId& driver, bool forward) noexcept;
+
+     private:
+     // Step 9.2.2: Configuration storage
+     float accelerations[MaxAxesPlusExtruders];
+     float maxFeedrates[MaxAxesPlusExtruders];
+     float jerks[MaxAxesPlusExtruders];
+     DriverId axisDrivers[MaxAxes];
+     DriverId extruderDrivers[MaxExtrudersPerTool];
+     bool driverForward[256];  // Indexed by board*16 + driver
+     ```
+
+   - **RRF/host/movement/MoveHost.cpp** (Extended)
+     - Why: Initialize configuration arrays and implement accessors
+     - Changes: Constructor initializes defaults, added 6 accessor implementations
+     ```cpp
+     Move::Move() noexcept
+         : kinematics(new Kinematics())
+         , mainRing(new DDARing())
+     {
+         for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
+         {
+             driveStepsPerMm[i] = 80.0f;
+             motorPositions[i] = 0;
+             accelerations[i] = 1000.0f;     // Default 1000 mm/s²
+             maxFeedrates[i] = 100.0f;       // Default 100 mm/s
+             jerks[i] = 240.0f;              // Default 240 mm/min
+         }
+
+         for (size_t i = 0; i < MaxAxes; ++i)
+         {
+             machinePosition[i] = 0.0f;
+             axisDrivers[i].SetLocal(0);
+         }
+
+         for (size_t i = 0; i < MaxExtrudersPerTool; ++i)
+         {
+             extruderDrivers[i].SetLocal(0);
+         }
+
+         for (size_t i = 0; i < 256; ++i)
+         {
+             driverForward[i] = true;
+         }
+     }
+
+     float Move::GetAcceleration(size_t drive) const noexcept
+     {
+         return (drive < MaxAxesPlusExtruders) ? accelerations[drive] : 1000.0f;
+     }
+
+     void Move::SetAcceleration(size_t drive, float value) noexcept
+     {
+         if (drive < MaxAxesPlusExtruders)
+         {
+             accelerations[drive] = value;
+         }
+     }
+     // ... similar for other accessors
+     ```
+
+   - **RRF/host/movement/DDAHost.cpp** (Updated)
+     - Why: Use configured values instead of hardcoded defaults, use configured driver mappings
+     - Changes: Modified DDA::Prepare() to query Move for acceleration/speed and driver IDs
+     ```cpp
+     bool DDA::Prepare() noexcept
+     {
+         constexpr float StepClockFrequency = 48000000.0f;
+         Move& m = reprap.GetMove();
+
+         // Step 9.2.2: Use configured acceleration values
+         float maxAcceleration = m.GetAcceleration(0);
+         float maxDeceleration = maxAcceleration;
+
+         // Clamp requested speed to configured maximum
+         float maxSpeed = m.GetMaxFeedrate(0);
+         if (requestedSpeed > maxSpeed)
+         {
+             requestedSpeed = maxSpeed;
+         }
+
+         // ... trapezoid calculation ...
+
+         // Step 9.2.2: Use configured driver mappings from M584
+         for (size_t axis = 0; axis < reprap.GetGCodes().GetVisibleAxes() && axis < MaxAxes; ++axis)
+         {
+             const int32_t steps = endSteps[axis] - startSteps[axis];
+             if (steps != 0)
+             {
+                 DriverId driver = m.GetAxisDriverId(axis);
+                 CanMotion::AddAxisMovement(params, driver, steps);
+             }
+         }
+     }
+     ```
+
+   - **RRF/host/src/main.cpp** (Extended)
+     - Why: Add M-code handlers and config.g execution
+     - Changes: Added 8 M-code handler functions, modified ProcessGCode to handle M-codes, added config.g execution in main()
+     ```cpp
+     // M92: Set steps per mm
+     bool ProcessM92(GCodeBuffer& gb)
+     {
+         static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+         Move& move = reprap.GetMove();
+
+         for (char letter : axisLetters)
+         {
+             if (gb.Seen(letter))
+             {
+                 size_t axis = 0;
+                 if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+                 {
+                     const float value = gb.GetFValue();
+                     move.SetDriveStepsPerMm(axis, value, 0);
+                     std::cout << "Set " << letter << " steps/mm to " << value << "\n";
+                 }
+             }
+         }
+
+         if (gb.Seen('E'))
+         {
+             const float value = gb.GetFValue();
+             const size_t extruderDrive = MaxAxes;
+             move.SetDriveStepsPerMm(extruderDrive, value, 0);
+             std::cout << "Set E steps/mm to " << value << "\n";
+         }
+
+         return true;
+     }
+
+     // M584: Set axis to driver mapping
+     bool ProcessM584(GCodeBuffer& gb)
+     {
+         static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+         Move& move = reprap.GetMove();
+
+         for (char letter : axisLetters)
+         {
+             if (gb.Seen(letter))
+             {
+                 size_t axis = 0;
+                 if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+                 {
+                     const float driverSpec = gb.GetFValue();
+                     const uint8_t board = static_cast<uint8_t>(driverSpec);
+                     const uint8_t localDriver = static_cast<uint8_t>((driverSpec - board) * 10.0f + 0.5f);
+
+                     DriverId driver;
+                     if (board == 0)
+                     {
+                         driver.SetLocal(localDriver);
+                     }
+                     else
+                     {
+                         driver = DriverId(board, localDriver);
+                     }
+
+                     move.SetAxisDriverId(axis, driver);
+                     std::cout << "Mapped " << letter << " axis to driver " << static_cast<int>(board)
+                               << "." << static_cast<int>(localDriver) << "\n";
+                 }
+             }
+         }
+
+         if (gb.Seen('P'))
+         {
+             const int visibleAxes = gb.GetIValue();
+             reprap.GetGCodes().SetAxisCount(static_cast<size_t>(visibleAxes));
+             std::cout << "Set visible axes to " << visibleAxes << "\n";
+         }
+
+         return true;
+     }
+
+     // Modified ProcessGCode to handle M-codes
+     bool ProcessGCode(GCodeBuffer& gb)
+     {
+         try
+         {
+             const char commandLetter = gb.GetCommandLetter();
+             if (commandLetter == 0 || !gb.HasCommandNumber())
+             {
+                 return true;
+             }
+
+             const int commandNumber = gb.GetCommandNumber();
+
+             if (commandLetter == 'G')
+             {
+                 // ... G-code handling ...
+             }
+
+             if (commandLetter == 'M')
+             {
+                 switch (commandNumber)
+                 {
+                 case 92:
+                     return ProcessM92(gb);
+                 case 201:
+                     return ProcessM201(gb);
+                 case 203:
+                     return ProcessM203(gb);
+                 case 566:
+                     return ProcessM566(gb);
+                 case 584:
+                     return ProcessM584(gb);
+                 case 569:
+                     return ProcessM569(gb);
+                 case 669:
+                     return ProcessM669(gb);
+                 case 666:
+                     return ProcessM666(gb);
+                 default:
+                     return true;
+                 }
+             }
+
+             return true;
+         }
+         catch (const GCodeException& exc)
+         {
+             String<StringLength100> message;
+             exc.GetMessage(message.GetRef(), &gb);
+             reprap.GetPlatform().MessageF(ErrorMessage, "G-code error: %s", message.c_str());
+             return false;
+         }
+     }
+
+     // Added config.g execution in main()
+     int main(int argc, char** argv)
+     {
+         // ... initialization ...
+
+         // Step 9.2.2: Execute config.g before running any user G-code
+         std::cout << "\n=== Executing config.g ===\n";
+         const std::string configPath = "0:/sys/config.g";
+         if (MassStorage::FileExists(configPath.c_str()))
+         {
+             if (!ExecuteFile(configPath))
+             {
+                 std::cerr << "Warning: config.g execution failed or was incomplete\n";
+             }
+             std::cout << "=== Config.g complete ===\n\n";
+         }
+         else
+         {
+             std::cout << "Note: No config.g found at " << configPath << ", using defaults\n\n";
+         }
+
+         if (!runPath.empty())
+         {
+             const std::string canonicalRun = NormaliseRunPath(runPath);
+             std::cout << "Executing G-code file: " << canonicalRun << "\n";
+             if (!ExecuteFile(canonicalRun))
+             {
+                 return 1;
+             }
+         }
+
+         return 0;
+     }
+     ```
+
+   - **RRF/host/vsd/sys/config.g** (Copied)
+     - Why: Real Hangprinter configuration for testing
+     - Source: Copied from RRF/ai_docs/config.g
+     - Key lines: M584 X40.0 Y41.0 Z42.0 U43.0 P4, M92 E415, M201 X10000, M203 X36000
+
+   - **RRF/host/vsd/sys/config_cartesian.g** (Created)
+     - Why: Alternate configuration to test different outputs
+     - Key differences: 160/400 steps/mm, 3000 mm/s² accel, local drivers 0-2
+
+   - **ai_docs/rrf_integration_build_plan.md** (Updated)
+     - Why: Document Step 9.2.2 completion
+     - Changes: Marked Step 9.2.2 as COMPLETED, added progress log with testing results
+
+4. Errors and Fixes:
+   - **Error: DriverId.h include error**
+     - Error: `fatal error: DriverId.h: No such file or directory` when compiling Move.h
+     - Cause: Added `#include <DriverId.h>` but DriverId is defined in RepRapFirmware.h
+     - Fix: Removed the separate `#include <DriverId.h>` line, kept only `#include <RepRapFirmware.h>`
+     - No user feedback on this error
+
+5. Problem Solving:
+   - **Configuration storage design**: Used arrays indexed by axis/extruder number for steps/mm, acceleration, speed, jerk. Used separate DriverId array for axis mappings. Used 256-element bool array for driver direction indexed by (board*16 +
+localDriver).
+   - **M584 parsing**: Parsed floating-point driver specification (40.0) by extracting board as integer part and local driver from fractional part * 10.
+   - **Config execution timing**: Added config.g execution before --run file to ensure all configuration is loaded before any movement commands.
+   - **Determinism verification**: Tested with two runs and confirmed movement packets are byte-identical (only timestamp header differs).
+   - **Testing approach**: Created two different configs (Hangprinter with CAN drivers, Cartesian with local drivers) and verified different step counts, timing, and destinations.
+
+6. All User Messages:
+   - "Good! I found the stack smashing bug. We had assumed `MaxAxesPlusExtruders >= MaxAxes` in a for-loop. Solved with `-constexpr std::size_t MaxAxesPlusExtruders = 12;` `+constexpr std::size_t MaxAxesPlusExtruders = 32;` in
+RRF/ReprapFirmware/src/Config/Pins_Host_MB6HC.h. Now continue with Step 9.2.2 in ai_docs/rrf_integration_build_plan.md: [requirements listed]. You find a config file for a real Hangprinter in RRF/ai_docs/config.g. For example the CAN address mapping
+is interesting: `M584 X40.0 Y41.0 Z42.0 U43.0 P4 ; map ABCD-axes to CAN addresses, and set four visible axes. Please excuse that ABCD motors are called XYZU here.`"
+
+7. Pending Tasks:
+   - None. Step 9.2.2 is complete with all acceptance criteria met.
+
+8. Current Work:
+   Immediately before the summary request, I had just completed Step 9.2.2 implementation and testing:
+   - Successfully implemented all M-code handlers (M92, M201, M203, M566, M584, M569, M669, M666)
+   - Extended Move class with configuration storage and accessors
+   - Updated DDA::Prepare() to use configured values and driver mappings
+   - Added config.g automatic execution on startup
+   - Implemented extruder E parameter handling with relative extrusion
+   - Tested with Hangprinter config (CAN drivers 40-42, 80 steps/mm) and Cartesian config (local drivers 0-2, 160/400 steps/mm)
+   - Verified different outputs: Hangprinter produced 400/800 steps, Cartesian produced 2000/1600 steps
+   - Verified determinism: movement packets byte-identical across runs
+   - Documented completion in ai_docs/rrf_integration_build_plan.md
+   - All acceptance criteria met:
+     ✅ Different configs produce different, plausible step counts and timing
+     ✅ Extruder support implemented
+     ✅ Determinism preserved
+
+9. Optional Next Step:
+   No next step recommended. Step 9.2.2 is fully complete and documented. The user should review the implementation and decide whether to:
+   - Proceed to Step 9.3 (Progressive migration toward full RRF movement)
+   - Work on other parts of the build plan
+   - Or provide other direction
+
+   The conversation ended with a successful completion summary showing all acceptance criteria met..
+</summary>
+
+Great! Now I really want to move towards full RRF movement (Step 9.3 in ai_docs/rrf_integration_build_plan.md).
+
+ - Replace simplified Init/Prepare with real DDA::Init/Prepare, DriveMovement, and selected kinematics from ReprapFirmware's Movement/.
+ - Add any missing subsystems (probing/endstops/pauses) strictly as the planner requires.
+
+When you pull in the genuine movement sources and call the actual planner, you’ll be executing the core files under RepRapFirmware/src/Movement:
+ - DDA.cpp/.h - the central per-move structure and logic. This is where the real DDA::Init(...) (turn user space motion into per-drive steps via kinematics) and DDA::Prepare(...) (compute trapezoid/clocks, shaping flags, etc.) live.
+ - DriveMovement.cpp/.h - per-driver step generation state (segment clocks/step counts, jerk constraints, etc.) that DDA::Prepare allocates/populates.
+ - Move.cpp/.h — orchestrates the move queue/rings and the motion task loop that pulls DDAs, prepares them, and schedules execution.
+ - Kinematics/* — concrete transforms used by DDA::Init to go from axes to drives (Cartesian, CoreXY/Delta/etc.; Hangprinter is in this area as well).
+
+-------------------------------------------
+Assistant (Claude Sonnet 4.5):
+
+  Step 9.3 Migration Plan Analysis
+
+  Based on my analysis of the real DDA.cpp and comparison with our current host implementation, here's what I've found:
+
+  Key Differences:
+
+  1. RawMove Structure: The real RawMove is much more comprehensive with:
+    - Tool information (movementTool)
+    - File position tracking
+    - Many flags (canPauseAfter, checkEndstops, usePressureAdvance, etc.)
+    - Acceleration limits (maxPrintingAcceleration, maxTravelAcceleration)
+    - Support for async moves, laser control, arc moves
+  2. DDA::InitStandardMove (real version):
+    - Uses Move::CartesianToMotorSteps() to transform coordinates via kinematics
+    - Handles rotational vs linear axes
+    - Computes direction vectors
+    - Handles extruder movement with pressure advance
+    - Normalizes the direction vector
+    - Calculates acceleration limits based on axis mix
+  3. DDA::Prepare (real version):
+    - Creates PrepParams from DDA state
+    - Handles timing calculation (moveStartTime)
+    - Calls CanMotion::StartMovement()
+    - For each axis: calls CanMotion::AddAxisMovement()
+    - For each extruder: calls CanMotion::AddExtruderMovement()
+    - Handles backlash compensation
+    - Creates movement segments via Move::AddLinearSegments()
+  4. Missing Subsystems:
+    - Kinematics: Real CartesianToMotorSteps() via Move class
+    - DriveMovement: Per-axis step generation state
+    - MoveSegment: Queue of movement segments for ISR
+    - DDARing: Proper ring buffer with start coordinates
+    - Endstop handling: Currently stubbed
+    - Tool management: Tool offsets and extruder mapping
+    - Backlash compensation: Applied during Prepare
+
+  Migration Strategy:
+
+  I recommend an incremental approach to minimize risk:
+
+  Phase 1: Bring in Real Movement Sources
+
+  - Copy Movement/DDA.cpp, Movement/Move.cpp, Movement/Kinematics/*.cpp into the build
+  - Create minimal stubs for missing dependencies:
+    - MoveSegment (can be no-op for CAN-only builds)
+    - DriveMovement (can be minimal for CAN-only builds)
+    - Tool class extensions
+    - Endstop handling (stub for now)
+
+  Phase 2: Wire Up InitStandardMove
+
+  - Stop using our custom RawMove, use the real one
+  - Modify main.cpp to populate real RawMove from G-code
+  - Let real InitStandardMove handle kinematics transform
+  - Keep using our configured kinematics (Cartesian or Hangprinter)
+
+  Phase 3: Wire Up Prepare
+
+  - Remove our simplified trapezoid calculator
+  - Let real Prepare() compute PrepParams and call CanMotion
+  - Handle the afterPrepare timing fields properly
+
+  Phase 4: Test and Verify
+
+  - Run existing Cartesian and Hangprinter tests
+  - Verify CAN packet outputs match or improve upon Step 9.2.2
+  - Verify determinism is preserved
+
+  Would you like me to proceed with Phase 1 - bringing in the real Movement sources and creating the necessary stubs? This is the safest way to proceed incrementally.
+
+  Let me show you what Phase 1 would look like:
+
+-------------------------------------------
+Architect:
+
+Yes, proceed with Phase 1

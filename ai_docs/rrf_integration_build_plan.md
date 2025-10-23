@@ -180,7 +180,7 @@ These facades do not yet plan moves, populate PrepParams, call CanMotion::Add*Mo
 
 
 ### Step 9.2 - Simplified motion planning
-Approach: We’ll first implement a host-side, simplified DDA/Move path to get deterministic packets flowing, then make it config-aware. This avoids pulling in the entire RRF movement subsystem up front, reduces stub churn, and lets us validate CAN capture and timing determinism early.
+Approach: We'll first implement a host-side, simplified DDA/Move path to get deterministic packets flowing, then make it config-aware. This avoids pulling in the entire RRF movement subsystem up front, reduces stub churn, and lets us validate CAN capture and timing determinism early.
 
 #### Step 9.2.1 - Minimal deterministic CAN emission (COMPLETED)
 Goal: For basic G1 commands, compute steps and a simple trapezoid, populate PrepParams, and emit at least one movementLinearShaped packet per move.
@@ -265,10 +265,75 @@ Acceptance criteria:
 
 ### Step 9.3 - Progressive migration toward full RRF movement (Pending)
 Scope:
- - Replace simplified Init/Prepare with real DDA::Init/Prepare, DriveMovement, and selected kinematics from RRF’s Movement/.
+ - Replace simplified Init/Prepare with real DDA::Init/Prepare, DriveMovement, and selected kinematics from RRF's Movement/.
  - Add any missing subsystems (probing/endstops/pauses) strictly as the planner requires.
 
-Exit when: the simplified path is fully validated and we specifically need parity with RRF’s corner cases.
+  Step 9.3 Migration Plan Analysis
+
+  Key Differences:
+
+  1. RawMove Structure: The real RawMove is much more comprehensive with:
+    - Tool information (movementTool)
+    - File position tracking
+    - Many flags (canPauseAfter, checkEndstops, usePressureAdvance, etc.)
+    - Acceleration limits (maxPrintingAcceleration, maxTravelAcceleration)
+    - Support for async moves, laser control, arc moves
+  2. DDA::InitStandardMove (real version):
+    - Uses Move::CartesianToMotorSteps() to transform coordinates via kinematics
+    - Handles rotational vs linear axes
+    - Computes direction vectors
+    - Handles extruder movement with pressure advance
+    - Normalizes the direction vector
+    - Calculates acceleration limits based on axis mix
+  3. DDA::Prepare (real version):
+    - Creates PrepParams from DDA state
+    - Handles timing calculation (moveStartTime)
+    - Calls CanMotion::StartMovement()
+    - For each axis: calls CanMotion::AddAxisMovement()
+    - For each extruder: calls CanMotion::AddExtruderMovement()
+    - Handles backlash compensation
+    - Creates movement segments via Move::AddLinearSegments()
+  4. Missing Subsystems:
+    - Kinematics: Real CartesianToMotorSteps() via Move class
+    - DriveMovement: Per-axis step generation state
+    - MoveSegment: Queue of movement segments for ISR
+    - DDARing: Proper ring buffer with start coordinates
+    - Endstop handling: Currently stubbed
+    - Tool management: Tool offsets and extruder mapping
+    - Backlash compensation: Applied during Prepare
+
+  Migration Strategy:
+
+  I recommend an incremental approach to minimize risk:
+
+  Phase 1 (Step 9.3.1): Bring in Real Movement Sources
+
+  - Copy Movement/DDA.cpp, Movement/Move.cpp, Movement/Kinematics/*.cpp into the build
+  - Create minimal stubs for missing dependencies:
+    - MoveSegment (can be no-op for CAN-only builds)
+    - DriveMovement (can be minimal for CAN-only builds)
+    - Tool class extensions
+    - Endstop handling (stub for now)
+
+  Phase 2 (Step 9.3.2): Wire Up InitStandardMove
+
+  - Stop using our custom RawMove, use the real one
+  - Modify main.cpp to populate real RawMove from G-code
+  - Let real InitStandardMove handle kinematics transform
+  - Keep using our configured kinematics (Cartesian or Hangprinter)
+
+  Phase 3 (Step 9.3.3): Wire Up Prepare
+
+  - Remove our simplified trapezoid calculator
+  - Let real Prepare() compute PrepParams and call CanMotion
+  - Handle the afterPrepare timing fields properly
+
+  Phase 4 (Step 9.3.4): Test and Verify
+
+  - Run existing Cartesian and Hangprinter tests
+  - Verify CAN packet outputs match or improve upon Step 9.2.2
+  - Verify determinism is preserved
+
 
 
 ### Notes & invariants for Step 9
@@ -331,11 +396,11 @@ Goal: Same inputs ⇒ byte-identical logs (great for regression).
     You already see them in the CAN payload fields: accelerationClocks, steadyClocks, decelClocks, plus the whenToExecute field.
     Total ticks for a segment = accel + steady + decel.
     Instead of sleep()-ing in real time, you advance a monotonic counter by exactly that many ticks and stamp the next message with the new whenToExecute.
-    No waiting; it’s pure arithmetic and therefore reproducible.
+    No waiting; it's pure arithmetic and therefore reproducible.
     Minimal sketch:
     ```cpp
     uint64_t now_ticks = 0;           // simulated time in step-timer ticks
-    const uint32_t tick_hz = 48000000; // whatever RRF’s step clock is
+    const uint32_t tick_hz = 48000000; // whatever RRF's step clock is
 
     for (auto& m : moves) {
       m.whenToExecute = now_ticks;
