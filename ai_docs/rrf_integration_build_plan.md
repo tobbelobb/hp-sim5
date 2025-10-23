@@ -132,12 +132,10 @@ These are the pieces we want to log.
 
 
 ## Step 9 - Bring up the real RRF motion pipeline
-Goal: A G1 in the input goes through RRF's planner and emits CAN movement packets that we already capture.
-
-This step is divided into two substeps:
+Goal: A G1 in the input goes through RRF's planner and emits CAN movement packets that the host build already captures.
 
 ### Step 9.1 - Lightweight host Move/DDA interface (COMPLETED)
-Goal: Create minimal Move/DDA facades that satisfy CanMotion.cpp without invoking MCU subsystems.
+Goal: Create minimal host-only facades so CanMotion.cpp can compile/link without pulling the full MCU movement stack.
 
 Approach: Rather than attempting to compile the full Movement/Move.cpp (which has heavy dependencies on RepRap::IsStopped, GCodes::ReadMove, SmartDrivers, PauseState enums, etc.), create host-only facades that provide just enough interface for CanMotion to compile and link.
 
@@ -155,6 +153,12 @@ Approach: Rather than attempting to compile the full Movement/Move.cpp (which ha
 - Extended RepRap host facade (RRF/host/include/Platform/RepRap.h) to include Move member and GetMove() accessor
 - Updated host Makefile to compile new movement host files
 - **Build result**: `make -C RRF/host` succeeds, produces 951K binary. CanMotion.cpp now links against host Move/DDA facades without pulling in full RRF Movement stack.
+ - What’s in place after Iteration 9.1A:
+   - RRF/host/include/Movement/ facades: Move.h, DDA.h (with PrepParams), DDARing.h, Kinematics/Kinematics.h.
+   - RRF/host/movement/ implementations: MoveHost.cpp, DDAHost.cpp, DDARingHost.cpp, KinematicsHost.cpp.
+   - RepRap host facade exposes Move& GetMove().
+   - Host Makefile builds the above; CanMotion.cpp links; binary ~951 KB.
+These facades do not yet plan moves, populate PrepParams, call CanMotion::Add*Movement(), or produce movement packets; they simply make CanMotion link and provide state holders for the next step.
 
 ### Key findings for Step 9.2
 - CanMotion.cpp requires:
@@ -174,27 +178,69 @@ Approach: Rather than attempting to compile the full Movement/Move.cpp (which ha
   - Decide whether to pull in real Kinematics or stub coordinate→steps transforms
   - Provide a simulated move execution loop that advances time deterministically
 
-### Step 9.2 - Full host Move/DDA interface (PENDING)
-Goal: Integrate enough of RRF's DDA preparation logic to generate real CAN movement packets from G1 commands.
 
-### Makefile: include the movement stack and kinematics.
-  * Add the essential RRF sources under Movement/ (+ minimal kinematics) to RRF_SRC.
-  * Keep StepTimer shimmed (-DSRC_MOVEMENT_STEPTIMER_H_=1) and -DRRF_HOST_BUILD=1.
-  * Movement core (typical): Movement/Move.cpp, Movement/DDA.cpp, Movement/DriveMovement.cpp, Movement/Motion.cpp, Movement/Kinematics/Kinematics.cpp, Movement/Kinematics/HangprinterKinematics.cpp , and any small deps they require.
-  * Keep the already-included CAN/CanMotion.cpp in place.
+### Step 9.2 - Simplified motion planning
+Approach: We’ll first implement a host-side, simplified DDA/Move path to get deterministic packets flowing, then make it config-aware. This avoids pulling in the entire RRF movement subsystem up front, reduces stub churn, and lets us validate CAN capture and timing determinism early.
 
-### Dispatch real G-codes instead of the manual switch.
-  * Replace the ad-hoc ProcessGCode in host/src/main.cpp with calls that drive GCodes' normal command flow so G0/G1 reach Move.
+#### Step 9.2.1 - Minimal deterministic CAN emission
+Goal: For basic G1 commands, compute steps and a simple trapezoid, populate PrepParams, and emit at least one movementLinearShaped packet per move.
 
-### Minimal host timebase.
-  * Provide a monotonic "firmware ticks" function used by the planner; for now, a deterministic simulated clock is fine (real-time later).
+Tasks:
+ - G-code -> Raw move:
+  * Use the current host path (your light ProcessGCode or a thin wrapper) to create a minimal "raw move" object for each G1 (X/Y/Z[/E], F).
+ - Coordinate -> steps (Cartesian 1:1):
+  * For now, steps[i] = (target[i] − start[i]) * driveStepsPerMm[i] with the host default (80 steps/mm) you already set.
+  * Treat E as an extruder channel and mark it through the extruder mask.
+ - Trapezoid profile:
+  * Implement a tiny trapezoid calculator (no S-curve): compute accelClocks, steadyClocks, decelClocks, acceleration, deceleration, topSpeed, totalDistance and set useInputShaping=false in PrepParams.
+ - Timebase:
+  * Maintain a deterministic simulated "tick" counter. Advance it by the total clocks returned by CanMotion::FinishMovement(...).
+ - Emit CAN movement:
+  * For each move:
+    CanMotion::StartMovement(); -> CanMotion::AddAxisMovement(...) per axis/extruder -> CanMotion::FinishMovement(dda, startTick, /*simulating*/true|false).
+ - Logging & CLI:
+  * Reuse --can-log. Keep JSONL schema stable; document the fields added by the trapezoid.
 
-### Acceptance checks:
-  * make -C RRF/host links without new stubs.
-  * Running a tiny test.g that contains just a few G1 lines generates at least one movementLinearShaped record in the CAN log.
+Acceptance:
+ - make -C RRF/host links with no new stubs.
+ - Running a tiny test.g (e.g., two G1 lines) produces at least one movementLinearShaped record in the CAN log.
+ - Two runs on the same machine produce byte-identical logs.
 
-### Step 9.2 Progress log
-nothing yet
+
+#### Step 9.2.2 - Config-aware simplified planner
+Goal: Make the simplified planner respect config.g and basic kinematics/driver mapping so that outputs reflect configuration.
+Tasks:
+ - Execute config.g on startup:
+  * Before --run, execute 0:/sys/config.g via the normal GCodes path.
+ - Parse the essentials:
+  * M92 (steps/mm), M201 (accel), M203 (max speed), M566 (jerk), M350 (microstepping), M584 (axis→driver map), M569 (driver polarity/dir), M669 and M666 (Hangprinter specific config). Store in the host Move facade.
+ - Axis/driver mapping:
+  * Build minimal DriverId mapping from M584 for external CAN drivers (board address + local driver index). Use this mapping when calling AddAxisMovement.
+ - Kinematics (config-selectable):
+  * Keep default Cartesian; allow plugging in a simple Hangprinter transform later (stub interface stays the same).
+ - Extruders & masks:
+  * Support extruder-only segments and mixed X/Y/Z/E moves; set extruder_mask accordingly.
+ - Determinism preserved:
+  * Keep the simulated tick source; document any scale/Hz constants.
+
+Acceptance:
+ - With two different config.g files, the same test.g produces different, plausible step counts and timing.
+ - Extruder segments appear in logs with the correct mask and per-driver values.
+ - Logs remain byte-identical across repeated runs (deterministic mode).
+
+
+### Step 9.3 - Progressive migration toward full RRF movement (Pending)
+Scope:
+ - Replace simplified Init/Prepare with real DDA::Init/Prepare, DriveMovement, and selected kinematics from RRF’s Movement/.
+ - Add any missing subsystems (probing/endstops/pauses) strictly as the planner requires.
+
+Exit when: the simplified path is fully validated and we specifically need parity with RRF’s corner cases.
+
+
+### Notes & invariants for Step 9
+ - Keep -DSRC_MOVEMENT_STEPTIMER_H_=1 and -DRRF_HOST_BUILD=1.
+ - Timebase stays simulated for Step 9; real-time mode comes later (see Step 12).
+
 
 
 ## Step 10 - Config.g ingestion
