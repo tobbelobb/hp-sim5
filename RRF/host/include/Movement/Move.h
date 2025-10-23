@@ -3,12 +3,13 @@
 #ifdef RRF_HOST_BUILD
 
 #include <RepRapFirmware.h>
+#include <Movement/MovementError.h>
+#include <Movement/Kinematics/Kinematics.h>
 #include <cstdint>
 #include <cstddef>
 
 // Forward declarations
 class DDA;
-class Kinematics;
 struct PrepParams;
 class DDARing;
 class GCodeBuffer;
@@ -87,6 +88,11 @@ public:
 	float NormalAcceleration(size_t drive) const noexcept { return GetAcceleration(drive); }  // Alias
 	const AxisDriversConfig& GetAxisDriversConfig(size_t axis) const noexcept;
 	unsigned int GetMicrostepping(size_t drive, bool& interpolation) const noexcept;
+
+	// Step 9.3.2: Coordinate transform via real Kinematics
+	MovementError CartesianToMotorSteps(const float machinePos[], int32_t motorPos[], bool isCoordinated) const noexcept;
+	bool IsAxisRotational(size_t axis) const noexcept;
+	void SetKinematics(KinematicsType type) noexcept;
 
 private:
 	Kinematics* kinematics;

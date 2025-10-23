@@ -16,6 +16,7 @@
 #include <General/String.h>
 #include <Movement/DDA.h>
 #include <Movement/Move.h>
+#include <Movement/Kinematics/Kinematics.h>
 
 #include <array>
 #include <cctype>
@@ -411,26 +412,36 @@ namespace
 
 	// M669: Set kinematics type
 	// Example: M669 K6 (Hangprinter), M669 K1 (Cartesian)
-	// For now, just log it - actual kinematics implementation comes later
+	// Step 9.3.2: Now actually creates the real kinematics instance
 	bool ProcessM669(GCodeBuffer& gb)
 	{
 		if (gb.Seen('K'))
 		{
 			const int kinematicsType = gb.GetIValue();
 			std::cout << "Set kinematics type to " << kinematicsType;
+
+			Move& move = reprap.GetMove();
+			KinematicsType kType = KinematicsType::cartesian;  // Default
+
 			switch (kinematicsType)
 			{
 			case 1:
 				std::cout << " (Cartesian)";
+				kType = KinematicsType::cartesian;
 				break;
 			case 6:
 				std::cout << " (Hangprinter)";
+				kType = KinematicsType::hangprinter;
 				break;
 			default:
-				std::cout << " (unknown)";
+				std::cout << " (unknown, defaulting to Cartesian)";
+				kType = KinematicsType::cartesian;
 				break;
 			}
 			std::cout << "\n";
+
+			// Actually change the kinematics
+			move.SetKinematics(kType);
 		}
 
 		// Other M669 parameters (for Hangprinter: anchor positions, etc.)

@@ -41,8 +41,7 @@ HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	object_model/ObjectExplorationContextHost.cpp \
 	movement/MoveHost.cpp \
 	movement/DDAHost.cpp \
-	movement/DDARingHost.cpp \
-	movement/KinematicsHost.cpp
+	movement/DDARingHost.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp \
     ../ReprapFirmware/src/Storage/CRC32.cpp \
     ../ReprapFirmware/src/Storage/CRC16.cpp \

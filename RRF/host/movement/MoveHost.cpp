@@ -6,11 +6,14 @@
 #include <Movement/Move.h>
 #include <Movement/DDARing.h>
 #include <Movement/Kinematics/Kinematics.h>
+#include <Movement/Kinematics/HangprinterKinematics.h>
 #include <General/StringRef.h>
+#include <Platform/RepRap.h>
+#include <GCodes/GCodes.h>
 #include <cstring>
 
 Move::Move() noexcept
-	: kinematics(new Kinematics())
+	: kinematics(nullptr)  // Will be set by SetKinematics()
 	, mainRing(new DDARing())
 {
 	// Initialize steps per mm to reasonable defaults (1mm = 80 steps is common)
@@ -46,6 +49,10 @@ Move::Move() noexcept
 		axisMinima[i] = 0.0f;		// Default minimum 0mm
 		axisMaxima[i] = 200.0f;		// Default maximum 200mm (will be set by kinematics or M208)
 	}
+
+	// Step 9.3.2: Default to Hangprinter kinematics for testing
+	// (Cartesian would require CoreKinematics which has complex dependencies)
+	kinematics = new HangprinterKinematics();
 }
 
 Move::~Move() noexcept
@@ -221,6 +228,50 @@ unsigned int Move::GetMicrostepping(size_t /*drive*/, bool& interpolation) const
 {
 	interpolation = false;
 	return 16;  // Default 16x microstepping for CAN-only builds
+}
+
+// Step 9.3.2: Call real Kinematics::CartesianToMotorSteps()
+MovementError Move::CartesianToMotorSteps(const float machinePos[], int32_t motorPos[], bool isCoordinated) const noexcept
+{
+	// Get the configured number of axes
+	const size_t numVisibleAxes = reprap.GetGCodes().GetVisibleAxes();
+	const size_t numTotalAxes = reprap.GetGCodes().GetTotalAxes();
+
+	// Call the real kinematics transform
+	return kinematics->CartesianToMotorSteps(machinePos, driveStepsPerMm, numVisibleAxes, numTotalAxes, motorPos, isCoordinated);
+}
+
+bool Move::IsAxisRotational(size_t /*axis*/) const noexcept
+{
+	// For now, treat all axes as linear (non-rotational)
+	// TODO: Add rotational axis support if needed (e.g., for A, B, C axes)
+	return false;
+}
+
+// Step 9.3.2: Change kinematics type (used by M669)
+void Move::SetKinematics(KinematicsType type) noexcept
+{
+	// Delete old kinematics if it exists
+	if (kinematics != nullptr)
+	{
+		delete kinematics;
+		kinematics = nullptr;
+	}
+
+	// Create new kinematics based on type
+	// For Step 9.3.2, only Hangprinter is fully integrated
+	// Cartesian would require CoreKinematics which depends on ZLeadscrewKinematics (more complex)
+	switch (type.RawValue())
+	{
+	case KinematicsType::hangprinter:
+		kinematics = new HangprinterKinematics();
+		break;
+
+	// For now, default everything to Hangprinter
+	default:
+		kinematics = new HangprinterKinematics();
+		break;
+	}
 }
 
 #endif // RRF_HOST_BUILD

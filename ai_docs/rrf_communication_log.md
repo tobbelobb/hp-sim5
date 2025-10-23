@@ -2309,4 +2309,41 @@ All coders working on this feature have read (and sometimes slightly changed) pl
 After you finish coding I expect you to write a little note under Step 9.3.2 and/or Step 9.3.3 describing your key findings.
 
 
+-------------------------------------------
+Assistant (Claude Sonnet 4.5):
 
+● Summary
+
+  I've successfully completed Step 9.3.2 of the RRF integration build plan! Here's what was accomplished:
+
+  Key Achievement
+
+  DDA::Init() now uses the real HangprinterKinematics::CartesianToMotorSteps() method instead of the simplified 1:1 Cartesian transform. This means the host build is now using actual RepRapFirmware kinematics calculations to transform user
+  coordinates into motor steps.
+
+  What Changed
+
+  1. Added Move::CartesianToMotorSteps() - Delegates to the real kinematics transform
+  2. Modified DDA::Init() - Now calls Move::CartesianToMotorSteps() for both start and end positions
+  3. Added Move::SetKinematics() - M669 command now actually switches kinematics types
+  4. Made constructors accessible - Added conditional compilation guards to make HangprinterKinematics and CoreKinematics constructors public for host builds
+  5. Updated build system - Removed old kinematics stub, integrated real HangprinterKinematics.cpp
+
+  Design Decision
+
+  I decided to focus only on Hangprinter kinematics for this phase because CoreKinematics has complex dependencies (ZLeadscrewKinematics, matrix operations, etc.). Since Hangprinter is the primary target, this was the right trade-off for Step 9.3.2.
+
+  Build & Test Results
+
+  - ✅ Build successful (1.1MB binary)
+  - ✅ Test execution works with real kinematics transforms
+  - ✅ CAN packets now contain step values calculated by real HangprinterKinematics
+
+  Next Steps (Step 9.3.3)
+
+  The next phase should consider whether to:
+  - Adopt more of the real DDA::InitStandardMove() logic (direction vectors, axis mix, flags)
+  - Integrate the real DDA::Prepare() instead of the simplified trapezoid calculator
+  - Or continue with the hybrid approach that's working well
+
+  All implementation notes have been documented in ai_docs/rrf_integration_build_plan.md under Step 9.3.2.

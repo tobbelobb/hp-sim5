@@ -4,6 +4,7 @@
 
 #include <Movement/DDA.h>
 #include <Movement/Move.h>
+#include <Movement/MovementError.h>
 #include <Platform/RepRap.h>
 #include <CAN/CanMotion.h>
 #include <CAN/CanInterface.h>
@@ -27,20 +28,29 @@ DDA::DDA() noexcept
 }
 
 // Initialize DDA from RawMove
-// Converts coordinates to steps and calculates basic move parameters
+// Step 9.3.2: Now uses real Kinematics::CartesianToMotorSteps() instead of 1:1 Cartesian transform
 bool DDA::Init(const RawMove& move, float startCoords[MaxAxesPlusExtruders]) noexcept
 {
 	Move& m = reprap.GetMove();
 
-	// Convert start and end positions to steps
-	for (size_t axis = 0; axis < MaxAxes; ++axis)
+	// Step 9.3.2: Use real Kinematics to transform start position to motor steps
+	const MovementError startErr = m.CartesianToMotorSteps(startCoords, startSteps, true);
+	if (startErr != MovementError::ok)
 	{
-		const float stepsPerMm = m.DriveStepsPerMm(axis);
-		startSteps[axis] = static_cast<int32_t>(startCoords[axis] * stepsPerMm);
-		endSteps[axis] = static_cast<int32_t>(move.coords[axis] * stepsPerMm);
+		// Could not transform start position
+		return false;
+	}
+
+	// Step 9.3.2: Use real Kinematics to transform end position to motor steps
+	const MovementError endErr = m.CartesianToMotorSteps(move.coords, endSteps, true);
+	if (endErr != MovementError::ok)
+	{
+		// Could not transform end position (unreachable, etc.)
+		return false;
 	}
 
 	// Handle extruder (simplified: just one extruder for now)
+	// Extruders are not transformed by kinematics, they're direct linear drives
 	hasExtrusion = move.hasE;
 	if (hasExtrusion)
 	{
@@ -52,7 +62,7 @@ bool DDA::Init(const RawMove& move, float startCoords[MaxAxesPlusExtruders]) noe
 
 	requestedSpeed = move.feedRate;
 
-	// Calculate total distance (Cartesian for now)
+	// Calculate total distance in Cartesian space (user coordinates)
 	float totalDistanceSquared = 0.0f;
 	for (size_t axis = 0; axis < MaxAxes; ++axis)
 	{
