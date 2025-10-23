@@ -14,6 +14,21 @@ class DDARing;
 class GCodeBuffer;
 class StringRef;
 
+// Step 9.3: AxisDriversConfig stub for Kinematics
+struct AxisDriversConfig
+{
+	DriverId driverNumbers[MaxDriversPerAxis];
+	size_t numDrivers;
+
+	AxisDriversConfig() noexcept : numDrivers(1)
+	{
+		for (size_t i = 0; i < MaxDriversPerAxis; ++i)
+		{
+			driverNumbers[i].SetLocal(0);
+		}
+	}
+};
+
 // Minimal host-side Move facade for Step 9.1
 // This provides just enough interface for CanMotion.cpp to compile and generate CAN packets
 // without dragging in the full Movement subsystem.
@@ -65,6 +80,14 @@ public:
 	bool GetDriverDirection(const DriverId& driver) const noexcept;
 	void SetDriverDirection(const DriverId& driver, bool forward) noexcept;
 
+	// Step 9.3: Additional accessors needed by real Kinematics
+	float AxisMinimum(size_t axis) const noexcept;
+	float AxisMaximum(size_t axis) const noexcept;
+	float MaxFeedrate(size_t drive) const noexcept { return GetMaxFeedrate(drive); }  // Alias
+	float NormalAcceleration(size_t drive) const noexcept { return GetAcceleration(drive); }  // Alias
+	const AxisDriversConfig& GetAxisDriversConfig(size_t axis) const noexcept;
+	unsigned int GetMicrostepping(size_t drive, bool& interpolation) const noexcept;
+
 private:
 	Kinematics* kinematics;
 	DDARing* mainRing;
@@ -79,6 +102,11 @@ private:
 	DriverId axisDrivers[MaxAxes];					// Axis to driver mapping (for M584)
 	DriverId extruderDrivers[MaxExtrudersPerTool];	// Extruder to driver mapping
 	bool driverForward[256];						// Driver direction (indexed by board*16 + driver)
+
+	// Step 9.3: Axis limits for kinematics
+	float axisMinima[MaxAxes];						// Minimum position for each axis (mm)
+	float axisMaxima[MaxAxes];						// Maximum position for each axis (mm)
+	AxisDriversConfig axisDriversConfigs[MaxAxes];	// Driver configuration for each axis
 };
 
 #endif // RRF_HOST_BUILD

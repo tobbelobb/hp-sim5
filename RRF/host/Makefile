@@ -53,7 +53,10 @@ RRF_SRC := ../ReprapFirmware/src/Version.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/BinaryParser.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/ExpressionParser.cpp \
 	../ReprapFirmware/src/CAN/CanMotion.cpp \
-	../ReprapFirmware/src/libc/strptime.cpp
+	../ReprapFirmware/src/libc/strptime.cpp \
+	../ReprapFirmware/src/Movement/Kinematics/Kinematics.cpp \
+	../ReprapFirmware/src/Movement/Kinematics/RoundBedKinematics.cpp \
+	../ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.cpp
 
 CANLIB_SRC := ../CANlib/src/CanMessageBuffer.cpp
 

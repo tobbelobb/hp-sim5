@@ -83,6 +83,9 @@ public:
 
 	PrepParams& GetPrepParams() noexcept { return params; }
 
+	// Step 9.3: Additional methods needed by real Kinematics
+	void LimitSpeedAndAcceleration(float /*maxSpeed*/, float /*maxAccel*/) noexcept {}  // Stub for now
+
 private:
 	bool checkEndstops;
 	bool isPrintingMove;

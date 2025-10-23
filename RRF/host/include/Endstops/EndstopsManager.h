@@ -4,26 +4,7 @@
 
 #include <RepRapFirmware.h>
 #include <General/Bitmap.h>
-
-enum class EndstopHitAction : uint8_t
-{
-	none = 0,
-	stopAll,
-	stopAxis,
-	stopDriver
-};
-
-struct EndstopHitDetails
-{
-	EndstopHitAction action{EndstopHitAction::none};
-	bool isZProbe{false};
-	size_t axis{0};
-	DriverId driver{};
-
-	EndstopHitAction GetAction() const noexcept { return action; }
-	float GetZProbeHeightError() const noexcept { return 0.0f; }
-	bool HasDriver() const noexcept { return false; }
-};
+#include <Endstops/EndstopDefs.h>
 
 class EndstopsManager
 {
@@ -39,6 +20,9 @@ public:
 	bool AnyEndstopsActive() const noexcept { return false; }
 
 	void DisableRemoteStallEndstops() noexcept {}
+
+	// Step 9.3: Additional stub for Kinematics
+	bool HomingZWithProbe() const noexcept { return false; }
 };
 
 #endif

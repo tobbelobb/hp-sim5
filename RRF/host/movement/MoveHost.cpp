@@ -39,6 +39,13 @@ Move::Move() noexcept
 	{
 		driverForward[i] = true;
 	}
+
+	// Step 9.3: Initialize axis limits to reasonable defaults
+	for (size_t i = 0; i < MaxAxes; ++i)
+	{
+		axisMinima[i] = 0.0f;		// Default minimum 0mm
+		axisMaxima[i] = 200.0f;		// Default maximum 200mm (will be set by kinematics or M208)
+	}
 }
 
 Move::~Move() noexcept
@@ -167,6 +174,9 @@ void Move::SetAxisDriverId(size_t axis, const DriverId& driver) noexcept
 	if (axis < MaxAxes)
 	{
 		axisDrivers[axis] = driver;
+		// Step 9.3: Also update the AxisDriversConfig
+		axisDriversConfigs[axis].driverNumbers[0] = driver;
+		axisDriversConfigs[axis].numDrivers = 1;
 	}
 }
 
@@ -188,6 +198,29 @@ void Move::SetDriverDirection(const DriverId& driver, bool forward) noexcept
 	{
 		driverForward[index] = forward;
 	}
+}
+
+// Step 9.3: Axis limit accessors for real Kinematics
+float Move::AxisMinimum(size_t axis) const noexcept
+{
+	return (axis < MaxAxes) ? axisMinima[axis] : 0.0f;
+}
+
+float Move::AxisMaximum(size_t axis) const noexcept
+{
+	return (axis < MaxAxes) ? axisMaxima[axis] : 200.0f;
+}
+
+const AxisDriversConfig& Move::GetAxisDriversConfig(size_t axis) const noexcept
+{
+	static AxisDriversConfig defaultConfig;
+	return (axis < MaxAxes) ? axisDriversConfigs[axis] : defaultConfig;
+}
+
+unsigned int Move::GetMicrostepping(size_t /*drive*/, bool& interpolation) const noexcept
+{
+	interpolation = false;
+	return 16;  // Default 16x microstepping for CAN-only builds
 }
 
 #endif // RRF_HOST_BUILD

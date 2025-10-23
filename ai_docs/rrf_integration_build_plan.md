@@ -334,6 +334,34 @@ Scope:
   - Verify CAN packet outputs match or improve upon Step 9.2.2
   - Verify determinism is preserved
 
+#### Step 9.3 Progress log - Option B (Hybrid Approach)
+- **Iteration 9.3A - Phase 1: Integrate real Kinematics sources (COMPLETED)**
+  - **Decision**: Chose hybrid approach (Option B) - keep simplified DDA/Move wrappers from Step 9.2.2, integrate only real Kinematics for coordinate transforms
+  - **Rationale**: Full RRF Movement integration would require many tightly-coupled dependencies (DriveMovement, MoveSegment, etc.). Hybrid approach gets us the real kinematics math (HangprinterKinematics::CartesianToMotorSteps, MotorStepsToCartesian, IsReachable, ForwardTransform, flexDistances, MotorPosToLinePos) while keeping working Step 9.2.2 infrastructure.
+  - **Simplifying assumption**: Host builds are CAN-only builds (no local step generation needed)
+  - Added real RRF Kinematics sources to build:
+    * `Movement/Kinematics/Kinematics.cpp` (base class)
+    * `Movement/Kinematics/RoundBedKinematics.cpp` (base for Hangprinter)
+    * `Movement/Kinematics/HangprinterKinematics.cpp` (real Hangprinter transforms)
+  - Extended host Move class with additional accessors needed by real Kinematics:
+    * `AxisMinimum()` / `AxisMaximum()` - axis limits for reachability checks
+    * `MaxFeedrate()` / `NormalAcceleration()` - aliases for existing methods
+    * `GetAxisDriversConfig()` - driver configuration per axis
+    * `GetMicrostepping()` - microstepping configuration (returns 16x for CAN builds)
+  - Added AxisDriversConfig structure to support multi-driver axes (used by HangprinterKinematics)
+  - Extended EndstopsManager stub with `HomingZWithProbe()` method
+  - Added `DDA::LimitSpeedAndAcceleration()` stub for Kinematics callbacks
+  - Created host-specific `Endstops/EndstopDefs.h` to prevent RRF header conflicts
+  - **Build result**: Successfully compiles and links with real HangprinterKinematics ✓
+  - **Testing**: Step 9.2.2 tests still pass - existing functionality preserved ✓
+  - **Files modified**:
+    * `Makefile`: Added Kinematics sources
+    * `include/Movement/Move.h`: Added accessors and AxisDriversConfig
+    * `movement/MoveHost.cpp`: Implemented new accessors
+    * `include/Movement/DDA.h`: Added LimitSpeedAndAcceleration stub
+    * `include/Endstops/EndstopsManager.h`: Added HomingZWithProbe
+    * `include/Endstops/EndstopDefs.h`: Created to prevent conflicts
+  - **Next**: Phase 2 will wire up DDA::Init() to call real `HangprinterKinematics::CartesianToMotorSteps()` instead of our simplified 1:1 Cartesian transform
 
 
 ### Notes & invariants for Step 9

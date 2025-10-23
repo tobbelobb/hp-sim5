@@ -2164,3 +2164,85 @@ Assistant (Claude Sonnet 4.5):
 Architect:
 
 Yes, proceed with Phase 1
+
+-------------------------------------------
+Assistant (Claude Sonnet 4.5):
+
+● We don't have a StepTimer in Movement/ directory. Let me check where our StepTimer stub is:
+
+● Bash(find include -name "StepTimer.h" 2>/dev/null)
+  ⎿  include/Movement.bak/StepTimer.h
+
+● Good! It's in the backup. Actually, given the complexity of this migration and the number of moving parts, let me take a step back and reconsider the approach.
+
+  The issue is that we're trying to use the real RRF Movement code wholesale, but it has many dependencies that are tightly coupled to the firmware architecture. This approach is getting complex.
+
+  Let me check with you: would you prefer that I:
+
+  Option A: Continue with full RRF Movement integration (more complex, more complete)
+  - Will take more time to get working
+  - Requires many stubs and workarounds
+  - Gets us closer to "true" RRF behavior
+
+  Option B: Keep a hybrid approach (simpler, faster)
+  - Keep using real RRF's kinematics transforms (the core math)
+  - Keep our simplified DDA/Move wrappers
+  - Just call the real Kinematics::CartesianToMotorSteps() for coordinate transforms
+  - Keep everything else as-is from Step 9.2.2
+
+  Given that Step 9.2.2 is already working and producing correct CAN packets with config-aware behavior, Option B might be more pragmatic for now. We can always do full integration later if needed.
+
+  What would you like me to do?
+
+-------------------------------------------
+Architect:
+
+Go for Option B. The real ReprapFirmware functions I'm most interested in using are:
+ - HangprinterKinematics::CartesianToMotorSteps
+ - HangprinterKinematics::MotorStepsToCartesian
+ - HangprinterKinematics::IsReachable
+ - HangprinterKinematics::ForwardTransform
+ - HangprinterKinematics::flexDistances
+ - HangprinterKinematics::MotorPosToLinePos
+
+A simplifying assumption you can safely make is that host builds are CAN-only builds.
+
+-------------------------------------------
+Assistant (Claude Sonnet 4.5):
+
+  Step 9.3 - Phase 1 Complete ✓
+
+  I've successfully completed Phase 1 of Step 9.3 using the hybrid approach (Option B) you requested. Here's what was accomplished:
+
+  What We Built
+
+  1. Integrated Real RRF Kinematics - The build now includes:
+    - Kinematics.cpp (base class with common kinematics logic)
+    - RoundBedKinematics.cpp (base for delta/Hangprinter types)
+    - HangprinterKinematics.cpp (the real Hangprinter coordinate transforms you wanted)
+  2. Extended Host Move Class - Added accessors needed by real Kinematics:
+    - Axis limits (AxisMinimum/Maximum)
+    - Driver configuration (GetAxisDriversConfig)
+    - Microstepping info (GetMicrostepping - returns 16x for CAN builds)
+  3. Kept Step 9.2.2 Working - All existing functionality preserved:
+    - Config-aware motion planning still works
+    - CAN packet generation unchanged
+    - Determinism maintained
+
+  What's Ready to Use
+
+  The real HangprinterKinematics class is now compiled and linked into the binary. It provides all the functions you mentioned:
+  - CartesianToMotorSteps() - Convert XYZ to motor steps
+  - MotorStepsToCartesian() - Inverse transform
+  - IsReachable() - Check if position is reachable
+  - ForwardTransform() - Forward kinematics
+  - flexDistances() - Line flex compensation
+  - MotorPosToLinePos() - Motor position to line length
+
+  Next Steps (Phase 2)
+
+  The next phase will wire up DDA::Init() to actually call the real HangprinterKinematics::CartesianToMotorSteps() instead of our current simplified 1:1 Cartesian transform. This will make Hangprinter moves use the real anchor geometry and cable
+  kinematics.
+
+  Would you like me to proceed with Phase 2, or would you prefer to test/review Phase 1 first?
+

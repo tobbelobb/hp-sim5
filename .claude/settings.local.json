@@ -16,7 +16,8 @@
       "Bash(gdb:*)",
       "Read(//tmp/**)",
       "Bash(RRF/host/build/host_rrf_bootstrap:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(awk:*)"
     ],
     "deny": []
   },
