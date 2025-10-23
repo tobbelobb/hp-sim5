@@ -2,6 +2,8 @@
 #include <Storage/MassStorage.h>
 
 #include <CAN/CanCapture.h>
+#include <CAN/CanMotion.h>
+#include <CanMessageBuffer.h>
 #include <Platform/RepRap.h>
 #include <Platform/MessageType.h>
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
@@ -12,6 +14,8 @@
 #include <Storage/FileData.h>
 #include <Storage/FileStore.h>
 #include <General/String.h>
+#include <Movement/DDA.h>
+#include <Movement/Move.h>
 
 #include <array>
 #include <cctype>
@@ -22,6 +26,10 @@
 
 namespace
 {
+	// Step 9.2.1: Deterministic simulated time in step-timer ticks (48 MHz)
+	constexpr uint32_t StepClockFrequency = 48000000;  // 48 MHz
+	uint64_t currentSimulatedTicks = 0;
+
 	void PrintUsage()
 	{
 		std::cout << "Usage: host_rrf_bootstrap [--vsd <path>] [--run <file.gcode>] [--can-log <path|disable>]\n";
@@ -52,6 +60,24 @@ namespace
 		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
 		const bool axesRelative = reprap.GetGCodes().GetAxesRelative(0);
 
+		// Build RawMove from G-code
+		RawMove move;
+		bool hasMovement = false;
+
+		// Get current position as starting point
+		float currentCoords[MaxAxesPlusExtruders] = {0};  // Initialize all to zero
+		for (size_t i = 0; i < MaxAxes; ++i)
+		{
+			currentCoords[i] = reprap.GetGCodes().GetUserPosition(i);
+		}
+
+		// Copy current coords as target (will be updated by seen axes)
+		for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
+		{
+			move.coords[i] = currentCoords[i];
+		}
+
+		// Process axis parameters
 		for (char letter : axisLetters)
 		{
 			if (!gb.Seen(letter))
@@ -68,7 +94,58 @@ namespace
 
 			const float current = reprap.GetGCodes().GetUserPosition(index);
 			const float updated = axesRelative ? current + value : value;
+			move.coords[index] = updated;
 			reprap.GetGCodes().SetUserPosition(index, updated);
+			hasMovement = true;
+		}
+
+		// Handle extruder E parameter
+		// TODO: For now, skip E parameter until we debug basic axis movement
+		if (gb.Seen('E'))
+		{
+			gb.GetFValue();  // Consume but ignore for now
+		}
+
+		// Handle feedrate F parameter (in mm/min, convert to mm/sec)
+		if (gb.Seen('F'))
+		{
+			const float feedRateMMperMin = gb.GetFValue();
+			move.feedRate = feedRateMMperMin / 60.0f;  // Convert to mm/sec
+		}
+		else
+		{
+			// Use default feedrate if not specified
+			move.feedRate = 100.0f;  // 100 mm/s default
+		}
+
+		// If there's actual movement, create and execute a DDA
+		if (hasMovement)
+		{
+			std::cout << "[DEBUG] Creating DDA...\n" << std::flush;
+			DDA dda;
+			std::cout << "[DEBUG] Calling Init...\n" << std::flush;
+			if (dda.Init(move, currentCoords))
+			{
+				std::cout << "[DEBUG] Init succeeded, calling Prepare...\n" << std::flush;
+				if (dda.Prepare())
+				{
+					std::cout << "[DEBUG] Prepare succeeded, finishing movement...\n" << std::flush;
+					// Set move start time to current simulated ticks
+					dda.SetMoveStartTime(static_cast<uint32_t>(currentSimulatedTicks & 0xFFFFFFFF));
+
+					std::cout << "[DEBUG] About to call FinishMovement...\n" << std::flush;
+					// Call FinishMovement to actually emit CAN packets
+					const uint32_t clocksUsed = CanMotion::FinishMovement(dda, dda.GetMoveStartTime(), false);
+					std::cout << "[DEBUG] FinishMovement returned, clocks=" << clocksUsed << "\n" << std::flush;
+
+					// Advance simulated time deterministically
+					currentSimulatedTicks += clocksUsed;
+
+					std::cout << "Move executed: distance=" << dda.GetPrepParams().totalDistance
+							  << "mm, speed=" << dda.GetPrepParams().topSpeed
+							  << "mm/s, ticks=" << clocksUsed << "\n";
+				}
+			}
 		}
 
 		return true;
@@ -375,6 +452,10 @@ int main(int argc, char** argv)
 			HostCanCapture::Shutdown();
 		}
 	} captureGuard;
+
+	// Initialize CAN subsystem
+	CanMessageBuffer::Init(40);  // Allocate 40 CAN message buffers (enough for multiple boards)
+	CanMotion::Init();
 
 	std::cout << "RRF host bootstrap build\n";
 	std::cout << "Version: " << VERSION << "\n";

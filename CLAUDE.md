@@ -2,22 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
-- Run all tests: `npm test`
-- Run a single test file: `npx jest tests/path/to/file.test.js`
-- Run a specific test: `npx jest -t "test description"`
-
-## Code Style Guidelines
-- **Architecture**: Follow Entity Component System (ECS) pattern
-- **Classes**: Use ES6 classes with PascalCase naming (e.g., `Vector2`, `CableJointComponent`)
-- **Methods/Variables**: Use camelCase naming (e.g., `addVectors`, `restLength`)
-- **Documentation**: Use JSDoc-style comments for functions
-- **Vector Math**: Use the built-in `Vector2` class for vector operations
-- **Error Handling**: Use console.warn for warnings; return fallback values when operations fail
-- **Immutability**: Prefer creating new instances rather than mutating existing ones
-- **Testing**: Use Jest's describe/test structure with expect assertions
-- **Dependencies**: Minimize external dependencies, use vanilla JS when possible
-
 # Rules for Better Code Collaboration
 
 ## 1. Follow Instructions Precisely

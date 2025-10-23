@@ -40,6 +40,22 @@ struct PrepParams
 	uint32_t TotalClocks() const noexcept { return TotalAccelClocks() + SteadyClocks() + TotalDecelClocks(); }
 };
 
+// Simple RawMove structure for G1 commands
+struct RawMove
+{
+	float coords[MaxAxesPlusExtruders];		// Target coordinates for each axis/extruder
+	float feedRate;							// Requested feedrate in mm/sec
+	bool hasE;								// Does this move include extrusion?
+
+	RawMove() noexcept : feedRate(0.0f), hasE(false)
+	{
+		for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
+		{
+			coords[i] = 0.0f;
+		}
+	}
+};
+
 // Minimal DDA class for host build
 // This provides just enough interface for CanMotion to call IsCheckingEndstops()
 // and other minimal queries during FinishMovement().
@@ -61,11 +77,24 @@ public:
 	void SetMoveStartTime(uint32_t time) noexcept { moveStartTime = time; }
 	void SetClocksNeeded(uint32_t clocks) noexcept { clocksNeeded = clocks; }
 
+	// Step 9.2.1: Movement planning methods
+	bool Init(const RawMove& move, float startCoords[MaxAxesPlusExtruders]) noexcept;
+	bool Prepare() noexcept;
+
+	PrepParams& GetPrepParams() noexcept { return params; }
+
 private:
 	bool checkEndstops;
 	bool isPrintingMove;
 	uint32_t moveStartTime;
 	uint32_t clocksNeeded;
+
+	// Step 9.2.1: Movement data
+	PrepParams params;
+	int32_t endSteps[MaxAxesPlusExtruders];	// Target position in steps
+	int32_t startSteps[MaxAxesPlusExtruders];	// Starting position in steps
+	float requestedSpeed;						// Requested speed in mm/sec
+	bool hasExtrusion;							// Does this move include extruder movement?
 };
 
 #endif // RRF_HOST_BUILD
