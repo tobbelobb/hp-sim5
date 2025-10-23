@@ -132,7 +132,50 @@ These are the pieces we want to log.
 
 
 ## Step 9 - Bring up the real RRF motion pipeline
-Goal: A G1 in the input goes through RRF’s planner and emits CAN movement packets that we already capture.
+Goal: A G1 in the input goes through RRF's planner and emits CAN movement packets that we already capture.
+
+This step is divided into two substeps:
+
+### Step 9.1 - Lightweight host Move/DDA interface (COMPLETED)
+Goal: Create minimal Move/DDA facades that satisfy CanMotion.cpp without invoking MCU subsystems.
+
+Approach: Rather than attempting to compile the full Movement/Move.cpp (which has heavy dependencies on RepRap::IsStopped, GCodes::ReadMove, SmartDrivers, PauseState enums, etc.), create host-only facades that provide just enough interface for CanMotion to compile and link.
+
+### Step 9.1 Progress log
+- Iteration 9.1A: Created lightweight host facades for the movement subsystem in RRF/host/include/Movement/:
+  - `Move.h`: Minimal Move class with basic queries (DriveStepsPerMm, GetCurrentMachinePosition, GetKinematics, GetMainDDARing)
+  - `DDA.h`: Minimal DDA class and PrepParams struct matching CanMotion's expectations (IsCheckingEndstops, moveStartTime, clocksNeeded)
+  - `DDARing.h`: Placeholder DDARing for position tracking and move counting
+  - `Kinematics/Kinematics.h`: Stub kinematics base class
+- Implemented corresponding .cpp files in RRF/host/movement/:
+  - `MoveHost.cpp`: Move facade with reasonable default steps/mm (80 steps/mm)
+  - `DDAHost.cpp`: Simple DDA state tracking
+  - `DDARingHost.cpp`: Basic position and simulation time tracking
+  - `KinematicsHost.cpp`: Stub returning "none" as kinematics name
+- Extended RepRap host facade (RRF/host/include/Platform/RepRap.h) to include Move member and GetMove() accessor
+- Updated host Makefile to compile new movement host files
+- **Build result**: `make -C RRF/host` succeeds, produces 951K binary. CanMotion.cpp now links against host Move/DDA facades without pulling in full RRF Movement stack.
+
+### Key findings for Step 9.2
+- CanMotion.cpp requires:
+  - `PrepParams` struct with timing fields (accelClocks, steadyClocks, decelClocks, acceleration, deceleration, totalDistance, topSpeed, useInputShaping)
+  - `DDA` reference with `IsCheckingEndstops()`, `GetMoveStartTime()`, `GetClocksNeeded()`
+  - These can be satisfied without the full DDA::Prepare/DDA::Init machinery
+- The full RRF Movement stack dependencies include:
+  - `Move::MoveLoop()` - main motion task that processes queued DDAs
+  - `DDA::Init*()` methods - parse RawMove into motor steps using kinematics
+  - `DDA::Prepare()` - compute acceleration profiles, allocate DriveMovement objects, call CanMotion::AddAxisMovement/AddExtruderMovement
+  - `DriveMovement` - per-motor step generation state
+  - Kinematics - transforms user coords to motor steps (Cartesian, Hangprinter, etc.)
+  - EndstopManager, probe handling, SmartDrivers status polling
+- To actually generate CAN packets in Step 9.2, we will need to:
+  - Wire G1 commands to create RawMove objects
+  - Implement simplified DDA::Init and DDA::Prepare that compute PrepParams and invoke CanMotion APIs
+  - Decide whether to pull in real Kinematics or stub coordinate→steps transforms
+  - Provide a simulated move execution loop that advances time deterministically
+
+### Step 9.2 - Full host Move/DDA interface (PENDING)
+Goal: Integrate enough of RRF's DDA preparation logic to generate real CAN movement packets from G1 commands.
 
 ### Makefile: include the movement stack and kinematics.
   * Add the essential RRF sources under Movement/ (+ minimal kinematics) to RRF_SRC.
@@ -150,7 +193,7 @@ Goal: A G1 in the input goes through RRF’s planner and emits CAN movement pack
   * make -C RRF/host links without new stubs.
   * Running a tiny test.g that contains just a few G1 lines generates at least one movementLinearShaped record in the CAN log.
 
-### Step 9 Progress log
+### Step 9.2 Progress log
 nothing yet
 
 

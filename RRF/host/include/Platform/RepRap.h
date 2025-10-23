@@ -12,6 +12,7 @@
 #include <Heating/Heat.h>
 #include <Fans/FansManager.h>
 #include <GCodes/GCodes.h>
+#include <Movement/Move.h>
 
 #include <cstdint>
 
@@ -32,6 +33,9 @@ public:
 
 	GCodes& GetGCodes() noexcept { return gCodes; }
 	const GCodes& GetGCodes() const noexcept { return gCodes; }
+
+	Move& GetMove() noexcept { return move; }
+	const Move& GetMove() const noexcept { return move; }
 
 	Heat& GetHeat() noexcept { return heat; }
 	PrintMonitor& GetPrintMonitor() noexcept { return printMonitor; }
@@ -56,6 +60,7 @@ public:
 
 private:
 	Platform platform;
+	Move move;
 	GCodes gCodes;
 	Heat heat;
 	PrintMonitor printMonitor;

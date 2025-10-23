@@ -5,7 +5,11 @@
       "Bash(grep:*)",
       "Bash(python:*)",
       "Bash(mkdir:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(g++:*)",
+      "Bash(make clean:*)",
+      "Bash(make:*)",
+      "Bash(./build/host_rrf_bootstrap:*)"
     ],
     "deny": []
   },
