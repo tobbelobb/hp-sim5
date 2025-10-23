@@ -69,7 +69,7 @@ private:
 	std::array<bool, kMaxInputs> inputAxesRelative{};
 	size_t numInputs{0};
 
-	std::array<char, kMaxAxes> axisLetters{'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'U', 'V', 'W'};
+	std::array<char, kMaxAxes> axisLetters{'X', 'Y', 'Z', 'U', 'V', 'W', 'A', 'B', 'C', 'D'};
 	std::array<char, kMaxAxes + 1> axisLettersString{};
 	size_t axisCount{7};
 	size_t numExtruders{0};

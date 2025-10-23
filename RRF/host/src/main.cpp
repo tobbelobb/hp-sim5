@@ -57,7 +57,7 @@ namespace
 
 	bool ProcessLinearMove(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		const bool axesRelative = reprap.GetGCodes().GetAxesRelative(0);
 
 		// Build RawMove from G-code
@@ -165,7 +165,7 @@ namespace
 
 	bool ProcessSetPosition(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 
 		for (char letter : axisLetters)
 		{
@@ -189,7 +189,7 @@ namespace
 	// Example: M92 E415 sets extruder steps/mm to 415
 	bool ProcessM92(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		Move& move = reprap.GetMove();
 
 		// Handle axis parameters
@@ -223,7 +223,7 @@ namespace
 	// Example: M201 X10000 Y10000 Z10000 U10000 E1000
 	bool ProcessM201(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		Move& move = reprap.GetMove();
 
 		for (char letter : axisLetters)
@@ -255,7 +255,7 @@ namespace
 	// Example: M203 X36000 Y36000 Z36000 E3600
 	bool ProcessM203(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		Move& move = reprap.GetMove();
 
 		for (char letter : axisLetters)
@@ -289,7 +289,7 @@ namespace
 	// Example: M566 X240 Y240 Z1200 E1200
 	bool ProcessM566(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		Move& move = reprap.GetMove();
 
 		for (char letter : axisLetters)
@@ -322,8 +322,16 @@ namespace
 	// Format: axis letter followed by board.driver (40.0 = board 40, driver 0)
 	bool ProcessM584(GCodeBuffer& gb)
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		Move& move = reprap.GetMove();
+
+		// Handle P parameter (number of visible axes)
+		if (gb.Seen('P'))
+		{
+			const int visibleAxes = gb.GetIValue();
+			reprap.GetGCodes().SetAxisCount(static_cast<size_t>(visibleAxes));
+			std::cout << "Set visible axes to " << visibleAxes << "\n";
+		}
 
 		for (char letter : axisLetters)
 		{
@@ -351,14 +359,6 @@ namespace
 							  << "." << static_cast<int>(localDriver) << "\n";
 				}
 			}
-		}
-
-		// Handle P parameter (number of visible axes)
-		if (gb.Seen('P'))
-		{
-			const int visibleAxes = gb.GetIValue();
-			reprap.GetGCodes().SetAxisCount(static_cast<size_t>(visibleAxes));
-			std::cout << "Set visible axes to " << visibleAxes << "\n";
 		}
 
 		// Handle E parameter (extruder driver mapping)
