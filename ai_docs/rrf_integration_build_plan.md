@@ -2,8 +2,9 @@
 
 This document tracks the incremental plan and key findings while bringing RepRapFirmware into a host (x86\_64) build suitable for generating deterministic motion traces.
 
-## Step 1 — Extract existing build configuration
+## Step 1 - Extract existing build configuration
 
+### Step 1 Progress log
 - **Source:** `RRF/ReprapFirmware/.cproject`, `RRF/RepRapFirmware.wiki/Building-RepRapFirmware.md`, `RRF/CoreN2G/README.md`, `RRF/CANlib/doc/Duet3CAN-FDProtocol.md`
 - Cross build targets ship with Eclipse-managed makefiles invoking `arm-none-eabi-g++` with `-mcpu=cortex-m7`, `-mthumb`, floating-point hard ABI, and size-optimised `-Os`.
 - Duet 3 MB6HC RTOS configuration exports include search paths for:
@@ -16,28 +17,32 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - CoreN2G requires the application to supply `main()` that calls `CoreInit()`, and to implement `AppInit`, `AppMain`, pin description queries, and systick hooks. This aligns with the need for a host-side HAL shim.
 - CAN protocol spec (Duet3 CAN FD) depends on a 48 MHz step clock and master-scheduled start times. Captured frames must preserve timestamp fields to reconstruct queue_step equivalents.
 
-## Step 2 — Makefile skeleton
+## Step 2 - Makefile skeleton
 
+### Step 2 Progress log
 - Added `RRF/host/Makefile` to drive a host build with GNU++17, out-of-source objects under `host/build`.
 - Minimal entry point lives in `RRF/host/src/main.cpp`; current target `host_rrf_bootstrap` just prints a banner, verifying the toolchain and folder conventions.
 - Successful build via `make -C RRF/host` confirms we can extend the Makefile incrementally without cross toolchain dependencies.
 - Host make rules intentionally avoid the size-constrained `-Os` flags used on MCU builds; we'll favour clarity and diagnostics on x64 where binary size is irrelevant.
 
-## Step 3 — Add first firmware translation unit
+## Step 3 - Add first firmware translation unit
 
+### Step 3 Progress log
 - Makefile now builds `ReprapFirmware/src/Version.cpp` alongside the host entry point, proving we can consume firmware headers on the host toolchain.
 - Added shared include flags for `../ReprapFirmware/src` and `../RRFLibraries/src` to satisfy dependencies on `Version.h` and `ecv_duet3d.h`.
 - Build flags now declare the Duet 3 MB6HC identity (`__SAME70Q20B__`, `DUET3_MB6HC`, `SAME70=1`) so every subsequent translation unit sees the CAN-capable board configuration instead of the Duet 2 defaults.
 - Host bootstrap prints `VERSION`, `DateText`, and `TimeSuffix`, letting us sanity-check that const data links correctly without MCU-specific libraries.
 
-## Step 4 — Fake HAL headers
+## Step 4 - Fake HAL headers
 
+### Step 4 Progress log
 - Added host shims `RRF/host/include/Core.h` and `RRF/host/include/CoreIO.h` to intercept `<Core.h>` / `<CoreIO.h>` at a higher include priority.
 - Current stubs define the processor feature macros, simple `PinMode` enum, dummy watchpoint registers, and no-op GPIO helpers so firmware sources can include them without dragging in MCU-specific ASF headers.
 - Declared placeholder heap pointers and time delay helpers; these will evolve alongside the scheduler shim when we bring in FreeRTOS dependencies.
 
-## Step 5 — Compile Platform subset
+## Step 5 - Compile Platform subset
 
+### Step 5 Progress log
 - First dry-run compile of `ReprapFirmware/src/Platform/Platform.cpp` exposed the MCU-facing dependencies we must neutralise: `Pins.h` expects board macros (`__SAME70Q20B__`, `DUET3_MB6HC`), CoreN2G headers like `Interrupts.h`, `AnalogIn/Out.h`, `UniqueIdBase.h`, and SAME70-specific device files (`Hardware/SAME70/Devices.h` pulls in `AsyncSerial`, `USARTClass`, etc.).
 - Introduced initial host stubs for `CoreTypes.h`, `Interrupts.h`, `{AnalogIn,AnalogOut}.h`, `UniqueIdBase.h`, cache control, async serial/USB (`AsyncSerial.h`, `SerialCDC.h`, `Wire.h`, `USARTClass.h`), and provided runtime stand-ins via `host/src/devices_stub.cpp`, plus extra include dirs for `Hardware/SAME70` during exploratory compiles.
 - Host stub now mirrors the Duet 3 device namespace (`serialUart1`, `serialUart2`, guarded `serialWiFi`) so firmware sources can pull in the SAME70 board descriptors without size-oriented Duet 2 assumptions.
@@ -63,8 +68,9 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Normalised the remaining `printf` calls that were mixing `%u` with `size_t`/`unsigned long` in `Platform.cpp` and `RepRap.cpp`, casting to explicit host-safe widths where the firmware expects small indices. Host compiles of both translation units now run cleanly wrt `-Wformat`, leaving only the expected macro and unused-parameter diagnostics.
 
 
-## Step 6 — FreeRTOS shim
+## Step 6 - FreeRTOS shim
 
+### Step 6 Progress log
 - Added a host runtime in `RRF/host/rtos/freertos_shim.cpp` that wraps `std::thread`, `std::mutex`, and `std::condition_variable` to emulate the FreeRTOS surfaces we touch today (tasks, queues, binary/recursive semaphores, task notifications, critical sections, tick/time helpers). Tasks spawn immediately as detached threads; handles map back to their `TaskBase` via the `StaticTask_t::hostContext` pointer.
 - Reworked the host headers (`FreeRTOS.h`, `task.h`, `queue.h`, `semphr.h`) so they declare the real shim entry points instead of inline no-ops, and taught `RTOSIface/RTOSIface.h` to use `std::recursive_timed_mutex` and the shimmed APIs for mutexes, binary semaphores, task registration, and critical-section helpers. `TaskBase::AttachHostHandle` now records the native stack pointers so diagnostics like `pxTaskGetLastStackTop()` have data.
 - Updated the host Makefile with `-pthread`, `-I.` for the new headers, automatic object-dir creation, and a new target for `rtos/freertos_shim.cpp`; `make -C RRF/host` builds `build/rtos/freertos_shim.o` and links the bootstrap without pulling in the embedded FreeRTOS sources.
@@ -74,13 +80,13 @@ This document tracks the incremental plan and key findings while bringing RepRap
 - Host Makefile now compiles the shim with the bootstrap sources, allowing `Platform.cpp`/`RepRap.cpp` to link without the embedded FreeRTOS port.
 - Future refinement: provide deterministic scheduling semantics (avoid 24 h sleeps for `portMAX_DELAY`), implement cleanup for task handles, and add unit tests around queue behaviour.
 
-## Step 7 — Virtual SD & G-code pipeline (in progress)
+## Step 7 - Virtual SD & G-code pipeline
 
 Goals:
 - Compile GCodes/GCodes.cpp#L1, GCodes/GCodeBuffer.cpp#L1, and config helpers.
 - Stub mass-storage calls from Storage module to the host filesystem root; map virtual SD to RRF/host/vsd.
 
-Progress log:
+### Step 7 Progress log
 - Introduced filesystem-backed storage shims: `host/include/Storage/{FileStore,FileWriteBuffer,MassStorage}.h` plus `host/storage/HostFileStore.cpp` and `HostMassStorage.cpp` translate firmware file operations onto `std::filesystem`/`std::fstream`. Volume `0:/` now maps to a configurable host root (`MassStorage::SetHostRoot`) with automatic `sys/`, `gcodes/`, and `firmware/` directory creation.
 - Host Makefile pulls in firmware’s `Storage/CRC32.cpp` and RRFLibraries helpers (`StringRef`, `SafeVsnprintf`, `StringFunctions`, `Strnlen`) so `M36`/metadata paths behave like the embedded build. `GetFileInfo` reports size, mtime, and appends a CRC32 token to `generatedBy` pending a cleaner reporting hook.
 - CLI updates in `host/src/main.cpp`: `--vsd <path>` selects the virtual SD root, `--run <file>` records a target gcode (execution still stubbed), and MassStorage initialises the directory skeleton on launch.
@@ -119,45 +125,139 @@ What we do want is the CAN movement messages, which might include:
 
 These are the pieces we want to log.
 
+### Step 8 Progress log
 - Iteration 8A: added a dedicated host CAN capture sink (`RRF/host/can/CanCapture.cpp`) that serialises every `CanMessageMovementLinearShaped` frame to JSONL. The CLI now accepts `--can-log <path|disable>` and defaults to `<vsd>/logs/can_capture.jsonl`, with shutdown handled via RAII in `host_rrf_bootstrap`. `CanInterface::SendMotion` is stubbed on host (`RRF/host/can/CanInterfaceHost.cpp`) so each queued movement logs and the buffer is freed immediately instead of touching hardware. To support this path the host build now pulls in `CANlib/src/CanMessageBuffer.cpp`, provides aligned `MessageBufferAlloc/Delete` in `platform/TasksHost.cpp`, and keeps `SUPPORT_CAN_EXPANSION` enabled so Duet3 CAN constants/types align with the sink.
 - Iteration 8B: wired `CanMotion.cpp` into the host build (Makefile now compiles the firmware TU alongside the capture shim) and extended `CanInterfaceHost.cpp` with a stubbed `GetCanAddress()` so movement packets carry master/source IDs. To keep the build surface small we temporarily skipped the heavyweight `Move.cpp` hierarchy; only the CAN motion module is linked while we plan a lighter host facade for Move in Step 9.
 - Iteration 8C: resolved a host-only build break in `ObjectModel/TypeCode.h` (first inclusion saw `SUPPORT_CAN_EXPANSION==0`) by pulling `Config/Features_Host.h` directly into the header, ensuring CAN-aware type codes survive even when other TUs include the file before `RepRapFirmware.h`. First exploratory compile of `Movement/Move.cpp` exposed broad dependencies on real MCU services (`RepRap::IsStopped`, `GCodes::ReadMove`, SmartDrivers, PauseState enums). Conclusion: rather than drag the full Move stack into the host build, we need a dedicated Move/DDA facade that reports the minimum data required for CAN logging while keeping host shims manageable.
 
 
+## Step 9 - Bring up the real RRF motion pipeline
+Goal: A G1 in the input goes through RRF’s planner and emits CAN movement packets that we already capture.
 
-## Step 9 - Gradual file adds in Makefile (pending)
+### Makefile: include the movement stack and kinematics.
+  * Add the essential RRF sources under Movement/ (+ minimal kinematics) to RRF_SRC.
+  * Keep StepTimer shimmed (-DSRC_MOVEMENT_STEPTIMER_H_=1) and -DRRF_HOST_BUILD=1.
+  * Movement core (typical): Movement/Move.cpp, Movement/DDA.cpp, Movement/DriveMovement.cpp, Movement/Motion.cpp, Movement/Kinematics/Kinematics.cpp, Movement/Kinematics/HangprinterKinematics.cpp , and any small deps they require.
+  * Keep the already-included CAN/CanMotion.cpp in place.
 
-- Each iteration, add one directory group: (a) Movement/Kinematics, (b) Movement/StepperDrivers, (c) Heating (stub out ADC/PID hardware but keep config parsing), (d) Tools for extruders.
-- After every addition, run `make -C RRF/host` to ensure no new link errors and adjust stubs accordingly.
+### Dispatch real G-codes instead of the manual switch.
+  * Replace the ad-hoc ProcessGCode in host/src/main.cpp with calls that drive GCodes' normal command flow so G0/G1 reach Move.
 
-## Step 10 - Echo test via DuetSoftwareFramework (pending)
+### Minimal host timebase.
+  * Provide a monotonic "firmware ticks" function used by the planner; for now, a deterministic simulated clock is fine (real-time later).
 
-- Build DSF’s code console client (RRF/DuetSoftwareFramework Makefile) and start it pointing to a mocked UNIX socket implemented in host firmware (expose --socket-file override, feed G-code lines to firmware object).
-- Add regression script that sends M118 hello and confirm the host firmware returns the same string, matching DSF handshake.
+### Acceptance checks:
+  * make -C RRF/host links without new stubs.
+  * Running a tiny test.g that contains just a few G1 lines generates at least one movementLinearShaped record in the CAN log.
 
-## Step 11 - Config.g handling (pending)
-
-- Mount DSF virtual SD path into host firmware; invoke existing GCodes::ReadAndExecuteConfig to parse config.g.
-- Add test target that loads minimal config.g and asserts platform state (e.g. steps/mm) via a JSON dump.
-
-## Step 12 - Batch mode output (pending)
-
-- Convert captured CAN movement packets into deterministic trace (binary + human-readable). Option 1: write raw frames plus timestamp into .duetcan; option 2: adapt to our .serial schema by translating CanMotion payloads into abstract queue_step
-  events.
-- Build CLI switches to choose output format and to run headless (no DSF).
-
-## Step 13 - Interfaces to stub long-term (pending)
-
-- WiFi/Ethernet: replace Networking initialisation with no-ops but keep API surfaces for future (only needed for config M commands).
-- SPI/I2C to stepper drivers: use host logging wrappers; the CAN capture path bypasses these.
-- Web control: disable DWC integration by short-circuiting SBC/WebServer modules; rely on DSF WebSocket for external UI if needed.
-
-## Step 14 - Validation & next steps (pending)
-
-- Unit-test CAN serialization against CANlib/src/CanMessageFormats.cpp#L1 reference tables.
-- Plan follow-up tasks: integrate timing scale control, implement real-time to simulated-time mapping, expand config coverage, document output format.
+### Step 9 Progress log
+nothing yet
 
 
-Questions:
+## Step 10 - Config.g ingestion
+Goal: Moves are computed with the right units, limits, and driver mapping.
 
-1. Decide whether .duetcan should mirror raw CAN frames or normalized step events.
+### Run config.g on startup:
+  * Execute 0:/sys/config.g before --run. (Use existing VSD; no DSF involved.)
+
+### Minimum config coverage:
+  * M92 (steps/mm)
+  * M566/M201/M203 (jerk/accel/max speed)
+  * M350 (microstepping)
+  * M584/M569 (axis-driver mapping and direction)
+  * M669/M666 (Hangprinter specific config)
+  * tool/extruder basics.
+
+### Kinematics selection:
+  * Accept Hangprinter vs. Cartesian by what config.g sets; only enable the kinematics we compile.
+
+### Acceptance checks:
+  * Dump a small object-model subset (or print) after config to verify steps/mm or M669/M666 settings and axis letters.
+  * Same G-code with two different config.g files yields different, plausible CAN step counts/timings.
+
+### Step 10 Progress log
+nothing yet
+
+
+## Step 11 - Expand CAN capture coverage
+Goal: Capture everything a simulator needs, not just linear-shaped packets.
+
+### Broaden packet types:
+  * Handle other motion-related message kinds we expect (plain linear, raw steps, late shaping variants, extruder-only segments, maybe set-current if emitted).
+
+### Stable schema & versioning:
+  * Keep JSONL, add capture_version, include board/driver IDs, seq numbers, per-driver data, PA flags, and timing fields.
+
+### CLI:
+  * --can-log <path> (already) and --can-format jsonl|raw (add later if we want a binary).
+
+### Acceptance checks:
+  * Logs contain entries for extruder moves and multi-driver segments.
+  * Schema passes a JSON schema check and is documented.
+
+### Step 11 Progress log
+nothing yet
+
+
+## Step 12 - Deterministic batch mode & timebase controls
+Goal: Same inputs ⇒ byte-identical logs (great for regression).
+
+## Simulated clock:
+  * Advance by planner-consumed clocks rather than wall time; seed is fixed: Drive the simulation clock from what the planner says a move lasts, not from wall-clock time and make every source of randomness fixed.
+    "Planner-consumed clocks" is the step-timer ticks the RRF planner computes for each segment.
+    You already see them in the CAN payload fields: accelerationClocks, steadyClocks, decelClocks, plus the whenToExecute field.
+    Total ticks for a segment = accel + steady + decel.
+    Instead of sleep()-ing in real time, you advance a monotonic counter by exactly that many ticks and stamp the next message with the new whenToExecute.
+    No waiting; it’s pure arithmetic and therefore reproducible.
+    Minimal sketch:
+    ```cpp
+    uint64_t now_ticks = 0;           // simulated time in step-timer ticks
+    const uint32_t tick_hz = 48000000; // whatever RRF’s step clock is
+
+    for (auto& m : moves) {
+      m.whenToExecute = now_ticks;
+      uint64_t dur = m.accelerationClocks + m.steadyClocks + m.decelClocks;
+      now_ticks += dur;
+      write_jsonl(m);                 // emit to log
+    }
+    ```
+
+### CLI:
+  * --rt false (default) for deterministic; later --rt true can follow wall-clock for interactive demos. Optional --timebase-hz for testing.
+
+### Acceptance checks:
+  * Two runs on different machines produce identical CAN logs.
+  * A unit test asserts exact file equality for a known input.
+
+### Step 12 Progress log
+nothing yet
+
+
+## Step 13 - Validation & regression
+Goal: Confidence that we match RRF semantics and don't regress.
+
+### Unit tests:
+  * Serialize/deserialize checks for CAN messages (compare against formats in CANlib).
+  * Small kinematics sanity (e.g., Cartesian vs HangprinterKinematics step mapping on a single segment).
+
+### End-to-end "golden log" tests:
+  * Tiny printlets (config.g + 10–50 G-code lines) generate canonical JSONL logs under tests/golden/.
+  * CI compares outputs byte-for-byte.
+
+### Docs:
+  * Document CLI (--vsd, --run, --can-log, --rt/--timebase-hz).
+  * Document JSONL schema and how a simulator should consume it.
+
+### Step 13 Progress log
+nothing yet
+
+
+## Next steps (when steps 1-13 are all done and all tests are green):
+Expand the following:
+ * kinematics set,
+ * pressure-advance fidelity,
+ * more M-code coverage,
+ * performance profiling.
+
+### Next steps Progress log
+nothing yet
