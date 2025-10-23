@@ -2246,3 +2246,67 @@ Assistant (Claude Sonnet 4.5):
 
   Would you like me to proceed with Phase 2, or would you prefer to test/review Phase 1 first?
 
+
+-------------------------------------------
+Architect:
+
+# Overview
+We're in the middle of a large feature: ReprapFirmware batch mode on host.
+
+The approach taken is to define all motors as CAN-attached external drivers, and to capture all the Movement/Motion commands or packets by writing them to a file.
+This file will later be used by a simulator to check exactly which motor movements are calculated by ReprapFirmware, and how well they might work on a "real" (simulated) machine.
+
+Right now we're integrating some of the real ReprapFirmware motion planner code (the Mover/Stepper classes).
+
+# Files and Directories
+The code lives in the RRF directory.
+The main upstream ReprapFirmware code lives inside RRF/ReprapFirmware.
+Required upstream libraries live in RRF/CANlib, RRF/RRFLibraries, among others.
+We try to change the upstream code as little as possible, mostly we're just fixing include bugs and put #define guards using the RRF_HOST_BUILD variable.
+Our code lives in RRF/host/.
+
+# Current Status
+The x86_64 host build has some basic functionality implemented.
+It sets up a virtual SD rooted at a host directory and provides stubs for the platform, storage and object‑model classes.
+The executable (host_rrf_bootstrap) accepts a G‑code file via --run and an optional --can‑log path.
+The typical way to invoke is:
+```
+cd RRF/host
+make clean # Optional
+make # Optional
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move.g # Or whatever gcode
+```
+
+  1. We have integrated Real RRF Kinematics - The build now includes:
+    - Kinematics.cpp (base class with common kinematics logic)
+    - RoundBedKinematics.cpp (base for delta/Hangprinter types)
+    - HangprinterKinematics.cpp (the real Hangprinter coordinate transforms you wanted)
+  2. Extended Host Move Class - Added accessors needed by real Kinematics:
+    - Axis limits (AxisMinimum/Maximum)
+    - Driver configuration (GetAxisDriversConfig)
+    - Microstepping info (GetMicrostepping - returns 16x for CAN builds)
+  3. Kept Step 9.2.2 Working - All existing functionality preserved:
+    - Config-aware motion planning still works
+    - CAN packet generation unchanged
+    - Determinism maintained
+
+We are currently adding calls to the RRF movement subsystem.
+
+A lot of the platform/host glue is already being compiled. See RRF/host/Makefile to learn what it pulls in.
+
+See the pending steps in ai_docs/rrf_integration_build_plan.md for more details on the roadmap/development plan.
+That plan is always up to date and we're just now ending Step 9.3.1 and starting on Step 9.3.2.
+The previous work iteration can be seen under "Step 9.3 Phase 1 Progress log".
+
+# What to Focus on
+The next phase will wire up DDA::Init() to actually call the real HangprinterKinematics::CartesianToMotorSteps() instead of our current simplified 1:1 Cartesian transform. This will make Hangprinter moves use the real anchor geometry and cable kinematics.
+See Step 9.3.2 in ai_docs/rrf_integration_build_plan.md for more details.
+
+Then just do Step 9.3.2 and collect information that will be useful for the next programmer who will have to do Step 9.3.3.
+
+# Take Notes
+All coders working on this feature have read (and sometimes slightly changed) plans from, as well as written implementation notes into ai_docs/rrf_integration_build_plan.md
+After you finish coding I expect you to write a little note under Step 9.3.2 and/or Step 9.3.3 describing your key findings.
+
+
+

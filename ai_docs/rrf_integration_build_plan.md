@@ -264,14 +264,8 @@ Acceptance criteria:
 
 
 ### Step 9.3 - Progressive migration toward full RRF movement (Pending)
-Scope:
- - Replace simplified Init/Prepare with real DDA::Init/Prepare, DriveMovement, and selected kinematics from RRF's Movement/.
- - Add any missing subsystems (probing/endstops/pauses) strictly as the planner requires.
-
-  Step 9.3 Migration Plan Analysis
-
+Migration Plan Analysis
   Key Differences:
-
   1. RawMove Structure: The real RawMove is much more comprehensive with:
     - Tool information (movementTool)
     - File position tracking
@@ -302,39 +296,23 @@ Scope:
     - Tool management: Tool offsets and extruder mapping
     - Backlash compensation: Applied during Prepare
 
-  Migration Strategy:
+  Migration Strategy in four phases:
 
-  I recommend an incremental approach to minimize risk:
+  Phase 1 (Step 9.3.1): Bring in Real Movement Sources (COMPLETED)
 
-  Phase 1 (Step 9.3.1): Bring in Real Movement Sources
-
-  - Copy Movement/DDA.cpp, Movement/Move.cpp, Movement/Kinematics/*.cpp into the build
+  - Copy some of Movement/DDA.cpp, Movement/Move.cpp, Movement/Kinematics/*.cpp into the build
   - Create minimal stubs for missing dependencies:
     - MoveSegment (can be no-op for CAN-only builds)
     - DriveMovement (can be minimal for CAN-only builds)
     - Tool class extensions
     - Endstop handling (stub for now)
+  - Keep a hybrid approach (simpler, faster)
+  - Keep using real RRF's kinematics transforms (the core math)
+  - Keep our simplified DDA/Move wrappers
+  - Just call the real Kinematics::CartesianToMotorSteps() for coordinate transforms
+  - Keep everything else as-is from Step 9.2.2
 
-  Phase 2 (Step 9.3.2): Wire Up InitStandardMove
-
-  - Stop using our custom RawMove, use the real one
-  - Modify main.cpp to populate real RawMove from G-code
-  - Let real InitStandardMove handle kinematics transform
-  - Keep using our configured kinematics (Cartesian or Hangprinter)
-
-  Phase 3 (Step 9.3.3): Wire Up Prepare
-
-  - Remove our simplified trapezoid calculator
-  - Let real Prepare() compute PrepParams and call CanMotion
-  - Handle the afterPrepare timing fields properly
-
-  Phase 4 (Step 9.3.4): Test and Verify
-
-  - Run existing Cartesian and Hangprinter tests
-  - Verify CAN packet outputs match or improve upon Step 9.2.2
-  - Verify determinism is preserved
-
-#### Step 9.3 Progress log - Option B (Hybrid Approach)
+#### Step 9.3 Phase 1 Progress log
 - **Iteration 9.3A - Phase 1: Integrate real Kinematics sources (COMPLETED)**
   - **Decision**: Chose hybrid approach (Option B) - keep simplified DDA/Move wrappers from Step 9.2.2, integrate only real Kinematics for coordinate transforms
   - **Rationale**: Full RRF Movement integration would require many tightly-coupled dependencies (DriveMovement, MoveSegment, etc.). Hybrid approach gets us the real kinematics math (HangprinterKinematics::CartesianToMotorSteps, MotorStepsToCartesian, IsReachable, ForwardTransform, flexDistances, MotorPosToLinePos) while keeping working Step 9.2.2 infrastructure.
@@ -362,6 +340,26 @@ Scope:
     * `include/Endstops/EndstopsManager.h`: Added HomingZWithProbe
     * `include/Endstops/EndstopDefs.h`: Created to prevent conflicts
   - **Next**: Phase 2 will wire up DDA::Init() to call real `HangprinterKinematics::CartesianToMotorSteps()` instead of our simplified 1:1 Cartesian transform
+
+  Phase 2 (Step 9.3.2): Wire Up InitStandardMove (PENDING)
+
+  - Stop using our custom RawMove, use the real one
+  - Modify main.cpp to populate real RawMove from G-code
+  - Let real InitStandardMove handle kinematics transform
+  - Keep using our configured kinematics (Cartesian or Hangprinter)
+
+  Phase 3 (Step 9.3.3): Wire Up Prepare
+
+  - Remove our simplified trapezoid calculator
+  - Let real Prepare() compute PrepParams and call CanMotion
+  - Handle the afterPrepare timing fields properly
+
+  Phase 4 (Step 9.3.4): Test and Verify
+
+  - Run existing Cartesian and Hangprinter tests
+  - Verify CAN packet outputs match or improve upon Step 9.2.2
+  - Verify determinism is preserved
+
 
 
 ### Notes & invariants for Step 9
