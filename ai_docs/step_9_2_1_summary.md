@@ -74,7 +74,7 @@ CanMotion::Init();
 
 ## Build Result
 
-✅ `make` succeeds (with `-fno-stack-protector` workaround for now)
+✅ `make` succeeds
 ✅ Produces ~953K binary at `build/host_rrf_bootstrap`
 ✅ Executes G-code files and generates CAN packets
 ✅ **Determinism verified**: Two runs produce byte-identical logs
@@ -124,26 +124,20 @@ Output shows incorrect distance values (inf, huge numbers). This is likely:
 - Does NOT affect CAN packet generation (steps are correct)
 - **Fix**: Debug DDA::Init() distance calculation
 
-### 2. Stack Corruption Warning
-Had to disable stack protector (`-fno-stack-protector`) to avoid crashes.
-- Stack smashing detected after FinishMovement() returns
-- Likely buffer overflow in ProcessLinearMove local arrays
-- **Fix**: Review array sizes, ensure MaxAxesPlusExtruders consistency
-
-### 3. Acceleration Values Zero in CAN Packets
+### 2. Acceleration Values Zero in CAN Packets
 CAN logs show `"acceleration":0.0,"deceleration":0.0"`.
 - This is because acceleration is scaled by totalDistance in CanMotion
 - If totalDistance is inf/NaN, the division produces zero
 - **Fix**: Solve distance calculation bug
 
-### 4. No Extruder Support Yet
+### 3. No Extruder Support Yet
 E parameter is parsed but ignored.
 - Need to handle extruder drive properly
 - ExtruderToLogicalDrive() mapping
 - AddExtruderMovement() call
 - **Implement in Step 9.2.2**
 
-### 5. Hardcoded Parameters
+### 4. Hardcoded Parameters
 - Acceleration: 1000 mm/s²
 - Deceleration: 1000 mm/s²
 - Steps/mm: 80 (all axes)
@@ -170,8 +164,6 @@ E parameter is parsed but ignored.
   - Modified ProcessLinearMove() to create and execute DDAs
   - Added CanMessageBuffer::Init() and CanMotion::Init() calls
   - Added debug output
-- `RRF/host/Makefile`:
-  - Added `-fno-stack-protector` flag (temporary workaround)
 
 **Test Files:**
 - `RRF/host/vsd/gcodes/test_move.g` - Simple 3-move test G-code
@@ -219,7 +211,6 @@ for (size_t axis = 0; axis < NumVisibleAxes; ++axis) {
 
 ### 5. Fix Known Bugs
 - **Distance calculation**: Debug sqrt/delta math
-- **Stack corruption**: Review array bounds
 - **Acceleration scaling**: Ensure totalDistance is valid
 
 ## Acceptance Criteria Met
@@ -248,6 +239,4 @@ Step 9.2.1 is **COMPLETE**. CAN packets are flowing with deterministic timing!
 
 6. **CAN capture already works**: Step 8 infrastructure works perfectly, just needed to call the APIs.
 
-7. **Stack protector is aggressive**: GCC's stack canary caught a subtle overflow. Disable for dev, fix before production.
-
-8. **RRF's DriverId**: Board address + local driver number. For CAN: `DriverId(121, 0)` = board 121, driver 0.
+7. **RRF's DriverId**: Board address + local driver number. For CAN: `DriverId(121, 0)` = board 121, driver 0.

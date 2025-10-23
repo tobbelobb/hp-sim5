@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic -pthread -fno-stack-protector \
+CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic -pthread \
     -I. \
     -Iinclude \
     -Irtos \

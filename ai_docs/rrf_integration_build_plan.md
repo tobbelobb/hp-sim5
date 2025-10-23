@@ -198,12 +198,11 @@ Goal: For basic G1 commands, compute steps and a simple trapezoid, populate Prep
   - Added deterministic simulated tick counter (currentSimulatedTicks)
   - Initialized CAN subsystem (CanMessageBuffer::Init, CanMotion::Init)
   - Hardcoded CAN driver mapping (board 121, drivers 0-3 → axes A-D)
-- **Build result**: `make` succeeds (with `-fno-stack-protector` workaround), produces ~953K binary
+- **Build result**: `make` succeeds, produces ~953K binary
 - **Testing**: test_move.g with 3 G1 commands produces 3 movementLinearShaped records in CAN log
 - **Determinism verified**: Two runs produce byte-identical logs ✓
 - **Known issues**:
   * Distance calculation shows inf/huge numbers (doesn't affect CAN packets)
-  * Stack corruption requires `-fno-stack-protector` (to be fixed)
   * E parameter not yet implemented
   * Acceleration values show as 0.0 in CAN packets (related to distance bug)
 - **Files modified**: DDA.h, DDAHost.cpp, main.cpp, Makefile

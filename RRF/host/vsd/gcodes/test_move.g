@@ -2,7 +2,7 @@
 ; Two linear moves to test CAN packet generation
 
 G90          ; Absolute positioning
-G92 X0 Y0 Z0 A0  ; Set origin
+G92 X0 Y0 Z0 ; Set origin
 
 ; Move 1: Simple XY move
 G1 X10 Y10 F6000
