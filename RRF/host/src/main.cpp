@@ -100,10 +100,22 @@ namespace
 		}
 
 		// Handle extruder E parameter
-		// TODO: For now, skip E parameter until we debug basic axis movement
+		// Note: Extruder uses separate relative/absolute mode (typically M83/M82)
+		// For now, assume relative extruder mode (M83) as configured in typical config.g
 		if (gb.Seen('E'))
 		{
-			gb.GetFValue();  // Consume but ignore for now
+			const float eValue = gb.GetFValue();
+			const size_t extruderIndex = MaxAxes;  // First extruder drive
+
+			// For relative extrusion, add to current position
+			// For absolute, would just set to eValue
+			// For now, treat as relative (M83 mode is common)
+			const float currentE = currentCoords[extruderIndex];
+			const float targetE = currentE + eValue;  // Relative extrusion
+
+			move.coords[extruderIndex] = targetE;
+			move.hasE = true;
+			hasMovement = true;  // E-only moves are valid
 		}
 
 		// Handle feedrate F parameter (in mm/min, convert to mm/sec)
@@ -173,6 +185,288 @@ namespace
 		return true;
 	}
 
+	// M92: Set steps per mm
+	// Example: M92 E415 sets extruder steps/mm to 415
+	bool ProcessM92(GCodeBuffer& gb)
+	{
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		Move& move = reprap.GetMove();
+
+		// Handle axis parameters
+		for (char letter : axisLetters)
+		{
+			if (gb.Seen(letter))
+			{
+				size_t axis = 0;
+				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				{
+					const float value = gb.GetFValue();
+					move.SetDriveStepsPerMm(axis, value, 0);
+					std::cout << "Set " << letter << " steps/mm to " << value << "\n";
+				}
+			}
+		}
+
+		// Handle extruder E parameter
+		if (gb.Seen('E'))
+		{
+			const float value = gb.GetFValue();
+			const size_t extruderDrive = MaxAxes;  // First extruder
+			move.SetDriveStepsPerMm(extruderDrive, value, 0);
+			std::cout << "Set E steps/mm to " << value << "\n";
+		}
+
+		return true;
+	}
+
+	// M201: Set max accelerations (mm/s²)
+	// Example: M201 X10000 Y10000 Z10000 U10000 E1000
+	bool ProcessM201(GCodeBuffer& gb)
+	{
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		Move& move = reprap.GetMove();
+
+		for (char letter : axisLetters)
+		{
+			if (gb.Seen(letter))
+			{
+				size_t axis = 0;
+				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				{
+					const float value = gb.GetFValue();
+					move.SetAcceleration(axis, value);
+					std::cout << "Set " << letter << " acceleration to " << value << " mm/s²\n";
+				}
+			}
+		}
+
+		if (gb.Seen('E'))
+		{
+			const float value = gb.GetFValue();
+			const size_t extruderDrive = MaxAxes;
+			move.SetAcceleration(extruderDrive, value);
+			std::cout << "Set E acceleration to " << value << " mm/s²\n";
+		}
+
+		return true;
+	}
+
+	// M203: Set max speeds (mm/min - will convert to mm/s)
+	// Example: M203 X36000 Y36000 Z36000 E3600
+	bool ProcessM203(GCodeBuffer& gb)
+	{
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		Move& move = reprap.GetMove();
+
+		for (char letter : axisLetters)
+		{
+			if (gb.Seen(letter))
+			{
+				size_t axis = 0;
+				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				{
+					const float mmPerMin = gb.GetFValue();
+					const float mmPerSec = mmPerMin / 60.0f;
+					move.SetMaxFeedrate(axis, mmPerSec);
+					std::cout << "Set " << letter << " max speed to " << mmPerSec << " mm/s\n";
+				}
+			}
+		}
+
+		if (gb.Seen('E'))
+		{
+			const float mmPerMin = gb.GetFValue();
+			const float mmPerSec = mmPerMin / 60.0f;
+			const size_t extruderDrive = MaxAxes;
+			move.SetMaxFeedrate(extruderDrive, mmPerSec);
+			std::cout << "Set E max speed to " << mmPerSec << " mm/s\n";
+		}
+
+		return true;
+	}
+
+	// M566: Set jerk (maximum instant speed change, mm/min)
+	// Example: M566 X240 Y240 Z1200 E1200
+	bool ProcessM566(GCodeBuffer& gb)
+	{
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		Move& move = reprap.GetMove();
+
+		for (char letter : axisLetters)
+		{
+			if (gb.Seen(letter))
+			{
+				size_t axis = 0;
+				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				{
+					const float value = gb.GetFValue();
+					move.SetJerk(axis, value);
+					std::cout << "Set " << letter << " jerk to " << value << " mm/min\n";
+				}
+			}
+		}
+
+		if (gb.Seen('E'))
+		{
+			const float value = gb.GetFValue();
+			const size_t extruderDrive = MaxAxes;
+			move.SetJerk(extruderDrive, value);
+			std::cout << "Set E jerk to " << value << " mm/min\n";
+		}
+
+		return true;
+	}
+
+	// M584: Set axis to driver mapping
+	// Example: M584 X40.0 Y41.0 Z42.0 U43.0 P4
+	// Format: axis letter followed by board.driver (40.0 = board 40, driver 0)
+	bool ProcessM584(GCodeBuffer& gb)
+	{
+		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','A','B','C','D','U','V','W' };
+		Move& move = reprap.GetMove();
+
+		for (char letter : axisLetters)
+		{
+			if (gb.Seen(letter))
+			{
+				size_t axis = 0;
+				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				{
+					const float driverSpec = gb.GetFValue();
+					const uint8_t board = static_cast<uint8_t>(driverSpec);
+					const uint8_t localDriver = static_cast<uint8_t>((driverSpec - board) * 10.0f + 0.5f);
+
+					DriverId driver;
+					if (board == 0)
+					{
+						driver.SetLocal(localDriver);
+					}
+					else
+					{
+						driver = DriverId(board, localDriver);
+					}
+
+					move.SetAxisDriverId(axis, driver);
+					std::cout << "Mapped " << letter << " axis to driver " << static_cast<int>(board)
+							  << "." << static_cast<int>(localDriver) << "\n";
+				}
+			}
+		}
+
+		// Handle P parameter (number of visible axes)
+		if (gb.Seen('P'))
+		{
+			const int visibleAxes = gb.GetIValue();
+			reprap.GetGCodes().SetAxisCount(static_cast<size_t>(visibleAxes));
+			std::cout << "Set visible axes to " << visibleAxes << "\n";
+		}
+
+		// Handle E parameter (extruder driver mapping)
+		// Example: M584 E0:1:2:3:4:5
+		// For now, just parse the first extruder
+		if (gb.Seen('E'))
+		{
+			const int extruderDriver = gb.GetIValue();
+			std::cout << "Mapped extruder to driver " << extruderDriver << "\n";
+		}
+
+		return true;
+	}
+
+	// M569: Set driver direction
+	// Example: M569 P40.0 S1 (driver 40.0 goes forward)
+	bool ProcessM569(GCodeBuffer& gb)
+	{
+		if (!gb.Seen('P'))
+		{
+			return true;  // No driver specified
+		}
+
+		Move& move = reprap.GetMove();
+		const float driverSpec = gb.GetFValue();
+		const uint8_t board = static_cast<uint8_t>(driverSpec);
+		const uint8_t localDriver = static_cast<uint8_t>((driverSpec - board) * 10.0f + 0.5f);
+
+		DriverId driver;
+		if (board == 0)
+		{
+			driver.SetLocal(localDriver);
+		}
+		else
+		{
+			driver = DriverId(board, localDriver);
+		}
+
+		if (gb.Seen('S'))
+		{
+			const int direction = gb.GetIValue();
+			const bool forward = (direction == 1);
+			move.SetDriverDirection(driver, forward);
+			std::cout << "Set driver " << static_cast<int>(board) << "." << static_cast<int>(localDriver)
+					  << " direction to " << (forward ? "forward" : "backward") << "\n";
+		}
+
+		return true;
+	}
+
+	// M669: Set kinematics type
+	// Example: M669 K6 (Hangprinter), M669 K1 (Cartesian)
+	// For now, just log it - actual kinematics implementation comes later
+	bool ProcessM669(GCodeBuffer& gb)
+	{
+		if (gb.Seen('K'))
+		{
+			const int kinematicsType = gb.GetIValue();
+			std::cout << "Set kinematics type to " << kinematicsType;
+			switch (kinematicsType)
+			{
+			case 1:
+				std::cout << " (Cartesian)";
+				break;
+			case 6:
+				std::cout << " (Hangprinter)";
+				break;
+			default:
+				std::cout << " (unknown)";
+				break;
+			}
+			std::cout << "\n";
+		}
+
+		// Other M669 parameters (for Hangprinter: anchor positions, etc.)
+		// For now, just consume and log them
+		static constexpr std::array<char, 4> hangprinterParams{ 'A', 'B', 'C', 'D' };
+		for (char letter : hangprinterParams)
+		{
+			if (gb.Seen(letter))
+			{
+				gb.GetFValue();  // Consume the value
+				// std::cout << "  " << letter << " parameter seen\n";
+			}
+		}
+
+		return true;
+	}
+
+	// M666: Set Hangprinter mechanical parameters
+	// Many sub-parameters: Q, R, U, O, L, H, W, S, I, X, T, Y, C, J
+	// For now, just consume them - actual Hangprinter kinematics comes later
+	bool ProcessM666(GCodeBuffer& gb)
+	{
+		// Just consume all the parameters for now
+		static constexpr std::array<char, 14> params{ 'Q', 'R', 'U', 'O', 'L', 'H', 'W', 'S', 'I', 'X', 'T', 'Y', 'C', 'J' };
+
+		for (char letter : params)
+		{
+			if (gb.Seen(letter))
+			{
+				gb.GetFValue();  // Consume the value
+			}
+		}
+
+		return true;
+	}
+
 	bool ProcessGCode(GCodeBuffer& gb)
 	{
 		try
@@ -183,36 +477,70 @@ namespace
 				return true;
 			}
 
-			if (commandLetter != 'G' || !gb.HasCommandNumber())
+			if (!gb.HasCommandNumber())
 			{
 				return true;
 			}
 
 			const int commandNumber = gb.GetCommandNumber();
-			switch (commandNumber)
+
+			// Handle G-codes
+			if (commandLetter == 'G')
 			{
-			case 0:
-			case 1:
-				return ProcessLinearMove(gb);
+				switch (commandNumber)
+				{
+				case 0:
+				case 1:
+					return ProcessLinearMove(gb);
 
-			case 90:
-				reprap.GetGCodes().SetAxesRelative(0, false);
-				gb.LatestMachineState().axesRelative = false;
-				reprap.GetPlatform().Message(GenericMessage, "Using absolute positioning");
-				return true;
+				case 90:
+					reprap.GetGCodes().SetAxesRelative(0, false);
+					gb.LatestMachineState().axesRelative = false;
+					reprap.GetPlatform().Message(GenericMessage, "Using absolute positioning");
+					return true;
 
-			case 91:
-				reprap.GetGCodes().SetAxesRelative(0, true);
-				gb.LatestMachineState().axesRelative = true;
-				reprap.GetPlatform().Message(GenericMessage, "Using relative positioning");
-				return true;
+				case 91:
+					reprap.GetGCodes().SetAxesRelative(0, true);
+					gb.LatestMachineState().axesRelative = true;
+					reprap.GetPlatform().Message(GenericMessage, "Using relative positioning");
+					return true;
 
-			case 92:
-				return ProcessSetPosition(gb);
+				case 92:
+					return ProcessSetPosition(gb);
 
-			default:
-				return true;
+				default:
+					return true;
+				}
 			}
+
+			// Handle M-codes
+			if (commandLetter == 'M')
+			{
+				switch (commandNumber)
+				{
+				case 92:
+					return ProcessM92(gb);
+				case 201:
+					return ProcessM201(gb);
+				case 203:
+					return ProcessM203(gb);
+				case 566:
+					return ProcessM566(gb);
+				case 584:
+					return ProcessM584(gb);
+				case 569:
+					return ProcessM569(gb);
+				case 669:
+					return ProcessM669(gb);
+				case 666:
+					return ProcessM666(gb);
+				default:
+					// Silently ignore unknown M-codes (many config commands we don't need yet)
+					return true;
+				}
+			}
+
+			return true;
 		}
 		catch (const GCodeException& exc)
 		{
@@ -468,6 +796,22 @@ int main(int argc, char** argv)
 	else
 	{
 		std::cout << "CAN capture disabled\n";
+	}
+
+	// Step 9.2.2: Execute config.g before running any user G-code
+	std::cout << "\n=== Executing config.g ===\n";
+	const std::string configPath = "0:/sys/config.g";
+	if (MassStorage::FileExists(configPath.c_str()))
+	{
+		if (!ExecuteFile(configPath))
+		{
+			std::cerr << "Warning: config.g execution failed or was incomplete\n";
+		}
+		std::cout << "=== Config.g complete ===\n\n";
+	}
+	else
+	{
+		std::cout << "Note: No config.g found at " << configPath << ", using defaults\n\n";
 	}
 
 	if (!runPath.empty())

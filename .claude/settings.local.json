@@ -13,7 +13,10 @@
       "Read(//home/torbjorn/repos/hp-sim5/RRF/ReprapFirmware/src/CAN/**)",
       "Read(//home/torbjorn/repos/hp-sim5/RRF/ReprapFirmware/src/**)",
       "Read(//home/torbjorn/repos/hp-sim5/RRF/CANlib/src/**)",
-      "Bash(gdb:*)"
+      "Bash(gdb:*)",
+      "Read(//tmp/**)",
+      "Bash(RRF/host/build/host_rrf_bootstrap:*)",
+      "Bash(/dev/null)"
     ],
     "deny": []
   },

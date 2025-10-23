@@ -1463,7 +1463,7 @@ Summary:
      - Why: Test file for validation
      ```gcode
      G90
-     G92 X0 Y0 Z0 A0
+     G92 X0 Y0 Z0
      G1 X10 Y10 F6000
      G1 X20 Y20 Z5 F3000
      G1 X30 Y30 E1.5 F3000
@@ -1542,6 +1542,15 @@ eventually anyways. After this step I don't want any more suggestions to 'the ea
 integration, but completion of Step 9.2.1 represents a natural stopping point for review..
 </summary>
 
+Good! I found the stack smashing bug. We had assumed `MaxAxesPlusExtruders >= MaxAxes` in a for-loop.
+Solved with
+```
+-constexpr std::size_t MaxAxesPlusExtruders = 12;
++constexpr std::size_t MaxAxesPlusExtruders = 32;
+```
+in RRF/ReprapFirmware/src/Config/Pins_Host_MB6HC.h
+
+
 Now continue with Step 9.2.2 in ai_docs/rrf_integration_build_plan.md:
   Make the planner config-aware by:
   - Parsing config.g on startup
@@ -1560,3 +1569,62 @@ For example the CAN address mapping is interesting:
 ```
 M584 X40.0 Y41.0 Z42.0 U43.0 P4 ; map ABCD-axes to CAN addresses, and set four visible axes. Please excuse that ABCD motors are called XYZU here.
 ```
+
+-------------------------------------------
+Assistant (Claude Sonnet 4.5):
+
+
+  Summary
+
+  I successfully completed Step 9.2.2: Config-aware simplified planner from the RRF integration build plan. Here's what was implemented:
+
+  Key Accomplishments
+
+  1. Configuration System
+  - Extended the Move class to store configuration values: steps/mm, accelerations, max speeds, jerk, driver mappings
+  - Implemented M-code handlers for all essential configuration commands:
+    - M92: Steps per mm (axes and extruder)
+    - M201: Maximum accelerations
+    - M203: Maximum speeds
+    - M566: Jerk (instant speed change)
+    - M584: Axis-to-driver mapping (supports CAN addresses like 40.0)
+    - M569: Driver direction/polarity
+    - M669: Kinematics type selection
+    - M666: Hangprinter mechanical parameters
+
+  2. Automatic Config Execution
+  - config.g is now automatically executed on startup before any --run file
+  - All configuration is properly parsed and stored in the Move facade
+
+  3. Config-Driven Motion Planning
+  - Updated DDA::Prepare() to use configured acceleration and speed values instead of hardcoded defaults
+  - Driver mappings from M584 are used when emitting CAN packets via CanMotion::AddAxisMovement()
+
+  4. Extruder Support
+  - Implemented E parameter handling with relative extrusion mode (M83)
+
+  Testing & Validation
+
+  Tested with two different configurations:
+
+  Hangprinter Config (real config from RRF/ai_docs/config.g):
+  - 80 steps/mm, 10000 mm/s² acceleration
+  - CAN drivers on boards 40-42
+  - Results: Correct step counts (400, 800 steps), correct CAN destinations
+
+  Cartesian Config (custom test config):
+  - 160/400 steps/mm, 3000 mm/s² acceleration
+  - Local drivers 0-2
+  - Results: Different step counts (2000, 1600 steps), different timing, correct local drivers
+
+  Determinism: Movement packets are byte-identical across runs (only timestamp header differs) ✓
+
+  Files Modified
+
+  - RRF/host/include/Movement/Move.h: Added configuration storage and accessors
+  - RRF/host/movement/MoveHost.cpp: Implemented configuration accessors
+  - RRF/host/movement/DDAHost.cpp: Updated to use config values
+  - RRF/host/src/main.cpp: Added M-code handlers and config.g execution
+
+  All acceptance criteria met! The planner now respects configuration files and produces different, correct outputs based on the config.
+

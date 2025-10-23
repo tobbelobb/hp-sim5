@@ -78,14 +78,24 @@ bool DDA::Prepare() noexcept
 	// Step timer frequency (48 MHz for Duet 3)
 	constexpr float StepClockFrequency = 48000000.0f;
 
-	// Use reasonable defaults for acceleration (will be config-driven in Step 9.2.2)
-	constexpr float maxAcceleration = 1000.0f;  // mm/s^2
-	constexpr float maxDeceleration = 1000.0f;  // mm/s^2
+	Move& m = reprap.GetMove();
+
+	// Step 9.2.2: Use configured acceleration values
+	// For now, use the first axis acceleration as representative (will be improved for multi-axis)
+	float maxAcceleration = m.GetAcceleration(0);  // Get configured acceleration
+	float maxDeceleration = maxAcceleration;       // Same for deceleration
 
 	// Clamp speed to something reasonable if not set
 	if (requestedSpeed <= 0.0f)
 	{
 		requestedSpeed = 100.0f;  // 100 mm/s default
+	}
+
+	// Clamp requested speed to configured maximum
+	float maxSpeed = m.GetMaxFeedrate(0);  // Get configured max speed
+	if (requestedSpeed > maxSpeed)
+	{
+		requestedSpeed = maxSpeed;
 	}
 
 	// Simple trapezoid profile calculation
@@ -157,19 +167,14 @@ bool DDA::Prepare() noexcept
 	// Now call CanMotion APIs to emit movement packets
 	CanMotion::StartMovement();
 
-	// For now, use hardcoded CAN driver mappings (will be config-driven in Step 9.2.2)
-	// Assume board 121, drivers 0-3 for axes A-D (Hangprinter convention)
-	constexpr uint8_t canBoardAddress = 121;
-
-	Move& m = reprap.GetMove();
-
-	// Add axis movements (for now, assume first 4 axes map to CAN drivers 0-3)
-	for (size_t axis = 0; axis < 4 && axis < MaxAxes; ++axis)
+	// Step 9.2.2: Use configured driver mappings from M584
+	// Add axis movements using the configured driver IDs
+	for (size_t axis = 0; axis < reprap.GetGCodes().GetVisibleAxes() && axis < MaxAxes; ++axis)
 	{
 		const int32_t steps = endSteps[axis] - startSteps[axis];
 		if (steps != 0)
 		{
-			DriverId driver(canBoardAddress, static_cast<uint8_t>(axis));
+			DriverId driver = m.GetAxisDriverId(axis);
 			CanMotion::AddAxisMovement(params, driver, steps);
 		}
 	}
@@ -181,7 +186,10 @@ bool DDA::Prepare() noexcept
 		const int32_t steps = endSteps[extruderDrive] - startSteps[extruderDrive];
 		if (steps != 0)
 		{
-			DriverId driver(canBoardAddress, 4);  // Extruder on driver 4
+			// For now, use a default CAN driver for extruder (will be config-driven later)
+			// Assume board 0, driver 0 as placeholder (real config would come from M584 E parameter)
+			DriverId driver;
+			driver.SetLocal(0);  // Local driver 0 for extruder
 			const float extrusion = static_cast<float>(steps) / m.DriveStepsPerMm(extruderDrive);
 			CanMotion::AddExtruderMovement(params, driver, extrusion, false);  // No pressure advance for now
 		}

@@ -18,8 +18,7 @@ class StringRef;
 // This provides just enough interface for CanMotion.cpp to compile and generate CAN packets
 // without dragging in the full Movement subsystem.
 //
-// Future work (Step 9.2): Replace this with a more complete Move implementation that
-// actually plans moves using RRF's DDA/DriveMovement classes.
+// Step 9.2.2: Extended with configuration storage for M92, M201, M203, M566, M584, M569
 
 class Move
 {
@@ -50,12 +49,36 @@ public:
 	// Diagnostics
 	void Diagnostics(unsigned int part, const StringRef& reply) noexcept;
 
+	// Step 9.2.2: Configuration accessors
+	float GetAcceleration(size_t drive) const noexcept;
+	void SetAcceleration(size_t drive, float value) noexcept;
+
+	float GetMaxFeedrate(size_t drive) const noexcept;
+	void SetMaxFeedrate(size_t drive, float value) noexcept;
+
+	float GetJerk(size_t drive) const noexcept;
+	void SetJerk(size_t drive, float value) noexcept;
+
+	DriverId GetAxisDriverId(size_t axis) const noexcept;
+	void SetAxisDriverId(size_t axis, const DriverId& driver) noexcept;
+
+	bool GetDriverDirection(const DriverId& driver) const noexcept;
+	void SetDriverDirection(const DriverId& driver, bool forward) noexcept;
+
 private:
 	Kinematics* kinematics;
 	DDARing* mainRing;
 	float driveStepsPerMm[MaxAxesPlusExtruders];
 	int32_t motorPositions[MaxAxesPlusExtruders];
 	float machinePosition[MaxAxes];
+
+	// Step 9.2.2: Configuration storage
+	float accelerations[MaxAxesPlusExtruders];		// Max acceleration per axis/extruder (mm/s²)
+	float maxFeedrates[MaxAxesPlusExtruders];		// Max speed per axis/extruder (mm/s)
+	float jerks[MaxAxesPlusExtruders];				// Jerk/instant speed change (mm/min)
+	DriverId axisDrivers[MaxAxes];					// Axis to driver mapping (for M584)
+	DriverId extruderDrivers[MaxExtrudersPerTool];	// Extruder to driver mapping
+	bool driverForward[256];						// Driver direction (indexed by board*16 + driver)
 };
 
 #endif // RRF_HOST_BUILD
