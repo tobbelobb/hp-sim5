@@ -2347,3 +2347,113 @@ Assistant (Claude Sonnet 4.5):
   - Or continue with the hybrid approach that's working well
 
   All implementation notes have been documented in ai_docs/rrf_integration_build_plan.md under Step 9.3.2.
+
+-------------------------------------------
+Architect:
+
+
+# Overview
+We're in the middle of a large feature: ReprapFirmware batch mode on host.
+
+The approach taken is to define all motors as CAN-attached external drivers, and to capture all the Movement/Motion commands or packets by writing them to a file.
+This file will later be used by a simulator to check exactly which motor movements are calculated by ReprapFirmware, and how well they might work on a "real" (simulated) machine.
+
+Right now we're integrating some of the real ReprapFirmware motion planner code (the Mover/Stepper classes).
+
+# Files and Directories
+The code lives in the RRF directory.
+The main upstream ReprapFirmware code lives inside RRF/ReprapFirmware.
+Required upstream libraries live in RRF/CANlib, RRF/RRFLibraries, among others.
+We try to change the upstream code as little as possible, mostly we just add #define guards using the RRF_HOST_BUILD variable.
+Our code lives in RRF/host/.
+
+# Current Status
+The x86_64 host build has some basic functionality implemented.
+It sets up a virtual SD rooted at a host directory and provides stubs for the platform, storage and object‑model classes.
+The executable (host_rrf_bootstrap) accepts a G‑code file via --run and an optional --can‑log path.
+The typical way to invoke is:
+```
+cd RRF/host
+make clean # Optional
+make # Optional
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move.g # Or whatever gcode
+```
+
+  1. We have integrated Real RRF Kinematics - The build now includes:
+    - Kinematics.cpp (base class with common kinematics logic)
+    - RoundBedKinematics.cpp (base for delta/Hangprinter types)
+    - HangprinterKinematics.cpp (the real Hangprinter coordinate transforms you wanted)
+  2. Extended Host Move Class - Added accessors needed by real Kinematics:
+    - Axis limits (AxisMinimum/Maximum)
+    - Driver configuration (GetAxisDriversConfig)
+    - Microstepping info (GetMicrostepping - returns 16x for CAN builds)
+  3. Added Move::CartesianToMotorSteps() - Delegates to the real kinematics transform
+  5. Modified DDA::Init() - Now calls Move::CartesianToMotorSteps() for both start and end positions
+  6. Added Move::SetKinematics() - M669 command now actually switches kinematics types
+  7. Made constructors accessible - Added conditional compilation guards to make HangprinterKinematics and CoreKinematics constructors public for host builds
+  8. Updated build system - Removed old kinematics stub, integrated real HangprinterKinematics.cpp
+
+
+A lot of the platform/host glue is already being compiled. See RRF/host/Makefile to learn what it pulls in.
+
+See the "PENDING" steps in ai_docs/rrf_integration_build_plan.md for more details on the roadmap/development plan.
+That plan is always up to date and we're just now ending Step 9.3.2 and starting on Step 9.3.3.
+The decisions and key findings from the previous sprint can be seen under "Step 9.3.2 Progress log".
+I cite it verbatim here for easier reference:
+
+```
+### Step 9.3.2 Progress log
+  - **Implementation complete**: DDA::Init() now calls real HangprinterKinematics::CartesianToMotorSteps()
+  - **Key changes made**:
+    * Added Move::CartesianToMotorSteps() method that delegates to kinematics->CartesianToMotorSteps()
+    * Modified DDA::Init() to use Move::CartesianToMotorSteps() for both start and end positions instead of simplified 1:1 transform
+    * Added Move::SetKinematics() to dynamically switch kinematics types (M669 now functional)
+    * Made HangprinterKinematics and CoreKinematics constructors public for RRF_HOST_BUILD using conditional compilation
+    * Added HangprinterKinematics.cpp to build (already had Kinematics.cpp and RoundBedKinematics.cpp from Step 9.3.1)
+    * Removed old host Kinematics stub from build (KinematicsHost.cpp) and include path precedence
+  - **Cartesian kinematics decision**: Decided NOT to integrate CoreKinematics in Step 9.3.2 because it requires ZLeadscrewKinematics which has complex dependencies. For Step 9.3.2, focused only on Hangprinter kinematics since that's the primary target.
+  - **Default kinematics**: System now defaults to HangprinterKinematics on startup. M669 K6 will keep it as Hangprinter; M669 K1 would switch but we don't have Cartesian integrated yet.
+  - **Testing**: Build successful (1.1MB binary). Test runs complete successfully with real Hangprinter coordinate transforms being applied.
+  - **Files modified**:
+    * RRF/host/include/Movement/Move.h: Added CartesianToMotorSteps(), IsAxisRotational(), SetKinematics()
+    * RRF/host/movement/MoveHost.cpp: Implemented above methods, defaults to HangprinterKinematics
+    * RRF/host/movement/DDAHost.cpp: Modified Init() to call Move::CartesianToMotorSteps() for coordinate transforms
+    * RRF/host/src/main.cpp: M669 handler now calls Move::SetKinematics()
+    * RRF/host/Makefile: Removed KinematicsHost.cpp, renamed old stub header
+    * RRF/ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.h: Made constructor public for RRF_HOST_BUILD
+    * RRF/ReprapFirmware/src/Movement/Kinematics/CoreKinematics.h: Made constructor public for RRF_HOST_BUILD (for future use)
+
+  **Important notes for Step 9.3.3**:
+  - The real RRF DDA::InitStandardMove() is much more complex than our current Init(). It handles:
+    * Async moves support (#if SUPPORT_ASYNC_MOVES)
+    * Rotational vs linear axes (IsAxisRotational checks)
+    * Raw motor moves vs coordinated moves
+    * Direction vectors and normalization
+    * Pressure advance for extruders
+    * Acceleration limits based on axis mix
+  - We're still using our simplified RawMove struct (just coords[] and feedRate), not the full RRF RawMove with all its flags and metadata
+  - Our Init() only handles the basic coordinate transform; DDA::Prepare() still uses our simplified trapezoid calculator
+  - Next phase (9.3.3) should consider whether to adopt more of the real DDA::InitStandardMove logic or keep the hybrid approach
+```
+
+  As the architect and product owner, I have the following comments:
+- Default kinematics: We should default to Cartesian on startup, and only switch to Hangprinter upon M669 K6.
+- Next phase (9.3.3) should adopt more of the real DDA::InitStandardMove logic while keeping the hybrid approach. We particularly interested in including:
+  * Raw motor moves vs coordinated moves
+  * Direction vectors and normalization
+  * Acceleration limits based on axis mix
+
+# What to Focus on
+We want to get as close to full ReprapFirmware movement as we can within reasonable cost.
+The tasks of the next phase are:
+```
+  - Remove our simplified trapezoid calculator
+  - Let real Prepare() compute PrepParams and call CanMotion
+  - Handle the afterPrepare timing fields properly
+```
+
+I expect you to execute on step 9.3.3 and collect information that will be useful for the next programmer who will have to do Step 9.3.4.
+
+# Take Notes
+All coders working on this feature have read (and sometimes slightly changed) plans from, as well as written implementation notes into ai_docs/rrf_integration_build_plan.md
+After you finish coding I expect you to write a little note under Step 9.3.3 and/or Step 9.3.4 describing your key findings.

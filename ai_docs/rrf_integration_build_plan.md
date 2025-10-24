@@ -263,7 +263,7 @@ Acceptance criteria:
  ✅ Logs remain byte-identical across repeated runs (deterministic mode)
 
 
-### Step 9.3 - Progressive migration toward full RRF movement (Pending)
+### Step 9.3 - Progressive migration toward full (enough) ReprapFirmware movement (PENDING)
 Migration Plan Analysis
   Key Differences:
   1. RawMove Structure: The real RawMove is much more comprehensive with:
@@ -376,7 +376,7 @@ Migration Plan Analysis
   - Our Init() only handles the basic coordinate transform; DDA::Prepare() still uses our simplified trapezoid calculator
   - Next phase (9.3.3) should consider whether to adopt more of the real DDA::InitStandardMove logic or keep the hybrid approach
 
-  Phase 3 (Step 9.3.3): Wire Up Prepare
+  Phase 3 (Step 9.3.3): Wire Up Prepare (PENDING)
 
   - Remove our simplified trapezoid calculator
   - Let real Prepare() compute PrepParams and call CanMotion
