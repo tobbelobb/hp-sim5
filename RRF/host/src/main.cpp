@@ -2,6 +2,7 @@
 #include <Storage/MassStorage.h>
 
 #include <CAN/CanCapture.h>
+#include <can/CanMotionHost.h>
 #include <CAN/CanMotion.h>
 #include <CanMessageBuffer.h>
 #include <Platform/RepRap.h>
@@ -56,13 +57,17 @@ namespace
 		return "0:/" + trimmed;
 	}
 
-	bool ProcessLinearMove(GCodeBuffer& gb)
+	bool ProcessLinearMove(GCodeBuffer& gb, int commandNumber)
 	{
 		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		const bool axesRelative = reprap.GetGCodes().GetAxesRelative(0);
 
 		// Build RawMove from G-code
 		RawMove move;
+		if (commandNumber == 0)
+		{
+			move.flags |= RMF_Rapid;
+		}
 		bool hasMovement = false;
 
 		// Get current position as starting point
@@ -70,6 +75,19 @@ namespace
 		for (size_t i = 0; i < MaxAxes; ++i)
 		{
 			currentCoords[i] = reprap.GetGCodes().GetUserPosition(i);
+		}
+
+		if (gb.Seen('H'))
+		{
+			const int hValue = gb.GetIValue();
+			if (hValue == 2)
+			{
+				move.flags |= RMF_RawMotorMove;
+			}
+			else if (hValue == 1)
+			{
+				move.flags |= RMF_Rapid;
+			}
 		}
 
 		// Copy current coords as target (will be updated by seen axes)
@@ -96,7 +114,14 @@ namespace
 			const float current = reprap.GetGCodes().GetUserPosition(index);
 			const float updated = axesRelative ? current + value : value;
 			move.coords[index] = updated;
-			reprap.GetGCodes().SetUserPosition(index, updated);
+			if ((move.flags & RMF_RawMotorMove) == 0)
+			{
+				reprap.GetGCodes().SetUserPosition(index, updated);
+			}
+			else
+			{
+				move.independentMask |= (1u << index);
+			}
 			hasMovement = true;
 		}
 
@@ -502,7 +527,7 @@ namespace
 				{
 				case 0:
 				case 1:
-					return ProcessLinearMove(gb);
+					return ProcessLinearMove(gb, commandNumber);
 
 				case 90:
 					reprap.GetGCodes().SetAxesRelative(0, false);
@@ -772,6 +797,8 @@ int main(int argc, char** argv)
 			std::cerr << "Failed to initialise CAN capture sink at " << resolvedCanLog << "\n";
 			return 1;
 		}
+		host::set_log_path(resolvedCanLog.string());
+		host::clear_log();
 	}
 	else
 	{
@@ -780,6 +807,7 @@ int main(int argc, char** argv)
 			std::cerr << "Failed to disable CAN capture sink\n";
 			return 1;
 		}
+		host::set_log_path({});
 	}
 
 	const bool captureActive = !canLogDisabled && !resolvedCanLog.empty();

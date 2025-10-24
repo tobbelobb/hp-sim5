@@ -40,14 +40,28 @@ struct PrepParams
 	uint32_t TotalClocks() const noexcept { return TotalAccelClocks() + SteadyClocks() + TotalDecelClocks(); }
 };
 
-// Simple RawMove structure for G1 commands
+enum RawMoveFlags : uint32_t
+{
+	RMF_None = 0u,
+	RMF_RawMotorMove = 1u << 0,
+	RMF_Rapid = 1u << 1,
+	RMF_IgnoreLimits = 1u << 2
+};
+
+// Simple RawMove structure for G1/G0 commands
 struct RawMove
 {
 	float coords[MaxAxesPlusExtruders];		// Target coordinates for each axis/extruder
 	float feedRate;							// Requested feedrate in mm/sec
+	uint32_t flags;						// RawMoveFlags bitfield
+	uint32_t independentMask;			// Bitmask of axes to treat as independent (raw motor moves)
 	bool hasE;								// Does this move include extrusion?
 
-	RawMove() noexcept : feedRate(0.0f), hasE(false)
+	RawMove() noexcept
+		: feedRate(0.0f)
+		, flags(RMF_None)
+		, independentMask(0)
+		, hasE(false)
 	{
 		for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
 		{
@@ -98,6 +112,8 @@ private:
 	int32_t startSteps[MaxAxesPlusExtruders];	// Starting position in steps
 	float requestedSpeed;						// Requested speed in mm/sec
 	bool hasExtrusion;							// Does this move include extruder movement?
+	float startMachineCoords[MaxAxesPlusExtruders]; // machine-space start position (mm)
+	RawMove rawMove;								// cached move definition for Prepare phase
 };
 
 #endif // RRF_HOST_BUILD

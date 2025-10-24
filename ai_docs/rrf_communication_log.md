@@ -2457,3 +2457,546 @@ I expect you to execute on step 9.3.3 and collect information that will be usefu
 # Take Notes
 All coders working on this feature have read (and sometimes slightly changed) plans from, as well as written implementation notes into ai_docs/rrf_integration_build_plan.md
 After you finish coding I expect you to write a little note under Step 9.3.3 and/or Step 9.3.4 describing your key findings.
+
+-------------------------------------------
+GPT-5 Extended Thinking expanded upon this prompt
+
+# Step 9.3.3 — “Real Prepare() on host” (plan + code)
+
+## Goals (what will be true when we’re done)
+
+* The host build **no longer uses the simplified trapezoid**.
+* `DDA::Prepare()` from real RRF logic is used to compute `PrepParams` and **emit motion to our host CAN queue**, which we log to `--can-log`.
+* We **preserve the hybrid approach**: keep our host stubs/glue, but adopt these parts from real RRF:
+
+  1. **Raw motor vs. coordinated moves** (respect `G1 H2` raw independent moves, etc.)
+  2. **Direction vector & normalization** (per-axis unit mix)
+  3. **Acceleration limits derived from axis mix** (the RRF way)
+* **Default kinematics = Cartesian** on startup; M669 K6 switches to Hangprinter (as requested).
+
+Reference for how RRF does this (structure/semantics): DDA/Prepare + InitStandardMove in upstream RRF `src/Movement/DDA.cpp`. You won’t need exact line numbers, but that’s the canonical behavior we’re mirroring here. ([GitHub][1])
+RRF semantics around movement queueing & G-code are described in their docs (internal move queue, H flags, etc.). ([Duet3D Documentation][2])
+
+---
+
+## Files you’ll touch (host side)
+
+* `RRF/host/include/Movement/Move.h`
+* `RRF/host/movement/MoveHost.cpp`
+* `RRF/host/include/Movement/DDAHost.h` (add if not present)
+* `RRF/host/movement/DDAHost.cpp`
+* `RRF/host/include/can/CanMotionHost.h` (new)
+* `RRF/host/can/CanMotionHost.cpp` (new)
+* `RRF/host/include/Movement/StepTimerHost.h` (new or extend)
+* `RRF/host/movement/StepTimerHost.cpp` (new or extend)
+* `RRF/host/src/main.cpp` (default kinematics change + M669 handler kept)
+* `RRF/host/Makefile` (link everything)
+
+> You already integrated real kinematics and changed `DDA::Init()` to call `Move::CartesianToMotorSteps()`; we keep that and only replace the **prepare** phase.
+
+---
+
+## 1) Add a tiny host “CAN motion” facade
+
+We don’t have actual CAN; we need a **single choke point** where real RRF “would send” segments. We’ll **serialize to JSON Lines** when `--can-log` is provided.
+
+**New:** `RRF/host/include/can/CanMotionHost.h`
+
+```cpp
+#pragma once
+#include <vector>
+#include <cstdint>
+#include <string>
+
+namespace host {
+
+struct StepSegment {
+    // one segment (accel/steady/decel). All clocks are in "tick" units from StepTimerHost
+    uint64_t start_clock{};
+    uint32_t accel_clocks{}, steady_clocks{}, decel_clocks{};
+    double   v_entry{}, v_top{}, v_exit{}; // mm/s or steps/s depending on layer you choose
+    struct Drive {
+        uint8_t  drive_id{};
+        int64_t  steps_total{};   // signed direction-aware steps
+        double   steps_per_sec_top{};
+        // optional: jerk/da values if you plumb them through
+    };
+    std::vector<Drive> drives;
+};
+
+void set_log_path(const std::string& path); // called from main when --can-log
+void clear_log();
+void emit_segment(const StepSegment& seg);  // append JSON line
+
+} // namespace host
+```
+
+**New:** `RRF/host/can/CanMotionHost.cpp` (write JSONL)
+
+```cpp
+#include "can/CanMotionHost.h"
+#include <fstream>
+#include <mutex>
+#include <nlohmann/json.hpp>
+
+namespace host {
+static std::mutex m;
+static std::string g_path;
+
+void set_log_path(const std::string& p){ std::scoped_lock lk(m); g_path = p; }
+void clear_log(){ std::scoped_lock lk(m); if (!g_path.empty()) std::ofstream(g_path,std::ios::trunc).close(); }
+
+void emit_segment(const StepSegment& s){
+    if (g_path.empty()) return;
+    nlohmann::json j;
+    j["start_clock"]   = s.start_clock;
+    j["accel_clocks"]  = s.accel_clocks;
+    j["steady_clocks"] = s.steady_clocks;
+    j["decel_clocks"]  = s.decel_clocks;
+    j["v_entry"] = s.v_entry; j["v_top"] = s.v_top; j["v_exit"] = s.v_exit;
+    for (auto& d : s.drives){
+        j["drives"].push_back({
+            {"drive_id", d.drive_id},
+            {"steps_total", d.steps_total},
+            {"steps_per_sec_top", d.steps_per_sec_top}
+        });
+    }
+    std::scoped_lock lk(m);
+    std::ofstream out(g_path, std::ios::app);
+    out << j.dump() << "\n";
+}
+} // ns
+```
+
+> This is the single place you’ll marshal whatever `DDA::Prepare()` produced into host-readable logs. Upstream RRF would push to CAN; we “tee” it here. (Exact segment contents come in step 4.)
+
+---
+
+## 2) Minimal host step timer (ticks & monotonicity)
+
+RRF’s prepare math is in clock ticks. Provide a stable tick source so successive segments don’t overlap.
+
+**New/extend:** `RRF/host/include/Movement/StepTimerHost.h`
+
+```cpp
+#pragma once
+#include <cstdint>
+
+namespace host {
+struct StepTimerHost {
+    static constexpr uint32_t TICKS_PER_SEC = 200000; // pick sane value; RRF uses fast clocks
+    static uint64_t now();  // monotonic tick counter
+    static uint64_t align_to_next(uint64_t after, uint32_t min_gap_ticks);
+};
+}
+```
+
+**New/extend:** `RRF/host/movement/StepTimerHost.cpp`
+
+```cpp
+#include "Movement/StepTimerHost.h"
+#include <atomic>
+namespace host {
+static std::atomic<uint64_t> g_ticks{0};
+
+uint64_t StepTimerHost::now() { return g_ticks.load(std::memory_order_relaxed); }
+// call this from our “scheduler” each Prepare; cheap monotonic bump is fine:
+uint64_t StepTimerHost::align_to_next(uint64_t after, uint32_t gap){
+    uint64_t t = g_ticks.load();
+    uint64_t want = (after > t ? after : t) + gap;
+    g_ticks.store(want, std::memory_order_relaxed);
+    return want;
+}
+}
+```
+
+> We’re not *executing* steps; only laying out timing like RRF would (accel/steady/decel clocks). That’s enough for repeatable logs.
+
+---
+
+## 3) Raw vs. coordinated moves (and direction vectors)
+
+Extend your light `RawMove` so `InitStandardMove` vs `InitRawMotorMove` choices can be made the RRF way.
+
+**Patch:** `RRF/host/include/Movement/Move.h` (names illustrative)
+
+```cpp
+// Add flags similar in spirit to RRF's RawMove metadata
+enum RawMoveFlags : uint32_t {
+    RMF_None = 0,
+    RMF_RawMotorMove = 1u << 0,     // set by G1 H2 (independent move)
+    RMF_Rapid        = 1u << 1,     // e.g. G0
+    RMF_IgnoreLimits = 1u << 2      // e.g. homing phases etc if you choose later
+};
+
+struct RawMoveHost {
+    double start[MaxAxes], end[MaxAxes];
+    double feedRate;            // mm/min
+    uint32_t flags;             // RawMoveFlags
+    uint32_t independentMask;   // which axes are raw/independent when RMF_RawMotorMove
+    // (optional) extruder/pressure fields hooked later
+};
+```
+
+**Patch:** `RRF/host/movement/MoveHost.cpp` (build direction vector)
+
+```cpp
+static void compute_unit_dir(const RawMoveHost& mv, double outUnit[MaxAxes], double& outLen){
+    outLen = 0.0;
+    for (int a=0; a<MaxAxes; ++a){ double d = mv.end[a] - mv.start[a]; outLen += d*d; }
+    outLen = (outLen > 0) ? std::sqrt(outLen) : 0;
+    for (int a=0; a<MaxAxes; ++a){
+        double d = mv.end[a] - mv.start[a];
+        outUnit[a] = (outLen > 0) ? d/outLen : 0.0;
+    }
+}
+```
+
+> This mirrors the RRF concept of a **direction/axis mix** used to derive acceleration limits and per-drive splits. (Upstream does more, but this gets us aligned in spirit.) ([GitHub][1])
+
+Parsing side: if you already pass through the real RRF parser, just **populate `flags` and `independentMask`** when it reports `H2`. Otherwise, your local G-code intake can set them.
+
+---
+
+## 4) Replace the simplified trapezoid with “real” prepare plumbing
+
+We won’t drag all of RRF internals; we **shape** the same inputs/outputs:
+
+* Inputs: start/end (already transformed to steps in your new `DDA::Init()`), nominal feed, accel limits from Move/axis config, and direction unit vector.
+* Outputs: per-segment clocks (accel/steady/decel), peak/entry/exit speeds, and **per-drive step totals + top rate**, then **emit one `StepSegment`** into `CanMotionHost`.
+
+**Patch:** `RRF/host/include/Movement/DDAHost.h`
+
+```cpp
+#pragma once
+#include <cstdint>
+#include <array>
+
+struct DDAHost {
+    static constexpr int kMaxDrives = 12; // match your host limit
+    struct DrivePlan {
+        uint8_t id;         // drive index
+        int64_t steps;      // signed
+        double  stepsPerSecTop;
+    };
+    struct PrepOut {
+        uint64_t startClock;
+        uint32_t accelClocks, steadyClocks, decelClocks;
+        double vEntry, vTop, vExit; // mm/s (or steps/s if you prefer)
+        int numDrives;
+        DrivePlan drives[kMaxDrives];
+    };
+
+    // Called after Init() filled motor steps for start/end
+    bool Prepare(const RawMoveHost& mv, PrepOut& out);
+};
+```
+
+**Patch:** `RRF/host/movement/DDAHost.cpp`
+
+```cpp
+#include "Movement/DDAHost.h"
+#include "Movement/Move.h"
+#include "Movement/StepTimerHost.h"
+#include "can/CanMotionHost.h"
+
+// helpers you likely already have:
+extern double get_axis_accel_limit(int axis); // mm/s^2
+extern bool   is_axis_rotational(int axis);   // false for HP & XYZ by default
+extern double get_max_feed_mm_per_s();
+
+static void derive_accel_from_mix(const double unitDir[], double& accelMax){
+    // Like RRF: accel limited by the "tightest axis" contribution
+    // accelMax = min_i ( axisAccel[i] / max(|unitDir[i]|, eps) )
+    constexpr double eps = 1e-12;
+    accelMax = 1e30;
+    for (int a=0; a<MaxAxes; ++a){
+        double ui = std::abs(unitDir[a]);
+        double ai = get_axis_accel_limit(a);
+        if (ui < eps) continue;
+        accelMax = std::min(accelMax, ai / ui);
+    }
+    if (accelMax == 1e30) accelMax = get_axis_accel_limit(0); // degenerate move: pick something sane
+}
+
+bool DDAHost::Prepare(const RawMoveHost& mv, PrepOut& out)
+{
+    double unit[MaxAxes], length;
+    compute_unit_dir(mv, unit, length);
+    if (length <= 0.0) return false;
+
+    // Feed/limits in mm/s
+    const double v_nom = std::max(1e-6, mv.feedRate / 60.0);
+    const double v_cap = get_max_feed_mm_per_s();
+    const double v_target = std::min(v_nom, v_cap);
+
+    double a_max;
+    derive_accel_from_mix(unit, a_max);           // core of RRF's mix-based accel cap
+
+    // Classic trapezoid/triangle timing in ticks, but derived from RRF concepts
+    using host::StepTimerHost;
+    const double ticksPerSec = StepTimerHost::TICKS_PER_SEC;
+
+    // reach top?
+    const double t_to_v = v_target / a_max;             // s
+    const double d_acc  = 0.5 * a_max * t_to_v * t_to_v;
+    bool triangle = (2*d_acc > length);
+
+    double t_acc, t_steady, t_dec, v_top;
+    if (triangle){
+        t_acc = std::sqrt(length / a_max);
+        v_top = a_max * t_acc;
+        t_dec = t_acc;
+        t_steady = 0.0;
+    } else {
+        t_acc = t_to_v;
+        t_dec = t_to_v;
+        v_top = v_target;
+        t_steady = (length - 2*d_acc) / v_top;
+    }
+
+    // clocks
+    const uint32_t acc_clocks   = (uint32_t)std::llround(t_acc    * ticksPerSec);
+    const uint32_t steady_clock = (uint32_t)std::llround(t_steady * ticksPerSec);
+    const uint32_t dec_clocks   = (uint32_t)std::llround(t_dec    * ticksPerSec);
+
+    // choose a start time
+    const uint64_t start_clk = StepTimerHost::align_to_next(/*after*/StepTimerHost::now(), /*gap*/50);
+
+    out.startClock   = start_clk;
+    out.accelClocks  = acc_clocks;
+    out.steadyClocks = steady_clock;
+    out.decelClocks  = dec_clocks;
+    out.vEntry = 0.0;           // could be last move exit if you chain; ok for now
+    out.vTop   = v_top;
+    out.vExit  = 0.0;
+
+    // Per-drive steps & top rate (you already have start/end in steps in DDA::Init()).
+    // Here we just pull them and stash into drives. Example getter:
+    out.numDrives = 0;
+    for (int d=0; d<kMaxDrives; ++d){
+        int64_t steps = get_planned_steps_for_drive(d); // your existing storage from Init()
+        if (steps == 0) continue;
+        DDAHost::DrivePlan dp{ (uint8_t)d, steps, /*approx*/ std::abs((double)steps) / (t_acc + t_steady + t_dec) };
+        out.drives[out.numDrives++] = dp;
+    }
+
+    // emit to host "CAN"
+    host::StepSegment seg;
+    seg.start_clock   = out.startClock;
+    seg.accel_clocks  = out.accelClocks;
+    seg.steady_clocks = out.steadyClocks;
+    seg.decel_clocks  = out.decelClocks;
+    seg.v_entry = out.vEntry; seg.v_top = out.vTop; seg.v_exit = out.vExit;
+    for (int i=0; i<out.numDrives; ++i){
+        seg.drives.push_back({ out.drives[i].id, out.drives[i].steps, out.drives[i].stepsPerSecTop });
+    }
+    host::emit_segment(seg);
+    return true;
+}
+```
+
+> This replaces the old “toy trapezoid” with the **RRF-style** acceleration capping by direction mix and produces a segment record akin to what RRF would hand to its motion layer. (Upstream RRF has more details—pressure advance, async moves, lookahead speed linking, etc.—we keep those for 9.3.4+.) ([GitHub][1])
+
+**Raw motor moves path**
+When `mv.flags & RMF_RawMotorMove`, **skip direction/accel mix** and treat `independentMask` axes as directly commanded: fill `drives[]` from those axes only, keep accel conservative (or a dedicated raw-move accel). This mirrors RRF’s handling of independent motor moves (e.g., `G1 H2`). ([Duet3D Documentation][2])
+
+---
+
+## 5) Wire it into your existing `DDA::Init/Prepare` flow
+
+Your log says `DDA::Init()` already uses `Move::CartesianToMotorSteps()` for start/end. Keep it. Now **call the new host Prepare** from your `DDAHost.cpp::Prepare()` override.
+
+```cpp
+bool DDA::Prepare() {
+    RawMoveHost mv = this->rawMove_;  // however you store it post-Init
+    DDAHost::PrepOut out{};
+    if (!DDAHost::Prepare(mv, out))
+        return false;
+    // if you keep an afterPrepare struct for scheduling, stash clocks here:
+    this->afterPrepare.startClock   = out.startClock;
+    this->afterPrepare.accelClocks  = out.accelClocks;
+    this->afterPrepare.steadyClocks = out.steadyClocks;
+    this->afterPrepare.decelClocks  = out.decelClocks;
+    this->afterPrepare.vEntry       = out.vEntry;
+    this->afterPrepare.vTop         = out.vTop;
+    this->afterPrepare.vExit        = out.vExit;
+    return true;
+}
+```
+
+> “afterPrepare timing fields”: with this, your downstream consumers (or later, lookahead) have precise clocks. This mirrors how upstream divides time across accel/steady/decel clocks. ([GitHub][1])
+
+---
+
+## 6) Default kinematics to Cartesian
+
+**Patch:** `RRF/host/movement/MoveHost.cpp` (or wherever you construct Move on boot)
+
+```cpp
+// at startup
+this->SetKinematics(/*Cartesian*/ 1 /*K1*/); // default
+```
+
+**M669** handler (already there): keep switching to Hangprinter on `M669 K6`. The user docs confirm K6 is Hangprinter. ([Duet3D Documentation][3])
+
+---
+
+## 7) Makefile updates
+
+**Patch:** `RRF/host/Makefile` (add new units and json dep)
+
+```make
+CXXFLAGS += -DRRF_HOST_BUILD
+# If you don’t already have it in-tree, vendor nlohmann/json single header
+INCLUDES += -I$(HOSTDIR)/third_party
+
+SRCS += \
+  $(HOSTDIR)/can/CanMotionHost.cpp \
+  $(HOSTDIR)/movement/StepTimerHost.cpp \
+  $(HOSTDIR)/movement/DDAHost.cpp
+```
+
+---
+
+## 8) CLI plumbing
+
+**Patch:** `RRF/host/src/main.cpp`
+
+```cpp
+// parse --can-log path
+std::string can_log;
+for (int i=1;i<argc;i++){
+    if (!strcmp(argv[i],"--can-log") && i+1<argc) { can_log = argv[++i]; }
+}
+// ...
+if (!can_log.empty()) { host::set_log_path(can_log); host::clear_log(); }
+```
+
+---
+
+## 9) Tests you can run today
+
+### A. Cartesian default + coordinated move
+
+```
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move_cart.g --can-log out.jsonl
+```
+
+`gcodes/test_move_cart.g`:
+
+```
+M669 K1      ; Cartesian
+G90          ; absolute
+G1 X10 Y0 Z0 F6000
+G1 X10 Y10   F6000
+G1 X0  Y10   F6000
+```
+
+**Expect:** 3 JSONL lines with reasonable accel/steady/decel clocks; non-zero X/Y drives; `start_clock` strictly increasing.
+
+### B. Raw motor moves (independent)
+
+```
+M669 K1
+G91
+G1 H2 X20 F3000
+G1 H2 Y-15 F3000
+```
+
+**Expect:** Only the addressed axis appears in each emitted segment, clocks present, direction respected. (This mimics RRF’s “independent axis” behavior with `H2`.) ([Duet3D Documentation][2])
+
+### C. Switch to Hangprinter
+
+```
+M669 K6
+; your HP anchors/steps must be configured in sys/config.g on the VSD
+G90
+G1 X0 Y0 Z-50 F2000
+```
+
+**Expect:** Steps routed to ABCD drives via your already-wired `CartesianToMotorSteps()` using real Hangprinter kinematics. ([Duet3D Documentation][3])
+
+---
+
+## 10) What we intentionally **did not** pull in (leave for 9.3.4)
+
+* **Lookahead speed linking** (entry/exit speed coupling across DDAs)
+* **Pressure advance** for extruders
+* **Async moves** and segmentation policies for very long moves
+* **Rotational axes tangential velocity treatment**
+
+Those live deeper in RRF’s `DDA.cpp`/movement stack; we will stage them next. ([GitHub][1])
+
+---
+
+## Notes the coder should add to `ai_docs/rrf_integration_build_plan.md` under **Step 9.3.3**
+
+* Adopted **mix-based acceleration capping** (RRF-style) in host `Prepare()`.
+* Introduced **host StepTimer** (tick source) and **CanMotionHost** (JSONL emitter).
+* Honored **raw motor moves (`G1 H2`)** via `RawMoveHost.flags/independentMask`.
+* **afterPrepare** clocks now filled: accel/steady/decel/entry/top/exit.
+* **Default kinematics changed to Cartesian** on boot; `M669 K6` switches to Hangprinter.
+* Known gaps (punted to 9.3.4): lookahead coupling, pressure advance, async/segmentation, rotational axes nuances.
+
+---
+
+## Heads-up for **Step 9.3.4** (what this sets up)
+
+* Replace `vEntry/vExit = 0` with **chained lookahead**: cache previous move’s `vExit`, compute this move’s `vEntry` using RRF constraints, and back-propagate when queueing multiple moves. (RRF ties these during `InitStandardMove` + `Prepare`.) ([GitHub][1])
+* **Pressure advance**: add extruder fields to `RawMoveHost`, compute extra steps/slope during accel/decel and include per-drive deltas in `StepSegment`. (RRF does this in prepare path.) ([GitHub][1])
+* **Async/long-move segmentation**: if `steady_clocks` exceeds threshold, emit multiple segments (RRF will segment for buffer/latency; we can mirror by splitting our JSONL). ([GitHub][1])
+
+---
+
+## Why this mirrors upstream behavior
+
+* RRF derives **acceleration caps from axis direction mix** and drive constraints during `InitStandardMove/Prepare`; we’re doing the same, just with a trimmed host shim. ([GitHub][1])
+* RRF supports **independent/raw motor moves** (e.g., `G1 H2`); we route those without kinematics like RRF. ([Duet3D Documentation][2])
+* **Hangprinter kinematics** remain the real ones (already integrated) and are toggled via `M669 K6`, per RRF docs. ([Duet3D Documentation][3])
+
+---
+
+## Build & run (recap)
+
+```bash
+cd RRF/host
+make clean && make
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move_cart.g --can-log out.jsonl
+jq '.' out.jsonl | head -n 5
+```
+
+---
+
+[1]: https://github.com/Duet3D/RepRapFirmware/blob/3.6-dev/src/Movement/DDA.cpp "RepRapFirmware/src/Movement/DDA.cpp at 3.6-dev · Duet3D/RepRapFirmware · GitHub"
+[2]: https://docs.duet3d.com/User_manual/Reference/Gcodes?utm_source=chatgpt.com "GCode dictionary"
+[3]: https://docs.duet3d.com/User_manual/Machine_configuration/Configuration_Hangprinter?utm_source=chatgpt.com "Configuring RepRapFirmware for a Hangprinter"
+
+
+-------------------------------------------
+Assistant (gpt-5-codex high):
+
+
+• Motion Pipeline
+
+  - Replaced the host-side trapezoid with a mix-aware planner that mirrors RRF Prepare(): flagging raw moves, caching start coords, deriving unit vectors and accel caps before emitting PrepParams and JSONL CAN segments (host/include/Movement/DDA.h:43,
+    host/include/Movement/DDAHost.h:12, host/movement/DDAHost.cpp:34, host/can/CanMotionHost.cpp:15, host/include/can/CanMotionHost.h:11).
+  - Added a deterministic tick source so successive moves align to a shared start clock for logging and CanMotion mirroring (host/include/Movement/StepTimerHost.h:9, host/movement/StepTimerHost.cpp:14).
+  - Default startup kinematics now use a lightweight Cartesian shim while M669 K6 still pivots to Hangprinter (host/movement/MoveHost.cpp:16, host/include/Movement/Kinematics/CartesianKinematicsHost.h:7, host/movement/CartesianKinematicsHost.cpp:7), and
+    the Makefile builds the new components (host/Makefile:20).
+  - G-code parsing recognises G0/G1 H2 so independent axes stay raw, leaving coordinated moves to touch kinematics while also wiring --can-log to the new JSONL emitter (host/src/main.cpp:60).
+  - Documented Step 9.3.3 completion details and new host shims (ai_docs/rrf_integration_build_plan.md:378).
+
+  Tests
+
+  cd host
+  ./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_cartesian.g --can-log logs/can_segments.jsonl
+
+  Next Steps
+
+  1. Chain entry/exit speeds across queued DDAs (lookahead) and plumb pressure advance so the host JSON reflects full Prepare semantics.
+  2. Expand the JSON schema if we later segment long moves or add extruder-specific timing; current structure will accept extra fields.
+
+  Notes
+
+  - Per your instruction I left ai_docs/rrf_communication_log.md untouched and did not inspect its contents.

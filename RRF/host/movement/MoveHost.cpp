@@ -5,6 +5,7 @@
 
 #include <Movement/Move.h>
 #include <Movement/DDARing.h>
+#include <Movement/Kinematics/CartesianKinematicsHost.h>
 #include <Movement/Kinematics/Kinematics.h>
 #include <Movement/Kinematics/HangprinterKinematics.h>
 #include <General/StringRef.h>
@@ -50,9 +51,8 @@ Move::Move() noexcept
 		axisMaxima[i] = 200.0f;		// Default maximum 200mm (will be set by kinematics or M208)
 	}
 
-	// Step 9.3.2: Default to Hangprinter kinematics for testing
-	// (Cartesian would require CoreKinematics which has complex dependencies)
-	kinematics = new HangprinterKinematics();
+	// Default to Cartesian kinematics on host startup
+	SetKinematics(KinematicsType::cartesian);
 }
 
 Move::~Move() noexcept
@@ -259,18 +259,13 @@ void Move::SetKinematics(KinematicsType type) noexcept
 	}
 
 	// Create new kinematics based on type
-	// For Step 9.3.2, only Hangprinter is fully integrated
-	// Cartesian would require CoreKinematics which depends on ZLeadscrewKinematics (more complex)
-	switch (type.RawValue())
+	if (type == KinematicsType::hangprinter)
 	{
-	case KinematicsType::hangprinter:
 		kinematics = new HangprinterKinematics();
-		break;
-
-	// For now, default everything to Hangprinter
-	default:
-		kinematics = new HangprinterKinematics();
-		break;
+	}
+	else
+	{
+		kinematics = new CartesianKinematicsHost();
 	}
 }
 

@@ -376,11 +376,13 @@ Migration Plan Analysis
   - Our Init() only handles the basic coordinate transform; DDA::Prepare() still uses our simplified trapezoid calculator
   - Next phase (9.3.3) should consider whether to adopt more of the real DDA::InitStandardMove logic or keep the hybrid approach
 
-  Phase 3 (Step 9.3.3): Wire Up Prepare (PENDING)
+  Phase 3 (Step 9.3.3): Wire Up Prepare (COMPLETED)
 
-  - Remove our simplified trapezoid calculator
-  - Let real Prepare() compute PrepParams and call CanMotion
-  - Handle the afterPrepare timing fields properly
+  - Replaced the simplified trapezoid with a mix-based acceleration planner that mirrors RRF’s Prepare() direction vector normalisation and per-axis acceleration capping.
+  - Added host-side `StepTimerHost` monotonic tick source and `CanMotionHost` JSONL emitter; `--can-log` now records one line per prepared segment showing clocks, peak speeds, and per-drive step counts.
+  - Extended `RawMove` with flags/independent masks, taught G-code parsing to respect `G1 H2` raw motor moves, and preserved host logging of coordinated vs independent drives.
+  - Default startup kinematics switched to Cartesian via `CartesianKinematicsHost`; `M669 K6` still swaps to Hangprinter.
+  - DDA::Prepare now calls the new host planner, fills PrepParams, updates simulated timing, and still forwards moves through CanMotion for compatibility.
 
   Phase 4 (Step 9.3.4): Test and Verify
 

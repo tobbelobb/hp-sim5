@@ -1,16 +1,35 @@
-// Host-side DDA implementation for Step 9.1
+#include <Movement/DDA.h>
 
 #ifdef RRF_HOST_BUILD
 
-#include <Movement/DDA.h>
+#include <Movement/DDAHost.h>
 #include <Movement/Move.h>
-#include <Movement/MovementError.h>
+#include <Movement/StepTimerHost.h>
 #include <Platform/RepRap.h>
 #include <CAN/CanMotion.h>
-#include <CAN/CanInterface.h>
-#include <Platform/Platform.h>
+#include <can/CanMotionHost.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
+#include <limits>
+
+using host::DDAHost;
+
+namespace
+{
+	constexpr double kTiny = 1e-9;
+
+	inline bool axis_in_mask(const RawMove& mv, size_t axis) noexcept
+	{
+		if ((mv.flags & RMF_RawMotorMove) == 0)
+		{
+			return true;
+		}
+		return (mv.independentMask & (1u << axis)) != 0;
+	}
+}
 
 DDA::DDA() noexcept
 	: checkEndstops(false)
@@ -24,189 +43,344 @@ DDA::DDA() noexcept
 	{
 		endSteps[i] = 0;
 		startSteps[i] = 0;
+		startMachineCoords[i] = 0.0f;
 	}
 }
 
-// Initialize DDA from RawMove
-// Step 9.3.2: Now uses real Kinematics::CartesianToMotorSteps() instead of 1:1 Cartesian transform
 bool DDA::Init(const RawMove& move, float startCoords[MaxAxesPlusExtruders]) noexcept
 {
 	Move& m = reprap.GetMove();
 
-	// Step 9.3.2: Use real Kinematics to transform start position to motor steps
-	const MovementError startErr = m.CartesianToMotorSteps(startCoords, startSteps, true);
-	if (startErr != MovementError::ok)
+	rawMove = move;
+	for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
 	{
-		// Could not transform start position
-		return false;
+		startMachineCoords[i] = startCoords[i];
 	}
 
-	// Step 9.3.2: Use real Kinematics to transform end position to motor steps
-	const MovementError endErr = m.CartesianToMotorSteps(move.coords, endSteps, true);
-	if (endErr != MovementError::ok)
+	const bool isRaw = (move.flags & RMF_RawMotorMove) != 0;
+
+	if (!isRaw)
 	{
-		// Could not transform end position (unreachable, etc.)
-		return false;
+		const MovementError startErr = m.CartesianToMotorSteps(startCoords, startSteps, true);
+		if (startErr != MovementError::ok)
+		{
+			return false;
+		}
+
+		const MovementError endErr = m.CartesianToMotorSteps(move.coords, endSteps, true);
+		if (endErr != MovementError::ok)
+		{
+			return false;
+		}
+	}
+	else
+	{
+		for (size_t axis = 0; axis < MaxAxes; ++axis)
+		{
+			const float stepsPerMm = m.DriveStepsPerMm(axis);
+			const float startMm = startCoords[axis];
+			const float endMm = move.coords[axis];
+			startSteps[axis] = static_cast<int32_t>(std::lround(startMm * stepsPerMm));
+			endSteps[axis] = static_cast<int32_t>(std::lround(endMm * stepsPerMm));
+		}
 	}
 
-	// Handle extruder (simplified: just one extruder for now)
-	// Extruders are not transformed by kinematics, they're direct linear drives
 	hasExtrusion = move.hasE;
 	if (hasExtrusion)
 	{
-		const size_t extruderDrive = MaxAxes;  // First extruder after axes
+		const size_t extruderDrive = MaxAxes;
 		const float stepsPerMm = m.DriveStepsPerMm(extruderDrive);
-		startSteps[extruderDrive] = static_cast<int32_t>(startCoords[extruderDrive] * stepsPerMm);
-		endSteps[extruderDrive] = static_cast<int32_t>(move.coords[extruderDrive] * stepsPerMm);
+		startSteps[extruderDrive] = static_cast<int32_t>(std::lround(startCoords[extruderDrive] * stepsPerMm));
+		endSteps[extruderDrive] = static_cast<int32_t>(std::lround(move.coords[extruderDrive] * stepsPerMm));
+	}
+	else
+	{
+		const size_t extruderDrive = MaxAxes;
+		const float stepsPerMm = m.DriveStepsPerMm(extruderDrive);
+		startSteps[extruderDrive] = static_cast<int32_t>(std::lround(startCoords[extruderDrive] * stepsPerMm));
+		endSteps[extruderDrive] = startSteps[extruderDrive];
 	}
 
-	requestedSpeed = move.feedRate;
+	requestedSpeed = (move.feedRate > 0.0f) ? move.feedRate : 1.0f;
 
-	// Calculate total distance in Cartesian space (user coordinates)
-	float totalDistanceSquared = 0.0f;
+	float totalDistanceSq = 0.0f;
 	for (size_t axis = 0; axis < MaxAxes; ++axis)
 	{
+		if (!axis_in_mask(move, axis))
+		{
+			continue;
+		}
+
 		const float axisDelta = move.coords[axis] - startCoords[axis];
-		totalDistanceSquared += axisDelta * axisDelta;
+		totalDistanceSq += axisDelta * axisDelta;
 	}
-	params.totalDistance = sqrtf(totalDistanceSquared);
 
-	// Zero move check
-	if (params.totalDistance < 0.001f && !hasExtrusion)
+	params.totalDistance = sqrtf(totalDistanceSq);
+	if (params.totalDistance < 1e-6f && hasExtrusion)
 	{
-		return false;  // Nothing to do
+		const float extruderDelta = move.coords[MaxAxes] - startCoords[MaxAxes];
+		params.totalDistance = fabsf(extruderDelta);
 	}
 
-	isPrintingMove = hasExtrusion && (params.totalDistance > 0.001f);
+	if (params.totalDistance < 1e-6f && !hasExtrusion)
+	{
+		return false;
+	}
+
+	isPrintingMove = hasExtrusion && (params.totalDistance > 1e-3f);
 
 	return true;
 }
 
-// Prepare DDA: compute trapezoid profile and call CanMotion APIs
-bool DDA::Prepare() noexcept
+namespace host
 {
-	// Step timer frequency (48 MHz for Duet 3)
-	constexpr float StepClockFrequency = 48000000.0f;
 
-	Move& m = reprap.GetMove();
-
-	// Step 9.2.2: Use configured acceleration values
-	// For now, use the first axis acceleration as representative (will be improved for multi-axis)
-	float maxAcceleration = m.GetAcceleration(0);  // Get configured acceleration
-	float maxDeceleration = maxAcceleration;       // Same for deceleration
-
-	// Clamp speed to something reasonable if not set
-	if (requestedSpeed <= 0.0f)
+static double compute_direction(const RawMove& mv,
+								const float startMachineCoords[MaxAxesPlusExtruders],
+								double unitDir[MaxAxes],
+								double axisDelta[MaxAxes],
+								size_t numAxes) noexcept
+{
+	double sumSq = 0.0;
+	for (size_t axis = 0; axis < numAxes; ++axis)
 	{
-		requestedSpeed = 100.0f;  // 100 mm/s default
+		double delta = static_cast<double>(mv.coords[axis] - startMachineCoords[axis]);
+		if (!axis_in_mask(mv, axis))
+		{
+			delta = 0.0;
+		}
+		axisDelta[axis] = delta;
+		sumSq += delta * delta;
+	}
+	const double length = (sumSq > kTiny) ? std::sqrt(sumSq) : 0.0;
+
+	if (length > kTiny)
+	{
+		const double inv = 1.0 / length;
+		for (size_t axis = 0; axis < numAxes; ++axis)
+		{
+			unitDir[axis] = axisDelta[axis] * inv;
+		}
+	}
+	else
+	{
+		for (size_t axis = 0; axis < numAxes; ++axis)
+		{
+		unitDir[axis] = 0.0;
+		}
+	}
+	return length;
+}
+
+bool DDAHost::Prepare(const RawMove& mv,
+					  const float startMachineCoords[MaxAxesPlusExtruders],
+					  const int32_t startSteps[MaxAxesPlusExtruders],
+					  const int32_t endSteps[MaxAxesPlusExtruders],
+					  PrepOut& out) noexcept
+{
+	Move& move = reprap.GetMove();
+	const size_t numAxes = reprap.GetGCodes().GetVisibleAxes();
+
+	double unitDir[MaxAxes] = {0.0};
+	double axisDelta[MaxAxes] = {0.0};
+	double length = compute_direction(mv, startMachineCoords, unitDir, axisDelta, numAxes);
+
+	const double extruderDelta = static_cast<double>(mv.coords[MaxAxes] - startMachineCoords[MaxAxes]);
+	if (length < kTiny && std::abs(extruderDelta) > kTiny)
+	{
+		length = std::abs(extruderDelta);
 	}
 
-	// Clamp requested speed to configured maximum
-	float maxSpeed = m.GetMaxFeedrate(0);  // Get configured max speed
-	if (requestedSpeed > maxSpeed)
-	{
-		requestedSpeed = maxSpeed;
-	}
-
-	// Simple trapezoid profile calculation
-	// For now, no S-curve support (SUPPORT_S_CURVE is typically 0 in host build)
-
-	const float totalDistance = params.totalDistance;
-	if (totalDistance < 0.001f && !hasExtrusion)
+	if (length < kTiny)
 	{
 		return false;
 	}
 
-	// Calculate time needed to accelerate to requested speed
-	const float accelTime = requestedSpeed / maxAcceleration;
-	const float accelDistance = 0.5f * maxAcceleration * accelTime * accelTime;
-
-	// Calculate time needed to decelerate from requested speed
-	const float decelTime = requestedSpeed / maxDeceleration;
-	const float decelDistance = 0.5f * maxDeceleration * decelTime * decelTime;
-
-	// Check if we can reach requested speed
-	if (accelDistance + decelDistance <= totalDistance)
+	double requested = static_cast<double>(mv.feedRate);
+	if (requested <= 0.0)
 	{
-		// Can reach requested speed with steady phase
-		params.topSpeed = requestedSpeed;
-		params.acceleration = maxAcceleration;
-		params.deceleration = -maxDeceleration;
-		params.accelDistance = accelDistance;
-		params.decelStartDistance = totalDistance - decelDistance;
+		requested = static_cast<double>(move.GetMaxFeedrate(0));
+	}
 
-		params.accelClocks = static_cast<uint32_t>(accelTime * StepClockFrequency);
-		const float steadyDistance = totalDistance - accelDistance - decelDistance;
-		const float steadyTime = steadyDistance / requestedSpeed;
-		params.steadyClocks = static_cast<uint32_t>(steadyTime * StepClockFrequency);
-		params.decelClocks = static_cast<uint32_t>(decelTime * StepClockFrequency);
+	double accelLimit = std::numeric_limits<double>::max();
+	double speedLimit = std::numeric_limits<double>::max();
+
+	for (size_t axis = 0; axis < numAxes; ++axis)
+	{
+		const double delta = std::abs(axisDelta[axis]);
+		if (delta < kTiny)
+		{
+			continue;
+		}
+
+		const double axisAccel = static_cast<double>(move.GetAcceleration(axis));
+		const double axisSpeed = static_cast<double>(move.GetMaxFeedrate(axis));
+		const double ui = std::abs(unitDir[axis]);
+
+		const double accelCap = (ui > kTiny) ? axisAccel / ui : axisAccel;
+		const double speedCap = (ui > kTiny) ? axisSpeed / ui : axisSpeed;
+
+		accelLimit = std::min(accelLimit, accelCap);
+		speedLimit = std::min(speedLimit, speedCap);
+	}
+
+	if (accelLimit == std::numeric_limits<double>::max())
+	{
+		accelLimit = static_cast<double>(move.GetAcceleration(0));
+	}
+	accelLimit = std::max(accelLimit, 1.0);
+
+	double targetSpeed = std::min(requested, speedLimit);
+	if (!std::isfinite(targetSpeed) || targetSpeed <= 0.0)
+	{
+		targetSpeed = requested;
+	}
+	targetSpeed = std::max(targetSpeed, 1e-3);
+
+	const double t_to_target = targetSpeed / accelLimit;
+	double accelDistance = 0.5 * accelLimit * t_to_target * t_to_target;
+
+	bool triangle = (2.0 * accelDistance) >= length;
+
+	double t_acc, t_dec, t_steady, v_top;
+	if (triangle)
+	{
+		t_acc = std::sqrt(length / accelLimit);
+		t_dec = t_acc;
+		t_steady = 0.0;
+		v_top = accelLimit * t_acc;
+		accelDistance = 0.5 * accelLimit * t_acc * t_acc;
 	}
 	else
 	{
-		// Triangle profile: can't reach requested speed
-		// Calculate peak speed we can reach
-		const float peakSpeed = sqrtf(maxAcceleration * maxDeceleration * totalDistance / (maxAcceleration + maxDeceleration));
-		params.topSpeed = peakSpeed;
-		params.acceleration = maxAcceleration;
-		params.deceleration = -maxDeceleration;
-
-		const float accelDist = peakSpeed * peakSpeed / (2.0f * maxAcceleration);
-		params.accelDistance = accelDist;
-		params.decelStartDistance = accelDist;
-
-		const float tAccel = peakSpeed / maxAcceleration;
-		const float tDecel = peakSpeed / maxDeceleration;
-		params.accelClocks = static_cast<uint32_t>(tAccel * StepClockFrequency);
-		params.steadyClocks = 0;
-		params.decelClocks = static_cast<uint32_t>(tDecel * StepClockFrequency);
+		t_acc = t_to_target;
+		t_dec = t_to_target;
+		t_steady = (length - 2.0 * accelDistance) / targetSpeed;
+		v_top = targetSpeed;
 	}
 
-	params.useInputShaping = false;  // No input shaping for now
+	const double decelDistance = 0.5 * accelLimit * t_dec * t_dec;
 
-	// Ensure all PrepParams fields are initialized for safety
-	// (The non-S-curve branch above should have initialized everything, but double-check)
-	#if !SUPPORT_S_CURVE
-	// Already initialized: accelClocks, steadyClocks, decelClocks
-	// Already initialized: acceleration, deceleration
-	// Already initialized: accelDistance, decelStartDistance
-	#endif
-	// Already initialized: totalDistance, topSpeed, useInputShaping
+	const double totalTime = t_acc + t_steady + t_dec;
+	if (totalTime <= kTiny)
+	{
+		return false;
+	}
+
+	const double ticksPerSec = static_cast<double>(host::StepTimerHost::TICKS_PER_SEC);
+	const uint32_t accelClocks = static_cast<uint32_t>(std::llround(t_acc * ticksPerSec));
+	const uint32_t steadyClocks = static_cast<uint32_t>(std::llround(t_steady * ticksPerSec));
+	const uint32_t decelClocks = static_cast<uint32_t>(std::llround(t_dec * ticksPerSec));
+	const uint32_t totalClocks = accelClocks + steadyClocks + decelClocks;
+
+	const uint64_t startClock = host::StepTimerHost::align_to_next(host::StepTimerHost::now(), 50);
+	host::StepTimerHost::align_to_next(startClock + totalClocks, 0);
+
+	out.startClock = startClock;
+	out.accelClocks = accelClocks;
+	out.steadyClocks = steadyClocks;
+	out.decelClocks = decelClocks;
+	out.vEntry = 0.0;
+	out.vTop = v_top;
+	out.vExit = 0.0;
+	out.acceleration = accelLimit;
+	out.deceleration = -accelLimit;
+	out.accelDistance = accelDistance;
+	out.decelDistanceStart = length - decelDistance;
+	out.totalDistance = length;
+
+	out.numDrives = 0;
+	for (int drive = 0; drive < kMaxDrives; ++drive)
+	{
+		const int64_t deltaSteps = static_cast<int64_t>(endSteps[drive]) - static_cast<int64_t>(startSteps[drive]);
+		if (deltaSteps == 0)
+		{
+			continue;
+		}
+
+		if (out.numDrives >= kMaxDrives)
+		{
+			break;
+		}
+
+		DrivePlan& dp = out.drives[out.numDrives++];
+		dp.id = static_cast<uint8_t>(drive);
+		dp.steps = deltaSteps;
+		dp.stepsPerSecTop = std::abs(static_cast<double>(deltaSteps)) / totalTime;
+	}
+
+	return true;
+}
+
+} // namespace host
+
+bool DDA::Prepare() noexcept
+{
+	CanMotion::StartMovement();
+
+	host::DDAHost::PrepOut prepOut{};
+	if (!host::DDAHost::Prepare(rawMove, startMachineCoords, startSteps, endSteps, prepOut))
+	{
+		return false;
+	}
+
+	params.accelClocks = prepOut.accelClocks;
+	params.steadyClocks = prepOut.steadyClocks;
+	params.decelClocks = prepOut.decelClocks;
+	params.acceleration = static_cast<float>(prepOut.acceleration);
+	params.deceleration = static_cast<float>(prepOut.deceleration);
+	params.accelDistance = static_cast<float>(prepOut.accelDistance);
+	params.decelStartDistance = static_cast<float>(prepOut.decelDistanceStart);
+	params.totalDistance = static_cast<float>(prepOut.totalDistance);
+	params.topSpeed = static_cast<float>(prepOut.vTop);
+	params.useInputShaping = false;
 
 	clocksNeeded = params.TotalClocks();
 
-	// Now call CanMotion APIs to emit movement packets
-	CanMotion::StartMovement();
+	host::StepSegment seg;
+	seg.start_clock = prepOut.startClock;
+	seg.accel_clocks = prepOut.accelClocks;
+	seg.steady_clocks = prepOut.steadyClocks;
+	seg.decel_clocks = prepOut.decelClocks;
+	seg.v_entry = prepOut.vEntry;
+	seg.v_top = prepOut.vTop;
+	seg.v_exit = prepOut.vExit;
+	for (int i = 0; i < prepOut.numDrives; ++i)
+	{
+		const auto& dp = prepOut.drives[i];
+		host::StepSegment::Drive drive;
+		drive.drive_id = dp.id;
+		drive.steps_total = dp.steps;
+		drive.steps_per_sec_top = dp.stepsPerSecTop;
+		seg.drives.push_back(drive);
+	}
+	host::emit_segment(seg);
 
-	// Step 9.2.2: Use configured driver mappings from M584
-	// Add axis movements using the configured driver IDs
-	for (size_t axis = 0; axis < reprap.GetGCodes().GetVisibleAxes() && axis < MaxAxes; ++axis)
+	Move& move = reprap.GetMove();
+	const size_t numAxes = reprap.GetGCodes().GetVisibleAxes();
+	for (size_t axis = 0; axis < numAxes && axis < MaxAxes; ++axis)
 	{
 		const int32_t steps = endSteps[axis] - startSteps[axis];
 		if (steps != 0)
 		{
-			DriverId driver = m.GetAxisDriverId(axis);
+			DriverId driver = move.GetAxisDriverId(axis);
 			CanMotion::AddAxisMovement(params, driver, steps);
 		}
 	}
 
-	// Add extruder movement if present
 	if (hasExtrusion)
 	{
 		const size_t extruderDrive = MaxAxes;
 		const int32_t steps = endSteps[extruderDrive] - startSteps[extruderDrive];
 		if (steps != 0)
 		{
-			// For now, use a default CAN driver for extruder (will be config-driven later)
-			// Assume board 0, driver 0 as placeholder (real config would come from M584 E parameter)
 			DriverId driver;
-			driver.SetLocal(0);  // Local driver 0 for extruder
-			const float extrusion = static_cast<float>(steps) / m.DriveStepsPerMm(extruderDrive);
-			CanMotion::AddExtruderMovement(params, driver, extrusion, false);  // No pressure advance for now
+			driver.SetLocal(0);
+			const float extrusion = static_cast<float>(steps) / move.DriveStepsPerMm(extruderDrive);
+			CanMotion::AddExtruderMovement(params, driver, extrusion, false);
 		}
 	}
 
-	// This will be called with moveStartTime from the move execution loop
-	// For now we return success; actual packet emission happens in the execution loop
 	return true;
 }
 
