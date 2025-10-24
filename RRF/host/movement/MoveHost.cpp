@@ -269,4 +269,14 @@ void Move::SetKinematics(KinematicsType type) noexcept
 	}
 }
 
+void Move::ConfigureSegmentation(float segmentsPerSecond, float minSegmentLength) noexcept
+{
+	if (kinematics == nullptr)
+	{
+		return;
+	}
+
+	kinematics->ConfigureSegmentationParameters(segmentsPerSecond, minSegmentLength);
+}
+
 #endif // RRF_HOST_BUILD

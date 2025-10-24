@@ -93,6 +93,7 @@ public:
 	MovementError CartesianToMotorSteps(const float machinePos[], int32_t motorPos[], bool isCoordinated) const noexcept;
 	bool IsAxisRotational(size_t axis) const noexcept;
 	void SetKinematics(KinematicsType type) noexcept;
+	void ConfigureSegmentation(float segmentsPerSecond, float minSegmentLength) noexcept;
 
 private:
 	Kinematics* kinematics;

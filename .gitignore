@@ -16,3 +16,4 @@ debug_sessions
 RRF/host/build
 RRF/host/build/*
 *.o
+RRF/host/vsd/logs/*.log

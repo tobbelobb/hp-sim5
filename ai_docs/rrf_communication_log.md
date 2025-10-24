@@ -3167,7 +3167,7 @@ Assistant (gpt-5-codex high):
 
 • Removed the host-side StepSegment logger so CAN capture goes through the same path RRF firmware would use.
 
-  - host/movement/DDAHost.cpp:339 no longer instantiates host::StepSegment, preventing the duplicate JSON lines and leaving CanMotion::Add*Movement as the only emission path.
+  - host/movement/DDAHost.cpp:339 no longer instantiates host::StepSegment, preventing the duplicate JSON lines and leaving CanMotion::Add\*Movement as the only emission path.
   - host/src/main.cpp:792 nowconfigures HostCanCapture directly (no set_log_path/clear_log), eliminating the truncation that produced the leading NUL bytes in capture files.
   - Dropped the unused host/include/can/CanMotionHost.h and host/can/CanMotionHost.cpp, and removed the build entry in host/Makefile.
 
@@ -3180,3 +3180,96 @@ Assistant (gpt-5-codex high):
 
   1. Update any documentation/scripts that referenced the old StepSegment log format.
   2. Decide whether to derive aggregate per-move diagnostics from the captured CAN frames for analysis tooling.
+
+-------------------------------------------
+Architect:
+
+We're in the middle of a large feature: ReprapFirmware batch mode on host.
+
+The approach taken is to define all motors as CAN-attached external drivers, and to capture all the Movement/Motion commands or packets by writing them to a file.
+This file will later be used by a simulator to check exactly which motor movements are calculated by ReprapFirmware, and how well they might work on a "real" (simulated) machine.
+
+Right now we're integrating some of the real ReprapFirmware motion planner code (the Mover/Stepper classes).
+
+# Files and Directories
+The code lives in the RRF directory.
+The main upstream ReprapFirmware code lives inside RRF/ReprapFirmware.
+Required upstream libraries live in RRF/CANlib, RRF/RRFLibraries, among others.
+We try to change the upstream code as little as possible, mostly we just add #define guards using the RRF_HOST_BUILD variable.
+Our code lives in RRF/host/.
+
+# Current Status
+The x86_64 host build has some basic functionality implemented.
+It sets up a virtual SD rooted at a host directory and provides stubs for the platform, storage and object‑model classes.
+The executable (host_rrf_bootstrap) accepts a G‑code file via --run and an optional --can‑log path.
+The typical way to invoke is:
+```
+cd RRF/host
+make clean # Optional
+make # Optional
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move.g # Or whatever gcode
+```
+
+  1. We have integrated Real RRF Kinematics - The build now includes:
+    - Kinematics.cpp (base class with common kinematics logic)
+    - RoundBedKinematics.cpp (base for delta/Hangprinter types)
+    - HangprinterKinematics.cpp (the real Hangprinter coordinate transforms you wanted)
+  2. Extended Host Move Class - Added accessors needed by real Kinematics:
+    - Axis limits (AxisMinimum/Maximum)
+    - Driver configuration (GetAxisDriversConfig)
+    - Microstepping info (GetMicrostepping - returns 16x for CAN builds)
+  3. Added Move::CartesianToMotorSteps() - Delegates to the real kinematics transform
+  5. Modified DDA::Init() - Now calls Move::CartesianToMotorSteps() for both start and end positions
+  6. Added Move::SetKinematics() - M669 command now actually switches kinematics types
+  7. Made constructors accessible - Added conditional compilation guards to make HangprinterKinematics and CoreKinematics constructors public for host builds
+  8. Updated build system - Removed old kinematics stub, integrated real HangprinterKinematics.cpp
+  9. Replaced the host-side trapezoid with a mix-aware planner that mirrors RRF Prepare(): flagging raw moves, caching start coords, deriving unit vectors and accel caps before emitting PrepParams and JSONL CAN segments (host/include/Movement/DDA.h:43,
+    host/include/Movement/DDAHost.h:12, host/movement/DDAHost.cpp:34, host/can/CanMotionHost.cpp:15, host/include/can/CanMotionHost.h:11).
+  10. Added a deterministic tick source so successive moves align to a shared start clock for logging and CanMotion mirroring (host/include/Movement/StepTimerHost.h:9, host/movement/StepTimerHost.cpp:14).
+  11. Default startup kinematics now use a lightweight Cartesian shim while M669 K6 still pivots to Hangprinter (host/movement/MoveHost.cpp:16, host/include/Movement/Kinematics/CartesianKinematicsHost.h:7, host/movement/CartesianKinematicsHost.cpp:7), and
+    the Makefile builds the new components (host/Makefile:20).
+  12. G-code parsing recognises G0/G1 H2 so independent axes stay raw, leaving coordinated moves to touch kinematics while also wiring --can-log to the new JSONL emitter (host/src/main.cpp:60).
+  13. Removed the host-side StepSegment logger so CAN capture goes through the same path RRF firmware would use.
+
+A lot of the platform/host glue is already being compiled. See RRF/host/Makefile to learn what it pulls in.
+
+# What to Focus on
+We want to get as close to full ReprapFirmware movement as we can within reasonable cost.
+Right now I'm very confused when I do
+```
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_cartesian.g --can-log logs/can_segments.log
+```
+
+The log contains only two long linear moves per axis.
+
+I expected lots of small segments of moves.
+This is because the default config file (config_hangprinter.g) contains M669 K6 (enable Hangprinter Kinematics, which uses segmented moves) as well as `M669 S430 T0.1`
+(segments per second and segment length).
+Dig through the real RRF/ReprapFirmware code and find where the segmentation is supposed to happen, and why it doesn't happen in our host version of ReprapFirmware.
+Try to compile in a larger fraction of the ReprapFirmware code such that segmentation happens automatically, like it would do on the embedded platform, when Hangprinter
+Kinematics is configured.
+I think we have shimmed too much and should move towards compiling more of the real ReprapFirmware code in the host version.
+
+-------------------------------------------
+Assistant (gpt-5-codex high):
+
+• Hooked the host move pipeline back into RRF’s segmentation flow so Hangprinter moves now split into the expected short CAN segments.
+
+  - Root cause: real firmware computes ms.totalSegments inside ReprapFirmware/src/GCodes/GCodes.cpp:3256, but the host stub at host/src/main.cpp:60-144 used to bypass that and feed whole G1s directly to a single DDA.
+  - Added a host-only setter on the real kinematics so M669 S/T can tune segmentation (ReprapFirmware/src/Movement/Kinematics/Kinematics.h:210-216, Kinematics.cpp:111-129, ReprapFirmware/src/Movement/Move.h:367-373, host/include/Movement/Move.h:84-97,
+    host/movement/MoveHost.cpp:251-280).
+  - Rewrote ProcessLinearMove to mirror NewSegmentableMoveAvailable: it now derives segment counts from GetSegmentsPerSecond()/GetReciprocalMinSegmentLength() and emits per-segment DDAs (host/src/main.cpp:60-251).
+  - ProcessM669 understands S/T and pushes them into the real kinematics instance, keeping the rest of the command handling untouched (host/src/main.cpp:503-546).
+
+  Verification:
+
+  - make (host) builds.
+  - ./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_cartesian.g --can-log logs/can_segments.log now reports 65/129 segments and the CAN log contains the expected per-segment packets (host/vsd/logs/can_segments.log).
+
+  Next steps (if you want more coverage):
+
+  1. Try a few other Hangprinter gcodes or kinematics to confirm segmentation heuristics behave well.
+  2. Consider trimming the debug std::cout spam once you’re happy with the flow.
+
+-------------------------------------------
+Architect:

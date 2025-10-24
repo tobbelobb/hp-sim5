@@ -87,7 +87,7 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 
 	std::ostringstream line;
 	line.setf(std::ios::fixed, std::ios::floatfield);
-	line << std::setprecision(6);
+	line << std::setprecision(3);
 
 	const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
 
@@ -101,9 +101,10 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 	line << ",\"acceleration\":" << msg.acceleration;
 	line << ",\"deceleration\":" << msg.deceleration;
 	line << ",\"seq\":" << static_cast<unsigned int>(msg.seq & CanMessageMovementLinearShaped::SeqMask);
-	line << ",\"extruder_mask\":" << static_cast<unsigned int>(msg.extruderDrives);
-	line << ",\"use_pressure_advance\":" << (msg.usePressureAdvance ? "true" : "false");
-	line << ",\"use_late_input_shaping\":" << (msg.useLateInputShaping ? "true" : "false");
+  // Ignore extruder_mask, pressure advance and input shaping for now
+	// line << ",\"extruder_mask\":" << static_cast<unsigned int>(msg.extruderDrives);
+	// line << ",\"use_pressure_advance\":" << (msg.usePressureAdvance ? "true" : "false");
+	// line << ",\"use_late_input_shaping\":" << (msg.useLateInputShaping ? "true" : "false");
 
 	line << ",\"drivers\":[";
 	for (uint32_t i = 0; i < msg.numDrivers && i < MaxLinearDriversPerCanSlave; ++i)

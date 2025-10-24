@@ -19,6 +19,7 @@
 #include <Movement/Kinematics/Kinematics.h>
 
 #include <array>
+#include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <iostream>
@@ -61,41 +62,38 @@ namespace
 		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
 		const bool axesRelative = reprap.GetGCodes().GetAxesRelative(0);
 
-		// Build RawMove from G-code
-		RawMove move;
+		RawMove baseMove;
 		if (commandNumber == 0)
 		{
-			move.flags |= RMF_Rapid;
+			baseMove.flags |= RMF_Rapid;
 		}
 		bool hasMovement = false;
 
-		// Get current position as starting point
-		float currentCoords[MaxAxesPlusExtruders] = {0};  // Initialize all to zero
+		float startCoords[MaxAxesPlusExtruders] = { 0.0f };
 		for (size_t i = 0; i < MaxAxes; ++i)
 		{
-			currentCoords[i] = reprap.GetGCodes().GetUserPosition(i);
+			startCoords[i] = reprap.GetGCodes().GetUserPosition(i);
 		}
+		const size_t extruderIndex = MaxAxes;
 
 		if (gb.Seen('H'))
 		{
 			const int hValue = gb.GetIValue();
 			if (hValue == 2)
 			{
-				move.flags |= RMF_RawMotorMove;
+				baseMove.flags |= RMF_RawMotorMove;
 			}
 			else if (hValue == 1)
 			{
-				move.flags |= RMF_Rapid;
+				baseMove.flags |= RMF_Rapid;
 			}
 		}
 
-		// Copy current coords as target (will be updated by seen axes)
 		for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
 		{
-			move.coords[i] = currentCoords[i];
+			baseMove.coords[i] = startCoords[i];
 		}
 
-		// Process axis parameters
 		for (char letter : axisLetters)
 		{
 			if (!gb.Seen(letter))
@@ -110,80 +108,145 @@ namespace
 				continue;
 			}
 
-			const float current = reprap.GetGCodes().GetUserPosition(index);
+			const float current = startCoords[index];
 			const float updated = axesRelative ? current + value : value;
-			move.coords[index] = updated;
-			if ((move.flags & RMF_RawMotorMove) == 0)
+			baseMove.coords[index] = updated;
+			if ((baseMove.flags & RMF_RawMotorMove) == 0)
 			{
 				reprap.GetGCodes().SetUserPosition(index, updated);
 			}
 			else
 			{
-				move.independentMask |= (1u << index);
+				baseMove.independentMask |= (1u << index);
 			}
 			hasMovement = true;
 		}
 
-		// Handle extruder E parameter
-		// Note: Extruder uses separate relative/absolute mode (typically M83/M82)
-		// For now, assume relative extruder mode (M83) as configured in typical config.g
 		if (gb.Seen('E'))
 		{
 			const float eValue = gb.GetFValue();
-			const size_t extruderIndex = MaxAxes;  // First extruder drive
-
-			// For relative extrusion, add to current position
-			// For absolute, would just set to eValue
-			// For now, treat as relative (M83 mode is common)
-			const float currentE = currentCoords[extruderIndex];
-			const float targetE = currentE + eValue;  // Relative extrusion
-
-			move.coords[extruderIndex] = targetE;
-			move.hasE = true;
-			hasMovement = true;  // E-only moves are valid
+			const float currentE = startCoords[extruderIndex];
+			const float targetE = currentE + eValue;
+			baseMove.coords[extruderIndex] = targetE;
+			baseMove.hasE = true;
+			hasMovement = true;
 		}
 
-		// Handle feedrate F parameter (in mm/min, convert to mm/sec)
 		if (gb.Seen('F'))
 		{
 			const float feedRateMMperMin = gb.GetFValue();
-			move.feedRate = feedRateMMperMin / 60.0f;  // Convert to mm/sec
+			baseMove.feedRate = feedRateMMperMin / 60.0f;
 		}
 		else
 		{
-			// Use default feedrate if not specified
-			move.feedRate = 100.0f;  // 100 mm/s default
+			baseMove.feedRate = 100.0f;
 		}
 
-		// If there's actual movement, create and execute a DDA
-		if (hasMovement)
+		if (!hasMovement)
 		{
-			std::cout << "[DEBUG] Creating DDA...\n" << std::flush;
-			DDA dda;
-			std::cout << "[DEBUG] Calling Init...\n" << std::flush;
-			if (dda.Init(move, currentCoords))
+			return true;
+		}
+
+		const bool isRawMove = (baseMove.flags & RMF_RawMotorMove) != 0;
+		const bool isRapid = (baseMove.flags & RMF_Rapid) != 0;
+		const size_t numAxes = reprap.GetGCodes().GetVisibleAxes();
+
+		float geometricLengthSq = 0.0f;
+		for (size_t axis = 0; axis < numAxes && axis < MaxAxes; ++axis)
+		{
+			const float delta = baseMove.coords[axis] - startCoords[axis];
+			geometricLengthSq += delta * delta;
+		}
+		const float geometricLength = (geometricLengthSq > 0.0f) ? std::sqrt(geometricLengthSq) : 0.0f;
+
+		unsigned int totalSegments = 1;
+		if (!isRawMove)
+		{
+			const Kinematics& kin = reprap.GetMove().GetKinematics();
+			const SegmentationType segType = kin.GetSegmentationType();
+			if (segType.useSegmentation && (segType.useG0Segmentation || !isRapid))
 			{
-				std::cout << "[DEBUG] Init succeeded, calling Prepare...\n" << std::flush;
-				if (dda.Prepare())
+				float segLengthSq = 0.0f;
+				for (size_t axis = 0; axis < numAxes && axis < MaxAxes; ++axis)
 				{
-					std::cout << "[DEBUG] Prepare succeeded, finishing movement...\n" << std::flush;
-					// Set move start time to current simulated ticks
-					dda.SetMoveStartTime(static_cast<uint32_t>(currentSimulatedTicks & 0xFFFFFFFF));
-
-					std::cout << "[DEBUG] About to call FinishMovement...\n" << std::flush;
-					// Call FinishMovement to actually emit CAN packets
-					const uint32_t clocksUsed = CanMotion::FinishMovement(dda, dda.GetMoveStartTime(), false);
-					std::cout << "[DEBUG] FinishMovement returned, clocks=" << clocksUsed << "\n" << std::flush;
-
-					// Advance simulated time deterministically
-					currentSimulatedTicks += clocksUsed;
-
-					std::cout << "Move executed: distance=" << dda.GetPrepParams().totalDistance
-							  << "mm, speed=" << dda.GetPrepParams().topSpeed
-							  << "mm/s, ticks=" << clocksUsed << "\n";
+					if (!segType.useZSegmentation && axis == 2)
+					{
+						continue;
+					}
+					const float delta = baseMove.coords[axis] - startCoords[axis];
+					segLengthSq += delta * delta;
+				}
+				const float segLength = (segLengthSq > 0.0f) ? std::sqrt(segLengthSq) : 0.0f;
+				if (segLength > 0.0f && baseMove.feedRate > 0.0f)
+				{
+					const float moveTime = segLength / baseMove.feedRate;
+					const float segmentsByLength = segLength * kin.GetReciprocalMinSegmentLength();
+					const float segmentsByTime = moveTime * kin.GetSegmentsPerSecond();
+					const float desired = std::min(segmentsByLength, segmentsByTime);
+					const float clampedDesired = std::max(desired, 1.0f);
+					const long rounded = std::lround(clampedDesired);
+					totalSegments = static_cast<unsigned int>((rounded <= 0) ? 1 : rounded);
 				}
 			}
 		}
+
+		float segmentStartCoords[MaxAxesPlusExtruders];
+		std::copy(startCoords, startCoords + MaxAxesPlusExtruders, segmentStartCoords);
+
+		const float invSegments = 1.0f / static_cast<float>(totalSegments);
+		const float totalExtrusionDelta = baseMove.hasE ? (baseMove.coords[extruderIndex] - startCoords[extruderIndex]) : 0.0f;
+
+		float executedDistance = 0.0f;
+		for (unsigned int seg = 0; seg < totalSegments; ++seg)
+		{
+			RawMove segmentMove = baseMove;
+			const float fraction = static_cast<float>(seg + 1) * invSegments;
+
+			for (size_t axis = 0; axis < MaxAxes; ++axis)
+			{
+				const float delta = baseMove.coords[axis] - startCoords[axis];
+				if (delta != 0.0f)
+				{
+					segmentMove.coords[axis] = startCoords[axis] + delta * fraction;
+				}
+				else
+				{
+					segmentMove.coords[axis] = segmentStartCoords[axis];
+				}
+			}
+
+			if (baseMove.hasE)
+			{
+				segmentMove.coords[extruderIndex] = startCoords[extruderIndex] + totalExtrusionDelta * fraction;
+			}
+
+			DDA dda;
+			if (!dda.Init(segmentMove, segmentStartCoords))
+			{
+				std::cerr << "Failed to initialise DDA for segment " << seg << "\n";
+				return false;
+			}
+			if (!dda.Prepare())
+			{
+				std::cerr << "Failed to prepare DDA for segment " << seg << "\n";
+				return false;
+			}
+
+			const uint32_t startClock = static_cast<uint32_t>(currentSimulatedTicks & 0xFFFFFFFF);
+			dda.SetMoveStartTime(startClock);
+			const uint32_t clocksUsed = CanMotion::FinishMovement(dda, startClock, false);
+			currentSimulatedTicks += clocksUsed;
+
+			std::copy(segmentMove.coords, segmentMove.coords + MaxAxesPlusExtruders, segmentStartCoords);
+			executedDistance += dda.GetPrepParams().totalDistance;
+		}
+
+		const bool segmented = (totalSegments > 1);
+		const float reportedDistance = segmented ? executedDistance : geometricLength;
+		std::cout << "Move executed: segments=" << totalSegments
+				  << " distance=" << reportedDistance
+				  << "mm, feed=" << baseMove.feedRate
+				  << "mm/s\n";
 
 		return true;
 	}
@@ -439,12 +502,19 @@ namespace
 	// Step 9.3.2: Now actually creates the real kinematics instance
 	bool ProcessM669(GCodeBuffer& gb)
 	{
+		Move& move = reprap.GetMove();
+
+		float segmentsPerSecond = 0.0f;
+		float minSegmentLength = 0.0f;
+		bool segParamsSeen = false;
+		gb.TryGetFValue('S', segmentsPerSecond, segParamsSeen);
+		gb.TryGetFValue('T', minSegmentLength, segParamsSeen);
+
 		if (gb.Seen('K'))
 		{
 			const int kinematicsType = gb.GetIValue();
 			std::cout << "Set kinematics type to " << kinematicsType;
 
-			Move& move = reprap.GetMove();
 			KinematicsType kType = KinematicsType::cartesian;  // Default
 
 			switch (kinematicsType)
@@ -466,6 +536,13 @@ namespace
 
 			// Actually change the kinematics
 			move.SetKinematics(kType);
+		}
+
+		if (segParamsSeen)
+		{
+			move.ConfigureSegmentation(segmentsPerSecond, minSegmentLength);
+			std::cout << "Set segmentation to " << segmentsPerSecond
+					  << " seg/s, min length " << minSegmentLength << "mm\n";
 		}
 
 		// Other M669 parameters (for Hangprinter: anchor positions, etc.)
