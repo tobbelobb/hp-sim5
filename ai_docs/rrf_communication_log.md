@@ -3161,3 +3161,22 @@ they're created and transmitted in RRF/CANlib and RRF/ReprapFirmware.
 
 I'm really tired of all this shimming logic, and want to integrate more of the real ReprapFirmware logic to be honest.
 Look at consolidating the above before looking at Step 9.3.4 in ai_docs/rrf_integration_build_plan.md
+
+-------------------------------------------
+Assistant (gpt-5-codex high):
+
+• Removed the host-side StepSegment logger so CAN capture goes through the same path RRF firmware would use.
+
+  - host/movement/DDAHost.cpp:339 no longer instantiates host::StepSegment, preventing the duplicate JSON lines and leaving CanMotion::Add*Movement as the only emission path.
+  - host/src/main.cpp:792 nowconfigures HostCanCapture directly (no set_log_path/clear_log), eliminating the truncation that produced the leading NUL bytes in capture files.
+  - Dropped the unused host/include/can/CanMotionHost.h and host/can/CanMotionHost.cpp, and removed the build entry in host/Makefile.
+
+  Tests
+
+  - make -C RRF/host
+  - ./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move.g (from RRF/host)
+
+  Next steps (if needed)
+
+  1. Update any documentation/scripts that referenced the old StepSegment log format.
+  2. Decide whether to derive aggregate per-move diagnostics from the captured CAN frames for analysis tooling.

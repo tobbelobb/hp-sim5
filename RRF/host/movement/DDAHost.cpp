@@ -7,7 +7,6 @@
 #include <Movement/StepTimerHost.h>
 #include <Platform/RepRap.h>
 #include <CAN/CanMotion.h>
-#include <can/CanMotionHost.h>
 
 #include <algorithm>
 #include <cmath>
@@ -336,25 +335,6 @@ bool DDA::Prepare() noexcept
 	params.useInputShaping = false;
 
 	clocksNeeded = params.TotalClocks();
-
-	host::StepSegment seg;
-	seg.start_clock = prepOut.startClock;
-	seg.accel_clocks = prepOut.accelClocks;
-	seg.steady_clocks = prepOut.steadyClocks;
-	seg.decel_clocks = prepOut.decelClocks;
-	seg.v_entry = prepOut.vEntry;
-	seg.v_top = prepOut.vTop;
-	seg.v_exit = prepOut.vExit;
-	for (int i = 0; i < prepOut.numDrives; ++i)
-	{
-		const auto& dp = prepOut.drives[i];
-		host::StepSegment::Drive drive;
-		drive.drive_id = dp.id;
-		drive.steps_total = dp.steps;
-		drive.steps_per_sec_top = dp.stepsPerSecTop;
-		seg.drives.push_back(drive);
-	}
-	host::emit_segment(seg);
 
 	Move& move = reprap.GetMove();
 	const size_t numAxes = reprap.GetGCodes().GetVisibleAxes();

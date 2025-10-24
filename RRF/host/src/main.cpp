@@ -2,7 +2,6 @@
 #include <Storage/MassStorage.h>
 
 #include <CAN/CanCapture.h>
-#include <can/CanMotionHost.h>
 #include <CAN/CanMotion.h>
 #include <CanMessageBuffer.h>
 #include <Platform/RepRap.h>
@@ -790,24 +789,18 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if (!canLogDisabled)
+	const bool canCaptureConfigured = canLogDisabled ? HostCanCapture::Configure({}) : HostCanCapture::Configure(resolvedCanLog);
+	if (!canCaptureConfigured)
 	{
-		if (!HostCanCapture::Configure(resolvedCanLog))
+		if (!canLogDisabled)
 		{
 			std::cerr << "Failed to initialise CAN capture sink at " << resolvedCanLog << "\n";
-			return 1;
 		}
-		host::set_log_path(resolvedCanLog.string());
-		host::clear_log();
-	}
-	else
-	{
-		if (!HostCanCapture::Configure({}))
+		else
 		{
 			std::cerr << "Failed to disable CAN capture sink\n";
-			return 1;
 		}
-		host::set_log_path({});
+		return 1;
 	}
 
 	const bool captureActive = !canLogDisabled && !resolvedCanLog.empty();

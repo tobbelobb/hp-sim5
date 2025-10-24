@@ -19,7 +19,6 @@ TARGET := host_rrf_bootstrap
 
 HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
     can/CanCapture.cpp \
-    can/CanMotionHost.cpp \
     can/CanInterfaceHost.cpp \
     storage/HostFileStore.cpp \
     storage/HostMassStorage.cpp \
