@@ -42,6 +42,7 @@ HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	movement/MoveHost.cpp \
 	movement/CartesianKinematicsHost.cpp \
 	movement/DDAHost.cpp \
+	movement/HostPlanner.cpp \
 	movement/StepTimerHost.cpp \
 	movement/DDARingHost.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp \

@@ -17,6 +17,7 @@
 #include <Movement/DDA.h>
 #include <Movement/Move.h>
 #include <Movement/Kinematics/Kinematics.h>
+#include <Movement/HostPlanner.h>
 
 #include <array>
 #include <algorithm>
@@ -28,10 +29,6 @@
 
 namespace
 {
-	// Step 9.2.1: Deterministic simulated time in step-timer ticks (48 MHz)
-	constexpr uint32_t StepClockFrequency = 48000000;  // 48 MHz
-	uint64_t currentSimulatedTicks = 0;
-
 	void PrintUsage()
 	{
 		std::cout << "Usage: host_rrf_bootstrap [--vsd <path>] [--run <file.gcode>] [--can-log <path|disable>]\n";
@@ -196,7 +193,6 @@ namespace
 		const float invSegments = 1.0f / static_cast<float>(totalSegments);
 		const float totalExtrusionDelta = baseMove.hasE ? (baseMove.coords[extruderIndex] - startCoords[extruderIndex]) : 0.0f;
 
-		float executedDistance = 0.0f;
 		for (unsigned int seg = 0; seg < totalSegments; ++seg)
 		{
 			RawMove segmentMove = baseMove;
@@ -220,29 +216,12 @@ namespace
 				segmentMove.coords[extruderIndex] = startCoords[extruderIndex] + totalExtrusionDelta * fraction;
 			}
 
-			DDA dda;
-			if (!dda.Init(segmentMove, segmentStartCoords))
-			{
-				std::cerr << "Failed to initialise DDA for segment " << seg << "\n";
-				return false;
-			}
-			if (!dda.Prepare())
-			{
-				std::cerr << "Failed to prepare DDA for segment " << seg << "\n";
-				return false;
-			}
-
-			const uint32_t startClock = static_cast<uint32_t>(currentSimulatedTicks & 0xFFFFFFFF);
-			dda.SetMoveStartTime(startClock);
-			const uint32_t clocksUsed = CanMotion::FinishMovement(dda, startClock, false);
-			currentSimulatedTicks += clocksUsed;
-
+			host::planner::QueueSegment(segmentMove, segmentStartCoords);
 			std::copy(segmentMove.coords, segmentMove.coords + MaxAxesPlusExtruders, segmentStartCoords);
-			executedDistance += dda.GetPrepParams().totalDistance;
 		}
 
 		const bool segmented = (totalSegments > 1);
-		const float reportedDistance = segmented ? executedDistance : geometricLength;
+		const float reportedDistance = segmented ? geometricLength : geometricLength;
 		std::cout << "Move executed: segments=" << totalSegments
 				  << " distance=" << reportedDistance
 				  << "mm, feed=" << baseMove.feedRate
@@ -746,6 +725,15 @@ namespace
 		}
 
 		fileData.Close();
+
+		if (running)
+		{
+			running = host::planner::FlushQueuedSegments();
+		}
+		else
+		{
+			host::planner::Reset();
+		}
 
 		if (running)
 		{

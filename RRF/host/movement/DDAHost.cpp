@@ -37,6 +37,10 @@ DDA::DDA() noexcept
 	, clocksNeeded(0)
 	, requestedSpeed(0.0f)
 	, hasExtrusion(false)
+	, plannedEntrySpeed(0.0f)
+	, plannedTopSpeed(0.0f)
+	, plannedExitSpeed(0.0f)
+	, plannedAcceleration(0.0f)
 {
 	for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
 	{
@@ -175,9 +179,12 @@ bool DDAHost::Prepare(const RawMove& mv,
 					  const float startMachineCoords[MaxAxesPlusExtruders],
 					  const int32_t startSteps[MaxAxesPlusExtruders],
 					  const int32_t endSteps[MaxAxesPlusExtruders],
+					  double entrySpeed,
+					  double topSpeed,
+					  double exitSpeed,
+					  double accelLimit,
 					  PrepOut& out) noexcept
 {
-	Move& move = reprap.GetMove();
 	const size_t numAxes = reprap.GetGCodes().GetVisibleAxes();
 
 	double unitDir[MaxAxes] = {0.0};
@@ -185,108 +192,101 @@ bool DDAHost::Prepare(const RawMove& mv,
 	double length = compute_direction(mv, startMachineCoords, unitDir, axisDelta, numAxes);
 
 	const double extruderDelta = static_cast<double>(mv.coords[MaxAxes] - startMachineCoords[MaxAxes]);
-	if (length < kTiny && std::abs(extruderDelta) > kTiny)
-	{
-		length = std::abs(extruderDelta);
-	}
-
-	if (length < kTiny)
+	const bool hasAxes = length > kTiny;
+	const bool hasExtrusionOnly = (!hasAxes && std::abs(extruderDelta) > kTiny);
+	if (!hasAxes && !hasExtrusionOnly)
 	{
 		return false;
 	}
 
-	double requested = static_cast<double>(mv.feedRate);
-	if (requested <= 0.0)
+	const double travelDistance = hasAxes ? length : std::abs(extruderDelta);
+
+	const double accel = std::max(accelLimit, 1.0);
+	const double vEntry = std::max(0.0, entrySpeed);
+	const double vExit = std::max(0.0, exitSpeed);
+
+	double vPeak = std::max({topSpeed, vEntry, vExit});
+
+	// Calculate acceleration/deceleration distances assuming trapezoid
+	double accelDistance = 0.0;
+	if (vPeak > vEntry)
 	{
-		requested = static_cast<double>(move.GetMaxFeedrate(0));
+		accelDistance = (vPeak * vPeak - vEntry * vEntry) / (2.0 * accel);
 	}
-
-	double accelLimit = std::numeric_limits<double>::max();
-	double speedLimit = std::numeric_limits<double>::max();
-
-	for (size_t axis = 0; axis < numAxes; ++axis)
+	double decelDistance = 0.0;
+	if (vPeak > vExit)
 	{
-		const double delta = std::abs(axisDelta[axis]);
-		if (delta < kTiny)
+		decelDistance = (vPeak * vPeak - vExit * vExit) / (2.0 * accel);
+	}
+	double steadyDistance = travelDistance - accelDistance - decelDistance;
+
+	if (steadyDistance < -1e-6)
+	{
+		// Triangular profile: recompute peak velocity
+		const double term = std::max(0.0, accel * travelDistance + 0.5 * (vEntry * vEntry + vExit * vExit));
+		vPeak = std::sqrt(term);
+		if (vPeak < vEntry)
 		{
-			continue;
+			vPeak = vEntry;
+		}
+		if (vPeak < vExit)
+		{
+			vPeak = vExit;
 		}
 
-		const double axisAccel = static_cast<double>(move.GetAcceleration(axis));
-		const double axisSpeed = static_cast<double>(move.GetMaxFeedrate(axis));
-		const double ui = std::abs(unitDir[axis]);
+		if (vPeak > vEntry)
+		{
+			accelDistance = (vPeak * vPeak - vEntry * vEntry) / (2.0 * accel);
+		}
+		else
+		{
+			accelDistance = 0.0;
+		}
 
-		const double accelCap = (ui > kTiny) ? axisAccel / ui : axisAccel;
-		const double speedCap = (ui > kTiny) ? axisSpeed / ui : axisSpeed;
-
-		accelLimit = std::min(accelLimit, accelCap);
-		speedLimit = std::min(speedLimit, speedCap);
+		if (vPeak > vExit)
+		{
+			decelDistance = (vPeak * vPeak - vExit * vExit) / (2.0 * accel);
+		}
+		else
+		{
+			decelDistance = 0.0;
+		}
+		steadyDistance = 0.0;
 	}
 
-	if (accelLimit == std::numeric_limits<double>::max())
-	{
-		accelLimit = static_cast<double>(move.GetAcceleration(0));
-	}
-	accelLimit = std::max(accelLimit, 1.0);
+	steadyDistance = std::max(0.0, steadyDistance);
 
-	double targetSpeed = std::min(requested, speedLimit);
-	if (!std::isfinite(targetSpeed) || targetSpeed <= 0.0)
-	{
-		targetSpeed = requested;
-	}
-	targetSpeed = std::max(targetSpeed, 1e-3);
+	const double tAcc = (vPeak > vEntry) ? (vPeak - vEntry) / accel : 0.0;
+	const double tDec = (vPeak > vExit) ? (vPeak - vExit) / accel : 0.0;
+	const double tSteady = (steadyDistance > kTiny && vPeak > kTiny) ? steadyDistance / vPeak : 0.0;
 
-	const double t_to_target = targetSpeed / accelLimit;
-	double accelDistance = 0.5 * accelLimit * t_to_target * t_to_target;
-
-	bool triangle = (2.0 * accelDistance) >= length;
-
-	double t_acc, t_dec, t_steady, v_top;
-	if (triangle)
-	{
-		t_acc = std::sqrt(length / accelLimit);
-		t_dec = t_acc;
-		t_steady = 0.0;
-		v_top = accelLimit * t_acc;
-		accelDistance = 0.5 * accelLimit * t_acc * t_acc;
-	}
-	else
-	{
-		t_acc = t_to_target;
-		t_dec = t_to_target;
-		t_steady = (length - 2.0 * accelDistance) / targetSpeed;
-		v_top = targetSpeed;
-	}
-
-	const double decelDistance = 0.5 * accelLimit * t_dec * t_dec;
-
-	const double totalTime = t_acc + t_steady + t_dec;
+	double totalTime = tAcc + tSteady + tDec;
 	if (totalTime <= kTiny)
 	{
-		return false;
+		totalTime = std::max(travelDistance / std::max(vPeak, 1e-6), 0.0);
+		if (totalTime <= kTiny)
+		{
+			return false;
+		}
 	}
 
 	const double ticksPerSec = static_cast<double>(host::StepTimerHost::TICKS_PER_SEC);
-	const uint32_t accelClocks = static_cast<uint32_t>(std::llround(t_acc * ticksPerSec));
-	const uint32_t steadyClocks = static_cast<uint32_t>(std::llround(t_steady * ticksPerSec));
-	const uint32_t decelClocks = static_cast<uint32_t>(std::llround(t_dec * ticksPerSec));
-	const uint32_t totalClocks = accelClocks + steadyClocks + decelClocks;
+	const uint32_t accelClocks = static_cast<uint32_t>(std::llround(tAcc * ticksPerSec));
+	const uint32_t steadyClocks = static_cast<uint32_t>(std::llround(tSteady * ticksPerSec));
+	const uint32_t decelClocks = static_cast<uint32_t>(std::llround(tDec * ticksPerSec));
 
-	const uint64_t startClock = host::StepTimerHost::align_to_next(host::StepTimerHost::now(), 50);
-	host::StepTimerHost::align_to_next(startClock + totalClocks, 0);
-
-	out.startClock = startClock;
+	out.startClock = 0;
 	out.accelClocks = accelClocks;
 	out.steadyClocks = steadyClocks;
 	out.decelClocks = decelClocks;
-	out.vEntry = 0.0;
-	out.vTop = v_top;
-	out.vExit = 0.0;
-	out.acceleration = accelLimit;
-	out.deceleration = -accelLimit;
+	out.vEntry = vEntry;
+	out.vTop = vPeak;
+	out.vExit = vExit;
+	out.acceleration = accel;
+	out.deceleration = -accel;
 	out.accelDistance = accelDistance;
-	out.decelDistanceStart = length - decelDistance;
-	out.totalDistance = length;
+	out.decelDistanceStart = std::max(0.0, travelDistance - decelDistance);
+	out.totalDistance = travelDistance;
 
 	out.numDrives = 0;
 	for (int drive = 0; drive < kMaxDrives; ++drive)
@@ -305,7 +305,7 @@ bool DDAHost::Prepare(const RawMove& mv,
 		DrivePlan& dp = out.drives[out.numDrives++];
 		dp.id = static_cast<uint8_t>(drive);
 		dp.steps = deltaSteps;
-		dp.stepsPerSecTop = std::abs(static_cast<double>(deltaSteps)) / totalTime;
+		dp.stepsPerSecTop = (totalTime > kTiny) ? std::abs(static_cast<double>(deltaSteps)) / totalTime : 0.0;
 	}
 
 	return true;
@@ -318,7 +318,15 @@ bool DDA::Prepare() noexcept
 	CanMotion::StartMovement();
 
 	host::DDAHost::PrepOut prepOut{};
-	if (!host::DDAHost::Prepare(rawMove, startMachineCoords, startSteps, endSteps, prepOut))
+	if (!host::DDAHost::Prepare(rawMove,
+								startMachineCoords,
+								startSteps,
+								endSteps,
+								static_cast<double>(plannedEntrySpeed),
+								static_cast<double>(plannedTopSpeed),
+								static_cast<double>(plannedExitSpeed),
+								static_cast<double>(plannedAcceleration),
+								prepOut))
 	{
 		return false;
 	}

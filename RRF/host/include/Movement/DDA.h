@@ -100,6 +100,15 @@ public:
 	// Step 9.3: Additional methods needed by real Kinematics
 	void LimitSpeedAndAcceleration(float /*maxSpeed*/, float /*maxAccel*/) noexcept {}  // Stub for now
 
+	// Host planner integration
+	void SetPlannedProfile(float entry, float top, float exit, float accel) noexcept
+	{
+		plannedEntrySpeed = entry;
+		plannedTopSpeed = top;
+		plannedExitSpeed = exit;
+		plannedAcceleration = accel;
+	}
+
 private:
 	bool checkEndstops;
 	bool isPrintingMove;
@@ -114,6 +123,12 @@ private:
 	bool hasExtrusion;							// Does this move include extruder movement?
 	float startMachineCoords[MaxAxesPlusExtruders]; // machine-space start position (mm)
 	RawMove rawMove;								// cached move definition for Prepare phase
+
+	// Host planner-provided profile parameters
+	float plannedEntrySpeed;
+	float plannedTopSpeed;
+	float plannedExitSpeed;
+	float plannedAcceleration;
 };
 
 #endif // RRF_HOST_BUILD

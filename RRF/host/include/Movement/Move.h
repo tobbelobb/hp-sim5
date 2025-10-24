@@ -74,6 +74,8 @@ public:
 
 	float GetJerk(size_t drive) const noexcept;
 	void SetJerk(size_t drive, float value) noexcept;
+	float GetMaxInstantDv(size_t drive) const noexcept;
+	float GetPrintingInstantDv(size_t drive) const noexcept { return GetMaxInstantDv(drive); }
 
 	DriverId GetAxisDriverId(size_t axis) const noexcept;
 	void SetAxisDriverId(size_t axis, const DriverId& driver) noexcept;

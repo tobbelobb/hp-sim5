@@ -43,6 +43,10 @@ public:
 						const float startMachineCoords[MaxAxesPlusExtruders],
 						const int32_t startSteps[MaxAxesPlusExtruders],
 						const int32_t endSteps[MaxAxesPlusExtruders],
+						double entrySpeed,
+						double topSpeed,
+						double exitSpeed,
+						double accelLimit,
 						PrepOut& out) noexcept;
 };
 

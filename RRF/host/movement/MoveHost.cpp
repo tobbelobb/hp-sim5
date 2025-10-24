@@ -165,6 +165,20 @@ void Move::SetJerk(size_t drive, float value) noexcept
 	}
 }
 
+float Move::GetMaxInstantDv(size_t drive) const noexcept
+{
+	constexpr float fallback = 240.0f / 60.0f;	// default 4 mm/s instant dv
+	if (drive < MaxAxesPlusExtruders)
+	{
+		const float jerkMmPerMin = jerks[drive];
+		if (jerkMmPerMin > 0.0f)
+		{
+			return jerkMmPerMin / 60.0f;
+		}
+	}
+	return fallback;
+}
+
 DriverId Move::GetAxisDriverId(size_t axis) const noexcept
 {
 	if (axis < MaxAxes)

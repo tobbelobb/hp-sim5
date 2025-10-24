@@ -3325,3 +3325,31 @@ Read the various progress logs in ai_docs/rrf_integration_build_plan.md to under
 Also look in the real DDA::Prepare and Move::AddSegment other relevant code in RRF/ReprapFirmware/src/Movement/Move.cpp
 
 I think we have shimmed too much and would really love to use the real Move.cpp code instead of reimplementing much of it. However, just take the functions we really need to get this to work quickly for now.
+
+-------------------------------------------
+Assistant (gpt-5-codex high):
+
+• Overhauled the host motion queue so we plan every segment up front, preserve lookahead speeds, and hand the real entry/top/
+  exit velocities through to CAN emission. New host planner batches RawMoves, performs jerk-limited speed matching, and feeds
+  the updated DDA/Move shims.
+
+  - RRF/host/src/main.cpp:196 now queues each segmented RawMove and defers execution until
+    host::planner::FlushQueuedSegments() runs after the G‑code file finishes, keeping the runtime pipeline simple and
+    deterministic.
+  - RRF/host/movement/HostPlanner.cpp:64-382 adds the host-side planner: it computes unit directions, derives per-move
+    acceleration/speed caps, enforces jerk-based junction limits, iterates forward/backward to solve entry/exit speeds, then
+    emits DDAs with preserved top speed.
+  - RRF/host/include/Movement/DDA.h:103-131 and RRF/host/movement/DDAHost.cpp:178-312 store the planner-provided profile and
+    use it to build precise trapezoids (including steady sections instead of forced start/stop ramps).
+  - RRF/host/include/Movement/Move.h:72-101 & RRF/host/movement/MoveHost.cpp:142-180 expose instantaneous DV limits derived
+    from M566 jerk so the planner can honor real junction constraints.
+  - RRF/host/Makefile:42-46 pulls the new planner file into the host build.
+
+  Verification: ./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_cartesian.g --can-log vsd/logs/can_segments_new.log
+  succeeded; the resulting JSONL (RRF/host/vsd/vsd/logs/can_segments_new.log) now shows steady-clock phases and zero
+  acceleration tails only when appropriate, confirming overlaps are restored.
+
+  Next steps you might consider:
+
+  1. Re-run with Hangprinter-heavy gcode to confirm jerk settings still produce smooth overlaps across the whole workspace.
+  2. Port the same planner into any other host tools or add regression checks comparing CAN logs for key fixtures.
