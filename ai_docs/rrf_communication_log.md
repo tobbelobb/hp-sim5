@@ -3273,3 +3273,55 @@ Assistant (gpt-5-codex high):
 
 -------------------------------------------
 Architect:
+We're in the middle of a large feature: ReprapFirmware batch mode on host.
+
+The approach taken is to define all motors as CAN-attached external drivers, and to capture all the Movement/Motion commands or packets by writing them to a file.
+This file will later be used by a simulator to check exactly which motor movements are calculated by ReprapFirmware, and how well they might work on a "real" (simulated) machine.
+
+Right now we're integrating some of the real ReprapFirmware motion planner code (the Mover/Stepper classes).
+
+# Files and Directories
+The code lives in the RRF directory.
+The main upstream ReprapFirmware code lives inside RRF/ReprapFirmware.
+Required upstream libraries live in RRF/CANlib, RRF/RRFLibraries, among others.
+We try to change the upstream code as little as possible, mostly we just add #define guards using the RRF_HOST_BUILD variable.
+Our code lives in RRF/host/.
+
+# Current Status
+The x86_64 host build has some basic functionality implemented.
+It sets up a virtual SD rooted at a host directory and provides stubs for the platform, storage and object‑model classes.
+The executable (host_rrf_bootstrap) accepts a G‑code file via --run and an optional --can‑log path.
+The typical way to invoke is:
+```
+cd RRF/host
+make clean # Optional
+make # Optional
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_move.g # Or whatever gcode
+```
+
+  1. G-code parsing recognises G0/G1 H2 so independent axes stay raw, leaving coordinated moves to touch kinematics while also wiring --can-log to the new JSONL emitter (host/src/main.cpp:60).
+  2. Removed the host-side StepSegment logger so CAN capture goes through the same path RRF firmware would use.
+  3. Hooked the host move pipeline back into RRF’s segmentation flow so Hangprinter moves now split into the expected short CAN segments.
+
+A lot of the platform/host glue is already being compiled. See RRF/host/Makefile to learn what it pulls in.
+
+# What to Focus on
+We want to get as close to full ReprapFirmware movement as we can within reasonable cost.
+Right now I'm very confused when I do
+```
+./build/host_rrf_bootstrap --vsd vsd --run gcodes/test_cartesian.g --can-log logs/can_segments.log
+```
+
+The log now contains segmented linear moves per axis, as expected.
+The latest log is at RRF/host/vsd/logs/can_segments2.log.
+
+However there's a problem in that log.
+The segments are not scheduled with overlaps, like the real ReprapFirmware sceduler would have scheduled them.
+Without overlaps, every move will go from zero-to-zero velocity, and movements will be stuttering.
+
+I have documented how the generated CanMessageMovementLinearShaped segments will eventually be interpreted in ai_docs/rrf_movementLinearShaped_interpretation.md. This can also give hints about how they should be created (including how they should be scheduled).
+
+Read the various progress logs in ai_docs/rrf_integration_build_plan.md to understand why the scheduling is off.
+Also look in the real DDA::Prepare and Move::AddSegment other relevant code in RRF/ReprapFirmware/src/Movement/Move.cpp
+
+I think we have shimmed too much and would really love to use the real Move.cpp code instead of reimplementing much of it. However, just take the functions we really need to get this to work quickly for now.
