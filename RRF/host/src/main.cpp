@@ -839,7 +839,7 @@ int main(int argc, char** argv)
 
 	// Step 9.2.2: Execute config.g before running any user G-code
 	std::cout << "\n=== Executing config.g ===\n";
-	const std::string configPath = "0:/sys/config.g";
+	const std::string configPath = "0:/sys/config_hangprinter.g";
 	if (MassStorage::FileExists(configPath.c_str()))
 	{
 		if (!ExecuteFile(configPath))
