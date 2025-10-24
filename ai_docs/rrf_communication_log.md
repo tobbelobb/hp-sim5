@@ -3009,8 +3009,8 @@ Architect:
 That seems to have gone to shit.
 
 I have this prompt to try and fix it, or I can just revert and try again:
+</non-prompt-just-a-note>
 
-"""
 We're working on the RRF/host code. There's a problem with the logging of CAN packets. There seems to be two functions that both want to write to the same buffer or something:
 
 The first line that tries to write CAN packets is this one:
@@ -3025,19 +3025,139 @@ RRF/host/can/CanInterfaceHost.cpp line 30: HostCanCapture::LogMotion(*buf);
 
 If I comment out none of them I get the log seen in RRF/host/vsd/logs/can_segments_hangprinter2_both_LogMotion_and_emit_segment.jsonl.
 You see an early part that seems to have been cut off.
-If I comment out only the LogMotion line we get this: RRF/host/vsd/logs/can_segments_hangprinter2_no_LogMotion.jsonl
+If I comment out only the LogMotion line we get only the emit_segment output: RRF/host/vsd/logs/can_segments_hangprinter2_no_LogMotion.jsonl
 A few lines of simple CAN output. The first few tens of characters matches can_segments_hangprinter2_both_LogMotion_and_emit_segment.jsonl
-If I enable the LogMotion line again but comment out the emit_segment line we get this: RRF/host/vsd/logs/can_segments_hangprinter2_no_emit_segment.jsonl
+
+If I enable the LogMotion line again but comment out the emit_segment line we get only the LogMotion output: RRF/host/vsd/logs/can_segments_hangprinter2_no_emit_segment.jsonl
 The first 50-100 characters of that is now just junk.
 
-Clearly these different functions writing to the can log is in conflict. The emit_segment one were newly added. I asked the programmer why they did it, and they said:
-"We don’t have actual CAN; we need a **single choke point** where real RRF “would send” segments. We’ll **serialize to JSON Lines** when `--can-log` is provided."
-I responded
-"Why the new CAN motion facade? Does it fix anything?"
-They responded
-"The tiny host CAN motion facade was a structural suggestion, not a fix—basically a way to make Prepare()-derived motion segments the single, canonical thing that hits the log (so we don’t log from multiple spots with slightly different semantics).
-If you already log after (or inside) your host DDA::Prepare() and your log lines include the Prepare-level details (accel/steady/decel clocks, vEntry/vTop/vExit, per-drive step counts/rates, and raw-vs-coordinated handling), then the facade is
-redundant—keep your current logger and just wire the richer fields into it."
+The emit_segment output is one object per move (with all drives inside), while the second set is one object per drive (so you see 4 objects per move, 8 total for the two moves).
+
+Field comparison
+Only in the emit_segment verision (per-move objects):
+ - start_clock
+ - v_entry
+ - v_top
+ - v_exit
+ - drives (array of per-drive entries)
+ - per drive: drive_id, steps_total, steps_per_sec_top
+
+Only in the LogMotion version (per-drive objects)
+ - type (e.g., "movement_linear_shaped")
+ - capture_index
+ - destination (per-drive destination/node)
+ - when_to_execute (start time; same for the 4 packets of a move)
+ - acceleration
+ - deceleration
+ - seq
+ - extruder_mask
+ - use_pressure_advance
+ - use_late_input_shaping
+ - drivers (array, but here it contains a single entry)
+ - per driver: index, steps
+
+Present in both
+ - accel_clocks
+ - steady_clocks
+ - decel_clocks
+
+Structure difference
+
+emit_segment version: 2 JSON objects (one per move). Each has drives with 4 entries, all four step counts are grouped:
+Move 1: steps [221, -285, 103, -108]
+Move 2: steps [225, -285, 104, -106]
+
+LogMotion version: 8 JSON objects = 2 moves × 4 drives. Each object repeats the same timing fields for that move (accel_clocks, steady_clocks, decel_clocks) but carries only one drive’s steps and a destination.
+
+Minor mapping notes
+ - start_clock (former) is approximately equal to when_to_execute (latter). The first move shows start_clock: 50 vs when_to_execute: 0; the second move start_clock: 31433 vs when_to_execute: 31333. So there’s a small offset, but they’re clearly the same concept (move start time).
+ - drive_id (former) corresponds to drivers[].index (latter).
+ - steps_total (former) corresponds to drivers[].steps (latter).
+ - The per-drive top step rate (steps_per_sec_top) exists only in the former; the latter doesn’t include per-drive peak rates.
+
+
+These different functions writing to the can log is currently in conflict and we want to consolidate them.
+
+The LogMotion CAN json version (LogMotion in CanInterfaceHost.cpp) were added by the programmer who implemented "Move command packet capture", see Step 8 in ai_docs/rrf_integration_build_plan.md
+
+The emit_segment one in DDAHost.cpp were newly added, by the programmer who worked towards full ReprapFirmware movement (the real code used in the real embedded hardware, found under
+RRF/ReprapFirmware). See Step 9 in ai_docs/rrf_integration_build_plan.md.
+
+When confronted with why they added a new one, the Step 9 programmer defended themselves with:
+
+"""
+I didn’t mean “your CAN logs are broken.” The tiny host “CAN motion” facade was a structural suggestion, not a fix—basically a way to make Prepare()-derived motion segments the single, canonical thing that hits the log (so we don’t log from multiple spots with slightly different semantics).
+
+If you already log after (or inside) your host DDA::Prepare() and your log lines include the Prepare-level details (accel/steady/decel clocks, vEntry/vTop/vExit, per-drive step counts/rates, and raw-vs-coordinated handling), then the facade is redundant—keep your current logger and just wire the richer fields into it.
+
+Why I proposed it anyway
+
+Single choke point. It forces all segment emission to come from the same stage (post-Prepare), which mirrors how RRF bundles timing decisions.
+
+Richer payload. It nudges the log schema toward “what Prepare knows”: segment clocks, entry/top/exit speeds, drive-mix, etc. If your current log already carries these, you’re good.
+
+Future-proofing. When you add lookahead/pressure advance/segmentation in 9.3.4, having one emitter at the Prepare boundary tends to be easier than hunting multiple call sites.
+
+Quick self-check: if all “yes”, skip the facade
+
+If your existing --can-log already records, per emitted segment:
+
+Clocks: accel_clocks, steady_clocks, decel_clocks, plus a monotonic start_clock.
+
+Speeds: v_entry, v_top, v_exit (even if entry/exit are 0.0 for now).
+
+Per-drive data: signed steps_total and some peak/avg steps/s for each active drive.
+
+Raw vs coordinated: G1 H2 (or equivalent) results in only the addressed drives being emitted (no kinematics mixing on those).
+
+Kinematics switch: M669 K1 (Cartesian) vs M669 K6 (Hangprinter) actually changes mapping/step output in the log.
+
+Long-move segmentation (optional for 9.3.3): either a single big segment or multiple; segmentation can come in 9.3.4.
+
+If that’s how your current logger behaves, no change needed: keep your logger and just ensure DDA::Prepare() is the point where emission happens and where those fields are populated.
+
+If you want the “minimal glue” without a new facade
+
+Instead of a new module, you can drop a tiny emit call right where your host Prepare() finishes computing timings:
+
+// Inside your existing host DDA::Prepare() once you have:
+// start_clock, accel_clocks, steady_clocks, decel_clocks,
+// v_entry, v_top, v_exit, and per-drive {id, steps_total, steps_per_sec_top}:
+
+CanLogLine line;
+line.start_clock   = start_clock;
+line.accel_clocks  = accel_clocks;
+line.steady_clocks = steady_clocks;
+line.decel_clocks  = decel_clocks;
+line.v_entry       = v_entry;
+line.v_top         = v_top;
+line.v_exit        = v_exit;
+
+for (auto& d : drives_prepared) {
+    line.drives.push_back({
+        .drive_id         = d.id,
+        .steps_total      = d.steps,
+        .steps_per_sec_top= d.steps_per_sec_top
+    });
+}
+
+// Reuse your existing logging path:
+rrf_canlog_append(line);   // whatever your current function is
+
+
+That keeps your current log format/file handling intact—just ensures the Prepare-level data is what gets logged.
+
+Bottom line
+
+I wasn’t confused so much as erring on the side of consolidating emission at Prepare.
+
+If your logs are already post-Prepare and rich, don’t add the facade.
+
+If any fields are missing, add them to your existing logger rather than introducing a new emission path.
 """
 
-I think I'll just try again.
+What I really want is just to capture the CAN packages, and I want the CAN packages to be as similar as possible to how
+they're created and transmitted in RRF/CANlib and RRF/ReprapFirmware.
+
+I'm really tired of all this shimming logic, and want to integrate more of the real ReprapFirmware logic to be honest.
+Look at consolidating the above before looking at Step 9.3.4 in ai_docs/rrf_integration_build_plan.md
