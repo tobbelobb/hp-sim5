@@ -1,5 +1,7 @@
 CXX := g++
-CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic -pthread \
+#CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic -pthread \
+
+CXXFLAGS := -std=gnu++17 -pthread \
     -I. \
     -Iinclude \
     -Irtos \
@@ -7,35 +9,35 @@ CXXFLAGS := -std=gnu++17 -Wall -Wextra -pedantic -pthread \
     -I../ReprapFirmware/src/Hardware/SAME70 \
     -I../RRFLibraries/src \
     -I../CANlib/src \
-	-D__SAME70Q20B__ \
-	-DDUET3_MB6HC=1 \
-	-DDUET3=1 \
-	-DSAME70=1 \
-	-DRRF_HOST_BUILD=1 \
+    -D__SAME70Q20B__ \
+    -DDUET3_MB6HC=1 \
+    -DDUET3=1 \
+    -DSAME70=1 \
+    -DRRF_HOST_BUILD=1 \
     -DSRC_MOVEMENT_STEPTIMER_H_=1 \
     -DUSE_SBC=0
 LDFLAGS := -pthread
 TARGET := host_rrf_bootstrap
 
 HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
-    can/CanCapture.cpp \
-    can/CanInterfaceHost.cpp \
-    storage/HostFileStore.cpp \
-    storage/HostMassStorage.cpp \
-    platform/Heap.cpp \
-    platform/StringHandle.cpp \
-    platform/ArrayHandle.cpp \
-    platform/SoftwareReset.cpp \
-    platform/PlatformHost.cpp \
-    platform/RepRapHost.cpp \
-    platform/GCodesHost.cpp \
-    gcodes/GCodeInputStubs.cpp \
-    gcodes/GCodeFileInfoHost.cpp \
-    networking/MacAddressHost.cpp \
-    platform/GetFloatFormatStringHost.cpp \
-    platform/TasksHost.cpp \
-    platform/DebugPrintHost.cpp \
-    object_model/ObjectModelHost.cpp \
+	can/CanCapture.cpp \
+	can/CanInterfaceHost.cpp \
+	storage/HostFileStore.cpp \
+	storage/HostMassStorage.cpp \
+	platform/Heap.cpp \
+	platform/StringHandle.cpp \
+	platform/ArrayHandle.cpp \
+	platform/SoftwareReset.cpp \
+	platform/PlatformHost.cpp \
+	platform/RepRapHost.cpp \
+	platform/GCodesHost.cpp \
+	gcodes/GCodeInputStubs.cpp \
+	gcodes/GCodeFileInfoHost.cpp \
+	networking/MacAddressHost.cpp \
+	platform/GetFloatFormatStringHost.cpp \
+	platform/TasksHost.cpp \
+	platform/DebugPrintHost.cpp \
+	object_model/ObjectModelHost.cpp \
 	object_model/VariableHost.cpp \
 	object_model/GlobalVariablesHost.cpp \
 	object_model/ObjectExplorationContextHost.cpp \
@@ -46,9 +48,9 @@ HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	movement/StepTimerHost.cpp \
 	movement/DDARingHost.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp \
-    ../ReprapFirmware/src/Storage/CRC32.cpp \
-    ../ReprapFirmware/src/Storage/CRC16.cpp \
-    ../ReprapFirmware/src/GCodes/GCodeException.cpp \
+	../ReprapFirmware/src/Storage/CRC32.cpp \
+	../ReprapFirmware/src/Storage/CRC16.cpp \
+	../ReprapFirmware/src/GCodes/GCodeException.cpp \
 	../ReprapFirmware/src/GCodes/GCodeMachineState.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/GCodeBuffer.cpp \
 	../ReprapFirmware/src/GCodes/GCodeBuffer/StringParser.cpp \

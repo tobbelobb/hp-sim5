@@ -28,4 +28,6 @@ struct EndstopHitDetails
 	bool HasDriver() const noexcept { return false; }
 };
 
+class ZProbe;
+
 #endif // ENDSTOPS_ENDSTOPS_DEFS_H_

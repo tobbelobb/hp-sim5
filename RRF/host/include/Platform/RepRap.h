@@ -11,13 +11,13 @@
 #include <PrintMonitor/PrintMonitor.h>
 #include <Heating/Heat.h>
 #include <Fans/FansManager.h>
-#include <GCodes/GCodes.h>
 #include <Movement/Move.h>
 
 #include <cstdint>
 
 class GCodeBuffer;
 class OutputBuffer;
+class GCodes;
 
 using DebugFlags = Bitmap<uint16_t>;
 
@@ -28,18 +28,18 @@ class RepRap
 public:
 	RepRap() noexcept;
 
-	Platform& GetPlatform() noexcept { return platform; }
-	const Platform& GetPlatform() const noexcept { return platform; }
+	Platform& GetPlatform() noexcept { return *platform; }
+	const Platform& GetPlatform() const noexcept { return *platform; }
 
-	GCodes& GetGCodes() noexcept { return gCodes; }
-	const GCodes& GetGCodes() const noexcept { return gCodes; }
+	GCodes& GetGCodes() noexcept { return *gCodes; }
+	const GCodes& GetGCodes() const noexcept { return *gCodes; }
 
-	Move& GetMove() noexcept { return move; }
-	const Move& GetMove() const noexcept { return move; }
+	Move& GetMove() noexcept { return *move; }
+	const Move& GetMove() const noexcept { return *move; }
 
-	Heat& GetHeat() noexcept { return heat; }
-	PrintMonitor& GetPrintMonitor() noexcept { return printMonitor; }
-	FansManager& GetFansManager() noexcept { return fansManager; }
+	Heat& GetHeat() noexcept { return *heat; }
+	PrintMonitor& GetPrintMonitor() noexcept { return *printMonitor; }
+	FansManager& GetFansManager() noexcept { return *fansManager; }
 
 	bool UsingSbcInterface() const noexcept { return false; }
 
@@ -55,17 +55,17 @@ public:
 	void GlobalUpdated() noexcept {}
 	void MoveUpdated() noexcept {}
 
-	ReadLockedPointer<const VariableSet> GetGlobalVariablesForReading() noexcept { return globalVariables.GetForReading(); }
-	WriteLockedPointer<VariableSet> GetGlobalVariablesForWriting() noexcept { return globalVariables.GetForWriting(); }
+	ReadLockedPointer<const VariableSet> GetGlobalVariablesForReading() noexcept { return *globalVariables.GetForReading(); }
+	WriteLockedPointer<VariableSet> GetGlobalVariablesForWriting() noexcept { return *globalVariables.GetForWriting(); }
 
 private:
-	Platform platform;
-	Move move;
-	GCodes gCodes;
-	Heat heat;
-	PrintMonitor printMonitor;
-	FansManager fansManager;
-	GlobalVariables globalVariables;
+	Platform* platform;
+	Move* move;
+	GCodes* gCodes;
+	Heat* heat;
+	PrintMonitor* printMonitor;
+	FansManager* fansManager;
+	GlobalVariables* globalVariables;
 };
 
 extern RepRap reprap;
