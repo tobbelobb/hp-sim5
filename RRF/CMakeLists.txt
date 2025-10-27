@@ -75,69 +75,21 @@ set(RRF_SOURCES
     #${RRF_SOURCE_DIR}/src/Platform/RepRap.cpp
 )
 
-# --- Helper function for patching #include "Somefile.h" into #include <SomeDir/SomeFile.h>, so we can include-shadow it ---
-# This avoids any shell/sed usage and works cross-platform.
-set(PATCH_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/patch_includes.cmake")
-file(WRITE "${PATCH_SCRIPT}" "
-# patch_includes.cmake
-if(NOT DEFINED INPUT OR NOT DEFINED OUTPUT)
-  message(FATAL_ERROR \"patch_includes.cmake requires -DINPUT and -DOUTPUT\")
-endif()
+# --- Patching #include "Somefile.h" into #include <SomeDir/SomeFile.h>
+# This gives us control. We can shadow bracketed includes, but not quoted includes ---
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(IncludePatcher)
 
-# Strip accidental surrounding quotes (if any)
-if(INPUT MATCHES \"^\\\".*\\\"$\")
-  string(REGEX REPLACE \"^\\\"(.*)\\\"$\" \"\\\\1\" INPUT \"\${INPUT}\")
-endif()
-if(OUTPUT MATCHES \"^\\\".*\\\"$\")
-  string(REGEX REPLACE \"^\\\"(.*)\\\"$\" \"\\\\1\" OUTPUT \"\${OUTPUT}\")
-endif()
-
-# Absolutize relative paths against the build dir
-get_filename_component(INPUT  \"\${INPUT}\"  ABSOLUTE BASE_DIR \"${CMAKE_CURRENT_BINARY_DIR}\")
-get_filename_component(OUTPUT \"\${OUTPUT}\" ABSOLUTE BASE_DIR \"${CMAKE_CURRENT_BINARY_DIR}\")
-
-file(READ \"\${INPUT}\" _c)
-
-# Normalize line endings
-string(REPLACE \"\\r\\n\" \"\\n\" _c \"\${_c}\")
-string(REPLACE \"\\r\"   \"\\n\" _c \"\${_c}\")
-
-# Nuke the quoted includes without changing the upstream ReprapFirmware repo...
-# Replace: #include \"Header.h\"  ->  #include <SomeDir/Header.h>
-string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"Platform\\\\.h\\\"\" \"#include <Platform/Platform.h>\" _c \"\${_c}\")
-string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"RepRap\\\\.h\\\"\"   \"#include <Platform/RepRap.h>\"   _c \"\${_c}\")
-string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"ArrayHandle\\\\.h\\\"\"   \"#include <Platform/ArrayHandle.h>\"   _c \"\${_c}\")
-string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"StringHandle\\\\.h\\\"\"   \"#include <Platform/StringHandle.h>\"   _c \"\${_c}\")
-string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"OutputMemory\\\\.h\\\"\"   \"#include <Platform/OutputMemory.h>\"   _c \"\${_c}\")
-
-get_filename_component(_outdir \"\${OUTPUT}\" DIRECTORY)
-file(MAKE_DIRECTORY \"\${_outdir}\")
-file(WRITE \"\${OUTPUT}\" \"\${_c}\")
-")
-
-# --- Helper function: patch headers in pure CMake and add resulting files ---
-function(patch_and_add_sources TARGET_NAME)
-  foreach(ABS_SOURCE_FILE IN LISTS ARGN)
-    file(RELATIVE_PATH REL_SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}" "${ABS_SOURCE_FILE}")
-    set(PATCHED_SOURCE_FILE "${CMAKE_CURRENT_BINARY_DIR}/patched_sources/${REL_SOURCE_FILE}")
-    get_filename_component(PATCHED_SOURCE_DIR "${PATCHED_SOURCE_FILE}" DIRECTORY)
-
-    add_custom_command(
-      OUTPUT "${PATCHED_SOURCE_FILE}"
-      COMMAND "${CMAKE_COMMAND}" -DINPUT:FILEPATH="${ABS_SOURCE_FILE}"
-                                  -DOUTPUT:FILEPATH="${PATCHED_SOURCE_FILE}"
-                                  -P "${PATCH_SCRIPT}"
-      DEPENDS "${ABS_SOURCE_FILE}" "${PATCH_SCRIPT}"
-      VERBATIM
-      COMMENT "Patching ${REL_SOURCE_FILE}"
-    )
-
-    target_sources(${TARGET_NAME} PRIVATE "${PATCHED_SOURCE_FILE}")
-  endforeach()
-endfunction()
-
-patch_and_add_sources(rrf_simulator ${RRF_SOURCES})
-
+# Declare mappings, (SomeFile.h|SomeDir/SomeFile.h)
+set(INCLUDE_PATCH_MAP
+  "Platform.h|Platform/Platform.h"
+  "RepRap.h|Platform/RepRap.h"
+  "ArrayHandle.h|Platform/ArrayHandle.h"
+  "StringHandle.h|Platform/StringHandle.h"
+  "OutputMemory.h|Platform/OutputMemory.h"
+)
+include_patcher_configure(PATCH_SCRIPT ${INCLUDE_PATCH_MAP})
+include_patcher_add_patched_sources(rrf_simulator "${PATCH_SCRIPT}" ${RRF_SOURCES})
 
 # --- Manage Include Directories ---
 # Order matters: fakes first, then real headers as fallback.
