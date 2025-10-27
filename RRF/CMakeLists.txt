@@ -42,9 +42,9 @@ set(RRF_SOURCES
     ${RRF_SOURCE_DIR}/src/Platform/ArrayHandle.cpp
     ${RRF_SOURCE_DIR}/src/Platform/StringHandle.cpp
     ${RRF_SOURCE_DIR}/src/Platform/OutputMemory.cpp
-    #${RRF_SOURCE_DIR}/src/ObjectModel/Variable.cpp
-    #${RRF_SOURCE_DIR}/src/ObjectModel/ObjectModel.cpp
-    #${RRF_SOURCE_DIR}/src/ObjectModel/GlobalVariables.cpp
+    ${RRF_SOURCE_DIR}/src/ObjectModel/Variable.cpp
+    ${RRF_SOURCE_DIR}/src/ObjectModel/ObjectModel.cpp
+    ${RRF_SOURCE_DIR}/src/ObjectModel/GlobalVariables.cpp
 
     # Tier 2: Core Machine Components (Stateful but not Active)
     #${RRF_SOURCE_DIR}/src/Tools/Filament.cpp

@@ -39,11 +39,12 @@ public:
 	void Spin() noexcept;
 	void Exit() noexcept;
 
-	void LogError(ErrorCode e) noexcept { }
+	void LogError(ErrorCode e) noexcept { } // Called by real OutputMemory.cpp
 
 	bool SysFileExists(const char* filename) const noexcept;
 	FileStore* OpenSysFile(const char* filename, OpenMode mode) const noexcept;
 	bool MakeSysFileName(const StringRef& result, const char* filename) const noexcept;
+	void AppendWebDir(const StringRef & path) const noexcept {  path.cat("www"); };
 	FileStore* OpenFile(const char* directory, const char* filename, OpenMode mode, unsigned int preAllocSize = 0) const noexcept;
 	bool FileExists(const char* directory, const char* filename) const noexcept;
 
@@ -56,12 +57,12 @@ public:
 
 	EndstopsManager& GetEndstops() noexcept { return endstops; }
 
-	const String<MaxFilenameLength>& GetSysDir() const noexcept { return sysDir; }
+	ReadLockedPointer<const char> GetSysDir() const noexcept;	// where the system files are
+	ReadLockedPointer<const char> GetWebDir() const noexcept;	// where the web files are
 	void SetSysDir(const char* path) noexcept;
 	void AppendSysDir(const StringRef& result) const noexcept;
 
 private:
-	String<MaxFilenameLength> sysDir;
 	EndstopsManager endstops;
 };
 
