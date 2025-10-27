@@ -76,6 +76,46 @@ set(RRF_SOURCES
 )
 
 # --- Helper function for patching #include "Somefile.h" into #include <SomeDir/SomeFile.h>, so we can include-shadow it ---
+# This avoids any shell/sed usage and works cross-platform.
+set(PATCH_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/patch_includes.cmake")
+file(WRITE "${PATCH_SCRIPT}" "
+# patch_includes.cmake
+if(NOT DEFINED INPUT OR NOT DEFINED OUTPUT)
+  message(FATAL_ERROR \"patch_includes.cmake requires -DINPUT and -DOUTPUT\")
+endif()
+
+# Strip accidental surrounding quotes (if any)
+if(INPUT MATCHES \"^\\\".*\\\"$\")
+  string(REGEX REPLACE \"^\\\"(.*)\\\"$\" \"\\\\1\" INPUT \"\${INPUT}\")
+endif()
+if(OUTPUT MATCHES \"^\\\".*\\\"$\")
+  string(REGEX REPLACE \"^\\\"(.*)\\\"$\" \"\\\\1\" OUTPUT \"\${OUTPUT}\")
+endif()
+
+# Absolutize relative paths against the build dir
+get_filename_component(INPUT  \"\${INPUT}\"  ABSOLUTE BASE_DIR \"${CMAKE_CURRENT_BINARY_DIR}\")
+get_filename_component(OUTPUT \"\${OUTPUT}\" ABSOLUTE BASE_DIR \"${CMAKE_CURRENT_BINARY_DIR}\")
+
+file(READ \"\${INPUT}\" _c)
+
+# Normalize line endings
+string(REPLACE \"\\r\\n\" \"\\n\" _c \"\${_c}\")
+string(REPLACE \"\\r\"   \"\\n\" _c \"\${_c}\")
+
+# Nuke the quoted includes without changing the upstream ReprapFirmware repo...
+# Replace: #include \"Header.h\"  ->  #include <SomeDir/Header.h>
+string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"Platform\\\\.h\\\"\" \"#include <Platform/Platform.h>\" _c \"\${_c}\")
+string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"RepRap\\\\.h\\\"\"   \"#include <Platform/RepRap.h>\"   _c \"\${_c}\")
+string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"ArrayHandle\\\\.h\\\"\"   \"#include <Platform/ArrayHandle.h>\"   _c \"\${_c}\")
+string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"StringHandle\\\\.h\\\"\"   \"#include <Platform/StringHandle.h>\"   _c \"\${_c}\")
+string(REGEX REPLACE \"#[ \\t]*include[ \\t]*\\\"OutputMemory\\\\.h\\\"\"   \"#include <Platform/OutputMemory.h>\"   _c \"\${_c}\")
+
+get_filename_component(_outdir \"\${OUTPUT}\" DIRECTORY)
+file(MAKE_DIRECTORY \"\${_outdir}\")
+file(WRITE \"\${OUTPUT}\" \"\${_c}\")
+")
+
+# --- Helper function: patch headers in pure CMake and add resulting files ---
 function(patch_and_add_sources TARGET_NAME)
   foreach(ABS_SOURCE_FILE IN LISTS ARGN)
     file(RELATIVE_PATH REL_SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}" "${ABS_SOURCE_FILE}")
@@ -84,13 +124,10 @@ function(patch_and_add_sources TARGET_NAME)
 
     add_custom_command(
       OUTPUT "${PATCHED_SOURCE_FILE}"
-      COMMAND "${CMAKE_COMMAND}" -E make_directory "${PATCHED_SOURCE_DIR}"
-      # Use a shell so '>' redirection works; quote everything; use '@' as sed delimiter.
-      COMMAND "${CMAKE_COMMAND}" -E sh -c
-        "sed -e 's@#include \\\"Platform.h\\\"@#include <Platform/Platform.h>@' \
-              -e 's@#include \\\"RepRap.h\\\"@#include <Platform/RepRap.h>@' \
-              \"$<SHELL_PATH:${ABS_SOURCE_FILE}>\" > \"$<SHELL_PATH:${PATCHED_SOURCE_FILE}>\""
-      DEPENDS "${ABS_SOURCE_FILE}"
+      COMMAND "${CMAKE_COMMAND}" -DINPUT:FILEPATH="${ABS_SOURCE_FILE}"
+                                  -DOUTPUT:FILEPATH="${PATCHED_SOURCE_FILE}"
+                                  -P "${PATCH_SCRIPT}"
+      DEPENDS "${ABS_SOURCE_FILE}" "${PATCH_SCRIPT}"
       VERBATIM
       COMMENT "Patching ${REL_SOURCE_FILE}"
     )
@@ -103,33 +140,27 @@ patch_and_add_sources(rrf_simulator ${RRF_SOURCES})
 
 
 # --- Manage Include Directories ---
-# This section solves "sibling include" and "double include" problems.
-# The order is important: fakes first
+# Order matters: fakes first, then real headers as fallback.
 
-# 1. Add the root of the fake include directory.
-#    This makes includes like <Platform/Platform.h> work.
+# 1) Root of fake include directory so <Platform/Platform.h> etc. resolve.
 target_include_directories(rrf_simulator PUBLIC
     "${SIM_ROOT_DIR}"
     "${SIM_ROOT_DIR}/include"
 )
 
-# 2. Automatically find and add all subdirectories of the fake include dir.
-#    First, get everything matching the pattern.
+# 2) Add all subdirectories under host/include (only directories).
 file(GLOB ALL_FAKE_INCLUDE_ITEMS LIST_DIRECTORIES true "${SIM_ROOT_DIR}/include/*")
-#    Then, create a new list and fill it ONLY with the items that are directories.
 set(FAKE_HEADER_DIRS "")
 foreach(item ${ALL_FAKE_INCLUDE_ITEMS})
     if(IS_DIRECTORY ${item})
         list(APPEND FAKE_HEADER_DIRS ${item})
     endif()
 endforeach()
-#    Finally, add the clean list of directories to the include path.
 target_include_directories(rrf_simulator PUBLIC
     ${FAKE_HEADER_DIRS}
 )
 
-# 3. Add the ROOT of the ReprapFirmware 'src' directory last.
-#    This is the fallback for all real headers we are not faking.
+# 3) Real RRF headers last (fallback).
 target_include_directories(rrf_simulator PRIVATE
     ${RRF_SOURCE_DIR}/src
     #${RRF_SOURCE_DIR}/src/Hardware/SAME70
@@ -141,7 +172,7 @@ target_include_directories(rrf_simulator PRIVATE
 # --- Final Touches ---
 set_target_properties(rrf_simulator PROPERTIES OUTPUT_NAME "rrf_simulator")
 
-# Add a message to confirm paths are set correctly
+# Diagnostics
 message(STATUS "Simulator Root: ${SIM_ROOT_DIR}")
 message(STATUS "RepRapFirmware Source: ${RRF_SOURCE_DIR}")
 message(STATUS "Fake header subdirectories: ${FAKE_HEADER_DIRS}")
