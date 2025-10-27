@@ -68,4 +68,7 @@ to silence the warnings:
 #include_next <Platform/TaskPriorities.h>
 ```
 
+# Oct 27, 2025
 
+Made a convenience variable:
+export CXXFLAGS="-fdiagnostics-color=always -std=gnu++17 -pthread -I. -Iinclude -Irtos -I../ReprapFirmware/src -I../ReprapFirmware/src/Hardware/SAME70 -I../RRFLibraries/src -I../CANlib/src -D__SAME70Q20B__ -DDUET3_MB6HC=1 -DDUET3=1 -DSAME70=1  -DRRF_HOST_BUILD=1 -DSRC_MOVEMENT_STEPTIMER_H_=1 -DUSE_SBC=0"

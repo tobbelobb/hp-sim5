@@ -362,6 +362,9 @@ public:
 	void ReleaseWriter() noexcept {}
 	void DowngradeWriter() noexcept {}
 	bool IsWriteLocked() const noexcept { return false; }
+	void CheckHasWriteLock() noexcept {};
+	void CheckHasReadLock() noexcept {};
+	void CheckHasReadOrWriteLock() noexcept {};
 };
 
 class ReadLocker
