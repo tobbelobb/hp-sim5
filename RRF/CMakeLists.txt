@@ -12,7 +12,7 @@ set(RRF_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ReprapFirmware)
 set(RRFLibraries_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/RRFLibraries)
 set(CANlib_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CANlib)
 
-
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # --- Define the Executable Target ---
 add_executable(rrf_simulator)
