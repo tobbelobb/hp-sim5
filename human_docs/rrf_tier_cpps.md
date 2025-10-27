@@ -1,7 +1,7 @@
 # Tier 1: Foundational Utilities and Data Structures
 
-Platform/ArrayHandle.cpp
-Platform/StringHandle.cpp
+Platform/ArrayHandle.cpp OK
+Platform/StringHandle.cpp OK
 Platform/OutputMemory.cpp
 ObjectModel/Variable.cpp
 ObjectModel/ObjectModel.cpp
