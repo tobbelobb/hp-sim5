@@ -12,6 +12,8 @@ set(RRF_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ReprapFirmware)
 set(RRFLibraries_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/RRFLibraries)
 set(CANlib_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CANlib)
 
+
+
 # --- Define the Executable Target ---
 add_executable(rrf_simulator)
 
@@ -73,7 +75,31 @@ set(RRF_SOURCES
     #${RRF_SOURCE_DIR}/src/Platform/RepRap.cpp
 )
 
-target_sources(rrf_simulator PRIVATE ${RRF_SOURCES})
+# --- Helper function for patching #include "Somefile.h" into #include <SomeDir/SomeFile.h>, so we can include-shadow it ---
+function(patch_and_add_sources TARGET_NAME)
+  foreach(ABS_SOURCE_FILE IN LISTS ARGN)
+    file(RELATIVE_PATH REL_SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}" "${ABS_SOURCE_FILE}")
+    set(PATCHED_SOURCE_FILE "${CMAKE_CURRENT_BINARY_DIR}/patched_sources/${REL_SOURCE_FILE}")
+    get_filename_component(PATCHED_SOURCE_DIR "${PATCHED_SOURCE_FILE}" DIRECTORY)
+
+    add_custom_command(
+      OUTPUT "${PATCHED_SOURCE_FILE}"
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${PATCHED_SOURCE_DIR}"
+      # Use a shell so '>' redirection works; quote everything; use '@' as sed delimiter.
+      COMMAND "${CMAKE_COMMAND}" -E sh -c
+        "sed -e 's@#include \\\"Platform.h\\\"@#include <Platform/Platform.h>@' \
+              -e 's@#include \\\"RepRap.h\\\"@#include <Platform/RepRap.h>@' \
+              \"$<SHELL_PATH:${ABS_SOURCE_FILE}>\" > \"$<SHELL_PATH:${PATCHED_SOURCE_FILE}>\""
+      DEPENDS "${ABS_SOURCE_FILE}"
+      VERBATIM
+      COMMENT "Patching ${REL_SOURCE_FILE}"
+    )
+
+    target_sources(${TARGET_NAME} PRIVATE "${PATCHED_SOURCE_FILE}")
+  endforeach()
+endfunction()
+
+patch_and_add_sources(rrf_simulator ${RRF_SOURCES})
 
 
 # --- Manage Include Directories ---
