@@ -16,7 +16,9 @@ namespace
 {
 	std::mutex logMutex;
 
-	constexpr const char* DefaultSysDir = "0:/sys";
+	constexpr const char* DefaultSysDir = "0:/sys/";
+	constexpr const char* DefaultWebDir = "0:/www/";
+	constexpr const char* DefaultGcodeDir = "0:/gcodes/";
 
 	constexpr const char* PrefixForType(MessageType type) noexcept
 	{
@@ -91,7 +93,8 @@ FileStore* Platform::OpenSysFile(const char* filename, OpenMode mode) const noex
 bool Platform::MakeSysFileName(const StringRef& result, const char* filename) const noexcept
 {
 #if HAS_MASS_STORAGE
-	return MassStorage::CombineName(result, GetSysDir().c_str(), filename);
+	auto sysDirPtr = GetSysDir();
+	return MassStorage::CombineName(result, sysDirPtr.Ptr(), filename);
 #else
 	(void)result;
 	(void)filename;
@@ -189,6 +192,7 @@ void Platform::DebugMessage(const char* fmt, va_list vargs) noexcept
 
 void Platform::SetSysDir(const char* path) noexcept
 {
+	WriteLocker locker(sysDirLock);
 	if (path != nullptr)
 	{
 		sysDir.copy(path);
@@ -201,5 +205,16 @@ void Platform::SetSysDir(const char* path) noexcept
 
 void Platform::AppendSysDir(const StringRef& result) const noexcept
 {
-	result.copy(sysDir.c_str());
+	auto sysDirPtr = GetSysDir();
+	result.copy(sysDirPtr.Ptr());
+}
+
+ReadLockedPointer<const char> Platform::GetSysDir() const noexcept
+{
+	return ReadLockedPointer<const char>(sysDirLock, sysDir.c_str());
+}
+
+ReadLockedPointer<const char> Platform::GetWebDir() const noexcept
+{
+	return ReadLockedPointer<const char>(nullptr, DefaultWebDir);
 }

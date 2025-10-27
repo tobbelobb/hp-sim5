@@ -8,6 +8,7 @@
 #include <General/String.h>
 #include <Platform/OutputMemory.h>
 #include <Endstops/EndstopsManager.h>
+#include <RTOSIface/RTOSIface.h>
 
 class RepRap;
 extern RepRap reprap;
@@ -63,6 +64,8 @@ public:
 	void AppendSysDir(const StringRef& result) const noexcept;
 
 private:
+	mutable ReadWriteLock sysDirLock;
+	String<MaxFilenameLength> sysDir;
 	EndstopsManager endstops;
 };
 
