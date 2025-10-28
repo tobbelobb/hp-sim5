@@ -5,4 +5,4 @@
 // Can Interface (defined in the real CAN/CanInterface.h)
 // in our own host/can/CanInterfaceHost.cpp
 
-#include_next <CAN/CanInterface.h>
+#include <CAN/CanInterface.h.orig>

@@ -96,7 +96,6 @@ set(RRF_SOURCES_TO_USE
 # List of REAL .h files needed by the .cpp files above.
 # If compilation fails with "No such file or directory", add the missing header here.
 set(RRF_HEADERS_TO_USE
-    RepRapFirmware.h
     # Tier 1 Dependencies
     Platform/ArrayHandle.h
     Platform/StringHandle.h
@@ -106,6 +105,7 @@ set(RRF_HEADERS_TO_USE
     ObjectModel/GlobalVariables.h
     ObjectModel/TypeCode.h
     Platform/MessageType.h
+    Platform/PrintPausedReason.h
     # Tier 2 Dependencies
     Tools/Filament.h
     Tools/Tool.h
@@ -117,15 +117,71 @@ set(RRF_HEADERS_TO_USE
     Movement/DDA.h
     Movement/DDARing.h
     Movement/Move.h
-    # Other common headers that will be needed soon
+    Movement/RawMove.h
+    # Other common headers
+    RepRapFirmware.h
     Platform/RepRap.h
     GCodes/GCodeMachineState.h
+    GCodes/GCodeException.h
+    GCodes/ObjectTracker.h
+    GCodes/RestorePoint.h
+    GCodes/GCodeChannel.h
+    GCodes/GCodeInput.h
+    GCodes/CollisionAvoider.h
+    GCodes/KeepoutZone.h
+    GCodes/TriggerItem.h
+    GCodes/StraightProbeSettings.h
+    GCodes/SimulationMode.h
+    GCodes/GCodeBuffer/GCodeBuffer.h
+    GCodes/GCodeBuffer/BinaryParser.h
+    GCodes/GCodeBuffer/StringParser.h
+    GCodes/GCodeBuffer/ExpressionParser.h
+    GCodes/GCodeFileInfo.h
+    Config/Configuration.h
+    Networking/NetworkDefs.h
+    Storage/FileData.h
+    Storage/CRC32.h
+    Storage/CRC16.h
+    Endstops/EndstopDefs.h
+    Endstops/ZProbe.h
+    Endstops/Endstop.h
+    Platform/MessageBox.h
+    CAN/ExpansionManager.h
+    Platform/UniqueId.h
+    Platform/Event.h
+    Movement/StepperDrivers/DriverData.h
+    Movement/BedProbing/Grid.h
+    Movement/HomingMode.h
+    Movement/MovementError.h
+    Movement/MoveTiming.h
+    Movement/AxisShaper.h
+    Movement/ExtruderShaper.h
+    Movement/MoveSegment.h
+    Movement/MovementProfile.h
+    Movement/BedProbing/RandomProbePointSet.h
+    Movement/MoveDebugFlags.h
+    Hardware/IoPorts.h
+    Hardware/ExceptionHandlers.h
+    Hardware/SoftwareReset.h
+    AppNotifyIndices.h
+    CAN/CanMotion.h
+    CAN/CanDriversData.h
+    Movement/Kinematics/ZLeadscrewKinematics.h
+    Movement/Kinematics/LinearDeltaKinematics.h
+    Movement/Kinematics/RoundBedKinematics.h
+    Movement/Kinematics/RotaryDeltaKinematics.h
+    Movement/Kinematics/ScaraKinematics.h
+    Movement/Kinematics/PolarKinematics.h
+    Movement/Kinematics/FiveBarScaraKinematics.h
+    Platform/PortControl.h
+    PrintMonitor/PrintMonitor.h
 )
 
 
 # List of FAKE headers from your host/include directory that will OVERWRITE the real ones.
 # The path here is relative to host/include.
-set(FAKE_HEADERS_TO_OVERWRITE
+set(SHADOWING_HEADERS_TO_USE
+    # Shadowing headers
     FreeRTOS.h
     task.h
     queue.h
@@ -135,6 +191,8 @@ set(FAKE_HEADERS_TO_OVERWRITE
     Platform/Heap.h
     Platform/Tasks.h
     Config/Pins.h
+    Config/Pins_Host.h
+    PinDescription.h
     Interrupts.h
     Movement/StepTimer.h
     Movement/StepperDrivers/SmartDrivers.h
@@ -146,7 +204,42 @@ set(FAKE_HEADERS_TO_OVERWRITE
     CAN/CanInterface.h
     Networking/Network.h
     SerialCDC.h
-    # Add all fake headers here.
+    Core.h
+    Config/Features_Host.h
+    CoreTypes.h
+    CoreIO.h
+    Storage/FileStore.h
+    Storage/FileWriteBuffer.h
+    Tools/Spindle.h
+    UniqueIdBase.h
+    Stream.h
+    AnalogIn.h
+    AnalogOut.h
+    FilamentMonitors/FilamentMonitor.h
+    GCodes/GCodes.h # Very thin shim just to include AsyncSerial.h
+    AsyncSerial.h
+    Platform/TaskPriorities.h
+    CoreNotifyIndices.h
+)
+
+
+set(RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX
+    # All the members in this list will probably also exist in SHADOWING_HEADERS_TO_USE
+    # Sometimes, the shadowing header wants to use the original header for something.
+    # In that case it will append .orig to its name when including, like this:
+    # include <Path/To/Header.h.orig>
+    Platform/Heap.h
+    CAN/CanInterface.h
+    GCodes/GCodes.h
+    Platform/TaskPriorities.h
+    Platform/Tasks.h
+    GCodes/GCodes.h
+    Platform/TaskPriorities.h
+)
+
+set(HOST_HEADERS_TO_USE
+    # Our own headers
+    rtos/host_rtos.h
 )
 
 # --- Logic to Prepare the Sandboxed Source Tree ---
@@ -188,9 +281,40 @@ foreach(rel_path ${RRF_HEADERS_TO_USE})
     )
 endforeach()
 
-# 2. Process the FAKE headers that will OVERWRITE the real ones
-foreach(rel_path ${FAKE_HEADERS_TO_OVERWRITE})
+foreach(rel_path ${RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX})
+    set(abs_src_path "${RRF_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}.orig")
+    list(APPEND GENERATED_H_FILES ${abs_dest_path})
+
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real header ${rel_path} into ${rel_path}.orig"
+    )
+endforeach()
+
+# 2. Process the fake/host headers that will overwrite the real ones
+foreach(rel_path ${SHADOWING_HEADERS_TO_USE})
     set(abs_src_path "${SIM_ROOT_DIR}/include/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_H_FILES ${abs_dest_path})
+
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying FAKE header ${rel_path}"
+    )
+endforeach()
+foreach(rel_path ${HOST_HEADERS_TO_USE})
+    set(abs_src_path "${SIM_ROOT_DIR}/${rel_path}")
     set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
     list(APPEND GENERATED_H_FILES ${abs_dest_path})
 

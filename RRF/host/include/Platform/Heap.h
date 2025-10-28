@@ -1,6 +1,6 @@
 #pragma once
 
-#include_next <Platform/Heap.h>
+#include <Platform/Heap.h.orig>
 
 namespace Heap
 {
