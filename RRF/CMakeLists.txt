@@ -61,7 +61,7 @@ set(RRF_SOURCES
 
     # Tier 4: G-Code Interpretation and High-Level Logic
     ${RRF_SOURCE_DIR}/src/GCodes/GCodeBuffer/GCodeBuffer.cpp
-    #${RRF_SOURCE_DIR}/src/ExpressionParser.cpp
+    ${RRF_SOURCE_DIR}/src/ExpressionParser.cpp
     #${RRF_SOURCE_DIR}/src/StringParser.cpp
     #${RRF_SOURCE_DIR}/src/GCodes/GCodeMachineState.cpp
     #${RRF_SOURCE_DIR}/src/GCodes/GCodeInput.cpp
