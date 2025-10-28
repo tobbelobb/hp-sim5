@@ -22,8 +22,8 @@ TARGET := host_rrf_bootstrap
 HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	can/CanCapture.cpp \
 	can/CanInterfaceHost.cpp \
-	storage/HostFileStore.cpp \
-	storage/HostMassStorage.cpp \
+	storage/FileStoreHost.cpp \
+	storage/MassStorageHost.cpp \
 	platform/Heap.cpp \
 	platform/StringHandle.cpp \
 	platform/ArrayHandle.cpp \
@@ -44,7 +44,7 @@ HOST_SRC := src/main.cpp src/devices_stub.cpp rtos/freertos_shim.cpp \
 	movement/MoveHost.cpp \
 	movement/CartesianKinematicsHost.cpp \
 	movement/DDAHost.cpp \
-	movement/HostPlanner.cpp \
+	movement/PlannerHost.cpp \
 	movement/StepTimerHost.cpp \
 	movement/DDARingHost.cpp
 RRF_SRC := ../ReprapFirmware/src/Version.cpp \

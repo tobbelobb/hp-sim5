@@ -21,7 +21,6 @@ public:
 
 	void DisableRemoteStallEndstops() noexcept {}
 
-	// Step 9.3: Additional stub for Kinematics
 	bool HomingZWithProbe() const noexcept { return false; }
 };
 

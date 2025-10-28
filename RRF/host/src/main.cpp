@@ -17,7 +17,7 @@
 #include <Movement/DDA.h>
 #include <Movement/Move.h>
 #include <Movement/Kinematics/Kinematics.h>
-#include <Movement/HostPlanner.h>
+#include <Movement/Planner.h>
 
 #include <array>
 #include <algorithm>

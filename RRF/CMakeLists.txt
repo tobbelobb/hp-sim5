@@ -49,14 +49,14 @@ set(RRF_SOURCES
     # Tier 2: Core Machine Components (Stateful but not Active)
     ${RRF_SOURCE_DIR}/src/Tools/Filament.cpp
     ${RRF_SOURCE_DIR}/src/Tools/Tool.cpp
-    #${RRF_SOURCE_DIR}/src/Movement/Kinematics/Kinematics.cpp
-    #${RRF_SOURCE_DIR}/src/Movement/Kinematics/CoreKinematics.cpp
-    #${RRF_SOURCE_DIR}/src/Movement/Kinematics/HangprinterKinematics.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/Kinematics/Kinematics.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/Kinematics/CoreKinematics.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/Kinematics/HangprinterKinematics.cpp
 
     # Tier 3: The Motion Planning Engine (Bottom-Up)
-    #${RRF_SOURCE_DIR}/src/Movement/DriveMovement.cpp
-    #${RRF_SOURCE_DIR}/src/Movement/DDA.cpp
-    #${RRF_SOURCE_DIR}/src/Movement/DDARing.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/DriveMovement.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/DDA.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/DDARing.cpp
     #${RRF_SOURCE_DIR}/src/Movement/Move.cpp
 
     # Tier 4: G-Code Interpretation and High-Level Logic
