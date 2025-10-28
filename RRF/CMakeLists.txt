@@ -60,7 +60,7 @@ set(RRF_SOURCES
     ${RRF_SOURCE_DIR}/src/Movement/Move.cpp
 
     # Tier 4: G-Code Interpretation and High-Level Logic
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodeBuffer/GCodeBuffer.cpp
+    ${RRF_SOURCE_DIR}/src/GCodes/GCodeBuffer/GCodeBuffer.cpp
     #${RRF_SOURCE_DIR}/src/ExpressionParser.cpp
     #${RRF_SOURCE_DIR}/src/StringParser.cpp
     #${RRF_SOURCE_DIR}/src/GCodes/GCodeMachineState.cpp
@@ -80,7 +80,19 @@ set(RRF_SOURCES
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(IncludePatcher)
 
-# Declare mappings, (SomeFile.h|SomeDir/SomeFile.h)
+# Declare mappings (SomeFile.h|SomeDir/SomeFile.h)
+# These are headers we want to shadow that have been included with quotes, like
+# ```cpp
+# #include "Platform.h"
+# ```
+# Our script changes that to
+# #include <Platform/Platform.h>
+# ... which makes it possible for us to shadow the real Platform.h file
+# I found all these variants that need replacement with a grep command
+# that includes the list of all the headers I want to shadow:
+# ```bash
+# git grep -nE '#[[:space:]]*include[[:space:]]*"([^"]*/)?(FreeRTOS\.h|task\.h|queue\.h|semphr\.h|RTOSIface\.h|Platform\.h|Heap\.h|Tasks\.h|Pins_[^"/]*\.h|Interrupts\.h|StepTimer\.h|SmartDrivers\.h|EndstopsManager\.h|Heat\.h|FansManager\.h|Accelerometers\.h|MassStorage\.h|CanInterface\.h|Network\.h|SerialCDC\.h|AuxDevice\.h)"' -- '*.h' '*.cpp
+# ```
 set(INCLUDE_PATCH_MAP
   "Platform.h|Platform/Platform.h"
   "RepRap.h|Platform/RepRap.h"
@@ -88,6 +100,23 @@ set(INCLUDE_PATCH_MAP
   "StringHandle.h|Platform/StringHandle.h"
   "OutputMemory.h|Platform/OutputMemory.h"
   "StepperDrivers/SmartDrivers.h|Movement/StepperDrivers/SmartDrivers.h"
+  "Accelerometers.h|Accelerometers/Accelerometers.h"
+  "CanInterface.h|CAN/CanInterface.h"
+  "CAN/CanInterface.h|CAN/CanInterface.h"
+  "Storage/MassStorage.h|Storage/MassStorage.h"
+  "EndstopsManager.h|Endstops/EndstopsManager.h"
+  "FansManager.h|Fans/FansManager.h"
+  "Heat.h|Heating/Heat.h"
+  "Heating/Heat.h|Heating/Heat.h"
+  "RTOSIface/RTOSIface.h|RTOSIface/RTOSIface.h"
+  "SerialCDC.h|SerialCDC.h"
+  "StepTimer.h|Movement/StepTimer.h"
+  "Network.h|Networking/Network.h"
+  "Heap.h|Platform/Heap.h"
+  "Tasks.h|Platform/Tasks.h"
+  "FreeRTOS.h|FreeRTOS.h"
+  "task.h|task.h"
+  "MassStorage.h|Storage/MassStorage.h"
 )
 include_patcher_configure(PATCH_SCRIPT ${INCLUDE_PATCH_MAP})
 include_patcher_add_patched_sources(rrf_simulator "${PATCH_SCRIPT}" ${RRF_SOURCES})
