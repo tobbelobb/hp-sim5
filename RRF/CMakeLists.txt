@@ -57,7 +57,7 @@ set(RRF_SOURCES
     ${RRF_SOURCE_DIR}/src/Movement/DriveMovement.cpp
     ${RRF_SOURCE_DIR}/src/Movement/DDA.cpp
     ${RRF_SOURCE_DIR}/src/Movement/DDARing.cpp
-    #${RRF_SOURCE_DIR}/src/Movement/Move.cpp
+    ${RRF_SOURCE_DIR}/src/Movement/Move.cpp
 
     # Tier 4: G-Code Interpretation and High-Level Logic
     #${RRF_SOURCE_DIR}/src/GCodes/GCodeBuffer/GCodeBuffer.cpp
@@ -87,6 +87,7 @@ set(INCLUDE_PATCH_MAP
   "ArrayHandle.h|Platform/ArrayHandle.h"
   "StringHandle.h|Platform/StringHandle.h"
   "OutputMemory.h|Platform/OutputMemory.h"
+  "StepperDrivers/SmartDrivers.h|Movement/StepperDrivers/SmartDrivers.h"
 )
 include_patcher_configure(PATCH_SCRIPT ${INCLUDE_PATCH_MAP})
 include_patcher_add_patched_sources(rrf_simulator "${PATCH_SCRIPT}" ${RRF_SOURCES})
@@ -94,25 +95,13 @@ include_patcher_add_patched_sources(rrf_simulator "${PATCH_SCRIPT}" ${RRF_SOURCE
 # --- Manage Include Directories ---
 # Order matters: fakes first, then real headers as fallback.
 
-# 1) Root of fake include directory so <Platform/Platform.h> etc. resolve.
+# Root of fake include directory so <Platform/Platform.h> etc. resolve.
 target_include_directories(rrf_simulator PUBLIC
     "${SIM_ROOT_DIR}"
     "${SIM_ROOT_DIR}/include"
 )
 
-# 2) Add all subdirectories under host/include (only directories).
-file(GLOB ALL_FAKE_INCLUDE_ITEMS LIST_DIRECTORIES true "${SIM_ROOT_DIR}/include/*")
-set(FAKE_HEADER_DIRS "")
-foreach(item ${ALL_FAKE_INCLUDE_ITEMS})
-    if(IS_DIRECTORY ${item})
-        list(APPEND FAKE_HEADER_DIRS ${item})
-    endif()
-endforeach()
-target_include_directories(rrf_simulator PUBLIC
-    ${FAKE_HEADER_DIRS}
-)
-
-# 3) Real RRF headers last (fallback).
+# Real RRF headers last (fallback).
 target_include_directories(rrf_simulator PRIVATE
     ${RRF_SOURCE_DIR}/src
     #${RRF_SOURCE_DIR}/src/Hardware/SAME70

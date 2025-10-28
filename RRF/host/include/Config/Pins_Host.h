@@ -150,3 +150,5 @@ namespace StepPins
 	inline void StepDriversHigh(uint32_t) noexcept {}
 	inline void StepDriversLow(uint32_t) noexcept {}
 }
+
+constexpr uint32_t DefaultStandstillCurrentPercent = 75;
