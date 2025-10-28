@@ -106,6 +106,9 @@ public:
 	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
 #endif
 	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
+	bool IsOutputOnExtrudeActive() const noexcept { return true; }
+	void ExtrudeOn() noexcept { }
+	void ExtrudeOff() noexcept { }
 	Spindle& AccessSpindle(size_t slot) noexcept { return spindles[slot]; }
 
 	// --- Static debug members (copied from your version) ---
