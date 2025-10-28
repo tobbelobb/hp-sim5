@@ -13,6 +13,8 @@
 #include <Platform/OutputMemory.h>
 #include <Endstops/EndstopsManager.h>
 #include <RTOSIface/RTOSIface.h>
+#include <Tools/Spindle.h>
+#include <Fans/FansManager.h>
 
 // --- Forward declarations for all major modules Platform is expected to know about ---
 // This is critical. Platform acts as a "service locator" for the rest of the firmware.
@@ -89,7 +91,7 @@ public:
 	ReadLockedPointer<const char> GetSysDir() const noexcept;
 	void AppendSysDir(const StringRef& result) const noexcept;
 	void SetSysDir(const char* path) noexcept;
-    // We can fake the web directory easily since it's only used for path construction
+	// We can fake the web directory easily since it's only used for path construction
 	ReadLockedPointer<const char> GetWebDir() const noexcept;
 	void AppendWebDir(const StringRef & path) const noexcept {  path.cat("www"); };
 
@@ -104,6 +106,7 @@ public:
 	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
 #endif
 	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
+	Spindle& AccessSpindle(size_t slot) noexcept { return spindles[slot]; }
 
 	// --- Static debug members (copied from your version) ---
 	static inline bool shouldTurnOffHeaters{false};
@@ -128,6 +131,7 @@ private:
 	// Filesystem state
 	mutable ReadWriteLock sysDirLock;
 	String<MaxFilenameLength> sysDir;
+	Spindle spindles[MaxSpindles];
 };
 
 #endif
