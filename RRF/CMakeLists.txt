@@ -3,16 +3,17 @@ project(RepRapFirmwareSimulator CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # --- Project Paths (Relative to this CMakeLists.txt) ---
-# The root of our simulation project (the 'host' directory)
 set(SIM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/host)
-# The location of the real ReprapFirmware source
 set(RRF_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ReprapFirmware)
 set(RRFLibraries_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/RRFLibraries)
 set(CANlib_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CANlib)
 
-set(CMAKE_COLOR_DIAGNOSTICS ON)
+# --- Define the Sandbox Directory ---
+# All sources will be copied here before compilation.
+set(GENERATED_SOURCES_DIR ${CMAKE_BINARY_DIR}/generated_sources)
 
 # --- Define the Executable Target ---
 add_executable(rrf_simulator)
@@ -31,118 +32,204 @@ target_compile_definitions(rrf_simulator PRIVATE
 # --- List Your Custom Source Files ---
 target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/src/main.cpp
-    # Add .cpp files that implement fakes here
+    ${SIM_ROOT_DIR}/platform/Heap.cpp
+    ${SIM_ROOT_DIR}/platform/PlatformHost.cpp
+    ${SIM_ROOT_DIR}/can/CanCapture.cpp
+    ${SIM_ROOT_DIR}/can/CanInterfaceHost.cpp
+    ${SIM_ROOT_DIR}/storage/MassStorageHost.cpp
+    ${SIM_ROOT_DIR}/storage/FileStoreHost.cpp
+    ${SIM_ROOT_DIR}/src/devices_stub.cpp
+    ${SIM_ROOT_DIR}/networking/MacAddressHost.cpp
+    ${SIM_ROOT_DIR}/movement/StepTimer.cpp
+    ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
+    ${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
+    ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
+    ${SIM_ROOT_DIR}/platform/TasksHost.cpp
+    ${SIM_ROOT_DIR}/platform/GetFloatFormatStringHost.cpp
+    ${SIM_ROOT_DIR}/platform/DebugPrintHost.cpp
+    ${SIM_ROOT_DIR}/rtos/freertos_shim.cpp
+    ${SIM_ROOT_DIR}/object_model/ObjectExplorationContextHost.cpp
 )
 
 
 # --- List the real ReprapFirmware Source Files ---
 # This is the list of .cpp files we want to compile the real version of.
-set(RRF_SOURCES
+set(RRF_SOURCES_TO_USE
     # Tier 1: Foundational Utilities
-    ${RRF_SOURCE_DIR}/src/Platform/ArrayHandle.cpp
-    ${RRF_SOURCE_DIR}/src/Platform/StringHandle.cpp
-    ${RRF_SOURCE_DIR}/src/Platform/OutputMemory.cpp
-    ${RRF_SOURCE_DIR}/src/ObjectModel/Variable.cpp
-    ${RRF_SOURCE_DIR}/src/ObjectModel/ObjectModel.cpp
-    ${RRF_SOURCE_DIR}/src/ObjectModel/GlobalVariables.cpp
+    Platform/ArrayHandle.cpp
+    Platform/StringHandle.cpp
+    Platform/OutputMemory.cpp
+    ObjectModel/Variable.cpp
+    ObjectModel/ObjectModel.cpp
+    ObjectModel/GlobalVariables.cpp
 
     # Tier 2: Core Machine Components (Stateful but not Active)
-    ${RRF_SOURCE_DIR}/src/Tools/Filament.cpp
-    ${RRF_SOURCE_DIR}/src/Tools/Tool.cpp
-    ${RRF_SOURCE_DIR}/src/Movement/Kinematics/Kinematics.cpp
-    ${RRF_SOURCE_DIR}/src/Movement/Kinematics/CoreKinematics.cpp
-    ${RRF_SOURCE_DIR}/src/Movement/Kinematics/HangprinterKinematics.cpp
+    Tools/Filament.cpp
+    Tools/Tool.cpp
+    Movement/Kinematics/Kinematics.cpp
+    Movement/Kinematics/CoreKinematics.cpp
+    Movement/Kinematics/HangprinterKinematics.cpp
 
     # Tier 3: The Motion Planning Engine (Bottom-Up)
-    ${RRF_SOURCE_DIR}/src/Movement/DriveMovement.cpp
-    ${RRF_SOURCE_DIR}/src/Movement/DDA.cpp
-    ${RRF_SOURCE_DIR}/src/Movement/DDARing.cpp
-    ${RRF_SOURCE_DIR}/src/Movement/Move.cpp
+    Movement/DriveMovement.cpp
+    Movement/DDA.cpp
+    Movement/DDARing.cpp
+    Movement/Move.cpp
 
     # Tier 4: G-Code Interpretation and High-Level Logic
-    ${RRF_SOURCE_DIR}/src/GCodes/GCodeBuffer/GCodeBuffer.cpp
-    ${RRF_SOURCE_DIR}/src/ExpressionParser.cpp
-    #${RRF_SOURCE_DIR}/src/StringParser.cpp
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodeMachineState.cpp
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodeInput.cpp
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodeQueue.cpp
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodes.cpp
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodes2.cpp
-    #${RRF_SOURCE_DIR}/src/GCodes/GCodes3.cpp
+    GCodes/GCodeBuffer/GCodeBuffer.cpp
+    GCodes/GCodeBuffer/ExpressionParser.cpp
+    #GCodes/GCodeBuffer/StringParser.cpp
+    #GCodes/GCodeMachineState.cpp
+    #GCodes/GCodeInput.cpp
+    #GCodes/GCodeQueue.cpp
+    #GCodes/GCodes.cpp
+    #GCodes/GCodes2.cpp
+    #GCodes/GCodes3.cpp
 
     # Tier 5: Top-Level Application Objects
-    #${RRF_SOURCE_DIR}/src/PrintMonitor/PrintMonitor.cpp
-    #${RRF_SOURCE_DIR}/src/Platform/RepRap.cpp
+    #PrintMonitor/PrintMonitor.cpp
+    #Platform/RepRap.cpp
 )
 
-# --- Patching #include "Somefile.h" into #include <SomeDir/SomeFile.h>
-# This gives us control. We can shadow bracketed includes, but not quoted includes ---
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(IncludePatcher)
-
-# Declare mappings (SomeFile.h|SomeDir/SomeFile.h)
-# These are headers we want to shadow that have been included with quotes, like
-# ```cpp
-# #include "Platform.h"
-# ```
-# Our script changes that to
-# #include <Platform/Platform.h>
-# ... which makes it possible for us to shadow the real Platform.h file
-# I found all these variants that need replacement with a grep command
-# that includes the list of all the headers I want to shadow:
-# ```bash
-# git grep -nE '#[[:space:]]*include[[:space:]]*"([^"]*/)?(FreeRTOS\.h|task\.h|queue\.h|semphr\.h|RTOSIface\.h|Platform\.h|Heap\.h|Tasks\.h|Pins_[^"/]*\.h|Interrupts\.h|StepTimer\.h|SmartDrivers\.h|EndstopsManager\.h|Heat\.h|FansManager\.h|Accelerometers\.h|MassStorage\.h|CanInterface\.h|Network\.h|SerialCDC\.h|AuxDevice\.h)"' -- '*.h' '*.cpp
-# ```
-set(INCLUDE_PATCH_MAP
-  "Platform.h|Platform/Platform.h"
-  "RepRap.h|Platform/RepRap.h"
-  "ArrayHandle.h|Platform/ArrayHandle.h"
-  "StringHandle.h|Platform/StringHandle.h"
-  "OutputMemory.h|Platform/OutputMemory.h"
-  "StepperDrivers/SmartDrivers.h|Movement/StepperDrivers/SmartDrivers.h"
-  "Accelerometers.h|Accelerometers/Accelerometers.h"
-  "CanInterface.h|CAN/CanInterface.h"
-  "CAN/CanInterface.h|CAN/CanInterface.h"
-  "Storage/MassStorage.h|Storage/MassStorage.h"
-  "EndstopsManager.h|Endstops/EndstopsManager.h"
-  "FansManager.h|Fans/FansManager.h"
-  "Heat.h|Heating/Heat.h"
-  "Heating/Heat.h|Heating/Heat.h"
-  "RTOSIface/RTOSIface.h|RTOSIface/RTOSIface.h"
-  "SerialCDC.h|SerialCDC.h"
-  "StepTimer.h|Movement/StepTimer.h"
-  "Network.h|Networking/Network.h"
-  "Heap.h|Platform/Heap.h"
-  "Tasks.h|Platform/Tasks.h"
-  "FreeRTOS.h|FreeRTOS.h"
-  "task.h|task.h"
-  "MassStorage.h|Storage/MassStorage.h"
+# NEW LIST DEFINITION
+# List of REAL .h files needed by the .cpp files above.
+# If compilation fails with "No such file or directory", add the missing header here.
+set(RRF_HEADERS_TO_USE
+    RepRapFirmware.h
+    # Tier 1 Dependencies
+    Platform/ArrayHandle.h
+    Platform/StringHandle.h
+    Platform/OutputMemory.h
+    ObjectModel/Variable.h
+    ObjectModel/ObjectModel.h
+    ObjectModel/GlobalVariables.h
+    ObjectModel/TypeCode.h
+    Platform/MessageType.h
+    # Tier 2 Dependencies
+    Tools/Filament.h
+    Tools/Tool.h
+    Movement/Kinematics/Kinematics.h
+    Movement/Kinematics/CoreKinematics.h
+    Movement/Kinematics/HangprinterKinematics.h
+    # Tier 3 Dependencies
+    Movement/DriveMovement.h
+    Movement/DDA.h
+    Movement/DDARing.h
+    Movement/Move.h
+    # Other common headers that will be needed soon
+    Platform/RepRap.h
+    GCodes/GCodeMachineState.h
 )
-include_patcher_configure(PATCH_SCRIPT ${INCLUDE_PATCH_MAP})
-include_patcher_add_patched_sources(rrf_simulator "${PATCH_SCRIPT}" ${RRF_SOURCES})
 
-# --- Manage Include Directories ---
-# Order matters: fakes first, then real headers as fallback.
 
-# Root of fake include directory so <Platform/Platform.h> etc. resolve.
+# List of FAKE headers from your host/include directory that will OVERWRITE the real ones.
+# The path here is relative to host/include.
+set(FAKE_HEADERS_TO_OVERWRITE
+    FreeRTOS.h
+    task.h
+    queue.h
+    semphr.h
+    RTOSIface/RTOSIface.h
+    Platform/Platform.h
+    Platform/Heap.h
+    Platform/Tasks.h
+    Config/Pins.h
+    Interrupts.h
+    Movement/StepTimer.h
+    Movement/StepperDrivers/SmartDrivers.h
+    Endstops/EndstopsManager.h
+    Heating/Heat.h
+    Fans/FansManager.h
+    Accelerometers/Accelerometers.h
+    Storage/MassStorage.h
+    CAN/CanInterface.h
+    Networking/Network.h
+    SerialCDC.h
+    # Add all fake headers here.
+)
+
+# --- Logic to Prepare the Sandboxed Source Tree ---
+
+set(GENERATED_CPP_FILES "")
+set(GENERATED_H_FILES "")
+
+# 1. Process the REAL RRF source files
+foreach(rel_path ${RRF_SOURCES_TO_USE})
+    set(abs_src_path "${RRF_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_CPP_FILES ${abs_dest_path})
+
+    # Get the directory part of the destination path for make_directory
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real source ${rel_path}"
+    )
+endforeach()
+
+foreach(rel_path ${RRF_HEADERS_TO_USE})
+    set(abs_src_path "${RRF_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_H_FILES ${abs_dest_path})
+
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real header ${rel_path}"
+    )
+endforeach()
+
+# 2. Process the FAKE headers that will OVERWRITE the real ones
+foreach(rel_path ${FAKE_HEADERS_TO_OVERWRITE})
+    set(abs_src_path "${SIM_ROOT_DIR}/include/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_H_FILES ${abs_dest_path})
+
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying FAKE header ${rel_path}"
+    )
+endforeach()
+
+# 3. Create a target to encapsulate all the copy operations
+add_custom_target(prepare_sources ALL
+    DEPENDS ${GENERATED_CPP_FILES} ${GENERATED_H_FILES}
+)
+
+
+
+# --- Configure the Main Executable ---
+
+# Add the generated .cpp files to the simulator target
+target_sources(rrf_simulator PRIVATE ${GENERATED_CPP_FILES})
+
+# CRITICAL: The executable target MUST depend on the preparation target
+add_dependencies(rrf_simulator prepare_sources)
+
+# CRITICAL: Set the include directory to ONLY be our sandboxed directory
 target_include_directories(rrf_simulator PUBLIC
-    "${SIM_ROOT_DIR}"
-    "${SIM_ROOT_DIR}/include"
-)
-
-# Real RRF headers last (fallback).
-target_include_directories(rrf_simulator PRIVATE
-    ${RRF_SOURCE_DIR}/src
-    #${RRF_SOURCE_DIR}/src/Hardware/SAME70
+    # The root of the sandbox `src` dir
+    "${GENERATED_SOURCES_DIR}/src"
+    # Also include the original RRFLibraries and CANlib if needed
     ${RRFLibraries_SOURCE_DIR}/src
     ${CANlib_SOURCE_DIR}/src
 )
 
-
 # --- Final Touches ---
 set_target_properties(rrf_simulator PROPERTIES OUTPUT_NAME "rrf_simulator")
 
-# Diagnostics
-message(STATUS "Simulator Root: ${SIM_ROOT_DIR}")
-message(STATUS "RepRapFirmware Source: ${RRF_SOURCE_DIR}")
-message(STATUS "Fake header subdirectories: ${FAKE_HEADER_DIRS}")
+message(STATUS "Sandbox for sources will be at: ${GENERATED_SOURCES_DIR}")
