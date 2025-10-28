@@ -47,7 +47,7 @@ set(RRF_SOURCES
     ${RRF_SOURCE_DIR}/src/ObjectModel/GlobalVariables.cpp
 
     # Tier 2: Core Machine Components (Stateful but not Active)
-    #${RRF_SOURCE_DIR}/src/Tools/Filament.cpp
+    ${RRF_SOURCE_DIR}/src/Tools/Filament.cpp
     #${RRF_SOURCE_DIR}/src/Tools/Tool.cpp
     #${RRF_SOURCE_DIR}/src/Movement/Kinematics/Kinematics.cpp
     #${RRF_SOURCE_DIR}/src/Movement/Kinematics/CoreKinematics.cpp

@@ -2,6 +2,10 @@
 
 #ifdef RRF_HOST_BUILD
 
+#include <cstdarg>
+#include <ctime> // For time_t and struct tm
+
+// Required RRF headers
 #include <Platform/MessageType.h>
 #include <Storage/FileStore.h>
 #include <General/StringRef.h>
@@ -10,10 +14,20 @@
 #include <Endstops/EndstopsManager.h>
 #include <RTOSIface/RTOSIface.h>
 
+// --- Forward declarations for all major modules Platform is expected to know about ---
+// This is critical. Platform acts as a "service locator" for the rest of the firmware.
 class RepRap;
-extern RepRap reprap;
+class GCodes;
+class Move;
+class Heat;
+class FansManager;
+class Tool;
 
-#include <cstdarg>
+// A minimal enum to satisfy code that checks the board type.
+enum class BoardType : uint8_t
+{
+	Host,
+};
 
 // Enumeration of error condition bits
 enum class ErrorCode : uint32_t
@@ -25,48 +39,95 @@ enum class ErrorCode : uint32_t
 	HsmciTimeout = 1u << 4
 };
 
-// Minimal host representation of the Platform abstraction.  Enough of the
-// firmware API is provided so that the G-code parser stack can call into
-// logging and filesystem helpers without touching any MCU peripherals.
+// --- The main Platform class for the host build ---
 class Platform
 {
 public:
 	Platform() noexcept;
 
-	static inline bool shouldTurnOffHeaters{false};
-	static inline bool hasGenericDebug{false};
-
+	// --- Lifecycle ---
 	void Init() noexcept;
 	void Spin() noexcept;
 	void Exit() noexcept;
 
-	void LogError(ErrorCode e) noexcept { } // Called by real OutputMemory.cpp
+	// --- Simulation Timekeeping (CRITICAL) ---
+	// The motion planner (DDA) is entirely dependent on millis().
+	uint32_t millis() const noexcept;
+	uint32_t micros() const noexcept;
 
-	bool SysFileExists(const char* filename) const noexcept;
-	FileStore* OpenSysFile(const char* filename, OpenMode mode) const noexcept;
-	bool MakeSysFileName(const StringRef& result, const char* filename) const noexcept;
-	void AppendWebDir(const StringRef & path) const noexcept {  path.cat("www"); };
-	FileStore* OpenFile(const char* directory, const char* filename, OpenMode mode, unsigned int preAllocSize = 0) const noexcept;
-	bool FileExists(const char* directory, const char* filename) const noexcept;
+	// --- Real-Time Clock (FIXES YOUR ERROR) ---
+	// The host system's clock will be used here.
+	bool IsDateTimeSet() const noexcept { return true; }
+	time_t GetDateTime() const noexcept;
+	bool GetDateTime(struct tm& rslt) const noexcept;
+	bool SetDateTime(time_t t) noexcept;
 
+	// --- Logging and Messaging ---
 	void Message(MessageType type, const char* message) noexcept;
 	void MessageF(MessageType type, const char* fmt, ...) noexcept __attribute__((format(printf, 3, 4)));
 	void MessageV(MessageType type, const char* fmt, va_list vargs) noexcept;
 	void Message(MessageType type, OutputBuffer* buffer) noexcept;
 	void RawMessage(MessageType type, const char* message) noexcept;
 	void DebugMessage(const char* fmt, va_list vargs) noexcept;
+	void LogError(ErrorCode e) noexcept { }
 
+	// --- Service Locators (CRITICAL) ---
+	// Provide access to the other major components.
+	RepRap& GetRepRap() const noexcept { return *reprap; }
+	GCodes& GetGCodes() const noexcept { return *gCodes; }
+	Move& GetMove() const noexcept { return *move; }
+	Heat& GetHeat() const noexcept { return *heat; }
+	FansManager& GetFansManager() const noexcept { return *fans; }
 	EndstopsManager& GetEndstops() noexcept { return endstops; }
 
-	ReadLockedPointer<const char> GetSysDir() const noexcept;	// where the system files are
-	ReadLockedPointer<const char> GetWebDir() const noexcept;	// where the web files are
-	void SetSysDir(const char* path) noexcept;
+	// --- Filesystem Abstraction ---
+	bool SysFileExists(const char* filename) const noexcept;
+	FileStore* OpenSysFile(const char* filename, OpenMode mode) const noexcept;
+	bool MakeSysFileName(const StringRef& result, const char* filename) const noexcept;
+	FileStore* OpenFile(const char* directory, const char* filename, OpenMode mode, uint32_t preAllocSize = 0) const noexcept;
+	bool FileExists(const char* directory, const char* filename) const noexcept;
+	ReadLockedPointer<const char> GetSysDir() const noexcept;
 	void AppendSysDir(const StringRef& result) const noexcept;
+	void SetSysDir(const char* path) noexcept;
+    // We can fake the web directory easily since it's only used for path construction
+	ReadLockedPointer<const char> GetWebDir() const noexcept;
+	void AppendWebDir(const StringRef & path) const noexcept {  path.cat("www"); };
+
+
+	// --- Stubbed Hardware/State Functions ---
+	// These are called by G-code handlers and need to exist and return sensible values.
+	void EmergencyStop() noexcept;
+	bool GetAtxPowerState() const noexcept { return true; } // Pretend PSU is always on
+	BoardType GetBoardType() const noexcept { return BoardType::Host; }
+	const char* GetElectronicsString() const noexcept { return "RRF_Host"; }
+#if HAS_VOLTAGE_MONITOR
+	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
+#endif
+	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
+
+	// --- Static debug members (copied from your version) ---
+	static inline bool shouldTurnOffHeaters{false};
+	static inline bool hasGenericDebug{false};
+	static inline String<StringLength256> genericDebugBuffer;
+
 
 private:
+	// Pointers to the real high-level modules. These must be set during initialization.
+	RepRap* reprap;
+	GCodes* gCodes;
+	Move* move;
+	Heat* heat;
+	FansManager* fans;
+
+	// Fake hardware modules that Platform owns
+	EndstopsManager endstops;
+
+	// Our fake simulation clock
+	uint64_t sim_micros;
+
+	// Filesystem state
 	mutable ReadWriteLock sysDirLock;
 	String<MaxFilenameLength> sysDir;
-	EndstopsManager endstops;
 };
 
 #endif
