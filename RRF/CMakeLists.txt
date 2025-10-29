@@ -79,11 +79,11 @@ set(RRF_SOURCES_TO_USE
     # Tier 4: G-Code Interpretation and High-Level Logic
     GCodes/GCodeBuffer/GCodeBuffer.cpp
     GCodes/GCodeBuffer/ExpressionParser.cpp
-    #GCodes/GCodeBuffer/StringParser.cpp
-    #GCodes/GCodeMachineState.cpp
-    #GCodes/GCodeInput.cpp
-    #GCodes/GCodeQueue.cpp
-    #GCodes/GCodes.cpp
+    GCodes/GCodeBuffer/StringParser.cpp
+    GCodes/GCodeMachineState.cpp
+    GCodes/GCodeInput.cpp
+    GCodes/GCodeQueue.cpp
+    GCodes/GCodes.cpp
     #GCodes/GCodes2.cpp
     #GCodes/GCodes3.cpp
 
@@ -175,6 +175,7 @@ set(RRF_HEADERS_TO_USE
     Movement/Kinematics/FiveBarScaraKinematics.h
     Platform/PortControl.h
     PrintMonitor/PrintMonitor.h
+    GCodes/GCodeQueue.h
 )
 
 
@@ -220,6 +221,7 @@ set(SHADOWING_HEADERS_TO_USE
     AsyncSerial.h
     Platform/TaskPriorities.h
     CoreNotifyIndices.h
+    Devices.h
 )
 
 

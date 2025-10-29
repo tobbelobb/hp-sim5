@@ -116,9 +116,10 @@ inline constexpr float PowerMonitorVoltageRange_v101 = 0.0f;
 
 inline constexpr Pin UsbVBusPin = NoPin;
 
-#define SERIAL_MAIN_DEVICE serialUSB
-#define SERIAL_AUX_DEVICE serialUart1
-#define SERIAL_AUX2_DEVICE serialUart2
+// We have no serial devices
+//#define SERIAL_MAIN_DEVICE serialUSB
+//#define SERIAL_AUX_DEVICE serialUart1
+//#define SERIAL_AUX2_DEVICE serialUart2
 
 namespace StepPins
 {

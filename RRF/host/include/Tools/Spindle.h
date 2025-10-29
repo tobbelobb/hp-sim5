@@ -6,12 +6,15 @@
 #include <General/NamedEnum.h>
 #include <ObjectModel/ObjectModel.h>
 
-// This enum definition is still correct
 NamedEnum(SpindleState, uint8_t, unconfigured, stopped, forward, reverse);
 
-// A more complete fake Spindle class to satisfy Tool.cpp
 class Spindle INHERIT_OBJECT_MODEL
 {
+private:
+	uint32_t currentRpm = 0; // Just made-up values
+	uint32_t configuredRpm = 100;
+	uint32_t minRpm = 0;
+	uint32_t maxRpm = 200;
 public:
 	// Constructor
 	Spindle() noexcept {}
@@ -29,6 +32,9 @@ public:
 	// For IsValidRpm, returning 'true' is the safest option. It prevents
 	// the calling code from thinking the RPM is invalid and throwing an error.
 	bool IsValidRpm(uint32_t rpm) const noexcept { return true; }
+
+  // --- Methods called by Gcodes.cpp ---
+	uint32_t GetRpm() const noexcept { return configuredRpm; }
 
 protected:
 	DECLARE_OBJECT_MODEL

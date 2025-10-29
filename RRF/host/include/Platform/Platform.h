@@ -52,17 +52,21 @@ public:
 	void Spin() noexcept;
 	void Exit() noexcept;
 
-	// --- Simulation Timekeeping (CRITICAL) ---
-	// The motion planner (DDA) is entirely dependent on millis().
+	// --- Simulation Timekeeping ---
+	// The motion planner (DDA) depend on millis().
 	uint32_t millis() const noexcept;
 	uint32_t micros() const noexcept;
 
-	// --- Real-Time Clock (FIXES YOUR ERROR) ---
+	// --- Real-Time Clock ---
 	// The host system's clock will be used here.
 	bool IsDateTimeSet() const noexcept { return true; }
 	time_t GetDateTime() const noexcept;
 	bool GetDateTime(struct tm& rslt) const noexcept;
 	bool SetDateTime(time_t t) noexcept;
+
+	void AppendUsbReply(OutputBuffer *buffer, bool rawMessage) noexcept {};
+	void AppendAuxReply(size_t auxNumber, OutputBuffer *buf, bool rawMessage) noexcept {};
+	void AppendAuxReply(size_t auxNumber, const char *_ecv_array msg, bool rawMessage) noexcept {};
 
 	// --- Logging and Messaging ---
 	void Message(MessageType type, const char* message) noexcept;
@@ -84,10 +88,17 @@ public:
 
 	// --- Filesystem Abstraction ---
 	bool SysFileExists(const char* filename) const noexcept;
+# if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
+	bool DeleteSysFile(const char *_ecv_array filename) const noexcept;
+# endif
 	FileStore* OpenSysFile(const char* filename, OpenMode mode) const noexcept;
 	bool MakeSysFileName(const StringRef& result, const char* filename) const noexcept;
 	FileStore* OpenFile(const char* directory, const char* filename, OpenMode mode, uint32_t preAllocSize = 0) const noexcept;
 	bool FileExists(const char* directory, const char* filename) const noexcept;
+
+	static const char *_ecv_array GetGCodeDir() noexcept; 		// Where the gcodes are
+	static const char *_ecv_array GetMacroDir() noexcept;		// Where the user-defined macros are
+                                                          //
 	ReadLockedPointer<const char> GetSysDir() const noexcept;
 	void AppendSysDir(const StringRef& result) const noexcept;
 	void SetSysDir(const char* path) noexcept;
@@ -106,6 +117,11 @@ public:
 	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
 #endif
 	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
+                                                            //
+#if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
+	bool WritePlatformParameters(FileStore *f, bool includingG31) const noexcept { return true; };
+#endif
+                                                            //
 	bool IsOutputOnExtrudeActive() const noexcept { return true; }
 	void ExtrudeOn() noexcept { }
 	void ExtrudeOff() noexcept { }
@@ -136,5 +152,20 @@ private:
 	String<MaxFilenameLength> sysDir;
 	Spindle spindles[MaxSpindles];
 };
+
+#if HAS_MASS_STORAGE || HAS_SBC_INTERFACE || HAS_EMBEDDED_FILES
+
+// Where the gcodes are
+inline const char *_ecv_array Platform::GetGCodeDir() noexcept
+{
+	return GCODE_DIR;
+}
+
+inline const char *_ecv_array Platform::GetMacroDir() noexcept
+{
+	return MACRO_DIR;
+}
+
+#endif
 
 #endif

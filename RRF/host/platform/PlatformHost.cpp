@@ -146,6 +146,12 @@ bool Platform::SetDateTime(time_t t) noexcept
 
 // --- Filesystem ---
 
+bool Platform::DeleteSysFile(const char *_ecv_array filename) const noexcept
+{
+	String<MaxFilenameLength> location;
+	return MakeSysFileName(location.GetRef(), filename) && MassStorage::Delete(location.GetRef(), ErrorMessageMode::messageUnlessMissing);
+}
+
 bool Platform::SysFileExists(const char* filename) const noexcept
 {
 #if HAS_MASS_STORAGE
