@@ -146,11 +146,19 @@ bool Platform::SetDateTime(time_t t) noexcept
 
 // --- Filesystem ---
 
+#if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
+bool Platform::Delete(const char *_ecv_array folder, const char *_ecv_array filename) const noexcept
+{
+	String<MaxFilenameLength> location;
+	return MassStorage::CombineName(location.GetRef(), folder, filename) && MassStorage::Delete(location.GetRef(), ErrorMessageMode::messageUnlessMissing);
+}
+
 bool Platform::DeleteSysFile(const char *_ecv_array filename) const noexcept
 {
 	String<MaxFilenameLength> location;
 	return MakeSysFileName(location.GetRef(), filename) && MassStorage::Delete(location.GetRef(), ErrorMessageMode::messageUnlessMissing);
 }
+#endif
 
 bool Platform::SysFileExists(const char* filename) const noexcept
 {

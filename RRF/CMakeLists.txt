@@ -84,7 +84,7 @@ set(RRF_SOURCES_TO_USE
     GCodes/GCodeInput.cpp
     GCodes/GCodeQueue.cpp
     GCodes/GCodes.cpp
-    #GCodes/GCodes2.cpp
+    GCodes/GCodes2.cpp
     #GCodes/GCodes3.cpp
 
     # Tier 5: Top-Level Application Objects
@@ -176,6 +176,10 @@ set(RRF_HEADERS_TO_USE
     Platform/PortControl.h
     PrintMonitor/PrintMonitor.h
     GCodes/GCodeQueue.h
+    Movement/StepperDrivers/DriverMode.h
+    Version.h
+    Platform/Logger.h
+    GPIO/GpOutPort.h
 )
 
 

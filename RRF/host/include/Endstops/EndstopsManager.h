@@ -22,6 +22,13 @@ public:
 	void DisableRemoteStallEndstops() noexcept {}
 
 	bool HomingZWithProbe() const noexcept { return false; }
+
+	void GetM119report(const StringRef& reply) noexcept {	reply.copy("No Endstops or zprobes on Host"); };
+	// G31: Set or Report Current Probe status
+	GCodeResult HandleG31(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException) { return GCodeResult::ok; };
+
+	void SetZProbeDefaults() noexcept { };
+	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); } ;
 };
 
 #endif

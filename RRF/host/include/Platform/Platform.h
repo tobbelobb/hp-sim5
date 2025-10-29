@@ -15,6 +15,7 @@
 #include <RTOSIface/RTOSIface.h>
 #include <Tools/Spindle.h>
 #include <Fans/FansManager.h>
+#include <GPIO/GpOutPort.h>
 
 // --- Forward declarations for all major modules Platform is expected to know about ---
 // This is critical. Platform acts as a "service locator" for the rest of the firmware.
@@ -51,6 +52,8 @@ public:
 	void Init() noexcept;
 	void Spin() noexcept;
 	void Exit() noexcept;
+
+	GCodeResult DiagnosticTest(GCodeBuffer& gb, const StringRef& reply, OutputBuffer *_ecv_null & buf, unsigned int d) { return GCodeResult::ok; };
 
 	// --- Simulation Timekeeping ---
 	// The motion planner (DDA) depend on millis().
@@ -89,6 +92,7 @@ public:
 	// --- Filesystem Abstraction ---
 	bool SysFileExists(const char* filename) const noexcept;
 # if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
+	bool Delete(const char *_ecv_array folder, const char *_ecv_array filename) const noexcept;
 	bool DeleteSysFile(const char *_ecv_array filename) const noexcept;
 # endif
 	FileStore* OpenSysFile(const char* filename, OpenMode mode) const noexcept;
@@ -102,20 +106,33 @@ public:
 	ReadLockedPointer<const char> GetSysDir() const noexcept;
 	void AppendSysDir(const StringRef& result) const noexcept;
 	void SetSysDir(const char* path) noexcept;
+	GCodeResult SetSysDir(const char *_ecv_array dir, const StringRef& reply) noexcept;				// Set the system files path
+	GCodeResult SetWebDir(const char *_ecv_array dir, const StringRef& reply) noexcept;				// Set the web files path
 	// We can fake the web directory easily since it's only used for path construction
 	ReadLockedPointer<const char> GetWebDir() const noexcept;
-	void AppendWebDir(const StringRef & path) const noexcept {  path.cat("www"); };
+	void AppendWebDir(const StringRef & path) const noexcept {  path.cat(webDir); };
 
 
 	// --- Stubbed Hardware/State Functions ---
 	// These are called by G-code handlers and need to exist and return sensible values.
 	void EmergencyStop() noexcept;
 	bool GetAtxPowerState() const noexcept { return true; } // Pretend PSU is always on
+	GCodeResult HandleM80(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
+	GCodeResult HandleM81(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
+	GCodeResult HandleM575(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
+	GCodeResult SendI2cOrModbus(GCodeBuffer& gb, const StringRef &reply) { return GCodeResult::ok; };			// Handle M260
+	GCodeResult ReceiveI2cOrModbus(GCodeBuffer& gb, const StringRef &reply) { return GCodeResult::ok; };			// Handle M261
+                                                          //
+	// Hotend configuration
+	float GetFilamentWidth() const noexcept { return filamentWidth; }
+	void SetFilamentWidth(float width) noexcept { filamentWidth = width; }
+                                                          //
 	BoardType GetBoardType() const noexcept { return BoardType::Host; }
 	const char* GetElectronicsString() const noexcept { return "RRF_Host"; }
 #if HAS_VOLTAGE_MONITOR
 	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
 #endif
+	GCodeResult SetBuzzerPort(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
 	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
                                                             //
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
@@ -126,6 +143,9 @@ public:
 	void ExtrudeOn() noexcept { }
 	void ExtrudeOff() noexcept { }
 	Spindle& AccessSpindle(size_t slot) noexcept { return spindles[slot]; }
+
+  GpOutputPort& stubbedGpoutPort;
+	GpOutputPort& GetGpOutPort(size_t gpoutPortNumber) noexcept { return stubbedGpoutPort; }
 
 	// --- Static debug members (copied from your version) ---
 	static inline bool shouldTurnOffHeaters{false};
@@ -151,6 +171,9 @@ private:
 	mutable ReadWriteLock sysDirLock;
 	String<MaxFilenameLength> sysDir;
 	Spindle spindles[MaxSpindles];
+
+  // Hotend state
+	float filamentWidth;
 };
 
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE || HAS_EMBEDDED_FILES
