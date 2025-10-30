@@ -254,6 +254,7 @@ set(SHADOWING_HEADERS_TO_USE
     CAN/CanInterface.h
     Networking/Network.h
     SerialCDC.h
+    USARTClass.h
     Core.h
     Config/Features_Host.h
     CoreTypes.h

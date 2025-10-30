@@ -70,7 +70,8 @@ namespace
 }
 
 Platform::Platform() noexcept
-	: sysFolder(*this, sysDirLock, sysDir, DEFAULT_SYS_DIR),
+	: objectModelProxy(*this),
+	  sysFolder(*this, sysDirLock, sysDir, DEFAULT_SYS_DIR),
 	  webFolder(*this, webDirLock, webDir, DEFAULT_WEB_DIR),
 	  logLevelSetting(LogLevel::off),
 	  logFile(nullptr),
@@ -89,6 +90,7 @@ Platform::Platform() noexcept
 	sysFolder.SetAbsolute(DEFAULT_SYS_DIR);
 	webFolder.SetAbsolute(DEFAULT_WEB_DIR);
 	logFileRrfPath.Clear();
+	uniqueId.SetFromCurrentBoard();
 }
 
 // In your main() function, you will need to create the instances of all the major
@@ -287,6 +289,32 @@ void Platform::RawMessage(MessageType type, const char* message) noexcept
 void Platform::DebugMessage(const char* fmt, va_list vargs) noexcept
 {
 	MessageV(GenericMessage, fmt, vargs);
+}
+
+bool Platform::Beep(unsigned int freq, unsigned int ms) noexcept
+{
+	(void)freq;
+	(void)ms;
+	return false;
+}
+
+bool Platform::FlushMessages() noexcept
+{
+	FlushLog();
+	return false;
+}
+
+const IoPort& Platform::GetAtxPowerPort() const noexcept
+{
+	static IoPort dummyPort;
+	return dummyPort;
+}
+
+const ObjectModelClassDescriptor *_ecv_null Platform::ObjectModelProxy::GetObjectModelClassDescriptor() const noexcept
+{
+	static constexpr uint8_t descriptor[] = { 0 };
+	static const ObjectModelClassDescriptor descriptorWrapper{ nullptr, descriptor, nullptr };
+	return &descriptorWrapper;
 }
 
 const char* Platform::GetLogLevel() const noexcept

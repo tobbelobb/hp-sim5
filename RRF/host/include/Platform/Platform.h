@@ -14,12 +14,15 @@
 #include <Config/Configuration.h>
 #include <RRF3Common.h>
 #include <Platform/OutputMemory.h>
+#include <Platform/UniqueId.h>
 #include <Endstops/EndstopsManager.h>
 #include <RTOSIface/RTOSIface.h>
 #include <Tools/Spindle.h>
 #include <Fans/FansManager.h>
 #include <GPIO/GpOutPort.h>
 #include <GPIO/GpInPort.h>
+#include <ObjectModel/ObjectModel.h>
+#include <Hardware/IoPorts.h>
 
 // --- Forward declarations for all major modules Platform is expected to know about ---
 // This is critical. Platform acts as a "service locator" for the rest of the firmware.
@@ -72,10 +75,11 @@ enum class ErrorCode : uint32_t
 };
 
 // --- The main Platform class for the host build ---
-class Platform
+class Platform final INHERIT_OBJECT_MODEL
 {
 public:
 	Platform() noexcept;
+	Platform(const Platform&) = delete;
 
 	// --- Lifecycle ---
 	void Init() noexcept;
@@ -83,11 +87,14 @@ public:
 	void Exit() noexcept;
 
 	GCodeResult DiagnosticTest(GCodeBuffer& gb, const StringRef& reply, OutputBuffer *_ecv_null & buf, unsigned int d) { return GCodeResult::ok; };
+	static constexpr unsigned int NumPlatformDiagnosticParts = 7;
+	static bool SetDebugBufferSize(unsigned int) noexcept { return true; }
 
 	// --- Simulation Timekeeping ---
 	// The motion planner (DDA) depend on millis().
 	uint32_t millis() const noexcept;
 	uint32_t micros() const noexcept;
+	void Tick() noexcept {}
 
 	// --- Real-Time Clock ---
 	// The host system's clock will be used here.
@@ -107,6 +114,7 @@ public:
 	void Message(MessageType type, OutputBuffer* buffer) noexcept;
 	void RawMessage(MessageType type, const char* message) noexcept;
 	void DebugMessage(const char* fmt, va_list vargs) noexcept;
+	bool FlushMessages() noexcept;
 	void LogError(ErrorCode e) noexcept { }
 
 	// --- Service Locators ---
@@ -150,6 +158,8 @@ public:
 	// These are called by G-code handlers and need to exist and return sensible values.
 	void EmergencyStop() noexcept;
 	bool GetAtxPowerState() const noexcept { return true; } // Pretend PSU is always on
+	bool IsAtxPowerControlled() const noexcept { return false; }
+	bool IsDeferredPowerDown() const noexcept { return false; }
 	GCodeResult HandleM80(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
 	GCodeResult HandleM81(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
 	GCodeResult HandleM575(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
@@ -166,7 +176,17 @@ public:
 	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
 #endif
 	GCodeResult SetBuzzerPort(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; }
-	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
+	bool Beep(unsigned int freq, unsigned int ms) noexcept; // Do nothing for beeps
+	bool IsChanEnabled(size_t chan) const noexcept { return false; }
+	bool IsChanRaw(size_t chan) const noexcept { return false; }
+	void PanelDueBeep(int freq, int ms) noexcept { }
+	void SendPanelDueMessage(size_t chan, const char *_ecv_array msg) noexcept { (void)chan; (void)msg; }
+	const IoPort& GetAtxPowerPort() const noexcept;
+	size_t GetNumGpInputsToReport() const noexcept { return 0; }
+	size_t GetNumGpOutputsToReport() const noexcept { return 0; }
+	void ResetVoltageMonitors() noexcept { }
+	void Diagnostics(unsigned int, const StringRef&) noexcept { }
+	const UniqueId& GetUniqueId() const noexcept { return uniqueId; }
                                                             //
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
 	bool WritePlatformParameters(FileStore *f, bool includingG31) const noexcept { return true; };
@@ -191,6 +211,33 @@ public:
 	static inline bool hasGenericDebug{false};
 	static inline String<StringLength256> genericDebugBuffer;
 
+protected:
+	DECLARE_OBJECT_MODEL_WITH_ARRAYS
+
+// -- Explicit version, to make Platform concrete despite inheriting ObjectModel --
+//protected:
+//	// Minimal ObjectModel implementation so Platform is concrete
+//	const ObjectModelClassDescriptor *_ecv_null GetObjectModelClassDescriptor() const noexcept override {
+//		static const ObjectModelTableEntry table[] = { };
+//		static const uint8_t descriptor[] = { 0 };
+//		static const ObjectModelClassDescriptor cls{ table, descriptor, nullptr };
+//		return &cls;
+//	}
+//
+//	// Stub JSON reporting (empty object)
+//	void ReportAsJson(OutputBuffer *buf,
+//	                  ObjectExplorationContext& /*context*/,
+//	                  const ObjectModelClassDescriptor * null /*classDescriptor*/,
+//	                  uint8_t /*tableNumber*/,
+//	                  const char *_ecv_array /*filter*/) const THROWS(GCodeException) override
+//	{
+//		buf->cat("{}");
+//	}
+//
+//	// No arrays/locks/limits
+//	const ObjectModelArrayTableEntry *_ecv_null GetObjectModelArrayEntry(unsigned int) const noexcept override { return nullptr; }
+//	ReadWriteLock *_ecv_null GetObjectLock(unsigned int) const noexcept override { return nullptr; }
+//	size_t GetMaxElementsToReturn(const ObjectModelArrayTableEntry*, const ObjectExplorationContext&) const noexcept override { return 0; }
 
 private:
 	// Pointers to the real high-level modules. These must be set during initialization.
@@ -222,6 +269,7 @@ private:
 
   // Hotend state
 	float filamentWidth;
+	UniqueId uniqueId;
 
 	friend class ConfigurableFolder;
 	void NotifyDirectoriesChanged() noexcept;
