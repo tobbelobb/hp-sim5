@@ -1,7 +1,7 @@
 #include <Version.h>
 #include <Storage/MassStorage.h>
 
-#include <CAN/CanCapture.h>
+#include <can/CanCapture.h>
 #include <CAN/CanMotion.h>
 #include <CanMessageBuffer.h>
 #include <Platform/RepRap.h>
@@ -17,7 +17,6 @@
 #include <Movement/DDA.h>
 #include <Movement/Move.h>
 #include <Movement/Kinematics/Kinematics.h>
-#include <Movement/Planner.h>
 
 #include <array>
 #include <algorithm>

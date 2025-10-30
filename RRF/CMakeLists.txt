@@ -292,6 +292,7 @@ set(RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX
 set(HOST_HEADERS_TO_USE
     # Our own headers
     rtos/host_rtos.h
+    can/CanCapture.h
 )
 
 # --- Logic to Prepare the Sandboxed Source Tree ---
