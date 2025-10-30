@@ -63,9 +63,18 @@ namespace
 
 // --- Lifecycle and Initialization ---
 
+namespace
+{
+	constexpr const char* MessageLogLevelNames[] = { "debug", "info", "warn", "off" };
+	constexpr uint32_t LogEnabledThreshold = 3;
+}
+
 Platform::Platform() noexcept
 	: sysFolder(*this, sysDirLock, sysDir, DEFAULT_SYS_DIR),
-	  webFolder(*this, webDirLock, webDir, DEFAULT_WEB_DIR)
+	  webFolder(*this, webDirLock, webDir, DEFAULT_WEB_DIR),
+	  logLevelSetting(LogLevel::off),
+	  logFile(nullptr),
+	  logWriteInProgress(false)
 {
 	// Initialize the simulation clock
 	sim_micros = 0;
@@ -79,6 +88,7 @@ Platform::Platform() noexcept
 
 	sysFolder.SetAbsolute(DEFAULT_SYS_DIR);
 	webFolder.SetAbsolute(DEFAULT_WEB_DIR);
+	logFileRrfPath.Clear();
 }
 
 // In your main() function, you will need to create the instances of all the major
@@ -96,11 +106,13 @@ void Platform::Spin() noexcept
 	// The motion planner and other time-sensitive code depend on this.
 	// Advancing by 1ms (1000us) per tick is a reasonable starting point.
 	sim_micros += 1000;
+	FlushLog();
 }
 
 void Platform::Exit() noexcept
 {
 	MessageF(GenericMessage, "Host Platform Shutdown.\n");
+	StopLogging();
 }
 
 void Platform::EmergencyStop() noexcept
@@ -246,6 +258,7 @@ void Platform::Message(MessageType type, const char* message) noexcept
 
 	std::lock_guard<std::mutex> lock(logMutex);
 	WriteLine(type, message);
+	LogToFile(type, message);
 }
 
 void Platform::Message(MessageType type, OutputBuffer* buffer) noexcept
@@ -268,11 +281,277 @@ void Platform::RawMessage(MessageType type, const char* message) noexcept
 {
 	std::lock_guard<std::mutex> lock(logMutex);
 	WriteLine(type, message);
+	LogToFile(type, message);
 }
 
 void Platform::DebugMessage(const char* fmt, va_list vargs) noexcept
 {
 	MessageV(GenericMessage, fmt, vargs);
+}
+
+const char* Platform::GetLogLevel() const noexcept
+{
+	static const LogLevel off = LogLevel::off;
+	return (IsLoggingActive()) ? logLevelSetting.ToString() : off.ToString();
+}
+
+const char* Platform::GetLogFileName() const noexcept
+{
+	return (IsLoggingActive() && !logFileRrfPath.IsEmpty()) ? logFileRrfPath.c_str() : nullptr;
+}
+
+void Platform::FlushLog() noexcept
+{
+	std::lock_guard<std::mutex> guard(loggingMutex);
+	if (logFile != nullptr)
+	{
+		logFile->Flush();
+	}
+}
+
+uint32_t Platform::ExtractMessageLogLevel(MessageType type) noexcept
+{
+	return (static_cast<uint32_t>(type) & LogLevelMask) >> LogLevelShift;
+}
+
+bool Platform::ShouldLog(uint32_t messageLogLevel) const noexcept
+{
+	if (!IsLoggingActive())
+	{
+		return false;
+	}
+	if (messageLogLevel >= 4u)
+	{
+		return false;
+	}
+	const uint32_t platformLevel = logLevelSetting.ToBaseType();
+	if (platformLevel == LogLevel::off.ToBaseType())
+	{
+		return false;
+	}
+	return (messageLogLevel + platformLevel) >= LogEnabledThreshold;
+}
+
+void Platform::LogToFile(MessageType type, const char* message) noexcept
+{
+	if (message == nullptr)
+	{
+		return;
+	}
+	const size_t len = std::strlen(message);
+	if (len == 0 || (len == 1 && message[0] == '\n'))
+	{
+		return;
+	}
+	const uint32_t messageLogLevel = ExtractMessageLogLevel(type);
+	if (!ShouldLog(messageLogLevel))
+	{
+		return;
+	}
+
+	WriteLogEntry(messageLogLevel, message);
+}
+
+void Platform::WriteLogEntry(uint32_t messageLogLevel, const char* message) noexcept
+{
+	std::lock_guard<std::mutex> guard(loggingMutex);
+	WriteLogEntryUnlocked(messageLogLevel, message);
+}
+
+void Platform::WriteLogEntryUnlocked(uint32_t messageLogLevel, const char* message) noexcept
+{
+	if (logFile == nullptr || message == nullptr || logWriteInProgress)
+	{
+		return;
+	}
+
+	const size_t len = std::strlen(message);
+	if (len == 0 || (len == 1 && message[0] == '\n'))
+	{
+		return;
+	}
+
+	logWriteInProgress = true;
+
+	String<StringLength50> prefix;
+	const time_t currentTime = GetDateTime();
+	if (currentTime == 0)
+	{
+		const uint32_t secondsSinceStart = millis() / 1000u;
+		const unsigned hours = secondsSinceStart / 3600u;
+		const unsigned minutes = (secondsSinceStart % 3600u) / 60u;
+		const unsigned seconds = secondsSinceStart % 60u;
+		prefix.printf("power up + %02u:%02u:%02u ", hours, minutes, seconds);
+	}
+	else
+	{
+		struct tm timeInfo;
+		if (gmtime_r(&currentTime, &timeInfo) != nullptr)
+		{
+			prefix.printf("%04d-%02d-%02d %02d:%02d:%02d ",
+				timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday,
+				timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
+		}
+		else
+		{
+			prefix.copy("power up + unknown ");
+		}
+	}
+
+	const char* levelName = (messageLogLevel < 4u) ? MessageLogLevelNames[messageLogLevel] : "off";
+	prefix.catf("[%s] ", levelName);
+
+	bool ok = logFile->Write(prefix.c_str(), prefix.strlen());
+	if (ok)
+	{
+		ok = logFile->Write(message, len);
+	}
+	if (ok && message[len - 1] != '\n')
+	{
+		ok = logFile->Write('\n');
+	}
+	if (ok)
+	{
+		logFile->Flush();
+	}
+	else
+	{
+		logFile->Close();
+		delete logFile;
+		logFile = nullptr;
+		logFileRrfPath.Clear();
+	}
+
+	logWriteInProgress = false;
+}
+
+GCodeResult Platform::StartLogging(const char* filename, const StringRef& reply) noexcept
+{
+	const char* requested = (filename != nullptr && filename[0] != 0) ? filename : DEFAULT_LOG_FILE;
+
+	String<MaxFilenameLength> fullPath;
+	auto sysDirPtr = GetSysDir();
+	if (!CombineRrfPath(fullPath, sysDirPtr.Ptr(), requested))
+	{
+		reply.copy("Path name too long");
+		return GCodeResult::error;
+	}
+
+	if (!MassStorage::EnsurePath(fullPath.c_str(), false))
+	{
+		reply.printf("Unable to prepare path \"%s\"", fullPath.c_str());
+		return GCodeResult::error;
+	}
+
+	FileStore* newLogFile = MassStorage::OpenFile(fullPath.c_str(), OpenMode::append, 0);
+	if (newLogFile == nullptr)
+	{
+		reply.printf("Unable to create or open file %s", fullPath.c_str());
+		return GCodeResult::error;
+	}
+
+	{
+		std::lock_guard<std::mutex> guard(loggingMutex);
+		logFile = newLogFile;
+		logFileRrfPath.copy(fullPath.c_str());
+		logWriteInProgress = false;
+
+		String<StringLength50> startMessage;
+		startMessage.printf("Event logging started at level %s", logLevelSetting.ToString());
+		WriteLogEntryUnlocked(1u, startMessage.c_str());
+
+		String<StringLength50> firmwareInfo;
+		firmwareInfo.printf("Running: %s (host build)", GetElectronicsString());
+		WriteLogEntryUnlocked(1u, firmwareInfo.c_str());
+	}
+
+	if (reprap != nullptr)
+	{
+		reprap->StateUpdated();
+	}
+
+	return GCodeResult::ok;
+}
+
+void Platform::StopLogging() noexcept
+{
+	bool notify = false;
+	{
+		std::lock_guard<std::mutex> guard(loggingMutex);
+		if (logFile != nullptr)
+		{
+			String<StringLength50> stopMessage;
+			stopMessage.copy("Event logging stopped");
+			WriteLogEntryUnlocked(1u, stopMessage.c_str());
+
+			logFile->Flush();
+			logFile->Close();
+			delete logFile;
+			logFile = nullptr;
+			logWriteInProgress = false;
+			logFileRrfPath.Clear();
+			notify = true;
+		}
+		logLevelSetting = LogLevel::off;
+	}
+
+	if (notify && reprap != nullptr)
+	{
+		reprap->StateUpdated();
+	}
+}
+
+GCodeResult Platform::ConfigureLogging(GCodeBuffer& gb, const StringRef& reply) noexcept
+{
+	if (gb.Seen('S'))
+	{
+		const auto newLevelRaw = static_cast<LogLevel::RawType>(gb.GetLimitedUIValue('S', LogLevel::off, LogLevel::NumValues));
+		const LogLevel newLevel(newLevelRaw);
+
+		StopLogging();
+
+		if (newLevel > LogLevel::off)
+		{
+			logLevelSetting = newLevel;
+			String<MaxFilenameLength> filename;
+			if (gb.Seen('P'))
+			{
+				gb.GetQuotedString(filename.GetRef());
+			}
+			else
+			{
+				filename.copy(DEFAULT_LOG_FILE);
+			}
+
+			const GCodeResult result = StartLogging(filename.c_str(), reply);
+			if (result != GCodeResult::ok)
+			{
+				logLevelSetting = LogLevel::off;
+				return result;
+			}
+		}
+		else
+		{
+			logLevelSetting = LogLevel::off;
+			if (reprap != nullptr)
+			{
+				reprap->StateUpdated();
+			}
+		}
+	}
+	else
+	{
+		if (!IsLoggingActive())
+		{
+			reply.copy("Event logging is disabled");
+		}
+		else
+		{
+			reply.printf("Event logging is enabled at log level %s", logLevelSetting.ToString());
+		}
+	}
+
+	return GCodeResult::ok;
 }
 
 void Platform::NotifyDirectoriesChanged() noexcept

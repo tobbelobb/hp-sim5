@@ -5,6 +5,7 @@
 #include <RepRapFirmware.h>
 #include <General/Bitmap.h>
 #include <Endstops/EndstopDefs.h>
+#include <RTOSIface/RTOSIface.h>
 
 class EndstopsManager
 {

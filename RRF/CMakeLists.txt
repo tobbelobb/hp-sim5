@@ -49,6 +49,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/platform/DebugPrintHost.cpp
     ${SIM_ROOT_DIR}/rtos/freertos_shim.cpp
     ${SIM_ROOT_DIR}/object_model/ObjectExplorationContextHost.cpp
+    ${SIM_ROOT_DIR}/GPIO/GpOutPortHost.cpp
 )
 
 
@@ -85,16 +86,14 @@ set(RRF_SOURCES_TO_USE
     GCodes/GCodeQueue.cpp
     GCodes/GCodes.cpp
     GCodes/GCodes2.cpp
-    #GCodes/GCodes3.cpp
+    GCodes/GCodes3.cpp
 
     # Tier 5: Top-Level Application Objects
     #PrintMonitor/PrintMonitor.cpp
     #Platform/RepRap.cpp
 )
 
-# NEW LIST DEFINITION
-# List of REAL .h files needed by the .cpp files above.
-# If compilation fails with "No such file or directory", add the missing header here.
+# List of real .h files we'll use for our builds.
 set(RRF_HEADERS_TO_USE
     # Tier 1 Dependencies
     Platform/ArrayHandle.h
@@ -183,10 +182,50 @@ set(RRF_HEADERS_TO_USE
 )
 
 
-# List of FAKE headers from your host/include directory that will OVERWRITE the real ones.
+# List of real .h files from RRFLibraries we'll use for our builds.
+set(RRFLibraries_HEADERS_TO_USE
+    ecv_duet3d.h
+    ecv_original.h
+    General/NamedEnum.h
+    General/String.h
+    General/StringRef.h
+    General/Strnlen.h
+    General/StringFunctions.h
+    General/Bitmap.h
+    General/function_ref.h
+    General/gcc_builtins.h
+    General/SafeStrtod.h
+    General/SafeVsnprintf.h
+    General/SimpleMath.h
+    General/IPAddress.h
+    General/FreelistManager.h
+    General/Portability.h
+    Math/Deviation.h
+    General/IP4String.h
+    RTOSIface/RTOSNotifyIndices.h
+    Math/Matrix.h
+    Math/Isqrt.h
+    General/NumericConverter.h
+)
+
+# List of real .h files from RRFLibraries we'll use for our builds.
+set(CANlib_HEADERS_TO_USE
+    RRF3Common.h
+    GCodeResult.h
+    CanId.h
+    Duet3Common.h
+    CanMessageBuffer.h
+    CanMessageFormats.h
+    CanSettings.h
+    RemoteInputHandle.h
+    TemperatureError.h
+    CANlibNotifyIndices.h
+)
+
+# List of fake headers from your host/include directory that we'll use
+# Since they are added after real headers, they will overwrite the real ones.
 # The path here is relative to host/include.
 set(SHADOWING_HEADERS_TO_USE
-    # Shadowing headers
     FreeRTOS.h
     task.h
     queue.h
@@ -221,7 +260,7 @@ set(SHADOWING_HEADERS_TO_USE
     AnalogIn.h
     AnalogOut.h
     FilamentMonitors/FilamentMonitor.h
-    GCodes/GCodes.h # Very thin shim just to include AsyncSerial.h
+    GCodes/GCodes.h
     AsyncSerial.h
     Platform/TaskPriorities.h
     CoreNotifyIndices.h
@@ -236,8 +275,6 @@ set(RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX
     # include <Path/To/Header.h.orig>
     Platform/Heap.h
     CAN/CanInterface.h
-    GCodes/GCodes.h
-    Platform/TaskPriorities.h
     Platform/Tasks.h
     GCodes/GCodes.h
     Platform/TaskPriorities.h
@@ -286,6 +323,42 @@ foreach(rel_path ${RRF_HEADERS_TO_USE})
         COMMENT "Copying real header ${rel_path}"
     )
 endforeach()
+
+foreach(rel_path ${RRFLibraries_HEADERS_TO_USE})
+  set(abs_src_path "${RRFLibraries_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_CPP_FILES ${abs_dest_path})
+
+    # Get the directory part of the destination path for make_directory
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real source ${rel_path}"
+    )
+endforeach()
+
+foreach(rel_path ${CANlib_HEADERS_TO_USE})
+  set(abs_src_path "${CANlib_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_CPP_FILES ${abs_dest_path})
+
+    # Get the directory part of the destination path for make_directory
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real source ${rel_path}"
+    )
+endforeach()
+
+
 
 foreach(rel_path ${RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX})
     set(abs_src_path "${RRF_SOURCE_DIR}/src/${rel_path}")
@@ -347,16 +420,13 @@ add_custom_target(prepare_sources ALL
 # Add the generated .cpp files to the simulator target
 target_sources(rrf_simulator PRIVATE ${GENERATED_CPP_FILES})
 
-# CRITICAL: The executable target MUST depend on the preparation target
+# The executable target depend on the preparation target
 add_dependencies(rrf_simulator prepare_sources)
 
-# CRITICAL: Set the include directory to ONLY be our sandboxed directory
+# Set the include directory to be our sandboxed directory
 target_include_directories(rrf_simulator PUBLIC
     # The root of the sandbox `src` dir
     "${GENERATED_SOURCES_DIR}/src"
-    # Also include the original RRFLibraries and CANlib if needed
-    ${RRFLibraries_SOURCE_DIR}/src
-    ${CANlib_SOURCE_DIR}/src
 )
 
 # --- Final Touches ---

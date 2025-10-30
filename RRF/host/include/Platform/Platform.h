@@ -4,6 +4,7 @@
 
 #include <cstdarg>
 #include <ctime> // For time_t and struct tm
+#include <mutex>
 
 // Required RRF headers
 #include <Platform/MessageType.h>
@@ -11,6 +12,7 @@
 #include <General/StringRef.h>
 #include <General/String.h>
 #include <Config/Configuration.h>
+#include <RRF3Common.h>
 #include <Platform/OutputMemory.h>
 #include <Endstops/EndstopsManager.h>
 #include <RTOSIface/RTOSIface.h>
@@ -137,6 +139,10 @@ public:
 	GCodeResult SetWebDir(const char *_ecv_array dir, const StringRef& reply) noexcept { return webFolder.Configure(dir, reply); }
 	ReadLockedPointer<const char> GetWebDir() const noexcept { return webFolder.GetLockedPointer(); }
 	void AppendWebDir(const StringRef& path) const noexcept { webFolder.AppendToString(path); }
+	GCodeResult ConfigureLogging(GCodeBuffer& gb, const StringRef& reply) noexcept;
+	void StopLogging() noexcept;
+	const char* GetLogLevel() const noexcept;
+	const char* GetLogFileName() const noexcept;
 
 
 	// --- Stubbed Hardware/State Functions ---
@@ -205,12 +211,25 @@ private:
 	ConfigurableFolder sysFolder;
 	ConfigurableFolder webFolder;
 	Spindle spindles[MaxSpindles];
+	LogLevel logLevelSetting;
+	FileStore* logFile;
+	bool logWriteInProgress;
+	String<MaxFilenameLength> logFileRrfPath;
+	mutable std::mutex loggingMutex;
 
   // Hotend state
 	float filamentWidth;
 
 	friend class ConfigurableFolder;
 	void NotifyDirectoriesChanged() noexcept;
+	bool IsLoggingActive() const noexcept { return logFile != nullptr; }
+	GCodeResult StartLogging(const char* filename, const StringRef& reply) noexcept;
+	static uint32_t ExtractMessageLogLevel(MessageType type) noexcept;
+	bool ShouldLog(uint32_t messageLogLevel) const noexcept;
+	void LogToFile(MessageType type, const char* message) noexcept;
+	void WriteLogEntry(uint32_t messageLogLevel, const char* message) noexcept;
+	void WriteLogEntryUnlocked(uint32_t messageLogLevel, const char* message) noexcept;
+	void FlushLog() noexcept;
 };
 
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE || HAS_EMBEDDED_FILES
