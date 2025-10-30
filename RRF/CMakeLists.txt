@@ -90,7 +90,7 @@ set(RRF_SOURCES_TO_USE
     GCodes/GCodes3.cpp
 
     # Tier 5: Top-Level Application Objects
-    #PrintMonitor/PrintMonitor.cpp
+    PrintMonitor/PrintMonitor.cpp
     #Platform/RepRap.cpp
 )
 
