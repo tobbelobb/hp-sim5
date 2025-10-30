@@ -23,12 +23,18 @@ public:
 
 	bool HomingZWithProbe() const noexcept { return false; }
 
-	void GetM119report(const StringRef& reply) noexcept {	reply.copy("No Endstops or zprobes on Host"); };
+	void GetM119report(const StringRef& reply) noexcept {	reply.copy("No Endstops or zprobes on Host"); }
+	// M558: Create or modify probe
+	GCodeResult HandleM558(GCodeBuffer& gb, const StringRef &reply) { return GCodeResult::ok; }
 	// G31: Set or Report Current Probe status
-	GCodeResult HandleG31(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException) { return GCodeResult::ok; };
+	GCodeResult HandleG31(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; }
+	// Configure the endstops in response to M574
+	GCodeResult HandleM574(GCodeBuffer& gb, const StringRef& reply, OutputBuffer *_ecv_null & outbuf)  { return GCodeResult::ok; }
 
-	void SetZProbeDefaults() noexcept { };
-	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); } ;
+	GCodeResult ProgramZProbe(GCodeBuffer& gb, const StringRef& reply)  { return GCodeResult::ok; }
+
+	void SetZProbeDefaults() noexcept { }
+	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); }
 };
 
 #endif

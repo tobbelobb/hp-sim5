@@ -106,7 +106,7 @@ public:
 	void DebugMessage(const char* fmt, va_list vargs) noexcept;
 	void LogError(ErrorCode e) noexcept { }
 
-	// --- Service Locators (CRITICAL) ---
+	// --- Service Locators ---
 	// Provide access to the other major components.
 	RepRap& GetRepRap() const noexcept { return *reprap; }
 	GCodes& GetGCodes() const noexcept { return *gCodes; }
@@ -114,6 +114,7 @@ public:
 	Heat& GetHeat() const noexcept { return *heat; }
 	FansManager& GetFansManager() const noexcept { return *fans; }
 	EndstopsManager& GetEndstops() noexcept { return endstops; }
+	ReadLockedPointer<ZProbe> GetZProbeOrDefault(size_t probeNumber) noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); }
 
 	// --- Filesystem Abstraction ---
 	bool SysFileExists(const char* filename) const noexcept;
@@ -157,7 +158,7 @@ public:
 #if HAS_VOLTAGE_MONITOR
 	float GetCurrentPowerVoltage() const noexcept { return 24.0f; } // Prevent low-voltage warnings
 #endif
-	GCodeResult SetBuzzerPort(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; };
+	GCodeResult SetBuzzerPort(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; }
 	void Beep(unsigned int freq, unsigned int ms) noexcept {} // Do nothing for beeps
                                                             //
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
@@ -167,7 +168,11 @@ public:
 	bool IsOutputOnExtrudeActive() const noexcept { return true; }
 	void ExtrudeOn() noexcept { }
 	void ExtrudeOff() noexcept { }
+
+	GCodeResult GetSetAncillaryPwm(GCodeBuffer& gb, const StringRef& reply) {  return GCodeResult::ok; }
 	Spindle& AccessSpindle(size_t slot) noexcept { return spindles[slot]; }
+
+	GCodeResult ConfigurePort(GCodeBuffer& gb, const StringRef& reply) {  return GCodeResult::ok; }
 
   GpOutputPort& stubbedGpoutPort;
 	GpOutputPort& GetGpOutPort(size_t gpoutPortNumber) noexcept { return stubbedGpoutPort; }
