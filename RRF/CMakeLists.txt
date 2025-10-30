@@ -91,7 +91,7 @@ set(RRF_SOURCES_TO_USE
 
     # Tier 5: Top-Level Application Objects
     PrintMonitor/PrintMonitor.cpp
-    #Platform/RepRap.cpp
+    Platform/RepRap.cpp
 )
 
 # List of real .h files we'll use for our builds.
@@ -184,6 +184,7 @@ set(RRF_HEADERS_TO_USE
     Hardware/I2C.h
     Comms/FirmwareUpdater.h
     ClosedLoop/ClosedLoop.h
+    Heating/Sensors/TemperatureSensor.h
 )
 
 
@@ -270,6 +271,8 @@ set(SHADOWING_HEADERS_TO_USE
     Platform/TaskPriorities.h
     CoreNotifyIndices.h
     Devices.h
+    Cache.h
+    DmacManager.h
 )
 
 
