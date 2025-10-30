@@ -12,6 +12,7 @@
 #include <Heating/Heat.h>
 #include <Fans/FansManager.h>
 
+#include <cctype>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -23,9 +24,6 @@
 namespace
 {
 	std::mutex logMutex;
-
-	constexpr const char* DefaultSysDir = "0:/sys/";
-	constexpr const char* DefaultWebDir = "0:/www/";
 
 	constexpr const char* PrefixForType(MessageType type) noexcept
 	{
@@ -66,6 +64,8 @@ namespace
 // --- Lifecycle and Initialization ---
 
 Platform::Platform() noexcept
+	: sysFolder(*this, sysDirLock, sysDir, DEFAULT_SYS_DIR),
+	  webFolder(*this, webDirLock, webDir, DEFAULT_WEB_DIR)
 {
 	// Initialize the simulation clock
 	sim_micros = 0;
@@ -77,7 +77,8 @@ Platform::Platform() noexcept
 	heat = nullptr;
 	fans = nullptr;
 
-	sysDir.copy(DefaultSysDir);
+	sysFolder.SetAbsolute(DEFAULT_SYS_DIR);
+	webFolder.SetAbsolute(DEFAULT_WEB_DIR);
 }
 
 // In your main() function, you will need to create the instances of all the major
@@ -216,26 +217,7 @@ bool Platform::FileExists(const char* folder, const char* filename) const noexce
 
 void Platform::SetSysDir(const char* path) noexcept
 {
-	WriteLocker locker(sysDirLock);
-	sysDir.copy((path != nullptr) ? path : DefaultSysDir);
-}
-
-void Platform::AppendSysDir(const StringRef& result) const noexcept
-{
-	auto sysDirPtr = GetSysDir();
-	result.copy(sysDirPtr.Ptr());
-}
-
-ReadLockedPointer<const char> Platform::GetSysDir() const noexcept
-{
-	return ReadLockedPointer<const char>(sysDirLock, sysDir.c_str());
-}
-
-ReadLockedPointer<const char> Platform::GetWebDir() const noexcept
-{
-    // This function is now inline in the header, but keeping it here for older compilers is safe.
-	// Or, it can be removed if your header has it as `return ReadLockedPointer<const char>(nullptr, "0:/www/");`
-	return ReadLockedPointer<const char>(nullptr, DefaultWebDir);
+	sysFolder.SetAbsolute(path);
 }
 
 
@@ -291,4 +273,168 @@ void Platform::RawMessage(MessageType type, const char* message) noexcept
 void Platform::DebugMessage(const char* fmt, va_list vargs) noexcept
 {
 	MessageV(GenericMessage, fmt, vargs);
+}
+
+void Platform::NotifyDirectoriesChanged() noexcept
+{
+	if (reprap != nullptr)
+	{
+		reprap->DirectoriesUpdated();
+	}
+}
+
+ConfigurableFolder::ConfigurableFolder(Platform& owner,
+									   ReadWriteLock& lock,
+									   String<MaxFilenameLength>& storage,
+									   const char* defaultValue) noexcept
+	: owner(owner),
+	  lockRef(lock),
+	  storageRef(storage),
+	  defaultValue(defaultValue)
+{
+}
+
+const char* ConfigurableFolder::GetUnlockedPointer() const noexcept
+{
+	return storageRef.c_str();
+}
+
+bool ConfigurableFolder::EnsureTrailingSlash(String<MaxFilenameLength>& path) const noexcept
+{
+	if (!path.EndsWith('/'))
+	{
+		if (path.cat('/'))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void ConfigurableFolder::AssignLocked(const char* newPath, bool notifyChange) noexcept
+{
+	if (newPath == nullptr || *newPath == 0)
+	{
+		if (!storageRef.Equals(defaultValue))
+		{
+			(void)storageRef.copy(defaultValue);
+			if (notifyChange)
+			{
+				owner.NotifyDirectoriesChanged();
+			}
+		}
+		return;
+	}
+
+	if (storageRef.Equals(newPath))
+	{
+		return;
+	}
+
+	if (!storageRef.copy(newPath))
+	{
+		if (notifyChange)
+		{
+			owner.NotifyDirectoriesChanged();
+		}
+	}
+}
+
+ReadLockedPointer<const char> ConfigurableFolder::GetLockedPointer() const noexcept
+{
+	return ReadLockedPointer<const char>(lockRef, GetUnlockedPointer());
+}
+
+void ConfigurableFolder::AppendToString(const StringRef& path) const noexcept
+{
+	ReadLocker locker(lockRef);
+	path.cat(GetUnlockedPointer());
+}
+
+static bool CombineRrfPath(String<MaxFilenameLength>& result, const char* base, const char* fragment) noexcept
+{
+	const char* frag = (fragment != nullptr) ? fragment : "";
+	bool hadError = false;
+	const bool isRelative = frag[0] != '/' && (std::strlen(frag) < 2 || !std::isdigit(static_cast<unsigned char>(frag[0])) || frag[1] != ':');
+
+	if (base != nullptr && base[0] != 0 && isRelative)
+	{
+		hadError = result.copy(base);
+		if (!hadError)
+		{
+			const size_t len = result.strlen();
+			if (len != 0 && result[len - 1] != '/')
+			{
+				hadError = result.cat('/');
+			}
+		}
+	}
+	else
+	{
+		result.Clear();
+	}
+
+	if (!hadError)
+	{
+		hadError = result.cat(frag);
+	}
+
+	if (hadError)
+	{
+		result.copy("?????");
+	}
+	return !hadError;
+}
+
+GCodeResult ConfigurableFolder::Configure(const char* dir, const StringRef& reply) noexcept
+{
+	WriteLocker locker(lockRef);
+
+	const char* base = GetUnlockedPointer();
+	String<MaxFilenameLength> newDir;
+	if (!CombineRrfPath(newDir, base, dir))
+	{
+		reply.copy("Path name too long");
+		return GCodeResult::error;
+	}
+
+	if (!EnsureTrailingSlash(newDir))
+	{
+		reply.copy("Path name too long");
+		return GCodeResult::error;
+	}
+
+	if (!MassStorage::DirectoryExists(newDir.c_str()))
+	{
+		reply.printf("Path \"%s\" not found", newDir.c_str());
+		return GCodeResult::error;
+	}
+
+	AssignLocked(newDir.c_str(), true);
+	return GCodeResult::ok;
+}
+
+void ConfigurableFolder::SetAbsolute(const char* absolutePath) noexcept
+{
+	WriteLocker locker(lockRef);
+
+	if (absolutePath == nullptr || absolutePath[0] == 0)
+	{
+		AssignLocked(defaultValue, true);
+		return;
+	}
+
+	String<MaxFilenameLength> newDir;
+	if (newDir.copy(absolutePath))
+	{
+		AssignLocked(defaultValue, true);
+		return;
+	}
+	if (!EnsureTrailingSlash(newDir))
+	{
+		AssignLocked(defaultValue, true);
+		return;
+	}
+
+	AssignLocked(newDir.c_str(), true);
 }

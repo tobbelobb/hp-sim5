@@ -10,6 +10,7 @@
 #include <Storage/FileStore.h>
 #include <General/StringRef.h>
 #include <General/String.h>
+#include <Config/Configuration.h>
 #include <Platform/OutputMemory.h>
 #include <Endstops/EndstopsManager.h>
 #include <RTOSIface/RTOSIface.h>
@@ -25,6 +26,31 @@ class Move;
 class Heat;
 class FansManager;
 class Tool;
+class Platform;
+
+class ConfigurableFolder
+{
+public:
+	ConfigurableFolder(Platform& owner,
+					   ReadWriteLock& lock,
+					   String<MaxFilenameLength>& storage,
+					   const char* defaultValue) noexcept;
+
+	ReadLockedPointer<const char> GetLockedPointer() const noexcept;
+	void AppendToString(const StringRef& path) const noexcept;
+	GCodeResult Configure(const char* dir, const StringRef& reply) noexcept;
+	void SetAbsolute(const char* absolutePath) noexcept;
+
+private:
+	Platform& owner;
+	ReadWriteLock& lockRef;
+	String<MaxFilenameLength>& storageRef;
+	const char* defaultValue;
+
+	const char* GetUnlockedPointer() const noexcept;
+	bool EnsureTrailingSlash(String<MaxFilenameLength>& path) const noexcept;
+	void AssignLocked(const char* newPath, bool notifyChange) noexcept;
+};
 
 // A minimal enum to satisfy code that checks the board type.
 enum class BoardType : uint8_t
@@ -103,14 +129,13 @@ public:
 	static const char *_ecv_array GetGCodeDir() noexcept; 		// Where the gcodes are
 	static const char *_ecv_array GetMacroDir() noexcept;		// Where the user-defined macros are
                                                           //
-	ReadLockedPointer<const char> GetSysDir() const noexcept;
-	void AppendSysDir(const StringRef& result) const noexcept;
+	ReadLockedPointer<const char> GetSysDir() const noexcept { return sysFolder.GetLockedPointer(); }
+	void AppendSysDir(const StringRef& path) const noexcept { sysFolder.AppendToString(path); }
 	void SetSysDir(const char* path) noexcept;
-	GCodeResult SetSysDir(const char *_ecv_array dir, const StringRef& reply) noexcept;				// Set the system files path
-	GCodeResult SetWebDir(const char *_ecv_array dir, const StringRef& reply) noexcept;				// Set the web files path
-	// We can fake the web directory easily since it's only used for path construction
-	ReadLockedPointer<const char> GetWebDir() const noexcept;
-	void AppendWebDir(const StringRef & path) const noexcept {  path.cat(webDir); };
+	GCodeResult SetSysDir(const char *_ecv_array dir, const StringRef& reply) noexcept { return sysFolder.Configure(dir, reply); }
+	GCodeResult SetWebDir(const char *_ecv_array dir, const StringRef& reply) noexcept { return webFolder.Configure(dir, reply); }
+	ReadLockedPointer<const char> GetWebDir() const noexcept { return webFolder.GetLockedPointer(); }
+	void AppendWebDir(const StringRef& path) const noexcept { webFolder.AppendToString(path); }
 
 
 	// --- Stubbed Hardware/State Functions ---
@@ -169,11 +194,18 @@ private:
 
 	// Filesystem state
 	mutable ReadWriteLock sysDirLock;
+	mutable ReadWriteLock webDirLock;
 	String<MaxFilenameLength> sysDir;
+	String<MaxFilenameLength> webDir;
+	ConfigurableFolder sysFolder;
+	ConfigurableFolder webFolder;
 	Spindle spindles[MaxSpindles];
 
   // Hotend state
 	float filamentWidth;
+
+	friend class ConfigurableFolder;
+	void NotifyDirectoriesChanged() noexcept;
 };
 
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE || HAS_EMBEDDED_FILES
