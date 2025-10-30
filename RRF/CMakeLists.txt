@@ -50,6 +50,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/rtos/freertos_shim.cpp
     ${SIM_ROOT_DIR}/object_model/ObjectExplorationContextHost.cpp
     ${SIM_ROOT_DIR}/GPIO/GpOutPortHost.cpp
+    ${SIM_ROOT_DIR}/GPIO/GpInPortHost.cpp
 )
 
 
@@ -179,6 +180,10 @@ set(RRF_HEADERS_TO_USE
     Version.h
     Platform/Logger.h
     GPIO/GpOutPort.h
+    GPIO/GpInPort.h
+    Hardware/I2C.h
+    Comms/FirmwareUpdater.h
+    ClosedLoop/ClosedLoop.h
 )
 
 

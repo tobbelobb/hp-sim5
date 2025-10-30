@@ -19,6 +19,7 @@
 #include <Tools/Spindle.h>
 #include <Fans/FansManager.h>
 #include <GPIO/GpOutPort.h>
+#include <GPIO/GpInPort.h>
 
 // --- Forward declarations for all major modules Platform is expected to know about ---
 // This is critical. Platform acts as a "service locator" for the rest of the firmware.
@@ -180,8 +181,10 @@ public:
 
 	GCodeResult ConfigurePort(GCodeBuffer& gb, const StringRef& reply) {  return GCodeResult::ok; }
 
-  GpOutputPort& stubbedGpoutPort;
+	GpOutputPort& stubbedGpoutPort;
 	GpOutputPort& GetGpOutPort(size_t gpoutPortNumber) noexcept { return stubbedGpoutPort; }
+	GpInputPort& stubbedGpinPort;
+	const GpInputPort& GetGpInPort(size_t gpinPortNumber) const noexcept { return stubbedGpinPort; }
 
 	// --- Static debug members (copied from your version) ---
 	static inline bool shouldTurnOffHeaters{false};
