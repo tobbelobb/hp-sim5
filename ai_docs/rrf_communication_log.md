@@ -3353,3 +3353,57 @@ Assistant (gpt-5-codex high):
 
   1. Re-run with Hangprinter-heavy gcode to confirm jerk settings still produce smooth overlaps across the whole workspace.
   2. Port the same planner into any other host tools or add regression checks comparing CAN logs for key fixtures.
+
+
+-----------------------
+long time. Lots of human work between.
+-----------------------
+› I'm looking at ReprapFirmware. It's usually built for an embedded platform but I want to make a x86_64 build with:
+  No FreeRTOS
+  No reason to be synchronous, we can fake clock ticks and such. We will only run in "batch mode" on x86_64, so no reason to wait for anything or stay synchronous, as long as everything happens in the right order.
+  No connected boards, but we want to capture packets that would have been sent to external CAN boards, so we need to fake something there
+  No networking
+  No connections to other programs such as DuetWebInterface or DSW or anything like that.
+  No fans or heaters or anything like that. No physical pins or connections to anything at all actually.
+
+  My code is in RRF/host/, the original code is in RRF/ReprapFirmware/.
+
+  The way I work is that I have a CMakeLists.txt in here (absolute path ~/repos/hp-sim5/RRF/CMakeLists.txt).
+
+  You can read directly in the CMakeLists.txt which original files, versus which shadowing/fake files I intend currently to use in the final build.
+
+  I use my CMakeLists.txt like this:
+  ```
+  cmake -B build
+  cd build
+  make prepare_sources
+  make rrf_simulator
+  ```
+
+  Right now all object files are building cleanly, except main.o. I'm rewriting host/src/main.cpp from scratch.
+  It was previously written to work with an ad-hoc planner for my host build, and lots of other ad-hoc code.
+  Since then I have managed to compile lots and lots more of the real ReprapFirmware logic.
+  Please help me rewrite main.cpp in a way that exercises all the real ReprapFirmware logic that is currently compiled and which fullfills my intent of generating movement commands that are sent out via the CAN interface and then captured and written to
+  disk. These captured files will be used in a physics simulator to check how well the ReprapFirmware planner, kinematics logic, DDA, movement system etc works.
+
+  Don't change real source files in ReprapFirmware source tree, unless it's a simple `%u` -> `%zu` change to silence a `-Wformat` error, or something really minor like that.
+  You can write new implementation code in the RRF/host directory, but only if the functionality isn't already available in the real RRF/ReprapFirmware directory.
+  If you're unable to fix link errors without changing RRF/ReprapFirmware a lot, or if you get stuck, just stop and ask me for help.
+  I'm expecting it will be very hard to get this thing to link, so see if you can write the logic of main.cpp first, and then link the function calls one by one in an iterative manner (for exaple by commenting out one line at a time or something)
+
+---------------------
+
+• - Replaced host/src/main.cpp with a new host entry point that:
+      - Parses --vsd, --run, and --can-log arguments, configures the virtual SD root, CAN capture, and CAN message buffers.
+      - Boots real RRF subsystems, uses QueueFileToPrint/StartPrinting to launch the requested G-code, then spins until the job and movement queues drain while faking time via the platform shim.
+      - Emits final position info and ensures CAN logging/MassStorage are shut down even on failure. (Private GCodes helpers are accessed by redefining private in this TU.)
+  - Updated host CAN helpers (host/can/CanCapture.cpp and host/can/CanInterfaceHost.cpp) to include their local header so they no longer depend on an un-copied RRF header.
+  - Simplified host/movement/StepTimer.cpp; the host shim is now fully defined inline in the header, so the translation unit just includes it.
+  - Tried to rebuild with cmake --build build --target rrf_simulator; the new main compiles, but the overall link still fails because existing host stubs (e.g. PlatformHost.cpp) rely on headers that aren’t present in the generated tree (RepRap.h). No
+    changes were made to those host files—fixing or restoring the missing headers will be the next step before a full build succeeds.
+
+  Next steps:
+
+  1. Restore/forward the necessary headers (e.g. make RepRap.h available under generated_sources) so the remaining host objects compile, then rerun the build.
+  2. Once it links, run rrf_simulator --vsd <path> --run <file> to validate the new batch-mode flow.
+  3. Keep in mind the repo already has one local commit; sync or rebase as needed before committing these changes.

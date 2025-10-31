@@ -1,6 +1,6 @@
 #include <CAN/CanInterface.h>
 
-#include <CAN/CanCapture.h>
+#include "CanCapture.h"
 #include <CanMessageBuffer.h>
 
 #if SUPPORT_CAN_EXPANSION

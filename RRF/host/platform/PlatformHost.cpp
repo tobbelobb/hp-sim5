@@ -7,6 +7,7 @@
 
 // Include headers for the modules Platform needs to know about
 #include <RepRap.h>
+#include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <GCodes/GCodes.h>
 #include <Movement/Move.h>
 #include <Heating/Heat.h>
@@ -70,8 +71,7 @@ namespace
 }
 
 Platform::Platform() noexcept
-	: objectModelProxy(*this),
-	  sysFolder(*this, sysDirLock, sysDir, DEFAULT_SYS_DIR),
+	: sysFolder(*this, sysDirLock, sysDir, DEFAULT_SYS_DIR),
 	  webFolder(*this, webDirLock, webDir, DEFAULT_WEB_DIR),
 	  logLevelSetting(LogLevel::off),
 	  logFile(nullptr),
@@ -308,13 +308,6 @@ const IoPort& Platform::GetAtxPowerPort() const noexcept
 {
 	static IoPort dummyPort;
 	return dummyPort;
-}
-
-const ObjectModelClassDescriptor *_ecv_null Platform::ObjectModelProxy::GetObjectModelClassDescriptor() const noexcept
-{
-	static constexpr uint8_t descriptor[] = { 0 };
-	static const ObjectModelClassDescriptor descriptorWrapper{ nullptr, descriptor, nullptr };
-	return &descriptorWrapper;
 }
 
 const char* Platform::GetLogLevel() const noexcept

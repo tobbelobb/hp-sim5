@@ -213,6 +213,12 @@ public:
 
 protected:
 	DECLARE_OBJECT_MODEL_WITH_ARRAYS
+  // GetObjectModelClassDescriptor;
+  // objectModelTable[]
+  // objectModelTableDescriptor[]
+  // objectModelClassDescriptor
+  // objectModelArrayTable[]
+  // GetObjectModelArrayEntry
 
 // -- Explicit version, to make Platform concrete despite inheriting ObjectModel --
 //protected:

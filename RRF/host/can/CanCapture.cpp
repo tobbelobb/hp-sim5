@@ -1,4 +1,4 @@
-#include <CAN/CanCapture.h>
+#include "CanCapture.h"
 
 #include <atomic>
 #include <cstdint>

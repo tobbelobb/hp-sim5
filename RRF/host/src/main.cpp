@@ -1,924 +1,456 @@
-#include <Version.h>
+#include <RepRapFirmware.h>
 #include <Storage/MassStorage.h>
-
 #include <can/CanCapture.h>
 #include <CAN/CanMotion.h>
 #include <CanMessageBuffer.h>
 #include <Platform/RepRap.h>
-#include <Platform/MessageType.h>
-#include <GCodes/GCodeBuffer/GCodeBuffer.h>
-#include <GCodes/GCodeInput.h>
-#include <GCodes/GCodeException.h>
-#include <GCodes/GCodeMachineState.h>
+#include <PrintMonitor/PrintMonitor.h>
+#define private public
 #include <GCodes/GCodes.h>
-#include <Storage/FileData.h>
-#include <Storage/FileStore.h>
-#include <General/String.h>
-#include <Movement/DDA.h>
+#undef private
+#include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <Movement/Move.h>
-#include <Movement/Kinematics/Kinematics.h>
+#include <General/String.h>
 
-#include <array>
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <string>
-#include <vector>
+#include <thread>
 
 namespace
 {
-	void PrintUsage()
+	enum class CaptureSelection : uint8_t
 	{
-		std::cout << "Usage: host_rrf_bootstrap [--vsd <path>] [--run <file.gcode>] [--can-log <path|disable>]\n";
+		notProvided,
+		disabled,
+		enabled
+	};
+
+	struct CommandLineOptions
+	{
+		std::filesystem::path vsdRoot{"host/vsd"};
+		std::string runArgument;
+		CaptureSelection capture{CaptureSelection::notProvided};
+		std::filesystem::path capturePath;
+		bool showHelp{false};
+	};
+
+	constexpr unsigned int kDefaultCanBuffers = 64;
+	constexpr std::chrono::minutes kPrintTimeout{30};
+	constexpr std::chrono::milliseconds kSpinSleep{1};
+	constexpr unsigned int kIdleSettlingCycles = 25;
+
+	void PrintUsage() noexcept
+	{
+		std::cout << "Usage: rrf_simulator [--vsd <path>] [--run <file.gcode>] [--can-log <path|disable>]\n";
 	}
 
-	std::string NormaliseRunPath(const std::string& rawPath)
+	std::string ToLower(std::string value) noexcept
 	{
-		if (rawPath.empty())
-		{
-			return rawPath;
-		}
-
-		if (rawPath.size() > 1 && rawPath[1] == ':')
-		{
-			return rawPath;
-		}
-
-		std::string trimmed = rawPath;
-		while (!trimmed.empty() && (trimmed.front() == '/' || trimmed.front() == '\\'))
-		{
-			trimmed.erase(trimmed.begin());
-		}
-		return "0:/" + trimmed;
+		std::transform(value.begin(), value.end(), value.begin(),
+					   [] (unsigned char ch) noexcept { return static_cast<char>(std::tolower(ch)); });
+		return value;
 	}
 
-	bool ProcessLinearMove(GCodeBuffer& gb, int commandNumber)
+	bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options, std::string& error) noexcept
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-		const bool axesRelative = reprap.GetGCodes().GetAxesRelative(0);
-
-		RawMove baseMove;
-		if (commandNumber == 0)
+		for (int i = 1; i < argc; ++i)
 		{
-			baseMove.flags |= RMF_Rapid;
-		}
-		bool hasMovement = false;
-
-		float startCoords[MaxAxesPlusExtruders] = { 0.0f };
-		for (size_t i = 0; i < MaxAxes; ++i)
-		{
-			startCoords[i] = reprap.GetGCodes().GetUserPosition(i);
-		}
-		const size_t extruderIndex = MaxAxes;
-
-		if (gb.Seen('H'))
-		{
-			const int hValue = gb.GetIValue();
-			if (hValue == 2)
+			const std::string arg(argv[i]);
+			if (arg == "--help" || arg == "-h")
 			{
-				baseMove.flags |= RMF_RawMotorMove;
+				options.showHelp = true;
+				return true;
 			}
-			else if (hValue == 1)
+			else if (arg == "--vsd")
 			{
-				baseMove.flags |= RMF_Rapid;
-			}
-		}
-
-		for (size_t i = 0; i < MaxAxesPlusExtruders; ++i)
-		{
-			baseMove.coords[i] = startCoords[i];
-		}
-
-		for (char letter : axisLetters)
-		{
-			if (!gb.Seen(letter))
-			{
-				continue;
-			}
-
-			const float value = gb.GetFValue();
-			size_t index = 0;
-			if (!reprap.GetGCodes().TryGetAxisIndex(letter, index))
-			{
-				continue;
-			}
-
-			const float current = startCoords[index];
-			const float updated = axesRelative ? current + value : value;
-			baseMove.coords[index] = updated;
-			if ((baseMove.flags & RMF_RawMotorMove) == 0)
-			{
-				reprap.GetGCodes().SetUserPosition(index, updated);
-			}
-			else
-			{
-				baseMove.independentMask |= (1u << index);
-			}
-			hasMovement = true;
-		}
-
-		if (gb.Seen('E'))
-		{
-			const float eValue = gb.GetFValue();
-			const float currentE = startCoords[extruderIndex];
-			const float targetE = currentE + eValue;
-			baseMove.coords[extruderIndex] = targetE;
-			baseMove.hasE = true;
-			hasMovement = true;
-		}
-
-		if (gb.Seen('F'))
-		{
-			const float feedRateMMperMin = gb.GetFValue();
-			baseMove.feedRate = feedRateMMperMin / 60.0f;
-		}
-		else
-		{
-			baseMove.feedRate = 100.0f;
-		}
-
-		if (!hasMovement)
-		{
-			return true;
-		}
-
-		const bool isRawMove = (baseMove.flags & RMF_RawMotorMove) != 0;
-		const bool isRapid = (baseMove.flags & RMF_Rapid) != 0;
-		const size_t numAxes = reprap.GetGCodes().GetVisibleAxes();
-
-		float geometricLengthSq = 0.0f;
-		for (size_t axis = 0; axis < numAxes && axis < MaxAxes; ++axis)
-		{
-			const float delta = baseMove.coords[axis] - startCoords[axis];
-			geometricLengthSq += delta * delta;
-		}
-		const float geometricLength = (geometricLengthSq > 0.0f) ? std::sqrt(geometricLengthSq) : 0.0f;
-
-		unsigned int totalSegments = 1;
-		if (!isRawMove)
-		{
-			const Kinematics& kin = reprap.GetMove().GetKinematics();
-			const SegmentationType segType = kin.GetSegmentationType();
-			if (segType.useSegmentation && (segType.useG0Segmentation || !isRapid))
-			{
-				float segLengthSq = 0.0f;
-				for (size_t axis = 0; axis < numAxes && axis < MaxAxes; ++axis)
+				if (i + 1 >= argc)
 				{
-					if (!segType.useZSegmentation && axis == 2)
-					{
-						continue;
-					}
-					const float delta = baseMove.coords[axis] - startCoords[axis];
-					segLengthSq += delta * delta;
+					error = "--vsd requires a path argument";
+					return false;
 				}
-				const float segLength = (segLengthSq > 0.0f) ? std::sqrt(segLengthSq) : 0.0f;
-				if (segLength > 0.0f && baseMove.feedRate > 0.0f)
-				{
-					const float moveTime = segLength / baseMove.feedRate;
-					const float segmentsByLength = segLength * kin.GetReciprocalMinSegmentLength();
-					const float segmentsByTime = moveTime * kin.GetSegmentsPerSecond();
-					const float desired = std::min(segmentsByLength, segmentsByTime);
-					const float clampedDesired = std::max(desired, 1.0f);
-					const long rounded = std::lround(clampedDesired);
-					totalSegments = static_cast<unsigned int>((rounded <= 0) ? 1 : rounded);
-				}
+				options.vsdRoot = argv[++i];
 			}
-		}
-
-		float segmentStartCoords[MaxAxesPlusExtruders];
-		std::copy(startCoords, startCoords + MaxAxesPlusExtruders, segmentStartCoords);
-
-		const float invSegments = 1.0f / static_cast<float>(totalSegments);
-		const float totalExtrusionDelta = baseMove.hasE ? (baseMove.coords[extruderIndex] - startCoords[extruderIndex]) : 0.0f;
-
-		for (unsigned int seg = 0; seg < totalSegments; ++seg)
-		{
-			RawMove segmentMove = baseMove;
-			const float fraction = static_cast<float>(seg + 1) * invSegments;
-
-			for (size_t axis = 0; axis < MaxAxes; ++axis)
+			else if (arg == "--run")
 			{
-				const float delta = baseMove.coords[axis] - startCoords[axis];
-				if (delta != 0.0f)
+				if (i + 1 >= argc)
 				{
-					segmentMove.coords[axis] = startCoords[axis] + delta * fraction;
+					error = "--run requires a filename";
+					return false;
+				}
+				options.runArgument = argv[++i];
+			}
+			else if (arg == "--can-log")
+			{
+				if (i + 1 >= argc)
+				{
+					error = "--can-log requires a path or the value 'disable'";
+					return false;
+				}
+				const std::string value = ToLower(argv[++i]);
+				if (value == "disable" || value == "none" || value == "off")
+				{
+					options.capture = CaptureSelection::disabled;
+					options.capturePath.clear();
 				}
 				else
 				{
-					segmentMove.coords[axis] = segmentStartCoords[axis];
+					options.capture = CaptureSelection::enabled;
+					options.capturePath = argv[i];
+				}
+			}
+			else
+			{
+				error = "Unknown option '" + arg + "'";
+				return false;
+			}
+		}
+		return true;
+	}
+
+	std::optional<std::string> ResolveRunFile(const std::filesystem::path& vsdRoot,
+											  const std::string& runArg,
+											  std::string& error) noexcept
+	{
+		if (runArg.empty())
+		{
+			return std::nullopt;
+		}
+
+		const std::filesystem::path gcodeRoot = vsdRoot / "gcodes";
+		if (!std::filesystem::exists(gcodeRoot))
+		{
+			error = "G-code directory '" + gcodeRoot.string() + "' does not exist";
+			return std::nullopt;
+		}
+
+		auto resolveRelative = [&gcodeRoot, &error] (const std::filesystem::path& hostPath) -> std::optional<std::string>
+		{
+			if (!std::filesystem::exists(hostPath))
+			{
+				error = "G-code file '" + hostPath.string() + "' does not exist";
+				return std::nullopt;
+			}
+
+			std::error_code ec;
+			std::filesystem::path relative = std::filesystem::relative(hostPath, gcodeRoot, ec);
+			if (ec)
+			{
+				error = "File '" + hostPath.string() + "' is outside '" + gcodeRoot.string() + "'";
+				return std::nullopt;
+			}
+
+			for (const auto& component : relative)
+			{
+				if (component == "..")
+				{
+					error = "File '" + hostPath.string() + "' escapes the gcodes directory";
+					return std::nullopt;
 				}
 			}
 
-			if (baseMove.hasE)
+			if (relative.empty())
 			{
-				segmentMove.coords[extruderIndex] = startCoords[extruderIndex] + totalExtrusionDelta * fraction;
+				error = "Run target refers to a directory";
+				return std::nullopt;
 			}
 
-			host::planner::QueueSegment(segmentMove, segmentStartCoords);
-			std::copy(segmentMove.coords, segmentMove.coords + MaxAxesPlusExtruders, segmentStartCoords);
+			return relative.generic_string();
+		};
+
+		// RRF-style path?
+		if (runArg.size() > 2 && runArg[1] == ':')
+		{
+			std::string remainder = runArg.substr(2);
+			while (!remainder.empty() && (remainder.front() == '/' || remainder.front() == '\\'))
+			{
+				remainder.erase(remainder.begin());
+			}
+
+			std::filesystem::path rrfPath(remainder);
+			if (rrfPath.empty())
+			{
+				error = "Run path '" + runArg + "' is not valid";
+				return std::nullopt;
+			}
+
+			auto iter = rrfPath.begin();
+			if (iter == rrfPath.end() || iter->string() != "gcodes")
+			{
+				error = "Run path '" + runArg + "' must target 0:/gcodes";
+				return std::nullopt;
+			}
+
+			std::filesystem::path relative;
+			for (++iter; iter != rrfPath.end(); ++iter)
+			{
+				relative /= *iter;
+			}
+
+			if (relative.empty())
+			{
+				error = "Run path '" + runArg + "' is incomplete";
+				return std::nullopt;
+			}
+
+			return resolveRelative(gcodeRoot / relative);
 		}
 
-		const bool segmented = (totalSegments > 1);
-		const float reportedDistance = segmented ? geometricLength : geometricLength;
-		std::cout << "Move executed: segments=" << totalSegments
-				  << " distance=" << reportedDistance
-				  << "mm, feed=" << baseMove.feedRate
-				  << "mm/s\n";
-
-		return true;
-	}
-
-	bool ProcessSetPosition(GCodeBuffer& gb)
-	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-
-		for (char letter : axisLetters)
+		// Host-style path. Prefer path relative to gcodes, fall back to vsdRoot.
+		std::filesystem::path candidate(runArg);
+		if (candidate.is_absolute())
 		{
-			if (!gb.Seen(letter))
-			{
-				continue;
-			}
-
-			const float value = gb.GetFValue();
-			size_t index = 0;
-			if (!reprap.GetGCodes().TryGetAxisIndex(letter, index))
-			{
-				continue;
-			}
-			reprap.GetGCodes().SetUserPosition(index, value);
+			return resolveRelative(candidate);
 		}
-		return true;
+
+		const std::filesystem::path gcodesCandidate = gcodeRoot / candidate;
+		if (std::filesystem::exists(gcodesCandidate))
+		{
+			return resolveRelative(gcodesCandidate);
+		}
+
+		const std::filesystem::path vsdCandidate = vsdRoot / candidate;
+		return resolveRelative(vsdCandidate);
 	}
 
-	// M92: Set steps per mm
-	// Example: M92 E415 sets extruder steps/mm to 415
-	bool ProcessM92(GCodeBuffer& gb)
+	bool ConfigureCapture(const CommandLineOptions& options) noexcept
 	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-		Move& move = reprap.GetMove();
-
-		// Handle axis parameters
-		for (char letter : axisLetters)
+		switch (options.capture)
 		{
-			if (gb.Seen(letter))
+			case CaptureSelection::disabled:
+				return HostCanCapture::Configure({});
+
+			case CaptureSelection::enabled:
 			{
-				size_t axis = 0;
-				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				std::filesystem::path capturePath = options.capturePath;
+				if (!capturePath.is_absolute())
 				{
-					const float value = gb.GetFValue();
-					move.SetDriveStepsPerMm(axis, value, 0);
-					std::cout << "Set " << letter << " steps/mm to " << value << "\n";
+					capturePath = std::filesystem::absolute(capturePath);
 				}
-			}
-		}
 
-		// Handle extruder E parameter
-		if (gb.Seen('E'))
-		{
-			const float value = gb.GetFValue();
-			const size_t extruderDrive = MaxAxes;  // First extruder
-			move.SetDriveStepsPerMm(extruderDrive, value, 0);
-			std::cout << "Set E steps/mm to " << value << "\n";
-		}
-
-		return true;
-	}
-
-	// M201: Set max accelerations (mm/s²)
-	// Example: M201 X10000 Y10000 Z10000 U10000 E1000
-	bool ProcessM201(GCodeBuffer& gb)
-	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-		Move& move = reprap.GetMove();
-
-		for (char letter : axisLetters)
-		{
-			if (gb.Seen(letter))
-			{
-				size_t axis = 0;
-				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
+				const std::filesystem::path parent = capturePath.parent_path();
+				if (!parent.empty())
 				{
-					const float value = gb.GetFValue();
-					move.SetAcceleration(axis, value);
-					std::cout << "Set " << letter << " acceleration to " << value << " mm/s²\n";
-				}
-			}
-		}
-
-		if (gb.Seen('E'))
-		{
-			const float value = gb.GetFValue();
-			const size_t extruderDrive = MaxAxes;
-			move.SetAcceleration(extruderDrive, value);
-			std::cout << "Set E acceleration to " << value << " mm/s²\n";
-		}
-
-		return true;
-	}
-
-	// M203: Set max speeds (mm/min - will convert to mm/s)
-	// Example: M203 X36000 Y36000 Z36000 E3600
-	bool ProcessM203(GCodeBuffer& gb)
-	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-		Move& move = reprap.GetMove();
-
-		for (char letter : axisLetters)
-		{
-			if (gb.Seen(letter))
-			{
-				size_t axis = 0;
-				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
-				{
-					const float mmPerMin = gb.GetFValue();
-					const float mmPerSec = mmPerMin / 60.0f;
-					move.SetMaxFeedrate(axis, mmPerSec);
-					std::cout << "Set " << letter << " max speed to " << mmPerSec << " mm/s\n";
-				}
-			}
-		}
-
-		if (gb.Seen('E'))
-		{
-			const float mmPerMin = gb.GetFValue();
-			const float mmPerSec = mmPerMin / 60.0f;
-			const size_t extruderDrive = MaxAxes;
-			move.SetMaxFeedrate(extruderDrive, mmPerSec);
-			std::cout << "Set E max speed to " << mmPerSec << " mm/s\n";
-		}
-
-		return true;
-	}
-
-	// M566: Set jerk (maximum instant speed change, mm/min)
-	// Example: M566 X240 Y240 Z1200 E1200
-	bool ProcessM566(GCodeBuffer& gb)
-	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-		Move& move = reprap.GetMove();
-
-		for (char letter : axisLetters)
-		{
-			if (gb.Seen(letter))
-			{
-				size_t axis = 0;
-				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
-				{
-					const float value = gb.GetFValue();
-					move.SetJerk(axis, value);
-					std::cout << "Set " << letter << " jerk to " << value << " mm/min\n";
-				}
-			}
-		}
-
-		if (gb.Seen('E'))
-		{
-			const float value = gb.GetFValue();
-			const size_t extruderDrive = MaxAxes;
-			move.SetJerk(extruderDrive, value);
-			std::cout << "Set E jerk to " << value << " mm/min\n";
-		}
-
-		return true;
-	}
-
-	// M584: Set axis to driver mapping
-	// Example: M584 X40.0 Y41.0 Z42.0 U43.0 P4
-	// Format: axis letter followed by board.driver (40.0 = board 40, driver 0)
-	bool ProcessM584(GCodeBuffer& gb)
-	{
-		static constexpr std::array<char, 10> axisLetters{ 'X','Y','Z','U','V','W','A','B','C','D' };
-		Move& move = reprap.GetMove();
-
-		// Handle P parameter (number of visible axes)
-		if (gb.Seen('P'))
-		{
-			const int visibleAxes = gb.GetIValue();
-			reprap.GetGCodes().SetAxisCount(static_cast<size_t>(visibleAxes));
-			std::cout << "Set visible axes to " << visibleAxes << "\n";
-		}
-
-		for (char letter : axisLetters)
-		{
-			if (gb.Seen(letter))
-			{
-				size_t axis = 0;
-				if (reprap.GetGCodes().TryGetAxisIndex(letter, axis))
-				{
-					const float driverSpec = gb.GetFValue();
-					const uint8_t board = static_cast<uint8_t>(driverSpec);
-					const uint8_t localDriver = static_cast<uint8_t>((driverSpec - board) * 10.0f + 0.5f);
-
-					DriverId driver;
-					if (board == 0)
+					std::error_code ec;
+					std::filesystem::create_directories(parent, ec);
+					if (ec)
 					{
-						driver.SetLocal(localDriver);
+						std::cerr << "Failed to create CAN log directory '" << parent << "': " << ec.message() << '\n';
+						return false;
 					}
-					else
-					{
-						driver = DriverId(board, localDriver);
-					}
-
-					move.SetAxisDriverId(axis, driver);
-					std::cout << "Mapped " << letter << " axis to driver " << static_cast<int>(board)
-							  << "." << static_cast<int>(localDriver) << "\n";
 				}
+
+				if (!HostCanCapture::Configure(capturePath))
+				{
+					std::cerr << "Failed to open CAN log file '" << capturePath << "'\n";
+					return false;
+				}
+				std::cout << "CAN capture enabled: " << capturePath << '\n';
+				return true;
 			}
-		}
 
-		// Handle E parameter (extruder driver mapping)
-		// Example: M584 E0:1:2:3:4:5
-		// For now, just parse the first extruder
-		if (gb.Seen('E'))
-		{
-			const int extruderDriver = gb.GetIValue();
-			std::cout << "Mapped extruder to driver " << extruderDriver << "\n";
+			case CaptureSelection::notProvided:
+			default:
+				return HostCanCapture::Configure({});
 		}
-
-		return true;
 	}
 
-	// M569: Set driver direction
-	// Example: M569 P40.0 S1 (driver 40.0 goes forward)
-	bool ProcessM569(GCodeBuffer& gb)
+	bool WaitForPrintCompletion() noexcept
 	{
-		if (!gb.Seen('P'))
+		GCodeBuffer* const fileBuffer = reprap.GetGCodes().FileGCode();
+		if (fileBuffer == nullptr)
 		{
-			return true;  // No driver specified
+			std::cerr << "No file G-code buffer available\n";
+			return false;
 		}
 
-		Move& move = reprap.GetMove();
-		const float driverSpec = gb.GetFValue();
-		const uint8_t board = static_cast<uint8_t>(driverSpec);
-		const uint8_t localDriver = static_cast<uint8_t>((driverSpec - board) * 10.0f + 0.5f);
+		const auto start = std::chrono::steady_clock::now();
+		unsigned int idleCycles = 0;
 
-		DriverId driver;
-		if (board == 0)
+		for (;;)
 		{
-			driver.SetLocal(localDriver);
+			reprap.Spin();
+
+			const bool printing = reprap.GetPrintMonitor().IsPrinting();
+			const bool fileBusy = fileBuffer->IsDoingFile() || !fileBuffer->IsCompletelyIdle();
+			const bool moveActive = !reprap.GetMove().NoLiveMovement();
+
+			if (!printing && !fileBusy && !moveActive)
+			{
+				if (++idleCycles > kIdleSettlingCycles)
+				{
+					return true;
+				}
+			}
+			else
+			{
+				idleCycles = 0;
+			}
+
+			if (reprap.IsStopped())
+			{
+				std::cerr << "Firmware entered stopped state\n";
+				return false;
+			}
+
+			if (std::chrono::steady_clock::now() - start > kPrintTimeout)
+			{
+				std::cerr << "Timed out waiting for print to finish\n";
+				return false;
+			}
+
+			std::this_thread::sleep_for(kSpinSleep);
+		}
+	}
+
+	void ReportFinalPosition() noexcept
+	{
+		float machine[MaxAxes] = { 0.0f };
+		reprap.GetMove().GetCurrentMachinePosition(machine, 0);
+
+		const char* letters = reprap.GetGCodes().GetAxisLetters();
+		const size_t totalAxes = reprap.GetGCodes().GetTotalAxes();
+
+		std::cout << "Final machine position:";
+		for (size_t axis = 0; axis < totalAxes && letters[axis] != '\0'; ++axis)
+		{
+			std::cout << ' ' << letters[axis] << '=' << machine[axis];
+		}
+		std::cout << '\n';
+	}
+
+	bool StartPrint(const std::string& relativePath) noexcept
+	{
+		String<GCodeReplyLength> reply;
+		if (!reprap.GetGCodes().QueueFileToPrint(relativePath.c_str(), reply.GetRef()))
+		{
+			std::cerr << reply.c_str();
+			return false;
+		}
+
+		reprap.GetPrintMonitor().StartingPrint(relativePath.c_str());
+		reprap.GetGCodes().StartPrinting(true);
+
+		const auto start = std::chrono::steady_clock::now();
+		const bool ok = WaitForPrintCompletion();
+		const auto stop = std::chrono::steady_clock::now();
+
+		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+		if (ok)
+		{
+			std::cout << "Completed G-code '" << relativePath << "' in " << elapsed.count() << " ms\n";
 		}
 		else
 		{
-			driver = DriverId(board, localDriver);
+			std::cerr << "Failed to complete G-code '" << relativePath << "'\n";
 		}
-
-		if (gb.Seen('S'))
-		{
-			const int direction = gb.GetIValue();
-			const bool forward = (direction == 1);
-			move.SetDriverDirection(driver, forward);
-			std::cout << "Set driver " << static_cast<int>(board) << "." << static_cast<int>(localDriver)
-					  << " direction to " << (forward ? "forward" : "backward") << "\n";
-		}
-
-		return true;
-	}
-
-	// M669: Set kinematics type
-	// Example: M669 K6 (Hangprinter), M669 K1 (Cartesian)
-	// Step 9.3.2: Now actually creates the real kinematics instance
-	bool ProcessM669(GCodeBuffer& gb)
-	{
-		Move& move = reprap.GetMove();
-
-		float segmentsPerSecond = 0.0f;
-		float minSegmentLength = 0.0f;
-		bool segParamsSeen = false;
-		gb.TryGetFValue('S', segmentsPerSecond, segParamsSeen);
-		gb.TryGetFValue('T', minSegmentLength, segParamsSeen);
-
-		if (gb.Seen('K'))
-		{
-			const int kinematicsType = gb.GetIValue();
-			std::cout << "Set kinematics type to " << kinematicsType;
-
-			KinematicsType kType = KinematicsType::cartesian;  // Default
-
-			switch (kinematicsType)
-			{
-			case 1:
-				std::cout << " (Cartesian)";
-				kType = KinematicsType::cartesian;
-				break;
-			case 6:
-				std::cout << " (Hangprinter)";
-				kType = KinematicsType::hangprinter;
-				break;
-			default:
-				std::cout << " (unknown, defaulting to Cartesian)";
-				kType = KinematicsType::cartesian;
-				break;
-			}
-			std::cout << "\n";
-
-			// Actually change the kinematics
-			move.SetKinematics(kType);
-		}
-
-		if (segParamsSeen)
-		{
-			move.ConfigureSegmentation(segmentsPerSecond, minSegmentLength);
-			std::cout << "Set segmentation to " << segmentsPerSecond
-					  << " seg/s, min length " << minSegmentLength << "mm\n";
-		}
-
-		// Other M669 parameters (for Hangprinter: anchor positions, etc.)
-		// For now, just consume and log them
-		static constexpr std::array<char, 4> hangprinterParams{ 'A', 'B', 'C', 'D' };
-		for (char letter : hangprinterParams)
-		{
-			if (gb.Seen(letter))
-			{
-				gb.GetFValue();  // Consume the value
-				// std::cout << "  " << letter << " parameter seen\n";
-			}
-		}
-
-		return true;
-	}
-
-	// M666: Set Hangprinter mechanical parameters
-	// Many sub-parameters: Q, R, U, O, L, H, W, S, I, X, T, Y, C, J
-	// For now, just consume them - actual Hangprinter kinematics comes later
-	bool ProcessM666(GCodeBuffer& gb)
-	{
-		// Just consume all the parameters for now
-		static constexpr std::array<char, 14> params{ 'Q', 'R', 'U', 'O', 'L', 'H', 'W', 'S', 'I', 'X', 'T', 'Y', 'C', 'J' };
-
-		for (char letter : params)
-		{
-			if (gb.Seen(letter))
-			{
-				gb.GetFValue();  // Consume the value
-			}
-		}
-
-		return true;
-	}
-
-	bool ProcessGCode(GCodeBuffer& gb)
-	{
-		try
-		{
-			const char commandLetter = gb.GetCommandLetter();
-			if (commandLetter == 0)
-			{
-				return true;
-			}
-
-			if (!gb.HasCommandNumber())
-			{
-				return true;
-			}
-
-			const int commandNumber = gb.GetCommandNumber();
-
-			// Handle G-codes
-			if (commandLetter == 'G')
-			{
-				switch (commandNumber)
-				{
-				case 0:
-				case 1:
-					return ProcessLinearMove(gb, commandNumber);
-
-				case 90:
-					reprap.GetGCodes().SetAxesRelative(0, false);
-					gb.LatestMachineState().axesRelative = false;
-					reprap.GetPlatform().Message(GenericMessage, "Using absolute positioning");
-					return true;
-
-				case 91:
-					reprap.GetGCodes().SetAxesRelative(0, true);
-					gb.LatestMachineState().axesRelative = true;
-					reprap.GetPlatform().Message(GenericMessage, "Using relative positioning");
-					return true;
-
-				case 92:
-					return ProcessSetPosition(gb);
-
-				default:
-					return true;
-				}
-			}
-
-			// Handle M-codes
-			if (commandLetter == 'M')
-			{
-				switch (commandNumber)
-				{
-				case 92:
-					return ProcessM92(gb);
-				case 201:
-					return ProcessM201(gb);
-				case 203:
-					return ProcessM203(gb);
-				case 566:
-					return ProcessM566(gb);
-				case 584:
-					return ProcessM584(gb);
-				case 569:
-					return ProcessM569(gb);
-				case 669:
-					return ProcessM669(gb);
-				case 666:
-					return ProcessM666(gb);
-				default:
-					// Silently ignore unknown M-codes (many config commands we don't need yet)
-					return true;
-				}
-			}
-
-			return true;
-		}
-		catch (const GCodeException& exc)
-		{
-			String<StringLength100> message;
-			exc.GetMessage(message.GetRef(), &gb);
-			reprap.GetPlatform().MessageF(ErrorMessage, "G-code error: %s", message.c_str());
-			return false;
-		}
-	}
-
-	bool FlushPending(GCodeBuffer& gb)
-	{
-		if (!gb.FileEnded())
-		{
-			return true;
-		}
-
-		gb.DecodeCommand();
-		const bool ok = ProcessGCode(gb);
-		gb.SetFinished(true);
-		gb.Init();
 		return ok;
 	}
-
-	bool ExecuteFile(const std::string& rrfPath)
-	{
-		if (!MassStorage::FileExists(rrfPath.c_str()))
-		{
-			std::cerr << "G-code file not found: " << rrfPath << "\n";
-			return false;
-		}
-
-		FileStore* store = MassStorage::OpenFile(rrfPath.c_str(), OpenMode::read, 0);
-		if (store == nullptr)
-		{
-			std::cerr << "Failed to open G-code file: " << rrfPath << "\n";
-			return false;
-		}
-
-		FileData fileData;
-		fileData.Set(store);
-
-	RegularGCodeInput normalInput;
-
-	GCodeBuffer buffer(GCodeChannel::File, &normalInput, nullptr, FileMessage, Compatibility::RepRapFirmware);
-		buffer.StartNewFile();
-		buffer.Init();
-		buffer.LatestMachineState().axesRelative = false;
-
-		reprap.GetGCodes().ClearInputs();
-		reprap.GetGCodes().RegisterInput(buffer);
-		reprap.GetGCodes().SetAxisCount(7);
-		reprap.GetGCodes().SetAxesRelative(0, false);
-		reprap.GetGCodes().ResetUserPositions();
-
-		bool running = true;
-
-		constexpr size_t chunkSize = 512;
-		char chunk[chunkSize];
-
-		while (running)
-		{
-			const int bytesRead = fileData.Read(chunk, chunkSize);
-			if (bytesRead < 0)
-			{
-				std::cerr << "Error while reading G-code data\n";
-				running = false;
-				break;
-			}
-
-			if (bytesRead == 0)
-			{
-				break;
-			}
-
-			for (int i = 0; i < bytesRead && running; ++i)
-			{
-				if (buffer.Put(chunk[i]))
-				{
-					buffer.DecodeCommand();
-					running = ProcessGCode(buffer);
-					buffer.SetFinished(true);
-					buffer.Init();
-				}
-			}
-		}
-
-		if (running)
-		{
-			running = FlushPending(buffer);
-		}
-
-		fileData.Close();
-
-		if (running)
-		{
-			running = host::planner::FlushQueuedSegments();
-		}
-		else
-		{
-			host::planner::Reset();
-		}
-
-		if (running)
-		{
-			const char* letters = reprap.GetGCodes().GetAxisLetters();
-			const size_t axisCount = reprap.GetGCodes().GetAxisCount();
-			std::cout << "Final user positions:";
-			for (size_t i = 0; i < axisCount; ++i)
-			{
-				const float pos = reprap.GetGCodes().GetUserPosition(i);
-				std::cout << ' ' << letters[i] << '=' << pos;
-			}
-			std::cout << '\n';
-		}
-
-		return running;
-	}
-}
+} // namespace
 
 int main(int argc, char** argv)
 {
-	std::string vsdPath = "host/vsd";
-	std::string runPath;
-	std::string canLogPath;
-	bool showHelp = false;
-	bool canLogProvided = false;
-	bool canLogDisabled = false;
-
-	for (int i = 1; i < argc; ++i)
+	CommandLineOptions options;
+	std::string parseError;
+	if (!ParseCommandLine(argc, argv, options, parseError))
 	{
-		const std::string arg(argv[i]);
-		if (arg == "--vsd")
-		{
-			if (i + 1 >= argc)
-			{
-				std::cerr << "--vsd requires a path argument\n";
-				return 1;
-			}
-			vsdPath = argv[++i];
-		}
-		else if (arg == "--run")
-		{
-			if (i + 1 >= argc)
-			{
-				std::cerr << "--run requires a filename\n";
-				return 1;
-			}
-			runPath = argv[++i];
-		}
-		else if (arg == "--can-log")
-		{
-			if (i + 1 >= argc)
-			{
-				std::cerr << "--can-log requires a path or the value 'disable'\n";
-				return 1;
-			}
-			canLogPath = argv[++i];
-			canLogProvided = true;
-			const std::string lower = [] (std::string value) {
-				for (char& ch : value)
-				{
-					ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-				}
-				return value;
-			}(canLogPath);
-			if (lower == "disable" || lower == "none")
-			{
-				canLogDisabled = true;
-			}
-		}
-		else if (arg == "--help" || arg == "-h")
-		{
-			showHelp = true;
-		}
-		else
-		{
-			std::cerr << "Unknown argument: " << arg << "\n";
-			return 1;
-		}
+		std::cerr << parseError << '\n';
+		PrintUsage();
+		return 1;
 	}
 
-	if (showHelp)
+	if (options.showHelp)
 	{
 		PrintUsage();
 		return 0;
 	}
 
-	std::filesystem::path absRoot;
+	bool reprapInitialised = false;
+	const auto cleanup = [&]() noexcept
+	{
+		if (reprapInitialised)
+		{
+			reprap.Exit();
+			reprapInitialised = false;
+		}
+		HostCanCapture::Shutdown();
+		MassStorage::CloseAllFiles();
+	};
+
 	try
 	{
-		absRoot = std::filesystem::absolute(vsdPath);
-		MassStorage::SetHostRoot(absRoot.string());
-		MassStorage::Init();
-	}
-	catch (const std::exception& ex)
-	{
-		std::cerr << "Failed to initialise virtual SD: " << ex.what() << "\n";
-		return 1;
-	}
-
-	std::filesystem::path resolvedCanLog;
-	if (!canLogDisabled)
-	{
-		if (canLogProvided)
+		std::filesystem::path vsdRoot = options.vsdRoot;
+		if (!vsdRoot.is_absolute())
 		{
-			std::filesystem::path candidate(canLogPath);
-			if (candidate.is_absolute())
+			vsdRoot = std::filesystem::absolute(vsdRoot);
+		}
+
+		std::error_code dirError;
+		std::filesystem::create_directories(vsdRoot, dirError);
+		if (dirError && !std::filesystem::exists(vsdRoot))
+		{
+			std::cerr << "Failed to prepare VSD directory '" << vsdRoot << "': " << dirError.message() << '\n';
+			return 1;
+		}
+
+		MassStorage::SetHostRoot(vsdRoot.string());
+		MassStorage::Init();
+
+		if (!ConfigureCapture(options))
+		{
+			cleanup();
+			return 1;
+		}
+
+		CanMessageBuffer::Init(kDefaultCanBuffers);
+		CanMotion::Init();
+
+		reprap.Init();
+		reprapInitialised = true;
+
+		bool success = true;
+		if (!options.runArgument.empty())
+		{
+			std::string resolveError;
+			auto relative = ResolveRunFile(vsdRoot, options.runArgument, resolveError);
+			if (!relative)
 			{
-				resolvedCanLog = candidate;
+				std::cerr << resolveError << '\n';
+				success = false;
 			}
 			else
 			{
-				resolvedCanLog = absRoot / candidate;
+				std::cout << "Starting G-code '" << *relative << "'\n";
+				success = StartPrint(*relative);
 			}
 		}
 		else
 		{
-			resolvedCanLog = absRoot / "logs" / "can_capture.jsonl";
+			std::cout << "Firmware initialised. No --run file supplied, exiting.\n";
 		}
-	}
 
-	const bool canCaptureConfigured = canLogDisabled ? HostCanCapture::Configure({}) : HostCanCapture::Configure(resolvedCanLog);
-	if (!canCaptureConfigured)
+		if (success)
+		{
+			ReportFinalPosition();
+		}
+
+		cleanup();
+		return success ? 0 : 1;
+	}
+	catch (const std::exception& ex)
 	{
-		if (!canLogDisabled)
-		{
-			std::cerr << "Failed to initialise CAN capture sink at " << resolvedCanLog << "\n";
-		}
-		else
-		{
-			std::cerr << "Failed to disable CAN capture sink\n";
-		}
+		std::cerr << "Fatal error: " << ex.what() << '\n';
+		cleanup();
 		return 1;
 	}
-
-	const bool captureActive = !canLogDisabled && !resolvedCanLog.empty();
-
-	struct CaptureGuard
+	catch (...)
 	{
-		~CaptureGuard()
-		{
-			HostCanCapture::Shutdown();
-		}
-	} captureGuard;
-
-	// Initialize CAN subsystem
-	CanMessageBuffer::Init(40);  // Allocate 40 CAN message buffers (enough for multiple boards)
-	CanMotion::Init();
-
-	std::cout << "RRF host bootstrap build\n";
-	std::cout << "Version: " << VERSION << "\n";
-	std::cout << "Build date: " << DateText << TimeSuffix << "\n";
-	std::cout << "Virtual SD root: " << MassStorage::GetHostRoot() << "\n";
-	if (captureActive)
-	{
-		std::cout << "CAN capture log: " << resolvedCanLog << "\n";
+		std::cerr << "Fatal error: unknown exception\n";
+		cleanup();
+		return 1;
 	}
-	else
-	{
-		std::cout << "CAN capture disabled\n";
-	}
-
-	// Step 9.2.2: Execute config.g before running any user G-code
-	std::cout << "\n=== Executing config.g ===\n";
-	const std::string configPath = "0:/sys/config_hangprinter.g";
-	if (MassStorage::FileExists(configPath.c_str()))
-	{
-		if (!ExecuteFile(configPath))
-		{
-			std::cerr << "Warning: config.g execution failed or was incomplete\n";
-		}
-		std::cout << "=== Config.g complete ===\n\n";
-	}
-	else
-	{
-		std::cout << "Note: No config.g found at " << configPath << ", using defaults\n\n";
-	}
-
-	if (!runPath.empty())
-	{
-		const std::string canonicalRun = NormaliseRunPath(runPath);
-		std::cout << "Executing G-code file: " << canonicalRun << "\n";
-		if (!ExecuteFile(canonicalRun))
-		{
-			return 1;
-		}
-	}
-
-	return 0;
 }
