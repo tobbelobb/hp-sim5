@@ -32,7 +32,7 @@ namespace
 
 	struct CommandLineOptions
 	{
-		std::filesystem::path vsdRoot{"host/vsd"};
+		std::filesystem::path vsdRoot{"run/vsd"};
 		std::string runArgument;
 		CaptureSelection capture{CaptureSelection::notProvided};
 		std::filesystem::path capturePath;
@@ -46,7 +46,7 @@ namespace
 
 	void PrintUsage() noexcept
 	{
-		std::cout << "Usage: rrf_simulator [--vsd <path>] [--run <file.gcode>] [--can-log <path|disable>]\n";
+		std::cout << "Usage: rrf_simulator [--vsd <path>] [--gcode <file.gcode>] [--can-log <path|disable>]\n";
 	}
 
 	std::string ToLower(std::string value) noexcept
@@ -75,11 +75,11 @@ namespace
 				}
 				options.vsdRoot = argv[++i];
 			}
-			else if (arg == "--run")
+			else if (arg == "--gcode")
 			{
 				if (i + 1 >= argc)
 				{
-					error = "--run requires a filename";
+					error = "--gcode requires a filename";
 					return false;
 				}
 				options.runArgument = argv[++i];
@@ -174,14 +174,14 @@ namespace
 			std::filesystem::path rrfPath(remainder);
 			if (rrfPath.empty())
 			{
-				error = "Run path '" + runArg + "' is not valid";
+				error = "gcode path '" + runArg + "' is not valid";
 				return std::nullopt;
 			}
 
 			auto iter = rrfPath.begin();
 			if (iter == rrfPath.end() || iter->string() != "gcodes")
 			{
-				error = "Run path '" + runArg + "' must target 0:/gcodes";
+				error = "gcode path '" + runArg + "' must target 0:/gcodes";
 				return std::nullopt;
 			}
 
@@ -193,7 +193,7 @@ namespace
 
 			if (relative.empty())
 			{
-				error = "Run path '" + runArg + "' is incomplete";
+				error = "gcode path '" + runArg + "' is incomplete";
 				return std::nullopt;
 			}
 
@@ -430,7 +430,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			std::cout << "Firmware initialised. No --run file supplied, exiting.\n";
+			std::cout << "Firmware initialised. No --gcode file supplied, exiting.\n";
 		}
 
 		if (success)
