@@ -39,6 +39,11 @@ public:
 
 	void SetZProbeDefaults() noexcept { }
 	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); }
+
+
+#if SUPPORT_CAN_EXPANSION
+	void HandleRemoteAnalogZProbeValueChange(CanAddress src, uint8_t handleMajor, uint8_t handleMinor, uint32_t reading) noexcept { }
+#endif
 };
 
 #endif

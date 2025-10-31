@@ -44,7 +44,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/networking/MacAddressHost.cpp
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
-    #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
+    ${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
     ${SIM_ROOT_DIR}/platform/TasksHost.cpp
     ${SIM_ROOT_DIR}/platform/EventHost.cpp
@@ -97,7 +97,7 @@ set(RRF_SOURCES_TO_USE
     GCodes/GCodeBuffer/ExpressionParser.cpp
     GCodes/GCodeBuffer/StringParser.cpp
     GCodes/GCodeMachineState.cpp
-    GCodes/GCodeInput.cpp
+    #GCodes/GCodeInput.cpp
     GCodes/GCodeQueue.cpp
     GCodes/GCodes.cpp
     GCodes/GCodes2.cpp
@@ -115,11 +115,20 @@ set(RRF_SOURCES_TO_USE
     PrintMonitor/PrintMonitor.cpp
     Platform/RepRap.cpp
     RepRapFirmware.cpp
+
+    # Additional needs found during compilation/linking
     Storage/CRC16.cpp
     Storage/CRC32.cpp
     CAN/CanDriversData.cpp
     libc/strptime.cpp
     Version.cpp
+
+    # Should we stub these?
+    CAN/ExpansionManager.cpp
+    Platform/Logger.cpp
+    GCodes/CollisionAvoider.cpp
+    Platform/PortControl.cpp
+    ClosedLoop/ClosedLoop.cpp
 )
 
 # List of real .h files from ReprapFirmware we'll use for our builds.
@@ -211,6 +220,7 @@ set(RRF_HEADERS_TO_USE
     Comms/FirmwareUpdater.h
     ClosedLoop/ClosedLoop.h
     Heating/Sensors/TemperatureSensor.h
+    CAN/CanMessageGenericConstructor.h
 )
 
 # List of real .cpp files from RRFLibraries we'll use for our builds.
