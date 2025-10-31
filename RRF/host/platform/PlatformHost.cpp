@@ -6,7 +6,7 @@
 #include <Platform/OutputMemory.h>
 
 // Include headers for the modules Platform needs to know about
-#include <RepRap.h>
+#include <Platform/RepRap.h>
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <GCodes/GCodes.h>
 #include <Movement/Move.h>

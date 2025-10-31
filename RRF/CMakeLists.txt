@@ -38,17 +38,16 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/can/CanInterfaceHost.cpp
     ${SIM_ROOT_DIR}/storage/MassStorageHost.cpp
     ${SIM_ROOT_DIR}/storage/FileStoreHost.cpp
-    ${SIM_ROOT_DIR}/src/devices_stub.cpp
+    #${SIM_ROOT_DIR}/src/devices_stub.cpp
     ${SIM_ROOT_DIR}/networking/MacAddressHost.cpp
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
-    ${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
+    #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
     ${SIM_ROOT_DIR}/platform/TasksHost.cpp
     ${SIM_ROOT_DIR}/platform/GetFloatFormatStringHost.cpp
     ${SIM_ROOT_DIR}/platform/DebugPrintHost.cpp
     ${SIM_ROOT_DIR}/rtos/freertos_shim.cpp
-    ${SIM_ROOT_DIR}/object_model/ObjectExplorationContextHost.cpp
     ${SIM_ROOT_DIR}/GPIO/GpOutPortHost.cpp
     ${SIM_ROOT_DIR}/GPIO/GpInPortHost.cpp
 )
@@ -94,7 +93,7 @@ set(RRF_SOURCES_TO_USE
     Platform/RepRap.cpp
 )
 
-# List of real .h files we'll use for our builds.
+# List of real .h files from ReprapFirmware we'll use for our builds.
 set(RRF_HEADERS_TO_USE
     # Tier 1 Dependencies
     Platform/ArrayHandle.h
@@ -187,6 +186,15 @@ set(RRF_HEADERS_TO_USE
     Heating/Sensors/TemperatureSensor.h
 )
 
+# List of real .cpp files from RRFLibraries we'll use for our builds.
+set(RRFLibraries_SOURCES_TO_USE
+    General/NamedEnum.cpp
+    General/StringRef.cpp
+    General/Strnlen.cpp
+    General/StringFunctions.cpp
+    General/SafeStrtod.cpp
+    General/SafeVsnprintf.cpp
+)
 
 # List of real .h files from RRFLibraries we'll use for our builds.
 set(RRFLibraries_HEADERS_TO_USE
@@ -214,6 +222,14 @@ set(RRFLibraries_HEADERS_TO_USE
     General/NumericConverter.h
 )
 
+# List of real .cpp files from CANlib we'll use for our builds.
+set(CANlib_SOURCES_TO_USE
+    RRF3Common.cpp
+    CanSettings.cpp
+    CanMessageFormats.cpp
+    CanMessageBuffer.cpp
+)
+
 # List of real .h files from RRFLibraries we'll use for our builds.
 set(CANlib_HEADERS_TO_USE
     RRF3Common.h
@@ -226,6 +242,7 @@ set(CANlib_HEADERS_TO_USE
     RemoteInputHandle.h
     TemperatureError.h
     CANlibNotifyIndices.h
+    CanMessageGenericTableFormat.h
 )
 
 # List of fake headers from your host/include directory that we'll use
@@ -314,7 +331,7 @@ foreach(rel_path ${RRF_SOURCES_TO_USE})
         COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
         DEPENDS ${abs_src_path}
-        COMMENT "Copying real source ${rel_path}"
+        COMMENT "Copying real ReprapFirmware source ${rel_path}"
     )
 endforeach()
 
@@ -330,7 +347,24 @@ foreach(rel_path ${RRF_HEADERS_TO_USE})
         COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
         DEPENDS ${abs_src_path}
-        COMMENT "Copying real header ${rel_path}"
+        COMMENT "Copying real ReprapFirmware header ${rel_path}"
+    )
+endforeach()
+
+foreach(rel_path ${RRFLibraries_SOURCES_TO_USE})
+    set(abs_src_path "${RRFLibraries_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_CPP_FILES ${abs_dest_path})
+
+    # Get the directory part of the destination path for make_directory
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real RRFLibraries source ${rel_path}"
     )
 endforeach()
 
@@ -347,7 +381,24 @@ foreach(rel_path ${RRFLibraries_HEADERS_TO_USE})
         COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
         DEPENDS ${abs_src_path}
-        COMMENT "Copying real source ${rel_path}"
+        COMMENT "Copying real RRFLibraries header ${rel_path}"
+    )
+endforeach()
+
+foreach(rel_path ${CANlib_SOURCES_TO_USE})
+    set(abs_src_path "${CANlib_SOURCE_DIR}/src/${rel_path}")
+    set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/${rel_path}")
+    list(APPEND GENERATED_CPP_FILES ${abs_dest_path})
+
+    # Get the directory part of the destination path for make_directory
+    get_filename_component(dest_dir ${abs_dest_path} DIRECTORY)
+
+    add_custom_command(
+        OUTPUT ${abs_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+        DEPENDS ${abs_src_path}
+        COMMENT "Copying real CANlib source ${rel_path}"
     )
 endforeach()
 
@@ -364,7 +415,7 @@ foreach(rel_path ${CANlib_HEADERS_TO_USE})
         COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_dir}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
         DEPENDS ${abs_src_path}
-        COMMENT "Copying real source ${rel_path}"
+        COMMENT "Copying real CANlib header ${rel_path}"
     )
 endforeach()
 
