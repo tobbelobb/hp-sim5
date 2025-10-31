@@ -258,66 +258,66 @@ namespace
 	bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options, std::string& error) noexcept
 	{
 		for (int i = 1; i < argc; ++i)
+	{
+		const std::string arg(argv[i]);
+		if (arg == "--help" || arg == "-h")
 		{
-			const std::string arg(argv[i]);
-			if (arg == "--help" || arg == "-h")
+			options.showHelp = true;
+			return true;
+		}
+		else if (arg == "--vsd" || arg == "-s")
+		{
+			if (i + 1 >= argc)
 			{
-				options.showHelp = true;
-				return true;
+				error = "--vsd requires a path argument";
+				return false;
 			}
-			else if (arg == "--vsd" || arg == "-s")
+			options.vsdRoot = argv[++i];
+		}
+		else if (arg == "--gcode" || arg == "-g")
+		{
+			if (i + 1 >= argc)
 			{
-				if (i + 1 >= argc)
-				{
-					error = "--vsd requires a path argument";
-					return false;
-				}
-				options.vsdRoot = argv[++i];
+				error = "--gcode requires a filename";
+				return false;
 			}
-			else if (arg == "--gcode" || arg == "-g")
+			options.gcodeArgument = std::filesystem::path(argv[++i]);
+		}
+		else if (arg == "--config" || arg == "-c")
+		{
+			if (i + 1 >= argc)
 			{
-				if (i + 1 >= argc)
-				{
-					error = "--gcode requires a filename";
-					return false;
-				}
-				options.gcodeArgument = std::filesystem::path(argv[++i]);
+				error = "--config requires a filename";
+				return false;
 			}
-			else if (arg == "--config" || arg == "-c")
+			options.configArgument = std::filesystem::path(argv[++i]);
+		}
+		else if (arg == "--can-log" || arg == "-l")
+		{
+			if (i + 1 >= argc)
 			{
-				if (i + 1 >= argc)
-				{
-					error = "--config requires a filename";
-					return false;
-				}
-				options.configArgument = std::filesystem::path(argv[++i]);
+				error = "--can-log requires a path or the value 'disable'";
+				return false;
 			}
-			else if (arg == "--can-log" || arg == "-l")
+			std::string rawValue(argv[++i]);
+			const std::string value = ToLower(rawValue);
+			if (value == "disable" || value == "none" || value == "off")
 			{
-				if (i + 1 >= argc)
-				{
-					error = "--can-log requires a path or the value 'disable'";
-					return false;
-				}
-				std::string rawValue(argv[++i]);
-				const std::string value = ToLower(rawValue);
-				if (value == "disable" || value == "none" || value == "off")
-				{
-					options.capture = CaptureSelection::disabled;
-					options.captureArgument.reset();
-				}
-				else
-				{
-					options.capture = CaptureSelection::enabled;
-					options.captureArgument = std::filesystem::path(rawValue);
-				}
+				options.capture = CaptureSelection::disabled;
+				options.captureArgument.reset();
 			}
 			else
 			{
-				error = "Unknown option '" + arg + "'";
-				return false;
+				options.capture = CaptureSelection::enabled;
+				options.captureArgument = std::filesystem::path(rawValue);
 			}
 		}
+		else
+		{
+			error = "Unknown option '" + arg + "'";
+			return false;
+		}
+	}
 		return true;
 	}
 

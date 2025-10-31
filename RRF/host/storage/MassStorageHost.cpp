@@ -6,7 +6,9 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include <string>
 #include <cctype>
+#include <cstdint>
 #include <Storage/CRC32.h>
 
 namespace fs = std::filesystem;
@@ -41,6 +43,20 @@ namespace
 	{
 		static std::vector<FileWriteBuffer*> pool;
 		return pool;
+	}
+
+	bool PathWithinRoot(const fs::path& candidate) noexcept
+	{
+		auto candIt = candidate.begin();
+		for (auto rootIt = RootPath().begin(); rootIt != RootPath().end(); ++rootIt)
+		{
+			if (candIt == candidate.end() || *candIt != *rootIt)
+			{
+				return false;
+			}
+			++candIt;
+		}
+		return true;
 	}
 
 	struct DirectoryIteratorState
@@ -81,6 +97,18 @@ namespace
 		if (!rrfPath || rrfPath[0] == '\0')
 		{
 			resolved = root;
+			return true;
+		}
+
+		fs::path candidate(rrfPath);
+		if (candidate.is_absolute())
+		{
+			candidate = candidate.lexically_normal();
+			if (!PathWithinRoot(candidate))
+			{
+				return false;
+			}
+			resolved = candidate;
 			return true;
 		}
 
@@ -220,8 +248,16 @@ FileStore* MassStorage::OpenFile(const char* filePath, OpenMode mode, uint32_t p
 {
 	std::lock_guard<std::mutex> lock(FilesMutex());
 
-	fs::path hostPath;
-	if (!ResolvePath(filePath, hostPath))
+	fs::path hostPath(filePath);
+	if (hostPath.is_absolute())
+	{
+		hostPath = hostPath.lexically_normal();
+		if (!PathWithinRoot(hostPath))
+		{
+			return nullptr;
+		}
+	}
+	else if (!ResolvePath(filePath, hostPath))
 	{
 		return nullptr;
 	}
