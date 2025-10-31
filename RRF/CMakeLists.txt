@@ -26,7 +26,7 @@ add_executable(rrf_simulator)
 # ensure our target gets symbols (works on all generators)
 target_compile_options(rrf_simulator PRIVATE
   $<$<CONFIG:Debug>:-O0 -g3 -fno-omit-frame-pointer>
-  $<$<CONFIG:RelWithDebInfo>:-g -fno-omit-frame-pointer>
+  $<$<CONFIG:RelWithDebInfo>:-g -fno-omit-frame-pointer -Wall>
 )
 
 # --- Preprocessor Definitions ---
