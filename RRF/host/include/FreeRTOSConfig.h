@@ -9,7 +9,9 @@
 #define configUSE_PREEMPTION                        1
 #define configUSE_TIME_SLICING                      1
 #define configUSE_TICKLESS_IDLE                     0
+#if !defined(configMAX_PRIORITIES)
 #define configMAX_PRIORITIES                        8
+#endif
 #define configMINIMAL_STACK_SIZE                    256
 #define configMAX_TASK_NAME_LEN                     16
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES       8
