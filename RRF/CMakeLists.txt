@@ -44,6 +44,7 @@ target_compile_definitions(rrf_simulator PRIVATE
 # --- List Your Custom Source Files ---
 target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/src/main.cpp
+    ${SIM_ROOT_DIR}/src/HostTiming.cpp
     ${SIM_ROOT_DIR}/platform/Heap.cpp
     ${SIM_ROOT_DIR}/platform/PlatformHost.cpp
     ${SIM_ROOT_DIR}/can/CanCapture.cpp
@@ -371,6 +372,8 @@ set(RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX
 
 set(HOST_HEADERS_TO_USE
     # Our own headers
+    HostTiming.h
+    include/HostTiming.h
     rtos/host_rtos.h
     can/CanCapture.h
 )

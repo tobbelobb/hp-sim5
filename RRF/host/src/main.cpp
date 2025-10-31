@@ -220,8 +220,7 @@ namespace
 		const auto normalizedVsd = NormalisePath(vsdRoot);
 		const auto normalizedSource = NormalisePath(configSource);
 
-		std::filesystem::path sysDir = normalizedVsd / "sys";
-		sysDir = sysDir.lexically_normal();
+		std::filesystem::path sysDir = (normalizedVsd / "sys").lexically_normal();
 
 		std::error_code dirError;
 		std::filesystem::create_directories(sysDir, dirError);
@@ -231,27 +230,32 @@ namespace
 			return false;
 		}
 
-		std::filesystem::path destination = sysDir / "config.g";
-		destination = destination.lexically_normal();
+		const std::filesystem::path defaultConfig = (sysDir / "config.g").lexically_normal();
+
+		std::string displayPath = normalizedSource.string();
+		displayPath.erase(std::remove(displayPath.begin(), displayPath.end(), '"'), displayPath.end());
+		std::cout << "Using configuration file: " << displayPath << '\n';
 
 		std::error_code eqError;
-		if (std::filesystem::equivalent(destination, normalizedSource, eqError))
+		bool sameAsDefault = false;
+		if (std::filesystem::exists(defaultConfig))
 		{
-			std::cout << "Using configuration file: " << normalizedSource << '\n';
+			sameAsDefault = std::filesystem::equivalent(defaultConfig, normalizedSource, eqError);
+		}
+
+		if (eqError)
+		{
+			// Treat errors comparing paths as not being the same path
+			sameAsDefault = false;
+		}
+
+		if (sameAsDefault)
+		{
+			MassStorage::ClearSysConfigOverride();
 			return true;
 		}
 
-		std::error_code copyError;
-		std::filesystem::copy_file(normalizedSource, destination,
-								   std::filesystem::copy_options::overwrite_existing, copyError);
-		if (copyError)
-		{
-			std::cerr << "Failed to copy configuration file to '" << destination << "': "
-					  << copyError.message() << '\n';
-			return false;
-		}
-
-		std::cout << "Using configuration file: " << normalizedSource << '\n';
+		MassStorage::SetSysConfigOverride(normalizedSource.string());
 		return true;
 	}
 
@@ -599,6 +603,7 @@ int main(int argc, char** argv)
 		}
 		HostCanCapture::Shutdown();
 		MassStorage::CloseAllFiles();
+		MassStorage::ClearSysConfigOverride();
 	};
 
 	try
@@ -613,6 +618,8 @@ int main(int argc, char** argv)
 			cleanup();
 			return 1;
 		}
+
+		MassStorage::ClearSysConfigOverride();
 
 		if (options.configArgument)
 		{

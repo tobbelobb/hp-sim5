@@ -4,6 +4,7 @@
 #include <General/StringFunctions.h>
 #include <General/SafeVsnprintf.h>
 #include <Platform/OutputMemory.h>
+#include <HostTiming.h>
 
 // Include headers for the modules Platform needs to know about
 #include <Platform/RepRap.h>
@@ -93,6 +94,8 @@ Platform::Platform() noexcept
 	webFolder.SetAbsolute(DEFAULT_WEB_DIR);
 	logFileRrfPath.Clear();
 	uniqueId.SetFromCurrentBoard();
+
+	HostTiming::RegisterPlatform(*this);
 }
 
 // In your main() function, you will need to create the instances of all the major
@@ -117,6 +120,7 @@ void Platform::Exit() noexcept
 {
 	MessageF(GenericMessage, "Host Platform Shutdown.\n");
 	StopLogging();
+	HostTiming::UnregisterPlatform();
 }
 
 void Platform::EmergencyStop() noexcept

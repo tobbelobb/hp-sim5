@@ -45,6 +45,22 @@ namespace
 		return pool;
 	}
 
+	std::optional<fs::path>& ConfigOverridePath() noexcept
+	{
+		static std::optional<fs::path> overridePath;
+		return overridePath;
+	}
+
+	fs::path SysConfigPath() noexcept
+	{
+		return (RootPath() / fs::path("sys/config.g")).lexically_normal();
+	}
+
+	bool IsSysConfigPath(const fs::path& candidate) noexcept
+	{
+		return candidate.lexically_normal() == SysConfigPath();
+	}
+
 	bool PathWithinRoot(const fs::path& candidate) noexcept
 	{
 		auto candIt = candidate.begin();
@@ -214,6 +230,30 @@ void MassStorage::SetHostRoot(const std::string& absolutePath) noexcept
 	EnsureRootSubdirs();
 }
 
+void MassStorage::SetSysConfigOverride(const std::string& absolutePath) noexcept
+{
+	std::lock_guard<std::mutex> lock(FilesMutex());
+	if (absolutePath.empty())
+	{
+		ConfigOverridePath().reset();
+		return;
+	}
+
+	std::error_code ec;
+	fs::path resolved = fs::absolute(absolutePath, ec);
+	if (ec)
+	{
+		resolved = fs::path(absolutePath);
+	}
+	ConfigOverridePath() = resolved.lexically_normal();
+}
+
+void MassStorage::ClearSysConfigOverride() noexcept
+{
+	std::lock_guard<std::mutex> lock(FilesMutex());
+	ConfigOverridePath().reset();
+}
+
 const std::string& MassStorage::GetHostRoot() noexcept
 {
 	return RootString();
@@ -262,6 +302,16 @@ FileStore* MassStorage::OpenFile(const char* filePath, OpenMode mode, uint32_t p
 		return nullptr;
 	}
 
+	const bool isReadMode = (mode == OpenMode::read);
+	if (isReadMode)
+	{
+		const auto& overridePath = ConfigOverridePath();
+		if (overridePath && IsSysConfigPath(hostPath))
+		{
+			hostPath = *overridePath;
+		}
+	}
+
 	if ((mode == OpenMode::write || mode == OpenMode::writeWithCrc || mode == OpenMode::append) && !EnsureParentPath(hostPath))
 	{
 		return nullptr;
@@ -278,7 +328,20 @@ FileStore* MassStorage::OpenFile(const char* filePath, OpenMode mode, uint32_t p
 bool MassStorage::FileExists(const char* filePath) noexcept
 {
 	fs::path hostPath;
-	return ResolvePath(filePath, hostPath) && fs::exists(hostPath);
+	if (!ResolvePath(filePath, hostPath))
+	{
+		return false;
+	}
+
+	const auto& overridePath = ConfigOverridePath();
+	if (overridePath && IsSysConfigPath(hostPath))
+	{
+		std::error_code ec;
+		const bool exists = fs::exists(*overridePath, ec);
+		return exists && !ec;
+	}
+
+	return fs::exists(hostPath);
 }
 
 void MassStorage::CloseAllFiles() noexcept

@@ -36,6 +36,8 @@ namespace MassStorage
 
 	void SetHostRoot(const std::string& absolutePath) noexcept;
 	const std::string& GetHostRoot() noexcept;
+	void SetSysConfigOverride(const std::string& absolutePath) noexcept;
+	void ClearSysConfigOverride() noexcept;
 
 	bool CombineName(const StringRef& outbuf, const char* directory, const char* fileName) noexcept;
 	const char* GetMonthName(uint8_t month) noexcept;

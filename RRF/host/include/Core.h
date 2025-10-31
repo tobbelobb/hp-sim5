@@ -16,6 +16,9 @@
 
 #include "CoreTypes.h"
 
+#ifdef RRF_HOST_BUILD
+# include <HostTiming.h>
+#endif
 // Host defaults: no MCU-specific peripherals
 #ifndef SAMC21
 # define SAMC21 0
@@ -158,12 +161,12 @@ inline uint32_t __get_PRIMASK() noexcept { return 0; }
 inline void __set_PRIMASK(uint32_t) noexcept {}
 inline uint32_t __get_IPSR() noexcept { return 0; }
 
-inline uint32_t millis() noexcept { return 0; }
-inline uint64_t millis64() noexcept { return 0; }
-inline uint32_t micros() noexcept { return 0; }
-inline uint64_t micros64() noexcept { return 0; }
-inline void delay(uint32_t) noexcept {}
-inline void delayMicroseconds(uint32_t) noexcept {}
+inline uint32_t millis() noexcept { return HostTiming::Millis(); }
+inline uint64_t millis64() noexcept { return HostTiming::Millis64(); }
+inline uint32_t micros() noexcept { return HostTiming::Micros(); }
+inline uint64_t micros64() noexcept { return HostTiming::Micros64(); }
+inline void delay(uint32_t value) noexcept { HostTiming::DelayMilliseconds(value); }
+inline void delayMicroseconds(uint32_t value) noexcept { HostTiming::DelayMicroseconds(value); }
 inline coreIrqflags_t IrqSave() noexcept { return 0; }
 inline void IrqRestore(coreIrqflags_t) noexcept {}
 inline void IrqDisable() noexcept {}
