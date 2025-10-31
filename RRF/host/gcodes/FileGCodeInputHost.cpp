@@ -55,15 +55,23 @@ namespace
 constexpr size_t kReadChunk = 256;
 }
 
-void FileGCodeInput::Reset(const FileData& file) noexcept
+void FileGCodeInput::Reset() noexcept
 {
-    RegularGCodeInput::Reset();
-    lastFileRead.CopyFrom(file);
+	lastFileRead.Close();
+	RegularGCodeInput::Reset();
 }
 
-size_t FileGCodeInput::FileBytesCached(const FileData&) const noexcept
+void FileGCodeInput::Reset(const FileData& file) noexcept
 {
-	return BytesCached();
+	if (lastFileRead == file)
+	{
+		Reset();
+	}
+}
+
+size_t FileGCodeInput::FileBytesCached(const FileData& file) const noexcept
+{
+	return (lastFileRead == file) ? BytesCached() : 0;
 }
 
 GCodeInputReadResult FileGCodeInput::ReadFromFile(FileData& file) noexcept
@@ -87,13 +95,19 @@ GCodeInputReadResult FileGCodeInput::ReadFromFile(FileData& file) noexcept
 		return GCodeInputReadResult::noData;
 	}
 
+	if (lastFileRead != file)
+	{
+		lastFileRead.Close();
+		RegularGCodeInput::Reset();
+		lastFileRead.CopyFrom(file);
+	}
+
 	for (int i = 0; i < readCount; ++i)
 	{
 		buffer[writingPointer] = temp[i];
 		writingPointer = (writingPointer + 1) % GCodeInputBufferSize;
 	}
 
-    lastFileRead.CopyFrom(file);
 	return BytesCached() > 0 ? GCodeInputReadResult::haveData : GCodeInputReadResult::noData;
 }
 

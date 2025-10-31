@@ -86,3 +86,11 @@ void GpOutputPort::Assign(const char *pinName) noexcept
 	// Host stub: no-op.
 }
 #endif
+
+// ----------------------------------------------------------------------------
+// Object model plumbing (host build)
+
+constexpr ObjectModelTableEntry GpOutputPort::objectModelTable[] = { };
+constexpr uint8_t GpOutputPort::objectModelTableDescriptor[] = { 0 };
+
+DEFINE_GET_OBJECT_MODEL_TABLE(GpOutputPort)

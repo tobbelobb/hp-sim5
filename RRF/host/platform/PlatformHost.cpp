@@ -740,3 +740,17 @@ void ConfigurableFolder::SetAbsolute(const char* absolutePath) noexcept
 
 	AssignLocked(newDir.c_str(), true);
 }
+
+// ----------------------------------------------------------------------------
+// Object model plumbing (host build)
+
+constexpr ObjectModelTableEntry Platform::objectModelTable[] = { };
+constexpr uint8_t Platform::objectModelTableDescriptor[] = { 0 };
+constexpr ObjectModelArrayTableEntry Platform::objectModelArrayTable[] = { };
+
+DEFINE_GET_OBJECT_MODEL_TABLE(Platform)
+
+const ObjectModelArrayTableEntry *_ecv_null Platform::GetObjectModelArrayEntry(unsigned int) const noexcept
+{
+	return nullptr;
+}

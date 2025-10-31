@@ -43,14 +43,18 @@ target_sources(rrf_simulator PRIVATE
     #${SIM_ROOT_DIR}/src/devices_stub.cpp
     ${SIM_ROOT_DIR}/networking/MacAddressHost.cpp
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
+    ${SIM_ROOT_DIR}/movement/DriverDataHost.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
+    ${SIM_ROOT_DIR}/endstops/ZProbeHost.cpp
     ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
     ${SIM_ROOT_DIR}/platform/TasksHost.cpp
     ${SIM_ROOT_DIR}/platform/EventHost.cpp
+    ${SIM_ROOT_DIR}/platform/MessageBoxHost.cpp
     ${SIM_ROOT_DIR}/rtos/freertos_shim.cpp
     ${SIM_ROOT_DIR}/GPIO/GpOutPortHost.cpp
     ${SIM_ROOT_DIR}/GPIO/GpInPortHost.cpp
+    ${SIM_ROOT_DIR}/tools/SpindleHost.cpp
 )
 
 

@@ -34,3 +34,11 @@ GCodeResult GpInputPort::Configure(uint32_t gpinNumber,
 	// Leave currentState as-is (default false until someone sets it).
 	return GCodeResult::ok;
 }
+
+// ----------------------------------------------------------------------------
+// Object model plumbing (host build)
+
+constexpr ObjectModelTableEntry GpInputPort::objectModelTable[] = { };
+constexpr uint8_t GpInputPort::objectModelTableDescriptor[] = { 0 };
+
+DEFINE_GET_OBJECT_MODEL_TABLE(GpInputPort)
