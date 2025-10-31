@@ -127,7 +127,7 @@ public:
 	Heat& GetHeat() const noexcept { return *heat; }
 	FansManager& GetFansManager() const noexcept { return *fans; }
 	EndstopsManager& GetEndstops() noexcept { return endstops; }
-	ReadLockedPointer<ZProbe> GetZProbeOrDefault(size_t probeNumber) noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); }
+	ReadLockedPointer<ZProbe> GetZProbeOrDefault(size_t probeNumber) noexcept { return endstops.GetZProbeOrDefault(probeNumber); }
 
 	// --- Filesystem Abstraction ---
 	bool SysFileExists(const char* filename) const noexcept;

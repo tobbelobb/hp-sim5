@@ -5,11 +5,17 @@
 #include <RepRapFirmware.h>
 #include <General/Bitmap.h>
 #include <Endstops/EndstopDefs.h>
+#include <Endstops/ZProbe.h>
 #include <RTOSIface/RTOSIface.h>
 
 class EndstopsManager
 {
 public:
+	EndstopsManager() noexcept : defaultProbe(0)
+	{
+		defaultProbe.SetDefaults();
+	}
+
 	void Init() noexcept {}
 	void ClearEndstops() noexcept {}
 
@@ -37,13 +43,23 @@ public:
 
 	GCodeResult ProgramZProbe(GCodeBuffer& gb, const StringRef& reply)  { return GCodeResult::ok; }
 
-	void SetZProbeDefaults() noexcept { }
-	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept { return ReadLockedPointer<ZProbe>(nullptr, nullptr); }
-
+	void SetZProbeDefaults() noexcept { defaultProbe.SetDefaults(); }
+	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept
+	{
+		return (index == 0) ? ReadLockedPointer<ZProbe>(nullptr, &defaultProbe)
+		                    : ReadLockedPointer<ZProbe>(nullptr, nullptr);
+	}
+	ReadLockedPointer<ZProbe> GetZProbeOrDefault(size_t) const noexcept
+	{
+		return ReadLockedPointer<ZProbe>(nullptr, &defaultProbe);
+	}
 
 #if SUPPORT_CAN_EXPANSION
 	void HandleRemoteAnalogZProbeValueChange(CanAddress src, uint8_t handleMajor, uint8_t handleMinor, uint32_t reading) noexcept { }
 #endif
+
+private:
+	mutable DummyZProbe defaultProbe;
 };
 
 #endif

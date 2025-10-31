@@ -4,6 +4,49 @@
 // ----------------------------------------------------------------------------
 // Minimal Z-probe implementation for host builds
 
+ZProbe::ZProbe(unsigned int num, ZProbeType p_type) noexcept
+	: EndstopOrZProbe(Z_AXIS),
+	  targetAdcValue(DefaultZProbeADValue),
+	  number(num),
+	  type(ZProbeType::none),
+	  sensor(-1),
+	  isDeployedByUser(false)
+{
+	misc.all = 0;
+	SetDefaults();
+	type = p_type;
+}
+
+bool ZProbe::Stopped() const noexcept
+{
+	return false;
+}
+
+EndstopHitDetails ZProbe::CheckTriggered() noexcept
+{
+	return EndstopHitDetails{};
+}
+
+bool ZProbe::Acknowledge(EndstopHitDetails) noexcept
+{
+	return false;
+}
+
+GCodeResult ZProbe::Configure(GCodeBuffer&, const StringRef&, bool&) THROWS(GCodeException)
+{
+	return GCodeResult::ok;
+}
+
+GCodeResult ZProbe::SendProgram(const uint32_t[], size_t, const StringRef&) noexcept
+{
+	return GCodeResult::ok;
+}
+
+GCodeResult ZProbe::HandleG31(GCodeBuffer&, const StringRef&) THROWS(GCodeException)
+{
+	return GCodeResult::ok;
+}
+
 void ZProbe::SetDefaults() noexcept
 {
 	targetAdcValue = DefaultZProbeADValue;
