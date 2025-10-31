@@ -201,9 +201,9 @@ public:
 
 	GCodeResult ConfigurePort(GCodeBuffer& gb, const StringRef& reply) {  return GCodeResult::ok; }
 
-	GpOutputPort& stubbedGpoutPort;
+	GpOutputPort stubbedGpoutPort;
 	GpOutputPort& GetGpOutPort(size_t gpoutPortNumber) noexcept { return stubbedGpoutPort; }
-	GpInputPort& stubbedGpinPort;
+	GpInputPort stubbedGpinPort;
 	const GpInputPort& GetGpInPort(size_t gpinPortNumber) const noexcept { return stubbedGpinPort; }
 
 	// --- Static debug members (copied from your version) ---

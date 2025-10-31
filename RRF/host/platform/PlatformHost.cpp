@@ -22,6 +22,8 @@
 #include <string>
 #include <ctime>        // For time() and localtime_r()
 
+static bool CombineRrfPath(String<MaxFilenameLength>& result, const char* base, const char* fragment) noexcept;
+
 namespace
 {
 	std::mutex logMutex;
@@ -346,7 +348,7 @@ bool Platform::ShouldLog(uint32_t messageLogLevel) const noexcept
 		return false;
 	}
 	const uint32_t platformLevel = logLevelSetting.ToBaseType();
-	if (platformLevel == LogLevel::off.ToBaseType())
+	if (platformLevel == LogLevel::ToBaseType(LogLevel::off))
 	{
 		return false;
 	}
