@@ -33,9 +33,10 @@ namespace
 	struct CommandLineOptions
 	{
 		std::filesystem::path vsdRoot{"run/vsd"};
-		std::string runArgument;
+		std::optional<std::filesystem::path> gcodeArgument;
 		CaptureSelection capture{CaptureSelection::notProvided};
-		std::filesystem::path capturePath;
+		std::optional<std::filesystem::path> captureArgument;
+		std::optional<std::filesystem::path> configArgument;
 		bool showHelp{false};
 	};
 
@@ -46,7 +47,8 @@ namespace
 
 	void PrintUsage() noexcept
 	{
-		std::cout << "Usage: rrf_simulator [--vsd <path>] [--gcode <file.gcode>] [--can-log <path|disable>]\n";
+		std::cout << "Usage: rrf_simulator [--vsd|-s <path>] [--gcode|-g <file.gcode>] [--config|-c <file>]"
+					 " [--can-log|-l <path|disable>]\n";
 	}
 
 	std::string ToLower(std::string value) noexcept
@@ -54,6 +56,203 @@ namespace
 		std::transform(value.begin(), value.end(), value.begin(),
 					   [] (unsigned char ch) noexcept { return static_cast<char>(std::tolower(ch)); });
 		return value;
+	}
+
+	std::filesystem::path GetCurrentPath() noexcept
+	{
+		std::error_code ec;
+		const auto cwd = std::filesystem::current_path(ec);
+		return ec ? std::filesystem::path{} : cwd;
+	}
+
+	std::filesystem::path NormalisePath(const std::filesystem::path& value) noexcept
+	{
+		if (value.empty())
+		{
+			return value;
+		}
+
+		std::filesystem::path result;
+		if (value.is_absolute())
+		{
+			result = value;
+		}
+		else
+		{
+			std::error_code absoluteError;
+			result = std::filesystem::absolute(value, absoluteError);
+			if (absoluteError)
+			{
+				const auto cwd = GetCurrentPath();
+				if (!cwd.empty())
+				{
+					result = cwd / value;
+				}
+				else
+				{
+					result = value;
+				}
+			}
+		}
+
+		return result.lexically_normal();
+	}
+
+	bool IsSubPathOf(const std::filesystem::path& candidate,
+					 const std::filesystem::path& base) noexcept
+	{
+		auto candidateIt = candidate.begin();
+		for (const auto& component : base)
+		{
+			if (candidateIt == candidate.end() || *candidateIt != component)
+			{
+				return false;
+			}
+			++candidateIt;
+		}
+		return true;
+	}
+
+	std::optional<std::filesystem::path> ResolveExistingPath(const std::filesystem::path& vsdRoot,
+															 const std::filesystem::path& userPath,
+															 const char* description,
+															 bool requireRegularFile,
+															 std::string& error) noexcept
+	{
+		error.clear();
+
+		if (userPath.empty())
+		{
+			error = std::string(description) + " path is empty";
+			return std::nullopt;
+		}
+
+		const auto normalizedVsd = NormalisePath(vsdRoot);
+
+		const auto validate = [&] (const std::filesystem::path& candidate) -> std::optional<std::filesystem::path>
+		{
+			std::error_code existsError;
+			if (!std::filesystem::exists(candidate, existsError))
+			{
+				return std::nullopt;
+			}
+
+			if (requireRegularFile)
+			{
+				std::error_code fileError;
+				if (!std::filesystem::is_regular_file(candidate, fileError))
+				{
+					error = std::string(description) + " '" + candidate.string() + "' is not a regular file";
+					return std::nullopt;
+				}
+			}
+
+			return NormalisePath(candidate);
+		};
+
+		if (userPath.is_absolute())
+		{
+			const auto normalizedUser = NormalisePath(userPath);
+			auto result = validate(normalizedUser);
+			if (!result && error.empty())
+			{
+				error = std::string(description) + " '" + normalizedUser.string() + "' does not exist";
+			}
+			return result;
+		}
+
+		const auto vsdCandidate = NormalisePath(normalizedVsd / userPath);
+		if (auto result = validate(vsdCandidate))
+		{
+			return result;
+		}
+		if (!error.empty())
+		{
+			return std::nullopt;
+		}
+
+		const auto cwd = GetCurrentPath();
+		const auto cwdCandidate = cwd.empty() ? NormalisePath(userPath) : NormalisePath(cwd / userPath);
+		if (auto result = validate(cwdCandidate))
+		{
+			return result;
+		}
+		if (!error.empty())
+		{
+			return std::nullopt;
+		}
+
+		error = std::string(description) + " '" + userPath.string() + "' was not found relative to '"
+				+ normalizedVsd.string() + "' or the current working directory";
+		return std::nullopt;
+	}
+
+	std::filesystem::path ResolveOutputPath(const std::filesystem::path& vsdRoot,
+											const std::filesystem::path& userPath) noexcept
+	{
+		if (userPath.empty())
+		{
+			return {};
+		}
+
+		if (userPath.is_absolute())
+		{
+			return NormalisePath(userPath);
+		}
+
+		const auto normalizedVsd = NormalisePath(vsdRoot);
+		const auto vsdCandidate = NormalisePath(normalizedVsd / userPath);
+
+		const auto cwd = GetCurrentPath();
+		const auto cwdCandidate = cwd.empty() ? NormalisePath(userPath) : NormalisePath(cwd / userPath);
+
+		if (cwdCandidate.is_absolute() && IsSubPathOf(cwdCandidate, normalizedVsd))
+		{
+			return cwdCandidate;
+		}
+
+		return vsdCandidate;
+	}
+
+	bool PrepareConfigFile(const std::filesystem::path& vsdRoot,
+						   const std::filesystem::path& configSource) noexcept
+	{
+		const auto normalizedVsd = NormalisePath(vsdRoot);
+		const auto normalizedSource = NormalisePath(configSource);
+
+		std::filesystem::path sysDir = normalizedVsd / "sys";
+		sysDir = sysDir.lexically_normal();
+
+		std::error_code dirError;
+		std::filesystem::create_directories(sysDir, dirError);
+		if (dirError)
+		{
+			std::cerr << "Failed to prepare sys directory '" << sysDir << "': " << dirError.message() << '\n';
+			return false;
+		}
+
+		std::filesystem::path destination = sysDir / "config.g";
+		destination = destination.lexically_normal();
+
+		std::error_code eqError;
+		if (std::filesystem::equivalent(destination, normalizedSource, eqError))
+		{
+			std::cout << "Using configuration file: " << normalizedSource << '\n';
+			return true;
+		}
+
+		std::error_code copyError;
+		std::filesystem::copy_file(normalizedSource, destination,
+								   std::filesystem::copy_options::overwrite_existing, copyError);
+		if (copyError)
+		{
+			std::cerr << "Failed to copy configuration file to '" << destination << "': "
+					  << copyError.message() << '\n';
+			return false;
+		}
+
+		std::cout << "Using configuration file: " << normalizedSource << '\n';
+		return true;
 	}
 
 	bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options, std::string& error) noexcept
@@ -66,7 +265,7 @@ namespace
 				options.showHelp = true;
 				return true;
 			}
-			else if (arg == "--vsd")
+			else if (arg == "--vsd" || arg == "-s")
 			{
 				if (i + 1 >= argc)
 				{
@@ -75,32 +274,42 @@ namespace
 				}
 				options.vsdRoot = argv[++i];
 			}
-			else if (arg == "--gcode")
+			else if (arg == "--gcode" || arg == "-g")
 			{
 				if (i + 1 >= argc)
 				{
 					error = "--gcode requires a filename";
 					return false;
 				}
-				options.runArgument = argv[++i];
+				options.gcodeArgument = std::filesystem::path(argv[++i]);
 			}
-			else if (arg == "--can-log")
+			else if (arg == "--config" || arg == "-c")
+			{
+				if (i + 1 >= argc)
+				{
+					error = "--config requires a filename";
+					return false;
+				}
+				options.configArgument = std::filesystem::path(argv[++i]);
+			}
+			else if (arg == "--can-log" || arg == "-l")
 			{
 				if (i + 1 >= argc)
 				{
 					error = "--can-log requires a path or the value 'disable'";
 					return false;
 				}
-				const std::string value = ToLower(argv[++i]);
+				std::string rawValue(argv[++i]);
+				const std::string value = ToLower(rawValue);
 				if (value == "disable" || value == "none" || value == "off")
 				{
 					options.capture = CaptureSelection::disabled;
-					options.capturePath.clear();
+					options.captureArgument.reset();
 				}
 				else
 				{
 					options.capture = CaptureSelection::enabled;
-					options.capturePath = argv[i];
+					options.captureArgument = std::filesystem::path(rawValue);
 				}
 			}
 			else
@@ -113,34 +322,44 @@ namespace
 	}
 
 	std::optional<std::string> ResolveRunFile(const std::filesystem::path& vsdRoot,
-											  const std::string& runArg,
+											  const std::optional<std::filesystem::path>& runArg,
 											  std::string& error) noexcept
 	{
-		if (runArg.empty())
+		if (!runArg)
 		{
 			return std::nullopt;
 		}
 
-		const std::filesystem::path gcodeRoot = vsdRoot / "gcodes";
-		if (!std::filesystem::exists(gcodeRoot))
+		const auto gcodeRoot = NormalisePath(vsdRoot / "gcodes");
+
+		std::error_code existsError;
+		if (!std::filesystem::exists(gcodeRoot, existsError))
 		{
 			error = "G-code directory '" + gcodeRoot.string() + "' does not exist";
 			return std::nullopt;
 		}
 
-		auto resolveRelative = [&gcodeRoot, &error] (const std::filesystem::path& hostPath) -> std::optional<std::string>
+		const auto toRelative = [&gcodeRoot, &error] (const std::filesystem::path& hostPath) -> std::optional<std::string>
 		{
-			if (!std::filesystem::exists(hostPath))
+			std::error_code existsErr;
+			if (!std::filesystem::exists(hostPath, existsErr))
 			{
 				error = "G-code file '" + hostPath.string() + "' does not exist";
 				return std::nullopt;
 			}
 
+			const auto normalizedHost = NormalisePath(hostPath);
+			if (!IsSubPathOf(normalizedHost, gcodeRoot))
+			{
+				error = "G-code file '" + normalizedHost.string() + "' is outside '" + gcodeRoot.string() + "'";
+				return std::nullopt;
+			}
+
 			std::error_code ec;
-			std::filesystem::path relative = std::filesystem::relative(hostPath, gcodeRoot, ec);
+			std::filesystem::path relative = std::filesystem::relative(normalizedHost, gcodeRoot, ec);
 			if (ec)
 			{
-				error = "File '" + hostPath.string() + "' is outside '" + gcodeRoot.string() + "'";
+				error = "Failed to resolve relative path for '" + normalizedHost.string() + "'";
 				return std::nullopt;
 			}
 
@@ -148,7 +367,7 @@ namespace
 			{
 				if (component == "..")
 				{
-					error = "File '" + hostPath.string() + "' escapes the gcodes directory";
+					error = "G-code file '" + normalizedHost.string() + "' escapes the gcodes directory";
 					return std::nullopt;
 				}
 			}
@@ -163,9 +382,16 @@ namespace
 		};
 
 		// RRF-style path?
-		if (runArg.size() > 2 && runArg[1] == ':')
+		const std::string runString = runArg->generic_string();
+		if (runString.size() > 2 && runString[1] == ':')
 		{
-			std::string remainder = runArg.substr(2);
+			if (runString[0] != '0')
+			{
+				error = "gcode path '" + runString + "' must target 0:/gcodes";
+				return std::nullopt;
+			}
+
+			std::string remainder = runString.substr(2);
 			while (!remainder.empty() && (remainder.front() == '/' || remainder.front() == '\\'))
 			{
 				remainder.erase(remainder.begin());
@@ -174,14 +400,14 @@ namespace
 			std::filesystem::path rrfPath(remainder);
 			if (rrfPath.empty())
 			{
-				error = "gcode path '" + runArg + "' is not valid";
+				error = "gcode path '" + runString + "' is not valid";
 				return std::nullopt;
 			}
 
 			auto iter = rrfPath.begin();
 			if (iter == rrfPath.end() || iter->string() != "gcodes")
 			{
-				error = "gcode path '" + runArg + "' must target 0:/gcodes";
+				error = "gcode path '" + runString + "' must target 0:/gcodes";
 				return std::nullopt;
 			}
 
@@ -193,31 +419,23 @@ namespace
 
 			if (relative.empty())
 			{
-				error = "gcode path '" + runArg + "' is incomplete";
+				error = "gcode path '" + runString + "' is incomplete";
 				return std::nullopt;
 			}
 
-			return resolveRelative(gcodeRoot / relative);
+			return toRelative(gcodeRoot / relative);
 		}
 
-		// Host-style path. Prefer path relative to gcodes, fall back to vsdRoot.
-		std::filesystem::path candidate(runArg);
-		if (candidate.is_absolute())
+		auto resolved = ResolveExistingPath(vsdRoot, *runArg, "G-code file", true, error);
+		if (!resolved)
 		{
-			return resolveRelative(candidate);
+			return std::nullopt;
 		}
 
-		const std::filesystem::path gcodesCandidate = gcodeRoot / candidate;
-		if (std::filesystem::exists(gcodesCandidate))
-		{
-			return resolveRelative(gcodesCandidate);
-		}
-
-		const std::filesystem::path vsdCandidate = vsdRoot / candidate;
-		return resolveRelative(vsdCandidate);
+		return toRelative(*resolved);
 	}
 
-	bool ConfigureCapture(const CommandLineOptions& options) noexcept
+	bool ConfigureCapture(const CommandLineOptions& options, const std::filesystem::path& vsdRoot) noexcept
 	{
 		switch (options.capture)
 		{
@@ -226,13 +444,15 @@ namespace
 
 			case CaptureSelection::enabled:
 			{
-				std::filesystem::path capturePath = options.capturePath;
-				if (!capturePath.is_absolute())
+				if (!options.captureArgument)
 				{
-					capturePath = std::filesystem::absolute(capturePath);
+					std::cerr << "CAN log path not specified\n";
+					return false;
 				}
 
+				std::filesystem::path capturePath = ResolveOutputPath(vsdRoot, *options.captureArgument);
 				const std::filesystem::path parent = capturePath.parent_path();
+
 				if (!parent.empty())
 				{
 					std::error_code ec;
@@ -383,24 +603,38 @@ int main(int argc, char** argv)
 
 	try
 	{
-		std::filesystem::path vsdRoot = options.vsdRoot;
-		if (!vsdRoot.is_absolute())
-		{
-			vsdRoot = std::filesystem::absolute(vsdRoot);
-		}
+		std::filesystem::path vsdRoot = NormalisePath(options.vsdRoot);
 
 		std::error_code dirError;
 		std::filesystem::create_directories(vsdRoot, dirError);
-		if (dirError && !std::filesystem::exists(vsdRoot))
+		if (dirError)
 		{
 			std::cerr << "Failed to prepare VSD directory '" << vsdRoot << "': " << dirError.message() << '\n';
+			cleanup();
 			return 1;
+		}
+
+		if (options.configArgument)
+		{
+			std::string configError;
+			auto resolvedConfig = ResolveExistingPath(vsdRoot, *options.configArgument, "Configuration file", true, configError);
+			if (!resolvedConfig)
+			{
+				std::cerr << configError << '\n';
+				cleanup();
+				return 1;
+			}
+			if (!PrepareConfigFile(vsdRoot, *resolvedConfig))
+			{
+				cleanup();
+				return 1;
+			}
 		}
 
 		MassStorage::SetHostRoot(vsdRoot.string());
 		MassStorage::Init();
 
-		if (!ConfigureCapture(options))
+		if (!ConfigureCapture(options, vsdRoot))
 		{
 			cleanup();
 			return 1;
@@ -413,10 +647,10 @@ int main(int argc, char** argv)
 		reprapInitialised = true;
 
 		bool success = true;
-		if (!options.runArgument.empty())
+		if (options.gcodeArgument)
 		{
 			std::string resolveError;
-			auto relative = ResolveRunFile(vsdRoot, options.runArgument, resolveError);
+			auto relative = ResolveRunFile(vsdRoot, options.gcodeArgument, resolveError);
 			if (!relative)
 			{
 				std::cerr << resolveError << '\n';
