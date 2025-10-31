@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(RepRapFirmwareSimulator CXX)
 
+if(NOT CMAKE_BUILD_TYPE)
+  # Default to optimized-with-debug-info when user doesn't specify a type
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
@@ -17,6 +22,12 @@ set(GENERATED_SOURCES_DIR ${CMAKE_BINARY_DIR}/generated_sources)
 
 # --- Define the Executable Target ---
 add_executable(rrf_simulator)
+
+# ensure our target gets symbols (works on all generators)
+target_compile_options(rrf_simulator PRIVATE
+  $<$<CONFIG:Debug>:-O0 -g3 -fno-omit-frame-pointer>
+  $<$<CONFIG:RelWithDebInfo>:-g -fno-omit-frame-pointer>
+)
 
 # --- Preprocessor Definitions ---
 target_compile_definitions(rrf_simulator PRIVATE
