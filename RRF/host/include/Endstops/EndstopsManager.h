@@ -33,6 +33,7 @@ public:
 	GCodeResult HandleM574(GCodeBuffer& gb, const StringRef& reply, OutputBuffer *_ecv_null & outbuf)  { return GCodeResult::ok; }
 
 	bool Stopped(size_t axis) const noexcept { return true; }
+	EndStopPosition GetEndStopPosition(size_t) const noexcept { return EndStopPosition::noEndStop; }
 
 	GCodeResult ProgramZProbe(GCodeBuffer& gb, const StringRef& reply)  { return GCodeResult::ok; }
 

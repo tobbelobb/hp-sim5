@@ -25,6 +25,7 @@ target_compile_definitions(rrf_simulator PRIVATE
   #__SAME70Q20B__
     SAME70=1 # Pretend we're this processor, affects array sizes and stuff
     RRF_HOST_BUILD=1
+    RTOS=1
     USE_SBC=0
     SRC_MOVEMENT_STEPTIMER_H_=1
 )
@@ -36,6 +37,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/platform/PlatformHost.cpp
     ${SIM_ROOT_DIR}/can/CanCapture.cpp
     ${SIM_ROOT_DIR}/can/CanInterfaceHost.cpp
+    ${SIM_ROOT_DIR}/can/CanMotionHost.cpp
     ${SIM_ROOT_DIR}/storage/MassStorageHost.cpp
     ${SIM_ROOT_DIR}/storage/FileStoreHost.cpp
     #${SIM_ROOT_DIR}/src/devices_stub.cpp
@@ -45,8 +47,7 @@ target_sources(rrf_simulator PRIVATE
     #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
     ${SIM_ROOT_DIR}/platform/TasksHost.cpp
-    ${SIM_ROOT_DIR}/platform/GetFloatFormatStringHost.cpp
-    ${SIM_ROOT_DIR}/platform/DebugPrintHost.cpp
+    ${SIM_ROOT_DIR}/platform/EventHost.cpp
     ${SIM_ROOT_DIR}/rtos/freertos_shim.cpp
     ${SIM_ROOT_DIR}/GPIO/GpOutPortHost.cpp
     ${SIM_ROOT_DIR}/GPIO/GpInPortHost.cpp
@@ -69,6 +70,8 @@ set(RRF_SOURCES_TO_USE
     Tools/Tool.cpp
     Movement/Kinematics/Kinematics.cpp
     Movement/Kinematics/CoreKinematics.cpp
+    Movement/Kinematics/ZLeadscrewKinematics.cpp
+    Movement/Kinematics/RoundBedKinematics.cpp
     Movement/Kinematics/HangprinterKinematics.cpp
 
     # Tier 3: The Motion Planning Engine (Bottom-Up)
@@ -76,6 +79,18 @@ set(RRF_SOURCES_TO_USE
     Movement/DDA.cpp
     Movement/DDARing.cpp
     Movement/Move.cpp
+    Movement/Move2.cpp
+    Movement/Move3.cpp
+    Movement/MoveSegment.cpp
+    Movement/RawMove.cpp
+    Movement/AxisShaper.cpp
+    Movement/ExtruderShaper.cpp
+    Movement/MovementProfile.cpp
+    Movement/MovementError.cpp
+    Movement/BedProbing/Grid.cpp
+    Movement/BedProbing/RandomProbePointSet.cpp
+    GCodes/StraightProbeSettings.cpp
+    GCodes/TriggerItem.cpp
 
     # Tier 4: G-Code Interpretation and High-Level Logic
     GCodes/GCodeBuffer/GCodeBuffer.cpp
@@ -87,10 +102,24 @@ set(RRF_SOURCES_TO_USE
     GCodes/GCodes.cpp
     GCodes/GCodes2.cpp
     GCodes/GCodes3.cpp
+    GCodes/GCodes4.cpp
+    GCodes/GCodes5.cpp
+    GCodes/GCodes6.cpp
+    GCodes/GCodes7.cpp
+    GCodes/GCodeException.cpp
+    GCodes/ObjectTracker.cpp
+    GCodes/KeepoutZone.cpp
+    GCodes/RestorePoint.cpp
 
     # Tier 5: Top-Level Application Objects
     PrintMonitor/PrintMonitor.cpp
     Platform/RepRap.cpp
+    RepRapFirmware.cpp
+    Storage/CRC16.cpp
+    Storage/CRC32.cpp
+    CAN/CanDriversData.cpp
+    libc/strptime.cpp
+    Version.cpp
 )
 
 # List of real .h files from ReprapFirmware we'll use for our builds.
@@ -146,7 +175,6 @@ set(RRF_HEADERS_TO_USE
     Endstops/Endstop.h
     Platform/MessageBox.h
     CAN/ExpansionManager.h
-    Platform/UniqueId.h
     Platform/Event.h
     Movement/StepperDrivers/DriverData.h
     Movement/BedProbing/Grid.h
@@ -159,7 +187,6 @@ set(RRF_HEADERS_TO_USE
     Movement/MovementProfile.h
     Movement/BedProbing/RandomProbePointSet.h
     Movement/MoveDebugFlags.h
-    Hardware/IoPorts.h
     Hardware/ExceptionHandlers.h
     Hardware/SoftwareReset.h
     AppNotifyIndices.h
@@ -194,6 +221,12 @@ set(RRFLibraries_SOURCES_TO_USE
     General/StringFunctions.cpp
     General/SafeStrtod.cpp
     General/SafeVsnprintf.cpp
+    General/IPAddress.cpp
+    General/IP4String.cpp
+    General/NumericConverter.cpp
+    Math/Isqrt.cpp
+    Math/Deviation.cpp
+    Math/DeviationAccumulator.cpp
 )
 
 # List of real .h files from RRFLibraries we'll use for our builds.
@@ -212,9 +245,11 @@ set(RRFLibraries_HEADERS_TO_USE
     General/SafeVsnprintf.h
     General/SimpleMath.h
     General/IPAddress.h
+    General/IsoDate.h
     General/FreelistManager.h
     General/Portability.h
     Math/Deviation.h
+    Math/DeviationAccumulator.h
     General/IP4String.h
     RTOSIface/RTOSNotifyIndices.h
     Math/Matrix.h
@@ -250,6 +285,7 @@ set(CANlib_HEADERS_TO_USE
 # The path here is relative to host/include.
 set(SHADOWING_HEADERS_TO_USE
     FreeRTOS.h
+    FreeRTOSConfig.h
     task.h
     queue.h
     semphr.h
@@ -257,6 +293,7 @@ set(SHADOWING_HEADERS_TO_USE
     Platform/Platform.h
     Platform/Heap.h
     Platform/Tasks.h
+    Platform/UniqueId.h
     Config/Pins.h
     Config/Pins_Host.h
     PinDescription.h
@@ -281,6 +318,7 @@ set(SHADOWING_HEADERS_TO_USE
     Tools/Spindle.h
     UniqueIdBase.h
     Stream.h
+    Hardware/IoPorts.h
     AnalogIn.h
     AnalogOut.h
     FilamentMonitors/FilamentMonitor.h

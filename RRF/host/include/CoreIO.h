@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <array>
 #include <cstring>
+#include <chrono>
 
 // Mirror SAME70 layout: ports A-D fully populated plus limited port E
 constexpr unsigned int NumTotalPins = (4 * 32) + 6;
@@ -92,12 +93,61 @@ inline bool digitalRead(Pin pin) noexcept
 class MillisTimer
 {
 public:
-	void Start(uint32_t) noexcept {}
-	bool IsRunning() const noexcept { return false; }
-	bool HasExpired() const noexcept { return false; }
-	void Cancel() noexcept {}
-	bool CheckAndStop(uint32_t) noexcept { return false; }
-	bool CheckNoStop(uint32_t) noexcept { return false; }
+	MillisTimer() noexcept = default;
+
+	void Start() noexcept
+	{
+		Start(std::chrono::milliseconds(0));
+	}
+
+	void Start(uint32_t delayMs) noexcept
+	{
+		Start(std::chrono::milliseconds(delayMs));
+	}
+
+	bool IsRunning() const noexcept { return running; }
+
+	bool HasExpired() const noexcept
+	{
+		return running && Clock::now() >= expiryTime;
+	}
+
+	void Stop() noexcept { running = false; }
+	void Cancel() noexcept { Stop(); }
+
+	bool CheckAndStop(uint32_t timeoutMillis) noexcept
+	{
+		if (CheckNoStop(timeoutMillis))
+		{
+			running = false;
+			return true;
+		}
+		return false;
+	}
+
+	bool CheckNoStop(uint32_t timeoutMillis) const noexcept
+	{
+		if (!running)
+		{
+			return false;
+		}
+		const auto elapsed = Clock::now() - startTime;
+		return elapsed >= std::chrono::milliseconds(timeoutMillis);
+	}
+
+private:
+	using Clock = std::chrono::steady_clock;
+
+	void Start(std::chrono::milliseconds delay) noexcept
+	{
+		startTime = Clock::now();
+		expiryTime = startTime + delay;
+		running = true;
+	}
+
+	Clock::time_point startTime{};
+	Clock::time_point expiryTime{};
+	bool running{false};
 };
 
 class AtomicCriticalSectionLocker

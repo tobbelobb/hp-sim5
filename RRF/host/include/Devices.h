@@ -12,6 +12,6 @@
 //#endif
 //extern SerialCDC serialUSB;
 
-void DeviceInit() noexcept {}
-void StopAnalogTask() noexcept {}
-void StopUsbTask() noexcept {}
+inline void DeviceInit() noexcept {}
+inline void StopAnalogTask() noexcept {}
+inline void StopUsbTask() noexcept {}

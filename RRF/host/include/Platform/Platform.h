@@ -89,6 +89,8 @@ public:
 	GCodeResult DiagnosticTest(GCodeBuffer& gb, const StringRef& reply, OutputBuffer *_ecv_null & buf, unsigned int d) { return GCodeResult::ok; };
 	static constexpr unsigned int NumPlatformDiagnosticParts = 7;
 	static bool SetDebugBufferSize(unsigned int) noexcept { return true; }
+	static bool HasDebugBuffer() noexcept { return false; }
+	static bool IsrDebugPutc(char) noexcept { return true; }
 
 	// --- Simulation Timekeeping ---
 	// The motion planner (DDA) depend on millis().
