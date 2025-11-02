@@ -18,6 +18,8 @@ RRF/host/build/*
 *.o
 RRF/host/vsd/logs/*.log
 RRF/build
+RRF/build*
 RRF/.cache
 */compile_commands.json
 RRF/run/vsd/logs/first.jsonl
+

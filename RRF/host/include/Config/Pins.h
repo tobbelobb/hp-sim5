@@ -95,7 +95,7 @@
 #endif
 
 #ifndef SUPPORT_CAN_EXPANSION
-# define SUPPORT_CAN_EXPANSION	0
+# define SUPPORT_CAN_EXPANSION	1
 #endif
 
 #ifndef DUAL_CAN

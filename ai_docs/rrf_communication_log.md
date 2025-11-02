@@ -4041,3 +4041,176 @@ I removed the reprap.GetGCodes().HostForceSimulationMode(SimulationMode::normal)
     687  		HostTiming::Reset();
 
 ■ You've hit your usage limit. Upgrade to Pro (https://openai.com/chatgpt/pricing), visit chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:48 PM.
+
+
+---------------
+## ReprapFirmware Host Build `rrf_simulator`
+
+This is a host (x86_64) version of ReprapFirmware with:
+ - No FreeRTOS
+ - No reason to be synchronous, we can fake clock ticks and such. We will only run in "batch mode" on x86_64, so no reason
+to wait for anything or stay synchronous, as long as everything happens in the right order.
+ - No connected boards, but we want to capture packets that would have been sent to external CAN boards, so we need to fake
+something there
+ - No networking
+ - No connections to other programs such as DuetWebInterface or DSW or anything like that.
+ - No fans or heaters or anything like that. No physical pins or connections to anything at all actually.
+
+The binary, `rrf_simulator`, is supposed to mirror the behavior of Klippers "batch mode", also known as "debug mode".
+In batch mode, Klipper simply reads a gcode and a config file, and dumps the stepper move commands, as well as a handful of
+other commands.
+This is very useful for hp-sim5 because we can run our simulation based on the commands read from the batch dump, without
+needing any special hardware.
+Batch mode basically stubs the USB-interface of Klipper.
+
+ReprapFirmware previously had no such mode, and not even a x86_64 build at all.
+The closest analog to Klipper's USB interface is ReprapFirmware's CAN interface.
+Our approach is to stub this and capture the move messages, so we can drive the hp-sim5 simulation with them.
+
+We had to:
+ 1. Decide which real source files to compile, and which to stub or shim.
+ 2. Get the chosen real files to compile.
+ 3. Write the stub and shim code.
+ 4. Write the actual batch mode logic.
+
+On point 1, the files are listed in CMakeLists.txt.
+To control which files get used in our build, we populate a physically isolated build directory called `build/
+generated_sources`.
+
+## How To Build
+
+```
+# cd RRF # Assumed start directory
+# Possibly rm -rf build if a corrupted one already exists
+cmake -B build
+cd build
+make
+# Or make in two steps
+make prepare_sources # Populates generated_sources
+make rrf_simulator # Builds main executable
+```
+
+## Instructions for Developers and AI Assistants
+
+The ReprapFirmware code is in ./ReprapFirmware/src, ./RRFLibraries/src and ./CANlib/src.
+
+Our code is in ./host.
+
+main.cpp is the entry point.
+It is supposed to exercises all the real ReprapFirmware logic that generates movement commands and that are sent out via
+the CAN interface.
+The CAN messages are supposed to get captured by our logic and written to disk.
+These captured files will be used in a physics simulator to check how well the ReprapFirmware planner, kinematics logic,
+DDA, movement system etc works.
+
+Don't change real source files in ReprapFirmware source tree.
+Some changes in ReprapFirmware has been neccessary to build cleanly, but it's mainly been about fixing format warnings.
+
+If you implement any custom host logic (any code in RRF/host) then look up how the logic is implemented in the original
+code (RRF/ReprapFirmware),
+and get as close as you can to the original logic, while preserving the host build's goal,
+which is to create a binary that can consume gcode, plan moves, emit CAN packages, capture the CAN packages and write them
+to disk.
+The movements are the most important part.
+Fans, object model, and such are nice-to-haves.
+
+Don't make any changes directly in the `RRF/build/generated_sources` directory.
+If you need to make a change there go via the RRF/CMakeLists.txt file:
+`cd RRF; cmake -B build; cd build; make prepare_sources`.
+
+What to focus on
+When I run `./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/
+config_hangprinter.g` then no move commands actually show up in `run/vsd/logs/first.jsonl`. Only a simple time stamp
+appears. Why is that?
+
+The previous programmer I asked added the `HostForceSimulationMode` function but that did not make any difference. We
+should simulate with `SimulationMode::off` anyways. The thing ReprapFirmware calls `SimulationMode` is not what we're
+after. We want to run ReprapFirmware as normally as possible, and just catch the CAN packets.
+
+Our logging logic is supposed to be triggered by the `HostCanCapture::LogMotion(*buf)` line in the
+`SendMotion(CanMessageBuffer *buf)` function found in host/can/CanInterfaceHost.cpp. The SendMotion function signature is
+defined in the real ReprapFirmware source file `ReprapFirmware/src/CAN/CanInterface.h`. I don't see anywhere in our build
+that the `SendMotion` command is actually built in. It's supposed to be called by the `CanMotion::FinishMovement` function
+defined in ReprapFirmware/src/CAN/CanMotion.cpp, but that source file is not listed in our CMakeLists.txt file, and using
+clangd and the build/compile_commands.json, the list of references to `SendMotion` is empty.
+
+It seems like we're doing something wrong since
+ 1. The real CanMotion.cpp is not in CMakeLists.txt
+ 2. Nothing fails in the build.
+
+Why doesn't our build require/use the `FinishMovement` function? The comment above the function definition says:
+```
+// This is called by DDA::Prepare when all DMs for CAN drives have been processed. Return the calculated move time in
+steps, or 0 if there are no CAN moves
+```
+
+And that's true. The DDA::Prepare funcion in ReprapFirmware/src/Movement/DDA.cpp does call `CanMotion::FinishMovement`.
+
+I've tried to get a debug print out of DDA::Prepare but nothing shows up. It looks like we're not triggering DDA::Prepare
+even once when we run `./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/
+first.jsonl -c sys/config_hangprinter.g`.
+
+The function who calls DDA::Prepare in our build is called `DDARing::PrepareMoves`. Its documentation comment says this:
+```
+// Prepare some moves. moveTimeLeft is the total length remaining of moves that are already executing or prepared.
+// Return the maximum time in milliseconds that should elapse before we prepare further unprepared moves that are already
+in the ring, or MoveTiming::StandardMoveWakeupInterval if there are no unprepared moves left.
+```
+
+`DDARing::PrepareMoves` is called from `DDARing::Spin`, which is called from `Move::MoveLoop` under a large comment saying:
+```
+// Let ring 0 process moves
+// When there is a gap between moves it can be that we try to prepare the second move while a segment of the first move
+that has been delayed by input shaping is still executing.
+// To avoid this we must ensure that we prepare moves at least half an input shaper period in advance. This avoids the
+problem because any delayed segment of the first move
+// will be half a shaper period long. In order to handle CAN delays etc. we prepare moves [half a shaper period plus
+MoveTiming::AbsoluteMinimumPreparedTime] in advance,
+// with a minimum of MoveTiming::UsualMinimumPreparedTime.
+```
+
+With my simple "printf-debugging" I've managed to conclude that `DDARing::PrepareMoves` gets called many times, but
+`DDA::Prepare` is never called. It looks like the while-loop surrounding it (surrounding line 400 in ReprapFirmware/src/
+Movement/DDARing.cpp), is never executed because the condition `firstUnpreparedMove->IsProvisional()` is always false in
+our case. The comments and signature above the while-loop says:
+```
+// Prepare some moves. moveTimeLeft is the total length remaining of moves that are already executing or prepared.
+// Return the maximum time in milliseconds that should elapse before we prepare further unprepared moves that are already
+in the ring, or MoveTiming::StandardMoveWakeupInterval if there are no unprepared moves left.
+uint32_t DDARing::PrepareMoves(DDA *firstUnpreparedMove, uint32_t prepareAdvanceTime, uint32_t moveTimeLeft, unsigned int
+alreadyPrepared, SimulationMode simulationMode) noexcept
+{
+// If the already-prepared moves will execute in less than the minimum time, prepare another move.
+```
+Could this explain why we're never executing our DDA::Prepare code?
+
+It seems so strange to me that ReprapFirmware/src/CAN/CanMotion.cpp isn't even compiled in our build...
+
+Can you please untangle this and help me understand why our CAN logs end up empty?
+...
+---------------
+
+The while-loop in DDARing::PrepareMoves() never runs because the ring never contains a provisional DDA in the first place.
+In my host run every G1 is being filtered out one layer higher, so getPointer always picks up the sentinel entry whose
+state stays empty, and firstUnpreparedMove->IsProvisional() quite rightly comes back false.
+
+If you trace the call stack back from the G-code reader you’ll see what is happening:
+
+- GCodes::ReadMove() only hands a move to the Move task when MovementState::segmentsLeft > 0. That flag is set by
+  GCodes::DoStraightMove() via NewMoveAvailable().
+- In my scenario DoStraightMove() never reaches NewMoveAvailable(). The very first G1 is rejected by the homing/
+  reachability checks – CheckEnoughAxesHomed() finds that none of the X/Y/Z/U axes are marked as virtually homed, so the
+  code throws a GCodeException and abandons the move before it can be queued.
+- Because the move is aborted at the G-code layer, Move::AddStandardMove() is never called, no DDA objects advance beyond
+  state == empty, and the ring that PrepareMoves() iterates over is empty. Hence firstUnpreparedMove->IsProvisional() is
+  always false and DDA::Prepare() is never entered. With no committed DDAs, you also won’t see any CAN traffic.
+
+You can confirm this by enabling move-debug (M111 P4 S1) or by watching reprap.GetGCodes().GetAxesHomed() after my startup
+sequence: the axes remain un-homed, so every coordinated move is discarded. Once you mark the axes as homed (either by
+running a suitable homing routine in the config, or by explicitly setting M564 H0 and G92 for the axes you care about)
+GCodes::DoStraightMove() will start queueing real moves again, and you’ll see firstUnpreparedMove->IsProvisional() flip to
+true and DDA::Prepare() executing.
+
+---------------
+
+

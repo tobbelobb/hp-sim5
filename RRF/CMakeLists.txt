@@ -49,7 +49,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/platform/PlatformHost.cpp
     ${SIM_ROOT_DIR}/can/CanCapture.cpp
     ${SIM_ROOT_DIR}/can/CanInterfaceHost.cpp
-    ${SIM_ROOT_DIR}/can/CanMotionHost.cpp
+    #${SIM_ROOT_DIR}/can/CanMotionHost.cpp
     ${SIM_ROOT_DIR}/storage/MassStorageHost.cpp
     ${SIM_ROOT_DIR}/storage/FileStoreHost.cpp
     #${SIM_ROOT_DIR}/src/devices_stub.cpp
@@ -145,6 +145,7 @@ set(RRF_SOURCES_TO_USE
     GCodes/CollisionAvoider.cpp
     Platform/PortControl.cpp
     ClosedLoop/ClosedLoop.cpp
+    CAN/CanMotion.cpp
 )
 
 # List of real .h files from ReprapFirmware we'll use for our builds.
