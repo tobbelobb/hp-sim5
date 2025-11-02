@@ -3434,3 +3434,21 @@ Also, the command seems to hang in an infinite loop or something. It takes up tw
   Next steps (optional):
 
   1. Re-run any broader regression suite you rely on, now that G4-style dwells complete under the host clock.
+
+----
+... lots of time and commits
+-----
+Great. But now execution stops forever upon hitting G4 (dwell). We fixed this command before, so if you jump to HEAD~2 you'll see a version that doesn't have this bug...
+
+  I also created run/vsd/sys/g4.g so you can test if your fix works with `./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/g4.g` but be careful to kill it after a few seconds, and notify if
+  the auto-kill triggered or not. The G4 will halt your debug run forever if your fix didn't work.
+-----
+
+• - Added a host-only include so the G-code buffer can reach the virtual clock helper (ReprapFirmware/src/GCodes/GCodeBuffer/GCodeBuffer.cpp:23).
+  - Short-circuited dwell handling on the host by advancing the 48 MHz virtual clock the requested amount and returning success immediately, preventing the wait loop from stalling (ReprapFirmware/src/GCodes/GCodeBuffer/GCodeBuffer.cpp:175).
+
+  Tests:
+
+  - timeout 5s ./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/g4.g (completed normally; timeout did not trigger)
+
+  You’re set to keep using G4 in batch runs; if you need longer dwells to appear in diagnostics, consider logging the simulated delay alongside the fast-forwarded time.
