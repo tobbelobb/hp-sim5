@@ -80,9 +80,6 @@ Platform::Platform() noexcept
 	  logFile(nullptr),
 	  logWriteInProgress(false)
 {
-	// Initialize the simulation clock
-	sim_micros = 0;
-
 	// Initialize all service locator pointers to null. They must be set by the simulator's main function.
 	reprap = nullptr;
 	gCodes = nullptr;
@@ -109,10 +106,8 @@ void Platform::Init() noexcept
 
 void Platform::Spin() noexcept
 {
-	// This is the heartbeat of the simulation. Each call advances the fake clock.
-	// The motion planner and other time-sensitive code depend on this.
-	// Advancing by 1ms (1000us) per tick is a reasonable starting point.
-	sim_micros += 1000;
+	// Keep the virtual clock in sync even if nobody queries it during this spin.
+	static_cast<void>(HostTiming::Micros64());
 	FlushLog();
 }
 
@@ -135,12 +130,21 @@ void Platform::EmergencyStop() noexcept
 
 uint32_t Platform::millis() const noexcept
 {
-	return sim_micros / 1000;
+	return HostTiming::Millis();
 }
 
 uint32_t Platform::micros() const noexcept
 {
-	return sim_micros;
+	return HostTiming::Micros();
+}
+
+double Platform::GetSimulationTimeSeconds() const noexcept
+{
+	if (reprap == nullptr || gCodes == nullptr || move == nullptr)
+	{
+		return 0.0;
+	}
+	return static_cast<double>(move->GetSimulationTime()) + static_cast<double>(gCodes->GetSimulationTime());
 }
 
 time_t Platform::GetDateTime() const noexcept

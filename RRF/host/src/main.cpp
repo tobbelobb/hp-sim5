@@ -11,6 +11,8 @@
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <Movement/Move.h>
 #include <General/String.h>
+#include <HostTiming.h>
+#include <GCodes/SimulationMode.h>
 
 #include <algorithm>
 #include <chrono>
@@ -19,7 +21,6 @@
 #include <iostream>
 #include <optional>
 #include <string>
-#include <thread>
 
 namespace
 {
@@ -42,7 +43,6 @@ namespace
 
 	constexpr unsigned int kDefaultCanBuffers = 64;
 	constexpr std::chrono::minutes kPrintTimeout{30};
-	constexpr std::chrono::milliseconds kSpinSleep{1};
 	constexpr unsigned int kIdleSettlingCycles = 25;
 
 	void PrintUsage() noexcept
@@ -527,7 +527,6 @@ namespace
 				return false;
 			}
 
-			std::this_thread::sleep_for(kSpinSleep);
 		}
 	}
 
@@ -652,6 +651,8 @@ int main(int argc, char** argv)
 
 		reprap.Init();
 		reprapInitialised = true;
+		reprap.GetGCodes().HostForceSimulationMode(SimulationMode::normal);
+		HostTiming::Reset();
 
 		bool success = true;
 		if (options.gcodeArgument)

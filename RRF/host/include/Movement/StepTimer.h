@@ -8,7 +8,7 @@
 #include <RepRapFirmware.h>
 
 #include <atomic>
-#include <chrono>
+#include <HostTiming.h>
 
 struct CanMessageTimeSync;
 
@@ -144,11 +144,8 @@ public:
 private:
 	static Ticks NowTicks() noexcept
 	{
-		using Clock = std::chrono::steady_clock;
-		static const auto start = Clock::now();
-		const auto elapsed = Clock::now() - start;
-		const auto micros = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-		return static_cast<Ticks>((micros * StepClockRate) / 1'000'000);
+		const uint64_t micros = HostTiming::Micros64();
+		return static_cast<Ticks>((micros * static_cast<uint64_t>(StepClockRate)) / 1'000'000ULL);
 	}
 
 	TimerCallbackFunction callback{nullptr};

@@ -3,46 +3,80 @@
 #include <Platform/Platform.h>
 
 #include <atomic>
-#include <chrono>
-#include <thread>
+#include <cmath>
 
 namespace HostTiming
 {
 	namespace
 	{
-		using Clock = std::chrono::steady_clock;
-
 		std::atomic<Platform*> g_platform{nullptr};
-		const Clock::time_point g_start = Clock::now();
+		std::atomic<uint64_t> g_virtualClockMicros{0};
+		std::atomic<uint64_t> g_lastSimulationMicros{0};
 
 		inline Platform* TryGetPlatform() noexcept
 		{
 			return g_platform.load(std::memory_order_acquire);
 		}
 
-		template <typename Duration>
-		uint64_t FallbackElapsed() noexcept
+		uint64_t CalculateSimulationMicros(Platform& platform) noexcept
 		{
-			return static_cast<uint64_t>(std::chrono::duration_cast<Duration>(Clock::now() - g_start).count());
+			const double totalSeconds = platform.GetSimulationTimeSeconds();
+			if (!std::isfinite(totalSeconds) || totalSeconds <= 0.0)
+			{
+				return 0;
+			}
+			const double micros = totalSeconds * 1'000'000.0;
+			if (!std::isfinite(micros) || micros <= 0.0)
+			{
+				return 0;
+			}
+			return static_cast<uint64_t>(micros);
+		}
+
+		void UpdateFromSimulation() noexcept
+		{
+			Platform* platform = TryGetPlatform();
+			if (platform == nullptr)
+			{
+				return;
+			}
+
+			const uint64_t simMicros = CalculateSimulationMicros(*platform);
+			uint64_t prevSim = g_lastSimulationMicros.load(std::memory_order_relaxed);
+
+			if (simMicros < prevSim)
+			{
+				g_lastSimulationMicros.store(simMicros, std::memory_order_relaxed);
+				g_virtualClockMicros.store(simMicros, std::memory_order_relaxed);
+				return;
+			}
+
+			while (simMicros > prevSim && !g_lastSimulationMicros.compare_exchange_weak(
+					   prevSim, simMicros, std::memory_order_relaxed, std::memory_order_relaxed))
+			{
+			}
+
+			if (simMicros > prevSim)
+			{
+				g_virtualClockMicros.fetch_add(simMicros - prevSim, std::memory_order_relaxed);
+			}
+		}
+
+		uint64_t GetVirtualMicros() noexcept
+		{
+			UpdateFromSimulation();
+			return g_virtualClockMicros.load(std::memory_order_relaxed);
 		}
 	}
 
 	uint32_t Millis() noexcept
 	{
-		if (auto* platform = TryGetPlatform())
-		{
-			return platform->millis();
-		}
-		return static_cast<uint32_t>(FallbackElapsed<std::chrono::milliseconds>());
+		return static_cast<uint32_t>(Millis64());
 	}
 
 	uint64_t Millis64() noexcept
 	{
-		if (auto* platform = TryGetPlatform())
-		{
-			return platform->micros() / 1000ULL;
-		}
-		return FallbackElapsed<std::chrono::milliseconds>();
+		return Micros64() / 1000ULL;
 	}
 
 	uint32_t Micros() noexcept
@@ -52,11 +86,22 @@ namespace HostTiming
 
 	uint64_t Micros64() noexcept
 	{
-		if (auto* platform = TryGetPlatform())
+		return GetVirtualMicros();
+	}
+
+	void Reset(uint64_t value) noexcept
+	{
+		g_lastSimulationMicros.store(value, std::memory_order_relaxed);
+		g_virtualClockMicros.store(value, std::memory_order_relaxed);
+	}
+
+	void AdvanceMicros(uint64_t value) noexcept
+	{
+		if (value == 0)
 		{
-			return platform->micros();
+			return;
 		}
-		return FallbackElapsed<std::chrono::microseconds>();
+		g_virtualClockMicros.fetch_add(value, std::memory_order_relaxed);
 	}
 
 	void DelayMilliseconds(uint32_t value) noexcept
@@ -65,7 +110,7 @@ namespace HostTiming
 		{
 			return;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(value));
+		AdvanceMicros(static_cast<uint64_t>(value) * 1000ULL);
 	}
 
 	void DelayMicroseconds(uint32_t value) noexcept
@@ -74,11 +119,12 @@ namespace HostTiming
 		{
 			return;
 		}
-		std::this_thread::sleep_for(std::chrono::microseconds(value));
+		AdvanceMicros(static_cast<uint64_t>(value));
 	}
 
 	void RegisterPlatform(Platform& platform) noexcept
 	{
+		Reset();
 		g_platform.store(&platform, std::memory_order_release);
 	}
 

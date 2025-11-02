@@ -96,6 +96,7 @@ public:
 	// The motion planner (DDA) depend on millis().
 	uint32_t millis() const noexcept;
 	uint32_t micros() const noexcept;
+	double GetSimulationTimeSeconds() const noexcept;
 	void Tick() noexcept {}
 
 	// --- Real-Time Clock ---
@@ -257,9 +258,6 @@ private:
 
 	// Fake hardware modules that Platform owns
 	EndstopsManager endstops;
-
-	// Our fake simulation clock
-	uint64_t sim_micros;
 
 	// Filesystem state
 	mutable ReadWriteLock sysDirLock;
