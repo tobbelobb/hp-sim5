@@ -143,5 +143,4 @@ G10 P0 S0 R0                                       ; Set initial tool 0 active a
 
 ; Miscellaneous
 M92 E415                                           ; Set extruder steps per mm
-M911 S10 R11 P"M913 X0 Y0 Z0 G91 M83 G1 Z3 E-5 F1000" ; set voltage thresholds and actions to run on power loss
 T0                                                 ; Select tool 0
