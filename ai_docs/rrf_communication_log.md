@@ -3407,3 +3407,30 @@ I'm expecting it will be very hard to get this thing to link, so see if you can 
   1. Restore/forward the necessary headers (e.g. make RepRap.h available under generated_sources) so the remaining host objects compile, then rerun the build.
   2. Once it links, run rrf_simulator --vsd <path> --run <file> to validate the new batch-mode flow.
   3. Keep in mind the repo already has one local commit; sync or rebase as needed before committing these changes.
+
+-----------------
+
+Currently, if I do `./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g` then my sys/config.g file gets overwritten by config_hangprinter.g.
+That's an annoying side effect.
+Can you make it not do that?
+
+Also, the command seems to hang in an infinite loop or something. It takes up two cpu cores at 100% each for an extended period of time. I killed it after a few seconds. It shouldn't hang, can you fix that as well?
+
+-----------------
+
+• Changes:
+
+  - RRF/host/src/main.cpp:217 now resolves --config without copying over sys/config.g, prints the chosen file cleanly, and clears any override when starting or shutting down to avoid lingering state.
+  - Added host-only config override plumbing in RRF/host/include/Storage/MassStorage.h:39 and RRF/host/storage/MassStorageHost.cpp:233,305,329, so reads of 0:/sys/config.g can be redirected to a user-supplied file while the original stays untouched.
+  - Introduced a deterministic host clock shim (RRF/host/include/HostTiming.h:1, RRF/host/src/HostTiming.cpp:1, RRF/host/HostTiming.h:1) and wired it through Core/Platform (RRF/host/include/Core.h:161, RRF/host/platform/PlatformHost.cpp:4,94) so
+    millis()/micros()/delay() advance during config dwells.
+  - Updated build wiring (RRF/CMakeLists.txt:45,373) to compile the new timing shim.
+
+  Tests:
+
+  - cd RRF && ./build/rrf_simulator --vsd run/vsd -c sys/config.g
+  - cd RRF && ./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g
+
+  Next steps (optional):
+
+  1. Re-run any broader regression suite you rely on, now that G4-style dwells complete under the host clock.
