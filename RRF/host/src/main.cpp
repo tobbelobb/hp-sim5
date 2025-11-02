@@ -21,6 +21,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -503,6 +504,16 @@ namespace
 			const bool fileBusy = fileBuffer->IsDoingFile() || !fileBuffer->IsCompletelyIdle();
 			const bool moveActive = !reprap.GetMove().NoLiveMovement();
 
+			static int debugCounter = 0;
+			if (debugCounter < 50)
+			{
+				std::cout << "wait loop: printing=" << printing
+						  << " fileBusy=" << fileBusy
+						  << " moveActive=" << moveActive
+						  << " idleCycles=" << idleCycles << '\n';
+				++debugCounter;
+			}
+
 			if (!printing && !fileBusy && !moveActive)
 			{
 				if (++idleCycles > kIdleSettlingCycles)
@@ -527,6 +538,52 @@ namespace
 				return false;
 			}
 
+		}
+	}
+
+	void VirtuallyHomeAxesIfNeeded() noexcept
+	{
+		auto& gcodes = reprap.GetGCodes();
+		if (gcodes.AllAxesAreHomed())
+		{
+			return;
+		}
+
+		const size_t visibleAxes = gcodes.GetVisibleAxes();
+		const char* axisLetters = gcodes.GetAxisLetters();
+
+		std::vector<std::string> homedAxes;
+		homedAxes.reserve(visibleAxes);
+
+		for (size_t axis = 0; axis < visibleAxes; ++axis)
+		{
+			if (!gcodes.IsAxisHomed(static_cast<unsigned int>(axis)))
+			{
+				gcodes.SetAxisIsHomed(static_cast<unsigned int>(axis));
+
+				if (axisLetters != nullptr && axisLetters[axis] != '\0')
+				{
+					homedAxes.emplace_back(1, axisLetters[axis]);
+				}
+				else
+				{
+					homedAxes.emplace_back("axis" + std::to_string(axis));
+				}
+			}
+		}
+
+		if (!homedAxes.empty())
+		{
+			std::cout << "Host marked axes as homed: ";
+			for (size_t i = 0; i < homedAxes.size(); ++i)
+			{
+				if (i != 0)
+				{
+					std::cout << ", ";
+				}
+				std::cout << homedAxes[i];
+			}
+			std::cout << '\n';
 		}
 	}
 
@@ -652,6 +709,7 @@ int main(int argc, char** argv)
 		reprap.Init();
 		reprapInitialised = true;
 		reprap.GetGCodes().HostForceSimulationMode(SimulationMode::off);
+		VirtuallyHomeAxesIfNeeded();
 		HostTiming::Reset();
 
 		bool success = true;
