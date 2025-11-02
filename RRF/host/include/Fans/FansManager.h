@@ -4,11 +4,14 @@
 
 #include <RepRapFirmware.h>
 #include <General/StringRef.h>
+#include <General/String.h>
 #include <GCodeResult.h>
+#include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <RTOSIface/RTOSIface.h>
 
 #include <array>
 #include <algorithm>
+#include <bitset>
 
 class GCodeBuffer;
 class Fan;
@@ -34,16 +37,212 @@ public:
 
 	bool CheckFans(bool) noexcept { return false; }
 
-	GCodeResult ConfigureFanPort(GCodeBuffer&, const StringRef& reply) THROWS(GCodeException)
+	GCodeResult ConfigureFanPort(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
 	{
-		reply.copy(UnsupportedMessage);
-		return GCodeResult::warningNotSupported;
+		const uint32_t fanNum = gb.GetLimitedUIValue('F', MaxFans);
+		auto& state = states[fanNum];
+		bool seenParameter = false;
+
+		if (gb.Seen('C'))
+		{
+			String<StringLength50> pinName;
+			gb.GetReducedString(pinName.GetRef());
+			if (pinName.EqualsIgnoreCase(NoPinName))
+			{
+				state = FanState{};
+				reply.printf("Fan %u deleted", (unsigned)fanNum);
+				return GCodeResult::ok;
+			}
+			state.portName.copy(pinName.c_str());
+			state.configured = true;
+			seenParameter = true;
+		}
+
+		if (gb.Seen('Q'))
+		{
+			state.frequency = static_cast<float>(gb.GetPwmFrequency());
+			state.configured = true;
+			seenParameter = true;
+		}
+
+		if (gb.Seen('K'))
+		{
+			state.pulsesPerRev = gb.GetLimitedFValue('K', MinFanPulsesPerRev, MaxFanPulsesPerRev);
+			state.configured = true;
+			seenParameter = true;
+		}
+
+		if (!seenParameter)
+		{
+			if (!state.configured)
+			{
+				reply.printf("Fan %u not configured", (unsigned)fanNum);
+			}
+			else
+			{
+				reply.printf(
+					"Fan %u: port %s, freq %.1f Hz, PPR %.1f",
+					(unsigned)fanNum,
+					state.portName.IsEmpty() ? "unset" : state.portName.c_str(),
+					(double)state.frequency,
+					(double)state.pulsesPerRev);
+			}
+		}
+
+		return GCodeResult::ok;
 	}
 
-	bool ConfigureFan(unsigned int, size_t, GCodeBuffer&, const StringRef& reply, bool& error) THROWS(GCodeException)
+	bool ConfigureFan(unsigned int mcode, size_t fanNum, GCodeBuffer& gb, const StringRef& reply, bool& error) THROWS(GCodeException)
 	{
-		reply.copy(UnsupportedMessage);
+		error = false;
+	if (!IsValidFan(fanNum))
+	{
+		reply.printf("Fan number %u out of range", static_cast<unsigned>(fanNum));
 		error = true;
+		return true;
+	}
+
+	auto& state = states[fanNum];
+	if (!state.configured)
+	{
+		state = FanState{};
+		state.configured = true;
+	}
+
+		bool handled = false;
+
+		if (mcode == 106)
+		{
+			if (gb.Seen('T'))
+			{
+				float temps[2] = { state.triggerTemperatures[0], state.triggerTemperatures[1] };
+				size_t count = 2;
+				gb.GetFloatArray(temps, count, true);
+				if (count >= 1)
+				{
+					state.triggerTemperatures[0] = temps[0];
+				}
+				if (count >= 2)
+				{
+					state.triggerTemperatures[1] = temps[1];
+				}
+				state.thermostatic = state.thermostatic || state.monitoredSensors.any();
+				handled = true;
+			}
+
+			if (gb.Seen('B'))
+			{
+				(void)gb.GetFValue();
+				handled = true;
+			}
+
+			if (gb.Seen('L'))
+			{
+				state.minSpeed = std::clamp(gb.GetPwmValue(), 0.0f, 1.0f);
+				if (state.maxSpeed < state.minSpeed)
+				{
+					state.maxSpeed = state.minSpeed;
+				}
+				handled = true;
+			}
+
+			if (gb.Seen('X'))
+			{
+				state.maxSpeed = std::clamp(gb.GetPwmValue(), state.minSpeed, 1.0f);
+				handled = true;
+			}
+
+			if (gb.Seen('H'))
+			{
+				int32_t sensors[MaxSensors];
+				size_t count = MaxSensors;
+				gb.GetIntArray(sensors, count, false);
+				state.monitoredSensors.reset();
+				bool foundSensor = false;
+				for (size_t i = 0; i < count; ++i)
+				{
+					const int32_t h = sensors[i];
+					if (h < 0)
+					{
+						continue;
+					}
+					if (h >= static_cast<int32_t>(MaxSensors))
+					{
+						reply.copy("Sensor number out of range");
+						error = true;
+					}
+					else
+					{
+						state.monitoredSensors.set(static_cast<size_t>(h));
+						foundSensor = true;
+					}
+				}
+				state.thermostatic = foundSensor;
+				if (!foundSensor)
+				{
+					state.speed = std::clamp(state.speed, state.minSpeed, state.maxSpeed);
+				}
+				else
+				{
+					state.speed = state.maxSpeed;
+				}
+				handled = true;
+			}
+
+			if (gb.Seen('C'))
+			{
+				String<MaxFanNameLength> name;
+				gb.GetQuotedString(name.GetRef());
+				state.name.copy(name.c_str());
+				handled = true;
+			}
+		}
+
+		const bool seenS = gb.Seen('S');
+		float desiredSpeed = 0.0f;
+		if (seenS)
+		{
+			desiredSpeed = gb.GetPwmValue();
+		}
+
+		if (handled || seenS)
+		{
+			if (seenS)
+			{
+				state.speed = std::clamp(desiredSpeed, state.minSpeed, state.maxSpeed);
+			}
+			state.configured = true;
+			return true;
+		}
+
+		reply.printf(
+			"Fan %u%s, speed %d%%, min %d%%, max %d%%",
+			static_cast<unsigned>(fanNum),
+			state.name.IsEmpty() ? "" : state.name.c_str(),
+			(int)(state.speed * 100.0f),
+			(int)(state.minSpeed * 100.0f),
+			(int)(state.maxSpeed * 100.0f));
+		if (state.thermostatic)
+		{
+			reply.catf(
+				", thermostatic %.1f:%.1fC sensors:",
+				(double)state.triggerTemperatures[0],
+				(double)state.triggerTemperatures[1]);
+			bool first = true;
+			for (size_t i = 0; i < MaxSensors; ++i)
+			{
+				if (state.monitoredSensors.test(i))
+				{
+					reply.catf("%s%u", first ? " " : ",", static_cast<unsigned>(i));
+					first = false;
+				}
+			}
+			if (first)
+			{
+				reply.cat(" none");
+			}
+		}
+
 		return false;
 	}
 
@@ -140,8 +339,17 @@ private:
 	struct FanState
 	{
 		bool configured{false};
+		bool thermostatic{false};
 		float speed{0.0f};
+		float minSpeed{0.0f};
+		float maxSpeed{1.0f};
+		float triggerTemperatures[2]{DefaultHotEndFanTemperature, DefaultHotEndFanTemperature};
+		float frequency{static_cast<float>(DefaultFanPwmFreq)};
+		float pulsesPerRev{DefaultFanTachoPulsesPerRev};
+		std::bitset<MaxSensors> monitoredSensors{};
 		int32_t rpm{0};
+		String<StringLength50> portName{};
+		String<MaxFanNameLength> name{};
 	};
 
 	float SetState(size_t fanNum, float speed) noexcept
@@ -152,7 +360,9 @@ private:
 		}
 		auto& state = states[fanNum];
 		state.configured = true;
-		state.speed = std::clamp(speed, 0.0f, 1.0f);
+		const float lower = state.minSpeed;
+		const float upper = std::max(state.maxSpeed, lower);
+		state.speed = std::clamp(speed, lower, upper);
 		state.rpm = 0;
 		return state.speed;
 	}

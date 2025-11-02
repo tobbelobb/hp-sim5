@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <General/String.h>
+#include <General/String.h>
 
 #include <RepRapFirmware.h>
 #include <TemperatureError.h>
@@ -144,6 +147,31 @@ protected:
 	const ObjectModelArrayTableEntry *_ecv_null GetObjectModelArrayEntry(unsigned int) const noexcept override { return nullptr; }
 
 private:
+	struct SensorState
+	{
+		bool configured{false};
+		String<StringLength50> portName{};
+		String<StringLength50> typeName{};
+		float lastTemperature{AmbientTemperature};
+	};
+
+	struct HeaterConfig
+	{
+		bool created{false};
+		String<StringLength50> portName{};
+		int sensorNumber{-1};
+		float pwmFrequency{static_cast<float>(DefaultHeaterPwmFreq)};
+		bool usePid{true};
+		float pwmLimit{1.0f};
+		float modelGain{0.0f};
+		float timeConstant{0.0f};
+		float deadTime{0.0f};
+		float supplyVoltage{0.0f};
+		float lowTemperatureLimit{NEARLY_ABS_ZERO};
+		float highTemperatureLimit{500.0f};
+		float faultTimeout{0.0f};
+	};
+
 	struct HeaterState
 	{
 		bool configured{false};
@@ -153,7 +181,7 @@ private:
 		float currentTemperature{AmbientTemperature};
 		float activeTemperature{0.0f};
 		float standbyTemperature{0.0f};
-		float minTemperatureLimit{0.0f};
+		float minTemperatureLimit{NEARLY_ABS_ZERO};
 		float maxTemperatureLimit{500.0f};
 		float averagePwm{0.0f};
 		const Tool *_ecv_null lastStandbyTool{nullptr};
@@ -169,6 +197,13 @@ private:
 	template <size_t N>
 	bool HeaterMatchesList(int heater, const std::array<int8_t, N>& list) const noexcept;
 
+	SensorState& GetSensorState(size_t sensor) noexcept { return sensorStates[sensor]; }
+	const SensorState& GetSensorState(size_t sensor) const noexcept { return sensorStates[sensor]; }
+	HeaterConfig& GetHeaterConfig(size_t heater) noexcept { return heaterConfigs[heater]; }
+	const HeaterConfig& GetHeaterConfig(size_t heater) const noexcept { return heaterConfigs[heater]; }
+
+	std::array<SensorState, MaxSensors> sensorStates{};
+	std::array<HeaterConfig, MaxHeaters> heaterConfigs{};
 	std::array<HeaterState, MaxHeaters> heaterStates{};
 	std::array<int8_t, MaxBedHeaters> bedHeaters{};
 	std::array<int8_t, MaxChamberHeaters> chamberHeaters{};
@@ -183,6 +218,15 @@ inline Heat::Heat() noexcept
 {
 	bedHeaters.fill(-1);
 	chamberHeaters.fill(-1);
+	for (auto& sensor : sensorStates)
+	{
+		sensor.lastTemperature = AmbientTemperature;
+	}
+	for (auto& config : heaterConfigs)
+	{
+		config.lowTemperatureLimit = NEARLY_ABS_ZERO;
+		config.highTemperatureLimit = 500.0f;
+	}
 }
 
 [[noreturn]] inline void Heat::HeaterTask() noexcept
@@ -350,9 +394,70 @@ inline GCodeResult Heat::ResetFault(int heater, const StringRef&) noexcept
 	return GCodeResult::ok;
 }
 
-inline GCodeResult Heat::SetOrReportHeaterModel(GCodeBuffer&, const StringRef&) THROWS(GCodeException)
+inline GCodeResult Heat::SetOrReportHeaterModel(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
 {
-	return GCodeResult::warningNotSupported;
+	const unsigned int heater = gb.GetLimitedUIValue('H', MaxHeaters);
+	auto& config = GetHeaterConfig(heater);
+	auto& state = GetState(static_cast<int>(heater));
+	bool seenParameter = false;
+
+	if (gb.Seen('B'))
+	{
+		config.usePid = (gb.GetIValue() == 0);
+		seenParameter = true;
+	}
+
+	bool seen = false;
+	float value = 0.0f;
+	if (gb.TryGetFValue('S', value, seen) && seen)
+	{
+		config.pwmLimit = std::clamp(value, 0.0f, 1.0f);
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('A', value, seen) && seen)
+	{
+		config.modelGain = value;
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('C', value, seen) && seen)
+	{
+		config.timeConstant = value;
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('D', value, seen) && seen)
+	{
+		config.deadTime = value;
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('V', value, seen) && seen)
+	{
+		config.supplyVoltage = value;
+		seenParameter = true;
+	}
+
+	if (seenParameter)
+	{
+		config.created = true;
+		state.configured = true;
+	}
+	else
+	{
+		reply.printf(
+			"Heater %u model: %s, S=%.2f, A=%.2f, C=%.2f, D=%.2f, V=%.1f",
+			heater,
+			config.usePid ? "PID" : "bang-bang",
+			(double)config.pwmLimit,
+			(double)config.modelGain,
+			(double)config.timeConstant,
+			(double)config.deadTime,
+			(double)config.supplyVoltage);
+	}
+
+	return GCodeResult::ok;
 }
 
 inline GCodeResult Heat::TuneHeater(GCodeBuffer&, const StringRef&) THROWS(GCodeException)
@@ -360,9 +465,95 @@ inline GCodeResult Heat::TuneHeater(GCodeBuffer&, const StringRef&) THROWS(GCode
 	return GCodeResult::warningNotSupported;
 }
 
-inline GCodeResult Heat::ConfigureSensor(GCodeBuffer&, const StringRef&) THROWS(GCodeException)
+inline GCodeResult Heat::ConfigureSensor(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
 {
-	return GCodeResult::warningNotSupported;
+	gb.MustSee('S');
+	const unsigned sensorNum = gb.GetUIValue();
+	if (sensorNum >= MaxSensors)
+	{
+		reply.copy("Sensor number out of range");
+		return GCodeResult::error;
+	}
+
+	auto& sensor = GetSensorState(sensorNum);
+	bool anyParameter = false;
+	bool changed = false;
+
+	if (gb.Seen('P'))
+	{
+		String<StringLength50> port;
+		gb.GetReducedString(port.GetRef());
+		if (port.EqualsIgnoreCase(NoPinName))
+		{
+			sensor = SensorState{};
+			sensor.lastTemperature = AmbientTemperature;
+			return GCodeResult::ok;
+		}
+
+		sensor.portName.copy(port.c_str());
+		sensor.configured = true;
+		anyParameter = true;
+		changed = true;
+	}
+
+	if (gb.Seen('Y'))
+	{
+		String<StringLength50> type;
+		gb.GetReducedString(type.GetRef());
+		sensor.typeName.copy(type.c_str());
+		sensor.configured = true;
+		anyParameter = true;
+		changed = true;
+	}
+
+	bool seen = false;
+	float value = 0.0f;
+	if (gb.TryGetFValue('T', value, seen) && seen)
+	{
+		anyParameter = true;
+		changed = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('B', value, seen) && seen)
+	{
+		anyParameter = true;
+		changed = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('C', value, seen) && seen)
+	{
+		anyParameter = true;
+		changed = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('R', value, seen) && seen)
+	{
+		anyParameter = true;
+		changed = true;
+	}
+
+	if (changed && !sensor.configured)
+	{
+		sensor.configured = true;
+	}
+
+	if (!anyParameter)
+	{
+		if (!sensor.configured)
+		{
+			reply.printf("Sensor %u not configured", sensorNum);
+		}
+		else
+		{
+			reply.printf(
+			"Sensor %u type %s reading %.1fC",
+			sensorNum,
+			(sensor.typeName.IsEmpty()) ? "unknown" : sensor.typeName.c_str(),
+			(double)sensor.lastTemperature);
+		}
+	}
+
+	return GCodeResult::ok;
 }
 
 inline GCodeResult Heat::SetPidParameters(unsigned int, GCodeBuffer&, const StringRef&) THROWS(GCodeException)
@@ -370,9 +561,50 @@ inline GCodeResult Heat::SetPidParameters(unsigned int, GCodeBuffer&, const Stri
 	return GCodeResult::warningNotSupported;
 }
 
-inline GCodeResult Heat::HandleM143(GCodeBuffer&, const StringRef&) THROWS(GCodeException)
+inline GCodeResult Heat::HandleM143(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
 {
-	return GCodeResult::warningNotSupported;
+	const size_t heaterNumber = (gb.Seen('H')) ? gb.GetLimitedUIValue('H', MaxHeaters) : 1;
+	if (!IsValidHeater(static_cast<int>(heaterNumber)))
+	{
+		reply.printf("Heater %zu does not exist", heaterNumber);
+		return GCodeResult::error;
+	}
+
+	auto& config = GetHeaterConfig(heaterNumber);
+	auto& state = GetState(static_cast<int>(heaterNumber));
+	bool seenParameter = false;
+
+	bool seen = false;
+	float value = 0.0f;
+	if (gb.TryGetFValue('S', value, seen) && seen)
+	{
+		config.highTemperatureLimit = value;
+		state.maxTemperatureLimit = value;
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('L', value, seen) && seen)
+	{
+		config.lowTemperatureLimit = value;
+		state.minTemperatureLimit = value;
+		seenParameter = true;
+	}
+
+		if (!seenParameter)
+		{
+			reply.printf(
+			"Heater %zu limits %.1f to %.1fC",
+			heaterNumber,
+			(double)state.minTemperatureLimit,
+			(double)state.maxTemperatureLimit);
+	}
+	else
+	{
+		config.created = true;
+		state.configured = true;
+	}
+
+	return GCodeResult::ok;
 }
 
 inline ReadLockedPointer<TemperatureSensor> Heat::FindSensor(int) const noexcept
@@ -385,10 +617,20 @@ inline ReadLockedPointer<TemperatureSensor> Heat::FindSensorAtOrAbove(unsigned i
 	return ReadLockedPointer<TemperatureSensor>(nullptr, nullptr);
 }
 
-inline float Heat::GetSensorTemperature(int, TemperatureError& err) const noexcept
+inline float Heat::GetSensorTemperature(int sensorNum, TemperatureError& err) const noexcept
 {
+	if (sensorNum >= 0 && static_cast<size_t>(sensorNum) < sensorStates.size())
+	{
+		const auto& sensor = GetSensorState(static_cast<size_t>(sensorNum));
+		if (sensor.configured)
+		{
+			err = TemperatureError::ok;
+			return sensor.lastTemperature;
+		}
+	}
+
 	err = TemperatureError::unknownSensor;
-	return 0.0f;
+	return AmbientTemperature;
 }
 
 inline float Heat::GetHighestTemperatureLimit() const noexcept
@@ -498,14 +740,119 @@ inline bool Heat::HeaterAtSetTemperature(int heater, bool, float tolerance, bool
 	return std::fabs(state.currentTemperature - target) <= tolerance;
 }
 
-inline GCodeResult Heat::ConfigureHeater(GCodeBuffer&, const StringRef&) THROWS(GCodeException)
+inline GCodeResult Heat::ConfigureHeater(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
 {
-	return GCodeResult::warningNotSupported;
+	const size_t heater = gb.GetLimitedUIValue('H', MaxHeaters);
+	auto& config = GetHeaterConfig(heater);
+	auto& state = GetState(static_cast<int>(heater));
+	bool seenParameter = false;
+
+	if (gb.Seen('C'))
+	{
+		String<StringLength50> pinName;
+		gb.GetReducedString(pinName.GetRef());
+		if (pinName.EqualsIgnoreCase(NoPinName))
+		{
+			SwitchOff(static_cast<int>(heater));
+			config = HeaterConfig{};
+			config.lowTemperatureLimit = NEARLY_ABS_ZERO;
+			config.highTemperatureLimit = 500.0f;
+			state = HeaterState{};
+			state.minTemperatureLimit = NEARLY_ABS_ZERO;
+			state.maxTemperatureLimit = 500.0f;
+			reply.printf("Heater %zu deleted", heater);
+			return GCodeResult::ok;
+		}
+
+		config.portName.copy(pinName.c_str());
+		config.created = true;
+		state.configured = true;
+		seenParameter = true;
+	}
+
+	if (gb.Seen('T'))
+	{
+		const unsigned sensorNum = gb.GetUIValue();
+		if (sensorNum >= MaxSensors || !GetSensorState(sensorNum).configured)
+		{
+			reply.printf("Sensor %u not configured", sensorNum);
+			return GCodeResult::error;
+		}
+		config.sensorNumber = static_cast<int>(sensorNum);
+		config.created = true;
+		state.configured = true;
+		seenParameter = true;
+	}
+
+	if (gb.Seen('Q'))
+	{
+		config.pwmFrequency = static_cast<float>(gb.GetPwmFrequency());
+		config.created = true;
+		state.configured = true;
+		seenParameter = true;
+	}
+
+	state.minTemperatureLimit = config.lowTemperatureLimit;
+	state.maxTemperatureLimit = config.highTemperatureLimit;
+
+	if (!seenParameter)
+	{
+		if (!config.created)
+		{
+			reply.printf("Heater %zu not configured", heater);
+		}
+		else
+		{
+			reply.printf(
+			"Heater %zu: port %s, sensor %d, freq %.1f Hz",
+			heater,
+			config.portName.IsEmpty() ? "unset" : config.portName.c_str(),
+			config.sensorNumber,
+			(double)config.pwmFrequency);
+		}
+	}
+
+	return GCodeResult::ok;
 }
 
-inline GCodeResult Heat::ConfigureHeaterMonitoring(size_t, GCodeBuffer&, const StringRef&) THROWS(GCodeException)
+inline GCodeResult Heat::ConfigureHeaterMonitoring(size_t heater, GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
 {
-	return GCodeResult::warningNotSupported;
+	if (heater >= MaxHeaters)
+	{
+		reply.copy("Heater number out of range");
+		return GCodeResult::error;
+	}
+
+	auto& config = GetHeaterConfig(heater);
+	bool seenParameter = false;
+	bool seen = false;
+	float value = 0.0f;
+	if (gb.TryGetFValue('S', value, seen) && seen)
+	{
+		config.faultTimeout = value;
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('P', value, seen) && seen)
+	{
+		seenParameter = true;
+	}
+	seen = false;
+	if (gb.TryGetFValue('T', value, seen) && seen)
+	{
+		seenParameter = true;
+	}
+
+	if (!seenParameter)
+	{
+		reply.printf("Heater %zu fault timeout %.1f s", heater, (double)config.faultTimeout);
+	}
+	else
+	{
+		config.created = true;
+	}
+
+	return GCodeResult::ok;
 }
 
 inline void Heat::SetTemperature(int heater, float t, bool activeNotStandby) THROWS(GCodeException)
@@ -516,6 +863,7 @@ inline void Heat::SetTemperature(int heater, float t, bool activeNotStandby) THR
 	}
 
 	auto& state = GetState(heater);
+	const auto& config = GetHeaterConfig(static_cast<size_t>(heater));
 	state.configured = true;
 	state.enabled = (t > 0.0f);
 	state.averagePwm = state.enabled ? 1.0f : 0.0f;
@@ -543,6 +891,15 @@ inline void Heat::SetTemperature(int heater, float t, bool activeNotStandby) THR
 	{
 		state.currentTemperature = 0.0f;
 	}
+
+	if (config.sensorNumber >= 0 && static_cast<size_t>(config.sensorNumber) < sensorStates.size())
+	{
+		auto& sensor = GetSensorState(static_cast<size_t>(config.sensorNumber));
+		if (sensor.configured)
+		{
+			sensor.lastTemperature = state.currentTemperature;
+		}
+	}
 }
 
 inline GCodeResult Heat::SetActiveOrStandby(int heater, const Tool *_ecv_null tool, bool active, const StringRef&) noexcept
@@ -567,6 +924,16 @@ inline GCodeResult Heat::SetActiveOrStandby(int heater, const Tool *_ecv_null to
 		state.lastStandbyTool = tool;
 	}
 
+	const auto& config = GetHeaterConfig(static_cast<size_t>(heater));
+	if (config.sensorNumber >= 0 && static_cast<size_t>(config.sensorNumber) < sensorStates.size())
+	{
+		auto& sensor = GetSensorState(static_cast<size_t>(config.sensorNumber));
+		if (sensor.configured)
+		{
+			sensor.lastTemperature = state.currentTemperature;
+		}
+	}
+
 	return GCodeResult::ok;
 }
 
@@ -579,8 +946,17 @@ inline void Heat::SwitchOff(int heater) noexcept
 	auto& state = GetState(heater);
 	state.enabled = false;
 	state.status = HeaterStatus::off;
-	state.currentTemperature = 0.0f;
+	state.currentTemperature = AmbientTemperature;
 	state.averagePwm = 0.0f;
+	const auto& config = GetHeaterConfig(static_cast<size_t>(heater));
+	if (config.sensorNumber >= 0 && static_cast<size_t>(config.sensorNumber) < sensorStates.size())
+	{
+		auto& sensor = GetSensorState(static_cast<size_t>(config.sensorNumber));
+		if (sensor.configured)
+		{
+			sensor.lastTemperature = AmbientTemperature;
+		}
+	}
 }
 
 inline void Heat::SetFanFeedForwardPwm(unsigned int, float) const noexcept

@@ -20,4 +20,4 @@ RRF/host/vsd/logs/*.log
 RRF/build
 RRF/.cache
 */compile_commands.json
-run/vsd/logs/first.jsonl
+RRF/run/vsd/logs/first.jsonl
