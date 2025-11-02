@@ -3,9 +3,9 @@
 #include <can/CanCapture.h>
 #include <CAN/CanMotion.h>
 #include <CanMessageBuffer.h>
+#include <Platform/RepRap.h>
 #include <PrintMonitor/PrintMonitor.h>
 #define private public
-#include <Platform/RepRap.h>
 #include <GCodes/GCodes.h>
 #undef private
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
@@ -495,20 +495,20 @@ namespace
 		const auto start = std::chrono::steady_clock::now();
 		unsigned int idleCycles = 0;
 
-	for (;;)
-	{
-		reprap.Spin();
-
-		const bool printing = reprap.GetPrintMonitor().IsPrinting();
-		const bool fileBusy = fileBuffer->IsDoingFile() || !fileBuffer->IsCompletelyIdle();
-		const bool moveActive = !reprap.GetMove().NoLiveMovement();
-
-		if (!printing && !fileBusy && !moveActive)
+		for (;;)
 		{
-			if (++idleCycles > kIdleSettlingCycles)
+			reprap.Spin();
+
+			const bool printing = reprap.GetPrintMonitor().IsPrinting();
+			const bool fileBusy = fileBuffer->IsDoingFile() || !fileBuffer->IsCompletelyIdle();
+			const bool moveActive = !reprap.GetMove().NoLiveMovement();
+
+			if (!printing && !fileBusy && !moveActive)
 			{
-				return true;
-			}
+				if (++idleCycles > kIdleSettlingCycles)
+				{
+					return true;
+				}
 			}
 			else
 			{
@@ -528,33 +528,6 @@ namespace
 			}
 
 		}
-	}
-
-	void ForceSimulationMode(SimulationMode mode) noexcept
-	{
-		GCodes& gcodes = reprap.GetGCodes();
-		if (gcodes.simulationMode == mode)
-		{
-			return;
-		}
-
-		if (mode == SimulationMode::off)
-		{
-			gcodes.simulationMode = SimulationMode::off;
-			gcodes.simulationTime = 0.0f;
-			reprap.GetMove().Simulate(SimulationMode::off);
-			return;
-		}
-
-		gcodes.simulationMode = mode;
-		gcodes.simulationTime = 0.0f;
-		gcodes.exitSimulationWhenFileComplete = false;
-		gcodes.updateFileWhenSimulationComplete = false;
-		const AxesBitmap allAxes = AxesBitmap::MakeLowestNBits(gcodes.GetTotalAxes());
-		gcodes.axesVirtuallyHomed = allAxes;
-		gcodes.axesHomed |= allAxes;
-		MovementState::SaveEndpointsBeforeSimulating();
-		reprap.GetMove().Simulate(mode);
 	}
 
 	void ReportFinalPosition() noexcept
@@ -585,9 +558,9 @@ namespace
 		reprap.GetPrintMonitor().StartingPrint(relativePath.c_str());
 		reprap.GetGCodes().StartPrinting(true);
 
-	const auto start = std::chrono::steady_clock::now();
-	const bool ok = WaitForPrintCompletion();
-	const auto stop = std::chrono::steady_clock::now();
+		const auto start = std::chrono::steady_clock::now();
+		const bool ok = WaitForPrintCompletion();
+		const auto stop = std::chrono::steady_clock::now();
 
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 		if (ok)
@@ -673,12 +646,12 @@ int main(int argc, char** argv)
 			return 1;
 		}
 
-	CanMessageBuffer::Init(kDefaultCanBuffers);
-	CanMotion::Init();
-	reprap.Init();
-	reprapInitialised = true;
-	ForceSimulationMode(SimulationMode::off);
-	HostTiming::Reset();
+		CanMessageBuffer::Init(kDefaultCanBuffers);
+		CanMotion::Init();
+
+		reprap.Init();
+		reprapInitialised = true;
+		HostTiming::Reset();
 
 		bool success = true;
 		if (options.gcodeArgument)
