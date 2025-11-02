@@ -651,6 +651,7 @@ int main(int argc, char** argv)
 
 		reprap.Init();
 		reprapInitialised = true;
+		reprap.GetGCodes().HostForceSimulationMode(SimulationMode::normal);
 		HostTiming::Reset();
 
 		bool success = true;
