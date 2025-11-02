@@ -142,10 +142,14 @@ public:
 	}
 
 private:
+	static constexpr uint32_t MasterClocksPerStepTick = HostTiming::StepClockFrequencyHz/StepClockRate;
+	static_assert(StepClockRate != 0, "Step clock rate must be non-zero");
+	static_assert(HostTiming::StepClockFrequencyHz % StepClockRate == 0, "Master clock must be integer multiple of step clock rate");
+
 	static Ticks NowTicks() noexcept
 	{
-		const uint64_t micros = HostTiming::Micros64();
-		return static_cast<Ticks>((micros * static_cast<uint64_t>(StepClockRate)) / 1'000'000ULL);
+		const uint64_t stepClocks = HostTiming::StepClocks64();
+		return static_cast<Ticks>(stepClocks / MasterClocksPerStepTick);
 	}
 
 	TimerCallbackFunction callback{nullptr};

@@ -10,27 +10,34 @@ namespace HostTiming
 	namespace
 	{
 		std::atomic<Platform*> g_platform{nullptr};
-		std::atomic<uint64_t> g_virtualClockMicros{0};
-		std::atomic<uint64_t> g_lastSimulationMicros{0};
+		std::atomic<uint64_t> g_virtualClockTicks{0};
+		std::atomic<uint64_t> g_lastSimulationTicks{0};
+
+		static_assert(StepClockFrequencyHz % 1'000'000U == 0, "Step clock frequency must be integer multiple of 1MHz");
+		static_assert(StepClockFrequencyHz % 1'000U == 0, "Step clock frequency must be integer multiple of 1kHz");
+		constexpr uint64_t StepClocksPerMicrosecond = StepClockFrequencyHz / 1'000'000ULL;
+		constexpr uint64_t StepClocksPerMillisecond = StepClockFrequencyHz / 1'000ULL;
+		static_assert(StepClocksPerMicrosecond > 0, "Step clock frequency must be >= 1MHz");
+		static_assert(StepClocksPerMillisecond > 0, "Step clock frequency must be >= 1kHz");
 
 		inline Platform* TryGetPlatform() noexcept
 		{
 			return g_platform.load(std::memory_order_acquire);
 		}
 
-		uint64_t CalculateSimulationMicros(Platform& platform) noexcept
+		uint64_t CalculateSimulationTicks(Platform& platform) noexcept
 		{
 			const double totalSeconds = platform.GetSimulationTimeSeconds();
 			if (!std::isfinite(totalSeconds) || totalSeconds <= 0.0)
 			{
 				return 0;
 			}
-			const double micros = totalSeconds * 1'000'000.0;
-			if (!std::isfinite(micros) || micros <= 0.0)
+			const double ticks = totalSeconds * static_cast<double>(StepClockFrequencyHz);
+			if (!std::isfinite(ticks) || ticks <= 0.0)
 			{
 				return 0;
 			}
-			return static_cast<uint64_t>(micros);
+			return static_cast<uint64_t>(ticks);
 		}
 
 		void UpdateFromSimulation() noexcept
@@ -41,32 +48,42 @@ namespace HostTiming
 				return;
 			}
 
-			const uint64_t simMicros = CalculateSimulationMicros(*platform);
-			uint64_t prevSim = g_lastSimulationMicros.load(std::memory_order_relaxed);
+			const uint64_t simTicks = CalculateSimulationTicks(*platform);
+			uint64_t prevSim = g_lastSimulationTicks.load(std::memory_order_relaxed);
 
-			if (simMicros < prevSim)
+			if (simTicks < prevSim)
 			{
-				g_lastSimulationMicros.store(simMicros, std::memory_order_relaxed);
-				g_virtualClockMicros.store(simMicros, std::memory_order_relaxed);
+				g_lastSimulationTicks.store(simTicks, std::memory_order_relaxed);
+				g_virtualClockTicks.store(simTicks, std::memory_order_relaxed);
 				return;
 			}
 
-			while (simMicros > prevSim && !g_lastSimulationMicros.compare_exchange_weak(
-					   prevSim, simMicros, std::memory_order_relaxed, std::memory_order_relaxed))
+			while (simTicks > prevSim && !g_lastSimulationTicks.compare_exchange_weak(
+					   prevSim, simTicks, std::memory_order_relaxed, std::memory_order_relaxed))
 			{
 			}
 
-			if (simMicros > prevSim)
+			if (simTicks > prevSim)
 			{
-				g_virtualClockMicros.fetch_add(simMicros - prevSim, std::memory_order_relaxed);
+				g_virtualClockTicks.fetch_add(simTicks - prevSim, std::memory_order_relaxed);
 			}
 		}
 
-		uint64_t GetVirtualMicros() noexcept
+		uint64_t GetVirtualStepClocks() noexcept
 		{
 			UpdateFromSimulation();
-			return g_virtualClockMicros.load(std::memory_order_relaxed);
+			return g_virtualClockTicks.load(std::memory_order_relaxed);
 		}
+	}
+
+	uint64_t StepClocks64() noexcept
+	{
+		return GetVirtualStepClocks();
+	}
+
+	uint32_t StepClocks() noexcept
+	{
+		return static_cast<uint32_t>(StepClocks64());
 	}
 
 	uint32_t Millis() noexcept
@@ -86,13 +103,22 @@ namespace HostTiming
 
 	uint64_t Micros64() noexcept
 	{
-		return GetVirtualMicros();
+		return StepClocks64() / StepClocksPerMicrosecond;
 	}
 
-	void Reset(uint64_t value) noexcept
+	void Reset(uint64_t stepClocks) noexcept
 	{
-		g_lastSimulationMicros.store(value, std::memory_order_relaxed);
-		g_virtualClockMicros.store(value, std::memory_order_relaxed);
+		g_lastSimulationTicks.store(stepClocks, std::memory_order_relaxed);
+		g_virtualClockTicks.store(stepClocks, std::memory_order_relaxed);
+	}
+
+	void AdvanceStepClocks(uint64_t value) noexcept
+	{
+		if (value == 0)
+		{
+			return;
+		}
+		g_virtualClockTicks.fetch_add(value, std::memory_order_relaxed);
 	}
 
 	void AdvanceMicros(uint64_t value) noexcept
@@ -101,7 +127,7 @@ namespace HostTiming
 		{
 			return;
 		}
-		g_virtualClockMicros.fetch_add(value, std::memory_order_relaxed);
+		AdvanceStepClocks(value * StepClocksPerMicrosecond);
 	}
 
 	void DelayMilliseconds(uint32_t value) noexcept
@@ -110,7 +136,7 @@ namespace HostTiming
 		{
 			return;
 		}
-		AdvanceMicros(static_cast<uint64_t>(value) * 1000ULL);
+		AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMillisecond);
 	}
 
 	void DelayMicroseconds(uint32_t value) noexcept
@@ -119,7 +145,7 @@ namespace HostTiming
 		{
 			return;
 		}
-		AdvanceMicros(static_cast<uint64_t>(value));
+		AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMicrosecond);
 	}
 
 	void RegisterPlatform(Platform& platform) noexcept

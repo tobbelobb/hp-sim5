@@ -138,6 +138,11 @@ uint32_t Platform::micros() const noexcept
 	return HostTiming::Micros();
 }
 
+uint64_t Platform::GetStepClockCount() const noexcept
+{
+	return HostTiming::StepClocks64();
+}
+
 double Platform::GetSimulationTimeSeconds() const noexcept
 {
 	if (reprap == nullptr || gCodes == nullptr || move == nullptr)

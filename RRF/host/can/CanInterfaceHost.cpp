@@ -2,6 +2,8 @@
 
 #include "CanCapture.h"
 #include <CanMessageBuffer.h>
+#include <HostTiming.h>
+#include <RepRapFirmware.h>
 
 #if SUPPORT_CAN_EXPANSION
 
@@ -9,6 +11,23 @@ namespace CanInterface
 {
 namespace
 {
+constexpr uint64_t MasterClocksPerStepTick = HostTiming::StepClockFrequencyHz/StepClockRate;
+static_assert(StepClockRate != 0, "Step clock rate must not be zero");
+static_assert(HostTiming::StepClockFrequencyHz % StepClockRate == 0, "Master clock must be multiple of step clock rate");
+
+inline void ConvertMovementToMasterClock(CanMessageMovementLinearShaped& msg) noexcept
+{
+	if (MasterClocksPerStepTick == 1)
+	{
+		return;
+	}
+
+	msg.whenToExecute = static_cast<uint32_t>(static_cast<uint64_t>(msg.whenToExecute) * MasterClocksPerStepTick);
+	msg.accelerationClocks = static_cast<uint32_t>(static_cast<uint64_t>(msg.accelerationClocks) * MasterClocksPerStepTick);
+	msg.steadyClocks = static_cast<uint32_t>(static_cast<uint64_t>(msg.steadyClocks) * MasterClocksPerStepTick);
+	msg.decelClocks = static_cast<uint32_t>(static_cast<uint64_t>(msg.decelClocks) * MasterClocksPerStepTick);
+}
+
 inline void FreeBuffer(CanMessageBuffer *&buf) noexcept
 {
 	if (buf != nullptr)
@@ -47,6 +66,14 @@ void SendMotion(CanMessageBuffer *buf) noexcept
 {
 	if (buf != nullptr)
 	{
+		if (buf->id.MsgType() == CanMessageType::movementLinearShaped)
+		{
+			ConvertMovementToMasterClock(buf->msg.moveLinearShaped);
+		}
+		else if (buf->id.MsgType() == CanMessageType::revertPosition && MasterClocksPerStepTick != 1)
+		{
+			buf->msg.revertPosition.clocksAllowed = static_cast<uint32_t>(static_cast<uint64_t>(buf->msg.revertPosition.clocksAllowed) * MasterClocksPerStepTick);
+		}
 		HostCanCapture::LogMotion(*buf);
 		CanMessageBuffer::Free(buf);
 	}

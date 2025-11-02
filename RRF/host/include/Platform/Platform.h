@@ -96,6 +96,7 @@ public:
 	// The motion planner (DDA) depend on millis().
 	uint32_t millis() const noexcept;
 	uint32_t micros() const noexcept;
+	uint64_t GetStepClockCount() const noexcept;
 	double GetSimulationTimeSeconds() const noexcept;
 	void Tick() noexcept {}
 
