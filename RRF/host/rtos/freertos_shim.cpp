@@ -26,6 +26,14 @@ namespace
 using Clock = std::chrono::steady_clock;
 constexpr TickType_t TicksPerSecond = 1000;  // 1 tick == 1ms on host
 
+enum class TaskState : uint8_t
+{
+    Ready,
+    Running,
+    Blocked,
+    Deleted
+};
+
 struct TaskControlBlock
 {
     TaskFunction_t entry{nullptr};
@@ -38,9 +46,13 @@ struct TaskControlBlock
     std::thread nativeThread;
     std::mutex notifyMutex;
     std::condition_variable notifyCv;
+    std::condition_variable schedulerCv;
     uint32_t notifyValue{0};
     bool notified{false};
     bool deleteRequested{false};
+    TaskState state{TaskState::Ready};
+    TickType_t wakeTime{0};
+    size_t creationOrder{0};  // For deterministic scheduling
 };
 
 struct QueueControlBlock
@@ -82,6 +94,12 @@ std::vector<std::unique_ptr<TaskControlBlock>> allTasks;
 std::recursive_mutex globalCriticalMutex;
 std::atomic<BaseType_t> schedulerState{taskSCHEDULER_RUNNING};
 
+// Cooperative scheduler state for deterministic execution
+std::mutex executionMutex;  // Only one task can hold this at a time
+std::condition_variable schedulerCondition;
+TaskControlBlock* runningTask = nullptr;
+size_t nextCreationOrder = 0;
+
 TaskControlBlock* TaskFromHandle(TaskHandle_t handle) noexcept
 {
     return static_cast<TaskControlBlock*>(handle);
@@ -118,6 +136,77 @@ void RemoveTask(TaskControlBlock* tcb) noexcept
         allTasks.erase(it);
     }
 }
+
+// Cooperative yield: release execution and let scheduler pick next task
+void CooperativeYield() noexcept
+{
+    TaskControlBlock* previousTask = currentTask;
+    currentTask = nullptr;
+
+    // Critical section: atomically update state and find next task
+    std::lock_guard<std::mutex> lock(tasksMutex);
+
+    if (previousTask != nullptr)
+    {
+        // Mark previous task as ready (unless it was explicitly blocked)
+        if (previousTask->state == TaskState::Running)
+        {
+            previousTask->state = TaskState::Ready;
+        }
+    }
+
+    // Find next ready task (already holding tasksMutex)
+    // Check for tasks that should wake up based on time
+    TickType_t now = static_cast<TickType_t>(HostTiming::Millis());
+    for (const auto& task : allTasks)
+    {
+        if (task->state == TaskState::Blocked && task->wakeTime <= now)
+        {
+            task->state = TaskState::Ready;
+        }
+    }
+
+    // Find the ready task with lowest creation order (FIFO)
+    TaskControlBlock* nextTask = nullptr;
+    size_t lowestOrder = SIZE_MAX;
+
+    for (const auto& task : allTasks)
+    {
+        if (task->state == TaskState::Ready && task->creationOrder < lowestOrder)
+        {
+            nextTask = task.get();
+            lowestOrder = task->creationOrder;
+        }
+    }
+
+    if (nextTask != nullptr)
+    {
+        nextTask->state = TaskState::Running;
+        runningTask = nextTask;
+
+        // Wake only the specific next task
+        nextTask->schedulerCv.notify_one();
+    }
+
+    // Release execution lock after setting up next task
+    executionMutex.unlock();
+}
+
+// Wait for our turn to execute
+void WaitForExecutionToken(TaskControlBlock* task) noexcept
+{
+    std::unique_lock<std::mutex> lock(tasksMutex);
+
+    // Wait until it's our turn
+    while (runningTask != task)
+    {
+        task->schedulerCv.wait(lock);
+    }
+
+    // Now acquire the execution lock
+    executionMutex.lock();
+    currentTask = task;
+}
 }  // anonymous namespace
 
 TickType_t xTaskGetTickCount() noexcept
@@ -139,18 +228,31 @@ UBaseType_t uxTaskGetNumberOfTasks() noexcept
 
 void vTaskDelay(const TickType_t ticksToDelay) noexcept
 {
-    if (ticksToDelay == 0)
+    TaskControlBlock* thisTask = currentTask;
+    if (thisTask == nullptr)
     {
-        std::this_thread::yield();
         return;
     }
-    // Use virtual delay for deterministic simulation
-    // Convert ticks to milliseconds (1 tick = 1ms)
+
+    if (ticksToDelay == 0)
+    {
+        // Just yield to next task
+        CooperativeYield();
+        WaitForExecutionToken(thisTask);
+        return;
+    }
+
+    // Advance virtual time
     uint32_t delayMs = static_cast<uint32_t>(ticksToDelay);
     HostTiming::DelayMilliseconds(delayMs);
 
-    // Still yield to allow other threads to run
-    std::this_thread::yield();
+    // Block task until wake time
+    thisTask->state = TaskState::Blocked;
+    thisTask->wakeTime = xTaskGetTickCount() + ticksToDelay;
+
+    // Yield to next ready task
+    CooperativeYield();
+    WaitForExecutionToken(thisTask);
 }
 
 void vTaskDelayUntil(TickType_t* const lastWakeTime,
@@ -192,6 +294,9 @@ TaskHandle_t xTaskCreateStatic(TaskFunction_t function, const char* name,
     raw->name = (name != nullptr) ? name : "";
     raw->stackBase = stackBuffer;
     raw->stackWords = stackDepth;
+    raw->state = TaskState::Ready;
+    raw->creationOrder = nextCreationOrder++;
+
     if (taskBuffer != nullptr)
     {
         raw->taskBase = reinterpret_cast<TaskBase*>(taskBuffer->hostContext);
@@ -211,13 +316,33 @@ TaskHandle_t xTaskCreateStatic(TaskFunction_t function, const char* name,
     raw->nativeThread = std::thread(
         [raw]()
         {
-            currentTask = raw;
+            // Wait for our turn in the cooperative scheduler
+            WaitForExecutionToken(raw);
+
+            // Run the task
             raw->entry(raw->parameters);
+
+            // Task finished, mark as deleted and yield
             raw->deleteRequested = true;
-            currentTask = nullptr;
+            raw->state = TaskState::Deleted;
+            CooperativeYield();
             RemoveTask(raw);
         });
     raw->nativeThread.detach();
+
+    // If this is the first task, give it the execution token
+    bool isFirstTask = false;
+    {
+        std::lock_guard<std::mutex> lock(tasksMutex);
+        isFirstTask = (allTasks.size() == 1);
+    }
+    if (isFirstTask && runningTask == nullptr)
+    {
+        runningTask = raw;
+        raw->state = TaskState::Running;
+        raw->schedulerCv.notify_one();
+    }
+
     return static_cast<TaskHandle_t>(raw);
 }
 
@@ -253,8 +378,15 @@ BaseType_t xTaskNotify(TaskHandle_t handle, uint32_t value, uint32_t) noexcept
         std::lock_guard<std::mutex> lock(tcb->notifyMutex);
         tcb->notifyValue = value;
         tcb->notified = true;
+
+        // If task was blocked on notification, make it ready
+        if (tcb->state == TaskState::Blocked)
+        {
+            tcb->state = TaskState::Ready;
+        }
     }
     tcb->notifyCv.notify_one();
+    // Note: task will be scheduled deterministically when current task yields
     return pdPASS;
 }
 
@@ -271,39 +403,52 @@ BaseType_t xTaskNotifyFromISR(TaskHandle_t handle, uint32_t value, uint32_t acti
 BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry, uint32_t bitsToClearOnExit,
                            uint32_t* receivedValue, TickType_t timeout) noexcept
 {
-    TaskControlBlock* tcb = currentTask;
-    if (tcb == nullptr)
+    TaskControlBlock* thisTask = currentTask;
+    if (thisTask == nullptr)
     {
         return pdFAIL;
     }
 
-    std::unique_lock<std::mutex> lock(tcb->notifyMutex);
-    tcb->notifyValue &= ~bitsToClearOnEntry;
+    {
+        std::lock_guard<std::mutex> lock(thisTask->notifyMutex);
+        thisTask->notifyValue &= ~bitsToClearOnEntry;
+    }
 
-    const auto duration = ToDuration(timeout);
-    if (!tcb->notified)
+    // If not already notified, block and yield
+    while (!thisTask->notified)
     {
         if (timeout == 0)
         {
             return pdFAIL;
         }
-        if (duration == std::chrono::milliseconds::max())
+
+        // Block task and yield to others
+        thisTask->state = TaskState::Blocked;
+        if (timeout != portMAX_DELAY)
         {
-            tcb->notifyCv.wait(lock, [tcb]() noexcept { return tcb->notified; });
+            thisTask->wakeTime = xTaskGetTickCount() + timeout;
         }
-        else if (!tcb->notifyCv.wait_for(lock, duration,
-                                         [tcb]() noexcept { return tcb->notified; }))
+
+        CooperativeYield();
+        WaitForExecutionToken(thisTask);
+
+        // Check if we timed out
+        if (timeout != portMAX_DELAY && !thisTask->notified)
         {
-            return pdFAIL;
+            if (xTaskGetTickCount() >= thisTask->wakeTime)
+            {
+                return pdFAIL;
+            }
         }
     }
 
+    std::lock_guard<std::mutex> lock(thisTask->notifyMutex);
     if (receivedValue != nullptr)
     {
-        *receivedValue = tcb->notifyValue;
+        *receivedValue = thisTask->notifyValue;
     }
-    tcb->notifyValue &= ~bitsToClearOnExit;
-    tcb->notified = false;
+    thisTask->notifyValue &= ~bitsToClearOnExit;
+    thisTask->notified = false;
     return pdPASS;
 }
 
@@ -366,31 +511,43 @@ BaseType_t xQueueSend(QueueHandle_t handle, const void* item, TickType_t timeout
         return pdFAIL;
     }
 
-    std::unique_lock<std::mutex> lock(queue->mutex);
-    auto canWrite = [queue]() noexcept { return queue->items.size() < queue->capacity; };
-    if (!canWrite())
+    TickType_t startTime = xTaskGetTickCount();
+
+    while (true)
     {
+        {
+            std::lock_guard<std::mutex> lock(queue->mutex);
+            if (queue->items.size() < queue->capacity)
+            {
+                // Can write now
+                std::vector<uint8_t> payload(queue->itemSize);
+                std::memcpy(payload.data(), item, queue->itemSize);
+                queue->items.push_back(std::move(payload));
+                queue->notEmpty.notify_one();
+                return pdPASS;
+            }
+        }
+
+        // Queue full, check timeout
         if (timeout == 0)
         {
             return pdFAIL;
         }
-        const auto duration = ToDuration(timeout);
-        if (duration == std::chrono::milliseconds::max())
-        {
-            queue->notFull.wait(lock, canWrite);
-        }
-        else if (!queue->notFull.wait_for(lock, duration, canWrite))
-        {
-            return pdFAIL;
-        }
-    }
 
-    std::vector<uint8_t> payload(queue->itemSize);
-    std::memcpy(payload.data(), item, queue->itemSize);
-    queue->items.push_back(std::move(payload));
-    lock.unlock();
-    queue->notEmpty.notify_one();
-    return pdPASS;
+        if (timeout != portMAX_DELAY)
+        {
+            TickType_t elapsed = xTaskGetTickCount() - startTime;
+            if (elapsed >= timeout)
+            {
+                return pdFAIL;
+            }
+        }
+
+        // Yield and try again
+        TaskControlBlock* thisTask = currentTask;
+        CooperativeYield();
+        WaitForExecutionToken(thisTask);
+    }
 }
 
 BaseType_t xQueueSendFromISR(QueueHandle_t handle, const void* item,
@@ -411,31 +568,43 @@ BaseType_t xQueueReceive(QueueHandle_t handle, void* buffer, TickType_t timeout)
         return pdFAIL;
     }
 
-    std::unique_lock<std::mutex> lock(queue->mutex);
-    auto hasItem = [queue]() noexcept { return !queue->items.empty(); };
-    if (!hasItem())
+    TickType_t startTime = xTaskGetTickCount();
+
+    while (true)
     {
+        {
+            std::lock_guard<std::mutex> lock(queue->mutex);
+            if (!queue->items.empty())
+            {
+                // Can read now
+                std::vector<uint8_t> payload = std::move(queue->items.front());
+                queue->items.pop_front();
+                std::memcpy(buffer, payload.data(), queue->itemSize);
+                queue->notFull.notify_one();
+                return pdPASS;
+            }
+        }
+
+        // Queue empty, check timeout
         if (timeout == 0)
         {
             return pdFAIL;
         }
-        const auto duration = ToDuration(timeout);
-        if (duration == std::chrono::milliseconds::max())
-        {
-            queue->notEmpty.wait(lock, hasItem);
-        }
-        else if (!queue->notEmpty.wait_for(lock, duration, hasItem))
-        {
-            return pdFAIL;
-        }
-    }
 
-    std::vector<uint8_t> payload = std::move(queue->items.front());
-    queue->items.pop_front();
-    std::memcpy(buffer, payload.data(), queue->itemSize);
-    lock.unlock();
-    queue->notFull.notify_one();
-    return pdPASS;
+        if (timeout != portMAX_DELAY)
+        {
+            TickType_t elapsed = xTaskGetTickCount() - startTime;
+            if (elapsed >= timeout)
+            {
+                return pdFAIL;
+            }
+        }
+
+        // Yield and try again
+        TaskControlBlock* thisTask = currentTask;
+        CooperativeYield();
+        WaitForExecutionToken(thisTask);
+    }
 }
 
 UBaseType_t uxQueueMessagesWaiting(const QueueHandle_t handle) noexcept
