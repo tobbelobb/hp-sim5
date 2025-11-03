@@ -5,6 +5,8 @@
 
 #if HAS_MASS_STORAGE
 
+#include <Storage/FileStore.h>
+
 bool StandardGCodeInput::FillBuffer(GCodeBuffer* gb) noexcept
 {
 	const size_t bytesToPass = BytesCached();
@@ -53,6 +55,7 @@ size_t RegularGCodeInput::BufferSpaceLeft() const noexcept
 namespace
 {
 constexpr size_t kReadChunk = 256;
+constexpr size_t kReadThreshold = 128;
 }
 
 void FileGCodeInput::Reset() noexcept
@@ -81,34 +84,51 @@ GCodeInputReadResult FileGCodeInput::ReadFromFile(FileData& file) noexcept
 		return GCodeInputReadResult::error;
 	}
 
-	const size_t spaceLeft = BufferSpaceLeft();
-	if (spaceLeft == 0)
-	{
-		return GCodeInputReadResult::haveData;
-	}
+	size_t bytesCached = BytesCached();
 
-	const size_t chunk = std::min(spaceLeft, kReadChunk);
-	char temp[kReadChunk];
-	const int readCount = file.Read(temp, chunk);
-	if (readCount <= 0)
-	{
-		return GCodeInputReadResult::noData;
-	}
-
+	// Track which file we are reading from so that nested macros rewind correctly
 	if (lastFileRead != file)
 	{
-		lastFileRead.Close();
+		if (lastFileRead.IsLive() && bytesCached > 0)
+		{
+			const FilePosition currentPos = lastFileRead.GetPosition();
+			if (currentPos >= bytesCached)
+			{
+				lastFileRead.Seek(currentPos - bytesCached);
+			}
+		}
+
 		RegularGCodeInput::Reset();
+		bytesCached = 0;
 		lastFileRead.CopyFrom(file);
 	}
 
-	for (int i = 0; i < readCount; ++i)
+	if (bytesCached < kReadThreshold)
 	{
-		buffer[writingPointer] = temp[i];
-		writingPointer = (writingPointer + 1) % GCodeInputBufferSize;
+		const size_t spaceLeft = BufferSpaceLeft();
+		if (spaceLeft > 0)
+		{
+			const size_t chunk = std::min(spaceLeft, kReadChunk);
+			char temp[kReadChunk];
+			const int readCount = file.Read(temp, chunk);
+			if (readCount < 0)
+			{
+				return GCodeInputReadResult::error;
+			}
+
+			if (readCount > 0)
+			{
+				for (int i = 0; i < readCount; ++i)
+				{
+					buffer[writingPointer] = temp[i];
+					writingPointer = (writingPointer + 1) % GCodeInputBufferSize;
+				}
+				return GCodeInputReadResult::haveData;
+			}
+		}
 	}
 
-	return BytesCached() > 0 ? GCodeInputReadResult::haveData : GCodeInputReadResult::noData;
+	return (BytesCached() > 0) ? GCodeInputReadResult::haveData : GCodeInputReadResult::noData;
 }
 
 #endif
