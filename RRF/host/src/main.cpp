@@ -23,6 +23,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace
@@ -47,6 +48,7 @@ namespace
 	constexpr unsigned int kDefaultCanBuffers = 64;
 	constexpr std::chrono::minutes kPrintTimeout{30};
 	constexpr unsigned int kIdleSettlingCycles = 25;
+	constexpr bool kTraceCompletion = false;
 
 	void PrintUsage() noexcept
 	{
@@ -487,63 +489,64 @@ namespace
 	}
 
 	bool WaitForPrintCompletion() noexcept
+{
+	GCodeBuffer* const fileBuffer = reprap.GetGCodes().FileGCode();
+	if (fileBuffer == nullptr)
 	{
-		GCodeBuffer* const fileBuffer = reprap.GetGCodes().FileGCode();
-		if (fileBuffer == nullptr)
+		std::cerr << "No file G-code buffer available\n";
+		return false;
+	}
+
+	const auto start = std::chrono::steady_clock::now();
+	unsigned int idleCycles = 0;
+	uint64_t lastCaptureCount = HostCanCapture::GetCaptureCount();
+	unsigned int captureIdleCycles = 0;
+	unsigned int fastForwardAttempts = 0;
+	bool seenCapture = (lastCaptureCount != 0);
+
+	for (;;)
+	{
+		reprap.Spin();
+
+		const uint64_t currentCaptureCount = HostCanCapture::GetCaptureCount();
+		if (currentCaptureCount != lastCaptureCount)
 		{
-			std::cerr << "No file G-code buffer available\n";
-			return false;
+			lastCaptureCount = currentCaptureCount;
+			captureIdleCycles = 0;
+			fastForwardAttempts = 0;
+			seenCapture = true;
 		}
-
-		const auto start = std::chrono::steady_clock::now();
-		unsigned int idleCycles = 0;
-		uint64_t lastCaptureCount = HostCanCapture::GetCaptureCount();
-		unsigned int captureIdleCycles = 0;
-		bool fastForwardApplied = false;
-
-		for (;;)
+		else if (currentCaptureCount != 0)
 		{
-			reprap.Spin();
-			Move& move = reprap.GetMove();
-			while (move.activeDMs != nullptr)
+			if (captureIdleCycles < kIdleSettlingCycles)
 			{
-				const uint32_t due = move.activeDMs->nextStepTime;
-				move.StepDrivers(due);
-			}
-
-			const uint64_t currentCaptureCount = HostCanCapture::GetCaptureCount();
-			if (currentCaptureCount != lastCaptureCount)
-			{
-				lastCaptureCount = currentCaptureCount;
-				captureIdleCycles = 0;
-				fastForwardApplied = false;
-			}
-			else if (currentCaptureCount != 0)
-			{
-				if (captureIdleCycles < kIdleSettlingCycles)
-				{
-					++captureIdleCycles;
-				}
-				else if (!fastForwardApplied)
-				{
-					const uint64_t latestFinish = HostCanCapture::GetLatestFinishMasterClock();
-					if (latestFinish != 0)
-					{
-						HostTiming::EnsureMasterClockAtLeast(latestFinish);
-						fastForwardApplied = true;
-					}
-				}
+				++captureIdleCycles;
 			}
 			else
 			{
-				captureIdleCycles = 0;
+				++fastForwardAttempts;
+				const uint64_t latestFinish = HostCanCapture::GetLatestFinishMasterClock();
+				if (latestFinish != 0)
+				{
+					const uint64_t advance = static_cast<uint64_t>(std::min<unsigned int>(fastForwardAttempts, 3600U))
+							* HostTiming::StepClockFrequencyHz;
+					HostTiming::EnsureMasterClockAtLeast(latestFinish + advance);
+				}
 			}
+		}
+		else
+		{
+			captureIdleCycles = 0;
+		}
 
-			const bool fileIdle = fileBuffer->IsCompletelyIdle();
+		const bool fileIdle = fileBuffer->IsCompletelyIdle();
+		const bool moveIdle = reprap.GetMove().NoLiveMovement();
 
+		if (seenCapture)
+		{
 			if (currentCaptureCount != 0)
 			{
-				if (captureIdleCycles > kIdleSettlingCycles || fastForwardApplied)
+				if (fileIdle && moveIdle && captureIdleCycles >= kIdleSettlingCycles)
 				{
 					return true;
 				}
@@ -551,7 +554,7 @@ namespace
 			}
 			else
 			{
-				if (fileIdle)
+				if (fileIdle && moveIdle)
 				{
 					if (++idleCycles > kIdleSettlingCycles)
 					{
@@ -563,69 +566,103 @@ namespace
 					idleCycles = 0;
 				}
 			}
-
-			if (reprap.IsStopped())
+		}
+		else
+		{
+			if (fileIdle && moveIdle)
 			{
-				std::cerr << "Firmware entered stopped state\n";
-				return false;
+				if (++idleCycles > kIdleSettlingCycles)
+				{
+					return true;
+				}
 			}
-
-			if (std::chrono::steady_clock::now() - start > kPrintTimeout)
+			else
 			{
-				std::cerr << "Timed out waiting for print to finish\n";
-				return false;
+				idleCycles = 0;
 			}
+		}
 
+		if constexpr (kTraceCompletion)
+		{
+			static uint64_t debugCounter = 0;
+			if ((debugCounter++ % 1000ULL) == 0)
+			{
+				std::cout << "[wait] captures=" << currentCaptureCount
+						  << " captureIdle=" << captureIdleCycles
+						  << " seen=" << seenCapture
+						  << " fileIdle=" << fileIdle
+						  << " moveIdle=" << moveIdle
+						  << " scheduled=" << reprap.GetMove().GetScheduledMoves()
+						  << " completed=" << reprap.GetMove().GetCompletedMoves()
+						  << '\n';
+			}
+		}
+
+		std::this_thread::yield();
+
+		if (reprap.IsStopped())
+		{
+			std::cerr << "Firmware entered stopped state\n";
+			return false;
+		}
+
+		if (std::chrono::steady_clock::now() - start > kPrintTimeout)
+		{
+			std::cerr << "Timed out waiting for print to finish\n";
+			return false;
 		}
 	}
+}
 
-	void VirtuallyHomeAxesIfNeeded() noexcept
+
+void VirtuallyHomeAxesIfNeeded() noexcept
+{
+	auto& gcodes = reprap.GetGCodes();
+	if (gcodes.AllAxesAreHomed())
 	{
-		auto& gcodes = reprap.GetGCodes();
-		if (gcodes.AllAxesAreHomed())
+		return;
+	}
+
+	const size_t visibleAxes = gcodes.GetVisibleAxes();
+	const char* axisLetters = gcodes.GetAxisLetters();
+
+	std::vector<std::string> homedAxes;
+	homedAxes.reserve(visibleAxes);
+
+	for (size_t axis = 0; axis < visibleAxes; ++axis)
+	{
+		if (!gcodes.IsAxisHomed(static_cast<unsigned int>(axis)))
 		{
-			return;
-		}
+			gcodes.SetAxisIsHomed(static_cast<unsigned int>(axis));
 
-		const size_t visibleAxes = gcodes.GetVisibleAxes();
-		const char* axisLetters = gcodes.GetAxisLetters();
-
-		std::vector<std::string> homedAxes;
-		homedAxes.reserve(visibleAxes);
-
-		for (size_t axis = 0; axis < visibleAxes; ++axis)
-		{
-			if (!gcodes.IsAxisHomed(static_cast<unsigned int>(axis)))
+			if (axisLetters != nullptr && axisLetters[axis] != '\0')
 			{
-				gcodes.SetAxisIsHomed(static_cast<unsigned int>(axis));
-
-				if (axisLetters != nullptr && axisLetters[axis] != '\0')
-				{
-					homedAxes.emplace_back(1, axisLetters[axis]);
-				}
-				else
-				{
-					homedAxes.emplace_back("axis" + std::to_string(axis));
-				}
+				homedAxes.emplace_back(1, axisLetters[axis]);
 			}
-		}
-
-		if (!homedAxes.empty())
-		{
-			std::cout << "Host marked axes as homed: ";
-			for (size_t i = 0; i < homedAxes.size(); ++i)
+			else
 			{
-				if (i != 0)
-				{
-					std::cout << ", ";
-				}
-				std::cout << homedAxes[i];
+				homedAxes.emplace_back("axis" + std::to_string(axis));
 			}
-			std::cout << '\n';
 		}
 	}
 
-	void ReportFinalPosition() noexcept
+	if (!homedAxes.empty())
+	{
+		std::cout << "Host marked axes as homed: ";
+		for (size_t i = 0; i < homedAxes.size(); ++i)
+		{
+			if (i != 0)
+			{
+				std::cout << ", ";
+			}
+			std::cout << homedAxes[i];
+		}
+		std::cout << '\n';
+	}
+}
+
+
+void ReportFinalPosition() noexcept
 	{
 		float machine[MaxAxes] = { 0.0f };
 		reprap.GetMove().GetCurrentMachinePosition(machine, 0);

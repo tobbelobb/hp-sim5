@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <mutex>
 #include <sstream>
 
@@ -24,6 +25,7 @@ bool gEnabled = false;
 std::atomic<uint64_t> gCaptureIndex{0};
 std::atomic<uint64_t> gLastExtendedWhen{0};
 std::atomic<uint64_t> gLatestFinishMasterClock{0};
+std::atomic<uint64_t> gBaseMasterClock{std::numeric_limits<uint64_t>::max()};
 
 constexpr uint64_t MasterClocksPerStepTick = HostTiming::StepClockFrequencyHz/StepClockRate;
 static_assert(StepClockRate != 0, "Step clock rate must not be zero");
@@ -51,6 +53,24 @@ inline void UpdateLatestFinish(uint64_t finishMasterClock) noexcept
 		   && !gLatestFinishMasterClock.compare_exchange_weak(current, finishMasterClock, std::memory_order_relaxed, std::memory_order_relaxed))
 	{
 	}
+}
+
+inline uint64_t NormaliseMasterClock(uint64_t absoluteMasterClock) noexcept
+{
+	uint64_t base = gBaseMasterClock.load(std::memory_order_relaxed);
+	if (base == std::numeric_limits<uint64_t>::max())
+	{
+		if (gBaseMasterClock.compare_exchange_strong(base, absoluteMasterClock, std::memory_order_relaxed, std::memory_order_relaxed))
+		{
+			return 0;
+		}
+		base = gBaseMasterClock.load(std::memory_order_relaxed);
+	}
+	if (absoluteMasterClock <= base)
+	{
+		return 0;
+	}
+	return absoluteMasterClock - base;
 }
 }
 
@@ -101,6 +121,7 @@ bool HostCanCapture::Configure(const std::filesystem::path& filePath) noexcept
 	gCaptureIndex.store(0, std::memory_order_relaxed);
 	gLastExtendedWhen.store(0, std::memory_order_relaxed);
 	gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
+	gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(), std::memory_order_relaxed);
 	return true;
 }
 
@@ -126,6 +147,7 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 	const uint64_t durationStep = accelStep + steadyStep + decelStep;
 
 	const uint64_t whenMaster = whenStep * MasterClocksPerStepTick;
+	const uint64_t normalisedWhenMaster = NormaliseMasterClock(whenMaster);
 	const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
 	const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
 	const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
@@ -141,7 +163,7 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 	line << "{\"type\":\"movement_linear_shaped\"";
 	line << ",\"capture_index\":" << captureIndex;
 	line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
-	line << ",\"when_to_execute\":" << whenMaster;
+	line << ",\"when_to_execute\":" << normalisedWhenMaster;
 	line << ",\"accel_clocks\":" << accelMaster;
 	line << ",\"steady_clocks\":" << steadyMaster;
 	line << ",\"decel_clocks\":" << decelMaster;
@@ -204,4 +226,5 @@ void HostCanCapture::Shutdown() noexcept
 	}
 	gOutputPath.clear();
 	gEnabled = false;
+	gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(), std::memory_order_relaxed);
 }
