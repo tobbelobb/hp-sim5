@@ -549,8 +549,10 @@ bool WaitForPrintCompletion() noexcept
                     HostCanCapture::GetLatestFinishMasterClock();
                 if (latestFinish != 0)
                 {
-                    // Advance only to the latest finish time, not beyond, to avoid skipping work
-                    HostTiming::EnsureMasterClockAtLeast(latestFinish);
+                    const uint64_t advance = static_cast<uint64_t>(std::min<unsigned int>(
+                                                 fastForwardAttempts, 3600U)) *
+                                             HostTiming::StepClockFrequencyHz;
+                    HostTiming::EnsureMasterClockAtLeast(latestFinish + advance);
                 }
             }
         }
@@ -618,6 +620,7 @@ bool WaitForPrintCompletion() noexcept
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        //std::this_thread::yield();
 
         if (reprap.IsStopped())
         {
