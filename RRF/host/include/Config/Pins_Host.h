@@ -1,32 +1,32 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <CoreTypes.h>
 #include <PinDescription.h>
+#include <cstddef>
+#include <cstdint>
 //#include <Duet3Common.h>
 #include <type_traits>
 
 enum class TcOutput : uint8_t
 {
-	none = 0,
+    none = 0,
 };
 
 enum class PwmOutput : uint8_t
 {
-	none = 0,
+    none = 0,
 };
 
 // --- Minimal board descriptors expected by Platform/RepRap ---
-#define BOARD_SHORT_NAME        "HOST"
-#define BOARD_NAME              "x86_64"
-#define DEFAULT_BOARD_TYPE      BoardType::Auto
-#define FIRMWARE_NAME           "RepRapFirmware for x86_64 (host)"
-#define IAP_FIRMWARE_FILE       "Duet3Firmware_MB6HC_host.bin"
-#define IAP_UPDATE_FILE         "Duet3_SDiap_host.bin"
-#define IAP_UPDATE_FILE_SBC     "Duet3_SBCiap_host.bin"
-#define IAP_CAN_LOADER_FILE     "Duet3_CANiap_host.bin"
-#define USART_SPI                1
+#define BOARD_SHORT_NAME "HOST"
+#define BOARD_NAME "x86_64"
+#define DEFAULT_BOARD_TYPE BoardType::Auto
+#define FIRMWARE_NAME "RepRapFirmware for x86_64 (host)"
+#define IAP_FIRMWARE_FILE "Duet3Firmware_MB6HC_host.bin"
+#define IAP_UPDATE_FILE "Duet3_SDiap_host.bin"
+#define IAP_UPDATE_FILE_SBC "Duet3_SBCiap_host.bin"
+#define IAP_CAN_LOADER_FILE "Duet3_CANiap_host.bin"
+#define USART_SPI 1
 constexpr uint32_t IAP_IMAGE_START = 0;
 
 constexpr std::size_t NumDirectDrivers = 6;
@@ -60,22 +60,27 @@ constexpr unsigned int NumSerialChannels = 3;
 constexpr unsigned int FirstAuxChannel = 1;
 constexpr unsigned int NumAuxChannels = NumSerialChannels - FirstAuxChannel;
 
-inline constexpr Pin STEP_PINS[NumDirectDrivers] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
-inline constexpr Pin DIRECTION_PINS[NumDirectDrivers] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
-inline constexpr Pin ENABLE_PINS[NumDirectDrivers] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
-inline constexpr Pin TmcCsPins[NumDirectDrivers] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
+inline constexpr Pin STEP_PINS[NumDirectDrivers] = {NoPin, NoPin, NoPin,
+                                                    NoPin, NoPin, NoPin};
+inline constexpr Pin DIRECTION_PINS[NumDirectDrivers] = {NoPin, NoPin, NoPin,
+                                                         NoPin, NoPin, NoPin};
+inline constexpr Pin ENABLE_PINS[NumDirectDrivers] = {NoPin, NoPin, NoPin,
+                                                      NoPin, NoPin, NoPin};
+inline constexpr Pin TmcCsPins[NumDirectDrivers] = {NoPin, NoPin, NoPin,
+                                                    NoPin, NoPin, NoPin};
 
 inline constexpr Pin SpiSdCsPin = NoPin;
-inline constexpr Pin DiagPins[NumDirectDrivers] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
-inline constexpr Pin EndstopPins[6] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
+inline constexpr Pin DiagPins[NumDirectDrivers] = {NoPin, NoPin, NoPin,
+                                                   NoPin, NoPin, NoPin};
+inline constexpr Pin EndstopPins[6] = {NoPin, NoPin, NoPin, NoPin, NoPin, NoPin};
 
 constexpr std::size_t NumNamedPins = 1;
-inline constexpr Pin PinTable[NumNamedPins] = { NoPin };
+inline constexpr Pin PinTable[NumNamedPins] = {NoPin};
 
 constexpr std::size_t NumSdCards = 2;
-inline constexpr Pin SdCardDetectPins[NumSdCards] = { NoPin, NoPin };
-inline constexpr Pin SdSpiCsPins[NumSdCards] = { NoPin, NoPin };
-inline constexpr Pin TEMP_SENSE_PINS[NumThermistorInputs] = { NoPin, NoPin, NoPin, NoPin };
+inline constexpr Pin SdCardDetectPins[NumSdCards] = {NoPin, NoPin};
+inline constexpr Pin SdSpiCsPins[NumSdCards] = {NoPin, NoPin};
+inline constexpr Pin TEMP_SENSE_PINS[NumThermistorInputs] = {NoPin, NoPin, NoPin, NoPin};
 inline constexpr Pin VssaSensePin = NoPin;
 inline constexpr Pin VrefSensePin = NoPin;
 inline constexpr Pin PowerMonitorVinDetectPin = NoPin;
@@ -86,7 +91,7 @@ inline constexpr Pin GlobalTmc51xxCSPin = NoPin;
 inline constexpr Pin EspEnablePin = NoPin;
 inline constexpr Pin ModbusTxPin = NoPin;
 
-inline constexpr Pin SpiTempSensorCsPins[] = { NoPin, NoPin, NoPin, NoPin };
+inline constexpr Pin SpiTempSensorCsPins[] = {NoPin, NoPin, NoPin, NoPin};
 
 inline constexpr Pin APIN_USART_SSPI_SCK = NoPin;
 inline constexpr Pin APIN_USART_SSPI_MOSI = NoPin;
@@ -123,33 +128,38 @@ inline constexpr Pin UsbVBusPin = NoPin;
 
 namespace StepPins
 {
-	namespace detail
-	{
-		inline constexpr uint32_t CalcBitmapFromIndex(size_t driver) noexcept
-		{
-			return (driver < 32) ? (1u << driver) : 0u;
-		}
-	}
-
-	template <typename DriverLike>
-	inline constexpr uint32_t CalcDriverBitmap(const DriverLike& driver) noexcept
-	{
-		if constexpr (std::is_integral_v<DriverLike>)
-		{
-			return detail::CalcBitmapFromIndex(static_cast<size_t>(driver));
-		}
-		else
-		{
-			return detail::CalcBitmapFromIndex(static_cast<size_t>(driver.localDriver));
-		}
-	}
-
-	inline constexpr uint32_t AllDriversBitmap = (NumDirectDrivers >= 32)
-		? 0xFFFFFFFFu
-		: ((NumDirectDrivers == 0) ? 0u : ((1u << NumDirectDrivers) - 1u));
-
-	inline void StepDriversHigh(uint32_t) noexcept {}
-	inline void StepDriversLow(uint32_t) noexcept {}
+namespace detail
+{
+inline constexpr uint32_t CalcBitmapFromIndex(size_t driver) noexcept
+{
+    return (driver < 32) ? (1u << driver) : 0u;
 }
+}  // namespace detail
+
+template <typename DriverLike>
+inline constexpr uint32_t CalcDriverBitmap(const DriverLike& driver) noexcept
+{
+    if constexpr (std::is_integral_v<DriverLike>)
+    {
+        return detail::CalcBitmapFromIndex(static_cast<size_t>(driver));
+    }
+    else
+    {
+        return detail::CalcBitmapFromIndex(static_cast<size_t>(driver.localDriver));
+    }
+}
+
+inline constexpr uint32_t AllDriversBitmap =
+    (NumDirectDrivers >= 32)
+        ? 0xFFFFFFFFu
+        : ((NumDirectDrivers == 0) ? 0u : ((1u << NumDirectDrivers) - 1u));
+
+inline void StepDriversHigh(uint32_t) noexcept
+{
+}
+inline void StepDriversLow(uint32_t) noexcept
+{
+}
+}  // namespace StepPins
 
 constexpr uint32_t DefaultStandstillCurrentPercent = 75;

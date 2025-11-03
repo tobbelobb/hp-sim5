@@ -10,22 +10,22 @@ using StackType_t = uint32_t;
 
 struct StaticTask_t
 {
-	void* hostContext{nullptr};
+    void* hostContext{nullptr};
 };
 
 struct StaticQueue_t
 {
-	void* hostContext{nullptr};
+    void* hostContext{nullptr};
 };
 
 struct StaticSemaphore_t
 {
-	void* hostContext{nullptr};
+    void* hostContext{nullptr};
 };
 
 struct StaticEventGroup_t
 {
-	void* hostContext{nullptr};
+    void* hostContext{nullptr};
 };
 
 #define pdMS_TO_TICKS(x) static_cast<TickType_t>(x)

@@ -12,26 +12,20 @@ TickType_t xTaskGetTickCountFromISR() noexcept;
 UBaseType_t uxTaskGetNumberOfTasks() noexcept;
 void vTaskDelay(TickType_t ticksToDelay) noexcept;
 void vTaskDelayUntil(TickType_t* lastWakeTime, TickType_t ticksToWait) noexcept;
-TaskHandle_t xTaskCreateStatic(TaskFunction_t function,
-							   const char* name,
-							   uint32_t stackDepth,
-							   void* parameters,
-							   UBaseType_t priority,
-							   StackType_t* stackBuffer,
-							   StaticTask_t* taskBuffer) noexcept;
+TaskHandle_t xTaskCreateStatic(TaskFunction_t function, const char* name,
+                               uint32_t stackDepth, void* parameters,
+                               UBaseType_t priority, StackType_t* stackBuffer,
+                               StaticTask_t* taskBuffer) noexcept;
 void vTaskDelete(TaskHandle_t handle) noexcept;
 void vTaskSuspend(TaskHandle_t handle) noexcept;
 void vTaskResume(TaskHandle_t handle) noexcept;
 BaseType_t xTaskNotify(TaskHandle_t handle, uint32_t value, uint32_t action) noexcept;
-BaseType_t xTaskNotifyFromISR(TaskHandle_t handle,
-							  uint32_t value,
-							  uint32_t action,
-							  BaseType_t* higherPriorityTaskWoken) noexcept;
-BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry,
-						   uint32_t bitsToClearOnExit,
-						   uint32_t* receivedValue,
-						   TickType_t timeout) noexcept;
-void vTaskNotifyGiveFromISR(TaskHandle_t handle, BaseType_t* higherPriorityTaskWoken) noexcept;
+BaseType_t xTaskNotifyFromISR(TaskHandle_t handle, uint32_t value, uint32_t action,
+                              BaseType_t* higherPriorityTaskWoken) noexcept;
+BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry, uint32_t bitsToClearOnExit,
+                           uint32_t* receivedValue, TickType_t timeout) noexcept;
+void vTaskNotifyGiveFromISR(TaskHandle_t handle,
+                            BaseType_t* higherPriorityTaskWoken) noexcept;
 void vTaskStartScheduler() noexcept;
 const StackType_t* pxTaskGetLastStackTop(TaskHandle_t handle) noexcept;
 TaskHandle_t xTaskGetCurrentTaskHandle() noexcept;

@@ -2,230 +2,339 @@
 
 #include "Core.h"
 
-#include <cstdint>
 #include <array>
-#include <cstring>
 #include <chrono>
+#include <cstdint>
+#include <cstring>
 
 // Mirror SAME70 layout: ports A-D fully populated plus limited port E
 constexpr unsigned int NumTotalPins = (4 * 32) + 6;
 
 enum class GpioPinFunction : uint8_t
 {
-	A = 0,
-	B,
-	C,
-	D,
-	E,
-	F,
-	G,
-	H,
-	I,
-	J,
-	K,
-	L,
-	M,
-	N
+    A = 0,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N
 };
 
 struct PinCapabilities
 {
-	bool canPwm = false;
-	bool canAnalog = false;
+    bool canPwm = false;
+    bool canAnalog = false;
 };
 
-inline char *heapTop = nullptr;
-inline const char *heapLimit = nullptr;
-inline const char *sysStackLimit = nullptr;
+inline char* heapTop = nullptr;
+inline const char* heapLimit = nullptr;
+inline const char* sysStackLimit = nullptr;
 
-inline void SetPinFunction(Pin, GpioPinFunction) noexcept {}
-inline void SetDriveStrength(Pin, unsigned int) noexcept {}
-inline void ClearPinFunction(Pin) noexcept {}
-inline void EnablePullup(Pin) noexcept {}
-inline void DisablePullup(Pin) noexcept {}
-inline void EnablePulldown(Pin) noexcept {}
-inline void DisablePulldown(Pin) noexcept {}
+inline void SetPinFunction(Pin, GpioPinFunction) noexcept
+{
+}
+inline void SetDriveStrength(Pin, unsigned int) noexcept
+{
+}
+inline void ClearPinFunction(Pin) noexcept
+{
+}
+inline void EnablePullup(Pin) noexcept
+{
+}
+inline void DisablePullup(Pin) noexcept
+{
+}
+inline void EnablePulldown(Pin) noexcept
+{
+}
+inline void DisablePulldown(Pin) noexcept
+{
+}
 
-inline void SetPinMode(Pin, PinMode) noexcept {}
-inline void SetPinMode(Pin, PinMode, bool) noexcept {}
-inline PinMode GetPinMode(Pin) noexcept { return INPUT; }
+inline void SetPinMode(Pin, PinMode) noexcept
+{
+}
+inline void SetPinMode(Pin, PinMode, bool) noexcept
+{
+}
+inline PinMode GetPinMode(Pin) noexcept
+{
+    return INPUT;
+}
 
-inline void DigitalWrite(Pin, bool) noexcept {}
-inline bool DigitalRead(Pin) noexcept { return false; }
-inline void TogglePin(Pin) noexcept {}
+inline void DigitalWrite(Pin, bool) noexcept
+{
+}
+inline bool DigitalRead(Pin) noexcept
+{
+    return false;
+}
+inline void TogglePin(Pin) noexcept
+{
+}
 
-inline float ReadAnalogPin(Pin) noexcept { return 0.0f; }
+inline float ReadAnalogPin(Pin) noexcept
+{
+    return 0.0f;
+}
 
-inline void DelayNs(uint32_t) noexcept {}
-inline void DelayUs(uint32_t) noexcept {}
-inline void DelayMs(uint32_t) noexcept {}
+inline void DelayNs(uint32_t) noexcept
+{
+}
+inline void DelayUs(uint32_t) noexcept
+{
+}
+inline void DelayMs(uint32_t) noexcept
+{
+}
 
-inline uint32_t GetCycles64() noexcept { return 0; }
+inline uint32_t GetCycles64() noexcept
+{
+    return 0;
+}
 
-inline bool IsPinInput(Pin) noexcept { return true; }
-inline bool IsPinOutput(Pin) noexcept { return false; }
+inline bool IsPinInput(Pin) noexcept
+{
+    return true;
+}
+inline bool IsPinOutput(Pin) noexcept
+{
+    return false;
+}
 
-inline bool IsPinReserved(Pin) noexcept { return false; }
+inline bool IsPinReserved(Pin) noexcept
+{
+    return false;
+}
 
-inline void ConfigurePinAsOutput(Pin, bool = false) noexcept {}
-inline void ConfigurePinAsInput(Pin) noexcept {}
+inline void ConfigurePinAsOutput(Pin, bool = false) noexcept
+{
+}
+inline void ConfigurePinAsInput(Pin) noexcept
+{
+}
 
-inline AnalogChannelNumber PinToAdcChannel(Pin) noexcept { return 0; }
+inline AnalogChannelNumber PinToAdcChannel(Pin) noexcept
+{
+    return 0;
+}
 
-inline void fastDigitalWriteLow(uint32_t) noexcept {}
-inline void fastDigitalWriteHigh(uint32_t) noexcept {}
+inline void fastDigitalWriteLow(uint32_t) noexcept
+{
+}
+inline void fastDigitalWriteHigh(uint32_t) noexcept
+{
+}
 
 inline void pinMode(Pin pin, PinMode mode) noexcept
 {
-	SetPinMode(pin, mode);
+    SetPinMode(pin, mode);
 }
 
 inline void digitalWrite(Pin pin, bool value) noexcept
 {
-	DigitalWrite(pin, value);
+    DigitalWrite(pin, value);
 }
 
 inline bool digitalRead(Pin pin) noexcept
 {
-	return DigitalRead(pin);
+    return DigitalRead(pin);
 }
 
 class MillisTimer
 {
 public:
-	MillisTimer() noexcept = default;
+    MillisTimer() noexcept = default;
 
-	void Start() noexcept
-	{
-		Start(std::chrono::milliseconds(0));
-	}
+    void Start() noexcept
+    {
+        Start(std::chrono::milliseconds(0));
+    }
 
-	void Start(uint32_t delayMs) noexcept
-	{
-		Start(std::chrono::milliseconds(delayMs));
-	}
+    void Start(uint32_t delayMs) noexcept
+    {
+        Start(std::chrono::milliseconds(delayMs));
+    }
 
-	bool IsRunning() const noexcept { return running; }
+    bool IsRunning() const noexcept
+    {
+        return running;
+    }
 
-	bool HasExpired() const noexcept
-	{
-		return running && Clock::now() >= expiryTime;
-	}
+    bool HasExpired() const noexcept
+    {
+        return running && Clock::now() >= expiryTime;
+    }
 
-	void Stop() noexcept { running = false; }
-	void Cancel() noexcept { Stop(); }
+    void Stop() noexcept
+    {
+        running = false;
+    }
+    void Cancel() noexcept
+    {
+        Stop();
+    }
 
-	bool CheckAndStop(uint32_t timeoutMillis) noexcept
-	{
-		if (CheckNoStop(timeoutMillis))
-		{
-			running = false;
-			return true;
-		}
-		return false;
-	}
+    bool CheckAndStop(uint32_t timeoutMillis) noexcept
+    {
+        if (CheckNoStop(timeoutMillis))
+        {
+            running = false;
+            return true;
+        }
+        return false;
+    }
 
-	bool CheckNoStop(uint32_t timeoutMillis) const noexcept
-	{
-		if (!running)
-		{
-			return false;
-		}
-		const auto elapsed = Clock::now() - startTime;
-		return elapsed >= std::chrono::milliseconds(timeoutMillis);
-	}
+    bool CheckNoStop(uint32_t timeoutMillis) const noexcept
+    {
+        if (!running)
+        {
+            return false;
+        }
+        const auto elapsed = Clock::now() - startTime;
+        return elapsed >= std::chrono::milliseconds(timeoutMillis);
+    }
 
 private:
-	using Clock = std::chrono::steady_clock;
+    using Clock = std::chrono::steady_clock;
 
-	void Start(std::chrono::milliseconds delay) noexcept
-	{
-		startTime = Clock::now();
-		expiryTime = startTime + delay;
-		running = true;
-	}
+    void Start(std::chrono::milliseconds delay) noexcept
+    {
+        startTime = Clock::now();
+        expiryTime = startTime + delay;
+        running = true;
+    }
 
-	Clock::time_point startTime{};
-	Clock::time_point expiryTime{};
-	bool running{false};
+    Clock::time_point startTime{};
+    Clock::time_point expiryTime{};
+    bool running{false};
 };
 
 class AtomicCriticalSectionLocker
 {
 public:
-	AtomicCriticalSectionLocker() noexcept
-	: flags(IrqSave())
-	{
-	}
+    AtomicCriticalSectionLocker() noexcept : flags(IrqSave())
+    {
+    }
 
-	~AtomicCriticalSectionLocker()
-	{
-		IrqRestore(flags);
-	}
+    ~AtomicCriticalSectionLocker()
+    {
+        IrqRestore(flags);
+    }
 
-	void Cancel() noexcept
-	{
-		IrqRestore(flags);
-	}
+    void Cancel() noexcept
+    {
+        IrqRestore(flags);
+    }
 
 private:
-	coreIrqflags_t flags;
+    coreIrqflags_t flags;
 };
 
-inline constexpr uint32_t GpioPortNumber(Pin p) noexcept { return static_cast<uint32_t>(p) >> 5; }
-inline constexpr uint32_t GpioPinNumber(Pin p) noexcept { return static_cast<uint32_t>(p) & 0x1Fu; }
-inline constexpr uint32_t GpioMask(Pin p) noexcept { return 1u << GpioPinNumber(p); }
-
-inline constexpr Pin PortAPin(unsigned int n) noexcept { return static_cast<Pin>(n); }
-inline constexpr Pin PortBPin(unsigned int n) noexcept { return static_cast<Pin>(32u + n); }
-inline constexpr Pin PortCPin(unsigned int n) noexcept { return static_cast<Pin>(64u + n); }
-inline constexpr Pin PortDPin(unsigned int n) noexcept { return static_cast<Pin>(96u + n); }
-inline constexpr Pin PortEPin(unsigned int n) noexcept { return static_cast<Pin>(128u + n); }
-
-inline void memcpyi32(int32_t *_ecv_array dst, const int32_t *_ecv_array src, size_t numWords) noexcept
+inline constexpr uint32_t GpioPortNumber(Pin p) noexcept
 {
-	memcpyu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
-			  reinterpret_cast<const uint32_t *_ecv_array>(src),
-			  numWords);
+    return static_cast<uint32_t>(p) >> 5;
+}
+inline constexpr uint32_t GpioPinNumber(Pin p) noexcept
+{
+    return static_cast<uint32_t>(p) & 0x1Fu;
+}
+inline constexpr uint32_t GpioMask(Pin p) noexcept
+{
+    return 1u << GpioPinNumber(p);
 }
 
-inline void memcpyf(float *_ecv_array dst, const float *_ecv_array src, size_t numFloats) noexcept
+inline constexpr Pin PortAPin(unsigned int n) noexcept
 {
-	memcpyu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
-			  reinterpret_cast<const uint32_t *_ecv_array>(src),
-			  numFloats);
+    return static_cast<Pin>(n);
+}
+inline constexpr Pin PortBPin(unsigned int n) noexcept
+{
+    return static_cast<Pin>(32u + n);
+}
+inline constexpr Pin PortCPin(unsigned int n) noexcept
+{
+    return static_cast<Pin>(64u + n);
+}
+inline constexpr Pin PortDPin(unsigned int n) noexcept
+{
+    return static_cast<Pin>(96u + n);
+}
+inline constexpr Pin PortEPin(unsigned int n) noexcept
+{
+    return static_cast<Pin>(128u + n);
 }
 
-inline void memmovei32(int32_t *_ecv_array dst, const int32_t *_ecv_array src, size_t numWords) noexcept
+inline void memcpyi32(int32_t* _ecv_array dst, const int32_t* _ecv_array src,
+                      size_t numWords) noexcept
 {
-	::memmoveu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
-	             reinterpret_cast<const uint32_t *_ecv_array>(src),
-	             numWords);
+    memcpyu32(reinterpret_cast<uint32_t * _ecv_array>(dst),
+              reinterpret_cast<const uint32_t * _ecv_array>(src), numWords);
 }
 
-inline void memmovef(float *_ecv_array dst, const float *_ecv_array src, size_t numFloats) noexcept
+inline void memcpyf(float* _ecv_array dst, const float* _ecv_array src,
+                    size_t numFloats) noexcept
 {
-	::memmoveu32(reinterpret_cast<uint32_t *_ecv_array>(dst),
-	             reinterpret_cast<const uint32_t *_ecv_array>(src),
-	             numFloats);
+    memcpyu32(reinterpret_cast<uint32_t * _ecv_array>(dst),
+              reinterpret_cast<const uint32_t * _ecv_array>(src), numFloats);
+}
+
+inline void memmovei32(int32_t* _ecv_array dst, const int32_t* _ecv_array src,
+                       size_t numWords) noexcept
+{
+    ::memmoveu32(reinterpret_cast<uint32_t * _ecv_array>(dst),
+                 reinterpret_cast<const uint32_t * _ecv_array>(src), numWords);
+}
+
+inline void memmovef(float* _ecv_array dst, const float* _ecv_array src,
+                     size_t numFloats) noexcept
+{
+    ::memmoveu32(reinterpret_cast<uint32_t * _ecv_array>(dst),
+                 reinterpret_cast<const uint32_t * _ecv_array>(src), numFloats);
 }
 
 union CallbackParameter
 {
-	void* vp;
-	uint32_t u32;
-	int32_t i32;
+    void* vp;
+    uint32_t u32;
+    int32_t i32;
 
-	explicit CallbackParameter(void* pp) noexcept : vp(pp) {}
-	explicit CallbackParameter(uint32_t pp) noexcept : u32(pp) {}
-	explicit CallbackParameter(int32_t pp) noexcept : i32(pp) {}
-	CallbackParameter() noexcept : u32(0) {}
+    explicit CallbackParameter(void* pp) noexcept : vp(pp)
+    {
+    }
+    explicit CallbackParameter(uint32_t pp) noexcept : u32(pp)
+    {
+    }
+    explicit CallbackParameter(int32_t pp) noexcept : i32(pp)
+    {
+    }
+    CallbackParameter() noexcept : u32(0)
+    {
+    }
 };
 
 using StandardCallbackFunction = void (*)(CallbackParameter) noexcept;
 
-inline void WatchdogInit() noexcept {}
-inline void WatchdogReset() noexcept {}
-inline void WatchdogResetSecondary() noexcept {}
+inline void WatchdogInit() noexcept
+{
+}
+inline void WatchdogReset() noexcept
+{
+}
+inline void WatchdogResetSecondary() noexcept
+{
+}
 
-inline uint32_t RandomNumber(uint32_t howbig) noexcept { return howbig ? (howbig - 1) : 0; }
+inline uint32_t RandomNumber(uint32_t howbig) noexcept
+{
+    return howbig ? (howbig - 1) : 0;
+}

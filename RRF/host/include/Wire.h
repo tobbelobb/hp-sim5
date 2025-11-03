@@ -3,6 +3,7 @@
 class TwoWire
 {
 public:
-	void begin() noexcept {}
+    void begin() noexcept
+    {
+    }
 };
-

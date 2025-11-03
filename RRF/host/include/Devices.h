@@ -1,17 +1,23 @@
 #pragma once
-#define SUPPORT_USB		0
+#define SUPPORT_USB 0
 
 //#include <AsyncSerial.h>
 //#include <USARTClass.h>
 //#include <SerialCDC.h>
 //
-//extern AsyncSerial serialUart1;
-//extern USARTClass serialUart2;
+// extern AsyncSerial serialUart1;
+// extern USARTClass serialUart2;
 //#if defined(DUET3_MB6HC)
-//extern AsyncSerial serialWiFi;
+// extern AsyncSerial serialWiFi;
 //#endif
-//extern SerialCDC serialUSB;
+// extern SerialCDC serialUSB;
 
-inline void DeviceInit() noexcept {}
-inline void StopAnalogTask() noexcept {}
-inline void StopUsbTask() noexcept {}
+inline void DeviceInit() noexcept
+{
+}
+inline void StopAnalogTask() noexcept
+{
+}
+inline void StopUsbTask() noexcept
+{
+}

@@ -10,17 +10,41 @@ constexpr uint32_t PMC_PCK_4 = 4;
 constexpr uint32_t PMC_PCK_5 = 5;
 constexpr uint32_t PMC_PCK_6 = 6;
 
-inline void pmc_enable_periph_clk(uint32_t) noexcept {}
-inline void pmc_disable_periph_clk(uint32_t) noexcept {}
-inline void pmc_enable_pck(uint32_t) noexcept {}
-inline void pmc_disable_pck(uint32_t) noexcept {}
-inline void pmc_enable_upll_clock() noexcept {}
-inline void pmc_enable_udpck() noexcept {}
-inline void pmc_enable_uhpck() noexcept {}
-inline void pmc_enable_sclk_osc_freq_monitor() noexcept {}
-inline void pmc_enable_interrupt(uint32_t) noexcept {}
-inline void pmc_disable_interrupt(uint32_t) noexcept {}
-inline void pmc_switch_pck_to_mck(uint32_t, uint32_t) noexcept {}
+inline void pmc_enable_periph_clk(uint32_t) noexcept
+{
+}
+inline void pmc_disable_periph_clk(uint32_t) noexcept
+{
+}
+inline void pmc_enable_pck(uint32_t) noexcept
+{
+}
+inline void pmc_disable_pck(uint32_t) noexcept
+{
+}
+inline void pmc_enable_upll_clock() noexcept
+{
+}
+inline void pmc_enable_udpck() noexcept
+{
+}
+inline void pmc_enable_uhpck() noexcept
+{
+}
+inline void pmc_enable_sclk_osc_freq_monitor() noexcept
+{
+}
+inline void pmc_enable_interrupt(uint32_t) noexcept
+{
+}
+inline void pmc_disable_interrupt(uint32_t) noexcept
+{
+}
+inline void pmc_switch_pck_to_mck(uint32_t, uint32_t) noexcept
+{
+}
 
-inline constexpr uint32_t PMC_PCK_PRES(uint32_t pres) noexcept { return pres; }
-
+inline constexpr uint32_t PMC_PCK_PRES(uint32_t pres) noexcept
+{
+    return pres;
+}

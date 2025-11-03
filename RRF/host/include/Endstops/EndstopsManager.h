@@ -2,64 +2,115 @@
 
 #ifdef RRF_HOST_BUILD
 
-#include <RepRapFirmware.h>
-#include <General/Bitmap.h>
 #include <Endstops/EndstopDefs.h>
 #include <Endstops/ZProbe.h>
+#include <General/Bitmap.h>
 #include <RTOSIface/RTOSIface.h>
+#include <RepRapFirmware.h>
 
 class EndstopsManager
 {
 public:
-	EndstopsManager() noexcept : defaultProbe(0)
-	{
-		defaultProbe.SetDefaults();
-	}
+    EndstopsManager() noexcept : defaultProbe(0)
+    {
+        defaultProbe.SetDefaults();
+    }
 
-	void Init() noexcept {}
-	void ClearEndstops() noexcept {}
+    void Init() noexcept
+    {
+    }
+    void ClearEndstops() noexcept
+    {
+    }
 
-	void EnableAxisEndstops(AxesBitmap, const float*, bool, bool&) noexcept {}
-	bool EnableZProbe(size_t, bool = false) noexcept { return false; }
-	void EnableExtruderEndstops(ExtrudersBitmap, const float*, bool&) noexcept {}
+    void EnableAxisEndstops(AxesBitmap, const float*, bool, bool&) noexcept
+    {
+    }
+    bool EnableZProbe(size_t, bool = false) noexcept
+    {
+        return false;
+    }
+    void EnableExtruderEndstops(ExtrudersBitmap, const float*, bool&) noexcept
+    {
+    }
 
-	EndstopHitDetails CheckEndstops() noexcept { return EndstopHitDetails{}; }
-	bool AnyEndstopsActive() const noexcept { return false; }
+    EndstopHitDetails CheckEndstops() noexcept
+    {
+        return EndstopHitDetails{};
+    }
+    bool AnyEndstopsActive() const noexcept
+    {
+        return false;
+    }
 
-	void DisableRemoteStallEndstops() noexcept {}
+    void DisableRemoteStallEndstops() noexcept
+    {
+    }
 
-	bool HomingZWithProbe() const noexcept { return false; }
+    bool HomingZWithProbe() const noexcept
+    {
+        return false;
+    }
 
-	void GetM119report(const StringRef& reply) noexcept {	reply.copy("No Endstops or zprobes on Host"); }
-	// M558: Create or modify probe
-	GCodeResult HandleM558(GCodeBuffer& gb, const StringRef &reply) { return GCodeResult::ok; }
-	// G31: Set or Report Current Probe status
-	GCodeResult HandleG31(GCodeBuffer& gb, const StringRef& reply) { return GCodeResult::ok; }
-	// Configure the endstops in response to M574
-	GCodeResult HandleM574(GCodeBuffer& gb, const StringRef& reply, OutputBuffer *_ecv_null & outbuf)  { return GCodeResult::ok; }
+    void GetM119report(const StringRef& reply) noexcept
+    {
+        reply.copy("No Endstops or zprobes on Host");
+    }
+    // M558: Create or modify probe
+    GCodeResult HandleM558(GCodeBuffer& gb, const StringRef& reply)
+    {
+        return GCodeResult::ok;
+    }
+    // G31: Set or Report Current Probe status
+    GCodeResult HandleG31(GCodeBuffer& gb, const StringRef& reply)
+    {
+        return GCodeResult::ok;
+    }
+    // Configure the endstops in response to M574
+    GCodeResult HandleM574(GCodeBuffer& gb, const StringRef& reply,
+                           OutputBuffer* _ecv_null& outbuf)
+    {
+        return GCodeResult::ok;
+    }
 
-	bool Stopped(size_t axis) const noexcept { return true; }
-	EndStopPosition GetEndStopPosition(size_t) const noexcept { return EndStopPosition::noEndStop; }
+    bool Stopped(size_t axis) const noexcept
+    {
+        return true;
+    }
+    EndStopPosition GetEndStopPosition(size_t) const noexcept
+    {
+        return EndStopPosition::noEndStop;
+    }
 
-	GCodeResult ProgramZProbe(GCodeBuffer& gb, const StringRef& reply)  { return GCodeResult::ok; }
+    GCodeResult ProgramZProbe(GCodeBuffer& gb, const StringRef& reply)
+    {
+        return GCodeResult::ok;
+    }
 
-	void SetZProbeDefaults() noexcept { defaultProbe.SetDefaults(); }
-	ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept
-	{
-		return (index == 0) ? ReadLockedPointer<ZProbe>(nullptr, &defaultProbe)
-		                    : ReadLockedPointer<ZProbe>(nullptr, nullptr);
-	}
-	ReadLockedPointer<ZProbe> GetZProbeOrDefault(size_t) const noexcept
-	{
-		return ReadLockedPointer<ZProbe>(nullptr, &defaultProbe);
-	}
+    void SetZProbeDefaults() noexcept
+    {
+        defaultProbe.SetDefaults();
+    }
+    ReadLockedPointer<ZProbe> GetZProbe(size_t index) const noexcept
+    {
+        return (index == 0) ? ReadLockedPointer<ZProbe>(nullptr, &defaultProbe)
+                            : ReadLockedPointer<ZProbe>(nullptr, nullptr);
+    }
+    ReadLockedPointer<ZProbe> GetZProbeOrDefault(size_t) const noexcept
+    {
+        return ReadLockedPointer<ZProbe>(nullptr, &defaultProbe);
+    }
 
 #if SUPPORT_CAN_EXPANSION
-	void HandleRemoteAnalogZProbeValueChange(CanAddress src, uint8_t handleMajor, uint8_t handleMinor, uint32_t reading) noexcept { }
+    void HandleRemoteAnalogZProbeValueChange(CanAddress src, uint8_t handleMajor,
+                                             uint8_t handleMinor,
+                                             uint32_t reading) noexcept
+    {
+    }
 #endif
 
 private:
-	mutable DummyZProbe defaultProbe;
+    mutable DummyZProbe defaultProbe;
 };
 
 #endif

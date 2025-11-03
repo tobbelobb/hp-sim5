@@ -19,13 +19,19 @@ using __fp16 = float;
 #endif
 
 #ifndef FLOAT16_T_DEFINED
-# define FLOAT16_T_DEFINED
+#define FLOAT16_T_DEFINED
 using float16_t = __fp16;
 #endif
 
 constexpr Pin NoPin = 0xFF;
 constexpr Pin Nx = NoPin;
 
-struct Spi {};
-struct Usart {};
-struct Sercom {};
+struct Spi
+{
+};
+struct Usart
+{
+};
+struct Sercom
+{
+};

@@ -1,8 +1,8 @@
 #include "CanCapture.h"
 
 #include <atomic>
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -10,9 +10,9 @@
 #include <mutex>
 #include <sstream>
 
+#include <CanId.h>
 #include <CanMessageBuffer.h>
 #include <CanMessageFormats.h>
-#include <CanId.h>
 #include <HostTiming.h>
 #include <RepRapFirmware.h>
 
@@ -27,204 +27,217 @@ std::atomic<uint64_t> gLastExtendedWhen{0};
 std::atomic<uint64_t> gLatestFinishMasterClock{0};
 std::atomic<uint64_t> gBaseMasterClock{std::numeric_limits<uint64_t>::max()};
 
-constexpr uint64_t MasterClocksPerStepTick = HostTiming::StepClockFrequencyHz/StepClockRate;
+constexpr uint64_t MasterClocksPerStepTick =
+    HostTiming::StepClockFrequencyHz / StepClockRate;
 static_assert(StepClockRate != 0, "Step clock rate must not be zero");
-static_assert(HostTiming::StepClockFrequencyHz % StepClockRate == 0, "Master clock must be multiple of step clock rate");
+static_assert(HostTiming::StepClockFrequencyHz % StepClockRate == 0,
+              "Master clock must be multiple of step clock rate");
 
 inline uint64_t ExtendTimestamp(uint32_t raw) noexcept
 {
-	uint64_t expected = gLastExtendedWhen.load(std::memory_order_relaxed);
-	for (;;)
-	{
-		const uint64_t high = expected & 0xFFFFFFFF00000000ULL;
-		const uint32_t low = static_cast<uint32_t>(expected & 0xFFFFFFFFUL);
-		const uint64_t candidate = (raw < low) ? (high + (1ULL << 32) + raw) : (high + raw);
-		if (gLastExtendedWhen.compare_exchange_weak(expected, candidate, std::memory_order_relaxed, std::memory_order_relaxed))
-		{
-			return candidate;
-		}
-	}
+    uint64_t expected = gLastExtendedWhen.load(std::memory_order_relaxed);
+    for (;;)
+    {
+        const uint64_t high = expected & 0xFFFFFFFF00000000ULL;
+        const uint32_t low = static_cast<uint32_t>(expected & 0xFFFFFFFFUL);
+        const uint64_t candidate =
+            (raw < low) ? (high + (1ULL << 32) + raw) : (high + raw);
+        if (gLastExtendedWhen.compare_exchange_weak(expected, candidate,
+                                                    std::memory_order_relaxed,
+                                                    std::memory_order_relaxed))
+        {
+            return candidate;
+        }
+    }
 }
 
 inline void UpdateLatestFinish(uint64_t finishMasterClock) noexcept
 {
-	uint64_t current = gLatestFinishMasterClock.load(std::memory_order_relaxed);
-	while (current < finishMasterClock
-		   && !gLatestFinishMasterClock.compare_exchange_weak(current, finishMasterClock, std::memory_order_relaxed, std::memory_order_relaxed))
-	{
-	}
+    uint64_t current = gLatestFinishMasterClock.load(std::memory_order_relaxed);
+    while (current < finishMasterClock &&
+           !gLatestFinishMasterClock.compare_exchange_weak(current, finishMasterClock,
+                                                           std::memory_order_relaxed,
+                                                           std::memory_order_relaxed))
+    {
+    }
 }
 
 inline uint64_t NormaliseMasterClock(uint64_t absoluteMasterClock) noexcept
 {
-	uint64_t base = gBaseMasterClock.load(std::memory_order_relaxed);
-	if (base == std::numeric_limits<uint64_t>::max())
-	{
-		if (gBaseMasterClock.compare_exchange_strong(base, absoluteMasterClock, std::memory_order_relaxed, std::memory_order_relaxed))
-		{
-			return 0;
-		}
-		base = gBaseMasterClock.load(std::memory_order_relaxed);
-	}
-	if (absoluteMasterClock <= base)
-	{
-		return 0;
-	}
-	return absoluteMasterClock - base;
+    uint64_t base = gBaseMasterClock.load(std::memory_order_relaxed);
+    if (base == std::numeric_limits<uint64_t>::max())
+    {
+        if (gBaseMasterClock.compare_exchange_strong(base, absoluteMasterClock,
+                                                     std::memory_order_relaxed,
+                                                     std::memory_order_relaxed))
+        {
+            return 0;
+        }
+        base = gBaseMasterClock.load(std::memory_order_relaxed);
+    }
+    if (absoluteMasterClock <= base)
+    {
+        return 0;
+    }
+    return absoluteMasterClock - base;
 }
-}
+}  // namespace
 
 bool HostCanCapture::Configure(const std::filesystem::path& filePath) noexcept
 {
-	std::lock_guard<std::mutex> lock(gMutex);
+    std::lock_guard<std::mutex> lock(gMutex);
 
-	if (filePath.empty())
-	{
-		if (gStream.is_open())
-		{
-			gStream.flush();
-			gStream.close();
-		}
-		gOutputPath.clear();
-		gEnabled = false;
-		return true;
-	}
+    if (filePath.empty())
+    {
+        if (gStream.is_open())
+        {
+            gStream.flush();
+            gStream.close();
+        }
+        gOutputPath.clear();
+        gEnabled = false;
+        return true;
+    }
 
-	std::error_code ec;
-	const auto directory = filePath.parent_path();
-	if (!directory.empty())
-	{
-		std::filesystem::create_directories(directory, ec);
-		if (ec)
-		{
-			gEnabled = false;
-			return false;
-		}
-	}
+    std::error_code ec;
+    const auto directory = filePath.parent_path();
+    if (!directory.empty())
+    {
+        std::filesystem::create_directories(directory, ec);
+        if (ec)
+        {
+            gEnabled = false;
+            return false;
+        }
+    }
 
-	gStream.close();
-	gStream.clear();
-	gStream.open(filePath, std::ios::out | std::ios::trunc);
-	if (!gStream.is_open())
-	{
-		gEnabled = false;
-		return false;
-	}
+    gStream.close();
+    gStream.clear();
+    gStream.open(filePath, std::ios::out | std::ios::trunc);
+    if (!gStream.is_open())
+    {
+        gEnabled = false;
+        return false;
+    }
 
-	gStream << "{\"capture_version\":1,\"generated_at\":\""
-	        << std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())
-	        << "\"}\n";
-	gStream.flush();
+    gStream << "{\"capture_version\":1,\"generated_at\":\""
+            << std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())
+            << "\"}\n";
+    gStream.flush();
 
-	gOutputPath = filePath;
-	gEnabled = true;
-	gCaptureIndex.store(0, std::memory_order_relaxed);
-	gLastExtendedWhen.store(0, std::memory_order_relaxed);
-	gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
-	gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(), std::memory_order_relaxed);
-	return true;
+    gOutputPath = filePath;
+    gEnabled = true;
+    gCaptureIndex.store(0, std::memory_order_relaxed);
+    gLastExtendedWhen.store(0, std::memory_order_relaxed);
+    gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
+    gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
+                           std::memory_order_relaxed);
+    return true;
 }
 
 void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 {
-	if (!gEnabled)
-	{
-		return;
-	}
+    if (!gEnabled)
+    {
+        return;
+    }
 
-	if (buffer.id.MsgType() != CanMessageType::movementLinearShaped)
-	{
-		return;
-	}
+    if (buffer.id.MsgType() != CanMessageType::movementLinearShaped)
+    {
+        return;
+    }
 
-	const auto& msg = buffer.msg.moveLinearShaped;
+    const auto& msg = buffer.msg.moveLinearShaped;
 
-	const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
-	const uint64_t whenStep = ExtendTimestamp(msg.whenToExecute);
-	const uint64_t accelStep = static_cast<uint64_t>(msg.accelerationClocks);
-	const uint64_t steadyStep = static_cast<uint64_t>(msg.steadyClocks);
-	const uint64_t decelStep = static_cast<uint64_t>(msg.decelClocks);
-	const uint64_t durationStep = accelStep + steadyStep + decelStep;
+    const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
+    const uint64_t whenStep = ExtendTimestamp(msg.whenToExecute);
+    const uint64_t accelStep = static_cast<uint64_t>(msg.accelerationClocks);
+    const uint64_t steadyStep = static_cast<uint64_t>(msg.steadyClocks);
+    const uint64_t decelStep = static_cast<uint64_t>(msg.decelClocks);
+    const uint64_t durationStep = accelStep + steadyStep + decelStep;
 
-	const uint64_t whenMaster = whenStep * MasterClocksPerStepTick;
-	const uint64_t normalisedWhenMaster = NormaliseMasterClock(whenMaster);
-	const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
-	const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
-	const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
-	const uint64_t finishMaster = (whenStep + durationStep) * MasterClocksPerStepTick;
+    const uint64_t whenMaster = whenStep * MasterClocksPerStepTick;
+    const uint64_t normalisedWhenMaster = NormaliseMasterClock(whenMaster);
+    const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
+    const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
+    const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
+    const uint64_t finishMaster = (whenStep + durationStep) * MasterClocksPerStepTick;
 
-	UpdateLatestFinish(finishMaster);
-	HostTiming::EnsureMasterClockAtLeast(finishMaster);
+    UpdateLatestFinish(finishMaster);
+    HostTiming::EnsureMasterClockAtLeast(finishMaster);
 
-	std::ostringstream line;
-	line.setf(std::ios::fixed, std::ios::floatfield);
-	line << std::setprecision(3);
+    std::ostringstream line;
+    line.setf(std::ios::fixed, std::ios::floatfield);
+    line << std::setprecision(3);
 
-	line << "{\"type\":\"movement_linear_shaped\"";
-	line << ",\"capture_index\":" << captureIndex;
-	line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
-	line << ",\"when_to_execute\":" << normalisedWhenMaster;
-	line << ",\"accel_clocks\":" << accelMaster;
-	line << ",\"steady_clocks\":" << steadyMaster;
-	line << ",\"decel_clocks\":" << decelMaster;
-	line << ",\"acceleration\":" << msg.acceleration;
-	line << ",\"deceleration\":" << msg.deceleration;
-	line << ",\"seq\":" << static_cast<unsigned int>(msg.seq & CanMessageMovementLinearShaped::SeqMask);
-  // Ignore extruder_mask, pressure advance and input shaping for now
-	// line << ",\"extruder_mask\":" << static_cast<unsigned int>(msg.extruderDrives);
-	// line << ",\"use_pressure_advance\":" << (msg.usePressureAdvance ? "true" : "false");
-	// line << ",\"use_late_input_shaping\":" << (msg.useLateInputShaping ? "true" : "false");
+    line << "{\"type\":\"movement_linear_shaped\"";
+    line << ",\"capture_index\":" << captureIndex;
+    line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
+    line << ",\"when_to_execute\":" << normalisedWhenMaster;
+    line << ",\"accel_clocks\":" << accelMaster;
+    line << ",\"steady_clocks\":" << steadyMaster;
+    line << ",\"decel_clocks\":" << decelMaster;
+    line << ",\"acceleration\":" << msg.acceleration;
+    line << ",\"deceleration\":" << msg.deceleration;
+    line << ",\"seq\":"
+         << static_cast<unsigned int>(msg.seq & CanMessageMovementLinearShaped::SeqMask);
+    // Ignore extruder_mask, pressure advance and input shaping for now
+    // line << ",\"extruder_mask\":" << static_cast<unsigned int>(msg.extruderDrives);
+    // line << ",\"use_pressure_advance\":" << (msg.usePressureAdvance ? "true" :
+    // "false"); line << ",\"use_late_input_shaping\":" << (msg.useLateInputShaping ?
+    // "true" : "false");
 
-	line << ",\"drivers\":[";
-	for (uint32_t i = 0; i < msg.numDrivers && i < MaxLinearDriversPerCanSlave; ++i)
-	{
-		if (i > 0)
-		{
-			line << ',';
-		}
-		const bool isExtruder = ((msg.extruderDrives >> i) & 0x1u) != 0;
-		line << "{\"index\":" << i;
-		if (isExtruder)
-		{
-			line << ",\"extrusion\":" << msg.perDrive[i].extrusion;
-		}
-		else
-		{
-			line << ",\"steps\":" << msg.perDrive[i].steps;
-		}
-		line << "}";
-	}
-	line << "]}";
+    line << ",\"drivers\":[";
+    for (uint32_t i = 0; i < msg.numDrivers && i < MaxLinearDriversPerCanSlave; ++i)
+    {
+        if (i > 0)
+        {
+            line << ',';
+        }
+        const bool isExtruder = ((msg.extruderDrives >> i) & 0x1u) != 0;
+        line << "{\"index\":" << i;
+        if (isExtruder)
+        {
+            line << ",\"extrusion\":" << msg.perDrive[i].extrusion;
+        }
+        else
+        {
+            line << ",\"steps\":" << msg.perDrive[i].steps;
+        }
+        line << "}";
+    }
+    line << "]}";
 
-	std::lock_guard<std::mutex> lock(gMutex);
-	if (!gEnabled || !gStream.is_open())
-	{
-		return;
-	}
+    std::lock_guard<std::mutex> lock(gMutex);
+    if (!gEnabled || !gStream.is_open())
+    {
+        return;
+    }
 
-	gStream << line.str() << '\n';
-	gStream.flush();
+    gStream << line.str() << '\n';
+    gStream.flush();
 }
 
 uint64_t HostCanCapture::GetCaptureCount() noexcept
 {
-	return gCaptureIndex.load(std::memory_order_relaxed);
+    return gCaptureIndex.load(std::memory_order_relaxed);
 }
 
 uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
 {
-	return gLatestFinishMasterClock.load(std::memory_order_relaxed);
+    return gLatestFinishMasterClock.load(std::memory_order_relaxed);
 }
 
 void HostCanCapture::Shutdown() noexcept
 {
-	std::lock_guard<std::mutex> lock(gMutex);
-	if (gStream.is_open())
-	{
-		gStream.flush();
-		gStream.close();
-	}
-	gOutputPath.clear();
-	gEnabled = false;
-	gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(), std::memory_order_relaxed);
+    std::lock_guard<std::mutex> lock(gMutex);
+    if (gStream.is_open())
+    {
+        gStream.flush();
+        gStream.close();
+    }
+    gOutputPath.clear();
+    gEnabled = false;
+    gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
+                           std::memory_order_relaxed);
 }

@@ -2,6 +2,5 @@
 
 namespace Heap
 {
-	ReadWriteLock heapLock;
+ReadWriteLock heapLock;
 }
-

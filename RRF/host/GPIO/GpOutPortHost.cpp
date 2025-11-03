@@ -1,9 +1,12 @@
 #include <GPIO/GpOutPort.h>
 #include <cstdint>
 
-namespace {
-	inline void UNUSED_(const void*) {}
+namespace
+{
+inline void UNUSED_(const void*)
+{
 }
+}  // namespace
 
 // Object model note:
 // In the host build, the object-model macros usually collapse to no-ops.
@@ -12,57 +15,54 @@ namespace {
 
 bool GpOutputPort::IsUnused() const noexcept
 {
-	// Treat "unused" as "not actively driven" on host.
-	// This is arbitrary but harmless; adjust if your code expects otherwise.
-	return lastPwm == 0.0f;
+    // Treat "unused" as "not actively driven" on host.
+    // This is arbitrary but harmless; adjust if your code expects otherwise.
+    return lastPwm == 0.0f;
 }
 
 #if SUPPORT_CAN_EXPANSION
 bool GpOutputPort::IsLocal() const noexcept
 {
-	// On host, consider everything "local" by default.
-	// If you prefer, compare to CanInterface::GetCanAddress().
-	return true;
+    // On host, consider everything "local" by default.
+    // If you prefer, compare to CanInterface::GetCanAddress().
+    return true;
 }
 #endif
 
-GCodeResult GpOutputPort::WriteAnalog(uint32_t gpioPortNumber,
-                                      bool /*isServo*/,
-                                      float pwm,
-                                      const GCodeBuffer& gb,
+GCodeResult GpOutputPort::WriteAnalog(uint32_t gpioPortNumber, bool /*isServo*/,
+                                      float pwm, const GCodeBuffer& gb,
                                       const StringRef& reply) noexcept
 {
-	UNUSED_(&gpioPortNumber);
-	UNUSED_(&gb);
-	UNUSED_(&reply);
+    UNUSED_(&gpioPortNumber);
+    UNUSED_(&gb);
+    UNUSED_(&reply);
 
-	// Host stub: just remember last value.
-	lastPwm = pwm;
-	return GCodeResult::ok;
+    // Host stub: just remember last value.
+    lastPwm = pwm;
+    return GCodeResult::ok;
 }
 
 void GpOutputPort::WriteDigital(bool value) noexcept
 {
-	// Represent digital on/off as 1.0 / 0.0 in our simple host stub.
-	lastPwm = value ? 1.0f : 0.0f;
+    // Represent digital on/off as 1.0 / 0.0 in our simple host stub.
+    lastPwm = value ? 1.0f : 0.0f;
 }
 
-GCodeResult GpOutputPort::Configure(uint32_t gpioNumber,
-                                    bool /*isServo*/,
-                                    GCodeBuffer& gb,
-                                    const StringRef& reply) THROWS(GCodeException)
+GCodeResult GpOutputPort::Configure(uint32_t gpioNumber, bool /*isServo*/,
+                                    GCodeBuffer& gb, const StringRef& reply)
+    THROWS(GCodeException)
 {
-	UNUSED_(&gpioNumber);
-	UNUSED_(&gb);
-	UNUSED_(&reply);
+    UNUSED_(&gpioNumber);
+    UNUSED_(&gb);
+    UNUSED_(&reply);
 
-	// Host stub: accept any configuration without touching hardware.
-	return GCodeResult::ok;
+    // Host stub: accept any configuration without touching hardware.
+    return GCodeResult::ok;
 }
 
 void GpOutputPort::WriteAnalog(float pwm) noexcept
 {
-	lastPwm = pwm;
+    lastPwm = pwm;
 }
 
 #if SUPPORT_REMOTE_COMMANDS
@@ -70,27 +70,27 @@ GCodeResult GpOutputPort::AssignFromRemote(uint32_t gpioPortNumber,
                                            const CanMessageGenericParser& parser,
                                            const StringRef& reply) noexcept
 {
-	UNUSED_(&gpioPortNumber);
-	UNUSED_(&parser);
-	UNUSED_(&reply);
+    UNUSED_(&gpioPortNumber);
+    UNUSED_(&parser);
+    UNUSED_(&reply);
 
-	// Host stub: pretend remote assignment succeeded.
-	return GCodeResult::ok;
+    // Host stub: pretend remote assignment succeeded.
+    return GCodeResult::ok;
 }
 #endif
 
 #ifdef PCCB
-void GpOutputPort::Assign(const char *pinName) noexcept
+void GpOutputPort::Assign(const char* pinName) noexcept
 {
-	UNUSED_(pinName);
-	// Host stub: no-op.
+    UNUSED_(pinName);
+    // Host stub: no-op.
 }
 #endif
 
 // ----------------------------------------------------------------------------
 // Object model plumbing (host build)
 
-constexpr ObjectModelTableEntry GpOutputPort::objectModelTable[] = { };
-constexpr uint8_t GpOutputPort::objectModelTableDescriptor[] = { 0 };
+constexpr ObjectModelTableEntry GpOutputPort::objectModelTable[] = {};
+constexpr uint8_t GpOutputPort::objectModelTableDescriptor[] = {0};
 
 DEFINE_GET_OBJECT_MODEL_TABLE(GpOutputPort)
