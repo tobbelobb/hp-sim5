@@ -124,30 +124,7 @@ void AdvanceStepClocks(uint64_t value) noexcept
     {
         return;
     }
-    uint64_t current = g_virtualClockTicks.load(std::memory_order_relaxed);
-    do
-    {
-        uint64_t target = current + value;
-        if (HostCanCapture::GetCaptureCount() != 0)
-        {
-            const uint64_t latestFinish = HostCanCapture::GetLatestFinishMasterClock();
-            if (latestFinish != 0)
-            {
-                const uint64_t maxAllowed =
-                    latestFinish +
-                    StepClockFrequencyHz;  // allow up to ~1s beyond latest finish
-                if (target > maxAllowed)
-                {
-                    target = maxAllowed;
-                }
-            }
-        }
-        if (g_virtualClockTicks.compare_exchange_weak(
-                current, target, std::memory_order_relaxed, std::memory_order_relaxed))
-        {
-            break;
-        }
-    } while (true);
+    g_virtualClockTicks.fetch_add(value, std::memory_order_relaxed);
 }
 
 void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept

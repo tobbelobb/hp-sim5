@@ -161,10 +161,11 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
     const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
     const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
+    const uint64_t durationMaster = durationStep * MasterClocksPerStepTick;
     const uint64_t finishMaster = (whenStep + durationStep) * MasterClocksPerStepTick;
 
     UpdateLatestFinish(finishMaster);
-    HostTiming::EnsureMasterClockAtLeast(finishMaster);
+    HostTiming::AdvanceStepClocks(durationMaster);
 
     std::ostringstream line;
     line.setf(std::ios::fixed, std::ios::floatfield);

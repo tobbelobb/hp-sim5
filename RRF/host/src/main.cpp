@@ -521,7 +521,6 @@ bool WaitForPrintCompletion() noexcept
     unsigned int idleCycles = 0;
     uint64_t lastCaptureCount = HostCanCapture::GetCaptureCount();
     unsigned int captureIdleCycles = 0;
-    unsigned int fastForwardAttempts = 0;
     bool seenCapture = (lastCaptureCount != 0);
 
     for (;;)
@@ -533,7 +532,6 @@ bool WaitForPrintCompletion() noexcept
         {
             lastCaptureCount = currentCaptureCount;
             captureIdleCycles = 0;
-            fastForwardAttempts = 0;
             seenCapture = true;
         }
         else if (currentCaptureCount != 0)
@@ -544,15 +542,12 @@ bool WaitForPrintCompletion() noexcept
             }
             else
             {
-                ++fastForwardAttempts;
+                // No longer fast-forwarding - clock is advanced deterministically by LogMotion()
                 const uint64_t latestFinish =
                     HostCanCapture::GetLatestFinishMasterClock();
                 if (latestFinish != 0)
                 {
-                    const uint64_t advance = static_cast<uint64_t>(std::min<unsigned int>(
-                                                 fastForwardAttempts, 3600U)) *
-                                             HostTiming::StepClockFrequencyHz;
-                    HostTiming::EnsureMasterClockAtLeast(latestFinish + advance);
+                    HostTiming::EnsureMasterClockAtLeast(latestFinish);
                 }
             }
         }
@@ -619,8 +614,7 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        //std::this_thread::yield();
+        std::this_thread::yield();
 
         if (reprap.IsStopped())
         {
