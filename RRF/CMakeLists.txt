@@ -57,7 +57,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
     ${SIM_ROOT_DIR}/movement/DriverDataHost.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
-    ${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
+    #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/endstops/ZProbeHost.cpp
     ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
     ${SIM_ROOT_DIR}/platform/TasksHost.cpp
@@ -113,7 +113,7 @@ set(RRF_SOURCES_TO_USE
     GCodes/GCodeBuffer/ExpressionParser.cpp
     GCodes/GCodeBuffer/StringParser.cpp
     GCodes/GCodeMachineState.cpp
-    #GCodes/GCodeInput.cpp
+    GCodes/GCodeInput.cpp
     GCodes/GCodeQueue.cpp
     GCodes/GCodes.cpp
     GCodes/GCodes2.cpp
