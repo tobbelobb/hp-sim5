@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -542,7 +543,7 @@ bool WaitForPrintCompletion() noexcept
             }
             else
             {
-                // No longer fast-forwarding - clock is advanced deterministically by LogMotion()
+                // Ensure clock is at least at the latest finish time
                 const uint64_t latestFinish =
                     HostCanCapture::GetLatestFinishMasterClock();
                 if (latestFinish != 0)
@@ -725,6 +726,9 @@ bool StartPrint(const std::string& relativePath) noexcept
 
 int main(int argc, char** argv)
 {
+    // Seed random number generator for deterministic behavior
+    std::srand(0);
+
     CommandLineOptions options;
     std::string parseError;
     if (!ParseCommandLine(argc, argv, options, parseError))
@@ -806,6 +810,7 @@ int main(int argc, char** argv)
         VirtuallyHomeAxesIfNeeded();
         HostTiming::Reset();
         HostCanCapture::Reset();
+        reprap.GetGCodes().daemonRunning = false;  // Reset daemon state for deterministic timing
 
         bool success = true;
         if (options.gcodeArgument)
