@@ -19,12 +19,12 @@
 
 #include <RTOSIface/RTOSIface.h>
 #include "host_rtos.h"
+#include "HostTiming.h"
 
 namespace
 {
 using Clock = std::chrono::steady_clock;
 constexpr TickType_t TicksPerSecond = 1000;  // 1 tick == 1ms on host
-const Clock::time_point startTime = Clock::now();
 
 struct TaskControlBlock
 {
@@ -122,10 +122,8 @@ void RemoveTask(TaskControlBlock* tcb) noexcept
 
 TickType_t xTaskGetTickCount() noexcept
 {
-    const auto now = Clock::now();
-    const auto elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
-    return static_cast<TickType_t>(elapsed.count());
+    // Use virtual clock for deterministic simulation
+    return static_cast<TickType_t>(HostTiming::Millis());
 }
 
 TickType_t xTaskGetTickCountFromISR() noexcept
@@ -143,17 +141,16 @@ void vTaskDelay(const TickType_t ticksToDelay) noexcept
 {
     if (ticksToDelay == 0)
     {
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
         std::this_thread::yield();
         return;
     }
-    const auto duration = ToDuration(ticksToDelay);
-    if (duration == std::chrono::milliseconds::max())
-    {
-        std::this_thread::sleep_for(std::chrono::hours(24));
-        return;
-    }
-    std::this_thread::sleep_for(duration);
+    // Use virtual delay for deterministic simulation
+    // Convert ticks to milliseconds (1 tick = 1ms)
+    uint32_t delayMs = static_cast<uint32_t>(ticksToDelay);
+    HostTiming::DelayMilliseconds(delayMs);
+
+    // Still yield to allow other threads to run
+    std::this_thread::yield();
 }
 
 void vTaskDelayUntil(TickType_t* const lastWakeTime,

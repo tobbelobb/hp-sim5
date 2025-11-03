@@ -57,7 +57,7 @@ Fans, object model, and such are nice-to-haves.
 
 Don't make any changes directly in the `RRF/build/generated_sources` directory.
 If you need to make a change there go via the RRF/CMakeLists.txt file:
-`cd RRF; cmake --build build --target rrf_simulator`
+`cd RRF; cmake --build build --target rrf_simulator -j`
 
 
 ### Instructions For Adding New Pieces of ReprapFirmware Logic and Compiling It
