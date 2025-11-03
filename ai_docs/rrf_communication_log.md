@@ -4213,4 +4213,143 @@ true and DDA::Prepare() executing.
 
 ---------------
 
+## ReprapFirmware Host Build `rrf_simulator`
 
+This is a host (x86_64) version of ReprapFirmware with:
+ - No FreeRTOS
+ - No reason to be synchronous, we can fake clock ticks and such. We will only run in "batch mode" on x86_64, so no reason to wait for anything or stay synchronous, as long as everything happens in the right order.
+ - No connected boards, but we want to capture packets that would have been sent to external CAN boards, so we need to fake something there
+ - No networking
+ - No connections to other programs such as DuetWebInterface or DSW or anything like that.
+ - No fans or heaters or anything like that. No physical pins or connections to anything at all actually.
+
+The binary, `rrf_simulator`, is supposed to mirror the behavior of Klippers "batch mode", also known as "debug mode".
+In batch mode, Klipper simply reads a gcode and a config file, and dumps the stepper move commands, as well as a handful of other commands.
+This is very useful for hp-sim5 because we can run our simulation based on the commands read from the batch dump, without needing any special hardware.
+Batch mode basically stubs the USB-interface of Klipper.
+
+ReprapFirmware previously had no such mode, and not even a x86_64 build at all.
+The closest analog to Klipper's USB interface is ReprapFirmware's CAN interface.
+Our approach is to stub this and capture the move messages, so we can drive the hp-sim5 simulation with them.
+
+We had to:
+ 1. Decide which real source files to compile, and which to stub or shim.
+ 2. Get the chosen real files to compile.
+ 3. Write the stub and shim code.
+ 4. Write the actual batch mode logic.
+
+On point 1, the files are listed in CMakeLists.txt.
+To control which files get used in our build, we populate a physically isolated build directory called `build/generated_sources`.
+
+## How To Build and Run
+
+```
+# cd RRF # Assumed start directory
+# Possibly rm -rf build if a corrupted one already exists
+cmake --build build --target rrf_simulator -j
+./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.gcode --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g
+```
+
+## Instructions for Developers and AI Assistants
+
+The ReprapFirmware code is in ./ReprapFirmware/src, ./RRFLibraries/src and ./CANlib/src.
+
+Our code is in ./host.
+
+main.cpp is the entry point.
+It is supposed to exercises all the real ReprapFirmware logic that generates movement commands and that are sent out via the CAN interface.
+The CAN messages are supposed to get captured by our logic and written to disk.
+These captured files will be used in a physics simulator to check how well the ReprapFirmware planner, kinematics logic, DDA, movement system etc works.
+
+Don't change real source files in ReprapFirmware source tree.
+Some changes in ReprapFirmware has been neccessary to build cleanly, but it's mainly been about fixing format warnings.
+
+If you implement any custom host logic (any code in RRF/host) then look up how the logic is implemented in the original code (RRF/ReprapFirmware),
+and get as close as you can to the original logic, while preserving the host build's goal,
+which is to create a binary that can consume gcode, plan moves, emit CAN packages, capture the CAN packages and write them to disk.
+The movements are the most important part.
+Fans, object model, and such are nice-to-haves.
+
+Don't make any changes directly in the `RRF/build/generated_sources` directory.
+If you need to make a change there go via the RRF/CMakeLists.txt file:
+`cd RRF; cmake -B build; cd build; make prepare_sources`.
+
+However there's a problem. There seems to be some problems with the progress of files.
+If the gcode file only contain a G92 move, then the program exits cleanly.
+But if there are G1 moves, then the program hangs.
+
+Here are a test gcode that exposes symptoms I want to focus on:
+
+  - gcodes/test_cartesian.g
+    This one tries to do a few G1 commands after an initial G92 command. It seems to do some moves, maybe even the "right" moves, but then hangs and runs "forever". There seems to be some kind of exit condition that never gets met.
+
+I think the problem might be related to synchronization and timing. I observe in the can logs (eg run/vsd/logs/first.jsonl and run/vsd/logs/logo.jsonl. Don't look at the other logs, they are outdated) that "when_to_execute" is not monotonically
+increasing.
+I was expecting "when_to_execute" to be equal four times in a row and then increase (at least when counting along the "capture_index" axis, which always or most of the time should increase with line number).
+Instead, what I see is that "when_to_execute" seems to loop with a module operator, or in otherways have a maximum value of ca 4295000000 (approx 4.3M).
+
+It's possible that my expectation is at error here, but I at least expects the program to not hang, but exit cleanly, even when G1 moves are present in the gcode file.
+
+<some_intermediate_reply_from_assistant />
+
+Ok that made my two test commands at least finish. These are the test commands:
+
+```
+./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g
+./build/rrf_simulator --vsd run/vsd --gcode gcodes/Hangprinter_logo6.gcode --can-log run/vsd/logs/logo.jsonl -c sys/config_hangprinter.g
+```
+
+However, if you look at run/vsd/logs/first.jsonl you'll see that it has no deceleration segments in the end, it just stops abruptly.
+The same is true for run/vsd/logs/logo.jsonl.
+I also expected run/vsd/logs/logo.jsonl to be a way larger file.
+
+So it looks like your changes made rrf_simulator exit prematurely. Please fix that.
+
+As a sidenote, I expected both jsonl files to start with a "when_to_execute" close to zero.
+Instead the logo.jsonl starts at 17330400000 while first.jsonl starts at 12050400000. Why do they start at these high tick counts?
+
+--------------
+
+• Ran git diff --stat
+  └  RRF/host/can/CanCapture.cpp |  25 +++++-
+     RRF/host/src/main.cpp       | 203 ++++++++++++++++++++++++++------------------
+     2 files changed, 144 insertions(+), 84 deletions(-)
+
+• I’m making sure the rewritten function is styled properly, planning one final test run to confirm changes, checking for unwanted instrumentation prints by searching for std::cout, and verifying log file sizes to include accurate details in the final
+  summary. There’s also a note about possibly removing or keeping large log files, with the instrumentation constant left for future debugging convenience.
+
+• Ran wc -l run/vsd/logs/first.jsonl
+  └ 743 run/vsd/logs/first.jsonl
+
+• I’m outlining the key changes like adding std::this_thread::yield for concurrency, introducing the fastForwardAttempts to prevent hanging, and normalizing when_to_execute to zero.
+  I’ll highlight that the trace completion flag is false, partial data
+  run generated over a million lines, and explain why a full run wasn’t done.
+  Finally, I’m considering if removing the instrumentation constant/block could clean up the code but noting it’s optional.
+  I’ll also collect code examples confirming the when_to_execute normalization near zero.
+
+• Explored
+  └ Read logo.jsonl
+
+• I'm organizing the key modifications made in the project, including updates to specific files like host/src/main.cpp and host/can/CanCapture.cpp.
+  I'll prepare a detailed final message referencing relevant code lines and logic, ensuring I capture all
+  important updates, including reverting the instrumentation constant and verifying includes. I plan to extract line numbers for clear referencing before composing the final summary.
+
+• Explored
+  └ Read main.cpp, CanCapture.cpp
+
+• I’m putting together a detailed final message covering changes to the wait loop with std::this_thread::yield, normalization logic in HostCanCapture, and the addition of fastForwardAttempts.
+  I’ll include line references from key files and mention testing results verifying the improvements. I’ll also confirm instrumentation settings and log cleanliness before wrapping up.
+
+• Explored
+  └ List logs
+
+─ Worked for 1h 50m 27s ──────
+
+• Refined the print completion loop so the simulator keeps spinning until both the G-code queue and movement pipeline are idle,
+  pushing the virtual clock forward whenever CAN traffic stalls and yielding to let the planner drain (host/src/main.cpp:491-
+  614). Added a base-clock tracker so every run normalises when_to_execute to start at zero while still exporting absolute durations, and reset it on configure/shutdown to keep captures monotonic (host/can/CanCapture.cpp:19-204).
+
+  Tests:
+
+  - ./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g ✔︎ (743 moves captured, deceleration segments present, when_to_execute begins at 0)
+  - ./build/rrf_simulator --vsd run/vsd --gcode gcodes/Hangprinter_logo6.gcode --can-log run/vsd/logs/logo.jsonl -c sys/config_hangprinter.g ▶︎ timed out after 60 s (run continues; log exceeded 1 M entries, now normalised timestamps)
