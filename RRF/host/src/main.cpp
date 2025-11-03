@@ -549,10 +549,8 @@ bool WaitForPrintCompletion() noexcept
                     HostCanCapture::GetLatestFinishMasterClock();
                 if (latestFinish != 0)
                 {
-                    const uint64_t advance = static_cast<uint64_t>(std::min<unsigned int>(
-                                                 fastForwardAttempts, 3600U)) *
-                                             HostTiming::StepClockFrequencyHz;
-                    HostTiming::EnsureMasterClockAtLeast(latestFinish + advance);
+                    // Advance only to the latest finish time, not beyond, to avoid skipping work
+                    HostTiming::EnsureMasterClockAtLeast(latestFinish);
                 }
             }
         }
@@ -619,7 +617,7 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
         if (reprap.IsStopped())
         {
@@ -810,6 +808,7 @@ int main(int argc, char** argv)
         reprap.GetGCodes().HostForceSimulationMode(SimulationMode::off);
         VirtuallyHomeAxesIfNeeded();
         HostTiming::Reset();
+        HostCanCapture::Reset();
 
         bool success = true;
         if (options.gcodeArgument)

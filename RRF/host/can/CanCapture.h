@@ -20,6 +20,10 @@ uint64_t GetCaptureCount() noexcept;
 // domain).
 uint64_t GetLatestFinishMasterClock() noexcept;
 
+// Reset capture state (counters and base clock) without closing the file.
+// This allows running multiple prints in the same process with deterministic timing.
+void Reset() noexcept;
+
 // Flush any pending output and release resources.
 void Shutdown() noexcept;
 }  // namespace HostCanCapture

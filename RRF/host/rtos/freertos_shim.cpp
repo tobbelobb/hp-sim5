@@ -143,7 +143,8 @@ void vTaskDelay(const TickType_t ticksToDelay) noexcept
 {
     if (ticksToDelay == 0)
     {
-        std::this_thread::yield();
+        // Use a small sleep instead of yield to reduce CPU usage and improve predictability
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         return;
     }
     const auto duration = ToDuration(ticksToDelay);

@@ -17,7 +17,13 @@
       "Read(//tmp/**)",
       "Bash(RRF/host/build/host_rrf_bootstrap:*)",
       "Bash(/dev/null)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(cmake --build:*)",
+      "Bash(for i in 1 2 3)",
+      "Bash(do echo \"=== Run $i ===\")",
+      "Bash(./build/rrf_simulator:*)",
+      "Bash(done)",
+      "Bash(do echo \"Run $i:\")"
     ],
     "deny": []
   },

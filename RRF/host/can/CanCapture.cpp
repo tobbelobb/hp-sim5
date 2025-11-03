@@ -228,6 +228,15 @@ uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
     return gLatestFinishMasterClock.load(std::memory_order_relaxed);
 }
 
+void HostCanCapture::Reset() noexcept
+{
+    gCaptureIndex.store(0, std::memory_order_relaxed);
+    gLastExtendedWhen.store(0, std::memory_order_relaxed);
+    gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
+    gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
+                           std::memory_order_relaxed);
+}
+
 void HostCanCapture::Shutdown() noexcept
 {
     std::lock_guard<std::mutex> lock(gMutex);
