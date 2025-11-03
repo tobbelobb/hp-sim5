@@ -60,7 +60,7 @@ M666 T10.0                ; Desired target force (unit N).
 ;M666 C0.025061:0.025061:0.025061:0.025061
 
 ; Uncomment M564 S0 if you don't want G0/G1 moves to be be limited to a software defined volume
-; M564 S0
+M564 S0
 
 ; Drives
 M666 J25:25:25:25 ; Full steps per ABCD motor revolution (match with ODrives...)
@@ -127,9 +127,9 @@ M950 F0 C"out8"                                    ; Defines a part cooling fan
 ; for how to install it
 ; Some of the commands below here might be different for you
 ; (eg if you don't have a Duet3 board, don't use the io7 headers, or have your bltouch mounted differently than me)
-M950 S0 C"io7.out"
-M558 P9 C"io7.in" H5 F120 T6000
-G31 X15 Y27 Z8 P25 ; Measure these values in your own setup.
+;M950 S0 C"io7.out"
+;M558 P9 C"io7.in" H5 F120 T6000
+;G31 X15 Y27 Z8 P25 ; Measure these values in your own setup.
 
 ; These affect how you create and your mesh/grid bed compensation heightmap.csv values
 ; M557 X-200.001:200 Y-277.001:277 S80 ; Define a A2 sized grid with 1 cm margin...

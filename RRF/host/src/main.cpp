@@ -501,6 +501,7 @@ namespace
 			reprap.Spin();
 
 			const bool printing = reprap.GetPrintMonitor().IsPrinting();
+			const bool fraction = reprap.GetPrintMonitor().FractionOfFilePrinted();
 			const bool fileBusy = fileBuffer->IsDoingFile() || !fileBuffer->IsCompletelyIdle();
 			const bool moveActive = !reprap.GetMove().NoLiveMovement();
 
@@ -510,7 +511,8 @@ namespace
 				std::cout << "wait loop: printing=" << printing
 						  << " fileBusy=" << fileBusy
 						  << " moveActive=" << moveActive
-						  << " idleCycles=" << idleCycles << '\n';
+						  << " idleCycles=" << idleCycles
+						  << " fraction=" << fraction << '\n';
 				++debugCounter;
 			}
 

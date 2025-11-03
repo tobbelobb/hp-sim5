@@ -26,17 +26,13 @@ We had to:
 On point 1, the files are listed in CMakeLists.txt.
 To control which files get used in our build, we populate a physically isolated build directory called `build/generated_sources`.
 
-## How To Build
+## How To Build and Run
 
 ```
 # cd RRF # Assumed start directory
 # Possibly rm -rf build if a corrupted one already exists
-cmake -B build
-cd build
-make
-# Or make in two steps
-make prepare_sources # Populates generated_sources
-make rrf_simulator # Builds main executable
+cmake --build build --target rrf_simulator -j
+./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.gcode --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g
 ```
 
 ## Instructions for Developers and AI Assistants
