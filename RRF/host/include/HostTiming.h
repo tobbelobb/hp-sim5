@@ -16,6 +16,7 @@ namespace HostTiming
 	uint64_t Micros64() noexcept;
 	void Reset(uint64_t stepClocks = 0) noexcept;
 	void AdvanceStepClocks(uint64_t value) noexcept;
+	void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept;
 	void AdvanceMicros(uint64_t value) noexcept;
 	void DelayMilliseconds(uint32_t value) noexcept;
 	void DelayMicroseconds(uint32_t value) noexcept;

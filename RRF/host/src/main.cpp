@@ -1,15 +1,17 @@
 #include <RepRapFirmware.h>
 #include <Storage/MassStorage.h>
 #include <can/CanCapture.h>
-#include <CAN/CanMotion.h>
 #include <CanMessageBuffer.h>
+#define private public
+#define protected public
+#include <CAN/CanMotion.h>
 #include <Platform/RepRap.h>
 #include <PrintMonitor/PrintMonitor.h>
-#define private public
 #include <GCodes/GCodes.h>
+#include <Movement/Move.h>
+#undef protected
 #undef private
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
-#include <Movement/Move.h>
 #include <General/String.h>
 #include <HostTiming.h>
 #include <GCodes/SimulationMode.h>
@@ -495,37 +497,71 @@ namespace
 
 		const auto start = std::chrono::steady_clock::now();
 		unsigned int idleCycles = 0;
+		uint64_t lastCaptureCount = HostCanCapture::GetCaptureCount();
+		unsigned int captureIdleCycles = 0;
+		bool fastForwardApplied = false;
 
 		for (;;)
 		{
 			reprap.Spin();
-
-			const bool printing = reprap.GetPrintMonitor().IsPrinting();
-			const bool fraction = reprap.GetPrintMonitor().FractionOfFilePrinted();
-			const bool fileBusy = fileBuffer->IsDoingFile() || !fileBuffer->IsCompletelyIdle();
-			const bool moveActive = !reprap.GetMove().NoLiveMovement();
-
-			static int debugCounter = 0;
-			if (debugCounter < 50)
+			Move& move = reprap.GetMove();
+			while (move.activeDMs != nullptr)
 			{
-				std::cout << "wait loop: printing=" << printing
-						  << " fileBusy=" << fileBusy
-						  << " moveActive=" << moveActive
-						  << " idleCycles=" << idleCycles
-						  << " fraction=" << fraction << '\n';
-				++debugCounter;
+				const uint32_t due = move.activeDMs->nextStepTime;
+				move.StepDrivers(due);
 			}
 
-			if (!printing && !fileBusy && !moveActive)
+			const uint64_t currentCaptureCount = HostCanCapture::GetCaptureCount();
+			if (currentCaptureCount != lastCaptureCount)
 			{
-				if (++idleCycles > kIdleSettlingCycles)
+				lastCaptureCount = currentCaptureCount;
+				captureIdleCycles = 0;
+				fastForwardApplied = false;
+			}
+			else if (currentCaptureCount != 0)
+			{
+				if (captureIdleCycles < kIdleSettlingCycles)
 				{
-					return true;
+					++captureIdleCycles;
+				}
+				else if (!fastForwardApplied)
+				{
+					const uint64_t latestFinish = HostCanCapture::GetLatestFinishMasterClock();
+					if (latestFinish != 0)
+					{
+						HostTiming::EnsureMasterClockAtLeast(latestFinish);
+						fastForwardApplied = true;
+					}
 				}
 			}
 			else
 			{
+				captureIdleCycles = 0;
+			}
+
+			const bool fileIdle = fileBuffer->IsCompletelyIdle();
+
+			if (currentCaptureCount != 0)
+			{
+				if (captureIdleCycles > kIdleSettlingCycles || fastForwardApplied)
+				{
+					return true;
+				}
 				idleCycles = 0;
+			}
+			else
+			{
+				if (fileIdle)
+				{
+					if (++idleCycles > kIdleSettlingCycles)
+					{
+						return true;
+					}
+				}
+				else
+				{
+					idleCycles = 0;
+				}
 			}
 
 			if (reprap.IsStopped())

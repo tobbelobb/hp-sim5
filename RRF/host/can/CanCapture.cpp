@@ -12,6 +12,8 @@
 #include <CanMessageBuffer.h>
 #include <CanMessageFormats.h>
 #include <CanId.h>
+#include <HostTiming.h>
+#include <RepRapFirmware.h>
 
 namespace
 {
@@ -20,7 +22,36 @@ std::ofstream gStream;
 std::filesystem::path gOutputPath;
 bool gEnabled = false;
 std::atomic<uint64_t> gCaptureIndex{0};
+std::atomic<uint64_t> gLastExtendedWhen{0};
+std::atomic<uint64_t> gLatestFinishMasterClock{0};
 
+constexpr uint64_t MasterClocksPerStepTick = HostTiming::StepClockFrequencyHz/StepClockRate;
+static_assert(StepClockRate != 0, "Step clock rate must not be zero");
+static_assert(HostTiming::StepClockFrequencyHz % StepClockRate == 0, "Master clock must be multiple of step clock rate");
+
+inline uint64_t ExtendTimestamp(uint32_t raw) noexcept
+{
+	uint64_t expected = gLastExtendedWhen.load(std::memory_order_relaxed);
+	for (;;)
+	{
+		const uint64_t high = expected & 0xFFFFFFFF00000000ULL;
+		const uint32_t low = static_cast<uint32_t>(expected & 0xFFFFFFFFUL);
+		const uint64_t candidate = (raw < low) ? (high + (1ULL << 32) + raw) : (high + raw);
+		if (gLastExtendedWhen.compare_exchange_weak(expected, candidate, std::memory_order_relaxed, std::memory_order_relaxed))
+		{
+			return candidate;
+		}
+	}
+}
+
+inline void UpdateLatestFinish(uint64_t finishMasterClock) noexcept
+{
+	uint64_t current = gLatestFinishMasterClock.load(std::memory_order_relaxed);
+	while (current < finishMasterClock
+		   && !gLatestFinishMasterClock.compare_exchange_weak(current, finishMasterClock, std::memory_order_relaxed, std::memory_order_relaxed))
+	{
+	}
+}
 }
 
 bool HostCanCapture::Configure(const std::filesystem::path& filePath) noexcept
@@ -68,6 +99,8 @@ bool HostCanCapture::Configure(const std::filesystem::path& filePath) noexcept
 	gOutputPath = filePath;
 	gEnabled = true;
 	gCaptureIndex.store(0, std::memory_order_relaxed);
+	gLastExtendedWhen.store(0, std::memory_order_relaxed);
+	gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
 	return true;
 }
 
@@ -85,19 +118,33 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 
 	const auto& msg = buffer.msg.moveLinearShaped;
 
+	const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
+	const uint64_t whenStep = ExtendTimestamp(msg.whenToExecute);
+	const uint64_t accelStep = static_cast<uint64_t>(msg.accelerationClocks);
+	const uint64_t steadyStep = static_cast<uint64_t>(msg.steadyClocks);
+	const uint64_t decelStep = static_cast<uint64_t>(msg.decelClocks);
+	const uint64_t durationStep = accelStep + steadyStep + decelStep;
+
+	const uint64_t whenMaster = whenStep * MasterClocksPerStepTick;
+	const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
+	const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
+	const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
+	const uint64_t finishMaster = (whenStep + durationStep) * MasterClocksPerStepTick;
+
+	UpdateLatestFinish(finishMaster);
+	HostTiming::EnsureMasterClockAtLeast(finishMaster);
+
 	std::ostringstream line;
 	line.setf(std::ios::fixed, std::ios::floatfield);
 	line << std::setprecision(3);
 
-	const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
-
 	line << "{\"type\":\"movement_linear_shaped\"";
 	line << ",\"capture_index\":" << captureIndex;
 	line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
-	line << ",\"when_to_execute\":" << msg.whenToExecute;
-	line << ",\"accel_clocks\":" << msg.accelerationClocks;
-	line << ",\"steady_clocks\":" << msg.steadyClocks;
-	line << ",\"decel_clocks\":" << msg.decelClocks;
+	line << ",\"when_to_execute\":" << whenMaster;
+	line << ",\"accel_clocks\":" << accelMaster;
+	line << ",\"steady_clocks\":" << steadyMaster;
+	line << ",\"decel_clocks\":" << decelMaster;
 	line << ",\"acceleration\":" << msg.acceleration;
 	line << ",\"deceleration\":" << msg.deceleration;
 	line << ",\"seq\":" << static_cast<unsigned int>(msg.seq & CanMessageMovementLinearShaped::SeqMask);
@@ -135,6 +182,16 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 
 	gStream << line.str() << '\n';
 	gStream.flush();
+}
+
+uint64_t HostCanCapture::GetCaptureCount() noexcept
+{
+	return gCaptureIndex.load(std::memory_order_relaxed);
+}
+
+uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
+{
+	return gLatestFinishMasterClock.load(std::memory_order_relaxed);
 }
 
 void HostCanCapture::Shutdown() noexcept

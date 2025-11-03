@@ -1,6 +1,7 @@
 #include <HostTiming.h>
 
 #include <Platform/Platform.h>
+#include <can/CanCapture.h>
 
 #include <atomic>
 #include <cmath>
@@ -49,23 +50,25 @@ namespace HostTiming
 			}
 
 			const uint64_t simTicks = CalculateSimulationTicks(*platform);
-			uint64_t prevSim = g_lastSimulationTicks.load(std::memory_order_relaxed);
+			uint64_t expected = g_lastSimulationTicks.load(std::memory_order_relaxed);
 
-			if (simTicks < prevSim)
+			if (simTicks <= expected)
 			{
-				g_lastSimulationTicks.store(simTicks, std::memory_order_relaxed);
-				g_virtualClockTicks.store(simTicks, std::memory_order_relaxed);
 				return;
 			}
 
-			while (simTicks > prevSim && !g_lastSimulationTicks.compare_exchange_weak(
-					   prevSim, simTicks, std::memory_order_relaxed, std::memory_order_relaxed))
+			while (expected < simTicks)
 			{
-			}
+				if (g_lastSimulationTicks.compare_exchange_weak(expected, simTicks, std::memory_order_relaxed, std::memory_order_relaxed))
+				{
+					g_virtualClockTicks.fetch_add(simTicks - expected, std::memory_order_relaxed);
+					break;
+				}
 
-			if (simTicks > prevSim)
-			{
-				g_virtualClockTicks.fetch_add(simTicks - prevSim, std::memory_order_relaxed);
+				if (expected >= simTicks)
+				{
+					break;
+				}
 			}
 		}
 
@@ -118,7 +121,43 @@ namespace HostTiming
 		{
 			return;
 		}
-		g_virtualClockTicks.fetch_add(value, std::memory_order_relaxed);
+		uint64_t current = g_virtualClockTicks.load(std::memory_order_relaxed);
+		do
+		{
+			uint64_t target = current + value;
+			if (HostCanCapture::GetCaptureCount() != 0)
+			{
+				const uint64_t latestFinish = HostCanCapture::GetLatestFinishMasterClock();
+				if (latestFinish != 0)
+				{
+					const uint64_t maxAllowed = latestFinish + StepClockFrequencyHz; // allow up to ~1s beyond latest finish
+					if (target > maxAllowed)
+					{
+						target = maxAllowed;
+					}
+				}
+			}
+			if (g_virtualClockTicks.compare_exchange_weak(current, target, std::memory_order_relaxed, std::memory_order_relaxed))
+			{
+				break;
+			}
+		}
+		while (true);
+	}
+
+	void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept
+	{
+		uint64_t current = g_virtualClockTicks.load(std::memory_order_relaxed);
+		while (current < masterClocks
+			   && !g_virtualClockTicks.compare_exchange_weak(current, masterClocks, std::memory_order_relaxed, std::memory_order_relaxed))
+		{
+		}
+
+		uint64_t lastSim = g_lastSimulationTicks.load(std::memory_order_relaxed);
+		while (lastSim < masterClocks
+			   && !g_lastSimulationTicks.compare_exchange_weak(lastSim, masterClocks, std::memory_order_relaxed, std::memory_order_relaxed))
+		{
+		}
 	}
 
 	void AdvanceMicros(uint64_t value) noexcept
