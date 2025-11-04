@@ -26,16 +26,48 @@ These modules form a small but powerful library that can be used outside of the 
    various integration-, functional-, and unit tests.
 
 ## Python Port
+
 A complete Python port of the cable joints engine is available in the `src/python/cable_joints/` directory.
   - Dependencies:
+    - python 3.10+
     - numpy
     - pytest
     - websockets
     - warp-lang[extras]
     - pytest-asyncio
+    - usd-core
   - Usage:
-    1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras] pytest-asyncio`
+    1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras] pytest-asyncio usd-core`
     2. Run Python tests: `python -m pytest`
+
+
+### Running the basic Python demos
+
+  * Flipper:
+    - Start the vite server
+      ```
+      npx vite
+      ```
+    - Start the demo server (in another terminal)
+      ```bash
+      python -m examples.python.flipper.server
+      ```
+    - Visit <http://localhost:5173/hp-sim5/examples/python/flipper/index.html>
+  * Slideprinter:
+    - Note: The Python Slideprinter Demo is broken, as the js hp-sim demo has replaced the js slideprinter demo, and no equivalent Python hp-sim demo has been developed.
+      The core Python physics engine and all python tests still work, but the js part of python slideprinter demo has changed and need to be refitted.
+      /tobben on Nov 4, 2025
+    - Start the demo server
+      ```bash
+      # Assumes npx vite is already running
+      python -m examples.python.slideprinter.server
+      ```
+    - Visit <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>
+    - Send some gcode commands with the Python Move Comander:
+      ```bash
+      python -m examples.python.slideprinter.move_commander public/examples/gcode/draw_squares.gcode
+      ```
+
 
 ### Warp Version of Cable Joints
 Warp is a Python library that can do many cool things.
@@ -65,6 +97,7 @@ This is fun and usefult for testing js/Python equivalence.
   # Assumes npx vite is already running
   python -m examples.python.flipper.server
   ```
+ - Visit <http://localhost:5173/hp-sim5/examples/js/flipper/flipper_overlay.html>
 
 ## Further Tests and Demos
 ### Cable Joints Visual "Unit Tests"
@@ -89,6 +122,6 @@ This is fun and usefult for testing js/Python equivalence.
 
 
 ## 6. 3D Visualization
- `tests/html/3d_tests.html` demonstrates rendering cable joint points using Three.js.
+ `tests/html/3d_tests.html` tries to render cable joint points using Three.js.
  Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers and now live under `src/js/cable_joints_3d/`.
  The Python side includes `src/python/cable_joints_3d/vector3.py` and `src/python/cable_joints_3d/geometry3.py` for analogous 3D helpers.

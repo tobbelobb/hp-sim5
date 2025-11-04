@@ -21,5 +21,4 @@ RRF/build
 RRF/build*
 RRF/.cache
 */compile_commands.json
-RRF/run/vsd/logs/first.jsonl
-
+RRF/run/vsd/logs/

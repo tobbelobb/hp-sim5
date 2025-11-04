@@ -19,7 +19,7 @@ this tool.
 
 Try the live demos:
 
-- A 2d Hangprinter called Slideprinter at [tobbelobb.github.io/hp-sim5/slideprinter](https://tobbelobb.github.io/hp-sim5/examples/js/slideprinter/index.html)
+- A 2d Hangprinter called Slideprinter at [tobbelobb.github.io/hp-sim5/hp-sim/](https://tobbelobb.github.io/hp-sim5/hp-sim/)
 - A flipper game that tests the Cable Physics engine at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html)
 
 Intended uses:
@@ -45,32 +45,9 @@ For a deeper dive into the physics engine and the classic flipper demo see
    npm install        # only needed the first time
    npx vite           # Needed every time to serve the html and js
    ```
-3. Open <http://localhost:5173/hp-sim5/slideprinter> in your browser.
+3. Open <http://localhost:5173/hp-sim5/hp-sim> in your browser.
    There's also <http://localhost:5173/hp-sim5/flipper> for the flipper demo.
 4. Hack away!
-
-### Running the basic Python demos
-1. Make sure Python 3.10+ is installed.
-2. Install the optional dependencies:
-   ```bash
-   pip install numpy pytest websockets warp-lang[extras] pytest-asyncio
-   ```
-3. Flipper:
-   - Start the demo server
-     ```bash
-     python -m examples.python.flipper.server
-     ```
-   - Visit <http://localhost:5173/hp-sim5/examples/python/flipper/index.html>
-4. Slideprinter:
-   - Start the demo server
-     ```bash
-     python -m examples.python.slideprinter.server
-     ```
-   - Visit <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>
-   - Send some gcode commands with the Python Move Comander:
-     ```bash
-     python -m examples.python.slideprinter.move_commander public/examples/gcode/draw_squares.gcode
-     ```
 
 ## hp-sim5 context: the Hangprinter Project
 hp-sim5 is part of an effort to automate the Hangprinter Project.

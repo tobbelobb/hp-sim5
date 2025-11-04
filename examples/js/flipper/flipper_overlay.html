@@ -362,7 +362,7 @@ canvas {
     connect();
 
     const base = import.meta.env.BASE_URL || '/';
-    const usdaPath = new URL('../usd_scenes/flipper_scene.usda', import.meta.url).href;
+    const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;
 
     UsdOpen(usdaPath).then(loadedStage => {
       stage = loadedStage;
