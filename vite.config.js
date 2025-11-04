@@ -12,7 +12,8 @@ export default defineConfig(async () => {
       'dist/**',
       'dist-hangprinter-org/**',
       'examples/js/flipper/flipper_with_sliding_beads.html',
-      'examples/js/flipper/flipper_with_attached_beads.html'
+      'examples/js/flipper/flipper_with_attached_beads.html',
+      'RRF/**'
     ],
   });
   const inputs = pages.reduce((o, p) => { o[p] = resolve(__dirname, p); return o; }, {});

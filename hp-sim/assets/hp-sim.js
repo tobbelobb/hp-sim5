@@ -8,11 +8,11 @@ import { QualityMonitor } from './quality-monitor.js';
 
 const MCU_PRESETS = {
   hangprinterLogo: {
-    url: new URL('../../examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
+    url: new URL('../../public/examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
     format: FileFormat.MCU_SERIAL,
   },
   straightMoves: {
-    url: new URL('../../examples/mcu_commands/draw_squares.serial', import.meta.url).href,
+    url: new URL('../../public/examples/mcu_commands/draw_squares.serial', import.meta.url).href,
     format: FileFormat.MCU_SERIAL,
   },
 };
