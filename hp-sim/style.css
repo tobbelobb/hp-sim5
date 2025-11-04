@@ -28,7 +28,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: clamp(16px, 3vw, 32px);
-  padding: clamp(16px, 3vw, 32px);
+  padding: 0;
   width: 100%;
   max-width: none;
   margin: 0;
@@ -50,7 +50,6 @@ body {
   max-width: none;
   background: rgba(24, 28, 46, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 32px;
   padding: clamp(20px, 3vw, 36px);
   box-shadow: 0 32px 80px rgba(5, 6, 10, 0.45);
   display: flex;
@@ -689,10 +688,6 @@ body {
 }
 
 @media (max-width: 600px) {
-  .layout {
-    padding: 0px;
-  }
-
   .canvas-frame {
     border-radius: 20px;
   }
