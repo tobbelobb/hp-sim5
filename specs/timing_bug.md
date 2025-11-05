@@ -277,4 +277,59 @@ Run a small test like this:
 
 -------
 
+See if you can out do your previous attempt by
+ - First providing an extremely detailed step-by description of how timing works, and how it's possibly advanced by the real ReprapFirmware DDA::Prepare code (be aware that you need to do `git submodule update --init --recursive` in the hp-sim5 repo if you already cloned it and submodules are not there yet)
+ - Then hypothesize what the bug or bugs in rrf_simulator's timing code in RRF/host might be. Check your hypotheses by comparing referencing your step-by-step descriptions of the two timing systems (the original one and the host one).
+ - Consider the simplest hypotheses first, for example that the `msg.whenToStart` is simply wrong when arriving at the printout in `LogMotion`.
 
+Here's a snippet from CanMessageFormats.h that might give you and edge in understanding the msg that arrives in LogMotion:
+```
+struct __attribute__((packed)) CanMessageMovementLinearShaped
+{
+	static constexpr CanMessageType messageType = CanMessageType::movementLinearShaped;
+
+	uint32_t whenToExecute;							// the master clock time at which this move should start
+	uint32_t accelerationClocks;					// how many clocks the acceleration phase should last
+	uint32_t steadyClocks;							// how many clocks the steady speed phase should last
+	uint32_t decelClocks;							// how many clocks the deceleration phase should last
+```
+
+Tracing back the "Print finished ... print time was ..." message:
+ - It's printed from RRF/ReprapFirmware/src/GCodes/GCodes.cpp line 4655
+ - The time estimations are based on `PrintMonitor::GetPrintDuration() ` which is defined in RRF/ReprapFirmwre/src/PrintMonitor/PrintMonitor.cpp lines 484-495.
+ - ... which in term bases its returned time on:
+```
+	const uint64_t now = millis64();
+	const uint64_t pauseTime = (paused) ? totalPauseTime + (now - pauseStartTime) : totalPauseTime;
+	return (float)(now - printStartTime - pauseTime) * MillisToSeconds;
+```
+Any of these values (millis64(), totalPauseTime, pauseStartTime, printStartTime, MillisToSeconds) could be at fault. There are no pauses during the simulated print, but check all of them for good measure.
+
+The millis64() logic eventually ends up in this call chain:
+```
+inline uint64_t millis64() noexcept
+{
+    return HostTiming::Millis64();
+}
+uint64_t Millis64() noexcept
+{
+    return Micros64() / 1000ULL;
+}
+uint64_t Micros64() noexcept
+{
+    return StepClocks64() / StepClocksPerMicrosecond;
+}
+uint64_t StepClocks64() noexcept
+{
+    return GetVirtualStepClocks();
+}
+uint64_t GetVirtualStepClocks() noexcept
+{
+    UpdateFromSimulation();
+    return g_virtualClockTicks.load(std::memory_order_relaxed);
+}
+std::atomic<uint64_t> g_virtualClockTicks{0};
+```
+
+I have no idea what `std::memory_order_relaxed` means or why it's spread out across the code base. Could it be causing our indeterminism?
+std::memory_order_relaxed is the weakest memory ordering constraint in C++, guaranteeing only the atomicity of an operation, not the order of any other memory accesses. It allows compilers and processors to reorder memory operations freely, meaning threads may observe memory changes in different orders. This is suitable for simple tasks like incrementing counters, but can be unsafe for more complex scenarios that require synchronized state between thread.
