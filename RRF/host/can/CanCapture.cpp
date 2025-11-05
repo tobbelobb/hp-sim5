@@ -150,19 +150,24 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     const auto& msg = buffer.msg.moveLinearShaped;
 
     const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
-    const uint64_t whenStep = ExtendTimestamp(msg.whenToExecute);
     const uint64_t accelStep = static_cast<uint64_t>(msg.accelerationClocks);
     const uint64_t steadyStep = static_cast<uint64_t>(msg.steadyClocks);
     const uint64_t decelStep = static_cast<uint64_t>(msg.decelClocks);
     const uint64_t durationStep = accelStep + steadyStep + decelStep;
 
-    const uint64_t whenMaster = whenStep * MasterClocksPerStepTick;
+    const uint64_t whenMaster = static_cast<uint64_t>(msg.whenToExecute);
     const uint64_t normalisedWhenMaster = NormaliseMasterClock(whenMaster);
     const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
     const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
     const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
-    const uint64_t finishMaster = (whenStep + durationStep) * MasterClocksPerStepTick;
+    const uint64_t durationMaster = durationStep * MasterClocksPerStepTick;
 
+    // This is just a tiny optimization
+    HostTiming::EnsureMasterClockAtLeast(whenMaster);
+    HostTiming::AdvanceStepClocks(durationStep);
+
+
+    const uint64_t finishMaster = whenMaster + durationMaster;
     UpdateLatestFinish(finishMaster);
 
     std::ostringstream line;

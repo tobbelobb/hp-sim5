@@ -24,7 +24,9 @@
       "Bash(./build/rrf_simulator:*)",
       "Bash(done)",
       "Bash(do echo \"Run $i:\")",
-      "Bash(./RRF/build/rrf_simulator:*)"
+      "Bash(./RRF/build/rrf_simulator:*)",
+      "Bash(timeout 60 ./RRF/build/rrf_simulator:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   },

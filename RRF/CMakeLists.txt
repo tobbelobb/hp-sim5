@@ -340,8 +340,6 @@ set(SHADOWING_HEADERS_TO_USE
     Config/Features_Host.h
     CoreTypes.h
     CoreIO.h
-    Storage/FileStore.h
-    Storage/FileWriteBuffer.h
     Tools/Spindle.h
     UniqueIdBase.h
     Stream.h
@@ -356,6 +354,8 @@ set(SHADOWING_HEADERS_TO_USE
     Devices.h
     Cache.h
     DmacManager.h
+    Storage/FileStore.h
+    Storage/FileWriteBuffer.h
 )
 
 

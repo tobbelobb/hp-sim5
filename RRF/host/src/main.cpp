@@ -544,12 +544,12 @@ bool WaitForPrintCompletion() noexcept
             else
             {
                 // Ensure clock is at least at the latest finish time
-                const uint64_t latestFinish =
-                    HostCanCapture::GetLatestFinishMasterClock();
-                if (latestFinish != 0)
-                {
-                    HostTiming::EnsureMasterClockAtLeast(latestFinish);
-                }
+                //const uint64_t latestFinish =
+                //    HostCanCapture::GetLatestFinishMasterClock();
+                //if (latestFinish != 0)
+                //{
+                //    HostTiming::EnsureMasterClockAtLeast(latestFinish);
+                //}
             }
         }
         else
@@ -603,7 +603,7 @@ bool WaitForPrintCompletion() noexcept
         if constexpr (kTraceCompletion)
         {
             static uint64_t debugCounter = 0;
-            if ((debugCounter++ % 1000ULL) == 0)
+            if ((debugCounter++ % 100000ULL) == 0)
             {
                 std::cout << "[wait] captures=" << currentCaptureCount
                           << " captureIdle=" << captureIdleCycles
@@ -616,6 +616,16 @@ bool WaitForPrintCompletion() noexcept
         }
 
         std::this_thread::yield();
+
+        // Advance the virtual clock to allow moves to execute
+        // Previously the daemon's DoDwellTime was advancing the clock, but we now prevent
+        // the daemon from running during printing
+        if (!moveIdle)
+        {
+            // The magic number 1000.
+            // I don't know why this works.
+            HostTiming::AdvanceStepClocks(1000);
+        }
 
         if (reprap.IsStopped())
         {
@@ -705,9 +715,24 @@ bool StartPrint(const std::string& relativePath) noexcept
     reprap.GetPrintMonitor().StartingPrint(relativePath.c_str());
     reprap.GetGCodes().StartPrinting(true);
 
+    // Push a machine state onto the daemon buffer to prevent it from running daemon.g
+    // during file printing. This makes GetPrevious() return non-null, which prevents
+    // the daemon check in StartNextGCode from evaluating to true.
+    GCodeBuffer* daemonBuffer = reprap.GetGCodes().DaemonGCode();
+    if (daemonBuffer != nullptr)
+    {
+        daemonBuffer->PushState(false);
+    }
+
     const auto start = std::chrono::steady_clock::now();
     const bool ok = WaitForPrintCompletion();
     const auto stop = std::chrono::steady_clock::now();
+
+    // Pop the machine state from the daemon buffer
+    if (daemonBuffer != nullptr)
+    {
+        daemonBuffer->PopState(false);
+    }
 
     const auto elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
