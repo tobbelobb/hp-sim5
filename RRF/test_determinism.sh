@@ -4,7 +4,7 @@ set -e
 
 SIMULATOR="./build/rrf_simulator"
 VSD_DIR="run/vsd"
-GCODE="gcodes/test_cartesian.g"
+GCODE="gcodes/draw_squares.gcode"
 CONFIG="sys/config_hangprinter.g"
 LOG1="run/vsd/logs/test_determinism_run1.jsonl"
 LOG2="run/vsd/logs/test_determinism_run2.jsonl"
