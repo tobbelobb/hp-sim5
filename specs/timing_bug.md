@@ -260,3 +260,21 @@ Run a small test like this:
 ```
 ./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.jsonl -c sys/config_hangprinter.g
 ```
+
+---------
+
+● I've made significant progress fixing the timing bugs, but there's still an issue. Let me summarize what I've fixed and what needs further investigation:
+
+  Fixed Issues
+
+  1. Changed SystemCoreClockFreq from 100MHz to 96MHz (Core.h:85)
+    - This makes StepClockRate = 96000000/128 = 750,000 Hz (matching Duet 3)
+    - Previously it was 781,250 Hz which doesn't divide evenly into 48MHz
+    - Now the conversion is exactly 64x (48000000 / 750000 = 64)
+  2. Removed clock advancement from CanCapture
+    - The original code was advancing the clock which conflicted with the DDARing simulation time
+    - Now only UpdateFromSimulation() advances the clock based on DDARing
+
+-------
+
+

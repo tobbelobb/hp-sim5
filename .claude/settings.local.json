@@ -23,7 +23,8 @@
       "Bash(do echo \"=== Run $i ===\")",
       "Bash(./build/rrf_simulator:*)",
       "Bash(done)",
-      "Bash(do echo \"Run $i:\")"
+      "Bash(do echo \"Run $i:\")",
+      "Bash(./RRF/build/rrf_simulator:*)"
     ],
     "deny": []
   },

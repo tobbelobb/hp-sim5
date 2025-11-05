@@ -82,7 +82,7 @@ enum PinMode : int
     OUTPUT_PWM_HIGH
 };
 
-constexpr uint32_t SystemCoreClockFreq = 100'000'000;
+constexpr uint32_t SystemCoreClockFreq = 96'000'000;  // 96MHz / 128 = 750kHz, which divides evenly into 48MHz
 inline uint32_t SystemCoreClock = SystemCoreClockFreq;
 constexpr uint32_t IRAM_ADDR = 0;
 constexpr uint32_t IRAM_SIZE = 0;
