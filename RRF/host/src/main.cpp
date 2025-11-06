@@ -49,7 +49,7 @@ struct CommandLineOptions
 constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
-constexpr bool kTraceCompletion = false;
+constexpr bool kTraceCompletion = true;
 
 void PrintUsage() noexcept
 {
@@ -608,13 +608,8 @@ bool WaitForPrintCompletion() noexcept
                           << '\n';
             }
         }
-
-        std::this_thread::yield();
-
-        if (!moveIdle)
-        {
-            HostTiming::AdvanceStepClocks(1000);
-        }
+        //HostTiming::AdvanceStepClocks(1000);
+        reprap.Tick();
 
         if (reprap.IsStopped())
         {
