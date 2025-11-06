@@ -47,6 +47,7 @@ for ((i=1; i<=ITERATIONS; i++)); do
         printf "✅"
     else
         printf "❌"
+        break
     fi
 done
 

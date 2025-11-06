@@ -613,7 +613,7 @@ bool WaitForPrintCompletion() noexcept
 
         if (!moveIdle)
         {
-            HostTiming::AdvanceStepClocks(1000); // Ca at 346 it starts being wrong some of the time
+            HostTiming::AdvanceStepClocks(1000);
         }
 
         if (reprap.IsStopped())
