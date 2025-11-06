@@ -543,13 +543,7 @@ bool WaitForPrintCompletion() noexcept
             }
             else
             {
-                // Ensure clock is at least at the latest finish time
-                //const uint64_t latestFinish =
-                //    HostCanCapture::GetLatestFinishMasterClock();
-                //if (latestFinish != 0)
-                //{
-                //    HostTiming::EnsureMasterClockAtLeast(latestFinish);
-                //}
+                // No new captures but still active; fall through to time advancement below.
             }
         }
         else
@@ -617,14 +611,9 @@ bool WaitForPrintCompletion() noexcept
 
         std::this_thread::yield();
 
-        // Advance the virtual clock to allow moves to execute
-        // Previously the daemon's DoDwellTime was advancing the clock, but we now prevent
-        // the daemon from running during printing
         if (!moveIdle)
         {
-            // The magic number 1000.
-            // I don't know why this works.
-            HostTiming::AdvanceStepClocks(1000);
+            HostTiming::AdvanceStepClocks(1000); // Ca at 346 it starts being wrong some of the time
         }
 
         if (reprap.IsStopped())

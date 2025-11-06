@@ -9,6 +9,7 @@
 #include <limits>
 #include <mutex>
 #include <sstream>
+#include <iostream>
 
 #include <CanId.h>
 #include <CanMessageBuffer.h>
@@ -144,31 +145,23 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 
     if (buffer.id.MsgType() != CanMessageType::movementLinearShaped)
     {
+        std::cerr << "Got a MsgType that is not CanMessageType::movementLinearShaped: " << static_cast<int>(buffer.id.MsgType()) << '\n';
         return;
     }
 
     const auto& msg = buffer.msg.moveLinearShaped;
 
     const uint64_t captureIndex = gCaptureIndex.fetch_add(1, std::memory_order_relaxed);
-    const uint64_t accelStep = static_cast<uint64_t>(msg.accelerationClocks);
-    const uint64_t steadyStep = static_cast<uint64_t>(msg.steadyClocks);
-    const uint64_t decelStep = static_cast<uint64_t>(msg.decelClocks);
-    const uint64_t durationStep = accelStep + steadyStep + decelStep;
+    const uint64_t accelClocks = static_cast<uint64_t>(msg.accelerationClocks);
+    const uint64_t steadyClocks = static_cast<uint64_t>(msg.steadyClocks);
+    const uint64_t decelClocks = static_cast<uint64_t>(msg.decelClocks);
 
-    const uint64_t whenMaster = static_cast<uint64_t>(msg.whenToExecute);
-    const uint64_t normalisedWhenMaster = NormaliseMasterClock(whenMaster);
-    const uint64_t accelMaster = accelStep * MasterClocksPerStepTick;
-    const uint64_t steadyMaster = steadyStep * MasterClocksPerStepTick;
-    const uint64_t decelMaster = decelStep * MasterClocksPerStepTick;
-    const uint64_t durationMaster = durationStep * MasterClocksPerStepTick;
+    const uint64_t when = static_cast<uint64_t>(msg.whenToExecute);
+    const uint64_t normalisedWhen = NormaliseMasterClock(when);
 
     // This is just a tiny optimization
-    HostTiming::EnsureMasterClockAtLeast(whenMaster);
-    HostTiming::AdvanceStepClocks(durationStep);
-
-
-    const uint64_t finishMaster = whenMaster + durationMaster;
-    UpdateLatestFinish(finishMaster);
+    const uint64_t durationClocks = accelClocks + steadyClocks + decelClocks;
+    HostTiming::AdvanceStepClocks(durationClocks);
 
     std::ostringstream line;
     line.setf(std::ios::fixed, std::ios::floatfield);
@@ -177,10 +170,10 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     line << "{\"type\":\"movement_linear_shaped\"";
     line << ",\"capture_index\":" << captureIndex;
     line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
-    line << ",\"when_to_execute\":" << normalisedWhenMaster;
-    line << ",\"accel_clocks\":" << accelMaster;
-    line << ",\"steady_clocks\":" << steadyMaster;
-    line << ",\"decel_clocks\":" << decelMaster;
+    line << ",\"when_to_execute\":" << normalisedWhen;
+    line << ",\"accel_clocks\":" << accelClocks;
+    line << ",\"steady_clocks\":" << steadyClocks;
+    line << ",\"decel_clocks\":" << decelClocks;
     line << ",\"acceleration\":" << msg.acceleration;
     line << ",\"deceleration\":" << msg.deceleration;
     line << ",\"seq\":"
