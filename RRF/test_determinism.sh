@@ -17,7 +17,7 @@ rm -f "$LOG1" "$LOG2"
 
 # Run 1
 echo "Running simulation #1..."
-$SIMULATOR --vsd "$VSD_DIR" --gcode "$GCODE" --can-log "$LOG1" -c "$CONFIG" > /dev/null 2>&1
+timeout 70 $SIMULATOR --vsd "$VSD_DIR" --gcode "$GCODE" --can-log "$LOG1" -c "$CONFIG" > /dev/null 2>&1
 if [ ! -f "$LOG1" ]; then
     echo "ERROR: First run did not produce log file"
     exit 1
@@ -25,7 +25,7 @@ fi
 
 # Run 2
 echo "Running simulation #2..."
-$SIMULATOR --vsd "$VSD_DIR" --gcode "$GCODE" --can-log "$LOG2" -c "$CONFIG" > /dev/null 2>&1
+timeout 70 $SIMULATOR --vsd "$VSD_DIR" --gcode "$GCODE" --can-log "$LOG2" -c "$CONFIG" > /dev/null 2>&1
 if [ ! -f "$LOG2" ]; then
     echo "ERROR: Second run did not produce log file"
     exit 1
