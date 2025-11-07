@@ -189,21 +189,13 @@ inline uint64_t millis64() noexcept
 {
     return HostTiming::Millis64();
 }
-inline uint32_t micros() noexcept
-{
-    return HostTiming::Micros();
-}
-inline uint64_t micros64() noexcept
-{
-    return HostTiming::Micros64();
-}
 inline void delay(uint32_t value) noexcept
 {
     //HostTiming::DelayMilliseconds(value);
 }
 inline void delayMicroseconds(uint32_t value) noexcept
 {
-    HostTiming::DelayMicroseconds(value);
+    //HostTiming::DelayMicroseconds(value);
 }
 inline coreIrqflags_t IrqSave() noexcept
 {

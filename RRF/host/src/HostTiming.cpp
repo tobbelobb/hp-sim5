@@ -1,10 +1,12 @@
 #include <HostTiming.h>
 
+#include <RepRapFirmware.h>
 #include <Platform/Platform.h>
 #include <can/CanCapture.h>
 
 #include <atomic>
 #include <cmath>
+#include <iostream>
 
 namespace HostTiming
 {
@@ -14,14 +16,8 @@ std::atomic<Platform*> g_platform{nullptr};
 std::atomic<uint64_t> g_virtualClockTicks{0};
 std::atomic<uint64_t> g_lastSimulationTicks{0};
 
-static_assert(StepClockFrequencyHz % 1'000'000U == 0,
-              "Step clock frequency must be integer multiple of 1MHz");
-static_assert(StepClockFrequencyHz % 1'000U == 0,
-              "Step clock frequency must be integer multiple of 1kHz");
-constexpr uint64_t StepClocksPerMicrosecond = StepClockFrequencyHz / 1'000'000ULL;
-constexpr uint64_t StepClocksPerMillisecond = StepClockFrequencyHz / 1'000ULL;
-static_assert(StepClocksPerMicrosecond > 0, "Step clock frequency must be >= 1MHz");
-static_assert(StepClocksPerMillisecond > 0, "Step clock frequency must be >= 1kHz");
+constexpr uint64_t StepClocksPerMicrosecond = StepClockRate / 1'000'000ULL;
+constexpr uint64_t StepClocksPerMillisecond = StepClockRate / 1'000ULL;
 
 inline Platform* TryGetPlatform() noexcept
 {
@@ -35,7 +31,7 @@ uint64_t CalculateSimulationTicks(Platform& platform) noexcept
     {
         return 0;
     }
-    const double ticks = totalSeconds * static_cast<double>(StepClockFrequencyHz);
+    const double ticks = totalSeconds * static_cast<double>(StepClockRate);
     if (!std::isfinite(ticks) || ticks <= 0.0)
     {
         return 0;
@@ -99,17 +95,7 @@ uint32_t Millis() noexcept
 
 uint64_t Millis64() noexcept
 {
-    return Micros64() / 1000ULL;
-}
-
-uint32_t Micros() noexcept
-{
-    return static_cast<uint32_t>(Micros64());
-}
-
-uint64_t Micros64() noexcept
-{
-    return StepClocks64() / StepClocksPerMicrosecond;
+    return StepClocks64() / StepClocksPerMillisecond;
 }
 
 void Reset(uint64_t stepClocks) noexcept
@@ -144,15 +130,6 @@ void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept
     }
 }
 
-void AdvanceMicros(uint64_t value) noexcept
-{
-    if (value == 0)
-    {
-        return;
-    }
-    AdvanceStepClocks(value * StepClocksPerMicrosecond);
-}
-
 void DelayMilliseconds(uint32_t value) noexcept
 {
     if (value == 0)
@@ -160,15 +137,6 @@ void DelayMilliseconds(uint32_t value) noexcept
         return;
     }
     AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMillisecond);
-}
-
-void DelayMicroseconds(uint32_t value) noexcept
-{
-    if (value == 0)
-    {
-        return;
-    }
-    AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMicrosecond);
 }
 
 void RegisterPlatform(Platform& platform) noexcept

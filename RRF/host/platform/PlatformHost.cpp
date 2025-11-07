@@ -108,8 +108,6 @@ void Platform::Init() noexcept
 
 void Platform::Spin() noexcept
 {
-    // Keep the virtual clock in sync even if nobody queries it during this spin.
-    static_cast<void>(HostTiming::Micros64());
     FlushLog();
 }
 
@@ -135,11 +133,6 @@ uint32_t Platform::millis() const noexcept
     return HostTiming::Millis();
 }
 
-uint32_t Platform::micros() const noexcept
-{
-    return HostTiming::Micros();
-}
-
 uint64_t Platform::GetStepClockCount() const noexcept
 {
     return HostTiming::StepClocks64();
@@ -151,6 +144,7 @@ double Platform::GetSimulationTimeSeconds() const noexcept
     {
         return 0.0;
     }
+
     return static_cast<double>(move->GetSimulationTime()) +
            static_cast<double>(gCodes->GetSimulationTime());
 }

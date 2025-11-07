@@ -28,11 +28,7 @@ std::atomic<uint64_t> gLastExtendedWhen{0};
 std::atomic<uint64_t> gLatestFinishMasterClock{0};
 std::atomic<uint64_t> gBaseMasterClock{std::numeric_limits<uint64_t>::max()};
 
-constexpr uint64_t MasterClocksPerStepTick =
-    HostTiming::StepClockFrequencyHz / StepClockRate;
 static_assert(StepClockRate != 0, "Step clock rate must not be zero");
-static_assert(HostTiming::StepClockFrequencyHz % StepClockRate == 0,
-              "Master clock must be multiple of step clock rate");
 
 inline uint64_t ExtendTimestamp(uint32_t raw) noexcept
 {
@@ -156,12 +152,12 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     const uint64_t steadyClocks = static_cast<uint64_t>(msg.steadyClocks);
     const uint64_t decelClocks = static_cast<uint64_t>(msg.decelClocks);
 
-    const uint64_t when = static_cast<uint64_t>(msg.whenToExecute);
-    const uint64_t normalisedWhen = NormaliseMasterClock(when);
+    const uint64_t absoluteWhen = ExtendTimestamp(msg.whenToExecute);
+    const uint64_t normalisedWhen = NormaliseMasterClock(absoluteWhen);
 
-    // This is just a tiny optimization
-    const uint64_t durationClocks = accelClocks + steadyClocks + decelClocks;
-    HostTiming::AdvanceStepClocks(durationClocks);
+    const uint64_t durationStepClocks = accelClocks + steadyClocks + decelClocks;
+    const uint64_t finish = absoluteWhen + durationStepClocks;
+    UpdateLatestFinish(finish);
 
     std::ostringstream line;
     line.setf(std::ios::fixed, std::ios::floatfield);
