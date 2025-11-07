@@ -26,13 +26,6 @@
 
 // --- Forward declarations for all major modules Platform is expected to know about ---
 // This is critical. Platform acts as a "service locator" for the rest of the firmware.
-class RepRap;
-class GCodes;
-class Move;
-class Heat;
-class FansManager;
-class Tool;
-class Platform;
 
 class ConfigurableFolder
 {
@@ -142,28 +135,6 @@ public:
     {
     }
 
-    // --- Service Locators ---
-    // Provide access to the other major components.
-    RepRap& GetRepRap() const noexcept
-    {
-        return *reprap;
-    }
-    GCodes& GetGCodes() const noexcept
-    {
-        return *gCodes;
-    }
-    Move& GetMove() const noexcept
-    {
-        return *move;
-    }
-    Heat& GetHeat() const noexcept
-    {
-        return *heat;
-    }
-    FansManager& GetFansManager() const noexcept
-    {
-        return *fans;
-    }
     EndstopsManager& GetEndstops() noexcept
     {
         return endstops;
@@ -407,13 +378,6 @@ protected:
     // override { return 0; }
 
 private:
-    // Pointers to the real high-level modules. These must be set during initialization.
-    RepRap* reprap;
-    GCodes* gCodes;
-    Move* move;
-    Heat* heat;
-    FansManager* fans;
-
     // Fake hardware modules that Platform owns
     EndstopsManager endstops;
 

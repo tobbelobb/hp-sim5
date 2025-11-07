@@ -81,14 +81,6 @@ Platform::Platform() noexcept
       logFile(nullptr),
       logWriteInProgress(false)
 {
-    // Initialize all service locator pointers to null. They must be set by the
-    // simulator's main function.
-    reprap = nullptr;
-    gCodes = nullptr;
-    move = nullptr;
-    heat = nullptr;
-    fans = nullptr;
-
     sysFolder.SetAbsolute(DEFAULT_SYS_DIR);
     webFolder.SetAbsolute(DEFAULT_WEB_DIR);
     logFileRrfPath.Clear();
@@ -140,13 +132,9 @@ uint64_t Platform::GetStepClockCount() const noexcept
 
 double Platform::GetSimulationTimeSeconds() const noexcept
 {
-    if (reprap == nullptr || gCodes == nullptr || move == nullptr)
-    {
-        return 0.0;
-    }
-
-    return static_cast<double>(move->GetSimulationTime()) +
-           static_cast<double>(gCodes->GetSimulationTime());
+    //std::cerr << "reprap.GetGCodes().GetSimulationTime(): " << reprap.GetGCodes().GetSimulationTime() << " reprap.GetMove().GetSimulationTime(): " << reprap.GetMove().GetSimulationTime() << '\n';
+    return static_cast<double>(reprap.GetMove().GetSimulationTime()) +
+           static_cast<double>(reprap.GetGCodes().GetSimulationTime());
 }
 
 time_t Platform::GetDateTime() const noexcept
@@ -509,10 +497,7 @@ GCodeResult Platform::StartLogging(const char* filename, const StringRef& reply)
         WriteLogEntryUnlocked(1u, firmwareInfo.c_str());
     }
 
-    if (reprap != nullptr)
-    {
-        reprap->StateUpdated();
-    }
+    reprap.StateUpdated();
 
     return GCodeResult::ok;
 }
@@ -539,9 +524,9 @@ void Platform::StopLogging() noexcept
         logLevelSetting = LogLevel::off;
     }
 
-    if (notify && reprap != nullptr)
+    if (notify)
     {
-        reprap->StateUpdated();
+        reprap.StateUpdated();
     }
 }
 
@@ -578,10 +563,7 @@ GCodeResult Platform::ConfigureLogging(GCodeBuffer& gb, const StringRef& reply) 
         else
         {
             logLevelSetting = LogLevel::off;
-            if (reprap != nullptr)
-            {
-                reprap->StateUpdated();
-            }
+            reprap.StateUpdated();
         }
     }
     else
@@ -602,10 +584,7 @@ GCodeResult Platform::ConfigureLogging(GCodeBuffer& gb, const StringRef& reply) 
 
 void Platform::NotifyDirectoriesChanged() noexcept
 {
-    if (reprap != nullptr)
-    {
-        reprap->DirectoriesUpdated();
-    }
+    reprap.DirectoriesUpdated();
 }
 
 ConfigurableFolder::ConfigurableFolder(Platform& owner, ReadWriteLock& lock,

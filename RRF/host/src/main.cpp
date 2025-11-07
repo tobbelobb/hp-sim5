@@ -597,7 +597,7 @@ bool WaitForPrintCompletion() noexcept
         if constexpr (kTraceCompletion)
         {
             static uint64_t debugCounter = 0;
-            if ((debugCounter++ % 100000ULL) == 0)
+            if ((debugCounter++ % 1000000ULL) == 0)
             {
                 std::cout << "[wait] captures=" << currentCaptureCount
                           << " captureIdle=" << captureIdleCycles
@@ -605,11 +605,13 @@ bool WaitForPrintCompletion() noexcept
                           << " moveIdle=" << moveIdle
                           << " scheduled=" << reprap.GetMove().GetScheduledMoves()
                           << " completed=" << reprap.GetMove().GetCompletedMoves()
+                          << " scheduled-completed=" << reprap.GetMove().GetScheduledMoves() - reprap.GetMove().GetCompletedMoves()
+                          << " Move.GetSimulationTime()=" << reprap.GetMove().GetSimulationTime()
                           << '\n';
             }
         }
+
         //HostTiming::AdvanceStepClocks(1000);
-        reprap.Tick();
 
         if (reprap.IsStopped())
         {

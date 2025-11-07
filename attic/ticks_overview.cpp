@@ -240,8 +240,8 @@ uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
 Based on what we have learned from inspecting the time keeping we want to:
  - Delete the gLatestFinishMasterClock stuff (CHECK)
  - Delete all references to a 48MHz frequency, only keep ClockRate, which is 750kHz. (CHECK)
- - Don't advance the clocks by ourselves. Rely on the built in Platform::GetSimulationTimeSeconds()
+ - Don't advance the clocks by ourselves. Rely on the built in Platform::GetSimulationTimeSeconds() (CHECK)
    ... which in turn relies on move->GetSimulationTime() (and to some degree gCodes->GetSimulationTime()).
- - The most important one is cleary Move::GetSimulationTime() which relies on DDARing::GetSimulationTime().
+   The most important one is cleary Move::GetSimulationTime() which relies on DDARing::GetSimulationTime().
  - We need to "fix" DDARing::GetSimulationTime() so that the internal state variable `simulationTime` is
    updated although we want SimulationMode::off. (CHECK)
