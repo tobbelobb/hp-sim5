@@ -131,9 +131,9 @@ uint64_t Platform::GetStepClockCount() const noexcept
 
 double Platform::GetSimulationTimeSeconds() const noexcept
 {
-    //std::cerr << "reprap.GetGCodes().GetSimulationTime(): " << reprap.GetGCodes().GetSimulationTime() << " reprap.GetMove().GetSimulationTime(): " << reprap.GetMove().GetSimulationTime() << '\n';
-    return static_cast<double>(reprap.GetMove().GetSimulationTime()) +
-           static_cast<double>(reprap.GetGCodes().GetSimulationTime());
+    return static_cast<double>(reprap.GetMove().GetSimulationTime());
+    //return static_cast<double>(reprap.GetMove().GetSimulationTime()) +
+    //       static_cast<double>(reprap.GetGCodes().GetSimulationTime());
 }
 
 time_t Platform::GetDateTime() const noexcept

@@ -14,7 +14,6 @@ namespace
 {
 std::atomic<Platform*> g_platform{nullptr};
 std::atomic<uint64_t> g_virtualClockTicks{0};
-std::atomic<uint64_t> g_lastSimulationTicks{0};
 
 constexpr uint64_t StepClocksPerMicrosecond = StepClockRate / 1'000'000ULL;
 constexpr uint64_t StepClocksPerMillisecond = StepClockRate / 1'000ULL;
@@ -54,21 +53,7 @@ void UpdateFromSimulation() noexcept
     {
         return;
     }
-
-    while (expected < simTicks)
-    {
-        if (g_lastSimulationTicks.compare_exchange_weak(
-                expected, simTicks, std::memory_order_relaxed, std::memory_order_relaxed))
-        {
-            g_virtualClockTicks.fetch_add(simTicks - expected, std::memory_order_relaxed);
-            break;
-        }
-
-        if (expected >= simTicks)
-        {
-            break;
-        }
-    }
+    g_virtualClockTicks.fetch_add(simTicks - expected, std::memory_order_relaxed);
 }
 
 uint64_t GetVirtualStepClocks() noexcept
@@ -100,7 +85,6 @@ uint64_t Millis64() noexcept
 
 void Reset(uint64_t stepClocks) noexcept
 {
-    g_lastSimulationTicks.store(stepClocks, std::memory_order_relaxed);
     g_virtualClockTicks.store(stepClocks, std::memory_order_relaxed);
 }
 
@@ -118,13 +102,6 @@ void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept
     uint64_t current = g_virtualClockTicks.load(std::memory_order_relaxed);
     while (current < masterClocks && !g_virtualClockTicks.compare_exchange_weak(
                                          current, masterClocks, std::memory_order_relaxed,
-                                         std::memory_order_relaxed))
-    {
-    }
-
-    uint64_t lastSim = g_lastSimulationTicks.load(std::memory_order_relaxed);
-    while (lastSim < masterClocks && !g_lastSimulationTicks.compare_exchange_weak(
-                                         lastSim, masterClocks, std::memory_order_relaxed,
                                          std::memory_order_relaxed))
     {
     }
