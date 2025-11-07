@@ -25,7 +25,6 @@ std::filesystem::path gOutputPath;
 bool gEnabled = false;
 std::atomic<uint64_t> gCaptureIndex{0};
 std::atomic<uint64_t> gLastExtendedWhen{0};
-std::atomic<uint64_t> gLatestFinishMasterClock{0};
 std::atomic<uint64_t> gBaseMasterClock{std::numeric_limits<uint64_t>::max()};
 
 static_assert(StepClockRate != 0, "Step clock rate must not be zero");
@@ -45,17 +44,6 @@ inline uint64_t ExtendTimestamp(uint32_t raw) noexcept
         {
             return candidate;
         }
-    }
-}
-
-inline void UpdateLatestFinish(uint64_t finishMasterClock) noexcept
-{
-    uint64_t current = gLatestFinishMasterClock.load(std::memory_order_relaxed);
-    while (current < finishMasterClock &&
-           !gLatestFinishMasterClock.compare_exchange_weak(current, finishMasterClock,
-                                                           std::memory_order_relaxed,
-                                                           std::memory_order_relaxed))
-    {
     }
 }
 
@@ -126,7 +114,6 @@ bool HostCanCapture::Configure(const std::filesystem::path& filePath) noexcept
     gEnabled = true;
     gCaptureIndex.store(0, std::memory_order_relaxed);
     gLastExtendedWhen.store(0, std::memory_order_relaxed);
-    gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
     gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
                            std::memory_order_relaxed);
     return true;
@@ -153,11 +140,7 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     const uint64_t decelClocks = static_cast<uint64_t>(msg.decelClocks);
 
     const uint64_t absoluteWhen = ExtendTimestamp(msg.whenToExecute);
-    const uint64_t normalisedWhen = NormaliseMasterClock(absoluteWhen);
-
-    const uint64_t durationStepClocks = accelClocks + steadyClocks + decelClocks;
-    const uint64_t finish = absoluteWhen + durationStepClocks;
-    UpdateLatestFinish(finish);
+    const uint64_t normalisedAbsoluteWhen = NormaliseMasterClock(absoluteWhen);
 
     std::ostringstream line;
     line.setf(std::ios::fixed, std::ios::floatfield);
@@ -166,7 +149,7 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     line << "{\"type\":\"movement_linear_shaped\"";
     line << ",\"capture_index\":" << captureIndex;
     line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
-    line << ",\"when_to_execute\":" << normalisedWhen;
+    line << ",\"when_to_execute\":" << normalisedAbsoluteWhen;
     line << ",\"accel_clocks\":" << accelClocks;
     line << ",\"steady_clocks\":" << steadyClocks;
     line << ",\"decel_clocks\":" << decelClocks;
@@ -216,16 +199,10 @@ uint64_t HostCanCapture::GetCaptureCount() noexcept
     return gCaptureIndex.load(std::memory_order_relaxed);
 }
 
-uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
-{
-    return gLatestFinishMasterClock.load(std::memory_order_relaxed);
-}
-
 void HostCanCapture::Reset() noexcept
 {
     gCaptureIndex.store(0, std::memory_order_relaxed);
     gLastExtendedWhen.store(0, std::memory_order_relaxed);
-    gLatestFinishMasterClock.store(0, std::memory_order_relaxed);
     gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
                            std::memory_order_relaxed);
 }

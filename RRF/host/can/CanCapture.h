@@ -16,10 +16,6 @@ void LogMotion(const CanMessageBuffer& buffer) noexcept;
 // Return the total number of captured movement messages.
 uint64_t GetCaptureCount() noexcept;
 
-// Return the latest movement completion time expressed in master clock ticks (48MHz
-// domain).
-uint64_t GetLatestFinishMasterClock() noexcept;
-
 // Reset capture state (counters and base clock) without closing the file.
 // This allows running multiple prints in the same process with deterministic timing.
 void Reset() noexcept;

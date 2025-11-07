@@ -238,7 +238,7 @@ uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
 ----
 
 Based on what we have learned from inspecting the time keeping we want to:
- - Delete the gLatestFinishMasterClock stuff
+ - Delete the gLatestFinishMasterClock stuff (CHECK)
  - Delete all references to a 48MHz frequency, only keep ClockRate, which is 750kHz. (CHECK)
  - Don't advance the clocks by ourselves. Rely on the built in Platform::GetSimulationTimeSeconds()
    ... which in turn relies on move->GetSimulationTime() (and to some degree gCodes->GetSimulationTime()).
