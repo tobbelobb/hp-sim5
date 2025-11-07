@@ -85,8 +85,6 @@ Platform::Platform() noexcept
     webFolder.SetAbsolute(DEFAULT_WEB_DIR);
     logFileRrfPath.Clear();
     uniqueId.SetFromCurrentBoard();
-
-    HostTiming::RegisterPlatform(*this);
 }
 
 // In your main() function, you will need to create the instances of all the major
@@ -96,6 +94,7 @@ void Platform::Init() noexcept
     // This is where board-level hardware would be initialized. For the host build,
     // we can leave it empty or add a log message.
     MessageF(GenericMessage, "Host Platform Initialized.\n");
+    HostTiming::RegisterPlatform(*this);
 }
 
 void Platform::Spin() noexcept
