@@ -4353,3 +4353,63 @@ Instead the logo.jsonl starts at 17330400000 while first.jsonl starts at 1205040
 
   - ./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.g --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g ✔︎ (743 moves captured, deceleration segments present, when_to_execute begins at 0)
   - ./build/rrf_simulator --vsd run/vsd --gcode gcodes/Hangprinter_logo6.gcode --can-log run/vsd/logs/logo.jsonl -c sys/config_hangprinter.g ▶︎ timed out after 60 s (run continues; log exceeded 1 M entries, now normalised timestamps)
+
+-----
+
+There is some source of indeterminism in my code base.
+Test it with `./run_draw_squares_determinism_test.sh 60`.
+It gets better if the number on line 616 of RRF/host/src/main.cpp. Eg 100 passes the test more often than 10000, but there's always some probability of indeterminism left.
+However, lowering that number to 100 makes the whole program extremely slow. I want to find the root cause.
+
+Please help me find out why we sometimes get indeterminism when we do `HostTiming::AdvanceStepClocks(1000)` (or other high advance numbers).
+Run run_draw_squares_determinism_test.sh to comile and test determinism.
+After the script has run, you have access to two log files:
+ - ./RRF/run/vsd/logs/test_draw_squares.jsonl This is the base log, which we consider "correct" because it's the most frequent result, and the result we're converging to when the advance number is lowered.
+ - ./RRF/run/vsd/logs/test_draw_squares2.jsonl This is the log that differs from the base.
+
+You can also run eg `./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/test_draw_squares2.jsonl -c sys/config_hangprinter.g` to create a single log.
+
+I want you to analyze in detail exactly what ends up different from base in some of the logs.
+Exactly when do they start to diverge?
+Do they diverge by a lot?
+What might have happened in the code to trigger such a diversion?
+
+Write a list of three hypothesis, ie three potential issues.
+For each hypothesis, write some symptoms that could be observable with gdb, or made observable with debug printouts.
+Design an experiment for each that tries to make the symptoms visible.
+Run each experiment, and decide if the result strengthens, weakens, or neutrally affects the plausability of the hypothesis.
+
+Look in RRF/CMakeLists.txt for a list of source files to search. Don't consume whole files, do targetted searches with `rg`, `git grep` and `git -C RRF/Reprapfirmware grep`.
+
+------
+
+
+
+
+
+• Divergence shows up once the move queue has been running for a while: the first mismatching entry is capture_index=8399 in experiment_bad.jsonl:8401, where when_to_execute is already 277 step clocks (≈5.8 µs) later than the reference run in
+  experiment_good.jsonl:8401. The gap keeps widening; in the “loops” experiment it reached 519 574 clocks (≈10.8 ms) by capture_index=9131 (experiment_bad_loops.jsonl:9133). Move payloads stay identical—the only thing that drifts is the scheduled start
+  time.
+
+  Hypotheses & experiments:
+
+  1. Host loop advances the virtual clock too aggressively while it waits for the next capture.
+     • Symptom to watch: difference between HostTiming::StepClocks64() and the CAN message’s when_to_execute.
+     • Experiment: temporarily logged both values in HostCanCapture::LogMotion (experiment_good.log, experiment_bad.log). The divergent run showed the host clock 1.7 M ticks ahead of the “good” run at capture_index≈8435, while when_to_execute was only
+     ~5 k ticks ahead. That strongly supports this hypothesis: extra iterations of HostTiming::AdvanceStepClocks(1000) are accumulating faster than the movement pipeline can emit new segments.
+  2. Step-timer hiccups (i.e. StepTimer::IncreaseMovementDelay) are inserting slack.
+     • Symptom: non-zero StepTimer::GetMovementDelay() at shutdown.
+     • Experiment: instrumented WaitForPrintCompletion() to print the counter (experiment_good_md.log, experiment_bad_md.log). Both divergent and matching runs reported movementDelay=0, so this hypothesis is weakened.
+  3. The “no new captures but still active” branch spins thousands of extra cycles once captureIdleCycles hits its settling threshold, injecting more 1000-tick advances.
+     • Symptom: significantly higher counts of total loop iterations and iterations after captureIdleCycles >= kIdleSettlingCycles.
+     • Experiment: counted iterations in WaitForPrintCompletion() (experiment_good_loops.log, experiment_bad_loops.log). Divergent run executed ~1240 k loops vs ~1138 k in a good run, with ~1109 k “post-settled” loops (≈100 k more than the reference).
+     That strongly supports the idea that this idle-settling window is where the extra virtual time comes from.
+
+  All temporary instrumentation has been removed; only the collected logs (experiment_*.log/jsonl) remain in the repo root for reference.
+
+  Next steps worth considering:
+
+  1. Make the idle-settling path stop advancing the virtual clock so aggressively (e.g. skip or reduce AdvanceStepClocks once captureIdleCycles ≥ threshold).
+  2. Track how many loops are spent without new captures in normal runs, then add logging or metrics to catch spikes automatically.
+  3. If you need more evidence, re-run the first experiment while sampling captureIdleCycles to correlate each 1000-clock jump with the idle branch.
+

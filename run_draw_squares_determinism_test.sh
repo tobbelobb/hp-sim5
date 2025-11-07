@@ -17,8 +17,10 @@ TEST_LOG="$VSD_DIR/logs/test_draw_squares2.jsonl"
 echo "Building rrf_simulator once..."
 cmake --build "$BUILD_DIR" --target rrf_simulator -j
 
+incorrect=0
 correct=0
 failed=0
+tries=0
 
 for ((i=1; i<=ITERATIONS; i++)); do
     if ! "$BUILD_DIR/rrf_simulator" \
@@ -30,12 +32,14 @@ for ((i=1; i<=ITERATIONS; i++)); do
     then
         # Treat failed run as incorrect
         ((failed++))
+        ((tries++))
         printf "❌"
         continue
     fi
 
     if [[ ! -f "$BASE_LOG" || ! -f "$TEST_LOG" ]]; then
         ((failed++))
+        ((tries++))
         printf "❌"
         continue
     fi
@@ -44,15 +48,17 @@ for ((i=1; i<=ITERATIONS; i++)); do
 
     if [[ "$diff_count" -eq 4 ]]; then
         ((correct++))
+        ((tries++))
         printf "✅"
     else
+        ((incorrect++))
+        ((tries++))
         printf "❌"
         break
     fi
 done
 
-incorrect=$((ITERATIONS - correct))
 
 # Summary: single line, wrapped in leading+trailing newline
 echo
-echo "Total runs: $ITERATIONS, Correct (4 lines): $correct, Incorrect/Failed: $incorrect"
+echo "Total runs: $tries, Correct: $correct, Incorrect: $incorrect, Failed: $failed"
