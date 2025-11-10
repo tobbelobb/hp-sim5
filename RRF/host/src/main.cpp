@@ -611,7 +611,10 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        HostTiming::AdvanceStepClocks(1);
+        {
+            HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
+            HostTiming::AdvanceStepClocks(1);
+        }
 
         if (reprap.IsStopped())
         {
@@ -849,6 +852,7 @@ int main(int argc, char** argv)
             ReportFinalPosition();
         }
 
+        HostTiming::DumpClockStats();
         cleanup();
         return success ? 0 : 1;
     }
