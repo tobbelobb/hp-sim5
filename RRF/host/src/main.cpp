@@ -524,7 +524,7 @@ bool WaitForPrintCompletion() noexcept
     unsigned int captureIdleCycles = 0;
     bool seenCapture = (lastCaptureCount != 0);
 
-    for (int spins=0;;)
+    for (;;)
     {
         reprap.Spin();
 
@@ -611,14 +611,13 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        if (spins > 100 && currentCaptureCount == 0)
+        if (HostCanCapture::GetCaptureCount() == 0)
         {
-            spins=0;
             HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
-            HostTiming::AdvanceStepClocks(1);
-        } else {
-          if (currentCaptureCount == 0)
-            spins++;
+            HostTiming::AdvanceStepClocks(75000);
+            for(int i=0; i<100; i++){
+              reprap.Spin();
+            }
         }
 
         if (reprap.IsStopped())
