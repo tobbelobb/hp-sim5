@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
-#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -51,40 +50,6 @@ constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
 constexpr bool kTraceCompletion = true;
-
-void SyncVirtualClockToSimulation() noexcept
-{
-    const uint32_t earliestStart =
-        reprap.GetMove().GetEarliestCommittedMoveStartTime();
-    if (earliestStart != 0)
-    {
-        HostTiming::EnsureMasterClockAtLeast(earliestStart);
-    }
-
-    const uint32_t earliestFinish =
-        reprap.GetMove().GetEarliestCommittedMoveFinishTime();
-    if (earliestFinish != 0)
-    {
-        HostTiming::EnsureMasterClockAtLeast(earliestFinish);
-        return;
-    }
-
-    const double moveSeconds = static_cast<double>(reprap.GetMove().GetSimulationTime());
-    const double gcodeSeconds = static_cast<double>(reprap.GetGCodes().GetSimulationTime());
-    const double totalSeconds = moveSeconds + gcodeSeconds;
-    if (!std::isfinite(totalSeconds) || totalSeconds <= 0.0)
-    {
-        return;
-    }
-
-    const double ticks = totalSeconds * static_cast<double>(StepClockRate);
-    if (!std::isfinite(ticks) || ticks <= 0.0)
-    {
-        return;
-    }
-
-    HostTiming::EnsureMasterClockAtLeast(static_cast<uint64_t>(ticks));
-}
 
 void PrintUsage() noexcept
 {
@@ -562,7 +527,6 @@ bool WaitForPrintCompletion() noexcept
     for (;;)
     {
         reprap.Spin();
-        SyncVirtualClockToSimulation();
 
         const uint64_t currentCaptureCount = HostCanCapture::GetCaptureCount();
         if (currentCaptureCount != lastCaptureCount)
@@ -645,6 +609,11 @@ bool WaitForPrintCompletion() noexcept
                           << " Move.GetSimulationTime()=" << reprap.GetMove().GetSimulationTime()
                           << '\n';
             }
+        }
+
+        {
+            HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
+            HostTiming::AdvanceStepClocks(1);
         }
 
         if (reprap.IsStopped())
