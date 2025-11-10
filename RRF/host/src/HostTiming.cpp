@@ -18,6 +18,7 @@ std::atomic<Platform*> g_platform{nullptr};
 std::atomic<uint64_t> g_virtualClockTicks{0};
 std::atomic<uint64_t> g_lastSimulationTicks{0};
 thread_local ClockStatKind g_currentClockStat = ClockStatKind::Other;
+constexpr bool kUseSimulationSync = false;
 
 struct ClockStats
 {
@@ -137,7 +138,10 @@ void UpdateFromSimulation() noexcept
 }
 uint64_t GetVirtualStepClocks() noexcept
 {
-    UpdateFromSimulation();
+    if constexpr (kUseSimulationSync)
+    {
+        UpdateFromSimulation();
+    }
     return g_virtualClockTicks.load(std::memory_order_relaxed);
 }
 }  // namespace

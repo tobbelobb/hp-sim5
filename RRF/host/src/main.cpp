@@ -52,23 +52,8 @@ constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
 constexpr bool kTraceCompletion = true;
 
-void SyncVirtualClockToSimulation() noexcept
+void SyncClockToSimulationTime() noexcept
 {
-    const uint32_t earliestStart =
-        reprap.GetMove().GetEarliestCommittedMoveStartTime();
-    if (earliestStart != 0)
-    {
-        HostTiming::EnsureMasterClockAtLeast(earliestStart);
-    }
-
-    const uint32_t earliestFinish =
-        reprap.GetMove().GetEarliestCommittedMoveFinishTime();
-    if (earliestFinish != 0)
-    {
-        HostTiming::EnsureMasterClockAtLeast(earliestFinish);
-        return;
-    }
-
     const double moveSeconds = static_cast<double>(reprap.GetMove().GetSimulationTime());
     const double gcodeSeconds = static_cast<double>(reprap.GetGCodes().GetSimulationTime());
     const double totalSeconds = moveSeconds + gcodeSeconds;
@@ -84,6 +69,28 @@ void SyncVirtualClockToSimulation() noexcept
     }
 
     HostTiming::EnsureMasterClockAtLeast(static_cast<uint64_t>(ticks));
+}
+
+void SyncClockToEarliestStart() noexcept
+{
+    const uint32_t earliestStart = reprap.GetMove().GetEarliestCommittedMoveStartTime();
+    if (earliestStart != 0)
+    {
+        HostTiming::EnsureMasterClockAtLeast(earliestStart);
+        return;
+    }
+    SyncClockToSimulationTime();
+}
+
+void SyncClockToEarliestFinish() noexcept
+{
+    const uint32_t earliestFinish = reprap.GetMove().GetEarliestCommittedMoveFinishTime();
+    if (earliestFinish != 0)
+    {
+        HostTiming::EnsureMasterClockAtLeast(earliestFinish);
+        return;
+    }
+    SyncClockToSimulationTime();
 }
 
 void PrintUsage() noexcept
@@ -561,8 +568,9 @@ bool WaitForPrintCompletion() noexcept
 
     for (;;)
     {
+        SyncClockToEarliestStart();
         reprap.Spin();
-        SyncVirtualClockToSimulation();
+        SyncClockToEarliestFinish();
 
         const uint64_t currentCaptureCount = HostCanCapture::GetCaptureCount();
         if (currentCaptureCount != lastCaptureCount)
