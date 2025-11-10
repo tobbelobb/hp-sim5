@@ -191,7 +191,7 @@ inline uint64_t millis64() noexcept
 }
 inline void delay(uint32_t value) noexcept
 {
-    //HostTiming::DelayMilliseconds(value);
+    HostTiming::DelayMilliseconds(value);
 }
 inline void delayMicroseconds(uint32_t value) noexcept
 {

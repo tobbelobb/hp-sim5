@@ -1,3 +1,4 @@
+// File: RRF/ReprapFirmware/src/RepRapFirmware.h
 constexpr uint32_t StepClockRate = 48000000/64;								// 750kHz
 constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
 constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
@@ -15,76 +16,62 @@ static inline constexpr uint32_t MillisToStepClocks(uint32_t numMillis) noexcept
 	return (numMillis * (uint64_t)StepClockRate)/1000;		// catch-all in case of using other step clock rates
 }
 
-// Convert microseconds to step clocks, rounding up to the next step clock
-static inline constexpr uint32_t MicrosecondsToStepClocks(float us) noexcept
-{
-	return (uint32_t)ceilf((float)StepClockRate * 0.000001 * us);
-}
-
+// File: RRF/host/src/HostTiming.cpp
 std::atomic<uint64_t> g_virtualClockTicks{0};
 std::atomic<uint64_t> g_lastSimulationTicks{0};
-inline constexpr uint32_t StepClockFrequencyHz = 48'000'000;
-constexpr uint64_t StepClocksPerMicrosecond = StepClockFrequencyHz / 1'000'000ULL;
-constexpr uint64_t StepClocksPerMillisecond = StepClockFrequencyHz / 1'000ULL;
 
-double Platform::GetSimulationTimeSeconds() const noexcept {
-    if (reprap == nullptr || gCodes == nullptr || move == nullptr)
-    {
-        // ^^ All these three are always nullptr for some reason
-        return 0.0;
-    }
+//File RRF/host/platform/PlatformHost.cpp
+double Platform::GetSimulationTimeSeconds() const noexcept
+{
     return static_cast<double>(move->GetSimulationTime()) +  // Get the accumulated simulation time (Print time since we started simulating)
            static_cast<double>(gCodes->GetSimulationTime()); // The GCodes simulationTime underlying state only increments during dwell operations.
-                                                             // Should use GetLastDuration() instead?
-                                                             // (Time or simulated time of the last successful print or simulation, in
-                                                             // seconds)
 }
 /* The move->GetSimulationTime()'s internal simulationTime state is in the DDARing object:
-
+// File: RRF/ReprapFirmware/src/Movement/Move.h
 class Move final INHERIT_OBJECT_MODEL
 {
   ...
 	float GetSimulationTime() const noexcept { return rings[0].GetSimulationTime(); }		// Get the accumulated simulation time
 }
+// File: RRF/ReprapFirmware/src/Movement/DDARing.cpp
+// Try to process moves in the ring. Called by the Move task.
+// Return the maximum time in milliseconds that should elapse before we prepare further unprepared moves that are already in the ring, or MoveTiming::StandardMoveWakeupInterval if there are no unprepared moves left.
 uint32_t DDARing::Spin(uint32_t prepareAdvanceTime, SimulationMode simulationMode, bool signalMoveCompletion, bool shouldStartMove) noexcept
 {
 	DDA *cdda = getPointer;											// capture volatile variable
 
-	// If we are simulating, simulate completion of the current move
-	if (simulationMode >= SimulationMode::normal)
+#if RRF_HOST_BUILD
+  // On host we want to keep track of simulation time even when we're not running in simulation mode
+	if (cdda->IsCommitted() && simulationMode == SimulationMode::off)
 	{
-		// Simulate completion of one move
-		if (cdda->IsCommitted())
-		{
-			simulationTime += (float)cdda->GetClocksNeeded() * (1.0/StepClockRate);
-			++completedMoves;
--------------
-
-We have a problem becasue we want acces to the simulationTime state, but we have to run with SimulationMode::off in order to
-exercise all the code we want to exercise. Maybe we could calculate an equivalent number ourselves, or inject some tiny code into DDARing.cpp?
+		simulationTime += (float)cdda->GetClocksNeeded() * (1.0/StepClockRate);
+	}
+#endif
 */
-uint64_t CalculateSimulationTicks(Platform& platform) noexcept {
+
+// File: RRF/host/src/HostTiming.cpp
+uint64_t CalculateSimulationTicks(Platform& platform) noexcept
+{
     const double totalSeconds = platform.GetSimulationTimeSeconds();
     if (!std::isfinite(totalSeconds) || totalSeconds <= 0.0)
     {
         return 0;
     }
-    const double ticks = totalSeconds * static_cast<double>(StepClockFrequencyHz);
+    const double ticks = totalSeconds * static_cast<double>(StepClockRate);
     if (!std::isfinite(ticks) || ticks <= 0.0)
     {
         return 0;
     }
     return static_cast<uint64_t>(ticks);
 }
-void UpdateFromSimulation() noexcept {
+void UpdateFromSimulation() noexcept
+{
     Platform* platform = TryGetPlatform();
     if (platform == nullptr)
     {
         return;
     }
 
-    // simTicks is always zero because platform.GetSimulationTimeSeconds() is always zero,
-    // which is because reprap, gCodes, move are all nullptr (none of them can be nullptr)
     const uint64_t simTicks = CalculateSimulationTicks(*platform);
     uint64_t expected = g_lastSimulationTicks.load(std::memory_order_relaxed);
 
@@ -115,26 +102,19 @@ void UpdateFromSimulation() noexcept {
 }
 uint64_t GetVirtualStepClocks() noexcept {
     UpdateFromSimulation();
-    // This returns step clocks incremented solely by our manual calls to AdvanceStepClocks
     return g_virtualClockTicks.load(std::memory_order_relaxed);
 }
-// The same goes for StepClocks64 and StepClocks, because they just wrap GetVirtualStepClocks
+// StepClocks64, StepClock, Millis, Millis64, just wrap GetVirtualStepClocks
 uint64_t StepClocks64() noexcept { return GetVirtualStepClocks(); }
 uint32_t StepClocks() noexcept { return static_cast<uint32_t>(StepClocks64()); }
-// The same also goes for Millis, Millis64, Micros, Micros64
-// Because they all just wrap StepClocks64().
+uint64_t Millis64() noexcept { return StepClocks64() / StepClocksPerMillisecond; }
 uint32_t Millis() noexcept { return static_cast<uint32_t>(Millis64()); }
-uint64_t Millis64() noexcept { return Micros64() / 1000ULL; }
-uint32_t Micros() noexcept { return static_cast<uint32_t>(Micros64()); }
-uint64_t Micros64() noexcept { return StepClocks64() / StepClocksPerMicrosecond; }
-// There are also some StepClocks64() wrappers in PlatformHost.cpp.
+// There are also some StepClocks64() wrappers in RRF/host/platform/PlatformHost.cpp.
 // Only Platform::millis() is used, and it's only used for logging
 uint32_t Platform::millis() const noexcept { return HostTiming::Millis(); }
-uint32_t Platform::micros() const noexcept { return HostTiming::Micros(); }
 uint64_t Platform::GetStepClockCount() const noexcept { return HostTiming::StepClocks64(); }
-// So we continue to look into HostTiming.cpp:
-// Since automatic updates of clock doesn't work in our case, we rely solely on these:
- void AdvanceStepClocks(uint64_t value) noexcept {
+// So we continue to look into RRF/host/src/HostTiming.cpp:
+void AdvanceStepClocks(uint64_t value) noexcept {
     if (value == 0)
     {
         return;
@@ -162,13 +142,6 @@ void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept
     {
     }
 }
-void AdvanceMicros(uint64_t value) noexcept {
-    if (value == 0)
-    {
-        return;
-    }
-    AdvanceStepClocks(value * StepClocksPerMicrosecond);
-}
 void DelayMilliseconds(uint32_t value) noexcept {
     if (value == 0)
     {
@@ -176,15 +149,7 @@ void DelayMilliseconds(uint32_t value) noexcept {
     }
     AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMillisecond);
 }
-void DelayMicroseconds(uint32_t value) noexcept {
-    if (value == 0)
-    {
-        return;
-    }
-    AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMicrosecond);
-}
-
-// In StepTimer.h we have:
+// In RRF/host/include/Movement/StepTimer.h we have:
 // Host-only shim that mimics the StepTimer interface without touching MCU peripherals.
 class StepTimer final
 {
@@ -217,31 +182,82 @@ public:
         return static_cast<Ticks>(stepClocks / MasterClocksPerStepTick);
     }
 }
+// Then, in order to make the simulation clock not stall completely, we have this in the spin loop of
+// RRF/host/src/main.cpp:
+        HostTiming::AdvanceStepClocks(1);
+// It's manual and hopelessly dependent on the number of Spin() iterations, which is not deterministic.
+// However, it's the closest to deterministic we've managed to get thus far.
+// We're looking for a way to either advance manually only a constant, deterministic amount of ticks,
+// or not do manual clock advancement at all.
 
-// There's also the unused branch of clock bookkeeping called "gLatestFinishMasterClock" in RRF/host/can/CanCapture.cpp
-std::atomic<uint64_t> gLatestFinishMasterClock{0};
-inline void UpdateLatestFinish(uint64_t finishMasterClock) noexcept
+
+// Here's some timing related code from RRF/host/rtos/freertos_shim.cpp that I don't really understand.
+TickType_t xTaskGetTickCount() noexcept
 {
-    uint64_t current = gLatestFinishMasterClock.load(std::memory_order_relaxed);
-    while (current < finishMasterClock &&
-           !gLatestFinishMasterClock.compare_exchange_weak(current, finishMasterClock,
-                                                           std::memory_order_relaxed,
-                                                           std::memory_order_relaxed))
+    // Use virtual clock for deterministic simulation
+    return static_cast<TickType_t>(HostTiming::Millis());
+}
+
+TickType_t xTaskGetTickCountFromISR() noexcept
+{
+    return xTaskGetTickCount();
+}
+
+UBaseType_t uxTaskGetNumberOfTasks() noexcept
+{
+    std::lock_guard<std::mutex> lock(tasksMutex);
+    return static_cast<UBaseType_t>(allTasks.size());
+}
+
+void vTaskDelay(const TickType_t ticksToDelay) noexcept
+{
+    if (ticksToDelay == 0)
     {
+        std::this_thread::yield();
+        return;
     }
+    // Use virtual delay for deterministic simulation
+    // Convert ticks to milliseconds (1 tick = 1ms)
+    uint32_t delayMs = static_cast<uint32_t>(ticksToDelay);
+    HostTiming::DelayMilliseconds(delayMs);
+
+    // Still yield to allow other threads to run
+    std::this_thread::yield();
 }
-uint64_t HostCanCapture::GetLatestFinishMasterClock() noexcept
+
+void vTaskDelayUntil(TickType_t* const lastWakeTime,
+                     const TickType_t ticksToWait) noexcept
 {
-    return gLatestFinishMasterClock.load(std::memory_order_relaxed);
+    if (lastWakeTime == nullptr)
+    {
+        vTaskDelay(ticksToWait);
+        return;
+    }
+
+    const TickType_t currentTicks = xTaskGetTickCount();
+    TickType_t target = *lastWakeTime + ticksToWait;
+    if (target <= currentTicks)
+    {
+        target = currentTicks + ticksToWait;
+    }
+
+    const TickType_t waitTicks = target > currentTicks ? (target - currentTicks) : 0;
+    vTaskDelay(waitTicks);
+    *lastWakeTime = target;
 }
 
-----
-
-Based on what we have learned from inspecting the time keeping we want to:
- - Delete the gLatestFinishMasterClock stuff (CHECK)
- - Delete all references to a 48MHz frequency, only keep ClockRate, which is 750kHz. (CHECK)
- - Don't advance the clocks by ourselves. Rely on the built in Platform::GetSimulationTimeSeconds() (CHECK)
-   ... which in turn relies on move->GetSimulationTime() (and to some degree gCodes->GetSimulationTime()).
-   The most important one is cleary Move::GetSimulationTime() which relies on DDARing::GetSimulationTime().
- - We need to "fix" DDARing::GetSimulationTime() so that the internal state variable `simulationTime` is
-   updated although we want SimulationMode::off. (CHECK)
+// There's also these functions in RRF/host/include/Core.h
+// They're just even more wrappers of the same old Millis() which wraps StepClocks64() which wraps GetVirtualStepClocks().
+// ... and HostTiming::DelayMilliseconds() which increments g_virtualClockTicks via AdvanceStepClocks()...
+inline uint32_t millis() noexcept
+{
+    return HostTiming::Millis();
+}
+inline uint64_t millis64() noexcept
+{
+    return HostTiming::Millis64();
+}
+inline void delay(uint32_t value) noexcept
+{
+    HostTiming::DelayMilliseconds(value);
+}

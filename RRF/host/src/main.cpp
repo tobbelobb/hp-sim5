@@ -611,9 +611,7 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        if (reprap.GetMove().GetScheduledMoves() - reprap.GetMove().GetCompletedMoves() > 0) {
-            HostTiming::AdvanceStepClocks(1);
-        }
+        HostTiming::AdvanceStepClocks(1);
 
         if (reprap.IsStopped())
         {
