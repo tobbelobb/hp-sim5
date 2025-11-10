@@ -11,7 +11,7 @@ cd "$ROOT_DIR"
 
 BUILD_DIR="$ROOT_DIR/RRF/build"
 VSD_DIR="$ROOT_DIR/RRF/run/vsd"
-BASE_LOG="$VSD_DIR/logs/test_draw_squares_long_but_deterministic.jsonl"
+BASE_LOG="$VSD_DIR/logs/test_draw_squares3.jsonl"
 TEST_LOG="$VSD_DIR/logs/test_draw_squares2.jsonl"
 
 echo "Building rrf_simulator once..."
