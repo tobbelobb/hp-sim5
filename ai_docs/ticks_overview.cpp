@@ -261,3 +261,12 @@ inline void delay(uint32_t value) noexcept
 {
     HostTiming::DelayMilliseconds(value);
 }
+
+// This commend in RRF/ReprapFirmware/src/Movement/Move.cpp also gives some important hints about initial delays...
+//
+// Let ring 0 process moves
+// When there is a gap between moves it can be that we try to prepare the second move while a segment of the first move that has been delayed by input shaping is still executing.
+// To avoid this we must ensure that we prepare moves at least half an input shaper period in advance. This avoids the problem because any delayed segment of the first move
+// will be half a shaper period long. In order to handle CAN delays etc. we prepare moves [half a shaper period plus MoveTiming::AbsoluteMinimumPreparedTime] in advance,
+// with a minimum of MoveTiming::UsualMinimumPreparedTime.
+
