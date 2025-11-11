@@ -49,7 +49,7 @@ struct CommandLineOptions
 constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
-constexpr bool kTraceCompletion = false;
+constexpr bool kTraceCompletion = true;
 
 void PrintUsage() noexcept
 {
@@ -594,18 +594,20 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
+        auto const scheduled = reprap.GetMove().GetScheduledMoves();
+        auto const completed = reprap.GetMove().GetCompletedMoves();
         if constexpr (kTraceCompletion)
         {
             static uint64_t debugCounter = 0;
-            if ((debugCounter++ % 1000ULL) == 0)
+            if ((debugCounter++ % 1000000ULL) == 0)
             {
                 std::cout << "[wait] captures=" << currentCaptureCount
                           << " captureIdle=" << captureIdleCycles
                           << " seen=" << seenCapture << " fileIdle=" << fileIdle
                           << " moveIdle=" << moveIdle
-                          << " scheduled=" << reprap.GetMove().GetScheduledMoves()
-                          << " completed=" << reprap.GetMove().GetCompletedMoves()
-                          << " scheduled-completed=" << reprap.GetMove().GetScheduledMoves() - reprap.GetMove().GetCompletedMoves()
+                          << " scheduled=" << scheduled
+                          << " completed=" << completed
+                          << " scheduled-completed=" << scheduled - completed
                           << " Move.GetSimulationTime()=" << reprap.GetMove().GetSimulationTime()
                           << " GetVirtualStepClocks()=" << HostTiming::StepClocks64()
                           << '\n';
@@ -619,6 +621,9 @@ bool WaitForPrintCompletion() noexcept
             for(int i=0; i<100; i++){
               reprap.Spin();
             }
+        } else if  (scheduled - completed >58) {
+            HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::Other);
+            HostTiming::AdvanceStepClocks(10);
         }
 
         if (reprap.IsStopped())

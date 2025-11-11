@@ -158,6 +158,10 @@ void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
     }
 
     g_lastSimulationTicks.fetch_add(deltaStepClocks, std::memory_order_relaxed);
+    // We're now at the end of a move, which is a nice place to be.
+    // In case the virtual clock ran ahead or behind of that move, just pin to
+    // this nice time stamp, plus the length of the previous move, before we move on.
+    //g_virtualClockTicks.store(g_lastSimulationTicks.load(std::memory_order_relaxed) + deltaStepClocks);
 }
 
 void RegisterPlatform(Platform& platform) noexcept
