@@ -77,18 +77,15 @@ constexpr uint64_t StepClocksPerMillisecond = StepClockRate / 1'000ULL;
 
 uint64_t GetVirtualStepClocks() noexcept
 {
-    // We want to call `RecordClockAdvance` instantly when events appear
-    // in RRFs planner, pretending the event finished instantly.
-    // This way we can "set and forget".
-    // We don't need to trace every event's execution path.
+    // We want to call `AdvanceStepClocks` fully and instantly when events appear
+    // and `RecordClockAdvance` when they expire.
+    // in RRFs planner, basically pretending the event finished instantly.
     //
     // However, on real hw the step timer is a free‑running counter, and
     // the RRF code is made to run "in flight".
-    // Being "too late" or "already finished" triggers unwanted special behavior.
-    // See eg RRF/ReprapFirmware/src/Movement/DDA.cpp:1156‑1172.
-    // If DDA::Prepare() sees that the previous move is already finished,
-    // it will inject a 25 ms pause called `AbsoluteMinimumPreparedTime`.
-    // This manifests as "stuttering" in a host build.
+    // Being "too late" or "already finished" might trigger unwanted special behavior.
+    // This might manifests as stuttering in a host build, or a hang/early finish by the
+    // host build binary.
     //
     // To get the best of both worlds, we pretend that we're always behind by a few ms.
     constexpr uint64_t ClockDelayWhenReporting = StepClockRate / 100ULL;
