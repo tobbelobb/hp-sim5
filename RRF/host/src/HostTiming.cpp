@@ -91,9 +91,8 @@ uint64_t GetVirtualStepClocks() noexcept
     // This manifests as "stuttering" in a host build.
     //
     // To get the best of both worlds, we pretend that we're always behind by a few ms.
-    //constexpr uint64_t ClockDelayWhenReporting = StepClockRate / 100ULL;
-    //return g_virtualClockTicks.load(std::memory_order_relaxed) - ClockDelayWhenReporting;
-    return g_virtualClockTicks.load(std::memory_order_relaxed);
+    constexpr uint64_t ClockDelayWhenReporting = StepClockRate / 100ULL;
+    return g_virtualClockTicks.load(std::memory_order_relaxed) - ClockDelayWhenReporting;
 }
 }  // namespace
 
