@@ -49,7 +49,7 @@ struct CommandLineOptions
 constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
-constexpr bool kTraceCompletion = false;
+constexpr bool kTraceCompletion = true;
 
 void PrintUsage() noexcept
 {
@@ -597,7 +597,7 @@ bool WaitForPrintCompletion() noexcept
         if constexpr (kTraceCompletion)
         {
             static uint64_t debugCounter = 0;
-            if ((debugCounter++ % 1000ULL) == 0)
+            if ((debugCounter++ % 10000000ULL) == 0)
             {
                 std::cout << "[wait] captures=" << currentCaptureCount
                           << " captureIdle=" << captureIdleCycles

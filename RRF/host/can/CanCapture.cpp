@@ -144,54 +144,65 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 
     std::ostringstream line;
     line.setf(std::ios::fixed, std::ios::floatfield);
-    line << std::setprecision(3);
+    line << std::setprecision(0);
 
-    line << "{\"type\":\"movement_linear_shaped\"";
-    line << ",\"capture_index\":" << captureIndex;
-    line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
-    line << ",\"when_to_execute\":" << normalisedAbsoluteWhen;
-    line << ",\"accel_clocks\":" << accelClocks;
-    line << ",\"steady_clocks\":" << steadyClocks;
-    line << ",\"decel_clocks\":" << decelClocks;
-    line << ",\"acceleration\":" << msg.acceleration;
-    line << ",\"deceleration\":" << msg.deceleration;
-    line << ",\"seq\":"
-         << static_cast<unsigned int>(msg.seq & CanMessageMovementLinearShaped::SeqMask);
+    // Minified...
+    line << captureIndex;
+    line << "," << static_cast<unsigned int>(buffer.id.Dst());
+    line << "," << normalisedAbsoluteWhen;
+    line << "," << accelClocks;
+    line << "," << steadyClocks;
+    line << "," << decelClocks;
+    if (std::abs(msg.acceleration) > 1e-1 || std::abs(msg.deceleration) > 1e-1) {
+      line << "," << msg.acceleration;
+      line << "," << msg.deceleration;
+    }
+
+    //line << "{\"type\":\"movement_linear_shaped\"";
+    //line << ",\"capture_index\":" << captureIndex;
+    //line << ",\"destination\":" << static_cast<unsigned int>(buffer.id.Dst());
+    //line << ",\"when_to_execute\":" << normalisedAbsoluteWhen;
+    //line << ",\"accel_clocks\":" << accelClocks;
+    //line << ",\"steady_clocks\":" << steadyClocks;
+    //line << ",\"decel_clocks\":" << decelClocks;
+    //line << ",\"acceleration\":" << msg.acceleration;
+    //line << ",\"deceleration\":" << msg.deceleration;
+    //line << ",\"seq\":"
+    //     << static_cast<unsigned int>(msg.seq & CanMessageMovementLinearShaped::SeqMask);
     // Ignore extruder_mask, pressure advance and input shaping for now
     // line << ",\"extruder_mask\":" << static_cast<unsigned int>(msg.extruderDrives);
     // line << ",\"use_pressure_advance\":" << (msg.usePressureAdvance ? "true" :
     // "false"); line << ",\"use_late_input_shaping\":" << (msg.useLateInputShaping ?
     // "true" : "false");
 
-    line << ",\"drivers\":[";
-    for (uint32_t i = 0; i < msg.numDrivers && i < MaxLinearDriversPerCanSlave; ++i)
-    {
-        if (i > 0)
-        {
-            line << ',';
-        }
-        const bool isExtruder = ((msg.extruderDrives >> i) & 0x1u) != 0;
-        line << "{\"index\":" << i;
-        if (isExtruder)
-        {
-            line << ",\"extrusion\":" << msg.perDrive[i].extrusion;
-        }
-        else
-        {
-            line << ",\"steps\":" << msg.perDrive[i].steps;
-        }
-        line << "}";
-    }
-    line << "]}";
+    //line << ",\"drivers\":[";
+    //for (uint32_t i = 0; i < msg.numDrivers && i < MaxLinearDriversPerCanSlave; ++i)
+    //{
+    //    if (i > 0)
+    //    {
+    //        line << ',';
+    //    }
+    //    const bool isExtruder = ((msg.extruderDrives >> i) & 0x1u) != 0;
+    //    line << "{\"index\":" << i;
+    //    if (isExtruder)
+    //    {
+    //        line << ",\"extrusion\":" << msg.perDrive[i].extrusion;
+    //    }
+    //    else
+    //    {
+    //        line << ",\"steps\":" << msg.perDrive[i].steps;
+    //    }
+    //    line << "}";
+    //}
+    //line << "]}";
 
-    std::lock_guard<std::mutex> lock(gMutex);
-    if (!gEnabled || !gStream.is_open())
-    {
-        return;
-    }
+    //std::lock_guard<std::mutex> lock(gMutex);
+    //if (!gEnabled || !gStream.is_open())
+    //{
+    //    return;
+    //}
 
     gStream << line.str() << '\n';
-    gStream.flush();
 }
 
 uint64_t HostCanCapture::GetCaptureCount() noexcept
