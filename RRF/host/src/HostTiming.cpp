@@ -140,23 +140,6 @@ void AdvanceStepClocks(uint64_t value) noexcept
     RecordClockAdvance(g_currentClockStat, value);
 }
 
-void EnsureMasterClockAtLeast(uint64_t masterClocks) noexcept
-{
-    uint64_t current = g_virtualClockTicks.load(std::memory_order_relaxed);
-    while (current < masterClocks && !g_virtualClockTicks.compare_exchange_weak(
-                                         current, masterClocks, std::memory_order_relaxed,
-                                         std::memory_order_relaxed))
-    {
-    }
-
-    uint64_t lastSim = g_lastSimulationTicks.load(std::memory_order_relaxed);
-    while (lastSim < masterClocks && !g_lastSimulationTicks.compare_exchange_weak(
-                                         lastSim, masterClocks, std::memory_order_relaxed,
-                                         std::memory_order_relaxed))
-    {
-    }
-}
-
 void DelayMilliseconds(uint32_t value) noexcept
 {
     if (value == 0)
