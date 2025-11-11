@@ -178,10 +178,7 @@ void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
         return;
     }
 
-    //std::cout << "Incrementing by " << deltaStepClocks << '\n';
     g_lastSimulationTicks.fetch_add(deltaStepClocks, std::memory_order_relaxed);
-    g_virtualClockTicks.fetch_add(deltaStepClocks, std::memory_order_relaxed);
-    RecordClockAdvance(ClockStatKind::Simulation, deltaStepClocks);
 }
 
 void RegisterPlatform(Platform& platform) noexcept

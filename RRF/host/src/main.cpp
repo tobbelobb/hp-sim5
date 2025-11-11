@@ -49,7 +49,7 @@ struct CommandLineOptions
 constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
-constexpr bool kTraceCompletion = true;
+constexpr bool kTraceCompletion = false;
 
 void PrintUsage() noexcept
 {
@@ -596,24 +596,23 @@ bool WaitForPrintCompletion() noexcept
 
         if constexpr (kTraceCompletion)
         {
-            //static uint64_t debugCounter = 0;
-            //if ((debugCounter++ % 1000ULL) == 0)
-            //{
-            //    std::cout << "[wait] captures=" << currentCaptureCount
-            //              << " captureIdle=" << captureIdleCycles
-            //              << " seen=" << seenCapture << " fileIdle=" << fileIdle
-            //              << " moveIdle=" << moveIdle
-            //              << " scheduled=" << reprap.GetMove().GetScheduledMoves()
-            //              << " completed=" << reprap.GetMove().GetCompletedMoves()
-            //              << " scheduled-completed=" << reprap.GetMove().GetScheduledMoves() - reprap.GetMove().GetCompletedMoves()
-            //              << " Move.GetSimulationTime()=" << reprap.GetMove().GetSimulationTime()
-            //              << " GetVirtualStepClocks()=" << HostTiming::StepClocks64()
-            //              << '\n';
-            //}
+            static uint64_t debugCounter = 0;
+            if ((debugCounter++ % 1000ULL) == 0)
+            {
+                std::cout << "[wait] captures=" << currentCaptureCount
+                          << " captureIdle=" << captureIdleCycles
+                          << " seen=" << seenCapture << " fileIdle=" << fileIdle
+                          << " moveIdle=" << moveIdle
+                          << " scheduled=" << reprap.GetMove().GetScheduledMoves()
+                          << " completed=" << reprap.GetMove().GetCompletedMoves()
+                          << " scheduled-completed=" << reprap.GetMove().GetScheduledMoves() - reprap.GetMove().GetCompletedMoves()
+                          << " Move.GetSimulationTime()=" << reprap.GetMove().GetSimulationTime()
+                          << " GetVirtualStepClocks()=" << HostTiming::StepClocks64()
+                          << '\n';
+            }
         }
 
         if (HostCanCapture::GetCaptureCount() == 0)
-        //if (reprap.GetMove().GetCompletedMoves() == 0)
         {
             HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
             HostTiming::AdvanceStepClocks(75000);
