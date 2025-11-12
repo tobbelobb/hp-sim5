@@ -128,9 +128,9 @@ void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
     auto const s = g_lastSimulationTicks.load(std::memory_order_relaxed);
     auto const simdiff = v - s;
     //if (simdiff != 37510 )
-    if (simdiff - prev_simdiff != 0)
-    std::cout << "off simdiff: " << simdiff - prev_simdiff << '\n';
-    prev_simdiff = simdiff;
+    //if (simdiff - prev_simdiff != 0)
+    //std::cout << "off simdiff: " << simdiff - prev_simdiff << '\n';
+    //prev_simdiff = simdiff;
 
     //g_virtualClockTicks.store(g_lastSimulationTicks.load(std::memory_order_relaxed), std::memory_order_relaxed);
 }
