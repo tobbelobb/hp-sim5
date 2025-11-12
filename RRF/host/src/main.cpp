@@ -620,9 +620,13 @@ bool WaitForPrintCompletion() noexcept
             HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
             HostTiming::AdvanceStepClocks(1);
         } else if (scheduled - completed < 10) {
-            // We don't want to drain the ring completely...
+            // We don't want to drain the ring completely... We really would prefer to not have to set this manually?
             HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
             HostTiming::BackOffStepClocks(1);
+        } else if (scheduled - completed > 50) {
+            // We don't want to have to wait for advancements... We really would prefer to not have to set this manually?
+            HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
+            HostTiming::AdvanceStepClocks(1);
         }
 
         if (reprap.IsStopped())
