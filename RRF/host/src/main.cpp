@@ -614,11 +614,12 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        if (HostTiming::Millis() < reprap.GetMove().GetMainDDARing().GetGracePeriod() || completed == 0)
-        {
+        //if (HostTiming::Millis() < reprap.GetMove().GetMainDDARing().GetGracePeriod() || completed == 0)
+        //if (HostTiming::StepClocks64() < 10000)
+        //{
             // There's an initial warmup/grace period of 10 ms (7500 ticks) before we start to move.
             //HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
-            //HostTiming::AdvanceStepClocks(10);
+            //HostTiming::AdvanceStepClocks(1);
         //} else if (scheduled - completed < 10) {
         //    // We don't want to drain the ring completely... We really would prefer to not have to set this manually?
         //    HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
@@ -627,7 +628,7 @@ bool WaitForPrintCompletion() noexcept
         //    // We don't want to have to wait for advancements... We really would prefer to not have to set this manually?
         //    HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
         //    HostTiming::AdvanceStepClocks(1);
-        }
+        //}
 
         if (reprap.IsStopped())
         {

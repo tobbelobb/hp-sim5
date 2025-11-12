@@ -117,17 +117,20 @@ uint64_t GetVirtualStepClocks() noexcept
 
 void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
 {
-   if (deltaStepClocks == 0)
+    static uint32_t prev_simdiff = 37500;
+    if (deltaStepClocks == 0)
     {
         return;
     }
 
     g_lastSimulationTicks.fetch_add(deltaStepClocks, std::memory_order_relaxed);
-    //auto const v = g_virtualClockTicks.load(std::memory_order_relaxed);
-    //auto const s = g_lastSimulationTicks.load(std::memory_order_relaxed);
-    //if (v - s > 60000) {
-    //    std::cout << "simdiff: " << v - s << '\n';
-    //}
+    auto const v = g_virtualClockTicks.load(std::memory_order_relaxed);
+    auto const s = g_lastSimulationTicks.load(std::memory_order_relaxed);
+    auto const simdiff = v - s;
+    //if (simdiff != 37510 )
+    if (simdiff - prev_simdiff != 0)
+    std::cout << "off simdiff: " << simdiff - prev_simdiff << '\n';
+    prev_simdiff = simdiff;
 
     //g_virtualClockTicks.store(g_lastSimulationTicks.load(std::memory_order_relaxed), std::memory_order_relaxed);
 }
@@ -177,7 +180,7 @@ void AdvanceStepClocks(uint64_t value) noexcept
     }
     g_virtualClockTicks.fetch_add(value, std::memory_order_relaxed);
     RecordClockAdvance(g_currentClockStat, value);
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+    //std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 }
 
 void BackOffStepClocks(uint64_t value) noexcept
