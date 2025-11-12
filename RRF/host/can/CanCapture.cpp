@@ -153,8 +153,7 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     line << "," << accelClocks;
     line << "," << steadyClocks;
     line << "," << decelClocks;
-    line << "," << msg.perDrive[0].steps
-    line << "," << msg.perDrive[0].extrusion
+    line << "," << msg.perDrive[0].steps;
     if (std::abs(msg.acceleration) > 1e-1 || std::abs(msg.deceleration) > 1e-1) {
       line << "," << msg.acceleration;
       line << "," << msg.deceleration;
