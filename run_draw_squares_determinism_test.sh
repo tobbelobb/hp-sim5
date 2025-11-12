@@ -11,8 +11,8 @@ cd "$ROOT_DIR"
 
 BUILD_DIR="$ROOT_DIR/RRF/build"
 VSD_DIR="$ROOT_DIR/RRF/run/vsd"
-BASE_LOG="$VSD_DIR/logs/test_draw_squares.jsonl"
-TEST_LOG="$VSD_DIR/logs/test_draw_squares2.jsonl"
+BASE_LOG="$VSD_DIR/logs/test_draw_squares.csv"
+TEST_LOG="$VSD_DIR/logs/test_draw_squares2.csv"
 
 echo "Building rrf_simulator once..."
 cmake --build "$BUILD_DIR" --target rrf_simulator -j
@@ -26,7 +26,7 @@ for ((i=1; i<=ITERATIONS; i++)); do
     if ! "$BUILD_DIR/rrf_simulator" \
         --vsd RRF/run/vsd \
         --gcode gcodes/draw_squares.gcode \
-        --can-log logs/test_draw_squares2.jsonl \
+        --can-log logs/test_draw_squares2.csv \
         -c sys/config_hangprinter.g \
         > /dev/null 2>&1
     then

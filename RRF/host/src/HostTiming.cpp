@@ -14,7 +14,6 @@ namespace HostTiming
 namespace
 {
 std::atomic<uint64_t> g_virtualClockTicks{0};
-std::atomic<uint64_t> g_lastSimulationTicks{0};
 thread_local ClockStatKind g_currentClockStat = ClockStatKind::Other;
 
 struct ClockStats
@@ -59,6 +58,23 @@ void RecordClockAdvance(ClockStatKind kind, uint64_t amount) noexcept
     g_clockStats[index].ticks.fetch_add(amount, std::memory_order_relaxed);
 }
 
+void RecordClockBackOff(ClockStatKind kind, uint64_t amount) noexcept
+{
+    if (amount == 0)
+    {
+        return;
+    }
+
+    const size_t index = static_cast<size_t>(kind);
+    if (index >= g_clockStats.size())
+    {
+        return;
+    }
+
+    g_clockStats[index].calls.fetch_add(1, std::memory_order_relaxed);
+    g_clockStats[index].ticks.fetch_sub(amount, std::memory_order_relaxed);
+}
+
 bool ShouldReportClockStats() noexcept
 {
     static std::atomic<int8_t> cached{-1};
@@ -88,8 +104,10 @@ uint64_t GetVirtualStepClocks() noexcept
     // host build binary.
     //
     // To get the best of both worlds, we pretend that we're always behind by a few ms.
-    constexpr uint64_t ClockDelayWhenReporting = StepClockRate / 100ULL;
-    return g_virtualClockTicks.load(std::memory_order_relaxed) - ClockDelayWhenReporting;
+    //constexpr uint64_t delay = StepClockRate / 100ULL;
+    //uint64_t current_ticks = g_virtualClockTicks.load(std::memory_order_relaxed);
+    //return (current_ticks >= delay) ? (current_ticks - delay) : 0;
+    return g_virtualClockTicks.load(std::memory_order_relaxed);
 }
 }  // namespace
 
@@ -125,7 +143,6 @@ uint64_t Millis64() noexcept
 
 void Reset(uint64_t stepClocks) noexcept
 {
-    g_lastSimulationTicks.store(stepClocks, std::memory_order_relaxed);
     g_virtualClockTicks.store(stepClocks, std::memory_order_relaxed);
     ResetClockStats();
 }
@@ -140,6 +157,16 @@ void AdvanceStepClocks(uint64_t value) noexcept
     RecordClockAdvance(g_currentClockStat, value);
 }
 
+void BackOffStepClocks(uint64_t value) noexcept
+{
+    if (value == 0)
+    {
+        return;
+    }
+    g_virtualClockTicks.fetch_sub(value, std::memory_order_relaxed);
+    RecordClockBackOff(g_currentClockStat, value);
+}
+
 void DelayMilliseconds(uint32_t value) noexcept
 {
     if (value == 0)
@@ -148,16 +175,6 @@ void DelayMilliseconds(uint32_t value) noexcept
     }
     ClockTagScope clockTag(ClockStatKind::Delay);
     AdvanceStepClocks(static_cast<uint64_t>(value) * StepClocksPerMillisecond);
-}
-
-void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
-{
-    if (deltaStepClocks == 0)
-    {
-        return;
-    }
-
-    g_lastSimulationTicks.fetch_add(deltaStepClocks, std::memory_order_relaxed);
 }
 
 void RegisterPlatform(Platform& platform) noexcept

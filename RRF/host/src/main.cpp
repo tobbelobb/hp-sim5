@@ -594,6 +594,8 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
+        uint64_t const scheduled = reprap.GetMove().GetScheduledMoves();
+        uint64_t const completed = reprap.GetMove().GetCompletedMoves();
         if constexpr (kTraceCompletion)
         {
             static uint64_t debugCounter = 0;
@@ -603,22 +605,24 @@ bool WaitForPrintCompletion() noexcept
                           << " captureIdle=" << captureIdleCycles
                           << " seen=" << seenCapture << " fileIdle=" << fileIdle
                           << " moveIdle=" << moveIdle
-                          << " scheduled=" << reprap.GetMove().GetScheduledMoves()
-                          << " completed=" << reprap.GetMove().GetCompletedMoves()
-                          << " scheduled-completed=" << reprap.GetMove().GetScheduledMoves() - reprap.GetMove().GetCompletedMoves()
+                          << " scheduled=" << scheduled
+                          << " completed=" << completed
+                          << " scheduled-completed=" << scheduled - completed
                           << " Move.GetSimulationTime()=" << reprap.GetMove().GetSimulationTime()
                           << " GetVirtualStepClocks()=" << HostTiming::StepClocks64()
                           << '\n';
             }
         }
 
-        if (HostCanCapture::GetCaptureCount() == 0)
+        if (HostTiming::Millis() < reprap.GetMove().GetMainDDARing().GetGracePeriod())
         {
+            // There's an initial warmup/grace period of 10 ms (7500 ticks) before we start to move.
             HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
-            HostTiming::AdvanceStepClocks(75000);
-            for(int i=0; i<100; i++){
-              reprap.Spin();
-            }
+            HostTiming::AdvanceStepClocks(1);
+        } else if (scheduled - completed < 10) {
+            // We don't want to drain the ring completely...
+            HostTiming::ClockTagScope scope(HostTiming::ClockStatKind::WaitLoop);
+            HostTiming::BackOffStepClocks(1);
         }
 
         if (reprap.IsStopped())

@@ -35,7 +35,7 @@ The host build replaces the MCU interfaces with shims in `RRF/host/src/HostTimin
 
 ### How time is advanced
 
-1. **Planner completion path**: inside `DDARing::Spin()` we now advance the virtual clock exactly once per committed move. When `HasExpired()` returns true we call `AdvanceStepClocks(clocksNeeded)` and record it as `ClockStatKind::Simulation`. This mimics the “time spent executing the move” on real hardware.
+1. **Planner completion path**: inside `DDARing::Spin()` we now advance the virtual clock exactly once per committed move. When `(cdda->IsCommitted() && !cdda->HasExpired())` returns true we call `AdvanceStepClocks(clocksNeeded)` and record it as `ClockStatKind::Simulation`. This mimics the “time spent executing the move” on real hardware.
 
 2. **Logging / captures**: CAN capture logging uses the same absolute start times and durations, so once the clock is advanced deterministically the log is deterministic as well. We no longer try to “fast forward” in the wait loop because the planner itself is authoritative about elapsed ticks.
 
@@ -78,4 +78,4 @@ The host build replaces the MCU interfaces with shims in `RRF/host/src/HostTimin
 
 5. **Stress tests**: Whenever you touch timing, run both short deterministic tests (`run_draw_squares_determinism_test.sh`) and large files with heavy queues (`Hangprinter_logo6.gcode`). The latter tends to expose scheduling stalls (`millis()` issues, wait-loop starvation, etc.).
 
-Feel free to append further observations—especially if you discover other subtle interactions between the host timing shim and planner guarantees. The more we document, the easier it will be to keep the simulator deterministic. 
+Feel free to append further observations—especially if you discover other subtle interactions between the host timing shim and planner guarantees. The more we document, the easier it will be to keep the simulator deterministic.
