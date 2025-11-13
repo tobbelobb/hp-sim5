@@ -108,4 +108,30 @@ if [[ "$failed" -gt 0 || "$incorrect" -gt 0 ]]; then
           echo "Last line comparison: Last lines ARE NOT equal."
       fi
     fi
+
+    # Pinpoint the first *meaningful* line of difference (skipping the header/first line)
+    if [[ -f "$BASE_LOG" && -f "$TEST_LOG" ]]; then
+
+        # Pipe the output of 'sed' (which skips the first line) into 'diff'
+        # We use process substitution <() to achieve this cleanly in bash
+        diff_output=$(diff <(sed '1d' "$BASE_LOG") <(sed '1d' "$TEST_LOG"))
+
+        if [[ -n "$diff_output" ]]; then
+            # This captures the line range marker *relative to the modified (sed) files*
+            first_diff_marker=$(echo "$diff_output" | head -n1)
+            # Extracts the line number from the marker (e.g., "9c9" -> "9")
+            # This line number is the offset *after* the first line was removed.
+            relative_line_num=$(echo "$first_diff_marker" | cut -d'c' -f1 | cut -d',' -f1)
+
+            # Add 1 back to the relative number to get the absolute line number in the original file
+            absolute_line_num=$((relative_line_num + 1))
+
+            echo "Details: Files started differing around line $absolute_line_num in the original logs (ignoring line 1)."
+            # Optionally, display the problematic lines:
+            echo "Base Log line $absolute_line_num: $(sed -n "${absolute_line_num}p" "$BASE_LOG")"
+            echo "Test Log line $absolute_line_num: $(sed -n "${absolute_line_num}p" "$TEST_LOG")"
+        else
+            echo "Details: Files are identical after ignoring the first line."
+        fi
+    fi
 fi
