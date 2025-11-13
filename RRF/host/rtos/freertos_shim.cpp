@@ -24,7 +24,8 @@
 namespace
 {
 using Clock = std::chrono::steady_clock;
-constexpr TickType_t TicksPerSecond = 1000;  // 1 tick == 1ms on host
+constexpr TickType_t TicksPerSecond = 750000;
+constexpr TickType_t TicksPerMillisecond = 750;
 
 struct TaskControlBlock
 {
@@ -146,7 +147,7 @@ void vTaskDelay(const TickType_t ticksToDelay) noexcept
     }
     // Use virtual delay for deterministic simulation
     // Convert ticks to milliseconds (1 tick = 1ms)
-    uint32_t delayMs = static_cast<uint32_t>(ticksToDelay);
+    uint32_t delayMs = static_cast<uint32_t>(ticksToDelay/TicksPerMillisecond);
     HostTiming::DelayMilliseconds(delayMs);
 
     // Still yield to allow other threads to run
