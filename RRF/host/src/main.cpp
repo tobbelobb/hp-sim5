@@ -620,6 +620,8 @@ bool WaitForPrintCompletion() noexcept
             return false;
         }
 
+        std::this_thread::yield();
+
         if (std::chrono::steady_clock::now() - start > kPrintTimeout)
         {
             std::cerr << "Timed out waiting for print to finish\n";
