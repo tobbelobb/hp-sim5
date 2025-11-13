@@ -64,14 +64,12 @@ for ((i=1; i<=ITERATIONS; i++)); do
         base_lines=$(wc -l < "$BASE_LOG")
         test_lines=$(wc -l < "$TEST_LOG")
 
-        if [[ "$test_lines" -lt "$base_lines" ]]; then
-            lines_to_keep=$((test_lines - LINES_TO_IGNORE))
-        else
-            lines_to_keep=$((base_lines - LINES_TO_IGNORE))
-        fi
-
-        if [[ "$lines_to_keep" -lt 0 ]]; then
-            lines_to_keep=0
+        lines_to_keep=$((base_lines - LINES_TO_IGNORE))
+        if [[ "$test_lines" -lt "$lines_to_keep" ]]; then
+            ((incorrect++))
+            ((tries++))
+            printf "❌"
+            break
         fi
 
         # 2. Perform the truncated comparison
@@ -157,3 +155,4 @@ if [[ "$failed" -gt 0 || "$incorrect" -gt 0 ]]; then
         fi
     fi
 fi
+
