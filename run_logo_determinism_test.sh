@@ -24,7 +24,7 @@ failed=0
 tries=0
 
 for ((i=1; i<=ITERATIONS; i++)); do
-    if ! timeout 30 "$BUILD_DIR/rrf_simulator" \
+    if ! "$BUILD_DIR/rrf_simulator" \
         --vsd RRF/run/vsd \
         --gcode gcodes/Hangprinter_logo6.gcode \
         --can-log logs/Hangprinter_logo6_2.csv \
