@@ -29,7 +29,7 @@ for ((i=1; i<=ITERATIONS; i++)); do
         --gcode gcodes/Hangprinter_logo6.gcode \
         --can-log logs/Hangprinter_logo6_2.csv \
         -c sys/config_hangprinter.g \
-        > /dev/null 2>&1
+        > /dev/null
     then
         exit_code=$?
         ((failed++))

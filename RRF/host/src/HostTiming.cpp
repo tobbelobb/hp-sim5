@@ -117,16 +117,16 @@ uint64_t GetVirtualStepClocks() noexcept
 
 void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
 {
-    static uint32_t prev_simdiff = 37500;
+    //static uint32_t prev_simdiff = 37500;
     if (deltaStepClocks == 0)
     {
         return;
     }
 
     g_lastSimulationTicks.fetch_add(deltaStepClocks, std::memory_order_relaxed);
-    auto const v = g_virtualClockTicks.load(std::memory_order_relaxed);
-    auto const s = g_lastSimulationTicks.load(std::memory_order_relaxed);
-    auto const simdiff = v - s;
+    //auto const v = g_virtualClockTicks.load(std::memory_order_relaxed);
+    //auto const s = g_lastSimulationTicks.load(std::memory_order_relaxed);
+    //auto const simdiff = v - s;
     //if (simdiff != 37510 )
     //if (simdiff - prev_simdiff != 0)
     //std::cout << "off simdiff: " << simdiff - prev_simdiff << '\n';
