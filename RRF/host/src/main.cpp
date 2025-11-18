@@ -715,8 +715,6 @@ bool StartPrint(const std::string& relativePath) noexcept
     const bool ok = WaitForPrintCompletion();
     const auto stop = std::chrono::steady_clock::now();
 
-    std::cerr << reprap.GetMove().GetMainDDARing().numLookaheadErrors;
-
     // Pop the machine state from the daemon buffer
     if (daemonBuffer != nullptr)
     {
