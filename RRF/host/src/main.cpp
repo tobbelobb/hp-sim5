@@ -523,6 +523,7 @@ bool WaitForPrintCompletion() noexcept
     uint64_t lastCaptureCount = HostCanCapture::GetCaptureCount();
     unsigned int captureIdleCycles = 0;
     bool seenCapture = (lastCaptureCount != 0);
+    bool wasPrinting = reprap.GetPrintMonitor().IsPrinting();
 
     for (;;)
     {
@@ -553,12 +554,26 @@ bool WaitForPrintCompletion() noexcept
 
         const bool fileIdle = fileBuffer->IsCompletelyIdle();
         const bool moveIdle = reprap.GetMove().NoLiveMovement();
+        const bool printingActive = reprap.GetPrintMonitor().IsPrinting();
+
+        if (wasPrinting && !printingActive)
+        {
+            idleCycles = 0;
+            captureIdleCycles = 0;
+        }
+        wasPrinting = printingActive;
+
+        const auto readyToFinish = [&](bool idleConditionMet) noexcept -> bool
+        {
+            return idleConditionMet && !printingActive;
+        };
 
         if (seenCapture)
         {
             if (currentCaptureCount != 0)
             {
-                if (fileIdle && moveIdle && captureIdleCycles >= kIdleSettlingCycles)
+                if (readyToFinish(fileIdle && moveIdle &&
+                                  captureIdleCycles >= kIdleSettlingCycles))
                 {
                     return true;
                 }
@@ -568,7 +583,7 @@ bool WaitForPrintCompletion() noexcept
             {
                 if (fileIdle && moveIdle)
                 {
-                    if (++idleCycles > kIdleSettlingCycles)
+                    if (readyToFinish(++idleCycles > kIdleSettlingCycles))
                     {
                         return true;
                     }
@@ -583,7 +598,7 @@ bool WaitForPrintCompletion() noexcept
         {
             if (fileIdle && moveIdle)
             {
-                if (++idleCycles > kIdleSettlingCycles)
+                if (readyToFinish(++idleCycles > kIdleSettlingCycles))
                 {
                     return true;
                 }
