@@ -153,7 +153,21 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     line << "," << accelClocks;
     line << "," << steadyClocks;
     line << "," << decelClocks;
-    line << "," << msg.perDrive[0].steps;
+    const std::streamsize originalPrecision = line.precision();
+    for (uint8_t drive = 0; drive < msg.numDrivers; ++drive)
+    {
+        line << ",";
+        const bool isExtruder = (msg.extruderDrives & (1u << drive)) != 0;
+        if (isExtruder)
+        {
+            line << std::setprecision(6) << msg.perDrive[drive].extrusion;
+            line.precision(originalPrecision);
+        }
+        else
+        {
+            line << msg.perDrive[drive].steps;
+        }
+    }
     if (std::abs(msg.acceleration) > 1e-1 || std::abs(msg.deceleration) > 1e-1) {
       line << "," << msg.acceleration;
       line << "," << msg.deceleration;
