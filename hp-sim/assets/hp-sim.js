@@ -3,7 +3,7 @@ import { World } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
-import { detectFileFormat, FileFormat, isMcuFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 import { QualityMonitor } from './quality-monitor.js';
 
 const MCU_PRESETS = {
@@ -153,6 +153,7 @@ function initHpSim() {
   const machines = [];
   let machineIdCounter = 0;
   let klipperCommanderWorker = null;
+  let rrfCommanderWorker = null;
   let moveCommanderWorker = null;
   let simDtSec = null;
   let stageReady = false;
@@ -719,6 +720,7 @@ function initHpSim() {
   }
 
   const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
+  const rrfCommanderModuleUrl = new URL('../../examples/js/slideprinter/rrfCommander.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
@@ -1871,6 +1873,9 @@ function initHpSim() {
         if (klipperCommanderWorker) {
           klipperCommanderWorker.postMessage({ type: 'pause' });
         }
+        if (rrfCommanderWorker) {
+          rrfCommanderWorker.postMessage({ type: 'pause' });
+        }
       } catch (err) {
         console.warn('hp-sim: unable to pause workers during scene change.', err);
       }
@@ -2550,6 +2555,9 @@ function initHpSim() {
     if (moveCommanderWorker) {
       moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
+    if (rrfCommanderWorker) {
+      rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    }
   }
 
   function handleTimeScaleChange(scale) {
@@ -2925,6 +2933,14 @@ function initHpSim() {
       }
       klipperCommanderWorker = null;
     }
+    if (rrfCommanderWorker) {
+      try {
+        rrfCommanderWorker.terminate();
+      } catch (err) {
+        console.warn('Slideprinter demo: unable to terminate rrf worker cleanly.', err);
+      }
+      rrfCommanderWorker = null;
+    }
   }
 
   function handleUserReset() {
@@ -3254,6 +3270,47 @@ function initHpSim() {
     return klipperCommanderWorker;
   }
 
+  function ensureRrfWorker() {
+    if (rrfCommanderWorker) {
+      return rrfCommanderWorker;
+    }
+    rrfCommanderWorker = new Worker(rrfCommanderModuleUrl, { type: 'module' });
+    rrfCommanderWorker.onmessage = (event) => {
+      if (!event?.data) {
+        return;
+      }
+      if (event.data.type === 'done') {
+        console.log('Slideprinter demo: RRF log playback finished.');
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+          remoteSystem.worker = null;
+          setPrintActive(false);
+          if (asapState.active) {
+            asapState.pendingFinalCheck = true;
+          } else {
+            runFinalQualityChecks();
+          }
+        }
+        return;
+      }
+      if (event.data.type === 'error') {
+        console.error('Slideprinter demo: Worker reported an error:', event.data.message);
+        return;
+      }
+      if (event.data.action === 'gcode') {
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+          remoteSystem.addCommand(event.data.command);
+        }
+      }
+    };
+    if (simDtSec != null) {
+      rrfCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+    }
+    rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+    return rrfCommanderWorker;
+  }
+
   function ensureMoveWorker() {
     if (moveCommanderWorker) {
       return moveCommanderWorker;
@@ -3301,6 +3358,9 @@ function initHpSim() {
     }
     if (klipperCommanderWorker && klipperCommanderWorker !== activeWorker) {
       klipperCommanderWorker.postMessage({ type: 'pause' });
+    }
+    if (rrfCommanderWorker && rrfCommanderWorker !== activeWorker) {
+      rrfCommanderWorker.postMessage({ type: 'pause' });
     }
   }
 
@@ -3367,6 +3427,8 @@ function initHpSim() {
       worker = ensureMoveWorker();
     } else if (isMcuFormat(format)) {
       worker = ensureKlipperWorker();
+    } else if (isRrfFormat(format)) {
+      worker = ensureRrfWorker();
     } else {
       console.warn('Slideprinter demo: unsupported preset format', format);
       return;
@@ -3408,6 +3470,8 @@ function initHpSim() {
       worker = ensureMoveWorker();
     } else if (isMcuFormat(format)) {
       worker = ensureKlipperWorker();
+    } else if (isRrfFormat(format)) {
+      worker = ensureRrfWorker();
     } else {
       console.warn('Slideprinter demo: unsupported upload format', file?.name || 'unknown');
       return;
@@ -3790,6 +3854,9 @@ function initHpSim() {
               }
               if (klipperCommanderWorker) {
                 klipperCommanderWorker.postMessage({ type: 'resume' });
+              }
+              if (rrfCommanderWorker) {
+                rrfCommanderWorker.postMessage({ type: 'resume' });
               }
             } catch (err) {
               console.warn('hp-sim: unable to resume workers after user request.', err);
