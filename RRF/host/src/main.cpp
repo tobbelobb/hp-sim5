@@ -833,7 +833,6 @@ int main(int argc, char** argv)
 
         reprap.Init();
         reprapInitialised = true;
-        reprap.GetGCodes().HostForceSimulationMode(SimulationMode::off);
         VirtuallyHomeAxesIfNeeded();
         HostTiming::Reset();
         HostCanCapture::Reset();
