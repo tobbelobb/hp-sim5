@@ -168,8 +168,9 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
             line << msg.perDrive[drive].steps;
         }
     }
-    line << "," << std::setprecision(6) << msg.acceleration;
-    line << "," << std::setprecision(6) << msg.deceleration;
+    line << "," << std::scientific << std::setprecision(6) << msg.acceleration;
+    line << "," << std::scientific << std::setprecision(6) << msg.deceleration;
+    line << std::defaultfloat;
     line.precision(originalPrecision);
 
     gStream << line.str() << '\n';
