@@ -3,6 +3,7 @@ export const FileFormat = {
   MCU_TEXT: 'mcu-text',
   MCU_SERIAL: 'mcu-serial',
   USD_STAGE: 'usd-stage',
+  RRF_CAN: 'rrf-can',
 };
 
 const EXTENSION_MAP = new Map([
@@ -12,6 +13,7 @@ const EXTENSION_MAP = new Map([
   ['.log', FileFormat.MCU_TEXT],
   ['.serial', FileFormat.MCU_SERIAL],
   ['.usda', FileFormat.USD_STAGE],
+  ['.csv', FileFormat.RRF_CAN],
 ]);
 
 export function detectFileFormat(name) {
@@ -33,4 +35,8 @@ export function detectFileFormat(name) {
 
 export function isMcuFormat(format) {
   return format === FileFormat.MCU_TEXT || format === FileFormat.MCU_SERIAL;
+}
+
+export function isRrfFormat(format) {
+  return format === FileFormat.RRF_CAN;
 }
