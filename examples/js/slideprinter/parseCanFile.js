@@ -12,6 +12,8 @@ async function parseCanFile(url) {
     let ctxCol3 = 0;
     let ctxCol4 = 0;
     let ctxCol5 = 0;
+    let ctxAccel = 0.0; // Float
+    let ctxDecel = 0.0; // Float
 
     while (offset < buffer.byteLength) {
         // 1. Read Header Info
@@ -19,24 +21,34 @@ async function parseCanFile(url) {
         const count = dataView.getUint8(offset++);
 
         // 2. Update Sticky Context based on Mask
-        // Bit 0: Time (8 bytes)
+        // Bit 0: Time (8 bytes, Uint64)
         if (mask & 1) {
             ctxTime = dataView.getBigUint64(offset, true);
             offset += 8;
         }
-        // Bit 1: Col3 (4 bytes)
+        // Bit 1: Col3 (4 bytes, Int32)
         if (mask & 2) {
             ctxCol3 = dataView.getInt32(offset, true);
             offset += 4;
         }
-        // Bit 2: Col4 (4 bytes)
+        // Bit 2: Col4 (4 bytes, Int32)
         if (mask & 4) {
             ctxCol4 = dataView.getInt32(offset, true);
             offset += 4;
         }
-        // Bit 3: Col5 (4 bytes)
+        // Bit 3: Col5 (4 bytes, Int32)
         if (mask & 8) {
             ctxCol5 = dataView.getInt32(offset, true);
+            offset += 4;
+        }
+        // Bit 4: Accel (4 bytes, Float32)
+        if (mask & 16) {
+            ctxAccel = dataView.getFloat32(offset, true);
+            offset += 4;
+        }
+        // Bit 5: Decel (4 bytes, Float32)
+        if (mask & 32) {
+            ctxDecel = dataView.getFloat32(offset, true);
             offset += 4;
         }
 
@@ -77,6 +89,8 @@ async function parseCanFile(url) {
                 col3: ctxCol3,
                 col4: ctxCol4,
                 col5: ctxCol5,
+                accel: ctxAccel,
+                decel: ctxDecel,
                 val: val
             });
         }
@@ -84,3 +98,6 @@ async function parseCanFile(url) {
 
     return movements;
 }
+
+// Example usage:
+// parseCanFile('data.can').then(console.log);
