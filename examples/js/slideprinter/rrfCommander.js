@@ -537,7 +537,7 @@ export class RrfCommander {
             return null;
         }
         const parts = trimmed.split(',');
-        if (parts.length < 7) {
+        if (parts.length < 9) {
             return null;
         }
         const motorId = Number(parts[1]);
@@ -549,8 +549,8 @@ export class RrfCommander {
         const steadyTicks = Number(parts[4]);
         const decelTicks = Number(parts[5]);
         const steps = Number(parts[6]);
-        const acceleration = parts.length >= 8 ? Number(parts[7]) : null;
-        const deceleration = parts.length >= 9 ? Number(parts[8]) : null;
+        const acceleration = Number(parts[7]);
+        const deceleration = Number(parts[8]);
         if (
             !Number.isFinite(whenToExecute)
             || !Number.isFinite(accelTicks)
@@ -567,8 +567,8 @@ export class RrfCommander {
             steadyTicks,
             decelTicks,
             steps,
-            acceleration: Number.isFinite(acceleration) ? acceleration : null,
-            deceleration: Number.isFinite(deceleration) ? deceleration : null,
+            acceleration,
+            deceleration,
         };
     }
 
