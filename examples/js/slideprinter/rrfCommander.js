@@ -342,7 +342,7 @@ export class RrfCommander {
         this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
     }
 
-    _distributeSegment(startTick, durationTicks, totalValue, accumulate) {
+    _distributeEvenly(startTick, durationTicks, totalValue, accumulate) {
         if (!Number.isFinite(totalValue) || totalValue === 0) {
             return;
         }
@@ -382,6 +382,103 @@ export class RrfCommander {
         this.maxBucketSeen = Math.max(this.maxBucketSeen, Math.floor((endTick - 1) / bucketSize));
     }
 
+    _createMotionProfile(row) {
+        const { accelTicks, steadyTicks, decelTicks, acceleration, deceleration } = row;
+        const totalTicks = accelTicks + steadyTicks + decelTicks;
+        if (
+            totalTicks <= 0
+            || !Number.isFinite(acceleration)
+            || !Number.isFinite(deceleration)
+        ) {
+            return null;
+        }
+        const accelDistanceExTopSpeed = -0.5 * acceleration * accelTicks * accelTicks;
+        const decelDistanceExTopSpeed = -0.5 * deceleration * decelTicks * decelTicks;
+        const denom = totalTicks;
+        if (denom === 0) {
+            return null;
+        }
+        const topSpeed = (1 - accelDistanceExTopSpeed - decelDistanceExTopSpeed) / denom;
+        if (!Number.isFinite(topSpeed)) {
+            return null;
+        }
+        const startSpeed = topSpeed - acceleration * accelTicks;
+        const accelDistance = accelDistanceExTopSpeed + topSpeed * accelTicks;
+        const decelDistance = decelDistanceExTopSpeed + topSpeed * decelTicks;
+        let steadyDistance = 1 - accelDistance - decelDistance;
+        if (!Number.isFinite(steadyDistance)) {
+            steadyDistance = 0;
+        }
+        if (steadyDistance < 0 && Math.abs(steadyDistance) < 1e-9) {
+            steadyDistance = 0;
+        }
+        const decelStartDistance = accelDistance + steadyDistance;
+        const profile = {
+            totalTicks,
+            accelTicks,
+            steadyTicks,
+            decelTicks,
+            acceleration,
+            deceleration,
+            startSpeed,
+            topSpeed,
+            accelDistance,
+            steadyDistance,
+            decelStartDistance,
+        };
+        profile.positionAt = (localTime) => {
+            if (!Number.isFinite(localTime)) {
+                return 0;
+            }
+            const clamped = Math.min(Math.max(localTime, 0), totalTicks);
+            if (clamped <= accelTicks) {
+                const distance = profile.startSpeed * clamped + 0.5 * profile.acceleration * clamped * clamped;
+                return Math.min(1, Math.max(0, distance));
+            }
+            if (clamped <= accelTicks + steadyTicks) {
+                const t = clamped - accelTicks;
+                const distance = profile.accelDistance + profile.topSpeed * t;
+                return Math.min(1, Math.max(0, distance));
+            }
+            const t = clamped - accelTicks - steadyTicks;
+            const distance = profile.decelStartDistance + profile.topSpeed * t + 0.5 * profile.deceleration * t * t;
+            return Math.min(1, Math.max(0, distance));
+        };
+        return profile;
+    }
+
+    _distributeWithProfile(startTick, profile, accumulateNormalized) {
+        if (!profile || !Number.isFinite(this.ticksPerBucket) || this.ticksPerBucket <= 0) {
+            return;
+        }
+        const bucketSize = this.ticksPerBucket;
+        const totalTicks = profile.totalTicks;
+        const moveEndTick = startTick + totalTicks;
+        const startBucket = Math.floor(startTick / bucketSize);
+        const endBucket = Math.floor((moveEndTick - 1) / bucketSize);
+        for (let bucket = startBucket; bucket <= endBucket; bucket += 1) {
+            const bucketStart = bucket * bucketSize;
+            const bucketEnd = bucketStart + bucketSize;
+            const overlapStart = Math.max(bucketStart, startTick);
+            const overlapEnd = Math.min(bucketEnd, moveEndTick);
+            if (overlapEnd <= overlapStart) {
+                continue;
+            }
+            const localStart = overlapStart - startTick;
+            const localEnd = overlapEnd - startTick;
+            const posStart = profile.positionAt(localStart);
+            const posEnd = profile.positionAt(localEnd);
+            const delta = posEnd - posStart;
+            if (Math.abs(delta) > 1e-12) {
+                accumulateNormalized(bucket, delta);
+            }
+        }
+        if (moveEndTick > startTick) {
+            const maxBucket = Math.floor((moveEndTick - 1) / bucketSize);
+            this.maxBucketSeen = Math.max(this.maxBucketSeen, maxBucket);
+        }
+    }
+
     _handleMovement(row) {
         const {
             motorId,
@@ -405,13 +502,25 @@ export class RrfCommander {
 
         const axisType = this.valueTypeByMotorId.get(motorId);
         const startTick = whenToExecute;
-        if (axis === 'E' || axisType === 'float') {
+        const profile = this._createMotionProfile(row);
+        const useProfile = profile && profile.totalTicks > 0;
+        const distribute = (bucketIdx, normalizedDelta) => {
+            const deltaValue = steps * normalizedDelta;
+            if (axis === 'E' || axisType === 'float') {
+                this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP);
+            } else {
+                this._recordBucketSteps(axis, bucketIdx, deltaValue);
+            }
+        };
+        if (useProfile) {
+            this._distributeWithProfile(startTick, profile, distribute);
+        } else if (axis === 'E' || axisType === 'float') {
             const extrusionMm = steps * EXTRUDER_MM_PER_STEP;
-            this._distributeSegment(startTick, totalTicks, extrusionMm, (bucketIdx, delta) => {
+            this._distributeEvenly(startTick, totalTicks, extrusionMm, (bucketIdx, delta) => {
                 this._recordBucketExtrusion(bucketIdx, delta);
             });
         } else {
-            this._distributeSegment(startTick, totalTicks, steps, (bucketIdx, delta) => {
+            this._distributeEvenly(startTick, totalTicks, steps, (bucketIdx, delta) => {
                 this._recordBucketSteps(axis, bucketIdx, delta);
             });
         }
@@ -440,6 +549,8 @@ export class RrfCommander {
         const steadyTicks = Number(parts[4]);
         const decelTicks = Number(parts[5]);
         const steps = Number(parts[6]);
+        const acceleration = parts.length >= 8 ? Number(parts[7]) : null;
+        const deceleration = parts.length >= 9 ? Number(parts[8]) : null;
         if (
             !Number.isFinite(whenToExecute)
             || !Number.isFinite(accelTicks)
@@ -456,6 +567,8 @@ export class RrfCommander {
             steadyTicks,
             decelTicks,
             steps,
+            acceleration: Number.isFinite(acceleration) ? acceleration : null,
+            deceleration: Number.isFinite(deceleration) ? deceleration : null,
         };
     }
 
