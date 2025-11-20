@@ -4,6 +4,7 @@ export const FileFormat = {
   MCU_SERIAL: 'mcu-serial',
   USD_STAGE: 'usd-stage',
   RRF_CAN: 'rrf-can',
+  RRF_CAN_BINARY: 'rrf-can-binary',
 };
 
 const EXTENSION_MAP = new Map([
@@ -14,6 +15,7 @@ const EXTENSION_MAP = new Map([
   ['.serial', FileFormat.MCU_SERIAL],
   ['.usda', FileFormat.USD_STAGE],
   ['.csv', FileFormat.RRF_CAN],
+  ['.can', FileFormat.RRF_CAN_BINARY],
 ]);
 
 export function detectFileFormat(name) {
@@ -38,5 +40,5 @@ export function isMcuFormat(format) {
 }
 
 export function isRrfFormat(format) {
-  return format === FileFormat.RRF_CAN;
+  return format === FileFormat.RRF_CAN || format === FileFormat.RRF_CAN_BINARY;
 }
