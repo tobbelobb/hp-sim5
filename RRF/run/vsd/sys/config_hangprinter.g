@@ -25,24 +25,27 @@ M666 U2:2:2:4         ; Mechanical advantages on ABCD
 M666 O1:1:1:1         ; Number of lines per spool
 M666 L20:20:20:20     ; Motor gear teeth of ABCD axes
 M666 H255:255:255:255 ; Spool gear teeth of ABCD axes
-
-; Flex compensation
-M666 W1.0                 ; Mover weighs 1 kg. Set to 0 to disable flex compensation.
+; Flex compensation parameters
+M666 W0.006               ; Mover weighs 0.006 kg when flex is active.
 M666 S20000.0             ; Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
                           ; The real value is somewhere between 20k and 100k.
                           ; Lower value gives more flex compensation.
-M666 I0.0:0.0:0.0:0.0     ; Min planned force in four directions (unit N).
+M666 I3.0:3.0:3.0:3.0     ; Min planned force in four directions (unit N).
                           ; This is a safety limit. Should affect only exceptional/wrong moves,
                           ; for example moves outside of the reachable volume.
-M666 X70.0:70.0:70.0:70.0 ; Max planned force in four directions (unit N)
+M666 X170.0:170.0:170.0:170.0 ; Max planned force in four directions (unit N)
                           ; This is a safety limit. Will affect moves close to
                           ; the limits of the reachable volume.
 M666 T10.0                ; Desired target force (unit N).
                           ; The flex compensation algorithm aims for at least
-                          ; this amount of fource in the ABC line directions at all times.
+                          ; this amount of force in the ABC line directions at all times.
                           ; It can be thought of as a minimum pre-tension value.
                           ; It's recommended to set it around 10 times higher
                           ; than your W (mover weight in kg) value.
+M666 Y528.3:528.3:528.3:528.3 ; Guy wire lengths (mm) for each anchor.
+M666 G1                  ; Ignore gravity forces when solving flex
+M666 P0                  ; Consider pretension when solving flex
+; Flex compensation stays disabled until you explicitly enable it with M666 F1 (qp) or F2 (tikhonov).
 
 ; Guy wire lengths. Needed for flex compenation.
 ; Guy wires go between spool and final line roller.
