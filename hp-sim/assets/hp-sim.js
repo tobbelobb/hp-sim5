@@ -30,6 +30,52 @@ const PRESET_GCODE_MAP = Object.freeze({
   },
 });
 
+const DEFAULT_UPLOAD_PRESET_MATCHES = Object.freeze([
+  { substring: 'Hangprinter_logo6', presetKey: 'hangprinterLogo' },
+  { substring: 'draw_squares', presetKey: 'straightMoves' },
+]);
+const DEFAULT_UPLOAD_PRESET_EXTENSIONS = Object.freeze(['.txt', '.serial', '.csv', '.can']);
+
+function parseUploadPresetMappings(value) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return DEFAULT_UPLOAD_PRESET_MATCHES;
+  }
+  const entries = [];
+  const normalized = value
+    .split(',')
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+  for (const segment of normalized) {
+    const [name, key] = segment.split('=').map((entry) => entry.trim());
+    if (name && key) {
+      entries.push({ substring: name, presetKey: key });
+    }
+  }
+  return entries.length > 0 ? entries : DEFAULT_UPLOAD_PRESET_MATCHES;
+}
+
+function parseUploadPresetExtensions(value) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return DEFAULT_UPLOAD_PRESET_EXTENSIONS;
+  }
+  const entries = value
+    .split(',')
+    .map((segment) => segment.trim().toLowerCase())
+    .filter((segment) => segment.length > 0)
+    .map((segment) => (segment.startsWith('.') ? segment : `.${segment}`));
+  return entries.length > 0 ? entries : DEFAULT_UPLOAD_PRESET_EXTENSIONS;
+}
+
+function buildUploadPresetConfig(inputElement) {
+  const dataset = inputElement?.dataset;
+  const presets = parseUploadPresetMappings(dataset?.referencePresets);
+  const extensions = parseUploadPresetExtensions(dataset?.referenceExtensions);
+  return {
+    presets,
+    extensionSet: new Set(extensions),
+  };
+}
+
 const GCODE_MM_TO_SIM_SCALE = 0.001;
 const GCODE_EXTRUSION_EPSILON = 1e-6;
 const GCODE_MOVE_EPSILON = 1e-9;
@@ -64,6 +110,7 @@ function initHpSim() {
   const printSquareBtn = document.getElementById('printSquareBtn');
   const uploadBtn = document.getElementById('uploadBtn');
   const gcodeInput = document.getElementById('gcodeFile');
+  const uploadPresetConfig = buildUploadPresetConfig(gcodeInput);
   const resetBtn = document.getElementById('resetBtn');
   const pauseBtn = document.getElementById('pauseBtn');
   const finishAsapBtn = document.getElementById('finishAsapBtn');
@@ -1175,9 +1222,41 @@ function initHpSim() {
     }
   }
 
+  function getPresetKeyForUploadFile(file) {
+    if (!file?.name) {
+      return null;
+    }
+    const name = file.name.trim();
+    if (!name) {
+      return null;
+    }
+    const dotIndex = name.lastIndexOf('.');
+    const extension = dotIndex >= 0 ? name.slice(dotIndex).toLowerCase() : '';
+    if (!uploadPresetConfig.extensionSet.has(extension)) {
+      return null;
+    }
+    const normalized = name.toLowerCase();
+    for (const entry of uploadPresetConfig.presets) {
+      if (!entry?.substring || !entry?.presetKey) {
+        continue;
+      }
+      if (normalized.includes(entry.substring.toLowerCase())) {
+        return entry.presetKey;
+      }
+    }
+    return null;
+  }
+
   async function handleFileUpload(file) {
     if (!file) {
       return;
+    }
+    const matchedPresetKey = getPresetKeyForUploadFile(file);
+    if (matchedPresetKey) {
+      const descriptor = PRESET_GCODE_MAP[matchedPresetKey];
+      const label = descriptor?.label || matchedPresetKey;
+      console.log(`hp-sim: upload "${file.name}" matched preset "${matchedPresetKey}" (${label}).`);
+      void loadReferencePathForPreset(matchedPresetKey, { setActive: true });
     }
     const detectedFormat = detectFileFormat(file.name);
     if (detectedFormat === FileFormat.GCODE) {
