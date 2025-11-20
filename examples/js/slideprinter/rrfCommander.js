@@ -441,7 +441,7 @@ export class RrfCommander {
                 return Math.min(1, Math.max(0, distance));
             }
             const t = clamped - accelTicks - steadyTicks;
-            const distance = profile.decelStartDistance + profile.topSpeed * t + 0.5 * profile.deceleration * t * t;
+            const distance = profile.decelStartDistance + profile.topSpeed * t - 0.5 * profile.deceleration * t * t;
             return Math.min(1, Math.max(0, distance));
         };
         return profile;
