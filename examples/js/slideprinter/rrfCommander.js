@@ -1,3 +1,5 @@
+import { detectFileFormat, FileFormat, isRrfFormat } from './fileFormatUtils.js';
+
 const STEP_CLOCK_HZ = 48_000_000 / 64; // 750 kHz step clock
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
 const EXTRUDER_MM_PER_STEP = 1 / 95.922; // Matches M92 E95.922 from the RRF config
@@ -572,7 +574,7 @@ export class RrfCommander {
         };
     }
 
-    async _parseStream(stream) {
+    async _parseCsvStream(stream) {
         const lineIterator = makeLineIterator(stream);
         let metadataHandled = false;
 
@@ -596,10 +598,172 @@ export class RrfCommander {
         }
     }
 
-    async run(stream) {
+    async _readStreamToArrayBuffer(stream) {
+        if (!stream || typeof stream.getReader !== 'function') {
+            return new ArrayBuffer(0);
+        }
+        const reader = stream.getReader();
+        const chunks = [];
+        let totalLength = 0;
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    break;
+                }
+                if (value == null) {
+                    continue;
+                }
+                let chunk;
+                if (value instanceof Uint8Array) {
+                    chunk = value;
+                } else if (value instanceof ArrayBuffer) {
+                    chunk = new Uint8Array(value);
+                } else {
+                    continue;
+                }
+                chunks.push(chunk);
+                totalLength += chunk.byteLength;
+            }
+        } finally {
+            if (reader.releaseLock) {
+                reader.releaseLock();
+            }
+        }
+        if (chunks.length === 0) {
+            return new ArrayBuffer(0);
+        }
+        if (chunks.length === 1) {
+            const [single] = chunks;
+            if (single.byteOffset === 0 && single.byteLength === single.buffer.byteLength) {
+                return single.buffer;
+            }
+        }
+        const merged = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+            merged.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return merged.buffer;
+    }
+
+    async _parseBinaryStream(stream) {
+        const buffer = await this._readStreamToArrayBuffer(stream);
+        if (!buffer || buffer.byteLength === 0) {
+            return;
+        }
+        const view = new DataView(buffer);
+        const totalLength = view.byteLength;
+        let offset = 0;
+
+        const ensureAvailable = (size) => {
+            if (offset + size > totalLength) {
+                throw new Error('Unexpected end of CAN data');
+            }
+        };
+
+        let ctxTime = 0n;
+        let ctxCol3 = 0;
+        let ctxCol4 = 0;
+        let ctxCol5 = 0;
+        let ctxAccel = 0.0;
+        let ctxDecel = 0.0;
+
+        while (offset < totalLength) {
+            ensureAvailable(2);
+            const mask = view.getUint8(offset++);
+            const count = view.getUint8(offset++);
+
+            if (mask & 1) {
+                ensureAvailable(8);
+                ctxTime = view.getBigUint64(offset, true);
+                offset += 8;
+            }
+            if (mask & 2) {
+                ensureAvailable(4);
+                ctxCol3 = view.getInt32(offset, true);
+                offset += 4;
+            }
+            if (mask & 4) {
+                ensureAvailable(4);
+                ctxCol4 = view.getInt32(offset, true);
+                offset += 4;
+            }
+            if (mask & 8) {
+                ensureAvailable(4);
+                ctxCol5 = view.getInt32(offset, true);
+                offset += 4;
+            }
+            if (mask & 16) {
+                ensureAvailable(4);
+                ctxAccel = view.getFloat32(offset, true);
+                offset += 4;
+            }
+            if (mask & 32) {
+                ensureAvailable(4);
+                ctxDecel = view.getFloat32(offset, true);
+                offset += 4;
+            }
+
+            for (let i = 0; i < count; i += 1) {
+                ensureAvailable(1);
+                const headerByte = view.getUint8(offset++);
+                const typeCode = (headerByte >> 6) & 0x03;
+                const canId = headerByte & 0x3F;
+                let value;
+                switch (typeCode) {
+                    case 0:
+                        ensureAvailable(1);
+                        value = view.getInt8(offset);
+                        offset += 1;
+                        break;
+                    case 1:
+                        ensureAvailable(2);
+                        value = view.getInt16(offset, true);
+                        offset += 2;
+                        break;
+                    case 2:
+                        ensureAvailable(4);
+                        value = view.getInt32(offset, true);
+                        offset += 4;
+                        break;
+                    case 3:
+                        ensureAvailable(4);
+                        value = view.getFloat32(offset, true);
+                        offset += 4;
+                        break;
+                    default:
+                        throw new Error(`Unsupported CAN type code: ${typeCode}`);
+                }
+                const whenToExecute = Number(ctxTime);
+                if (!Number.isFinite(whenToExecute)) {
+                    throw new Error('CAN timestamp exceeds supported precision');
+                }
+                const movement = {
+                    motorId: canId,
+                    whenToExecute,
+                    accelTicks: ctxCol3,
+                    steadyTicks: ctxCol4,
+                    decelTicks: ctxCol5,
+                    steps: value,
+                    acceleration: ctxAccel,
+                    deceleration: ctxDecel,
+                };
+                this._handleMovement(movement);
+                await this._flushReadyBuckets();
+            }
+        }
+    }
+
+    async run(stream, format = FileFormat.RRF_CAN) {
         this._resetState();
         try {
-            await this._parseStream(stream);
+            if (format === FileFormat.RRF_CAN_BINARY) {
+                await this._parseBinaryStream(stream);
+            } else {
+                await this._parseCsvStream(stream);
+            }
             await this._flushReadyBuckets(true);
             postMessage({ type: 'done' });
         } catch (e) {
@@ -619,7 +783,12 @@ self.addEventListener('message', async (e) => {
             if (!file || !file.stream) {
                 break;
             }
-            commander.run(file.stream());
+            const format = detectFileFormat(file.name);
+            if (!isRrfFormat(format)) {
+                postMessage({ type: 'error', message: 'Unsupported file type for RrfCommander' });
+                break;
+            }
+            commander.run(file.stream(), format);
             break;
         }
         case 'filename_fetch': {
@@ -632,7 +801,8 @@ self.addEventListener('message', async (e) => {
                 if (!response.ok || !response.body) {
                     throw new Error(`Failed to fetch ${filename}`);
                 }
-                await commander.run(response.body);
+                const format = detectFileFormat(filename) || FileFormat.RRF_CAN;
+                await commander.run(response.body, isRrfFormat(format) ? format : FileFormat.RRF_CAN);
             } catch (err) {
                 console.error('RrfCommander fetch failed:', err);
                 postMessage({ type: 'error', message: err.message });
