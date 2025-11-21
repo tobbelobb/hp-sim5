@@ -643,52 +643,6 @@ bool WaitForPrintCompletion() noexcept
     }
 }
 
-void VirtuallyHomeAxesIfNeeded() noexcept
-{
-    auto& gcodes = reprap.GetGCodes();
-    if (gcodes.AllAxesAreHomed())
-    {
-        return;
-    }
-
-    const size_t visibleAxes = gcodes.GetVisibleAxes();
-    const char* axisLetters = gcodes.GetAxisLetters();
-
-    std::vector<std::string> homedAxes;
-    homedAxes.reserve(visibleAxes);
-
-    for (size_t axis = 0; axis < visibleAxes; ++axis)
-    {
-        if (!gcodes.IsAxisHomed(static_cast<unsigned int>(axis)))
-        {
-            gcodes.SetAxisIsHomed(static_cast<unsigned int>(axis));
-
-            if (axisLetters != nullptr && axisLetters[axis] != '\0')
-            {
-                homedAxes.emplace_back(1, axisLetters[axis]);
-            }
-            else
-            {
-                homedAxes.emplace_back("axis" + std::to_string(axis));
-            }
-        }
-    }
-
-    if (!homedAxes.empty())
-    {
-        std::cout << "Host marked axes as homed: ";
-        for (size_t i = 0; i < homedAxes.size(); ++i)
-        {
-            if (i != 0)
-            {
-                std::cout << ", ";
-            }
-            std::cout << homedAxes[i];
-        }
-        std::cout << '\n';
-    }
-}
-
 void ReportFinalPosition() noexcept
 {
     float machine[MaxAxes] = {0.0f};
@@ -833,7 +787,6 @@ int main(int argc, char** argv)
 
         reprap.Init();
         reprapInitialised = true;
-        VirtuallyHomeAxesIfNeeded();
         HostTiming::Reset();
         HostCanCapture::Reset();
         reprap.GetGCodes().daemonRunning = false;  // Reset daemon state for deterministic timing
