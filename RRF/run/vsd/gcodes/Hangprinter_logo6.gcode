@@ -11,7 +11,7 @@
 
 ;TYPE:Custom
 G28 ; home all axes
-;M666 F1 ; Tension the lines
+M666 F1 ; Tension the lines
 G1 F5000 ; lift nozzle
 G21 ; set units to millimeters
 G90 ; use absolute coordinates

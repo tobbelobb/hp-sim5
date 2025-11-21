@@ -4,7 +4,7 @@ G90              ; Send absolute coordinates...
 M83              ; ...but relative extruder moves
 
 ; Kinematics
-M584 X40.0 Y41.0 Z42.0 E43.0 P3 ; map ABCE-axes to CAN addresses, and set four visible axes. Please excuse that ABC motors are called XYZ here.
+M584 X40.0 Y41.0 Z42.0 E43.0 P3 ; map ABCE-axes to CAN addresses, and set three visible axes. Please excuse that ABC motors are called XYZ here.
 M669 K6                         ; "This is a Hangprinter"
 M669 N3                         ; This Hangprinter has three anchors (is a Slideprinter)
 M666 A2                         ; anchorMode=HangprinterAnchorMode::AllOnTop, // 0=None, 1=last-top, 2=all-top, 3-half-top, etc
@@ -32,18 +32,12 @@ M666 W0.0                 ; Disable flex compensation until we have fixed it.
 M666 S20000.0             ; Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
                           ; The real value is somewhere between 20k and 100k.
                           ; Lower value gives more flex compensation.
-M666 I3.0:3.0:3.0         ; Min planned force in four directions (unit N).
+M666 I3.0:3.0:3.0         ; Min planned force in all directions (unit N).
                           ; This is a safety limit. Should affect only exceptional/wrong moves,
                           ; for example moves outside of the reachable volume.
-M666 X170.0:170.0:170.0   ; Max planned force in four directions (unit N)
+M666 X170.0:170.0:170.0   ; Max planned force in all directions (unit N)
                           ; This is a safety limit. Will affect moves close to
                           ; the limits of the reachable volume.
-M666 T10.0                ; Desired target force (unit N).
-                          ; The flex compensation algorithm aims for at least
-                          ; this amount of fource in the ABC line directions at all times.
-                          ; It can be thought of as a minimum pre-tension value.
-                          ; It's recommended to set it around 10 times higher
-                          ; than your W (mover weight in kg) value.
 
 ; Guy wire lengths. Needed for flex compenation.
 ; Guy wires go between spool and final line roller.
@@ -54,6 +48,8 @@ M666 T10.0                ; Desired target force (unit N).
 ; If your spools are all mounted on their respective anchors, so that you have no guy wires,
 ; then you should configure zeroed guy wire lengths M666 Y0.0:0.0:0.0:0.0.
 ;M666 Y528.3:528.3:528.3
+M666 B1                  ; Ignore gravity forces when solving flex
+M666 P0                  ; Consider pretension when solving flex
 
 ; Uncomment M564 S0 if you don't want G0/G1 moves to be be limited to a software defined volume
 M564 S0
