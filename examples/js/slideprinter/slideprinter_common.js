@@ -200,9 +200,9 @@ export class StepperMotorSystem {
             const totalTorque = restoringTorque + dampingTorque;
 
             // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
-            const angularAcceleration = totalTorque / inertia.inertia;
-            angVel.angularVelocity += angularAcceleration * dt;
-            //orient.angle = stepper.commandedAngle;
+            //const angularAcceleration = totalTorque / inertia.inertia;
+            //angVel.angularVelocity += angularAcceleration * dt;
+            orient.angle = stepper.commandedAngle;
         }
     }
 }
