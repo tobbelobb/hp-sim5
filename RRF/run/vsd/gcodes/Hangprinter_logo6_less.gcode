@@ -6456,21 +6456,5 @@ G1 X19.612 Y442.043 E8.34336
 ;WIDTH:2.25
 G1 X19.598 Y441.958 E8.35703
 G1 X22.732 Y438.824 E9.0606
-;LAYER_CHANGE
-;Z:1.8
-;HEIGHT:0.6
-G92 E0
-G1 F7800
-G1 X-153.272 Y-435.165
-G1 E2 F2400
-G92 E0
-G1 X-153.653 Y-439.39 F7800
-G1 E2 F2400
 G92 E0
 M107
-;TYPE:Custom
-; Filament-specific end gcode
-;END gcode for filament
-M104 S0 ; turn off temperature
-G28 X0  ; home X axis
-M84     ; disable motors
