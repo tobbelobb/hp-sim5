@@ -1,5 +1,9 @@
 M83
+G28
 M666 F1
+G21 ; set units to millimeters
+G90 ; use absolute coordinates
+T0
 G1 X200 Y200 Z0 F12000
 G1 X200 Y-200 Z0 E50
 G1 X-200 Y-200 Z0 E50

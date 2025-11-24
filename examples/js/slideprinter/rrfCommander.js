@@ -56,9 +56,6 @@ export class RrfCommander {
         this.lastYieldTime = 0;
         this.axisByMotorId = new Map();
         this.valueTypeByMotorId = new Map();
-        this.logBucketsRemaining = 8; // host-side debug: log the first few buckets we emit
-        this.logNonZeroRemaining = 4; // additional logging for first buckets that actually move
-        this.logMovesRemaining = 16; // log the first few parsed movements
         this.baselineEmitted = false;
         this._resetState();
     }
@@ -129,9 +126,6 @@ export class RrfCommander {
         this.axisByMotorId.clear();
         this.valueTypeByMotorId.clear();
         this.baselineEmitted = false;
-        this.logBucketsRemaining = 8;
-        this.logNonZeroRemaining = 4;
-        this.logMovesRemaining = 16;
     }
 
     _ensureAxisState(axis) {
@@ -248,9 +242,6 @@ export class RrfCommander {
             }
             if (hasDelta) {
                 await this.sendCommand(addCmd);
-                if (this.logBucketsRemaining > 0) {
-                    console.info('[rrfCommander] addRef bucket=%d cmd=%o', bucketIdx, addCmd);
-                }
             }
             this.bucketAddToReference.delete(bucketIdx);
         }
@@ -306,18 +297,6 @@ export class RrfCommander {
         if (changed) {
             if (bucketIdx === 0) {
                 this.baselineEmitted = true;
-            }
-            const logNonZero = Object.entries(moveCmd).some(([k, v]) => k !== 'type' && v !== 0);
-            if (this.logBucketsRemaining > 0 || (logNonZero && this.logNonZeroRemaining > 0)) {
-                console.info('[rrfCommander] move bucket=%d cmd=%o', bucketIdx, moveCmd);
-                if (this.logBucketsRemaining > 0) {
-                    this.logBucketsRemaining -= 1;
-                } else if (logNonZero && this.logNonZeroRemaining > 0) {
-                    this.logNonZeroRemaining -= 1;
-                }
-                if (bucketIdx === 0) {
-                    console.info('[rrfCommander] spoolAxisOrder=%o activeAxes=%o', this.spoolAxisOrder, Array.from(this.activeAxes));
-                }
             }
             await this.sendCommand(moveCmd);
         }
@@ -523,11 +502,6 @@ export class RrfCommander {
         } = row;
 
         const axis = this._assignAxisName(motorId);
-        if (this.logMovesRemaining > 0) {
-            console.info('[rrfCommander] move parsed axis=%s motor=%d when=%d accel=%d steady=%d decel=%d steps=%s',
-                axis, motorId, whenToExecute, accelTicks, steadyTicks, decelTicks, String(steps));
-            this.logMovesRemaining -= 1;
-        }
         const totalTicks = accelTicks + steadyTicks + decelTicks;
         const state = this._ensureAxisState(axis);
         if (state) {
