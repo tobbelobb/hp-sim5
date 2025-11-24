@@ -56,6 +56,10 @@ export class RrfCommander {
         this.lastYieldTime = 0;
         this.axisByMotorId = new Map();
         this.valueTypeByMotorId = new Map();
+        this.logBucketsRemaining = 8; // host-side debug: log the first few buckets we emit
+        this.logNonZeroRemaining = 4; // additional logging for first buckets that actually move
+        this.logMovesRemaining = 16; // log the first few parsed movements
+        this.baselineEmitted = false;
         this._resetState();
     }
 
@@ -124,6 +128,10 @@ export class RrfCommander {
         this.usedAxes = new Set();
         this.axisByMotorId.clear();
         this.valueTypeByMotorId.clear();
+        this.baselineEmitted = false;
+        this.logBucketsRemaining = 8;
+        this.logNonZeroRemaining = 4;
+        this.logMovesRemaining = 16;
     }
 
     _ensureAxisState(axis) {
@@ -240,6 +248,9 @@ export class RrfCommander {
             }
             if (hasDelta) {
                 await this.sendCommand(addCmd);
+                if (this.logBucketsRemaining > 0) {
+                    console.info('[rrfCommander] addRef bucket=%d cmd=%o', bucketIdx, addCmd);
+                }
             }
             this.bucketAddToReference.delete(bucketIdx);
         }
@@ -287,7 +298,27 @@ export class RrfCommander {
             }
         }
 
+        // If nothing has been emitted yet, ensure we send an explicit baseline at bucket 0
+        if (!changed && bucketIdx === 0 && !this.baselineEmitted) {
+            changed = true;
+        }
+
         if (changed) {
+            if (bucketIdx === 0) {
+                this.baselineEmitted = true;
+            }
+            const logNonZero = Object.entries(moveCmd).some(([k, v]) => k !== 'type' && v !== 0);
+            if (this.logBucketsRemaining > 0 || (logNonZero && this.logNonZeroRemaining > 0)) {
+                console.info('[rrfCommander] move bucket=%d cmd=%o', bucketIdx, moveCmd);
+                if (this.logBucketsRemaining > 0) {
+                    this.logBucketsRemaining -= 1;
+                } else if (logNonZero && this.logNonZeroRemaining > 0) {
+                    this.logNonZeroRemaining -= 1;
+                }
+                if (bucketIdx === 0) {
+                    console.info('[rrfCommander] spoolAxisOrder=%o activeAxes=%o', this.spoolAxisOrder, Array.from(this.activeAxes));
+                }
+            }
             await this.sendCommand(moveCmd);
         }
 
@@ -492,6 +523,11 @@ export class RrfCommander {
         } = row;
 
         const axis = this._assignAxisName(motorId);
+        if (this.logMovesRemaining > 0) {
+            console.info('[rrfCommander] move parsed axis=%s motor=%d when=%d accel=%d steady=%d decel=%d steps=%s',
+                axis, motorId, whenToExecute, accelTicks, steadyTicks, decelTicks, String(steps));
+            this.logMovesRemaining -= 1;
+        }
         const totalTicks = accelTicks + steadyTicks + decelTicks;
         const state = this._ensureAxisState(axis);
         if (state) {
@@ -577,6 +613,7 @@ export class RrfCommander {
     async _parseCsvStream(stream) {
         const lineIterator = makeLineIterator(stream);
         let metadataHandled = false;
+        let lastWhen = null;
 
         for await (const rawLine of lineIterator) {
             const line = typeof rawLine === 'string' ? rawLine.trim() : '';
@@ -593,9 +630,13 @@ export class RrfCommander {
             if (!movement) {
                 continue;
             }
+            if (lastWhen !== null && movement.whenToExecute !== lastWhen) {
+                await this._flushReadyBuckets();
+            }
             this._handleMovement(movement);
-            await this._flushReadyBuckets();
+            lastWhen = movement.whenToExecute;
         }
+        await this._flushReadyBuckets(true);
     }
 
     async _readStreamToArrayBuffer(stream) {
@@ -669,6 +710,7 @@ export class RrfCommander {
         let ctxCol5 = 0;
         let ctxAccel = 0.0;
         let ctxDecel = 0.0;
+        let lastWhen = null;
 
         while (offset < totalLength) {
             ensureAvailable(2);
@@ -740,6 +782,9 @@ export class RrfCommander {
                 if (!Number.isFinite(whenToExecute)) {
                     throw new Error('CAN timestamp exceeds supported precision');
                 }
+                if (lastWhen !== null && whenToExecute !== lastWhen) {
+                    await this._flushReadyBuckets();
+                }
                 const movement = {
                     motorId: canId,
                     whenToExecute,
@@ -751,9 +796,10 @@ export class RrfCommander {
                     deceleration: ctxDecel,
                 };
                 this._handleMovement(movement);
-                await this._flushReadyBuckets();
+                lastWhen = whenToExecute;
             }
         }
+        await this._flushReadyBuckets(true);
     }
 
     async run(stream, format = FileFormat.RRF_CAN) {
