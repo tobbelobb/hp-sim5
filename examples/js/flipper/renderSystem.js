@@ -336,7 +336,7 @@ export class RenderSystem {
       if (!extrusion) continue;
       const pos = Array.isArray(extrusion) ? extrusion[0] : extrusion.pos;
       const length = Array.isArray(extrusion) ? extrusion[1] : extrusion.length;
-      const color = Array.isArray(extrusion) ? null : extrusion.color;
+      const color = this._getExtrusionColor(extrusion);
 
       const radiusSim = Math.sqrt(length / Math.PI) * 0.01 * 0.5;
       const px = this.cX(pos[0]);
@@ -760,7 +760,7 @@ export class RenderSystem {
                 }
                 const pos = Array.isArray(extrusion) ? extrusion[0] : extrusion.pos;
                 const length = Array.isArray(extrusion) ? extrusion[1] : extrusion.length;
-                const color = Array.isArray(extrusion) ? null : extrusion.color;
+                const color = this._getExtrusionColor(extrusion);
                 const radius = Math.sqrt(length / Math.PI) * 0.01 * 0.5;
 
                 this.extrusionCtx.fillStyle = this._colorWithAlpha(color, 0.5);
@@ -996,6 +996,18 @@ export class RenderSystem {
         }
         this.c.restore();
     }
+  }
+
+  _getExtrusionColor(extrusion) {
+    if (extrusion && typeof extrusion === 'object' && !Array.isArray(extrusion)) {
+      if (typeof extrusion.qualityColor === 'string' && extrusion.qualityColor.length > 0) {
+        return extrusion.qualityColor;
+      }
+      if (typeof extrusion.color === 'string' && extrusion.color.length > 0) {
+        return extrusion.color;
+      }
+    }
+    return null;
   }
 
   _colorWithAlpha(color, alpha = 1) {

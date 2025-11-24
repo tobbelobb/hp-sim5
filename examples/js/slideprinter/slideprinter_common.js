@@ -492,7 +492,7 @@ export class RemoteSpoolSystem {
                     extruderComp.extrusions.push(extrusionEvent);
                     if (emitEvents && this.onExtrusion) {
                         try {
-                            this.onExtrusion({ ...extrusionEvent });
+                            this.onExtrusion(extrusionEvent);
                         } catch (err) {
                             console.warn('RemoteSpoolSystem: extrusion listener threw', err);
                         }

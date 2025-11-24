@@ -237,6 +237,7 @@ export class QualityMonitor {
     this.pendingExtrusionsY = new Float64Array(0);
     this.pendingExtrusionsLength = new Float64Array(0);
     this.enabled = true;
+    this.projectionHintValid = false;
 
     this.straightStats = {
       count: 0,
@@ -263,6 +264,11 @@ export class QualityMonitor {
     this.cornerRingingTail = 0.016; // meters (16 mm)
     this.cornerMinSamples = 3;
     this.cornerRingingMinAmplitude = 0.00005; // 0.05 mm
+
+    this.segmentSearchRadius = 20; // segments to scan around hint
+    this.projectionFallbackDistance = 0.02; // meters before forcing full search
+    this.penaltySoftThreshold = 0.00025; // meters (0.25 mm) before coloring
+    this.penaltyHardThreshold = 0.0015; // meters (1.5 mm) saturates penalty
 
     this.coverageStep = 0.001; // 1 mm grid
     this.coverageMargin = 0.015; // 15 mm margin
@@ -354,6 +360,7 @@ export class QualityMonitor {
 
   reset({ keepReference = false } = {}) {
     this.lastSegmentIndex = 0;
+    this.projectionHintValid = false;
     this.pendingExtrusionCount = 0;
     this.metricsDirty = true;
     this.metrics = null;
@@ -442,6 +449,7 @@ export class QualityMonitor {
     }
     this.enabled = next;
     if (this.enabled) {
+      this.projectionHintValid = false;
       this._drainPendingExtrusions();
       this.refreshHud(true);
     } else if (this.hudElement) {
@@ -535,14 +543,17 @@ export class QualityMonitor {
     this.pendingExtrusionCount = index + 1;
   }
 
-  _recordNormalizedExtrusion(x, y, length) {
+  _recordNormalizedExtrusion(x, y, length, sourceEvent = null) {
     const projection = this._projectToPath(x, y);
     if (!projection) {
       return;
     }
 
+    const nearestCornerDelta = this._accumulateCornerSamples(projection);
+    const penalty = this._computeExtrusionPenalty(projection, nearestCornerDelta);
+    this._applyPenaltyToExtrusion(sourceEvent, penalty);
+
     this._accumulateStraightError(projection);
-    this._accumulateCornerSamples(projection);
     this._updateCoverageForExtrusion(x, y, length);
 
     this.metricsDirty = true;
@@ -561,7 +572,7 @@ export class QualityMonitor {
     if (!normalized) {
       return;
     }
-    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.length);
+    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.length, extrusionEvent);
   }
 
   _drainPendingExtrusions() {
@@ -862,7 +873,8 @@ export class QualityMonitor {
     let bestDistSq = Infinity;
     const segments = this.segmentData;
     const count = segments.length;
-    const searchRadius = 6;
+    const searchRadius = Math.max(0, Math.floor(this.segmentSearchRadius));
+    const hasHint = this.projectionHintValid && Number.isInteger(this.lastSegmentIndex);
     const hint = clamp(this.lastSegmentIndex, 0, count - 1);
 
     const evaluateSegment = (index) => {
@@ -900,18 +912,28 @@ export class QualityMonitor {
       }
     };
 
-    const startIdx = Math.max(0, hint - searchRadius);
-    const endIdx = Math.min(count - 1, hint + searchRadius);
+    const startIdx = hasHint ? Math.max(0, hint - searchRadius) : 0;
+    const endIdx = hasHint ? Math.min(count - 1, hint + searchRadius) : count - 1;
     for (let i = startIdx; i <= endIdx; i += 1) {
       evaluateSegment(i);
     }
-    if (!best) {
+
+    const fallbackDistanceSq = Number.isFinite(this.projectionFallbackDistance) && this.projectionFallbackDistance > 0
+      ? this.projectionFallbackDistance * this.projectionFallbackDistance
+      : Infinity;
+    const searchedFullRange = !hasHint;
+    const needFallbackSearch = !searchedFullRange && bestDistSq > fallbackDistanceSq;
+    if (needFallbackSearch) {
       for (let i = 0; i < count; i += 1) {
+        if (i >= startIdx && i <= endIdx) {
+          continue;
+        }
         evaluateSegment(i);
       }
     }
     if (best) {
       this.lastSegmentIndex = best.segmentIndex;
+      this.projectionHintValid = true;
     }
     return best;
   }
@@ -930,11 +952,16 @@ export class QualityMonitor {
 
   _accumulateCornerSamples(projection) {
     if (this.cornerData.length === 0) {
-      return;
+      return Infinity;
     }
+    let closestAbsDelta = Infinity;
     for (const corner of this.cornerData) {
       const delta = projection.arcLength - corner.arcLength;
-      if (Math.abs(delta) <= this.cornerRadiusWindow) {
+      const absDelta = Math.abs(delta);
+      if (absDelta < closestAbsDelta) {
+        closestAbsDelta = absDelta;
+      }
+      if (absDelta <= this.cornerRadiusWindow) {
         corner.samples.push({
           delta,
           normalError: projection.normalError,
@@ -947,6 +974,7 @@ export class QualityMonitor {
         });
       }
     }
+    return closestAbsDelta;
   }
 
   _computeMetrics() {
@@ -1042,6 +1070,43 @@ export class QualityMonitor {
       iou,
       score,
     };
+  }
+
+  _computeExtrusionPenalty(projection, nearestCornerDelta = Infinity) {
+    const errorAbs = Math.abs(projection.normalError);
+    const soft = Number.isFinite(this.penaltySoftThreshold) && this.penaltySoftThreshold > 0
+      ? this.penaltySoftThreshold
+      : 0;
+    const hard = Number.isFinite(this.penaltyHardThreshold) && this.penaltyHardThreshold > soft
+      ? this.penaltyHardThreshold
+      : soft + 1e-6;
+    let penalty = 0;
+    if (errorAbs > soft) {
+      penalty = clamp((errorAbs - soft) / (hard - soft), 0, 1);
+    }
+    if (Number.isFinite(nearestCornerDelta) && nearestCornerDelta <= this.cornerRadiusWindow) {
+      const proximity = clamp(1 - nearestCornerDelta / this.cornerRadiusWindow, 0, 1);
+      penalty = clamp(penalty + 0.35 * proximity, 0, 1);
+    }
+    return penalty;
+  }
+
+  _colorFromPenalty(penalty) {
+    const p = clamp(Number.isFinite(penalty) ? penalty : 0, 0, 1);
+    if (p <= 0) {
+      return '#ffffff';
+    }
+    const channel = Math.round(255 * (1 - 0.75 * p));
+    return `rgb(255, ${channel}, ${channel})`;
+  }
+
+  _applyPenaltyToExtrusion(extrusionEvent, penalty) {
+    if (!extrusionEvent || typeof extrusionEvent !== 'object') {
+      return;
+    }
+    const safePenalty = clamp(Number.isFinite(penalty) ? penalty : 0, 0, 1);
+    extrusionEvent.penalty = safePenalty;
+    extrusionEvent.qualityColor = this._colorFromPenalty(safePenalty);
   }
 
   _composeScore({ rmse, p95, radiusAvg, amplitude, coverage, iou }) {
