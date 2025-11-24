@@ -3470,6 +3470,13 @@ function initHpSim() {
     stopInactiveWorkers(worker);
     resetRemoteQueue(worker);
     if (worker) {
+      // Workers can remain paused after being sidelined for another format (e.g. RRF -> MCU),
+      // so make sure the active worker is unpaused before starting a new job.
+      try {
+        worker.postMessage({ type: 'resume' });
+      } catch (err) {
+        console.warn('hp-sim: unable to resume worker before starting job.', err);
+      }
       worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
     }
     if (gameControls && typeof gameControls.reset === 'function') {
