@@ -46,7 +46,7 @@ M666 X170.0:170.0:170.0   ; Max planned force in all directions (unit N)
 ; lengths and set them here.
 ; If your spools are all mounted on their respective anchors, so that you have no guy wires,
 ; then you should configure zeroed guy wire lengths M666 Y0.0:0.0:0.0:0.0.
-;M666 Y528.3:528.3:528.3
+M666 Y528.3:528.3:528.3
 M666 B1                  ; Ignore gravity forces when solving flex
 M666 P0                  ; Consider pretension when solving flex
 
