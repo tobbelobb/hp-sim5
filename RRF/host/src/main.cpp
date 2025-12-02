@@ -58,6 +58,7 @@ constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
 constexpr bool kTraceCompletion = true;
+constexpr auto kServerSpinSleep = std::chrono::milliseconds(1);
 std::atomic<bool> gServerShutdown{false};
 
 void HandleServerSignal(int) noexcept
@@ -756,6 +757,7 @@ bool RunServerLoop() noexcept
         while (!gServerShutdown.load())
         {
             reprap.Spin();
+            std::this_thread::sleep_for(kServerSpinSleep);
         }
     });
 
