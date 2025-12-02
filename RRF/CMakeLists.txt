@@ -53,6 +53,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/storage/MassStorageHost.cpp
     ${SIM_ROOT_DIR}/storage/FileStoreHost.cpp
     #${SIM_ROOT_DIR}/src/devices_stub.cpp
+    ${SIM_ROOT_DIR}/src/HostIdle.cpp
     ${SIM_ROOT_DIR}/networking/HostNetworkConfig.cpp
     ${SIM_ROOT_DIR}/networking/NetworkInterfaceHost.cpp
     ${SIM_ROOT_DIR}/networking/SocketHost.cpp
@@ -392,7 +393,9 @@ set(RRF_HEADERS_WE_NEED_WITH_orig_POSTFIX
 set(HOST_HEADERS_TO_USE
     # Our own headers
     HostTiming.h
+    HostIdle.h
     include/HostTiming.h
+    include/HostIdle.h
     rtos/host_rtos.h
     can/CanCapture.h
     networking/HostNetworkConfig.h

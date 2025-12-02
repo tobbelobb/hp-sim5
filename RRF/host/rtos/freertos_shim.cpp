@@ -17,6 +17,7 @@
 #include <semphr.h>
 #include <task.h>
 
+#include <HostIdle.h>
 #include <RTOSIface/RTOSIface.h>
 #include "host_rtos.h"
 #include "HostTiming.h"
@@ -565,7 +566,14 @@ void ExitCritical() noexcept
 
 void Yield() noexcept
 {
-    std::this_thread::yield();
+    if (HostIdle::IsServerIdle())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    else
+    {
+        std::this_thread::yield();
+    }
 }
 
 TaskBase* GetCurrentTaskBase() noexcept

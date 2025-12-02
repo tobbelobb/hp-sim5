@@ -14,6 +14,7 @@
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <GCodes/SimulationMode.h>
 #include <General/String.h>
+#include <HostIdle.h>
 #include <HostTiming.h>
 #include <networking/HostNetworkConfig.h>
 
@@ -749,6 +750,7 @@ bool StartPrint(const std::string& relativePath) noexcept
 
 bool RunServerLoop() noexcept
 {
+    HostIdle::SetServerMode(true);
     gServerShutdown.store(false);
     std::signal(SIGINT, HandleServerSignal);
     std::signal(SIGTERM, HandleServerSignal);
@@ -768,10 +770,21 @@ bool RunServerLoop() noexcept
         {
             gServerShutdown.store(true);
         }
+        else
+        {
+            const Move& move = reprap.GetMove();
+            const bool moveIdle = move.NoLiveMovement();
+            GCodeBuffer* const httpBuffer = reprap.GetGCodes().HttpGCode();
+            const bool httpIdle = (httpBuffer == nullptr) ? true : httpBuffer->IsCompletelyIdle();
+            const bool printing = reprap.GetPrintMonitor().IsPrinting();
+            HostIdle::SetServerIdle(moveIdle && httpIdle && !printing);
+        }
     }
 
     gServerShutdown.store(true);
     spinThread.join();
+    HostIdle::SetServerMode(false);
+    HostIdle::SetServerIdle(false);
     return !reprap.IsStopped();
 }
 }  // namespace
