@@ -36,6 +36,12 @@ Müller](https://matthias-research.github.io/pages/index.html).
 For a deeper dive into the physics engine and the classic flipper demo see
 `README_adv.md`.
 
+To compile and invoke the `x86_64` version of ReprapFirmware, do:
+```
+cmake --build RRF/build --target rrf_simulator -j
+./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
+```
+
 ## Quick Start
 
 ### Running Demos Locally
