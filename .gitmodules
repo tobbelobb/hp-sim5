@@ -50,3 +50,8 @@
 	path = RRF/Duet3Expansion
 	url = git@github.com:Duet3D/Duet3Expansion
 	branch = 3.7-dev
+[submodule "autocal/auto-calibration-simulation-for-hangprinter"]
+	path = autocal/auto-calibration-simulation-for-hangprinter
+	url = git@gitlab.com:tobben/auto-calibration-simulation-for-hangprinter
+	branch = five_anchors
+  ignore = untracked

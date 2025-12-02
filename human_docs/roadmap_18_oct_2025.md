@@ -1,11 +1,3 @@
-# Reliability of hp-sim5
-
-We have pinned down that the RemoteStepperSystem waits (blocking) for move commands from the KlipperCommander reading .serial files.
-We need to make sure KlipperCommander sends empty Move commands to further the simulation in case no steps were planned for a given timespan.
-
-We want a guarantee that there are no buffering or similar bugs in klippers pacer or commander.
-
-
 # General Strategy hp-sim5
 
 We need several firmware features in both Klipper and ReprapFirmware.
@@ -92,7 +84,7 @@ We make a bet that it's possible to develop super good software, previously unim
 We just compensate whatever.
 
 
-# ReprapFirmware Support in hp-sim5
+# ReprapFirmware Support in hp-sim5 DONE
 
 We really want to use ReprapFirmware in batch mode on the x64 architecture, on the desktop.
 That way ReprapFirmware and Klipper get hot-swap interchangeable at the .serial layer.
@@ -153,7 +145,7 @@ At first we shouldn't bother with extrusions at least.
 
 
 
-# Flex Compensation
+# Flex Compensation DONE
 
 This feature is already implemented in both ReprapFirmware and Klipper.
 However, the ReprapFirmware implementation is a bit broken, it needs to be fixed.
@@ -189,7 +181,7 @@ Change line stiffness -> change the optimal pre-tension. Line stiffness is in th
 The pretension mm should be stated explicitly in the .usda, maybe at the CablePath level,
 so the pretension can be distributed evenly among the CableJoints.
 
-Feature wish:
+Feature wish: DONE
 The `restLength` should not have to be stated exlicitly in the CableJoint prim. Just the start- and end-point.
 
 We will maybe not want to test lots of pre-tension values or optimize over them so much,
