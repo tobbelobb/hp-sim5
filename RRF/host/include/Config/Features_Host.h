@@ -27,6 +27,16 @@
 #endif
 #define HAS_ESP32_NETWORKING 0
 
+#ifdef HAS_HOST_NETWORKING
+#undef HAS_HOST_NETWORKING
+#endif
+#define HAS_HOST_NETWORKING 1
+
+#ifdef HAS_NETWORKING
+#undef HAS_NETWORKING
+#endif
+#define HAS_NETWORKING HAS_HOST_NETWORKING
+
 #ifdef HAS_CPU_TEMP_SENSOR
 #undef HAS_CPU_TEMP_SENSOR
 #endif
@@ -120,7 +130,7 @@
 #ifdef SUPPORT_HTTP
 #undef SUPPORT_HTTP
 #endif
-#define SUPPORT_HTTP 0
+#define SUPPORT_HTTP 1
 
 #ifdef SUPPORT_FTP
 #undef SUPPORT_FTP

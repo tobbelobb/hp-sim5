@@ -53,7 +53,9 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/storage/MassStorageHost.cpp
     ${SIM_ROOT_DIR}/storage/FileStoreHost.cpp
     #${SIM_ROOT_DIR}/src/devices_stub.cpp
-    ${SIM_ROOT_DIR}/networking/MacAddressHost.cpp
+    ${SIM_ROOT_DIR}/networking/HostNetworkConfig.cpp
+    ${SIM_ROOT_DIR}/networking/NetworkInterfaceHost.cpp
+    ${SIM_ROOT_DIR}/networking/SocketHost.cpp
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
     ${SIM_ROOT_DIR}/movement/DriverDataHost.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
@@ -107,6 +109,15 @@ set(RRF_SOURCES_TO_USE
     Movement/BedProbing/RandomProbePointSet.cpp
     GCodes/StraightProbeSettings.cpp
     GCodes/TriggerItem.cpp
+
+    # Networking
+    Networking/NetworkBuffer.cpp
+    Networking/NetworkInterface.cpp
+    Networking/NetworkResponder.cpp
+    Networking/NetworkClient.cpp
+    Networking/UploadingNetworkResponder.cpp
+    Networking/HttpResponder.cpp
+    Networking/Network.cpp
 
     # Tier 4: G-Code Interpretation and High-Level Logic
     GCodes/GCodeBuffer/GCodeBuffer.cpp
@@ -193,6 +204,14 @@ set(RRF_HEADERS_TO_USE
     GCodes/GCodeFileInfo.h
     Config/Configuration.h
     Networking/NetworkDefs.h
+    Networking/Network.h
+    Networking/NetworkInterface.h
+    Networking/NetworkResponder.h
+    Networking/NetworkBuffer.h
+    Networking/NetworkClient.h
+    Networking/UploadingNetworkResponder.h
+    Networking/Socket.h
+    Networking/HttpResponder.h
     Storage/FileData.h
     Storage/CRC32.h
     Storage/CRC16.h
@@ -333,7 +352,6 @@ set(SHADOWING_HEADERS_TO_USE
     Accelerometers/Accelerometers.h
     Storage/MassStorage.h
     CAN/CanInterface.h
-    Networking/Network.h
     SerialCDC.h
     USARTClass.h
     Core.h
@@ -377,6 +395,9 @@ set(HOST_HEADERS_TO_USE
     include/HostTiming.h
     rtos/host_rtos.h
     can/CanCapture.h
+    networking/HostNetworkConfig.h
+    networking/NetworkInterfaceHost.h
+    networking/SocketHost.h
 )
 
 # --- Logic to Prepare the Sandboxed Source Tree ---

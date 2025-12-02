@@ -152,9 +152,11 @@
 #define HAS_ESP32_NETWORKING 0
 #endif
 
+#ifndef HAS_NETWORKING
 #define HAS_NETWORKING                                                     \
     (HAS_LWIP_NETWORKING || HAS_WIFI_NETWORKING || HAS_W5500_NETWORKING || \
      HAS_RTOSPLUSTCP_NETWORKING || HAS_ESP32_NETWORKING)
+#endif
 
 #ifndef SUPPORT_HTTP
 #define SUPPORT_HTTP HAS_NETWORKING

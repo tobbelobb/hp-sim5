@@ -15,13 +15,19 @@
 #include <GCodes/SimulationMode.h>
 #include <General/String.h>
 #include <HostTiming.h>
+#include <networking/HostNetworkConfig.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
+#include <cstdint>
 #include <chrono>
+#include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <limits>
+#include <exception>
 #include <optional>
 #include <string>
 #include <thread>
@@ -44,18 +50,26 @@ struct CommandLineOptions
     std::optional<std::filesystem::path> captureArgument;
     std::optional<std::filesystem::path> configArgument;
     bool showHelp{false};
+    bool serverMode{false};
+    uint16_t serverPort{8080};
 };
 
 constexpr unsigned int kDefaultCanBuffers = 64;
 constexpr std::chrono::minutes kPrintTimeout{30};
 constexpr unsigned int kIdleSettlingCycles = 25;
 constexpr bool kTraceCompletion = true;
+std::atomic<bool> gServerShutdown{false};
+
+void HandleServerSignal(int) noexcept
+{
+    gServerShutdown.store(true);
+}
 
 void PrintUsage() noexcept
 {
     std::cout << "Usage: rrf_simulator [--vsd|-s <path>] [--gcode|-g <file.gcode>] "
-                 "[--config|-c <file>]"
-                 " [--can-log|-l <path|disable>]\n";
+                 "[--config|-c <file>] [--can-log|-l <path|disable>]"
+                 " [--server|-S] [--port|-p <port>]\n";
 }
 
 std::string ToLower(std::string value) noexcept
@@ -330,6 +344,34 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options,
             {
                 options.capture = CaptureSelection::enabled;
                 options.captureArgument = std::filesystem::path(rawValue);
+            }
+        }
+        else if (arg == "--server" || arg == "-S")
+        {
+            options.serverMode = true;
+        }
+        else if (arg == "--port" || arg == "-p")
+        {
+            if (i + 1 >= argc)
+            {
+                error = "--port requires a port number";
+                return false;
+            }
+
+            try
+            {
+                const int value = std::stoi(argv[++i]);
+                if (value <= 0 || value > std::numeric_limits<uint16_t>::max())
+                {
+                    error = "--port must be between 1 and 65535";
+                    return false;
+                }
+                options.serverPort = static_cast<uint16_t>(value);
+            }
+            catch (const std::exception&)
+            {
+                error = "--port requires a numeric port value";
+                return false;
             }
         }
         else
@@ -703,6 +745,33 @@ bool StartPrint(const std::string& relativePath) noexcept
     }
     return ok;
 }
+
+bool RunServerLoop() noexcept
+{
+    gServerShutdown.store(false);
+    std::signal(SIGINT, HandleServerSignal);
+    std::signal(SIGTERM, HandleServerSignal);
+
+    std::thread spinThread([]() {
+        while (!gServerShutdown.load())
+        {
+            reprap.Spin();
+        }
+    });
+
+    while (!gServerShutdown.load())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (reprap.IsStopped())
+        {
+            gServerShutdown.store(true);
+        }
+    }
+
+    gServerShutdown.store(true);
+    spinThread.join();
+    return !reprap.IsStopped();
+}
 }  // namespace
 
 int main(int argc, char** argv)
@@ -782,6 +851,8 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        HostNetworkConfig::SetHttpPort(options.serverPort);
+
         CanMessageBuffer::Init(kDefaultCanBuffers);
         CanMotion::Init();
 
@@ -792,7 +863,16 @@ int main(int argc, char** argv)
         reprap.GetGCodes().daemonRunning = false;  // Reset daemon state for deterministic timing
 
         bool success = true;
-        if (options.gcodeArgument)
+        if (options.serverMode)
+        {
+            if (options.gcodeArgument)
+            {
+                std::cout << "--gcode is ignored in server mode\n";
+            }
+            std::cout << "HTTP server listening on port " << options.serverPort << '\n';
+            success = RunServerLoop();
+        }
+        else if (options.gcodeArgument)
         {
             std::string resolveError;
             auto relative = ResolveRunFile(vsdRoot, options.gcodeArgument, resolveError);
@@ -812,7 +892,7 @@ int main(int argc, char** argv)
             std::cout << "Firmware initialised. No --gcode file supplied, exiting.\n";
         }
 
-        if (success)
+        if (success && !options.serverMode)
         {
             ReportFinalPosition();
         }

@@ -14,6 +14,7 @@
 #include <GPIO/GpOutPort.h>
 #include <General/String.h>
 #include <General/StringRef.h>
+#include <General/IPAddress.h>
 #include <Hardware/IoPorts.h>
 #include <ObjectModel/ObjectModel.h>
 #include <Platform/MessageType.h>
@@ -241,9 +242,24 @@ public:
     {
         return BoardType::Host;
     }
+    const char* GetBoardString() const noexcept
+    {
+        return "rrf-host";
+    }
     const char* GetElectronicsString() const noexcept
     {
         return "RRF_Host";
+    }
+    void SetIPAddress(IPAddress) noexcept {}
+    void SetNetMask(IPAddress) noexcept {}
+    IPAddress NetMask() const noexcept
+    {
+        return IPAddress();
+    }
+    void SetGateWay(IPAddress) noexcept {}
+    IPAddress GateWay() const noexcept
+    {
+        return IPAddress();
     }
 #if HAS_VOLTAGE_MONITOR
     float GetCurrentPowerVoltage() const noexcept
