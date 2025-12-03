@@ -53,14 +53,14 @@ void GCodeInjector::ProcessPending()
     if (!activeCommand_ || activeCommand_->started)
     {
         return;
-    }
+	}
 
-    GCodeBuffer* httpBuffer = reprap.GetGCodes().GetGCodeBuffer(GCodeChannel::HTTP);
-    if (httpBuffer != nullptr && httpBuffer->IsCompletelyIdle())
-    {
-        httpBuffer->Put(activeCommand_->gcode.c_str());
-        activeCommand_->started = true;
-    }
+	GCodeBuffer* httpBuffer = reprap.GetGCodes().GetGCodeBuffer(GCodeChannel::HTTP);
+	if (httpBuffer != nullptr && httpBuffer->IsCompletelyIdle())
+	{
+		httpBuffer->PutAndDecode(activeCommand_->gcode.c_str());
+		activeCommand_->started = true;
+	}
 }
 
 void GCodeInjector::OnResponse(const char* response)
