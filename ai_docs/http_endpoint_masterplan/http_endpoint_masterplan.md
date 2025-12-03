@@ -11,9 +11,9 @@
   │              rrf_simulator (Server Mode)                        │
   │  ┌─────────────────┐   ┌─────────────────┐   ┌───────────────┐  │
   │  │   HTTP Server   │──▶│  GCodeInjector  │──▶│   GCodes      │  │
-  │  │   (cpp-httplib) │   │   (Subtask 2)   │   │   System      │  │
-  │  │   (Subtask 1)   │   └────────┬────────┘   └───────┬───────┘  │
-  │  └─────────────────┘            │                    │          │
+  │  │   (Subtask 1)   │   │   (Subtask 2)   │   │   System      │  │
+  │  └─────────────────┘   └────────┬────────┘   └───────┬───────┘  │
+  │                                 │                    │          │
   │                                 │              ┌─────▼─────┐    │
   │                                 │              │ M569.4    │    │
   │                                 │              │ HOST_BUILD│    │
@@ -42,7 +42,7 @@
 
   | #   | File                                      | Description                                    |
   |-----|-------------------------------------------|------------------------------------------------|
-  | 1   | http_endpoint_implementation_subtask_1.md | HTTP server mode using cpp-httplib             |
+  | 1   | http_endpoint_implementation_subtask_1.md | Enable SUPPORT_HTTP and host http server       |
   | 2   | http_endpoint_implementation_subtask_2.md | G-code injection and response capture          |
   | 3   | http_endpoint_implementation_subtask_3.md | Simplified M569.4 handler (#if RRF_HOST_BUILD) |
   | 4   | http_endpoint_implementation_subtask_4.md | Motion command streaming (in-memory buffer)    |
