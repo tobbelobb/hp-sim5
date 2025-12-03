@@ -32,7 +32,9 @@ using Clock = std::chrono::steady_clock;
 //                                               ? (TicksPerSecond / 1000)
 //                                               : 1;
 constexpr TickType_t TicksPerSecond = 750000;
-constexpr TickType_t TicksPerMillisecond = 750;
+constexpr TickType_t TicksPerMillisecond = (TicksPerSecond >= 1000)
+                                               ? (TicksPerSecond / 1000)
+                                               : 1;
 
 struct TaskControlBlock
 {
@@ -107,12 +109,21 @@ SemaphoreControlBlock* SemaphoreFromHandle(SemaphoreHandle_t handle) noexcept
 
 std::chrono::milliseconds ToDuration(TickType_t ticks) noexcept
 {
+    if (!HostIdle::IsServerIdle())
+    {
+        return std::chrono::milliseconds(0);
+    }
     if (ticks == portMAX_DELAY)
     {
         return std::chrono::milliseconds::max();
     }
-    return std::chrono::milliseconds(
-        static_cast<int64_t>(ticks * 1000ull / TicksPerSecond));
+    const auto ms = static_cast<int64_t>(ticks * 1000ull / TicksPerSecond);
+    return (ms <= 0) ? std::chrono::milliseconds(1) : std::chrono::milliseconds(ms);
+}
+
+bool ShouldBlock(TickType_t ticks) noexcept
+{
+    return HostIdle::IsServerIdle() && ticks != 0;
 }
 
 void RemoveTask(TaskControlBlock* tcb) noexcept
@@ -337,10 +348,11 @@ BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry, uint32_t bitsToClearOnEx
     std::unique_lock<std::mutex> lock(tcb->notifyMutex);
     tcb->notifyValue &= ~bitsToClearOnEntry;
 
+    const bool shouldBlock = ShouldBlock(timeout);
     const auto duration = ToDuration(timeout);
     if (!tcb->notified)
     {
-        if (timeout == 0)
+        if (timeout == 0 || !shouldBlock)
         {
             return pdFAIL;
         }
@@ -393,10 +405,11 @@ uint32_t ulTaskGenericNotifyTake(UBaseType_t, BaseType_t clearCountOnExit,
 
     std::unique_lock<std::mutex> lock(tcb->notifyMutex);
     auto hasValue = [tcb]() noexcept { return tcb->notifyValue != 0; };
+    const bool shouldBlock = ShouldBlock(ticksToWait);
 
     if (!hasValue())
     {
-        if (ticksToWait == 0)
+        if (ticksToWait == 0 || !shouldBlock)
         {
             return 0;
         }
@@ -483,9 +496,10 @@ BaseType_t xQueueSend(QueueHandle_t handle, const void* item, TickType_t timeout
 
     std::unique_lock<std::mutex> lock(queue->mutex);
     auto canWrite = [queue]() noexcept { return queue->items.size() < queue->capacity; };
+    const bool shouldBlock = ShouldBlock(timeout);
     if (!canWrite())
     {
-        if (timeout == 0)
+        if (timeout == 0 || !shouldBlock)
         {
             return pdFAIL;
         }
@@ -528,9 +542,10 @@ BaseType_t xQueueReceive(QueueHandle_t handle, void* buffer, TickType_t timeout)
 
     std::unique_lock<std::mutex> lock(queue->mutex);
     auto hasItem = [queue]() noexcept { return !queue->items.empty(); };
+    const bool shouldBlock = ShouldBlock(timeout);
     if (!hasItem())
     {
-        if (timeout == 0)
+        if (timeout == 0 || !shouldBlock)
         {
             return pdFAIL;
         }
@@ -622,9 +637,10 @@ BaseType_t xSemaphoreTake(SemaphoreHandle_t handle, TickType_t timeout) noexcept
         return pdFAIL;
     }
 
+    const bool shouldBlock = ShouldBlock(timeout);
     if (sem->kind == SemaphoreKind::Mutex)
     {
-        if (timeout == 0)
+        if (timeout == 0 || !shouldBlock)
         {
             return sem->mutex.try_lock() ? pdPASS : pdFAIL;
         }
@@ -641,7 +657,7 @@ BaseType_t xSemaphoreTake(SemaphoreHandle_t handle, TickType_t timeout) noexcept
     auto available = [sem]() noexcept { return sem->available; };
     if (!available())
     {
-        if (timeout == 0)
+        if (timeout == 0 || !shouldBlock)
         {
             return pdFAIL;
         }
