@@ -16,6 +16,7 @@
 #include <General/String.h>
 #include <HostIdle.h>
 #include <HostTiming.h>
+#include "GCodeInjector.h"
 #include <networking/HostNetworkConfig.h>
 
 #include <algorithm>
@@ -760,6 +761,7 @@ bool RunServerLoop() noexcept
         pthread_setname_np(pthread_self(), "SpinThread");
         while (!gServerShutdown.load())
         {
+            GCodeInjector::Instance().ProcessPending();
             reprap.Spin();
             std::this_thread::sleep_for(kServerSpinSleep);
         }

@@ -62,6 +62,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
     #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/endstops/ZProbeHost.cpp
+    ${SIM_ROOT_DIR}/src/GCodeInjector.cpp
     ${SIM_ROOT_DIR}/platform/SoftwareReset.cpp
     ${SIM_ROOT_DIR}/platform/TasksHost.cpp
     ${SIM_ROOT_DIR}/platform/EventHost.cpp
@@ -559,6 +560,19 @@ foreach(rel_path ${HOST_HEADERS_TO_USE})
         COMMENT "Copying FAKE header ${rel_path}"
     )
 endforeach()
+
+# Copy host-only injector header to the sandbox root (source lives in host/src)
+set(abs_src_path "${SIM_ROOT_DIR}/src/GCodeInjector.h")
+set(abs_dest_path "${GENERATED_SOURCES_DIR}/src/GCodeInjector.h")
+list(APPEND GENERATED_H_FILES ${abs_dest_path})
+
+add_custom_command(
+    OUTPUT ${abs_dest_path}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${GENERATED_SOURCES_DIR}/src"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${abs_src_path}" "${abs_dest_path}"
+    DEPENDS ${abs_src_path}
+    COMMENT "Copying host header src/GCodeInjector.h"
+)
 
 # 3. Create a target to encapsulate all the copy operations
 add_custom_target(prepare_sources ALL
