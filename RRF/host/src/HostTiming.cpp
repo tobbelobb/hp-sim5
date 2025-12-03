@@ -132,7 +132,7 @@ void ReportSimulationClocks(uint64_t deltaStepClocks) noexcept
     //std::cout << "off simdiff: " << simdiff - prev_simdiff << '\n';
     //prev_simdiff = simdiff;
 
-    g_virtualClockTicks.store(g_lastSimulationTicks.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    //g_virtualClockTicks.store(g_lastSimulationTicks.load(std::memory_order_relaxed), std::memory_order_relaxed);
 }
 
 ClockTagScope::ClockTagScope(ClockStatKind kind) noexcept : previous(g_currentClockStat)

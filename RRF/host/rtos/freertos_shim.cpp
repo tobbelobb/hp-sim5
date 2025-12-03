@@ -4,6 +4,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <array>
 #include <cstring>
 #include <deque>
 #include <memory>
@@ -11,6 +12,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <pthread.h>
 
 #include <FreeRTOS.h>
 #include <queue.h>
@@ -25,6 +27,10 @@
 namespace
 {
 using Clock = std::chrono::steady_clock;
+//constexpr TickType_t TicksPerSecond = 1000;  // FreeRTOS tick rate in Hz
+//constexpr TickType_t TicksPerMillisecond = (TicksPerSecond >= 1000)
+//                                               ? (TicksPerSecond / 1000)
+//                                               : 1;
 constexpr TickType_t TicksPerSecond = 750000;
 constexpr TickType_t TicksPerMillisecond = 750;
 
@@ -120,6 +126,65 @@ void RemoveTask(TaskControlBlock* tcb) noexcept
         allTasks.erase(it);
     }
 }
+
+BaseType_t NotifyInternal(TaskControlBlock* tcb, uint32_t value, ::eNotifyAction action,
+                          uint32_t* previousValue) noexcept
+{
+    if (tcb == nullptr)
+    {
+        return pdFAIL;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(tcb->notifyMutex);
+        if (previousValue != nullptr)
+        {
+            *previousValue = tcb->notifyValue;
+        }
+
+        switch (action)
+        {
+            case ::eSetBits:
+                tcb->notifyValue |= value;
+                break;
+            case ::eIncrement:
+                ++tcb->notifyValue;
+                break;
+            case ::eSetValueWithOverwrite:
+                tcb->notifyValue = value;
+                break;
+            case ::eSetValueWithoutOverwrite:
+                if (tcb->notified)
+                {
+                    return pdFAIL;
+                }
+                tcb->notifyValue = value;
+                break;
+            case ::eNoAction:
+            default:
+                break;
+        }
+
+        tcb->notified = true;
+    }
+
+    tcb->notifyCv.notify_one();
+    return pdPASS;
+}
+
+void SetThreadName(const std::string& name) noexcept
+{
+    if (name.empty())
+    {
+        return;
+    }
+
+    // pthread_setname_np expects a 16-byte buffer including null terminator
+    std::array<char, 16> buffer{};
+    const size_t copyLen = std::min(name.size(), buffer.size() - 1);
+    std::memcpy(buffer.data(), name.data(), copyLen);
+    pthread_setname_np(pthread_self(), buffer.data());
+}
 }  // anonymous namespace
 
 TickType_t xTaskGetTickCount() noexcept
@@ -214,6 +279,7 @@ TaskHandle_t xTaskCreateStatic(TaskFunction_t function, const char* name,
         [raw]()
         {
             currentTask = raw;
+            SetThreadName(raw->name);
             raw->entry(raw->parameters);
             raw->deleteRequested = true;
             currentTask = nullptr;
@@ -245,19 +311,7 @@ void vTaskResume(TaskHandle_t) noexcept
 
 BaseType_t xTaskNotify(TaskHandle_t handle, uint32_t value, uint32_t) noexcept
 {
-    TaskControlBlock* tcb = TaskFromHandle(handle);
-    if (tcb == nullptr)
-    {
-        return pdFAIL;
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(tcb->notifyMutex);
-        tcb->notifyValue = value;
-        tcb->notified = true;
-    }
-    tcb->notifyCv.notify_one();
-    return pdPASS;
+    return NotifyInternal(TaskFromHandle(handle), value, ::eSetValueWithOverwrite, nullptr);
 }
 
 BaseType_t xTaskNotifyFromISR(TaskHandle_t handle, uint32_t value, uint32_t action,
@@ -267,7 +321,8 @@ BaseType_t xTaskNotifyFromISR(TaskHandle_t handle, uint32_t value, uint32_t acti
     {
         *higherPriorityTaskWoken = pdFALSE;
     }
-    return xTaskNotify(handle, value, action);
+    return NotifyInternal(TaskFromHandle(handle), value,
+                          static_cast<::eNotifyAction>(action), nullptr);
 }
 
 BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry, uint32_t bitsToClearOnExit,
@@ -309,14 +364,72 @@ BaseType_t xTaskNotifyWait(uint32_t bitsToClearOnEntry, uint32_t bitsToClearOnEx
     return pdPASS;
 }
 
-void vTaskNotifyGiveFromISR(TaskHandle_t handle,
-                            BaseType_t* higherPriorityTaskWoken) noexcept
+BaseType_t xTaskGenericNotify(TaskHandle_t handle, UBaseType_t, uint32_t value,
+                              ::eNotifyAction action, uint32_t* previousValue) noexcept
 {
-    (void)xTaskNotify(handle, 1, 0);
+    return NotifyInternal(TaskFromHandle(handle), value, action, previousValue);
+}
+
+BaseType_t xTaskGenericNotifyFromISR(TaskHandle_t handle, UBaseType_t index, uint32_t value,
+                                     ::eNotifyAction action, uint32_t* previousValue,
+                                     BaseType_t* higherPriorityTaskWoken) noexcept
+{
+    (void)index;
     if (higherPriorityTaskWoken != nullptr)
     {
         *higherPriorityTaskWoken = pdFALSE;
     }
+    return NotifyInternal(TaskFromHandle(handle), value, action, previousValue);
+}
+
+uint32_t ulTaskGenericNotifyTake(UBaseType_t, BaseType_t clearCountOnExit,
+                                 TickType_t ticksToWait) noexcept
+{
+    TaskControlBlock* tcb = currentTask;
+    if (tcb == nullptr)
+    {
+        return 0;
+    }
+
+    std::unique_lock<std::mutex> lock(tcb->notifyMutex);
+    auto hasValue = [tcb]() noexcept { return tcb->notifyValue != 0; };
+
+    if (!hasValue())
+    {
+        if (ticksToWait == 0)
+        {
+            return 0;
+        }
+
+        const auto duration = ToDuration(ticksToWait);
+        if (duration == std::chrono::milliseconds::max())
+        {
+            tcb->notifyCv.wait(lock, hasValue);
+        }
+        else if (!tcb->notifyCv.wait_for(lock, duration, hasValue))
+        {
+            return 0;
+        }
+    }
+
+    const uint32_t ret = tcb->notifyValue;
+    if (clearCountOnExit != pdFALSE)
+    {
+        tcb->notifyValue = 0;
+    }
+    else if (tcb->notifyValue != 0)
+    {
+        --tcb->notifyValue;
+    }
+    tcb->notified = false;
+    return ret;
+}
+
+void vTaskNotifyGiveFromISR(TaskHandle_t handle,
+                            BaseType_t* higherPriorityTaskWoken) noexcept
+{
+    (void)xTaskGenericNotifyFromISR(handle, tskDEFAULT_INDEX_TO_NOTIFY, 0, ::eIncrement,
+                                    nullptr, higherPriorityTaskWoken);
 }
 
 void vTaskStartScheduler() noexcept

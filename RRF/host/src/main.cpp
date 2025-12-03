@@ -33,6 +33,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <pthread.h>
 
 namespace
 {
@@ -756,6 +757,7 @@ bool RunServerLoop() noexcept
     std::signal(SIGTERM, HandleServerSignal);
 
     std::thread spinThread([]() {
+        pthread_setname_np(pthread_self(), "SpinThread");
         while (!gServerShutdown.load())
         {
             reprap.Spin();

@@ -241,28 +241,34 @@ public:
         return running;
     }
 
-    static void GiveFromISR(TaskBase*, uint32_t) noexcept
+    static void GiveFromISR(TaskBase* task, uint32_t index) noexcept
     {
+        if (task != nullptr)
+        {
+            vTaskNotifyGiveIndexedFromISR(task->handle, index, nullptr);
+        }
     }
-    void GiveFromISR(uint32_t) noexcept
+    void GiveFromISR(uint32_t index) noexcept
     {
+        GiveFromISR(this, index);
     }
-    void Give(uint32_t) noexcept
+    void Give(uint32_t index) noexcept
     {
+        xTaskNotifyGiveIndexed(handle, index);
     }
 
-    static bool TakeIndexed(uint32_t, uint32_t = TimeoutUnlimited) noexcept
+    static bool TakeIndexed(uint32_t index, uint32_t timeout = TimeoutUnlimited) noexcept
     {
-        return true;
+        return ulTaskNotifyTakeIndexed(index, pdTRUE, timeout) != 0;
     }
 
-    static uint32_t ClearNotifyCount(TaskBase*, uint32_t) noexcept
+    static uint32_t ClearNotifyCount(TaskBase* task, uint32_t index) noexcept
     {
-        return 0;
+        return (task == nullptr) ? 0 : ulTaskGenericNotifyTake(index, pdTRUE, 0);
     }
-    static uint32_t ClearCurrentTaskNotifyCount(uint32_t) noexcept
+    static uint32_t ClearCurrentTaskNotifyCount(uint32_t index) noexcept
     {
-        return 0;
+        return ulTaskGenericNotifyTake(index, pdTRUE, 0);
     }
 
     static TaskBase* GetCallerTaskHandle() noexcept
