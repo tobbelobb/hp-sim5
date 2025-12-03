@@ -42,6 +42,11 @@ cmake --build RRF/build --target rrf_simulator -j
 ./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
 ```
 
+To run `rrf_simulator` in server mode do:
+```
+./RRF/build/rrf_simulator --vsd RRF/run/vsd -c sys/config_slideprinter.g --server -p 8080
+```
+
 ## Quick Start
 
 ### Running Demos Locally
