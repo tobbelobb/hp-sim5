@@ -45,6 +45,8 @@ cmake --build RRF/build --target rrf_simulator -j
 To run `rrf_simulator` in server mode do:
 ```
 ./RRF/build/rrf_simulator --vsd RRF/run/vsd -c sys/config_slideprinter.g --server -p 8080
+curl -s http://localhost:8080/machine/code -d "M569.4 P40.0 T0.001"
+curl -s http://localhost:8080/machine/model
 ```
 
 ## Quick Start
