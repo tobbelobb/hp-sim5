@@ -1,6 +1,7 @@
 #include <CAN/CanInterface.h>
 
 #include <CanMessageBuffer.h>
+#include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <RepRapFirmware.h>
 #include "CanCapture.h"
 #include <HostTorqueMode.h>
