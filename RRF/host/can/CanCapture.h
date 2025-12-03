@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 
 class CanMessageBuffer;
@@ -12,6 +13,9 @@ bool Configure(const std::filesystem::path& filePath) noexcept;
 
 // Record a motion CAN message. No effect if Configure() has not enabled capture.
 void LogMotion(const CanMessageBuffer& buffer) noexcept;
+
+// Record a torque mode change event (driver address, torque Nm).
+void LogTorqueModeChange(uint8_t driverAddress, float torqueNm) noexcept;
 
 // Return the total number of captured movement messages.
 uint64_t GetCaptureCount() noexcept;

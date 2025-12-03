@@ -3,6 +3,7 @@
 #include <CanMessageBuffer.h>
 #include <RepRapFirmware.h>
 #include "CanCapture.h"
+#include <HostTorqueMode.h>
 
 #if SUPPORT_CAN_EXPANSION
 
@@ -191,9 +192,24 @@ GCodeResult SetRemoteDriverStepsPerMmAndMicrostepping(
     return ReturnOk(reply);
 }
 
-GCodeResult ConfigureRemoteDriver(DriverId, GCodeBuffer&, const StringRef& reply)
+GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const StringRef& reply)
     THROWS(GCodeException)
 {
+    if (gb.GetCommandFraction() == 4)
+    {
+        if (!gb.Seen('T'))
+        {
+            reply.copy("Error: M569.4 missing parameter 'T'");
+            return GCodeResult::error;
+        }
+
+        const float torque = gb.GetFValue();
+        const char* response =
+            HostTorqueMode::Instance().SetTorqueMode(driver.boardAddress, torque);
+        reply.cat(response);
+        return GCodeResult::ok;
+    }
+
     return ReturnOk(reply);
 }
 

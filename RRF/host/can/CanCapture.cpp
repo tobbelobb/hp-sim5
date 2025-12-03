@@ -173,7 +173,22 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     line << std::defaultfloat;
     line.precision(originalPrecision);
 
-    gStream << line.str() << '\n';
+    {
+        std::lock_guard<std::mutex> lock(gMutex);
+        gStream << line.str() << '\n';
+    }
+}
+
+void HostCanCapture::LogTorqueModeChange(uint8_t driverAddress, float torqueNm) noexcept
+{
+    if (!gEnabled)
+    {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(gMutex);
+    gStream << "T," << static_cast<unsigned int>(driverAddress) << "," << torqueNm << '\n';
+    gStream.flush();
 }
 
 uint64_t HostCanCapture::GetCaptureCount() noexcept

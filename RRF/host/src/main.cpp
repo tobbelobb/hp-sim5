@@ -16,6 +16,7 @@
 #include <General/String.h>
 #include <HostIdle.h>
 #include <HostTiming.h>
+#include <HostTorqueMode.h>
 #include "GCodeInjector.h"
 #include <networking/HostNetworkConfig.h>
 
@@ -879,6 +880,8 @@ int main(int argc, char** argv)
         reprapInitialised = true;
         HostTiming::Reset();
         HostCanCapture::Reset();
+        HostTorqueMode::Instance().SetCallback(
+            [](uint8_t driver, float torque) { HostCanCapture::LogTorqueModeChange(driver, torque); });
         reprap.GetGCodes().daemonRunning = false;  // Reset daemon state for deterministic timing
 
         bool success = true;

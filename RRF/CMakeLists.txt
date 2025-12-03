@@ -45,6 +45,7 @@ target_compile_definitions(rrf_simulator PRIVATE
 target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/src/main.cpp
     ${SIM_ROOT_DIR}/src/HostTiming.cpp
+    ${SIM_ROOT_DIR}/src/HostTorqueMode.cpp
     ${SIM_ROOT_DIR}/platform/Heap.cpp
     ${SIM_ROOT_DIR}/platform/PlatformHost.cpp
     ${SIM_ROOT_DIR}/can/CanCapture.cpp
@@ -395,8 +396,10 @@ set(HOST_HEADERS_TO_USE
     # Our own headers
     HostTiming.h
     HostIdle.h
+    HostTorqueMode.h
     include/HostTiming.h
     include/HostIdle.h
+    include/HostTorqueMode.h
     src/GCodeInjector.h
     rtos/host_rtos.h
     can/CanCapture.h
