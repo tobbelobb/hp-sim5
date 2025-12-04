@@ -71,13 +71,18 @@ export class RrfHttpBridge {
         const result = {
             reply: parts[0].trim(),
             motion: [],
+            rawMotionLines: [],
         };
 
         if (parts.length > 1) {
             const motionLines = parts[1].trim().split('\n');
             for (const rawLine of motionLines) {
                 const line = rawLine.trim();
-                if (!line || line.startsWith('{')) {
+                if (!line) {
+                    continue;
+                }
+                result.rawMotionLines.push(line);
+                if (line.startsWith('{')) {
                     continue;
                 }
 

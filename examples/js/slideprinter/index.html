@@ -237,6 +237,14 @@ canvas {
                 <input type="text" id="klipperRawPort" value="8770" style="width: 4em;">
             </span>
             <br />
+            <div id="httpControls" style="margin-top: 6px; font-size: 0.85rem; display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span>HTTP:</span>
+                <input id="httpBaseUrl" type="text" value="http://localhost:8080" style="width: 14em;" aria-label="HTTP base URL">
+                <button id="httpConnectBtn" type="button">Use</button>
+                <input id="httpGcodeInput" type="text" placeholder="G-code (e.g. M569.4 P40.0 T0.001)" style="width: 18em;" aria-label="G-code to send over HTTP">
+                <button id="httpSendBtn" type="button">Send</button>
+                <span id="httpStatus" style="min-width: 10em; display: inline-block;"></span>
+            </div>
             <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
                 dt: <span id="dt">N/A</span> |
                 Speed: <span id="speed">N/A</span>
@@ -268,6 +276,7 @@ canvas {
     import { RemoteSpoolSystem } from './slideprinter_common.js';
     import { connectKlipperRaw } from './klipperHandler.js';
     import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
+    import { RrfHttpBridge } from './rrfHttpBridge.js';
 
     const searchParams = new URLSearchParams(window.location.search);
     const logMoveParamKeys = ['--log-move', 'log-move', 'logMove'];
@@ -312,6 +321,9 @@ canvas {
     let moveCommanderWorker;
     let klipperCommanderWorker;
     let commander;
+    let httpBridge = null;
+    let rrfCommanderWorker = null;
+    let pendingCommanderCommands = [];
     let gameControls = null;
     let stageReady = false;
     let ws = null;
@@ -327,12 +339,19 @@ canvas {
     const websocketPortInput = document.getElementById('websocketPort');
     const klipperRawInToggle = document.getElementById('klipperRawIn');
     const klipperRawPortInput = document.getElementById('klipperRawPort');
+    const httpBaseInput = document.getElementById('httpBaseUrl');
+    const httpConnectBtn = document.getElementById('httpConnectBtn');
+    const httpSendBtn = document.getElementById('httpSendBtn');
+    const httpGcodeInput = document.getElementById('httpGcodeInput');
+    const httpStatusLabel = document.getElementById('httpStatus');
 
     const websocket_in = websocketInToggle.checked;
     const websocket_out = websocketOutToggle.checked;
     const port = websocketPortInput.value;
     const klipperRawIn = klipperRawInToggle.checked;
     const klipperRawPort = klipperRawPortInput.value;
+
+    const getRemoteSystem = () => world.systems.find((s) => s instanceof RemoteSpoolSystem);
 
     const setSpeedButtonsEnabled = (enabled) => {
         [speedSlowerBtn, speedFasterBtn].forEach((button) => {
@@ -370,6 +389,82 @@ canvas {
         speedStatusEl.classList.remove('hidden');
     };
 
+    const ensureRrfCommanderWorker = () => {
+        if (rrfCommanderWorker) {
+            return rrfCommanderWorker;
+        }
+        const worker = new Worker(new URL('./rrfCommander.js', import.meta.url), { type: 'module' });
+        worker.onmessage = (e) => {
+            const data = e.data || {};
+            if (data.action === 'gcode' && data.command) {
+                const remote = getRemoteSystem();
+                if (remote) {
+                    if (remote.worker !== worker) {
+                        remote.worker = worker;
+                    }
+                    remote.addCommand(data.command);
+                } else {
+                    pendingCommanderCommands.push(data.command);
+                }
+            } else if (data.type === 'error' && data.message) {
+                console.error('RrfCommander error:', data.message);
+            }
+        };
+        rrfCommanderWorker = worker;
+        if (simDtSec) {
+            worker.postMessage({ type: 'set_dt', dt: simDtSec });
+        }
+        worker.postMessage({ type: 'reset_state' });
+        return worker;
+    };
+
+    const feedMotionToCommander = (lines) => {
+        if (!lines || lines.length === 0) {
+            return;
+        }
+        const worker = ensureRrfCommanderWorker();
+        try {
+            worker.postMessage({ type: 'append_csv', lines });
+        } catch (err) {
+            console.error('Failed to feed motion to RrfCommander:', err);
+        }
+    };
+
+    const updateHttpStatus = (text) => {
+        if (httpStatusLabel) {
+            httpStatusLabel.textContent = text || '';
+        }
+    };
+
+    const connectHttpBridge = () => {
+        const base = (httpBaseInput?.value || '').trim() || 'http://localhost:8080';
+        httpBridge = new RrfHttpBridge({
+            baseUrl: base,
+        });
+        ensureRrfCommanderWorker();
+        updateHttpStatus(`Using ${base}`);
+    };
+
+    const sendHttpGcode = async () => {
+        const gcode = (httpGcodeInput?.value || '').trim();
+        if (!gcode) {
+            return;
+        }
+        if (!httpBridge) {
+            connectHttpBridge();
+        }
+        try {
+            const result = await httpBridge.sendGCode(gcode);
+            if (result?.rawMotionLines?.length) {
+                feedMotionToCommander(result.rawMotionLines);
+            }
+            updateHttpStatus(result?.reply || 'ok');
+        } catch (err) {
+            updateHttpStatus(`Err: ${err.message}`);
+            console.error('HTTP bridge send failed:', err);
+        }
+    };
+
     const applyTimeScaleToWorkers = (scale) => {
         const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
         if (moveCommanderWorker) {
@@ -377,6 +472,9 @@ canvas {
         }
         if (klipperCommanderWorker) {
             klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+        }
+        if (rrfCommanderWorker) {
+            rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
         }
     };
 
@@ -417,6 +515,29 @@ canvas {
             gameControls.setTimeScale(nextScale);
             const appliedScale = typeof gameControls.getTimeScale === 'function' ? gameControls.getTimeScale() : nextScale;
             showSpeedStatus(appliedScale);
+        });
+    }
+
+    if (httpConnectBtn) {
+        httpConnectBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            connectHttpBridge();
+        });
+    }
+
+    if (httpSendBtn) {
+        httpSendBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            sendHttpGcode();
+        });
+    }
+
+    if (httpGcodeInput) {
+        httpGcodeInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendHttpGcode();
+            }
         });
     }
 
@@ -714,8 +835,9 @@ canvas {
               klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
               klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
-          if (commander) {
-              commander.dt = simDtSec;
+          if (rrfCommanderWorker) {
+              rrfCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+              rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
           if (klipperRaw) {
               klipperRaw.setDt(simDtSec);
@@ -725,6 +847,16 @@ canvas {
           initialTimeScale: currentTimeScale,
           onTimeScaleChange: handleTimeScaleChange,
       });
+      const remoteSystem = getRemoteSystem();
+      if (remoteSystem && rrfCommanderWorker) {
+          remoteSystem.worker = rrfCommanderWorker;
+          if (pendingCommanderCommands.length > 0) {
+              for (const cmd of pendingCommanderCommands) {
+                  remoteSystem.addCommand(cmd);
+              }
+              pendingCommanderCommands = [];
+          }
+      }
       stageReady = true;
       setSpeedButtonsEnabled(true);
     }).catch(error => {

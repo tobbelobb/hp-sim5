@@ -584,12 +584,40 @@ export class RrfCommander {
         };
     }
 
-    async _parseCsvStream(stream) {
-        const lineIterator = makeLineIterator(stream);
+    _parseTorqueRow(line) {
+        if (!line || !line.startsWith('T,')) {
+            return null;
+        }
+        const parts = line.split(',');
+        if (parts.length < 3) {
+            return null;
+        }
+        const motorId = Number(parts[1]);
+        const torqueNm = Number(parts[2]);
+        if (!Number.isFinite(motorId) || !Number.isFinite(torqueNm)) {
+            return null;
+        }
+        return { motorId, torqueNm };
+    }
+
+    async _handleTorque(row) {
+        const { motorId, torqueNm } = row;
+        const axis = this._assignAxisName(motorId);
+        if (!axis) {
+            return;
+        }
+        const isPositionMode = Math.abs(torqueNm) < 1e-9;
+        const command = isPositionMode
+            ? { type: 'SetPositionMode', axis, driver: motorId }
+            : { type: 'SetTorqueMode', axis, driver: motorId, torqueNm };
+        await this.sendCommand(command);
+    }
+
+    async _consumeCsvLines(lineIterable) {
         let metadataHandled = false;
         let lastWhen = null;
 
-        for await (const rawLine of lineIterator) {
+        for await (const rawLine of lineIterable) {
             const line = typeof rawLine === 'string' ? rawLine.trim() : '';
             if (!line) {
                 continue;
@@ -599,6 +627,13 @@ export class RrfCommander {
                 continue;
             }
             metadataHandled = true;
+
+            const torque = this._parseTorqueRow(line);
+            if (torque) {
+                await this._flushReadyBuckets();
+                await this._handleTorque(torque);
+                continue;
+            }
 
             const movement = this._parseCsvRow(line);
             if (!movement) {
@@ -611,6 +646,11 @@ export class RrfCommander {
             lastWhen = movement.whenToExecute;
         }
         await this._flushReadyBuckets(true);
+    }
+
+    async _parseCsvStream(stream) {
+        const lineIterator = makeLineIterator(stream);
+        await this._consumeCsvLines(lineIterator);
     }
 
     async _readStreamToArrayBuffer(stream) {
@@ -857,6 +897,26 @@ self.addEventListener('message', async (e) => {
             commander.isPaused = false;
             if (commander.resolveResume) {
                 commander.resolveResume();
+            }
+            break;
+        }
+        case 'reset_state': {
+            commander._resetState();
+            break;
+        }
+        case 'append_csv': {
+            {
+                const lines = Array.isArray(e.data.lines)
+                    ? e.data.lines
+                    : (typeof e.data.lines === 'string' ? e.data.lines.split('\n') : []);
+                if (lines.length > 0) {
+                    const iterable = (async function* () {
+                        for (const line of lines) {
+                            yield line;
+                        }
+                    }());
+                    await commander._consumeCsvLines(iterable);
+                }
             }
             break;
         }
