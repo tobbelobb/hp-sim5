@@ -19,10 +19,16 @@ export class RrfHttpBridge {
 
         this._pendingMotion = [];
         this._axisAngles = new Map();
+        this._driverDirections = new Map();
+        this._directionFetches = new Map();
     }
 
     async sendGCode(gcode, options = {}) {
-        const timeout = options.timeout || 30000;
+        const {
+            timeout = 30000,
+            suppressMotionProcessing = false,
+            suppressCallbacks = false,
+        } = options;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -44,11 +50,12 @@ export class RrfHttpBridge {
             const text = await response.text();
             const parsed = this._parseResponse(text);
 
-            if (parsed.motion.length > 0) {
+            if (!suppressMotionProcessing && parsed.motion.length > 0) {
+                await this._primeDriverDirections(parsed.motion);
                 this._processMotion(parsed.motion);
             }
 
-            if (this.onGCodeReply) {
+            if (!suppressCallbacks && this.onGCodeReply) {
                 try {
                     this.onGCodeReply(gcode, parsed.reply);
                 } catch (_err) {
@@ -56,6 +63,7 @@ export class RrfHttpBridge {
                 }
             }
 
+            this._maybeCacheDirectionFromReply(gcode, parsed.reply);
             return parsed;
         } catch (error) {
             clearTimeout(timeoutId);
@@ -63,6 +71,104 @@ export class RrfHttpBridge {
                 throw new Error(`G-code command timed out after ${timeout}ms`);
             }
             throw error;
+        }
+    }
+
+    async _primeDriverDirections(motionItems) {
+        const drivers = new Set();
+        for (const item of motionItems) {
+            if (item && item.type === 'TorqueMode' && Number.isFinite(item.driver)) {
+                drivers.add(item.driver);
+            } else if (item && item.type === 'Motion' && Number.isFinite(item.motorId)) {
+                drivers.add(item.motorId);
+            }
+        }
+
+        if (drivers.size === 0) {
+            return;
+        }
+
+        const tasks = [];
+        for (const driver of drivers) {
+            if (this._driverDirections.has(driver)) {
+                continue;
+            }
+            tasks.push(this._fetchDriverDirection(driver));
+        }
+
+        if (tasks.length > 0) {
+            await Promise.allSettled(tasks);
+        }
+    }
+
+    async _fetchDriverDirection(driver) {
+        if (this._driverDirections.has(driver)) {
+            return this._driverDirections.get(driver);
+        }
+        if (this._directionFetches.has(driver)) {
+            return this._directionFetches.get(driver);
+        }
+
+        const inflight = (async () => {
+            try {
+                const result = await this.sendGCode(`M569 P${driver}`, {
+                    suppressMotionProcessing: true,
+                    suppressCallbacks: true,
+                });
+                const rawReply = result?.reply ?? '';
+                const direction = this._parseDriverDirectionFromReply(rawReply);
+                if (direction !== null) {
+                    this._driverDirections.set(driver, direction);
+                    return direction;
+                }
+                if (typeof rawReply === 'string' && rawReply.trim().length === 0) {
+                    this._driverDirections.set(driver, true); // assume forwards when firmware stays silent
+                    return true;
+                }
+            } catch (err) {
+                console.warn(`RrfHttpBridge: failed to fetch direction for driver ${driver}: ${err?.message || err}`);
+            } finally {
+                this._directionFetches.delete(driver);
+            }
+            return null;
+        })();
+
+        this._directionFetches.set(driver, inflight);
+        return inflight;
+    }
+
+    _parseDriverDirectionFromReply(reply) {
+        if (typeof reply !== 'string' || reply.length === 0) {
+            return null;
+        }
+        const match = reply.match(/runs\s+(forwards?|forward|in\s+reverse|reverse)/i);
+        if (!match || !match[1]) {
+            return null;
+        }
+        const descriptor = match[1].toLowerCase();
+        if (descriptor.startsWith('forw')) {
+            return true;
+        }
+        if (descriptor.includes('reverse')) {
+            return false;
+        }
+        return null;
+    }
+
+    _maybeCacheDirectionFromReply(gcode, reply) {
+        if (typeof gcode !== 'string' || !gcode.trim().toUpperCase().startsWith('M569')) {
+            return;
+        }
+        const driverMatch = gcode.match(/P([0-9]+(?:\.[0-9]+)?)/i);
+        const driver = driverMatch ? parseFloat(driverMatch[1]) : null;
+        if (!Number.isFinite(driver)) {
+            return;
+        }
+        const direction = this._parseDriverDirectionFromReply(reply);
+        if (direction !== null) {
+            this._driverDirections.set(driver, direction);
+        } else if (typeof reply === 'string' && reply.trim().length === 0) {
+            this._driverDirections.set(driver, true); // silent reply -> assume forwards
         }
     }
 
@@ -136,21 +242,25 @@ export class RrfHttpBridge {
             return;
         }
 
+        const direction = this._driverDirections.get(driver);
+        const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
+        const effectiveTorque = torqueSign === null ? torqueNm : torqueNm * torqueSign;
+
         if (this.onTorqueModeChange) {
             try {
-                this.onTorqueModeChange(driver, axis, torqueNm);
+                this.onTorqueModeChange(driver, axis, effectiveTorque);
             } catch (_err) {
                 /* ignore listener errors */
             }
         }
 
         if (this.remoteSpoolSystem) {
-            const isPositionMode = Math.abs(torqueNm) < 0.0001;
+            const isPositionMode = Math.abs(effectiveTorque) < 0.0001;
             this.remoteSpoolSystem.addCommand({
                 type: isPositionMode ? 'SetPositionMode' : 'SetTorqueMode',
                 axis,
                 driver,
-                torqueNm,
+                torqueNm: effectiveTorque,
                 timestamp: Date.now(),
             });
         }
