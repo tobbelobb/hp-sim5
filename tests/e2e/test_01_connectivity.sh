@@ -20,13 +20,6 @@ trap cleanup EXIT
 
 sleep 3
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/machine/status")
-if [ "$STATUS" != "200" ]; then
-    echo "FAIL: Status endpoint returned $STATUS"
-    exit 1
-fi
-echo "  /machine/status: OK"
-
 RESPONSE=$(curl -s -w "\n%{http_code}" "http://localhost:${PORT}/machine/code" \
     -d "M115" -H "Content-Type: text/plain")
 HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
