@@ -371,8 +371,28 @@ export class RemoteSpoolSystem {
         const renderStore = world.getComponentStore ? world.getComponentStore(RenderableComponent) : null;
         const stepperStore = world.getComponentStore ? world.getComponentStore(StepperMotorComponent) : null;
 
+        if (commandType === 'SetTorqueMode' || commandType === 'SetPositionMode') {
+            const axis = command.axis;
+            const mapping = this.axisToEntity[axis];
+            const entityIds = Array.isArray(mapping) ? mapping : (mapping !== undefined ? [mapping] : []);
+            for (const entityId of entityIds) {
+                const stepperComp = stepperStore ? stepperStore.get(entityId) : world.getComponent(entityId, StepperMotorComponent);
+                if (!stepperComp) {
+                    continue;
+                }
+                if (commandType === 'SetTorqueMode') {
+                    stepperComp.torqueMode = true;
+                    stepperComp.targetTorque = command.torqueNm || 0;
+                } else {
+                    stepperComp.torqueMode = false;
+                    stepperComp.targetTorque = 0;
+                }
+            }
+            return;
+        }
+
         for (const axis of Object.keys(this.axisToEntity)) {
-            const axisValue = command[axis];
+            const axisValue = command[axis] ?? (command.axes ? command.axes[axis] : undefined);
             if (axisValue === undefined) {
                 continue;
             }
