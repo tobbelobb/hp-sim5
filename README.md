@@ -80,6 +80,13 @@ curl http://localhost:8080/machine/code -d "G1 X10 F1000" -H "Content-Type: text
 
 See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
 
+### hp-sim CLI bridge (no UI changes)
+
+- Start the simulator in server mode (as above), then run  
+  `node scripts/rrf_http_bridge.mjs --server http://localhost:8080 --ws-port 8790`
+- Type G-code lines into the CLI (or pass `--cmd "G1 X10"` for one shots); replies are printed immediately.
+- Open hp-sim locally with `?gcode_ws=ws://localhost:8790` appended to the URL so the visualization consumes the streamed motion without new UI controls.
+
 ## Quick Start
 
 ### Running Demos Locally

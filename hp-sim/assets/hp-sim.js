@@ -226,6 +226,15 @@ function initHpSim() {
   let currentJobDescriptor = null;
   const qualityHistoryRecords = [];
   let qualityHistoryExpanded = false;
+  const urlParams =
+    typeof window !== 'undefined' && window.location
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const externalWsParam = urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null;
+  const externalWsUrl = normalizeWsUrl(externalWsParam);
+  const externalCommandQueue = [];
+  const EXTERNAL_QUEUE_LIMIT = 5000;
+  let externalCommandSocket = null;
 
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
@@ -827,6 +836,110 @@ function initHpSim() {
       r: base.r * (1 - mixFactor) + tint.r * mixFactor,
       g: base.g * (1 - mixFactor) + tint.g * mixFactor,
       b: base.b * (1 - mixFactor) + tint.b * mixFactor,
+    });
+  }
+
+  function normalizeWsUrl(raw) {
+    if (!raw || typeof raw !== 'string') {
+      return null;
+    }
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) {
+      return trimmed;
+    }
+    const cleaned = trimmed.replace(/^\/+/, '');
+    return `ws://${cleaned}`;
+  }
+
+  function maybeResumeFromPause() {
+    const pauseState = world.getResource('pauseState');
+    if (pauseState && pauseState.paused) {
+      pauseState.paused = false;
+    }
+  }
+
+  function pushExternalCommands(commands) {
+    if (!Array.isArray(commands) || commands.length === 0) {
+      return;
+    }
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      const overflow = externalCommandQueue.length + commands.length - EXTERNAL_QUEUE_LIMIT;
+      if (overflow > 0) {
+        externalCommandQueue.splice(0, overflow);
+      }
+      externalCommandQueue.push(...commands);
+      return;
+    }
+    for (const cmd of commands) {
+      remoteSystem.addCommand(cmd);
+    }
+    setPrintActive(true);
+    maybeResumeFromPause();
+  }
+
+  function flushExternalCommandQueue() {
+    if (externalCommandQueue.length === 0) {
+      return;
+    }
+    const batch = externalCommandQueue.splice(0, externalCommandQueue.length);
+    pushExternalCommands(batch);
+  }
+
+  function handleExternalPayload(payload) {
+    if (!payload) {
+      return;
+    }
+    const commands = [];
+    if (payload.type === 'command' && payload.command) {
+      commands.push(payload.command);
+    }
+    if (Array.isArray(payload.commands)) {
+      for (const cmd of payload.commands) {
+        if (cmd) {
+          commands.push(cmd);
+        }
+      }
+    }
+    if (commands.length > 0) {
+      pushExternalCommands(commands);
+    }
+    if (typeof payload.reply === 'string' && payload.reply.trim().length > 0) {
+      console.info('hp-sim: gcode reply', payload.reply.trim());
+    }
+  }
+
+  function connectExternalCommandStream() {
+    if (!externalWsUrl || externalCommandSocket || typeof WebSocket === 'undefined') {
+      return;
+    }
+    try {
+      externalCommandSocket = new WebSocket(externalWsUrl);
+    } catch (err) {
+      console.warn('hp-sim: failed to open external G-code stream.', err);
+      externalCommandSocket = null;
+      return;
+    }
+    externalCommandSocket.addEventListener('open', () => {
+      console.log('hp-sim: external G-code stream connected:', externalWsUrl);
+      flushExternalCommandQueue();
+    });
+    externalCommandSocket.addEventListener('message', (event) => {
+      try {
+        const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        handleExternalPayload(payload);
+      } catch (err) {
+        console.warn('hp-sim: failed to process external G-code payload.', err);
+      }
+    });
+    externalCommandSocket.addEventListener('close', () => {
+      externalCommandSocket = null;
+    });
+    externalCommandSocket.addEventListener('error', (err) => {
+      console.warn('hp-sim: external G-code stream error.', err);
     });
   }
 
@@ -1436,6 +1549,7 @@ function initHpSim() {
       isFirst = false;
     }
     attachQualityMonitorsToRemoteSystem();
+    flushExternalCommandQueue();
   }
 
   function createColorChip() {
@@ -3910,6 +4024,7 @@ function initHpSim() {
   handleLayoutChange();
 
   updateZoomButtonState();
+  connectExternalCommandStream();
 
   const bootstrapSimulation = async () => {
     if (!usdaCatalog.has(defaultUsdaKey)) {
