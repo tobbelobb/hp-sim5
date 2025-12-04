@@ -42,12 +42,43 @@ cmake --build RRF/build --target rrf_simulator -j
 ./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
 ```
 
-To run `rrf_simulator` in server mode do:
+## HTTP Endpoint Mode
+
+The rrf_simulator supports an HTTP server mode for interactive G-code execution:
+
+### Starting the Server
+
+```bash
+./RRF/build/rrf_simulator \
+    --vsd RRF/run/vsd \
+    -c sys/config_slideprinter.g \
+    --server \
+    -p 8080
 ```
-./RRF/build/rrf_simulator --vsd RRF/run/vsd -c sys/config_slideprinter.g --server -p 8080
-curl -s http://localhost:8080/machine/code -d "M569.4 P40.0 T0.001"
-curl -s http://localhost:8080/machine/model
+
+### Endpoints
+
+- `POST /machine/code` - Execute G-code, returns reply text
+- `GET /machine/status` - Get server status
+
+### Example Usage
+
+```bash
+# Set torque mode
+curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0.001" -H "Content-Type: text/plain"
+# Response: 0.001000 Nm,
+
+# Return to position mode
+curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0" -H "Content-Type: text/plain"
+# Response: pos_mode,
+
+# Execute move
+curl http://localhost:8080/machine/code -d "G1 X10 F1000" -H "Content-Type: text/plain"
 ```
+
+### JavaScript Integration
+
+See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
 
 ## Quick Start
 
