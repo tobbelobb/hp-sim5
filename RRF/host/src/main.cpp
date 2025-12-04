@@ -814,6 +814,11 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // Report output buffer configuration for host builds (useful when returning large HTTP responses).
+    std::cout << "Output buffers: size=" << OUTPUT_BUFFER_SIZE
+              << " count=" << OUTPUT_BUFFER_COUNT
+              << " reserved=" << RESERVED_OUTPUT_BUFFERS << '\n';
+
     bool reprapInitialised = false;
     const auto cleanup = [&]() noexcept
     {

@@ -30,6 +30,7 @@ private:
         std::string response;
         bool completed{false};
         bool started{false};
+        bool responseReady{false};
         std::condition_variable cv;
     };
 

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <string>
 
 class CanMessageBuffer;
 
@@ -16,6 +17,18 @@ void LogMotion(const CanMessageBuffer& buffer) noexcept;
 
 // Record a torque mode change event (driver address, torque Nm).
 void LogTorqueModeChange(uint8_t driverAddress, float torqueNm) noexcept;
+
+// Begin capturing to in-memory buffer (used for HTTP responses).
+void StartCapture() noexcept;
+
+// Stop capturing to in-memory buffer without clearing it.
+void StopCapture() noexcept;
+
+// Return true if memory capture is active.
+bool IsCapturing() noexcept;
+
+// Return captured data and clear the buffer.
+std::string FlushCapture();
 
 // Return the total number of captured movement messages.
 uint64_t GetCaptureCount() noexcept;

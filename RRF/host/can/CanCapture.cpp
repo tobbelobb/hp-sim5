@@ -5,11 +5,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <vector>
 #include <iomanip>
 #include <limits>
 #include <mutex>
 #include <sstream>
 #include <iostream>
+#include <string>
 
 #include <CanId.h>
 #include <CanMessageBuffer.h>
@@ -26,6 +28,10 @@ bool gEnabled = false;
 std::atomic<uint64_t> gCaptureIndex{0};
 std::atomic<uint64_t> gLastExtendedWhen{0};
 std::atomic<uint64_t> gBaseMasterClock{std::numeric_limits<uint64_t>::max()};
+std::vector<std::string> gMemoryBuffer;
+std::mutex gMemoryMutex;
+std::atomic<bool> gCaptureToMemory{false};
+constexpr size_t kMaxMemoryBufferSize = 10000;
 
 static_assert(StepClockRate != 0, "Step clock rate must not be zero");
 
@@ -121,7 +127,8 @@ bool HostCanCapture::Configure(const std::filesystem::path& filePath) noexcept
 
 void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
 {
-    if (!gEnabled)
+    const bool captureMemory = gCaptureToMemory.load(std::memory_order_relaxed);
+    if (!gEnabled && !captureMemory)
     {
         return;
     }
@@ -173,22 +180,53 @@ void HostCanCapture::LogMotion(const CanMessageBuffer& buffer) noexcept
     line << std::defaultfloat;
     line.precision(originalPrecision);
 
+    const std::string formatted = line.str();
+
+    if (captureMemory)
+    {
+        std::lock_guard<std::mutex> memoryLock(gMemoryMutex);
+        if (gMemoryBuffer.size() >= kMaxMemoryBufferSize)
+        {
+            gMemoryBuffer.erase(gMemoryBuffer.begin());
+        }
+        gMemoryBuffer.emplace_back(formatted);
+    }
+
+    if (gEnabled)
     {
         std::lock_guard<std::mutex> lock(gMutex);
-        gStream << line.str() << '\n';
+        gStream << formatted << '\n';
     }
 }
 
 void HostCanCapture::LogTorqueModeChange(uint8_t driverAddress, float torqueNm) noexcept
 {
-    if (!gEnabled)
+    const bool captureMemory = gCaptureToMemory.load(std::memory_order_relaxed);
+    if (!gEnabled && !captureMemory)
     {
         return;
     }
 
-    std::lock_guard<std::mutex> lock(gMutex);
-    gStream << "T," << static_cast<unsigned int>(driverAddress) << "," << torqueNm << '\n';
-    gStream.flush();
+    std::ostringstream oss;
+    oss << "T," << static_cast<unsigned int>(driverAddress) << "," << torqueNm;
+    const std::string entry = oss.str();
+
+    if (captureMemory)
+    {
+        std::lock_guard<std::mutex> memoryLock(gMemoryMutex);
+        if (gMemoryBuffer.size() >= kMaxMemoryBufferSize)
+        {
+            gMemoryBuffer.erase(gMemoryBuffer.begin());
+        }
+        gMemoryBuffer.emplace_back(entry);
+    }
+
+    if (gEnabled)
+    {
+        std::lock_guard<std::mutex> lock(gMutex);
+        gStream << entry << '\n';
+        gStream.flush();
+    }
 }
 
 uint64_t HostCanCapture::GetCaptureCount() noexcept
@@ -202,6 +240,11 @@ void HostCanCapture::Reset() noexcept
     gLastExtendedWhen.store(0, std::memory_order_relaxed);
     gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
                            std::memory_order_relaxed);
+    gCaptureToMemory.store(false, std::memory_order_relaxed);
+    {
+        std::lock_guard<std::mutex> memoryLock(gMemoryMutex);
+        gMemoryBuffer.clear();
+    }
 }
 
 void HostCanCapture::Shutdown() noexcept
@@ -216,4 +259,37 @@ void HostCanCapture::Shutdown() noexcept
     gEnabled = false;
     gBaseMasterClock.store(std::numeric_limits<uint64_t>::max(),
                            std::memory_order_relaxed);
+}
+
+void HostCanCapture::StartCapture() noexcept
+{
+    std::lock_guard<std::mutex> memoryLock(gMemoryMutex);
+    gMemoryBuffer.clear();
+    gCaptureToMemory.store(true, std::memory_order_relaxed);
+}
+
+void HostCanCapture::StopCapture() noexcept
+{
+    gCaptureToMemory.store(false, std::memory_order_relaxed);
+}
+
+bool HostCanCapture::IsCapturing() noexcept
+{
+    return gCaptureToMemory.load(std::memory_order_relaxed);
+}
+
+std::string HostCanCapture::FlushCapture()
+{
+    std::lock_guard<std::mutex> memoryLock(gMemoryMutex);
+
+    std::string aggregated;
+    aggregated.reserve(gMemoryBuffer.size() * 32);  // heuristic
+    for (const auto& line : gMemoryBuffer)
+    {
+        aggregated += line;
+        aggregated += '\n';
+    }
+
+    gMemoryBuffer.clear();
+    return aggregated;
 }
