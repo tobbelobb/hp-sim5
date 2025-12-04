@@ -152,6 +152,10 @@ export class StepperMotorComponent {
         this.holdingTorque = holdingTorque;
         this.numPolePairs = numPolePairs;
         this.dampingCoeff = dampingCoeff;
+
+        // Torque mode support
+        this.torqueMode = false;
+        this.targetTorque = 0.0;
     }
 }
 
@@ -186,18 +190,27 @@ export class StepperMotorSystem {
             const angVel = world.getComponent(e, AngularVelocityComponent);
             const inertia = world.getComponent(e, MomentOfInertiaComponent);
 
-            // Calculate restoring torque based on angular error.
-            // Make the stepper act in the group's local frame so rigid-group rotation
-            // does not fight the motor controller. Target in world = groupAngle + commanded.
-            const groupAngle = groupAngleByMember.get(e) || 0.0;
-            const targetWorldAngle = groupAngle + (stepper.commandedAngle - stepper.deltaAngle);
-            const error = orient.angle - targetWorldAngle;
-            const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
+            let totalTorque;
 
-            // Add damping to help the motor settle
-            const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
+            if (stepper.torqueMode) {
+                // Constant torque mode
+                totalTorque = stepper.targetTorque;
+                const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
+                totalTorque += dampingTorque;
+            } else {
+                // Position control mode
+                // Make the stepper act in the group's local frame so rigid-group rotation
+                // does not fight the motor controller. Target in world = groupAngle + commanded.
+                const groupAngle = groupAngleByMember.get(e) || 0.0;
+                const targetWorldAngle = groupAngle + (stepper.commandedAngle - stepper.deltaAngle);
+                const error = orient.angle - targetWorldAngle;
+                const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
 
-            const totalTorque = restoringTorque + dampingTorque;
+                // Add damping to help the motor settle
+                const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
+
+                totalTorque = restoringTorque + dampingTorque;
+            }
 
             // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
             const angularAcceleration = totalTorque / inertia.inertia;
@@ -205,6 +218,32 @@ export class StepperMotorSystem {
             //orient.angle = stepper.commandedAngle;
         }
     }
+}
+
+export function setStepperTorqueMode(world, entity, torqueNm) {
+    const stepper = world.getComponent(entity, StepperMotorComponent);
+    if (stepper) {
+        stepper.torqueMode = true;
+        stepper.targetTorque = torqueNm;
+    }
+}
+
+export function setStepperPositionMode(world, entity) {
+    const stepper = world.getComponent(entity, StepperMotorComponent);
+    if (stepper) {
+        stepper.torqueMode = false;
+        stepper.targetTorque = 0;
+    }
+}
+
+export function isStepperInTorqueMode(world, entity) {
+    const stepper = world.getComponent(entity, StepperMotorComponent);
+    return stepper?.torqueMode ?? false;
+}
+
+export function getStepperTorque(world, entity) {
+    const stepper = world.getComponent(entity, StepperMotorComponent);
+    return stepper?.torqueMode ? stepper.targetTorque : 0;
 }
 
 export class RemoteSpoolSystem {
@@ -376,16 +415,10 @@ export class RemoteSpoolSystem {
             const mapping = this.axisToEntity[axis];
             const entityIds = Array.isArray(mapping) ? mapping : (mapping !== undefined ? [mapping] : []);
             for (const entityId of entityIds) {
-                const stepperComp = stepperStore ? stepperStore.get(entityId) : world.getComponent(entityId, StepperMotorComponent);
-                if (!stepperComp) {
-                    continue;
-                }
                 if (commandType === 'SetTorqueMode') {
-                    stepperComp.torqueMode = true;
-                    stepperComp.targetTorque = command.torqueNm || 0;
+                    setStepperTorqueMode(world, entityId, command.torqueNm || 0);
                 } else {
-                    stepperComp.torqueMode = false;
-                    stepperComp.targetTorque = 0;
+                    setStepperPositionMode(world, entityId);
                 }
             }
             return;
