@@ -466,6 +466,9 @@ export class RemoteSpoolSystem {
                 if (commandType === 'Move') {
                     const stepperComp = stepperStore ? stepperStore.get(entityId) : world.getComponent(entityId, StepperMotorComponent);
                     if (stepperComp != null) {
+                        if (stepperComp.torqueMode) {
+                            continue;
+                        }
                         stepperComp.commandedAngle = axisValue;
                     }
                 }

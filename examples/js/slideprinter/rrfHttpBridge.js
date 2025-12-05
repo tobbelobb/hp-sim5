@@ -49,6 +49,7 @@ export class RrfHttpBridge {
 
             const text = await response.text();
             const parsed = this._parseResponse(text);
+            this._injectTorqueModeFallback(parsed, gcode);
 
             if (!suppressMotionProcessing && parsed.motion.length > 0) {
                 await this._primeDriverDirections(parsed.motion);
@@ -221,6 +222,51 @@ export class RrfHttpBridge {
         }
 
         return result;
+    }
+
+    _parseTorqueModeCommand(gcode) {
+        if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
+            return [];
+        }
+        const pMatch = gcode.match(/P([0-9:\.]+)/i);
+        const tMatch = gcode.match(/T(-?[0-9]+(?:\.[0-9]+)?)/i);
+        if (!pMatch || !tMatch) {
+            return [];
+        }
+        const torqueNm = parseFloat(tMatch[1]);
+        if (!Number.isFinite(torqueNm)) {
+            return [];
+        }
+
+        const drivers = pMatch[1]
+            .split(':')
+            .map((d) => parseFloat(d))
+            .filter((d) => Number.isFinite(d));
+
+        return drivers.map((driver) => ({
+            type: 'TorqueMode',
+            driver,
+            torqueNm,
+        }));
+    }
+
+    _injectTorqueModeFallback(parsedResponse, gcode) {
+        if (!parsedResponse || !gcode || !Array.isArray(parsedResponse.motion)) {
+            return;
+        }
+        const torqueCommands = this._parseTorqueModeCommand(gcode);
+        if (torqueCommands.length === 0) {
+            return;
+        }
+        const seenDrivers = new Set(
+            parsedResponse.motion
+                .filter((m) => m?.type === 'TorqueMode' && Number.isFinite(m.driver))
+                .map((m) => m.driver),
+        );
+        const missing = torqueCommands.filter((cmd) => !seenDrivers.has(cmd.driver));
+        if (missing.length > 0) {
+            parsedResponse.motion.push(...missing);
+        }
     }
 
     _processMotion(motionItems) {
