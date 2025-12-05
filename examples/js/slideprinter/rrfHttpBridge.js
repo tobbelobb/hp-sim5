@@ -1,3 +1,12 @@
+import {
+    computeTicksPerBucket,
+    createMotionProfile,
+    distributeEvenly,
+    distributeWithProfile,
+    isFloatValue,
+    EXTRUDER_MM_PER_STEP,
+} from './rrfMotionUtils.js';
+
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 1.8deg motor, 16x microstepping
 
 export class RrfHttpBridge {
@@ -16,6 +25,19 @@ export class RrfHttpBridge {
         if (!this.fetchImpl) {
             throw new Error('Fetch implementation is not available in this environment.');
         }
+
+        this.dt = Number.isFinite(options.dt) && options.dt > 0 ? options.dt : 1 / 500;
+        this.ticksPerBucket = computeTicksPerBucket(this.dt);
+        this.valueTypeByMotorId = new Map();
+        this.axisStates = new Map();
+        this.activeAxes = new Set();
+        this.spoolAxisOrder = [];
+        this.bucketSteps = new Map();
+        this.bucketExtrusion = new Map();
+        this.bucketAddToReference = new Map();
+        this.maxBucketSeen = -1;
+        this.nextBucketToEmit = 0;
+        this.baselineEmitted = false;
 
         this._pendingMotion = [];
         this._axisAngles = new Map();
@@ -173,6 +195,166 @@ export class RrfHttpBridge {
         }
     }
 
+    _ensureAxisState(axis) {
+        if (!axis) {
+            return null;
+        }
+        let state = this.axisStates.get(axis);
+        if (!state) {
+            state = {
+                lastTick: 0,
+                active: false,
+                hasSteps: false,
+            };
+            this.axisStates.set(axis, state);
+        }
+        return state;
+    }
+
+    _ensureBucketMap(axis) {
+        let map = this.bucketSteps.get(axis);
+        if (!map) {
+            map = new Map();
+            this.bucketSteps.set(axis, map);
+        }
+        return map;
+    }
+
+    _markAxisActive(axis) {
+        const state = this._ensureAxisState(axis);
+        if (!state) {
+            return;
+        }
+        state.active = true;
+        this.activeAxes.add(axis);
+        if (!this._axisAngles.has(axis)) {
+            this._axisAngles.set(axis, 0);
+        }
+        if (axis !== 'E' && !this.spoolAxisOrder.includes(axis)) {
+            this.spoolAxisOrder.push(axis);
+        }
+    }
+
+    _readyBucketThreshold(force = false) {
+        if (force) {
+            return this.maxBucketSeen + 1;
+        }
+        if (this.maxBucketSeen < 0 || this.activeAxes.size === 0) {
+            return null;
+        }
+        let minBucket = Infinity;
+        let hasBlockingAxis = false;
+        for (const axis of this.activeAxes) {
+            const state = this.axisStates.get(axis);
+            if (!state) {
+                continue;
+            }
+            if (!state.hasSteps && state.lastTick === 0) {
+                continue;
+            }
+            hasBlockingAxis = true;
+            const bucket = Math.floor(state.lastTick / this.ticksPerBucket);
+            minBucket = Math.min(minBucket, bucket);
+        }
+        if (!hasBlockingAxis) {
+            return this.maxBucketSeen + 1;
+        }
+        return minBucket;
+    }
+
+    _flushReadyBuckets(force = false) {
+        const threshold = this._readyBucketThreshold(force);
+        if (threshold == null) {
+            return;
+        }
+        const upperBound = Math.min(threshold, this.maxBucketSeen + 1);
+        while (this.nextBucketToEmit < upperBound) {
+            this._emitBucket(this.nextBucketToEmit);
+            this.nextBucketToEmit += 1;
+        }
+    }
+
+    _recordBucketSteps(axis, bucketIdx, delta) {
+        if (!Number.isFinite(delta) || delta === 0) {
+            return;
+        }
+        const axisMap = this._ensureBucketMap(axis);
+        axisMap.set(bucketIdx, (axisMap.get(bucketIdx) || 0) + delta);
+        this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
+    }
+
+    _recordBucketExtrusion(bucketIdx, delta) {
+        if (!Number.isFinite(delta) || delta === 0) {
+            return;
+        }
+        this.bucketExtrusion.set(bucketIdx, (this.bucketExtrusion.get(bucketIdx) || 0) + delta);
+        this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
+    }
+
+    _emitBucket(bucketIdx) {
+        const addRefEntry = this.bucketAddToReference.get(bucketIdx);
+        if (addRefEntry) {
+            const addCmd = { type: 'Add to reference' };
+            let hasDelta = false;
+            for (const [axis, delta] of Object.entries(addRefEntry)) {
+                if (!Number.isFinite(delta) || delta === 0) {
+                    continue;
+                }
+                addCmd[axis] = delta;
+                hasDelta = true;
+            }
+            if (hasDelta && this.remoteSpoolSystem) {
+                this.remoteSpoolSystem.addCommand(addCmd);
+            }
+            this.bucketAddToReference.delete(bucketIdx);
+        }
+
+        let changed = false;
+        const moveCmd = { type: 'Move' };
+
+        for (const axis of this.spoolAxisOrder) {
+            const state = this.axisStates.get(axis);
+            if (!this._axisAngles.has(axis)) {
+                this._axisAngles.set(axis, state?.baseAngle || 0);
+            }
+            const axisMap = this.bucketSteps.get(axis);
+            const deltaSteps = axisMap ? axisMap.get(bucketIdx) || 0 : 0;
+            if (deltaSteps !== 0) {
+                const current = this._axisAngles.get(axis) || 0;
+                const newAngle = current + deltaSteps * STEP_ANGLE_RAD;
+                this._axisAngles.set(axis, newAngle);
+                changed = true;
+            }
+            moveCmd[axis] = this._axisAngles.get(axis) || 0;
+            if (axisMap) {
+                axisMap.delete(bucketIdx);
+                if (axisMap.size === 0) {
+                    this.bucketSteps.delete(axis);
+                }
+            }
+        }
+
+        const extrusionDelta = this.bucketExtrusion.get(bucketIdx) || 0;
+        if (extrusionDelta !== 0) {
+            moveCmd.E = extrusionDelta;
+            changed = true;
+        }
+        if (this.bucketExtrusion.has(bucketIdx)) {
+            this.bucketExtrusion.delete(bucketIdx);
+        }
+
+        if (!changed && bucketIdx === 0 && !this.baselineEmitted) {
+            changed = true;
+        }
+
+        if (changed && this.remoteSpoolSystem) {
+            if (bucketIdx === 0) {
+                this.baselineEmitted = true;
+            }
+            this.remoteSpoolSystem.addCommand(moveCmd);
+        }
+    }
+
     _parseResponse(responseText) {
         const parts = responseText.split('---MOTION---');
         const result = {
@@ -270,13 +452,20 @@ export class RrfHttpBridge {
     }
 
     _processMotion(motionItems) {
+        let lastTimestamp = null;
         for (const item of motionItems) {
             if (item.type === 'TorqueMode') {
+                this._flushReadyBuckets();
                 this._handleTorqueModeChange(item);
             } else if (item.type === 'Motion') {
+                if (lastTimestamp !== null && item.timestamp !== lastTimestamp) {
+                    this._flushReadyBuckets();
+                }
                 this._handleMotionCommand(item);
+                lastTimestamp = item.timestamp;
             }
         }
+        this._flushReadyBuckets(true);
     }
 
     _handleTorqueModeChange(event) {
@@ -322,21 +511,68 @@ export class RrfHttpBridge {
             return;
         }
 
-        const deltaAngle = motion.steps * STEP_ANGLE_RAD;
-        const prevAngle = this._axisAngles.get(axis) || 0;
-        const nextAngle = prevAngle + deltaAngle;
-        this._axisAngles.set(axis, nextAngle);
+        const totalTicks = motion.accelTicks + motion.steadyTicks + motion.decelTicks;
+        const state = this._ensureAxisState(axis);
+        if (state) {
+            state.lastTick = Math.max(state.lastTick, motion.timestamp + totalTicks);
+        }
 
-        const command = {
-            type: 'Move',
-            timestamp: motion.timestamp,
-            axes: {
-                [axis]: nextAngle,
-            },
-            _motion: motion,
+        if (!this.valueTypeByMotorId.has(motion.motorId)) {
+            this.valueTypeByMotorId.set(motion.motorId, isFloatValue(motion.steps) ? 'float' : 'int');
+        }
+        const axisType = this.valueTypeByMotorId.get(motion.motorId);
+        const startTick = motion.timestamp;
+        const profile = createMotionProfile(motion);
+        const useProfile = profile && profile.totalTicks > 0;
+        const distribute = (bucketIdx, normalizedDelta) => {
+            const deltaValue = motion.steps * normalizedDelta;
+            if (axis === 'E' || axisType === 'float') {
+                this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP);
+            } else {
+                this._recordBucketSteps(axis, bucketIdx, deltaValue);
+            }
         };
 
-        this.remoteSpoolSystem.addCommand(command);
+        const updateMax = (bucketIdx) => {
+            this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
+        };
+
+        if (useProfile) {
+            distributeWithProfile({
+                startTick,
+                profile,
+                bucketSize: this.ticksPerBucket,
+                accumulateNormalized: distribute,
+                setMaxBucket: updateMax,
+            });
+        } else if (axis === 'E' || axisType === 'float') {
+            distributeEvenly({
+                startTick,
+                durationTicks: totalTicks,
+                totalValue: motion.steps * EXTRUDER_MM_PER_STEP,
+                bucketSize: this.ticksPerBucket,
+                accumulate: (bucketIdx, delta) => {
+                    this._recordBucketExtrusion(bucketIdx, delta);
+                },
+                setMaxBucket: updateMax,
+            });
+        } else {
+            distributeEvenly({
+                startTick,
+                durationTicks: totalTicks,
+                totalValue: motion.steps,
+                bucketSize: this.ticksPerBucket,
+                accumulate: (bucketIdx, delta) => {
+                    this._recordBucketSteps(axis, bucketIdx, delta);
+                },
+                setMaxBucket: updateMax,
+            });
+        }
+
+        if (state && motion.steps !== 0) {
+            state.hasSteps = true;
+        }
+        this._markAxisActive(axis);
     }
 
     async home() {
