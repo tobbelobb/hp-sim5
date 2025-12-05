@@ -55,27 +55,81 @@ if (args.help) {
   process.exit(0);
 }
 
+const wss = args.wsPort
+  ? new WebSocketServer({ port: args.wsPort })
+  : null;
+
+const pendingWsPayloads = [];
+const MAX_PENDING_WS_PAYLOADS = 5000;
+let waitingForClientNoticePrinted = false;
+
+const hasReadyWsClients = () => Boolean(
+  wss && Array.from(wss.clients).some((client) => client.readyState === 1)
+);
+
 const broadcast = (payload) => {
   if (!payload || !wss) {
     return;
   }
-  const data = JSON.stringify(payload);
+  const readyClients = [];
   wss.clients.forEach((client) => {
     if (client.readyState === 1) {
-      client.send(data);
+      readyClients.push(client);
     }
+  });
+  if (readyClients.length === 0) {
+    enqueuePendingPayload(payload);
+    return;
+  }
+  const data = JSON.stringify(payload);
+  readyClients.forEach((client) => {
+    client.send(data);
   });
 };
 
-const wss = args.wsPort
-  ? new WebSocketServer({ port: args.wsPort })
-  : null;
+function enqueuePendingPayload(payload) {
+  if (!wss || !payload) {
+    return;
+  }
+  pendingWsPayloads.push(payload);
+  const overflow = pendingWsPayloads.length - MAX_PENDING_WS_PAYLOADS;
+  if (overflow > 0) {
+    pendingWsPayloads.splice(0, overflow);
+  }
+  if (!waitingForClientNoticePrinted && !args.quiet) {
+    console.log('Waiting for hp-sim WebSocket client to connect before streaming...');
+    waitingForClientNoticePrinted = true;
+  }
+}
+
+function flushPendingPayloads() {
+  if (!hasReadyWsClients() || pendingWsPayloads.length === 0) {
+    return;
+  }
+  const batch = pendingWsPayloads.splice(0, pendingWsPayloads.length);
+  if (!args.quiet) {
+    console.log(`Streaming ${batch.length} queued message${batch.length === 1 ? '' : 's'} to hp-sim client.`);
+  }
+  batch.forEach((payload) => broadcast(payload));
+  waitingForClientNoticePrinted = false;
+}
 
 if (wss) {
   if (!args.quiet) {
     console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
     console.log(`Open hp-sim with ?gcode_ws=ws://localhost:${args.wsPort} to follow along.`);
   }
+  wss.on('connection', (socket) => {
+    if (!args.quiet) {
+      console.log('hp-sim connected to WebSocket feed.');
+    }
+    flushPendingPayloads();
+    socket.on('close', () => {
+      if (!args.quiet) {
+        console.log('hp-sim disconnected from WebSocket feed.');
+      }
+    });
+  });
 }
 
 let currentGcode = null;

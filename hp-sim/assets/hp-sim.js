@@ -235,6 +235,11 @@ function initHpSim() {
   const externalCommandQueue = [];
   const EXTERNAL_QUEUE_LIMIT = 5000;
   let externalCommandSocket = null;
+  let externalCommandSocketConnecting = false;
+  let externalWsReconnectTimer = null;
+  const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 1000;
+  const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 15000;
+  let externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
 
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
@@ -889,6 +894,37 @@ function initHpSim() {
     pushExternalCommands(batch);
   }
 
+  function clearExternalReconnectTimer() {
+    if (externalWsReconnectTimer) {
+      clearTimeout(externalWsReconnectTimer);
+      externalWsReconnectTimer = null;
+    }
+  }
+
+  function resetExternalReconnectBackoff() {
+    externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
+  }
+
+  function scheduleExternalCommandReconnect(reason = '') {
+    if (!externalWsUrl || typeof WebSocket === 'undefined') {
+      return;
+    }
+    if (externalCommandSocket || externalCommandSocketConnecting || externalWsReconnectTimer) {
+      return;
+    }
+    const delay = externalWsReconnectDelayMs;
+    const messageSuffix = reason ? ` (${reason})` : '';
+    console.log(`hp-sim: waiting for external G-code stream${messageSuffix}, retrying in ${Math.round(delay)}ms`);
+    externalWsReconnectTimer = setTimeout(() => {
+      externalWsReconnectTimer = null;
+      connectExternalCommandStream();
+    }, delay);
+    externalWsReconnectDelayMs = Math.min(
+      Math.max(externalWsReconnectDelayMs * 2, EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS),
+      EXTERNAL_WS_RECONNECT_MAX_DELAY_MS
+    );
+  }
+
   function handleExternalPayload(payload) {
     if (!payload) {
       return;
@@ -913,17 +949,23 @@ function initHpSim() {
   }
 
   function connectExternalCommandStream() {
-    if (!externalWsUrl || externalCommandSocket || typeof WebSocket === 'undefined') {
+    if (!externalWsUrl || externalCommandSocket || externalCommandSocketConnecting || typeof WebSocket === 'undefined') {
       return;
     }
+    clearExternalReconnectTimer();
+    externalCommandSocketConnecting = true;
     try {
       externalCommandSocket = new WebSocket(externalWsUrl);
     } catch (err) {
       console.warn('hp-sim: failed to open external G-code stream.', err);
       externalCommandSocket = null;
+      externalCommandSocketConnecting = false;
+      scheduleExternalCommandReconnect('failed to open');
       return;
     }
     externalCommandSocket.addEventListener('open', () => {
+      externalCommandSocketConnecting = false;
+      resetExternalReconnectBackoff();
       console.log('hp-sim: external G-code stream connected:', externalWsUrl);
       flushExternalCommandQueue();
     });
@@ -937,9 +979,18 @@ function initHpSim() {
     });
     externalCommandSocket.addEventListener('close', () => {
       externalCommandSocket = null;
+      externalCommandSocketConnecting = false;
+      scheduleExternalCommandReconnect('connection closed');
     });
     externalCommandSocket.addEventListener('error', (err) => {
       console.warn('hp-sim: external G-code stream error.', err);
+      if (externalCommandSocket) {
+        try {
+          externalCommandSocket.close();
+        } catch (_err) {
+          // Ignore socket close errors
+        }
+      }
     });
   }
 
