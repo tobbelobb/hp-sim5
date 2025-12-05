@@ -69,6 +69,7 @@ public:
     }
     FilePosition Position() const noexcept;
     void Duplicate() noexcept;
+    bool CopyFrom(const FileStore* f) noexcept;
 
     bool Write(char b) noexcept;
     bool Write(const char* s, size_t len) noexcept;

@@ -45,6 +45,7 @@ const char* GetMonthName(uint8_t month) noexcept;
 
 void Init() noexcept;
 FileStore* OpenFile(const char* filePath, OpenMode mode, uint32_t preAllocSize) noexcept;
+FileStore* DuplicateOpenHandle(const FileStore* f) noexcept;
 bool FileExists(const char* filePath) noexcept;
 void CloseAllFiles() noexcept;
 void Spin() noexcept;

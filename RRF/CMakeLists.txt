@@ -260,6 +260,7 @@ set(RRF_HEADERS_TO_USE
     ClosedLoop/ClosedLoop.h
     Heating/Sensors/TemperatureSensor.h
     CAN/CanMessageGenericConstructor.h
+    Movement/HeightControl/HeightController.h
 )
 
 # List of real .cpp files from RRFLibraries we'll use for our builds.

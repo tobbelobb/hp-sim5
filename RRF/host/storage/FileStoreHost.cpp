@@ -249,6 +249,46 @@ void FileStore::Duplicate() noexcept
     ++openCount;
 }
 
+bool FileStore::CopyFrom(const FileStore* f) noexcept
+{
+    if (f == nullptr || !f->EnsureOpen() || f->usageMode != FileUseMode::readOnly)
+    {
+        return false;
+    }
+
+    Init();
+
+    auto newHandle = std::make_shared<Handle>();
+    newHandle->hostPath = f->handle->hostPath;
+    newHandle->mode = f->handle->mode;
+    newHandle->writeMode = false;
+    newHandle->length = f->handle->length;
+    newHandle->position = f->handle->position;
+    newHandle->crc = f->handle->crc;
+
+    newHandle->stream.open(newHandle->hostPath, std::ios::binary | std::ios::in);
+    if (!newHandle->stream.is_open())
+    {
+        return false;
+    }
+
+    newHandle->stream.seekg(static_cast<std::streamoff>(newHandle->position),
+                            std::ios::beg);
+    if (!newHandle->stream)
+    {
+        Init();
+        return false;
+    }
+
+    handle = std::move(newHandle);
+    usageMode = FileUseMode::readOnly;
+    openCount = 1;
+    closeRequested = false;
+    calcCrc = false;
+
+    return true;
+}
+
 bool FileStore::Write(char b) noexcept
 {
     return Write(&b, 1);

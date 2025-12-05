@@ -329,6 +329,33 @@ FileStore* MassStorage::OpenFile(const char* filePath, OpenMode mode,
     return nullptr;
 }
 
+FileStore* MassStorage::DuplicateOpenHandle(const FileStore* f) noexcept
+{
+    if (f == nullptr || !f->IsOpen())
+    {
+        return nullptr;
+    }
+
+    std::lock_guard<std::mutex> lock(FilesMutex());
+    for (auto& file : OpenFiles())
+    {
+        if (file->IsFree() && file->CopyFrom(f))
+        {
+            return file.get();
+        }
+    }
+
+    auto newStore = std::make_unique<FileStore>();
+    if (newStore->CopyFrom(f))
+    {
+        FileStore* raw = newStore.get();
+        OpenFiles().emplace_back(std::move(newStore));
+        return raw;
+    }
+
+    return nullptr;
+}
+
 bool MassStorage::FileExists(const char* filePath) noexcept
 {
     fs::path hostPath;
