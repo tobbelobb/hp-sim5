@@ -290,7 +290,7 @@ export class RrfHttpBridge {
 
         const direction = this._driverDirections.get(driver);
         const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
-        const effectiveTorque = torqueSign === null ? torqueNm : torqueNm * torqueSign;
+        const effectiveTorque = torqueSign === null ? -torqueNm : torqueNm * torqueSign;
 
         if (this.onTorqueModeChange) {
             try {
