@@ -60,6 +60,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/networking/SocketHost.cpp
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
     ${SIM_ROOT_DIR}/movement/DriverDataHost.cpp
+    ${SIM_ROOT_DIR}/movement/HeightControllerHost.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
     #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
     ${SIM_ROOT_DIR}/endstops/ZProbeHost.cpp
