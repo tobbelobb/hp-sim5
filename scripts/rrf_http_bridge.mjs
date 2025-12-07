@@ -209,6 +209,44 @@ const promptIfInteractive = () => {
   }
 };
 
+function waitForHpSimConnection() {
+  if (!wss || hasReadyWsClients()) {
+    return Promise.resolve();
+  }
+
+  let settled = false;
+  const resolveOnce = (resolve) => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    resolve();
+  };
+
+  return new Promise((resolve) => {
+    const cleanup = () => {
+      wss.off('connection', onConnection);
+    };
+
+    const onConnection = () => {
+      cleanup();
+      resolveOnce(resolve);
+    };
+
+    wss.on('connection', onConnection);
+
+    process.nextTick(() => {
+      if (settled) {
+        return;
+      }
+      if (hasReadyWsClients()) {
+        cleanup();
+        resolveOnce(resolve);
+      }
+    });
+  });
+}
+
 async function processQueue() {
   if (processingQueue) {
     return;
@@ -287,6 +325,7 @@ function sendEncoderRequest(axes, timeoutMs = ENCODER_REQUEST_TIMEOUT_MS) {
 }
 
 async function runOneShot() {
+  await waitForHpSimConnection();
   await handleGcodeLine(args.command);
   if (wss) {
     wss.close();
