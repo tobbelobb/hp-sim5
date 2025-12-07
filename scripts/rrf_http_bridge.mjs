@@ -62,21 +62,21 @@ const wss = args.wsPort
 const pendingWsPayloads = [];
 const MAX_PENDING_WS_PAYLOADS = 5000;
 let waitingForClientNoticePrinted = false;
+const pendingEncoderRequests = new Map();
+let encoderRequestSeq = 1;
+const ENCODER_REQUEST_TIMEOUT_MS = 2000;
 
-const hasReadyWsClients = () => Boolean(
-  wss && Array.from(wss.clients).some((client) => client.readyState === 1)
-);
+const getReadyWsClients = () => (wss
+  ? Array.from(wss.clients).filter((client) => client.readyState === 1)
+  : []);
+
+const hasReadyWsClients = () => getReadyWsClients().length > 0;
 
 const broadcast = (payload) => {
   if (!payload || !wss) {
     return;
   }
-  const readyClients = [];
-  wss.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      readyClients.push(client);
-    }
-  });
+  const readyClients = getReadyWsClients();
   if (readyClients.length === 0) {
     enqueuePendingPayload(payload);
     return;
@@ -114,6 +114,25 @@ function flushPendingPayloads() {
   waitingForClientNoticePrinted = false;
 }
 
+function handleIncomingWsMessage(data) {
+  if (!data) {
+    return;
+  }
+  let payload = null;
+  try {
+    payload = typeof data === 'string' ? JSON.parse(data) : JSON.parse(data.toString());
+  } catch (_err) {
+    return;
+  }
+  if (payload?.type === 'encoder_response' && payload.requestId != null) {
+    const pending = pendingEncoderRequests.get(payload.requestId);
+    if (pending) {
+      pendingEncoderRequests.delete(payload.requestId);
+      pending.resolve(payload);
+    }
+  }
+}
+
 if (wss) {
   if (!args.quiet) {
     console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
@@ -124,6 +143,7 @@ if (wss) {
       console.log('hp-sim connected to WebSocket feed.');
     }
     flushPendingPayloads();
+    socket.on('message', (data) => handleIncomingWsMessage(data));
     socket.on('close', () => {
       if (!args.quiet) {
         console.log('hp-sim disconnected from WebSocket feed.');
@@ -142,6 +162,19 @@ const bridge = new RrfHttpBridge({
       }
       broadcast({ type: 'command', command, gcode: currentGcode });
     },
+  },
+  encoderResolver: async ({ axes, timeoutMs }) => {
+    const timeout = Number.isFinite(timeoutMs)
+      ? Math.max(1, Math.min(timeoutMs, 5000))
+      : ENCODER_REQUEST_TIMEOUT_MS;
+    const response = await sendEncoderRequest(axes, timeout);
+    if (response && Array.isArray(response.anglesDeg)) {
+      return response.anglesDeg;
+    }
+    if (Array.isArray(response.angles)) {
+      return response.angles;
+    }
+    return [];
   },
 });
 
@@ -196,6 +229,41 @@ function enqueueLine(line) {
   sendQueue.push(() => handleGcodeLine(line));
   processQueue().catch((err) => {
     console.error('Unexpected error while processing queue:', err);
+  });
+}
+
+function sendEncoderRequest(axes, timeoutMs = ENCODER_REQUEST_TIMEOUT_MS) {
+  const readyClients = getReadyWsClients();
+  if (readyClients.length === 0) {
+    throw new Error('Message not received');
+  }
+  const requestId = encoderRequestSeq++;
+  const payload = { type: 'encoder_request', requestId, axes };
+  const data = JSON.stringify(payload);
+  readyClients.forEach((client) => {
+    try {
+      client.send(data);
+    } catch (_err) {
+      // Ignore send errors; timeout will handle missing responses
+    }
+  });
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingEncoderRequests.delete(requestId);
+      reject(new Error('Message not received'));
+    }, Math.max(1, timeoutMs));
+    pendingEncoderRequests.set(requestId, {
+      resolve: (value) => {
+        clearTimeout(timeout);
+        pendingEncoderRequests.delete(requestId);
+        resolve(value);
+      },
+      reject: (err) => {
+        clearTimeout(timeout);
+        pendingEncoderRequests.delete(requestId);
+        reject(err);
+      },
+    });
   });
 }
 

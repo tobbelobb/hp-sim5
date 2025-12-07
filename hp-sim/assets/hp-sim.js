@@ -1,5 +1,5 @@
 import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
-import { World } from '../../src/js/cable_joints/ecs.js';
+import { World, OrientationComponent } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
@@ -925,8 +925,63 @@ function initHpSim() {
     );
   }
 
+  function resolveEncoderAngles(axes = []) {
+    if (!Array.isArray(axes) || axes.length === 0) {
+      return [];
+    }
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      return [];
+    }
+    if (typeof remoteSystem._ensureAxisMapping === 'function') {
+      try {
+        remoteSystem._ensureAxisMapping(world);
+      } catch (_err) {
+        // ignore mapping errors
+      }
+    }
+    return axes.map((axis) => {
+      const mapping = remoteSystem.axisToEntity ? remoteSystem.axisToEntity[axis] : null;
+      const entityIds = Array.isArray(mapping) ? mapping : (mapping != null ? [mapping] : []);
+      for (const entityId of entityIds) {
+        const orient = world.getComponent(entityId, OrientationComponent);
+        if (orient && Number.isFinite(orient.angle)) {
+          return orient.angle * (180 / Math.PI);
+        }
+      }
+      return null;
+    });
+  }
+
+  function respondToEncoderRequest(requestId, axes) {
+    if (!externalCommandSocket || typeof externalCommandSocket.send !== 'function') {
+      return;
+    }
+    if (typeof WebSocket !== 'undefined' && externalCommandSocket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const anglesDeg = resolveEncoderAngles(axes);
+    const payload = {
+      type: 'encoder_response',
+      requestId,
+      axes,
+      anglesDeg,
+    };
+    try {
+      externalCommandSocket.send(JSON.stringify(payload));
+    } catch (err) {
+      console.warn('hp-sim: failed to send encoder response.', err);
+    }
+  }
+
   function handleExternalPayload(payload) {
     if (!payload) {
+      return;
+    }
+    if (payload.type === 'encoder_request') {
+      if (payload.requestId != null && Array.isArray(payload.axes)) {
+        respondToEncoderRequest(payload.requestId, payload.axes);
+      }
       return;
     }
     const commands = [];

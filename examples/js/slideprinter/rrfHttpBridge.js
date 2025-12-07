@@ -25,6 +25,7 @@ export class RrfHttpBridge {
         if (!this.fetchImpl) {
             throw new Error('Fetch implementation is not available in this environment.');
         }
+        this.encoderResolver = typeof options.encoderResolver === 'function' ? options.encoderResolver : null;
 
         this.dt = Number.isFinite(options.dt) && options.dt > 0 ? options.dt : 1 / 500;
         this.ticksPerBucket = computeTicksPerBucket(this.dt);
@@ -43,6 +44,7 @@ export class RrfHttpBridge {
         this._axisAngles = new Map();
         this._driverDirections = new Map();
         this._directionFetches = new Map();
+        this._encoderReferences = new Map();
     }
 
     async sendGCode(gcode, options = {}) {
@@ -51,6 +53,11 @@ export class RrfHttpBridge {
             suppressMotionProcessing = false,
             suppressCallbacks = false,
         } = options;
+
+        if (this._isEncoderQuery(gcode) && this.encoderResolver) {
+            return this._handleEncoderQuery(gcode, { timeout, suppressCallbacks });
+        }
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -233,6 +240,109 @@ export class RrfHttpBridge {
             return null;
         }
         return this._normalizeMotorDescriptorValue(input);
+    }
+
+    _parseEncoderQuery(gcode) {
+        if (typeof gcode !== 'string' || !/^M569\.3\b/i.test(gcode.trim())) {
+            return { descriptors: [], setReference: false };
+        }
+        const pMatch = gcode.match(/P([0-9:\.]+)/i);
+        const descriptors = pMatch
+            ? pMatch[1]
+                .split(':')
+                .map((p) => this._normalizeMotorDescriptorValue(p))
+                .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress))
+            : [];
+        const setReference = /\bS(?:\s|$|-?[0-9])/i.test(gcode);
+        return { descriptors, setReference };
+    }
+
+    _isEncoderQuery(gcode) {
+        return typeof gcode === 'string' && /^M569\.3\b/i.test(gcode.trim());
+    }
+
+    async _handleEncoderQuery(gcode, options = {}) {
+        const { timeout = 30000, suppressCallbacks = false } = options;
+        const { descriptors, setReference } = this._parseEncoderQuery(gcode);
+        if (!descriptors || descriptors.length === 0) {
+            return { reply: "Error: M569: missing parameter 'P'", motion: [], rawMotionLines: [] };
+        }
+
+        const descriptorEntries = descriptors.map((descriptor) => ({
+            descriptor,
+            key: this._motorDescriptorKey(descriptor),
+            axis: descriptor ? this.driverToAxis[descriptor.canAddress] : null,
+        }));
+        const axesForQuery = descriptorEntries
+            .filter((entry) => entry.axis)
+            .map((entry) => entry.axis);
+
+        if (axesForQuery.length === 0) {
+            return { reply: 'Error: M569.3: Message not received', motion: [], rawMotionLines: [] };
+        }
+
+        let anglesDeg = null;
+        try {
+            const resolverResult = await this.encoderResolver({
+                axes: axesForQuery,
+                timeoutMs: timeout,
+                gcode,
+            });
+            if (Array.isArray(resolverResult)) {
+                anglesDeg = resolverResult;
+            } else if (resolverResult && Array.isArray(resolverResult.anglesDeg)) {
+                anglesDeg = resolverResult.anglesDeg;
+            }
+        } catch (err) {
+            const message = err?.message || 'encoder read failed';
+            return { reply: `Error: M569.3: ${message}`, motion: [], rawMotionLines: [] };
+        }
+
+        if (!anglesDeg || anglesDeg.length === 0) {
+            return { reply: 'Error: M569.3: Message not received', motion: [], rawMotionLines: [] };
+        }
+
+        const values = [];
+        let encoderIdx = 0;
+        for (const entry of descriptorEntries) {
+            if (!entry.axis) {
+                values.push(null);
+                continue;
+            }
+            const rawValue = anglesDeg[encoderIdx++];
+            if (setReference && entry.key && Number.isFinite(rawValue)) {
+                this._encoderReferences.set(entry.key, rawValue);
+            }
+            const reference = entry.key && this._encoderReferences.has(entry.key)
+                ? this._encoderReferences.get(entry.key)
+                : 0;
+            const relative = Number.isFinite(rawValue) ? rawValue - reference : null;
+            values.push(Number.isFinite(relative) ? relative : null);
+        }
+
+        const reply = this._formatEncoderReply(values);
+        if (!suppressCallbacks && this.onGCodeReply) {
+            try {
+                this.onGCodeReply(gcode, reply);
+            } catch (_err) {
+                // Ignore listener errors
+            }
+        }
+        return { reply, motion: [], rawMotionLines: [] };
+    }
+
+    _formatEncoderReply(values) {
+        if (!Array.isArray(values) || values.length === 0) {
+            return '[ ]';
+        }
+        const formatValue = (value) => {
+            if (!Number.isFinite(value)) {
+                return 'nan';
+            }
+            return value.toFixed(2);
+        };
+        const content = values.map((v) => `${formatValue(v)}`).join(', ');
+        return `[${content}, ]`;
     }
 
     async _fetchDriverDirection(identifier) {
