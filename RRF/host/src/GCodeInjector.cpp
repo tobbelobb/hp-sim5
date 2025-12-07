@@ -1,7 +1,6 @@
 #include "GCodeInjector.h"
 
 #include <chrono>
-#include <cstdio>
 
 #include <GCodes/GCodes.h>
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
@@ -51,7 +50,6 @@ void GCodeInjector::ProcessPending()
     {
         activeCommand_ = pendingCommands_.front();
         pendingCommands_.pop();
-        fprintf(stderr, "[GCodeInjector] activating '%s'\n", activeCommand_->gcode.c_str());
     }
 
     GCodeBuffer* httpBuffer = reprap.GetGCodes().GetGCodeBuffer(GCodeChannel::HTTP);
@@ -64,54 +62,18 @@ void GCodeInjector::ProcessPending()
     {
         if (httpBuffer != nullptr && httpBuffer->IsCompletelyIdle())
         {
-            fprintf(stderr, "[GCodeInjector] starting '%s'\n", activeCommand_->gcode.c_str());
             HostCanCapture::StartCapture();
             httpBuffer->PutAndDecode(activeCommand_->gcode.c_str());
             activeCommand_->started = true;
         }
         return;
     }
-    else if (!activeCommand_->responseReady && httpBuffer != nullptr)
-    {
-        static auto lastPendingLog = std::chrono::steady_clock::time_point{};
-        const auto now = std::chrono::steady_clock::now();
-        if (lastPendingLog.time_since_epoch().count() == 0 ||
-            now - lastPendingLog > std::chrono::seconds(1))
-        {
-            lastPendingLog = now;
-            const MovementState& ms = reprap.GetGCodes().GetConstMovementState(*httpBuffer);
-            fprintf(stderr,
-                    "[GCodeInjector] pending response: state=%u segLeft=%u totalSeg=%u "
-                    "scheduled=%u completed=%u\n",
-                    static_cast<unsigned>(httpBuffer->GetState()), ms.segmentsLeft,
-                    ms.totalSegments, reprap.GetMove().GetScheduledMoves(),
-                    reprap.GetMove().GetCompletedMoves());
-        }
-    }
 
     if (activeCommand_->responseReady && !activeCommand_->completed)
     {
-        static auto lastLog = std::chrono::steady_clock::time_point{};
         const bool httpIdle =
             (httpBuffer == nullptr) ? true : httpBuffer->IsCompletelyIdle();
         const bool moveIdle = reprap.GetMove().NoLiveMovement();
-
-        if (!(httpIdle && moveIdle))
-        {
-            const auto now = std::chrono::steady_clock::now();
-            if (lastLog.time_since_epoch().count() == 0 ||
-                now - lastLog > std::chrono::seconds(1))
-            {
-                lastLog = now;
-                const MovementState& ms = reprap.GetGCodes().GetConstMovementState(*httpBuffer);
-                fprintf(stderr,
-                        "[GCodeInjector] waiting: httpIdle=%d moveIdle=%d segLeft=%u "
-                        "totalSeg=%u scheduled=%u completed=%u\n",
-                        httpIdle, moveIdle, ms.segmentsLeft, ms.totalSegments,
-                        reprap.GetMove().GetScheduledMoves(),
-                        reprap.GetMove().GetCompletedMoves());
-            }
-        }
 
         if (httpIdle && moveIdle)
         {
@@ -139,8 +101,6 @@ void GCodeInjector::OnResponse(const char* response)
         return;
     }
 
-    fprintf(stderr, "[GCodeInjector] got response for '%s': '%s'\n",
-            activeCommand_->gcode.c_str(), (response != nullptr) ? response : "");
     activeCommand_->response = (response != nullptr) ? response : "";
     activeCommand_->responseReady = true;
 }
