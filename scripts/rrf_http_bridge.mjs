@@ -147,6 +147,15 @@ const bridge = new RrfHttpBridge({
 
 const sendQueue = [];
 let processingQueue = false;
+let rl = null;
+
+const interactivePromptEnabled = () => rl && process.stdin.isTTY && !args.quiet;
+
+const promptIfInteractive = () => {
+  if (interactivePromptEnabled()) {
+    rl.prompt();
+  }
+};
 
 async function processQueue() {
   if (processingQueue) {
@@ -164,6 +173,7 @@ async function processQueue() {
 async function handleGcodeLine(line) {
   const trimmed = line.trim();
   if (trimmed.length === 0) {
+    promptIfInteractive();
     return;
   }
   currentGcode = trimmed;
@@ -178,6 +188,7 @@ async function handleGcodeLine(line) {
     console.error(`Error sending "${trimmed}": ${err.message}`);
   } finally {
     currentGcode = null;
+    promptIfInteractive();
   }
 }
 
@@ -202,7 +213,7 @@ if (args.command) {
     process.exit(1);
   });
 } else {
-  const rl = readline.createInterface({
+  rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: process.stdin.isTTY,
@@ -215,9 +226,6 @@ if (args.command) {
 
   rl.on('line', (line) => {
     enqueueLine(line);
-    if (process.stdin.isTTY && !args.quiet) {
-      rl.prompt();
-    }
   });
 
   rl.on('close', () => {
