@@ -74,7 +74,10 @@ export class RrfHttpBridge {
             this._injectTorqueModeFallback(parsed, gcode);
 
             if (!suppressMotionProcessing && parsed.motion.length > 0) {
-                await this._primeDriverDirections(parsed.motion);
+                const torqueItems = parsed.motion.filter((item) => item?.type === 'TorqueMode');
+                if (torqueItems.length > 0) {
+                    await this._primeDriverDirections(torqueItems);
+                }
                 this._processMotion(parsed.motion);
             }
 
@@ -100,11 +103,14 @@ export class RrfHttpBridge {
     async _primeDriverDirections(motionItems) {
         const drivers = new Set();
         for (const item of motionItems) {
-            if (item && item.type === 'TorqueMode' && Number.isFinite(item.driver)) {
-                drivers.add(item.driver);
-            } else if (item && item.type === 'Motion' && Number.isFinite(item.motorId)) {
-                drivers.add(item.motorId);
+            if (!item || item.type !== 'TorqueMode') {
+                continue;
             }
+            const motorId = this._getMotorIdFromTorqueEvent(item);
+            if (!Number.isFinite(motorId)) {
+                continue;
+            }
+            drivers.add(motorId);
         }
 
         if (drivers.size === 0) {
@@ -124,39 +130,90 @@ export class RrfHttpBridge {
         }
     }
 
-    async _fetchDriverDirection(driver) {
-        if (this._driverDirections.has(driver)) {
-            return this._driverDirections.get(driver);
+    _getMotorIdFromTorqueEvent(event) {
+        if (!event || event.type !== 'TorqueMode') {
+            return null;
         }
-        if (this._directionFetches.has(driver)) {
-            return this._directionFetches.get(driver);
+        if (Number.isFinite(event.motorId)) {
+            return event.motorId;
+        }
+        if (Number.isFinite(event.driver)) {
+            return event.driver;
+        }
+        const fallback = event.motorId ?? event.driver;
+        const normalizedFallback = this._normalizeMotorId(fallback);
+        if (Number.isFinite(normalizedFallback)) {
+            return normalizedFallback;
+        }
+        return null;
+    }
+
+    _normalizeMotorId(value) {
+        if (Number.isFinite(value)) {
+            return value;
+        }
+        if (typeof value === 'string') {
+            const parsed = parseFloat(value);
+            if (Number.isFinite(parsed)) {
+                return parsed;
+            }
+        }
+        return null;
+    }
+
+    _formatMotorIdForCommand(motorId) {
+        const normalized = this._normalizeMotorId(motorId);
+        if (normalized === null) {
+            return null;
+        }
+        if (Number.isInteger(normalized)) {
+            return `${normalized}.0`;
+        }
+        return `${normalized}`;
+    }
+
+    async _fetchDriverDirection(driver) {
+        const normalizedDriver = this._normalizeMotorId(driver);
+        if (normalizedDriver === null) {
+            return null;
+        }
+        if (this._driverDirections.has(normalizedDriver)) {
+            return this._driverDirections.get(normalizedDriver);
+        }
+        if (this._directionFetches.has(normalizedDriver)) {
+            return this._directionFetches.get(normalizedDriver);
+        }
+
+        const commandMotorId = this._formatMotorIdForCommand(normalizedDriver);
+        if (!commandMotorId) {
+            return null;
         }
 
         const inflight = (async () => {
             try {
-                const result = await this.sendGCode(`M569 P${driver}`, {
+                const result = await this.sendGCode(`M569 P${commandMotorId}`, {
                     suppressMotionProcessing: true,
                     suppressCallbacks: true,
                 });
                 const rawReply = result?.reply ?? '';
                 const direction = this._parseDriverDirectionFromReply(rawReply);
                 if (direction !== null) {
-                    this._driverDirections.set(driver, direction);
+                    this._driverDirections.set(normalizedDriver, direction);
                     return direction;
                 }
                 if (typeof rawReply === 'string' && rawReply.trim().length === 0) {
-                    this._driverDirections.set(driver, true); // assume forwards when firmware stays silent
+                    this._driverDirections.set(normalizedDriver, true); // assume forwards when firmware stays silent
                     return true;
                 }
             } catch (err) {
-                console.warn(`RrfHttpBridge: failed to fetch direction for driver ${driver}: ${err?.message || err}`);
+                console.warn(`RrfHttpBridge: failed to fetch direction for driver ${normalizedDriver}: ${err?.message || err}`);
             } finally {
-                this._directionFetches.delete(driver);
+                this._directionFetches.delete(normalizedDriver);
             }
             return null;
         })();
 
-        this._directionFetches.set(driver, inflight);
+        this._directionFetches.set(normalizedDriver, inflight);
         return inflight;
     }
 
@@ -183,7 +240,7 @@ export class RrfHttpBridge {
             return;
         }
         const driverMatch = gcode.match(/P([0-9]+(?:\.[0-9]+)?)/i);
-        const driver = driverMatch ? parseFloat(driverMatch[1]) : null;
+        const driver = driverMatch ? this._normalizeMotorId(driverMatch[1]) : null;
         if (!Number.isFinite(driver)) {
             return;
         }
@@ -377,9 +434,14 @@ export class RrfHttpBridge {
 
                 if (line.startsWith('T,')) {
                     const [, driver, torque] = line.split(',');
+                    const motorId = parseFloat(driver);
+                    if (!Number.isFinite(motorId)) {
+                        continue;
+                    }
                     result.motion.push({
                         type: 'TorqueMode',
-                        driver: parseInt(driver, 10),
+                        driver: motorId,
+                        motorId,
                         torqueNm: parseFloat(torque),
                     });
                     continue;
@@ -420,14 +482,15 @@ export class RrfHttpBridge {
             return [];
         }
 
-        const drivers = pMatch[1]
+        const motorIds = pMatch[1]
             .split(':')
-            .map((d) => parseFloat(d))
-            .filter((d) => Number.isFinite(d));
+            .map((d) => this._normalizeMotorId(d))
+            .filter((id) => Number.isFinite(id));
 
-        return drivers.map((driver) => ({
+        return motorIds.map((motorId) => ({
             type: 'TorqueMode',
-            driver,
+            driver: motorId,
+            motorId,
             torqueNm,
         }));
     }
@@ -440,12 +503,16 @@ export class RrfHttpBridge {
         if (torqueCommands.length === 0) {
             return;
         }
-        const seenDrivers = new Set(
+        const seenMotorIds = new Set(
             parsedResponse.motion
-                .filter((m) => m?.type === 'TorqueMode' && Number.isFinite(m.driver))
-                .map((m) => m.driver),
+                .filter((m) => m?.type === 'TorqueMode')
+                .map((m) => this._getMotorIdFromTorqueEvent(m))
+                .filter((id) => Number.isFinite(id)),
         );
-        const missing = torqueCommands.filter((cmd) => !seenDrivers.has(cmd.driver));
+        const missing = torqueCommands.filter((cmd) => {
+            const motorId = this._getMotorIdFromTorqueEvent(cmd);
+            return Number.isFinite(motorId) && !seenMotorIds.has(motorId);
+        });
         if (missing.length > 0) {
             parsedResponse.motion.push(...missing);
         }
@@ -469,21 +536,26 @@ export class RrfHttpBridge {
     }
 
     _handleTorqueModeChange(event) {
-        const { driver, torqueNm } = event;
-        const axis = this.driverToAxis[driver];
+        const motorId = this._getMotorIdFromTorqueEvent(event);
+        if (!Number.isFinite(motorId)) {
+            console.warn('RrfHttpBridge: TorqueMode event missing motorId');
+            return;
+        }
+        const torqueNm = event?.torqueNm ?? 0;
+        const axis = this.driverToAxis[motorId];
 
         if (!axis) {
-            console.warn(`RrfHttpBridge: Unknown driver address ${driver}`);
+            console.warn(`RrfHttpBridge: Unknown motorId ${motorId}`);
             return;
         }
 
-        const direction = this._driverDirections.get(driver);
+        const direction = this._driverDirections.get(motorId);
         const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
         const effectiveTorque = torqueSign === null ? -torqueNm : torqueNm * torqueSign;
 
         if (this.onTorqueModeChange) {
             try {
-                this.onTorqueModeChange(driver, axis, effectiveTorque);
+                this.onTorqueModeChange(motorId, axis, effectiveTorque);
             } catch (_err) {
                 /* ignore listener errors */
             }
@@ -494,7 +566,7 @@ export class RrfHttpBridge {
             this.remoteSpoolSystem.addCommand({
                 type: isPositionMode ? 'SetPositionMode' : 'SetTorqueMode',
                 axis,
-                driver,
+                driver: motorId,
                 torqueNm: effectiveTorque,
                 timestamp: Date.now(),
             });
