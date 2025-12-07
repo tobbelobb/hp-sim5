@@ -238,7 +238,7 @@ function initHpSim() {
   let externalCommandSocketConnecting = false;
   let externalWsReconnectTimer = null;
   const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 1000;
-  const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 15000;
+  const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 5000;
   let externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
 
   function forEachQualityMonitor(callback) {

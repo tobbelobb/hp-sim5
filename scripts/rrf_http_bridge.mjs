@@ -59,6 +59,11 @@ const wss = args.wsPort
   ? new WebSocketServer({ port: args.wsPort })
   : null;
 
+const PROMPT_CONNECTED = 'gcode> ';
+const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
+let promptConnectedState = !wss;
+let promptEverRendered = false;
+
 const pendingWsPayloads = [];
 const MAX_PENDING_WS_PAYLOADS = 5000;
 let waitingForClientNoticePrinted = false;
@@ -139,15 +144,11 @@ if (wss) {
     console.log(`Open hp-sim with ?gcode_ws=ws://localhost:${args.wsPort} to follow along.`);
   }
   wss.on('connection', (socket) => {
-    if (!args.quiet) {
-      console.log('hp-sim connected to WebSocket feed.');
-    }
+    updatePromptForConnectionState(true);
     flushPendingPayloads();
     socket.on('message', (data) => handleIncomingWsMessage(data));
     socket.on('close', () => {
-      if (!args.quiet) {
-        console.log('hp-sim disconnected from WebSocket feed.');
-      }
+      updatePromptForConnectionState(hasReadyWsClients());
     });
   });
 }
@@ -184,8 +185,26 @@ let rl = null;
 
 const interactivePromptEnabled = () => rl && process.stdin.isTTY && !args.quiet;
 
+function updatePromptForConnectionState(connected, { forcePrompt = false } = {}) {
+  promptConnectedState = connected;
+  if (!interactivePromptEnabled()) {
+    return;
+  }
+  const targetPrompt = connected ? PROMPT_CONNECTED : PROMPT_DISCONNECTED;
+  if (rl.getPrompt() !== targetPrompt) {
+    rl.setPrompt(targetPrompt);
+  }
+  if (forcePrompt || !promptEverRendered) {
+    promptEverRendered = true;
+    rl.prompt();
+  } else {
+    rl.prompt(true);
+  }
+}
+
 const promptIfInteractive = () => {
   if (interactivePromptEnabled()) {
+    promptEverRendered = true;
     rl.prompt();
   }
 };
@@ -288,8 +307,7 @@ if (args.command) {
   });
 
   if (process.stdin.isTTY && !args.quiet) {
-    rl.setPrompt('gcode> ');
-    rl.prompt();
+    updatePromptForConnectionState(promptConnectedState, { forcePrompt: true });
   }
 
   rl.on('line', (line) => {
