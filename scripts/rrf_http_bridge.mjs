@@ -1,39 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { WebSocketServer } from 'ws';
-import { RrfHttpBridge } from '../examples/js/slideprinter/rrfHttpBridge.js';
-
-function parseArgs(argv) {
-  const args = {
-    server: process.env.RRF_SERVER_URL || 'http://localhost:8080',
-    wsPort: 8790,
-    command: null,
-    quiet: false,
-    help: false,
-  };
-
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-    if (arg === '--server' || arg === '--rrf') {
-      args.server = argv[++i] || args.server;
-    } else if (arg === '--ws-port') {
-      const value = parseInt(argv[++i], 10);
-      if (Number.isFinite(value) && value > 0) {
-        args.wsPort = value;
-      } else {
-        args.wsPort = 0;
-      }
-    } else if (arg === '--cmd' || arg === '-c') {
-      args.command = argv[++i] || null;
-    } else if (arg === '--quiet' || arg === '-q') {
-      args.quiet = true;
-    } else if (arg === '--help' || arg === '-h') {
-      args.help = true;
-    }
-  }
-
-  return args;
-}
+import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
 
 function printHelp() {
   console.log(`Usage: node scripts/rrf_http_bridge.mjs [options]
@@ -44,140 +11,32 @@ motion commands over WebSocket for hp-sim to visualize.
 Options:
   --server, --rrf <url>    Base URL of rrf_simulator (default: http://localhost:8080)
   --ws-port <port>         Port for the WebSocket fan-out (0 to disable, default: 8790)
+  --no-ws                  Disable WebSocket fan-out entirely
   --cmd, -c <GCODE>        Send one G-code line and exit
   --quiet, -q              Only print replies (suppress prompts and extra logs)
   --help, -h               Show this help`);
 }
 
-const args = parseArgs(process.argv.slice(2));
+const args = parseBridgeArgs(process.argv.slice(2));
 if (args.help) {
   printHelp();
   process.exit(0);
 }
 
-const wss = args.wsPort
-  ? new WebSocketServer({ port: args.wsPort })
-  : null;
+const bridgeContext = createGcodeBridge({
+  server: args.server,
+  wsPort: args.noWs ? 0 : args.wsPort,
+  quiet: args.quiet,
+  onClientChange: (connected) => updatePromptForConnectionState(connected),
+});
 
 const PROMPT_CONNECTED = 'gcode> ';
 const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
-let promptConnectedState = !wss;
+let promptConnectedState = !bridgeContext.wss;
 let promptEverRendered = false;
 
-const pendingWsPayloads = [];
-const MAX_PENDING_WS_PAYLOADS = 5000;
-let waitingForClientNoticePrinted = false;
-const pendingEncoderRequests = new Map();
-let encoderRequestSeq = 1;
-const ENCODER_REQUEST_TIMEOUT_MS = 2000;
-
-const getReadyWsClients = () => (wss
-  ? Array.from(wss.clients).filter((client) => client.readyState === 1)
-  : []);
-
-const hasReadyWsClients = () => getReadyWsClients().length > 0;
-
-const broadcast = (payload) => {
-  if (!payload || !wss) {
-    return;
-  }
-  const readyClients = getReadyWsClients();
-  if (readyClients.length === 0) {
-    enqueuePendingPayload(payload);
-    return;
-  }
-  const data = JSON.stringify(payload);
-  readyClients.forEach((client) => {
-    client.send(data);
-  });
-};
-
-function enqueuePendingPayload(payload) {
-  if (!wss || !payload) {
-    return;
-  }
-  pendingWsPayloads.push(payload);
-  const overflow = pendingWsPayloads.length - MAX_PENDING_WS_PAYLOADS;
-  if (overflow > 0) {
-    pendingWsPayloads.splice(0, overflow);
-  }
-  if (!waitingForClientNoticePrinted && !args.quiet) {
-    console.log('Waiting for hp-sim WebSocket client to connect before streaming...');
-    waitingForClientNoticePrinted = true;
-  }
-}
-
-function flushPendingPayloads() {
-  if (!hasReadyWsClients() || pendingWsPayloads.length === 0) {
-    return;
-  }
-  const batch = pendingWsPayloads.splice(0, pendingWsPayloads.length);
-  if (!args.quiet) {
-    console.log(`Streaming ${batch.length} queued message${batch.length === 1 ? '' : 's'} to hp-sim client.`);
-  }
-  batch.forEach((payload) => broadcast(payload));
-  waitingForClientNoticePrinted = false;
-}
-
-function handleIncomingWsMessage(data) {
-  if (!data) {
-    return;
-  }
-  let payload = null;
-  try {
-    payload = typeof data === 'string' ? JSON.parse(data) : JSON.parse(data.toString());
-  } catch (_err) {
-    return;
-  }
-  if (payload?.type === 'encoder_response' && payload.requestId != null) {
-    const pending = pendingEncoderRequests.get(payload.requestId);
-    if (pending) {
-      pendingEncoderRequests.delete(payload.requestId);
-      pending.resolve(payload);
-    }
-  }
-}
-
-if (wss) {
-  if (!args.quiet) {
-    console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
-    console.log(`Open hp-sim with ?gcode_ws=ws://localhost:${args.wsPort} to follow along.`);
-  }
-  wss.on('connection', (socket) => {
-    updatePromptForConnectionState(true);
-    flushPendingPayloads();
-    socket.on('message', (data) => handleIncomingWsMessage(data));
-    socket.on('close', () => {
-      updatePromptForConnectionState(hasReadyWsClients());
-    });
-  });
-}
-
 let currentGcode = null;
-const bridge = new RrfHttpBridge({
-  baseUrl: args.server.replace(/\/$/, ''),
-  remoteSpoolSystem: {
-    addCommand: (command) => {
-      if (!command) {
-        return;
-      }
-      broadcast({ type: 'command', command, gcode: currentGcode });
-    },
-  },
-  encoderResolver: async ({ axes, timeoutMs }) => {
-    const timeout = Number.isFinite(timeoutMs)
-      ? Math.max(1, Math.min(timeoutMs, 5000))
-      : ENCODER_REQUEST_TIMEOUT_MS;
-    const response = await sendEncoderRequest(axes, timeout);
-    if (response && Array.isArray(response.anglesDeg)) {
-      return response.anglesDeg;
-    }
-    if (Array.isArray(response.angles)) {
-      return response.angles;
-    }
-    return [];
-  },
-});
+const bridge = bridgeContext.bridge;
 
 const sendQueue = [];
 let processingQueue = false;
@@ -209,44 +68,6 @@ const promptIfInteractive = () => {
   }
 };
 
-function waitForHpSimConnection() {
-  if (!wss || hasReadyWsClients()) {
-    return Promise.resolve();
-  }
-
-  let settled = false;
-  const resolveOnce = (resolve) => {
-    if (settled) {
-      return;
-    }
-    settled = true;
-    resolve();
-  };
-
-  return new Promise((resolve) => {
-    const cleanup = () => {
-      wss.off('connection', onConnection);
-    };
-
-    const onConnection = () => {
-      cleanup();
-      resolveOnce(resolve);
-    };
-
-    wss.on('connection', onConnection);
-
-    process.nextTick(() => {
-      if (settled) {
-        return;
-      }
-      if (hasReadyWsClients()) {
-        cleanup();
-        resolveOnce(resolve);
-      }
-    });
-  });
-}
-
 async function processQueue() {
   if (processingQueue) {
     return;
@@ -271,9 +92,8 @@ async function handleGcodeLine(line) {
     console.log(`> ${trimmed}`);
   }
   try {
-    const result = await bridge.sendGCode(trimmed);
+    const result = await bridgeContext.sendGcodeLine(trimmed);
     console.log(result.reply.trim());
-    broadcast({ type: 'reply', gcode: trimmed, reply: result.reply });
   } catch (err) {
     console.error(`Error sending "${trimmed}": ${err.message}`);
   } finally {
@@ -325,11 +145,9 @@ function sendEncoderRequest(axes, timeoutMs = ENCODER_REQUEST_TIMEOUT_MS) {
 }
 
 async function runOneShot() {
-  await waitForHpSimConnection();
+  await bridgeContext.waitForHpSimConnection();
   await handleGcodeLine(args.command);
-  if (wss) {
-    wss.close();
-  }
+  bridgeContext.close();
   process.exit(0);
 }
 
@@ -354,9 +172,12 @@ if (args.command) {
   });
 
   rl.on('close', () => {
-    if (wss) {
-      wss.close();
-    }
+    bridgeContext.close();
     process.exit(0);
   });
+
+  if (bridgeContext.wss && !args.quiet) {
+    console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
+    console.log(`Open hp-sim with ?gcode_ws=ws://localhost:${args.wsPort} to follow along.`);
+  }
 }
