@@ -984,6 +984,10 @@ function initHpSim() {
       }
       return;
     }
+    if (payload.type === 'reset') {
+      handleUserReset();
+      return;
+    }
     const commands = [];
     if (payload.type === 'command' && payload.command) {
       commands.push(payload.command);

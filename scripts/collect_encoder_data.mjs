@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
 import { STEP_CLOCK_HZ } from '../examples/js/slideprinter/rrfMotionUtils.js';
 
-const DEFAULT_FEED = 600;
+const DEFAULT_FEED = 2000;
 const DEFAULT_WAIT_FOR_WS_MS = 5000;
 const DEFAULT_SETTLE_MS = 1000;
 const DEFAULT_SENSOR_AXIS_IDX = 2; // Z motor is sensor by default
 const DEFAULT_TORQUE = 0.05;
+const DEFAULT_RRF_PORT = 8081;
+const DEFAULT_RRF_SERVER = `http://localhost:${DEFAULT_RRF_PORT}`;
+const RRF_SIM_BINARY = './RRF/build/rrf_simulator';
+const RRF_SIM_ARGS = ['--vsd', 'RRF/run/vsd', '-c', 'sys/config_slideprinter.g', '--server', '-p'];
 const AXES = ['X', 'Y', 'Z'];
 const MOTOR_IDS = ['40.0', '41.0', '42.0'];
 
@@ -147,6 +152,64 @@ function estimateMoveLengthMm(gcode) {
   const dy = coords.Y ?? 0;
   const dz = coords.Z ?? 0;
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+function buildRrfSimulatorArgs(port) {
+  return [...RRF_SIM_ARGS, port.toString()];
+}
+
+async function startRrfSimulator({ port = DEFAULT_RRF_PORT, debug = false } = {}) {
+  const args = buildRrfSimulatorArgs(port);
+  const child = spawn(RRF_SIM_BINARY, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+  if (debug && child?.stdout) {
+    child.stdout.on('data', (data) => {
+      process.stdout.write(`[rrf_sim] ${data}`);
+    });
+  }
+  if (child?.stderr) {
+    child.stderr.on('data', (data) => {
+      const prefix = debug ? '[rrf_sim] ' : '';
+      process.stderr.write(`${prefix}${data}`);
+    });
+  }
+  return child;
+}
+
+async function waitForRrfSimulator(baseUrl, timeoutMs = 7000) {
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/machine/code`;
+  const deadline = Date.now() + Math.max(1, timeoutMs);
+  while (Date.now() < deadline) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'M115',
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        await res.text();
+        return;
+      }
+    } catch (_err) {
+      /* try again */
+    }
+    await sleep(250);
+  }
+  throw new Error(`rrf_simulator at ${baseUrl} did not become ready in time`);
+}
+
+function stopProcess(proc) {
+  if (!proc || proc.killed) {
+    return;
+  }
+  try {
+    proc.kill('SIGTERM');
+  } catch (_err) {
+    /* best effort */
+  }
 }
 
 function parseTorqueValue(token) {
@@ -334,6 +397,17 @@ async function restorePositions(sendFn, {
   }
 }
 
+async function sendHpSimReset(bridgeCtx, { quiet = false } = {}) {
+  if (!bridgeCtx?.broadcast) {
+    return;
+  }
+  bridgeCtx.broadcast({ type: 'reset' });
+  if (!quiet) {
+    console.log('Sent hp-sim reset request.');
+  }
+  await sleep(50);
+}
+
 async function main() {
   const args = parseBridgeArgs(process.argv.slice(2));
   const dx = Number.isFinite(parseFloat(args.dx)) ? parseFloat(args.dx) : 10;
@@ -374,8 +448,21 @@ async function main() {
     console.log('No measurement_points.txt supplied; using single default coordinate.');
   }
 
+  const targetServer = args.serverExplicit ? args.server : DEFAULT_RRF_SERVER;
+  const shouldSpawnRrf = !args.noSpawnRrfSimulator && !args.serverExplicit;
+  let rrfProcess = null;
+  if (shouldSpawnRrf) {
+    try {
+      console.log(`Starting rrf_simulator at ${targetServer}...`);
+      rrfProcess = await startRrfSimulator({ port: DEFAULT_RRF_PORT, debug });
+      await waitForRrfSimulator(targetServer);
+    } catch (err) {
+      throw new Error(`Unable to start rrf_simulator: ${err?.message || err}`);
+    }
+  }
+
   const bridgeCtx = createGcodeBridge({
-    server: args.server,
+    server: targetServer,
     wsPort: args.noWs ? 0 : args.wsPort,
     quiet: args.quiet,
     encoderTimeoutMs,
@@ -391,6 +478,9 @@ async function main() {
 
   if (!args.noWs) {
     await bridgeCtx.waitForHpSimConnection(waitForWsMs);
+    if (!args.noHpSimReset) {
+      await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
+    }
   }
 
   let originalQ = null;
@@ -476,6 +566,9 @@ async function main() {
       await send(`M666 Q${originalQ}`, { suppressMotionProcessing: true });
     }
   } finally {
+    if (rrfProcess && !args.persistRrfSimulator) {
+      stopProcess(rrfProcess);
+    }
     bridgeCtx.close();
     process.exit(success ? 0 : 1);
   }

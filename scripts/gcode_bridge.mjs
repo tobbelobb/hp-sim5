@@ -251,8 +251,10 @@ export function createGcodeBridge({
 }
 
 export function parseBridgeArgs(argv) {
+  const envServer = process.env.RRF_SERVER_URL;
   const args = {
-    server: process.env.RRF_SERVER_URL || 'http://localhost:8080',
+    server: envServer || 'http://localhost:8080',
+    serverExplicit: !!envServer,
     wsPort: 8790,
     quiet: false,
     command: null,
@@ -267,12 +269,16 @@ export function parseBridgeArgs(argv) {
     pointsFile: null,
     outputFile: null,
     settleMs: null,
+    persistRrfSimulator: false,
+    noHpSimReset: false,
+    noSpawnRrfSimulator: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--server' || arg === '--rrf') {
       args.server = argv[++i] || args.server;
+      args.serverExplicit = true;
     } else if (arg === '--ws-port') {
       const value = parseInt(argv[++i], 10);
       if (Number.isFinite(value) && value > 0) {
@@ -306,6 +312,12 @@ export function parseBridgeArgs(argv) {
       args.outputFile = argv[++i] || null;
     } else if (arg === '--settle-ms') {
       args.settleMs = argv[++i] || null;
+    } else if (arg === '--persist-rrf-simulator') {
+      args.persistRrfSimulator = true;
+    } else if (arg === '--no-hp-sim-reset') {
+      args.noHpSimReset = true;
+    } else if (arg === '--no-spawn-rrf-simulator') {
+      args.noSpawnRrfSimulator = true;
     }
   }
 
