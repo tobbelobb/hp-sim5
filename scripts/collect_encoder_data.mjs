@@ -1,9 +1,15 @@
 #!/usr/bin/env node
+import fs from 'node:fs/promises';
 import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
 import { STEP_CLOCK_HZ } from '../examples/js/slideprinter/rrfMotionUtils.js';
 
 const DEFAULT_FEED = 600;
 const DEFAULT_WAIT_FOR_WS_MS = 5000;
+const DEFAULT_SETTLE_MS = 1000;
+const DEFAULT_SENSOR_AXIS_IDX = 2; // Z motor is sensor by default
+const DEFAULT_TORQUE = 0.05;
+const AXES = ['X', 'Y', 'Z'];
+const MOTOR_IDS = ['40.0', '41.0', '42.0'];
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -143,6 +149,191 @@ function estimateMoveLengthMm(gcode) {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
+function parseTorqueValue(token) {
+  if (typeof token !== 'string') {
+    return null;
+  }
+  const match = token.trim().match(/^T\s*([-+]?[0-9]*\.?[0-9]+)/i);
+  if (!match) {
+    return null;
+  }
+  const torque = parseFloat(match[1]);
+  return Number.isFinite(torque) ? torque : null;
+}
+
+function parsePointLine(line, lineNumber) {
+  const trimmed = line.trim();
+  if (trimmed.length === 0 || trimmed.startsWith('#') || trimmed.startsWith('//')) {
+    return null;
+  }
+  const match = trimmed.match(/^\[([^\]]+)\]\s*$/);
+  if (!match) {
+    console.warn(`Skipping malformed line ${lineNumber}: "${line}"`);
+    return null;
+  }
+  const parts = match[1].split(',').map((part) => part.trim()).filter((part) => part.length > 0);
+  if (parts.length !== AXES.length) {
+    console.warn(`Skipping line ${lineNumber}: expected ${AXES.length} entries, got ${parts.length}`);
+    return null;
+  }
+  const rawParts = [...parts];
+  const targets = [];
+  let sensor = null;
+  for (let i = 0; i < parts.length; i += 1) {
+    const torque = parseTorqueValue(parts[i]);
+    if (torque !== null) {
+      sensor = { axisIdx: i, torque };
+      targets.push(null);
+      continue;
+    }
+    const value = parseFloat(parts[i]);
+    if (!Number.isFinite(value)) {
+      console.warn(`Skipping line ${lineNumber}: unable to parse value "${parts[i]}"`);
+      return null;
+    }
+    targets.push(value);
+  }
+  return { targets, sensor, rawParts, lineNumber };
+}
+
+async function loadMeasurementPoints(filePath) {
+  const content = await fs.readFile(filePath, 'utf8');
+  const points = [];
+  const lines = content.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const parsed = parsePointLine(lines[i], i + 1);
+    if (parsed) {
+      points.push(parsed);
+    }
+  }
+  if (points.length === 0) {
+    throw new Error(`No measurement coordinates found in ${filePath}`);
+  }
+  return points;
+}
+
+function formatPoint(point) {
+  if (!point?.rawParts) {
+    return 'unknown';
+  }
+  return `[${point.rawParts.join(', ')}]`;
+}
+
+function buildRelativeMove(currentPosition, point, feed) {
+  if (!point?.targets || !Array.isArray(currentPosition)) {
+    return null;
+  }
+  const parts = [];
+  for (let i = 0; i < point.targets.length; i += 1) {
+    const target = point.targets[i];
+    if (!Number.isFinite(target)) {
+      continue;
+    }
+    const delta = target - (currentPosition[i] ?? 0);
+    currentPosition[i] = target;
+    if (Math.abs(delta) < 1e-6) {
+      continue;
+    }
+    parts.push(`${AXES[i]}${delta.toFixed(3)}`);
+  }
+  if (parts.length === 0) {
+    return null;
+  }
+  return `G1 H2 ${parts.join(' ')} F${feed}`;
+}
+
+async function ensureSensorState(sendFn, desiredSensor, state) {
+  if (!state) {
+    return;
+  }
+  const desiredAxis = desiredSensor?.axisIdx ?? null;
+  const desiredTorque = desiredSensor?.torque;
+  const sameAxis = desiredAxis === state.axisIdx;
+  const sameTorque = (desiredTorque == null && state.torque == null)
+    || (Number.isFinite(desiredTorque) && Number.isFinite(state.torque)
+      && Math.abs(desiredTorque - state.torque) < 1e-9);
+  if (sameAxis && sameTorque) {
+    return;
+  }
+  if (state.axisIdx != null && state.axisIdx !== desiredAxis) {
+    const motorId = MOTOR_IDS[state.axisIdx];
+    await sendFn(`M569.4 P${motorId} T0`, { suppressMotionProcessing: true });
+  }
+  if (desiredAxis != null) {
+    const motorId = MOTOR_IDS[desiredAxis];
+    const torque = Number.isFinite(desiredTorque) ? desiredTorque : DEFAULT_TORQUE;
+    await sendFn(`M569.4 P${motorId} T${torque}`);
+  }
+  state.axisIdx = desiredAxis;
+  state.torque = desiredTorque;
+}
+
+function computeReverseDistanceMm(angleDeg, axisIdx, mmPerDeg, m666Values, stepsPerMm) {
+  const factor = Number.isFinite(mmPerDeg?.[axisIdx]) ? mmPerDeg[axisIdx] : null;
+  if (factor !== null) {
+    return -angleDeg * factor;
+  }
+  const radius = getArrayValue(m666Values?.R, axisIdx, null);
+  if (Number.isFinite(radius)) {
+    const simpleMmPerDeg = (2 * Math.PI * radius) / 360.0;
+    return -angleDeg * simpleMmPerDeg;
+  }
+  const stepsPerMmAxis = stepsPerMm?.[AXES[axisIdx]];
+  if (Number.isFinite(stepsPerMmAxis) && stepsPerMmAxis !== 0) {
+    return -(angleDeg / 360) * (1 / stepsPerMmAxis);
+  }
+  return 0;
+}
+
+async function restorePositions(sendFn, {
+  feed,
+  anglesDeg,
+  mmPerDeg,
+  m666Values,
+  stepsPerMm,
+  sensorState,
+}) {
+  const hasAngles = Array.isArray(anglesDeg) && anglesDeg.length > 0;
+  const reverseMm = hasAngles
+    ? AXES.map((_, idx) => computeReverseDistanceMm(
+      anglesDeg[idx] ?? 0,
+      idx,
+      mmPerDeg,
+      m666Values,
+      stepsPerMm,
+    ))
+    : [];
+  const moveParts = [];
+  if (hasAngles) {
+    for (let i = 0; i < reverseMm.length; i += 1) {
+      if (sensorState?.axisIdx === i) {
+        continue;
+      }
+      const dist = reverseMm[i];
+      if (!Number.isFinite(dist) || Math.abs(dist) < 1e-5) {
+        continue;
+      }
+      moveParts.push(`${AXES[i]}${dist.toFixed(3)}`);
+    }
+  }
+  if (moveParts.length > 0) {
+    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`);
+  }
+  if (sensorState?.axisIdx != null) {
+    const motorId = MOTOR_IDS[sensorState.axisIdx];
+    await sendFn(`M569.4 P${motorId} T0`, { suppressMotionProcessing: true });
+    const encoderReply = await sendFn(`M569.3 P${motorId}`, { suppressMotionProcessing: true });
+    const encoderAngles = parseEncoderReply(encoderReply?.reply);
+    const angle = encoderAngles[0] ?? 0;
+    const dist = computeReverseDistanceMm(angle, sensorState.axisIdx, mmPerDeg, m666Values, stepsPerMm);
+    if (Number.isFinite(dist) && Math.abs(dist) > 1e-5) {
+      await runMoveWithWait(sendFn, `G1 H2 ${AXES[sensorState.axisIdx]}${dist.toFixed(3)} F${feed}`);
+    }
+    sensorState.axisIdx = null;
+    sensorState.torque = null;
+  }
+}
+
 async function main() {
   const args = parseBridgeArgs(process.argv.slice(2));
   const dx = Number.isFinite(parseFloat(args.dx)) ? parseFloat(args.dx) : 10;
@@ -152,6 +343,36 @@ async function main() {
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
   const debug = !!args.debug;
   let success = false;
+  const settleMs = Number.isFinite(parseFloat(args.settleMs))
+    ? Math.max(0, parseFloat(args.settleMs))
+    : DEFAULT_SETTLE_MS;
+
+  let measurementPoints = null;
+  const requestedPointsFile = args.pointsFile;
+  if (requestedPointsFile) {
+    measurementPoints = await loadMeasurementPoints(requestedPointsFile);
+    console.log(`Loaded ${measurementPoints.length} measurement point(s) from ${requestedPointsFile}`);
+  } else {
+    try {
+      await fs.access('measurement_points.txt');
+      measurementPoints = await loadMeasurementPoints('measurement_points.txt');
+      console.log(`Loaded ${measurementPoints.length} measurement point(s) from measurement_points.txt`);
+    } catch (err) {
+      if (err?.code !== 'ENOENT') {
+        console.warn(`Could not load measurement_points.txt: ${err.message}`);
+      }
+      /* keep fallback */
+    }
+  }
+
+  if (!measurementPoints) {
+    measurementPoints = [{
+      targets: [dx, dy, null],
+      sensor: { axisIdx: DEFAULT_SENSOR_AXIS_IDX, torque: DEFAULT_TORQUE },
+      rawParts: [dx, dy, `T${DEFAULT_TORQUE}`],
+    }];
+    console.log('No measurement_points.txt supplied; using single default coordinate.');
+  }
 
   const bridgeCtx = createGcodeBridge({
     server: args.server,
@@ -173,6 +394,11 @@ async function main() {
   }
 
   let originalQ = null;
+  const measurements = [];
+  const sensorState = { axisIdx: null, torque: null };
+  const currentPosition = [0, 0, 0];
+  let lastAnglesDeg = null;
+
   try {
     const m92Reply = await send('M92', { suppressMotionProcessing: true });
     const stepsPerMm = parseM92(m92Reply?.reply);
@@ -180,72 +406,72 @@ async function main() {
     const m666Reply = await send('M666', { suppressMotionProcessing: true });
     const m666Values = parseM666(m666Reply?.reply);
     originalQ = Number.isFinite(m666Values.Q) ? m666Values.Q : null;
+    const mmPerDeg = AXES.map((_, i) => computeMmPerDegree(m666Values, i));
 
     await send('G92 X0 Y0 Z0', { suppressMotionProcessing: true });
     await send('G91', { suppressMotionProcessing: true });
     await send('M666 Q0', { suppressMotionProcessing: true });
     await send('M569.3 P40.0:41.0:42.0 S', { suppressMotionProcessing: true });
-    await send('M569.4 P42.0 T0.05');
 
-    await runMoveWithWait(send, `G1 H2 X${dx} Y${dy} F${feed}`);
-
-    await sleep(1000);
-    const encoderMid = await send('M569.3 P40.0:41.0:42.0');
-    const anglesDeg = parseEncoderReply(encoderMid?.reply);
-
-    const mmPerDeg = [0, 1, 2].map((i) => computeMmPerDegree(m666Values, i));
-    const axisOrder = ['X', 'Y', 'Z'];
-    const reverseXYMm = anglesDeg.slice(0, 2).map((deg, idx) => {
-      const factor = Number.isFinite(mmPerDeg[idx]) ? mmPerDeg[idx] : null;
-      if (factor === null) {
-        const radius = getArrayValue(m666Values.R, idx, null);
-        if (Number.isFinite(radius)) {
-          const simpleMmPerDeg = (2 * Math.PI * radius) / 360.0;
-          return -deg * simpleMmPerDeg;
-        }
-        const stepsPerMmAxis = axisOrder[idx] ? stepsPerMm?.[axisOrder[idx]] : null;
-        if (Number.isFinite(stepsPerMmAxis) && stepsPerMmAxis !== 0) {
-          return -(deg / 360) * (1 / stepsPerMmAxis);
-        }
-        return 0;
+    for (const point of measurementPoints) {
+      const desiredSensor = point.sensor
+        || (sensorState.axisIdx != null ? sensorState : { axisIdx: DEFAULT_SENSOR_AXIS_IDX, torque: DEFAULT_TORQUE });
+      // eslint-disable-next-line no-await-in-loop
+      await ensureSensorState(send, desiredSensor, sensorState);
+      const move = buildRelativeMove(currentPosition, point, feed);
+      if (move) {
+        // eslint-disable-next-line no-await-in-loop
+        await runMoveWithWait(send, move);
       }
-      return -deg * factor;
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(settleMs);
+      // eslint-disable-next-line no-await-in-loop
+      const encoderMid = await send('M569.3 P40.0:41.0:42.0');
+      const anglesDeg = parseEncoderReply(encoderMid?.reply);
+      lastAnglesDeg = anglesDeg;
+      measurements.push({
+        point: formatPoint(point),
+        targets: point.targets,
+        sensorAxis: sensorState.axisIdx != null ? AXES[sensorState.axisIdx] : null,
+        torque: sensorState.torque ?? desiredSensor?.torque ?? null,
+        anglesDeg,
+      });
+      console.log(`Measured ${measurements.length}/${measurementPoints.length} at ${formatPoint(point)}: ${anglesDeg.join(', ')}`);
+    }
+
+    await restorePositions(send, {
+      feed,
+      anglesDeg: lastAnglesDeg,
+      mmPerDeg,
+      m666Values,
+      stepsPerMm,
+      sensorState,
     });
-
-    const [a, b] = reverseXYMm;
-    await runMoveWithWait(send, `G1 H2 X${a.toFixed(3)} Y${b.toFixed(3)} F${feed}`);
-    await send('M569.4 P42.0 T0', { suppressMotionProcessing: true });
-    const encoderC = await send('M569.3 P42.0', { suppressMotionProcessing: true });
-    const anglesCDeg = parseEncoderReply(encoderC?.reply);
-    const cAngle = anglesCDeg[0] ?? 0;
-    const cFactor = Number.isFinite(mmPerDeg[2]) ? mmPerDeg[2] : (() => {
-      const radius = getArrayValue(m666Values.R, 2, null);
-      if (Number.isFinite(radius)) {
-        return (2 * Math.PI * radius) / 360.0;
-      }
-      const stepsPerMmAxis = stepsPerMm?.Z;
-      if (Number.isFinite(stepsPerMmAxis) && stepsPerMmAxis !== 0) {
-        return 1 / (stepsPerMmAxis * 360);
-      }
-      return 0;
-    })();
-    const c = -cAngle * cFactor;
-    await runMoveWithWait(send, `G1 H2 Z${c.toFixed(3)} F${feed}`);
 
     if (originalQ !== null) {
       await send(`M666 Q${originalQ}`, { suppressMotionProcessing: true });
     }
-    console.log('Captured encoder reading:', anglesDeg);
+
+    if (args.outputFile) {
+      await fs.writeFile(args.outputFile, JSON.stringify(measurements, null, 2));
+      console.log(`Saved ${measurements.length} measurement${measurements.length === 1 ? '' : 's'} to ${args.outputFile}`);
+    }
+
     if (debug) {
-      console.log('Reverse XY (mm):', reverseXYMm.map((v) => Number.isFinite(v) ? v.toFixed(3) : 'nan'));
-      console.log('Captured C encoder:', cAngle);
-      console.log('Reverse Z (mm):', Number.isFinite(c) ? c.toFixed(3) : 'nan');
       console.log('Steps/mm:', stepsPerMm);
       console.log('M666:', m666Values);
     }
     success = true;
   } catch (err) {
     console.error(`Failed to complete sequence: ${err?.message || err}`);
+    if (sensorState?.axisIdx != null) {
+      try {
+        const motorId = MOTOR_IDS[sensorState.axisIdx];
+        await send(`M569.4 P${motorId} T0`, { suppressMotionProcessing: true });
+      } catch (_err) {
+        /* best effort */
+      }
+    }
     if (originalQ !== null) {
       await send(`M666 Q${originalQ}`, { suppressMotionProcessing: true });
     }
