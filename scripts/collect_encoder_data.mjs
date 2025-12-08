@@ -179,6 +179,7 @@ async function main() {
     const m666Values = parseM666(m666Reply?.reply);
     originalQ = Number.isFinite(m666Values.Q) ? m666Values.Q : null;
 
+    await send('G92 X0 Y0 Z0', { suppressMotionProcessing: true });
     await send('M666 Q0', { suppressMotionProcessing: true });
     await send('M569.3 P40.0:41.0:42.0 S', { suppressMotionProcessing: true });
     await send('M569.4 P42.0 T0.05');
