@@ -150,6 +150,8 @@ async function main() {
   const feed = Number.isFinite(parseFloat(args.feed)) ? parseFloat(args.feed) : DEFAULT_FEED;
   const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : DEFAULT_WAIT_FOR_WS_MS;
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
+  const debug = !!args.debug;
+  let success = false;
 
   const bridgeCtx = createGcodeBridge({
     server: args.server,
@@ -160,7 +162,7 @@ async function main() {
 
   const send = async (line, options = {}) => {
     const res = await bridgeCtx.sendGcodeLine(line, options);
-    if (!args.quiet && res?.reply) {
+    if (debug && res?.reply) {
       console.log(res.reply.trim());
     }
     return res;
@@ -186,12 +188,13 @@ async function main() {
 
     await runMoveWithWait(send, `G1 H2 X${dx} Y${dy} F${feed}`);
 
+    await sleep(1000);
     const encoderMid = await send('M569.3 P40.0:41.0:42.0');
     const anglesDeg = parseEncoderReply(encoderMid?.reply);
 
     const mmPerDeg = [0, 1, 2].map((i) => computeMmPerDegree(m666Values, i));
     const axisOrder = ['X', 'Y', 'Z'];
-    const reverseMm = anglesDeg.map((deg, idx) => {
+    const reverseXYMm = anglesDeg.slice(0, 2).map((deg, idx) => {
       const factor = Number.isFinite(mmPerDeg[idx]) ? mmPerDeg[idx] : null;
       if (factor === null) {
         const radius = getArrayValue(m666Values.R, idx, null);
@@ -208,20 +211,38 @@ async function main() {
       return -deg * factor;
     });
 
-    const [a, b, c] = reverseMm;
+    const [a, b] = reverseXYMm;
     await runMoveWithWait(send, `G1 H2 X${a.toFixed(3)} Y${b.toFixed(3)} F${feed}`);
     await send('M569.4 P42.0 T0', { suppressMotionProcessing: true });
-    await send('M569.3 P42.0', { suppressMotionProcessing: true });
+    const encoderC = await send('M569.3 P42.0', { suppressMotionProcessing: true });
+    const anglesCDeg = parseEncoderReply(encoderC?.reply);
+    const cAngle = anglesCDeg[0] ?? 0;
+    const cFactor = Number.isFinite(mmPerDeg[2]) ? mmPerDeg[2] : (() => {
+      const radius = getArrayValue(m666Values.R, 2, null);
+      if (Number.isFinite(radius)) {
+        return (2 * Math.PI * radius) / 360.0;
+      }
+      const stepsPerMmAxis = stepsPerMm?.Z;
+      if (Number.isFinite(stepsPerMmAxis) && stepsPerMmAxis !== 0) {
+        return 1 / (stepsPerMmAxis * 360);
+      }
+      return 0;
+    })();
+    const c = -cAngle * cFactor;
     await runMoveWithWait(send, `G1 H2 Z${c.toFixed(3)} F${feed}`);
 
     if (originalQ !== null) {
       await send(`M666 Q${originalQ}`, { suppressMotionProcessing: true });
     }
-
-    if (!args.quiet) {
-      console.log('Captured encoder reading:', anglesDeg);
-      console.log('Reverse move (mm):', reverseMm.map((v) => Number.isFinite(v) ? v.toFixed(3) : 'nan'));
+    console.log('Captured encoder reading:', anglesDeg);
+    if (debug) {
+      console.log('Reverse XY (mm):', reverseXYMm.map((v) => Number.isFinite(v) ? v.toFixed(3) : 'nan'));
+      console.log('Captured C encoder:', cAngle);
+      console.log('Reverse Z (mm):', Number.isFinite(c) ? c.toFixed(3) : 'nan');
+      console.log('Steps/mm:', stepsPerMm);
+      console.log('M666:', m666Values);
     }
+    success = true;
   } catch (err) {
     console.error(`Failed to complete sequence: ${err?.message || err}`);
     if (originalQ !== null) {
@@ -229,6 +250,7 @@ async function main() {
     }
   } finally {
     bridgeCtx.close();
+    process.exit(success ? 0 : 1);
   }
 }
 

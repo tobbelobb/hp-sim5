@@ -263,6 +263,7 @@ export function parseBridgeArgs(argv) {
     feed: null,
     waitWs: null,
     timeout: null,
+    debug: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -294,6 +295,8 @@ export function parseBridgeArgs(argv) {
       args.waitWs = argv[++i] || null;
     } else if (arg === '--timeout') {
       args.timeout = argv[++i] || null;
+    } else if (arg === '--debug') {
+      args.debug = true;
     }
   }
 
