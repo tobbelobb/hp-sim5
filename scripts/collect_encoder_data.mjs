@@ -355,6 +355,7 @@ async function restorePositions(sendFn, {
   m666Values,
   stepsPerMm,
   sensorState,
+  speedup = 1,
 }) {
   const hasAngles = Array.isArray(anglesDeg) && anglesDeg.length > 0;
   const reverseMm = hasAngles
@@ -380,7 +381,7 @@ async function restorePositions(sendFn, {
     }
   }
   if (moveParts.length > 0) {
-    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`);
+    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup);
   }
   if (sensorState?.axisIdx != null) {
     const motorId = MOTOR_IDS[sensorState.axisIdx];
@@ -390,7 +391,7 @@ async function restorePositions(sendFn, {
     const angle = encoderAngles[0] ?? 0;
     const dist = computeReverseDistanceMm(angle, sensorState.axisIdx, mmPerDeg, m666Values, stepsPerMm);
     if (Number.isFinite(dist) && Math.abs(dist) > 1e-5) {
-      await runMoveWithWait(sendFn, `G1 H2 ${AXES[sensorState.axisIdx]}${dist.toFixed(3)} F${feed}`);
+      await runMoveWithWait(sendFn, `G1 H2 ${AXES[sensorState.axisIdx]}${dist.toFixed(3)} F${feed}`, speedup);
     }
     sensorState.axisIdx = null;
     sensorState.torque = null;
@@ -408,6 +409,17 @@ async function sendHpSimReset(bridgeCtx, { quiet = false } = {}) {
   await sleep(50);
 }
 
+async function sendHpSimSpeedScale(bridgeCtx, scale, { quiet = false } = {}) {
+  if (!bridgeCtx?.broadcast || !Number.isFinite(scale) || scale <= 0 || scale === 1) {
+    return;
+  }
+  bridgeCtx.broadcast({ type: 'set_speed_scale', value: scale });
+  if (!quiet) {
+    console.log(`Requested hp-sim speed scale: ${scale}x`);
+  }
+  await sleep(25);
+}
+
 async function main() {
   const args = parseBridgeArgs(process.argv.slice(2));
   const dx = Number.isFinite(parseFloat(args.dx)) ? parseFloat(args.dx) : 10;
@@ -420,6 +432,9 @@ async function main() {
   const settleMs = Number.isFinite(parseFloat(args.settleMs))
     ? Math.max(0, parseFloat(args.settleMs))
     : DEFAULT_SETTLE_MS;
+  const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
+    ? parseFloat(args.speedup)
+    : 1;
 
   let measurementPoints = null;
   const requestedPointsFile = args.pointsFile;
@@ -481,6 +496,9 @@ async function main() {
     if (!args.noHpSimReset) {
       await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
     }
+    if (speedup !== 1) {
+      await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+    }
   }
 
   let originalQ = null;
@@ -509,12 +527,12 @@ async function main() {
       // eslint-disable-next-line no-await-in-loop
       await ensureSensorState(send, desiredSensor, sensorState);
       const move = buildRelativeMove(currentPosition, point, feed);
-      if (move) {
-        // eslint-disable-next-line no-await-in-loop
-        await runMoveWithWait(send, move);
-      }
+    if (move) {
       // eslint-disable-next-line no-await-in-loop
-      await sleep(settleMs);
+      await runMoveWithWait(send, move, speedup);
+    }
+    // eslint-disable-next-line no-await-in-loop
+    await sleep(Math.max(0, settleMs / (speedup > 0 ? speedup : 1)));
       // eslint-disable-next-line no-await-in-loop
       const encoderMid = await send('M569.3 P40.0:41.0:42.0');
       const anglesDeg = parseEncoderReply(encoderMid?.reply);
@@ -536,6 +554,7 @@ async function main() {
       m666Values,
       stepsPerMm,
       sensorState,
+      speedup,
     });
 
     if (originalQ !== null) {
@@ -574,19 +593,20 @@ async function main() {
   }
 }
 
-async function runMoveWithWait(sendFn, gcode) {
+async function runMoveWithWait(sendFn, gcode, speedup = 1) {
   const result = await sendFn(gcode);
   const durationSeconds = motionDurationSeconds(result);
+  const divisor = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
-    await sleep(durationSeconds * 1000);
+    await sleep((durationSeconds * 1000) / divisor);
   } else {
     const feedMatch = gcode.match(/\bF([0-9]+(?:\.[0-9]+)?)/i);
     const feed = feedMatch ? parseFloat(feedMatch[1]) : DEFAULT_FEED;
     const dist = estimateMoveLengthMm(gcode);
     if (Number.isFinite(feed) && feed > 0 && Number.isFinite(dist)) {
-      await sleep(((dist / (feed / 60)) + 0.1) * 1000);
+      await sleep((((dist / (feed / 60)) + 0.1) * 1000) / divisor);
     } else {
-      await sleep(500);
+      await sleep(500 / divisor);
     }
   }
 }

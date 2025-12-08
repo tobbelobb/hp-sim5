@@ -272,6 +272,7 @@ export function parseBridgeArgs(argv) {
     persistRrfSimulator: false,
     noHpSimReset: false,
     noSpawnRrfSimulator: false,
+    speedup: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -318,6 +319,8 @@ export function parseBridgeArgs(argv) {
       args.noHpSimReset = true;
     } else if (arg === '--no-spawn-rrf-simulator') {
       args.noSpawnRrfSimulator = true;
+    } else if (arg === '--speedup') {
+      args.speedup = argv[++i] || null;
     }
   }
 

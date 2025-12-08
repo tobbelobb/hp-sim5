@@ -988,6 +988,22 @@ function initHpSim() {
       handleUserReset();
       return;
     }
+    if (payload.type === 'set_speed_scale' && Number.isFinite(payload.value) && payload.value > 0) {
+      const targetScale = payload.value;
+      speedStatusArmed = true;
+      if (gameControls && typeof gameControls.setTimeScale === 'function') {
+        gameControls.setTimeScale(targetScale);
+        const appliedScale = typeof gameControls.getTimeScale === 'function'
+          ? gameControls.getTimeScale()
+          : targetScale;
+        handleTimeScaleChange(appliedScale);
+        showSpeedStatus(appliedScale);
+      } else {
+        handleTimeScaleChange(targetScale);
+        showSpeedStatus(targetScale);
+      }
+      return;
+    }
     const commands = [];
     if (payload.type === 'command' && payload.command) {
       commands.push(payload.command);
