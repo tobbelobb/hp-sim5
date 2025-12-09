@@ -1,0 +1,1847 @@
+[
+  {
+    "point": "[0, 0, T0.05]",
+    "targets": [
+      0,
+      0,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      0.04,
+      0.04,
+      -0.75
+    ]
+  },
+  {
+    "point": "[1, 1, T0.05]",
+    "targets": [
+      1,
+      1,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      1.95,
+      1.95,
+      -4.57
+    ]
+  },
+  {
+    "point": "[2, 2, T0.05]",
+    "targets": [
+      2,
+      2,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      3.86,
+      3.86,
+      -8.38
+    ]
+  },
+  {
+    "point": "[3, 3, T0.05]",
+    "targets": [
+      3,
+      3,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      5.79,
+      5.79,
+      -12.33
+    ]
+  },
+  {
+    "point": "[4, 4, T0.05]",
+    "targets": [
+      4,
+      4,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      7.7,
+      7.7,
+      -16.13
+    ]
+  },
+  {
+    "point": "[5, 5, T0.05]",
+    "targets": [
+      5,
+      5,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      9.61,
+      9.61,
+      -19.93
+    ]
+  },
+  {
+    "point": "[6, 6, T0.05]",
+    "targets": [
+      6,
+      6,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      11.52,
+      11.52,
+      -23.72
+    ]
+  },
+  {
+    "point": "[7, 7, T0.05]",
+    "targets": [
+      7,
+      7,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      13.44,
+      13.44,
+      -27.5
+    ]
+  },
+  {
+    "point": "[8, 8, T0.05]",
+    "targets": [
+      8,
+      8,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      15.34,
+      15.34,
+      -31.13
+    ]
+  },
+  {
+    "point": "[9, 9, T0.05]",
+    "targets": [
+      9,
+      9,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      17.26,
+      17.26,
+      -35.05
+    ]
+  },
+  {
+    "point": "[10, 10, T0.05]",
+    "targets": [
+      10,
+      10,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      19.17,
+      19.17,
+      -38.82
+    ]
+  },
+  {
+    "point": "[-1, -1, T0.05]",
+    "targets": [
+      -1,
+      -1,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -1.86,
+      -1.86,
+      2.93
+    ]
+  },
+  {
+    "point": "[-2, -2, T0.05]",
+    "targets": [
+      -2,
+      -2,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -3.79,
+      -3.79,
+      6.91
+    ]
+  },
+  {
+    "point": "[-3, -3, T0.05]",
+    "targets": [
+      -3,
+      -3,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -5.7,
+      -5.7,
+      10.75
+    ]
+  },
+  {
+    "point": "[-4, -4, T0.05]",
+    "targets": [
+      -4,
+      -4,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -7.6,
+      -7.6,
+      14.45
+    ]
+  },
+  {
+    "point": "[-5, -5, T0.05]",
+    "targets": [
+      -5,
+      -5,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -9.51,
+      -9.51,
+      18.3
+    ]
+  },
+  {
+    "point": "[-6, -6, T0.05]",
+    "targets": [
+      -6,
+      -6,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -11.44,
+      -11.44,
+      22.29
+    ]
+  },
+  {
+    "point": "[-7, -7, T0.05]",
+    "targets": [
+      -7,
+      -7,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -13.35,
+      -13.35,
+      26.16
+    ]
+  },
+  {
+    "point": "[-8, -8, T0.05]",
+    "targets": [
+      -8,
+      -8,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -15.25,
+      -15.25,
+      29.88
+    ]
+  },
+  {
+    "point": "[-9, -9, T0.05]",
+    "targets": [
+      -9,
+      -9,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -17.16,
+      -17.16,
+      33.76
+    ]
+  },
+  {
+    "point": "[-10, -10, T0.05]",
+    "targets": [
+      -10,
+      -10,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -19.09,
+      -19.09,
+      37.78
+    ]
+  },
+  {
+    "point": "[1, -1, T0.05]",
+    "targets": [
+      1,
+      -1,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      1.95,
+      -1.87,
+      -0.75
+    ]
+  },
+  {
+    "point": "[2, -2, T0.05]",
+    "targets": [
+      2,
+      -2,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      3.86,
+      -3.79,
+      -0.74
+    ]
+  },
+  {
+    "point": "[3, -3, T0.05]",
+    "targets": [
+      3,
+      -3,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      5.79,
+      -5.69,
+      -0.88
+    ]
+  },
+  {
+    "point": "[4, -4, T0.05]",
+    "targets": [
+      4,
+      -4,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      7.7,
+      -7.6,
+      -0.87
+    ]
+  },
+  {
+    "point": "[5, -5, T0.05]",
+    "targets": [
+      5,
+      -5,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      9.6,
+      -9.52,
+      -0.72
+    ]
+  },
+  {
+    "point": "[6, -6, T0.05]",
+    "targets": [
+      6,
+      -6,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      11.51,
+      -11.44,
+      -0.71
+    ]
+  },
+  {
+    "point": "[7, -7, T0.05]",
+    "targets": [
+      7,
+      -7,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      13.44,
+      -13.34,
+      -0.84
+    ]
+  },
+  {
+    "point": "[8, -8, T0.05]",
+    "targets": [
+      8,
+      -8,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      15.35,
+      -15.25,
+      -0.83
+    ]
+  },
+  {
+    "point": "[9, -9, T0.05]",
+    "targets": [
+      9,
+      -9,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      17.25,
+      -17.17,
+      -0.67
+    ]
+  },
+  {
+    "point": "[10, -10, T0.05]",
+    "targets": [
+      10,
+      -10,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      19.16,
+      -19.09,
+      -0.65
+    ]
+  },
+  {
+    "point": "[-1, 1, T0.05]",
+    "targets": [
+      -1,
+      1,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -1.86,
+      1.96,
+      -0.89
+    ]
+  },
+  {
+    "point": "[-2, 2, T0.05]",
+    "targets": [
+      -2,
+      2,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -3.79,
+      3.86,
+      -0.74
+    ]
+  },
+  {
+    "point": "[-3, 3, T0.05]",
+    "targets": [
+      -3,
+      3,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -5.7,
+      5.78,
+      -0.74
+    ]
+  },
+  {
+    "point": "[-4, 4, T0.05]",
+    "targets": [
+      -4,
+      4,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -7.6,
+      7.7,
+      -0.87
+    ]
+  },
+  {
+    "point": "[-5, 5, T0.05]",
+    "targets": [
+      -5,
+      5,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -9.51,
+      9.61,
+      -0.87
+    ]
+  },
+  {
+    "point": "[-6, 6, T0.05]",
+    "targets": [
+      -6,
+      6,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -11.44,
+      11.51,
+      -0.71
+    ]
+  },
+  {
+    "point": "[-7, 7, T0.05]",
+    "targets": [
+      -7,
+      7,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -13.35,
+      13.42,
+      -0.7
+    ]
+  },
+  {
+    "point": "[-8, 8, T0.05]",
+    "targets": [
+      -8,
+      8,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -15.25,
+      15.35,
+      -0.83
+    ]
+  },
+  {
+    "point": "[-9, 9, T0.05]",
+    "targets": [
+      -9,
+      9,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -17.16,
+      17.26,
+      -0.81
+    ]
+  },
+  {
+    "point": "[-10, 10, T0.05]",
+    "targets": [
+      -10,
+      10,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -19.09,
+      19.16,
+      -0.65
+    ]
+  },
+  {
+    "point": "[0, T0.05, 0]",
+    "targets": [
+      0,
+      null,
+      0
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      0.04,
+      9.12,
+      -9.82
+    ]
+  },
+  {
+    "point": "[1, T0.05, 1]",
+    "targets": [
+      1,
+      null,
+      1
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      1.95,
+      7.99,
+      -10.6
+    ]
+  },
+  {
+    "point": "[2, T0.05, 2]",
+    "targets": [
+      2,
+      null,
+      2
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      3.87,
+      6.99,
+      -11.5
+    ]
+  },
+  {
+    "point": "[3, T0.05, 3]",
+    "targets": [
+      3,
+      null,
+      3
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      5.78,
+      5.86,
+      -12.29
+    ]
+  },
+  {
+    "point": "[4, T0.05, 4]",
+    "targets": [
+      4,
+      null,
+      4
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      7.69,
+      4.78,
+      -13.11
+    ]
+  },
+  {
+    "point": "[5, T0.05, 5]",
+    "targets": [
+      5,
+      null,
+      5
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      9.6,
+      3.68,
+      -13.92
+    ]
+  },
+  {
+    "point": "[6, T0.05, 6]",
+    "targets": [
+      6,
+      null,
+      6
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      11.52,
+      2.42,
+      -14.56
+    ]
+  },
+  {
+    "point": "[7, T0.05, 7]",
+    "targets": [
+      7,
+      null,
+      7
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      13.43,
+      1.32,
+      -15.36
+    ]
+  },
+  {
+    "point": "[8, T0.05, 8]",
+    "targets": [
+      8,
+      null,
+      8
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      15.34,
+      0.37,
+      -16.32
+    ]
+  },
+  {
+    "point": "[9, T0.05, 9]",
+    "targets": [
+      9,
+      null,
+      9
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      17.25,
+      -0.77,
+      -17.08
+    ]
+  },
+  {
+    "point": "[10, T0.05, 10]",
+    "targets": [
+      10,
+      null,
+      10
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      19.17,
+      -1.97,
+      -17.77
+    ]
+  },
+  {
+    "point": "[-1, T0.05, -1]",
+    "targets": [
+      -1,
+      null,
+      -1
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -1.87,
+      8.41,
+      -7.2
+    ]
+  },
+  {
+    "point": "[-2, T0.05, -2]",
+    "targets": [
+      -2,
+      null,
+      -2
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -3.78,
+      9.05,
+      -5.93
+    ]
+  },
+  {
+    "point": "[-3, T0.05, -3]",
+    "targets": [
+      -3,
+      null,
+      -3
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -5.7,
+      9.88,
+      -4.84
+    ]
+  },
+  {
+    "point": "[-4, T0.05, -4]",
+    "targets": [
+      -4,
+      null,
+      -4
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -7.61,
+      10.72,
+      -3.77
+    ]
+  },
+  {
+    "point": "[-5, T0.05, -5]",
+    "targets": [
+      -5,
+      null,
+      -5
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -9.52,
+      11.67,
+      -2.79
+    ]
+  },
+  {
+    "point": "[-6, T0.05, -6]",
+    "targets": [
+      -6,
+      null,
+      -6
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -11.43,
+      12.5,
+      -1.71
+    ]
+  },
+  {
+    "point": "[-7, T0.05, -7]",
+    "targets": [
+      -7,
+      null,
+      -7
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -13.35,
+      13.2,
+      -0.48
+    ]
+  },
+  {
+    "point": "[-8, T0.05, -8]",
+    "targets": [
+      -8,
+      null,
+      -8
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -15.26,
+      14.01,
+      0.63
+    ]
+  },
+  {
+    "point": "[-9, T0.05, -9]",
+    "targets": [
+      -9,
+      null,
+      -9
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -17.17,
+      15,
+      1.56
+    ]
+  },
+  {
+    "point": "[-10, T0.05, -10]",
+    "targets": [
+      -10,
+      null,
+      -10
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -19.08,
+      15.84,
+      2.64
+    ]
+  },
+  {
+    "point": "[1, T0.05, -1]",
+    "targets": [
+      1,
+      null,
+      -1
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      1.95,
+      5.03,
+      -7.65
+    ]
+  },
+  {
+    "point": "[2, T0.05, -2]",
+    "targets": [
+      2,
+      null,
+      -2
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      3.87,
+      3.97,
+      -8.5
+    ]
+  },
+  {
+    "point": "[3, T0.05, -3]",
+    "targets": [
+      3,
+      null,
+      -3
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      5.78,
+      2.76,
+      -9.2
+    ]
+  },
+  {
+    "point": "[4, T0.05, -4]",
+    "targets": [
+      4,
+      null,
+      -4
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      7.69,
+      1.7,
+      -10.04
+    ]
+  },
+  {
+    "point": "[5, T0.05, -5]",
+    "targets": [
+      5,
+      null,
+      -5
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      9.6,
+      0.65,
+      -10.89
+    ]
+  },
+  {
+    "point": "[6, T0.05, -6]",
+    "targets": [
+      6,
+      null,
+      -6
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      11.52,
+      -0.3,
+      -11.85
+    ]
+  },
+  {
+    "point": "[7, T0.05, -7]",
+    "targets": [
+      7,
+      null,
+      -7
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      13.43,
+      -1.33,
+      -12.72
+    ]
+  },
+  {
+    "point": "[8, T0.05, -8]",
+    "targets": [
+      8,
+      null,
+      -8
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      15.34,
+      -2.52,
+      -13.44
+    ]
+  },
+  {
+    "point": "[9, T0.05, -9]",
+    "targets": [
+      9,
+      null,
+      -9
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      17.25,
+      -3.56,
+      -14.29
+    ]
+  },
+  {
+    "point": "[10, T0.05, -10]",
+    "targets": [
+      10,
+      null,
+      -10
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      19.17,
+      -4.47,
+      -15.28
+    ]
+  },
+  {
+    "point": "[-1, T0.05, 1]",
+    "targets": [
+      -1,
+      null,
+      1
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -1.87,
+      5.7,
+      -4.5
+    ]
+  },
+  {
+    "point": "[-2, T0.05, 2]",
+    "targets": [
+      -2,
+      null,
+      2
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -3.78,
+      6.57,
+      -3.45
+    ]
+  },
+  {
+    "point": "[-3, T0.05, 3]",
+    "targets": [
+      -3,
+      null,
+      3
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -5.7,
+      7.56,
+      -2.53
+    ]
+  },
+  {
+    "point": "[-4, T0.05, 4]",
+    "targets": [
+      -4,
+      null,
+      4
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -7.61,
+      8.27,
+      -1.32
+    ]
+  },
+  {
+    "point": "[-5, T0.05, 5]",
+    "targets": [
+      -5,
+      null,
+      5
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -9.52,
+      9.14,
+      -0.28
+    ]
+  },
+  {
+    "point": "[-6, T0.05, 6]",
+    "targets": [
+      -6,
+      null,
+      6
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -11.43,
+      10.14,
+      0.64
+    ]
+  },
+  {
+    "point": "[-7, T0.05, 7]",
+    "targets": [
+      -7,
+      null,
+      7
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -13.35,
+      11.02,
+      1.69
+    ]
+  },
+  {
+    "point": "[-8, T0.05, 8]",
+    "targets": [
+      -8,
+      null,
+      8
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -15.26,
+      11.74,
+      2.89
+    ]
+  },
+  {
+    "point": "[-9, T0.05, 9]",
+    "targets": [
+      -9,
+      null,
+      9
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -17.17,
+      12.62,
+      3.93
+    ]
+  },
+  {
+    "point": "[-10, T0.05, 10]",
+    "targets": [
+      -10,
+      null,
+      10
+    ],
+    "sensorAxis": "Y",
+    "torque": 0.05,
+    "anglesDeg": [
+      -19.08,
+      13.63,
+      4.84
+    ]
+  },
+  {
+    "point": "[T0.05, 0, 0]",
+    "targets": [
+      null,
+      0,
+      0
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -20.54,
+      17.06,
+      2.84
+    ]
+  },
+  {
+    "point": "[T0.05, 1, 1]",
+    "targets": [
+      null,
+      1,
+      1
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -21.26,
+      18.95,
+      1.68
+    ]
+  },
+  {
+    "point": "[T0.05, 2, 2]",
+    "targets": [
+      null,
+      2,
+      2
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -21.98,
+      20.81,
+      0.55
+    ]
+  },
+  {
+    "point": "[T0.05, 3, 3]",
+    "targets": [
+      null,
+      3,
+      3
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -22.71,
+      22.96,
+      -0.7
+    ]
+  },
+  {
+    "point": "[T0.05, 4, 4]",
+    "targets": [
+      null,
+      4,
+      4
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -23.4,
+      24.76,
+      -1.8
+    ]
+  },
+  {
+    "point": "[T0.05, 5, 5]",
+    "targets": [
+      null,
+      5,
+      5
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -24.22,
+      26.67,
+      -3.01
+    ]
+  },
+  {
+    "point": "[T0.05, 6, 6]",
+    "targets": [
+      null,
+      6,
+      6
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -25.06,
+      28.85,
+      -4.33
+    ]
+  },
+  {
+    "point": "[T0.05, 7, 7]",
+    "targets": [
+      null,
+      7,
+      7
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -25.73,
+      30.84,
+      -5.48
+    ]
+  },
+  {
+    "point": "[T0.05, 8, 8]",
+    "targets": [
+      null,
+      8,
+      8
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -26.37,
+      32.52,
+      -6.5
+    ]
+  },
+  {
+    "point": "[T0.05, 9, 9]",
+    "targets": [
+      null,
+      9,
+      9
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -27.15,
+      34.31,
+      -7.63
+    ]
+  },
+  {
+    "point": "[T0.05, 10, 10]",
+    "targets": [
+      null,
+      10,
+      10
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -27.78,
+      36.2,
+      -8.71
+    ]
+  },
+  {
+    "point": "[T0.05, -1, -1]",
+    "targets": [
+      null,
+      -1,
+      -1
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -28.99,
+      39.12,
+      -10.53
+    ]
+  },
+  {
+    "point": "[T0.05, -2, -2]",
+    "targets": [
+      null,
+      -2,
+      -2
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -29.44,
+      40.52,
+      -11.32
+    ]
+  },
+  {
+    "point": "[T0.05, -3, -3]",
+    "targets": [
+      null,
+      -3,
+      -3
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -30.17,
+      42.43,
+      -12.46
+    ]
+  },
+  {
+    "point": "[T0.05, -4, -4]",
+    "targets": [
+      null,
+      -4,
+      -4
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -30.89,
+      44.07,
+      -13.5
+    ]
+  },
+  {
+    "point": "[T0.05, -5, -5]",
+    "targets": [
+      null,
+      -5,
+      -5
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -31.46,
+      45.55,
+      -14.38
+    ]
+  },
+  {
+    "point": "[T0.05, -6, -6]",
+    "targets": [
+      null,
+      -6,
+      -6
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -32.01,
+      47.22,
+      -15.32
+    ]
+  },
+  {
+    "point": "[T0.05, -7, -7]",
+    "targets": [
+      null,
+      -7,
+      -7
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -32.56,
+      48.65,
+      -16.18
+    ]
+  },
+  {
+    "point": "[T0.05, -8, -8]",
+    "targets": [
+      null,
+      -8,
+      -8
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -33.1,
+      50.05,
+      -17.01
+    ]
+  },
+  {
+    "point": "[T0.05, -9, -9]",
+    "targets": [
+      null,
+      -9,
+      -9
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -33.9,
+      51.92,
+      -18.18
+    ]
+  },
+  {
+    "point": "[T0.05, -10, -10]",
+    "targets": [
+      null,
+      -10,
+      -10
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -34.41,
+      53.46,
+      -19.04
+    ]
+  },
+  {
+    "point": "[T0.05, 1, -1]",
+    "targets": [
+      null,
+      1,
+      -1
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -35.31,
+      55.59,
+      -20.37
+    ]
+  },
+  {
+    "point": "[T0.05, 2, -2]",
+    "targets": [
+      null,
+      2,
+      -2
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -35.81,
+      56.89,
+      -21.13
+    ]
+  },
+  {
+    "point": "[T0.05, 3, -3]",
+    "targets": [
+      null,
+      3,
+      -3
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -36.16,
+      58.02,
+      -21.75
+    ]
+  },
+  {
+    "point": "[T0.05, 4, -4]",
+    "targets": [
+      null,
+      4,
+      -4
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -36.9,
+      59.73,
+      -22.82
+    ]
+  },
+  {
+    "point": "[T0.05, 5, -5]",
+    "targets": [
+      null,
+      5,
+      -5
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -37.49,
+      61.27,
+      -23.73
+    ]
+  },
+  {
+    "point": "[T0.05, 6, -6]",
+    "targets": [
+      null,
+      6,
+      -6
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -37.81,
+      62.34,
+      -24.3
+    ]
+  },
+  {
+    "point": "[T0.05, 7, -7]",
+    "targets": [
+      null,
+      7,
+      -7
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -38.27,
+      63.53,
+      -25
+    ]
+  },
+  {
+    "point": "[T0.05, 8, -8]",
+    "targets": [
+      null,
+      8,
+      -8
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -38.98,
+      65.13,
+      -26.01
+    ]
+  },
+  {
+    "point": "[T0.05, 9, -9]",
+    "targets": [
+      null,
+      9,
+      -9
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -39.53,
+      66.57,
+      -26.85
+    ]
+  },
+  {
+    "point": "[T0.05, 10, -10]",
+    "targets": [
+      null,
+      10,
+      -10
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -39.82,
+      67.55,
+      -27.37
+    ]
+  },
+  {
+    "point": "[T0.05, -1, 1]",
+    "targets": [
+      null,
+      -1,
+      1
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -40.6,
+      69.35,
+      -28.48
+    ]
+  },
+  {
+    "point": "[T0.05, -2, 2]",
+    "targets": [
+      null,
+      -2,
+      2
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -40.97,
+      70.56,
+      -29.13
+    ]
+  },
+  {
+    "point": "[T0.05, -3, 3]",
+    "targets": [
+      null,
+      -3,
+      3
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -41.38,
+      71.62,
+      -29.76
+    ]
+  },
+  {
+    "point": "[T0.05, -4, 4]",
+    "targets": [
+      null,
+      -4,
+      4
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -42.03,
+      73.07,
+      -30.66
+    ]
+  },
+  {
+    "point": "[T0.05, -5, 5]",
+    "targets": [
+      null,
+      -5,
+      5
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -42.42,
+      74.09,
+      -31.26
+    ]
+  },
+  {
+    "point": "[T0.05, -6, 6]",
+    "targets": [
+      null,
+      -6,
+      6
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -42.81,
+      75.1,
+      -31.85
+    ]
+  },
+  {
+    "point": "[T0.05, -7, 7]",
+    "targets": [
+      null,
+      -7,
+      7
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -43.14,
+      76.2,
+      -32.43
+    ]
+  },
+  {
+    "point": "[T0.05, -8, 8]",
+    "targets": [
+      null,
+      -8,
+      8
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -43.52,
+      77.17,
+      -33
+    ]
+  },
+  {
+    "point": "[T0.05, -9, 9]",
+    "targets": [
+      null,
+      -9,
+      9
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -44.03,
+      78.27,
+      -33.7
+    ]
+  },
+  {
+    "point": "[T0.05, -10, 10]",
+    "targets": [
+      null,
+      -10,
+      10
+    ],
+    "sensorAxis": "X",
+    "torque": 0.05,
+    "anglesDeg": [
+      -44.48,
+      79.45,
+      -34.39
+    ]
+  }
+]

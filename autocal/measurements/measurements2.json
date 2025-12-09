@@ -1,0 +1,92 @@
+[
+  {
+    "point": "[100, 0, T0.05]",
+    "targets": [
+      100,
+      0,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      191.14,
+      0.01,
+      -181.52
+    ]
+  },
+  {
+    "point": "[100, 100, T0.05]",
+    "targets": [
+      100,
+      100,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      191.12,
+      191.01,
+      -356.87
+    ]
+  },
+  {
+    "point": "[0, 100, T0.05]",
+    "targets": [
+      0,
+      100,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      0.1,
+      191.02,
+      -181.37
+    ]
+  },
+  {
+    "point": "[-100, 0, T0.05]",
+    "targets": [
+      -100,
+      0,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -190.89,
+      0.02,
+      201.3
+    ]
+  },
+  {
+    "point": "[-100, -100, T0.05]",
+    "targets": [
+      -100,
+      -100,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      -190.9,
+      -190.97,
+      419.95
+    ]
+  },
+  {
+    "point": "[0, -100, T0.05]",
+    "targets": [
+      0,
+      -100,
+      null
+    ],
+    "sensorAxis": "Z",
+    "torque": 0.05,
+    "anglesDeg": [
+      0.12,
+      -191.01,
+      201.44
+    ]
+  }
+]
