@@ -305,7 +305,15 @@ function buildRelativeMove(currentPosition, point, feed) {
   return `G1 H2 ${parts.join(' ')} F${feed}`;
 }
 
-async function ensureSensorState(sendFn, desiredSensor, state) {
+async function ensureSensorState(sendFn, desiredSensor, state, {
+  mmPerDeg,
+  m666Values,
+  stepsPerMm,
+  currentPosition,
+  debug = false,
+  feed = DEFAULT_FEED,
+  speedup = 1,
+} = {}) {
   if (!state) {
     return;
   }
@@ -318,14 +326,41 @@ async function ensureSensorState(sendFn, desiredSensor, state) {
   if (sameAxis && sameTorque) {
     return;
   }
+
   if (state.axisIdx != null && state.axisIdx !== desiredAxis) {
     const motorId = MOTOR_IDS[state.axisIdx];
-    await sendFn(`M569.4 P${motorId} T0`, { suppressMotionProcessing: true });
+    await sendFn(`M569.4 P${motorId} T0.0`);
   }
   if (desiredAxis != null) {
     const motorId = MOTOR_IDS[desiredAxis];
     const torque = Number.isFinite(desiredTorque) ? desiredTorque : DEFAULT_TORQUE;
+    if (debug) {
+      console.log(`Setting motor ${motorId} torque mode T${torque}`);
+    }
     await sendFn(`M569.4 P${motorId} T${torque}`);
+  }
+  if (state.axisIdx != null && state.axisIdx !== desiredAxis) {
+    const motorId = MOTOR_IDS[state.axisIdx];
+    try {
+      const encoderReply = await sendFn(`M569.3 P${motorId}`);
+      const encoderAngles = parseEncoderReply(encoderReply?.reply);
+      const angle = encoderAngles[0] ?? null;
+      const returnDist = computeReverseDistanceMm(
+        angle ?? 0,
+        state.axisIdx,
+        mmPerDeg,
+        m666Values,
+        stepsPerMm,
+      );
+      if (Number.isFinite(returnDist) && Math.abs(returnDist) > 1e-5) {
+        await runMoveWithWait(sendFn, `G1 H2 ${AXES[state.axisIdx]}${returnDist.toFixed(3)} F${feed}`, speedup);
+        if (Array.isArray(currentPosition)) {
+          currentPosition[state.axisIdx] = 0;
+        }
+      }
+    } catch (_err) {
+      /* best effort */
+    }
   }
   state.axisIdx = desiredAxis;
   state.torque = desiredTorque;
@@ -335,15 +370,6 @@ function computeReverseDistanceMm(angleDeg, axisIdx, mmPerDeg, m666Values, steps
   const factor = Number.isFinite(mmPerDeg?.[axisIdx]) ? mmPerDeg[axisIdx] : null;
   if (factor !== null) {
     return -angleDeg * factor;
-  }
-  const radius = getArrayValue(m666Values?.R, axisIdx, null);
-  if (Number.isFinite(radius)) {
-    const simpleMmPerDeg = (2 * Math.PI * radius) / 360.0;
-    return -angleDeg * simpleMmPerDeg;
-  }
-  const stepsPerMmAxis = stepsPerMm?.[AXES[axisIdx]];
-  if (Number.isFinite(stepsPerMmAxis) && stepsPerMmAxis !== 0) {
-    return -(angleDeg / 360) * (1 / stepsPerMmAxis);
   }
   return 0;
 }
@@ -385,8 +411,8 @@ async function restorePositions(sendFn, {
   }
   if (sensorState?.axisIdx != null) {
     const motorId = MOTOR_IDS[sensorState.axisIdx];
-    await sendFn(`M569.4 P${motorId} T0`, { suppressMotionProcessing: true });
-    const encoderReply = await sendFn(`M569.3 P${motorId}`, { suppressMotionProcessing: true });
+    await sendFn(`M569.4 P${motorId} T0.0`);
+    const encoderReply = await sendFn(`M569.3 P${motorId}`);
     const encoderAngles = parseEncoderReply(encoderReply?.reply);
     const angle = encoderAngles[0] ?? 0;
     const dist = computeReverseDistanceMm(angle, sensorState.axisIdx, mmPerDeg, m666Values, stepsPerMm);
@@ -428,6 +454,8 @@ async function main() {
   const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : DEFAULT_WAIT_FOR_WS_MS;
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
   const debug = !!args.debug;
+  const debugGcode = !!args.debugGcode;
+  const debugGcodeResponses = !!args.debugGcodeResponses;
   let success = false;
   const settleMs = Number.isFinite(parseFloat(args.settleMs))
     ? Math.max(0, parseFloat(args.settleMs))
@@ -484,9 +512,16 @@ async function main() {
   });
 
   const send = async (line, options = {}) => {
+    const trimmed = line?.trim?.();
+    if (debugGcode && trimmed) {
+      console.log(`[rrf_gcode] ${trimmed}`);
+    }
     const res = await bridgeCtx.sendGcodeLine(line, options);
-    if (debug && res?.reply) {
-      console.log(res.reply.trim());
+    if ((debugGcodeResponses || debug) && res?.reply) {
+      const reply = res.reply.trim();
+      if (reply.length > 0) {
+        console.log(`[rrf_reply] ${reply}`);
+      }
     }
     return res;
   };
@@ -508,24 +543,32 @@ async function main() {
   let lastAnglesDeg = null;
 
   try {
-    const m92Reply = await send('M92', { suppressMotionProcessing: true });
+    const m92Reply = await send('M92');
     const stepsPerMm = parseM92(m92Reply?.reply);
 
-    const m666Reply = await send('M666', { suppressMotionProcessing: true });
+    const m666Reply = await send('M666');
     const m666Values = parseM666(m666Reply?.reply);
     originalQ = Number.isFinite(m666Values.Q) ? m666Values.Q : null;
     const mmPerDeg = AXES.map((_, i) => computeMmPerDegree(m666Values, i));
 
-    await send('G92 X0 Y0 Z0', { suppressMotionProcessing: true });
-    await send('G91', { suppressMotionProcessing: true });
-    await send('M666 Q0', { suppressMotionProcessing: true });
-    await send('M569.3 P40.0:41.0:42.0 S', { suppressMotionProcessing: true });
+    await send('G92 X0 Y0 Z0');
+    await send('G91');
+    await send('M666 Q0');
+    await send('M569.3 P40.0:41.0:42.0 S', );
 
     for (const point of measurementPoints) {
       const desiredSensor = point.sensor
         || (sensorState.axisIdx != null ? sensorState : { axisIdx: DEFAULT_SENSOR_AXIS_IDX, torque: DEFAULT_TORQUE });
       // eslint-disable-next-line no-await-in-loop
-      await ensureSensorState(send, desiredSensor, sensorState);
+      await ensureSensorState(send, desiredSensor, sensorState, {
+        mmPerDeg,
+        m666Values,
+        stepsPerMm,
+        currentPosition,
+        debug,
+        feed,
+        speedup,
+      });
       const move = buildRelativeMove(currentPosition, point, feed);
     if (move) {
       // eslint-disable-next-line no-await-in-loop
@@ -558,7 +601,7 @@ async function main() {
     });
 
     if (originalQ !== null) {
-      await send(`M666 Q${originalQ}`, { suppressMotionProcessing: true });
+      await send(`M666 Q${originalQ}`);
     }
 
     if (args.outputFile) {
@@ -576,13 +619,13 @@ async function main() {
     if (sensorState?.axisIdx != null) {
       try {
         const motorId = MOTOR_IDS[sensorState.axisIdx];
-        await send(`M569.4 P${motorId} T0`, { suppressMotionProcessing: true });
+        await send(`M569.4 P${motorId} T0.0`);
       } catch (_err) {
         /* best effort */
       }
     }
     if (originalQ !== null) {
-      await send(`M666 Q${originalQ}`, { suppressMotionProcessing: true });
+      await send(`M666 Q${originalQ}`);
     }
   } finally {
     if (rrfProcess && !args.persistRrfSimulator) {

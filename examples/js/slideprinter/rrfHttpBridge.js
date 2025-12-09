@@ -50,7 +50,6 @@ export class RrfHttpBridge {
     async sendGCode(gcode, options = {}) {
         const {
             timeout = 30000,
-            suppressMotionProcessing = false,
             suppressCallbacks = false,
         } = options;
 
@@ -80,7 +79,7 @@ export class RrfHttpBridge {
             const parsed = this._parseResponse(text);
             this._injectTorqueModeFallback(parsed, gcode);
 
-            if (!suppressMotionProcessing && parsed.motion.length > 0) {
+            if (parsed.motion.length > 0) {
                 const torqueItems = parsed.motion.filter((item) => item?.type === 'TorqueMode');
                 if (torqueItems.length > 0) {
                     await this._primeDriverDirections(torqueItems);
@@ -364,7 +363,6 @@ export class RrfHttpBridge {
         const inflight = (async () => {
             try {
                 const result = await this.sendGCode(`M569 P${key}`, {
-                    suppressMotionProcessing: true,
                     suppressCallbacks: true,
                 });
                 const rawReply = result?.reply ?? '';

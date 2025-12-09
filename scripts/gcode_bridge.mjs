@@ -266,6 +266,8 @@ export function parseBridgeArgs(argv) {
     waitWs: null,
     timeout: null,
     debug: false,
+    debugGcode: false,
+    debugGcodeResponses: false,
     pointsFile: null,
     outputFile: null,
     settleMs: null,
@@ -307,6 +309,10 @@ export function parseBridgeArgs(argv) {
       args.timeout = argv[++i] || null;
     } else if (arg === '--debug') {
       args.debug = true;
+    } else if (arg === '--debug-gcode' || arg === '--debug-gcodes' || arg === '--trace-gcode') {
+      args.debugGcode = true;
+    } else if (arg === '--debug-gcode-responses' || arg === '--trace-gcode-responses' || arg === '--debug-gcodes-responses') {
+      args.debugGcodeResponses = true;
     } else if (arg === '--points-file' || arg === '--points') {
       args.pointsFile = argv[++i] || null;
     } else if (arg === '--output-file' || arg === '--output' || arg === '--out') {
