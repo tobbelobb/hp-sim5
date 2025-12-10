@@ -184,6 +184,7 @@ Select a representative subset:
 ```
 
 Store raw sweeps; ellipse fitting happens inside the optimizer for each anchor guess after reconstructing absolute lengths. All length-valued fields represent encoder-derived deltas from the origin; absolute lengths must be reconstructed during optimization using anchor guesses.
+Do **not** persist `fitted_ellipses` in the canonical dataset; any ellipse fits belong to ephemeral, in-memory structures (or optional sidecar debug outputs) created per anchor guess.
 
 ## Advantages Over Differential/Gradient Methods
 

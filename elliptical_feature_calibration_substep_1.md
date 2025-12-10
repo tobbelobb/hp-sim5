@@ -160,7 +160,7 @@ class EllipseCoefficients:
 
 @dataclass
 class FittedEllipse:
-    """Result of ellipse fitting for a sweep."""
+    """Result of ellipse fitting for a sweep (in-memory/debug only, not persisted)."""
     sweep_id: str
     sweep_config: SweepConfigSnapshot  # Snapshot of fixed/drive/sense roles
     coefficients: EllipseCoefficients
@@ -179,14 +179,13 @@ class SweepDataset:
     machine_config: MachineConfig
     timestamp: str
     sweeps: List[Sweep]
-    fitted_ellipses: List[FittedEllipse] = field(default_factory=list)
 
-    def get_valid_ellipses(self) -> List[FittedEllipse]:
-        """Return only ellipses that passed QC."""
-        return [e for e in self.fitted_ellipses if e.valid]
+# `FittedEllipse` objects live only in memory (or in optional sidecar debug files)
+# because ellipse fitting happens inside the optimizer after reconstructing
+# absolute lengths from encoder deltas and the current anchor guess.
 ```
 
-**Phase transition guardrail:** Each `FittedEllipse` now carries a `SweepConfigSnapshot` so forward-model code in Phase 2 can reconstruct exactly which cables were fixed/drive/sense when that ellipse was produced.
+**Phase transition guardrail:** When we do generate debug fits in-memory, each `FittedEllipse` carries a `SweepConfigSnapshot` so the optimizer/visualizer can still line them up with the right sweep roles. The canonical on-disk dataset remains sweep-only.
 
 ### 1.2 JSON Schema
 
@@ -222,10 +221,6 @@ class SweepDataset:
       "type": "array",
       "items": {"$ref": "#/definitions/Sweep"},
       "minItems": 1
-    },
-    "fitted_ellipses": {
-      "type": "array",
-      "items": {"$ref": "#/definitions/FittedEllipse"}
     }
   },
   "definitions": {
@@ -282,71 +277,12 @@ class SweepDataset:
         "settle_ms": {"type": "number", "default": 100},
         "sample_rate_hz": {"type": "number"}
       }
-    },
-    "SweepConfigSnapshot": {
-      "type": "object",
-      "required": ["fixed_anchors", "fixed_lengths", "drive_anchor", "sensor_anchor"],
-      "properties": {
-        "fixed_anchors": {
-          "type": "array",
-          "items": {"type": "integer", "minimum": 0}
-        },
-        "fixed_lengths": {
-          "type": "array",
-          "items": {"type": "number"}
-        },
-        "drive_anchor": {"type": "integer", "minimum": 0},
-        "sensor_anchor": {"type": "integer", "minimum": 0}
-      }
-    },
-    "FittedEllipse": {
-      "type": "object",
-    "required": ["sweep_id", "sweep_config", "coefficients", "center", "semi_axes", "orientation_rad", "residual_rms", "valid"],
-    "properties": {
-      "sweep_id": {"type": "string"},
-      "sweep_config": {"$ref": "#/definitions/SweepConfigSnapshot"},
-      "coefficients": {
-        "type": "object",
-          "properties": {
-            "A": {"type": "number"},
-            "B": {"type": "number"},
-            "C": {"type": "number"},
-          "D": {"type": "number"},
-          "E": {"type": "number"},
-          "F": {"type": "number"}
-        }
-      },
-      "center": {
-        "type": "object",
-        "required": ["x", "y"],
-        "properties": {
-          "x": {"type": "number"},
-          "y": {"type": "number"}
-        }
-      },
-      "semi_axes": {
-        "type": "object",
-        "required": ["a", "b"],
-        "properties": {
-          "a": {"type": "number"},
-          "b": {"type": "number"}
-        },
-        "description": "Canonical ordering a >= b enforced by fitter"
-      },
-      "orientation_rad": {"type": "number", "description": "θ wrapped into a stable interval (e.g. [-π/2, π/2])"},
-      "residual_rms": {"type": "number"},
-      "residual_series": {
-        "type": "array",
-        "items": {"type": "number"},
-        "description": "Optional per-point residuals for observability/noise plots"
-      },
-      "valid": {"type": "boolean"},
-      "num_points": {"type": "integer"}
     }
   }
 }
-}
 ```
+
+Optional debug sidecars may serialize `FittedEllipse` objects (including `SweepConfigSnapshot`), but those live outside the canonical schema above; the on-disk dataset is sweep-only so the optimizer can rebuild fits per anchor guess.
 
 ### 1.3 Serialization Utilities
 
@@ -389,33 +325,6 @@ def save_sweep_dataset(dataset: SweepDataset, path: Union[str, Path]) -> None:
                 }
             }
             for s in dataset.sweeps
-        ],
-        "fitted_ellipses": [
-            {
-                "sweep_id": e.sweep_id,
-                "sweep_config": {
-                    "fixed_anchors": e.sweep_config.fixed_anchors,
-                    "fixed_lengths": e.sweep_config.fixed_lengths,
-                    "drive_anchor": e.sweep_config.drive_anchor,
-                    "sensor_anchor": e.sweep_config.sensor_anchor,
-                },
-                "coefficients": {
-                    "A": e.coefficients.A,
-                    "B": e.coefficients.B,
-                    "C": e.coefficients.C,
-                    "D": e.coefficients.D,
-                    "E": e.coefficients.E,
-                    "F": e.coefficients.F,
-                },
-                "center": {"x": e.center[0], "y": e.center[1]},
-                "semi_axes": {"a": e.semi_axes[0], "b": e.semi_axes[1]},
-                "orientation_rad": e.orientation_rad,
-                "residual_rms": e.residual_rms,
-                "residual_series": e.residual_series,
-                "valid": e.valid,
-                "num_points": e.num_points,
-            }
-            for e in dataset.fitted_ellipses
         ]
     }
 
@@ -452,29 +361,11 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
             metadata=metadata,
         ))
 
-    fitted_ellipses = []
-    for e in data.get("fitted_ellipses", []):
-        coeffs = EllipseCoefficients(**e["coefficients"])
-        sweep_cfg_data = e["sweep_config"]
-        fitted_ellipses.append(FittedEllipse(
-            sweep_id=e["sweep_id"],
-            sweep_config=SweepConfigSnapshot(**sweep_cfg_data),
-            coefficients=coeffs,
-            center=(e["center"]["x"], e["center"]["y"]),
-            semi_axes=(e["semi_axes"]["a"], e["semi_axes"]["b"]),
-            orientation_rad=e["orientation_rad"],
-            residual_rms=e["residual_rms"],
-            residual_series=e.get("residual_series"),
-            valid=e["valid"],
-            num_points=e.get("num_points", 0),
-        ))
-
     return SweepDataset(
         version=data["version"],
         machine_config=config,
         timestamp=data.get("timestamp", datetime.now().isoformat()),
         sweeps=sweeps,
-        fitted_ellipses=fitted_ellipses,
     )
 ```
 
@@ -668,24 +559,6 @@ def test_roundtrip_serialization(tmp_path):
                 sensor_anchor=2,
                 data_points=[DataPoint(i*10, i*12+50) for i in range(20)],
             )
-        ],
-        fitted_ellipses=[
-            FittedEllipse(
-                sweep_id="sweep_001",
-                sweep_config=SweepConfigSnapshot(
-                    fixed_anchors=[0],
-                    fixed_lengths=[10.0],
-                    drive_anchor=1,
-                    sensor_anchor=2,
-                ),
-                coefficients=EllipseCoefficients(1.0, 0.1, 0.9, -50, -60, 500),
-                center=(0.0, 0.0),
-                semi_axes=(10.0, 8.0),
-                orientation_rad=0.0,
-                residual_rms=0.001,
-                valid=True,
-                num_points=20,
-            )
         ]
     )
 
@@ -696,7 +569,6 @@ def test_roundtrip_serialization(tmp_path):
     assert loaded.version == dataset.version
     assert loaded.machine_config.machine_type == config.machine_type
     assert len(loaded.sweeps) == 1
-    assert len(loaded.fitted_ellipses) == 1
     assert loaded.sweeps[0].id == "sweep_001"
 ```
 

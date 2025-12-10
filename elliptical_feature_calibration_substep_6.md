@@ -222,13 +222,14 @@ def _plot_ellipse_from_coeffs(
 def plot_all_sweeps(
     dataset: dict,
     ncols: int = 3,
-    figsize: Tuple[int, int] = None
+    figsize: Tuple[int, int] = None,
+    ellipse_fits: Optional[List[dict]] = None
 ) -> plt.Figure:
     """
-    Plot all sweeps in a dataset as a grid.
+    Plot all sweeps in a dataset as a grid, optionally overlaying ellipse fits from a sidecar.
     """
     sweeps = dataset.get('sweeps', [])
-    fitted = {e['sweep_id']: e for e in dataset.get('fitted_ellipses', [])}
+    fitted = {e['sweep_id']: e for e in (ellipse_fits or [])}
 
     n = len(sweeps)
     nrows = (n + ncols - 1) // ncols
@@ -471,6 +472,7 @@ def plot_residuals_comparison(
 def create_calibration_report(
     dataset: dict,
     solution: dict,
+    ellipse_fits: Optional[List[dict]] = None,
     output_path: str = 'calibration_report.png'
 ) -> plt.Figure:
     """
@@ -494,7 +496,7 @@ def create_calibration_report(
 
     # 2-3. First two sweep fits
     sweeps = dataset.get('sweeps', [])[:2]
-    fitted = {e['sweep_id']: e for e in dataset.get('fitted_ellipses', [])}
+    fitted = {e['sweep_id']: e for e in (ellipse_fits or [])}
 
     for i, sweep in enumerate(sweeps):
         ax = fig.add_subplot(gs[0, 1 + i])
@@ -529,7 +531,7 @@ Num Anchors: {dataset.get('num_anchors', 'unknown')}
 Dimensions: {dataset.get('dimensions', 'unknown')}
 
 Total Sweeps: {len(dataset.get('sweeps', []))}
-Valid Ellipses: {len([e for e in dataset.get('fitted_ellipses', []) if e.get('valid')])}
+Ellipse Fits Shown: {len([e for e in (ellipse_fits or []) if e.get('valid')])}
 
 Final Cost: {solution.get('cost', 'N/A'):.6e}
 Success: {solution.get('success', False)}
@@ -565,17 +567,24 @@ if __name__ == '__main__':
     parser.add_argument('input', help='Input JSON file')
     parser.add_argument('-o', '--output', help='Output image file')
     parser.add_argument('--sweep', help='Specific sweep ID to plot')
+    parser.add_argument('--fits', help='Optional JSON sidecar with fitted ellipses')
 
     args = parser.parse_args()
 
     with open(args.input, 'r') as f:
         dataset = json.load(f)
 
+    ellipse_fits = []
+    if args.fits:
+        with open(args.fits, 'r') as f:
+            ellipse_fits = json.load(f).get('fitted_ellipses', [])
+
+    fitted_by_id = {e['sweep_id']: e for e in ellipse_fits}
+
     if args.sweep:
         sweep = next((s for s in dataset['sweeps'] if s['id'] == args.sweep), None)
         if sweep:
-            fitted = next((e for e in dataset.get('fitted_ellipses', [])
-                          if e['sweep_id'] == args.sweep), None)
+            fitted = fitted_by_id.get(args.sweep)
             if fitted:
                 plot_ellipse_fit(sweep, fitted)
             else:
@@ -583,7 +592,7 @@ if __name__ == '__main__':
         else:
             print(f"Sweep {args.sweep} not found")
     else:
-        plot_all_sweeps(dataset)
+        plot_all_sweeps(dataset, ellipse_fits=ellipse_fits)
 
     if args.output:
         plt.savefig(args.output, dpi=150, bbox_inches='tight')

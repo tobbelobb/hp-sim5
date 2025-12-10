@@ -119,6 +119,7 @@ class EllipseCostFunction:
         self,
         dataset: dict,
         geometry_weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
+        residual_threshold: float = 0.01,
         use_weights: bool = True,
         invalid_sweep_penalty: float = 1000.0
     ):
@@ -126,8 +127,9 @@ class EllipseCostFunction:
         Initialize cost function.
 
         Parameters:
-            dataset: Sweep dataset with fitted_ellipses
+            dataset: Sweep dataset (sweeps only; lengths stored as deltas)
             geometry_weights: Tuple weighting (center, axes, theta) in geometry_distance
+            residual_threshold: QC threshold passed to fit_ellipse_from_sweep
             use_weights: Weight sweeps by inverse residual
             invalid_sweep_penalty: Penalty for sweeps that can't be predicted
         """
@@ -138,38 +140,64 @@ class EllipseCostFunction:
 
         self.invalid_penalty = invalid_sweep_penalty
         self.geometry_weights = geometry_weights
+        self.residual_threshold = residual_threshold
+        self.use_weights = use_weights
 
-        # Extract observed ellipses
-        self.observed_ellipses = {}
-        self.sweep_weights = {}
+        self.sweeps = dataset.get('sweeps', [])
 
-        self.sweep_configs = {}
+    def _reconstruct_lengths(
+        self,
+        sweep: dict,
+        anchors: np.ndarray
+    ) -> tuple[list[float], np.ndarray, np.ndarray]:
+        """Add anchor-baseline lengths to the stored encoder deltas."""
+        drive_idx = sweep['drive_anchor']
+        sensor_idx = sweep['sensor_anchor']
+        fixed_indices = sweep['fixed_anchors']
 
-        for fe in dataset.get('fitted_ellipses', []):
-            if not fe.get('valid', False):
-                continue
+        l_drive = np.array([p['l_drive'] for p in sweep['data_points']], dtype=float)
+        l_sensor = np.array([p['l_sensor'] for p in sweep['data_points']], dtype=float)
 
-            sweep_id = fe['sweep_id']
-            center = (fe['center']['x'], fe['center']['y'])
-            axes = (fe['semi_axes']['a'], fe['semi_axes']['b'])
-            theta = fe.get('orientation_rad', 0.0)
-            c_can, axes_can, theta_can = canonicalize_geometry(center, axes, theta)
-            self.observed_ellipses[sweep_id] = (c_can, axes_can, theta_can)
+        fixed_lengths_abs = [
+            np.linalg.norm(anchors[idx]) + dl
+            for idx, dl in zip(fixed_indices, sweep['fixed_lengths'])
+        ]
+        l_drive_abs = l_drive + np.linalg.norm(anchors[drive_idx])
+        l_sensor_abs = l_sensor + np.linalg.norm(anchors[sensor_idx])
 
-            # Weight by inverse residual (more confident fits get more weight)
-            if use_weights:
-                residual = fe.get('residual_rms', 0.01)
-                self.sweep_weights[sweep_id] = 1.0 / max(residual, 0.001)
-            else:
-                self.sweep_weights[sweep_id] = 1.0
+        return fixed_lengths_abs, l_drive_abs, l_sensor_abs
 
-            self.sweep_configs[sweep_id] = fe['sweep_config']
+    def _fit_observed_geometry(
+        self,
+        sweep: dict,
+        anchors: np.ndarray
+    ) -> tuple[Optional[Tuple[np.ndarray, np.ndarray, float]], float, list[float]]:
+        """
+        Fit an ellipse for a sweep given the current anchor guess.
 
-        # Normalize weights
-        if self.sweep_weights:
-            total_weight = sum(self.sweep_weights.values())
-            for k in self.sweep_weights:
-                self.sweep_weights[k] /= total_weight
+        Returns:
+            (canonical_geom or None, weight, fixed_lengths_abs)
+        """
+        fixed_lengths_abs, l_drive_abs, l_sensor_abs = self._reconstruct_lengths(sweep, anchors)
+        fit = fit_ellipse_from_sweep(
+            l_drive_abs,
+            l_sensor_abs,
+            residual_threshold=self.residual_threshold
+        )
+
+        weight = 1.0
+        if self.use_weights and np.isfinite(fit.residual_rms):
+            weight = 1.0 / max(fit.residual_rms, 0.001)
+
+        if not fit.valid:
+            return None, weight, fixed_lengths_abs
+
+        geom = canonicalize_geometry(
+            fit.center,
+            fit.semi_axes,
+            fit.rotation_angle
+        )
+        return geom, weight, fixed_lengths_abs
 
     def evaluate(self, anchor_vec: np.ndarray) -> float:
         """
@@ -185,40 +213,45 @@ class EllipseCostFunction:
             anchor_vec, self.num_anchors, self.dimensions
         )
 
-        total_cost = 0.0
+        weighted_costs = []
+        weights = []
 
-        # In the final implementation, rebuild absolute lengths and re-fit ellipses here
-        # (using fit_ellipse_from_sweep) so "observed" geometry matches the current anchor guess.
-        # If observed_ellipses already came from such a per-iteration fit, we can reuse them.
+        for sweep in self.sweeps:
+            obs_geom, weight, fixed_lengths_abs = self._fit_observed_geometry(
+                sweep, anchors
+            )
+            sweep_id = sweep.get('id', '')
+            weights.append(weight)
 
-        for sweep_id, obs_coeffs in self.observed_ellipses.items():
-            config = self.sweep_configs.get(sweep_id)
             # Predict ellipse for this configuration
             pred_geom = predict_ellipse_geometry(
                 anchors,
-                config['fixed_anchors'],
-                config['fixed_lengths'],
-                config['drive_anchor'],
-                config['sensor_anchor'],
+                sweep['fixed_anchors'],
+                fixed_lengths_abs,
+                sweep['drive_anchor'],
+                sweep['sensor_anchor'],
                 self.dimensions
             )
 
-            if pred_geom is None:
-                # Invalid configuration (e.g., spheres don't intersect)
-                total_cost += self.invalid_penalty * self.sweep_weights[sweep_id]
+            if obs_geom is None or pred_geom is None:
+                weighted_costs.append(self.invalid_penalty)
                 continue
 
             pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
-            obs_center, obs_axes, obs_theta = obs_coeffs
+            obs_center, obs_axes, obs_theta = obs_geom
 
-            # Compute distance in canonical geometry space
             dist = geometry_distance(
                 obs_center, obs_axes, obs_theta,
                 pred_center, pred_axes, pred_theta,
                 self.geometry_weights
             )
-            weighted_cost = dist**2 * self.sweep_weights[sweep_id]
-            total_cost += weighted_cost
+            weighted_costs.append(dist**2)
+
+        # Normalize by total weight to keep scale consistent across sweeps
+        weight_sum = sum(weights) or 1.0
+        total_cost = sum(
+            wc * (w / weight_sum) for wc, w in zip(weighted_costs, weights)
+        )
 
         return total_cost
 
@@ -233,34 +266,42 @@ class EllipseCostFunction:
         per_sweep_costs = {}
         num_valid = 0
         num_invalid = 0
+        weights = {}
 
-        for sweep_id, obs_coeffs in self.observed_ellipses.items():
-            config = self.sweep_configs.get(sweep_id)
+        for sweep in self.sweeps:
+            sweep_id = sweep.get('id', '')
+            obs_geom, weight, fixed_lengths_abs = self._fit_observed_geometry(
+                sweep, anchors
+            )
+            weights[sweep_id] = weight
+
             pred_geom = predict_ellipse_geometry(
                 anchors,
-                config['fixed_anchors'],
-                config['fixed_lengths'],
-                config['drive_anchor'],
-                config['sensor_anchor'],
+                sweep['fixed_anchors'],
+                fixed_lengths_abs,
+                sweep['drive_anchor'],
+                sweep['sensor_anchor'],
                 self.dimensions
             )
 
-            if pred_geom is None:
+            if obs_geom is None or pred_geom is None:
                 per_sweep_costs[sweep_id] = self.invalid_penalty
                 num_invalid += 1
-            else:
-                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
-                obs_center, obs_axes, obs_theta = obs_coeffs
-                dist = geometry_distance(
-                    obs_center, obs_axes, obs_theta,
-                    pred_center, pred_axes, pred_theta,
-                    self.geometry_weights
-                )
-                per_sweep_costs[sweep_id] = dist**2
-                num_valid += 1
+                continue
 
+            pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
+            obs_center, obs_axes, obs_theta = obs_geom
+            dist = geometry_distance(
+                obs_center, obs_axes, obs_theta,
+                pred_center, pred_axes, pred_theta,
+                self.geometry_weights
+            )
+            per_sweep_costs[sweep_id] = dist**2
+            num_valid += 1
+
+        weight_sum = sum(weights.values()) or 1.0
         total_cost = sum(
-            per_sweep_costs[sid] * self.sweep_weights.get(sid, 1.0)
+            per_sweep_costs[sid] * (weights.get(sid, 1.0) / weight_sum)
             for sid in per_sweep_costs
         )
 
@@ -580,8 +621,13 @@ class TestCostFunction:
             [0, -500]
         ])
 
-        # Generate synthetic sweeps and fit ellipses
-        # (In practice, would use actual simulation)
+        # Generate synthetic sweep deltas (absolute lengths rebuilt with anchor norms)
+        phi = np.linspace(0, np.pi, 40)
+        baseline_drive = np.linalg.norm(true_anchors[1])
+        baseline_sensor = np.linalg.norm(true_anchors[2])
+        l_drive_delta = 20.0 * np.cos(phi)  # encoder deltas from origin
+        l_sensor_delta = 15.0 * np.sin(phi)
+
         return {
             'version': '1.0',
             'machine_type': 'slideprinter',
@@ -591,24 +637,13 @@ class TestCostFunction:
                 {
                     'id': 'sweep_001',
                     'fixed_anchors': [0],
-                    'fixed_lengths': [600.0],
+                    'fixed_lengths': [0.0],  # delta; absolute = ||A0|| + delta
                     'drive_anchor': 1,
                     'sensor_anchor': 2,
-                    'data_points': []
-                }
-            ],
-            'fitted_ellipses': [
-                {
-                    'sweep_id': 'sweep_001',
-                    'coefficients': {
-                        'A': 0.5, 'B': 0.1, 'C': 0.4,
-                        'D': -50, 'E': -40, 'F': 1000
-                    },
-                    'center': {'x': 0.0, 'y': 0.0},
-                    'semi_axes': {'a': 10.0, 'b': 8.0},
-                    'orientation_rad': 0.0,
-                    'residual_rms': 0.001,
-                    'valid': True
+                    'data_points': [
+                        {'l_drive': float(ld), 'l_sensor': float(ls)}
+                        for ld, ls in zip(l_drive_delta, l_sensor_delta)
+                    ]
                 }
             ],
             '_true_anchors': true_anchors
@@ -616,7 +651,7 @@ class TestCostFunction:
 
     def test_cost_function_creation(self, synthetic_dataset):
         cost_fn = EllipseCostFunction(synthetic_dataset)
-        assert len(cost_fn.observed_ellipses) == 1
+        assert len(cost_fn.sweeps) == 1
 
     def test_cost_at_true_anchors(self, synthetic_dataset):
         """Cost should be low at true anchor positions."""

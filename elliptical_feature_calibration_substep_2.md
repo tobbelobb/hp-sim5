@@ -5,6 +5,7 @@
 Create or modify the data collection script to perform "circular sweep" measurements where N-1 cables are held at fixed length while one cable is driven and another is passively measured. This produces the (l_drive, l_sensor) pairs needed for ellipse fitting. Carry over the masterplan constraint: on Hangprinter variants the top "carrying" anchor should never be assigned the Sensor/torque role during sweeps.
 
 We cannot record absolute cable lengths during collection because anchor locations are unknown. The script must therefore zero encoders at the origin and log *relative* lengths (`ΔL` from origin) for `fixed_lengths`, `l_drive`, and `l_sensor`. Phase 2 will reconstruct absolute lengths as `L_abs = ||anchor - origin|| + ΔL` using the current anchor guess before comparing against theoretical ellipses or re-fitting if needed. Keep the raw encoder angles in the log (alongside the derived lengths) so later physics models—sag/flex/buildup—can reinterpret the data without recollecting, and so QC tooling can visualize where along the arc the sampler spent the most time and how noise varies.
+The output JSON remains sweep-only; any ellipse fitting happens later inside the optimizer (or in ephemeral debug sidecars), never baked into the canonical dataset.
 
 ## Implementation Details
 
@@ -317,7 +318,6 @@ async function main() {
       dimensions: machineConfig.dimensions,
       timestamp: new Date().toISOString(),
       sweeps: sweeps,
-      fitted_ellipses: [],  // To be filled by Python fitting script
     };
 
     // Save output

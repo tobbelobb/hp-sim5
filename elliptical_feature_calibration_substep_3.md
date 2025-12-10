@@ -508,12 +508,13 @@ def fit_ellipse_from_sweep(
     )
 
 
-def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict]:
+def fit_all_sweeps(sweeps: List[dict], residual_threshold: float = 0.01) -> List[dict]:
     """
     Fit ellipses to all sweeps in a dataset.
 
     Parameters:
-        dataset: Sweep dataset dict (from JSON)
+        sweeps: Iterable of sweep dicts whose lengths have already been
+                reconstructed to absolute values for the current anchor guess
         residual_threshold: Maximum RMS residual for valid fit
 
     Returns:
@@ -521,7 +522,7 @@ def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict
     """
     results = []
 
-    for sweep in dataset.get('sweeps', []):
+    for sweep in sweeps:
         sweep_id = sweep['id']
         data_points = sweep['data_points']
         sweep_config = {
@@ -600,8 +601,10 @@ def main():
     with open(args.input, 'r') as f:
         dataset = json.load(f)
 
-    # Fit ellipses
-    fitted_ellipses = fit_all_sweeps(dataset, args.threshold)
+    # Fit ellipses (expects sweeps already expressed in absolute lengths, e.g. after
+    # adding ||anchor_i - origin|| to all stored deltas for a particular anchor guess)
+    sweeps = dataset.get('sweeps', [])
+    fitted_ellipses = fit_all_sweeps(sweeps, args.threshold)
 
     # Summary
     valid_count = sum(1 for e in fitted_ellipses if e['valid'])
@@ -613,13 +616,14 @@ def main():
             status = "VALID" if fe['valid'] else f"REJECTED: {fe['rejection_reason']}"
             print(f"  {fe['sweep_id']}: RMS={fe['residual_rms']:.6f} {status}")
 
-    # Update dataset
-    dataset['fitted_ellipses'] = fitted_ellipses
-
-    # Save output
-    output_path = args.output or args.input
+    # Save output sidecar (keep canonical dataset sweep-only)
+    output_path = args.output or args.input.replace('.json', '_fits.json')
     with open(output_path, 'w') as f:
-        json.dump(dataset, f, indent=2)
+        json.dump({
+            "source": args.input,
+            "residual_threshold": args.threshold,
+            "fitted_ellipses": fitted_ellipses,
+        }, f, indent=2)
 
     print(f"Saved to {output_path}")
 
@@ -837,7 +841,7 @@ class TestBatchFitting:
             ]
         }
 
-        results = fit_all_sweeps(dataset, residual_threshold=0.01)
+        results = fit_all_sweeps(dataset['sweeps'], residual_threshold=0.01)
 
         assert len(results) == 2
         assert results[0]['sweep_id'] == 'sweep_001'

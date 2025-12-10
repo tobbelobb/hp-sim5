@@ -42,7 +42,7 @@ where:
 
 ### 4.2 Core Implementation (`theoretical_ellipse.py`)
 
-Forward projections take `SweepConfigSnapshot` data (fixed anchors + held lengths + drive/sense roles) that rides along with each `FittedEllipse`, so theoretical and observed ellipses stay aligned through the Phase 1 → Phase 2 handoff.
+Forward projections consume the sweep configurations directly (fixed anchors + held lengths + drive/sense roles) from the raw dataset; optional debug fit objects can still carry the same snapshot shape, but they never need to be persisted on disk now that fitting happens per anchor guess.
 
 ```python
 """
@@ -339,32 +339,33 @@ def predict_ellipse_coefficients(
 
 def predict_ellipses_for_dataset(
     anchors: np.ndarray,
-    dataset: dict
+    sweeps: List[dict],
+    dimensions: int
 ) -> List[dict]:
     """
-    Predict ellipse coefficients for all fitted sweeps in a dataset.
+    Predict ellipse coefficients for all sweeps in a dataset.
 
     Parameters:
         anchors: Current anchor position estimates (N, D)
-        dataset: Sweep dataset dictionary
-        (Callers should feed in absolute fixed lengths; if the dataset stores
-        origin-relative lengths, add the guessed baseline length for each fixed
-        anchor before calling.)
+        sweeps: Sweep list; callers should add ||A_i|| baselines to any
+                origin-relative lengths before calling
+        dimensions: Workspace dimensionality
 
     Returns:
         List of predicted ellipse dicts matching sweep IDs
     """
-    dimensions = dataset.get('dimensions', 3)
     predictions = []
 
-    for fe in dataset.get('fitted_ellipses', []):
-        sweep_id = fe['sweep_id']
-        cfg = fe['sweep_config']
-
-        fixed_indices = cfg['fixed_anchors']
-        fixed_lengths = cfg['fixed_lengths']
-        drive_idx = cfg['drive_anchor']
-        sensor_idx = cfg['sensor_anchor']
+    for sweep in sweeps:
+        sweep_id = sweep['id']
+        fixed_indices = sweep['fixed_anchors']
+        # Add guessed baseline ||A_i|| to stored deltas (assumes origin at [0,0,0])
+        fixed_lengths = [
+            np.linalg.norm(anchors[idx]) + dl
+            for idx, dl in zip(fixed_indices, sweep['fixed_lengths'])
+        ]
+        drive_idx = sweep['drive_anchor']
+        sensor_idx = sweep['sensor_anchor']
 
         coeffs = predict_ellipse_coefficients(
             anchors, fixed_indices, fixed_lengths,
