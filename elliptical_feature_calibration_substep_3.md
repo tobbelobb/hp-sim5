@@ -39,13 +39,13 @@ class EllipseFitResult:
     valid: bool
     rejection_reason: Optional[str] = None
 
-TODO
 def fit_ellipse_maini_stefano(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Fit ellipse using Maini & Stefano's Least Squares method.
 
-    TODO
-    <one-line-explanation-here />
+    Re-center/scale data into a [-1, 1]² box (EDFE) to tame conditioning, solve
+    the constrained eigenproblem, and fall back to perturb-and-resample if the
+    scatter matrix is ill-conditioned.
 
     Parameters:
         x, y: Arrays of point coordinates (already squared for L² data)
@@ -53,7 +53,131 @@ def fit_ellipse_maini_stefano(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     Returns:
         Coefficients [A, B, C, D, E, F] of Ax² + Bxy + Cy² + Dx + Ey + F = 0
     """
-    pass
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+
+    if len(x) != len(y):
+        raise ValueError("x and y must have the same length")
+    if len(x) < 5:
+        raise ValueError("At least 5 points required for ellipse fitting")
+
+    # Re-center and scale into [-1, 1]² per Maini & Stefano
+    x_min, x_max = np.min(x), np.max(x)
+    y_min, y_max = np.min(y), np.max(y)
+
+    sx = (x_max - x_min) / 2.0
+    sy = (y_max - y_min) / 2.0
+
+    if sx <= 0 or sy <= 0:
+        raise ValueError("Degenerate data range; cannot normalize for ellipse fitting")
+
+    x_hat = (x - x_min) / sx - 1.0
+    y_hat = (y - y_min) / sy - 1.0
+
+    def _direct_fit(xn: np.ndarray, yn: np.ndarray) -> Tuple[np.ndarray, float]:
+        """Direct constrained fit on normalized data."""
+        D = np.column_stack([
+            xn**2,
+            xn * yn,
+            yn**2,
+            xn,
+            yn,
+            np.ones_like(xn)
+        ])
+
+        S = D.T @ D
+        cond_S = np.linalg.cond(S)
+
+        C = np.zeros((6, 6))
+        C[0, 2] = 2
+        C[1, 1] = -1
+        C[2, 0] = 2
+
+        S1 = S[:3, :3]
+        S2 = S[:3, 3:]
+        S3 = S[3:, 3:]
+
+        try:
+            S3_inv = inv(S3)
+        except np.linalg.LinAlgError:
+            S3_inv = np.linalg.pinv(S3)
+
+        T = -S3_inv @ S2.T
+        M = S1 + S2 @ T
+
+        C1 = C[:3, :3]
+
+        try:
+            C1_inv = inv(C1)
+        except np.linalg.LinAlgError:
+            C1_inv = np.linalg.pinv(C1)
+
+        M_prime = C1_inv @ M
+
+        eigenvalues, eigenvectors = eig(M_prime)
+
+        valid_idx = None
+        best_constraint = -np.inf
+        for i, vec in enumerate(eigenvectors.T):
+            a1, b1, c1 = vec.real[:3]
+            constraint_val = 4 * a1 * c1 - b1**2
+            if np.isreal(eigenvalues[i]) and constraint_val > 0:
+                valid_idx = i
+                break
+            if constraint_val > best_constraint:
+                best_constraint = constraint_val
+                valid_idx = i
+
+        v1 = eigenvectors[:, valid_idx].real
+        v2 = T @ v1
+        coeffs_hat = np.concatenate([v1, v2])
+        return coeffs_hat, cond_S
+
+    try:
+        coeffs_hat, cond_val = _direct_fit(x_hat, y_hat)
+        if not np.isfinite(cond_val) or cond_val > 1e12:
+            raise np.linalg.LinAlgError("Ill-conditioned scatter matrix")
+    except Exception as first_err:
+        # Perturb-and-resample strategy when localization is critical
+        replicates = 25
+        noise_std = 1e-3
+        coeffs_list = []
+        for _ in range(replicates):
+            xn = x_hat + np.random.normal(0, noise_std, size=x_hat.shape)
+            yn = y_hat + np.random.normal(0, noise_std, size=y_hat.shape)
+            try:
+                coeffs_i, _ = _direct_fit(xn, yn)
+                coeffs_list.append(coeffs_i)
+            except Exception:
+                continue
+
+        if not coeffs_list:
+            raise ValueError("Ellipse fitting failed after perturb-and-resample") from first_err
+
+        coeffs_hat = np.mean(coeffs_list, axis=0)
+
+    # Denormalize coefficients back to original coordinates
+    ox = 1.0 / sx
+    oy = 1.0 / sy
+    px = -x_min * ox - 1.0
+    py = -y_min * oy - 1.0
+
+    Ah, Bh, Ch, Dh, Eh, Fh = coeffs_hat
+
+    A = Ah * ox * ox
+    B = Bh * ox * oy
+    C = Ch * oy * oy
+    D = 2 * Ah * ox * px + Bh * ox * py + Dh * ox
+    E = 2 * Ch * oy * py + Bh * px * oy + Eh * oy
+    F = Ah * px**2 + Bh * px * py + Ch * py**2 + Dh * px + Eh * py + Fh
+
+    coeffs = np.array([A, B, C, D, E, F], dtype=float)
+
+    norm_factor = np.linalg.norm(coeffs[:3])
+    if norm_factor > 0:
+        coeffs = coeffs / norm_factor
+
+    return coeffs
 
 
 def fit_ellipse_fitzgibbon(x: np.ndarray, y: np.ndarray) -> np.ndarray:
