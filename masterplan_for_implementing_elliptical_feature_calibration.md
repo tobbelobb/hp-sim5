@@ -4,6 +4,8 @@
 
 This document outlines a calibration approach for cable-driven parallel robots that exploits a fundamental geometric property: when the effector is constrained to move along a 1-DOF path (by fixing N-1 cable lengths), the relationship between any two cable lengths squared traces an **ellipse**. By fitting ellipses to measurement data and optimizing anchor positions to match theoretical ellipses, we achieve noise-robust calibration that generalizes across machine configurations. Cost comparisons use a canonical geometric parameterization `(x0, y0, a, b, θ)` (with `a >= b` and θ wrapped into a fixed range) rather than raw `(A,B,C,D,E,F)` coefficients to avoid scale and conditioning pitfalls.
 
+The project finishes with a parity/check harness so the new ellipse feature fitter and the legacy point-based solver (`autocal/auto-calibration-simulation-for-hangprinter/simulation.py`) can both consume the sweep dataset, reuse the same core math, and emit comparable anchor/cost summaries. This makes it easy to validate the new method against known behavior while keeping the point-based path available.
+
 ## Supported Machine Configurations
 
 | Configuration | Anchors | Dimensions | Type            | Constraints for 1-DOF |
@@ -200,7 +202,7 @@ Do **not** persist `fitted_ellipses` in the canonical dataset; any ellipse fits 
 
 ## Implementation Substeps
 
-The implementation is divided into 7 substeps:
+The implementation is divided into 8 substeps:
 
 1. **Sweep Data Structure & JSON Format** - Define the generalized data structures
 2. **Data Collector Script** - Modify `collect_encoder_data.mjs` or create `collect_sweep_data.mjs`
@@ -209,6 +211,7 @@ The implementation is divided into 7 substeps:
 5. **Feature Cost Function** - Link observed and predicted ellipses
 6. **Visualization Module** - Debug plots for ellipse fitting and optimization
 7. **Integration with simulation.py** - Merge into existing calibration workflow
+8. **Comparison Harness & Shared Logic** - Adapt the legacy point-based solver to the sweep format, centralize shared math/utilities, and provide side-by-side reporting against the ellipse solver
 
 ## Success Criteria
 
@@ -217,6 +220,7 @@ The implementation is divided into 7 substeps:
 3. **Noise Robustness Test**: Add Gaussian noise to synthetic data; recover anchors within tolerance.
 4. **Real Hardware Validation**: Run on physical Slideprinter; compare to known geometry.
 5. **Convergence Speed**: Solver converges faster than point-based method with similar data volume.
+6. **Parity Check**: Running the point-based and ellipse-based solvers on the same sweep dataset yields anchor estimates within a small tolerance (e.g., <5 mm mean difference) and comparable residual trends.
 
 ## Risk Assessment
 

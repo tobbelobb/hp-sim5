@@ -6,6 +6,8 @@ Define the generalized data structures that support sweep-based calibration for 
 
 Remember the data-collection limitation: we only have encoder deltas, not anchor positions, during logging. Every length value we store (`fixed_lengths`, `l_drive`, `l_sensor`) is therefore relative to the length when the mover was at the origin after encoder zeroing. Any downstream code that needs absolute lengths must reconstruct them using the current anchor guess: `L_abs = ||A_i - origin|| + ΔL_measured`. Keep this contract in mind when consuming these structures in later substeps. Ellipse fitting is now performed inside the optimization loop per anchor guess; no pre-fit ellipses are stored. Preserve raw encoder angles alongside the derived lengths so future sag/flex/buildup models can re-interpret the exact same dataset.
 
+Maintain schema neutrality: the same `SweepDataset` should be usable by the ellipse pipeline *and* by the legacy point-based solver (via the adapter added in Substep 8) without introducing ellipse-specific artifacts into the on-disk format.
+
 ## Implementation Details
 
 ### 1.1 Core Data Structures

@@ -8,6 +8,8 @@ Keep the `sweep_config` snapshots that travel with each `FittedEllipse` when rou
 Absolute cable lengths are still unknown at data-collection time, so the integration layer must rebuild them from anchor guesses during optimization (`L_abs = ||A_i - origin|| + ΔL_measured`) before feeding anything into the forward model or cost function; otherwise observed (relative) and predicted (absolute) ellipses will be misaligned. Keep the raw encoder angles alongside the derived lengths so future sag/flex/buildup models can reinterpret the same files without recollecting.
 Ellipse fitting now happens inside the optimizer on those reconstructed absolute lengths; drop any stored `fitted_ellipses` paths. Compare ellipses in the canonical geometry space `(x0, y0, a, b, θ)` (with `a >= b`, θ wrapped) rather than raw `(A..F)` coefficients.
 
+Factor out shared math and parameterization utilities (anchor vector helpers, spool/buildup/flex models, sweep-to-absolute conversions) into common modules so both the legacy point-based solver and the new ellipse solver depend on the same building blocks. This keeps outputs comparable and sets up the dedicated comparison harness in Substep 8.
+
 ## Implementation Details
 
 ### 7.1 Unified Calibration Pipeline (`calibrate.py`)
