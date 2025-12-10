@@ -2,7 +2,7 @@
 
 ## Overview
 
-Define the generalized data structures that support sweep-based calibration for all machine configurations (3-8 anchors, 2D and 3D). This substep establishes the foundation for data collection, storage, and exchange between components.
+Define the generalized data structures that support sweep-based calibration for all machine configurations (3-8 anchors, 2D and 3D). This substep establishes the foundation for data collection, storage, and exchange between components. Keep the masterplan warning in mind: on Hangprinter variants the top "carrying" anchor must never be put in torque/sensor mode during sweeps.
 
 ## Implementation Details
 
@@ -29,6 +29,7 @@ class MachineConfig:
     machine_type: MachineType
     num_anchors: int
     dimensions: int  # 2 for Slideprinter, 3 for others
+    carrying_anchors: List[int] = field(default_factory=list)  # Anchors that must never be Sensor/torque mode
 
     @property
     def constraints_for_1dof(self) -> int:
@@ -38,14 +39,14 @@ class MachineConfig:
     @classmethod
     def from_type(cls, machine_type: MachineType) -> 'MachineConfig':
         configs = {
-            MachineType.SLIDEPRINTER: (3, 2),
-            MachineType.HANGPRINTER_4: (4, 3),
-            MachineType.HANGPRINTER_5: (5, 3),
-            MachineType.CUBECORNERS: (8, 3),
-            MachineType.SKYCAM: (4, 3),
+            MachineType.SLIDEPRINTER: (3, 2, []),
+            MachineType.HANGPRINTER_4: (4, 3, [3]),  # Anchor 3 carries weight, never Sensor
+            MachineType.HANGPRINTER_5: (5, 3, [4]),  # Anchor 4 carries weight, never Sensor
+            MachineType.CUBECORNERS: (8, 3, []),
+            MachineType.SKYCAM: (4, 3, []),
         }
-        num_anchors, dimensions = configs[machine_type]
-        return cls(machine_type, num_anchors, dimensions)
+        num_anchors, dimensions, carrying = configs[machine_type]
+        return cls(machine_type, num_anchors, dimensions, carrying)
 
 @dataclass
 class DataPoint:
@@ -88,6 +89,10 @@ class Sweep:
                 f"Expected {config.constraints_for_1dof} fixed anchors, "
                 f"got {len(self.fixed_anchors)}"
             )
+
+        # Prevent putting carrying anchors in torque/sensor mode
+        if self.sensor_anchor in (config.carrying_anchors or []):
+            errors.append("Carrying anchors cannot be assigned the Sensor role")
 
         # Check no duplicates
         if len(all_anchors) != len(self.fixed_anchors) + 2:
@@ -427,7 +432,10 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
 from itertools import combinations, permutations
 from typing import List, Tuple
 
-def generate_sweep_configs(config: MachineConfig) -> List[dict]:
+def generate_sweep_configs(
+    config: MachineConfig,
+    forbidden_sensor_anchors: List[int] | None = None
+) -> List[dict]:
     """
     Generate all valid sweep configurations for a machine type.
 
@@ -438,6 +446,7 @@ def generate_sweep_configs(config: MachineConfig) -> List[dict]:
     """
     n = config.num_anchors
     k = config.constraints_for_1dof  # Number of anchors to fix
+    sensor_block = set(forbidden_sensor_anchors or config.carrying_anchors or [])
 
     all_configs = []
 
@@ -448,6 +457,8 @@ def generate_sweep_configs(config: MachineConfig) -> List[dict]:
 
         # For each permutation of (drive, sensor) from free anchors
         for drive, sensor in permutations(free_anchors, 2):
+            if sensor in sensor_block:
+                continue  # Carrying anchors must never be Sensors
             all_configs.append({
                 "fixed_anchors": list(fixed),
                 "drive_anchor": drive,
@@ -466,7 +477,7 @@ def select_representative_configs(
 
     Strategy:
     - Ensure each anchor appears as drive at least once
-    - Ensure each anchor (TODO: except top "carrying" anchors) appears as sensor at least once
+    - Ensure each non-carrying anchor appears as sensor at least once
     - Distribute fixed anchor combinations evenly
     """
     if len(all_configs) <= max_sweeps:
@@ -475,14 +486,17 @@ def select_representative_configs(
     selected = []
     used_as_drive = set()
     used_as_sensor = set()
+    sensor_block = set(config.carrying_anchors or [])
 
     # First pass: ensure coverage
     for cfg in all_configs:
         drive = cfg["drive_anchor"]
         sensor = cfg["sensor_anchor"]
 
+        if sensor in sensor_block:
+            continue
+
         if drive not in used_as_drive or sensor not in used_as_sensor:
-            # TODO: Never append carrying anchors as sensor
             selected.append(cfg)
             used_as_drive.add(drive)
             used_as_sensor.add(sensor)
@@ -546,6 +560,19 @@ def test_sweep_validation_wrong_constraints():
     errors = sweep.validate(config)
     assert len(errors) > 0
 
+def test_sweep_validation_blocks_carrying_sensor():
+    config = MachineConfig.from_type(MachineType.HANGPRINTER_4)
+    sweep = Sweep(
+        id="bad_sensor",
+        fixed_anchors=[0, 1],
+        fixed_lengths=[10.0, 11.0],
+        drive_anchor=2,
+        sensor_anchor=3,  # Carrying anchor must never be Sensor
+        data_points=[DataPoint(i, i+100) for i in range(10)],
+    )
+    errors = sweep.validate(config)
+    assert any("Carrying" in err for err in errors)
+
 def test_ellipse_coefficients_normalization():
     coeffs = EllipseCoefficients(A=3.0, B=0.0, C=4.0, D=10, E=20, F=100)
     arr = coeffs.to_array()
@@ -560,8 +587,8 @@ def test_sweep_config_generator_slideprinter():
 def test_sweep_config_generator_hangprinter_4():
     config = MachineConfig.from_type(MachineType.HANGPRINTER_4)
     configs = generate_sweep_configs(config)
-    # C(4,2) = 6 ways to fix 2, then 2*1 permutations of remaining -> 6 * 2 = 12
-    assert len(configs) == 12
+    # C(4,2) = 6 ways to fix 2, but anchor 3 is carrying and never Sensor -> 9 configs
+    assert len(configs) == 9
 ```
 
 ### Integration Test
@@ -615,7 +642,7 @@ def test_roundtrip_serialization(tmp_path):
 
 1. **Schema Compliance**: All generated JSON files validate against the schema
 2. **Roundtrip Fidelity**: `load(save(dataset)) == dataset` for all fields
-3. **Configuration Coverage**: `generate_sweep_configs()` produces correct count for each machine type
+3. **Configuration Coverage**: `generate_sweep_configs()` produces correct count for each machine type while respecting carrying/sensor exclusions
 4. **Constraint Validation**: `Sweep.validate()` catches all invalid configurations
 5. **Normalization Consistency**: Ellipse coefficient normalization is idempotent
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Create or modify the data collection script to perform "circular sweep" measurements where N-1 cables are held at fixed length while one cable is driven and another is passively measured. This produces the (l_drive, l_sensor) pairs needed for ellipse fitting.
+Create or modify the data collection script to perform "circular sweep" measurements where N-1 cables are held at fixed length while one cable is driven and another is passively measured. This produces the (l_drive, l_sensor) pairs needed for ellipse fitting. Carry over the masterplan constraint: on Hangprinter variants the top "carrying" anchor should never be assigned the Sensor/torque role during sweeps.
 
 ## Implementation Details
 
@@ -27,11 +27,11 @@ import { STEP_CLOCK_HZ } from '../examples/js/slideprinter/rrfMotionUtils.js';
 
 // Machine configurations
 const MACHINE_CONFIGS = {
-  slideprinter: { numAnchors: 3, dimensions: 2, axes: ['X', 'Y', 'Z'] },
-  hangprinter_4: { numAnchors: 4, dimensions: 3, axes: ['A', 'B', 'C', 'D'] },
-  hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['A', 'B', 'C', 'D', 'I'] },
-  cubecorners: { numAnchors: 8, dimensions: 3, axes: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] },
-  skycam: { numAnchors: 4, dimensions: 3, axes: ['A', 'B', 'C', 'D'] },
+  slideprinter: { numAnchors: 3, dimensions: 2, axes: ['X', 'Y', 'Z'], forbiddenSensors: [] },
+  hangprinter_4: { numAnchors: 4, dimensions: 3, axes: ['A', 'B', 'C', 'D'], forbiddenSensors: [3] }, // Anchor 3 carries, never Sensor
+  hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['A', 'B', 'C', 'D', 'I'], forbiddenSensors: [4] }, // Anchor 4 carries, never Sensor
+  cubecorners: { numAnchors: 8, dimensions: 3, axes: ['A', 'B', 'C', 'D', 'I', 'J', 'K', 'L'], forbiddenSensors: [] },
+  skycam: { numAnchors: 4, dimensions: 3, axes: ['A', 'B', 'C', 'D'], forbiddenSensors: [] },
 };
 
 // Motor IDs for Slideprinter (extend for other machines)
@@ -51,12 +51,13 @@ const DEFAULT_SETTLE_MS = 200;
 /**
  * Generate sweep configurations for a machine type.
  */
-function generateSweepConfigs(machineType) {
+function generateSweepConfigs(machineType, forbiddenSensors = null) {
   const config = MACHINE_CONFIGS[machineType];
   if (!config) throw new Error(`Unknown machine type: ${machineType}`);
 
   const n = config.numAnchors;
   const k = config.dimensions - 1;  // Number of fixed anchors for 1-DOF
+  const sensorBlock = new Set(forbiddenSensors ?? config.forbiddenSensors ?? []);
 
   const configs = [];
 
@@ -69,6 +70,7 @@ function generateSweepConfigs(machineType) {
 
     // Generate all permutations of (drive, sensor) from free anchors
     for (const [drive, sensor] of permutations(freeAnchors, 2)) {
+      if (sensorBlock.has(sensor)) continue;  // Never assign carrying anchor to Sensor
       configs.push({
         fixedAnchors: fixed,
         driveAnchor: drive,
@@ -222,7 +224,12 @@ async function main() {
   // Generate sweep configurations
   let sweepConfigs = generateSweepConfigs(machineType);
   if (sweepConfigs.length > maxSweeps) {
-    sweepConfigs = selectRepresentativeConfigs(sweepConfigs, machineConfig.numAnchors, maxSweeps);
+    sweepConfigs = selectRepresentativeConfigs(
+      sweepConfigs,
+      machineConfig.numAnchors,
+      maxSweeps,
+      machineConfig.forbiddenSensors
+    );
   }
 
   console.log(`Machine: ${machineType} (${machineConfig.numAnchors} anchors, ${machineConfig.dimensions}D)`);
@@ -323,13 +330,15 @@ async function main() {
 /**
  * Select representative sweep configurations.
  */
-function selectRepresentativeConfigs(allConfigs, numAnchors, maxSweeps) {
+function selectRepresentativeConfigs(allConfigs, numAnchors, maxSweeps, forbiddenSensors = []) {
   const selected = [];
   const usedAsDrive = new Set();
   const usedAsSensor = new Set();
+  const sensorBlock = new Set(forbiddenSensors);
 
   // First pass: ensure coverage
   for (const cfg of allConfigs) {
+    if (sensorBlock.has(cfg.sensorAnchor)) continue;
     if (cfg.driveAnchor in usedAsDrive && cfg.sensorAnchor in usedAsSensor) {
       continue;
     }
@@ -533,9 +542,9 @@ function testGenerateSweepConfigs() {
   const slideConfigs = generateSweepConfigs('slideprinter');
   assert.equal(slideConfigs.length, 6);
 
-  // Hangprinter 4: C(4,2) = 6, permute 2 -> 6 * 2 = 12
+  // Hangprinter 4: C(4,2) = 6, but anchor 3 must never be Sensor -> 9 configs
   const hp4Configs = generateSweepConfigs('hangprinter_4');
-  assert.equal(hp4Configs.length, 12);
+  assert.equal(hp4Configs.length, 9);
 
   console.log('testGenerateSweepConfigs: PASSED');
 }
@@ -549,8 +558,13 @@ function testCombinations() {
 
 // Test representative selection
 function testSelectRepresentative() {
-  const allConfigs = generateSweepConfigs('hangprinter_4');  // 12 configs
-  const selected = selectRepresentativeConfigs(allConfigs, 4, 6);
+  const allConfigs = generateSweepConfigs('hangprinter_4');  // 9 configs
+  const selected = selectRepresentativeConfigs(
+    allConfigs,
+    4,
+    6,
+    MACHINE_CONFIGS.hangprinter_4.forbiddenSensors
+  );
   assert.equal(selected.length, 6);
 
   // Check all anchors appear as drive at least once
@@ -597,8 +611,8 @@ async function testSweepDataCollection() {
 
 ## Validation Criteria
 
-1. **Sweep Count**: Generated number of sweeps matches theoretical count for each machine type
-2. **Anchor Coverage**: Each anchor appears as drive and sensor in at least one sweep
+1. **Sweep Count**: Generated number of sweeps matches the expected count after excluding carrying anchors from Sensor role
+2. **Anchor Coverage**: Each anchor appears as drive in at least one sweep; each non-carrying anchor appears as sensor in at least one sweep
 3. **Data Completeness**: All `sweepPoints` data points collected for each sweep
 4. **JSON Validity**: Output JSON validates against schema from Substep 1
 5. **Length Plausibility**: Collected lengths change monotonically during sweep (sanity check)

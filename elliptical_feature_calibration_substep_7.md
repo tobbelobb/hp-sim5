@@ -66,6 +66,24 @@ def calibrate_elliptical(
     with open(input_path, 'r') as f:
         dataset = json.load(f)
 
+    # Guard: Hangprinter carrying anchors must never be Sensor/torque
+    machine_type = dataset.get('machine_type', '')
+    forbidden_sensors = {
+        'hangprinter_4': {3},
+        'hangprinter_5': {4},
+    }.get(machine_type, set())
+    if forbidden_sensors:
+        invalid_sweeps = [
+            s['id'] for s in dataset.get('sweeps', [])
+            if s.get('sensor_anchor') in forbidden_sensors
+        ]
+        if invalid_sweeps:
+            print(f"Skipping sweeps that put carrying anchors in Sensor role: {invalid_sweeps}")
+            dataset['sweeps'] = [
+                s for s in dataset['sweeps']
+                if s.get('sensor_anchor') not in forbidden_sensors
+            ]
+
     # Step 1: Fit ellipses if not already done
     fitted_ellipses = dataset.get('fitted_ellipses', [])
     if not fitted_ellipses:
