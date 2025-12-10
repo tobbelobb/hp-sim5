@@ -1,5 +1,10 @@
 # Potential issues
 
+## Absolute vs relative lengths (This is the most important one!)
+The ellipse invariant is strictly an invariant of absolute squared lengths.
+With purely relative encoder deltas, pre-fitting ellipses that are independent of anchor guesses is not mathematically consistent.
+Our Fix/comment: Move the ellipse fitting inside the optimization. Modify Phase 1/2 architecture. Phase 1: store raw sweeps. Phase 2: for each candidate anchor set, reconstruct absolute lengths, fit ellipses, and then compare to theoretical ellipses.
+
 ## Circle assumption vs real physics
 Cable sag, flex, gravity, and torque-mode dynamics mean the effector path is approximately but not exactly the pure circle defined by fixed lengths.
 
