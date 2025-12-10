@@ -179,6 +179,12 @@ Select a representative subset:
   "fitted_ellipses": [
     {
       "sweep_id": "sweep_001",
+      "sweep_config": {
+        "fixed_anchors": [1],
+        "fixed_lengths": [12.5],
+        "drive_anchor": 0,
+        "sensor_anchor": 2
+      },
       "coefficients": {"A": 1.0, "B": 0.1, "C": 0.8, "D": -100, "E": -80, "F": 1000},
       "residual_rms": 0.0012,
       "valid": true
@@ -187,6 +193,8 @@ Select a representative subset:
   ]
 }
 ```
+
+Each fitted ellipse carries a `sweep_id` and a `sweep_config` snapshot so that Phase 2 (forward prediction and cost evaluation) always knows which cables were fixed/drive/sense when the ellipse was produced, even if sweeps are filtered or re-sampled after Phase 1.
 
 ## Advantages Over Differential/Gradient Methods
 
@@ -235,4 +243,3 @@ The implementation is divided into 7 substeps:
 1. Maini, Eliseo Stefano. "Enhanced direct least square fitting of ellipses." International Journal of Pattern Recognition and Artificial Intelligence 20.06 (2006): 939-953. (Enhanced_Direct_Least_Square_Fitting_of_Ellipses.pdf)
 2. "A Novel Calibration Algorithm for Cable-Driven Parallel Robots with Application to Rehabilitation" (applsci-09-02182-v2.pdf)
 3. Current codebase: `simulation.py`, `collect_encoder_data.mjs`
-

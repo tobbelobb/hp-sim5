@@ -106,6 +106,28 @@ class Sweep:
         return l_drive**2, l_sensor**2
 
 @dataclass
+class SweepConfigSnapshot:
+    """
+    Minimal sweep configuration needed to reconstruct the ellipse roles.
+
+    Stored alongside fitted ellipses so Phase 2 can match predictions to
+    observations even if the sweep list is filtered or re-sampled.
+    """
+    fixed_anchors: List[int]
+    fixed_lengths: List[float]
+    drive_anchor: int
+    sensor_anchor: int
+
+    @classmethod
+    def from_sweep(cls, sweep: Sweep) -> 'SweepConfigSnapshot':
+        return cls(
+            fixed_anchors=list(sweep.fixed_anchors),
+            fixed_lengths=list(sweep.fixed_lengths),
+            drive_anchor=sweep.drive_anchor,
+            sensor_anchor=sweep.sensor_anchor,
+        )
+
+@dataclass
 class EllipseCoefficients:
     """Algebraic ellipse coefficients: Ax² + Bxy + Cy² + Dx + Ey + F = 0"""
     A: float
@@ -132,6 +154,7 @@ class EllipseCoefficients:
 class FittedEllipse:
     """Result of ellipse fitting for a sweep."""
     sweep_id: str
+    sweep_config: SweepConfigSnapshot  # Snapshot of fixed/drive/sense roles
     coefficients: EllipseCoefficients
     residual_rms: float         # Root mean square algebraic distance
     valid: bool                 # True if residual below threshold
@@ -150,6 +173,8 @@ class SweepDataset:
         """Return only ellipses that passed QC."""
         return [e for e in self.fitted_ellipses if e.valid]
 ```
+
+**Phase transition guardrail:** Each `FittedEllipse` now carries a `SweepConfigSnapshot` so forward-model code in Phase 2 can reconstruct exactly which cables were fixed/drive/sense when that ellipse was produced, even if the original `Sweep` list is filtered, merged, or re-sampled after fitting.
 
 ### 1.2 JSON Schema
 
@@ -241,11 +266,28 @@ class SweepDataset:
         "sample_rate_hz": {"type": "number"}
       }
     },
+    "SweepConfigSnapshot": {
+      "type": "object",
+      "required": ["fixed_anchors", "fixed_lengths", "drive_anchor", "sensor_anchor"],
+      "properties": {
+        "fixed_anchors": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0}
+        },
+        "fixed_lengths": {
+          "type": "array",
+          "items": {"type": "number"}
+        },
+        "drive_anchor": {"type": "integer", "minimum": 0},
+        "sensor_anchor": {"type": "integer", "minimum": 0}
+      }
+    },
     "FittedEllipse": {
       "type": "object",
-      "required": ["sweep_id", "coefficients", "residual_rms", "valid"],
+      "required": ["sweep_id", "sweep_config", "coefficients", "residual_rms", "valid"],
       "properties": {
         "sweep_id": {"type": "string"},
+        "sweep_config": {"$ref": "#/definitions/SweepConfigSnapshot"},
         "coefficients": {
           "type": "object",
           "properties": {
@@ -306,6 +348,12 @@ def save_sweep_dataset(dataset: SweepDataset, path: Union[str, Path]) -> None:
         "fitted_ellipses": [
             {
                 "sweep_id": e.sweep_id,
+                "sweep_config": {
+                    "fixed_anchors": e.sweep_config.fixed_anchors,
+                    "fixed_lengths": e.sweep_config.fixed_lengths,
+                    "drive_anchor": e.sweep_config.drive_anchor,
+                    "sensor_anchor": e.sweep_config.sensor_anchor,
+                },
                 "coefficients": {
                     "A": e.coefficients.A,
                     "B": e.coefficients.B,
@@ -350,11 +398,27 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
             metadata=metadata,
         ))
 
+    sweep_lookup = {s.id: s for s in sweeps}
     fitted_ellipses = []
     for e in data.get("fitted_ellipses", []):
         coeffs = EllipseCoefficients(**e["coefficients"])
+        sweep_cfg_data = e.get("sweep_config")
+        if sweep_cfg_data is None:
+            # Backward compatibility: derive from sweep list
+            sweep_obj = sweep_lookup.get(e["sweep_id"])
+            if sweep_obj:
+                sweep_cfg_data = {
+                    "fixed_anchors": sweep_obj.fixed_anchors,
+                    "fixed_lengths": sweep_obj.fixed_lengths,
+                    "drive_anchor": sweep_obj.drive_anchor,
+                    "sensor_anchor": sweep_obj.sensor_anchor,
+                }
+            else:
+                raise ValueError(f"Missing sweep_config and unknown sweep_id {e['sweep_id']}")
+
         fitted_ellipses.append(FittedEllipse(
             sweep_id=e["sweep_id"],
+            sweep_config=SweepConfigSnapshot(**sweep_cfg_data),
             coefficients=coeffs,
             residual_rms=e["residual_rms"],
             valid=e["valid"],
@@ -369,6 +433,8 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
         fitted_ellipses=fitted_ellipses,
     )
 ```
+
+`load_sweep_dataset` backfills `sweep_config` for legacy files, but new producers should always emit it so Phase 2 can operate without the full sweep payload.
 
 ### 1.4 Sweep Configuration Generator
 
@@ -536,6 +602,12 @@ def test_roundtrip_serialization(tmp_path):
         fitted_ellipses=[
             FittedEllipse(
                 sweep_id="sweep_001",
+                sweep_config=SweepConfigSnapshot(
+                    fixed_anchors=[0],
+                    fixed_lengths=[1000.0],
+                    drive_anchor=1,
+                    sensor_anchor=2,
+                ),
                 coefficients=EllipseCoefficients(1.0, 0.1, 0.9, -50, -60, 500),
                 residual_rms=0.001,
                 valid=True,

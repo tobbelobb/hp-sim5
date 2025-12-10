@@ -6,6 +6,8 @@ Create visualization tools for debugging and monitoring the calibration process.
 
 ## Implementation Details
 
+All plots prefer the `sweep_config` snapshot shipped with each `FittedEllipse` (if present) so overlays stay consistent even when the underlying sweep list is trimmed between Phase 1 and Phase 2.
+
 ### 6.1 Core Visualization (`ellipse_visualization.py`)
 
 ```python
@@ -101,6 +103,13 @@ def plot_ellipse_fit(
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 8))
 
+    cfg = fitted_ellipse.get('sweep_config') or {
+        'drive_anchor': sweep.get('drive_anchor'),
+        'sensor_anchor': sweep.get('sensor_anchor'),
+        'fixed_anchors': sweep.get('fixed_anchors'),
+    }
+    sweep_id = fitted_ellipse.get('sweep_id', sweep.get('id'))
+
     # Plot data points
     data_points = sweep['data_points']
     l_drive = np.array([p['l_drive'] for p in data_points])
@@ -135,9 +144,11 @@ def plot_ellipse_fit(
             verticalalignment='top', fontfamily='monospace',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
-    ax.set_xlabel('L²_drive')
-    ax.set_ylabel('L²_sensor')
-    ax.set_title(f"Ellipse Fit: {sweep['id']}")
+    drive_anchor = cfg.get('drive_anchor')
+    sensor_anchor = cfg.get('sensor_anchor')
+    ax.set_xlabel(f"L²_drive (anchor {drive_anchor})" if drive_anchor is not None else 'L²_drive')
+    ax.set_ylabel(f"L²_sensor (anchor {sensor_anchor})" if sensor_anchor is not None else 'L²_sensor')
+    ax.set_title(f"Ellipse Fit: {sweep_id}")
     ax.legend(loc='lower right')
     ax.grid(True, alpha=0.3)
 

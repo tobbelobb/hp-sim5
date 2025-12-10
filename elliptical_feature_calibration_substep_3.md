@@ -12,6 +12,8 @@ See ai_docs/Enhanced_Direct_Least_Square_Fitting_of_Ellipses/Enhanced_Direct_Lea
 
 ### 3.2 Core Implementation (`ellipse_fitting.py`)
 
+Fit results include a `sweep_config` snapshot (fixed/drive/sense roles and held lengths) so the optimizer in Substep 5 can match each observed ellipse to the correct forward-model prediction without having to rely on the raw sweep payload remaining unchanged.
+
 ```python
 """
 ellipse_fitting.py
@@ -514,6 +516,12 @@ def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict
     for sweep in dataset.get('sweeps', []):
         sweep_id = sweep['id']
         data_points = sweep['data_points']
+        sweep_config = {
+            'fixed_anchors': sweep['fixed_anchors'],
+            'fixed_lengths': sweep['fixed_lengths'],
+            'drive_anchor': sweep['drive_anchor'],
+            'sensor_anchor': sweep['sensor_anchor'],
+        }
 
         l_drive = np.array([p['l_drive'] for p in data_points])
         l_sensor = np.array([p['l_sensor'] for p in data_points])
@@ -538,6 +546,9 @@ def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict
             'valid': result.valid,
             'num_points': result.num_points,
             'rejection_reason': result.rejection_reason,
+            # Keep a snapshot of the sweep roles so Phase 2 can consume this
+            # fit even if the original sweep list is filtered/trimmed.
+            'sweep_config': sweep_config,
         })
 
     return results
@@ -785,6 +796,10 @@ class TestBatchFitting:
             'sweeps': [
                 {
                     'id': 'sweep_001',
+                    'fixed_anchors': [0],
+                    'fixed_lengths': [500.0],
+                    'drive_anchor': 1,
+                    'sensor_anchor': 2,
                     'data_points': [
                         {
                             'l_drive': np.sqrt(10000 + 2000*np.cos(p)),
@@ -795,6 +810,10 @@ class TestBatchFitting:
                 },
                 {
                     'id': 'sweep_002',
+                    'fixed_anchors': [1],
+                    'fixed_lengths': [520.0],
+                    'drive_anchor': 0,
+                    'sensor_anchor': 2,
                     'data_points': [
                         {
                             'l_drive': np.sqrt(9000 + 1500*np.cos(p)),
@@ -811,6 +830,8 @@ class TestBatchFitting:
         assert len(results) == 2
         assert results[0]['sweep_id'] == 'sweep_001'
         assert results[1]['sweep_id'] == 'sweep_002'
+        assert results[0]['sweep_config']['drive_anchor'] == 1
+        assert results[1]['sweep_config']['fixed_anchors'] == [1]
 ```
 
 ## Validation Criteria

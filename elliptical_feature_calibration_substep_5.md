@@ -8,6 +8,8 @@ Implement the cost function that compares observed ellipse coefficients (from fi
 
 ### 5.1 Cost Function Design
 
+Inputs must carry both the fitted coefficients and the sweep configuration that generated them (fixed anchors, held lengths, drive/sense roles). `EllipseCostFunction` prefers the `sweep_config` snapshot stored with each `FittedEllipse`, falling back to the raw `sweeps` list for legacy datasets, so the forward model is always comparing like with like.
+
 The cost function computes:
 $$\text{Cost} = \sum_{\text{sweeps}} w_i \cdot d(\mathbf{C}_{\text{obs}}^{(i)}, \mathbf{C}_{\text{pred}}^{(i)})^2$$
 
@@ -187,6 +189,18 @@ class EllipseCostFunction:
         self.observed_ellipses = {}
         self.sweep_weights = {}
 
+        # Cache sweep configs from raw sweeps as fallback
+        sweep_cfg_from_dataset = {
+            sweep['id']: {
+                'fixed_anchors': sweep['fixed_anchors'],
+                'fixed_lengths': sweep['fixed_lengths'],
+                'drive_anchor': sweep['drive_anchor'],
+                'sensor_anchor': sweep['sensor_anchor'],
+            }
+            for sweep in dataset.get('sweeps', [])
+        }
+        self.sweep_configs = {}
+
         for fe in dataset.get('fitted_ellipses', []):
             if not fe.get('valid', False):
                 continue
@@ -205,21 +219,15 @@ class EllipseCostFunction:
             else:
                 self.sweep_weights[sweep_id] = 1.0
 
+            cfg = fe.get('sweep_config') or sweep_cfg_from_dataset.get(sweep_id)
+            if cfg:
+                self.sweep_configs[sweep_id] = cfg
+
         # Normalize weights
         if self.sweep_weights:
             total_weight = sum(self.sweep_weights.values())
             for k in self.sweep_weights:
                 self.sweep_weights[k] /= total_weight
-
-        # Cache sweep configurations
-        self.sweep_configs = {}
-        for sweep in dataset.get('sweeps', []):
-            self.sweep_configs[sweep['id']] = {
-                'fixed_anchors': sweep['fixed_anchors'],
-                'fixed_lengths': sweep['fixed_lengths'],
-                'drive_anchor': sweep['drive_anchor'],
-                'sensor_anchor': sweep['sensor_anchor']
-            }
 
     def evaluate(self, anchor_vec: np.ndarray) -> float:
         """
@@ -240,6 +248,7 @@ class EllipseCostFunction:
         for sweep_id, obs_coeffs in self.observed_ellipses.items():
             config = self.sweep_configs.get(sweep_id)
             if config is None:
+                total_cost += self.invalid_penalty * self.sweep_weights.get(sweep_id, 1.0)
                 continue
 
             # Predict ellipse for this configuration
@@ -279,6 +288,8 @@ class EllipseCostFunction:
         for sweep_id, obs_coeffs in self.observed_ellipses.items():
             config = self.sweep_configs.get(sweep_id)
             if config is None:
+                per_sweep_costs[sweep_id] = self.invalid_penalty
+                num_invalid += 1
                 continue
 
             pred_coeffs = predict_ellipse_coefficients(
