@@ -20,6 +20,12 @@ export class RrfHttpBridge {
             41: 'B',
             42: 'C',
             43: 'D',
+            44: 'E',
+            45: 'I',
+            46: 'J',
+            47: 'K',
+            48: 'L',
+            49: 'O',
         };
         this.fetchImpl = options.fetchImpl || (typeof fetch !== 'undefined' ? fetch.bind(globalThis) : null);
         if (!this.fetchImpl) {

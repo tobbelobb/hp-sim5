@@ -10,12 +10,18 @@ import {
 
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
 
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'O'];
 const MOTOR_AXIS_MAP = new Map([
     [40, 'A'],
     [41, 'B'],
     [42, 'C'],
-    [43, 'E'],
+    [43, 'D'], // D has been injected at position 43 here, instead of E, without testing if that causes problems or not. Just because ABCDEIJKLO is the new default order of can addresses
+    [44, 'E'],
+    [45, 'I'],
+    [46, 'J'],
+    [47, 'K'],
+    [48, 'L'],
+    [49, 'O'],
 ]);
 
 async function* makeLineIterator(stream) {
