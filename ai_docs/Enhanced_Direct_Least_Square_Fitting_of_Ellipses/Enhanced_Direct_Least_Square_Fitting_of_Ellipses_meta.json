@@ -1,0 +1,952 @@
+{
+  "table_of_contents": [
+    {
+      "title": "ENHANCED DIRECT LEAST SQUARE FITTING OF ELLIPSES",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          63.129638671875,
+          170.5462646484375
+        ],
+        [
+          407.9853515625,
+          170.5462646484375
+        ],
+        [
+          407.9853515625,
+          181.7962818145752
+        ],
+        [
+          63.129638671875,
+          181.7962818145752
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          55.2528076171875,
+          400.97900390625
+        ],
+        [
+          134.53857421875,
+          400.97900390625
+        ],
+        [
+          134.53857421875,
+          412.19627571105957
+        ],
+        [
+          55.2528076171875,
+          412.19627571105957
+        ]
+      ]
+    },
+    {
+      "title": "2. Direct Least-Squares Fitting of Ellipses",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          55.3677978515625,
+          96.16552734375
+        ],
+        [
+          268.50337982177734,
+          96.16552734375
+        ],
+        [
+          268.50337982177734,
+          106.19624519348145
+        ],
+        [
+          55.3677978515625,
+          106.19624519348145
+        ]
+      ]
+    },
+    {
+      "title": "2.1. Definition of the problem",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          55.42529296875,
+          114.1135425567627
+        ],
+        [
+          206.67549896240234,
+          114.1135425567627
+        ],
+        [
+          206.67549896240234,
+          124.0822925567627
+        ],
+        [
+          55.42529296875,
+          124.0822925567627
+        ]
+      ]
+    },
+    {
+      "title": "2.2. Critical analysis of the method",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          57.150146484375,
+          363.4736499786377
+        ],
+        [
+          236.0560531616211,
+          363.4736499786377
+        ],
+        [
+          236.0560531616211,
+          373.44236946105957
+        ],
+        [
+          57.150146484375,
+          373.44236946105957
+        ]
+      ]
+    },
+    {
+      "title": "3. Enhanced Direct Least-Squares Fitting of Ellipses \u2014 EDFE",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          55.6552734375,
+          234.511962890625
+        ],
+        [
+          371.1884765625,
+          234.511962890625
+        ],
+        [
+          371.1884765625,
+          244.79792976379395
+        ],
+        [
+          55.6552734375,
+          244.79792976379395
+        ]
+      ]
+    },
+    {
+      "title": "3.1. Re-centering and scaling",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          55.6552734375,
+          430.3149890899658
+        ],
+        [
+          203.53271484375,
+          430.3149890899658
+        ],
+        [
+          203.53271484375,
+          440.2837085723877
+        ],
+        [
+          55.6552734375,
+          440.2837085723877
+        ]
+      ]
+    },
+    {
+      "title": "3.2. Resampling with perturbations",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          57.150146484375,
+          583.2421875
+        ],
+        [
+          234.07198333740234,
+          583.2421875
+        ],
+        [
+          234.07198333740234,
+          593.5219135284424
+        ],
+        [
+          57.150146484375,
+          593.5219135284424
+        ]
+      ]
+    },
+    {
+      "title": "4. Experimental Procedures",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          55.770263671875,
+          591.5936908721924
+        ],
+        [
+          198.588134765625,
+          591.5936908721924
+        ],
+        [
+          198.588134765625,
+          601.64208984375
+        ],
+        [
+          55.770263671875,
+          601.64208984375
+        ]
+      ]
+    },
+    {
+      "title": "4.1. Methodology",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          55.56903076171875,
+          609.4735584259033
+        ],
+        [
+          142.1279296875,
+          609.4735584259033
+        ],
+        [
+          142.1279296875,
+          619.69482421875
+        ],
+        [
+          55.56903076171875,
+          619.69482421875
+        ]
+      ]
+    },
+    {
+      "title": "4.2. Testing numerical stability",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          57.150146484375,
+          504.7822265625
+        ],
+        [
+          215.146728515625,
+          504.7822265625
+        ],
+        [
+          215.146728515625,
+          514.9266681671143
+        ],
+        [
+          57.150146484375,
+          514.9266681671143
+        ]
+      ]
+    },
+    {
+      "title": "4.3. Testing accuracy",
+      "heading_level": null,
+      "page_id": 9,
+      "polygon": [
+        [
+          57.380126953125,
+          236.15538215637207
+        ],
+        [
+          166.0458984375,
+          236.15538215637207
+        ],
+        [
+          166.0458984375,
+          246.12410163879395
+        ],
+        [
+          57.380126953125,
+          246.12410163879395
+        ]
+      ]
+    },
+    {
+      "title": "4.4. Testing device independence",
+      "heading_level": null,
+      "page_id": 12,
+      "polygon": [
+        [
+          55.42529296875,
+          518.6689453125
+        ],
+        [
+          220.32222747802734,
+          518.6689453125
+        ],
+        [
+          220.32222747802734,
+          529.083984375
+        ],
+        [
+          55.42529296875,
+          529.083984375
+        ]
+      ]
+    },
+    {
+      "title": "5. Conclusions",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          57.26513671875,
+          96.16552734375
+        ],
+        [
+          131.70877838134766,
+          96.16552734375
+        ],
+        [
+          131.70877838134766,
+          106.19624519348145
+        ],
+        [
+          57.26513671875,
+          106.19624519348145
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 13,
+      "polygon": [
+        [
+          56.920166015625,
+          416.25439453125
+        ],
+        [
+          111.655517578125,
+          416.25439453125
+        ],
+        [
+          111.655517578125,
+          426.2404956817627
+        ],
+        [
+          56.920166015625,
+          426.2404956817627
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          113
+        ],
+        [
+          "Line",
+          40
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 4,
+        "llm_error_count": 0,
+        "llm_tokens_used": 13428
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          148
+        ],
+        [
+          "Line",
+          46
+        ],
+        [
+          "Text",
+          6
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 3225
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          379
+        ],
+        [
+          "Line",
+          57
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "TextInlineMath",
+          4
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 18,
+        "llm_error_count": 3,
+        "llm_tokens_used": 64631
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          239
+        ],
+        [
+          "Line",
+          44
+        ],
+        [
+          "TextInlineMath",
+          3
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 11,
+        "llm_error_count": 3,
+        "llm_tokens_used": 37812
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          323
+        ],
+        [
+          "Line",
+          45
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 2,
+        "llm_error_count": 0,
+        "llm_tokens_used": 8284
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          334
+        ],
+        [
+          "Line",
+          50
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "TextInlineMath",
+          3
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 7,
+        "llm_error_count": 0,
+        "llm_tokens_used": 26190
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          152
+        ],
+        [
+          "Line",
+          42
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 14,
+        "llm_error_count": 1,
+        "llm_tokens_used": 49604
+      }
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          152
+        ],
+        [
+          "Line",
+          40
+        ],
+        [
+          "ListItem",
+          12
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "ListGroup",
+          3
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 21,
+        "llm_error_count": 0,
+        "llm_tokens_used": 78013
+      }
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          864
+        ],
+        [
+          "TableCell",
+          416
+        ],
+        [
+          "Line",
+          45
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "Table",
+          3
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "TableGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 4,
+        "llm_error_count": 0,
+        "llm_tokens_used": 14127
+      }
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          232
+        ],
+        [
+          "Line",
+          41
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "ListItem",
+          5
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 14,
+        "llm_error_count": 1,
+        "llm_tokens_used": 51920
+      }
+    },
+    {
+      "page_id": 10,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          286
+        ],
+        [
+          "Line",
+          65
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 9,
+        "llm_error_count": 1,
+        "llm_tokens_used": 27867
+      }
+    },
+    {
+      "page_id": 11,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          223
+        ],
+        [
+          "Line",
+          68
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 8,
+        "llm_error_count": 1,
+        "llm_tokens_used": 25773
+      }
+    },
+    {
+      "page_id": 12,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          251
+        ],
+        [
+          "TableCell",
+          48
+        ],
+        [
+          "Line",
+          45
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 3489
+      }
+    },
+    {
+      "page_id": 13,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          161
+        ],
+        [
+          "Line",
+          46
+        ],
+        [
+          "ListItem",
+          10
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 3581
+      }
+    },
+    {
+      "page_id": 14,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          148
+        ],
+        [
+          "Line",
+          46
+        ],
+        [
+          "ListItem",
+          11
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 15,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Text",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 2705
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/Enhanced_Direct_Least_Square_Fitting_of_Ellipses"
+}
