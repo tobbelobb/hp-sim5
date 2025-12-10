@@ -4,7 +4,7 @@
 
 Define the generalized data structures that support sweep-based calibration for all machine configurations (3-8 anchors, 2D and 3D). This substep establishes the foundation for data collection, storage, and exchange between components. Keep the masterplan warning in mind: on Hangprinter variants the top "carrying" anchor must never be put in torque/sensor mode during sweeps.
 
-Remember the data-collection limitation: we only have encoder deltas, not anchor positions, during logging. Every length value we store (`fixed_lengths`, `l_drive`, `l_sensor`) is therefore relative to the length when the mover was at the origin after encoder zeroing. Any downstream code that needs absolute lengths must reconstruct them using the current anchor guess: `L_abs = ||A_i - origin|| + ΔL_measured`. Keep this contract in mind when consuming these structures in later substeps. Ellipse fitting is now performed inside the optimization loop per anchor guess, so `fitted_ellipses` is optional/QC-only rather than the primary Phase 1 output.
+Remember the data-collection limitation: we only have encoder deltas, not anchor positions, during logging. Every length value we store (`fixed_lengths`, `l_drive`, `l_sensor`) is therefore relative to the length when the mover was at the origin after encoder zeroing. Any downstream code that needs absolute lengths must reconstruct them using the current anchor guess: `L_abs = ||A_i - origin|| + ΔL_measured`. Keep this contract in mind when consuming these structures in later substeps. Ellipse fitting is now performed inside the optimization loop per anchor guess; no pre-fit ellipses are stored.
 
 ## Implementation Details
 

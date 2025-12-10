@@ -6,7 +6,7 @@ Integrate the elliptical feature calibration system with the existing `simulatio
 
 Keep the `sweep_config` snapshots that travel with each `FittedEllipse` when round-tripping files so the optimizer and visualizer always know which cables were fixed/drive/sense for each ellipse.
 Absolute cable lengths are still unknown at data-collection time, so the integration layer must rebuild them from anchor guesses during optimization (`L_abs = ||A_i - origin|| + ΔL_measured`) before feeding anything into the forward model or cost function; otherwise observed (relative) and predicted (absolute) ellipses will be misaligned.
-Ellipse fitting now happens inside the optimizer on those reconstructed absolute lengths; any stored `fitted_ellipses` are for QC only.
+Ellipse fitting now happens inside the optimizer on those reconstructed absolute lengths; drop any stored `fitted_ellipses` paths.
 
 ## Implementation Details
 

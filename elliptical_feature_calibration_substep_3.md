@@ -4,7 +4,7 @@
 
 Implement robust ellipse fitting using Maini, Eliseo Stefano's Direct Least Squares method. This module takes (l_drive, l_sensor) pairs, squares them to (L_drive², L_sensor²), and fits the algebraic ellipse equation. Quality control metrics determine whether the fit is valid.
 
-Because the ellipse invariant is strictly about *absolute* squared lengths, fitting must happen inside the optimization loop after reconstructing absolute lengths from encoder deltas and the current anchor guess. Pre-fitting invariant ellipses on raw deltas alone is mathematically inconsistent. Use this fitter both for per-guess fitting in the optimizer and, optionally, for offline QC on raw sweeps (with the understanding that QC fits on deltas are only a sanity filter, not the data that enters the cost).
+Because the ellipse invariant is strictly about *absolute* squared lengths, fitting must happen inside the optimization loop after reconstructing absolute lengths from encoder deltas and the current anchor guess. Pre-fitting invariant ellipses on raw deltas alone is mathematically inconsistent; drop that flow entirely.
 
 ## Implementation Details
 

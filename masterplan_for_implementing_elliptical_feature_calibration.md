@@ -178,12 +178,11 @@ Select a representative subset:
       }
     },
     ...
-  ],
-  "fitted_ellipses": []
+  ]
 }
 ```
 
-Store raw sweeps; `fitted_ellipses` can be used for optional offline QC but the optimization loop re-fits ellipses per anchor guess after reconstructing absolute lengths. All length-valued fields represent encoder-derived deltas from the origin; absolute lengths must be reconstructed during optimization using anchor guesses.
+Store raw sweeps; ellipse fitting happens inside the optimizer for each anchor guess after reconstructing absolute lengths. All length-valued fields represent encoder-derived deltas from the origin; absolute lengths must be reconstructed during optimization using anchor guesses.
 
 ## Advantages Over Differential/Gradient Methods
 
