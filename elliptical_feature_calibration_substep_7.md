@@ -430,7 +430,7 @@ autocal/
 ├── sweep_types.py             # New: Data structures (Substep 1)
 ├── sweep_io.py                # New: JSON I/O (Substep 1)
 ├── sweep_config_generator.py  # New: Config generation (Substep 1)
-├── ellipse_fitting.py         # New: Fitzgibbon fitting (Substep 3)
+├── ellipse_fitting.py         # New: Ellipse fitting (Substep 3)
 ├── theoretical_ellipse.py     # New: Forward model (Substep 4)
 ├── ellipse_cost.py            # New: Cost function (Substep 5)
 ├── ellipse_solver.py          # New: Optimizer (Substep 5)

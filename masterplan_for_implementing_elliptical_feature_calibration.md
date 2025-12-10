@@ -6,13 +6,13 @@ This document outlines a calibration approach for cable-driven parallel robots t
 
 ## Supported Machine Configurations
 
-| Configuration | Anchors | Dimensions | Type | Constraints for 1-DOF |
-|--------------|---------|------------|------|----------------------|
-| Slideprinter | 3 | 2D | Overconstrained | Fix 1 cable |
-| Hangprinter | 4 | 3D | Overconstrained | Fix 2 cables |
-| Hangprinter | 5 | 3D | Overconstrained | Fix 2 cables |
-| CubeCorners | 8 | 3D | Overconstrained | Fix 2 cables |
-| SkyCam | 4 | 3D | Underactuated | Fix 2 cables |
+| Configuration | Anchors | Dimensions | Type            | Constraints for 1-DOF |
+|---------------|---------|------------|-----------------|-----------------------|
+| Slideprinter  |       3 |         2D | Overconstrained | Fix 1 cable           |
+| Hangprinter   |       4 |         3D | Overconstrained | Fix 2 cables          |
+| Hangprinter   |       5 |         3D | Overconstrained | Fix 2 cables          |
+| CubeCorners   |       8 |         3D | Overconstrained | Fix 2 cables          |
+| SkyCam        |       4 |         3D | Underactuated   | Fix 2 cables          |
 
 ## The Mathematical Foundation
 
@@ -45,24 +45,24 @@ The general conic equation $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$ has 5 degrees o
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     PHASE 1: DATA COMPRESSION                    │
+│                     PHASE 1: DATA COMPRESSION                   │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Raw Sweep Data              Ellipse Fitting                     │
+│                                                                 │
+│  Raw Sweep Data              Ellipse Fitting                    │
 │  ┌──────────────┐           ┌──────────────┐                    │
-│  │ (l_d, l_s)   │  ──────▶  │ Fitzgibbon   │  ──────▶  Coeffs   │
-│  │ (l_d, l_s)   │   Square  │ B2AC Method  │          (A,B,C,   │
+│  │ (l_d, l_s)   │  ──────▶  │ Enhanced     │  ──────▶  Coeffs   │
+│  │ (l_d, l_s)   │   Square  │ Method       │          (A,B,C,   │
 │  │ ...          │           │              │           D,E,F)   │
 │  │ (l_d, l_s)   │           └──────────────┘                    │
 │  └──────────────┘                    │                          │
 │                                      ▼                          │
 │                              QC: Residual Check                 │
 │                              (Discard bad sweeps)               │
-│                                                                  │
+│                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                     PHASE 2: OPTIMIZATION                        │
+│                     PHASE 2: OPTIMIZATION                       │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  Anchor Guess     Theoretical Ellipse      Cost Function        │
 │  ┌──────────────┐ ┌──────────────────┐    ┌──────────────────┐  │
 │  │ A_0, A_1,... │ │ predict_ellipse  │    │                  │  │
@@ -72,11 +72,11 @@ The general conic equation $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$ has 5 degrees o
 │  └──────────────┘ └──────────────────┘    └──────────────────┘  │
 │         │                                          │            │
 │         └──────────────────────────────────────────┘            │
-│                              │                                   │
-│                              ▼                                   │
-│                      SLSQP / L-BFGS-B                            │
-│                      Optimizer                                   │
-│                                                                  │
+│                              │                                  │
+│                              ▼                                  │
+│                      SLSQP / L-BFGS-B                           │
+│                      Optimizer                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -85,7 +85,7 @@ The general conic equation $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$ has 5 degrees o
 ### Sweep Definition
 
 A **sweep** is a sequence of measurements where:
-- **Fixed cables**: N-2 cables (for 3D) or N-2 cables (for 2D) are held at constant length
+- **Fixed cables**: 2 cables (for 3D) or 1 cable (for 2D) are held at constant length
 - **Drive cable**: 1 cable is actively varied over a range
 - **Sensor cable**: 1 cable is in torque mode (passively actuated), measuring its length
 
@@ -95,14 +95,16 @@ For an N-anchor system in D dimensions:
 - **Constraints needed for 1-DOF**: D-1 fixed cables
 - **Free cables**: N - (D-1) = N - D + 1
 
-| System | N | D | Fixed | Drive | Sensor | Permutations |
-|--------|---|---|-------|-------|--------|--------------|
-| Slideprinter | 3 | 2 | 1 | 1 | 1 | 3 × 2 × 1 = 6 |
-| Hangprinter 4 | 4 | 3 | 2 | 1 | 1 | C(4,2) × 2 × 1 = 12 |
-| Hangprinter 5 | 5 | 3 | 2 | 1 | 2 choices | C(5,2) × 3 × 2 = 60 |
-| CubeCorners | 8 | 3 | 2 | 1 | 5 choices | C(8,2) × 6 × 5 = 840 |
+| System        | N | D | Fixed | Drive     | Sensor    | Permutations         |
+|---------------|---|---|-------|-----------|-----------|----------------------|
+| Slideprinter  | 3 | 2 |     1 |         1 |         1 |      3 × 2 × 1 = 6   |
+| Hangprinter 4 | 4 | 3 |     2 |         1 |         1 | C(4,2) × 2 × 1 = 12  |
+| Hangprinter 5 | 5 | 3 |     2 |         1 | 2 choices | C(5,2) × 3 × 2 = 60  |
+| CubeCorners   | 8 | 3 |     2 |         1 | 5 choices | C(8,2) × 6 × 5 = 840 |
 
 In practice, we don't need all permutations. A well-distributed subset provides sufficient constraints.
+We'll want at least one high anchor/drive to be either fixed or drive, in order to avoid the mover dropping down due
+gravity potentially overwhelming the sensor's constant torque.
 
 ### Recommended Sweep Patterns
 
@@ -121,23 +123,28 @@ Sweep Set C: Fix anchor 2
   - Drive 1, Sense 0
 ```
 
-#### Hangprinter (4 anchors)
+#### Hangprinter (4 anchors, Drive 3 is high, so it never takes the "Sense" role)
 ```
-Fix anchors {0,1}: Drive 2, Sense 3 and Drive 3, Sense 2
-Fix anchors {0,2}: Drive 1, Sense 3 and Drive 3, Sense 1
+Fix anchors {0,1}: Drive 3, Sense 2
+Fix anchors {0,2}: Drive 3, Sense 1
 Fix anchors {0,3}: Drive 1, Sense 2 and Drive 2, Sense 1
-Fix anchors {1,2}: Drive 0, Sense 3 and Drive 3, Sense 0
+Fix anchors {1,2}: Drive 3, Sense 0
 Fix anchors {1,3}: Drive 0, Sense 2 and Drive 2, Sense 0
 Fix anchors {2,3}: Drive 0, Sense 1 and Drive 1, Sense 0
 ```
 
 #### Hangprinter (5 anchors)
-Same as 4-anchor but with anchor I (index 4) as an additional option for fixed, drive, or sensor.
+Same as 4-anchor but with anchor I (index 4) being the high anchor.
+Therefore, Hangprinter 5's drive 3 can be used as Fixed, Drive or Sense,
+while HP5's drive 4 can only act as Fixed or Drive.
 
 #### CubeCorners (8 anchors)
 Select a representative subset:
 - Choose fixing pairs that span the workspace geometry
 - Prioritize combinations that exercise different regions of the workspace
+- Make sure the mover is sufficiently light to carry the mover with only torque mode,
+  or make sure enough high anchors are either fixed or drive so mover doesn't sag down
+  due to gravity.
 
 ## JSON Data Format
 
@@ -152,13 +159,13 @@ Select a representative subset:
     {
       "id": "sweep_001",
       "fixed_anchors": [1],
-      "fixed_lengths": [1200.5],
+      "fixed_lengths": [12.5],
       "drive_anchor": 0,
       "sensor_anchor": 2,
       "drive_range": {"start": -100, "end": 100, "unit": "mm"},
       "data_points": [
-        {"l_drive": 1000.0, "l_sensor": 1050.2, "timestamp_ms": 0},
-        {"l_drive": 1005.0, "l_sensor": 1053.1, "timestamp_ms": 50},
+        {"l_drive": -100.0, "l_sensor": -50.2, "timestamp_ms": 0},
+        {"l_drive": -95.0, "l_sensor": -53.1, "timestamp_ms": 50},
         ...
       ],
       "metadata": {
@@ -199,7 +206,7 @@ The implementation is divided into 7 substeps:
 
 1. **Sweep Data Structure & JSON Format** - Define the generalized data structures
 2. **Data Collector Script** - Modify `collect_encoder_data.mjs` or create `collect_sweep_data.mjs`
-3. **Ellipse Fitting Module** - Implement Fitzgibbon's B2AC method in Python
+3. **Ellipse Fitting Module** - Implement Enhanced method in Python
 4. **Theoretical Ellipse Projection** - Forward math to predict ellipses from anchor positions
 5. **Feature Cost Function** - Link observed and predicted ellipses
 6. **Visualization Module** - Debug plots for ellipse fitting and optimization
@@ -215,16 +222,17 @@ The implementation is divided into 7 substeps:
 
 ## Risk Assessment
 
-| Risk | Mitigation |
-|------|------------|
-| Near-degenerate ellipses (near-circles) | Multiple sweeps with diverse configurations |
-| Cable slack during sweep | QC residual check; discard bad sweeps |
-| Numerical instability in fitting | Use Fitzgibbon's method (guaranteed ellipse) |
-| Local minima in optimization | Multiple random restarts; good initial guess |
-| 8-anchor complexity | Start with 3/4 anchors; scale up incrementally |
+| Risk                                    | Mitigation                                     |
+|-----------------------------------------|------------------------------------------------|
+| Near-degenerate ellipses (near-circles) | Multiple sweeps with diverse configurations    |
+| Cable slack during sweep                | QC residual check; discard bad sweeps          |
+| Numerical instability in fitting        | Use Maini's method (guaranteed ellipse)        |
+| Local minima in optimization            | Multiple random restarts; good initial guess   |
+| 8-anchor complexity                     | Start with 3/4 anchors; scale up incrementally |
 
 ## References
 
-1. Fitzgibbon, A., Pilu, M., & Fisher, R. B. (1999). "Direct least square fitting of ellipses." IEEE TPAMI.
+1. Maini, Eliseo Stefano. "Enhanced direct least square fitting of ellipses." International Journal of Pattern Recognition and Artificial Intelligence 20.06 (2006): 939-953. (Enhanced_Direct_Least_Square_Fitting_of_Ellipses.pdf)
 2. "A Novel Calibration Algorithm for Cable-Driven Parallel Robots with Application to Rehabilitation" (applsci-09-02182-v2.pdf)
 3. Current codebase: `simulation.py`, `collect_encoder_data.mjs`
+

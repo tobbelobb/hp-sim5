@@ -164,9 +164,9 @@ The cost function minimizes the difference between the **Observed Ellipse** and 
 ### Subtask 2: Ellipse Regression Module
 **Overview:** Implement Phase 1 in Python (`geometry_fitting.py`).
 **Implementation:**
-*   Implement **Fitzgibbon’s B2AC method** (Direct Least Squares Fitting of Ellipses). It is numerically stable and guarantees an ellipse result.
+*   Implement ** Maini, Eliseo Stefano's ellipse fitting method** (Direct Least Squares Fitting of Ellipses). It is numerically stable and guarantees an ellipse result.
 *   Input: Arrays $L_d, L_s$.
-*   Process: Square inputs -> Run Fitzgibbon -> Get coefficients $(A, B, C, D, E, F)$.
+*   Process: Square inputs -> Run Ellipse Fitting -> Get coefficients $(A, B, C, D, E, F)$.
 *   **QC:** Compute algebraic distance of points to the curve. Discard if variance is high.
 **Dependencies:** `numpy`, `scipy`.
 

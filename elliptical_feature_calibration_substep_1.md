@@ -50,8 +50,8 @@ class MachineConfig:
 @dataclass
 class DataPoint:
     """Single measurement point in a sweep."""
-    l_drive: float          # Drive cable length (mm)
-    l_sensor: float         # Sensor cable length (mm)
+    l_drive: float          # Drive cable length (mm). Not absolute length. Relative to length when at origin.
+    l_sensor: float         # Sensor cable length (mm). Not absolute length. Relative to length when at origin.
     timestamp_ms: Optional[float] = None  # Relative timestamp
 
 @dataclass

@@ -2,16 +2,13 @@
 
 ## Overview
 
-Implement robust ellipse fitting using Fitzgibbon's Direct Least Squares method (B2AC constraint). This module takes raw (l_drive, l_sensor) pairs, squares them to (L_drive², L_sensor²), and fits the algebraic ellipse equation. Quality control metrics determine whether the fit is valid.
+Implement robust ellipse fitting using Maini, Eliseo Stefano's Direct Least Squares method. This module takes raw (l_drive, l_sensor) pairs, squares them to (L_drive², L_sensor²), and fits the algebraic ellipse equation. Quality control metrics determine whether the fit is valid.
 
 ## Implementation Details
 
-### 3.1 Fitzgibbon's B2AC Method
+### 3.1 Numerical Method
 
-The general conic equation is:
-$$Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$$
-
-Fitzgibbon's method constrains $B^2 - 4AC < 0$ (ellipse constraint) and solves via generalized eigenvalue decomposition.
+See ai_docs/Enhanced_Direct_Least_Square_Fitting_of_Ellipses/Enhanced_Direct_Least_Square_Fitting_of_Ellipses.md for details.
 
 ### 3.2 Core Implementation (`ellipse_fitting.py`)
 
@@ -19,7 +16,7 @@ Fitzgibbon's method constrains $B^2 - 4AC < 0$ (ellipse constraint) and solves v
 """
 ellipse_fitting.py
 
-Robust ellipse fitting using Fitzgibbon's Direct Least Squares method.
+Robust ellipse fitting using Maini & Stefano's Least Squares method.
 """
 
 import numpy as np
@@ -42,10 +39,26 @@ class EllipseFitResult:
     valid: bool
     rejection_reason: Optional[str] = None
 
+TODO
+def fit_ellipse_maini_stefano(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """
+    Fit ellipse using Maini & Stefano's Least Squares method.
+
+    TODO
+    <one-line-explanation-here />
+
+    Parameters:
+        x, y: Arrays of point coordinates (already squared for L² data)
+
+    Returns:
+        Coefficients [A, B, C, D, E, F] of Ax² + Bxy + Cy² + Dx + Ey + F = 0
+    """
+    pass
+
 
 def fit_ellipse_fitzgibbon(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
-    Fit ellipse using Fitzgibbon's Direct Least Squares method.
+    Fit ellipse using Fitzgibbon's Least Squares method.
 
     Minimizes algebraic distance subject to constraint 4AC - B² = 1.
 
@@ -314,7 +327,7 @@ def fit_ellipse_from_sweep(
 
     # Fit ellipse
     try:
-        coeffs = fit_ellipse_fitzgibbon(x, y)
+        coeffs = fit_ellipse_maini_stefano(x, y)
     except Exception as e:
         return EllipseFitResult(
             coefficients=np.zeros(6),
@@ -404,60 +417,6 @@ def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict
         })
 
     return results
-
-
-# Alternative: Taubin's method for comparison
-def fit_ellipse_taubin(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """
-    Fit ellipse using Taubin's method (minimizes approximate geometric distance).
-
-    May give better results when algebraic distance is poor proxy for geometric.
-    """
-    x = np.asarray(x, dtype=float).ravel()
-    y = np.asarray(y, dtype=float).ravel()
-
-    # Normalize
-    mx, my = np.mean(x), np.mean(y)
-    sx = np.std(x) if np.std(x) > 0 else 1.0
-    sy = np.std(y) if np.std(y) > 0 else 1.0
-    x_n = (x - mx) / sx
-    y_n = (y - my) / sy
-
-    # Build matrices
-    z = np.column_stack([x_n**2, x_n*y_n, y_n**2, x_n, y_n, np.ones_like(x_n)])
-
-    M = z.T @ z / len(x)
-
-    # Weight matrix for Taubin's method
-    P = np.zeros((6, 6))
-    P[0, 0] = 4 * np.mean(x_n**2)
-    P[0, 1] = P[1, 0] = 2 * np.mean(x_n * y_n)
-    P[0, 3] = P[3, 0] = 2 * np.mean(x_n)
-    P[1, 1] = np.mean(x_n**2) + np.mean(y_n**2)
-    P[1, 2] = P[2, 1] = 2 * np.mean(x_n * y_n)
-    P[1, 4] = P[4, 1] = np.mean(y_n)
-    P[1, 3] = P[3, 1] = np.mean(x_n)
-    P[2, 2] = 4 * np.mean(y_n**2)
-    P[2, 4] = P[4, 2] = 2 * np.mean(y_n)
-    P[3, 3] = 1
-    P[4, 4] = 1
-
-    # Solve generalized eigenvalue problem
-    eigenvalues, eigenvectors = eig(inv(P) @ M)
-
-    # Take eigenvector with smallest positive eigenvalue
-    pos_idx = np.where(eigenvalues.real > 0)[0]
-    if len(pos_idx) == 0:
-        pos_idx = range(len(eigenvalues))
-
-    min_idx = pos_idx[np.argmin(eigenvalues.real[pos_idx])]
-    coeffs_norm = eigenvectors[:, min_idx].real
-
-    # Denormalize
-    coeffs = denormalize_ellipse_coeffs(coeffs_norm, mx, my, sx, sy)
-    coeffs = coeffs / np.linalg.norm(coeffs[:3])
-
-    return coeffs
 ```
 
 ### 3.3 CLI Tool for Batch Fitting
@@ -536,7 +495,7 @@ if __name__ == '__main__':
 import pytest
 import numpy as np
 from ellipse_fitting import (
-    fit_ellipse_fitzgibbon,
+    fit_ellipse_maini_stefano,
     fit_ellipse_from_sweep,
     ellipse_geometric_params,
     EllipseFitResult
@@ -574,7 +533,7 @@ def generate_ellipse_points(
     return x, y
 
 
-class TestFitzgibbonFitting:
+class TestMainiStefanoFitting:
     def test_perfect_circle(self):
         """Fit a perfect circle (special case of ellipse)."""
         x, y = generate_ellipse_points(
@@ -584,7 +543,7 @@ class TestFitzgibbonFitting:
             n_points=100
         )
 
-        coeffs = fit_ellipse_fitzgibbon(x, y)
+        coeffs = fit_ellipse_maini_stefano(x, y)
         center, semi_axes, rotation = ellipse_geometric_params(coeffs)
 
         assert abs(center[0] - 100) < 1e-6
@@ -601,7 +560,7 @@ class TestFitzgibbonFitting:
             n_points=100
         )
 
-        coeffs = fit_ellipse_fitzgibbon(x, y)
+        coeffs = fit_ellipse_maini_stefano(x, y)
         center, semi_axes, rotation = ellipse_geometric_params(coeffs)
 
         assert abs(center[0] - 500) < 1e-3
@@ -620,7 +579,7 @@ class TestFitzgibbonFitting:
             noise_std=5.0
         )
 
-        coeffs = fit_ellipse_fitzgibbon(x, y)
+        coeffs = fit_ellipse_maini_stefano(x, y)
         center, semi_axes, rotation = ellipse_geometric_params(coeffs)
 
         # Looser tolerances for noisy data
@@ -635,7 +594,7 @@ class TestFitzgibbonFitting:
         y = np.array([1, 0, -1, 0, 0.866])
 
         # Should not raise
-        coeffs = fit_ellipse_fitzgibbon(x, y)
+        coeffs = fit_ellipse_maini_stefano(x, y)
         assert len(coeffs) == 6
 
     def test_insufficient_points(self):
@@ -644,7 +603,7 @@ class TestFitzgibbonFitting:
         y = np.array([1, 0, -1, 0])
 
         with pytest.raises(ValueError, match="At least 5 points"):
-            fit_ellipse_fitzgibbon(x, y)
+            fit_ellipse_maini_stefano(x, y)
 
 
 class TestSweepFitting:
@@ -737,7 +696,7 @@ class TestBatchFitting:
 3. **QC Rejection**: Random noise data correctly rejected with appropriate reason
 4. **Numerical Stability**: No NaN/Inf in outputs for any valid input
 5. **Coefficient Normalization**: ||[A,B,C]|| = 1 for all outputs
-6. **Ellipse Guarantee**: B² - 4AC < 0 for all valid fits (Fitzgibbon method)
+6. **Ellipse Guarantee**: Some inequality holds for all valid fits
 
 ## Dependencies
 
@@ -748,14 +707,14 @@ class TestBatchFitting:
 
 ## Estimated Complexity
 
-**Effort**: Medium (3-4 hours)
+**Effort**: Medium
 
-The core Fitzgibbon algorithm is well-documented but has numerical edge cases. The normalization/denormalization logic requires careful implementation. Quality control thresholds may need tuning based on real data.
+The core algorithm is well-documented. Quality control thresholds may need tuning based on real data.
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `autocal/ellipse_fitting.py` | Create |
-| `autocal/fit_ellipses.py` | Create (CLI) |
-| `autocal/tests/test_ellipse_fitting.py` | Create |
+| File                                    | Action       |
+|-----------------------------------------|--------------|
+| `autocal/ellipse_fitting.py`            | Create       |
+| `autocal/fit_ellipses.py`               | Create (CLI) |
+| `autocal/tests/test_ellipse_fitting.py` | Create       |
