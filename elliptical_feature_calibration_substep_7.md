@@ -4,7 +4,7 @@
 
 Integrate the elliptical feature calibration system with the existing `simulation.py` calibration framework. This includes adapting the new modules to work alongside or replace the existing point-based calibration, providing a unified CLI, and ensuring backward compatibility.
 
-Keep the `sweep_config` snapshots that travel with each `FittedEllipse` when round-tripping files so the optimizer and visualizer can operate even if the raw sweeps are thinned or re-ordered between runs.
+Keep the `sweep_config` snapshots that travel with each `FittedEllipse` when round-tripping files so the optimizer and visualizer always know which cables were fixed/drive/sense for each ellipse.
 
 ## Implementation Details
 
@@ -72,21 +72,6 @@ def calibrate_elliptical(
         print("Fitting ellipses to sweep data...")
         fitted_ellipses = fit_all_sweeps(dataset, residual_threshold)
         dataset['fitted_ellipses'] = fitted_ellipses
-
-    # Backfill sweep_config for legacy datasets so Phase 2 knows which cables were fixed
-    sweep_cfg_fallback = {
-        sweep['id']: {
-            'fixed_anchors': sweep['fixed_anchors'],
-            'fixed_lengths': sweep['fixed_lengths'],
-            'drive_anchor': sweep['drive_anchor'],
-            'sensor_anchor': sweep['sensor_anchor'],
-        } for sweep in dataset.get('sweeps', [])
-    }
-    for fe in fitted_ellipses:
-        if 'sweep_config' not in fe:
-            cfg = sweep_cfg_fallback.get(fe['sweep_id'])
-            if cfg:
-                fe['sweep_config'] = cfg
 
     valid_count = sum(1 for e in fitted_ellipses if e.get('valid', False))
     print(f"Valid ellipse fits: {valid_count}/{len(fitted_ellipses)}")

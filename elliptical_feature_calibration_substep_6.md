@@ -6,7 +6,7 @@ Create visualization tools for debugging and monitoring the calibration process.
 
 ## Implementation Details
 
-All plots prefer the `sweep_config` snapshot shipped with each `FittedEllipse` (if present) so overlays stay consistent even when the underlying sweep list is trimmed between Phase 1 and Phase 2.
+All plots read the `sweep_config` snapshot shipped with each `FittedEllipse` so overlays stay consistent through the Phase 1 → Phase 2 handoff.
 
 ### 6.1 Core Visualization (`ellipse_visualization.py`)
 
@@ -103,11 +103,7 @@ def plot_ellipse_fit(
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 8))
 
-    cfg = fitted_ellipse.get('sweep_config') or {
-        'drive_anchor': sweep.get('drive_anchor'),
-        'sensor_anchor': sweep.get('sensor_anchor'),
-        'fixed_anchors': sweep.get('fixed_anchors'),
-    }
+    cfg = fitted_ellipse['sweep_config']
     sweep_id = fitted_ellipse.get('sweep_id', sweep.get('id'))
 
     # Plot data points

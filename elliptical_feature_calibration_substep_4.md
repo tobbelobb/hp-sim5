@@ -37,7 +37,7 @@ where:
 
 ### 4.2 Core Implementation (`theoretical_ellipse.py`)
 
-Forward projections take `SweepConfigSnapshot` data (fixed anchors + held lengths + drive/sense roles) that rides along with each `FittedEllipse`, so theoretical and observed ellipses stay aligned even if sweeps are pruned or re-sampled between Phase 1 and Phase 2.
+Forward projections take `SweepConfigSnapshot` data (fixed anchors + held lengths + drive/sense roles) that rides along with each `FittedEllipse`, so theoretical and observed ellipses stay aligned through the Phase 1 → Phase 2 handoff.
 
 ```python
 """
@@ -337,7 +337,7 @@ def predict_ellipses_for_dataset(
     dataset: dict
 ) -> List[dict]:
     """
-    Predict ellipse coefficients for all sweeps in a dataset.
+    Predict ellipse coefficients for all fitted sweeps in a dataset.
 
     Parameters:
         anchors: Current anchor position estimates (N, D)
@@ -349,29 +349,9 @@ def predict_ellipses_for_dataset(
     dimensions = dataset.get('dimensions', 3)
     predictions = []
 
-    # Prefer configs captured alongside fitted ellipses (Phase 1 output),
-    # but fall back to raw sweeps for backward compatibility.
-    sweep_cfg_by_id = {}
-    for sweep in dataset.get('sweeps', []):
-        sweep_cfg_by_id[sweep['id']] = {
-            'fixed_anchors': sweep['fixed_anchors'],
-            'fixed_lengths': sweep['fixed_lengths'],
-            'drive_anchor': sweep['drive_anchor'],
-            'sensor_anchor': sweep['sensor_anchor'],
-        }
-
     for fe in dataset.get('fitted_ellipses', []):
-        cfg = fe.get('sweep_config')
-        if cfg:
-            sweep_cfg_by_id[fe['sweep_id']] = cfg
-
-    targets = dataset.get('fitted_ellipses') or dataset.get('sweeps', [])
-
-    for target in targets:
-        sweep_id = target.get('sweep_id') or target['id']
-        cfg = sweep_cfg_by_id.get(sweep_id)
-        if cfg is None:
-            continue
+        sweep_id = fe['sweep_id']
+        cfg = fe['sweep_config']
 
         fixed_indices = cfg['fixed_anchors']
         fixed_lengths = cfg['fixed_lengths']

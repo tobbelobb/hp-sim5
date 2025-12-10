@@ -174,7 +174,7 @@ class SweepDataset:
         return [e for e in self.fitted_ellipses if e.valid]
 ```
 
-**Phase transition guardrail:** Each `FittedEllipse` now carries a `SweepConfigSnapshot` so forward-model code in Phase 2 can reconstruct exactly which cables were fixed/drive/sense when that ellipse was produced, even if the original `Sweep` list is filtered, merged, or re-sampled after fitting.
+**Phase transition guardrail:** Each `FittedEllipse` now carries a `SweepConfigSnapshot` so forward-model code in Phase 2 can reconstruct exactly which cables were fixed/drive/sense when that ellipse was produced.
 
 ### 1.2 JSON Schema
 
@@ -398,24 +398,10 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
             metadata=metadata,
         ))
 
-    sweep_lookup = {s.id: s for s in sweeps}
     fitted_ellipses = []
     for e in data.get("fitted_ellipses", []):
         coeffs = EllipseCoefficients(**e["coefficients"])
-        sweep_cfg_data = e.get("sweep_config")
-        if sweep_cfg_data is None:
-            # Backward compatibility: derive from sweep list
-            sweep_obj = sweep_lookup.get(e["sweep_id"])
-            if sweep_obj:
-                sweep_cfg_data = {
-                    "fixed_anchors": sweep_obj.fixed_anchors,
-                    "fixed_lengths": sweep_obj.fixed_lengths,
-                    "drive_anchor": sweep_obj.drive_anchor,
-                    "sensor_anchor": sweep_obj.sensor_anchor,
-                }
-            else:
-                raise ValueError(f"Missing sweep_config and unknown sweep_id {e['sweep_id']}")
-
+        sweep_cfg_data = e["sweep_config"]
         fitted_ellipses.append(FittedEllipse(
             sweep_id=e["sweep_id"],
             sweep_config=SweepConfigSnapshot(**sweep_cfg_data),
@@ -433,8 +419,6 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
         fitted_ellipses=fitted_ellipses,
     )
 ```
-
-`load_sweep_dataset` backfills `sweep_config` for legacy files, but new producers should always emit it so Phase 2 can operate without the full sweep payload.
 
 ### 1.4 Sweep Configuration Generator
 
