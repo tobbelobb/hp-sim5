@@ -4,6 +4,8 @@
 
 Create visualization tools for debugging and monitoring the calibration process. This includes plots of raw sweep data, fitted vs theoretical ellipses, cost function landscapes, and anchor position convergence.
 
+Raw plots visualize the encoder-relative lengths collected from origin; if you need to see absolute lengths, reconstruct them with the current anchor guess before plotting theoretical overlays so both curves share the same baseline.
+
 ## Implementation Details
 
 All plots read the `sweep_config` snapshot shipped with each `FittedEllipse` so overlays stay consistent through the Phase 1 → Phase 2 handoff.

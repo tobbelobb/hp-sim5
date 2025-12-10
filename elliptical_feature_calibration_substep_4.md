@@ -4,6 +4,10 @@
 
 Implement the forward mathematical model that predicts ellipse parameters from anchor positions and sweep configuration. Given a set of anchor positions and the specification of which cables are fixed/driven/sensed, compute the theoretical ellipse that the (L_drive², L_sensor²) relationship should trace.
 
+The forward model requires *absolute* cable lengths for the fixed lines during a sweep, but the dataset only carries encoder deltas from the origin because anchors are unknown during collection. Before calling the projection routines, reconstruct fixed lengths as `L_fixed_abs = ||A_fixed - origin|| + ΔL_fixed_measured` using the current anchor guess (and any spool offsets), and keep drive/sensor deltas available if you need to re-fit ellipses per guess.
+
+Pair this with Substep 3: every optimization iteration reconstructs absolute lengths, fits ellipses from those lengths, and then compares the fitted coefficients against the theoretical predictions described here.
+
 ## Implementation Details
 
 ### 4.1 Mathematical Foundation
@@ -342,6 +346,9 @@ def predict_ellipses_for_dataset(
     Parameters:
         anchors: Current anchor position estimates (N, D)
         dataset: Sweep dataset dictionary
+        (Callers should feed in absolute fixed lengths; if the dataset stores
+        origin-relative lengths, add the guessed baseline length for each fixed
+        anchor before calling.)
 
     Returns:
         List of predicted ellipse dicts matching sweep IDs

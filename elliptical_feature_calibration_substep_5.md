@@ -2,13 +2,15 @@
 
 ## Overview
 
-Implement the cost function that compares observed ellipse coefficients (from fitting) to theoretical ellipse coefficients (from anchor geometry). This is the core of Phase 2 optimization - finding anchor positions that minimize the discrepancy between predicted and measured ellipses.
+Implement the cost function that, for each anchor guess, reconstructs absolute sweep lengths, fits ellipses on those absolute lengths, and compares the fitted coefficients to theoretical ellipse coefficients from the same anchor guess. This is the core of Phase 2 optimization—finding anchor positions that minimize the discrepancy between predicted and measured ellipses.
+
+Remember the data-collection constraint: all recorded lengths are deltas from the origin because anchors were unknown at logging time. When evaluating the cost, reconstruct absolute lengths from the current anchor guess (`L_abs = ||A_i - origin|| + ΔL_measured`), fit ellipses from those absolute lengths, and only then compare to theoretical ellipses so both sides live in the same coordinate system. Stored `fitted_ellipses` entries can remain for QC, but the optimizer should ignore them and re-fit per iteration.
 
 ## Implementation Details
 
 ### 5.1 Cost Function Design
 
-Inputs carry both the fitted coefficients and the sweep configuration that generated them (fixed anchors, held lengths, drive/sense roles) via each `FittedEllipse`'s `sweep_config`, ensuring the forward model compares like with like.
+Inputs carry sweep configurations (fixed anchors, held lengths, drive/sense roles). Per-iteration fits should attach the same snapshot so the forward model compares like with like.
 
 The cost function computes:
 $$\text{Cost} = \sum_{\text{sweeps}} w_i \cdot d(\mathbf{C}_{\text{obs}}^{(i)}, \mathbf{C}_{\text{pred}}^{(i)})^2$$

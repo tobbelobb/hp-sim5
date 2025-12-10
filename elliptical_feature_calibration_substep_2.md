@@ -4,6 +4,8 @@
 
 Create or modify the data collection script to perform "circular sweep" measurements where N-1 cables are held at fixed length while one cable is driven and another is passively measured. This produces the (l_drive, l_sensor) pairs needed for ellipse fitting. Carry over the masterplan constraint: on Hangprinter variants the top "carrying" anchor should never be assigned the Sensor/torque role during sweeps.
 
+We cannot record absolute cable lengths during collection because anchor locations are unknown. The script must therefore zero encoders at the origin and log *relative* lengths (`ΔL` from origin) for `fixed_lengths`, `l_drive`, and `l_sensor`. Phase 2 will reconstruct absolute lengths as `L_abs = ||anchor - origin|| + ΔL` using the current anchor guess before comparing against theoretical ellipses or re-fitting if needed.
+
 ## Implementation Details
 
 ### 2.1 Script Design: `collect_sweep_data.mjs`
@@ -268,7 +270,7 @@ async function main() {
       console.log(`  Fixed anchors: [${sweepConfig.fixedAnchors.join(', ')}]`);
       console.log(`  Drive: ${sweepConfig.driveAnchor}, Sensor: ${sweepConfig.sensorAnchor}`);
 
-      // Get current fixed lengths
+      // Get current fixed lengths (encoder deltas relative to origin; absolute length will be reconstructed later)
       const currentLengths = await getCurrentLengths(send, motorIds, mmPerDeg);
       const fixedLengths = sweepConfig.fixedAnchors.map(idx => currentLengths[idx]);
 

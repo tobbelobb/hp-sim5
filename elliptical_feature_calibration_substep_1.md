@@ -4,6 +4,8 @@
 
 Define the generalized data structures that support sweep-based calibration for all machine configurations (3-8 anchors, 2D and 3D). This substep establishes the foundation for data collection, storage, and exchange between components. Keep the masterplan warning in mind: on Hangprinter variants the top "carrying" anchor must never be put in torque/sensor mode during sweeps.
 
+Remember the data-collection limitation: we only have encoder deltas, not anchor positions, during logging. Every length value we store (`fixed_lengths`, `l_drive`, `l_sensor`) is therefore relative to the length when the mover was at the origin after encoder zeroing. Any downstream code that needs absolute lengths must reconstruct them using the current anchor guess: `L_abs = ||A_i - origin|| + ΔL_measured`. Keep this contract in mind when consuming these structures in later substeps. Ellipse fitting is now performed inside the optimization loop per anchor guess, so `fitted_ellipses` is optional/QC-only rather than the primary Phase 1 output.
+
 ## Implementation Details
 
 ### 1.1 Core Data Structures
@@ -604,7 +606,7 @@ def test_roundtrip_serialization(tmp_path):
             Sweep(
                 id="sweep_001",
                 fixed_anchors=[0],
-                fixed_lengths=[1000.0],
+                fixed_lengths=[10.0],
                 drive_anchor=1,
                 sensor_anchor=2,
                 data_points=[DataPoint(i*10, i*12+50) for i in range(20)],
@@ -615,7 +617,7 @@ def test_roundtrip_serialization(tmp_path):
                 sweep_id="sweep_001",
                 sweep_config=SweepConfigSnapshot(
                     fixed_anchors=[0],
-                    fixed_lengths=[1000.0],
+                    fixed_lengths=[10.0],
                     drive_anchor=1,
                     sensor_anchor=2,
                 ),

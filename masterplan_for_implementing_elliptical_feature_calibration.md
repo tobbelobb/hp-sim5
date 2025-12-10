@@ -45,37 +45,37 @@ The general conic equation $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$ has 5 degrees o
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     PHASE 1: DATA COMPRESSION                   │
+│                     PHASE 1: DATA CAPTURE                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  Raw Sweep Data              Ellipse Fitting                    │
-│  ┌──────────────┐           ┌──────────────┐                    │
-│  │ (l_d, l_s)   │  ──────▶  │ Enhanced     │  ──────▶  Coeffs   │
-│  │ (l_d, l_s)   │   Square  │ Method       │          (A,B,C,   │
-│  │ ...          │           │              │           D,E,F)   │
-│  │ (l_d, l_s)   │           └──────────────┘                    │
-│  └──────────────┘                    │                          │
-│                                      ▼                          │
-│                              QC: Residual Check                 │
-│                              (Discard bad sweeps)               │
+│  Raw Sweep Data (ΔL only, origin-relative)                      │
+│  ┌──────────────┐                                               │
+│  │ (l_d, l_s)   │   Store sweeps + metadata                     │
+│  │ (l_d, l_s)   │   (optional lightweight QC)                   │
+│  │ ...          │                                               │
+│  │ (l_d, l_s)   │                                               │
+│  └──────────────┘                                               │
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                     PHASE 2: OPTIMIZATION                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  Anchor Guess     Theoretical Ellipse      Cost Function        │
-│  ┌──────────────┐ ┌──────────────────┐    ┌──────────────────┐  │
-│  │ A_0, A_1,... │ │ predict_ellipse  │    │                  │  │
-│  │              │ │ (anchors,        │    │  Σ ||C_obs -     │  │
-│  │              │ │  constraints,    │ ──▶│      C_pred||²   │  │
-│  │              │ │  drive, sensor)  │    │                  │  │
-│  └──────────────┘ └──────────────────┘    └──────────────────┘  │
-│         │                                          │            │
-│         └──────────────────────────────────────────┘            │
+│  Anchor Guess     Reconstruct Abs.     Ellipse Fitting          │
+│  ┌──────────────┐ Lengths per Sweep    (per guess)              │
+│  │ A_0, A_1,... │ ┌──────────────────┐ ┌──────────────────┐     │
+│  │              │ │ L_abs = ||A|| +  │ │ ΔL→(L²)→coeffs   │     │
+│  │              │ │  ΔL_measured     │ │ (Maini/Stefano) │     │
+│  └──────────────┘ └──────────────────┘ └──────────────────┘     │
+│         │                        │                   │          │
+│         │                        ▼                   │          │
+│         │                 Theoretical Ellipse        │          │
+│         │                 (anchors, roles)           │          │
+│         │                        │                   │          │
+│         └────────────────────────┴───────────────────┘          │
 │                              │                                  │
 │                              ▼                                  │
-│                      SLSQP / L-BFGS-B                           │
-│                      Optimizer                                  │
+│                    Cost Function + Optimizer                    │
+│                     (SLSQP / L-BFGS-B)                          │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -88,6 +88,8 @@ A **sweep** is a sequence of measurements where:
 - **Fixed cables**: 2 cables (for 3D) or 1 cable (for 2D) are held at constant length
 - **Drive cable**: 1 cable is actively varied over a range
 - **Sensor cable**: 1 cable is in torque mode (passively actuated), measuring its length
+
+**Length reference model:** During data collection we have encoder deltas but we do *not* know anchor locations, so all recorded lengths (`fixed_lengths`, `l_drive`, `l_sensor`) are relative to the length when the mover sat at the origin (encoders zeroed). Phase 2 must reconstruct absolute lengths as `L_abs(φ) = ||A_i - origin|| + ΔL_measured(φ)` using the current anchor guess; the cost function should therefore either re-fit ellipses on these reconstructed lengths or compare against theoretical ellipses built from the guessed absolute lengths.
 
 ### Generalized Sweep Configuration
 
@@ -177,25 +179,11 @@ Select a representative subset:
     },
     ...
   ],
-  "fitted_ellipses": [
-    {
-      "sweep_id": "sweep_001",
-      "sweep_config": {
-        "fixed_anchors": [1],
-        "fixed_lengths": [12.5],
-        "drive_anchor": 0,
-        "sensor_anchor": 2
-      },
-      "coefficients": {"A": 1.0, "B": 0.1, "C": 0.8, "D": -100, "E": -80, "F": 1000},
-      "residual_rms": 0.0012,
-      "valid": true
-    },
-    ...
-  ]
+  "fitted_ellipses": []
 }
 ```
 
-Each fitted ellipse carries a `sweep_id` and a `sweep_config` snapshot so that Phase 2 (forward prediction and cost evaluation) always knows which cables were fixed/drive/sense when the ellipse was produced, even if sweeps are filtered or re-sampled after Phase 1.
+Store raw sweeps; `fitted_ellipses` can be used for optional offline QC but the optimization loop re-fits ellipses per anchor guess after reconstructing absolute lengths. All length-valued fields represent encoder-derived deltas from the origin; absolute lengths must be reconstructed during optimization using anchor guesses.
 
 ## Advantages Over Differential/Gradient Methods
 
