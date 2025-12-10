@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement the cost function that, for each anchor guess, reconstructs absolute sweep lengths, fits ellipses on those absolute lengths, and compares the fitted coefficients to theoretical ellipse coefficients from the same anchor guess. This is the core of Phase 2 optimization—finding anchor positions that minimize the discrepancy between predicted and measured ellipses. No pre-fit ellipses are used; everything is fit per iteration.
+Implement the cost function that, for each anchor guess, reconstructs absolute sweep lengths, fits ellipses on those absolute lengths, and compares the fitted **geometric** parameters `(x0, y0, a, b, θ)` (canonicalized with `a >= b` and θ wrapped) to theoretical ellipse geometry from the same anchor guess. This is the core of Phase 2 optimization—finding anchor positions that minimize the discrepancy between predicted and measured ellipses without suffering from the scale/conditioning ambiguity of raw `(A,B,C,D,E,F)` coefficients. No pre-fit ellipses are used; everything is fit per iteration.
 
 Remember the data-collection constraint: all recorded lengths are deltas from the origin because anchors were unknown at logging time. When evaluating the cost, reconstruct absolute lengths from the current anchor guess (`L_abs = ||A_i - origin|| + ΔL_measured`), fit ellipses from those absolute lengths, and only then compare to theoretical ellipses so both sides live in the same coordinate system. The optimizer ignores any stored ellipse fits and re-fits per iteration.
 
@@ -13,21 +13,22 @@ Remember the data-collection constraint: all recorded lengths are deltas from th
 Inputs carry sweep configurations (fixed anchors, held lengths, drive/sense roles). Per-iteration fits should attach the same snapshot so the forward model compares like with like.
 
 The cost function computes:
-$$\text{Cost} = \sum_{\text{sweeps}} w_i \cdot d(\mathbf{C}_{\text{obs}}^{(i)}, \mathbf{C}_{\text{pred}}^{(i)})^2$$
+$$\text{Cost} = \sum_{\text{sweeps}} w_i \cdot d\Big((x_0, y_0, a, b, \theta)_{\text{obs}}^{(i)}, (x_0, y_0, a, b, \theta)_{\text{pred}}^{(i)}\Big)^2$$
 
 where:
-- $\mathbf{C}_{\text{obs}}^{(i)}$ are the fitted (observed) coefficients for sweep $i$
-- $\mathbf{C}_{\text{pred}}^{(i)}$ are the predicted coefficients from current anchor estimates
-- $d(\cdot, \cdot)$ is a distance metric between coefficient vectors
+- Observed tuples come from the per-iteration ellipse fitting (canonicalized with `a >= b`, θ in a stable interval such as [-π/2, π/2])
+- Predicted tuples come from the theoretical projection (also canonicalized)
+- $d(\cdot, \cdot)$ is a geometry-aware distance (see below)
 - $w_i$ is a weight (inverse of fit residual, or uniform)
+- Per-sweep QC should also retain per-point residuals and sampling density (e.g. histogram by drive delta or fitted φ) to expose where noise or sparse coverage might weaken observability.
 
-### 5.2 Coefficient Distance Metrics
+### 5.2 Geometry Distance Metrics
 
-Since ellipse coefficients are defined up to scale, we need scale-invariant comparison:
+Use geometry-aware comparisons instead of raw coefficients:
 
-1. **Normalized L2**: Normalize both vectors to unit norm, compute Euclidean distance
-2. **Angular Distance**: $1 - |\cos\theta|$ where $\theta$ is the angle between vectors
-3. **Weighted Algebraic**: Weight by importance of each coefficient
+1. **Canonical Euclidean** (default): Weighted Euclidean distance in `(x0, y0, a, b, θ)` after wrapping θ to the shortest difference.
+2. **Axis-Weighted**: Emphasize shape `(a, b, θ)` over translation `(x0, y0)` if desired.
+3. **Hybrid Debug**: Keep `(A..F)` alongside geometry for diagnostics, but never drive the optimizer directly with them.
 
 ### 5.3 Core Implementation (`ellipse_cost.py`)
 
@@ -45,7 +46,7 @@ from dataclasses import dataclass
 import warnings
 
 from theoretical_ellipse import (
-    predict_ellipse_coefficients,
+    predict_ellipse_geometry,
     anchors_vec_to_matrix,
     anchors_matrix_to_vec
 )
@@ -61,90 +62,50 @@ class CostResult:
     anchor_estimate: np.ndarray
 
 
-def normalize_coefficients(coeffs: np.ndarray) -> np.ndarray:
+def canonicalize_geometry(center: Tuple[float, float], semi_axes: Tuple[float, float], theta: float) -> Tuple[np.ndarray, np.ndarray, float]:
     """
-    Normalize ellipse coefficients for comparison.
-
-    Normalizes so that ||[A, B, C]|| = 1 and the sign is canonical.
+    Canonicalize geometry to (x0, y0, a >= b, θ in [-pi/2, pi/2]).
     """
-    coeffs = np.asarray(coeffs, dtype=float)
+    x0, y0 = center
+    a, b = semi_axes
+    theta_wrapped = ((theta + np.pi/2) % np.pi) - np.pi/2  # wrap to [-pi/2, pi/2]
 
-    # Normalize by ||ABC||
-    abc_norm = norm(coeffs[:3])
-    if abc_norm < 1e-10:
-        return coeffs
+    if a < b:
+        a, b = b, a
+        theta_wrapped += np.sign(theta_wrapped) * np.pi/2 if theta_wrapped != 0 else np.pi/2
+        theta_wrapped = ((theta_wrapped + np.pi/2) % np.pi) - np.pi/2
 
-    coeffs = coeffs / abc_norm
-
-    # Canonical sign: make largest of |A|, |B|, |C| positive
-    max_idx = np.argmax(np.abs(coeffs[:3]))
-    if coeffs[max_idx] < 0:
-        coeffs = -coeffs
-
-    return coeffs
+    return np.array([x0, y0]), np.array([a, b]), theta_wrapped
 
 
-def coefficient_distance_l2(
-    coeffs1: np.ndarray,
-    coeffs2: np.ndarray
+def geometry_distance(
+    obs_center: np.ndarray,
+    obs_axes: np.ndarray,
+    obs_theta: float,
+    pred_center: np.ndarray,
+    pred_axes: np.ndarray,
+    pred_theta: float,
+    weights: Tuple[float, float, float] = (1.0, 1.0, 0.2)
 ) -> float:
     """
-    Compute L2 distance between normalized coefficient vectors.
+    Weighted Euclidean distance in canonical geometry space.
+
+    weights = (w_center, w_axes, w_theta) controls emphasis.
     """
-    c1 = normalize_coefficients(coeffs1)
-    c2 = normalize_coefficients(coeffs2)
+    w_center, w_axes, w_theta = weights
 
-    # Handle sign ambiguity
-    dist_same = norm(c1 - c2)
-    dist_flip = norm(c1 + c2)
+    delta_center = obs_center - pred_center
+    delta_axes = obs_axes - pred_axes
 
-    return min(dist_same, dist_flip)
+    # Smallest angular difference
+    delta_theta = pred_theta - obs_theta
+    delta_theta = (delta_theta + np.pi) % (2 * np.pi) - np.pi  # wrap to [-π, π]
 
-
-def coefficient_distance_angular(
-    coeffs1: np.ndarray,
-    coeffs2: np.ndarray
-) -> float:
-    """
-    Compute angular distance between coefficient vectors.
-
-    Returns 1 - |cos(θ)| where θ is the angle between vectors.
-    Range: [0, 1] where 0 = parallel, 1 = orthogonal
-    """
-    c1 = normalize_coefficients(coeffs1)
-    c2 = normalize_coefficients(coeffs2)
-
-    dot = np.dot(c1, c2)
-    cos_theta = np.clip(np.abs(dot), 0, 1)
-
-    return 1 - cos_theta
-
-
-def coefficient_distance_weighted(
-    coeffs1: np.ndarray,
-    coeffs2: np.ndarray,
-    weights: np.ndarray = None
-) -> float:
-    """
-    Compute weighted distance between coefficients.
-
-    Default weights emphasize A, B, C (shape) over D, E, F (position).
-    """
-    if weights is None:
-        # Shape parameters more important than position
-        weights = np.array([1.0, 1.0, 1.0, 0.5, 0.5, 0.5])
-
-    c1 = normalize_coefficients(coeffs1)
-    c2 = normalize_coefficients(coeffs2)
-
-    # Handle sign ambiguity
-    diff_same = (c1 - c2) * weights
-    diff_flip = (c1 + c2) * weights
-
-    dist_same = norm(diff_same)
-    dist_flip = norm(diff_flip)
-
-    return min(dist_same, dist_flip)
+    return np.sqrt(
+        w_center * np.dot(delta_center, delta_center) +
+        w_axes * np.dot(delta_axes, delta_axes) +
+        w_theta * (delta_theta ** 2)
+    )
 
 
 class EllipseCostFunction:
@@ -157,7 +118,7 @@ class EllipseCostFunction:
     def __init__(
         self,
         dataset: dict,
-        distance_metric: str = 'l2',
+        geometry_weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
         use_weights: bool = True,
         invalid_sweep_penalty: float = 1000.0
     ):
@@ -166,7 +127,7 @@ class EllipseCostFunction:
 
         Parameters:
             dataset: Sweep dataset with fitted_ellipses
-            distance_metric: 'l2', 'angular', or 'weighted'
+            geometry_weights: Tuple weighting (center, axes, theta) in geometry_distance
             use_weights: Weight sweeps by inverse residual
             invalid_sweep_penalty: Penalty for sweeps that can't be predicted
         """
@@ -176,16 +137,7 @@ class EllipseCostFunction:
         self.num_anchors = dataset.get('num_anchors', 4)
 
         self.invalid_penalty = invalid_sweep_penalty
-
-        # Select distance metric
-        if distance_metric == 'l2':
-            self.distance_fn = coefficient_distance_l2
-        elif distance_metric == 'angular':
-            self.distance_fn = coefficient_distance_angular
-        elif distance_metric == 'weighted':
-            self.distance_fn = coefficient_distance_weighted
-        else:
-            raise ValueError(f"Unknown distance metric: {distance_metric}")
+        self.geometry_weights = geometry_weights
 
         # Extract observed ellipses
         self.observed_ellipses = {}
@@ -198,11 +150,11 @@ class EllipseCostFunction:
                 continue
 
             sweep_id = fe['sweep_id']
-            coeffs = fe['coefficients']
-            self.observed_ellipses[sweep_id] = np.array([
-                coeffs['A'], coeffs['B'], coeffs['C'],
-                coeffs['D'], coeffs['E'], coeffs['F']
-            ])
+            center = (fe['center']['x'], fe['center']['y'])
+            axes = (fe['semi_axes']['a'], fe['semi_axes']['b'])
+            theta = fe.get('orientation_rad', 0.0)
+            c_can, axes_can, theta_can = canonicalize_geometry(center, axes, theta)
+            self.observed_ellipses[sweep_id] = (c_can, axes_can, theta_can)
 
             # Weight by inverse residual (more confident fits get more weight)
             if use_weights:
@@ -235,10 +187,14 @@ class EllipseCostFunction:
 
         total_cost = 0.0
 
+        # In the final implementation, rebuild absolute lengths and re-fit ellipses here
+        # (using fit_ellipse_from_sweep) so "observed" geometry matches the current anchor guess.
+        # If observed_ellipses already came from such a per-iteration fit, we can reuse them.
+
         for sweep_id, obs_coeffs in self.observed_ellipses.items():
             config = self.sweep_configs.get(sweep_id)
             # Predict ellipse for this configuration
-            pred_coeffs = predict_ellipse_coefficients(
+            pred_geom = predict_ellipse_geometry(
                 anchors,
                 config['fixed_anchors'],
                 config['fixed_lengths'],
@@ -247,13 +203,20 @@ class EllipseCostFunction:
                 self.dimensions
             )
 
-            if pred_coeffs is None:
+            if pred_geom is None:
                 # Invalid configuration (e.g., spheres don't intersect)
                 total_cost += self.invalid_penalty * self.sweep_weights[sweep_id]
                 continue
 
-            # Compute distance
-            dist = self.distance_fn(obs_coeffs, pred_coeffs)
+            pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
+            obs_center, obs_axes, obs_theta = obs_coeffs
+
+            # Compute distance in canonical geometry space
+            dist = geometry_distance(
+                obs_center, obs_axes, obs_theta,
+                pred_center, pred_axes, pred_theta,
+                self.geometry_weights
+            )
             weighted_cost = dist**2 * self.sweep_weights[sweep_id]
             total_cost += weighted_cost
 
@@ -273,7 +236,7 @@ class EllipseCostFunction:
 
         for sweep_id, obs_coeffs in self.observed_ellipses.items():
             config = self.sweep_configs.get(sweep_id)
-            pred_coeffs = predict_ellipse_coefficients(
+            pred_geom = predict_ellipse_geometry(
                 anchors,
                 config['fixed_anchors'],
                 config['fixed_lengths'],
@@ -282,11 +245,17 @@ class EllipseCostFunction:
                 self.dimensions
             )
 
-            if pred_coeffs is None:
+            if pred_geom is None:
                 per_sweep_costs[sweep_id] = self.invalid_penalty
                 num_invalid += 1
             else:
-                dist = self.distance_fn(obs_coeffs, pred_coeffs)
+                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
+                obs_center, obs_axes, obs_theta = obs_coeffs
+                dist = geometry_distance(
+                    obs_center, obs_axes, obs_theta,
+                    pred_center, pred_axes, pred_theta,
+                    self.geometry_weights
+                )
                 per_sweep_costs[sweep_id] = dist**2
                 num_valid += 1
 
@@ -449,7 +418,7 @@ def solve_anchors(
     bounds = list(zip(lb, ub))
 
     # Create cost function
-    cost_fn = EllipseCostFunction(dataset, distance_metric='l2', use_weights=True)
+    cost_fn = EllipseCostFunction(dataset, geometry_weights=(1.0, 1.0, 0.2), use_weights=True)
 
     if verbose:
         print(f"Solving for {num_anchors} anchors in {dimensions}D")
@@ -567,55 +536,37 @@ def format_anchors_gcode(anchors: np.ndarray, machine_type: str) -> str:
 import pytest
 import numpy as np
 from ellipse_cost import (
-    normalize_coefficients,
-    coefficient_distance_l2,
-    coefficient_distance_angular,
+    canonicalize_geometry,
+    geometry_distance,
     EllipseCostFunction,
 )
 from ellipse_solver import solve_anchors
 
 
-class TestNormalization:
-    def test_unit_norm(self):
-        coeffs = np.array([3, 0, 4, 10, 20, 30])
-        normalized = normalize_coefficients(coeffs)
-        assert abs(np.linalg.norm(normalized[:3]) - 1.0) < 1e-10
+class TestGeometryCanonicalization:
+    def test_axes_ordering_and_angle_wrap(self):
+        center_can, axes_can, theta_can = canonicalize_geometry(
+            (10.0, -5.0),
+            (5.0, 10.0),
+            3 * np.pi / 4,  # 135°
+        )
+        assert axes_can[0] >= axes_can[1]
+        assert -np.pi/2 <= theta_can <= np.pi/2
 
-    def test_canonical_sign(self):
-        coeffs1 = np.array([0.6, 0, 0.8, 1, 2, 3])
-        coeffs2 = np.array([-0.6, 0, -0.8, -1, -2, -3])
+    def test_identity_distance(self):
+        obs_c = np.array([0.0, 0.0])
+        obs_axes = np.array([10.0, 8.0])
+        obs_theta = 0.1
+        assert geometry_distance(obs_c, obs_axes, obs_theta, obs_c, obs_axes, obs_theta) == 0.0
 
-        n1 = normalize_coefficients(coeffs1)
-        n2 = normalize_coefficients(coeffs2)
-
-        # Should have same sign after normalization
-        assert np.allclose(n1, n2) or np.allclose(n1, -n2)
-
-
-class TestDistanceMetrics:
-    def test_identical_coefficients(self):
-        c1 = np.array([1, 0, 1, 10, 20, 30])
-        c2 = np.array([2, 0, 2, 20, 40, 60])  # Same up to scale
-
-        assert coefficient_distance_l2(c1, c2) < 1e-10
-        assert coefficient_distance_angular(c1, c2) < 1e-10
-
-    def test_different_coefficients(self):
-        c1 = np.array([1, 0, 1, 0, 0, 0])
-        c2 = np.array([1, 0.5, 0.5, 0, 0, 0])
-
-        dist_l2 = coefficient_distance_l2(c1, c2)
-        dist_ang = coefficient_distance_angular(c1, c2)
-
-        assert dist_l2 > 0
-        assert dist_ang > 0
-
-    def test_sign_invariance(self):
-        c1 = np.array([1, 0.2, 0.8, 5, 10, 15])
-        c2 = -c1
-
-        assert coefficient_distance_l2(c1, c2) < 1e-10
-        assert coefficient_distance_angular(c1, c2) < 1e-10
+    def test_geometry_distance_changes(self):
+        obs_c = np.array([0.0, 0.0])
+        obs_axes = np.array([10.0, 8.0])
+        obs_theta = 0.0
+        pred_c = np.array([1.0, 0.0])
+        pred_axes = np.array([11.0, 8.0])
+        pred_theta = 0.05
+        assert geometry_distance(obs_c, obs_axes, obs_theta, pred_c, pred_axes, pred_theta) > 0
 
 
 class TestCostFunction:
@@ -653,6 +604,9 @@ class TestCostFunction:
                         'A': 0.5, 'B': 0.1, 'C': 0.4,
                         'D': -50, 'E': -40, 'F': 1000
                     },
+                    'center': {'x': 0.0, 'y': 0.0},
+                    'semi_axes': {'a': 10.0, 'b': 8.0},
+                    'orientation_rad': 0.0,
                     'residual_rms': 0.001,
                     'valid': True
                 }
@@ -690,8 +644,8 @@ class TestSolver:
 
 1. **Zero Cost at True Anchors**: Synthetic data with known anchors gives cost ≈ 0
 2. **Monotonic Cost Increase**: Perturbing anchors from true positions increases cost
-3. **Sign Invariance**: Cost identical for coefficient vectors differing only by sign
-4. **Scale Invariance**: Cost identical for scaled coefficient vectors
+3. **Geometry Canonicalization**: Swapping axes or adding ±π to θ leaves the cost unchanged after canonicalization
+4. **Angle Wrapping**: Cost uses the shortest angular difference (no discontinuities at ±π)
 5. **Gradient Consistency**: Numerical gradient matches finite differences
 6. **Solver Convergence**: Solver finds near-optimal solution from random starts
 

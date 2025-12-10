@@ -4,7 +4,7 @@
 
 Create or modify the data collection script to perform "circular sweep" measurements where N-1 cables are held at fixed length while one cable is driven and another is passively measured. This produces the (l_drive, l_sensor) pairs needed for ellipse fitting. Carry over the masterplan constraint: on Hangprinter variants the top "carrying" anchor should never be assigned the Sensor/torque role during sweeps.
 
-We cannot record absolute cable lengths during collection because anchor locations are unknown. The script must therefore zero encoders at the origin and log *relative* lengths (`ΔL` from origin) for `fixed_lengths`, `l_drive`, and `l_sensor`. Phase 2 will reconstruct absolute lengths as `L_abs = ||anchor - origin|| + ΔL` using the current anchor guess before comparing against theoretical ellipses or re-fitting if needed.
+We cannot record absolute cable lengths during collection because anchor locations are unknown. The script must therefore zero encoders at the origin and log *relative* lengths (`ΔL` from origin) for `fixed_lengths`, `l_drive`, and `l_sensor`. Phase 2 will reconstruct absolute lengths as `L_abs = ||anchor - origin|| + ΔL` using the current anchor guess before comparing against theoretical ellipses or re-fitting if needed. Keep the raw encoder angles in the log (alongside the derived lengths) so later physics models—sag/flex/buildup—can reinterpret the data without recollecting, and so QC tooling can visualize where along the arc the sampler spent the most time and how noise varies.
 
 ## Implementation Details
 
@@ -175,7 +175,7 @@ async function performSweep(sendFn, machineConfig, sweepConfig, options) {
       l_drive: lengths[driveAnchor],
       l_sensor: lengths[sensorAnchor],
       timestamp_ms: Date.now(),
-      raw_angles: anglesDeg,
+      raw_angles: anglesDeg, // Preserve raw encoders for future physics models and coverage/noise visualization
     });
 
     console.log(`  Point ${i + 1}/${sweepPoints}: drive=${lengths[driveAnchor].toFixed(2)}, sensor=${lengths[sensorAnchor].toFixed(2)}`);
@@ -297,6 +297,7 @@ async function main() {
           l_drive: p.l_drive,
           l_sensor: p.l_sensor,
           timestamp_ms: p.timestamp_ms,
+          raw_angles_deg: p.raw_angles,
         })),
         metadata: {
           feed_rate: feed,
@@ -506,6 +507,7 @@ async function performContinuousSweep(sendFn, sweepConfig, options) {
         l_drive: lengths[driveAnchor],
         l_sensor: lengths[sensorAnchor],
         timestamp_ms: Date.now(),
+        raw_angles_deg: angles,
       });
 
       await sleep(samplingInterval);
@@ -529,6 +531,11 @@ async function performContinuousSweep(sendFn, sweepConfig, options) {
   return dataPoints;
 }
 ```
+
+### 2.5 Observability Outputs
+
+- Persist `timestamp_ms`, `raw_angles_deg`, and drive setpoints for each sample so QC plots can show sampling density along the arc and noise-versus-arc-position.
+- Emit a lightweight histogram per sweep (e.g. bucket by drive delta or fitted φ) plus basic per-bucket variance in a sidecar JSON for quick inspection without reprocessing the whole dataset.
 
 ## Testing
 

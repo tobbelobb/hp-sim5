@@ -7,6 +7,7 @@ Implement the forward mathematical model that predicts ellipse parameters from a
 The forward model requires *absolute* cable lengths for the fixed lines during a sweep, but the dataset only carries encoder deltas from the origin because anchors are unknown during collection. Before calling the projection routines, reconstruct fixed lengths as `L_fixed_abs = ||A_fixed - origin|| + ΔL_fixed_measured` using the current anchor guess (and any spool offsets), and keep drive/sensor deltas available if you need to re-fit ellipses per guess.
 
 Pair this with Substep 3: every optimization iteration reconstructs absolute lengths, fits ellipses from those lengths, and then compares the fitted coefficients against the theoretical predictions described here.
+Return both algebraic coefficients and the canonical geometric tuple `(x0, y0, a, b, θ)` (with `a >= b` and θ wrapped) so the cost function can work in the safer geometric space.
 
 ## Implementation Details
 
@@ -391,6 +392,34 @@ def predict_ellipses_for_dataset(
             })
 
     return predictions
+
+
+def predict_ellipse_geometry(
+    anchors: np.ndarray,
+    fixed_anchor_indices: List[int],
+    fixed_lengths: List[float],
+    drive_anchor_idx: int,
+    sensor_anchor_idx: int,
+    dimensions: int = 3
+) -> Optional[Tuple[Tuple[float, float], Tuple[float, float], float]]:
+    """
+    Convenience helper that wraps `predict_ellipse_coefficients` and converts
+    to canonical (center, (a,b), θ) using Substep 3's geometry extractor.
+    """
+    coeffs = predict_ellipse_coefficients(
+        anchors,
+        fixed_anchor_indices,
+        fixed_lengths,
+        drive_anchor_idx,
+        sensor_anchor_idx,
+        dimensions,
+    )
+    if coeffs is None:
+        return None
+
+    from ellipse_fitting import ellipse_geometric_params
+    center, semi_axes, theta = ellipse_geometric_params(coeffs)
+    return center, semi_axes, theta
 
 
 # Utility functions for working with different machine types

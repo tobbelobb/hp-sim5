@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a calibration approach for cable-driven parallel robots that exploits a fundamental geometric property: when the effector is constrained to move along a 1-DOF path (by fixing N-1 cable lengths), the relationship between any two cable lengths squared traces an **ellipse**. By fitting ellipses to measurement data and optimizing anchor positions to match theoretical ellipses, we achieve noise-robust calibration that generalizes across machine configurations.
+This document outlines a calibration approach for cable-driven parallel robots that exploits a fundamental geometric property: when the effector is constrained to move along a 1-DOF path (by fixing N-1 cable lengths), the relationship between any two cable lengths squared traces an **ellipse**. By fitting ellipses to measurement data and optimizing anchor positions to match theoretical ellipses, we achieve noise-robust calibration that generalizes across machine configurations. Cost comparisons use a canonical geometric parameterization `(x0, y0, a, b, θ)` (with `a >= b` and θ wrapped into a fixed range) rather than raw `(A,B,C,D,E,F)` coefficients to avoid scale and conditioning pitfalls.
 
 ## Supported Machine Configurations
 
@@ -89,7 +89,7 @@ A **sweep** is a sequence of measurements where:
 - **Drive cable**: 1 cable is actively varied over a range
 - **Sensor cable**: 1 cable is in torque mode (passively actuated), measuring its length
 
-**Length reference model:** During data collection we have encoder deltas but we do *not* know anchor locations, so all recorded lengths (`fixed_lengths`, `l_drive`, `l_sensor`) are relative to the length when the mover sat at the origin (encoders zeroed). Phase 2 must reconstruct absolute lengths as `L_abs(φ) = ||A_i - origin|| + ΔL_measured(φ)` using the current anchor guess; the cost function should therefore either re-fit ellipses on these reconstructed lengths or compare against theoretical ellipses built from the guessed absolute lengths.
+**Length reference model:** During data collection we have encoder deltas but we do *not* know anchor locations, so all recorded lengths (`fixed_lengths`, `l_drive`, `l_sensor`) are relative to the length when the mover sat at the origin (encoders zeroed). Phase 2 must reconstruct absolute lengths as `L_abs(φ) = ||A_i - origin|| + ΔL_measured(φ)` using the current anchor guess; the cost function should therefore either re-fit ellipses on these reconstructed lengths or compare against theoretical ellipses built from the guessed absolute lengths. Keep the raw encoder-driven measurements intact (no baked-in spool, sag, or flex corrections) so future physics models can re-interpret the same dataset when we extend beyond the initial "rigid + no-buildup" assumption.
 
 ### Generalized Sweep Configuration
 
@@ -108,6 +108,7 @@ In practice, we don't need all permutations. A well-distributed subset provides 
 Pay special attention to which anchor/drives are drive/fixed/sense on Hangprinter configurations, because they only have one motor pulling upwards.
 We'll want at least one high anchor/drive to be either fixed or drive, in order to avoid the mover dropping down due
 gravity potentially overwhelming the sensor's constant torque.
+- Capture enough metadata to visualize sweep observability: retain timestamps/drive progress so later QC plots can reveal which arc regions were sampled most densely and how noise/residuals vary along the path.
 
 ### Recommended Sweep Patterns
 
@@ -210,7 +211,7 @@ The implementation is divided into 7 substeps:
 
 ## Success Criteria
 
-1. **Synthetic Data Test**: Generate exact sweeps from known anchors; verify cost = 0.
+1. **Synthetic Data Test**: Generate exact sweeps from known anchors; verify cost = 0 when comparing canonical `(x0, y0, a, b, θ)` tuples.
 2. **Perturbation Test**: Small anchor perturbations produce smoothly increasing cost.
 3. **Noise Robustness Test**: Add Gaussian noise to synthetic data; recover anchors within tolerance.
 4. **Real Hardware Validation**: Run on physical Slideprinter; compare to known geometry.
@@ -222,7 +223,7 @@ The implementation is divided into 7 substeps:
 |-----------------------------------------|------------------------------------------------|
 | Near-degenerate ellipses (near-circles) | Multiple sweeps with diverse configurations    |
 | Cable slack during sweep                | QC residual check; discard bad sweeps          |
-| Numerical instability in fitting        | Use Maini's method (guaranteed ellipse)        |
+| Numerical instability in fitting        | Use Maini's method (guaranteed ellipse) and compare in canonical `(x0, y0, a, b, θ)` space to avoid scale drift |
 | Local minima in optimization            | Multiple random restarts; good initial guess   |
 | 8-anchor complexity                     | Start with 3/4 anchors; scale up incrementally |
 

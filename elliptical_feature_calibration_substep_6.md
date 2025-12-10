@@ -2,7 +2,7 @@
 
 ## Overview
 
-Create visualization tools for debugging and monitoring the calibration process. This includes plots of raw sweep data, fitted vs theoretical ellipses, cost function landscapes, and anchor position convergence.
+Create visualization tools for debugging and monitoring the calibration process. This includes plots of raw sweep data, fitted vs theoretical ellipses, cost function landscapes, anchor position convergence, and observability diagnostics that reveal where along the arc we sampled densely and how noise varies with arc position.
 
 Raw plots visualize the encoder-relative lengths collected from origin; if you need to see absolute lengths, reconstruct them with the current anchor guess before plotting theoretical overlays so both curves share the same baseline.
 
@@ -254,6 +254,46 @@ def plot_all_sweeps(
 
     plt.tight_layout()
     return fig
+
+
+def plot_sampling_density(
+    sweep: dict,
+    fitted_ellipse: Optional[dict] = None,
+    bins: int = 20,
+    ax: Optional[plt.Axes] = None
+) -> plt.Axes:
+    """
+    Show how densely the arc was sampled and how residuals vary along it.
+
+    If `fitted_ellipse` carries `residual_series`, overlay residual std per bin.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 4))
+
+    l_drive = np.array([p['l_drive'] for p in sweep['data_points']])
+    hist, edges = np.histogram(l_drive, bins=bins)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+
+    ax.bar(centers, hist, width=np.diff(edges), alpha=0.5, color='steelblue', label='Samples')
+
+    if fitted_ellipse and fitted_ellipse.get('residual_series'):
+        residuals = np.array(fitted_ellipse['residual_series'])
+        if len(residuals) == len(l_drive):
+            res_bins = []
+            for i in range(len(edges) - 1):
+                mask = (l_drive >= edges[i]) & (l_drive < edges[i+1])
+                if np.any(mask):
+                    res_bins.append(np.std(residuals[mask]))
+                else:
+                    res_bins.append(0.0)
+            ax.plot(centers, res_bins, color='darkred', marker='o', label='Residual σ')
+
+    ax.set_xlabel('Drive length delta (mm)')
+    ax.set_ylabel('Count')
+    ax.set_title(f"Sampling density for {sweep.get('id', '')}")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    return ax
 
 
 def plot_cost_convergence(
@@ -568,6 +608,7 @@ from ellipse_visualization import (
     plot_ellipse_fit,
     plot_anchors_2d,
     plot_anchors_3d,
+    plot_sampling_density,
     create_calibration_report
 )
 
@@ -615,6 +656,12 @@ class TestPlotting:
     def test_plot_ellipse_fit(self, sample_sweep, sample_fitted_ellipse):
         fig, ax = plt.subplots()
         result_ax = plot_ellipse_fit(sample_sweep, sample_fitted_ellipse, ax=ax)
+        assert result_ax is not None
+        plt.close(fig)
+
+    def test_plot_sampling_density(self, sample_sweep, sample_fitted_ellipse):
+        fig, ax = plt.subplots()
+        result_ax = plot_sampling_density(sample_sweep, sample_fitted_ellipse, ax=ax)
         assert result_ax is not None
         plt.close(fig)
 

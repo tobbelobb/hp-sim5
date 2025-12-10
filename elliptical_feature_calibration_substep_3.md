@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement robust ellipse fitting using Maini, Eliseo Stefano's Direct Least Squares method. This module takes (l_drive, l_sensor) pairs, squares them to (L_drive², L_sensor²), and fits the algebraic ellipse equation. Quality control metrics determine whether the fit is valid.
+Implement robust ellipse fitting using Maini, Eliseo Stefano's Direct Least Squares method. This module takes (l_drive, l_sensor) pairs, squares them to (L_drive², L_sensor²), and fits the algebraic ellipse equation. Quality control metrics determine whether the fit is valid. Downstream cost computations consume the canonical geometric tuple `(x0, y0, a, b, θ)` (with `a >= b` and θ wrapped to a stable interval) rather than raw `(A,B,C,D,E,F)` to avoid scale ambiguity.
 
 Because the ellipse invariant is strictly about *absolute* squared lengths, fitting must happen inside the optimization loop after reconstructing absolute lengths from encoder deltas and the current anchor guess. Pre-fitting invariant ellipses on raw deltas alone is mathematically inconsistent; drop that flow entirely.
 
@@ -36,7 +36,7 @@ class EllipseFitResult:
     coefficients: np.ndarray  # [A, B, C, D, E, F]
     center: Tuple[float, float]
     semi_axes: Tuple[float, float]  # (a, b) where a >= b
-    rotation_angle: float  # radians
+    rotation_angle: float  # radians, canonicalized to a stable interval (e.g. [-pi/2, pi/2])
     residual_rms: float
     residual_max: float
     num_points: int
@@ -407,6 +407,12 @@ def ellipse_geometric_params(coeffs: np.ndarray) -> Tuple[Tuple, Tuple, float]:
         a, b = b, a
         theta += np.pi / 2
 
+    # Wrap rotation to a stable interval to keep comparisons well-conditioned
+    if theta > np.pi / 2:
+        theta -= np.pi
+    elif theta < -np.pi / 2:
+        theta += np.pi
+
     return (cx, cy), (a, b), theta
 
 
@@ -530,6 +536,9 @@ def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict
 
         result = fit_ellipse_from_sweep(l_drive, l_sensor, residual_threshold)
 
+        # Residuals per sample help visualize noise variation along the arc
+        residual_series = ellipse_algebraic_distance(result.coefficients, l_drive**2, l_sensor**2) if result.valid else []
+
         results.append({
             'sweep_id': sweep_id,
             'coefficients': {
@@ -545,6 +554,7 @@ def fit_all_sweeps(dataset: dict, residual_threshold: float = 0.01) -> List[dict
             'rotation_angle_rad': result.rotation_angle,
             'residual_rms': result.residual_rms,
             'residual_max': result.residual_max,
+            'residual_series': residual_series.tolist() if isinstance(residual_series, np.ndarray) else [],
             'valid': result.valid,
             'num_points': result.num_points,
             'rejection_reason': result.rejection_reason,

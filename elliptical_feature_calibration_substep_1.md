@@ -4,7 +4,7 @@
 
 Define the generalized data structures that support sweep-based calibration for all machine configurations (3-8 anchors, 2D and 3D). This substep establishes the foundation for data collection, storage, and exchange between components. Keep the masterplan warning in mind: on Hangprinter variants the top "carrying" anchor must never be put in torque/sensor mode during sweeps.
 
-Remember the data-collection limitation: we only have encoder deltas, not anchor positions, during logging. Every length value we store (`fixed_lengths`, `l_drive`, `l_sensor`) is therefore relative to the length when the mover was at the origin after encoder zeroing. Any downstream code that needs absolute lengths must reconstruct them using the current anchor guess: `L_abs = ||A_i - origin|| + ΔL_measured`. Keep this contract in mind when consuming these structures in later substeps. Ellipse fitting is now performed inside the optimization loop per anchor guess; no pre-fit ellipses are stored.
+Remember the data-collection limitation: we only have encoder deltas, not anchor positions, during logging. Every length value we store (`fixed_lengths`, `l_drive`, `l_sensor`) is therefore relative to the length when the mover was at the origin after encoder zeroing. Any downstream code that needs absolute lengths must reconstruct them using the current anchor guess: `L_abs = ||A_i - origin|| + ΔL_measured`. Keep this contract in mind when consuming these structures in later substeps. Ellipse fitting is now performed inside the optimization loop per anchor guess; no pre-fit ellipses are stored. Preserve raw encoder angles alongside the derived lengths so future sag/flex/buildup models can re-interpret the exact same dataset.
 
 ## Implementation Details
 
@@ -56,6 +56,7 @@ class DataPoint:
     l_drive: float          # Drive cable length (mm). Not absolute length. Relative to length when at origin.
     l_sensor: float         # Sensor cable length (mm). Not absolute length. Relative to length when at origin.
     timestamp_ms: Optional[float] = None  # Relative timestamp
+    raw_angles_deg: Optional[List[float]] = None  # Raw encoder angles to preserve the un-modeled signal path
 
 @dataclass
 class SweepMetadata:
@@ -163,7 +164,11 @@ class FittedEllipse:
     sweep_id: str
     sweep_config: SweepConfigSnapshot  # Snapshot of fixed/drive/sense roles
     coefficients: EllipseCoefficients
+    center: Tuple[float, float]        # Canonical center (x0, y0)
+    semi_axes: Tuple[float, float]     # (a, b) with a >= b
+    orientation_rad: float             # θ wrapped to a stable interval (e.g. [-pi/2, pi/2])
     residual_rms: float         # Root mean square algebraic distance
+    residual_series: Optional[List[float]] = None  # Optional per-point residuals for observability/noise plots
     valid: bool                 # True if residual below threshold
     num_points: int             # Number of points used in fit
 
@@ -258,12 +263,17 @@ class SweepDataset:
     "DataPoint": {
       "type": "object",
       "required": ["l_drive", "l_sensor"],
-      "properties": {
-        "l_drive": {"type": "number"},
-        "l_sensor": {"type": "number"},
-        "timestamp_ms": {"type": "number"}
-      }
-    },
+        "properties": {
+          "l_drive": {"type": "number"},
+          "l_sensor": {"type": "number"},
+          "timestamp_ms": {"type": "number"},
+          "raw_angles_deg": {
+            "type": "array",
+            "items": {"type": "number"},
+            "description": "Raw encoder angles for every axis at this sample"
+          }
+        }
+      },
     "SweepMetadata": {
       "type": "object",
       "properties": {
@@ -291,27 +301,50 @@ class SweepDataset:
     },
     "FittedEllipse": {
       "type": "object",
-      "required": ["sweep_id", "sweep_config", "coefficients", "residual_rms", "valid"],
-      "properties": {
-        "sweep_id": {"type": "string"},
-        "sweep_config": {"$ref": "#/definitions/SweepConfigSnapshot"},
-        "coefficients": {
-          "type": "object",
+    "required": ["sweep_id", "sweep_config", "coefficients", "center", "semi_axes", "orientation_rad", "residual_rms", "valid"],
+    "properties": {
+      "sweep_id": {"type": "string"},
+      "sweep_config": {"$ref": "#/definitions/SweepConfigSnapshot"},
+      "coefficients": {
+        "type": "object",
           "properties": {
             "A": {"type": "number"},
             "B": {"type": "number"},
             "C": {"type": "number"},
-            "D": {"type": "number"},
-            "E": {"type": "number"},
-            "F": {"type": "number"}
-          }
+          "D": {"type": "number"},
+          "E": {"type": "number"},
+          "F": {"type": "number"}
+        }
+      },
+      "center": {
+        "type": "object",
+        "required": ["x", "y"],
+        "properties": {
+          "x": {"type": "number"},
+          "y": {"type": "number"}
+        }
+      },
+      "semi_axes": {
+        "type": "object",
+        "required": ["a", "b"],
+        "properties": {
+          "a": {"type": "number"},
+          "b": {"type": "number"}
         },
-        "residual_rms": {"type": "number"},
-        "valid": {"type": "boolean"},
-        "num_points": {"type": "integer"}
-      }
+        "description": "Canonical ordering a >= b enforced by fitter"
+      },
+      "orientation_rad": {"type": "number", "description": "θ wrapped into a stable interval (e.g. [-π/2, π/2])"},
+      "residual_rms": {"type": "number"},
+      "residual_series": {
+        "type": "array",
+        "items": {"type": "number"},
+        "description": "Optional per-point residuals for observability/noise plots"
+      },
+      "valid": {"type": "boolean"},
+      "num_points": {"type": "integer"}
     }
   }
+}
 }
 ```
 
@@ -340,7 +373,12 @@ def save_sweep_dataset(dataset: SweepDataset, path: Union[str, Path]) -> None:
                 "drive_anchor": s.drive_anchor,
                 "sensor_anchor": s.sensor_anchor,
                 "data_points": [
-                    {"l_drive": p.l_drive, "l_sensor": p.l_sensor, "timestamp_ms": p.timestamp_ms}
+                    {
+                        "l_drive": p.l_drive,
+                        "l_sensor": p.l_sensor,
+                        "timestamp_ms": p.timestamp_ms,
+                        "raw_angles_deg": p.raw_angles_deg,
+                    }
                     for p in s.data_points
                 ],
                 "metadata": {
@@ -369,7 +407,11 @@ def save_sweep_dataset(dataset: SweepDataset, path: Union[str, Path]) -> None:
                     "E": e.coefficients.E,
                     "F": e.coefficients.F,
                 },
+                "center": {"x": e.center[0], "y": e.center[1]},
+                "semi_axes": {"a": e.semi_axes[0], "b": e.semi_axes[1]},
+                "orientation_rad": e.orientation_rad,
                 "residual_rms": e.residual_rms,
+                "residual_series": e.residual_series,
                 "valid": e.valid,
                 "num_points": e.num_points,
             }
@@ -391,7 +433,12 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
     sweeps = []
     for s in data["sweeps"]:
         data_points = [
-            DataPoint(p["l_drive"], p["l_sensor"], p.get("timestamp_ms"))
+            DataPoint(
+                p["l_drive"],
+                p["l_sensor"],
+                p.get("timestamp_ms"),
+                p.get("raw_angles_deg"),
+            )
             for p in s["data_points"]
         ]
         metadata = SweepMetadata(**s.get("metadata", {}))
@@ -413,7 +460,11 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
             sweep_id=e["sweep_id"],
             sweep_config=SweepConfigSnapshot(**sweep_cfg_data),
             coefficients=coeffs,
+            center=(e["center"]["x"], e["center"]["y"]),
+            semi_axes=(e["semi_axes"]["a"], e["semi_axes"]["b"]),
+            orientation_rad=e["orientation_rad"],
             residual_rms=e["residual_rms"],
+            residual_series=e.get("residual_series"),
             valid=e["valid"],
             num_points=e.get("num_points", 0),
         ))
@@ -514,6 +565,12 @@ def select_representative_configs(
 
     return selected
 ```
+
+### 1.5 Observability Metadata
+
+To make sweep coverage and noise distribution visible during QC:
+- Keep `timestamp_ms` and (optionally) `raw_angles_deg` per point so we can reconstruct where on the arc the sampler lingered.
+- Downstream QC/visualization modules should compute density plots (e.g. point count per drive delta or per fitted φ bin) and residual-vs-φ charts using these preserved signals.
 
 ## Testing
 
@@ -622,6 +679,9 @@ def test_roundtrip_serialization(tmp_path):
                     sensor_anchor=2,
                 ),
                 coefficients=EllipseCoefficients(1.0, 0.1, 0.9, -50, -60, 500),
+                center=(0.0, 0.0),
+                semi_axes=(10.0, 8.0),
+                orientation_rad=0.0,
                 residual_rms=0.001,
                 valid=True,
                 num_points=20,
