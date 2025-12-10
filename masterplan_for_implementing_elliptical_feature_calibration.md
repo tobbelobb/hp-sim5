@@ -206,7 +206,7 @@ The implementation is divided into 7 substeps:
 
 1. **Sweep Data Structure & JSON Format** - Define the generalized data structures
 2. **Data Collector Script** - Modify `collect_encoder_data.mjs` or create `collect_sweep_data.mjs`
-3. **Ellipse Fitting Module** - Implement Enhanced method in Python
+3. **Ellipse Fitting Module** - Implement Maini & Eliseo Stefano method in Python
 4. **Theoretical Ellipse Projection** - Forward math to predict ellipses from anchor positions
 5. **Feature Cost Function** - Link observed and predicted ellipses
 6. **Visualization Module** - Debug plots for ellipse fitting and optimization

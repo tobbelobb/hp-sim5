@@ -67,7 +67,7 @@ class Sweep:
     """A single sweep measurement sequence."""
     id: str
     fixed_anchors: List[int]        # Indices of anchors held fixed
-    fixed_lengths: List[float]      # Lengths of fixed cables (mm)
+    fixed_lengths: List[float]      # Lengths of fixed cables (mm). Not absolute length. Relative to length when at origin.
     drive_anchor: int               # Index of actively driven anchor
     sensor_anchor: int              # Index of passively measured anchor
     data_points: List[DataPoint]
@@ -416,7 +416,7 @@ def select_representative_configs(
 
     Strategy:
     - Ensure each anchor appears as drive at least once
-    - Ensure each anchor appears as sensor at least once
+    - Ensure each anchor (TODO: except top "carrying" anchors) appears as sensor at least once
     - Distribute fixed anchor combinations evenly
     """
     if len(all_configs) <= max_sweeps:
@@ -432,6 +432,7 @@ def select_representative_configs(
         sensor = cfg["sensor_anchor"]
 
         if drive not in used_as_drive or sensor not in used_as_sensor:
+            # TODO: Never append carrying anchors as sensor
             selected.append(cfg)
             used_as_drive.add(drive)
             used_as_sensor.add(sensor)
@@ -474,7 +475,7 @@ def test_sweep_validation_valid():
     sweep = Sweep(
         id="test",
         fixed_anchors=[0],
-        fixed_lengths=[1000.0],
+        fixed_lengths=[10.0],
         drive_anchor=1,
         sensor_anchor=2,
         data_points=[DataPoint(i, i+100) for i in range(10)],
@@ -487,7 +488,7 @@ def test_sweep_validation_wrong_constraints():
     sweep = Sweep(
         id="test",
         fixed_anchors=[0, 1],  # Wrong: Slideprinter needs only 1 fixed
-        fixed_lengths=[1000.0, 1100.0],
+        fixed_lengths=[10.0, 11.0],
         drive_anchor=2,
         sensor_anchor=0,  # Duplicate!
         data_points=[DataPoint(i, i+100) for i in range(10)],
