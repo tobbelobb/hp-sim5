@@ -275,6 +275,17 @@ export function parseBridgeArgs(argv) {
     noHpSimReset: false,
     noSpawnRrfSimulator: false,
     speedup: null,
+    port: null,
+    machineType: null,
+    sweepRange: null,
+    sweepPoints: null,
+    maxSweeps: null,
+    torque: null,
+    debugSweep: false,
+    sweepConfigFile: null,
+    continuous: false,
+    sampleRate: null,
+    observabilityFile: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -282,6 +293,11 @@ export function parseBridgeArgs(argv) {
     if (arg === '--server' || arg === '--rrf') {
       args.server = argv[++i] || args.server;
       args.serverExplicit = true;
+    } else if (arg === '--port') {
+      const value = parseInt(argv[++i], 10);
+      if (Number.isFinite(value)) {
+        args.port = value;
+      }
     } else if (arg === '--ws-port') {
       const value = parseInt(argv[++i], 10);
       if (Number.isFinite(value) && value > 0) {
@@ -327,6 +343,26 @@ export function parseBridgeArgs(argv) {
       args.noSpawnRrfSimulator = true;
     } else if (arg === '--speedup') {
       args.speedup = argv[++i] || null;
+    } else if (arg === '--machineType' || arg === '--machine-type') {
+      args.machineType = argv[++i] || null;
+    } else if (arg === '--sweepRange') {
+      args.sweepRange = argv[++i] || null;
+    } else if (arg === '--sweepPoints') {
+      args.sweepPoints = argv[++i] || null;
+    } else if (arg === '--maxSweeps') {
+      args.maxSweeps = argv[++i] || null;
+    } else if (arg === '--torque') {
+      args.torque = argv[++i] || null;
+    } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
+      args.debugSweep = true;
+    } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
+      args.sweepConfigFile = argv[++i] || null;
+    } else if (arg === '--continuous') {
+      args.continuous = true;
+    } else if (arg === '--sample-rate' || arg === '--sampleRate') {
+      args.sampleRate = argv[++i] || null;
+    } else if (arg === '--observability-file' || arg === '--obs-file') {
+      args.observabilityFile = argv[++i] || null;
     }
   }
 
