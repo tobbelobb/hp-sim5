@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+import json
+from pathlib import Path
 
 from autocal.ellipse_fitting import (
     EllipseFitResult,
@@ -196,3 +198,87 @@ class TestBatchFitting:
         assert results[1]["sweep_id"] == "sweep_002"
         assert results[0]["sweep_config"]["drive_anchor"] == 1
         assert results[1]["sweep_config"]["fixed_anchors"] == [1]
+
+
+class TestRealDataFitting:
+    def _load_sweeps_abs(self) -> list[dict]:
+        """Load real sweep data and convert to absolute lengths."""
+        BASE_LENGTH = 1900.0
+        data_path = (
+            Path(__file__).resolve().parents[1]
+            / "data"
+            / "sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json"
+        )
+
+        with data_path.open() as f:
+            raw = json.load(f)
+
+        sweeps_abs: list[dict] = []
+        for sweep in raw["sweeps"]:
+            sweeps_abs.append(
+                {
+                    **sweep,
+                    "fixed_lengths": [
+                        fl + BASE_LENGTH for fl in sweep.get("fixed_lengths", [])
+                    ],
+                    "data_points": [
+                        {
+                            **p,
+                            "l_drive": p["l_drive"] + BASE_LENGTH,
+                            "l_sensor": p["l_sensor"] + BASE_LENGTH,
+                        }
+                        for p in sweep["data_points"]
+                    ],
+                }
+            )
+        return sweeps_abs
+
+    def test_slideprinter_training_data_fits_tightly(self):
+        """
+        Real sweep data should yield valid ellipse fits for *all* sweeps,
+        and all fits should have low residual RMS.
+        """
+        sweeps_abs = self._load_sweeps_abs()
+        MAX_RMS = 1.0
+
+        # Sanity: we expect at least some sweeps to exist
+        assert sweeps_abs, "No sweeps found in training data."
+
+        results = fit_all_sweeps(
+            sweeps_abs,
+            residual_threshold=250.0,
+            min_points=10,
+        )
+
+        # Sanity: we expect a 1:1 mapping between sweeps and results
+        assert len(results) == len(
+            sweeps_abs
+        ), f"Expected {len(sweeps_abs)} results, got {len(results)}."
+
+        # Debug-friendly breakdown
+        invalid = [i for i, r in enumerate(results) if not r["valid"]]
+        too_high_rms = [
+            (i, r["residual_rms"]) for i, r in enumerate(results) if r["residual_rms"] > MAX_RMS
+        ]
+
+        # 1) All fits valid
+        assert not invalid, (
+            f"{len(invalid)} / {len(results)} sweeps produced invalid fits. "
+            f"Invalid indices: {invalid}"
+        )
+
+        # 2) All RMS below threshold
+        assert not too_high_rms, (
+            f"{len(too_high_rms)} / {len(results)} sweeps exceed RMS threshold {MAX_RMS}. "
+            "Examples (index, rms): "
+            f"{too_high_rms[:5]}"
+        )
+
+        # Optional: extra sanity check for min & max RMS, useful in CI logs
+        rms_values = [r["residual_rms"] for r in results]
+        min_rms = min(rms_values)
+        max_rms = max(rms_values)
+        assert max_rms <= MAX_RMS, (
+            f"Maximum residual_rms {max_rms:.6f} exceeds threshold {MAX_RMS}, "
+            f"min_rms={min_rms:.6f}, n={len(rms_values)}"
+        )
