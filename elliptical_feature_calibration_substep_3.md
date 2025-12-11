@@ -184,6 +184,8 @@ def fit_ellipse_maini_stefano(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     return coeffs
 
 
+// This one is only included for comparison and tests.
+// A useful test could be: we should have the same fitting for maini and fitzgibbon most of the time
 def fit_ellipse_fitzgibbon(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Fit ellipse using Fitzgibbon's Least Squares method.
