@@ -13,6 +13,12 @@ The output JSON remains sweep-only; any ellipse fitting happens later inside the
 
 This script extends the existing `collect_encoder_data.mjs` with sweep-specific functionality.
 
+Here's an initial sketch of the new `collect_sweep_data.mjs` code.
+In particular the `performSweep` function does the `M569.3 P...` thing that `collect_encoder_data.mjs` already can do in a tested an verified way.
+The only difference is that `performSweep` generates the sweep positions instead of reading them from a file.
+However, the older `collect_encoder_data.mjs` logic has been tested, so we'd like to reuse that logic in a shared library file.
+Make sure to really study `collect_encoder_data.mjs` and share its logic where it makes sense, don't duplicate it.
+
 ```javascript
 #!/usr/bin/env node
 /**
@@ -415,6 +421,23 @@ function angleToLength(angleDeg, axisIdx, mmPerDeg) {
   return angleDeg * factor;
 }
 
+// Observe! This is pseudocode. Make it valid js when implementing
+function debug_sweep(sweeps):
+    for sweep in sweeps:
+        f = sweep["fixed"]
+        d = sweep["drive"]
+        s = sweep["sensor"]
+        stdout.write(
+            f"# Sweep: fix {f}, drive {d}, sensor {s}\n"
+        )
+        for row in sweep["rows"]:
+            pretty = ", ".join(
+                f"{x:>6}" if isinstance(x, (int, float)) else f"{x:>6}"
+                for x in row
+            )
+            stdout.write(f"[{pretty}]\n")
+        stdout.write("\n")  # blank line between sweeps
+
 async function runMoveWithWait(sendFn, gcode, speedup = 1) {
   const result = await sendFn(gcode);
   // Estimate move duration
@@ -456,6 +479,7 @@ Options:
   --settleMs        Settle time between points in ms (default: 200)
   --speedup         Simulation speedup factor (default: 1)
   --outputFile      Output JSON file path
+  --debugSweep      Print the generated sweep points to stdout for debugging
   --server          RRF server URL
   --port            RRF server port (default: 8081)
   --noWs            Disable WebSocket connection
@@ -589,34 +613,8 @@ testSelectRepresentative();
 ```
 
 ### Integration Tests
-
-```javascript
-// Mock RRF responses for testing
-const mockBridge = {
-  responses: {
-    'M666': 'R75.0:75.0:75.0 U2.0:2.0:2.0 O1.0:1.0:1.0 L20 H255',
-    'M569.3': '0.0 0.0 0.0',
-    'G92': 'ok',
-    'G91': 'ok',
-    'G1': 'ok',
-    'M569.4': 'ok',
-  },
-  sendGcodeLine: async (line) => {
-    for (const [cmd, reply] of Object.entries(mockBridge.responses)) {
-      if (line.startsWith(cmd)) {
-        return { reply };
-      }
-    }
-    return { reply: 'ok' };
-  },
-};
-
-async function testSweepDataCollection() {
-  // This would run against mockBridge
-  console.log('Integration test: sweep data collection');
-  // ... implementation
-}
-```
+There's no need to mock RRF responses since we have the `rrf_simulator` binary always available.
+See `collect_encoder_data.mjs` for how to start, query, and stop the `rrf_simulator`.
 
 ## Validation Criteria
 
@@ -638,7 +636,8 @@ async function testSweepDataCollection() {
 
 **Effort**: Medium (4-6 hours)
 
-The core sweep logic is straightforward, but edge cases around motor mode switching, error handling, and different machine configurations add complexity. Testing with actual hardware may reveal additional issues.
+The core sweep logic is straightforward, but edge cases around motor mode switching, error handling, and different machine configurations add complexity.
+The motor mode switching logic in `collect_encoder_data.mjs` is already tested and working though, so make sure to just extend that logic, don't reinvent it.
 
 ## Files to Create/Modify
 

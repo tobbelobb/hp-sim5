@@ -108,7 +108,7 @@ For an N-anchor system in D dimensions:
 
 In practice, we don't need all permutations. A well-distributed subset provides sufficient constraints.
 Pay special attention to which anchor/drives are drive/fixed/sense on Hangprinter configurations, because they only have one motor pulling upwards.
-We'll want at least one high anchor/drive to be either fixed or drive, in order to avoid the mover dropping down due
+We'll want at least one high anchor/drive to be either fixed or drive, in order to avoid the mover dropping down due to
 gravity potentially overwhelming the sensor's constant torque.
 - Capture enough metadata to visualize sweep observability: retain timestamps/drive progress so later QC plots can reveal which arc regions were sampled most densely and how noise/residuals vary along the path.
 
