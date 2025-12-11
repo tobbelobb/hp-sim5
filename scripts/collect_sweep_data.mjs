@@ -127,6 +127,17 @@ function buildSweepValues(rangeMm, points) {
   return Array.from({ length: count }, (_, idx) => -span + idx * step);
 }
 
+function buildDrivePositions(rangeMm, points) {
+  const count = Math.max(2, points);
+  const span = Math.max(0, rangeMm);
+  if (span < 1e-9) {
+    return Array.from({ length: count }, () => 0);
+  }
+  const start = -span;
+  const step = (2 * span) / (count - 1);
+  return Array.from({ length: count }, (_, idx) => start + idx * step);
+}
+
 function generateFixedLengthCombos(fixedCount, rangeMm, points) {
   if (!Number.isFinite(fixedCount) || fixedCount <= 0) {
     return [[]];
@@ -358,20 +369,24 @@ async function performSweep(sendFn, sweepConfig, options) {
     speedup,
     mmPerDeg,
     datasetStartMs,
-    driveStartMm = -sweepRangeMm,
+    drivePositions,
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
-  const stepSize = (2 * sweepRangeMm) / (sweepPoints - 1);
+  const path = Array.isArray(drivePositions) && drivePositions.length === sweepPoints
+    ? drivePositions
+    : buildDrivePositions(sweepRangeMm, sweepPoints);
   const settleDelayMs = Math.max(0, settleMs / (speedup > 0 ? speedup : 1));
   const dataPoints = [];
-
   await sleep(settleDelayMs);
 
   for (let i = 0; i < sweepPoints; i += 1) {
     if (i > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${stepSize} F${feed}`, speedup, { axes });
+      const delta = path[i] - path[i - 1];
+      if (Math.abs(delta) > 1e-9) {
+        // eslint-disable-next-line no-await-in-loop
+        await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta} F${feed}`, speedup, { axes });
+      }
       // eslint-disable-next-line no-await-in-loop
       await sleep(settleDelayMs);
     }
@@ -384,7 +399,7 @@ async function performSweep(sendFn, sweepConfig, options) {
       l_sensor: lengths[sensorAnchor],
       timestamp_ms: Date.now() - datasetStartMs,
       raw_angles_deg: anglesDeg,
-      drive_setpoint_mm: driveStartMm + i * stepSize,
+      drive_setpoint_mm: path[i],
     });
   }
 
@@ -400,6 +415,8 @@ async function performContinuousSweep(sendFn, sweepConfig, options) {
     sampleRateHz,
     mmPerDeg,
     datasetStartMs,
+    driveStartMm,
+    driveEndMm,
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
@@ -425,8 +442,11 @@ async function performContinuousSweep(sendFn, sweepConfig, options) {
   })();
 
   try {
-    await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${2 * sweepRangeMm} F${feed}`, 1, { axes });
-    await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${-2 * sweepRangeMm} F${feed}`, 1, { axes });
+    const leg = driveEndMm - driveStartMm;
+    if (Math.abs(leg) > 1e-9) {
+      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${leg} F${feed}`, 1, { axes });
+      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${-leg} F${feed}`, 1, { axes });
+    }
   } finally {
     collecting = false;
     try {
@@ -539,9 +559,10 @@ async function main() {
     console.error(`Motor ID count (${motorIds.length}) does not match axes count (${machineConfig.axes.length}) for ${machineType}`);
     process.exit(1);
   }
-  const sweepRangeMm = Number.isFinite(parseFloat(args.sweepRange))
+  const sweepRangeInput = Number.isFinite(parseFloat(args.sweepRange))
     ? parseFloat(args.sweepRange)
     : DEFAULT_SWEEP_RANGE_MM;
+  const sweepRangeMm = Math.abs(sweepRangeInput);
   const sweepPoints = Number.isFinite(parseInt(args.sweepPoints, 10))
     ? parseInt(args.sweepPoints, 10)
     : DEFAULT_SWEEP_POINTS;
@@ -651,11 +672,44 @@ async function main() {
   const sweeps = [];
   const datasetStartMs = Date.now();
   const currentPositions = Array.from({ length: motorIds.length }, () => 0);
-  const sweepPlans = sweepConfigs.map((cfg) => ({
-    config: cfg,
-    fixedCombos: generateFixedLengthCombos(cfg.fixedAnchors.length, superSweepRangeMm, superSweepPoints),
-  }));
-  const totalPlannedSweeps = sweepPlans.reduce((sum, plan) => sum + plan.fixedCombos.length, 0) || sweepConfigs.length;
+  const baseDrivePositions = buildDrivePositions(sweepRangeMm, sweepPoints);
+  const reverseDrivePositions = [...baseDrivePositions].reverse();
+  const sweepTasks = [];
+
+  for (const config of sweepConfigs) {
+    const combos = generateFixedLengthCombos(config.fixedAnchors.length, superSweepRangeMm, superSweepPoints);
+    for (let comboIdx = 0; comboIdx < combos.length; comboIdx += 1) {
+      sweepTasks.push({
+        config,
+        fixedTargets: combos[comboIdx] || [],
+        fixedComboIndex: comboIdx,
+        fixedComboCount: combos.length,
+      });
+    }
+  }
+
+  const plannedPositions = Array.from({ length: motorIds.length }, () => 0);
+  const plannedSweeps = sweepTasks.map((task) => {
+    const driveIdx = task.config.driveAnchor;
+    const currentDrivePos = plannedPositions[driveIdx] ?? 0;
+    const forwardDist = Math.abs(currentDrivePos - baseDrivePositions[0]);
+    const reverseDist = Math.abs(currentDrivePos - reverseDrivePositions[0]);
+    const useReverse = reverseDist + 1e-9 < forwardDist;
+    const drivePath = useReverse ? reverseDrivePositions : baseDrivePositions;
+    const driveStartPos = drivePath[0];
+    const driveEndPos = drivePath[drivePath.length - 1];
+    const directionLabel = useReverse ? 'decreasing' : 'increasing';
+    plannedPositions[driveIdx] = driveEndPos;
+    return {
+      ...task,
+      drivePath,
+      driveStartPos,
+      driveEndPos,
+      directionLabel,
+    };
+  });
+
+  const totalPlannedSweeps = plannedSweeps.length || sweepConfigs.length;
   let sweepOrdinal = 0;
 
   try {
@@ -674,79 +728,87 @@ async function main() {
     await send('M666 Q0');
     await send(`M569.3 P${motorIds.join(':')} S`);
 
-    for (const { config: sweepConfig, fixedCombos } of sweepPlans) {
-      for (let comboIdx = 0; comboIdx < fixedCombos.length; comboIdx += 1) {
-        const fixedTargets = fixedCombos[comboIdx] || [];
-        sweepOrdinal += 1;
-        const fixedDesc = fixedTargets.length > 0
-          ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
-          : '';
-        const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';
-        console.log(`\nSweep ${sweepOrdinal}/${totalPlannedSweeps}: fix [${sweepConfig.fixedAnchors.join(', ')}], drive ${sweepConfig.driveAnchor}, sensor ${sweepConfig.sensorAnchor}${fixedInfo}`);
+    for (const plan of plannedSweeps) {
+      const {
+        config: sweepConfig,
+        fixedTargets,
+        fixedComboIndex,
+        fixedComboCount,
+        drivePath,
+        driveStartPos,
+        driveEndPos,
+        directionLabel,
+      } = plan;
+      sweepOrdinal += 1;
+      const fixedDesc = fixedTargets.length > 0
+        ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
+        : '';
+      const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';
+      console.log(`\nSweep ${sweepOrdinal}/${totalPlannedSweeps}: fix [${sweepConfig.fixedAnchors.join(', ')}], drive ${sweepConfig.driveAnchor}, sensor ${sweepConfig.sensorAnchor}${fixedInfo}, drive order ${directionLabel}`);
 
-        const preparedPositions = await prepareSweepPositioning(send, sweepConfig, {
-          motorIds,
+      const preparedPositions = await prepareSweepPositioning(send, sweepConfig, {
+        motorIds,
+        axes: machineConfig.axes,
+        mmPerDeg,
+        torque,
+        driveStartPos,
+        fixedTargets,
+        feed,
+        speedup,
+        currentPositions,
+      });
+
+      const dataPoints = args.continuous
+        ? await performContinuousSweep(send, sweepConfig, {
           axes: machineConfig.axes,
-          mmPerDeg,
-          torque,
-          driveStartPos: -sweepRangeMm,
-          fixedTargets,
+          motorIds,
+          sweepRangeMm,
           feed,
+          sampleRateHz,
+          mmPerDeg,
+          datasetStartMs,
+          driveStartMm: driveStartPos,
+          driveEndMm: driveEndPos,
+        })
+        : await performSweep(send, sweepConfig, {
+          axes: machineConfig.axes,
+          motorIds,
+          sweepRangeMm,
+          sweepPoints,
+          feed,
+          settleMs,
           speedup,
-          currentPositions,
+          mmPerDeg,
+          datasetStartMs,
+          drivePositions: drivePath,
         });
 
-        const dataPoints = args.continuous
-          ? await performContinuousSweep(send, sweepConfig, {
-            axes: machineConfig.axes,
-            motorIds,
-            sweepRangeMm,
-            feed,
-            sampleRateHz,
-            mmPerDeg,
-            datasetStartMs,
-          })
-          : await performSweep(send, sweepConfig, {
-            axes: machineConfig.axes,
-            motorIds,
-            sweepRangeMm,
-            sweepPoints,
-            feed,
-            settleMs,
-            speedup,
-            mmPerDeg,
-            datasetStartMs,
-            driveStartMm: -sweepRangeMm,
-          });
+      const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
+        if (Number.isFinite(preparedPositions[idx])) {
+          return preparedPositions[idx];
+        }
+        return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
+      });
 
-        currentPositions[sweepConfig.driveAnchor] = sweepRangeMm;
-
-        const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
-          if (Number.isFinite(preparedPositions[idx])) {
-            return preparedPositions[idx];
-          }
-          return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
-        });
-
-        sweeps.push({
-          id: `sweep_${String(sweepOrdinal).padStart(3, '0')}`,
-          fixed_anchors: sweepConfig.fixedAnchors,
-          fixed_lengths: fixedLengths,
-          drive_anchor: sweepConfig.driveAnchor,
-          sensor_anchor: sweepConfig.sensorAnchor,
-          drive_range: { start: -sweepRangeMm, end: sweepRangeMm, unit: 'mm' },
-          data_points: dataPoints,
-          metadata: {
-            feed_rate: feed,
-            torque,
-            settle_ms: settleMs,
-            fixed_combo_index: comboIdx,
-            fixed_combo_count: fixedCombos.length,
-            sample_rate_hz: args.continuous ? sampleRateHz : undefined,
-          },
-        });
-        console.log(`  Collected ${dataPoints.length} points`);
-      }
+      sweeps.push({
+        id: `sweep_${String(sweepOrdinal).padStart(3, '0')}`,
+        fixed_anchors: sweepConfig.fixedAnchors,
+        fixed_lengths: fixedLengths,
+        drive_anchor: sweepConfig.driveAnchor,
+        sensor_anchor: sweepConfig.sensorAnchor,
+        drive_range: { start: -sweepRangeMm, end: sweepRangeMm, unit: 'mm' },
+        data_points: dataPoints,
+        metadata: {
+          feed_rate: feed,
+          torque,
+          settle_ms: settleMs,
+          fixed_combo_index: fixedComboIndex,
+          fixed_combo_count: fixedComboCount,
+          sample_rate_hz: args.continuous ? sampleRateHz : undefined,
+          drive_direction: directionLabel,
+        },
+      });
+      console.log(`  Collected ${dataPoints.length} points`);
     }
 
     const dataset = {
