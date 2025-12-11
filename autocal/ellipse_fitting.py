@@ -379,18 +379,21 @@ def fit_ellipse_from_sweep(
     l_sensor: np.ndarray,
     residual_threshold: float = 0.01,
     min_points: int = 10,
+    square_inputs: bool = True,
 ) -> EllipseFitResult:
     """
     Fit ellipse to sweep data (l_drive, l_sensor).
 
-    Squares the inputs and fits in (L², L²) space. Lengths should already be
-    reconstructed to absolute values for the current anchor guess.
+    By default squares the inputs and fits in (L², L²) space. Set
+    `square_inputs=False` to fit directly on the provided values (useful when
+    working with raw absolute lengths whose baselines are approximate).
 
     Parameters:
         l_drive: Drive cable lengths
         l_sensor: Sensor cable lengths
         residual_threshold: Maximum RMS residual for valid fit
         min_points: Minimum points required
+        square_inputs: Whether to square inputs before fitting
 
     Returns:
         EllipseFitResult with fit parameters and quality metrics
@@ -426,8 +429,12 @@ def fit_ellipse_from_sweep(
             rejection_reason=f"Insufficient points ({num_points} < {min_points})",
         )
 
-    x = l_drive**2
-    y = l_sensor**2
+    if square_inputs:
+        x = l_drive**2
+        y = l_sensor**2
+    else:
+        x = l_drive
+        y = l_sensor
 
     try:
         coeffs = fit_ellipse_maini_stefano(x, y)
@@ -441,7 +448,7 @@ def fit_ellipse_from_sweep(
             residual_max=np.inf,
             num_points=num_points,
             valid=False,
-            rejection_reason=f"Fitting failed: {exc}",
+        rejection_reason=f"Fitting failed: {exc}",
         )
 
     sampson_residuals = ellipse_sampson_residuals(coeffs, x, y)
@@ -475,7 +482,10 @@ def fit_ellipse_from_sweep(
 
 
 def fit_all_sweeps(
-    sweeps: Iterable[Union[Sweep, dict]], residual_threshold: float = 0.01, min_points: int = 10
+    sweeps: Iterable[Union[Sweep, dict]],
+    residual_threshold: float = 0.01,
+    min_points: int = 10,
+    square_inputs: bool = False,
 ) -> List[dict]:
     """
     Fit ellipses to all sweeps in a dataset.
@@ -485,6 +495,7 @@ def fit_all_sweeps(
                 to absolute values for the current anchor guess
         residual_threshold: Maximum RMS residual for valid fit
         min_points: Minimum number of points required per sweep
+        square_inputs: Whether to square lengths before fitting
 
     Returns:
         List of fitted ellipse dicts
@@ -509,13 +520,20 @@ def fit_all_sweeps(
                 "sensor_anchor": sweep.get("sensor_anchor"),
             }
 
-        result = fit_ellipse_from_sweep(l_drive, l_sensor, residual_threshold, min_points)
-
-        residual_series = (
-            ellipse_sampson_residuals(result.coefficients, l_drive**2, l_sensor**2)
-            if result.valid
-            else np.array([], dtype=float)
+        result = fit_ellipse_from_sweep(
+            l_drive,
+            l_sensor,
+            residual_threshold=residual_threshold,
+            min_points=min_points,
+            square_inputs=square_inputs,
         )
+
+        if result.valid:
+            x_resid = l_drive**2 if square_inputs else l_drive
+            y_resid = l_sensor**2 if square_inputs else l_sensor
+            residual_series = ellipse_sampson_residuals(result.coefficients, x_resid, y_resid)
+        else:
+            residual_series = np.array([], dtype=float)
 
         results.append(
             {
