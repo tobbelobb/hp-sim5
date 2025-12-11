@@ -99,17 +99,12 @@ def _plot_single_sweep(
     cbar = fig.colorbar(scatter, ax=ax_xy, shrink=0.8, pad=0.02)
     cbar.set_label("|normalized residual|")
 
-    # Raw length plane with per-point residual colors and optional histogram means
+    # Raw length plane with per-point residual colors
     ax_res.scatter(l_drive, l_sensor, c=colors, cmap="magma", s=40, edgecolor="k", linewidth=0.3)
     ax_res.plot(l_drive, l_sensor, color="gray", alpha=0.4, linestyle="--", linewidth=1)
-    if obs_bins:
-        for bin_entry in obs_bins:
-            mean_d = bin_entry.get("mean_drive", 0.0) + base_length
-            mean_s = bin_entry.get("mean_sensor", 0.0) + base_length
-            ax_res.scatter(mean_d, mean_s, marker="s", color="tab:blue", alpha=0.35, s=50)
     ax_res.set_xlabel("l_drive (mm, abs)")
     ax_res.set_ylabel("l_sensor (mm, abs)")
-    ax_res.set_title("Raw lengths (obs means in blue)")
+    ax_res.set_title("Raw lengths")
 
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
