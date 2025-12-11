@@ -280,6 +280,8 @@ export function parseBridgeArgs(argv) {
     sweepRange: null,
     sweepPoints: null,
     maxSweeps: null,
+    superSweepRange: null,
+    superSweepPoints: null,
     torque: null,
     debugSweep: false,
     sweepConfigFile: null,
@@ -351,6 +353,10 @@ export function parseBridgeArgs(argv) {
       args.sweepPoints = argv[++i] || null;
     } else if (arg === '--maxSweeps') {
       args.maxSweeps = argv[++i] || null;
+    } else if (arg === '--superSweepRange') {
+      args.superSweepRange = argv[++i] || null;
+    } else if (arg === '--superSweepPoints') {
+      args.superSweepPoints = argv[++i] || null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
