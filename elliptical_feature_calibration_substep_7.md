@@ -4,7 +4,7 @@
 
 Integrate the elliptical feature calibration system with the existing `simulation.py` calibration framework. This includes adapting the new modules to work alongside or replace the existing point-based calibration, providing a unified CLI, and ensuring backward compatibility.
 
-Keep the `sweep_config` snapshots that travel with each `FittedEllipse` when round-tripping files so the optimizer and visualizer always know which cables were fixed/drive/sense for each ellipse.
+Keep the `sweep_config` snapshots that travel with each `FittedEllipse` when round-tripping files so the optimizer and visualizer always know which cables were fixed/drive/sense for each ellipse. Residuals reported/thresholded in the integrated pipeline should use the fitter’s Sampson (approximate geometric) residuals, not algebraic error, to avoid “valid but obviously wrong” cases during fast/low-fidelity runs.
 Absolute cable lengths are still unknown at data-collection time, so the integration layer must rebuild them from anchor guesses during optimization (`L_abs = ||A_i - origin|| + ΔL_measured`) before feeding anything into the forward model or cost function; otherwise observed (relative) and predicted (absolute) ellipses will be misaligned. Keep the raw encoder angles alongside the derived lengths so future sag/flex/buildup models can reinterpret the same files without recollecting.
 Ellipse fitting now happens inside the optimizer on those reconstructed absolute lengths; drop any stored `fitted_ellipses` paths. Compare ellipses in the canonical geometry space `(x0, y0, a, b, θ)` (with `a >= b`, θ wrapped) rather than raw `(A..F)` coefficients.
 

@@ -7,6 +7,8 @@ Align the new ellipse-fitting pipeline with the existing point-based solver in `
 - Common geometric/physics routines live in shared modules instead of being duplicated across `simulation.py` and the new `elliptical_feature_autocal.py` (or similar).
 - Side-by-side runs produce comparable outputs (anchors, cost breakdowns, plots) to validate parity and guide migration.
 
+Ensure the ellipse side of the comparison reports Sampson (approximate geometric) residuals so “validity” and RMS figures align with the fitter used in Phase 2, and document that the point-based solver may use a different metric.
+
 ## Implementation Details
 
 ### 8.1 Shared Core Library

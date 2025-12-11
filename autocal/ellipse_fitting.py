@@ -299,6 +299,22 @@ def ellipse_algebraic_distance(coeffs: np.ndarray, x: np.ndarray, y: np.ndarray)
     return A * x**2 + B * x * y + C * y**2 + D * x + E * y + F
 
 
+def ellipse_sampson_residuals(coeffs: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """
+    Compute Sampson approximation of geometric distance for an ellipse.
+
+    This down-weights points where the implicit gradient is large, producing
+    a closer proxy to true point-to-ellipse distance than raw algebraic error.
+    """
+    A, B, C, D, E, F = coeffs
+    algebraic = ellipse_algebraic_distance(coeffs, x, y)
+    grad_x = 2 * A * x + B * y + D
+    grad_y = B * x + 2 * C * y + E
+    denom = np.sqrt(grad_x**2 + grad_y**2)
+    denom = np.where(denom < 1e-12, 1e-12, denom)
+    return algebraic / denom
+
+
 def ellipse_geometric_params(coeffs: np.ndarray) -> Tuple[Tuple[float, float], Tuple[float, float], float]:
     """
     Extract geometric parameters from algebraic coefficients.
@@ -428,16 +444,10 @@ def fit_ellipse_from_sweep(
             rejection_reason=f"Fitting failed: {exc}",
         )
 
-    algebraic_dist = ellipse_algebraic_distance(coeffs, x, y)
+    sampson_residuals = ellipse_sampson_residuals(coeffs, x, y)
 
-    scale = float(np.sqrt(np.mean(x**2 + y**2)))
-    if scale < 1e-10:
-        scale = 1.0
-
-    normalized_residuals = algebraic_dist / scale
-
-    residual_rms = float(np.sqrt(np.mean(normalized_residuals**2)))
-    residual_max = float(np.max(np.abs(normalized_residuals)))
+    residual_rms = float(np.sqrt(np.mean(sampson_residuals**2)))
+    residual_max = float(np.max(np.abs(sampson_residuals)))
 
     center, semi_axes, rotation = ellipse_geometric_params(coeffs)
 
@@ -502,7 +512,7 @@ def fit_all_sweeps(
         result = fit_ellipse_from_sweep(l_drive, l_sensor, residual_threshold, min_points)
 
         residual_series = (
-            ellipse_algebraic_distance(result.coefficients, l_drive**2, l_sensor**2)
+            ellipse_sampson_residuals(result.coefficients, l_drive**2, l_sensor**2)
             if result.valid
             else np.array([], dtype=float)
         )

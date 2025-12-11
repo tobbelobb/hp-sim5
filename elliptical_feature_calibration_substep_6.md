@@ -2,7 +2,7 @@
 
 ## Overview
 
-Create visualization tools for debugging and monitoring the calibration process. This includes plots of raw sweep data, fitted vs theoretical ellipses, cost function landscapes, anchor position convergence, and observability diagnostics that reveal where along the arc we sampled densely and how noise varies with arc position.
+Create visualization tools for debugging and monitoring the calibration process. This includes plots of raw sweep data, fitted vs theoretical ellipses, cost function landscapes, anchor position convergence, and observability diagnostics that reveal where along the arc we sampled densely and how noise varies with arc position. Display fit RMS/max using the same Sampson (approximate geometric) residuals used by the fitter so QC thresholds align with solver expectations.
 
 Raw plots visualize the encoder-relative lengths collected from origin; if you need to see absolute lengths, reconstruct them with the current anchor guess before plotting theoretical overlays so both curves share the same baseline.
 
