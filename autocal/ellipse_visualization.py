@@ -134,10 +134,88 @@ def _plot_ellipse_from_coeffs(
     )
 
 
+def _plot_theoretical_arc_near_data(
+    ax: "plt.Axes",
+    coeffs: np.ndarray,
+    x_obs: np.ndarray,
+    y_obs: np.ndarray,
+    color: str = "tab:red",
+    linestyle: str = "--",
+    linewidth: float = 2.0,
+    label: Optional[str] = None,
+    num_points: int = 300,
+    padding_rad: float = 0.15,
+) -> None:
+    """Plot only the arc of a theoretical ellipse closest to observed data.
+
+    This disambiguates short-arc sweeps where many ellipses can fit locally:
+    we find the parametric angles implied by the data in ellipse-aligned
+    coordinates, unwrap them, and render only that angular span.
+    """
+    center, semi_axes, theta = ellipse_geometric_params(coeffs)
+    a, b = semi_axes
+    if a <= 0 or b <= 0 or x_obs.size == 0:
+        _plot_ellipse_from_coeffs(
+            ax,
+            coeffs,
+            color=color,
+            linestyle=linestyle,
+            linewidth=linewidth,
+            label=label,
+            num_points=num_points,
+        )
+        return
+
+    cx, cy = center
+    cos_t = float(np.cos(theta))
+    sin_t = float(np.sin(theta))
+
+    # Transform observed points into ellipse-aligned coordinates.
+    dx = x_obs - cx
+    dy = y_obs - cy
+    x_rot = cos_t * dx + sin_t * dy
+    y_rot = -sin_t * dx + cos_t * dy
+
+    # Estimate param angles for each observed point.
+    phi = np.arctan2(y_rot / b, x_rot / a)
+    phi = np.unwrap(phi)
+
+    phi_min = float(np.min(phi) - padding_rad)
+    phi_max = float(np.max(phi) + padding_rad)
+    if not np.isfinite(phi_min) or not np.isfinite(phi_max):
+        _plot_ellipse_from_coeffs(
+            ax,
+            coeffs,
+            color=color,
+            linestyle=linestyle,
+            linewidth=linewidth,
+            label=label,
+            num_points=num_points,
+        )
+        return
+
+    t = np.linspace(phi_min, phi_max, num_points)
+    x_ell = a * np.cos(t)
+    y_ell = b * np.sin(t)
+
+    x_plot = cx + x_ell * cos_t - y_ell * sin_t
+    y_plot = cy + x_ell * sin_t + y_ell * cos_t
+
+    ax.plot(
+        x_plot,
+        y_plot,
+        color=color,
+        linestyle=linestyle,
+        linewidth=linewidth,
+        label=label,
+    )
+
+
 def plot_ellipse_fit(
     sweep: Union[Sweep, dict],
     fitted_ellipse: dict,
     theoretical_coeffs: Optional[np.ndarray] = None,
+    align_theory_to_data: bool = False,
     ax: Optional["plt.Axes"] = None,
 ) -> "plt.Axes":
     """Plot sweep data with fitted (and optionally theoretical) ellipse overlays."""
@@ -157,13 +235,25 @@ def plot_ellipse_fit(
     )
 
     if theoretical_coeffs is not None:
-        _plot_ellipse_from_coeffs(
-            ax,
-            np.asarray(theoretical_coeffs, dtype=float),
-            color="tab:red",
-            linestyle="--",
-            label="Theoretical ellipse",
-        )
+        theory_arr = np.asarray(theoretical_coeffs, dtype=float)
+        if align_theory_to_data:
+            _plot_theoretical_arc_near_data(
+                ax,
+                theory_arr,
+                x_obs=x,
+                y_obs=y,
+                color="tab:red",
+                linestyle="--",
+                label="Theoretical arc",
+            )
+        else:
+            _plot_ellipse_from_coeffs(
+                ax,
+                theory_arr,
+                color="tab:red",
+                linestyle="--",
+                label="Theoretical ellipse",
+            )
 
     rms = float(fitted_ellipse.get("residual_rms", float("nan")))
     rmax = float(fitted_ellipse.get("residual_max", float("nan")))

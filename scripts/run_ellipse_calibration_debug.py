@@ -234,7 +234,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 observed_ids.append(sid)
 
         fig_fit, ax_fit = __import__("matplotlib.pyplot").pyplot.subplots(figsize=(8, 6))
-        plot_ellipse_fit(sweep, fit, theoretical_coeffs=theory, ax=ax_fit)
+        plot_ellipse_fit(
+            sweep,
+            fit,
+            theoretical_coeffs=theory,
+            align_theory_to_data=True,
+            ax=ax_fit,
+        )
         fit_path = outdir / f"02_fit_{sid}.png"
         fig_fit.savefig(fit_path, dpi=150)
         fig_fit.clf()
@@ -386,4 +392,3 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
