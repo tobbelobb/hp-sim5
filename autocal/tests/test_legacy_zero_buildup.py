@@ -36,3 +36,30 @@ def test_motor_pos_samples_to_distances_zero_buildup_no_div0():
     gear = float(util.spool_gear_teeth) / float(util.motor_gear_teeth)
     scale = (2.0 * np.pi * spool_r) / (gear * mech_adv * 360.0)
     assert np.allclose(out, motor_deg * scale)
+
+
+def test_zero_buildup_matches_small_buildup_limit():
+    util = _load_legacy_util()
+    motor_deg = np.array([[10.0, 20.0, 30.0]], dtype=float)
+    spool_r = np.array([75.0, 75.0, 75.0], dtype=float)
+    mech_adv = np.array([2.0, 2.0, 2.0], dtype=float)
+    lines_per = np.ones(3)
+
+    out0 = util.motor_pos_samples_to_distances_relative_to_origin(
+        motor_deg,
+        spool_buildup_factor=0.0,
+        spool_r=spool_r,
+        mech_adv_=mech_adv,
+        lines_per_spool_=lines_per,
+    )
+    out_eps = util.motor_pos_samples_to_distances_relative_to_origin(
+        motor_deg,
+        spool_buildup_factor=1e-6,
+        spool_r=spool_r,
+        mech_adv_=mech_adv,
+        lines_per_spool_=lines_per,
+    )
+
+    denom = np.maximum(np.abs(out0), 1e-9)
+    rel_err = np.max(np.abs(out_eps - out0) / denom)
+    assert rel_err < 1e-3

@@ -244,6 +244,8 @@ def calibrate_point_based(
     tries: int = 4,
     maxiter: int = 500,
     use_parallel: bool = False,
+    ftol: float = 1e-9,
+    eps: Optional[float] = None,
 ) -> Dict[str, Any]:
     sim, _ = _load_legacy_simulation()
 
@@ -271,6 +273,8 @@ def calibrate_point_based(
         tries=int(tries),
         maxiter=int(maxiter),
         use_parallel=bool(use_parallel),
+        ftol=float(ftol),
+        eps=(None if eps is None else float(eps)),
     )
 
     params_anch = int(np.shape(motor_pos_samp)[1]) * 3
@@ -343,6 +347,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     point_parser.add_argument("--tries", type=int, default=4, help="Number of random restarts (default: 4).")
     point_parser.add_argument("--iterations", type=int, default=500, help="Max iterations per restart (default: 500).")
+    point_parser.add_argument("--ftol", type=float, default=1e-9, help="Optimizer ftol (default: 1e-9).")
+    point_parser.add_argument(
+        "--eps",
+        type=float,
+        default=None,
+        help="SLSQP finite-difference step (optional).",
+    )
     point_parser.add_argument(
         "--parallel",
         action="store_true",
@@ -395,6 +406,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             tries=int(args.tries),
             maxiter=int(args.iterations),
             use_parallel=bool(args.parallel),
+            ftol=float(args.ftol),
+            eps=args.eps,
         )
         print(json.dumps(result, indent=2))
         return 0
