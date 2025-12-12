@@ -288,6 +288,14 @@ export class RenderSystem {
     }
   }
 
+  clearPositionTracePoints() {
+    this.positionTracePoints = [];
+    this.drawnPositionTraceCount = 0;
+    if (this.positionTraceCtx) {
+      this.positionTraceCtx.clearRect(0, 0, this.positionTraceCanvas.width, this.positionTraceCanvas.height);
+    }
+  }
+
   clearPositionTraceMarkers() {
     this.positionTraceMarkers = [];
   }

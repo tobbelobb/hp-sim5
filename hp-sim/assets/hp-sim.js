@@ -170,7 +170,9 @@ function initHpSim() {
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
-  let lastPositionTraceRightClickMs = 0;
+  let positionTraceRightClickCount = 0;
+  let positionTraceFirstRightClickMs = 0;
+  let positionTraceDoubleClickTimer = null;
 
   if (qualityToggle) {
     qualityToggle.checked = false;
@@ -3974,13 +3976,46 @@ function initHpSim() {
       }
       event.preventDefault();
       const nowMs = performance.now();
-      if (nowMs - lastPositionTraceRightClickMs < 350) {
-        lastPositionTraceRightClickMs = 0;
+      if (positionTraceRightClickCount === 0 || nowMs - positionTraceFirstRightClickMs > 700) {
+        positionTraceRightClickCount = 0;
+        positionTraceFirstRightClickMs = nowMs;
+        if (positionTraceDoubleClickTimer) {
+          clearTimeout(positionTraceDoubleClickTimer);
+          positionTraceDoubleClickTimer = null;
+        }
+      }
+
+      positionTraceRightClickCount += 1;
+
+      if (positionTraceRightClickCount === 2) {
+        if (positionTraceDoubleClickTimer) {
+          clearTimeout(positionTraceDoubleClickTimer);
+        }
+        positionTraceDoubleClickTimer = window.setTimeout(() => {
+          if (positionTraceRightClickCount === 2) {
+            renderSystem.clearPositionTraceMarkers?.();
+            renderSystem.update?.(world, 0);
+          }
+          positionTraceRightClickCount = 0;
+          positionTraceFirstRightClickMs = 0;
+          positionTraceDoubleClickTimer = null;
+        }, 350);
+        return;
+      }
+
+      if (positionTraceRightClickCount === 3 && nowMs - positionTraceFirstRightClickMs <= 700) {
+        if (positionTraceDoubleClickTimer) {
+          clearTimeout(positionTraceDoubleClickTimer);
+          positionTraceDoubleClickTimer = null;
+        }
+        positionTraceRightClickCount = 0;
+        positionTraceFirstRightClickMs = 0;
+        renderSystem.clearPositionTracePoints?.();
         renderSystem.clearPositionTraceMarkers?.();
         renderSystem.update?.(world, 0);
         return;
       }
-      lastPositionTraceRightClickMs = nowMs;
+
       const rect = canvas.getBoundingClientRect();
       const px = event.clientX - rect.left;
       const py = event.clientY - rect.top;
