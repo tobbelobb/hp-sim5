@@ -842,9 +842,6 @@ async function main() {
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
   } finally {
-    if (!args.noWs) {
-      await sendHpSimPositionTraceMode(bridgeCtx, false, { quiet: args.quiet });
-    }
     if (rrfProcess && !args.persistRrfSimulator) {
       stopProcess(rrfProcess);
     }
