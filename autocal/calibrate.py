@@ -207,26 +207,68 @@ def calibrate_point_based(
     use_flex: bool = False,
     use_line_lengths: bool = True,
     verbose: bool = False,
+    input_path: Optional[Path] = None,
+    output_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     sim, _ = _load_legacy_simulation()
 
+    motor_pos_samp = sim.motor_pos_samp
+    xyz_of_samp = sim.xyz_of_samp
+    line_lengths_when_at_origin = sim.line_lengths_when_at_origin
+
+    if input_path is not None:
+        dataset = _load_json(input_path)
+        machine_type = str(dataset.get("machine_type", ""))
+        if machine_type not in ("hangprinter_5", ""):
+            raise ValueError(
+                "Legacy point-based solver currently supports only hangprinter_5 sweeps; "
+                f"got machine_type={machine_type!r}."
+            )
+
+        rows = []
+        for sweep in dataset.get("sweeps", []):
+            for p in sweep.get("data_points", []):
+                raw = p.get("raw_angles_deg")
+                if raw is None:
+                    continue
+                rows.append(raw)
+
+        if not rows:
+            raise ValueError("No raw encoder samples found (missing data_points[].raw_angles_deg).")
+
+        motor_pos_samp = np.asarray(rows, dtype=float)
+        if motor_pos_samp.ndim != 2 or motor_pos_samp.shape[1] != 5:
+            raise ValueError(
+                f"Expected raw_angles_deg with 5 entries per point (HP5); got shape {motor_pos_samp.shape}."
+            )
+
+        xyz_of_samp = np.zeros((0, 3), dtype=float)
+        use_line_lengths = False
+
     solution_vec = sim.solve(
-        sim.motor_pos_samp,
-        sim.xyz_of_samp,
-        sim.line_lengths_when_at_origin,
+        motor_pos_samp,
+        xyz_of_samp,
+        line_lengths_when_at_origin,
         bool(use_flex),
         bool(use_line_lengths),
         debug=bool(verbose),
     )
 
     anchors = sim.anchorsvec2matrix(solution_vec[0 : sim.params_anch])
-    return {
+    result = {
         "method": "point",
         "anchors": np.asarray(anchors, dtype=float).tolist(),
         "solution_vector": np.asarray(solution_vec, dtype=float).tolist(),
         "use_flex": bool(use_flex),
         "use_line_lengths": bool(use_line_lengths),
     }
+    if input_path is not None:
+        result["input_file"] = str(input_path)
+
+    if output_path is not None:
+        _write_json(output_path, result)
+
+    return result
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -236,7 +278,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser = subparsers.add_parser("ellipse", help="Elliptical feature calibration")
     ellipse_parser.add_argument("input", type=Path, help="Sweep data JSON file (deltas from origin)")
     ellipse_parser.add_argument("-o", "--output", type=Path, help="Output results JSON")
-    ellipse_parser.add_argument("-t", "--threshold", type=float, default=0.01, help="Sampson RMS threshold")
+    ellipse_parser.add_argument(
+        "-t",
+        "--threshold",
+        type=float,
+        default=None,
+        help="Sampson RMS threshold (default depends on machine_type)",
+    )
     ellipse_parser.add_argument("-r", "--restarts", type=int, default=8, help="Number of optimization restarts")
     ellipse_parser.add_argument("-i", "--iterations", type=int, default=1000, help="Max iterations per restart")
     ellipse_parser.add_argument(
@@ -253,6 +301,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
 
     point_parser = subparsers.add_parser("point", help="Legacy point-based calibration")
+    point_parser.add_argument(
+        "--input",
+        type=Path,
+        help="Optional sweep dataset JSON; requires data_points[].raw_angles_deg (HP5 only).",
+    )
+    point_parser.add_argument("-o", "--output", type=Path, help="Optional output JSON")
     point_parser.add_argument("--flex", action="store_true", help="Enable flex compensation (default off)")
     point_parser.add_argument(
         "--no-line-lengths",
@@ -264,10 +318,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "ellipse":
+        dataset = _load_json(args.input)
+        if args.threshold is None:
+            if str(dataset.get("machine_type", "")) == "slideprinter":
+                threshold = 250.0
+            else:
+                threshold = 0.01
+        else:
+            threshold = float(args.threshold)
+
         result = calibrate_elliptical(
             args.input,
             args.output,
-            residual_threshold=args.threshold,
+            residual_threshold=threshold,
             num_restarts=args.restarts,
             max_iterations=args.iterations,
             method=args.optimizer,
@@ -283,6 +346,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             use_flex=bool(args.flex),
             use_line_lengths=not bool(args.no_line_lengths),
             verbose=bool(args.verbose),
+            input_path=args.input,
+            output_path=args.output,
         )
         print(json.dumps(result, indent=2))
         return 0
