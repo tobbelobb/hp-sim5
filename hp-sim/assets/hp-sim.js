@@ -736,6 +736,7 @@ function initHpSim() {
     const renderSystem = world.getResource('renderSystem');
     const enabled = Boolean(renderSystem?.positionTraceEnabled);
     positionTraceBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    positionTraceBtn.classList.toggle('is-active', enabled);
   }
 
   function syncReferenceOverlayToRenderSystem({ force = false } = {}) {

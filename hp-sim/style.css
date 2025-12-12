@@ -199,7 +199,8 @@ body {
 }
 
 .sim-zoom-btn[aria-pressed="true"],
-.sim-zoom-btn.is-active {
+.sim-zoom-btn.is-active,
+#positionTraceBtn.is-active {
   background: rgba(255, 255, 255, 0.32);
   color: #151526;
 }
