@@ -284,6 +284,7 @@ export function parseBridgeArgs(argv) {
     superSweepPoints: null,
     torque: null,
     debugSweep: false,
+    trace: false,
     sweepConfigFile: null,
     continuous: false,
     sampleRate: null,
@@ -361,6 +362,8 @@ export function parseBridgeArgs(argv) {
       args.torque = argv[++i] || null;
     } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
       args.debugSweep = true;
+    } else if (arg === '--trace' || arg === '--trace-positions') {
+      args.trace = true;
     } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
       args.sweepConfigFile = argv[++i] || null;
     } else if (arg === '--continuous') {

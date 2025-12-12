@@ -66,6 +66,7 @@ Options:
   --sample-rate <Hz>         Sample rate for continuous mode (default: ${DEFAULT_SAMPLE_RATE_HZ})
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
+  --trace                    Tell hp-sim to plot a trace of its movements
   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
   --observability-file <path> Sidecar histogram JSON path (default: <output>.obs.json)
   --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
@@ -667,7 +668,9 @@ async function main() {
     if (speedup !== 1) {
       await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
     }
-    await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+    if (args.trace) {
+      await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+    }
   }
 
   let success = false;
