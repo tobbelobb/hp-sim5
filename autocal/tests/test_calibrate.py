@@ -1,6 +1,6 @@
 import numpy as np
 
-from autocal.calibrate import calibrate_elliptical, main
+from autocal.calibrate import _extract_motor_samples_from_sweep_dataset, calibrate_elliptical, main
 
 
 def _tiny_slideprinter_delta_dataset(tmp_path):
@@ -73,3 +73,29 @@ def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "M669" in out or "Anchors" in out
+
+
+def test_extract_motor_samples_from_sweep_dataset():
+    dataset = {
+        "version": "1.0",
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [
+            {
+                "id": "sweep_001",
+                "fixed_anchors": [0],
+                "fixed_lengths": [0.0],
+                "drive_anchor": 1,
+                "sensor_anchor": 2,
+                "data_points": [
+                    {"l_drive": 0.0, "l_sensor": 0.0, "raw_angles_deg": [0.0, 0.0, 0.0]},
+                    {"l_drive": 1.0, "l_sensor": 2.0, "raw_angles_deg": [10.0, 20.0, 30.0]},
+                    {"l_drive": 2.0, "l_sensor": 3.0, "raw_angles_deg": [20.0, 40.0, 60.0]},
+                ],
+            }
+        ],
+    }
+    motor_samp, dims = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=2)
+    assert dims == 2
+    assert motor_samp.shape == (2, 3)

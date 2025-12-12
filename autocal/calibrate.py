@@ -104,6 +104,36 @@ def _validate_sweep_roles(dataset: dict) -> None:
         raise ValueError("Invalid sweep dataset:\n" + "\n".join(errors))
 
 
+def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -> Tuple[np.ndarray, int]:
+    machine_type = str(dataset.get("machine_type", ""))
+    dimensions = 2 if machine_type == "slideprinter" else 3
+
+    rows = []
+    for sweep in dataset.get("sweeps", []):
+        for p in sweep.get("data_points", []):
+            raw = p.get("raw_angles_deg")
+            if raw is None:
+                continue
+            rows.append(raw)
+
+    if not rows:
+        raise ValueError("No raw encoder samples found (missing data_points[].raw_angles_deg).")
+
+    motor_pos_samp = np.asarray(rows, dtype=float)
+    if motor_pos_samp.ndim != 2:
+        raise ValueError(f"raw_angles_deg produced unexpected shape {motor_pos_samp.shape}.")
+
+    num_axes = int(motor_pos_samp.shape[1])
+    if num_axes < 3 or num_axes > 8:
+        raise ValueError(f"Legacy solver supports 3..8 axes; got {num_axes}.")
+
+    if max_samples and motor_pos_samp.shape[0] > max_samples:
+        idx = np.linspace(0, motor_pos_samp.shape[0] - 1, max_samples).astype(int)
+        motor_pos_samp = motor_pos_samp[idx]
+
+    return motor_pos_samp, dimensions
+
+
 def calibrate_elliptical(
     input_path: Path,
     output_path: Optional[Path] = None,
@@ -209,6 +239,11 @@ def calibrate_point_based(
     verbose: bool = False,
     input_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
+    max_samples: int = 800,
+    optimizer_method: str = "SLSQP",
+    tries: int = 4,
+    maxiter: int = 500,
+    use_parallel: bool = False,
 ) -> Dict[str, Any]:
     sim, _ = _load_legacy_simulation()
 
@@ -216,31 +251,10 @@ def calibrate_point_based(
     xyz_of_samp = sim.xyz_of_samp
     line_lengths_when_at_origin = sim.line_lengths_when_at_origin
 
+    dimensions = 3
     if input_path is not None:
         dataset = _load_json(input_path)
-        machine_type = str(dataset.get("machine_type", ""))
-        if machine_type not in ("hangprinter_5", ""):
-            raise ValueError(
-                "Legacy point-based solver currently supports only hangprinter_5 sweeps; "
-                f"got machine_type={machine_type!r}."
-            )
-
-        rows = []
-        for sweep in dataset.get("sweeps", []):
-            for p in sweep.get("data_points", []):
-                raw = p.get("raw_angles_deg")
-                if raw is None:
-                    continue
-                rows.append(raw)
-
-        if not rows:
-            raise ValueError("No raw encoder samples found (missing data_points[].raw_angles_deg).")
-
-        motor_pos_samp = np.asarray(rows, dtype=float)
-        if motor_pos_samp.ndim != 2 or motor_pos_samp.shape[1] != 5:
-            raise ValueError(
-                f"Expected raw_angles_deg with 5 entries per point (HP5); got shape {motor_pos_samp.shape}."
-            )
+        motor_pos_samp, dimensions = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=max_samples)
 
         xyz_of_samp = np.zeros((0, 3), dtype=float)
         use_line_lengths = False
@@ -252,9 +266,15 @@ def calibrate_point_based(
         bool(use_flex),
         bool(use_line_lengths),
         debug=bool(verbose),
+        dimensions=int(dimensions),
+        optimizer_method=str(optimizer_method),
+        tries=int(tries),
+        maxiter=int(maxiter),
+        use_parallel=bool(use_parallel),
     )
 
-    anchors = sim.anchorsvec2matrix(solution_vec[0 : sim.params_anch])
+    params_anch = int(np.shape(motor_pos_samp)[1]) * 3
+    anchors = sim.anchorsvec2matrix(solution_vec[0:params_anch])
     result = {
         "method": "point",
         "anchors": np.asarray(anchors, dtype=float).tolist(),
@@ -302,12 +322,33 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     point_parser = subparsers.add_parser("point", help="Legacy point-based calibration")
     point_parser.add_argument(
-        "--input",
+        "input_path",
+        nargs="?",
         type=Path,
-        help="Optional sweep dataset JSON; requires data_points[].raw_angles_deg (HP5 only).",
+        help="Optional sweep dataset JSON; uses data_points[].raw_angles_deg as motor samples.",
     )
+    point_parser.add_argument("--input", dest="input_path", type=Path, help="Same as positional input.")
     point_parser.add_argument("-o", "--output", type=Path, help="Optional output JSON")
     point_parser.add_argument("--flex", action="store_true", help="Enable flex compensation (default off)")
+    point_parser.add_argument(
+        "--optimizer",
+        default="SLSQP",
+        help="scipy.optimize.minimize method (default: SLSQP).",
+    )
+    point_parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=800,
+        help="Downsample raw encoder samples to this many rows (0 disables).",
+    )
+    point_parser.add_argument("--tries", type=int, default=4, help="Number of random restarts (default: 4).")
+    point_parser.add_argument("--iterations", type=int, default=500, help="Max iterations per restart (default: 500).")
+    point_parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Run restarts in parallel processes (can be slow to start).",
+    )
+    point_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     point_parser.add_argument(
         "--no-line-lengths",
         action="store_true",
@@ -342,12 +383,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     if args.command == "point":
+        verbose = bool(args.verbose or args.debug)
         result = calibrate_point_based(
             use_flex=bool(args.flex),
             use_line_lengths=not bool(args.no_line_lengths),
-            verbose=bool(args.verbose),
-            input_path=args.input,
+            verbose=verbose,
+            input_path=args.input_path,
             output_path=args.output,
+            max_samples=int(args.max_samples),
+            optimizer_method=str(args.optimizer),
+            tries=int(args.tries),
+            maxiter=int(args.iterations),
+            use_parallel=bool(args.parallel),
         )
         print(json.dumps(result, indent=2))
         return 0
