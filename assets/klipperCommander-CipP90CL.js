@@ -8,10 +8,11 @@ const STEP_PIN_AXIS_MAP = {
     'gpiochip1/gpio3': 'B',
     'gpiochip1/gpio6': 'C',
     'gpiochip1/gpio9': 'D',
+    // Lacking I, J, K, L, O
 };
 
-//const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E'];
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E'];
+//const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'O'];
+const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E']; // Observe: This only works for Slideprinter. Must change when we go 3d and use more complicated setups
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 200 steps/rev, 16 microsteps
 const MCU_CLOCK_HZ = 50_000_000;
 const EXTRUDER_MM_PER_STEP = 33.5 / (200 * 16);

@@ -163,8 +163,9 @@ class MoveCommander {
     async run(stream) {
         try {
             await this.connect();
-            const axesABC = ['A', 'B', 'C'];
-            const axesXYZ = ['X', 'Y', 'Z'];
+            // TODO: These two lists and their usage seem specialized for a Slideprinter (three anchor) setup?
+            const axesABC = ['A', 'B', 'C']; // The real set of Hangprinter axis names from ReprapFirmware: ABCDIJKLO
+            const axesXYZ = ['X', 'Y', 'Z']; // The real set of XYZ axis names from ReprapFirmware: XYZUVWABC
 
             const lineIterator = makeLineIterator(stream);
             for await (const line of lineIterator) {
