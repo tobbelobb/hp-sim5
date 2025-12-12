@@ -114,6 +114,7 @@ function initHpSim() {
   const resetBtn = document.getElementById('resetBtn');
   const pauseBtn = document.getElementById('pauseBtn');
   const finishAsapBtn = document.getElementById('finishAsapBtn');
+  const positionTraceBtn = document.getElementById('positionTraceBtn');
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const panModeBtn = document.getElementById('panModeBtn');
@@ -169,6 +170,7 @@ function initHpSim() {
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
+  let lastPositionTraceRightClickMs = 0;
 
   if (qualityToggle) {
     qualityToggle.checked = false;
@@ -725,6 +727,15 @@ function initHpSim() {
     });
   }
 
+  function updatePositionTraceToggleUI() {
+    if (!positionTraceBtn) {
+      return;
+    }
+    const renderSystem = world.getResource('renderSystem');
+    const enabled = Boolean(renderSystem?.positionTraceEnabled);
+    positionTraceBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+  }
+
   function syncReferenceOverlayToRenderSystem({ force = false } = {}) {
     const renderSystem = world.getResource('renderSystem');
     if (!renderSystem || typeof renderSystem.setReferencePaths !== 'function') {
@@ -1010,6 +1021,7 @@ function initHpSim() {
         renderSystem.setPositionTraceEnabled(Boolean(payload.enabled));
         renderSystem.update?.(world, 0);
       }
+      updatePositionTraceToggleUI();
       return;
     }
     const commands = [];
@@ -3961,6 +3973,14 @@ function initHpSim() {
         return;
       }
       event.preventDefault();
+      const nowMs = performance.now();
+      if (nowMs - lastPositionTraceRightClickMs < 350) {
+        lastPositionTraceRightClickMs = 0;
+        renderSystem.clearPositionTraceMarkers?.();
+        renderSystem.update?.(world, 0);
+        return;
+      }
+      lastPositionTraceRightClickMs = nowMs;
       const rect = canvas.getBoundingClientRect();
       const px = event.clientX - rect.left;
       const py = event.clientY - rect.top;
@@ -4102,6 +4122,20 @@ function initHpSim() {
     finishAsapBtn.addEventListener('click', (event) => {
       event.preventDefault();
       void triggerFinishAsap();
+    });
+  }
+
+  if (positionTraceBtn) {
+    positionTraceBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      const renderSystem = world.getResource('renderSystem');
+      if (!renderSystem || typeof renderSystem.setPositionTraceEnabled !== 'function') {
+        return;
+      }
+      const nextEnabled = !renderSystem.positionTraceEnabled;
+      renderSystem.setPositionTraceEnabled(nextEnabled);
+      renderSystem.update?.(world, 0);
+      updatePositionTraceToggleUI();
     });
   }
 

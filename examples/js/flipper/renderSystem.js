@@ -56,8 +56,10 @@ export class RenderSystem {
     this.positionTraceCanvas.height = this.canvas.height;
     this.positionTraceCtx = this.positionTraceCanvas.getContext('2d');
     this.positionTraceEnabled = false;
-    this.positionTraceRadiusPx = 2.5;
-    this.positionTraceColor = 'rgba(0,0,0,0.6)';
+    this.positionTraceRadiusPx = 1.25;
+    this.positionTraceColor = 'rgba(255,255,255,0.8)';
+    this.positionTracePoints = [];
+    this.drawnPositionTraceCount = 0;
     this.positionTraceMarkers = [];
 
     this.referenceCanvas = document.createElement('canvas');
@@ -280,9 +282,14 @@ export class RenderSystem {
     if (this.positionTraceCtx) {
       this.positionTraceCtx.clearRect(0, 0, this.positionTraceCanvas.width, this.positionTraceCanvas.height);
     }
+    this.drawnPositionTraceCount = 0;
     if (!keepMarkers) {
       this.positionTraceMarkers = [];
     }
+  }
+
+  clearPositionTraceMarkers() {
+    this.positionTraceMarkers = [];
   }
 
   setPositionTraceEnabled(enabled, options = {}) {
@@ -320,13 +327,13 @@ export class RenderSystem {
     ctx.save();
     ctx.lineWidth = 1;
 
-    ctx.strokeStyle = 'rgba(255,0,0,0.8)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
     ctx.beginPath();
     ctx.moveTo(this.cX(minX), this.cY(0));
     ctx.lineTo(this.cX(maxX), this.cY(0));
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(0,0,255,0.8)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
     ctx.beginPath();
     ctx.moveTo(this.cX(0), this.cY(minY));
     ctx.lineTo(this.cX(0), this.cY(maxY));
@@ -468,6 +475,40 @@ export class RenderSystem {
       }
     }
     this.extrusionCtx.restore();
+
+    // Backfill position trace dots for newly exposed strips.
+    if (this.positionTraceEnabled && this.positionTraceCtx && Array.isArray(this.positionTracePoints)) {
+      const nTrace = Math.min(this.drawnPositionTraceCount, this.positionTracePoints.length) | 0;
+      if (nTrace > 0) {
+        this.positionTraceCtx.save();
+        this.positionTraceCtx.beginPath();
+        for (let r = 0; r < rects.length; r++) {
+          const R = rects[r];
+          this.positionTraceCtx.rect(R.x, R.y, R.w, R.h);
+        }
+        this.positionTraceCtx.clip();
+        this.positionTraceCtx.fillStyle = this.positionTraceColor;
+        for (let i = 0; i < nTrace; i++) {
+          const pt = this.positionTracePoints[i];
+          if (!pt) continue;
+          const px = this.cX(pt[0]);
+          const py = this.cY(pt[1]);
+          if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+          for (let r = 0; r < rects.length; r++) {
+            const R = rects[r];
+            if (px + this.positionTraceRadiusPx < R.x || px - this.positionTraceRadiusPx > R.x + R.w
+              || py + this.positionTraceRadiusPx < R.y || py - this.positionTraceRadiusPx > R.y + R.h) {
+              continue;
+            }
+            this.positionTraceCtx.beginPath();
+            this.positionTraceCtx.arc(px, py, this.positionTraceRadiusPx, 0, 2 * Math.PI);
+            this.positionTraceCtx.fill();
+            break;
+          }
+        }
+        this.positionTraceCtx.restore();
+      }
+    }
   }
 
 
@@ -486,15 +527,23 @@ export class RenderSystem {
         const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
         const center = extruderComp?.centerPos;
         if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
-          const px = this.cX(center.x);
-          const py = this.cY(center.y);
-          if (Number.isFinite(px) && Number.isFinite(py) && this.positionTraceCtx) {
-            this.positionTraceCtx.fillStyle = this.positionTraceColor;
-            this.positionTraceCtx.beginPath();
-            this.positionTraceCtx.arc(px, py, this.positionTraceRadiusPx, 0, 2 * Math.PI);
-            this.positionTraceCtx.fill();
-          }
+          this.positionTracePoints.push([center.x, center.y]);
         }
+      }
+
+      if (this.positionTraceCtx && Array.isArray(this.positionTracePoints)) {
+        this.positionTraceCtx.fillStyle = this.positionTraceColor;
+        for (let i = this.drawnPositionTraceCount; i < this.positionTracePoints.length; i++) {
+          const pt = this.positionTracePoints[i];
+          if (!pt) continue;
+          const px = this.cX(pt[0]);
+          const py = this.cY(pt[1]);
+          if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+          this.positionTraceCtx.beginPath();
+          this.positionTraceCtx.arc(px, py, this.positionTraceRadiusPx, 0, 2 * Math.PI);
+          this.positionTraceCtx.fill();
+        }
+        this.drawnPositionTraceCount = this.positionTracePoints.length;
       }
 
       this._drawPositionTraceAxes();
