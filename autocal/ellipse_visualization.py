@@ -108,6 +108,7 @@ def _plot_ellipse_from_coeffs(
     linewidth: float = 2.0,
     label: Optional[str] = None,
     num_points: int = 300,
+    alpha: float = 1.0,
 ) -> None:
     center, semi_axes, theta = ellipse_geometric_params(coeffs)
     a, b = semi_axes
@@ -131,6 +132,7 @@ def _plot_ellipse_from_coeffs(
         linestyle=linestyle,
         linewidth=linewidth,
         label=label,
+        alpha=alpha,
     )
 
 
@@ -237,14 +239,26 @@ def plot_ellipse_fit(
     if theoretical_coeffs is not None:
         theory_arr = np.asarray(theoretical_coeffs, dtype=float)
         if align_theory_to_data:
+            # Show the full ellipse for global context, then highlight the local arc
+            # nearest the observed data for disambiguation.
+            _plot_ellipse_from_coeffs(
+                ax,
+                theory_arr,
+                color="tab:red",
+                linestyle="--",
+                linewidth=1.5,
+                alpha=0.35,
+                label="Theoretical ellipse",
+            )
             _plot_theoretical_arc_near_data(
                 ax,
                 theory_arr,
                 x_obs=x,
                 y_obs=y,
                 color="tab:red",
-                linestyle="--",
-                label="Theoretical arc",
+                linestyle="-",
+                linewidth=2.5,
+                label="Theoretical arc (nearest)",
             )
         else:
             _plot_ellipse_from_coeffs(

@@ -11,6 +11,9 @@ This script is meant to be a one-stop tool to:
 5) Generate a suite of plots (substep 6) plus a plot index with expectations.
 
 Outputs are written into --outdir (default: plots/ellipse_debug/<dataset_stem>).
+
+Run for example like this:
+python scripts/run_ellipse_calibration_debug.py autocal/data/sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json --anchors "0.0,-1900.0;1645.44826719,950.0;-1645.44826719,950.0" --threshold 250 --min-points 10
 """
 
 import argparse

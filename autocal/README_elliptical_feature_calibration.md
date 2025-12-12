@@ -321,3 +321,5 @@ create_calibration_report(dataset, solution, ellipse_fits=fits, output_path="plo
 - `plot_anchors_3d` automatically falls back to a 2D XY view if your local matplotlib lacks 3D support.
 - Keep raw datasets as deltas; only inflate to absolute lengths for *fit/plotting* outside the optimizer.
 
+## To Just Get a Lot of Plots:
+`python ../scripts/run_ellipse_calibration_debug.py data/sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json --anchors "0.0,-1900.0;1645.44826719,950.0;-1645.44826719,950.0" --threshold 250 --min-points 10`
