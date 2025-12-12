@@ -237,3 +237,14 @@ export async function sendHpSimSpeedScale(bridgeCtx, scale, { quiet = false } = 
   }
   await sleep(25);
 }
+
+export async function sendHpSimPositionTraceMode(bridgeCtx, enabled, { quiet = false } = {}) {
+  if (!bridgeCtx?.broadcast) {
+    return;
+  }
+  bridgeCtx.broadcast({ type: 'position_trace_mode', enabled: Boolean(enabled) });
+  if (!quiet) {
+    console.log(`Requested hp-sim position trace mode: ${enabled ? 'on' : 'off'}.`);
+  }
+  await sleep(25);
+}

@@ -12,6 +12,7 @@ import {
   runMoveWithWait,
   sendHpSimReset,
   sendHpSimSpeedScale,
+  sendHpSimPositionTraceMode,
   sleep,
   startRrfSimulator,
   stopProcess,
@@ -666,6 +667,7 @@ async function main() {
     if (speedup !== 1) {
       await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
     }
+    await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
   }
 
   let success = false;
@@ -840,6 +842,9 @@ async function main() {
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
   } finally {
+    if (!args.noWs) {
+      await sendHpSimPositionTraceMode(bridgeCtx, false, { quiet: args.quiet });
+    }
     if (rrfProcess && !args.persistRrfSimulator) {
       stopProcess(rrfProcess);
     }

@@ -1004,6 +1004,14 @@ function initHpSim() {
       }
       return;
     }
+    if (payload.type === 'position_trace_mode') {
+      const renderSystem = world.getResource('renderSystem');
+      if (renderSystem && typeof renderSystem.setPositionTraceEnabled === 'function') {
+        renderSystem.setPositionTraceEnabled(Boolean(payload.enabled));
+        renderSystem.update?.(world, 0);
+      }
+      return;
+    }
     const commands = [];
     if (payload.type === 'command' && payload.command) {
       commands.push(payload.command);
@@ -2796,6 +2804,9 @@ function initHpSim() {
     if (clearExtrusions && typeof renderSystem.clearExtrusions === 'function') {
       renderSystem.clearExtrusions();
     }
+    if (clearExtrusions && typeof renderSystem.clearPositionTrace === 'function') {
+      renderSystem.clearPositionTrace({ keepMarkers: true });
+    }
   }
 
   function updateZoomButtonState() {
@@ -2957,6 +2968,7 @@ function initHpSim() {
       } catch (_) {
         // Fallback safety: if shifting fails for any reason, clear to stay correct
         renderSystem.clearExtrusions?.();
+        renderSystem.clearPositionTrace?.({ keepMarkers: true });
       }
     } else {
       // Zoom changed or renderer missing: use safe path (clear and redraw as before)
@@ -3943,6 +3955,26 @@ function initHpSim() {
       }
     });
     canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+    canvas.addEventListener('contextmenu', (event) => {
+      const renderSystem = world.getResource('renderSystem');
+      if (!renderSystem || !renderSystem.positionTraceEnabled) {
+        return;
+      }
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const px = event.clientX - rect.left;
+      const py = event.clientY - rect.top;
+      const simX = renderSystem.simXFromCanvas(px);
+      const simY = renderSystem.simYFromCanvas(py);
+      if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
+        return;
+      }
+      const mmX = simX / GCODE_MM_TO_SIM_SCALE;
+      const mmY = simY / GCODE_MM_TO_SIM_SCALE;
+      const label = `(${mmX.toFixed(2)}, ${mmY.toFixed(2)})`;
+      renderSystem.addPositionTraceMarker?.(simX, simY, label);
+      renderSystem.update?.(world, 0);
+    });
   }
 
   if (secondaryControls) {

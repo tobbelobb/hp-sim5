@@ -51,6 +51,15 @@ export class RenderSystem {
     this.extrusionCtx = this.extrusionCanvas.getContext('2d');
     this.drawnExtrusionCount = 0;
 
+    this.positionTraceCanvas = document.createElement('canvas');
+    this.positionTraceCanvas.width = this.canvas.width;
+    this.positionTraceCanvas.height = this.canvas.height;
+    this.positionTraceCtx = this.positionTraceCanvas.getContext('2d');
+    this.positionTraceEnabled = false;
+    this.positionTraceRadiusPx = 2.5;
+    this.positionTraceColor = 'rgba(0,0,0,0.6)';
+    this.positionTraceMarkers = [];
+
     this.referenceCanvas = document.createElement('canvas');
     this.referenceCanvas.width = this.canvas.width;
     this.referenceCanvas.height = this.canvas.height;
@@ -78,6 +87,14 @@ export class RenderSystem {
     const scaledY = (simY - this.viewOffsetY_sim) * this.effectiveCScale;
     // Center the view vertically. We map simY=viewOffsetY_sim to canvas.height/2
     return this.canvas.height / 2.0 - scaledY;
+  }
+
+  simXFromCanvas(px) {
+    return (px - this.canvas.width / 2.0) / this.effectiveCScale + this.viewOffsetX_sim;
+  }
+
+  simYFromCanvas(py) {
+    return (this.canvas.height / 2.0 - py) / this.effectiveCScale + this.viewOffsetY_sim;
   }
 
   // Use effective scale for radius
@@ -259,6 +276,89 @@ export class RenderSystem {
     this.drawnExtrusionCount = 0;
   }
 
+  clearPositionTrace({ keepMarkers = true } = {}) {
+    if (this.positionTraceCtx) {
+      this.positionTraceCtx.clearRect(0, 0, this.positionTraceCanvas.width, this.positionTraceCanvas.height);
+    }
+    if (!keepMarkers) {
+      this.positionTraceMarkers = [];
+    }
+  }
+
+  setPositionTraceEnabled(enabled, options = {}) {
+    this.positionTraceEnabled = Boolean(enabled);
+    if (options && typeof options === 'object') {
+      if (typeof options.radiusPx === 'number' && isFinite(options.radiusPx) && options.radiusPx > 0) {
+        this.positionTraceRadiusPx = options.radiusPx;
+      }
+      if (typeof options.color === 'string' && options.color.length > 0) {
+        this.positionTraceColor = options.color;
+      }
+    }
+  }
+
+  addPositionTraceMarker(simX, simY, labelText) {
+    if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
+      return;
+    }
+    this.positionTraceMarkers.push({
+      x: simX,
+      y: simY,
+      text: typeof labelText === 'string' ? labelText : '',
+    });
+  }
+
+  _drawPositionTraceAxes() {
+    const ctx = this.c;
+    const widthSim = this.canvas.width / this.effectiveCScale;
+    const heightSim = this.canvas.height / this.effectiveCScale;
+    const minX = this.viewOffsetX_sim - widthSim / 2;
+    const maxX = this.viewOffsetX_sim + widthSim / 2;
+    const minY = this.viewOffsetY_sim - heightSim / 2;
+    const maxY = this.viewOffsetY_sim + heightSim / 2;
+
+    ctx.save();
+    ctx.lineWidth = 1;
+
+    ctx.strokeStyle = 'rgba(255,0,0,0.8)';
+    ctx.beginPath();
+    ctx.moveTo(this.cX(minX), this.cY(0));
+    ctx.lineTo(this.cX(maxX), this.cY(0));
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(0,0,255,0.8)';
+    ctx.beginPath();
+    ctx.moveTo(this.cX(0), this.cY(minY));
+    ctx.lineTo(this.cX(0), this.cY(maxY));
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  _drawPositionTraceMarkers() {
+    if (!Array.isArray(this.positionTraceMarkers) || this.positionTraceMarkers.length === 0) {
+      return;
+    }
+    const ctx = this.c;
+    ctx.save();
+    ctx.fillStyle = 'rgba(102, 204, 255, 0.9)';
+    ctx.font = '12px sans-serif';
+    ctx.textBaseline = 'top';
+    for (const marker of this.positionTraceMarkers) {
+      if (!marker) continue;
+      const px = this.cX(marker.x);
+      const py = this.cY(marker.y);
+      if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      if (marker.text) {
+        ctx.fillText(marker.text, px + 6, py + 4);
+      }
+    }
+    ctx.restore();
+  }
+
   // Shift already drawn extrusions when panning without redrawing everything.
   // deltaOffsetX_sim and deltaOffsetY_sim are in simulation units (change in view offsets).
   // Only use when zoom (scale) is unchanged.
@@ -290,6 +390,17 @@ export class RenderSystem {
     // Swap back into the extrusion canvas
     this.extrusionCtx.clearRect(0, 0, w, h);
     this.extrusionCtx.drawImage(tmp, 0, 0);
+
+    if (this.positionTraceCanvas && this.positionTraceCtx) {
+      const tmpTrace = document.createElement('canvas');
+      tmpTrace.width = w;
+      tmpTrace.height = h;
+      const tctx = tmpTrace.getContext('2d');
+      tctx.clearRect(0, 0, w, h);
+      tctx.drawImage(this.positionTraceCanvas, dxPx, dyPx);
+      this.positionTraceCtx.clearRect(0, 0, w, h);
+      this.positionTraceCtx.drawImage(tmpTrace, 0, 0);
+    }
 
     // Determine newly exposed regions (up to four edge strips)
     const rects = [];
@@ -368,6 +479,29 @@ export class RenderSystem {
     // effectiveCScale is also an instance property (this.effectiveCScale)
 
     this.c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    if (this.positionTraceEnabled) {
+      const extruderEntities = world.query([ExtruderComponent]);
+      if (extruderEntities.length > 0) {
+        const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+        const center = extruderComp?.centerPos;
+        if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
+          const px = this.cX(center.x);
+          const py = this.cY(center.y);
+          if (Number.isFinite(px) && Number.isFinite(py) && this.positionTraceCtx) {
+            this.positionTraceCtx.fillStyle = this.positionTraceColor;
+            this.positionTraceCtx.beginPath();
+            this.positionTraceCtx.arc(px, py, this.positionTraceRadiusPx, 0, 2 * Math.PI);
+            this.positionTraceCtx.fill();
+          }
+        }
+      }
+
+      this._drawPositionTraceAxes();
+      if (this.positionTraceCanvas) {
+        this.c.drawImage(this.positionTraceCanvas, 0, 0);
+      }
+    }
 
     // --- Query for Cable Link Obstacles ---
     this.cableLinkObstacles = [];
@@ -960,6 +1094,10 @@ export class RenderSystem {
           }
         }
       }
+    }
+
+    if (this.positionTraceEnabled) {
+      this._drawPositionTraceMarkers();
     }
 
     if (this.referenceDirty) {

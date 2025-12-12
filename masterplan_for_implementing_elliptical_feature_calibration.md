@@ -66,7 +66,7 @@ The general conic equation $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$ has 5 degrees o
 │  ┌──────────────┐ Lengths per Sweep    (per guess)              │
 │  │ A_0, A_1,... │ ┌──────────────────┐ ┌──────────────────┐     │
 │  │              │ │ L_abs = ||A|| +  │ │ ΔL→(L²)→coeffs   │     │
-│  │              │ │  ΔL_measured     │ │ (Maini/Stefano) │     │
+│  │              │ │  ΔL_measured     │ │ (Maini/Stefano)  │     │
 │  └──────────────┘ └──────────────────┘ └──────────────────┘     │
 │         │                        │                   │          │
 │         │                        ▼                   │          │
