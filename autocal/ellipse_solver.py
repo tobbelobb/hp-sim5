@@ -40,6 +40,7 @@ def solve_anchors(
     residual_threshold: float = 0.01,
     use_weights: bool = True,
     invalid_sweep_penalty: float = 1000.0,
+    cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
     """
@@ -93,6 +94,11 @@ def solve_anchors(
                 maxiter=max_iterations,
                 polish=True,
                 updating="deferred",
+                callback=(
+                    (lambda xk, convergence: cost_callback(np.asarray(xk, dtype=float), float(convergence)))
+                    if cost_callback
+                    else None
+                ),
             )
         else:
             result = minimize(
@@ -100,6 +106,7 @@ def solve_anchors(
                 x0_clipped,
                 method=method,
                 bounds=bounds,
+                callback=((lambda xk: cost_callback(np.asarray(xk, dtype=float), None)) if cost_callback else None),
                 options={"maxiter": max_iterations, "ftol": 1e-9, "disp": False},
             )
 
