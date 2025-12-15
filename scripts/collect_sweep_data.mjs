@@ -835,8 +835,27 @@ async function performTorqueRampSweep(sendFn, task, options) {
     }
   }
 
-  await sendFn(`M569.4 P${motorIds[anchorA]} T0.0`);
-  await sendFn(`M569.4 P${motorIds[anchorB]} T0.0`);
+  {
+    const lastPhase = phases[phases.length - 1];
+    const lastDriveAnchor = lastPhase.drive;
+    const lastSensorAnchor = lastPhase.sensor;
+    const axis = axes?.[lastDriveAnchor];
+    if (!axis) {
+      throw new Error('torque-ramp requires axes mapping for reposition step');
+    }
+
+    // Drop the last ramping motor back to low torque and move the last drive motor back to its sweep start position.
+    await sendFn(`M569.4 P${motorIds[lastSensorAnchor]} T${torqueLow}`);
+    await sendFn(`M569.4 P${motorIds[lastDriveAnchor]} T0.0`);
+    const lengthsAfter = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+    const current = lengthsAfter[lastDriveAnchor] ?? 0;
+    const target = sweepStartLengths[lastDriveAnchor] ?? 0;
+    const delta = target - current;
+    if (Math.abs(delta) > 1e-6) {
+      await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
+    }
+    await sendFn(`M569.4 P${motorIds[lastDriveAnchor]} T${torqueLow}`);
+  }
 
   return dataPoints;
 }
