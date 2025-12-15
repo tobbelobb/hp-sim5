@@ -260,6 +260,7 @@ export function parseBridgeArgs(argv) {
     command: null,
     help: false,
     noWs: false,
+    stepGcode: false,
     dx: null,
     dy: null,
     feed: null,
@@ -323,6 +324,8 @@ export function parseBridgeArgs(argv) {
       args.help = true;
     } else if (arg === '--no-ws') {
       args.noWs = true;
+    } else if (arg === '--step-gcode' || arg === '--step-gcodes' || arg === '--interactive-gcode') {
+      args.stepGcode = true;
     } else if (arg === '--dx') {
       args.dx = argv[++i] || null;
     } else if (arg === '--dy') {

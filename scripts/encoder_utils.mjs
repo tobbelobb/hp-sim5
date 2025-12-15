@@ -139,21 +139,22 @@ export function estimateMoveLengthMm(gcode, axes = null) {
 export async function runMoveWithWait(sendFn, gcode, speedup = 1, {
   defaultFeed = DEFAULT_FEED,
   axes = null,
+  delayFn = sleep,
 } = {}) {
   const result = await sendFn(gcode);
   const durationSeconds = motionDurationSeconds(result);
   const divisor = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
-    await sleep((durationSeconds * 1000) / divisor);
+    await delayFn((durationSeconds * 1000) / divisor);
     return;
   }
   const feedMatch = gcode.match(/\bF([0-9]+(?:\.[0-9]+)?)/i);
   const feed = feedMatch ? parseFloat(feedMatch[1]) : defaultFeed;
   const dist = estimateMoveLengthMm(gcode, axes);
   if (Number.isFinite(feed) && feed > 0 && Number.isFinite(dist)) {
-    await sleep((((dist / (feed / 60)) + 0.1) * 1000) / divisor);
+    await delayFn((((dist / (feed / 60)) + 0.1) * 1000) / divisor);
   } else {
-    await sleep(500 / divisor);
+    await delayFn(500 / divisor);
   }
 }
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
 import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
 import {
@@ -13,7 +14,7 @@ import {
   sendHpSimReset,
   sendHpSimSpeedScale,
   sendHpSimPositionTraceMode,
-  sleep,
+  sleep as baseSleep,
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
@@ -51,6 +52,47 @@ const DEFAULT_TORQUE_STEP = 0.01;
 const DEFAULT_RAMP_WAIT_MS = 1000;
 const DEFAULT_SWAP_WAIT_MS = 2000;
 const DATASET_VERSION = '2.0';
+
+const SOURCE_FILE_LABEL = 'scripts/collect_sweep_data.mjs';
+let stepGcodeMode = false;
+let pendingPreSendDelayMs = 0;
+let stepReadline = null;
+
+function getSourceLineFromStack(stack, { skipMatches = 1 } = {}) {
+  if (!stack) {
+    return null;
+  }
+  const matches = [...stack.matchAll(/collect_sweep_data\.mjs:(\d+):\d+/g)];
+  if (matches.length === 0) {
+    return null;
+  }
+  const idx = matches.length > skipMatches ? skipMatches : 0;
+  const line = parseInt(matches[idx][1], 10);
+  return Number.isFinite(line) ? line : null;
+}
+
+async function waitForEnter(message) {
+  if (!process.stdin.isTTY) {
+    console.log(message);
+    return;
+  }
+  if (!stepReadline) {
+    stepReadline = readline.createInterface({ input: process.stdin, output: process.stdout });
+  }
+  await new Promise((resolve) => stepReadline.question(message, resolve));
+}
+
+function sleep(ms) {
+  const delayMs = Number(ms);
+  if (!Number.isFinite(delayMs) || delayMs <= 0) {
+    return Promise.resolve();
+  }
+  if (stepGcodeMode) {
+    pendingPreSendDelayMs += delayMs;
+    return Promise.resolve();
+  }
+  return baseSleep(delayMs);
+}
 
 function printHelp() {
   console.log(`Usage: node scripts/collect_sweep_data.mjs [options]
@@ -93,6 +135,7 @@ Options:
   --debug                    Verbose logging (includes G-code replies)
   --debug-gcode              Echo sent G-code
   --debug-gcode-responses    Echo G-code responses
+  --step-gcode               Pause before each G-code; press Enter to send (prints source line + skipped waits)
 
 Examples:
   node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepRange 100 --sweepPoints 41 --output-file sweep.json
@@ -385,7 +428,7 @@ async function prepareTorqueRampPositioning(sendFn, task, options) {
   }
 
   if (moveParts.length > 0) {
-    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
+    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes, delayFn: sleep });
   }
   return currentPositions.slice();
 }
@@ -441,7 +484,7 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
   await sendFn(`M569.4 P${sensorMotorId} T${torque}`);
 
   if (moveParts.length > 0) {
-    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
+    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes, delayFn: sleep });
   }
 
   return currentPositions.slice();
@@ -542,7 +585,7 @@ async function performSweep(sendFn, sweepConfig, options) {
       const delta = path[i] - path[i - 1];
       if (Math.abs(delta) > 1e-9) {
         // eslint-disable-next-line no-await-in-loop
-        await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta} F${feed}`, speedup, { axes });
+        await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta} F${feed}`, speedup, { axes, delayFn: sleep });
       }
       // eslint-disable-next-line no-await-in-loop
       await sleep(settleDelayMs);
@@ -601,8 +644,8 @@ async function performContinuousSweep(sendFn, sweepConfig, options) {
   try {
     const leg = driveEndMm - driveStartMm;
     if (Math.abs(leg) > 1e-9) {
-      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${leg} F${feed}`, 1, { axes });
-      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${-leg} F${feed}`, 1, { axes });
+      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${leg} F${feed}`, 1, { axes, delayFn: sleep });
+      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${-leg} F${feed}`, 1, { axes, delayFn: sleep });
     }
   } finally {
     collecting = false;
@@ -644,6 +687,7 @@ async function performTorqueRampSweep(sendFn, task, options) {
   const rampWaitScaled = Math.max(0, rampWaitMs / waitScale);
   const swapWaitScaled = Math.max(0, swapWaitMs / waitScale);
   const rampTorques = buildTorqueRampValues(torqueMin, torqueMax, torqueStep);
+  const sweepStartLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
   const dataPoints = [];
   const phases = [
@@ -707,16 +751,17 @@ async function performTorqueRampSweep(sendFn, task, options) {
         throw new Error('torque-ramp requires axes mapping for reposition step');
       }
 
-      // Put the first ramping motor into position mode and move it back to its start position (0).
+      // Put the first ramping motor into position mode and move it back to its sweep start position.
       // eslint-disable-next-line no-await-in-loop
       await sendFn(`M569.4 P${motorIds[firstRampingAnchor]} T0.0`);
       // eslint-disable-next-line no-await-in-loop
       const lengthsAfter = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
       const current = lengthsAfter[firstRampingAnchor] ?? 0;
-      const delta = 0 - current;
+      const target = sweepStartLengths[firstRampingAnchor] ?? 0;
+      const delta = target - current;
       if (Math.abs(delta) > 1e-6) {
         // eslint-disable-next-line no-await-in-loop
-        await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes });
+        await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
       }
     }
   }
@@ -812,6 +857,7 @@ async function main() {
     printHelp();
     process.exit(0);
   }
+  stepGcodeMode = !!args.stepGcode;
   const machineType = (args.machineType || 'slideprinter').toLowerCase();
   const machineConfig = MACHINE_CONFIGS[machineType];
   if (!machineConfig) {
@@ -925,11 +971,22 @@ async function main() {
 
   const send = async (line, options = {}) => {
     const trimmed = line?.trim?.();
-    if (args.debugGcode && trimmed) {
+    if (args.stepGcode && trimmed) {
+      const normalPreWaitMs = pendingPreSendDelayMs;
+      pendingPreSendDelayMs = 0;
+      const sourceLine = getSourceLineFromStack(new Error().stack, { skipMatches: 1 });
+      const sourceLabel = sourceLine ? `${SOURCE_FILE_LABEL}:${sourceLine}` : SOURCE_FILE_LABEL;
+      await waitForEnter(
+        `Send: ${trimmed}\n  Enter to send (normal pre-wait ${Math.round(normalPreWaitMs)}ms; from ${sourceLabel}) `,
+      );
+    } else if (args.debugGcode && trimmed) {
       console.log(`[rrf_gcode] ${trimmed}`);
     }
     const res = await bridgeCtx.sendGcodeLine(line, options);
-    if ((args.debugGcodeResponses || args.debug) && res?.reply) {
+    if (args.stepGcode) {
+      const reply = res?.reply?.trim?.() || '';
+      console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');
+    } else if ((args.debugGcodeResponses || args.debug) && res?.reply) {
       const reply = res.reply.trim();
       if (reply.length > 0) {
         console.log(`[rrf_reply] ${reply}`);
@@ -1234,14 +1291,18 @@ async function main() {
     success = true;
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
-  } finally {
-    if (rrfProcess && !args.persistRrfSimulator) {
-      stopProcess(rrfProcess);
-    }
-    bridgeCtx.close();
-    process.exit(success ? 0 : 1);
-  }
-}
+	  } finally {
+	    if (rrfProcess && !args.persistRrfSimulator) {
+	      stopProcess(rrfProcess);
+	    }
+	    if (stepReadline) {
+	      stepReadline.close();
+	      stepReadline = null;
+	    }
+	    bridgeCtx.close();
+	    process.exit(success ? 0 : 1);
+	  }
+	}
 
 export {
   angleToLength,
