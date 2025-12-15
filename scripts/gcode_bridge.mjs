@@ -283,6 +283,13 @@ export function parseBridgeArgs(argv) {
     superSweepRange: null,
     superSweepPoints: null,
     torque: null,
+    sweepMethod: null,
+    torqueLow: null,
+    torqueMin: null,
+    torqueMax: null,
+    torqueStep: null,
+    rampWaitMs: null,
+    swapWaitMs: null,
     debugSweep: false,
     trace: false,
     sweepConfigFile: null,
@@ -360,6 +367,20 @@ export function parseBridgeArgs(argv) {
       args.superSweepPoints = argv[++i] || null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
+    } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
+      args.sweepMethod = argv[++i] || null;
+    } else if (arg === '--torque-low') {
+      args.torqueLow = argv[++i] || null;
+    } else if (arg === '--torque-min') {
+      args.torqueMin = argv[++i] || null;
+    } else if (arg === '--torque-max') {
+      args.torqueMax = argv[++i] || null;
+    } else if (arg === '--torque-step') {
+      args.torqueStep = argv[++i] || null;
+    } else if (arg === '--ramp-wait-ms') {
+      args.rampWaitMs = argv[++i] || null;
+    } else if (arg === '--swap-wait-ms') {
+      args.swapWaitMs = argv[++i] || null;
     } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
       args.debugSweep = true;
     } else if (arg === '--trace' || arg === '--trace-positions') {

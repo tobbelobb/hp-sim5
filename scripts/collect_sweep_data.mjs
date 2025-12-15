@@ -43,7 +43,14 @@ const DEFAULT_SETTLE_MS = 200;
 const DEFAULT_SAMPLE_RATE_HZ = 40;
 const DEFAULT_SUPER_SWEEP_RANGE_MM = 0;
 const DEFAULT_SUPER_SWEEP_POINTS = 1;
-const DATASET_VERSION = '1.0';
+const DEFAULT_SWEEP_METHOD = 'position';
+const DEFAULT_TORQUE_LOW = 0.01;
+const DEFAULT_TORQUE_MIN = 0.01;
+const DEFAULT_TORQUE_MAX = 0.1;
+const DEFAULT_TORQUE_STEP = 0.01;
+const DEFAULT_RAMP_WAIT_MS = 1000;
+const DEFAULT_SWAP_WAIT_MS = 2000;
+const DATASET_VERSION = '2.0';
 
 function printHelp() {
   console.log(`Usage: node scripts/collect_sweep_data.mjs [options]
@@ -64,6 +71,13 @@ Options:
   --speedup <scale>          hp-sim speed scale (default: 1)
   --continuous               Use continuous sweep mode (records at --sample-rate)
   --sample-rate <Hz>         Sample rate for continuous mode (default: ${DEFAULT_SAMPLE_RATE_HZ})
+  --sweep-method <name>      Sweep method: position | torque-ramp (default: ${DEFAULT_SWEEP_METHOD})
+  --torque-low <Nm>          torque-ramp: low/idle torque (default: ${DEFAULT_TORQUE_LOW})
+  --torque-min <Nm>          torque-ramp: start torque (default: ${DEFAULT_TORQUE_MIN})
+  --torque-max <Nm>          torque-ramp: end torque (default: ${DEFAULT_TORQUE_MAX})
+  --torque-step <Nm>         torque-ramp: torque increment (default: ${DEFAULT_TORQUE_STEP})
+  --ramp-wait-ms <ms>        torque-ramp: wait between torque steps (default: ${DEFAULT_RAMP_WAIT_MS})
+  --swap-wait-ms <ms>        torque-ramp: initial wait after role swap (default: ${DEFAULT_SWAP_WAIT_MS})
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements
@@ -229,10 +243,151 @@ function angleToLength(angleDeg, axisIdx, mmPerDeg) {
   return angleDeg * factor;
 }
 
+function parseSweepMethod(raw, fallback = DEFAULT_SWEEP_METHOD) {
+  const value = (raw || fallback || '').toString().trim().toLowerCase();
+  if (value === 'torque-ramp' || value === 'torqueramp' || value === 'torque_ramp') {
+    return 'torque-ramp';
+  }
+  if (value === 'position' || value === 'pos' || value === 'drive') {
+    return 'position';
+  }
+  return fallback;
+}
+
+function generateTorqueRampPairsFromConfigs(sweepConfigs) {
+  const grouped = new Map();
+  for (const cfg of sweepConfigs) {
+    const fixedKey = (cfg.fixedAnchors || []).join(',');
+    const pair = [cfg.driveAnchor, cfg.sensorAnchor].slice().sort((a, b) => a - b);
+    const pairKey = `${pair[0]},${pair[1]}`;
+    const key = `${fixedKey}|${pairKey}`;
+    const entry = grouped.get(key) || { fixedAnchors: cfg.fixedAnchors, pairAnchors: pair };
+    grouped.set(key, entry);
+  }
+  return Array.from(grouped.values());
+}
+
+function buildTorqueRampValues(minTorque, maxTorque, stepTorque) {
+  const minVal = Number.isFinite(minTorque) ? minTorque : DEFAULT_TORQUE_MIN;
+  const maxVal = Number.isFinite(maxTorque) ? maxTorque : DEFAULT_TORQUE_MAX;
+  const stepVal = Number.isFinite(stepTorque) ? stepTorque : DEFAULT_TORQUE_STEP;
+  if (stepVal <= 0) {
+    return [minVal];
+  }
+  const start = Math.min(minVal, maxVal);
+  const end = Math.max(minVal, maxVal);
+  const values = [];
+  for (let t = start; t <= end + 1e-12; t += stepVal) {
+    values.push(Math.round(t * 1e9) / 1e9);
+  }
+  if (values.length === 0) {
+    return [start];
+  }
+  const last = values[values.length - 1];
+  if (Math.abs(last - end) > 1e-9) {
+    values.push(end);
+  }
+  return values;
+}
+
+function getArrayValue(values, idx, fallback = 1) {
+  if (Array.isArray(values) && Number.isFinite(values[idx])) {
+    return values[idx];
+  }
+  if (Number.isFinite(values)) {
+    return values;
+  }
+  return fallback;
+}
+
+function computeAssumedLineTensionN(m666Values, axisIdx, motorTorqueNm) {
+  if (!Number.isFinite(motorTorqueNm)) {
+    return null;
+  }
+  const radiiMm = m666Values?.R;
+  const mechAdv = m666Values?.U;
+  const linesPerSpool = m666Values?.O;
+  const motorGear = m666Values?.L;
+  const spoolGear = m666Values?.H;
+
+  const rMm = getArrayValue(radiiMm, axisIdx, null);
+  if (!Number.isFinite(rMm) || Math.abs(rMm) < 1e-12) {
+    return null;
+  }
+  const rM = rMm / 1000.0;
+  const ma = Math.max(getArrayValue(mechAdv, axisIdx, 1), 1e-6);
+  const lines = Math.max(getArrayValue(linesPerSpool, axisIdx, 1), 1e-6);
+  const motorGearTeeth = Math.max(getArrayValue(motorGear, axisIdx, 1), 1e-6);
+  const spoolGearTeeth = Math.max(getArrayValue(spoolGear, axisIdx, 1), 1e-6);
+  const gearFactor = spoolGearTeeth / motorGearTeeth;
+  const tension = (motorTorqueNm * gearFactor * ma * lines) / rM;
+  return Number.isFinite(tension) ? tension : null;
+}
+
 async function getCurrentLengths(sendFn, motorIds, mmPerDeg) {
   const encoderReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
   const anglesDeg = parseEncoderReply(encoderReply?.reply);
   return anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+}
+
+async function prepareTorqueRampPositioning(sendFn, task, options) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    fixedTargets = [],
+    torqueLow = DEFAULT_TORQUE_LOW,
+    feed = DEFAULT_FEED,
+    speedup = 1,
+    currentPositions = [],
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return currentPositions.slice();
+  }
+  if (!Array.isArray(currentPositions) || currentPositions.length !== motorIds.length) {
+    throw new Error('currentPositions must match motorIds length');
+  }
+
+  await sendFn(`M569.4 P${motorIds.join(':')} T0.0`);
+  const measured = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  for (let idx = 0; idx < motorIds.length; idx += 1) {
+    currentPositions[idx] = Number.isFinite(measured[idx]) ? measured[idx] : 0;
+  }
+
+  const pairAnchors = task.pairAnchors || [];
+  if (pairAnchors.length === 2) {
+    const lowTorque = Number.isFinite(torqueLow) ? torqueLow : DEFAULT_TORQUE_LOW;
+    await sendFn(`M569.4 P${motorIds[pairAnchors[0]]} T${lowTorque}`);
+    await sendFn(`M569.4 P${motorIds[pairAnchors[1]]} T${lowTorque}`);
+  }
+
+  const moveParts = [];
+  const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
+
+  const fixedAnchors = task.fixedAnchors || [];
+  for (let i = 0; i < fixedAnchors.length; i += 1) {
+    const anchorIdx = fixedAnchors[i];
+    const target = Number.isFinite(fixedTargets[i]) ? fixedTargets[i] : 0;
+    const delta = target - (currentPositions[anchorIdx] ?? 0);
+    if (Math.abs(delta) > 1e-6) {
+      moveParts.push(formatDelta(axes[anchorIdx], delta));
+    }
+    currentPositions[anchorIdx] = target;
+  }
+
+  for (const anchorIdx of pairAnchors) {
+    const target = 0;
+    const delta = target - (currentPositions[anchorIdx] ?? 0);
+    if (Math.abs(delta) > 1e-6) {
+      moveParts.push(formatDelta(axes[anchorIdx], delta));
+    }
+    currentPositions[anchorIdx] = target;
+  }
+
+  if (moveParts.length > 0) {
+    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
+  }
+  return currentPositions.slice();
 }
 
 async function prepareSweepPositioning(sendFn, sweepConfig, options) {
@@ -461,6 +616,117 @@ async function performContinuousSweep(sendFn, sweepConfig, options) {
   return dataPoints;
 }
 
+async function performTorqueRampSweep(sendFn, task, options) {
+  const {
+    axes,
+    motorIds,
+    mmPerDeg,
+    datasetStartMs,
+    speedup,
+    fixedAnchors,
+    fixedLengths,
+    feed,
+    torqueLow,
+    torqueMin,
+    torqueMax,
+    torqueStep,
+    rampWaitMs,
+    swapWaitMs,
+    m666Values,
+  } = options;
+
+  const pairAnchors = task.pairAnchors || [];
+  if (pairAnchors.length !== 2) {
+    throw new Error('torque-ramp sweep requires exactly two free anchors');
+  }
+  const [anchorA, anchorB] = pairAnchors.slice().sort((a, b) => a - b);
+  const waitScale = speedup > 0 ? speedup : 1;
+  const rampWaitScaled = Math.max(0, rampWaitMs / waitScale);
+  const swapWaitScaled = Math.max(0, swapWaitMs / waitScale);
+  const rampTorques = buildTorqueRampValues(torqueMin, torqueMax, torqueStep);
+
+  const dataPoints = [];
+  const phases = [
+    { drive: anchorA, sensor: anchorB, phase: 'A_low_B_ramp', initialWaitMs: rampWaitScaled },
+    { drive: anchorB, sensor: anchorA, phase: 'B_low_A_ramp', initialWaitMs: swapWaitScaled },
+  ];
+
+  for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx += 1) {
+    const phase = phases[phaseIdx];
+    const driveMotorId = motorIds[phase.drive];
+    const sensorMotorId = motorIds[phase.sensor];
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T${torqueLow}`);
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${sensorMotorId} T${rampTorques[0]}`);
+    // eslint-disable-next-line no-await-in-loop
+    await sleep(phase.initialWaitMs);
+
+    for (let i = 0; i < rampTorques.length; i += 1) {
+      const sensorTorque = rampTorques[i];
+      if (i > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        await sendFn(`M569.4 P${sensorMotorId} T${sensorTorque}`);
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(rampWaitScaled);
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const encoderMid = await sendFn(`M569.3 P${motorIds.join(':')}`);
+      const anglesDeg = parseEncoderReply(encoderMid?.reply);
+      const lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+
+      const torqueByAnchor = new Map([
+        [phase.drive, torqueLow],
+        [phase.sensor, sensorTorque],
+      ]);
+      const torqueA = torqueByAnchor.get(anchorA) ?? 0;
+      const torqueB = torqueByAnchor.get(anchorB) ?? 0;
+
+      dataPoints.push({
+        l_drive: lengths[anchorA],
+        l_sensor: lengths[anchorB],
+        timestamp_ms: Date.now() - datasetStartMs,
+        raw_angles_deg: anglesDeg,
+        fixed_anchors: fixedAnchors,
+        fixed_lengths: fixedLengths,
+        torque_drive_nm: torqueA,
+        torque_sensor_nm: torqueB,
+        assumed_tension_drive_n: computeAssumedLineTensionN(m666Values, anchorA, torqueA),
+        assumed_tension_sensor_n: computeAssumedLineTensionN(m666Values, anchorB, torqueB),
+        phase: phase.phase,
+        torque_step_index: i,
+        torque_step_count: rampTorques.length,
+      });
+    }
+
+    if (phaseIdx === 0) {
+      const firstRampingAnchor = phase.sensor;
+      const axis = axes?.[firstRampingAnchor];
+      if (!axis) {
+        throw new Error('torque-ramp requires axes mapping for reposition step');
+      }
+
+      // Put the first ramping motor into position mode and move it back to its start position (0).
+      // eslint-disable-next-line no-await-in-loop
+      await sendFn(`M569.4 P${motorIds[firstRampingAnchor]} T0.0`);
+      // eslint-disable-next-line no-await-in-loop
+      const lengthsAfter = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+      const current = lengthsAfter[firstRampingAnchor] ?? 0;
+      const delta = 0 - current;
+      if (Math.abs(delta) > 1e-6) {
+        // eslint-disable-next-line no-await-in-loop
+        await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes });
+      }
+    }
+  }
+
+  await sendFn(`M569.4 P${motorIds[anchorA]} T0.0`);
+  await sendFn(`M569.4 P${motorIds[anchorB]} T0.0`);
+
+  return dataPoints;
+}
+
 function buildHistogram(dataPoints, bucketCount = 20) {
   if (!Array.isArray(dataPoints) || dataPoints.length === 0) {
     return [];
@@ -584,6 +850,13 @@ async function main() {
   const maxSweepCount = Math.max(1, maxSweeps);
   const feed = Number.isFinite(parseFloat(args.feed)) ? parseFloat(args.feed) : DEFAULT_FEED;
   const torque = Number.isFinite(parseFloat(args.torque)) ? parseFloat(args.torque) : DEFAULT_TORQUE;
+  const sweepMethod = parseSweepMethod(args.sweepMethod, DEFAULT_SWEEP_METHOD);
+  const torqueLow = Number.isFinite(parseFloat(args.torqueLow)) ? parseFloat(args.torqueLow) : DEFAULT_TORQUE_LOW;
+  const torqueMin = Number.isFinite(parseFloat(args.torqueMin)) ? parseFloat(args.torqueMin) : DEFAULT_TORQUE_MIN;
+  const torqueMax = Number.isFinite(parseFloat(args.torqueMax)) ? parseFloat(args.torqueMax) : DEFAULT_TORQUE_MAX;
+  const torqueStep = Number.isFinite(parseFloat(args.torqueStep)) ? parseFloat(args.torqueStep) : DEFAULT_TORQUE_STEP;
+  const rampWaitMs = Number.isFinite(parseFloat(args.rampWaitMs)) ? Math.max(0, parseFloat(args.rampWaitMs)) : DEFAULT_RAMP_WAIT_MS;
+  const swapWaitMs = Number.isFinite(parseFloat(args.swapWaitMs)) ? Math.max(0, parseFloat(args.swapWaitMs)) : DEFAULT_SWAP_WAIT_MS;
   const settleMs = Number.isFinite(parseFloat(args.settleMs))
     ? Math.max(0, parseFloat(args.settleMs))
     : DEFAULT_SETTLE_MS;
@@ -595,6 +868,11 @@ async function main() {
     : DEFAULT_SAMPLE_RATE_HZ;
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
   const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
+
+  if (sweepMethod === 'torque-ramp' && args.continuous) {
+    console.error('torque-ramp sweep method does not support --continuous');
+    process.exit(1);
+  }
 
   let sweepConfigs = null;
   if (args.sweepConfigFile) {
@@ -681,7 +959,11 @@ async function main() {
   const reverseDrivePositions = [...baseDrivePositions].reverse();
   const sweepTasks = [];
 
-  for (const config of sweepConfigs) {
+  const sweepGroups = sweepMethod === 'torque-ramp'
+    ? generateTorqueRampPairsFromConfigs(sweepConfigs)
+    : null;
+  const taskSources = sweepGroups ?? sweepConfigs;
+  for (const config of taskSources) {
     const combos = generateFixedLengthCombos(config.fixedAnchors.length, superSweepRangeMm, superSweepPoints);
     for (let comboIdx = 0; comboIdx < combos.length; comboIdx += 1) {
       sweepTasks.push({
@@ -695,6 +977,13 @@ async function main() {
 
   const plannedPositions = Array.from({ length: motorIds.length }, () => 0);
   const plannedSweeps = sweepTasks.map((task) => {
+    if (sweepMethod === 'torque-ramp') {
+      const pairAnchors = task.config.pairAnchors;
+      return {
+        ...task,
+        pairAnchors,
+      };
+    }
     const driveIdx = task.config.driveAnchor;
     const currentDrivePos = plannedPositions[driveIdx] ?? 0;
     const forwardDist = Math.abs(currentDrivePos - baseDrivePositions[0]);
@@ -747,16 +1036,96 @@ async function main() {
         fixedTargets,
         fixedComboIndex,
         fixedComboCount,
-        drivePath,
-        driveStartPos,
-        driveEndPos,
-        directionLabel,
       } = plan;
       sweepOrdinal += 1;
       const fixedDesc = fixedTargets.length > 0
         ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
         : '';
       const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';
+      if (sweepMethod === 'torque-ramp') {
+        const pairAnchors = plan.pairAnchors;
+        const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
+        if (pairAnchors.some((idx) => forbidden.has(idx))) {
+          console.warn(`Skipping sweep (torque-ramp needs torque-capable anchors): fix [${sweepConfig.fixedAnchors.join(', ')}], pair [${pairAnchors.join(', ')}]`);
+          continue;
+        }
+        const canonicalPair = pairAnchors.slice().sort((a, b) => a - b);
+        console.log(`\nSweep ${sweepOrdinal}/${totalPlannedSweeps}: fix [${sweepConfig.fixedAnchors.join(', ')}], pair [${canonicalPair.join(', ')}]${fixedInfo}, method torque-ramp`);
+
+        const preparedPositions = await prepareTorqueRampPositioning(send, {
+          fixedAnchors: sweepConfig.fixedAnchors,
+          pairAnchors: canonicalPair,
+        }, {
+          motorIds,
+          axes: machineConfig.axes,
+          mmPerDeg,
+          fixedTargets,
+          torqueLow,
+          feed,
+          speedup,
+          currentPositions,
+        });
+
+        const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
+          if (Number.isFinite(preparedPositions[idx])) {
+            return preparedPositions[idx];
+          }
+          return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
+        });
+
+        const dataPoints = await performTorqueRampSweep(send, {
+          pairAnchors: canonicalPair,
+        }, {
+          axes: machineConfig.axes,
+          motorIds,
+          mmPerDeg,
+          datasetStartMs,
+          speedup,
+          fixedAnchors: sweepConfig.fixedAnchors,
+          fixedLengths,
+          feed,
+          torqueLow,
+          torqueMin,
+          torqueMax,
+          torqueStep,
+          rampWaitMs,
+          swapWaitMs,
+          m666Values: m666After,
+        });
+
+        sweeps.push({
+          id: `sweep_${String(sweepOrdinal).padStart(3, '0')}`,
+          fixed_anchors: sweepConfig.fixedAnchors,
+          fixed_lengths: fixedLengths,
+          drive_anchor: canonicalPair[0],
+          sensor_anchor: canonicalPair[1],
+          drive_range: null,
+          data_points: dataPoints,
+          metadata: {
+            sweep_method: 'torque-ramp',
+            feed_rate: feed,
+            fixed_combo_index: fixedComboIndex,
+            fixed_combo_count: fixedComboCount,
+            torque_low_nm: torqueLow,
+            torque_min_nm: torqueMin,
+            torque_max_nm: torqueMax,
+            torque_step_nm: torqueStep,
+            ramp_wait_ms: rampWaitMs,
+            swap_wait_ms: swapWaitMs,
+            speedup,
+          },
+        });
+        console.log(`  Collected ${dataPoints.length} points`);
+        continue;
+      }
+
+      const {
+        drivePath,
+        driveStartPos,
+        driveEndPos,
+        directionLabel,
+      } = plan;
+
       console.log(`\nSweep ${sweepOrdinal}/${totalPlannedSweeps}: fix [${sweepConfig.fixedAnchors.join(', ')}], drive ${sweepConfig.driveAnchor}, sensor ${sweepConfig.sensorAnchor}${fixedInfo}, drive order ${directionLabel}`);
 
       const preparedPositions = await prepareSweepPositioning(send, sweepConfig, {
@@ -812,6 +1181,7 @@ async function main() {
         drive_range: { start: -sweepRangeMm, end: sweepRangeMm, unit: 'mm' },
         data_points: dataPoints,
         metadata: {
+          sweep_method: 'position',
           feed_rate: feed,
           torque,
           settle_ms: settleMs,
