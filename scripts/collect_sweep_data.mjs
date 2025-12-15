@@ -456,6 +456,54 @@ async function getCurrentLengths(sendFn, motorIds, mmPerDeg) {
   return anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
 }
 
+async function returnAllMotorsToEncoderOrigin(sendFn, options) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    feed = DEFAULT_FEED,
+    speedup = 1,
+    torqueHoldNm = 0.0,
+    forbiddenTorqueAnchors = [],
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return [];
+  }
+  if (!Array.isArray(axes) || axes.length !== motorIds.length) {
+    throw new Error('returnAllMotorsToEncoderOrigin requires full axes mapping');
+  }
+  const hold = Number.isFinite(torqueHoldNm) ? torqueHoldNm : 0.0;
+  const forbidden = new Set(forbiddenTorqueAnchors ?? []);
+
+  for (let anchorIdx = 0; anchorIdx < motorIds.length; anchorIdx += 1) {
+    if (forbidden.has(anchorIdx)) {
+      await sendFn(`M569.4 P${motorIds[anchorIdx]} T0.0`);
+    } else {
+      await sendFn(`M569.4 P${motorIds[anchorIdx]} T${hold}`);
+    }
+  }
+
+  for (let anchorIdx = 0; anchorIdx < motorIds.length; anchorIdx += 1) {
+    const axis = axes[anchorIdx];
+    if (!axis) {
+      throw new Error(`Missing axis mapping for anchor ${anchorIdx}`);
+    }
+
+    await sendFn(`M569.4 P${motorIds[anchorIdx]} T0.0`);
+    const lengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+    const current = lengths[anchorIdx] ?? 0;
+    const delta = -current;
+    if (Math.abs(delta) > 1e-6) {
+      await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
+    }
+    if (!forbidden.has(anchorIdx)) {
+      await sendFn(`M569.4 P${motorIds[anchorIdx]} T${hold}`);
+    }
+  }
+
+  return await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+}
+
 async function prepareTorqueRampPositioning(sendFn, task, options) {
   const {
     motorIds,
@@ -1124,10 +1172,14 @@ async function main() {
   const plannedSweeps = sweepTasks.map((task) => {
     if (sweepMethod === 'torque-ramp') {
       const pairAnchors = task.config.pairAnchors;
-      return {
+      const plan = {
         ...task,
         pairAnchors,
       };
+      if (task.fixedComboCount > 1 && task.fixedComboIndex === task.fixedComboCount - 1) {
+        plannedPositions.fill(0);
+      }
+      return plan;
     }
     const driveIdx = task.config.driveAnchor;
     const currentDrivePos = plannedPositions[driveIdx] ?? 0;
@@ -1139,13 +1191,17 @@ async function main() {
     const driveEndPos = drivePath[drivePath.length - 1];
     const directionLabel = useReverse ? 'decreasing' : 'increasing';
     plannedPositions[driveIdx] = driveEndPos;
-    return {
+    const plan = {
       ...task,
       drivePath,
       driveStartPos,
       driveEndPos,
       directionLabel,
     };
+    if (task.fixedComboCount > 1 && task.fixedComboIndex === task.fixedComboCount - 1) {
+      plannedPositions.fill(0);
+    }
+    return plan;
   });
 
   const totalPlannedSweeps = plannedSweeps.length || sweepConfigs.length;
@@ -1175,7 +1231,8 @@ async function main() {
     await send('G91'); // Use relative coordinates
     await send(`M569.3 P${motorIds.join(':')} S`); // Set encoder reference point
 
-    for (const plan of plannedSweeps) {
+    for (let planIdx = 0; planIdx < plannedSweeps.length; planIdx += 1) {
+      const plan = plannedSweeps[planIdx];
       const {
         config: sweepConfig,
         fixedTargets,
@@ -1261,6 +1318,18 @@ async function main() {
           },
         });
         console.log(`  Collected ${dataPoints.length} points`);
+        if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1 && planIdx < plannedSweeps.length - 1) {
+          await returnAllMotorsToEncoderOrigin(send, {
+            motorIds,
+            axes: machineConfig.axes,
+            mmPerDeg,
+            feed,
+            speedup,
+            torqueHoldNm: torqueLow,
+            forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+          });
+          currentPositions.fill(0);
+        }
         continue;
       }
 
@@ -1337,6 +1406,19 @@ async function main() {
         },
       });
       console.log(`  Collected ${dataPoints.length} points`);
+      if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1 && planIdx < plannedSweeps.length - 1) {
+        const holdTorque = Math.max(DEFAULT_TORQUE_LOW, Number.isFinite(torque) ? torque : DEFAULT_TORQUE);
+        await returnAllMotorsToEncoderOrigin(send, {
+          motorIds,
+          axes: machineConfig.axes,
+          mmPerDeg,
+          feed,
+          speedup,
+          torqueHoldNm: holdTorque,
+          forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+        });
+        currentPositions.fill(0);
+      }
     }
 
     const dataset = {
