@@ -14,7 +14,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from autocal.ellipse_fitting import ellipse_algebraic_distance, fit_ellipse_from_sweep
+from autocal.ellipse_fitting import EllipseFitResult, ellipse_algebraic_distance, fit_ellipse_from_sweep
+from autocal.flex import FlexModel
 
 
 def _load_obs(path: Optional[Path]) -> Dict[str, list]:
@@ -36,9 +37,22 @@ def _plot_single_sweep(
     base_length: float,
     residual_threshold: float,
     obs_bins: Optional[list],
+    flex_model: Optional[FlexModel],
     out_path: Path,
-) -> None:
+) -> "EllipseFitResult":
     l_drive, l_sensor = _inflate_lengths(sweep["data_points"], base_length)
+    if flex_model is not None:
+        drive_idx = int(sweep.get("drive_anchor", 0))
+        sensor_idx = int(sweep.get("sensor_anchor", 0))
+        t_drive = np.array(
+            [p.get("assumed_tension_drive_n", 0.0) for p in sweep.get("data_points", [])], dtype=float
+        )
+        t_sensor = np.array(
+            [p.get("assumed_tension_sensor_n", 0.0) for p in sweep.get("data_points", [])], dtype=float
+        )
+        if t_drive.shape == l_drive.shape and t_sensor.shape == l_sensor.shape:
+            l_drive = flex_model.corrected_distance_mm(l_drive, t_drive, axis=drive_idx)
+            l_sensor = flex_model.corrected_distance_mm(l_sensor, t_sensor, axis=sensor_idx)
     result = fit_ellipse_from_sweep(l_drive, l_sensor, residual_threshold=residual_threshold)
 
     x = l_drive**2
@@ -110,6 +124,7 @@ def _plot_single_sweep(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
+    return result
 
 
 def main() -> int:
@@ -134,6 +149,17 @@ def main() -> int:
         default=Path("plots") / "sweep_fits",
         help="Directory for output PNGs",
     )
+    parser.add_argument(
+        "--no-flex",
+        action="store_true",
+        help="Disable spring-based flex correction (auto-enabled if dataset includes config.m666 and tensions).",
+    )
+    parser.add_argument(
+        "--spring-k-multiplier",
+        type=float,
+        default=1.0,
+        help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
+    )
     args = parser.parse_args()
 
     with args.dataset.open("r", encoding="utf-8") as f:
@@ -141,16 +167,31 @@ def main() -> int:
 
     obs_by_id = _load_obs(args.obs)
 
+    flex_model: Optional[FlexModel] = None
+    if not args.no_flex:
+        m666 = (data.get("config") or {}).get("m666")
+        if isinstance(m666, dict):
+            num_axes = int(data.get("num_anchors", 0) or 0)
+            flex_model = FlexModel.from_m666(
+                m666,
+                num_axes=num_axes,
+                spring_k_multiplier=float(args.spring_k_multiplier),
+            )
+
     for sweep in data.get("sweeps", []):
         sid = sweep.get("id", "sweep")
         out_path = args.outdir / f"{sid}.png"
-        _plot_single_sweep(
+        result = _plot_single_sweep(
             sweep,
             base_length=args.base_length,
             residual_threshold=args.residual_threshold,
             obs_bins=obs_by_id.get(sid),
+            flex_model=flex_model,
             out_path=out_path,
         )
+        status = "VALID" if result.valid else "REJECTED"
+        reason = f" | {result.rejection_reason}" if result.rejection_reason else ""
+        print(f"{sid} {status} rms={result.residual_rms:.6g} max={result.residual_max:.6g}{reason}")
         print(f"Wrote {out_path}")
 
     return 0

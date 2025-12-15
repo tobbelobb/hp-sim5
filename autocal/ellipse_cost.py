@@ -8,6 +8,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
+from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
     anchors_vec_to_matrix,
@@ -111,6 +112,7 @@ class EllipseCostFunction:
         use_weights: bool = True,
         invalid_sweep_penalty: float = 1000.0,
         weight_floor: float = 1e-3,
+        spring_k_multiplier: float = 1.0,
     ) -> None:
         (
             self.machine_type,
@@ -125,6 +127,14 @@ class EllipseCostFunction:
         self.use_weights = use_weights
         self.invalid_penalty = invalid_sweep_penalty
         self.weight_floor = weight_floor
+        self.flex_model: Optional[FlexModel] = None
+        if isinstance(dataset, dict):
+            m666 = (dataset.get("config") or {}).get("m666")
+            self.flex_model = FlexModel.from_m666(
+                m666,
+                num_axes=self.num_anchors,
+                spring_k_multiplier=float(spring_k_multiplier),
+            )
 
     @staticmethod
     def _extract_sweep_arrays(
@@ -151,9 +161,26 @@ class EllipseCostFunction:
 
         return fixed_indices, fixed_deltas, drive_idx, sensor_idx, l_drive, l_sensor, sweep_id
 
+    @staticmethod
+    def _extract_tension_arrays(
+        sweep: Union[Sweep, dict]
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+        if isinstance(sweep, Sweep):
+            return None, None
+
+        data_points = sweep.get("data_points", [])
+        if not isinstance(data_points, list) or not data_points:
+            return None, None
+
+        t_drive = np.array([p.get("assumed_tension_drive_n", np.nan) for p in data_points], dtype=float)
+        t_sensor = np.array([p.get("assumed_tension_sensor_n", np.nan) for p in data_points], dtype=float)
+        if t_drive.ndim != 1 or t_sensor.ndim != 1:
+            return None, None
+        return t_drive, t_sensor
+
     def _reconstruct_lengths(
         self, sweep: Union[Sweep, dict], anchors: np.ndarray
-    ) -> Tuple[List[float], np.ndarray, np.ndarray, str]:
+    ) -> Tuple[List[float], int, int, np.ndarray, np.ndarray, str]:
         """Add anchor baselines to encoder deltas to get absolute lengths."""
         (
             fixed_indices,
@@ -171,7 +198,7 @@ class EllipseCostFunction:
         l_drive_abs = l_drive + np.linalg.norm(anchors[drive_idx])
         l_sensor_abs = l_sensor + np.linalg.norm(anchors[sensor_idx])
 
-        return fixed_lengths_abs, l_drive_abs, l_sensor_abs, sweep_id
+        return fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id
 
     def _fit_observed_geometry(
         self, sweep: Union[Sweep, dict], anchors: np.ndarray
@@ -182,7 +209,20 @@ class EllipseCostFunction:
         Returns:
             (canonical_geometry or None, weight, fixed_lengths_abs, sweep_id)
         """
-        fixed_lengths_abs, l_drive_abs, l_sensor_abs, sweep_id = self._reconstruct_lengths(sweep, anchors)
+        fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id = self._reconstruct_lengths(
+            sweep, anchors
+        )
+
+        if self.flex_model is not None:
+            t_drive, t_sensor = self._extract_tension_arrays(sweep)
+            if (
+                t_drive is not None
+                and t_sensor is not None
+                and t_drive.shape == l_drive_abs.shape
+                and t_sensor.shape == l_sensor_abs.shape
+            ):
+                l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
+                l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
 
         fit = fit_ellipse_from_sweep(
             l_drive_abs,
