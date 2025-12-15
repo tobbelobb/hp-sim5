@@ -490,11 +490,13 @@ async function returnAllMotorsToEncoderOrigin(sendFn, options) {
     }
 
     await sendFn(`M569.4 P${motorIds[anchorIdx]} T0.0`);
-    const lengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-    const current = lengths[anchorIdx] ?? 0;
+    const stableBefore = await waitForStableEncoders(sendFn, motorIds, { speedup });
+    const lengthsBefore = stableBefore.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+    const current = lengthsBefore[anchorIdx] ?? 0;
     const delta = -current;
     if (Math.abs(delta) > 1e-6) {
       await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
+      await waitForStableEncoders(sendFn, motorIds, { speedup });
     }
     if (!forbidden.has(anchorIdx)) {
       await sendFn(`M569.4 P${motorIds[anchorIdx]} T${hold}`);
@@ -1318,7 +1320,7 @@ async function main() {
           },
         });
         console.log(`  Collected ${dataPoints.length} points`);
-        if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1 && planIdx < plannedSweeps.length - 1) {
+        if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1) {
           await returnAllMotorsToEncoderOrigin(send, {
             motorIds,
             axes: machineConfig.axes,
@@ -1406,7 +1408,7 @@ async function main() {
         },
       });
       console.log(`  Collected ${dataPoints.length} points`);
-      if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1 && planIdx < plannedSweeps.length - 1) {
+      if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1) {
         const holdTorque = Math.max(DEFAULT_TORQUE_LOW, Number.isFinite(torque) ? torque : DEFAULT_TORQUE);
         await returnAllMotorsToEncoderOrigin(send, {
           motorIds,
