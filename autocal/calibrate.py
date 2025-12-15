@@ -134,6 +134,109 @@ def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -
     return motor_pos_samp, dimensions
 
 
+def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float]:
+    if value is None:
+        return [float(default)] * num_axes
+    if isinstance(value, (int, float)):
+        try:
+            v = float(value)
+        except Exception:
+            v = float(default)
+        return [v] * num_axes
+    if isinstance(value, (list, tuple)):
+        out: List[float] = []
+        for item in value[:num_axes]:
+            try:
+                out.append(float(item))
+            except Exception:
+                out.append(float(default))
+        if len(out) < num_axes:
+            out.extend([float(out[0] if out else default)] * (num_axes - len(out)))
+        return out
+    return [float(default)] * num_axes
+
+
+def _first_float(value: Any, default: float) -> float:
+    if isinstance(value, (list, tuple)) and value:
+        value = value[0]
+    try:
+        return float(value)
+    except Exception:
+        return float(default)
+
+
+def _extract_legacy_machine_config(dataset: dict, num_axes: int) -> Optional[Dict[str, Any]]:
+    cfg = dataset.get("config")
+    if not isinstance(cfg, dict):
+        return None
+    m666 = cfg.get("m666") or cfg.get("m666_after") or cfg.get("m666_before")
+    if not isinstance(m666, dict):
+        return None
+
+    spool_r = _expand_to_num_axes(m666.get("R"), num_axes, 75.0)
+    mech_adv = _expand_to_num_axes(m666.get("U"), num_axes, 1.0)
+    lines = _expand_to_num_axes(m666.get("O"), num_axes, 1.0)
+    motor_gear = _expand_to_num_axes(m666.get("L"), num_axes, 1.0)
+    spool_gear = _expand_to_num_axes(m666.get("H"), num_axes, 1.0)
+    guy_wires = _expand_to_num_axes(m666.get("Y"), num_axes, 0.0)
+    min_force_limit = _first_float(m666.get("I"), 0.0)
+    max_force_limit = _first_float(m666.get("X"), 120.0)
+
+    out: Dict[str, Any] = {
+        "spool_buildup_factor": _first_float(m666.get("Q"), 0.0),
+        "spool_r_in_origin": spool_r,
+        "spool_gear_teeth": spool_gear,
+        "motor_gear_teeth": motor_gear,
+        "mechanical_advantage": mech_adv,
+        "lines_per_spool": lines,
+        "guy_wire_lengths": guy_wires,
+        "min_force_limit": float(min_force_limit),
+        "max_force_limit": float(max_force_limit),
+    }
+    if "S" in m666:
+        out["spring_k_per_unit_length"] = _first_float(m666.get("S"), 0.0)
+    if "W" in m666:
+        out["mover_weight"] = _first_float(m666.get("W"), 0.0)
+    return out
+
+
+def _debug_print_legacy_config_comparison(sim: Any, dataset: dict, num_axes: int) -> None:
+    cfg = dataset.get("config")
+    if not isinstance(cfg, dict):
+        return
+    dataset_machine_cfg = _extract_legacy_machine_config(dataset, num_axes)
+    if dataset_machine_cfg is None:
+        return
+
+    try:
+        resolved_dataset = sim._resolve_machine_config(dataset_machine_cfg, num_axes)  # type: ignore[attr-defined]
+        resolved_defaults = sim._resolve_machine_config(None, num_axes)  # type: ignore[attr-defined]
+    except Exception as exc:
+        print(f"[config] Unable to resolve legacy machine config: {exc}", file=sys.stderr)
+        return
+
+    def _jsonify(obj: Any) -> Any:
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, (np.floating, np.integer)):
+            return obj.item()
+        if isinstance(obj, dict):
+            return {k: _jsonify(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [_jsonify(v) for v in obj]
+        return obj
+
+    payload = {
+        "dataset_config_keys": sorted(cfg.keys()),
+        "dataset_m666": cfg.get("m666"),
+        "dataset_mm_per_degree": cfg.get("mm_per_degree"),
+        "resolved_from_dataset": _jsonify(resolved_dataset),
+        "resolved_from_data_py_defaults": _jsonify(resolved_defaults),
+    }
+    print("[config] Legacy solver config comparison (dataset vs data.py defaults):", file=sys.stderr)
+    print(json.dumps(payload, indent=2, sort_keys=True), file=sys.stderr)
+
+
 def calibrate_elliptical(
     input_path: Path,
     output_path: Optional[Path] = None,
@@ -254,9 +357,13 @@ def calibrate_point_based(
     line_lengths_when_at_origin = sim.line_lengths_when_at_origin
 
     dimensions = 3
+    machine_config = None
     if input_path is not None:
         dataset = _load_json(input_path)
         motor_pos_samp, dimensions = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=max_samples)
+        machine_config = _extract_legacy_machine_config(dataset, int(motor_pos_samp.shape[1]))
+        if verbose and machine_config is not None:
+            _debug_print_legacy_config_comparison(sim, dataset, int(motor_pos_samp.shape[1]))
 
         xyz_of_samp = np.zeros((0, 3), dtype=float)
         use_line_lengths = False
@@ -275,6 +382,7 @@ def calibrate_point_based(
         use_parallel=bool(use_parallel),
         ftol=float(ftol),
         eps=(None if eps is None else float(eps)),
+        machine_config=machine_config,
     )
 
     params_anch = int(np.shape(motor_pos_samp)[1]) * 3

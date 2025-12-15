@@ -718,9 +718,18 @@ async function main() {
   let sweepOrdinal = 0;
 
   try {
-    const m666Reply = await send('M666');
-    const m666Values = parseM666(m666Reply?.reply);
-    const mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666Values, idx));
+    const m666BeforeReply = await send('M666');
+    const m666Before = parseM666(m666BeforeReply?.reply);
+    const m669Reply = await send('M669');
+    const m669Values = parseM666(m669Reply?.reply);
+    const m92Reply = await send('M92');
+    const m92Values = parseM666(m92Reply?.reply);
+
+    await send('M666 Q0'); // Set buildup factor to zero for data collection
+    const m666AfterReply = await send('M666');
+    const m666After = parseM666(m666AfterReply?.reply);
+
+    const mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666After, idx));
     const missingAxes = mmPerDeg
       .map((val, idx) => (Number.isFinite(val) ? null : machineConfig.axes[idx]))
       .filter(Boolean);
@@ -729,9 +738,8 @@ async function main() {
     }
 
     await send(buildG92Command(machineConfig.axes));
-    await send('G91');
-    await send('M666 Q0');
-    await send(`M569.3 P${motorIds.join(':')} S`);
+    await send('G91'); // Use relative coordinates
+    await send(`M569.3 P${motorIds.join(':')} S`); // Set encoder reference point
 
     for (const plan of plannedSweeps) {
       const {
@@ -822,6 +830,18 @@ async function main() {
       num_anchors: machineConfig.numAnchors,
       dimensions: machineConfig.dimensions,
       timestamp: new Date().toISOString(),
+      config: {
+        angles_unit: 'deg',
+        lengths_unit: 'mm',
+        m666: m666After,
+        m666_before: m666Before,
+        m669: m669Values,
+        m92: m92Values,
+        mm_per_degree: mmPerDeg,
+        notes: {
+          buildup_factor_forced: 0,
+        },
+      },
       sweeps,
     };
 
