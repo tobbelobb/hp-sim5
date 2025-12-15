@@ -51,6 +51,9 @@ const DEFAULT_TORQUE_MAX = 0.1;
 const DEFAULT_TORQUE_STEP = 0.01;
 const DEFAULT_RAMP_WAIT_MS = 1000;
 const DEFAULT_SWAP_WAIT_MS = 2000;
+const DEFAULT_STABILITY_POLL_MS = 500;
+const DEFAULT_STABILITY_WINDOW_MS = 2000;
+const DEFAULT_STABILITY_TOLERANCE_DEG = 1.0;
 const DATASET_VERSION = '2.0';
 
 const SOURCE_FILE_LABEL = 'scripts/collect_sweep_data.mjs';
@@ -94,6 +97,86 @@ function sleep(ms) {
   return baseSleep(delayMs);
 }
 
+async function waitForStableEncoders(sendFn, motorIds, options = {}) {
+  const {
+    speedup = 1,
+    pollIntervalMs = DEFAULT_STABILITY_POLL_MS,
+    stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
+    toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
+    timeoutMs = null,
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return { anglesDeg: [], samples: 0, elapsedMs: 0 };
+  }
+
+  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
+  const pollMs = Math.max(10, pollIntervalMs / timeScale);
+  const windowMs = Math.max(pollMs * 2, stableWindowMs / timeScale);
+  const tol = Math.max(0, Number.isFinite(toleranceDeg) ? toleranceDeg : DEFAULT_STABILITY_TOLERANCE_DEG);
+  const startMs = Date.now();
+  const samples = [];
+
+  const isStable = () => {
+    if (samples.length < 2) {
+      return false;
+    }
+    const windowSpan = samples[samples.length - 1].timestampMs - samples[0].timestampMs;
+    if (windowSpan < windowMs) {
+      return false;
+    }
+    for (let motorIdx = 0; motorIdx < motorIds.length; motorIdx += 1) {
+      let minVal = Number.POSITIVE_INFINITY;
+      let maxVal = Number.NEGATIVE_INFINITY;
+      for (let i = 0; i < samples.length; i += 1) {
+        const v = samples[i].anglesDeg[motorIdx];
+        if (!Number.isFinite(v)) {
+          return false;
+        }
+        minVal = Math.min(minVal, v);
+        maxVal = Math.max(maxVal, v);
+      }
+      if (maxVal - minVal > tol + 1e-9) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Poll until encoders have stayed within tolerance for the full stable window.
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    // eslint-disable-next-line no-await-in-loop
+    const encoderReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
+    const anglesDeg = parseEncoderReply(encoderReply?.reply);
+    const nowMs = Date.now();
+
+    if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
+      samples.push({ timestampMs: nowMs, anglesDeg });
+      const cutoff = nowMs - 2*windowMs;
+      while (samples.length > 0 && samples[0].timestampMs < cutoff) {
+        samples.shift();
+      }
+    } else {
+      samples.length = 0;
+    }
+
+    if (isStable()) {
+      return {
+        anglesDeg: samples[samples.length - 1].anglesDeg.slice(),
+        samples: samples.length,
+        elapsedMs: nowMs - startMs,
+      };
+    }
+
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0 && nowMs - startMs > timeoutMs) {
+      throw new Error(`Timed out waiting for encoder stability after ${Math.round(timeoutMs)}ms`);
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    await sleep(pollMs);
+  }
+}
+
 function printHelp() {
   console.log(`Usage: node scripts/collect_sweep_data.mjs [options]
 
@@ -109,7 +192,7 @@ Options:
   --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${DEFAULT_MAX_SWEEPS})
   --feed <mm/min>            Feed rate for drive moves (default: ${DEFAULT_FEED})
   --torque <Nm>              Torque for sensor motor (default: ${DEFAULT_TORQUE})
-  --settleMs <ms>            Settle time between points (default: ${DEFAULT_SETTLE_MS})
+  --settleMs <ms>            Deprecated (was fixed settle time; now waits for encoder stability)
   --speedup <scale>          hp-sim speed scale (default: 1)
   --continuous               Use continuous sweep mode (records at --sample-rate)
   --sample-rate <Hz>         Sample rate for continuous mode (default: ${DEFAULT_SAMPLE_RATE_HZ})
@@ -118,8 +201,8 @@ Options:
   --torque-min <Nm>          torque-ramp: start torque (default: ${DEFAULT_TORQUE_MIN})
   --torque-max <Nm>          torque-ramp: end torque (default: ${DEFAULT_TORQUE_MAX})
   --torque-step <Nm>         torque-ramp: torque increment (default: ${DEFAULT_TORQUE_STEP})
-  --ramp-wait-ms <ms>        torque-ramp: wait between torque steps (default: ${DEFAULT_RAMP_WAIT_MS})
-  --swap-wait-ms <ms>        torque-ramp: initial wait after role swap (default: ${DEFAULT_SWAP_WAIT_MS})
+  --ramp-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
+  --swap-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements
@@ -565,7 +648,6 @@ async function performSweep(sendFn, sweepConfig, options) {
     sweepRangeMm,
     sweepPoints,
     feed,
-    settleMs,
     speedup,
     mmPerDeg,
     datasetStartMs,
@@ -576,9 +658,7 @@ async function performSweep(sendFn, sweepConfig, options) {
   const path = Array.isArray(drivePositions) && drivePositions.length === sweepPoints
     ? drivePositions
     : buildDrivePositions(sweepRangeMm, sweepPoints);
-  const settleDelayMs = Math.max(0, settleMs / (speedup > 0 ? speedup : 1));
   const dataPoints = [];
-  await sleep(settleDelayMs);
 
   for (let i = 0; i < sweepPoints; i += 1) {
     if (i > 0) {
@@ -587,12 +667,10 @@ async function performSweep(sendFn, sweepConfig, options) {
         // eslint-disable-next-line no-await-in-loop
         await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta} F${feed}`, speedup, { axes, delayFn: sleep });
       }
-      // eslint-disable-next-line no-await-in-loop
-      await sleep(settleDelayMs);
     }
     // eslint-disable-next-line no-await-in-loop
-    const encoderMid = await sendFn(`M569.3 P${motorIds.join(':')}`);
-    const anglesDeg = parseEncoderReply(encoderMid?.reply);
+    const stable = await waitForStableEncoders(sendFn, motorIds, { speedup });
+    const anglesDeg = stable.anglesDeg;
     const lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     dataPoints.push({
       l_drive: lengths[driveAnchor],
@@ -673,8 +751,6 @@ async function performTorqueRampSweep(sendFn, task, options) {
     torqueMin,
     torqueMax,
     torqueStep,
-    rampWaitMs,
-    swapWaitMs,
     m666Values,
   } = options;
 
@@ -683,16 +759,13 @@ async function performTorqueRampSweep(sendFn, task, options) {
     throw new Error('torque-ramp sweep requires exactly two free anchors');
   }
   const [anchorA, anchorB] = pairAnchors.slice().sort((a, b) => a - b);
-  const waitScale = speedup > 0 ? speedup : 1;
-  const rampWaitScaled = Math.max(0, rampWaitMs / waitScale);
-  const swapWaitScaled = Math.max(0, swapWaitMs / waitScale);
   const rampTorques = buildTorqueRampValues(torqueMin, torqueMax, torqueStep);
   const sweepStartLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
   const dataPoints = [];
   const phases = [
-    { drive: anchorA, sensor: anchorB, phase: 'A_low_B_ramp', initialWaitMs: rampWaitScaled },
-    { drive: anchorB, sensor: anchorA, phase: 'B_low_A_ramp', initialWaitMs: swapWaitScaled },
+    { drive: anchorA, sensor: anchorB, phase: 'A_low_B_ramp' },
+    { drive: anchorB, sensor: anchorA, phase: 'B_low_A_ramp' },
   ];
 
   for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx += 1) {
@@ -703,21 +776,17 @@ async function performTorqueRampSweep(sendFn, task, options) {
     await sendFn(`M569.4 P${driveMotorId} T${torqueLow}`);
     // eslint-disable-next-line no-await-in-loop
     await sendFn(`M569.4 P${sensorMotorId} T${rampTorques[0]}`);
-    // eslint-disable-next-line no-await-in-loop
-    await sleep(phase.initialWaitMs);
 
     for (let i = 0; i < rampTorques.length; i += 1) {
       const sensorTorque = rampTorques[i];
       if (i > 0) {
         // eslint-disable-next-line no-await-in-loop
         await sendFn(`M569.4 P${sensorMotorId} T${sensorTorque}`);
-        // eslint-disable-next-line no-await-in-loop
-        await sleep(rampWaitScaled);
       }
 
       // eslint-disable-next-line no-await-in-loop
-      const encoderMid = await sendFn(`M569.3 P${motorIds.join(':')}`);
-      const anglesDeg = parseEncoderReply(encoderMid?.reply);
+      const stable = await waitForStableEncoders(sendFn, motorIds, { speedup });
+      const anglesDeg = stable.anglesDeg;
       const lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
 
       const torqueByAnchor = new Map([
