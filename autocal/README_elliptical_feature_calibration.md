@@ -323,3 +323,7 @@ create_calibration_report(dataset, solution, ellipse_fits=fits, output_path="plo
 
 ## To Just Get a Lot of Plots:
 `python ../scripts/run_ellipse_calibration_debug.py data/sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json --anchors "0.0,-1900.0;1645.44826719,950.0;-1645.44826719,950.0" --threshold 250 --min-points 10`
+
+
+## To do a reference optimization with the old point method, including flex:
+python autocal/calibrate.py point autocal/data/big_pattern.json --spring-k-multiplier 2.0 --debug
