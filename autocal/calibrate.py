@@ -302,6 +302,7 @@ def calibrate_elliptical(
     max_iterations: int = 1000,
     method: str = "SLSQP",
     spring_k_multiplier: float = 1.0,
+    use_flex: bool = False,
     verbose: bool = False,
     generate_report: bool = True,
     include_debug_fits: bool = True,
@@ -322,6 +323,7 @@ def calibrate_elliptical(
         num_restarts=num_restarts,
         residual_threshold=residual_threshold,
         spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
         verbose=verbose,
     )
 
@@ -349,6 +351,7 @@ def calibrate_elliptical(
         "cost": float(solution.get("cost", float("nan"))),
         "success": bool(solution.get("success", False)),
         "gcode": gcode,
+        "use_flex": bool(use_flex),
     }
 
     details = solution.get("details")
@@ -513,6 +516,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=1.0,
         help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
     )
+    ellipse_flex_group = ellipse_parser.add_mutually_exclusive_group()
+    ellipse_flex_group.add_argument(
+        "--flex",
+        dest="use_flex",
+        action="store_true",
+        help="Enable flex compensation (default: disabled).",
+    )
+    ellipse_flex_group.add_argument(
+        "--no-flex",
+        dest="use_flex",
+        action="store_false",
+        help="Disable flex compensation (default).",
+    )
+    ellipse_parser.set_defaults(use_flex=False)
 
     point_parser = subparsers.add_parser("point", help="Legacy point-based calibration")
     point_parser.add_argument(
@@ -526,14 +543,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     flex_group = point_parser.add_mutually_exclusive_group()
     flex_group.add_argument(
         "--flex",
+        dest="use_flex",
         action="store_true",
-        help="(Deprecated) Flex compensation is now enabled by default.",
+        help="Enable flex compensation (default: disabled).",
     )
     flex_group.add_argument(
         "--no-flex",
-        action="store_true",
-        help="Disable flex compensation (default: enabled).",
+        dest="use_flex",
+        action="store_false",
+        help="Disable flex compensation (default).",
     )
+    point_parser.set_defaults(use_flex=False)
     flex_mode_group = point_parser.add_mutually_exclusive_group()
     flex_mode_group.add_argument(
         "--per-sample-flex",
@@ -604,6 +624,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             max_iterations=args.iterations,
             method=args.optimizer,
             spring_k_multiplier=float(args.spring_k_multiplier),
+            use_flex=bool(args.use_flex),
             verbose=bool(args.verbose or args.debug),
             generate_report=not args.no_report,
             include_debug_fits=not args.no_debug_fits,
@@ -617,7 +638,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if bool(args.inverse_transform_planned_flex):
             flex_mode = "inverse_transform_planned"
         result = calibrate_point_based(
-            use_flex=not bool(args.no_flex),
+            use_flex=bool(args.use_flex),
             use_line_lengths=not bool(args.no_line_lengths),
             flex_mode=flex_mode,
             verbose=verbose,

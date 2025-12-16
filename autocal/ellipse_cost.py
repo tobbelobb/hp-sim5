@@ -113,6 +113,7 @@ class EllipseCostFunction:
         invalid_sweep_penalty: float = 1000.0,
         weight_floor: float = 1e-3,
         spring_k_multiplier: float = 1.0,
+        use_flex: bool = True,
     ) -> None:
         (
             self.machine_type,
@@ -128,7 +129,7 @@ class EllipseCostFunction:
         self.invalid_penalty = invalid_sweep_penalty
         self.weight_floor = weight_floor
         self.flex_model: Optional[FlexModel] = None
-        if isinstance(dataset, dict):
+        if bool(use_flex) and isinstance(dataset, dict):
             m666 = (dataset.get("config") or {}).get("m666")
             self.flex_model = FlexModel.from_m666(
                 m666,
