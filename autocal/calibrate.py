@@ -103,6 +103,34 @@ def _validate_sweep_roles(dataset: dict) -> None:
     if errors:
         raise ValueError("Invalid sweep dataset:\n" + "\n".join(errors))
 
+def _canonicalize_slideprinter_anchors_for_output(anchors: np.ndarray) -> np.ndarray:
+    """
+    Fix the unobservable global rotation/reflection gauge for Slideprinter.
+
+    Sweep data contains only lengths, so anchors are identifiable only up to a rigid
+    rotation/reflection about the origin. For consistent, human-friendly output we:
+      1) rotate so anchor 0 lies on +Y (x≈0, y>0)
+      2) reflect (mirror) so anchor 1 has x>=0
+    """
+    anchors = np.asarray(anchors, dtype=float)
+    if anchors.shape != (3, 2):
+        return anchors
+
+    a0 = anchors[0]
+    ang = float(np.arctan2(a0[1], a0[0]))
+    # Slideprinter conventions (Klipper configs, examples) place anchor 0 at (0, -R).
+    rot = float(-np.pi / 2 - ang)
+    c = float(np.cos(rot))
+    s = float(np.sin(rot))
+    R = np.array([[c, -s], [s, c]], dtype=float)
+    out = anchors @ R.T
+
+    if out[0, 1] > 0:
+        out[:, 1] *= -1.0
+    if out[1, 0] < 0:
+        out[:, 0] *= -1.0
+    return out
+
 
 def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -> Tuple[np.ndarray, int]:
     machine_type = str(dataset.get("machine_type", ""))
@@ -304,6 +332,7 @@ def calibrate_elliptical(
     spring_k_multiplier: float = 1.0,
     use_flex: bool = False,
     verbose: bool = False,
+    progress_every: int = 10,
     generate_report: bool = True,
     include_debug_fits: bool = True,
 ) -> Dict[str, Any]:
@@ -315,12 +344,28 @@ def calibrate_elliptical(
         )
 
     _validate_sweep_roles(dataset)
+    if verbose:
+        sweeps = dataset.get("sweeps", [])
+        print(
+            "[ellipse] config:",
+            f"machine_type={dataset.get('machine_type','?')}",
+            f"anchors={dataset.get('num_anchors','?')}",
+            f"dims={dataset.get('dimensions','?')}",
+            f"sweeps={len(sweeps) if isinstance(sweeps, list) else '?'}",
+            f"optimizer={method}",
+            f"restarts={num_restarts}",
+            f"maxiter={max_iterations}",
+            f"threshold={residual_threshold}",
+            f"progress_every={progress_every}",
+            f"flex={use_flex}",
+        )
 
     solution = solve_anchors(
         dataset,
         method=method,
         max_iterations=max_iterations,
         num_restarts=num_restarts,
+        progress_every=int(progress_every),
         residual_threshold=residual_threshold,
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
@@ -332,6 +377,13 @@ def calibrate_elliptical(
         raise RuntimeError("Solver returned no anchors")
 
     anchors_arr = np.asarray(anchors, dtype=float)
+    if str(dataset.get("machine_type", "")) == "slideprinter" and anchors_arr.shape == (3, 2):
+        anchors_arr = _canonicalize_slideprinter_anchors_for_output(anchors_arr)
+        if verbose:
+            print(
+                "[ellipse] note: Slideprinter anchors from sweep-length data are only identifiable up to a global "
+                "rotation/reflection; output is canonicalized for readability."
+            )
     gcode = format_anchors_gcode(anchors_arr, dataset.get("machine_type", ""))
 
     debug_fits = None
@@ -498,9 +550,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.add_argument("-r", "--restarts", type=int, default=8, help="Number of optimization restarts")
     ellipse_parser.add_argument("-i", "--iterations", type=int, default=1000, help="Max iterations per restart")
     ellipse_parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=None,
+        help="When verbose/debug, print progress every N iterations (default: 1 for --debug, 10 for --verbose).",
+    )
+    ellipse_parser.add_argument(
         "--optimizer",
-        default="SLSQP",
-        help="Optimizer method (default: SLSQP)",
+        default="L-BFGS-B",
+        help="Optimizer method (default: L-BFGS-B)",
     )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
@@ -620,12 +678,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.input,
             args.output,
             residual_threshold=threshold,
-            num_restarts=args.restarts,
+            num_restarts=int(args.restarts),
             max_iterations=args.iterations,
             method=args.optimizer,
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.use_flex),
             verbose=bool(args.verbose or args.debug),
+            progress_every=(
+                int(args.progress_every)
+                if args.progress_every is not None
+                else (1 if bool(args.debug) else 10)
+            ),
             generate_report=not args.no_report,
             include_debug_fits=not args.no_debug_fits,
         )

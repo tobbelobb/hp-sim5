@@ -148,7 +148,7 @@ def _plot_theoretical_arc_near_data(
     num_points: int = 300,
     padding_rad: float = 0.15,
 ) -> None:
-    """Plot only the arc of a theoretical ellipse closest to observed data.
+    """Plot only the arc of an ellipse closest to observed data.
 
     This disambiguates short-arc sweeps where many ellipses can fit locally:
     we find the parametric angles implied by the data in ellipse-aligned
@@ -232,8 +232,18 @@ def plot_ellipse_fit(
     ax.scatter(x, y, c="tab:blue", s=30, alpha=0.6, label="Data points")
 
     coeffs_arr = _coeffs_array(fitted_ellipse)
-    _plot_ellipse_from_coeffs(
-        ax, coeffs_arr, color="tab:green", linestyle="-", label="Fitted ellipse"
+    # Most sweeps trace only a short arc of the full ellipse. Rendering the whole
+    # curve is visually misleading, so by default show the local arc nearest data.
+    _plot_theoretical_arc_near_data(
+        ax,
+        coeffs_arr,
+        x_obs=x,
+        y_obs=y,
+        color="tab:green",
+        linestyle="-",
+        linewidth=2.0,
+        label="Fitted ellipse (nearest arc)",
+        padding_rad=0.05,
     )
 
     if theoretical_coeffs is not None:
@@ -643,6 +653,7 @@ def create_calibration_report(
     gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
 
     anchors = solution.get("anchors")
+    anchors_arr = None
     if anchors is not None:
         anchors_arr = np.asarray(anchors, dtype=float)
         if anchors_arr.ndim == 2 and anchors_arr.shape[1] == 2:
@@ -655,15 +666,39 @@ def create_calibration_report(
             )
             ax_anchors.set_title("Anchor Positions")
 
+    def _inflate_sweep_for_plot(sweep: dict) -> dict:
+        if anchors_arr is None or anchors_arr.ndim != 2:
+            return sweep
+        baselines = np.linalg.norm(anchors_arr, axis=1)
+        drive_idx = int(sweep.get("drive_anchor", 0))
+        sensor_idx = int(sweep.get("sensor_anchor", 0))
+        fixed_anchors = list(sweep.get("fixed_anchors", []))
+        fixed_lengths = list(sweep.get("fixed_lengths", []))
+        fixed_lengths_abs = [
+            float(baselines[idx] + delta) for idx, delta in zip(fixed_anchors, fixed_lengths)
+        ]
+        data_points = sweep.get("data_points", [])
+        abs_points = []
+        for p in data_points:
+            abs_points.append(
+                {
+                    **p,
+                    "l_drive": float(p.get("l_drive", 0.0) + baselines[drive_idx]),
+                    "l_sensor": float(p.get("l_sensor", 0.0) + baselines[sensor_idx]),
+                }
+            )
+        return {**sweep, "fixed_lengths": fixed_lengths_abs, "data_points": abs_points}
+
     sweeps = dataset.get("sweeps", [])[:2]
     fitted_by_id = {e.get("sweep_id", ""): e for e in (ellipse_fits or [])}
     for i, sweep in enumerate(sweeps):
         ax = fig.add_subplot(gs[0, 1 + i])
         sid = sweep.get("id", "")
+        sweep_plot = _inflate_sweep_for_plot(sweep) if isinstance(sweep, dict) else sweep
         if sid in fitted_by_id:
-            plot_ellipse_fit(sweep, fitted_by_id[sid], ax=ax)
+            plot_ellipse_fit(sweep_plot, fitted_by_id[sid], ax=ax)
         else:
-            plot_sweep_data(sweep, ax=ax)
+            plot_sweep_data(sweep_plot, ax=ax)
 
     ax_costs = fig.add_subplot(gs[1, :2])
     details = solution.get("details")

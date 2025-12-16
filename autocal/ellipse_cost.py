@@ -12,6 +12,7 @@ from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
     anchors_vec_to_matrix,
+    get_anchor_bounds,
     predict_ellipse_geometry,
 )
 
@@ -87,6 +88,9 @@ def geometry_distance_squared_normalized(
     pred_axes: np.ndarray,
     pred_theta: float,
     weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
+    *,
+    center_scale: float,
+    axes_scale: float,
 ) -> float:
     """
     Dimensionless squared distance in canonical geometry space.
@@ -102,17 +106,8 @@ def geometry_distance_squared_normalized(
     obs_axes = np.asarray(obs_axes, dtype=float).reshape(2)
     pred_axes = np.asarray(pred_axes, dtype=float).reshape(2)
 
-    # Use robust per-sweep scales so errors become relative quantities.
-    center_scale = float(
-        max(
-            np.linalg.norm(obs_center),
-            np.linalg.norm(pred_center),
-            np.max(np.abs(obs_axes)),
-            np.max(np.abs(pred_axes)),
-            1.0,
-        )
-    )
-    axes_scale = float(max(np.max(np.abs(obs_axes)), np.max(np.abs(pred_axes)), 1.0))
+    center_scale = float(max(center_scale, 1.0))
+    axes_scale = float(max(axes_scale, 1.0))
 
     delta_center = (obs_center - pred_center) / center_scale
     delta_axes = (obs_axes - pred_axes) / axes_scale
@@ -182,6 +177,12 @@ class EllipseCostFunction:
         self.min_weight = float(min_weight)
         self.max_weight = float(max_weight)
         self.residual_cost_weight = float(residual_cost_weight)
+
+        lb, ub = get_anchor_bounds(self.machine_type)
+        ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
+        max_anchor_norm = float(np.max(np.linalg.norm(ub_mat, axis=1))) if ub_mat.size else 1.0
+        self._l2_scale = float((2.0 * max_anchor_norm) ** 2)
+
         self.flex_model: Optional[FlexModel] = None
         if bool(use_flex) and isinstance(dataset, dict):
             m666 = (dataset.get("config") or {}).get("m666")
@@ -383,6 +384,8 @@ class EllipseCostFunction:
                 pred_axes,
                 pred_theta,
                 self.geometry_weights,
+                center_scale=self._l2_scale,
+                axes_scale=self._l2_scale,
             )
 
             residual_cost = 0.0
@@ -438,6 +441,8 @@ class EllipseCostFunction:
                 pred_axes,
                 pred_theta,
                 self.geometry_weights,
+                center_scale=self._l2_scale,
+                axes_scale=self._l2_scale,
             )
             residual_cost = 0.0
             if np.isfinite(residual_ratio):

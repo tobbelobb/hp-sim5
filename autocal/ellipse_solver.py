@@ -7,11 +7,16 @@ from typing import Dict, Optional, Tuple, Union
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
 
-from autocal.ellipse_cost import CostResult, EllipseCostFunction
+from autocal.ellipse_cost import (
+    CostResult,
+    EllipseCostFunction,
+    geometry_distance_squared_normalized,
+)
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import (
     anchors_vec_to_matrix,
     get_anchor_bounds,
+    predict_ellipse_geometry,
 )
 
 _BOUND_PENALTY_WEIGHT = 1e4
@@ -37,6 +42,7 @@ def solve_anchors(
     method: str = "L-BFGS-B",
     max_iterations: int = 1000,
     num_restarts: int = 4,
+    progress_every: int = 10,
     geometry_weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
     residual_threshold: float = 0.01,
     use_weights: bool = True,
@@ -83,6 +89,86 @@ def solve_anchors(
             print("[solver] Mapping method SLSQP -> L-BFGS-B for robustness.")
         method_norm = "l-bfgs-b"
 
+    def _summarize_cost(tag: str, x: np.ndarray, *, include_details: bool = True) -> None:
+        detailed: CostResult = cost_fn.evaluate_detailed(np.asarray(x, dtype=float))
+        costs = detailed.per_sweep_costs
+        worst = sorted(costs.items(), key=lambda kv: kv[1], reverse=True)[:3]
+        worst_str = ", ".join(f"{sid}={c:.3g}" for sid, c in worst)
+        print(
+            f"[{tag}] cost={detailed.total_cost:.6g} valid={detailed.num_valid_sweeps} invalid={detailed.num_invalid_sweeps}"
+            + (f" worst: {worst_str}" if worst_str else "")
+        )
+        if not include_details or not worst:
+            return
+
+        try:
+            anchors = anchors_vec_to_matrix(np.asarray(x, dtype=float), num_anchors, dimensions)
+            norms = np.linalg.norm(anchors, axis=1)
+            norms_str = ", ".join(f"{v:.3f}" for v in norms.tolist())
+            print(f"  anchor norms: [{norms_str}]")
+            if anchors.shape == (3, 2):
+                d01 = float(np.linalg.norm(anchors[0] - anchors[1]))
+                d02 = float(np.linalg.norm(anchors[0] - anchors[2]))
+                d12 = float(np.linalg.norm(anchors[1] - anchors[2]))
+                print(f"  pairwise dists: d01={d01:.3f} d02={d02:.3f} d12={d12:.3f}")
+            for sid, _ in worst[:2]:
+                sweep = next((s for s in cost_fn.sweeps if (s.get("id", "") if isinstance(s, dict) else s.id) == sid), None)
+                if sweep is None:
+                    continue
+                (
+                    obs_geom,
+                    weight,
+                    fixed_lengths_abs,
+                    _sid,
+                    residual_ratio,
+                    violation_penalty,
+                ) = cost_fn._fit_observed_geometry(sweep, anchors)  # type: ignore[attr-defined]
+                fixed_indices, _, drive_idx, sensor_idx, *_rest = cost_fn._extract_sweep_arrays(sweep)  # type: ignore[attr-defined]
+                pred_geom = predict_ellipse_geometry(
+                    anchors,
+                    fixed_indices,
+                    fixed_lengths_abs,
+                    drive_idx,
+                    sensor_idx,
+                    dimensions,
+                )
+                rr = residual_ratio if np.isfinite(residual_ratio) else float("inf")
+                print(
+                    f"  [{sid}] w={weight:.3g} rr={rr:.3g} viol={violation_penalty:.3g} pred={'ok' if pred_geom else 'none'} obs={'ok' if obs_geom else 'none'}"
+                )
+
+                # Print a compact geometric mismatch breakdown when available.
+                if obs_geom is None or pred_geom is None:
+                    continue
+                from autocal.ellipse_cost import canonicalize_geometry
+
+                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
+                obs_center, obs_axes, obs_theta = obs_geom
+                l2_scale = float(getattr(cost_fn, "_l2_scale", 1.0))
+                geom_cost = geometry_distance_squared_normalized(
+                    obs_center,
+                    obs_axes,
+                    obs_theta,
+                    pred_center,
+                    pred_axes,
+                    pred_theta,
+                    cost_fn.geometry_weights,
+                    center_scale=l2_scale,
+                    axes_scale=l2_scale,
+                )
+                print(
+                    f"    fixed={fixed_indices}@{[round(float(v),3) for v in fixed_lengths_abs]} drive={drive_idx} sensor={sensor_idx} geom_cost={geom_cost:.3g}"
+                )
+                print(
+                    f"    obs ctr=({obs_center[0]:.3g},{obs_center[1]:.3g}) axes=({obs_axes[0]:.3g},{obs_axes[1]:.3g}) th={obs_theta:.3g}"
+                )
+                print(
+                    f"    pre ctr=({pred_center[0]:.3g},{pred_center[1]:.3g}) axes=({pred_axes[0]:.3g},{pred_axes[1]:.3g}) th={pred_theta:.3g}"
+                )
+        except Exception:
+            # Debug printing must never derail the solver.
+            return
+
     initial_guesses = []
     if initial_guess is not None:
         guess = np.asarray(initial_guess, dtype=float).reshape(expected_len)
@@ -103,10 +189,35 @@ def solve_anchors(
         return float(cost_fn.evaluate(x_clipped) + penalty)
 
     for idx, x0 in enumerate(initial_guesses):
+        x0_clipped = np.clip(x0, lb, ub)
         if verbose:
             print(f"Starting optimization {idx + 1}/{len(initial_guesses)}...")
+            _summarize_cost(f"restart {idx + 1} init", x0_clipped, include_details=True)
 
-        x0_clipped = np.clip(x0, lb, ub)
+        progress_stride = int(progress_every) if verbose else 0
+        if progress_stride <= 0:
+            progress_stride = 0
+        details_stride = 10 if verbose else 0
+        progress_state = {"iter": 0}
+
+        def _progress_callback(xk: np.ndarray, _convergence: Optional[float] = None) -> None:
+            if cost_callback is not None:
+                try:
+                    cost_callback(np.asarray(xk, dtype=float), _convergence)
+                except TypeError:
+                    cost_callback(np.asarray(xk, dtype=float))
+
+            if progress_stride <= 0:
+                return
+            progress_state["iter"] += 1
+            if progress_state["iter"] % progress_stride != 0:
+                return
+            include_details = bool(details_stride and (progress_state["iter"] % details_stride == 0))
+            _summarize_cost(
+                f"restart {idx + 1} iter {progress_state['iter']}",
+                np.asarray(xk, dtype=float),
+                include_details=include_details,
+            )
 
         if method_norm == "differential-evolution":
             result = differential_evolution(
@@ -116,9 +227,7 @@ def solve_anchors(
                 polish=True,
                 updating="deferred",
                 callback=(
-                    (lambda xk, convergence: cost_callback(np.asarray(xk, dtype=float), float(convergence)))
-                    if cost_callback
-                    else None
+                    (lambda xk, convergence: _progress_callback(np.asarray(xk, dtype=float), float(convergence)))
                 ),
             )
         else:
@@ -127,7 +236,7 @@ def solve_anchors(
                     _bounded_objective,
                     x0_clipped,
                     method="Nelder-Mead",
-                    callback=((lambda xk: cost_callback(np.asarray(xk, dtype=float), None)) if cost_callback else None),
+                    callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
                     options={
                         "maxiter": max_iterations,
                         "xatol": 1e-4,
@@ -158,7 +267,7 @@ def solve_anchors(
                     x1,
                     method="L-BFGS-B",
                     bounds=bounds,
-                    callback=((lambda xk: cost_callback(np.asarray(xk, dtype=float), None)) if cost_callback else None),
+                    callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
                     options={"maxiter": max_iterations, "ftol": 1e-12, "disp": False},
                 )
             else:
@@ -181,9 +290,17 @@ def solve_anchors(
                     x0_clipped,
                     method=scipy_method,
                     bounds=bounds,
-                    callback=((lambda xk: cost_callback(np.asarray(xk, dtype=float), None)) if cost_callback else None),
+                    callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
                     options=options,
                 )
+        if verbose:
+            try:
+                print(
+                    f"[restart {idx + 1} done] fun={float(result.fun):.6g} success={bool(getattr(result,'success',True))} "
+                    f"nit={getattr(result,'nit',None)} nfev={getattr(result,'nfev',None)} msg={getattr(result,'message','')}"
+                )
+            except Exception:
+                pass
 
         if result.fun < best_cost:
             best_cost = float(result.fun)
