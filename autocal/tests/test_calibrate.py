@@ -68,6 +68,9 @@ def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):
             "1",
             "--threshold",
             "1000000000",
+            "--spring-k-multiplier",
+            "1.0",
+            "--debug",
         ]
     )
     assert rc == 0

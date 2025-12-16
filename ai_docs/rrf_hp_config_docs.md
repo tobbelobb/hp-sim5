@@ -23,3 +23,5 @@ M669 N parameter sets the number of anchors Default: 4.
 M669 P parameter sets the printable radius. It is unused by Hangprinters.
 M669 S and T parameters sets segments per second and min segment length. That's basically how many times per second or per length the firmware will change the rotational speed of the motors.
 M669 ABCDIJKLO parameters sets anchor locations, expressed as X:Y:Z distances between a line's pivot points, when the machine is homed. You only need as many anchor locations as you have anchors.
+M666 B parameter sets whether the flex solver should ignore gravitational forces or not. M666 B1 makes the flex solver ignore gravity. Default: 0
+M666 P parameter sets whether the flex solver should ignore pretension forces or not. M666 P0 makes the solver ignore pretension. Default: 0

@@ -40,6 +40,7 @@ def solve_anchors(
     residual_threshold: float = 0.01,
     use_weights: bool = True,
     invalid_sweep_penalty: float = 1000.0,
+    spring_k_multiplier: float = 1.0,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -67,6 +68,7 @@ def solve_anchors(
         residual_threshold=residual_threshold,
         use_weights=use_weights,
         invalid_sweep_penalty=invalid_sweep_penalty,
+        spring_k_multiplier=float(spring_k_multiplier),
     )
 
     initial_guesses = []

@@ -181,6 +181,8 @@ def _extract_legacy_machine_config(dataset: dict, num_axes: int) -> Optional[Dic
     guy_wires = _expand_to_num_axes(m666.get("Y"), num_axes, 0.0)
     min_force_limit = _first_float(m666.get("I"), 0.0)
     max_force_limit = _first_float(m666.get("X"), 120.0)
+    ignore_gravity = bool(_first_float(m666.get("B"), 0.0))
+    ignore_pretension = bool(_first_float(m666.get("P"), 0.0))
 
     out: Dict[str, Any] = {
         "spool_buildup_factor": _first_float(m666.get("Q"), 0.0),
@@ -192,6 +194,8 @@ def _extract_legacy_machine_config(dataset: dict, num_axes: int) -> Optional[Dic
         "guy_wire_lengths": guy_wires,
         "min_force_limit": float(min_force_limit),
         "max_force_limit": float(max_force_limit),
+        "ignore_gravity": bool(ignore_gravity),
+        "ignore_pretension": bool(ignore_pretension),
     }
     if "S" in m666:
         out["spring_k_per_unit_length"] = _first_float(m666.get("S"), 0.0)
@@ -244,6 +248,7 @@ def calibrate_elliptical(
     num_restarts: int = 8,
     max_iterations: int = 1000,
     method: str = "SLSQP",
+    spring_k_multiplier: float = 1.0,
     verbose: bool = False,
     generate_report: bool = True,
     include_debug_fits: bool = True,
@@ -263,6 +268,7 @@ def calibrate_elliptical(
         max_iterations=max_iterations,
         num_restarts=num_restarts,
         residual_threshold=residual_threshold,
+        spring_k_multiplier=float(spring_k_multiplier),
         verbose=verbose,
     )
 
@@ -337,12 +343,13 @@ def _load_legacy_simulation() -> Tuple[Any, Path]:
 
 
 def calibrate_point_based(
-    use_flex: bool = False,
+    use_flex: bool = True,
     use_line_lengths: bool = True,
     verbose: bool = False,
     input_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
     max_samples: int = 800,
+    spring_k_multiplier: float = 1.0,
     optimizer_method: str = "SLSQP",
     tries: int = 4,
     maxiter: int = 500,
@@ -362,6 +369,14 @@ def calibrate_point_based(
         dataset = _load_json(input_path)
         motor_pos_samp, dimensions = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=max_samples)
         machine_config = _extract_legacy_machine_config(dataset, int(motor_pos_samp.shape[1]))
+        if machine_config is not None and spring_k_multiplier != 1.0:
+            base = machine_config.get("spring_k_per_unit_length")
+            try:
+                base_val = float(base)
+            except Exception:
+                base_val = None
+            if base_val is not None and np.isfinite(base_val) and base_val > 0.0:
+                machine_config["spring_k_per_unit_length"] = float(base_val) * float(spring_k_multiplier)
         if verbose and machine_config is not None:
             _debug_print_legacy_config_comparison(sim, dataset, int(motor_pos_samp.shape[1]))
 
@@ -425,11 +440,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Optimizer method (default: SLSQP)",
     )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
+    ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     ellipse_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
     ellipse_parser.add_argument(
         "--no-debug-fits",
         action="store_true",
         help="Skip generating fitted-ellipse debug sidecar in output JSON",
+    )
+    ellipse_parser.add_argument(
+        "--spring-k-multiplier",
+        type=float,
+        default=1.0,
+        help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
     )
 
     point_parser = subparsers.add_parser("point", help="Legacy point-based calibration")
@@ -441,7 +463,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     point_parser.add_argument("--input", dest="input_path", type=Path, help="Same as positional input.")
     point_parser.add_argument("-o", "--output", type=Path, help="Optional output JSON")
-    point_parser.add_argument("--flex", action="store_true", help="Enable flex compensation (default off)")
+    flex_group = point_parser.add_mutually_exclusive_group()
+    flex_group.add_argument(
+        "--flex",
+        action="store_true",
+        help="(Deprecated) Flex compensation is now enabled by default.",
+    )
+    flex_group.add_argument(
+        "--no-flex",
+        action="store_true",
+        help="Disable flex compensation (default: enabled).",
+    )
+    point_parser.add_argument(
+        "--spring-k-multiplier",
+        type=float,
+        default=1.0,
+        help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
+    )
     point_parser.add_argument(
         "--optimizer",
         default="SLSQP",
@@ -494,7 +532,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             num_restarts=args.restarts,
             max_iterations=args.iterations,
             method=args.optimizer,
-            verbose=args.verbose,
+            spring_k_multiplier=float(args.spring_k_multiplier),
+            verbose=bool(args.verbose or args.debug),
             generate_report=not args.no_report,
             include_debug_fits=not args.no_debug_fits,
         )
@@ -504,12 +543,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.command == "point":
         verbose = bool(args.verbose or args.debug)
         result = calibrate_point_based(
-            use_flex=bool(args.flex),
+            use_flex=not bool(args.no_flex),
             use_line_lengths=not bool(args.no_line_lengths),
             verbose=verbose,
             input_path=args.input_path,
             output_path=args.output,
             max_samples=int(args.max_samples),
+            spring_k_multiplier=float(args.spring_k_multiplier),
             optimizer_method=str(args.optimizer),
             tries=int(args.tries),
             maxiter=int(args.iterations),
