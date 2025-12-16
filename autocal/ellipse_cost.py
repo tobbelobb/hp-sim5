@@ -15,6 +15,8 @@ from autocal.theoretical_ellipse import (
     predict_ellipse_geometry,
 )
 
+_EPS_LEN_MM = 1.0  # Prevent squaring negative/near-zero lengths during reconstruction.
+
 
 @dataclass
 class CostResult:
@@ -77,6 +79,52 @@ def geometry_distance(
         )
     )
 
+def geometry_distance_squared_normalized(
+    obs_center: np.ndarray,
+    obs_axes: np.ndarray,
+    obs_theta: float,
+    pred_center: np.ndarray,
+    pred_axes: np.ndarray,
+    pred_theta: float,
+    weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
+) -> float:
+    """
+    Dimensionless squared distance in canonical geometry space.
+
+    The raw ellipse geometry lives in the (L_drive^2, L_sensor^2) plane, so center/axes are O(1e7)
+    for mm-scale machines. Comparing those directly produces O(1e10..1e14) costs that swamp
+    gradients and make penalties meaningless. This function compares *relative* geometry error.
+    """
+    w_center, w_axes, w_theta = weights
+
+    obs_center = np.asarray(obs_center, dtype=float).reshape(2)
+    pred_center = np.asarray(pred_center, dtype=float).reshape(2)
+    obs_axes = np.asarray(obs_axes, dtype=float).reshape(2)
+    pred_axes = np.asarray(pred_axes, dtype=float).reshape(2)
+
+    # Use robust per-sweep scales so errors become relative quantities.
+    center_scale = float(
+        max(
+            np.linalg.norm(obs_center),
+            np.linalg.norm(pred_center),
+            np.max(np.abs(obs_axes)),
+            np.max(np.abs(pred_axes)),
+            1.0,
+        )
+    )
+    axes_scale = float(max(np.max(np.abs(obs_axes)), np.max(np.abs(pred_axes)), 1.0))
+
+    delta_center = (obs_center - pred_center) / center_scale
+    delta_axes = (obs_axes - pred_axes) / axes_scale
+
+    delta_theta = (obs_theta - pred_theta + np.pi) % (2 * np.pi) - np.pi
+
+    return float(
+        w_center * np.dot(delta_center, delta_center)
+        + w_axes * np.dot(delta_axes, delta_axes)
+        + w_theta * (delta_theta**2)
+    )
+
 
 def _dataset_metadata(
     dataset: Union[dict, "SweepDataset"]
@@ -110,8 +158,11 @@ class EllipseCostFunction:
         residual_threshold: float = 0.01,
         min_points: int = 10,
         use_weights: bool = True,
-        invalid_sweep_penalty: float = 1000.0,
+        invalid_sweep_penalty: float = 1e6,
         weight_floor: float = 1e-3,
+        min_weight: float = 0.2,
+        max_weight: float = 1.0,
+        residual_cost_weight: float = 0.1,
         spring_k_multiplier: float = 1.0,
         use_flex: bool = True,
     ) -> None:
@@ -128,6 +179,9 @@ class EllipseCostFunction:
         self.use_weights = use_weights
         self.invalid_penalty = invalid_sweep_penalty
         self.weight_floor = weight_floor
+        self.min_weight = float(min_weight)
+        self.max_weight = float(max_weight)
+        self.residual_cost_weight = float(residual_cost_weight)
         self.flex_model: Optional[FlexModel] = None
         if bool(use_flex) and isinstance(dataset, dict):
             m666 = (dataset.get("config") or {}).get("m666")
@@ -181,7 +235,7 @@ class EllipseCostFunction:
 
     def _reconstruct_lengths(
         self, sweep: Union[Sweep, dict], anchors: np.ndarray
-    ) -> Tuple[List[float], int, int, np.ndarray, np.ndarray, str]:
+    ) -> Tuple[List[float], int, int, np.ndarray, np.ndarray, str, float]:
         """Add anchor baselines to encoder deltas to get absolute lengths."""
         (
             fixed_indices,
@@ -193,26 +247,61 @@ class EllipseCostFunction:
             sweep_id,
         ) = self._extract_sweep_arrays(sweep)
 
-        fixed_lengths_abs = [
-            float(np.linalg.norm(anchors[idx]) + delta) for idx, delta in zip(fixed_indices, fixed_deltas)
-        ]
-        l_drive_abs = l_drive + np.linalg.norm(anchors[drive_idx])
-        l_sensor_abs = l_sensor + np.linalg.norm(anchors[sensor_idx])
+        # Baseline reconstruction is only valid when absolute lengths remain positive. If a guess
+        # makes some lengths negative, we keep optimization stable by (a) adding a smooth penalty
+        # proportional to the violation magnitude, and (b) clipping to a small epsilon before
+        # squaring inside the ellipse fitter.
+        fixed_lengths_abs = [float(np.linalg.norm(anchors[idx]) + delta) for idx, delta in zip(fixed_indices, fixed_deltas)]
+        l_drive_abs = l_drive + float(np.linalg.norm(anchors[drive_idx]))
+        l_sensor_abs = l_sensor + float(np.linalg.norm(anchors[sensor_idx]))
 
-        return fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id
+        penalty = 0.0
+        if fixed_lengths_abs:
+            fixed_arr = np.asarray(fixed_lengths_abs, dtype=float)
+            neg = np.maximum(_EPS_LEN_MM - fixed_arr, 0.0)
+            penalty += float(np.dot(neg, neg))
+            fixed_lengths_abs = [float(max(v, _EPS_LEN_MM)) for v in fixed_arr]
+
+        if l_drive_abs.size:
+            neg = np.maximum(_EPS_LEN_MM - l_drive_abs, 0.0)
+            penalty += float(np.dot(neg, neg))
+            l_drive_abs = np.maximum(l_drive_abs, _EPS_LEN_MM)
+
+        if l_sensor_abs.size:
+            neg = np.maximum(_EPS_LEN_MM - l_sensor_abs, 0.0)
+            penalty += float(np.dot(neg, neg))
+            l_sensor_abs = np.maximum(l_sensor_abs, _EPS_LEN_MM)
+
+        # Convert to a dimensionless scale by normalizing with typical squared-length magnitude.
+        typical = float(
+            max(
+                np.mean(l_drive_abs) if l_drive_abs.size else 0.0,
+                np.mean(l_sensor_abs) if l_sensor_abs.size else 0.0,
+                np.mean(fixed_lengths_abs) if fixed_lengths_abs else 0.0,
+                1.0,
+            )
+        )
+        penalty = penalty / (typical * typical)
+        return fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id, penalty
 
     def _fit_observed_geometry(
         self, sweep: Union[Sweep, dict], anchors: np.ndarray
-    ) -> Tuple[Optional[Tuple[np.ndarray, np.ndarray, float]], float, List[float], str]:
+    ) -> Tuple[Optional[Tuple[np.ndarray, np.ndarray, float]], float, List[float], str, float, float]:
         """
         Fit ellipse geometry for a sweep given the current anchor guess.
 
         Returns:
-            (canonical_geometry or None, weight, fixed_lengths_abs, sweep_id)
+            (canonical_geometry or None, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty)
         """
-        fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id = self._reconstruct_lengths(
-            sweep, anchors
-        )
+        (
+            fixed_lengths_abs,
+            drive_idx,
+            sensor_idx,
+            l_drive_abs,
+            l_sensor_abs,
+            sweep_id,
+            violation_penalty,
+        ) = self._reconstruct_lengths(sweep, anchors)
 
         if self.flex_model is not None:
             t_drive, t_sensor = self._extract_tension_arrays(sweep)
@@ -228,21 +317,28 @@ class EllipseCostFunction:
         fit = fit_ellipse_from_sweep(
             l_drive_abs,
             l_sensor_abs,
-            residual_threshold=self.residual_threshold,
+            residual_threshold=float("inf"),
             min_points=self.min_points,
             square_inputs=True,
         )
 
-        if self.use_weights and np.isfinite(fit.residual_rms):
-            weight = 1.0 / max(fit.residual_rms, self.weight_floor)
-        else:
-            weight = 1.0
+        residual_ratio = float("inf")
+        if np.isfinite(fit.residual_rms):
+            denom = float(self.residual_threshold) if float(self.residual_threshold) > 0 else 1.0
+            residual_ratio = float(fit.residual_rms) / denom
 
+        # Keep weights conservative: never overweight a sweep; don't downweight too hard either.
+        weight = 1.0
+        if self.use_weights and np.isfinite(residual_ratio):
+            weight = 1.0 / max(1.0, residual_ratio)
+            weight = float(np.clip(weight, self.min_weight, self.max_weight))
+
+        # Only reject when geometry cannot be extracted (non-ellipse / degeneracy).
         if not fit.valid:
-            return None, weight, fixed_lengths_abs, sweep_id
+            return None, 1.0, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
 
         geom = canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle)
-        return geom, weight, fixed_lengths_abs, sweep_id
+        return geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
 
     def evaluate(self, anchor_vec: np.ndarray) -> float:
         """Compute scalar cost for a flat anchor vector."""
@@ -255,7 +351,9 @@ class EllipseCostFunction:
         weights: List[float] = []
 
         for sweep in self.sweeps:
-            obs_geom, weight, fixed_lengths_abs, _ = self._fit_observed_geometry(sweep, anchors)
+            obs_geom, weight, fixed_lengths_abs, _, residual_ratio, violation_penalty = self._fit_observed_geometry(
+                sweep, anchors
+            )
             weights.append(weight)
 
             sweep_fields = self._extract_sweep_arrays(sweep)
@@ -271,16 +369,26 @@ class EllipseCostFunction:
             )
 
             if obs_geom is None or pred_geom is None:
-                weighted_costs.append(self.invalid_penalty)
+                weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
                 continue
 
             pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
             obs_center, obs_axes, obs_theta = obs_geom
 
-            dist = geometry_distance(
-                obs_center, obs_axes, obs_theta, pred_center, pred_axes, pred_theta, self.geometry_weights
+            geom_cost = geometry_distance_squared_normalized(
+                obs_center,
+                obs_axes,
+                obs_theta,
+                pred_center,
+                pred_axes,
+                pred_theta,
+                self.geometry_weights,
             )
-            weighted_costs.append(dist**2)
+
+            residual_cost = 0.0
+            if np.isfinite(residual_ratio):
+                residual_cost = self.residual_cost_weight * float(residual_ratio * residual_ratio)
+            weighted_costs.append(float(geom_cost + residual_cost + violation_penalty))
 
         weight_sum = float(sum(weights)) if weights else 1.0
         if weight_sum <= 0:
@@ -299,7 +407,9 @@ class EllipseCostFunction:
         weights: Dict[str, float] = {}
 
         for sweep in self.sweeps:
-            obs_geom, weight, fixed_lengths_abs, sweep_id = self._fit_observed_geometry(sweep, anchors)
+            obs_geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty = self._fit_observed_geometry(
+                sweep, anchors
+            )
             weights[sweep_id] = weight
 
             fixed_indices, _, drive_idx, sensor_idx, _, _, _ = self._extract_sweep_arrays(sweep)
@@ -313,16 +423,26 @@ class EllipseCostFunction:
             )
 
             if obs_geom is None or pred_geom is None:
-                per_sweep_costs[sweep_id] = self.invalid_penalty
+                per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
                 num_invalid += 1
                 continue
 
             pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
             obs_center, obs_axes, obs_theta = obs_geom
-            dist = geometry_distance(
-                obs_center, obs_axes, obs_theta, pred_center, pred_axes, pred_theta, self.geometry_weights
+
+            geom_cost = geometry_distance_squared_normalized(
+                obs_center,
+                obs_axes,
+                obs_theta,
+                pred_center,
+                pred_axes,
+                pred_theta,
+                self.geometry_weights,
             )
-            per_sweep_costs[sweep_id] = dist**2
+            residual_cost = 0.0
+            if np.isfinite(residual_ratio):
+                residual_cost = self.residual_cost_weight * float(residual_ratio * residual_ratio)
+            per_sweep_costs[sweep_id] = float(geom_cost + residual_cost + violation_penalty)
             num_valid += 1
 
         weight_sum = float(sum(weights.values())) if weights else 1.0
