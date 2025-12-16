@@ -121,6 +121,29 @@ def geometry_distance_squared_normalized(
         + w_theta * (delta_theta**2)
     )
 
+def pseudo_huber_loss(residuals: np.ndarray, *, delta: float) -> np.ndarray:
+    """
+    Smooth robust loss (quadratic near zero, linear for outliers).
+
+    Returns per-element loss for the given residuals.
+    """
+    r = np.asarray(residuals, dtype=float)
+    d = float(delta)
+    if not np.isfinite(d) or d <= 0.0:
+        return np.square(r)
+    scaled = r / d
+    return 2.0 * (d**2) * (np.sqrt(1.0 + np.square(scaled)) - 1.0)
+
+
+def pseudo_huber_from_squared_error(squared_error: float, *, delta: float) -> float:
+    """Apply pseudo-Huber to a scalar squared error by interpreting it as r^2."""
+    se = float(squared_error)
+    if not np.isfinite(se) or se < 0.0:
+        return float("inf")
+    r = float(np.sqrt(se))
+    return float(pseudo_huber_loss(np.array([r], dtype=float), delta=delta)[0])
+
+
 def pointwise_sampson_cost_normalized(
     coeffs: np.ndarray,
     x: np.ndarray,
@@ -128,6 +151,8 @@ def pointwise_sampson_cost_normalized(
     *,
     l2_scale: float,
     weight: float = 1.0,
+    robust_loss: bool = False,
+    huber_delta: float = 1.0,
 ) -> Tuple[float, float, float]:
     """
     Normalized pointwise cost of samples to a predicted ellipse.
@@ -149,7 +174,11 @@ def pointwise_sampson_cost_normalized(
     max_abs = float(np.max(np.abs(residuals)))
 
     scale = float(max(l2_scale, 1.0))
-    cost = float(np.mean((residuals / scale) ** 2))
+    r_norm = residuals / scale
+    if bool(robust_loss):
+        cost = float(np.mean(pseudo_huber_loss(r_norm, delta=float(huber_delta))))
+    else:
+        cost = float(np.mean(r_norm**2))
     return float(weight) * cost, rms, max_abs
 
 
@@ -194,6 +223,8 @@ class EllipseCostFunction:
         pointwise_cost_weight: float = 1e8,
         spring_k_multiplier: float = 1.0,
         use_flex: bool = True,
+        robust_loss: bool = False,
+        huber_delta: float = 1.0,
     ) -> None:
         (
             self.machine_type,
@@ -213,6 +244,8 @@ class EllipseCostFunction:
         self.max_weight = float(max_weight)
         self.residual_cost_weight = float(residual_cost_weight)
         self.pointwise_cost_weight = float(pointwise_cost_weight)
+        self.robust_loss = bool(robust_loss)
+        self.huber_delta = float(huber_delta)
 
         lb, ub = get_anchor_bounds(self.machine_type)
         ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
@@ -426,6 +459,8 @@ class EllipseCostFunction:
             y,
             l2_scale=self._l2_scale,
             weight=self.pointwise_cost_weight,
+            robust_loss=self.robust_loss,
+            huber_delta=self.huber_delta,
         )
         return float(cost), float(rms), float(max_abs), float(violation_penalty), str(sweep_id)
 
@@ -486,6 +521,8 @@ class EllipseCostFunction:
                 center_scale=self._l2_scale,
                 axes_scale=self._l2_scale,
             )
+            if self.robust_loss:
+                geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
 
             residual_cost = 0.0
             if np.isfinite(residual_ratio) and float(residual_ratio) > 1.0:
@@ -557,6 +594,8 @@ class EllipseCostFunction:
                 center_scale=self._l2_scale,
                 axes_scale=self._l2_scale,
             )
+            if self.robust_loss:
+                geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
             residual_cost = 0.0
             if np.isfinite(residual_ratio) and float(residual_ratio) > 1.0:
                 dr = float(residual_ratio) - 1.0

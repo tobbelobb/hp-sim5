@@ -36,6 +36,8 @@ def _optimize_restart_worker(payload: dict) -> dict:
     invalid_sweep_penalty = float(payload["invalid_sweep_penalty"])
     spring_k_multiplier = float(payload["spring_k_multiplier"])
     use_flex = bool(payload["use_flex"])
+    robust_loss = bool(payload.get("robust_loss", False))
+    huber_delta = float(payload.get("huber_delta", 1.0))
 
     machine_type_raw = dataset.get("machine_type", "hangprinter_4")
     machine_type = machine_type_raw.value if isinstance(machine_type_raw, MachineType) else str(machine_type_raw)
@@ -53,6 +55,8 @@ def _optimize_restart_worker(payload: dict) -> dict:
         invalid_sweep_penalty=invalid_sweep_penalty,
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
     )
 
     method_norm = method_raw.strip().replace("_", "-").lower()
@@ -166,6 +170,8 @@ def solve_anchors(
     invalid_sweep_penalty: float = 1e6,
     spring_k_multiplier: float = 1.0,
     use_flex: bool = True,
+    robust_loss: bool = False,
+    huber_delta: float = 1.0,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -196,6 +202,8 @@ def solve_anchors(
         invalid_sweep_penalty=invalid_sweep_penalty,
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
     )
 
     method_raw = str(method or "L-BFGS-B")
@@ -335,6 +343,8 @@ def solve_anchors(
                 "invalid_sweep_penalty": float(invalid_sweep_penalty),
                 "spring_k_multiplier": float(spring_k_multiplier),
                 "use_flex": bool(use_flex),
+                "robust_loss": bool(robust_loss),
+                "huber_delta": float(huber_delta),
             }
             for x0 in initial_guesses
         ]

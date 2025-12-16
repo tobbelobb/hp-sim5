@@ -484,6 +484,8 @@ def calibrate_elliptical(
     method: str = "SLSQP",
     spring_k_multiplier: float = 1.0,
     use_flex: bool = False,
+    robust_loss: bool = False,
+    huber_delta: float = 1.0,
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
@@ -531,6 +533,8 @@ def calibrate_elliptical(
         cost_mode=str(cost_mode),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
         verbose=verbose,
     )
 
@@ -628,6 +632,8 @@ def calibrate_point_based(
     ftol: float = 1e-9,
     eps: Optional[float] = None,
     regularize_supersweep: bool = False,
+    raw_squared_cost: bool = True,
+    huber_delta_mm: float = 10.0,
 ) -> Dict[str, Any]:
     sim, _ = _load_legacy_simulation()
 
@@ -697,6 +703,8 @@ def calibrate_point_based(
                 machine_config=machine_config,
                 flex_mode=str(flex_mode),
                 tension_samp=tension_samp,
+                raw_squared_cost=bool(raw_squared_cost),
+                huber_delta_mm=float(huber_delta_mm),
             )
     else:
         solution_vec = sim.solve(
@@ -716,6 +724,8 @@ def calibrate_point_based(
             machine_config=machine_config,
             flex_mode=str(flex_mode),
             tension_samp=tension_samp,
+            raw_squared_cost=bool(raw_squared_cost),
+            huber_delta_mm=float(huber_delta_mm),
         )
 
     params_anch = int(np.shape(motor_pos_samp)[1]) * 3
@@ -784,6 +794,8 @@ def calibrate_point_based(
                 ignore_gravity=ignore_gravity,
                 ignore_pretension=ignore_pretension,
                 guy_wire_lengths=guy_wire_lengths,
+                raw_squared_cost=bool(raw_squared_cost),
+                huber_delta_mm=float(huber_delta_mm),
             )
         )
     except Exception:
@@ -845,6 +857,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "--optimizer",
         default="L-BFGS-B",
         help="Optimizer method (default: L-BFGS-B)",
+    )
+    ellipse_cost_group = ellipse_parser.add_mutually_exclusive_group()
+    ellipse_cost_group.add_argument(
+        "--huber-loss",
+        dest="huber_loss",
+        action="store_true",
+        help="Use a pseudo-Huber loss to reduce the influence of outlier sweeps.",
+    )
+    ellipse_cost_group.add_argument(
+        "--raw-squared-cost",
+        dest="huber_loss",
+        action="store_false",
+        help="Use the legacy raw squared-cost aggregation (default).",
+    )
+    ellipse_parser.set_defaults(huber_loss=False)
+    ellipse_parser.add_argument(
+        "--huber-delta",
+        type=float,
+        default=1.0,
+        help="Pseudo-Huber delta for ellipse cost (dimensionless, used with --huber-loss).",
     )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
@@ -944,6 +976,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="SLSQP",
         help="scipy.optimize.minimize method (default: SLSQP).",
     )
+    point_cost_group = point_parser.add_mutually_exclusive_group()
+    point_cost_group.add_argument(
+        "--huber-loss",
+        dest="huber_loss",
+        action="store_true",
+        help="Use a pseudo-Huber loss (quadratic near zero, linear for outliers).",
+    )
+    point_cost_group.add_argument(
+        "--raw-squared-cost",
+        dest="huber_loss",
+        action="store_false",
+        help="Use legacy raw sum-of-squared residuals cost (default).",
+    )
+    point_parser.set_defaults(huber_loss=False)
+    point_parser.add_argument(
+        "--huber-delta-mm",
+        type=float,
+        default=10.0,
+        help="Pseudo-Huber delta in mm for point solver (used with --huber-loss).",
+    )
     point_parser.add_argument(
         "--max-samples",
         type=int,
@@ -1006,6 +1058,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             method=args.optimizer,
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.use_flex),
+            robust_loss=bool(args.huber_loss),
+            huber_delta=float(args.huber_delta),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),
@@ -1043,6 +1097,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             ftol=float(args.ftol),
             eps=args.eps,
             regularize_supersweep=bool(args.regularize_supersweep),
+            raw_squared_cost=not bool(args.huber_loss),
+            huber_delta_mm=float(args.huber_delta_mm),
         )
         if bool(args.json):
             print(json.dumps(result, indent=2))
