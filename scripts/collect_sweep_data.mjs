@@ -818,94 +818,130 @@ async function performTorqueRampSweep(sendFn, task, options) {
     { drive: anchorB, sensor: anchorA, phase: 'B_low_A_ramp' },
   ];
 
+  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
+  const rampIntervalMs = Math.max(10, 1000 / timeScale);
+  const rampSteps = Math.max(1, rampTorques.length);
+  const minRampTorque = Number.isFinite(torqueMin) ? torqueMin : rampTorques[0];
+  const maxRampTorque = Number.isFinite(torqueMax) ? torqueMax : rampTorques[rampTorques.length - 1];
+  const rampRatio = minRampTorque > 0 && maxRampTorque > 0
+    ? maxRampTorque / minRampTorque
+    : null;
+  const rampMultiplier = Number.isFinite(rampRatio) && rampRatio > 0
+    ? Math.pow(rampRatio, 1 / rampSteps)
+    : null;
+
+  const recordMeasurement = async (phase, { phaseLabel, stepIndex, stepCount, driveSetpointMm = null } = {}) => {
+    const stable = await waitForStableEncoders(sendFn, motorIds, { speedup });
+    const anglesDeg = stable.anglesDeg;
+    const lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+    const torqueByAnchor = new Map([
+      [phase.drive, 0.0], // position mode
+      [phase.sensor, torqueLow], // low torque
+    ]);
+    const torqueA = torqueByAnchor.get(anchorA) ?? 0;
+    const torqueB = torqueByAnchor.get(anchorB) ?? 0;
+    dataPoints.push({
+      l_drive: lengths[anchorA],
+      l_sensor: lengths[anchorB],
+      timestamp_ms: Date.now() - datasetStartMs,
+      raw_angles_deg: anglesDeg,
+      fixed_anchors: fixedAnchors,
+      fixed_lengths: fixedLengths,
+      torque_drive_nm: torqueA,
+      torque_sensor_nm: torqueB,
+      assumed_tension_drive_n: computeAssumedLineTensionN(m666Values, anchorA, torqueA),
+      assumed_tension_sensor_n: computeAssumedLineTensionN(m666Values, anchorB, torqueB),
+      phase: phaseLabel ?? phase.phase,
+      torque_step_index: stepIndex,
+      torque_step_count: stepCount,
+      drive_setpoint_mm: driveSetpointMm,
+    });
+    return lengths;
+  };
+
   for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx += 1) {
     const phase = phases[phaseIdx];
     const driveMotorId = motorIds[phase.drive];
     const sensorMotorId = motorIds[phase.sensor];
-    // eslint-disable-next-line no-await-in-loop
-    await sendFn(`M569.4 P${driveMotorId} T${torqueLow}`);
-    // eslint-disable-next-line no-await-in-loop
-    await sendFn(`M569.4 P${sensorMotorId} T${rampTorques[0]}`);
-
-    for (let i = 0; i < rampTorques.length; i += 1) {
-      const sensorTorque = rampTorques[i];
-      if (i > 0) {
-        // eslint-disable-next-line no-await-in-loop
-        await sendFn(`M569.4 P${sensorMotorId} T${sensorTorque}`);
-      }
-
-      // eslint-disable-next-line no-await-in-loop
-      const stable = await waitForStableEncoders(sendFn, motorIds, { speedup });
-      const anglesDeg = stable.anglesDeg;
-      const lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
-
-      const torqueByAnchor = new Map([
-        [phase.drive, torqueLow],
-        [phase.sensor, sensorTorque],
-      ]);
-      const torqueA = torqueByAnchor.get(anchorA) ?? 0;
-      const torqueB = torqueByAnchor.get(anchorB) ?? 0;
-
-      dataPoints.push({
-        l_drive: lengths[anchorA],
-        l_sensor: lengths[anchorB],
-        timestamp_ms: Date.now() - datasetStartMs,
-        raw_angles_deg: anglesDeg,
-        fixed_anchors: fixedAnchors,
-        fixed_lengths: fixedLengths,
-        torque_drive_nm: torqueA,
-        torque_sensor_nm: torqueB,
-        assumed_tension_drive_n: computeAssumedLineTensionN(m666Values, anchorA, torqueA),
-        assumed_tension_sensor_n: computeAssumedLineTensionN(m666Values, anchorB, torqueB),
-        phase: phase.phase,
-        torque_step_index: i,
-        torque_step_count: rampTorques.length,
-      });
-    }
-
-    if (phaseIdx === 0) {
-      const firstRampingAnchor = phase.sensor;
-      const axis = axes?.[firstRampingAnchor];
-      if (!axis) {
-        throw new Error('torque-ramp requires axes mapping for reposition step');
-      }
-
-      // Put the first ramping motor into position mode and move it back to its sweep start position.
-      // eslint-disable-next-line no-await-in-loop
-      await sendFn(`M569.4 P${motorIds[firstRampingAnchor]} T0.0`);
-      // eslint-disable-next-line no-await-in-loop
-      const lengthsAfter = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-      const current = lengthsAfter[firstRampingAnchor] ?? 0;
-      const target = sweepStartLengths[firstRampingAnchor] ?? 0;
-      const delta = target - current;
-      if (Math.abs(delta) > 1e-6) {
-        // eslint-disable-next-line no-await-in-loop
-        await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
-      }
-    }
-  }
-
-  {
-    const lastPhase = phases[phases.length - 1];
-    const lastDriveAnchor = lastPhase.drive;
-    const lastSensorAnchor = lastPhase.sensor;
-    const axis = axes?.[lastDriveAnchor];
-    if (!axis) {
+    const driveAxis = axes?.[phase.drive];
+    if (!driveAxis) {
       throw new Error('torque-ramp requires axes mapping for reposition step');
     }
 
-    // Drop the last ramping motor back to low torque and move the last drive motor back to its sweep start position.
-    await sendFn(`M569.4 P${motorIds[lastSensorAnchor]} T${torqueLow}`);
-    await sendFn(`M569.4 P${motorIds[lastDriveAnchor]} T0.0`);
-    const lengthsAfter = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-    const current = lengthsAfter[lastDriveAnchor] ?? 0;
-    const target = sweepStartLengths[lastDriveAnchor] ?? 0;
-    const delta = target - current;
-    if (Math.abs(delta) > 1e-6) {
-      await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
+    // Start: both motors in torque mode. Ramp the sensor torque multiplicatively to max.
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T${torqueLow}`);
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${sensorMotorId} T${minRampTorque}`);
+    if (Number.isFinite(rampMultiplier) && rampMultiplier > 0) {
+      for (let i = 0; i < rampSteps; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(rampIntervalMs);
+        const nextTorque = minRampTorque * Math.pow(rampMultiplier, i + 1);
+        const clamped = Math.min(Math.max(nextTorque, Math.min(minRampTorque, maxRampTorque)), Math.max(minRampTorque, maxRampTorque));
+        // eslint-disable-next-line no-await-in-loop
+        await sendFn(`M569.4 P${sensorMotorId} T${clamped}`);
+      }
+    } else {
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(rampIntervalMs * rampSteps);
+      // eslint-disable-next-line no-await-in-loop
+      await sendFn(`M569.4 P${sensorMotorId} T${maxRampTorque}`);
     }
-    await sendFn(`M569.4 P${motorIds[lastDriveAnchor]} T${torqueLow}`);
+
+    // After max torque: settle, then driver to position mode and sensor back to low torque.
+    // eslint-disable-next-line no-await-in-loop
+    await waitForStableEncoders(sendFn, motorIds, { speedup });
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T0.0`);
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${sensorMotorId} T${torqueLow}`);
+
+    const segmentCount = Math.max(1, Math.floor(rampTorques.length));
+
+    // First measurement at the current offset.
+    // eslint-disable-next-line no-await-in-loop
+    const firstLengths = await recordMeasurement(phase, {
+      phaseLabel: phase.drive === anchorA ? 'A_return' : 'B_return',
+      stepIndex: 0,
+      stepCount: segmentCount + 1,
+      driveSetpointMm: null,
+    });
+
+    // Return the driver motor to its start point in segments, measuring after each segment.
+    const target = sweepStartLengths[phase.drive] ?? 0;
+    const current = firstLengths[phase.drive] ?? 0;
+    const totalDelta = target - current;
+    const segmentDelta = segmentCount > 0 ? totalDelta / segmentCount : totalDelta;
+    const roundToGcodeMm = (value) => Math.round(value * 1000) / 1000;
+    let commanded = 0;
+
+    for (let segIdx = 0; segIdx < segmentCount; segIdx += 1) {
+      const desired = segIdx === segmentCount - 1
+        ? totalDelta - commanded
+        : segmentDelta;
+      const delta = roundToGcodeMm(desired);
+      commanded += delta;
+      if (Math.abs(delta) > 1e-6) {
+        // eslint-disable-next-line no-await-in-loop
+        await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await recordMeasurement(phase, {
+        phaseLabel: phase.drive === anchorA ? 'A_return' : 'B_return',
+        stepIndex: segIdx + 1,
+        stepCount: segmentCount + 1,
+        driveSetpointMm: null,
+      });
+    }
+
+    // End: put driver motor back into low torque mode (sensor already low torque).
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T${torqueLow}`);
   }
+
+  await sendFn(`M569.4 P${motorIds[anchorA]} T${torqueLow}`);
+  await sendFn(`M569.4 P${motorIds[anchorB]} T${torqueLow}`);
 
   return dataPoints;
 }

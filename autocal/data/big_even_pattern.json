@@ -1,0 +1,5091 @@
+{
+  "version": "2.0",
+  "machine_type": "slideprinter",
+  "num_anchors": 3,
+  "dimensions": 2,
+  "timestamp": "2025-12-16T11:50:13.889Z",
+  "config": {
+    "angles_unit": "deg",
+    "lengths_unit": "mm",
+    "m666": {
+      "M": 666,
+      "A": 2,
+      "Q": 0,
+      "R": [
+        30,
+        30,
+        30
+      ],
+      "U": [
+        1,
+        1,
+        1
+      ],
+      "O": [
+        1,
+        1,
+        1
+      ],
+      "L": [
+        20,
+        20,
+        20
+      ],
+      "H": [
+        20,
+        20,
+        20
+      ],
+      "J": [
+        200,
+        200,
+        200
+      ],
+      "W": 0.01,
+      "S": 20000,
+      "I": [
+        3,
+        3,
+        3
+      ],
+      "X": [
+        170,
+        170,
+        170
+      ],
+      "Y": [
+        528.3,
+        528.3,
+        528.3
+      ],
+      "C": [
+        0,
+        0,
+        0
+      ],
+      "F": 0,
+      "B": 1,
+      "P": 0
+    },
+    "m666_before": {
+      "M": 666,
+      "A": 2,
+      "Q": 0,
+      "R": [
+        30,
+        30,
+        30
+      ],
+      "U": [
+        1,
+        1,
+        1
+      ],
+      "O": [
+        1,
+        1,
+        1
+      ],
+      "L": [
+        20,
+        20,
+        20
+      ],
+      "H": [
+        20,
+        20,
+        20
+      ],
+      "J": [
+        200,
+        200,
+        200
+      ],
+      "W": 0.01,
+      "S": 20000,
+      "I": [
+        3,
+        3,
+        3
+      ],
+      "X": [
+        170,
+        170,
+        170
+      ],
+      "Y": [
+        528.3,
+        528.3,
+        528.3
+      ],
+      "C": [
+        0,
+        0,
+        0
+      ],
+      "F": 0,
+      "B": 1,
+      "P": 0
+    },
+    "m669": {
+      "A": [
+        0
+      ],
+      "B": [
+        1645.45
+      ],
+      "C": [
+        -1645.45
+      ],
+      "P": []
+    },
+    "m92": {
+      "X": [],
+      "Y": [],
+      "Z": [],
+      "E": []
+    },
+    "mm_per_degree": [
+      0.5235987755982988,
+      0.5235987755982988,
+      0.5235987755982988
+    ],
+    "notes": {
+      "buildup_factor_forced": 0
+    }
+  },
+  "sweeps": [
+    {
+      "id": "sweep_001",
+      "fixed_anchors": [
+        0
+      ],
+      "fixed_lengths": [
+        -600
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 727.598094559152,
+          "l_sensor": 129.88914826266998,
+          "timestamp_ms": 2273,
+          "raw_angles_deg": [
+            -1145.85,
+            1389.61,
+            248.07
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 669.2220670676976,
+          "l_sensor": 151.46665380507588,
+          "timestamp_ms": 2507,
+          "raw_angles_deg": [
+            -1145.85,
+            1278.12,
+            289.28
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 610.8512755639994,
+          "l_sensor": 178.1230674707853,
+          "timestamp_ms": 2740,
+          "raw_angles_deg": [
+            -1145.84,
+            1166.64,
+            340.19
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 552.475248072545,
+          "l_sensor": 210.13066062310926,
+          "timestamp_ms": 2941,
+          "raw_angles_deg": [
+            -1145.84,
+            1055.15,
+            401.32
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 494.09922058109066,
+          "l_sensor": 247.91354827028252,
+          "timestamp_ms": 3140,
+          "raw_angles_deg": [
+            -1145.83,
+            943.66,
+            473.48
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 435.72842907739226,
+          "l_sensor": 292.13670085731485,
+          "timestamp_ms": 3345,
+          "raw_angles_deg": [
+            -1145.83,
+            832.18,
+            557.94
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 377.352401585938,
+          "l_sensor": 343.74259618028316,
+          "timestamp_ms": 3541,
+          "raw_angles_deg": [
+            -1145.85,
+            720.69,
+            656.5
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 318.9973180455076,
+          "l_sensor": 404.2391987129106,
+          "timestamp_ms": 3728,
+          "raw_angles_deg": [
+            -1145.9,
+            609.24,
+            772.04
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 129.88914826266998,
+          "l_sensor": 727.598094559152,
+          "timestamp_ms": 4308,
+          "raw_angles_deg": [
+            -1145.85,
+            248.07,
+            1389.61
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 151.46665380507588,
+          "l_sensor": 669.2220670676976,
+          "timestamp_ms": 4508,
+          "raw_angles_deg": [
+            -1145.85,
+            289.28,
+            1278.12
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 178.1230674707853,
+          "l_sensor": 610.8512755639994,
+          "timestamp_ms": 4709,
+          "raw_angles_deg": [
+            -1145.84,
+            340.19,
+            1166.64
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 210.13066062310926,
+          "l_sensor": 552.475248072545,
+          "timestamp_ms": 4908,
+          "raw_angles_deg": [
+            -1145.84,
+            401.32,
+            1055.15
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 247.91354827028252,
+          "l_sensor": 494.09922058109066,
+          "timestamp_ms": 5109,
+          "raw_angles_deg": [
+            -1145.83,
+            473.48,
+            943.66
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 292.13670085731485,
+          "l_sensor": 435.72842907739226,
+          "timestamp_ms": 5309,
+          "raw_angles_deg": [
+            -1145.83,
+            557.94,
+            832.18
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 343.74259618028316,
+          "l_sensor": 377.352401585938,
+          "timestamp_ms": 5509,
+          "raw_angles_deg": [
+            -1145.85,
+            656.5,
+            720.69
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 404.1920748231068,
+          "l_sensor": 318.97113810672766,
+          "timestamp_ms": 5709,
+          "raw_angles_deg": [
+            -1145.83,
+            771.95,
+            609.19
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 0,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_002",
+      "fixed_anchors": [
+        0
+      ],
+      "fixed_lengths": [
+        -200
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 620.5640328513477,
+          "l_sensor": -243.9551415267594,
+          "timestamp_ms": 8211,
+          "raw_angles_deg": [
+            -381.9,
+            1185.19,
+            -465.92
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 548.9985522025723,
+          "l_sensor": -213.00521790114394,
+          "timestamp_ms": 8445,
+          "raw_angles_deg": [
+            -381.9,
+            1048.51,
+            -406.81
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 477.13462025170577,
+          "l_sensor": -176.11768416024378,
+          "timestamp_ms": 8679,
+          "raw_angles_deg": [
+            -381.89,
+            911.26,
+            -336.36
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 405.27068830083925,
+          "l_sensor": -133.46532790000637,
+          "timestamp_ms": 8912,
+          "raw_angles_deg": [
+            -381.89,
+            774.01,
+            -254.9
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 333.41199233772875,
+          "l_sensor": -85.0429131326757,
+          "timestamp_ms": 9145,
+          "raw_angles_deg": [
+            -381.89,
+            636.77,
+            -162.42
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 261.54806038686223,
+          "l_sensor": -30.724776152108173,
+          "timestamp_ms": 9379,
+          "raw_angles_deg": [
+            -381.89,
+            499.52,
+            -58.68
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 189.6841284359957,
+          "l_sensor": 29.761354405007307,
+          "timestamp_ms": 9645,
+          "raw_angles_deg": [
+            -381.89,
+            362.27,
+            56.84
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 117.82543247288518,
+          "l_sensor": 96.90766138773316,
+          "timestamp_ms": 9880,
+          "raw_angles_deg": [
+            -381.9,
+            225.03,
+            185.08
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -243.94990553900342,
+          "l_sensor": 620.5640328513477,
+          "timestamp_ms": 10680,
+          "raw_angles_deg": [
+            -381.9,
+            -465.91,
+            1185.19
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -211.6333891090764,
+          "l_sensor": 546.1082869612696,
+          "timestamp_ms": 10913,
+          "raw_angles_deg": [
+            -381.9,
+            -404.19,
+            1042.99
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -172.87137175153435,
+          "l_sensor": 471.30172989154073,
+          "timestamp_ms": 11147,
+          "raw_angles_deg": [
+            -381.89,
+            -330.16,
+            900.12
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -127.86282100110456,
+          "l_sensor": 396.49517282181176,
+          "timestamp_ms": 11381,
+          "raw_angles_deg": [
+            -381.89,
+            -244.2,
+            757.25
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -76.59202889451915,
+          "l_sensor": 321.6886157520828,
+          "timestamp_ms": 11614,
+          "raw_angles_deg": [
+            -381.89,
+            -146.28,
+            614.38
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -18.89144382358662,
+          "l_sensor": 246.88205868235386,
+          "timestamp_ms": 11848,
+          "raw_angles_deg": [
+            -381.89,
+            -36.08,
+            471.51
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 45.57403742807593,
+          "l_sensor": 172.07550161262492,
+          "timestamp_ms": 12081,
+          "raw_angles_deg": [
+            -381.89,
+            87.04,
+            328.64
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 117.45367734221038,
+          "l_sensor": 97.26894454289598,
+          "timestamp_ms": 12316,
+          "raw_angles_deg": [
+            -381.9,
+            224.32,
+            185.77
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 1,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_003",
+      "fixed_anchors": [
+        0
+      ],
+      "fixed_lengths": [
+        200
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 702.1459580773187,
+          "l_sensor": -656.82324806153,
+          "timestamp_ms": 15484,
+          "raw_angles_deg": [
+            381.94,
+            1341,
+            -1254.44
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 589.1114544011579,
+          "l_sensor": -609.2333553474006,
+          "timestamp_ms": 15818,
+          "raw_angles_deg": [
+            381.94,
+            1125.12,
+            -1163.55
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 476.6005495005955,
+          "l_sensor": -548.9409563372566,
+          "timestamp_ms": 16151,
+          "raw_angles_deg": [
+            381.94,
+            910.24,
+            -1048.4
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 364.0948805877891,
+          "l_sensor": -477.24457599458145,
+          "timestamp_ms": 16485,
+          "raw_angles_deg": [
+            381.94,
+            695.37,
+            -911.47
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 251.58921167498258,
+          "l_sensor": -395.47415520939506,
+          "timestamp_ms": 16826,
+          "raw_angles_deg": [
+            381.94,
+            480.5,
+            -755.3
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 139.07830677442013,
+          "l_sensor": -304.6192956675783,
+          "timestamp_ms": 17151,
+          "raw_angles_deg": [
+            381.95,
+            265.62,
+            -581.78
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 26.572637861613664,
+          "l_sensor": -205.292607936581,
+          "timestamp_ms": 17486,
+          "raw_angles_deg": [
+            381.95,
+            50.75,
+            -392.08
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -85.9330310511928,
+          "l_sensor": -97.5988117715229,
+          "timestamp_ms": 17820,
+          "raw_angles_deg": [
+            381.95,
+            -164.12,
+            -186.4
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -625.8890323991824,
+          "l_sensor": 625.0408023827132,
+          "timestamp_ms": 18753,
+          "raw_angles_deg": [
+            381.96,
+            -1195.36,
+            1193.74
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -574.9690514722479,
+          "l_sensor": 522.3735544633988,
+          "timestamp_ms": 19055,
+          "raw_angles_deg": [
+            381.96,
+            -1098.11,
+            997.66
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -513.6032749721272,
+          "l_sensor": 419.0518080745865,
+          "timestamp_ms": 19404,
+          "raw_angles_deg": [
+            381.94,
+            -980.91,
+            800.33
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -443.3049033602997,
+          "l_sensor": 315.73529767353017,
+          "timestamp_ms": 19754,
+          "raw_angles_deg": [
+            381.96,
+            -846.65,
+            603.01
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -364.8802787511865,
+          "l_sensor": 212.41878727247385,
+          "timestamp_ms": 20056,
+          "raw_angles_deg": [
+            381.96,
+            -696.87,
+            405.69
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -279.0048435653095,
+          "l_sensor": 109.10751285917351,
+          "timestamp_ms": 20390,
+          "raw_angles_deg": [
+            381.95,
+            -532.86,
+            208.38
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -186.0294089823196,
+          "l_sensor": 5.780530482605219,
+          "timestamp_ms": 20738,
+          "raw_angles_deg": [
+            381.95,
+            -355.29,
+            11.04
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -86.04298679406845,
+          "l_sensor": -97.52550794293913,
+          "timestamp_ms": 21055,
+          "raw_angles_deg": [
+            381.96,
+            -164.33,
+            -186.26
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 2,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_004",
+      "fixed_anchors": [
+        0
+      ],
+      "fixed_lengths": [
+        600
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 773.5962469954626,
+          "l_sensor": -1032.4791896145296,
+          "timestamp_ms": 22990,
+          "raw_angles_deg": [
+            1145.92,
+            1477.46,
+            -1971.89
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 631.8109345511992,
+          "l_sensor": -952.8869397358321,
+          "timestamp_ms": 23390,
+          "raw_angles_deg": [
+            1145.92,
+            1206.67,
+            -1819.88
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 490.80578428257735,
+          "l_sensor": -854.9425527724143,
+          "timestamp_ms": 23807,
+          "raw_angles_deg": [
+            1145.94,
+            937.37,
+            -1632.82
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 349.78492605068755,
+          "l_sensor": -743.4579014720246,
+          "timestamp_ms": 24207,
+          "raw_angles_deg": [
+            1145.93,
+            668.04,
+            -1419.9
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 208.76930380655372,
+          "l_sensor": -622.2552568965303,
+          "timestamp_ms": 24607,
+          "raw_angles_deg": [
+            1145.93,
+            398.72,
+            -1188.42
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 67.75368156241987,
+          "l_sensor": -493.91072502187524,
+          "timestamp_ms": 25008,
+          "raw_angles_deg": [
+            1145.93,
+            129.4,
+            -943.3
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -73.26194068171397,
+          "l_sensor": -360.00557415036633,
+          "timestamp_ms": 25408,
+          "raw_angles_deg": [
+            1145.93,
+            -139.92,
+            -687.56
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -214.27232693809182,
+          "l_sensor": -221.38279831071674,
+          "timestamp_ms": 25843,
+          "raw_angles_deg": [
+            1145.93,
+            -409.23,
+            -422.81
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -1032.3849418349218,
+          "l_sensor": 773.3082676688836,
+          "timestamp_ms": 26692,
+          "raw_angles_deg": [
+            1145.94,
+            -1971.71,
+            1476.91
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -952.1381934867265,
+          "l_sensor": 630.632837306103,
+          "timestamp_ms": 27093,
+          "raw_angles_deg": [
+            1145.92,
+            -1818.45,
+            1204.42
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -853.1361369966,
+          "l_sensor": 488.4391178168731,
+          "timestamp_ms": 27493,
+          "raw_angles_deg": [
+            1145.92,
+            -1629.37,
+            932.85
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -740.4786244388702,
+          "l_sensor": 346.24016233988704,
+          "timestamp_ms": 27893,
+          "raw_angles_deg": [
+            1145.93,
+            -1414.21,
+            661.27
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -618.029814777452,
+          "l_sensor": 204.04644285065703,
+          "timestamp_ms": 28327,
+          "raw_angles_deg": [
+            1145.93,
+            -1180.35,
+            389.7
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -488.3710499760453,
+          "l_sensor": 61.85272336142704,
+          "timestamp_ms": 28727,
+          "raw_angles_deg": [
+            1145.93,
+            -932.72,
+            118.13
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -353.16737414105256,
+          "l_sensor": -80.33052415229099,
+          "timestamp_ms": 29145,
+          "raw_angles_deg": [
+            1145.93,
+            -674.5,
+            -153.42
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -213.13611759504352,
+          "l_sensor": -222.52424364152102,
+          "timestamp_ms": 29545,
+          "raw_angles_deg": [
+            1145.93,
+            -407.06,
+            -424.99
+          ],
+          "fixed_anchors": [
+            0
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 3,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_005",
+      "fixed_anchors": [
+        1
+      ],
+      "fixed_lengths": [
+        -600
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 727.598094559152,
+          "l_sensor": 129.3917294258516,
+          "timestamp_ms": 33649,
+          "raw_angles_deg": [
+            1389.61,
+            -1144.95,
+            247.12
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 674.8716978564033,
+          "l_sensor": 148.69681628216088,
+          "timestamp_ms": 33832,
+          "raw_angles_deg": [
+            1288.91,
+            -1145.02,
+            283.99
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 622.33379671287,
+          "l_sensor": 171.94460191872534,
+          "timestamp_ms": 34015,
+          "raw_angles_deg": [
+            1188.57,
+            -1144.94,
+            328.39
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 569.7958955693367,
+          "l_sensor": 199.5644373315356,
+          "timestamp_ms": 34198,
+          "raw_angles_deg": [
+            1088.23,
+            -1145.01,
+            381.14
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 517.2475224502914,
+          "l_sensor": 231.65580628795536,
+          "timestamp_ms": 34389,
+          "raw_angles_deg": [
+            987.87,
+            -1144.93,
+            442.43
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 464.7148572945141,
+          "l_sensor": 268.7841954656307,
+          "timestamp_ms": 34571,
+          "raw_angles_deg": [
+            887.54,
+            -1145.01,
+            513.34
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 412.16648417546884,
+          "l_sensor": 311.4103717870882,
+          "timestamp_ms": 34749,
+          "raw_angles_deg": [
+            787.18,
+            -1144.94,
+            594.75
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 359.6285830319356,
+          "l_sensor": 360.47681304840484,
+          "timestamp_ms": 34937,
+          "raw_angles_deg": [
+            686.84,
+            -1144.99,
+            688.46
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 129.3917294258516,
+          "l_sensor": 727.598094559152,
+          "timestamp_ms": 35533,
+          "raw_angles_deg": [
+            247.12,
+            -1144.95,
+            1389.61
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 148.62351245357712,
+          "l_sensor": 675.0497214401067,
+          "timestamp_ms": 35716,
+          "raw_angles_deg": [
+            283.85,
+            -1145.02,
+            1289.25
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 171.86082611462962,
+          "l_sensor": 622.5118202965734,
+          "timestamp_ms": 35900,
+          "raw_angles_deg": [
+            328.23,
+            -1144.94,
+            1188.91
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 199.46495356417194,
+          "l_sensor": 569.9686831652841,
+          "timestamp_ms": 36083,
+          "raw_angles_deg": [
+            380.95,
+            -1145.01,
+            1088.56
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 231.53537856956774,
+          "l_sensor": 517.4255460339949,
+          "timestamp_ms": 36267,
+          "raw_angles_deg": [
+            442.2,
+            -1144.93,
+            988.21
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 268.64805978397516,
+          "l_sensor": 464.89288087821757,
+          "timestamp_ms": 36451,
+          "raw_angles_deg": [
+            513.08,
+            -1145.01,
+            887.88
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 311.30041604421257,
+          "l_sensor": 412.34974374692825,
+          "timestamp_ms": 36622,
+          "raw_angles_deg": [
+            594.54,
+            -1145,
+            787.53
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 360.2569015626535,
+          "l_sensor": 359.801370627883,
+          "timestamp_ms": 36802,
+          "raw_angles_deg": [
+            688.04,
+            -1144.95,
+            687.17
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 0,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_006",
+      "fixed_anchors": [
+        1
+      ],
+      "fixed_lengths": [
+        -200
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 619.7419827736584,
+          "l_sensor": -243.5833863960846,
+          "timestamp_ms": 39256,
+          "raw_angles_deg": [
+            1183.62,
+            -381.94,
+            -465.21
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 548.1136702718111,
+          "l_sensor": -212.53921499086147,
+          "timestamp_ms": 39486,
+          "raw_angles_deg": [
+            1046.82,
+            -381.93,
+            -405.92
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 474.89885347990105,
+          "l_sensor": -174.87675506207583,
+          "timestamp_ms": 39737,
+          "raw_angles_deg": [
+            906.99,
+            -381.89,
+            -333.99
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 401.67880070023494,
+          "l_sensor": -131.18243723839777,
+          "timestamp_ms": 39970,
+          "raw_angles_deg": [
+            767.15,
+            -381.89,
+            -250.54
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 328.46398390832485,
+          "l_sensor": -81.49814942187521,
+          "timestamp_ms": 40208,
+          "raw_angles_deg": [
+            627.32,
+            -381.89,
+            -155.65
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 255.24393112865872,
+          "l_sensor": -25.672047967584593,
+          "timestamp_ms": 40437,
+          "raw_angles_deg": [
+            487.48,
+            -381.89,
+            -49.03
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 182.02911433674856,
+          "l_sensor": 36.58908243880912,
+          "timestamp_ms": 40671,
+          "raw_angles_deg": [
+            347.65,
+            -381.89,
+            69.88
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 108.81429754483845,
+          "l_sensor": 105.83502051168414,
+          "timestamp_ms": 40904,
+          "raw_angles_deg": [
+            207.82,
+            -381.9,
+            202.13
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -243.69857812671623,
+          "l_sensor": 619.9147703696059,
+          "timestamp_ms": 41671,
+          "raw_angles_deg": [
+            -465.43,
+            -381.9,
+            1183.95
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -211.13073428450204,
+          "l_sensor": 545.0506174345611,
+          "timestamp_ms": 41905,
+          "raw_angles_deg": [
+            -403.23,
+            -381.9,
+            1040.97
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -173.16982305362538,
+          "l_sensor": 471.835800642651,
+          "timestamp_ms": 42138,
+          "raw_angles_deg": [
+            -330.73,
+            -381.89,
+            901.14
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -129.22417781766015,
+          "l_sensor": 398.61574786298485,
+          "timestamp_ms": 42372,
+          "raw_angles_deg": [
+            -246.8,
+            -381.89,
+            761.3
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -79.2833266010944,
+          "l_sensor": 325.40093107107475,
+          "timestamp_ms": 42605,
+          "raw_angles_deg": [
+            -151.42,
+            -381.89,
+            621.47
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -23.200661746760623,
+          "l_sensor": 252.18087829140865,
+          "timestamp_ms": 42839,
+          "raw_angles_deg": [
+            -44.31,
+            -381.89,
+            481.63
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 39.33797601070019,
+          "l_sensor": 178.96606149949855,
+          "timestamp_ms": 43072,
+          "raw_angles_deg": [
+            75.13,
+            -381.89,
+            341.8
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 108.89807334893418,
+          "l_sensor": 105.75124470758841,
+          "timestamp_ms": 43306,
+          "raw_angles_deg": [
+            207.98,
+            -381.9,
+            201.97
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 1,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_007",
+      "fixed_anchors": [
+        1
+      ],
+      "fixed_lengths": [
+        200
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 625.2764218317325,
+          "l_sensor": -625.9937521543021,
+          "timestamp_ms": 45324,
+          "raw_angles_deg": [
+            1194.19,
+            381.96,
+            -1195.56
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 523.4364599778634,
+          "l_sensor": -575.5502461131621,
+          "timestamp_ms": 45624,
+          "raw_angles_deg": [
+            999.69,
+            381.96,
+            -1099.22
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 421.2352149688314,
+          "l_sensor": -515.0379356172666,
+          "timestamp_ms": 45925,
+          "raw_angles_deg": [
+            804.5,
+            381.96,
+            -983.65
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 319.03396995979944,
+          "l_sensor": -445.682041801516,
+          "timestamp_ms": 46225,
+          "raw_angles_deg": [
+            609.31,
+            381.96,
+            -851.19
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 216.83796093852348,
+          "l_sensor": -368.3883905476951,
+          "timestamp_ms": 46526,
+          "raw_angles_deg": [
+            414.13,
+            381.96,
+            -703.57
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 114.64195191724752,
+          "l_sensor": -283.79053637427796,
+          "timestamp_ms": 46825,
+          "raw_angles_deg": [
+            218.95,
+            381.95,
+            -542
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 12.445942895971562,
+          "l_sensor": -192.2707063874513,
+          "timestamp_ms": 47126,
+          "raw_angles_deg": [
+            23.77,
+            381.96,
+            -367.21
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -89.7500661253044,
+          "l_sensor": -93.82890058721514,
+          "timestamp_ms": 47443,
+          "raw_angles_deg": [
+            -171.41,
+            381.96,
+            -179.2
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -626.3079114196612,
+          "l_sensor": 625.9832801787901,
+          "timestamp_ms": 48326,
+          "raw_angles_deg": [
+            -1196.16,
+            381.96,
+            1195.54
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -575.4507623457984,
+          "l_sensor": 523.25843639416,
+          "timestamp_ms": 48627,
+          "raw_angles_deg": [
+            -1099.03,
+            381.96,
+            999.35
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -514.6975964131277,
+          "l_sensor": 420.7063802054771,
+          "timestamp_ms": 48927,
+          "raw_angles_deg": [
+            -983,
+            381.96,
+            803.49
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -445.04848728304205,
+          "l_sensor": 318.1543240167943,
+          "timestamp_ms": 49228,
+          "raw_angles_deg": [
+            -849.98,
+            381.96,
+            607.63
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -367.4092608373263,
+          "l_sensor": 215.6022678281115,
+          "timestamp_ms": 49528,
+          "raw_angles_deg": [
+            -701.7,
+            381.96,
+            411.77
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -282.4187075822104,
+          "l_sensor": 113.0502116394287,
+          "timestamp_ms": 49828,
+          "raw_angles_deg": [
+            -539.38,
+            381.95,
+            215.91
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -190.46429061163718,
+          "l_sensor": 10.503391438501874,
+          "timestamp_ms": 50128,
+          "raw_angles_deg": [
+            -363.76,
+            381.96,
+            20.06
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -91.53030196233861,
+          "l_sensor": -92.04866475018093,
+          "timestamp_ms": 50429,
+          "raw_angles_deg": [
+            -174.81,
+            381.96,
+            -175.8
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 2,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_008",
+      "fixed_anchors": [
+        1
+      ],
+      "fixed_lengths": [
+        600
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 773.5438871179027,
+          "l_sensor": -1032.5001335655534,
+          "timestamp_ms": 52363,
+          "raw_angles_deg": [
+            1477.36,
+            1145.94,
+            -1971.93
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 632.9995037718074,
+          "l_sensor": -953.6828098747416,
+          "timestamp_ms": 52764,
+          "raw_angles_deg": [
+            1208.94,
+            1145.94,
+            -1821.4
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 491.5126426296351,
+          "l_sensor": -855.4713875357685,
+          "timestamp_ms": 53163,
+          "raw_angles_deg": [
+            938.72,
+            1145.94,
+            -1633.83
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 350.02054549970677,
+          "l_sensor": -743.6516330189959,
+          "timestamp_ms": 53566,
+          "raw_angles_deg": [
+            668.49,
+            1145.93,
+            -1420.27
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 208.53368435753447,
+          "l_sensor": -622.0510533740469,
+          "timestamp_ms": 54015,
+          "raw_angles_deg": [
+            398.27,
+            1145.93,
+            -1188.03
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 67.04682321536217,
+          "l_sensor": -493.2509905646214,
+          "timestamp_ms": 54448,
+          "raw_angles_deg": [
+            128.05,
+            1145.93,
+            -942.04
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -74.44003792681013,
+          "l_sensor": -358.869364807318,
+          "timestamp_ms": 54849,
+          "raw_angles_deg": [
+            -142.17,
+            1145.93,
+            -685.39
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -215.92166308122646,
+          "l_sensor": -219.7334621675821,
+          "timestamp_ms": 55249,
+          "raw_angles_deg": [
+            -412.38,
+            1145.93,
+            -419.66
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -1031.395340149041,
+          "l_sensor": 771.2452884930262,
+          "timestamp_ms": 56099,
+          "raw_angles_deg": [
+            -1969.82,
+            1145.94,
+            1472.97
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -952.6617922623248,
+          "l_sensor": 631.4601233715483,
+          "timestamp_ms": 56500,
+          "raw_angles_deg": [
+            -1819.45,
+            1145.92,
+            1206
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -854.3247062172084,
+          "l_sensor": 490.0256221069359,
+          "timestamp_ms": 56900,
+          "raw_angles_deg": [
+            -1631.64,
+            1145.92,
+            935.88
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -742.4368838596079,
+          "l_sensor": 348.5963568300794,
+          "timestamp_ms": 57301,
+          "raw_angles_deg": [
+            -1417.95,
+            1145.93,
+            665.77
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -620.799652300367,
+          "l_sensor": 207.16709155322292,
+          "timestamp_ms": 57701,
+          "raw_angles_deg": [
+            -1185.64,
+            1145.93,
+            395.66
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -491.99958949094145,
+          "l_sensor": 65.73782627636642,
+          "timestamp_ms": 58102,
+          "raw_angles_deg": [
+            -939.65,
+            1145.93,
+            125.55
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -357.67032361119794,
+          "l_sensor": -75.67573103722214,
+          "timestamp_ms": 58551,
+          "raw_angles_deg": [
+            -683.1,
+            1145.93,
+            -144.53
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -218.55536492248592,
+          "l_sensor": -217.10499631407862,
+          "timestamp_ms": 58953,
+          "raw_angles_deg": [
+            -417.41,
+            1145.93,
+            -414.64
+          ],
+          "fixed_anchors": [
+            1
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 3,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_009",
+      "fixed_anchors": [
+        2
+      ],
+      "fixed_lengths": [
+        -600
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 727.598094559152,
+          "l_sensor": 129.88914826266998,
+          "timestamp_ms": 65990,
+          "raw_angles_deg": [
+            1389.61,
+            248.07,
+            -1145.85
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 676.9399130200165,
+          "l_sensor": 148.33029713924208,
+          "timestamp_ms": 66158,
+          "raw_angles_deg": [
+            1292.86,
+            283.29,
+            -1145.85
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 624.5695634846747,
+          "l_sensor": 171.43147511863904,
+          "timestamp_ms": 66341,
+          "raw_angles_deg": [
+            1192.84,
+            327.41,
+            -1145.91
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 572.2096859248448,
+          "l_sensor": 198.69002737628648,
+          "timestamp_ms": 66524,
+          "raw_angles_deg": [
+            1092.84,
+            379.47,
+            -1145.84
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 519.8498083650151,
+          "l_sensor": 230.55101287144294,
+          "timestamp_ms": 66711,
+          "raw_angles_deg": [
+            992.84,
+            440.32,
+            -1145.91
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 467.47422284191714,
+          "l_sensor": 267.2238711143478,
+          "timestamp_ms": 66891,
+          "raw_angles_deg": [
+            892.81,
+            510.36,
+            -1145.82
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 415.11434528208724,
+          "l_sensor": 309.5097082316664,
+          "timestamp_ms": 67079,
+          "raw_angles_deg": [
+            792.81,
+            591.12,
+            -1145.9
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 362.6863998814296,
+          "l_sensor": 358.02113479084875,
+          "timestamp_ms": 67258,
+          "raw_angles_deg": [
+            692.68,
+            683.77,
+            -1145.85
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 129.88914826266998,
+          "l_sensor": 727.598094559152,
+          "timestamp_ms": 67859,
+          "raw_angles_deg": [
+            248.07,
+            1389.61,
+            -1145.85
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 149.70736191906562,
+          "l_sensor": 673.5260490031156,
+          "timestamp_ms": 68031,
+          "raw_angles_deg": [
+            285.92,
+            1286.34,
+            -1145.85
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 173.16982305362538,
+          "l_sensor": 620.9776758840704,
+          "timestamp_ms": 68217,
+          "raw_angles_deg": [
+            330.73,
+            1185.98,
+            -1145.91
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 200.8263103807275,
+          "l_sensor": 568.4397747405371,
+          "timestamp_ms": 68393,
+          "raw_angles_deg": [
+            383.55,
+            1085.64,
+            -1145.84
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 233.1428268106545,
+          "l_sensor": 515.9018735970038,
+          "timestamp_ms": 68576,
+          "raw_angles_deg": [
+            445.27,
+            985.3,
+            -1145.91
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 270.34451981691365,
+          "l_sensor": 463.35350047795856,
+          "timestamp_ms": 68760,
+          "raw_angles_deg": [
+            516.32,
+            884.94,
+            -1145.82
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 313.2377315139263,
+          "l_sensor": 410.81559933442526,
+          "timestamp_ms": 68943,
+          "raw_angles_deg": [
+            598.24,
+            784.6,
+            -1145.9
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 362.44030845689844,
+          "l_sensor": 358.27246220313594,
+          "timestamp_ms": 69126,
+          "raw_angles_deg": [
+            692.21,
+            684.25,
+            -1145.85
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 0,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_010",
+      "fixed_anchors": [
+        2
+      ],
+      "fixed_lengths": [
+        -200
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 619.0351244266008,
+          "l_sensor": -243.3058790450175,
+          "timestamp_ms": 71580,
+          "raw_angles_deg": [
+            1182.27,
+            -464.68,
+            -381.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 545.406664601968,
+          "l_sensor": -211.25116200288963,
+          "timestamp_ms": 71820,
+          "raw_angles_deg": [
+            1041.65,
+            -403.46,
+            -381.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 472.3646354060053,
+          "l_sensor": -173.42115046591255,
+          "timestamp_ms": 72045,
+          "raw_angles_deg": [
+            902.15,
+            -331.21,
+            -381.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 399.3226062100426,
+          "l_sensor": -129.63258486262683,
+          "timestamp_ms": 72282,
+          "raw_angles_deg": [
+            762.65,
+            -247.58,
+            -381.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 326.2805770140799,
+          "l_sensor": -79.92211710732433,
+          "timestamp_ms": 72529,
+          "raw_angles_deg": [
+            623.15,
+            -152.64,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 253.24378380587322,
+          "l_sensor": -24.054127750985845,
+          "timestamp_ms": 72763,
+          "raw_angles_deg": [
+            483.66,
+            -45.94,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 180.20175460991052,
+          "l_sensor": 38.2279466064318,
+          "timestamp_ms": 72996,
+          "raw_angles_deg": [
+            344.16,
+            73.01,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 107.1649614017038,
+          "l_sensor": 107.48435665481878,
+          "timestamp_ms": 73230,
+          "raw_angles_deg": [
+            204.67,
+            205.28,
+            -381.9
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -243.09643953477817,
+          "l_sensor": 618.3806259571029,
+          "timestamp_ms": 74030,
+          "raw_angles_deg": [
+            -464.28,
+            1181.02,
+            -381.9
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -211.15691422328194,
+          "l_sensor": 545.1082132998769,
+          "timestamp_ms": 74264,
+          "raw_angles_deg": [
+            -403.28,
+            1041.08,
+            -381.9
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -173.26930682098904,
+          "l_sensor": 472.00858823859846,
+          "timestamp_ms": 74498,
+          "raw_angles_deg": [
+            -330.92,
+            901.47,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -129.41267337687555,
+          "l_sensor": 398.90896317731995,
+          "timestamp_ms": 74731,
+          "raw_angles_deg": [
+            -247.16,
+            761.86,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -79.58177790318544,
+          "l_sensor": 325.80933811604143,
+          "timestamp_ms": 74965,
+          "raw_angles_deg": [
+            -151.99,
+            622.25,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -23.630012742751227,
+          "l_sensor": 252.71494904251892,
+          "timestamp_ms": 75198,
+          "raw_angles_deg": [
+            -45.13,
+            482.65,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 38.756781369786076,
+          "l_sensor": 179.61532398124044,
+          "timestamp_ms": 75444,
+          "raw_angles_deg": [
+            74.02,
+            343.04,
+            -381.89
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 108.13361913656068,
+          "l_sensor": 106.51569891996193,
+          "timestamp_ms": 75668,
+          "raw_angles_deg": [
+            206.52,
+            203.43,
+            -381.9
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            -200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 1,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_011",
+      "fixed_anchors": [
+        2
+      ],
+      "fixed_lengths": [
+        200
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 699.0253093747529,
+          "l_sensor": -655.7393985960414,
+          "timestamp_ms": 78834,
+          "raw_angles_deg": [
+            1335.04,
+            -1252.37,
+            381.96
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 587.226498809004,
+          "l_sensor": -608.3222934778595,
+          "timestamp_ms": 79184,
+          "raw_angles_deg": [
+            1121.52,
+            -1161.81,
+            381.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 474.301950875719,
+          "l_sensor": -547.5848355084569,
+          "timestamp_ms": 79518,
+          "raw_angles_deg": [
+            905.85,
+            -1045.81,
+            381.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 361.38787491794585,
+          "l_sensor": -475.4329242310113,
+          "timestamp_ms": 79869,
+          "raw_angles_deg": [
+            690.2,
+            -908.01,
+            381.96
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 248.4633269846607,
+          "l_sensor": -393.0708368293989,
+          "timestamp_ms": 80236,
+          "raw_angles_deg": [
+            474.53,
+            -750.71,
+            381.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 135.5440150391316,
+          "l_sensor": -301.62954665891203,
+          "timestamp_ms": 80569,
+          "raw_angles_deg": [
+            258.87,
+            -576.07,
+            381.95
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 22.62470309360249,
+          "l_sensor": -201.6588324339288,
+          "timestamp_ms": 80936,
+          "raw_angles_deg": [
+            43.21,
+            -385.14,
+            381.95
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -90.29460885192663,
+          "l_sensor": -93.25294193405702,
+          "timestamp_ms": 81269,
+          "raw_angles_deg": [
+            -172.45,
+            -178.1,
+            381.95
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -626.6482506238,
+          "l_sensor": 626.7477343911637,
+          "timestamp_ms": 82170,
+          "raw_angles_deg": [
+            -1196.81,
+            1197,
+            381.96
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -575.3879304927266,
+          "l_sensor": 523.1380086757723,
+          "timestamp_ms": 82471,
+          "raw_angles_deg": [
+            -1098.91,
+            999.12,
+            381.96
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -514.5038648661564,
+          "l_sensor": 420.46552476870187,
+          "timestamp_ms": 82788,
+          "raw_angles_deg": [
+            -982.63,
+            803.03,
+            381.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -444.744799993195,
+          "l_sensor": 317.79304086163154,
+          "timestamp_ms": 83088,
+          "raw_angles_deg": [
+            -849.4,
+            606.94,
+            381.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -366.9903818168476,
+          "l_sensor": 215.12579294231705,
+          "timestamp_ms": 83388,
+          "raw_angles_deg": [
+            -700.9,
+            410.86,
+            381.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -281.86369288007626,
+          "l_sensor": 112.45330903524665,
+          "timestamp_ms": 83693,
+          "raw_angles_deg": [
+            -538.32,
+            214.77,
+            381.95
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -189.8097921421393,
+          "l_sensor": 9.796533091444172,
+          "timestamp_ms": 84006,
+          "raw_angles_deg": [
+            -362.51,
+            18.71,
+            381.96
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -90.70825188464929,
+          "l_sensor": -92.87071482787026,
+          "timestamp_ms": 84305,
+          "raw_angles_deg": [
+            -173.24,
+            -177.37,
+            381.96
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            200
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 2,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    },
+    {
+      "id": "sweep_012",
+      "fixed_anchors": [
+        2
+      ],
+      "fixed_lengths": [
+        600
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1,
+      "drive_range": null,
+      "data_points": [
+        {
+          "l_drive": 773.0098163667924,
+          "l_sensor": -1032.2435701655102,
+          "timestamp_ms": 86242,
+          "raw_angles_deg": [
+            1476.34,
+            -1971.44,
+            1145.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 631.7062147960796,
+          "l_sensor": -952.8555238092961,
+          "timestamp_ms": 86640,
+          "raw_angles_deg": [
+            1206.47,
+            -1819.82,
+            1145.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 490.2769495192231,
+          "l_sensor": -854.5498536907155,
+          "timestamp_ms": 87041,
+          "raw_angles_deg": [
+            936.36,
+            -1632.07,
+            1145.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 348.8424482546106,
+          "l_sensor": -742.677739296383,
+          "timestamp_ms": 87442,
+          "raw_angles_deg": [
+            666.24,
+            -1418.41,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 207.4131829777541,
+          "l_sensor": -621.0562157004102,
+          "timestamp_ms": 87842,
+          "raw_angles_deg": [
+            396.13,
+            -1186.13,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": 65.9891536886536,
+          "l_sensor": -492.2613888787406,
+          "timestamp_ms": 88243,
+          "raw_angles_deg": [
+            126.03,
+            -940.15,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -75.4401115882029,
+          "l_sensor": -357.90070707246116,
+          "timestamp_ms": 88642,
+          "raw_angles_deg": [
+            -144.08,
+            -683.54,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -216.8641408773034,
+          "l_sensor": -218.79098437150515,
+          "timestamp_ms": 89042,
+          "raw_angles_deg": [
+            -414.18,
+            -417.86,
+            1145.92
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0,
+          "torque_sensor_nm": 0.03,
+          "assumed_tension_drive_n": 0,
+          "assumed_tension_sensor_n": 1,
+          "phase": "A_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -1030.9921690918302,
+          "l_sensor": 770.418002427581,
+          "timestamp_ms": 89893,
+          "raw_angles_deg": [
+            -1969.05,
+            1471.39,
+            1145.94
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 0,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -950.3736656129602,
+          "l_sensor": 627.8629997831881,
+          "timestamp_ms": 90293,
+          "raw_angles_deg": [
+            -1815.08,
+            1199.13,
+            1145.92
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 1,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -851.7643082045327,
+          "l_sensor": 486.611758090035,
+          "timestamp_ms": 90694,
+          "raw_angles_deg": [
+            -1626.75,
+            929.36,
+            1145.92
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 2,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -739.7927100428365,
+          "l_sensor": 345.37098837239387,
+          "timestamp_ms": 91112,
+          "raw_angles_deg": [
+            -1412.9,
+            659.61,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 3,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -618.0821746550118,
+          "l_sensor": 204.10403871597288,
+          "timestamp_ms": 91528,
+          "raw_angles_deg": [
+            -1180.45,
+            389.81,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 4,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -489.30829178436625,
+          "l_sensor": 62.85279702281979,
+          "timestamp_ms": 91928,
+          "raw_angles_deg": [
+            -934.51,
+            120.04,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 5,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -355.00520584340256,
+          "l_sensor": -78.39844467033328,
+          "timestamp_ms": 92329,
+          "raw_angles_deg": [
+            -678.01,
+            -149.73,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 6,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        },
+        {
+          "l_drive": -215.97925894654227,
+          "l_sensor": -219.65492235124233,
+          "timestamp_ms": 92732,
+          "raw_angles_deg": [
+            -412.49,
+            -419.51,
+            1145.93
+          ],
+          "fixed_anchors": [
+            2
+          ],
+          "fixed_lengths": [
+            600
+          ],
+          "torque_drive_nm": 0.03,
+          "torque_sensor_nm": 0,
+          "assumed_tension_drive_n": 1,
+          "assumed_tension_sensor_n": 0,
+          "phase": "B_return",
+          "torque_step_index": 7,
+          "torque_step_count": 8,
+          "drive_setpoint_mm": null
+        }
+      ],
+      "metadata": {
+        "sweep_method": "torque-ramp",
+        "feed_rate": 400,
+        "fixed_combo_index": 3,
+        "fixed_combo_count": 4,
+        "torque_low_nm": 0.03,
+        "torque_min_nm": 0.03,
+        "torque_max_nm": 0.3,
+        "torque_step_nm": 0.05,
+        "ramp_wait_ms": 1000,
+        "swap_wait_ms": 2000,
+        "speedup": 64
+      }
+    }
+  ]
+}

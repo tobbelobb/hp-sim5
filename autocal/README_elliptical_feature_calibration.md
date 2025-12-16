@@ -33,11 +33,16 @@ Sweep data is collected by:
 
 ```bash
 node scripts/collect_sweep_data.mjs \
-  --sweepRange 150 \
-  --superSweepRange 150 \
-  --superSweepPoints 3 \
-  --speedup 16 \
-  --trace
+  --sweep-method torque-ramp \
+  --speedup 64 \
+  --trace \
+  --torque-low 0.03 \
+  --torque-min 0.03 \
+  --torque-max 0.3 \
+  --torque-step 0.05 \
+  --feed 400 \
+  --superSweepRange 600 \
+  --superSweepPoints 4
 ```
 
 This produces a `sweep_data_*.json` file at repo root (or wherever the script writes it).
