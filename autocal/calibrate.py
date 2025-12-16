@@ -134,6 +134,59 @@ def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -
     return motor_pos_samp, dimensions
 
 
+def _extract_motor_and_tension_samples_from_sweep_dataset(
+    dataset: dict, max_samples: int
+) -> Tuple[np.ndarray, Optional[np.ndarray], int]:
+    """
+    Extract legacy motor samples plus optional per-axis tension hints.
+
+    For each data point we map:
+      data_points[].assumed_tension_drive_n  -> sweep.drive_anchor
+      data_points[].assumed_tension_sensor_n -> sweep.sensor_anchor
+    All other axes are NaN (unknown) and may be filled in by equilibrium.
+    """
+    motor_pos_samp, dimensions = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=0)
+    num_axes = int(motor_pos_samp.shape[1])
+
+    tensions_rows: List[List[float]] = []
+    have_any = False
+    for sweep in dataset.get("sweeps", []):
+        drive_idx = sweep.get("drive_anchor")
+        sensor_idx = sweep.get("sensor_anchor")
+        if drive_idx is None or sensor_idx is None:
+            continue
+        drive_idx = int(drive_idx)
+        sensor_idx = int(sensor_idx)
+        for p in sweep.get("data_points", []):
+            raw = p.get("raw_angles_deg")
+            if raw is None:
+                continue
+            row = [float("nan")] * num_axes
+            td = p.get("assumed_tension_drive_n")
+            ts = p.get("assumed_tension_sensor_n")
+            if td is not None:
+                row[drive_idx] = float(td)
+                have_any = True
+            if ts is not None:
+                row[sensor_idx] = float(ts)
+                have_any = True
+            tensions_rows.append(row)
+
+    tension_samp = np.asarray(tensions_rows, dtype=float) if tensions_rows else None
+    if tension_samp is not None and tension_samp.shape[0] != motor_pos_samp.shape[0]:
+        # Fallback: if ordering mismatch, disable tensions rather than risk misalignment.
+        tension_samp = None
+        have_any = False
+
+    if max_samples and motor_pos_samp.shape[0] > max_samples:
+        idx = np.linspace(0, motor_pos_samp.shape[0] - 1, max_samples).astype(int)
+        motor_pos_samp = motor_pos_samp[idx]
+        if tension_samp is not None:
+            tension_samp = tension_samp[idx]
+
+    return motor_pos_samp, (tension_samp if have_any else None), dimensions
+
+
 def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float]:
     if value is None:
         return [float(default)] * num_axes
@@ -345,6 +398,7 @@ def _load_legacy_simulation() -> Tuple[Any, Path]:
 def calibrate_point_based(
     use_flex: bool = True,
     use_line_lengths: bool = True,
+    flex_mode: str = "per_sample",
     verbose: bool = False,
     input_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
@@ -365,9 +419,12 @@ def calibrate_point_based(
 
     dimensions = 3
     machine_config = None
+    tension_samp = None
     if input_path is not None:
         dataset = _load_json(input_path)
-        motor_pos_samp, dimensions = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=max_samples)
+        motor_pos_samp, tension_samp, dimensions = _extract_motor_and_tension_samples_from_sweep_dataset(
+            dataset, max_samples=max_samples
+        )
         machine_config = _extract_legacy_machine_config(dataset, int(motor_pos_samp.shape[1]))
         if machine_config is not None and spring_k_multiplier != 1.0:
             base = machine_config.get("spring_k_per_unit_length")
@@ -398,6 +455,8 @@ def calibrate_point_based(
         ftol=float(ftol),
         eps=(None if eps is None else float(eps)),
         machine_config=machine_config,
+        flex_mode=str(flex_mode),
+        tension_samp=tension_samp,
     )
 
     params_anch = int(np.shape(motor_pos_samp)[1]) * 3
@@ -407,6 +466,7 @@ def calibrate_point_based(
         "anchors": np.asarray(anchors, dtype=float).tolist(),
         "solution_vector": np.asarray(solution_vec, dtype=float).tolist(),
         "use_flex": bool(use_flex),
+        "flex_mode": str(flex_mode),
         "use_line_lengths": bool(use_line_lengths),
     }
     if input_path is not None:
@@ -473,6 +533,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "--no-flex",
         action="store_true",
         help="Disable flex compensation (default: enabled).",
+    )
+    flex_mode_group = point_parser.add_mutually_exclusive_group()
+    flex_mode_group.add_argument(
+        "--per-sample-flex",
+        action="store_true",
+        help="Use per-sample flex from assumed tensions (default).",
+    )
+    flex_mode_group.add_argument(
+        "--inverse-transform-planned-flex",
+        action="store_true",
+        help="Use legacy inverse-transform planned flex (QP solver + tuned force limit).",
     )
     point_parser.add_argument(
         "--spring-k-multiplier",
@@ -542,9 +613,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if args.command == "point":
         verbose = bool(args.verbose or args.debug)
+        flex_mode = "per_sample"
+        if bool(args.inverse_transform_planned_flex):
+            flex_mode = "inverse_transform_planned"
         result = calibrate_point_based(
             use_flex=not bool(args.no_flex),
             use_line_lengths=not bool(args.no_line_lengths),
+            flex_mode=flex_mode,
             verbose=verbose,
             input_path=args.input_path,
             output_path=args.output,
