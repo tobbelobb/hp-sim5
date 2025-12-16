@@ -7,12 +7,13 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
-from autocal.ellipse_fitting import fit_ellipse_from_sweep
+from autocal.ellipse_fitting import ellipse_sampson_residuals, fit_ellipse_from_sweep
 from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
     anchors_vec_to_matrix,
     get_anchor_bounds,
+    predict_ellipse_coefficients,
     predict_ellipse_geometry,
 )
 
@@ -120,6 +121,37 @@ def geometry_distance_squared_normalized(
         + w_theta * (delta_theta**2)
     )
 
+def pointwise_sampson_cost_normalized(
+    coeffs: np.ndarray,
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    l2_scale: float,
+    weight: float = 1.0,
+) -> Tuple[float, float, float]:
+    """
+    Normalized pointwise cost of samples to a predicted ellipse.
+
+    Returns (cost, rms, max), where residual stats are in the squared-length plane's
+    units and cost is dimensionless (scaled by `l2_scale`).
+    """
+    coeffs = np.asarray(coeffs, dtype=float).reshape(6)
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+    if x.size == 0 or y.size == 0 or x.size != y.size:
+        return float("inf"), float("inf"), float("inf")
+
+    residuals = ellipse_sampson_residuals(coeffs, x, y)
+    if not np.all(np.isfinite(residuals)):
+        return float("inf"), float("inf"), float("inf")
+
+    rms = float(np.sqrt(np.mean(residuals**2)))
+    max_abs = float(np.max(np.abs(residuals)))
+
+    scale = float(max(l2_scale, 1.0))
+    cost = float(np.mean((residuals / scale) ** 2))
+    return float(weight) * cost, rms, max_abs
+
 
 def _dataset_metadata(
     dataset: Union[dict, "SweepDataset"]
@@ -153,11 +185,13 @@ class EllipseCostFunction:
         residual_threshold: float = 0.01,
         min_points: int = 10,
         use_weights: bool = True,
+        cost_mode: str = "geometry",
         invalid_sweep_penalty: float = 1e6,
         weight_floor: float = 1e-3,
         min_weight: float = 0.2,
         max_weight: float = 1.0,
         residual_cost_weight: float = 0.1,
+        pointwise_cost_weight: float = 1e8,
         spring_k_multiplier: float = 1.0,
         use_flex: bool = True,
     ) -> None:
@@ -172,11 +206,13 @@ class EllipseCostFunction:
         self.residual_threshold = residual_threshold
         self.min_points = min_points
         self.use_weights = use_weights
+        self.cost_mode = str(cost_mode or "geometry").strip().lower()
         self.invalid_penalty = invalid_sweep_penalty
         self.weight_floor = weight_floor
         self.min_weight = float(min_weight)
         self.max_weight = float(max_weight)
         self.residual_cost_weight = float(residual_cost_weight)
+        self.pointwise_cost_weight = float(pointwise_cost_weight)
 
         lb, ub = get_anchor_bounds(self.machine_type)
         ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
@@ -341,6 +377,58 @@ class EllipseCostFunction:
         geom = canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle)
         return geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
 
+    def _pointwise_predicted_cost(
+        self, sweep: Union[Sweep, dict], anchors: np.ndarray
+    ) -> Tuple[float, float, float, float, str]:
+        """
+        Pointwise cost of reconstructed samples against the predicted ellipse.
+
+        Returns (cost, rms, max_abs, violation_penalty, sweep_id).
+        """
+        (
+            fixed_lengths_abs,
+            drive_idx,
+            sensor_idx,
+            l_drive_abs,
+            l_sensor_abs,
+            sweep_id,
+            violation_penalty,
+        ) = self._reconstruct_lengths(sweep, anchors)
+
+        if self.flex_model is not None:
+            t_drive, t_sensor = self._extract_tension_arrays(sweep)
+            if (
+                t_drive is not None
+                and t_sensor is not None
+                and t_drive.shape == l_drive_abs.shape
+                and t_sensor.shape == l_sensor_abs.shape
+            ):
+                l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
+                l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
+
+        fixed_indices, _, drive_idx2, sensor_idx2, *_rest = self._extract_sweep_arrays(sweep)
+        coeffs = predict_ellipse_coefficients(
+            anchors,
+            fixed_indices,
+            fixed_lengths_abs,
+            drive_idx2,
+            sensor_idx2,
+            dimensions=self.dimensions,
+        )
+        if coeffs is None:
+            return float("inf"), float("inf"), float("inf"), float(violation_penalty), sweep_id
+
+        x = l_drive_abs**2
+        y = l_sensor_abs**2
+        cost, rms, max_abs = pointwise_sampson_cost_normalized(
+            coeffs,
+            x,
+            y,
+            l2_scale=self._l2_scale,
+            weight=self.pointwise_cost_weight,
+        )
+        return float(cost), float(rms), float(max_abs), float(violation_penalty), str(sweep_id)
+
     def evaluate(self, anchor_vec: np.ndarray) -> float:
         """Compute scalar cost for a flat anchor vector."""
         anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
@@ -352,6 +440,17 @@ class EllipseCostFunction:
         weights: List[float] = []
 
         for sweep in self.sweeps:
+            if self.cost_mode in ("pointwise", "sampson"):
+                cost, _rms, _max_abs, violation_penalty, _sid = self._pointwise_predicted_cost(
+                    sweep, anchors
+                )
+                weights.append(1.0)
+                if not np.isfinite(cost):
+                    weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
+                else:
+                    weighted_costs.append(float(cost + violation_penalty))
+                continue
+
             obs_geom, weight, fixed_lengths_abs, _, residual_ratio, violation_penalty = self._fit_observed_geometry(
                 sweep, anchors
             )
@@ -410,6 +509,19 @@ class EllipseCostFunction:
         weights: Dict[str, float] = {}
 
         for sweep in self.sweeps:
+            if self.cost_mode in ("pointwise", "sampson"):
+                cost, _rms, _max_abs, violation_penalty, sweep_id = self._pointwise_predicted_cost(
+                    sweep, anchors
+                )
+                weights[sweep_id] = 1.0
+                if not np.isfinite(cost):
+                    per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
+                    num_invalid += 1
+                else:
+                    per_sweep_costs[sweep_id] = float(cost + violation_penalty)
+                    num_valid += 1
+                continue
+
             obs_geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty = self._fit_observed_geometry(
                 sweep, anchors
             )

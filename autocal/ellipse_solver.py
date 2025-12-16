@@ -46,6 +46,7 @@ def solve_anchors(
     geometry_weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
     residual_threshold: float = 0.01,
     use_weights: bool = True,
+    cost_mode: str = "geometry",
     invalid_sweep_penalty: float = 1e6,
     spring_k_multiplier: float = 1.0,
     use_flex: bool = True,
@@ -75,6 +76,7 @@ def solve_anchors(
         geometry_weights=geometry_weights,
         residual_threshold=residual_threshold,
         use_weights=use_weights,
+        cost_mode=str(cost_mode),
         invalid_sweep_penalty=invalid_sweep_penalty,
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
@@ -136,6 +138,12 @@ def solve_anchors(
                 print(
                     f"  [{sid}] w={weight:.3g} rr={rr:.3g} viol={violation_penalty:.3g} pred={'ok' if pred_geom else 'none'} obs={'ok' if obs_geom else 'none'}"
                 )
+                try:
+                    p_cost, p_rms, p_max, _p_viol, _p_sid = cost_fn._pointwise_predicted_cost(sweep, anchors)  # type: ignore[attr-defined]
+                    if np.isfinite(p_cost):
+                        print(f"    pred Sampson rms={p_rms:.3g} max={p_max:.3g}")
+                except Exception:
+                    pass
 
                 # Print a compact geometric mismatch breakdown when available.
                 if obs_geom is None or pred_geom is None:

@@ -333,6 +333,7 @@ def calibrate_elliptical(
     use_flex: bool = False,
     verbose: bool = False,
     progress_every: int = 10,
+    cost_mode: str = "pointwise",
     generate_report: bool = True,
     include_debug_fits: bool = True,
 ) -> Dict[str, Any]:
@@ -357,6 +358,7 @@ def calibrate_elliptical(
             f"maxiter={max_iterations}",
             f"threshold={residual_threshold}",
             f"progress_every={progress_every}",
+            f"cost_mode={cost_mode}",
             f"flex={use_flex}",
         )
 
@@ -367,6 +369,7 @@ def calibrate_elliptical(
         num_restarts=num_restarts,
         progress_every=int(progress_every),
         residual_threshold=residual_threshold,
+        cost_mode=str(cost_mode),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
         verbose=verbose,
@@ -550,6 +553,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.add_argument("-r", "--restarts", type=int, default=8, help="Number of optimization restarts")
     ellipse_parser.add_argument("-i", "--iterations", type=int, default=1000, help="Max iterations per restart")
     ellipse_parser.add_argument(
+        "--cost-mode",
+        choices=["pointwise", "geometry"],
+        default="pointwise",
+        help="Ellipse cost mode: compare predicted ellipse to points (pointwise) or compare fitted vs predicted ellipse geometry (geometry).",
+    )
+    ellipse_parser.add_argument(
         "--progress-every",
         type=int,
         default=None,
@@ -689,6 +698,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 if args.progress_every is not None
                 else (1 if bool(args.debug) else 10)
             ),
+            cost_mode=str(args.cost_mode),
             generate_report=not args.no_report,
             include_debug_fits=not args.no_debug_fits,
         )
