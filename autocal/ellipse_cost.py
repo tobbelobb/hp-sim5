@@ -488,8 +488,9 @@ class EllipseCostFunction:
             )
 
             residual_cost = 0.0
-            if np.isfinite(residual_ratio):
-                residual_cost = self.residual_cost_weight * float(residual_ratio * residual_ratio)
+            if np.isfinite(residual_ratio) and float(residual_ratio) > 1.0:
+                dr = float(residual_ratio) - 1.0
+                residual_cost = self.residual_cost_weight * float(dr * dr)
             weighted_costs.append(float(geom_cost + residual_cost + violation_penalty))
 
         weight_sum = float(sum(weights)) if weights else 1.0
@@ -557,8 +558,9 @@ class EllipseCostFunction:
                 axes_scale=self._l2_scale,
             )
             residual_cost = 0.0
-            if np.isfinite(residual_ratio):
-                residual_cost = self.residual_cost_weight * float(residual_ratio * residual_ratio)
+            if np.isfinite(residual_ratio) and float(residual_ratio) > 1.0:
+                dr = float(residual_ratio) - 1.0
+                residual_cost = self.residual_cost_weight * float(dr * dr)
             per_sweep_costs[sweep_id] = float(geom_cost + residual_cost + violation_penalty)
             num_valid += 1
 

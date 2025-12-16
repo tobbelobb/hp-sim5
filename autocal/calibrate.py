@@ -12,6 +12,8 @@ Point-based calibration delegates to the legacy solver in
 """
 
 import argparse
+import contextlib
+import io
 import json
 import sys
 from dataclasses import asdict
@@ -103,6 +105,39 @@ def _validate_sweep_roles(dataset: dict) -> None:
     if errors:
         raise ValueError("Invalid sweep dataset:\n" + "\n".join(errors))
 
+
+def _anchor_norms(anchors: np.ndarray) -> List[float]:
+    anchors = np.asarray(anchors, dtype=float)
+    if anchors.ndim != 2:
+        return []
+    return [float(v) for v in np.linalg.norm(anchors, axis=1).tolist()]
+
+
+def _pairwise_anchor_distances(anchors: np.ndarray) -> Dict[str, float]:
+    anchors = np.asarray(anchors, dtype=float)
+    if anchors.ndim != 2:
+        return {}
+    n = int(anchors.shape[0])
+    out: Dict[str, float] = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            out[f"d{i}{j}"] = float(np.linalg.norm(anchors[i] - anchors[j]))
+    return out
+
+
+def _format_anchor_stats(anchors: np.ndarray) -> str:
+    norms = _anchor_norms(anchors)
+    pairwise = _pairwise_anchor_distances(anchors)
+    norms_str = ", ".join(f"{v:.3f}" for v in norms) if norms else "n/a"
+    pair_str = ", ".join(f"{k}={v:.3f}" for k, v in sorted(pairwise.items())) if pairwise else "n/a"
+    return f"origin_norms=[{norms_str}] pairwise=[{pair_str}]"
+
+
+def _print_solution_summary(method: str, anchors: np.ndarray, *, cost: Optional[float] = None) -> None:
+    cost_str = "n/a" if cost is None or not np.isfinite(cost) else f"{float(cost):.6g}"
+    print(f"; [{method}] cost={cost_str} {_format_anchor_stats(anchors)}")
+
+
 def _canonicalize_slideprinter_anchors_for_output(anchors: np.ndarray) -> np.ndarray:
     """
     Fix the unobservable global rotation/reflection gauge for Slideprinter.
@@ -132,17 +167,27 @@ def _canonicalize_slideprinter_anchors_for_output(anchors: np.ndarray) -> np.nda
     return out
 
 
-def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -> Tuple[np.ndarray, int]:
+def _canonicalize_anchors_for_output(machine_type: str, anchors: np.ndarray) -> np.ndarray:
+    anchors = np.asarray(anchors, dtype=float)
+    if str(machine_type) == "slideprinter" and anchors.shape == (3, 2):
+        return _canonicalize_slideprinter_anchors_for_output(anchors)
+    return anchors
+
+
+def _extract_motor_samples_with_metadata(dataset: dict) -> Tuple[np.ndarray, int, List[Tuple[int, List[int]]]]:
     machine_type = str(dataset.get("machine_type", ""))
     dimensions = 2 if machine_type == "slideprinter" else 3
 
-    rows = []
-    for sweep in dataset.get("sweeps", []):
+    rows: List[List[float]] = []
+    meta: List[Tuple[int, List[int]]] = []
+    for sweep_idx, sweep in enumerate(dataset.get("sweeps", [])):
+        fixed = [int(x) for x in sweep.get("fixed_anchors", [])]
         for p in sweep.get("data_points", []):
             raw = p.get("raw_angles_deg")
             if raw is None:
                 continue
             rows.append(raw)
+            meta.append((int(sweep_idx), fixed))
 
     if not rows:
         raise ValueError("No raw encoder samples found (missing data_points[].raw_angles_deg).")
@@ -154,6 +199,112 @@ def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -
     num_axes = int(motor_pos_samp.shape[1])
     if num_axes < 3 or num_axes > 8:
         raise ValueError(f"Legacy solver supports 3..8 axes; got {num_axes}.")
+
+    return motor_pos_samp, dimensions, meta
+
+
+def _enforce_per_sweep_fixed_anchor_constant(
+    motor_pos_samp: np.ndarray, meta: List[Tuple[int, List[int]]]
+) -> np.ndarray:
+    """Replace fixed-anchor motor samples with their per-sweep mean to enforce sweep structure."""
+    motor = np.asarray(motor_pos_samp, dtype=float).copy()
+    if motor.ndim != 2 or not meta:
+        return motor
+
+    num_axes = int(motor.shape[1])
+    rows_by_sweep: Dict[int, List[int]] = {}
+    fixed_by_sweep: Dict[int, List[int]] = {}
+    for row_idx, (sweep_idx, fixed_axes) in enumerate(meta):
+        rows_by_sweep.setdefault(int(sweep_idx), []).append(int(row_idx))
+        fixed_by_sweep.setdefault(int(sweep_idx), fixed_axes)
+
+    for sweep_idx, rows in rows_by_sweep.items():
+        fixed_axes = fixed_by_sweep.get(int(sweep_idx), [])
+        for axis in fixed_axes:
+            if axis < 0 or axis >= num_axes:
+                continue
+            vals = motor[np.asarray(rows, dtype=int), axis]
+            vals = vals[np.isfinite(vals)]
+            if vals.size == 0:
+                continue
+            motor[np.asarray(rows, dtype=int), axis] = float(np.mean(vals))
+
+    return motor
+
+
+def _regularize_fixed_anchor_motor_positions_by_fixed_length(
+    dataset: dict, motor_pos_samp: np.ndarray, meta: List[Tuple[int, List[int]]]
+) -> np.ndarray:
+    """
+    Optional "super sweep" regularization.
+
+    For each fixed anchor axis, fit a line:
+      motor_angle_mean ~= a + b * fixed_length_delta_mm
+    across sweeps and replace the per-sweep fixed-anchor motor values with the fitted values.
+
+    This leverages that fixed lengths are typically commanded in regular steps.
+    """
+    motor = np.asarray(motor_pos_samp, dtype=float).copy()
+    sweeps = dataset.get("sweeps", [])
+    if motor.ndim != 2 or not isinstance(sweeps, list) or not sweeps or not meta:
+        return motor
+
+    num_axes = int(motor.shape[1])
+    rows_by_sweep: Dict[int, List[int]] = {}
+    fixed_by_sweep: Dict[int, List[int]] = {}
+    for row_idx, (sweep_idx, fixed_axes) in enumerate(meta):
+        rows_by_sweep.setdefault(int(sweep_idx), []).append(int(row_idx))
+        fixed_by_sweep.setdefault(int(sweep_idx), fixed_axes)
+
+    pairs: Dict[Tuple[Tuple[int, ...], int], List[Tuple[float, float, int]]] = {}
+    for sweep_idx, rows in rows_by_sweep.items():
+        if sweep_idx < 0 or sweep_idx >= len(sweeps):
+            continue
+        sweep = sweeps[sweep_idx]
+        fixed_axes = fixed_by_sweep.get(int(sweep_idx), [])
+        fixed_deltas = sweep.get("fixed_lengths", [])
+        if not isinstance(fixed_deltas, list):
+            continue
+        fixed_tuple = tuple(int(x) for x in fixed_axes)
+        for axis, delta in zip(fixed_axes, fixed_deltas):
+            if axis < 0 or axis >= num_axes:
+                continue
+            try:
+                delta_f = float(delta)
+            except Exception:
+                continue
+            vals = motor[np.asarray(rows, dtype=int), axis]
+            vals = vals[np.isfinite(vals)]
+            if vals.size == 0:
+                continue
+            mean_angle = float(np.mean(vals))
+            pairs.setdefault((fixed_tuple, int(axis)), []).append((delta_f, mean_angle, int(sweep_idx)))
+
+    for (_fixed_tuple, axis), triplets in pairs.items():
+        if len(triplets) < 3:
+            continue
+        deltas = np.asarray([t[0] for t in triplets], dtype=float)
+        means = np.asarray([t[1] for t in triplets], dtype=float)
+        if not np.all(np.isfinite(deltas)) or not np.all(np.isfinite(means)):
+            continue
+        if float(np.std(deltas)) <= 1e-12:
+            continue
+        A = np.column_stack([np.ones_like(deltas), deltas])
+        coef, *_ = np.linalg.lstsq(A, means, rcond=None)
+        a, b = float(coef[0]), float(coef[1])
+
+        for delta_f, _mean_angle, sweep_idx in triplets:
+            rows = rows_by_sweep.get(int(sweep_idx), [])
+            if not rows:
+                continue
+            motor[np.asarray(rows, dtype=int), axis] = float(a + b * float(delta_f))
+
+    return motor
+
+
+def _extract_motor_samples_from_sweep_dataset(dataset: dict, max_samples: int) -> Tuple[np.ndarray, int]:
+    motor_pos_samp, dimensions, meta = _extract_motor_samples_with_metadata(dataset)
+    motor_pos_samp = _enforce_per_sweep_fixed_anchor_constant(motor_pos_samp, meta)
 
     if max_samples and motor_pos_samp.shape[0] > max_samples:
         idx = np.linspace(0, motor_pos_samp.shape[0] - 1, max_samples).astype(int)
@@ -173,18 +324,17 @@ def _extract_motor_and_tension_samples_from_sweep_dataset(
       data_points[].assumed_tension_sensor_n -> sweep.sensor_anchor
     All other axes are NaN (unknown) and may be filled in by equilibrium.
     """
-    motor_pos_samp, dimensions = _extract_motor_samples_from_sweep_dataset(dataset, max_samples=0)
-    num_axes = int(motor_pos_samp.shape[1])
+    motor_pos_raw, dimensions, meta = _extract_motor_samples_with_metadata(dataset)
+    num_axes = int(motor_pos_raw.shape[1])
 
-    tensions_rows: List[List[float]] = []
+    tension_rows: List[List[float]] = []
     have_any = False
+    row_cursor = 0
     for sweep in dataset.get("sweeps", []):
         drive_idx = sweep.get("drive_anchor")
         sensor_idx = sweep.get("sensor_anchor")
-        if drive_idx is None or sensor_idx is None:
-            continue
-        drive_idx = int(drive_idx)
-        sensor_idx = int(sensor_idx)
+        drive_idx = int(drive_idx) if drive_idx is not None else -1
+        sensor_idx = int(sensor_idx) if sensor_idx is not None else -1
         for p in sweep.get("data_points", []):
             raw = p.get("raw_angles_deg")
             if raw is None:
@@ -192,15 +342,18 @@ def _extract_motor_and_tension_samples_from_sweep_dataset(
             row = [float("nan")] * num_axes
             td = p.get("assumed_tension_drive_n")
             ts = p.get("assumed_tension_sensor_n")
-            if td is not None:
+            if td is not None and 0 <= drive_idx < num_axes:
                 row[drive_idx] = float(td)
                 have_any = True
-            if ts is not None:
+            if ts is not None and 0 <= sensor_idx < num_axes:
                 row[sensor_idx] = float(ts)
                 have_any = True
-            tensions_rows.append(row)
+            tension_rows.append(row)
+            row_cursor += 1
 
-    tension_samp = np.asarray(tensions_rows, dtype=float) if tensions_rows else None
+    motor_pos_samp = _enforce_per_sweep_fixed_anchor_constant(motor_pos_raw, meta)
+
+    tension_samp = np.asarray(tension_rows, dtype=float) if tension_rows else None
     if tension_samp is not None and tension_samp.shape[0] != motor_pos_samp.shape[0]:
         # Fallback: if ordering mismatch, disable tensions rather than risk misalignment.
         tension_samp = None
@@ -334,10 +487,15 @@ def calibrate_elliptical(
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
+    use_parallel: bool = True,
+    regularize_supersweep: bool = False,
     generate_report: bool = True,
     include_debug_fits: bool = True,
 ) -> Dict[str, Any]:
     dataset = _load_json(input_path)
+    # `regularize_supersweep` is primarily relevant for the legacy point solver (raw motor samples);
+    # ellipse mode consumes fixed_lengths setpoints, which are typically already regular.
+    _ = bool(regularize_supersweep)
 
     if "fitted_ellipses" in dataset:
         raise ValueError(
@@ -367,6 +525,7 @@ def calibrate_elliptical(
         method=method,
         max_iterations=max_iterations,
         num_restarts=num_restarts,
+        use_parallel=bool(use_parallel) and not bool(verbose),
         progress_every=int(progress_every),
         residual_threshold=residual_threshold,
         cost_mode=str(cost_mode),
@@ -379,14 +538,12 @@ def calibrate_elliptical(
     if anchors is None:
         raise RuntimeError("Solver returned no anchors")
 
-    anchors_arr = np.asarray(anchors, dtype=float)
-    if str(dataset.get("machine_type", "")) == "slideprinter" and anchors_arr.shape == (3, 2):
-        anchors_arr = _canonicalize_slideprinter_anchors_for_output(anchors_arr)
-        if verbose:
-            print(
-                "[ellipse] note: Slideprinter anchors from sweep-length data are only identifiable up to a global "
-                "rotation/reflection; output is canonicalized for readability."
-            )
+    anchors_arr = _canonicalize_anchors_for_output(str(dataset.get("machine_type", "")), np.asarray(anchors, dtype=float))
+    if verbose and str(dataset.get("machine_type", "")) == "slideprinter" and anchors_arr.shape == (3, 2):
+        print(
+            "[ellipse] note: Slideprinter anchors from sweep-length data are only identifiable up to a global "
+            "rotation/reflection; output is canonicalized for readability."
+        )
     gcode = format_anchors_gcode(anchors_arr, dataset.get("machine_type", ""))
 
     debug_fits = None
@@ -405,6 +562,8 @@ def calibrate_elliptical(
         "anchors": anchors_arr.tolist(),
         "cost": float(solution.get("cost", float("nan"))),
         "success": bool(solution.get("success", False)),
+        "anchor_norms": _anchor_norms(anchors_arr),
+        "pairwise_distances": _pairwise_anchor_distances(anchors_arr),
         "gcode": gcode,
         "use_flex": bool(use_flex),
     }
@@ -465,9 +624,10 @@ def calibrate_point_based(
     optimizer_method: str = "SLSQP",
     tries: int = 4,
     maxiter: int = 500,
-    use_parallel: bool = False,
+    use_parallel: bool = True,
     ftol: float = 1e-9,
     eps: Optional[float] = None,
+    regularize_supersweep: bool = False,
 ) -> Dict[str, Any]:
     sim, _ = _load_legacy_simulation()
 
@@ -480,9 +640,26 @@ def calibrate_point_based(
     tension_samp = None
     if input_path is not None:
         dataset = _load_json(input_path)
-        motor_pos_samp, tension_samp, dimensions = _extract_motor_and_tension_samples_from_sweep_dataset(
-            dataset, max_samples=max_samples
-        )
+        if bool(regularize_supersweep):
+            motor_pos_full, tension_full, dimensions = _extract_motor_and_tension_samples_from_sweep_dataset(
+                dataset, max_samples=0
+            )
+            motor_pos_meta, _dims_meta, meta = _extract_motor_samples_with_metadata(dataset)
+            motor_pos_meta = _enforce_per_sweep_fixed_anchor_constant(motor_pos_meta, meta)
+            motor_pos_full = _regularize_fixed_anchor_motor_positions_by_fixed_length(
+                dataset, motor_pos_meta, meta
+            )
+            motor_pos_samp = motor_pos_full
+            tension_samp = tension_full
+            if max_samples and motor_pos_samp.shape[0] > max_samples:
+                idx = np.linspace(0, motor_pos_samp.shape[0] - 1, max_samples).astype(int)
+                motor_pos_samp = motor_pos_samp[idx]
+                if tension_samp is not None:
+                    tension_samp = tension_samp[idx]
+        else:
+            motor_pos_samp, tension_samp, dimensions = _extract_motor_and_tension_samples_from_sweep_dataset(
+                dataset, max_samples=max_samples
+            )
         machine_config = _extract_legacy_machine_config(dataset, int(motor_pos_samp.shape[1]))
         if machine_config is not None and spring_k_multiplier != 1.0:
             base = machine_config.get("spring_k_per_unit_length")
@@ -497,35 +674,135 @@ def calibrate_point_based(
 
         xyz_of_samp = np.zeros((0, 3), dtype=float)
         use_line_lengths = False
+    else:
+        dataset = None
 
-    solution_vec = sim.solve(
-        motor_pos_samp,
-        xyz_of_samp,
-        line_lengths_when_at_origin,
-        bool(use_flex),
-        bool(use_line_lengths),
-        debug=bool(verbose),
-        dimensions=int(dimensions),
-        optimizer_method=str(optimizer_method),
-        tries=int(tries),
-        maxiter=int(maxiter),
-        use_parallel=bool(use_parallel),
-        ftol=float(ftol),
-        eps=(None if eps is None else float(eps)),
-        machine_config=machine_config,
-        flex_mode=str(flex_mode),
-        tension_samp=tension_samp,
-    )
+    if not bool(verbose):
+        # Legacy solver prints directly; keep CLI output comparable to ellipse mode by default.
+        with contextlib.redirect_stdout(io.StringIO()):
+            solution_vec = sim.solve(
+                motor_pos_samp,
+                xyz_of_samp,
+                line_lengths_when_at_origin,
+                bool(use_flex),
+                bool(use_line_lengths),
+                debug=False,
+                dimensions=int(dimensions),
+                optimizer_method=str(optimizer_method),
+                tries=int(tries),
+                maxiter=int(maxiter),
+                use_parallel=bool(use_parallel),
+                ftol=float(ftol),
+                eps=(None if eps is None else float(eps)),
+                machine_config=machine_config,
+                flex_mode=str(flex_mode),
+                tension_samp=tension_samp,
+            )
+    else:
+        solution_vec = sim.solve(
+            motor_pos_samp,
+            xyz_of_samp,
+            line_lengths_when_at_origin,
+            bool(use_flex),
+            bool(use_line_lengths),
+            debug=True,
+            dimensions=int(dimensions),
+            optimizer_method=str(optimizer_method),
+            tries=int(tries),
+            maxiter=int(maxiter),
+            use_parallel=bool(use_parallel) and not bool(verbose),
+            ftol=float(ftol),
+            eps=(None if eps is None else float(eps)),
+            machine_config=machine_config,
+            flex_mode=str(flex_mode),
+            tension_samp=tension_samp,
+        )
 
     params_anch = int(np.shape(motor_pos_samp)[1]) * 3
     anchors = sim.anchorsvec2matrix(solution_vec[0:params_anch])
+    anchors_arr = np.asarray(anchors, dtype=float)
+    if int(dimensions) == 2:
+        anchors_arr = anchors_arr[:, :2]
+    machine_type = str((dataset or {}).get("machine_type", "unknown")) if dataset is not None else "unknown"
+    anchors_arr = _canonicalize_anchors_for_output(machine_type, anchors_arr)
+
+    # Recompute the legacy objective for reporting.
+    try:
+        num_axes = int(np.shape(motor_pos_samp)[1])
+        params_buildup_local = 2 if (num_axes == 5 and int(dimensions) == 3) else num_axes
+        resolved_cfg = sim._resolve_machine_config(machine_config, num_axes)  # type: ignore[attr-defined]
+        spool_buildup_factor = float(resolved_cfg["spool_buildup_factor"])
+        spool_to_motor_gearing_factor = np.asarray(resolved_cfg["spool_to_motor_gearing_factor"], dtype=float)
+        mech_adv = np.asarray(resolved_cfg["mechanical_advantage"], dtype=float)
+        lines_per_spool_local = np.asarray(resolved_cfg["lines_per_spool"], dtype=float)
+        spring_k_per_unit_length = float(resolved_cfg["spring_k_per_unit_length"])
+        mover_weight_local = float(resolved_cfg["mover_weight"])
+        guy_wire_lengths = np.asarray(resolved_cfg["guy_wire_lengths"], dtype=float)
+        ignore_gravity = bool(resolved_cfg.get("ignore_gravity", False))
+        ignore_pretension = bool(resolved_cfg.get("ignore_pretension", False))
+
+        flex_mode_effective = str(flex_mode)
+        if bool(use_flex) and flex_mode_effective == "per_sample":
+            t_arr = None if tension_samp is None else np.asarray(tension_samp, dtype=float)
+            if (
+                t_arr is None
+                or t_arr.ndim != 2
+                or t_arr.shape[0] != int(np.shape(motor_pos_samp)[0])
+                or t_arr.shape[1] != num_axes
+                or not np.any(np.isfinite(t_arr))
+            ):
+                flex_mode_effective = "inverse_transform_planned"
+        flex_param_count = 1 if (bool(use_flex) and flex_mode_effective == "inverse_transform_planned") else 0
+        x = np.asarray(solution_vec, dtype=float).reshape(-1)
+        params_perturb = int(getattr(sim, "params_perturb", 3))
+        posvec = x[params_anch : -(params_buildup_local + params_perturb + flex_param_count)]
+        anchvec = x[0:params_anch]
+        spool_r = x[-(params_buildup_local + params_perturb + flex_param_count) : -(params_perturb + flex_param_count)]
+        perturb = x[-(params_perturb + flex_param_count) : (x.size - flex_param_count)]
+        low_axis_max_force = float(x[-1]) if int(flex_param_count) else float(0.0)
+        cost = float(
+            sim.costx(
+                posvec,
+                anchvec,
+                spool_buildup_factor,
+                spool_r,
+                line_lengths_when_at_origin,
+                perturb,
+                bool(use_flex),
+                bool(use_line_lengths),
+                low_axis_max_force,
+                motor_pos_samp,
+                xyz_of_samp,
+                int(dimensions),
+                flex_mode=str(flex_mode_effective),
+                tension_samp=tension_samp,
+                spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+                mech_adv_=mech_adv,
+                lines_per_spool_=lines_per_spool_local,
+                spring_k_per_unit_length=spring_k_per_unit_length,
+                mover_weight=mover_weight_local,
+                ignore_gravity=ignore_gravity,
+                ignore_pretension=ignore_pretension,
+                guy_wire_lengths=guy_wire_lengths,
+            )
+        )
+    except Exception:
+        cost = float("nan")
+
+    gcode = format_anchors_gcode(anchors_arr, machine_type)
     result = {
         "method": "point",
-        "anchors": np.asarray(anchors, dtype=float).tolist(),
+        "machine_type": machine_type,
+        "anchors": anchors_arr.tolist(),
         "solution_vector": np.asarray(solution_vec, dtype=float).tolist(),
+        "cost": float(cost),
+        "success": bool(np.isfinite(cost)),
         "use_flex": bool(use_flex),
         "flex_mode": str(flex_mode),
         "use_line_lengths": bool(use_line_lengths),
+        "anchor_norms": _anchor_norms(anchors_arr),
+        "pairwise_distances": _pairwise_anchor_distances(anchors_arr),
+        "gcode": gcode,
     }
     if input_path is not None:
         result["input_file"] = str(input_path)
@@ -571,6 +848,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
+    ellipse_parallel_group = ellipse_parser.add_mutually_exclusive_group()
+    ellipse_parallel_group.add_argument(
+        "--parallel",
+        dest="parallel",
+        action="store_true",
+        help="Run restarts in parallel processes (default).",
+    )
+    ellipse_parallel_group.add_argument(
+        "--no-parallel",
+        dest="parallel",
+        action="store_false",
+        help="Run restarts sequentially (useful for debugging).",
+    )
+    ellipse_parser.set_defaults(parallel=True)
     ellipse_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
     ellipse_parser.add_argument(
         "--no-debug-fits",
@@ -582,6 +873,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         type=float,
         default=1.0,
         help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
+    )
+    ellipse_parser.add_argument(
+        "--regularize-supersweep",
+        action="store_true",
+        help="Apply optional super-sweep regularization (currently a no-op for ellipse mode).",
     )
     ellipse_flex_group = ellipse_parser.add_mutually_exclusive_group()
     ellipse_flex_group.add_argument(
@@ -639,6 +935,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
     )
     point_parser.add_argument(
+        "--regularize-supersweep",
+        action="store_true",
+        help="Fit fixed-anchor motor positions to fixed_lengths across sweeps (super-sweep regularization).",
+    )
+    point_parser.add_argument(
         "--optimizer",
         default="SLSQP",
         help="scipy.optimize.minimize method (default: SLSQP).",
@@ -660,8 +961,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     point_parser.add_argument(
         "--parallel",
+        dest="parallel",
         action="store_true",
-        help="Run restarts in parallel processes (can be slow to start).",
+        help="Run restarts in parallel processes (default).",
+    )
+    point_parser.add_argument(
+        "--no-parallel",
+        dest="parallel",
+        action="store_false",
+        help="Run restarts sequentially (useful for debugging).",
+    )
+    point_parser.set_defaults(parallel=True)
+    point_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print full JSON result (default prints G-code + summary).",
     )
     point_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     point_parser.add_argument(
@@ -693,6 +1007,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.use_flex),
             verbose=bool(args.verbose or args.debug),
+            use_parallel=bool(args.parallel),
+            regularize_supersweep=bool(args.regularize_supersweep),
             progress_every=(
                 int(args.progress_every)
                 if args.progress_every is not None
@@ -703,6 +1019,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             include_debug_fits=not args.no_debug_fits,
         )
         print(result["gcode"])
+        _print_solution_summary("ellipse", np.asarray(result["anchors"], dtype=float), cost=float(result.get("cost", float("nan"))))
         return 0
 
     if args.command == "point":
@@ -722,11 +1039,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             optimizer_method=str(args.optimizer),
             tries=int(args.tries),
             maxiter=int(args.iterations),
-            use_parallel=bool(args.parallel),
+            use_parallel=bool(args.parallel) and not bool(verbose),
             ftol=float(args.ftol),
             eps=args.eps,
+            regularize_supersweep=bool(args.regularize_supersweep),
         )
-        print(json.dumps(result, indent=2))
+        if bool(args.json):
+            print(json.dumps(result, indent=2))
+        else:
+            print(result["gcode"])
+            _print_solution_summary("point", np.asarray(result["anchors"], dtype=float), cost=float(result.get("cost", float("nan"))))
         return 0
 
     raise AssertionError("Unhandled method")

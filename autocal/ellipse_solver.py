@@ -2,10 +2,11 @@ from __future__ import annotations
 
 """Optimization helpers for ellipse-based calibration."""
 
+import concurrent.futures
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-from scipy.optimize import differential_evolution, minimize
+from scipy.optimize import OptimizeResult, differential_evolution, minimize
 
 from autocal.ellipse_cost import (
     CostResult,
@@ -20,6 +21,119 @@ from autocal.theoretical_ellipse import (
 )
 
 _BOUND_PENALTY_WEIGHT = 1e4
+
+
+def _optimize_restart_worker(payload: dict) -> dict:
+    """Run a single restart in a separate process; returns an OptimizeResult-compatible dict."""
+    dataset = payload["dataset"]
+    x0_clipped = np.asarray(payload["x0"], dtype=float)
+    method_raw = str(payload["method"])
+    max_iterations = int(payload["max_iterations"])
+    geometry_weights = tuple(payload["geometry_weights"])
+    residual_threshold = float(payload["residual_threshold"])
+    use_weights = bool(payload["use_weights"])
+    cost_mode = str(payload["cost_mode"])
+    invalid_sweep_penalty = float(payload["invalid_sweep_penalty"])
+    spring_k_multiplier = float(payload["spring_k_multiplier"])
+    use_flex = bool(payload["use_flex"])
+
+    machine_type_raw = dataset.get("machine_type", "hangprinter_4")
+    machine_type = machine_type_raw.value if isinstance(machine_type_raw, MachineType) else str(machine_type_raw)
+    num_anchors = int(dataset.get("num_anchors", 4))
+    dimensions = int(dataset.get("dimensions", 3))
+    lb, ub = get_anchor_bounds(machine_type)
+    bounds = list(zip(lb, ub))
+
+    cost_fn = EllipseCostFunction(
+        dataset,
+        geometry_weights=geometry_weights,
+        residual_threshold=residual_threshold,
+        use_weights=use_weights,
+        cost_mode=str(cost_mode),
+        invalid_sweep_penalty=invalid_sweep_penalty,
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+    )
+
+    method_norm = method_raw.strip().replace("_", "-").lower()
+    if method_norm in ("slsqp", "sqp"):
+        method_norm = "l-bfgs-b"
+
+    def _bounded_objective(x: np.ndarray) -> float:
+        x = np.asarray(x, dtype=float).reshape(-1)
+        x_clipped = np.clip(x, lb, ub)
+        penalty = float(_BOUND_PENALTY_WEIGHT * np.dot(x - x_clipped, x - x_clipped))
+        return float(cost_fn.evaluate(x_clipped) + penalty)
+
+    if method_norm in ("nelder-mead", "neldermead"):
+        result = minimize(
+            _bounded_objective,
+            x0_clipped,
+            method="Nelder-Mead",
+            options={
+                "maxiter": max_iterations,
+                "xatol": 1e-4,
+                "fatol": 1e-8,
+                "adaptive": True,
+                "disp": False,
+            },
+        )
+        result.x = np.clip(np.asarray(result.x, dtype=float), lb, ub)
+        result.fun = float(cost_fn.evaluate(result.x))
+    elif method_norm in ("hybrid", "nm+lbfgsb", "nelder-mead+lbfgsb"):
+        nm = minimize(
+            _bounded_objective,
+            x0_clipped,
+            method="Nelder-Mead",
+            options={
+                "maxiter": max(200, int(max_iterations // 2)),
+                "xatol": 1e-3,
+                "fatol": 1e-6,
+                "adaptive": True,
+                "disp": False,
+            },
+        )
+        x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
+        result = minimize(
+            cost_fn.evaluate,
+            x1,
+            method="L-BFGS-B",
+            bounds=bounds,
+            options={"maxiter": max_iterations, "ftol": 1e-12, "disp": False},
+        )
+    else:
+        scipy_method = method_raw
+        if method_norm in ("l-bfgs-b", "lbfgsb"):
+            scipy_method = "L-BFGS-B"
+        elif method_norm == "powell":
+            scipy_method = "Powell"
+
+        options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
+        if scipy_method == "L-BFGS-B":
+            options["ftol"] = 1e-12
+            options["maxls"] = 40
+        elif scipy_method == "Powell":
+            options["xtol"] = 1e-4
+            options["ftol"] = 1e-8
+
+        result = minimize(
+            cost_fn.evaluate,
+            x0_clipped,
+            method=scipy_method,
+            bounds=bounds,
+            options=options,
+        )
+
+    best = OptimizeResult(
+        x=np.asarray(result.x, dtype=float),
+        fun=float(result.fun),
+        success=bool(getattr(result, "success", True)),
+        message=str(getattr(result, "message", "")),
+        nit=int(getattr(result, "nit", 0) or 0),
+        nfev=int(getattr(result, "nfev", 0) or 0),
+    )
+    return dict(best)
+
 
 def _dataset_metadata(dataset: Union[dict, "SweepDataset"]) -> Tuple[str, int, int]:
     """Extract (machine_type, num_anchors, dimensions) from datasets or dicts."""
@@ -42,6 +156,8 @@ def solve_anchors(
     method: str = "L-BFGS-B",
     max_iterations: int = 1000,
     num_restarts: int = 4,
+    use_parallel: bool = True,
+    max_workers: Optional[int] = None,
     progress_every: int = 10,
     geometry_weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
     residual_threshold: float = 0.01,
@@ -196,123 +312,180 @@ def solve_anchors(
         penalty = float(_BOUND_PENALTY_WEIGHT * np.dot(x - x_clipped, x - x_clipped))
         return float(cost_fn.evaluate(x_clipped) + penalty)
 
-    for idx, x0 in enumerate(initial_guesses):
-        x0_clipped = np.clip(x0, lb, ub)
-        if verbose:
-            print(f"Starting optimization {idx + 1}/{len(initial_guesses)}...")
-            _summarize_cost(f"restart {idx + 1} init", x0_clipped, include_details=True)
+    run_parallel = (
+        bool(use_parallel)
+        and not bool(verbose)
+        and cost_callback is None
+        and method_norm != "differential-evolution"
+        and isinstance(dataset, dict)
+        and len(initial_guesses) > 1
+    )
 
-        progress_stride = int(progress_every) if verbose else 0
-        if progress_stride <= 0:
-            progress_stride = 0
-        details_stride = 10 if verbose else 0
-        progress_state = {"iter": 0}
+    if run_parallel:
+        payloads = [
+            {
+                "dataset": dataset,
+                "x0": np.clip(np.asarray(x0, dtype=float), lb, ub),
+                "method": method_raw,
+                "max_iterations": int(max_iterations),
+                "geometry_weights": geometry_weights,
+                "residual_threshold": float(residual_threshold),
+                "use_weights": bool(use_weights),
+                "cost_mode": str(cost_mode),
+                "invalid_sweep_penalty": float(invalid_sweep_penalty),
+                "spring_k_multiplier": float(spring_k_multiplier),
+                "use_flex": bool(use_flex),
+            }
+            for x0 in initial_guesses
+        ]
+        parallel_exc: Optional[BaseException] = None
+        try:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                for idx, out in enumerate(executor.map(_optimize_restart_worker, payloads), start=1):
+                    result = OptimizeResult(out)
+                    if verbose:
+                        print(
+                            f"[restart {idx} done] fun={float(result.fun):.6g} success={bool(getattr(result,'success',True))} "
+                            f"nit={getattr(result,'nit',None)} nfev={getattr(result,'nfev',None)} msg={getattr(result,'message','')}"
+                        )
+                    if float(result.fun) < best_cost:
+                        best_cost = float(result.fun)
+                        best_result = result
+        except BaseException as exc:
+            parallel_exc = exc
 
-        def _progress_callback(xk: np.ndarray, _convergence: Optional[float] = None) -> None:
-            if cost_callback is not None:
-                try:
-                    cost_callback(np.asarray(xk, dtype=float), _convergence)
-                except TypeError:
-                    cost_callback(np.asarray(xk, dtype=float))
+        if parallel_exc is not None:
+            # Some sandboxed environments disallow creating multiprocessing primitives; fall back to threads.
+            if verbose:
+                print(f"[solver] Parallel restarts unavailable ({parallel_exc}); falling back to threads.")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for idx, out in enumerate(executor.map(_optimize_restart_worker, payloads), start=1):
+                    result = OptimizeResult(out)
+                    if float(result.fun) < best_cost:
+                        best_cost = float(result.fun)
+                        best_result = result
+    else:
+        for idx, x0 in enumerate(initial_guesses):
+            x0_clipped = np.clip(x0, lb, ub)
+            if verbose:
+                print(f"Starting optimization {idx + 1}/{len(initial_guesses)}...")
+                _summarize_cost(f"restart {idx + 1} init", x0_clipped, include_details=True)
 
+            progress_stride = int(progress_every) if verbose else 0
             if progress_stride <= 0:
-                return
-            progress_state["iter"] += 1
-            if progress_state["iter"] % progress_stride != 0:
-                return
-            include_details = bool(details_stride and (progress_state["iter"] % details_stride == 0))
-            _summarize_cost(
-                f"restart {idx + 1} iter {progress_state['iter']}",
-                np.asarray(xk, dtype=float),
-                include_details=include_details,
-            )
+                progress_stride = 0
+            details_stride = 10 if verbose else 0
+            progress_state = {"iter": 0}
 
-        if method_norm == "differential-evolution":
-            result = differential_evolution(
-                cost_fn.evaluate,
-                bounds=bounds,
-                maxiter=max_iterations,
-                polish=True,
-                updating="deferred",
-                callback=(
-                    (lambda xk, convergence: _progress_callback(np.asarray(xk, dtype=float), float(convergence)))
-                ),
-            )
-        else:
-            if method_norm in ("nelder-mead", "neldermead"):
-                result = minimize(
-                    _bounded_objective,
-                    x0_clipped,
-                    method="Nelder-Mead",
-                    callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
-                    options={
-                        "maxiter": max_iterations,
-                        "xatol": 1e-4,
-                        "fatol": 1e-8,
-                        "adaptive": True,
-                        "disp": False,
-                    },
+            def _progress_callback(xk: np.ndarray, _convergence: Optional[float] = None) -> None:
+                if cost_callback is not None:
+                    try:
+                        cost_callback(np.asarray(xk, dtype=float), _convergence)
+                    except TypeError:
+                        cost_callback(np.asarray(xk, dtype=float))
+
+                if progress_stride <= 0:
+                    return
+                progress_state["iter"] += 1
+                if progress_state["iter"] % progress_stride != 0:
+                    return
+                include_details = bool(details_stride and (progress_state["iter"] % details_stride == 0))
+                _summarize_cost(
+                    f"restart {idx + 1} iter {progress_state['iter']}",
+                    np.asarray(xk, dtype=float),
+                    include_details=include_details,
                 )
-                # Project to bounds for downstream consumption.
-                result.x = np.clip(np.asarray(result.x, dtype=float), lb, ub)
-                result.fun = float(cost_fn.evaluate(result.x))
-            elif method_norm in ("hybrid", "nm+lbfgsb", "nelder-mead+lbfgsb"):
-                nm = minimize(
-                    _bounded_objective,
-                    x0_clipped,
-                    method="Nelder-Mead",
-                    options={
-                        "maxiter": max(200, int(max_iterations // 2)),
-                        "xatol": 1e-3,
-                        "fatol": 1e-6,
-                        "adaptive": True,
-                        "disp": False,
-                    },
-                )
-                x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
-                result = minimize(
+
+            if method_norm == "differential-evolution":
+                result = differential_evolution(
                     cost_fn.evaluate,
-                    x1,
-                    method="L-BFGS-B",
                     bounds=bounds,
-                    callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
-                    options={"maxiter": max_iterations, "ftol": 1e-12, "disp": False},
+                    maxiter=max_iterations,
+                    polish=True,
+                    updating="deferred",
+                    callback=(
+                        (
+                            lambda xk, convergence: _progress_callback(
+                                np.asarray(xk, dtype=float), float(convergence)
+                            )
+                        )
+                    ),
                 )
             else:
-                scipy_method = method_raw
-                if method_norm in ("l-bfgs-b", "lbfgsb"):
-                    scipy_method = "L-BFGS-B"
-                elif method_norm == "powell":
-                    scipy_method = "Powell"
+                if method_norm in ("nelder-mead", "neldermead"):
+                    result = minimize(
+                        _bounded_objective,
+                        x0_clipped,
+                        method="Nelder-Mead",
+                        callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                        options={
+                            "maxiter": max_iterations,
+                            "xatol": 1e-4,
+                            "fatol": 1e-8,
+                            "adaptive": True,
+                            "disp": False,
+                        },
+                    )
+                    # Project to bounds for downstream consumption.
+                    result.x = np.clip(np.asarray(result.x, dtype=float), lb, ub)
+                    result.fun = float(cost_fn.evaluate(result.x))
+                elif method_norm in ("hybrid", "nm+lbfgsb", "nelder-mead+lbfgsb"):
+                    nm = minimize(
+                        _bounded_objective,
+                        x0_clipped,
+                        method="Nelder-Mead",
+                        options={
+                            "maxiter": max(200, int(max_iterations // 2)),
+                            "xatol": 1e-3,
+                            "fatol": 1e-6,
+                            "adaptive": True,
+                            "disp": False,
+                        },
+                    )
+                    x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
+                    result = minimize(
+                        cost_fn.evaluate,
+                        x1,
+                        method="L-BFGS-B",
+                        bounds=bounds,
+                        callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                        options={"maxiter": max_iterations, "ftol": 1e-12, "disp": False},
+                    )
+                else:
+                    scipy_method = method_raw
+                    if method_norm in ("l-bfgs-b", "lbfgsb"):
+                        scipy_method = "L-BFGS-B"
+                    elif method_norm == "powell":
+                        scipy_method = "Powell"
 
-                options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
-                if scipy_method == "L-BFGS-B":
-                    options["ftol"] = 1e-12
-                    options["maxls"] = 40
-                elif scipy_method == "Powell":
-                    options["xtol"] = 1e-4
-                    options["ftol"] = 1e-8
+                    options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
+                    if scipy_method == "L-BFGS-B":
+                        options["ftol"] = 1e-12
+                        options["maxls"] = 40
+                    elif scipy_method == "Powell":
+                        options["xtol"] = 1e-4
+                        options["ftol"] = 1e-8
 
-                result = minimize(
-                    cost_fn.evaluate,
-                    x0_clipped,
-                    method=scipy_method,
-                    bounds=bounds,
-                    callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
-                    options=options,
-                )
-        if verbose:
-            try:
-                print(
-                    f"[restart {idx + 1} done] fun={float(result.fun):.6g} success={bool(getattr(result,'success',True))} "
-                    f"nit={getattr(result,'nit',None)} nfev={getattr(result,'nfev',None)} msg={getattr(result,'message','')}"
-                )
-            except Exception:
-                pass
+                    result = minimize(
+                        cost_fn.evaluate,
+                        x0_clipped,
+                        method=scipy_method,
+                        bounds=bounds,
+                        callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                        options=options,
+                    )
+            if verbose:
+                try:
+                    print(
+                        f"[restart {idx + 1} done] fun={float(result.fun):.6g} success={bool(getattr(result,'success',True))} "
+                        f"nit={getattr(result,'nit',None)} nfev={getattr(result,'nfev',None)} msg={getattr(result,'message','')}"
+                    )
+                except Exception:
+                    pass
 
-        if result.fun < best_cost:
-            best_cost = float(result.fun)
-            best_result = result
+            if result.fun < best_cost:
+                best_cost = float(result.fun)
+                best_result = result
 
     if best_result is None:
         return {
