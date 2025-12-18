@@ -443,7 +443,7 @@ def merge_datasets(base_dataset: Path, extra_datasets: Sequence[Path], *, output
 
 
 def ellipse_loop(
-    seed_dataset: Path,
+    seed_dataset: Optional[Path],
     *,
     work_dataset: Optional[Path],
     max_steps: int,
@@ -469,10 +469,78 @@ def ellipse_loop(
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
 ) -> int:
-    work_path = work_dataset or seed_dataset.with_name(seed_dataset.stem + "_active.json")
+    if work_dataset is not None:
+        work_path = Path(work_dataset)
+    elif seed_dataset is not None:
+        work_path = Path(seed_dataset).with_name(Path(seed_dataset).stem + "_active.json")
+    else:
+        work_path = Path("autocal/data/active_bootstrap_slideprinter.json")
+
     if not work_path.exists():
-        _write_json(work_path, _load_json(seed_dataset))
-        print(f"; created working dataset {work_path}")
+        if seed_dataset is not None:
+            _write_json(work_path, _load_json(Path(seed_dataset)))
+            print(f"; created working dataset {work_path}")
+        else:
+            work_path.parent.mkdir(parents=True, exist_ok=True)
+            bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
+            bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
+            bootstrap_cfg.write_text(
+                "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
+                encoding="utf-8",
+            )
+
+            def _strip_conflicts(argv: Sequence[str]) -> List[str]:
+                skip_with_value = {
+                    "--output-file",
+                    "--output",
+                    "--out",
+                    "--observability-file",
+                    "--obs-file",
+                    "--machineType",
+                    "--machine-type",
+                    "--sweepMethod",
+                    "--sweep-method",
+                    "--sweep-config-file",
+                    "--sweep-config",
+                    "--sweepFile",
+                    "--fixed-targets",
+                    "--fixedTargets",
+                    "--fixed-target",
+                }
+                out: List[str] = []
+                i = 0
+                while i < len(argv):
+                    arg = str(argv[i])
+                    if arg in skip_with_value:
+                        i += 2
+                        continue
+                    out.append(arg)
+                    i += 1
+                return out
+
+            argv_eff = _strip_conflicts(list(collector_args))
+            if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
+                argv_eff.append("--return-to-origin")
+
+            cmd = [
+                "node",
+                "scripts/collect_sweep_data.mjs",
+                "--machineType",
+                "slideprinter",
+                "--sweep-method",
+                "torque-ramp",
+                "--sweep-config-file",
+                str(bootstrap_cfg),
+                "--fixed-targets",
+                "0.0",
+                "--output-file",
+                str(work_path),
+                *argv_eff,
+            ]
+            print("; bootstrapping dataset (3 sweeps, fixed-target 0.0):")
+            print(";   " + " ".join(cmd))
+            subprocess.run(cmd, check=True)
+            print(f"; bootstrap dataset written to {work_path}")
 
     for step in range(1, max(1, int(max_steps)) + 1):
         print(f"\n; === iteration {step}/{max_steps} dataset={work_path} ===")
@@ -600,7 +668,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     merge.add_argument("-o", "--output", type=Path, default=None, help="Output dataset path (default: overwrite base)")
 
     loop = subparsers.add_parser("ellipse-loop", help="Interactive active-learning loop (plan → collect → merge)")
-    loop.add_argument("dataset", type=Path, help="Seed sweep dataset JSON")
+    loop.add_argument(
+        "dataset",
+        type=Path,
+        nargs="?",
+        default=None,
+        help="Optional seed sweep dataset JSON; omitted bootstraps a 3-sweep slideprinter dataset at fixed-target 0.0",
+    )
     loop.add_argument(
         "--work-dataset",
         type=Path,
