@@ -58,3 +58,6 @@
 [submodule "forward-transform-dev/hangprinter-forward-transform"]
 	path = forward-transform-dev/hangprinter-forward-transform
 	url = git@gitlab.com:tobben/hangprinter-forward-transform.git
+[submodule "flex-compensation-dev/hangprinter-flex-compensation"]
+	path = flex-compensation-dev/hangprinter-flex-compensation
+	url = git@gitlab.com:tobben/hangprinter-flex-compensation.git
