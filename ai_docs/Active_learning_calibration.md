@@ -107,3 +107,82 @@ A simulation is deterministic. If you run a fixed sweep, you get the same inform
 An **Active** solver will "realize" that (for example) the Z-height of Anchor 3 is poorly constrained, and it will automatically decide to perform a specific maneuver (e.g., move the effector very low and close to Anchor 3) to isolate that variable.
 
 Would you like to start by implementing the **Fisher Information / Jacobian** calculation for your specific cable geometry? That is the math "brain" required to tell the robot where to go.
+
+----
+Me telling Codex what to do
+----
+We're working on auto calibration of a (simulated) cabled driven robot.
+
+We currently only have a planar 3 line robot simulated, called "Slideprinter". We collect data from it like this:
+```
+node scripts/collect_sweep_data.mjs --sweep-method torque-ramp --speedup 4 --trace --torque-low 0.03 --torque-min 0.03 --torque-max 0.3 --torque-step 0.05 --feed 400 --superSweepRange 600 --superSweepPoints 4
+```
+
+... which gives us a batch of known valid encoder data. One such batch can be seen in autocal/data/big_even_pattern.json.
+
+As you can guess from some of the option names, this procedure creates movements by utilizing a special "torque mode" on the motors (one or two at a time, called the "sensor motor" and the "driver motor") combined with moves that winds or unwinds a (roughly) known amount on the third motor (the "fixed motor". By combining these movement, the script moves the effector in radial sweeps around the fixed motor within the reachable area. All three motors take turns to act as sensor, driver, and fixed, and we collect sweeps at four different distances from each motor  (that's the `--superSweepPoints 4).
+
+We have implemented two methods that run optimizations on the data in order to find the CDPR's configuration values, most notably the anchor point positions. They are invoked like this:
+
+```
+python autocal/calibrate.py ellipse autocal/data/big_even_pattern.json
+python autocal/calibrate.py point autocal/data/big_even_pattern.json
+```
+
+The "ellipse" method takes advantage of the radial pattern in the data by inferring that distances to the sensor and drive motors must follow an elliptical relationship. It fits ellipses to each sweep, takes a guess at anchor positions, which implies some guessed ellipses, and measures the distance between the observed ellipses and the guessed ellipses. Moving anchor guesses closer to the true anchor positions reduces the difference between guessed ellipses and observed ellipses.
+
+The "point" method takes a more point-wise approach and mostly cares about distances between guessed anchors and the xyz coordinates where it guesses that the measurements were made. Improving the guessed positions of anchors and measurements decreases the difference between guessed line lengths and observed (relative) line lengths.
+
+<feature_request>
+The procedure described above is called "Batch Calibration" (collect data blindly -> post-process). We want to move into an "Active Learning Calibration" (collect data point -> improve parameter guess -> find the most valuable next position for measurement -> repeat).
+</feature_request>
+
+Ideation and initial work on this has been done in ai_docs/Active_learning_calibration.md.
+
+For the ellipse method, the question between repetition becomes "at which fixed length should I collect the next sweep" and possibly "how high torques should the sweep be?" since this determines how close to the outskirts of the reachable area we'll move, and maybe "how many points should I collect during the next sweep?" although I expect the default number of data points per sweep to work quite well.
+
+For the point method, the question between iterations is more direct and easy to translate from theory. It's simply "Where should I move next?". The question is mostly if we should reason in the robot's inverse coordinates (since those are the only ones we can control without knowing the anchor locations), or if we should try to make movements in cartesian coordinates once anchor position estimations start to be fairly good.
+
+We don't have access to any other sensors than the encoders on the motors (via M569.3, see the code).
+
+We do have access to a forward transform, in autocal/auto-calibration-simulation-for-hangprinter/hangprinter_forward_transform.py
+
+You might find some inspiration on how to tackle various issues in ai_docs/Extended_Kalman_Filter-Based_State_Estimation_and_Adaptive_Control_of_Cable-Driven_Parallel_Robots/Extended_Kalman_Filter-Based_State_Estimation_and_Adaptive_Control_of_Cable-Driven_Parallel_Robots.md although it describes a Kalman filter rather than the non-linear optimizations we will be doing between iterations.
+
+Another good source of inspiration is ai_docs/An_Approach_for_Predicting_the_Calibration_Accuracy/An_Approach_for_Predicting_the_Calibration_Accuracy.md.
+It proposes an automatic calibration method for redundantly actuated cable-driven parallel robots (CDPRs) that exclusively utilizes the inner encoders of the driving motors, thus not requiring any external sensors.
+ - Mapping Parameters for Calibration: Establishes a mapping between unknown geometric parameters, specifically the coordinates of the attachment points, and measurable parameters, which are the lengths of the redundant cables, and then uses a least squares algorithm for finding the solutions.
+ - Simulation and Validation: Validates the method through simulations on a 3-DOF parallel robot driven by four cables, demonstrating precise determination of attachment point coordinates and significant improvement in positioning accuracy.
+
+A third source of inspiration could be ai_docs/Controlling_Cable_Driven_Parallel_Robots_OperationsDeep_Reinforcement_Learning_Approach/Controlling_Cable_Driven_Parallel_Robots_OperationsDeep_Reinforcement_Learning_Approach.md
+It applies a Deep Reinforcement Learning (DRL) approach, specifically the adaptive-featured Twin Delayed Deep Deterministic (TD3) policy gradient algorithm, for controlling a Cable-Driven Parallel Robot (CDPR).
+ - Integrates PID in RL Framework: Integrates a Proportional-Integral-Derivative (PID) controller within the Reinforcement Learning (RL) framework to establish a unique approach to CDPR control that leverages adaptive learning capabilities.
+ - Utilizes Motor Encoder Data: Receives the current kinematic state of the CDPR, which is characterized by the length and angular velocity of the cable and the target cable length, as input to the controller, where the output vector specifies the updated PID parameters that command the motor activations of the eight actuators.
+
+Some of these papers describe cutting edge complicated calibration routines. We'll probably want to keep our algorithm simpler, but the papers cover a lot of general knowledge about the subject of Adaptive Learning for CDPRs that will apply to us for sure.
+
+I will not give you network access, so you will not be able to collect data from the simulator yourself. Just assume that hp-sim is running at "http://localhost:5173/hp-sim5/hp-sim/?gcode_ws=ws://localhost:8790" and ask me to do the actual test runs for you when the algorithm is ready to be tested. Make your script print a calibration report and I will run tests for you and send the full report of each test run.
+
+Give it your best! I know you can do it!
+
+----
+Codex taking a stab at this
+----
+
+• What’s Implemented
+
+  - Active-learning sweep planner (D-optimal Fisher information on predicted ellipse geometry) in autocal/active_learning.py:1, with CLI/reporting in autocal/active_calibrate.py:1.
+  - Data collector upgrades in scripts/collect_sweep_data.mjs:1 (+ arg parsing in scripts/gcode_bridge.mjs:253):
+      - --fixed-targets <spec> to collect specific fixed-anchor target(s) (overrides --superSweepRange/--superSweepPoints).
+      - --return-to-origin to end the run back at encoder origin so multiple runs stay mergeable.
+
+  How To Use (Ellipse Active Learning)
+
+  - Suggest next sweep (prints anchors + uncertainty + top candidates + a ready-to-run collect_command):
+      - python autocal/active_calibrate.py ellipse <dataset.json> --collector-args <your usual collect_sweep_data args...>
+  - Example (your parameters; collect_command will include --fixed-targets ... --return-to-origin):
+      - python autocal/active_calibrate.py ellipse autocal/data/big_even_pattern.json --collector-args --speedup 4 --trace --torque-low 0.03 --torque-min 0.03 --torque-max 0.3 --torque-step 0.05 --feed 400
+  - One-step “suggest → collect → merge into dataset”:
+      - python autocal/active_calibrate.py ellipse <dataset.json> --collect-once --collector-output /tmp/next.json --collector-args --speedup 4 ...
+
+  Run it once on your current dataset and paste back the full stdout (the “report” lines + suggested collect_command + calibration summary), and I’ll tune the candidate range/scoring if needed.

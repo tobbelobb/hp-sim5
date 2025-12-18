@@ -189,6 +189,7 @@ Options:
   --sweepPoints <count>      Number of points per sweep (default: ${DEFAULT_SWEEP_POINTS})
   --superSweepRange <mm>     Fixed-anchor half-range in mm (default: ${DEFAULT_SUPER_SWEEP_RANGE_MM})
   --superSweepPoints <count> Number of fixed-length samples per sweep config (default: ${DEFAULT_SUPER_SWEEP_POINTS})
+  --fixed-targets <spec>     Override fixed-anchor targets; e.g. "-600,-200,200,600" or "-100,0;0,100"
   --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${DEFAULT_MAX_SWEEPS})
   --feed <mm/min>            Feed rate for drive moves (default: ${DEFAULT_FEED})
   --torque <Nm>              Torque for sensor motor (default: ${DEFAULT_TORQUE})
@@ -219,6 +220,7 @@ Options:
   --debug-gcode              Echo sent G-code
   --debug-gcode-responses    Echo G-code responses
   --step-gcode               Pause before each G-code; press Enter to send (prints source line + skipped waits)
+  --return-to-origin         After collection, return all motors to encoder origin (useful across repeated runs)
 
 Examples:
   node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepRange 100 --sweepPoints 41 --output-file sweep.json
@@ -301,6 +303,92 @@ function generateFixedLengthCombos(fixedCount, rangeMm, points) {
 
   helper(0);
   return combos;
+}
+
+function parseFixedTargetsSpec(spec, fixedCount) {
+  if (!spec) {
+    return null;
+  }
+  if (!Number.isFinite(fixedCount) || fixedCount <= 0) {
+    return [[]];
+  }
+  const raw = spec.toString().trim();
+  if (raw.length === 0) {
+    return null;
+  }
+
+  if (raw.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return null;
+      }
+      if (parsed.length === 0) {
+        return [[]];
+      }
+      if (Array.isArray(parsed[0])) {
+        const combos = parsed.map((row) => row.map((v) => parseFloat(v)));
+        return combos;
+      }
+      const vals = parsed.map((v) => parseFloat(v));
+      if (fixedCount === 1) {
+        return vals.map((v) => [v]);
+      }
+      return [vals];
+    } catch (_err) {
+      // Fall back to string parsing.
+    }
+  }
+
+  const hasMultiCombo = raw.includes(';');
+  if (!hasMultiCombo && fixedCount === 1) {
+    const vals = raw.split(',').map((part) => parseFloat(part.trim())).filter((v) => Number.isFinite(v));
+    if (vals.length === 0) {
+      return null;
+    }
+    return vals.map((v) => [v]);
+  }
+
+  const comboParts = raw.split(';').map((part) => part.trim()).filter((part) => part.length > 0);
+  const combos = comboParts.map((part) => part.split(',').map((v) => parseFloat(v.trim())));
+  return combos;
+}
+
+function normalizeFixedTargetCombos(combos, fixedCount) {
+  if (!Array.isArray(combos)) {
+    return null;
+  }
+  if (!Number.isFinite(fixedCount) || fixedCount <= 0) {
+    return [[]];
+  }
+  const normalized = combos.map((combo, idx) => {
+    if (!Array.isArray(combo)) {
+      throw new Error(`Invalid fixed-targets entry ${idx + 1}: expected a list of numbers`);
+    }
+    const values = combo.map((v) => (Number.isFinite(v) ? v : parseFloat(v)));
+    if (values.length !== fixedCount) {
+      throw new Error(
+        `Invalid fixed-targets entry ${idx + 1}: expected ${fixedCount} value(s), got ${values.length}`,
+      );
+    }
+    if (!values.every((v) => Number.isFinite(v))) {
+      throw new Error(`Invalid fixed-targets entry ${idx + 1}: non-numeric values`);
+    }
+    return values.map((v) => (Math.round(v * 1000) / 1000));
+  });
+  if (normalized.length === 0) {
+    return [[]];
+  }
+  return normalized;
+}
+
+function resolveFixedLengthCombos(fixedCount, rangeMm, points, fixedTargetsSpec) {
+  const parsed = parseFixedTargetsSpec(fixedTargetsSpec, fixedCount);
+  const combos = normalizeFixedTargetCombos(parsed, fixedCount);
+  if (combos) {
+    return combos;
+  }
+  return generateFixedLengthCombos(fixedCount, rangeMm, points);
 }
 
 function generateSweepConfigs(machineType, forbiddenSensors = null) {
@@ -1195,7 +1283,12 @@ async function main() {
     : null;
   const taskSources = sweepGroups ?? sweepConfigs;
   for (const config of taskSources) {
-    const combos = generateFixedLengthCombos(config.fixedAnchors.length, superSweepRangeMm, superSweepPoints);
+    const combos = resolveFixedLengthCombos(
+      config.fixedAnchors.length,
+      superSweepRangeMm,
+      superSweepPoints,
+      args.fixedTargets,
+    );
     for (let comboIdx = 0; comboIdx < combos.length; comboIdx += 1) {
       sweepTasks.push({
         config,
@@ -1494,6 +1587,26 @@ async function main() {
     const sidecarPath = await writeObservabilitySidecar(obsTarget, sweeps);
     if (sidecarPath) {
       console.log(`Saved histogram sidecar to ${sidecarPath}`);
+    }
+
+    if (args.returnToOrigin) {
+      const holdTorque = sweepMethod === 'torque-ramp'
+        ? Math.max(DEFAULT_TORQUE_LOW, Number.isFinite(torqueLow) ? torqueLow : DEFAULT_TORQUE_LOW)
+        : Math.max(DEFAULT_TORQUE_LOW, Number.isFinite(torque) ? torque : DEFAULT_TORQUE);
+      try {
+        await returnAllMotorsToEncoderOrigin(send, {
+          motorIds,
+          axes: machineConfig.axes,
+          mmPerDeg,
+          feed,
+          speedup,
+          torqueHoldNm: holdTorque,
+          forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+        });
+        console.log('Returned all motors to encoder origin.');
+      } catch (err) {
+        console.warn(`Warning: failed to return to encoder origin: ${err?.message || err}`);
+      }
     }
 
     success = true;

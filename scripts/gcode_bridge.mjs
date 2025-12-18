@@ -283,6 +283,7 @@ export function parseBridgeArgs(argv) {
     maxSweeps: null,
     superSweepRange: null,
     superSweepPoints: null,
+    fixedTargets: null,
     torque: null,
     sweepMethod: null,
     torqueLow: null,
@@ -297,6 +298,7 @@ export function parseBridgeArgs(argv) {
     continuous: false,
     sampleRate: null,
     observabilityFile: null,
+    returnToOrigin: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -368,6 +370,8 @@ export function parseBridgeArgs(argv) {
       args.superSweepRange = argv[++i] || null;
     } else if (arg === '--superSweepPoints') {
       args.superSweepPoints = argv[++i] || null;
+    } else if (arg === '--fixed-targets' || arg === '--fixedTargets' || arg === '--fixed-target') {
+      args.fixedTargets = argv[++i] || null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
@@ -396,6 +400,8 @@ export function parseBridgeArgs(argv) {
       args.sampleRate = argv[++i] || null;
     } else if (arg === '--observability-file' || arg === '--obs-file') {
       args.observabilityFile = argv[++i] || null;
+    } else if (arg === '--return-to-origin' || arg === '--returnToOrigin') {
+      args.returnToOrigin = true;
     }
   }
 
