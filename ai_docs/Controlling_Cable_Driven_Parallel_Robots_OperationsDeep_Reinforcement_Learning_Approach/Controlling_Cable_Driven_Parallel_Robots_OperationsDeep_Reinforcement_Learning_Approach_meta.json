@@ -1,0 +1,984 @@
+{
+  "table_of_contents": [
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          42.1875,
+          105.90380859375
+        ],
+        [
+          201.234375,
+          105.90380859375
+        ],
+        [
+          201.234375,
+          127.122802734375
+        ],
+        [
+          42.1875,
+          127.122802734375
+        ]
+      ]
+    },
+    {
+      "title": "Controlling Cable Driven Parallel Robots\nOperations\u2014Deep Reinforcement\nLearning Approach",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          35.015625,
+          135.0560302734375
+        ],
+        [
+          387.5625,
+          135.0560302734375
+        ],
+        [
+          387.5625,
+          213.4132080078125
+        ],
+        [
+          35.015625,
+          213.4132080078125
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          35.71875,
+          661.4208984375
+        ],
+        [
+          113.203125,
+          661.4208984375
+        ],
+        [
+          113.203125,
+          672.0127258300781
+        ],
+        [
+          35.71875,
+          672.0127258300781
+        ]
+      ]
+    },
+    {
+      "title": "II. CABLE DRIVEN PARALLEL ROBOT",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          35.7890625,
+          639.62841796875
+        ],
+        [
+          191.8125,
+          639.62841796875
+        ],
+        [
+          191.8125,
+          649.1926574707031
+        ],
+        [
+          35.7890625,
+          649.1926574707031
+        ]
+      ]
+    },
+    {
+      "title": "III. REINFORCEMENT LEARNING",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          298.0740661621094,
+          472.17041015625
+        ],
+        [
+          433.6875,
+          472.17041015625
+        ],
+        [
+          433.6875,
+          481.81982421875
+        ],
+        [
+          298.0740661621094,
+          481.81982421875
+        ]
+      ]
+    },
+    {
+      "title": "IV. CONTROL OF THE CDPR USING TD3",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          35.71875,
+          340.3509216308594
+        ],
+        [
+          201.36036682128906,
+          339.12158203125
+        ],
+        [
+          201.36036682128906,
+          349.31689453125
+        ],
+        [
+          35.71875,
+          349.4443359375
+        ]
+      ]
+    },
+    {
+      "title": "A. SETUP OF THE REINFORCEMENT LEARNING",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          35.6484375,
+          352.2979431152344
+        ],
+        [
+          232.1945037841797,
+          350.9736328125
+        ],
+        [
+          232.1945037841797,
+          361.2639465332031
+        ],
+        [
+          35.6484375,
+          361.29638671875
+        ]
+      ]
+    },
+    {
+      "title": "B. NEURAL NETWORK",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          297.0,
+          410.6162109375
+        ],
+        [
+          392.0625,
+          410.6162109375
+        ],
+        [
+          392.0625,
+          419.9837341308594
+        ],
+        [
+          297.0,
+          419.9837341308594
+        ]
+      ]
+    },
+    {
+      "title": "C. REWARD FUNCTION",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          297.5625,
+          614.77734375
+        ],
+        [
+          394.3125,
+          614.77734375
+        ],
+        [
+          394.3125,
+          624.2776336669922
+        ],
+        [
+          297.5625,
+          624.2776336669922
+        ]
+      ]
+    },
+    {
+      "title": "V. RESULTS AND DISCUSSION",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          297.5625,
+          244.496337890625
+        ],
+        [
+          424.8990783691406,
+          244.496337890625
+        ],
+        [
+          424.8990783691406,
+          254.17364501953125
+        ],
+        [
+          297.5625,
+          254.17364501953125
+        ]
+      ]
+    },
+    {
+      "title": "A. RL FINDINGS",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          296.71875,
+          435.0849609375
+        ],
+        [
+          365.1406555175781,
+          435.0849609375
+        ],
+        [
+          365.1406555175781,
+          445.025390625
+        ],
+        [
+          296.71875,
+          445.025390625
+        ]
+      ]
+    },
+    {
+      "title": "B. TENSION DISTRIBUTION",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          35.68359375,
+          448.083984375
+        ],
+        [
+          150.57691955566406,
+          448.083984375
+        ],
+        [
+          150.57691955566406,
+          458.3428039550781
+        ],
+        [
+          35.68359375,
+          458.3428039550781
+        ]
+      ]
+    },
+    {
+      "title": "VI. CONCLUSION",
+      "heading_level": null,
+      "page_id": 9,
+      "polygon": [
+        [
+          35.7890625,
+          556.28173828125
+        ],
+        [
+          109.8984375,
+          556.28173828125
+        ],
+        [
+          109.8984375,
+          565.5055389404297
+        ],
+        [
+          35.7890625,
+          565.5055389404297
+        ]
+      ]
+    },
+    {
+      "title": "ACKNOWLEDGMENT",
+      "heading_level": null,
+      "page_id": 9,
+      "polygon": [
+        [
+          297.0,
+          432.40869140625
+        ],
+        [
+          385.3125,
+          432.40869140625
+        ],
+        [
+          385.3125,
+          441.7295227050781
+        ],
+        [
+          297.0,
+          441.7295227050781
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 9,
+      "polygon": [
+        [
+          296.4375,
+          560.0444641113281
+        ],
+        [
+          352.125,
+          560.0444641113281
+        ],
+        [
+          352.125,
+          569.0104675292969
+        ],
+        [
+          296.4375,
+          569.0104675292969
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          170
+        ],
+        [
+          "Line",
+          50
+        ],
+        [
+          "Text",
+          15
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageFooter",
+          3
+        ],
+        [
+          "Reference",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 3,
+        "llm_error_count": 0,
+        "llm_tokens_used": 9969
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          246
+        ],
+        [
+          "Line",
+          112
+        ],
+        [
+          "Reference",
+          17
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          237
+        ],
+        [
+          "Line",
+          95
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Reference",
+          5
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 2869
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          431
+        ],
+        [
+          "Line",
+          105
+        ],
+        [
+          "TableCell",
+          72
+        ],
+        [
+          "Reference",
+          8
+        ],
+        [
+          "TextInlineMath",
+          4
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 20,
+        "llm_error_count": 1,
+        "llm_tokens_used": 62349
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          752
+        ],
+        [
+          "Line",
+          135
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "ListItem",
+          5
+        ],
+        [
+          "Equation",
+          5
+        ],
+        [
+          "Reference",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "TextInlineMath",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 31,
+        "llm_error_count": 2,
+        "llm_tokens_used": 99374
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          281
+        ],
+        [
+          "Line",
+          97
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Reference",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 6,
+        "llm_error_count": 2,
+        "llm_tokens_used": 21269
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          486
+        ],
+        [
+          "Line",
+          112
+        ],
+        [
+          "TableCell",
+          42
+        ],
+        [
+          "Reference",
+          6
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 18,
+        "llm_error_count": 1,
+        "llm_tokens_used": 57014
+      }
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          171
+        ],
+        [
+          "Line",
+          59
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "Reference",
+          5
+        ],
+        [
+          "Figure",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 4,
+        "llm_error_count": 0,
+        "llm_tokens_used": 12414
+      }
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          310
+        ],
+        [
+          "Line",
+          61
+        ],
+        [
+          "Reference",
+          5
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "TextInlineMath",
+          3
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 17,
+        "llm_error_count": 2,
+        "llm_tokens_used": 51249
+      }
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          455
+        ],
+        [
+          "Line",
+          129
+        ],
+        [
+          "Reference",
+          6
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "ListItem",
+          4
+        ],
+        [
+          "TextInlineMath",
+          3
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 6,
+        "llm_error_count": 1,
+        "llm_tokens_used": 16208
+      }
+    },
+    {
+      "page_id": 10,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          353
+        ],
+        [
+          "Line",
+          129
+        ],
+        [
+          "ListItem",
+          22
+        ],
+        [
+          "Reference",
+          20
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Picture",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "ListGroup",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 11,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          156
+        ],
+        [
+          "Line",
+          78
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "Picture",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 1352
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/Controlling_Cable_Driven_Parallel_Robots_OperationsDeep_Reinforcement_Learning_Approach"
+}
