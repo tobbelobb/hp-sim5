@@ -554,6 +554,7 @@ async function returnAllMotorsToEncoderOrigin(sendFn, options) {
     torqueHoldNm = 0.0,
     forbiddenTorqueAnchors = [],
     endInPositionMode = false,
+    positionModeFirstAnchorIdx = null,
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return [];
@@ -564,7 +565,27 @@ async function returnAllMotorsToEncoderOrigin(sendFn, options) {
   const hold = Number.isFinite(torqueHoldNm) ? torqueHoldNm : 0.0;
   const forbidden = new Set(forbiddenTorqueAnchors ?? []);
 
+  const preferredIdx = Number.isFinite(positionModeFirstAnchorIdx)
+    ? Math.max(0, Math.min(motorIds.length - 1, positionModeFirstAnchorIdx))
+    : null;
+  const ordered = [];
+  if (preferredIdx !== null) {
+    ordered.push(preferredIdx);
+  }
+  for (let i = 0; i < motorIds.length; i += 1) {
+    if (preferredIdx !== null && i === preferredIdx) {
+      continue;
+    }
+    ordered.push(i);
+  }
+
+  // Put all motors except an already-position-mode preferred axis into torque-hold first.
+  // This avoids toggling an axis that is already in position mode into torque mode and letting it drift
+  // while other axes are being returned.
   for (let anchorIdx = 0; anchorIdx < motorIds.length; anchorIdx += 1) {
+    if (preferredIdx !== null && anchorIdx === preferredIdx) {
+      continue;
+    }
     if (forbidden.has(anchorIdx)) {
       await sendFn(`M569.4 P${motorIds[anchorIdx]} T0.0`);
     } else {
@@ -572,7 +593,8 @@ async function returnAllMotorsToEncoderOrigin(sendFn, options) {
     }
   }
 
-  for (let anchorIdx = 0; anchorIdx < motorIds.length; anchorIdx += 1) {
+  for (let orderIdx = 0; orderIdx < ordered.length; orderIdx += 1) {
+    const anchorIdx = ordered[orderIdx];
     const axis = axes[anchorIdx];
     if (!axis) {
       throw new Error(`Missing axis mapping for anchor ${anchorIdx}`);
@@ -1118,6 +1140,76 @@ function buildG92Command(axes) {
   return `G92 ${parts.join(' ')}`;
 }
 
+function parseTorqueModeCommand(line) {
+  if (typeof line !== 'string') {
+    return null;
+  }
+  const trimmed = line.trim();
+  if (!/^M569\.4\b/i.test(trimmed)) {
+    return null;
+  }
+  const pMatch = trimmed.match(/\bP([^\s]+)\b/i);
+  const tMatch = trimmed.match(/\bT([^\s]+)\b/i);
+  if (!pMatch || !tMatch) {
+    return null;
+  }
+  const torqueNm = parseFloat(tMatch[1]);
+  if (!Number.isFinite(torqueNm)) {
+    return null;
+  }
+  const motorIdParts = pMatch[1]
+    .split(':')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  if (motorIdParts.length === 0) {
+    return null;
+  }
+  return { motorIdParts, torqueNm };
+}
+
+function updateMotorTorqueState(line, motorIds, motorTorqueNm) {
+  const parsed = parseTorqueModeCommand(line);
+  if (!parsed) {
+    return;
+  }
+  const { motorIdParts, torqueNm } = parsed;
+  for (const motorId of motorIdParts) {
+    let anchorIdx = motorIds.indexOf(motorId);
+    if (anchorIdx < 0) {
+      const motorIdNum = Number.parseFloat(motorId);
+      if (Number.isFinite(motorIdNum)) {
+        anchorIdx = motorIds.findIndex((id) => Math.abs(Number.parseFloat(id) - motorIdNum) < 1e-9);
+      }
+    }
+    if (anchorIdx < 0 || anchorIdx >= motorTorqueNm.length) {
+      continue;
+    }
+    motorTorqueNm[anchorIdx] = torqueNm;
+  }
+}
+
+function pickPositionModeFirstAnchorIdx(motorTorqueNm, forbiddenTorqueAnchors = []) {
+  if (!Array.isArray(motorTorqueNm) || motorTorqueNm.length === 0) {
+    return null;
+  }
+  const forbidden = new Set(forbiddenTorqueAnchors ?? []);
+  const isPositionMode = (torque) => Number.isFinite(torque) && Math.abs(torque) < 1e-12;
+  for (let idx = 0; idx < motorTorqueNm.length; idx += 1) {
+    if (forbidden.has(idx)) {
+      continue;
+    }
+    if (isPositionMode(motorTorqueNm[idx])) {
+      return idx;
+    }
+  }
+  for (let idx = 0; idx < motorTorqueNm.length; idx += 1) {
+    if (isPositionMode(motorTorqueNm[idx])) {
+      return idx;
+    }
+  }
+  return null;
+}
+
 async function main() {
   const args = parseBridgeArgs(process.argv.slice(2));
   if (args.help) {
@@ -1140,6 +1232,7 @@ async function main() {
     console.error(`Motor ID count (${motorIds.length}) does not match axes count (${machineConfig.axes.length}) for ${machineType}`);
     process.exit(1);
   }
+  const motorTorqueNm = Array.from({ length: motorIds.length }, () => null);
   const sweepRangeInput = Number.isFinite(parseFloat(args.sweepRange))
     ? parseFloat(args.sweepRange)
     : DEFAULT_SWEEP_RANGE_MM;
@@ -1250,6 +1343,7 @@ async function main() {
       console.log(`[rrf_gcode] ${trimmed}`);
     }
     const res = await bridgeCtx.sendGcodeLine(line, options);
+    updateMotorTorqueState(trimmed, motorIds, motorTorqueNm);
     if (args.stepGcode) {
       const reply = res?.reply?.trim?.() || '';
       console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');
@@ -1463,6 +1557,7 @@ async function main() {
             speedup,
             torqueHoldNm: torqueLow,
             forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+            positionModeFirstAnchorIdx: pickPositionModeFirstAnchorIdx(motorTorqueNm, machineConfig.forbiddenSensors),
           });
           currentPositions.fill(0);
         }
@@ -1552,6 +1647,7 @@ async function main() {
           speedup,
           torqueHoldNm: holdTorque,
           forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+          positionModeFirstAnchorIdx: pickPositionModeFirstAnchorIdx(motorTorqueNm, machineConfig.forbiddenSensors),
         });
         currentPositions.fill(0);
       }
@@ -1608,6 +1704,7 @@ async function main() {
           torqueHoldNm: holdTorque,
           forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
           endInPositionMode: true,
+          positionModeFirstAnchorIdx: pickPositionModeFirstAnchorIdx(motorTorqueNm, machineConfig.forbiddenSensors),
         });
         console.log('Returned all motors to encoder origin.');
       } catch (err) {
@@ -1618,18 +1715,18 @@ async function main() {
     success = true;
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
-	  } finally {
-	    if (rrfProcess && !args.persistRrfSimulator) {
-	      stopProcess(rrfProcess);
-	    }
-	    if (stepReadline) {
-	      stepReadline.close();
-	      stepReadline = null;
-	    }
-	    bridgeCtx.close();
-	    process.exit(success ? 0 : 1);
-	  }
-	}
+  } finally {
+    if (rrfProcess && !args.persistRrfSimulator) {
+      stopProcess(rrfProcess);
+    }
+    if (stepReadline) {
+      stepReadline.close();
+      stepReadline = null;
+    }
+    bridgeCtx.close();
+    process.exit(success ? 0 : 1);
+  }
+}
 
 export {
   angleToLength,
