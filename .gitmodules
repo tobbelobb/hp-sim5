@@ -55,3 +55,6 @@
 	url = git@gitlab.com:tobben/auto-calibration-simulation-for-hangprinter
 	branch = five_anchors
   ignore = untracked
+[submodule "forward-transform-dev/hangprinter-forward-transform"]
+	path = forward-transform-dev/hangprinter-forward-transform
+	url = git@gitlab.com:tobben/hangprinter-forward-transform.git
