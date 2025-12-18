@@ -149,7 +149,32 @@ def parametric_to_algebraic_ellipse(
     det = M_d * N_s - N_d * M_s
 
     if abs(det) < 1e-10:
-        return np.array([0.0, 0.0, 0.0, M_d, M_s, -K_d * M_d - K_s * M_s], dtype=float)
+        # Degenerate case: the (cos, sin) coefficient vectors are linearly dependent, so the
+        # parametric curve in (x, y) space collapses to a line:
+        #   P * (x - K_d) + Q * (y - K_s) = 0
+        #
+        # Any (P, Q) satisfying:
+        #   P*M_d + Q*M_s = 0  and  P*N_d + Q*N_s = 0
+        # defines the same line, up to scaling. Prefer a numerically stable nonzero choice.
+        cand1 = np.array([M_s, -M_d], dtype=float)
+        cand2 = np.array([N_s, -N_d], dtype=float)
+        if float(np.dot(cand2, cand2)) > float(np.dot(cand1, cand1)):
+            P, Q = float(cand2[0]), float(cand2[1])
+        else:
+            P, Q = float(cand1[0]), float(cand1[1])
+
+        if not (np.isfinite(P) and np.isfinite(Q)) or (abs(P) + abs(Q) < 1e-12):
+            # Fully degenerate: both anchors coincide with the circle center so both x and y are
+            # constant in the forward model, but real sweep data will not satisfy all-zero coeffs.
+            # Emit a simple nonzero line to avoid a misleading zero-cost objective.
+            P, Q = 1.0, 0.0
+
+        norm_pq = float(np.hypot(P, Q))
+        if norm_pq > 1e-12:
+            P /= norm_pq
+            Q /= norm_pq
+        F = -(P * float(K_d) + Q * float(K_s))
+        return np.array([0.0, 0.0, 0.0, P, Q, F], dtype=float)
 
     A_xy = N_s**2 + M_s**2
     B_xy = -2 * (N_s * N_d + M_s * M_d)

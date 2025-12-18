@@ -84,6 +84,33 @@ def test_parametric_to_algebraic_produces_ellipse():
     assert discriminant < 0
 
 
+def test_parametric_to_algebraic_degenerate_det_produces_nontrivial_line():
+    # When det≈0, the sweep collapses to a line in (x=L_d^2, y=L_s^2) space.
+    # Regression test: the previous fallback only used M terms, producing all-zero
+    # coefficients when M_d=M_s=0 even if N terms were present.
+    K_d = 10.0
+    M_d = 0.0
+    N_d = 4.0
+    K_s = 20.0
+    M_s = 0.0
+    N_s = 0.0
+
+    coeffs = parametric_to_algebraic_ellipse(K_d, M_d, N_d, K_s, M_s, N_s)
+    assert np.linalg.norm(coeffs) > 0.0
+    assert np.linalg.norm(coeffs[:3]) == pytest.approx(0.0)
+
+    phi = np.linspace(0.0, 2.0 * np.pi, 17)
+    x = K_d + M_d * np.cos(phi) + N_d * np.sin(phi)
+    y = K_s + M_s * np.cos(phi) + N_s * np.sin(phi)
+
+    vals = coeffs[3] * x + coeffs[4] * y + coeffs[5]
+    assert np.max(np.abs(vals)) < 1e-9
+
+    # A point off the line must violate the constraint.
+    off = coeffs[3] * K_d + coeffs[4] * (K_s + 1.0) + coeffs[5]
+    assert abs(off) > 1e-6
+
+
 def simulate_sweep_lengths(circle, anchors, drive_idx, sensor_idx):
     phi = np.linspace(0, np.pi, 80)
     positions = circle.center + circle.radius * (
