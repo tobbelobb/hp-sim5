@@ -553,6 +553,7 @@ async function returnAllMotorsToEncoderOrigin(sendFn, options) {
     speedup = 1,
     torqueHoldNm = 0.0,
     forbiddenTorqueAnchors = [],
+    endInPositionMode = false,
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return [];
@@ -586,9 +587,13 @@ async function returnAllMotorsToEncoderOrigin(sendFn, options) {
       await runMoveWithWait(sendFn, `G1 H2 ${axis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn: sleep });
       await waitForStableEncoders(sendFn, motorIds, { speedup });
     }
-    if (!forbidden.has(anchorIdx)) {
+    if (!forbidden.has(anchorIdx) && !endInPositionMode) {
       await sendFn(`M569.4 P${motorIds[anchorIdx]} T${hold}`);
     }
+  }
+
+  if (endInPositionMode) {
+    await sendFn(`M569.4 P${motorIds.join(':')} T0.0`);
   }
 
   return await getCurrentLengths(sendFn, motorIds, mmPerDeg);
@@ -1602,6 +1607,7 @@ async function main() {
           speedup,
           torqueHoldNm: holdTorque,
           forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+          endInPositionMode: true,
         });
         console.log('Returned all motors to encoder origin.');
       } catch (err) {

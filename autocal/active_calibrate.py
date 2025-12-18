@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-if __name__ == "__main__" and (__package__ is None or __package__ == ""):
-    import os
-    import sys
-
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import argparse
 import json
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from autocal.active_learning import (
     SweepConfig,
@@ -184,7 +183,7 @@ def _parse_csv_floats(spec: Optional[str]) -> Optional[List[float]]:
     return out or None
 
 
-def ellipse_active(
+def _plan_next_ellipse_sweep(
     dataset_path: Path,
     *,
     solve_restarts: int,
@@ -205,12 +204,9 @@ def ellipse_active(
     existing_tol_mm: float,
     top_k: int,
     write_cfg: Optional[Path],
-    print_command: bool,
-    collector_args: Sequence[str],
-    collect_once: bool,
     collector_output: Optional[Path],
-    merged_output_dataset: Optional[Path],
-) -> int:
+    collector_args: Sequence[str],
+) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
     machine_type = str(dataset.get("machine_type", "hangprinter_4"))
     num_anchors = int(dataset.get("num_anchors", 4))
@@ -248,7 +244,7 @@ def ellipse_active(
     cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
 
     if candidate_deltas is None:
-        observed_deltas = []
+        observed_deltas: List[float] = []
         for cfg in sweeps_obs:
             observed_deltas.extend(list(cfg.fixed_deltas_mm))
         if observed_deltas:
@@ -286,47 +282,136 @@ def ellipse_active(
         top_k=int(top_k),
     )
 
-    print("; Active ellipse calibration")
-    print(cal["gcode"])
-    print(f"; cost={cost:.6g} {_format_anchor_stats(anchors)}")
-    print(
-        f"; info rank: {int(np.linalg.matrix_rank(info_obs))}/{info_obs.shape[0]} {_covariance_report(cov)}"
-    )
-
-    if not ranked:
-        print("; No valid candidate sweeps found (check delta range and anchor estimate).")
-        return 2
-
-    best_score, best_cfg = ranked[0]
-    print(
-        f"; next_sweep score={best_score:.6g} fixed={list(best_cfg.fixed_anchors)} "
-        f"targets={list(best_cfg.fixed_deltas_mm)} pair=[{best_cfg.drive_anchor},{best_cfg.sensor_anchor}]"
-    )
-    if len(ranked) > 1:
-        print("; top_candidates:")
-        for score, cfg in ranked[: min(5, len(ranked))]:
-            print(
-                f";   {score:.6g} fixed={list(cfg.fixed_anchors)} targets={list(cfg.fixed_deltas_mm)} "
-                f"pair=[{cfg.drive_anchor},{cfg.sensor_anchor}]"
-            )
-
+    best_cfg = ranked[0][1] if ranked else None
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
-    _write_sweep_config_file(cfg_path, best_cfg)
+    if best_cfg is not None:
+        _write_sweep_config_file(cfg_path, best_cfg)
 
     collector_args_eff = list(collector_args)
     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
         collector_args_eff.append("--return-to-origin")
 
-    cmd = _suggested_collect_command(
-        cfg_path,
-        best_cfg,
-        machine_type=machine_type,
-        output_file=collector_output,
-        extra_args=collector_args_eff,
-    )
-    if print_command:
+    cmd = None
+    if best_cfg is not None:
+        cmd = _suggested_collect_command(
+            cfg_path,
+            best_cfg,
+            machine_type=machine_type,
+            output_file=collector_output,
+            extra_args=collector_args_eff,
+        )
+
+    return {
+        "dataset": dataset,
+        "machine_type": machine_type,
+        "num_anchors": num_anchors,
+        "dimensions": dimensions,
+        "calibration": cal,
+        "anchors": anchors,
+        "cost": cost,
+        "info": info_obs,
+        "covariance": cov,
+        "ranked": ranked,
+        "best_cfg": best_cfg,
+        "cfg_path": cfg_path,
+        "collect_command": cmd,
+    }
+
+
+def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_command: bool = True) -> None:
+    cal = plan.get("calibration") or {}
+    anchors = np.asarray(plan.get("anchors"), dtype=float)
+    cost = float(plan.get("cost", float("nan")))
+    info = np.asarray(plan.get("info"), dtype=float)
+    cov = np.asarray(plan.get("covariance"), dtype=float)
+    ranked = plan.get("ranked") or []
+    cmd = plan.get("collect_command")
+
+    print("; Active ellipse calibration")
+    if isinstance(cal, dict) and "gcode" in cal:
+        print(str(cal["gcode"]))
+    print(f"; cost={cost:.6g} {_format_anchor_stats(anchors)}")
+    if info.ndim == 2 and info.shape[0] == info.shape[1]:
+        print(f"; info rank: {int(np.linalg.matrix_rank(info))}/{info.shape[0]} {_covariance_report(cov)}")
+
+    if isinstance(ranked, list) and ranked:
+        best_score, best_cfg = ranked[0]
+        print(
+            f"; next_sweep score={float(best_score):.6g} fixed={list(best_cfg.fixed_anchors)} "
+            f"targets={list(best_cfg.fixed_deltas_mm)} pair=[{best_cfg.drive_anchor},{best_cfg.sensor_anchor}]"
+        )
+        if len(ranked) > 1:
+            print("; top_candidates:")
+            for score, cfg in ranked[: min(int(top_n), len(ranked))]:
+                print(
+                    f";   {float(score):.6g} fixed={list(cfg.fixed_anchors)} targets={list(cfg.fixed_deltas_mm)} "
+                    f"pair=[{cfg.drive_anchor},{cfg.sensor_anchor}]"
+                )
+    else:
+        print("; No valid candidate sweeps found (check delta range and anchor estimate).")
+
+    if bool(print_command) and isinstance(cmd, list) and cmd:
         print("; collect_command:")
-        print(";   " + " ".join(cmd))
+        print(";   " + " ".join(str(x) for x in cmd))
+
+
+def ellipse_active(
+    dataset_path: Path,
+    *,
+    solve_restarts: int,
+    solve_iterations: int,
+    solve_optimizer: str,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    cost_mode: str,
+    generate_report: bool,
+    candidate_deltas: Optional[List[float]],
+    candidate_count: int,
+    delta_min: Optional[float],
+    delta_max: Optional[float],
+    fd_eps_mm: float,
+    regularization: float,
+    exclude_existing: bool,
+    existing_tol_mm: float,
+    top_k: int,
+    write_cfg: Optional[Path],
+    print_command: bool,
+    collector_args: Sequence[str],
+    collect_once: bool,
+    collector_output: Optional[Path],
+    merged_output_dataset: Optional[Path],
+) -> int:
+    plan = _plan_next_ellipse_sweep(
+        dataset_path,
+        solve_restarts=solve_restarts,
+        solve_iterations=solve_iterations,
+        solve_optimizer=solve_optimizer,
+        residual_threshold=residual_threshold,
+        spring_k_multiplier=spring_k_multiplier,
+        use_flex=use_flex,
+        cost_mode=cost_mode,
+        generate_report=generate_report,
+        candidate_deltas=candidate_deltas,
+        candidate_count=candidate_count,
+        delta_min=delta_min,
+        delta_max=delta_max,
+        fd_eps_mm=fd_eps_mm,
+        regularization=regularization,
+        exclude_existing=exclude_existing,
+        existing_tol_mm=existing_tol_mm,
+        top_k=top_k,
+        write_cfg=write_cfg,
+        collector_output=collector_output,
+        collector_args=collector_args,
+    )
+
+    _print_ellipse_plan(plan, top_n=5, print_command=print_command)
+
+    ranked = plan.get("ranked") or []
+    cmd = plan.get("collect_command")
+    if not ranked or not isinstance(cmd, list):
+        return 2
 
     if not collect_once:
         return 0
@@ -338,10 +423,130 @@ def ellipse_active(
     subprocess.run(cmd, check=True)
 
     new_dataset = _load_json(collector_output)
-    merged = _merge_sweep_datasets(dataset, new_dataset)
+    merged = _merge_sweep_datasets(_load_json(dataset_path), new_dataset)
     out_path = merged_output_dataset or dataset_path
     _write_json(out_path, merged)
     print(f"; merged dataset written to {out_path}")
+    return 0
+
+
+def merge_datasets(base_dataset: Path, extra_datasets: Sequence[Path], *, output: Optional[Path] = None) -> int:
+    merged: dict = _load_json(base_dataset)
+    for path in extra_datasets:
+        merged = _merge_sweep_datasets(merged, _load_json(Path(path)))
+    out_path = output or base_dataset
+    _write_json(out_path, merged)
+    sweeps = merged.get("sweeps", [])
+    count = len(sweeps) if isinstance(sweeps, list) else "?"
+    print(f"; merged dataset written to {out_path} sweeps={count}")
+    return 0
+
+
+def ellipse_loop(
+    seed_dataset: Path,
+    *,
+    work_dataset: Optional[Path],
+    max_steps: int,
+    stop_cost: Optional[float],
+    stop_std_mm: Optional[float],
+    solve_restarts: int,
+    solve_iterations: int,
+    solve_optimizer: str,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    cost_mode: str,
+    generate_report: bool,
+    candidate_deltas: Optional[List[float]],
+    candidate_count: int,
+    delta_min: Optional[float],
+    delta_max: Optional[float],
+    fd_eps_mm: float,
+    regularization: float,
+    exclude_existing: bool,
+    existing_tol_mm: float,
+    top_k: int,
+    write_cfg: Optional[Path],
+    collector_args: Sequence[str],
+) -> int:
+    work_path = work_dataset or seed_dataset.with_name(seed_dataset.stem + "_active.json")
+    if not work_path.exists():
+        _write_json(work_path, _load_json(seed_dataset))
+        print(f"; created working dataset {work_path}")
+
+    for step in range(1, max(1, int(max_steps)) + 1):
+        print(f"\n; === iteration {step}/{max_steps} dataset={work_path} ===")
+        collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
+
+        plan = _plan_next_ellipse_sweep(
+            work_path,
+            solve_restarts=solve_restarts,
+            solve_iterations=solve_iterations,
+            solve_optimizer=solve_optimizer,
+            residual_threshold=residual_threshold,
+            spring_k_multiplier=spring_k_multiplier,
+            use_flex=use_flex,
+            cost_mode=cost_mode,
+            generate_report=generate_report,
+            candidate_deltas=candidate_deltas,
+            candidate_count=candidate_count,
+            delta_min=delta_min,
+            delta_max=delta_max,
+            fd_eps_mm=fd_eps_mm,
+            regularization=regularization,
+            exclude_existing=exclude_existing,
+            existing_tol_mm=existing_tol_mm,
+            top_k=top_k,
+            write_cfg=write_cfg,
+            collector_output=collector_output,
+            collector_args=collector_args,
+        )
+        _print_ellipse_plan(plan, top_n=5, print_command=True)
+
+        cost = float(plan.get("cost", float("nan")))
+        cov = np.asarray(plan.get("covariance"), dtype=float)
+        max_std = float("nan")
+        if cov.ndim == 2 and cov.shape[0] == cov.shape[1] and cov.size:
+            diag = np.diag(cov)
+            if diag.size and np.any(np.isfinite(diag)):
+                max_std = float(np.max(np.sqrt(np.maximum(diag, 0.0))))
+
+        if stop_cost is not None and np.isfinite(cost) and cost <= float(stop_cost):
+            print(f"; stop condition: cost <= {float(stop_cost):.6g}")
+        if stop_std_mm is not None and np.isfinite(max_std) and max_std <= float(stop_std_mm):
+            print(f"; stop condition: max_std <= {float(stop_std_mm):.6g}mm")
+
+        cmd = plan.get("collect_command")
+        if not isinstance(cmd, list) or not cmd:
+            print("; No valid candidate to collect; stopping.")
+            return 2
+
+        try:
+            while True:
+                resp = input("Accept anchors [a], collect next sweep [c], quit [q]? ").strip().lower()
+                if resp in ("a", "accept", "ok", "y", "yes"):
+                    print(f"; accepted anchors; dataset={work_path}")
+                    return 0
+                if resp in ("q", "quit", "exit", "n", "no"):
+                    print(f"; stopped; dataset={work_path}")
+                    return 0
+                if resp in ("c", "collect", "next", ""):
+                    break
+                print("Please enter a/c/q.")
+        except KeyboardInterrupt:
+            print(f"\n; interrupted; dataset={work_path}")
+            return 130
+
+        print(f"; running: {' '.join(str(x) for x in cmd)}")
+        subprocess.run(cmd, check=True)
+
+        merged = _merge_sweep_datasets(_load_json(work_path), _load_json(collector_output))
+        _write_json(work_path, merged)
+        sweeps = merged.get("sweeps", [])
+        count = len(sweeps) if isinstance(sweeps, list) else "?"
+        print(f"; merged {collector_output} -> {work_path} sweeps={count}")
+
+    print(f"; reached max steps; dataset={work_path}")
     return 0
 
 
@@ -389,6 +594,50 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Where to write the merged dataset (default: overwrite input dataset)",
     )
 
+    merge = subparsers.add_parser("merge", help="Merge one or more sweep datasets into a base dataset")
+    merge.add_argument("base", type=Path, help="Base dataset JSON (keeps config metadata)")
+    merge.add_argument("extra", type=Path, nargs="+", help="Additional dataset JSON files to append")
+    merge.add_argument("-o", "--output", type=Path, default=None, help="Output dataset path (default: overwrite base)")
+
+    loop = subparsers.add_parser("ellipse-loop", help="Interactive active-learning loop (plan → collect → merge)")
+    loop.add_argument("dataset", type=Path, help="Seed sweep dataset JSON")
+    loop.add_argument(
+        "--work-dataset",
+        type=Path,
+        default=None,
+        help="Working dataset file that is updated each iteration (default: <seed>_active.json)",
+    )
+    loop.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
+    loop.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
+    loop.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
+
+    # Reuse the same knobs as the one-shot planner.
+    loop.add_argument("--solve-restarts", type=int, default=4)
+    loop.add_argument("--solve-iterations", type=int, default=400)
+    loop.add_argument("--solve-optimizer", default="L-BFGS-B")
+    loop.add_argument("--threshold", type=float, default=250.0)
+    loop.add_argument("--spring-k-multiplier", type=float, default=1.0)
+    loop.add_argument("--flex", action="store_true")
+    loop.add_argument("--cost-mode", choices=["pointwise", "geometry"], default="pointwise")
+    loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
+
+    loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
+    loop.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
+    loop.add_argument("--delta-min", type=float, default=None)
+    loop.add_argument("--delta-max", type=float, default=None)
+    loop.add_argument("--fd-eps-mm", type=float, default=1.0)
+    loop.add_argument("--regularization", type=float, default=1e-6)
+    loop.add_argument("--no-exclude-existing", action="store_true")
+    loop.add_argument("--existing-tol-mm", type=float, default=1e-3)
+    loop.add_argument("--top-k", type=int, default=10)
+    loop.add_argument("--write-sweep-config", type=Path, default=None)
+    loop.add_argument(
+        "--collector-args",
+        nargs=argparse.REMAINDER,
+        default=(),
+        help="Extra args passed to scripts/collect_sweep_data.mjs (after --collector-args)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "ellipse":
@@ -420,6 +669,40 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             collect_once=bool(args.collect_once),
             collector_output=args.collector_output,
             merged_output_dataset=args.merged_output_dataset,
+        )
+
+    if args.command == "merge":
+        return merge_datasets(args.base, args.extra, output=args.output)
+
+    if args.command == "ellipse-loop":
+        collector_args = list(args.collector_args)
+        if collector_args and collector_args[0] == "--":
+            collector_args = collector_args[1:]
+        return ellipse_loop(
+            args.dataset,
+            work_dataset=args.work_dataset,
+            max_steps=int(args.max_steps),
+            stop_cost=args.stop_cost,
+            stop_std_mm=args.stop_std_mm,
+            solve_restarts=int(args.solve_restarts),
+            solve_iterations=int(args.solve_iterations),
+            solve_optimizer=str(args.solve_optimizer),
+            residual_threshold=float(args.threshold),
+            spring_k_multiplier=float(args.spring_k_multiplier),
+            use_flex=bool(args.flex),
+            cost_mode=str(args.cost_mode),
+            generate_report=bool(args.report),
+            candidate_deltas=_parse_csv_floats(args.candidate_deltas),
+            candidate_count=int(args.candidate_count),
+            delta_min=args.delta_min,
+            delta_max=args.delta_max,
+            fd_eps_mm=float(args.fd_eps_mm),
+            regularization=float(args.regularization),
+            exclude_existing=not bool(args.no_exclude_existing),
+            existing_tol_mm=float(args.existing_tol_mm),
+            top_k=int(args.top_k),
+            write_cfg=args.write_sweep_config,
+            collector_args=collector_args,
         )
 
     raise AssertionError("Unhandled command")
