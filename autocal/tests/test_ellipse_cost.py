@@ -89,6 +89,19 @@ def test_cost_is_low_for_true_anchors():
     assert detailed.num_valid_sweeps == 1
 
 
+def test_pointwise_euclidean_cost_is_low_for_true_anchors():
+    dataset, anchors = _synthetic_dataset()
+    cost_fn = EllipseCostFunction(
+        dataset,
+        residual_threshold=0.01,
+        cost_mode="pointwise",
+        pointwise_residual_mode="euclidean",
+        use_weights=False,
+    )
+    cost = cost_fn.evaluate(anchors.ravel())
+    assert cost < 1e-6
+
+
 def test_invalid_sweep_adds_penalty():
     dataset, anchors = _synthetic_dataset()
     # Trim to force an invalid fit (min_points default is 10)

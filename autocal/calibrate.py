@@ -493,6 +493,7 @@ def calibrate_elliptical(
     regularize_supersweep: bool = False,
     generate_report: bool = True,
     include_debug_fits: bool = True,
+    pointwise_residual_mode: str = "sampson",
 ) -> Dict[str, Any]:
     dataset = _load_json(input_path)
     # `regularize_supersweep` is primarily relevant for the legacy point solver (raw motor samples);
@@ -531,6 +532,7 @@ def calibrate_elliptical(
         progress_every=int(progress_every),
         residual_threshold=residual_threshold,
         cost_mode=str(cost_mode),
+        pointwise_residual_mode=str(pointwise_residual_mode),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
@@ -848,6 +850,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Ellipse cost mode: compare predicted ellipse to points (pointwise) or compare fitted vs predicted ellipse geometry (geometry).",
     )
     ellipse_parser.add_argument(
+        "--pointwise-residual",
+        choices=["sampson", "euclidean"],
+        default="sampson",
+        help="Pointwise residual metric (only used when --cost-mode=pointwise).",
+    )
+    ellipse_parser.add_argument(
         "--progress-every",
         type=int,
         default=None,
@@ -1069,6 +1077,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 else (1 if bool(args.debug) else 10)
             ),
             cost_mode=str(args.cost_mode),
+            pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=not args.no_report,
             include_debug_fits=not args.no_debug_fits,
         )

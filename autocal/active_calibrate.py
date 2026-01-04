@@ -193,6 +193,7 @@ def _plan_next_ellipse_sweep(
     spring_k_multiplier: float,
     use_flex: bool,
     cost_mode: str,
+    pointwise_residual_mode: str,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -224,6 +225,7 @@ def _plan_next_ellipse_sweep(
         verbose=False,
         use_parallel=False,
         cost_mode=str(cost_mode),
+        pointwise_residual_mode=str(pointwise_residual_mode),
         generate_report=bool(generate_report),
         include_debug_fits=False,
     )
@@ -365,6 +367,7 @@ def ellipse_active(
     spring_k_multiplier: float,
     use_flex: bool,
     cost_mode: str,
+    pointwise_residual_mode: str,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -391,6 +394,7 @@ def ellipse_active(
         spring_k_multiplier=spring_k_multiplier,
         use_flex=use_flex,
         cost_mode=cost_mode,
+        pointwise_residual_mode=pointwise_residual_mode,
         generate_report=generate_report,
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
@@ -456,6 +460,7 @@ def ellipse_loop(
     spring_k_multiplier: float,
     use_flex: bool,
     cost_mode: str,
+    pointwise_residual_mode: str,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -555,6 +560,7 @@ def ellipse_loop(
             spring_k_multiplier=spring_k_multiplier,
             use_flex=use_flex,
             cost_mode=cost_mode,
+            pointwise_residual_mode=pointwise_residual_mode,
             generate_report=generate_report,
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
@@ -632,6 +638,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse.add_argument("--spring-k-multiplier", type=float, default=1.0)
     ellipse.add_argument("--flex", action="store_true")
     ellipse.add_argument("--cost-mode", choices=["pointwise", "geometry"], default="pointwise")
+    ellipse.add_argument(
+        "--pointwise-residual",
+        choices=["sampson", "euclidean"],
+        default="sampson",
+        help="Pointwise residual metric (only used when --cost-mode=pointwise)",
+    )
     ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
 
     ellipse.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
@@ -693,6 +705,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     loop.add_argument("--spring-k-multiplier", type=float, default=1.0)
     loop.add_argument("--flex", action="store_true")
     loop.add_argument("--cost-mode", choices=["pointwise", "geometry"], default="pointwise")
+    loop.add_argument(
+        "--pointwise-residual",
+        choices=["sampson", "euclidean"],
+        default="sampson",
+        help="Pointwise residual metric (only used when --cost-mode=pointwise)",
+    )
     loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
 
     loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
@@ -727,6 +745,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.flex),
             cost_mode=str(args.cost_mode),
+            pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
@@ -765,6 +784,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.flex),
             cost_mode=str(args.cost_mode),
+            pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),

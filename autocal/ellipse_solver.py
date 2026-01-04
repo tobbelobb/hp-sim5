@@ -33,6 +33,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
     residual_threshold = float(payload["residual_threshold"])
     use_weights = bool(payload["use_weights"])
     cost_mode = str(payload["cost_mode"])
+    pointwise_residual_mode = str(payload.get("pointwise_residual_mode", "sampson"))
     invalid_sweep_penalty = float(payload["invalid_sweep_penalty"])
     spring_k_multiplier = float(payload["spring_k_multiplier"])
     use_flex = bool(payload["use_flex"])
@@ -52,6 +53,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         residual_threshold=residual_threshold,
         use_weights=use_weights,
         cost_mode=str(cost_mode),
+        pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=invalid_sweep_penalty,
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
@@ -167,6 +169,7 @@ def solve_anchors(
     residual_threshold: float = 0.01,
     use_weights: bool = True,
     cost_mode: str = "geometry",
+    pointwise_residual_mode: str = "sampson",
     invalid_sweep_penalty: float = 1e6,
     spring_k_multiplier: float = 1.0,
     use_flex: bool = True,
@@ -199,6 +202,7 @@ def solve_anchors(
         residual_threshold=residual_threshold,
         use_weights=use_weights,
         cost_mode=str(cost_mode),
+        pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=invalid_sweep_penalty,
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
@@ -265,7 +269,10 @@ def solve_anchors(
                 try:
                     p_cost, p_rms, p_max, _p_viol, _p_sid = cost_fn._pointwise_predicted_cost(sweep, anchors)  # type: ignore[attr-defined]
                     if np.isfinite(p_cost):
-                        print(f"    pred Sampson rms={p_rms:.3g} max={p_max:.3g}")
+                        resid_kind = "Sampson"
+                        if str(pointwise_residual_mode or "").strip().lower() in ("euclidean", "exact", "distance"):
+                            resid_kind = "Euclidean"
+                        print(f"    pred {resid_kind} rms={p_rms:.3g} max={p_max:.3g}")
                 except Exception:
                     pass
 
@@ -340,6 +347,7 @@ def solve_anchors(
                 "residual_threshold": float(residual_threshold),
                 "use_weights": bool(use_weights),
                 "cost_mode": str(cost_mode),
+                "pointwise_residual_mode": str(pointwise_residual_mode),
                 "invalid_sweep_penalty": float(invalid_sweep_penalty),
                 "spring_k_multiplier": float(spring_k_multiplier),
                 "use_flex": bool(use_flex),

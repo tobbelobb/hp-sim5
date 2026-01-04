@@ -7,7 +7,11 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
-from autocal.ellipse_fitting import ellipse_sampson_residuals, fit_ellipse_from_sweep
+from autocal.ellipse_fitting import (
+    ellipse_euclidean_residuals,
+    ellipse_sampson_residuals,
+    fit_ellipse_from_sweep,
+)
 from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
@@ -182,6 +186,44 @@ def pointwise_sampson_cost_normalized(
     return float(weight) * cost, rms, max_abs
 
 
+def pointwise_euclidean_cost_normalized(
+    coeffs: np.ndarray,
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    l2_scale: float,
+    weight: float = 1.0,
+    robust_loss: bool = False,
+    huber_delta: float = 1.0,
+) -> Tuple[float, float, float]:
+    """
+    Normalized pointwise cost using Euclidean distance to the predicted ellipse.
+
+    Returns (cost, rms, max) where residual stats are in the squared-length plane's
+    units and cost is dimensionless (scaled by `l2_scale`).
+    """
+    coeffs = np.asarray(coeffs, dtype=float).reshape(6)
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+    if x.size == 0 or y.size == 0 or x.size != y.size:
+        return float("inf"), float("inf"), float("inf")
+
+    residuals = ellipse_euclidean_residuals(coeffs, x, y)
+    if residuals.size == 0 or not np.all(np.isfinite(residuals)):
+        return float("inf"), float("inf"), float("inf")
+
+    rms = float(np.sqrt(np.mean(residuals**2)))
+    max_abs = float(np.max(np.abs(residuals)))
+
+    scale = float(max(l2_scale, 1.0))
+    r_norm = residuals / scale
+    if bool(robust_loss):
+        cost = float(np.mean(pseudo_huber_loss(r_norm, delta=float(huber_delta))))
+    else:
+        cost = float(np.mean(r_norm**2))
+    return float(weight) * cost, rms, max_abs
+
+
 def _dataset_metadata(
     dataset: Union[dict, "SweepDataset"]
 ) -> Tuple[str, int, int, Iterable[Union[Sweep, dict]]]:
@@ -215,6 +257,7 @@ class EllipseCostFunction:
         min_points: int = 10,
         use_weights: bool = True,
         cost_mode: str = "geometry",
+        pointwise_residual_mode: str = "sampson",
         invalid_sweep_penalty: float = 1e6,
         weight_floor: float = 1e-3,
         min_weight: float = 0.2,
@@ -238,6 +281,7 @@ class EllipseCostFunction:
         self.min_points = min_points
         self.use_weights = use_weights
         self.cost_mode = str(cost_mode or "geometry").strip().lower()
+        self.pointwise_residual_mode = str(pointwise_residual_mode or "sampson").strip().lower()
         self.invalid_penalty = invalid_sweep_penalty
         self.weight_floor = weight_floor
         self.min_weight = float(min_weight)
@@ -453,15 +497,27 @@ class EllipseCostFunction:
 
         x = l_drive_abs**2
         y = l_sensor_abs**2
-        cost, rms, max_abs = pointwise_sampson_cost_normalized(
-            coeffs,
-            x,
-            y,
-            l2_scale=self._l2_scale,
-            weight=self.pointwise_cost_weight,
-            robust_loss=self.robust_loss,
-            huber_delta=self.huber_delta,
-        )
+        mode = self.pointwise_residual_mode
+        if mode in ("euclidean", "exact", "distance"):
+            cost, rms, max_abs = pointwise_euclidean_cost_normalized(
+                coeffs,
+                x,
+                y,
+                l2_scale=self._l2_scale,
+                weight=self.pointwise_cost_weight,
+                robust_loss=self.robust_loss,
+                huber_delta=self.huber_delta,
+            )
+        else:
+            cost, rms, max_abs = pointwise_sampson_cost_normalized(
+                coeffs,
+                x,
+                y,
+                l2_scale=self._l2_scale,
+                weight=self.pointwise_cost_weight,
+                robust_loss=self.robust_loss,
+                huber_delta=self.huber_delta,
+            )
         return float(cost), float(rms), float(max_abs), float(violation_penalty), str(sweep_id)
 
     def evaluate(self, anchor_vec: np.ndarray) -> float:

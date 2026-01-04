@@ -5,6 +5,8 @@ from pathlib import Path
 
 from autocal.ellipse_fitting import (
     EllipseFitResult,
+    closest_point_on_ellipse,
+    ellipse_euclidean_residuals,
     ellipse_geometric_params,
     fit_all_sweeps,
     fit_ellipse_from_sweep,
@@ -152,6 +154,45 @@ class TestSweepFitting:
 
         assert not result.valid
         assert "RMS residual too high" in (result.rejection_reason or "")
+
+
+class TestPointToEllipseDistance:
+    def test_closest_point_on_axis_aligned_ellipse(self):
+        center = (0.0, 0.0)
+        axes = (5.0, 3.0)
+        theta = 0.0
+
+        cp = closest_point_on_ellipse(center, axes, theta, (10.0, 0.0))
+        assert np.allclose(cp, (5.0, 0.0), atol=1e-6)
+
+        cp2 = closest_point_on_ellipse(center, axes, theta, (5.0, 0.0))
+        assert np.allclose(cp2, (5.0, 0.0), atol=1e-6)
+
+    def test_closest_point_on_rotated_ellipse_lies_on_ellipse(self):
+        center = (2.0, -1.0)
+        axes = (7.0, 2.0)
+        theta = 0.35
+        query = (12.0, 3.0)
+
+        cp = closest_point_on_ellipse(center, axes, theta, query)
+
+        # Validate that the returned closest point lies on the ellipse in the local frame.
+        dx = cp[0] - center[0]
+        dy = cp[1] - center[1]
+        c = float(np.cos(theta))
+        s = float(np.sin(theta))
+        x_local = c * dx + s * dy
+        y_local = -s * dx + c * dy
+        val = (x_local / axes[0]) ** 2 + (y_local / axes[1]) ** 2
+        assert val == pytest.approx(1.0, abs=1e-6)
+
+    def test_euclidean_residuals_handle_line_degenerate(self):
+        # Line x=0 represented as A=B=C=0, D=1, E=0, F=0.
+        coeffs = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+        x = np.array([3.0, -2.0, 0.0])
+        y = np.array([10.0, 5.0, -1.0])
+        r = ellipse_euclidean_residuals(coeffs, x, y)
+        assert np.allclose(r, [3.0, -2.0, 0.0], atol=1e-12)
 
 
 class TestBatchFitting:

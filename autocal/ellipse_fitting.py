@@ -315,6 +315,159 @@ def ellipse_sampson_residuals(coeffs: np.ndarray, x: np.ndarray, y: np.ndarray) 
     return algebraic / denom
 
 
+def closest_point_on_ellipse(
+    center: Tuple[float, float],
+    semi_axes: Tuple[float, float],
+    rotation: float,
+    point: Tuple[float, float],
+    *,
+    iterations: int = 3,
+) -> Tuple[float, float]:
+    """
+    Compute the closest point on an ellipse to a query point (Euclidean distance).
+
+    The ellipse is defined by center (cx, cy), semi-axes (a, b) with a>=b>0, and
+    a rotation angle in radians.
+    """
+    cx, cy = float(center[0]), float(center[1])
+    a, b = float(semi_axes[0]), float(semi_axes[1])
+    if not (np.isfinite(a) and np.isfinite(b) and a > 0.0 and b > 0.0):
+        raise ValueError("semi_axes must be finite and positive")
+
+    # Treat extreme eccentricity as a line segment to avoid numerical issues.
+    if b / a < 1e-10:
+        px, py = float(point[0]) - cx, float(point[1]) - cy
+        c = float(np.cos(rotation))
+        s = float(np.sin(rotation))
+        x_local = c * px + s * py
+        x_local = float(np.clip(x_local, -a, a))
+        # y_local = 0
+        xw = cx + c * x_local
+        yw = cy + s * x_local
+        return float(xw), float(yw)
+
+    px, py = float(point[0]) - cx, float(point[1]) - cy
+    c = float(np.cos(rotation))
+    s = float(np.sin(rotation))
+    # Transform to ellipse-local coordinates (undo rotation).
+    x_local = c * px + s * py
+    y_local = -s * px + c * py
+
+    x_sign = 1.0 if x_local >= 0.0 else -1.0
+    y_sign = 1.0 if y_local >= 0.0 else -1.0
+    ux = abs(float(x_local))
+    uy = abs(float(y_local))
+
+    if ux < 1e-18 and uy < 1e-18:
+        # Any point on the ellipse is equally close; pick the minor-axis vertex.
+        x_cl, y_cl = 0.0, b
+    else:
+        # Initialize on the unit circle using the scaled direction to the query point.
+        tx = ux / a
+        ty = uy / b
+        t_norm = float(np.hypot(tx, ty))
+        if t_norm < 1e-18:
+            tx, ty = 1.0 / np.sqrt(2.0), 1.0 / np.sqrt(2.0)
+        else:
+            tx /= t_norm
+            ty /= t_norm
+
+        tx = float(np.clip(tx, 0.0, 1.0))
+        ty = float(np.clip(ty, 0.0, 1.0))
+        t_norm = float(np.hypot(tx, ty))
+        if t_norm < 1e-18:
+            tx, ty = 1.0 / np.sqrt(2.0), 1.0 / np.sqrt(2.0)
+        else:
+            tx /= t_norm
+            ty /= t_norm
+
+        a2 = a * a
+        b2 = b * b
+        for _ in range(max(1, int(iterations))):
+            x = a * tx
+            y = b * ty
+
+            ex = (a2 - b2) * (tx**3) / a
+            ey = (b2 - a2) * (ty**3) / b
+
+            rx = x - ex
+            ry = y - ey
+
+            qx = ux - ex
+            qy = uy - ey
+
+            r = float(np.hypot(rx, ry))
+            q = float(np.hypot(qx, qy))
+            if q < 1e-18 or r < 1e-18:
+                break
+
+            tx = (qx * (r / q) + ex) / a
+            ty = (qy * (r / q) + ey) / b
+
+            tx = float(np.clip(tx, 0.0, 1.0))
+            ty = float(np.clip(ty, 0.0, 1.0))
+            t_norm = float(np.hypot(tx, ty))
+            if t_norm < 1e-18:
+                break
+            tx /= t_norm
+            ty /= t_norm
+
+        x_cl = x_sign * a * tx
+        y_cl = y_sign * b * ty
+
+    # Transform closest point back to world coordinates.
+    xw = cx + c * x_cl - s * y_cl
+    yw = cy + s * x_cl + c * y_cl
+    return float(xw), float(yw)
+
+
+def ellipse_euclidean_residuals(coeffs: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """
+    Compute signed Euclidean residuals from points to an ellipse.
+
+    For true ellipses, this uses a closest-point iteration in the ellipse's
+    canonical frame and assigns sign from the implicit function value.
+
+    For line-like degenerate conics (A=B=C≈0), this falls back to signed distance
+    to the line D*x + E*y + F = 0.
+    """
+    coeffs = np.asarray(coeffs, dtype=float).reshape(6)
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+    if x.size == 0 or y.size == 0 or x.size != y.size:
+        return np.array([], dtype=float)
+
+    A, B, C, D, E, F = (float(v) for v in coeffs.tolist())
+    delta = B * B - 4.0 * A * C
+
+    # Degenerate line-like representation (used by the forward model when det≈0).
+    if abs(A) + abs(B) + abs(C) < 1e-14:
+        denom = float(np.hypot(D, E))
+        if denom < 1e-18:
+            return np.full_like(x, float("inf"), dtype=float)
+        return (D * x + E * y + F) / denom
+
+    # Non-ellipse conics are treated as invalid.
+    if not np.isfinite(delta) or delta >= 0.0:
+        return np.full_like(x, float("inf"), dtype=float)
+
+    center, semi_axes, theta = ellipse_geometric_params(coeffs)
+    a, b = float(semi_axes[0]), float(semi_axes[1])
+    if not (np.isfinite(a) and np.isfinite(b) and a > 0.0 and b > 0.0):
+        return np.full_like(x, float("inf"), dtype=float)
+
+    # Use the implicit function sign to distinguish inside/outside.
+    signs = np.sign(ellipse_algebraic_distance(coeffs, x, y))
+    signs = np.where(signs == 0.0, 1.0, signs)
+
+    residuals = np.empty_like(x, dtype=float)
+    for i in range(x.size):
+        cp_x, cp_y = closest_point_on_ellipse(center, (a, b), theta, (float(x[i]), float(y[i])))
+        residuals[i] = signs[i] * float(np.hypot(x[i] - cp_x, y[i] - cp_y))
+
+    return residuals
+
+
 def ellipse_geometric_params(coeffs: np.ndarray) -> Tuple[Tuple[float, float], Tuple[float, float], float]:
     """
     Extract geometric parameters from algebraic coefficients.
