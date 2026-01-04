@@ -49,6 +49,14 @@ const DEFAULT_TORQUE_LOW = 0.01;
 const DEFAULT_TORQUE_MIN = 0.01;
 const DEFAULT_TORQUE_MAX = 0.1;
 const DEFAULT_TORQUE_STEP = 0.01;
+const DEFAULT_TORQUE_STEP_DIVISOR = 6;
+const AUTO_TUNE_MAX_ITERATIONS = 20;
+const AUTO_TUNE_UP_FACTOR = 1.25;
+const AUTO_TUNE_DOWN_FACTOR = 0.8;
+const AUTO_TUNE_REL_TOL = 0.1;
+const AUTO_TUNE_ABS_TOL_MM = 0.05;
+const AUTO_TUNE_MIN_TORQUE = 0.001;
+const AUTO_TUNE_MAX_TORQUE = 1.0;
 const DEFAULT_RAMP_WAIT_MS = 1000;
 const DEFAULT_SWAP_WAIT_MS = 2000;
 const DEFAULT_STABILITY_POLL_MS = 500;
@@ -201,7 +209,9 @@ Options:
   --torque-low <Nm>          torque-ramp: low/idle torque (default: ${DEFAULT_TORQUE_LOW})
   --torque-min <Nm>          torque-ramp: start torque (default: ${DEFAULT_TORQUE_MIN})
   --torque-max <Nm>          torque-ramp: end torque (default: ${DEFAULT_TORQUE_MAX})
-  --torque-step <Nm>         torque-ramp: torque increment (default: ${DEFAULT_TORQUE_STEP})
+  --torque-step <Nm>         torque-ramp: torque increment (default: (torque-max - torque-min) / ${DEFAULT_TORQUE_STEP_DIVISOR})
+  --auto-tune-torque         torque-ramp: auto-tune torque-low/min/max using a test sweep (default when no torque args)
+  --no-auto-tune-torque      torque-ramp: skip auto-tuning and use provided/default torques
   --ramp-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
   --swap-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
@@ -226,6 +236,258 @@ Options:
 Examples:
   node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepRange 100 --sweepPoints 41 --output-file sweep.json
   node scripts/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file scripts/sweep_configs/hangprinter_4.txt --debug-sweep`);
+}
+
+function deriveTorqueStep(minTorque, maxTorque) {
+  const span = Math.abs(maxTorque - minTorque);
+  if (!Number.isFinite(span) || span <= 0) {
+    return DEFAULT_TORQUE_STEP;
+  }
+  const step = span / DEFAULT_TORQUE_STEP_DIVISOR;
+  return step > 0 ? step : DEFAULT_TORQUE_STEP;
+}
+
+function torqueMovementTolerance(movement) {
+  if (!Number.isFinite(movement)) {
+    return AUTO_TUNE_ABS_TOL_MM;
+  }
+  return Math.max(AUTO_TUNE_ABS_TOL_MM, Math.abs(movement) * AUTO_TUNE_REL_TOL);
+}
+
+function clampAutoTuneTorque(value) {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+  return Math.min(AUTO_TUNE_MAX_TORQUE, Math.max(AUTO_TUNE_MIN_TORQUE, value));
+}
+
+function normalizeAutoTuneRange(range) {
+  let low = clampAutoTuneTorque(range.low);
+  let min = clampAutoTuneTorque(range.min);
+  let max = clampAutoTuneTorque(range.max);
+
+  if (!Number.isFinite(low)) {
+    low = clampAutoTuneTorque(DEFAULT_TORQUE_LOW);
+  }
+  if (!Number.isFinite(min)) {
+    min = clampAutoTuneTorque(DEFAULT_TORQUE_MIN);
+  }
+  if (!Number.isFinite(max)) {
+    max = clampAutoTuneTorque(DEFAULT_TORQUE_MAX);
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    min = clampAutoTuneTorque(DEFAULT_TORQUE_MIN);
+    max = clampAutoTuneTorque(DEFAULT_TORQUE_MAX);
+  }
+
+  if (Number.isFinite(min) && Number.isFinite(max) && max < min) {
+    [min, max] = [max, min];
+  }
+  if (Number.isFinite(low) && Number.isFinite(min) && low > min) {
+    low = min;
+  }
+  return { low, min, max };
+}
+
+function scaleAutoTuneRange(range, factor) {
+  if (!Number.isFinite(factor) || factor <= 0) {
+    return normalizeAutoTuneRange(range);
+  }
+  return normalizeAutoTuneRange({
+    low: range.low * factor,
+    min: range.min * factor,
+    max: range.max * factor,
+  });
+}
+
+function computeTorqueRampMovement(startLengths, dataPoints, pairAnchors) {
+  if (!Array.isArray(pairAnchors) || pairAnchors.length !== 2) {
+    return 0;
+  }
+  const [anchorA, anchorB] = pairAnchors;
+  const startA = startLengths?.[anchorA];
+  const startB = startLengths?.[anchorB];
+  let maxDelta = 0;
+  for (const point of dataPoints ?? []) {
+    const deltaA = Number.isFinite(point?.l_drive) && Number.isFinite(startA)
+      ? Math.abs(point.l_drive - startA)
+      : 0;
+    const deltaB = Number.isFinite(point?.l_sensor) && Number.isFinite(startB)
+      ? Math.abs(point.l_sensor - startB)
+      : 0;
+    maxDelta = Math.max(maxDelta, deltaA, deltaB);
+  }
+  return maxDelta;
+}
+
+async function measureTorqueRampMovement(sendFn, plan, options) {
+  const {
+    axes,
+    motorIds,
+    mmPerDeg,
+    feed,
+    speedup,
+    currentPositions,
+    rampWaitMs,
+    swapWaitMs,
+    m666Values,
+    forbiddenTorqueAnchors,
+  } = options;
+  const { torqueLow, torqueMin, torqueMax, torqueStep } = options;
+  const fixedTargets = Array.isArray(plan.fixedTargets) ? plan.fixedTargets : [];
+  const { config, pairAnchors } = plan;
+  const canonicalPair = pairAnchors?.slice?.().sort((a, b) => a - b) ?? [];
+  const fixedAnchors = config?.fixedAnchors ?? [];
+
+  const preparedPositions = await prepareTorqueRampPositioning(sendFn, {
+    fixedAnchors,
+    pairAnchors: canonicalPair,
+  }, {
+    motorIds,
+    axes,
+    mmPerDeg,
+    fixedTargets,
+    torqueLow,
+    feed,
+    speedup,
+    currentPositions,
+  });
+
+  const fixedLengths = fixedAnchors.map((idx, anchorIdx) => {
+    if (Number.isFinite(preparedPositions[idx])) {
+      return preparedPositions[idx];
+    }
+    return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
+  });
+
+  const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  const dataPoints = await performTorqueRampSweep(sendFn, {
+    pairAnchors: canonicalPair,
+  }, {
+    axes,
+    motorIds,
+    mmPerDeg,
+    datasetStartMs: Date.now(),
+    speedup,
+    fixedAnchors,
+    fixedLengths,
+    feed,
+    torqueLow,
+    torqueMin,
+    torqueMax,
+    torqueStep,
+    rampWaitMs,
+    swapWaitMs,
+    m666Values,
+  });
+
+  const movement = computeTorqueRampMovement(startLengths, dataPoints, canonicalPair);
+  await returnAllMotorsToEncoderOrigin(sendFn, {
+    motorIds,
+    axes,
+    mmPerDeg,
+    feed,
+    speedup,
+    torqueHoldNm: torqueLow,
+    forbiddenTorqueAnchors,
+  });
+  currentPositions.fill(0);
+  return { movement, dataPointsCount: dataPoints.length };
+}
+
+async function autoTuneTorqueRamp(sendFn, plan, options) {
+  const torqueStepInput = options.torqueStepInput;
+  let candidate = normalizeAutoTuneRange({
+    low: options.torqueLow,
+    min: options.torqueMin,
+    max: options.torqueMax,
+  });
+
+  const measurements = [];
+  let previousMovement = null;
+  let plateauReached = false;
+
+  for (let i = 0; i < AUTO_TUNE_MAX_ITERATIONS; i += 1) {
+    const step = Number.isFinite(torqueStepInput)
+      ? torqueStepInput
+      : deriveTorqueStep(candidate.min, candidate.max);
+    const result = await measureTorqueRampMovement(sendFn, plan, {
+      ...options,
+      torqueLow: candidate.low,
+      torqueMin: candidate.min,
+      torqueMax: candidate.max,
+      torqueStep: step,
+    });
+    const movement = Number.isFinite(result.movement) ? result.movement : 0;
+    console.log(
+      `; auto-tune torque ${i + 1}/${AUTO_TUNE_MAX_ITERATIONS}: low=${candidate.low.toFixed(4)} `
+      + `min=${candidate.min.toFixed(4)} max=${candidate.max.toFixed(4)} `
+      + `step=${step.toFixed(4)} movement=${movement.toFixed(3)}mm`,
+    );
+    measurements.push({
+      low: candidate.low,
+      min: candidate.min,
+      max: candidate.max,
+      step,
+      movement,
+    });
+
+    if (previousMovement !== null) {
+      const tol = torqueMovementTolerance(previousMovement);
+      if (movement <= previousMovement + tol) {
+        plateauReached = true;
+        break;
+      }
+    }
+    previousMovement = movement;
+    candidate = scaleAutoTuneRange(candidate, AUTO_TUNE_UP_FACTOR);
+  }
+
+  if (plateauReached) {
+    const last = measurements[measurements.length - 1];
+    const lowered = scaleAutoTuneRange(last, AUTO_TUNE_DOWN_FACTOR);
+    const step = Number.isFinite(torqueStepInput)
+      ? torqueStepInput
+      : deriveTorqueStep(lowered.min, lowered.max);
+    const result = await measureTorqueRampMovement(sendFn, plan, {
+      ...options,
+      torqueLow: lowered.low,
+      torqueMin: lowered.min,
+      torqueMax: lowered.max,
+      torqueStep: step,
+    });
+    const movement = Number.isFinite(result.movement) ? result.movement : 0;
+    console.log(
+      `; auto-tune torque down: low=${lowered.low.toFixed(4)} `
+      + `min=${lowered.min.toFixed(4)} max=${lowered.max.toFixed(4)} `
+      + `step=${step.toFixed(4)} movement=${movement.toFixed(3)}mm`,
+    );
+    measurements.push({
+      low: lowered.low,
+      min: lowered.min,
+      max: lowered.max,
+      step,
+      movement,
+    });
+  }
+
+  const bestMovement = Math.max(...measurements.map((entry) => entry.movement));
+  const allowed = torqueMovementTolerance(bestMovement);
+  const viable = measurements.filter((entry) => entry.movement >= bestMovement - allowed);
+  const chosen = viable.reduce((best, entry) => (entry.max < best.max ? entry : best), viable[0]);
+
+  console.log(
+    `; auto-tune selected: low=${chosen.low.toFixed(4)} `
+    + `min=${chosen.min.toFixed(4)} max=${chosen.max.toFixed(4)} `
+    + `movement=${chosen.movement.toFixed(3)}mm`,
+  );
+
+  return {
+    torqueLow: chosen.low,
+    torqueMin: chosen.min,
+    torqueMax: chosen.max,
+  };
 }
 
 function range(n) {
@@ -1265,10 +1527,17 @@ async function main() {
   const feed = Number.isFinite(parseFloat(args.feed)) ? parseFloat(args.feed) : DEFAULT_FEED;
   const torque = Number.isFinite(parseFloat(args.torque)) ? parseFloat(args.torque) : DEFAULT_TORQUE;
   const sweepMethod = parseSweepMethod(args.sweepMethod, DEFAULT_SWEEP_METHOD);
-  const torqueLow = Number.isFinite(parseFloat(args.torqueLow)) ? parseFloat(args.torqueLow) : DEFAULT_TORQUE_LOW;
-  const torqueMin = Number.isFinite(parseFloat(args.torqueMin)) ? parseFloat(args.torqueMin) : DEFAULT_TORQUE_MIN;
-  const torqueMax = Number.isFinite(parseFloat(args.torqueMax)) ? parseFloat(args.torqueMax) : DEFAULT_TORQUE_MAX;
-  const torqueStep = Number.isFinite(parseFloat(args.torqueStep)) ? parseFloat(args.torqueStep) : DEFAULT_TORQUE_STEP;
+  const torqueLowProvided = Number.isFinite(parseFloat(args.torqueLow));
+  const torqueMinProvided = Number.isFinite(parseFloat(args.torqueMin));
+  const torqueMaxProvided = Number.isFinite(parseFloat(args.torqueMax));
+  const torqueStepProvided = Number.isFinite(parseFloat(args.torqueStep));
+  let torqueLow = torqueLowProvided ? parseFloat(args.torqueLow) : DEFAULT_TORQUE_LOW;
+  let torqueMin = torqueMinProvided ? parseFloat(args.torqueMin) : DEFAULT_TORQUE_MIN;
+  let torqueMax = torqueMaxProvided ? parseFloat(args.torqueMax) : DEFAULT_TORQUE_MAX;
+  const torqueStepInput = torqueStepProvided ? parseFloat(args.torqueStep) : null;
+  let torqueStep = Number.isFinite(torqueStepInput)
+    ? torqueStepInput
+    : deriveTorqueStep(torqueMin, torqueMax);
   const rampWaitMs = Number.isFinite(parseFloat(args.rampWaitMs)) ? Math.max(0, parseFloat(args.rampWaitMs)) : DEFAULT_RAMP_WAIT_MS;
   const swapWaitMs = Number.isFinite(parseFloat(args.swapWaitMs)) ? Math.max(0, parseFloat(args.swapWaitMs)) : DEFAULT_SWAP_WAIT_MS;
   const settleMs = Number.isFinite(parseFloat(args.settleMs))
@@ -1468,6 +1737,41 @@ async function main() {
     await send(buildG92Command(machineConfig.axes));
     await send('G91'); // Use relative coordinates
     await send(`M569.3 P${motorIds.join(':')} S`); // Set encoder reference point
+
+    const torqueArgsProvided = torqueLowProvided || torqueMinProvided || torqueMaxProvided || torqueStepProvided;
+    const autoTuneTorque = sweepMethod === 'torque-ramp'
+      && (args.autoTuneTorque || (!args.noAutoTuneTorque && !torqueArgsProvided));
+    if (autoTuneTorque) {
+      const autoTunePlan = plannedSweeps.find((entry) => Array.isArray(entry.pairAnchors) && entry.pairAnchors.length === 2);
+      if (!autoTunePlan) {
+        console.log('; auto-tune torque skipped (no torque-ramp sweeps)');
+      } else {
+        console.log('; auto-tune torque start');
+        const tuned = await autoTuneTorqueRamp(send, autoTunePlan, {
+          axes: machineConfig.axes,
+          motorIds,
+          mmPerDeg,
+          feed,
+          speedup,
+          currentPositions,
+          rampWaitMs,
+          swapWaitMs,
+          m666Values: m666After,
+          forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
+          torqueLow,
+          torqueMin,
+          torqueMax,
+          torqueStepInput,
+        });
+        torqueLow = tuned.torqueLow;
+        torqueMin = tuned.torqueMin;
+        torqueMax = tuned.torqueMax;
+        if (!torqueStepProvided) {
+          torqueStep = deriveTorqueStep(torqueMin, torqueMax);
+          console.log(`; auto-tune torque step=${torqueStep.toFixed(4)}`);
+        }
+      }
+    }
 
     for (let planIdx = 0; planIdx < plannedSweeps.length; planIdx += 1) {
       const plan = plannedSweeps[planIdx];

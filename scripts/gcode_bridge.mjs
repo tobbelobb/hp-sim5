@@ -290,6 +290,8 @@ export function parseBridgeArgs(argv) {
     torqueMin: null,
     torqueMax: null,
     torqueStep: null,
+    autoTuneTorque: false,
+    noAutoTuneTorque: false,
     rampWaitMs: null,
     swapWaitMs: null,
     debugSweep: false,
@@ -384,6 +386,10 @@ export function parseBridgeArgs(argv) {
       args.torqueMax = argv[++i] || null;
     } else if (arg === '--torque-step') {
       args.torqueStep = argv[++i] || null;
+    } else if (arg === '--auto-tune-torque' || arg === '--autoTuneTorque') {
+      args.autoTuneTorque = true;
+    } else if (arg === '--no-auto-tune-torque' || arg === '--noAutoTuneTorque') {
+      args.noAutoTuneTorque = true;
     } else if (arg === '--ramp-wait-ms') {
       args.rampWaitMs = argv[++i] || null;
     } else if (arg === '--swap-wait-ms') {
