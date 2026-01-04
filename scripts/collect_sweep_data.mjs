@@ -5,7 +5,6 @@ import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
 import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
 import {
-  DEFAULT_FEED,
   DEFAULT_RRF_PORT,
   computeMmPerDegree,
   parseEncoderReply,
@@ -39,6 +38,7 @@ const MOTOR_IDS_BY_MACHINE = {
 const DEFAULT_SWEEP_RANGE_MM = 50;
 const DEFAULT_SWEEP_POINTS = 21;
 const DEFAULT_MAX_SWEEPS = 6;
+const DEFAULT_FEED = 400;
 const DEFAULT_TORQUE = 0.05;
 const DEFAULT_SETTLE_MS = 200;
 const DEFAULT_SAMPLE_RATE_HZ = 40;
@@ -206,7 +206,8 @@ Options:
   --swap-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
-  --trace                    Tell hp-sim to plot a trace of its movements
+  --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+  --no-trace                 Disable hp-sim trace plotting
   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
   --observability-file <path> Sidecar histogram JSON path (default: <output>.obs.json)
   --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
@@ -1211,7 +1212,14 @@ function pickPositionModeFirstAnchorIdx(motorTorqueNm, forbiddenTorqueAnchors = 
 }
 
 async function main() {
-  const args = parseBridgeArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const args = parseBridgeArgs(argv);
+  const hasNoTrace = argv.includes('--no-trace');
+  if (hasNoTrace) {
+    args.trace = false;
+  } else if (!args.trace) {
+    args.trace = true;
+  }
   if (args.help) {
     printHelp();
     process.exit(0);
