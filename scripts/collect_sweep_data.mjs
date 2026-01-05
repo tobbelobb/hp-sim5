@@ -286,12 +286,14 @@ async function measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors
   speedup,
   targetMoveMm,
   windowMs,
+  allowEarlyExit,
 } = {}) {
   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = Math.max(20, AUTO_TUNE_POLL_INTERVAL_MS / timeScale);
   const windowScaledMs = Math.max(pollMs, (Number.isFinite(windowMs) ? windowMs : AUTO_TUNE_COARSE_WINDOW_MS) / timeScale);
   const targetMovement = Number.isFinite(targetMoveMm) ? targetMoveMm : AUTO_TUNE_COARSE_TARGET_MOVE_MM;
+  const earlyExit = allowEarlyExit !== false;
   const deadline = Date.now() + windowScaledMs;
   let maxMovement = 0;
 
@@ -300,7 +302,7 @@ async function measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors
     const movement = computeTorqueTuningMovement(startLengths, lengths, pairAnchors);
     if (movement > maxMovement) {
       maxMovement = movement;
-      if (maxMovement >= targetMovement) {
+      if (earlyExit && maxMovement >= targetMovement) {
         break;
       }
     }
@@ -360,6 +362,7 @@ async function performTorqueTuningProbe(sendFn, pairAnchors, options) {
     torqueTest,
     targetMoveMm,
     windowMs,
+    allowEarlyExit,
   } = options;
   if (!Array.isArray(pairAnchors) || pairAnchors.length !== 2) {
     return 0;
@@ -374,6 +377,7 @@ async function performTorqueTuningProbe(sendFn, pairAnchors, options) {
     speedup,
     targetMoveMm,
     windowMs,
+    allowEarlyExit,
   });
   await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${lowTorque}`);
   await sendFn(`M569.4 P${motorIds[driveAnchor]} T${lowTorque}`);
@@ -463,6 +467,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       torqueTest: nextTorque,
       targetMoveMm: AUTO_TUNE_FINE_TARGET_MOVE_MM,
       windowMs: AUTO_TUNE_FINE_WINDOW_MS,
+      allowEarlyExit: false,
     });
     console.log(`; auto-tune torque ramp ${i + 1}/${AUTO_TUNE_MAX_FINE_STEPS}: test=${nextTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
     if (movement < AUTO_TUNE_FINE_TARGET_MOVE_MM) {
