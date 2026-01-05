@@ -124,6 +124,16 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     merged = dict(base)
     merged["timestamp"] = datetime.now().isoformat()
     merged["sweeps"] = merged_sweeps
+
+    base_config = merged.get("config")
+    new_config = new.get("config")
+    if isinstance(new_config, dict):
+        if not isinstance(base_config, dict):
+            merged["config"] = dict(new_config)
+        elif "torque_tuning" in new_config:
+            updated = dict(base_config)
+            updated["torque_tuning"] = new_config.get("torque_tuning")
+            merged["config"] = updated
     return merged
 
 
@@ -181,6 +191,67 @@ def _parse_csv_floats(spec: Optional[str]) -> Optional[List[float]]:
         if np.isfinite(v):
             out.append(v)
     return out or None
+
+
+def _parse_float(value: object) -> Optional[float]:
+    try:
+        v = float(value)
+    except Exception:
+        return None
+    if np.isfinite(v):
+        return v
+    return None
+
+
+def _collector_args_has_torque_overrides(args: Sequence[str]) -> bool:
+    flags = {
+        "--torque-low",
+        "--torque-min",
+        "--torque-max",
+        "--torque-step",
+        "--auto-tune-torque",
+        "--no-auto-tune-torque",
+        "--autoTuneTorque",
+        "--noAutoTuneTorque",
+    }
+    for arg in args:
+        if arg in flags:
+            return True
+        if any(arg.startswith(f"{flag}=") for flag in flags):
+            return True
+    return False
+
+
+def _torque_args_from_dataset(dataset: dict) -> Optional[List[str]]:
+    if not isinstance(dataset, dict):
+        return None
+    config = dataset.get("config")
+    tuning = None
+    if isinstance(config, dict):
+        tuning = config.get("torque_tuning")
+    if tuning is None:
+        tuning = dataset.get("torque_tuning")
+    if not isinstance(tuning, dict):
+        return None
+
+    torque_min = _parse_float(tuning.get("torque_min_nm"))
+    torque_max = _parse_float(tuning.get("torque_max_nm"))
+    if torque_min is None or torque_max is None:
+        return None
+    torque_low = _parse_float(tuning.get("torque_low_nm")) or torque_min
+    torque_step = _parse_float(tuning.get("torque_step_nm"))
+
+    out = [
+        "--torque-low",
+        str(torque_low),
+        "--torque-min",
+        str(torque_min),
+        "--torque-max",
+        str(torque_max),
+    ]
+    if torque_step is not None:
+        out.extend(["--torque-step", str(torque_step)])
+    return out
 
 
 def _plan_next_ellipse_sweep(
@@ -290,6 +361,10 @@ def _plan_next_ellipse_sweep(
         _write_sweep_config_file(cfg_path, best_cfg)
 
     collector_args_eff = list(collector_args)
+    if not _collector_args_has_torque_overrides(collector_args_eff):
+        torque_args = _torque_args_from_dataset(dataset)
+        if torque_args:
+            collector_args_eff.extend(torque_args)
     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
         collector_args_eff.append("--return-to-origin")
 

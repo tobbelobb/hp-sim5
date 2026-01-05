@@ -50,13 +50,16 @@ const DEFAULT_TORQUE_MIN = 0.01;
 const DEFAULT_TORQUE_MAX = 0.1;
 const DEFAULT_TORQUE_STEP = 0.01;
 const DEFAULT_TORQUE_STEP_DIVISOR = 6;
-const AUTO_TUNE_MAX_ITERATIONS = 20;
-const AUTO_TUNE_UP_FACTOR = 1.25;
-const AUTO_TUNE_DOWN_FACTOR = 0.8;
 const AUTO_TUNE_REL_TOL = 0.1;
 const AUTO_TUNE_ABS_TOL_MM = 0.05;
 const AUTO_TUNE_MIN_TORQUE = 0.001;
+const AUTO_TUNE_START_TORQUE = AUTO_TUNE_MIN_TORQUE;
 const AUTO_TUNE_MAX_TORQUE = 1.0;
+const AUTO_TUNE_MAX_DOUBLES = 12;
+const AUTO_TUNE_DOUBLE_FACTOR = 2.0;
+const AUTO_TUNE_FINE_FACTOR = 1.1;
+const AUTO_TUNE_MAX_FINE_STEPS = 12;
+const AUTO_TUNE_PLATEAU_REDUCTION = 0.75;
 const DEFAULT_RAMP_WAIT_MS = 1000;
 const DEFAULT_SWAP_WAIT_MS = 2000;
 const DEFAULT_STABILITY_POLL_MS = 500;
@@ -261,67 +264,21 @@ function clampAutoTuneTorque(value) {
   return Math.min(AUTO_TUNE_MAX_TORQUE, Math.max(AUTO_TUNE_MIN_TORQUE, value));
 }
 
-function normalizeAutoTuneRange(range) {
-  let low = clampAutoTuneTorque(range.low);
-  let min = clampAutoTuneTorque(range.min);
-  let max = clampAutoTuneTorque(range.max);
-
-  if (!Number.isFinite(low)) {
-    low = clampAutoTuneTorque(DEFAULT_TORQUE_LOW);
-  }
-  if (!Number.isFinite(min)) {
-    min = clampAutoTuneTorque(DEFAULT_TORQUE_MIN);
-  }
-  if (!Number.isFinite(max)) {
-    max = clampAutoTuneTorque(DEFAULT_TORQUE_MAX);
-  }
-
-  if (!Number.isFinite(min) || !Number.isFinite(max)) {
-    min = clampAutoTuneTorque(DEFAULT_TORQUE_MIN);
-    max = clampAutoTuneTorque(DEFAULT_TORQUE_MAX);
-  }
-
-  if (Number.isFinite(min) && Number.isFinite(max) && max < min) {
-    [min, max] = [max, min];
-  }
-  if (Number.isFinite(low) && Number.isFinite(min) && low > min) {
-    low = min;
-  }
-  return { low, min, max };
-}
-
-function scaleAutoTuneRange(range, factor) {
-  if (!Number.isFinite(factor) || factor <= 0) {
-    return normalizeAutoTuneRange(range);
-  }
-  return normalizeAutoTuneRange({
-    low: range.low * factor,
-    min: range.min * factor,
-    max: range.max * factor,
-  });
-}
-
-function computeTorqueRampMovement(startLengths, dataPoints, pairAnchors) {
+function computeTorqueTuningMovement(startLengths, endLengths, pairAnchors) {
   if (!Array.isArray(pairAnchors) || pairAnchors.length !== 2) {
     return 0;
   }
   const [anchorA, anchorB] = pairAnchors;
   const startA = startLengths?.[anchorA];
   const startB = startLengths?.[anchorB];
-  let maxDelta = 0;
-  for (const point of dataPoints ?? []) {
-    const deltaA = Number.isFinite(point?.l_drive) && Number.isFinite(startA)
-      ? Math.abs(point.l_drive - startA)
-      : 0;
-    const deltaB = Number.isFinite(point?.l_sensor) && Number.isFinite(startB)
-      ? Math.abs(point.l_sensor - startB)
-      : 0;
-    maxDelta = Math.max(maxDelta, deltaA, deltaB);
-  }
-  return maxDelta;
+  const endA = endLengths?.[anchorA];
+  const endB = endLengths?.[anchorB];
+  const deltaA = Number.isFinite(startA) && Number.isFinite(endA) ? Math.abs(endA - startA) : 0;
+  const deltaB = Number.isFinite(startB) && Number.isFinite(endB) ? Math.abs(endB - startB) : 0;
+  return Math.max(deltaA, deltaB);
 }
 
-async function measureTorqueRampMovement(sendFn, plan, options) {
+async function performTorqueTuningSweep(sendFn, plan, options) {
   const {
     axes,
     motorIds,
@@ -329,18 +286,22 @@ async function measureTorqueRampMovement(sendFn, plan, options) {
     feed,
     speedup,
     currentPositions,
-    rampWaitMs,
-    swapWaitMs,
-    m666Values,
+    torqueLow,
+    torqueTest,
     forbiddenTorqueAnchors,
   } = options;
-  const { torqueLow, torqueMin, torqueMax, torqueStep } = options;
   const fixedTargets = Array.isArray(plan.fixedTargets) ? plan.fixedTargets : [];
   const { config, pairAnchors } = plan;
   const canonicalPair = pairAnchors?.slice?.().sort((a, b) => a - b) ?? [];
   const fixedAnchors = config?.fixedAnchors ?? [];
+  if (canonicalPair.length !== 2) {
+    return 0;
+  }
 
-  const preparedPositions = await prepareTorqueRampPositioning(sendFn, {
+  const lowTorque = Number.isFinite(torqueLow) ? torqueLow : DEFAULT_TORQUE_LOW;
+  const testTorque = Number.isFinite(torqueTest) ? torqueTest : lowTorque;
+
+  await prepareTorqueRampPositioning(sendFn, {
     fixedAnchors,
     pairAnchors: canonicalPair,
   }, {
@@ -348,145 +309,134 @@ async function measureTorqueRampMovement(sendFn, plan, options) {
     axes,
     mmPerDeg,
     fixedTargets,
-    torqueLow,
+    torqueLow: lowTorque,
     feed,
     speedup,
     currentPositions,
   });
 
-  const fixedLengths = fixedAnchors.map((idx, anchorIdx) => {
-    if (Number.isFinite(preparedPositions[idx])) {
-      return preparedPositions[idx];
-    }
-    return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
-  });
-
   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-  const dataPoints = await performTorqueRampSweep(sendFn, {
-    pairAnchors: canonicalPair,
-  }, {
-    axes,
-    motorIds,
-    mmPerDeg,
-    datasetStartMs: Date.now(),
-    speedup,
-    fixedAnchors,
-    fixedLengths,
-    feed,
-    torqueLow,
-    torqueMin,
-    torqueMax,
-    torqueStep,
-    rampWaitMs,
-    swapWaitMs,
-    m666Values,
-  });
+  const [driveAnchor, sensorAnchor] = canonicalPair;
+  await sendFn(`M569.4 P${motorIds[driveAnchor]} T${lowTorque}`);
+  await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${testTorque}`);
+  await waitForStableEncoders(sendFn, motorIds, { speedup });
+  const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  const movement = computeTorqueTuningMovement(startLengths, endLengths, canonicalPair);
 
-  const movement = computeTorqueRampMovement(startLengths, dataPoints, canonicalPair);
+  await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${lowTorque}`);
+
   await returnAllMotorsToEncoderOrigin(sendFn, {
     motorIds,
     axes,
     mmPerDeg,
     feed,
     speedup,
-    torqueHoldNm: torqueLow,
+    torqueHoldNm: lowTorque,
     forbiddenTorqueAnchors,
   });
   currentPositions.fill(0);
-  return { movement, dataPointsCount: dataPoints.length };
+  return movement;
 }
 
 async function autoTuneTorqueRamp(sendFn, plan, options) {
-  const torqueStepInput = options.torqueStepInput;
-  let candidate = normalizeAutoTuneRange({
-    low: options.torqueLow,
-    min: options.torqueMin,
-    max: options.torqueMax,
-  });
+  const fallback = {
+    torqueLow: Number.isFinite(options.torqueLow) ? options.torqueLow : DEFAULT_TORQUE_LOW,
+    torqueMin: Number.isFinite(options.torqueMin) ? options.torqueMin : DEFAULT_TORQUE_MIN,
+    torqueMax: Number.isFinite(options.torqueMax) ? options.torqueMax : DEFAULT_TORQUE_MAX,
+  };
 
-  const measurements = [];
-  let previousMovement = null;
-  let plateauReached = false;
+  let testTorque = clampAutoTuneTorque(AUTO_TUNE_START_TORQUE);
+  if (!Number.isFinite(testTorque)) {
+    testTorque = fallback.torqueMin;
+  }
 
-  for (let i = 0; i < AUTO_TUNE_MAX_ITERATIONS; i += 1) {
-    const step = Number.isFinite(torqueStepInput)
-      ? torqueStepInput
-      : deriveTorqueStep(candidate.min, candidate.max);
-    const result = await measureTorqueRampMovement(sendFn, plan, {
+  const baseLow = clampAutoTuneTorque(AUTO_TUNE_START_TORQUE) ?? DEFAULT_TORQUE_LOW;
+  let lastNoMoveTorque = null;
+  let firstMoveTorque = null;
+  let firstMoveDelta = 0;
+
+  for (let i = 0; i < AUTO_TUNE_MAX_DOUBLES; i += 1) {
+    const movement = await performTorqueTuningSweep(sendFn, plan, {
       ...options,
-      torqueLow: candidate.low,
-      torqueMin: candidate.min,
-      torqueMax: candidate.max,
-      torqueStep: step,
+      torqueLow: baseLow,
+      torqueTest: testTorque,
     });
-    const movement = Number.isFinite(result.movement) ? result.movement : 0;
-    console.log(
-      `; auto-tune torque ${i + 1}/${AUTO_TUNE_MAX_ITERATIONS}: low=${candidate.low.toFixed(4)} `
-      + `min=${candidate.min.toFixed(4)} max=${candidate.max.toFixed(4)} `
-      + `step=${step.toFixed(4)} movement=${movement.toFixed(3)}mm`,
-    );
-    measurements.push({
-      low: candidate.low,
-      min: candidate.min,
-      max: candidate.max,
-      step,
-      movement,
-    });
-
-    if (previousMovement !== null) {
-      const tol = torqueMovementTolerance(previousMovement);
-      if (movement <= previousMovement + tol) {
-        plateauReached = true;
+    console.log(`; auto-tune torque probe ${i + 1}/${AUTO_TUNE_MAX_DOUBLES}: test=${testTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
+    if (movement <= AUTO_TUNE_ABS_TOL_MM) {
+      lastNoMoveTorque = testTorque;
+      const nextTorque = clampAutoTuneTorque(testTorque * AUTO_TUNE_DOUBLE_FACTOR);
+      if (!Number.isFinite(nextTorque) || nextTorque <= testTorque + 1e-12) {
         break;
       }
+      testTorque = nextTorque;
+      continue;
     }
-    previousMovement = movement;
-    candidate = scaleAutoTuneRange(candidate, AUTO_TUNE_UP_FACTOR);
+    firstMoveTorque = testTorque;
+    firstMoveDelta = movement;
+    break;
   }
 
-  if (plateauReached) {
-    const last = measurements[measurements.length - 1];
-    const lowered = scaleAutoTuneRange(last, AUTO_TUNE_DOWN_FACTOR);
-    const step = Number.isFinite(torqueStepInput)
-      ? torqueStepInput
-      : deriveTorqueStep(lowered.min, lowered.max);
-    const result = await measureTorqueRampMovement(sendFn, plan, {
+  if (!Number.isFinite(firstMoveTorque)) {
+    console.log('; auto-tune torque failed to detect movement; using provided/default torques');
+    return {
+      ...fallback,
+      tuningMeta: { tuning_failed: true, method: 'half-sweep' },
+    };
+  }
+
+  const minTorqueCandidate = lastNoMoveTorque ?? (firstMoveTorque / AUTO_TUNE_DOUBLE_FACTOR);
+  const minTorque = clampAutoTuneTorque(minTorqueCandidate) ?? baseLow;
+
+  let prevTorque = firstMoveTorque;
+  let prevMovement = firstMoveDelta;
+  let plateauTorque = null;
+  let plateauMovement = null;
+
+  for (let i = 0; i < AUTO_TUNE_MAX_FINE_STEPS; i += 1) {
+    const nextTorque = clampAutoTuneTorque(prevTorque * AUTO_TUNE_FINE_FACTOR);
+    if (!Number.isFinite(nextTorque) || nextTorque <= prevTorque + 1e-12) {
+      break;
+    }
+    const movement = await performTorqueTuningSweep(sendFn, plan, {
       ...options,
-      torqueLow: lowered.low,
-      torqueMin: lowered.min,
-      torqueMax: lowered.max,
-      torqueStep: step,
+      torqueLow: baseLow,
+      torqueTest: nextTorque,
     });
-    const movement = Number.isFinite(result.movement) ? result.movement : 0;
-    console.log(
-      `; auto-tune torque down: low=${lowered.low.toFixed(4)} `
-      + `min=${lowered.min.toFixed(4)} max=${lowered.max.toFixed(4)} `
-      + `step=${step.toFixed(4)} movement=${movement.toFixed(3)}mm`,
-    );
-    measurements.push({
-      low: lowered.low,
-      min: lowered.min,
-      max: lowered.max,
-      step,
-      movement,
-    });
+    console.log(`; auto-tune torque ramp ${i + 1}/${AUTO_TUNE_MAX_FINE_STEPS}: test=${nextTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
+    if (movement <= prevMovement + torqueMovementTolerance(prevMovement)) {
+      plateauTorque = nextTorque;
+      plateauMovement = movement;
+      break;
+    }
+    prevTorque = nextTorque;
+    prevMovement = movement;
   }
 
-  const bestMovement = Math.max(...measurements.map((entry) => entry.movement));
-  const allowed = torqueMovementTolerance(bestMovement);
-  const viable = measurements.filter((entry) => entry.movement >= bestMovement - allowed);
-  const chosen = viable.reduce((best, entry) => (entry.max < best.max ? entry : best), viable[0]);
+  let maxTorque = plateauTorque ? plateauTorque * AUTO_TUNE_PLATEAU_REDUCTION : prevTorque;
+  maxTorque = clampAutoTuneTorque(maxTorque) ?? prevTorque;
+  if (Number.isFinite(minTorque) && Number.isFinite(maxTorque) && maxTorque < minTorque) {
+    maxTorque = minTorque;
+  }
 
   console.log(
-    `; auto-tune selected: low=${chosen.low.toFixed(4)} `
-    + `min=${chosen.min.toFixed(4)} max=${chosen.max.toFixed(4)} `
-    + `movement=${chosen.movement.toFixed(3)}mm`,
+    `; auto-tune selected: min=${minTorque.toFixed(4)} max=${maxTorque.toFixed(4)} `
+    + `plateau=${Number.isFinite(plateauTorque) ? plateauTorque.toFixed(4) : 'n/a'} `
+    + `movement=${(plateauMovement ?? prevMovement).toFixed(3)}mm`,
   );
 
   return {
-    torqueLow: chosen.low,
-    torqueMin: chosen.min,
-    torqueMax: chosen.max,
+    torqueLow: minTorque,
+    torqueMin: minTorque,
+    torqueMax: maxTorque,
+    tuningMeta: {
+      method: 'half-sweep',
+      min_no_move_nm: lastNoMoveTorque,
+      first_move_nm: firstMoveTorque,
+      first_move_mm: firstMoveDelta,
+      plateau_nm: plateauTorque,
+      plateau_movement_mm: plateauMovement,
+      plateau_reduction: AUTO_TUNE_PLATEAU_REDUCTION,
+    },
   };
 }
 
@@ -1741,8 +1691,14 @@ async function main() {
     const torqueArgsProvided = torqueLowProvided || torqueMinProvided || torqueMaxProvided || torqueStepProvided;
     const autoTuneTorque = sweepMethod === 'torque-ramp'
       && (args.autoTuneTorque || (!args.noAutoTuneTorque && !torqueArgsProvided));
+    let torqueTuningMeta = null;
     if (autoTuneTorque) {
-      const autoTunePlan = plannedSweeps.find((entry) => Array.isArray(entry.pairAnchors) && entry.pairAnchors.length === 2);
+      const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
+      const autoTunePlan = plannedSweeps.find(
+        (entry) => Array.isArray(entry.pairAnchors)
+          && entry.pairAnchors.length === 2
+          && !entry.pairAnchors.some((idx) => forbidden.has(idx)),
+      );
       if (!autoTunePlan) {
         console.log('; auto-tune torque skipped (no torque-ramp sweeps)');
       } else {
@@ -1754,18 +1710,15 @@ async function main() {
           feed,
           speedup,
           currentPositions,
-          rampWaitMs,
-          swapWaitMs,
-          m666Values: m666After,
           forbiddenTorqueAnchors: machineConfig.forbiddenSensors,
           torqueLow,
           torqueMin,
           torqueMax,
-          torqueStepInput,
         });
         torqueLow = tuned.torqueLow;
         torqueMin = tuned.torqueMin;
         torqueMax = tuned.torqueMax;
+        torqueTuningMeta = tuned.tuningMeta ?? null;
         if (!torqueStepProvided) {
           torqueStep = deriveTorqueStep(torqueMin, torqueMax);
           console.log(`; auto-tune torque step=${torqueStep.toFixed(4)}`);
@@ -1965,6 +1918,19 @@ async function main() {
       }
     }
 
+    const torqueTuning = sweepMethod === 'torque-ramp'
+      ? {
+        auto_tuned: autoTuneTorque,
+        method: autoTuneTorque ? 'half-sweep' : 'manual',
+        tuned_at: autoTuneTorque ? new Date().toISOString() : undefined,
+        torque_low_nm: torqueLow,
+        torque_min_nm: torqueMin,
+        torque_max_nm: torqueMax,
+        torque_step_nm: torqueStep,
+        ...(torqueTuningMeta ?? {}),
+      }
+      : null;
+
     const dataset = {
       version: DATASET_VERSION,
       machine_type: machineType,
@@ -1982,6 +1948,7 @@ async function main() {
         notes: {
           buildup_factor_forced: 0,
         },
+        torque_tuning: torqueTuning ?? undefined,
       },
       sweeps,
     };
