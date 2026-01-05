@@ -50,19 +50,19 @@ const DEFAULT_TORQUE_MIN = 0.01;
 const DEFAULT_TORQUE_MAX = 0.1;
 const DEFAULT_TORQUE_STEP = 0.01;
 const DEFAULT_TORQUE_STEP_DIVISOR = 6;
-const AUTO_TUNE_REL_TOL = 0.1;
-const AUTO_TUNE_ABS_TOL_MM = 1.0;
 const AUTO_TUNE_MIN_MOVE_MM = 1.0;
-const AUTO_TUNE_TARGET_MOVE_MM = 10.0;
-const AUTO_TUNE_TARGET_WINDOW_MS = 10000;
+const AUTO_TUNE_COARSE_TARGET_MOVE_MM = 10.0;
+const AUTO_TUNE_COARSE_WINDOW_MS = 10000;
+const AUTO_TUNE_FINE_TARGET_MOVE_MM = 2.0;
+const AUTO_TUNE_FINE_WINDOW_MS = 10000;
 const AUTO_TUNE_POLL_INTERVAL_MS = 250;
 const AUTO_TUNE_MIN_TORQUE = 0.001;
 const AUTO_TUNE_START_TORQUE = AUTO_TUNE_MIN_TORQUE;
 const AUTO_TUNE_MAX_TORQUE = 1.0;
-const AUTO_TUNE_MAX_DOUBLES = 12;
+const AUTO_TUNE_MAX_DOUBLES = 120;
 const AUTO_TUNE_DOUBLE_FACTOR = 2.0;
 const AUTO_TUNE_FINE_FACTOR = 1.1;
-const AUTO_TUNE_MAX_FINE_STEPS = 12;
+const AUTO_TUNE_MAX_FINE_STEPS = 120;
 const AUTO_TUNE_PLATEAU_REDUCTION = 0.75;
 const DEFAULT_RAMP_WAIT_MS = 1000;
 const DEFAULT_SWAP_WAIT_MS = 2000;
@@ -254,13 +254,6 @@ function deriveTorqueStep(minTorque, maxTorque) {
   return step > 0 ? step : DEFAULT_TORQUE_STEP;
 }
 
-function torqueMovementTolerance(movement) {
-  if (!Number.isFinite(movement)) {
-    return AUTO_TUNE_ABS_TOL_MM;
-  }
-  return Math.max(AUTO_TUNE_ABS_TOL_MM, Math.abs(movement) * AUTO_TUNE_REL_TOL);
-}
-
 function clampAutoTuneTorque(value) {
   if (!Number.isFinite(value)) {
     return null;
@@ -289,12 +282,17 @@ function computeTorqueTuningMovement(startLengths, endLengths, pairAnchors) {
   return Math.max(deltaA, deltaB);
 }
 
-async function measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors, speedup) {
+async function measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors, {
+  speedup,
+  targetMoveMm,
+  windowMs,
+} = {}) {
   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = Math.max(20, AUTO_TUNE_POLL_INTERVAL_MS / timeScale);
-  const windowMs = Math.max(pollMs, AUTO_TUNE_TARGET_WINDOW_MS / timeScale);
-  const deadline = Date.now() + windowMs;
+  const windowScaledMs = Math.max(pollMs, (Number.isFinite(windowMs) ? windowMs : AUTO_TUNE_COARSE_WINDOW_MS) / timeScale);
+  const targetMovement = Number.isFinite(targetMoveMm) ? targetMoveMm : AUTO_TUNE_COARSE_TARGET_MOVE_MM;
+  const deadline = Date.now() + windowScaledMs;
   let maxMovement = 0;
 
   while (Date.now() <= deadline) {
@@ -302,7 +300,7 @@ async function measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors
     const movement = computeTorqueTuningMovement(startLengths, lengths, pairAnchors);
     if (movement > maxMovement) {
       maxMovement = movement;
-      if (maxMovement >= AUTO_TUNE_TARGET_MOVE_MM) {
+      if (maxMovement >= targetMovement) {
         break;
       }
     }
@@ -360,6 +358,8 @@ async function performTorqueTuningProbe(sendFn, pairAnchors, options) {
     speedup,
     torqueLow,
     torqueTest,
+    targetMoveMm,
+    windowMs,
   } = options;
   if (!Array.isArray(pairAnchors) || pairAnchors.length !== 2) {
     return 0;
@@ -370,7 +370,11 @@ async function performTorqueTuningProbe(sendFn, pairAnchors, options) {
 
   await sendFn(`M569.4 P${motorIds[driveAnchor]} T${lowTorque}`);
   await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${testTorque}`);
-  const movement = await measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors, speedup);
+  const movement = await measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors, {
+    speedup,
+    targetMoveMm,
+    windowMs,
+  });
   await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${lowTorque}`);
   await sendFn(`M569.4 P${motorIds[driveAnchor]} T${lowTorque}`);
   return movement;
@@ -383,7 +387,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     torqueMax: Number.isFinite(options.torqueMax) ? options.torqueMax : DEFAULT_TORQUE_MAX,
   };
   const timeScale = Number.isFinite(options.speedup) && options.speedup > 0 ? options.speedup : 1;
-  const windowMs = Math.max(1, AUTO_TUNE_TARGET_WINDOW_MS / timeScale);
+  const coarseWindowMs = Math.max(1, AUTO_TUNE_COARSE_WINDOW_MS / timeScale);
 
   let testTorque = clampAutoTuneTorque(AUTO_TUNE_START_TORQUE);
   if (!Number.isFinite(testTorque)) {
@@ -413,12 +417,14 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       ...options,
       torqueLow: baseLow,
       torqueTest: testTorque,
+      targetMoveMm: AUTO_TUNE_COARSE_TARGET_MOVE_MM,
+      windowMs: AUTO_TUNE_COARSE_WINDOW_MS,
     });
     console.log(`; auto-tune torque probe ${i + 1}/${AUTO_TUNE_MAX_DOUBLES}: test=${testTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
     if (movement < AUTO_TUNE_MIN_MOVE_MM) {
       lastNoMoveTorque = testTorque;
     }
-    if (movement >= AUTO_TUNE_TARGET_MOVE_MM) {
+    if (movement >= AUTO_TUNE_COARSE_TARGET_MOVE_MM) {
       firstMoveTorque = testTorque;
       firstMoveDelta = movement;
       break;
@@ -431,7 +437,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
   }
 
   if (!Number.isFinite(firstMoveTorque)) {
-    console.log(`; auto-tune torque failed to reach ${AUTO_TUNE_TARGET_MOVE_MM}mm within ${Math.round(windowMs)}ms; using provided/default torques`);
+    console.log(`; auto-tune torque failed to reach ${AUTO_TUNE_COARSE_TARGET_MOVE_MM}mm within ${Math.round(coarseWindowMs)}ms; using provided/default torques`);
     return {
       ...fallback,
       tuningMeta: { tuning_failed: true, method: 'half-sweep' },
@@ -455,9 +461,11 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       ...options,
       torqueLow: baseLow,
       torqueTest: nextTorque,
+      targetMoveMm: AUTO_TUNE_FINE_TARGET_MOVE_MM,
+      windowMs: AUTO_TUNE_FINE_WINDOW_MS,
     });
     console.log(`; auto-tune torque ramp ${i + 1}/${AUTO_TUNE_MAX_FINE_STEPS}: test=${nextTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
-    if (movement <= prevMovement + torqueMovementTolerance(prevMovement)) {
+    if (movement < AUTO_TUNE_FINE_TARGET_MOVE_MM) {
       plateauTorque = nextTorque;
       plateauMovement = movement;
       break;
