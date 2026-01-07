@@ -16,6 +16,8 @@ public:
     // Set torque mode for a driver and return formatted response string.
     // Returns an error string for invalid driver addresses.
     const char* SetTorqueMode(uint8_t driverAddress, float torqueNm);
+    // Set torque mode without applying any threshold; positionMode overrides torque value.
+    const char* SetTorqueModeExplicit(uint8_t driverAddress, float torqueNm, bool positionMode);
 
     float GetTorque(uint8_t driverAddress) const;
     bool IsInTorqueMode(uint8_t driverAddress) const;

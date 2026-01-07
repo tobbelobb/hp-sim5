@@ -12,6 +12,12 @@ HostTorqueMode& HostTorqueMode::Instance()
 
 const char* HostTorqueMode::SetTorqueMode(uint8_t driverAddress, float torqueNm)
 {
+    const bool positionMode = std::fabs(torqueNm) < MIN_TORQUE_THRESHOLD;
+    return SetTorqueModeExplicit(driverAddress, torqueNm, positionMode);
+}
+
+const char* HostTorqueMode::SetTorqueModeExplicit(uint8_t driverAddress, float torqueNm, bool positionMode)
+{
     if (driverAddress < MIN_DRIVER || driverAddress > MAX_DRIVER)
     {
         std::snprintf(responseBuffer_, sizeof(responseBuffer_),
@@ -21,7 +27,7 @@ const char* HostTorqueMode::SetTorqueMode(uint8_t driverAddress, float torqueNm)
 
     const size_t index = driverAddress - MIN_DRIVER;
 
-    if (std::fabs(torqueNm) < MIN_TORQUE_THRESHOLD)
+    if (positionMode)
     {
         torques_[index] = 0.0f;
         std::snprintf(responseBuffer_, sizeof(responseBuffer_), "pos_mode, ");

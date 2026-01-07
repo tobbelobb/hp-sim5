@@ -2,9 +2,14 @@
 
 #include <CanMessageBuffer.h>
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
+#include <Movement/Move.h>
 #include <RepRapFirmware.h>
+#include <Platform/RepRap.h>
 #include "CanCapture.h"
 #include <HostTorqueMode.h>
+#if SUPPORT_HANGPRINTER
+#include <Movement/Kinematics/HangprinterKinematics.h>
+#endif
 
 #if SUPPORT_CAN_EXPANSION
 
@@ -204,9 +209,30 @@ GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const String
             return GCodeResult::error;
         }
 
-        const float torque = gb.GetFValue();
+        const float forceNewtons = gb.GetFValue();
+#if SUPPORT_HANGPRINTER
+        Kinematics& kin = reprap.GetMove().GetKinematics();
+        if (kin.GetLegacyType() == KinematicsType::hangprinter)
+        {
+            float motorTorqueNm = 0.0F;
+            bool positionMode = false;
+            const GCodeResult conversion =
+                static_cast<HangprinterKinematics&>(kin).ComputeODrive3TorqueFromForce(
+                    driver, forceNewtons, motorTorqueNm, positionMode, reply);
+            if (conversion != GCodeResult::ok)
+            {
+                return conversion;
+            }
+            const float appliedTorque = positionMode ? 0.0F : motorTorqueNm;
+            const char* response =
+                HostTorqueMode::Instance().SetTorqueModeExplicit(
+                    driver.boardAddress, appliedTorque, positionMode);
+            reply.cat(response);
+            return GCodeResult::ok;
+        }
+#endif
         const char* response =
-            HostTorqueMode::Instance().SetTorqueMode(driver.boardAddress, torque);
+            HostTorqueMode::Instance().SetTorqueMode(driver.boardAddress, forceNewtons);
         reply.cat(response);
         return GCodeResult::ok;
     }
@@ -330,6 +356,51 @@ GCodeResult ProcessM655(GCodeBuffer&, const StringRef& reply) THROWS(GCodeExcept
 {
     return ReturnOk(reply);
 }
+
+#if DUAL_CAN
+uint32_t SendPlainMessageNoFree(CanMessageBuffer* buf, uint32_t) noexcept
+{
+    (void)buf;
+    return 0;
+}
+
+bool ReceivePlainMessage(CanMessageBuffer*, uint32_t) noexcept
+{
+    return false;
+}
+
+namespace ODrive
+{
+CanId ArbitrationId(DriverId, uint8_t) noexcept
+{
+    CanId id;
+    id.SetReceivedId(0);
+    return id;
+}
+
+CanMessageBuffer* PrepareSimpleMessage(DriverId const, const StringRef& reply) noexcept
+{
+    CanMessageBuffer* buf = CanMessageBuffer::Allocate();
+    if (buf == nullptr)
+    {
+        reply.copy("no CAN buffer");
+    }
+    return buf;
+}
+
+void FlushCanReceiveHardware() noexcept
+{
+}
+
+bool GetExpectedSimpleMessage(CanMessageBuffer* buf, DriverId const, uint8_t const,
+                              const StringRef& reply) noexcept
+{
+    (void)buf;
+    reply.copy("Message not received");
+    return false;
+}
+} // namespace ODrive
+#endif
 
 }  // namespace CanInterface
 

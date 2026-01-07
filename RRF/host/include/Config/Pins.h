@@ -101,7 +101,7 @@
 #endif
 
 #ifndef DUAL_CAN
-#define DUAL_CAN 0
+#define DUAL_CAN 1
 #endif
 
 #define HAS_SMART_DRIVERS (SUPPORT_TMC2660 || SUPPORT_TMC22xx || SUPPORT_TMC51xx)
