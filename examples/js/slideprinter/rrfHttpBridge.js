@@ -59,9 +59,10 @@ export class RrfHttpBridge {
             suppressCallbacks = false,
         } = options;
 
-        if (this._isEncoderQuery(gcode) && this.encoderResolver) {
-            return this._handleEncoderQuery(gcode, { timeout, suppressCallbacks });
-        }
+        const isEncoderQuery = this._isEncoderQuery(gcode);
+        const simulatedEncoder = isEncoderQuery && this.encoderResolver
+            ? this._handleEncoderQuery(gcode, { timeout, suppressCallbacks: true })
+            : null;
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -91,6 +92,17 @@ export class RrfHttpBridge {
                     await this._primeDriverDirections(torqueItems);
                 }
                 this._processMotion(parsed.motion);
+            }
+
+            if (simulatedEncoder) {
+                const simulated = await simulatedEncoder;
+                if (simulated?.reply) {
+                    const replyText = simulated.reply.trim();
+                    const skipOverride = /^Error:\s*M569\.3:\s*Message not received/i.test(replyText);
+                    if (!skipOverride) {
+                        parsed.reply = simulated.reply;
+                    }
+                }
             }
 
             if (!suppressCallbacks && this.onGCodeReply) {
@@ -646,13 +658,73 @@ export class RrfHttpBridge {
         return result;
     }
 
-    _parseTorqueModeCommand(gcode) {
+    _parseTorqueModeTargets(gcode) {
         if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
             return [];
         }
         const pMatch = gcode.match(/P([0-9:\.]+)/i);
+        if (!pMatch) {
+            return [];
+        }
+        return pMatch[1]
+            .split(':')
+            .map((d) => this._normalizeMotorDescriptorValue(d))
+            .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress));
+    }
+
+    _parseTorqueModeReplyValues(reply) {
+        if (typeof reply !== 'string' || reply.length === 0) {
+            return [];
+        }
+        const values = [];
+        const regex = /\bpos_mode\b|(-?[0-9]+(?:\.[0-9]+)?)\s*Nm\b/gi;
+        let match = regex.exec(reply);
+        while (match) {
+            if (match[0].toLowerCase().includes('pos_mode')) {
+                values.push(0);
+            } else {
+                const value = parseFloat(match[1]);
+                values.push(Number.isFinite(value) ? value : null);
+            }
+            match = regex.exec(reply);
+        }
+        return values;
+    }
+
+    _parseTorqueModeReply(gcode, reply) {
+        const descriptors = this._parseTorqueModeTargets(gcode);
+        if (descriptors.length === 0) {
+            return [];
+        }
+        const values = this._parseTorqueModeReplyValues(reply);
+        if (values.length === 0) {
+            return [];
+        }
+        const events = [];
+        const count = Math.min(descriptors.length, values.length);
+        for (let i = 0; i < count; i += 1) {
+            const torqueNm = values[i];
+            if (!Number.isFinite(torqueNm)) {
+                continue;
+            }
+            const descriptor = descriptors[i];
+            events.push({
+                type: 'TorqueMode',
+                can_address: descriptor.canAddress,
+                driver: descriptor.driver,
+                motorId: descriptor.canAddress,
+                torqueNm,
+            });
+        }
+        return events;
+    }
+
+    _parseTorqueModeCommand(gcode) {
+        if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
+            return [];
+        }
         const tMatch = gcode.match(/T(-?[0-9]+(?:\.[0-9]+)?)/i);
-        if (!pMatch || !tMatch) {
+        if (!tMatch) {
             return [];
         }
         const torqueNm = parseFloat(tMatch[1]);
@@ -660,10 +732,10 @@ export class RrfHttpBridge {
             return [];
         }
 
-        const descriptors = pMatch[1]
-            .split(':')
-            .map((d) => this._normalizeMotorDescriptorValue(d))
-            .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress));
+        const descriptors = this._parseTorqueModeTargets(gcode);
+        if (descriptors.length === 0) {
+            return [];
+        }
 
         return descriptors.map((descriptor) => ({
             type: 'TorqueMode',
@@ -678,7 +750,10 @@ export class RrfHttpBridge {
         if (!parsedResponse || !gcode || !Array.isArray(parsedResponse.motion)) {
             return;
         }
-        const torqueCommands = this._parseTorqueModeCommand(gcode);
+        let torqueCommands = this._parseTorqueModeReply(gcode, parsedResponse.reply);
+        if (torqueCommands.length === 0) {
+            torqueCommands = this._parseTorqueModeCommand(gcode);
+        }
         if (torqueCommands.length === 0) {
             return;
         }
@@ -844,11 +919,13 @@ export class RrfHttpBridge {
     }
 
     async setTorqueMode(driver, torqueNm) {
-        return this.sendGCode(`M569.4 P${driver} T${torqueNm}`);
+        const target = this._formatDriverSpecifier(driver);
+        return this.sendGCode(`M569.4 P${target} T${torqueNm}`);
     }
 
     async setPositionMode(driver) {
-        return this.sendGCode(`M569.4 P${driver} T0`);
+        const target = this._formatDriverSpecifier(driver);
+        return this.sendGCode(`M569.4 P${target} T0`);
     }
 
     async getPosition() {
@@ -858,6 +935,49 @@ export class RrfHttpBridge {
 
     async getFirmwareInfo() {
         return this.sendGCode('M115');
+    }
+
+    _formatDriverSpecifier(input) {
+        if (input == null) {
+            return '';
+        }
+        if (typeof input === 'string') {
+            const trimmed = input.trim();
+            return trimmed.length > 0 ? trimmed : '';
+        }
+        if (typeof input === 'number') {
+            if (!Number.isFinite(input)) {
+                return '';
+            }
+            const asInt = Math.round(input);
+            const isInteger = Math.abs(input - asInt) < 1e-9;
+            if (isInteger) {
+                const key = String(asInt);
+                if (Object.prototype.hasOwnProperty.call(this.driverToAxis, key)) {
+                    return `${asInt}.0`;
+                }
+                return `${asInt}`;
+            }
+            return `${input}`;
+        }
+        if (typeof input === 'object') {
+            if (input.local === true || input.isLocal === true) {
+                const localDriver = Number.isFinite(input.driver)
+                    ? input.driver
+                    : Number.isFinite(input.motorId)
+                        ? input.motorId
+                        : null;
+                if (Number.isFinite(localDriver)) {
+                    return `${localDriver}`;
+                }
+            }
+            const descriptor = this._getMotorDescriptorFromInput(input);
+            if (descriptor && Number.isFinite(descriptor.canAddress)) {
+                const driverIndex = Number.isFinite(descriptor.driver) ? descriptor.driver : 0;
+                return `${descriptor.canAddress}.${driverIndex}`;
+            }
+        }
+        return `${input}`;
     }
 }
 

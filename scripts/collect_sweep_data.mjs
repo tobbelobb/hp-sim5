@@ -1494,13 +1494,43 @@ function parseTorqueModeCommand(line) {
   return { motorIdParts, torqueNm };
 }
 
-function updateMotorTorqueState(line, motorIds, motorTorqueNm) {
+function parseTorqueModeReply(reply) {
+  if (typeof reply !== 'string' || reply.length === 0) {
+    return [];
+  }
+  const values = [];
+  const regex = /\bpos_mode\b|(-?[0-9]+(?:\.[0-9]+)?)\s*Nm\b/gi;
+  let match = regex.exec(reply);
+  while (match) {
+    if (match[0].toLowerCase().includes('pos_mode')) {
+      values.push(0);
+    } else {
+      const value = parseFloat(match[1]);
+      values.push(Number.isFinite(value) ? value : null);
+    }
+    match = regex.exec(reply);
+  }
+  return values;
+}
+
+function updateMotorTorqueState(line, reply, motorIds, motorTorqueNm) {
   const parsed = parseTorqueModeCommand(line);
   if (!parsed) {
     return;
   }
   const { motorIdParts, torqueNm } = parsed;
-  for (const motorId of motorIdParts) {
+  const replyTorques = parseTorqueModeReply(reply);
+  const fallbackTorque = Number.isFinite(torqueNm) ? torqueNm : null;
+  const torqueValues = replyTorques.length > 0
+    ? replyTorques
+    : motorIdParts.map(() => fallbackTorque);
+  const count = Math.min(motorIdParts.length, torqueValues.length);
+  for (let i = 0; i < count; i += 1) {
+    const torqueValue = torqueValues[i];
+    if (!Number.isFinite(torqueValue)) {
+      continue;
+    }
+    const motorId = motorIdParts[i];
     let anchorIdx = motorIds.indexOf(motorId);
     if (anchorIdx < 0) {
       const motorIdNum = Number.parseFloat(motorId);
@@ -1511,7 +1541,7 @@ function updateMotorTorqueState(line, motorIds, motorTorqueNm) {
     if (anchorIdx < 0 || anchorIdx >= motorTorqueNm.length) {
       continue;
     }
-    motorTorqueNm[anchorIdx] = torqueNm;
+    motorTorqueNm[anchorIdx] = torqueValue;
   }
 }
 
@@ -1684,7 +1714,7 @@ async function main() {
       console.log(`[rrf_gcode] ${trimmed}`);
     }
     const res = await bridgeCtx.sendGcodeLine(line, options);
-    updateMotorTorqueState(trimmed, motorIds, motorTorqueNm);
+    updateMotorTorqueState(trimmed, res?.reply, motorIds, motorTorqueNm);
     if (args.stepGcode) {
       const reply = res?.reply?.trim?.() || '';
       console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');

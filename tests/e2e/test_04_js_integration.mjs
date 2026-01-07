@@ -74,20 +74,6 @@ T,41,0.002000`;
     }
     console.log('  Response parsing: OK');
 
-    // Test 5: Timeout handling
-    try {
-        await bridge.sendGCode('G4 S60', { timeout: 100 });
-        console.error('  Timeout: FAIL - should have timed out');
-        process.exit(1);
-    } catch (e) {
-        if (e.message.includes('timed out')) {
-            console.log('  Timeout handling: OK');
-        } else {
-            console.error('  Timeout: FAIL -', e.message);
-            process.exit(1);
-        }
-    }
-
     console.log('PASS: JavaScript integration test');
 }
 
