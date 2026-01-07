@@ -52,10 +52,7 @@ const DEFAULT_TORQUE_STEP = 0.01;
 const DEFAULT_TORQUE_STEP_DIVISOR = 6;
 const AUTO_TUNE_MIN_MOVE_MM = 1.0;
 const AUTO_TUNE_COARSE_TARGET_MOVE_MM = 10.0;
-const AUTO_TUNE_COARSE_WINDOW_MS = 10000;
 const AUTO_TUNE_FINE_TARGET_MOVE_MM = 2.0;
-const AUTO_TUNE_FINE_WINDOW_MS = 10000;
-const AUTO_TUNE_POLL_INTERVAL_MS = 250;
 const AUTO_TUNE_MIN_TORQUE = 0.001;
 const AUTO_TUNE_START_TORQUE = AUTO_TUNE_MIN_TORQUE;
 const AUTO_TUNE_MAX_TORQUE = 1.0;
@@ -282,40 +279,6 @@ function computeTorqueTuningMovement(startLengths, endLengths, pairAnchors) {
   return Math.max(deltaA, deltaB);
 }
 
-async function measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors, {
-  speedup,
-  targetMoveMm,
-  windowMs,
-  allowEarlyExit,
-} = {}) {
-  const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const pollMs = Math.max(20, AUTO_TUNE_POLL_INTERVAL_MS / timeScale);
-  const windowScaledMs = Math.max(pollMs, (Number.isFinite(windowMs) ? windowMs : AUTO_TUNE_COARSE_WINDOW_MS) / timeScale);
-  const targetMovement = Number.isFinite(targetMoveMm) ? targetMoveMm : AUTO_TUNE_COARSE_TARGET_MOVE_MM;
-  const earlyExit = allowEarlyExit !== false;
-  const deadline = Date.now() + windowScaledMs;
-  let maxMovement = 0;
-
-  while (Date.now() <= deadline) {
-    const lengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-    const movement = computeTorqueTuningMovement(startLengths, lengths, pairAnchors);
-    if (movement > maxMovement) {
-      maxMovement = movement;
-      if (earlyExit && maxMovement >= targetMovement) {
-        break;
-      }
-    }
-    if (Date.now() >= deadline) {
-      break;
-    }
-    // eslint-disable-next-line no-await-in-loop
-    await sleep(pollMs);
-  }
-
-  return normalizeTorqueMovement(maxMovement);
-}
-
 async function prepareTorqueTuning(sendFn, plan, options) {
   const {
     axes,
@@ -355,33 +318,123 @@ async function prepareTorqueTuning(sendFn, plan, options) {
 
 async function performTorqueTuningProbe(sendFn, pairAnchors, options) {
   const {
+    axes,
     motorIds,
     mmPerDeg,
     speedup,
+    feed,
     torqueLow,
     torqueTest,
-    targetMoveMm,
-    windowMs,
-    allowEarlyExit,
   } = options;
   if (!Array.isArray(pairAnchors) || pairAnchors.length !== 2) {
     return 0;
   }
-  const [driveAnchor, sensorAnchor] = pairAnchors;
+  const [anchorA, anchorB] = pairAnchors;
   const lowTorque = Number.isFinite(torqueLow) ? torqueLow : DEFAULT_TORQUE_LOW;
   const testTorque = Number.isFinite(torqueTest) ? torqueTest : lowTorque;
+  const feedRate = Number.isFinite(feed) ? feed : DEFAULT_FEED;
+  const rampTorques = buildTorqueRampValues(lowTorque, testTorque, deriveTorqueStep(lowTorque, testTorque));
+  const rampSteps = Math.max(1, rampTorques.length);
+  const minRampTorque = rampTorques[0];
+  const maxRampTorque = rampTorques[rampTorques.length - 1];
+  const rampRatio = minRampTorque > 0 && maxRampTorque > 0
+    ? maxRampTorque / minRampTorque
+    : null;
+  const rampMultiplier = Number.isFinite(rampRatio) && rampRatio > 0
+    ? Math.pow(rampRatio, 1 / rampSteps)
+    : null;
 
-  await sendFn(`M569.4 P${motorIds[driveAnchor]} T${lowTorque}`);
-  await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${testTorque}`);
-  const movement = await measureTorqueTuningWindow(sendFn, motorIds, mmPerDeg, pairAnchors, {
-    speedup,
-    targetMoveMm,
-    windowMs,
-    allowEarlyExit,
-  });
-  await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${lowTorque}`);
-  await sendFn(`M569.4 P${motorIds[driveAnchor]} T${lowTorque}`);
-  return movement;
+  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
+  const rampIntervalMs = Math.max(10, 1000 / timeScale);
+  const phases = [
+    { drive: anchorA, sensor: anchorB },
+    { drive: anchorB, sensor: anchorA },
+  ];
+  const toLengths = (anglesDeg) => anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  let maxMovement = 0;
+
+  for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx += 1) {
+    const phase = phases[phaseIdx];
+    const driveMotorId = motorIds[phase.drive];
+    const sensorMotorId = motorIds[phase.sensor];
+    const driveAxis = axes?.[phase.drive];
+    if (!driveAxis) {
+      throw new Error('torque tuning requires axes mapping for reposition step');
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    const startStable = await waitForStableEncoders(sendFn, motorIds, { speedup });
+    const startLengths = toLengths(startStable.anglesDeg);
+
+    // Start: both motors in torque mode. Ramp the sensor torque up to the test max.
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T${lowTorque}`);
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${sensorMotorId} T${minRampTorque}`);
+    if (Number.isFinite(rampMultiplier) && rampMultiplier > 0) {
+      for (let i = 0; i < rampSteps; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(rampIntervalMs);
+        const nextTorque = minRampTorque * Math.pow(rampMultiplier, i + 1);
+        const clamped = Math.min(Math.max(nextTorque, Math.min(minRampTorque, maxRampTorque)), Math.max(minRampTorque, maxRampTorque));
+        // eslint-disable-next-line no-await-in-loop
+        await sendFn(`M569.4 P${sensorMotorId} T${clamped}`);
+      }
+    } else {
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(rampIntervalMs * rampSteps);
+      // eslint-disable-next-line no-await-in-loop
+      await sendFn(`M569.4 P${sensorMotorId} T${maxRampTorque}`);
+    }
+
+    // After max torque: settle, then switch to position mode to return the drive anchor.
+    // eslint-disable-next-line no-await-in-loop
+    await waitForStableEncoders(sendFn, motorIds, { speedup });
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T0.0`);
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${sensorMotorId} T${lowTorque}`);
+
+    // Capture the endpoint after the mode swap so the measurement matches data collection behavior.
+    // eslint-disable-next-line no-await-in-loop
+    const endStable = await waitForStableEncoders(sendFn, motorIds, { speedup });
+    const endLengths = toLengths(endStable.anglesDeg);
+    const movement = computeTorqueTuningMovement(startLengths, endLengths, pairAnchors);
+    if (movement > maxMovement) {
+      maxMovement = movement;
+    }
+
+    const segmentCount = Math.max(1, Math.floor(rampTorques.length));
+    const target = startLengths[phase.drive] ?? 0;
+    const current = endLengths[phase.drive] ?? 0;
+    const totalDelta = target - current;
+    const segmentDelta = segmentCount > 0 ? totalDelta / segmentCount : totalDelta;
+    const roundToGcodeMm = (value) => Math.round(value * 1000) / 1000;
+    let commanded = 0;
+
+    for (let segIdx = 0; segIdx < segmentCount; segIdx += 1) {
+      const desired = segIdx === segmentCount - 1
+        ? totalDelta - commanded
+        : segmentDelta;
+      const delta = roundToGcodeMm(desired);
+      commanded += delta;
+      if (Math.abs(delta) > 1e-6) {
+        // eslint-disable-next-line no-await-in-loop
+        await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feedRate}`, speedup, { axes, delayFn: sleep });
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await waitForStableEncoders(sendFn, motorIds, { speedup });
+    }
+
+    // End: put the drive motor back into low torque mode (sensor already low torque).
+    // eslint-disable-next-line no-await-in-loop
+    await sendFn(`M569.4 P${driveMotorId} T${lowTorque}`);
+  }
+
+  await sendFn(`M569.4 P${motorIds[anchorA]} T${lowTorque}`);
+  await sendFn(`M569.4 P${motorIds[anchorB]} T${lowTorque}`);
+
+  return normalizeTorqueMovement(maxMovement);
 }
 
 async function autoTuneTorqueRamp(sendFn, plan, options) {
@@ -390,8 +443,6 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     torqueMin: Number.isFinite(options.torqueMin) ? options.torqueMin : DEFAULT_TORQUE_MIN,
     torqueMax: Number.isFinite(options.torqueMax) ? options.torqueMax : DEFAULT_TORQUE_MAX,
   };
-  const timeScale = Number.isFinite(options.speedup) && options.speedup > 0 ? options.speedup : 1;
-  const coarseWindowMs = Math.max(1, AUTO_TUNE_COARSE_WINDOW_MS / timeScale);
 
   let testTorque = clampAutoTuneTorque(AUTO_TUNE_START_TORQUE);
   if (!Number.isFinite(testTorque)) {
@@ -421,8 +472,6 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       ...options,
       torqueLow: baseLow,
       torqueTest: testTorque,
-      targetMoveMm: AUTO_TUNE_COARSE_TARGET_MOVE_MM,
-      windowMs: AUTO_TUNE_COARSE_WINDOW_MS,
     });
     console.log(`; auto-tune torque probe ${i + 1}/${AUTO_TUNE_MAX_DOUBLES}: test=${testTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
     if (movement < AUTO_TUNE_MIN_MOVE_MM) {
@@ -441,7 +490,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
   }
 
   if (!Number.isFinite(firstMoveTorque)) {
-    console.log(`; auto-tune torque failed to reach ${AUTO_TUNE_COARSE_TARGET_MOVE_MM}mm within ${Math.round(coarseWindowMs)}ms; using provided/default torques`);
+    console.log(`; auto-tune torque failed to reach ${AUTO_TUNE_COARSE_TARGET_MOVE_MM}mm; using provided/default torques`);
     return {
       ...fallback,
       tuningMeta: { tuning_failed: true, method: 'half-sweep' },
@@ -465,12 +514,10 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       ...options,
       torqueLow: baseLow,
       torqueTest: nextTorque,
-      targetMoveMm: AUTO_TUNE_FINE_TARGET_MOVE_MM,
-      windowMs: AUTO_TUNE_FINE_WINDOW_MS,
-      allowEarlyExit: false,
     });
     console.log(`; auto-tune torque ramp ${i + 1}/${AUTO_TUNE_MAX_FINE_STEPS}: test=${nextTorque.toFixed(4)} movement=${movement.toFixed(3)}mm`);
-    if (movement < AUTO_TUNE_FINE_TARGET_MOVE_MM) {
+    const improvement = movement - prevMovement;
+    if (improvement < AUTO_TUNE_FINE_TARGET_MOVE_MM) {
       plateauTorque = nextTorque;
       plateauMovement = movement;
       break;
