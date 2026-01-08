@@ -161,6 +161,11 @@ export class StepperMotorComponent {
     }
 }
 
+
+function smoothSign(x, eps) {
+  return x / (Math.abs(x) + eps); // [-1..1], smooth near 0
+}
+
 // Adapted from the Stepper Motor Model for Dynamic Simulation paper by Alexandru Morar
 export class StepperMotorSystem {
     update(world, dt) {
@@ -195,23 +200,42 @@ export class StepperMotorSystem {
             let totalTorque;
 
             if (stepper.torqueMode) {
-                // Torque command with back-EMF rolloff at high speed.
                 const omega = angVel.angularVelocity;
                 const maxSpeedRad = Math.max(1e-6, stepper.maxSpeedRad ?? 600);
+
+                // Back-EMF / voltage-limited torque droop
                 const droop = Math.max(0, Math.min(1, 1 - Math.abs(omega) / maxSpeedRad));
                 const electricalTorque = stepper.targetTorque * droop;
-                // Rule of thumb for dampingTorque defaults:
-                // In torque mode we model viscous losses as Tvisc = -B*ω. If the motor can deliver
-                // about holdingTorque in the relevant range, then the speed where viscous losses
-                // balance the motor is ω ≈ holdingTorque / B. Choosing B = holdingTorque/maxSpeedRad
-                // anchors that balance point at maxSpeedRad, so "maxSpeedRad" is reachable.
-                // Note: this is not a physical motor constant; it's a convenience default for the
-                // loss model when we don't have real friction/windage measurements.
+
+                // Viscous loss default anchored so maxSpeedRad is reachable
                 const B = stepper.holdingTorque / maxSpeedRad;
                 const dampingTorque = -B * omega;
-                const windageCoeff = stepper.dampingCoeff * 1e-3;
+
+                // Optional windage (small)
+                const windageCoeff = stepper.windageCoeff ?? (stepper.dampingCoeff * 1e-3);
                 const windageTorque = -windageCoeff * omega * Math.abs(omega);
-                totalTorque = electricalTorque + dampingTorque + windageTorque;
+
+                // ---- Coulomb + stiction friction (startup resistance) ----
+                const epsW = 1e-3;
+                const smoothSign = omega / (Math.abs(omega) + epsW);
+
+                const Tc = stepper.coulombFriction ?? (0.002 * stepper.holdingTorque);
+                const Ts = stepper.stictionTorque ?? (0.003 * stepper.holdingTorque);
+                const wS = stepper.stictionSpeed ?? 1.0;
+                const stictionFactor = Math.exp(-Math.abs(omega) / wS);
+                const frictionTorque = -(Tc + Ts * stictionFactor) * smoothSign;
+
+                // ---- cogging (detent) torque ripple vs angle ----
+                const cogAmp = stepper.coggingTorque ?? (0.01 * stepper.holdingTorque);
+                const cogFreq = stepper.coggingFreq ?? stepper.numPolePairs;
+                const coggingTorque = -cogAmp * Math.sin(cogFreq * orient.angle);
+
+                totalTorque =
+                  electricalTorque +
+                  dampingTorque +
+                  windageTorque +
+                  frictionTorque +
+                  coggingTorque;
             } else {
                 // Position control mode
                 // Make the stepper act in the group's local frame so rigid-group rotation
