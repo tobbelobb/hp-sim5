@@ -201,6 +201,17 @@ GCodeResult SetRemoteDriverStepsPerMmAndMicrostepping(
 GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const StringRef& reply)
     THROWS(GCodeException)
 {
+    const int commandFraction = gb.GetCommandFraction();
+    if (commandFraction == -1 || commandFraction == 0)
+    {
+        if (gb.Seen('S'))
+        {
+            const int32_t directionValue = gb.GetIValue();
+            reprap.GetExpansion().SetDriverDirection(driver.boardAddress, driver.localDriver,
+                                                     directionValue != 0);
+        }
+    }
+
     if (gb.GetCommandFraction() == 4)
     {
         if (!gb.Seen('T'))
