@@ -145,13 +145,15 @@ export class StepperMotorComponent {
         deltaAngle = 0.0,
         holdingTorque = 0.5, // Nm. Within the typical range for Nema 17 motors
         numPolePairs = 50,   // For a 1.8 deg/step motor
-        dampingCoeff = 0.01  // Gotten by trial and error. For stepper inertia 5e-05
+        dampingCoeff = 0.01, // Gotten by trial and error. For stepper inertia 5e-05
+        maxSpeedRad = 600    // rad/s base speed before back-EMF limits torque
     ) {
         this.commandedAngle = commandedAngle;
         this.deltaAngle = deltaAngle;
         this.holdingTorque = holdingTorque;
         this.numPolePairs = numPolePairs;
         this.dampingCoeff = dampingCoeff;
+        this.maxSpeedRad = maxSpeedRad;
 
         // Torque mode support
         this.torqueMode = false;
@@ -193,10 +195,23 @@ export class StepperMotorSystem {
             let totalTorque;
 
             if (stepper.torqueMode) {
-                // Constant torque mode
-                totalTorque = stepper.targetTorque;
-                const dampingTorque = -stepper.dampingCoeff * angVel.angularVelocity;
-                totalTorque += dampingTorque;
+                // Torque command with back-EMF rolloff at high speed.
+                const omega = angVel.angularVelocity;
+                const maxSpeedRad = Math.max(1e-6, stepper.maxSpeedRad ?? 600);
+                const droop = Math.max(0, Math.min(1, 1 - Math.abs(omega) / maxSpeedRad));
+                const electricalTorque = stepper.targetTorque * droop;
+                // Rule of thumb for dampingTorque defaults:
+                // In torque mode we model viscous losses as Tvisc = -B*ω. If the motor can deliver
+                // about holdingTorque in the relevant range, then the speed where viscous losses
+                // balance the motor is ω ≈ holdingTorque / B. Choosing B = holdingTorque/maxSpeedRad
+                // anchors that balance point at maxSpeedRad, so "maxSpeedRad" is reachable.
+                // Note: this is not a physical motor constant; it's a convenience default for the
+                // loss model when we don't have real friction/windage measurements.
+                const B = stepper.holdingTorque / maxSpeedRad;
+                const dampingTorque = -B * omega;
+                const windageCoeff = stepper.dampingCoeff * 1e-3;
+                const windageTorque = -windageCoeff * omega * Math.abs(omega);
+                totalTorque = electricalTorque + dampingTorque + windageTorque;
             } else {
                 // Position control mode
                 // Make the stepper act in the group's local frame so rigid-group rotation

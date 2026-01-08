@@ -296,6 +296,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const holdingTorque = readNumericAttribute(prim, "stepper:holdingTorque");
                     const numPolePairs = readNumericAttribute(prim, "stepper:numPolePairs");
                     const dampingCoeff = readNumericAttribute(prim, "stepper:dampingCoeff");
+                    const maxSpeedRad = readNumericAttribute(prim, "stepper:maxSpeedRad");
                     const stepperComponent = new StepperMotorComponent();
                     if (holdingTorque !== null) {
                         stepperComponent.holdingTorque = holdingTorque;
@@ -305,6 +306,9 @@ export function setupScene(world, stage, canvas, options = {}) {
                     }
                     if (dampingCoeff !== null) {
                         stepperComponent.dampingCoeff = dampingCoeff;
+                    }
+                    if (maxSpeedRad !== null) {
+                        stepperComponent.maxSpeedRad = maxSpeedRad;
                     }
                     world.addComponent(ent, stepperComponent);
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y));
