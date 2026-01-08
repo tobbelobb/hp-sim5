@@ -82,7 +82,6 @@ export class RrfHttpBridge {
 
             const text = await response.text();
             const parsed = this._parseResponse(text);
-            this._injectTorqueModeFallback(parsed, gcode);
 
             if (parsed.motion.length > 0) {
                 this._processMotion(parsed.motion);
@@ -506,12 +505,15 @@ export class RrfHttpBridge {
                     if (!descriptor) {
                         continue;
                     }
+                    const torqueNm = parseFloat(torque);
+                    const positionMode = Number.isFinite(torqueNm) && Math.abs(torqueNm) < 1e-12;
                     result.motion.push({
                         type: 'TorqueMode',
                         can_address: descriptor.canAddress,
                         driver: descriptor.driver,
                         motorId: descriptor.canAddress,
-                        torqueNm: parseFloat(torque),
+                        torqueNm,
+                        positionMode,
                     });
                     continue;
                 }
@@ -535,164 +537,6 @@ export class RrfHttpBridge {
         }
 
         return result;
-    }
-
-    _parseTorqueModeTargets(gcode) {
-        if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
-            return [];
-        }
-        const pMatch = gcode.match(/P([0-9:\.]+)/i);
-        if (!pMatch) {
-            return [];
-        }
-        return pMatch[1]
-            .split(':')
-            .map((d) => this._normalizeMotorDescriptorValue(d))
-            .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress));
-    }
-
-    _parseTorqueModeReplyValues(reply) {
-        if (typeof reply !== 'string' || reply.length === 0) {
-            return [];
-        }
-        const values = [];
-        const regex = /\bpos_mode\b|(-?[0-9]+(?:\.[0-9]+)?)\s*Nm\b/gi;
-        let match = regex.exec(reply);
-        while (match) {
-            if (match[0].toLowerCase().includes('pos_mode')) {
-                values.push({ torqueNm: 0, positionMode: true });
-            } else {
-                const value = parseFloat(match[1]);
-                values.push({
-                    torqueNm: Number.isFinite(value) ? value : null,
-                    positionMode: false,
-                });
-            }
-            match = regex.exec(reply);
-        }
-        return values;
-    }
-
-    _parseTorqueModeReply(gcode, reply) {
-        const descriptors = this._parseTorqueModeTargets(gcode);
-        if (descriptors.length === 0) {
-            return [];
-        }
-        const values = this._parseTorqueModeReplyValues(reply);
-        if (values.length === 0) {
-            return [];
-        }
-        const events = [];
-        const count = Math.min(descriptors.length, values.length);
-        for (let i = 0; i < count; i += 1) {
-            const torqueNm = values[i]?.torqueNm;
-            if (!Number.isFinite(torqueNm)) {
-                continue;
-            }
-            const descriptor = descriptors[i];
-            events.push({
-                type: 'TorqueMode',
-                can_address: descriptor.canAddress,
-                driver: descriptor.driver,
-                motorId: descriptor.canAddress,
-                torqueNm,
-                positionMode: values[i]?.positionMode === true,
-            });
-        }
-        return events;
-    }
-
-    _parseTorqueModeCommand(gcode) {
-        if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
-            return [];
-        }
-        const tMatch = gcode.match(/T(-?[0-9]+(?:\.[0-9]+)?)/i);
-        if (!tMatch) {
-            return [];
-        }
-        const torqueNm = parseFloat(tMatch[1]);
-        if (!Number.isFinite(torqueNm)) {
-            return [];
-        }
-
-        const descriptors = this._parseTorqueModeTargets(gcode);
-        if (descriptors.length === 0) {
-            return [];
-        }
-
-        return descriptors.map((descriptor) => ({
-            type: 'TorqueMode',
-            can_address: descriptor.canAddress,
-            driver: descriptor.driver,
-            motorId: descriptor.canAddress,
-            torqueNm,
-            positionMode: false,
-        }));
-    }
-
-    _injectTorqueModeFallback(parsedResponse, gcode) {
-        if (!parsedResponse || !gcode || !Array.isArray(parsedResponse.motion)) {
-            return;
-        }
-        const replyCommands = this._parseTorqueModeReply(gcode, parsedResponse.reply);
-        if (replyCommands.length > 0) {
-            const replyByKey = new Map();
-            replyCommands.forEach((cmd) => {
-                const descriptor = this._getTorqueMotorDescriptor(cmd);
-                const key = this._motorDescriptorKey(descriptor);
-                if (key) {
-                    replyByKey.set(key, cmd);
-                }
-            });
-            const seenKeys = new Set();
-            parsedResponse.motion.forEach((item) => {
-                if (item?.type !== 'TorqueMode') {
-                    return;
-                }
-                const descriptor = this._getTorqueMotorDescriptor(item);
-                const key = this._motorDescriptorKey(descriptor);
-                if (!key) {
-                    return;
-                }
-                const replyCmd = replyByKey.get(key);
-                if (replyCmd) {
-                    item.torqueNm = replyCmd.torqueNm;
-                    item.positionMode = replyCmd.positionMode === true;
-                    seenKeys.add(key);
-                }
-            });
-            const missing = replyCommands.filter((cmd) => {
-                const descriptor = this._getTorqueMotorDescriptor(cmd);
-                const key = this._motorDescriptorKey(descriptor);
-                return key && !seenKeys.has(key);
-            });
-            if (missing.length > 0) {
-                parsedResponse.motion.push(...missing);
-            }
-            return;
-        }
-
-        const torqueCommands = this._parseTorqueModeCommand(gcode);
-        if (torqueCommands.length === 0) {
-            return;
-        }
-        const seenKeys = new Set(
-            parsedResponse.motion
-                .filter((m) => m?.type === 'TorqueMode')
-                .map((m) => {
-                    const descriptor = this._getTorqueMotorDescriptor(m);
-                    return this._motorDescriptorKey(descriptor);
-                })
-                .filter((key) => typeof key === 'string'),
-        );
-        const missing = torqueCommands.filter((cmd) => {
-            const descriptor = this._getTorqueMotorDescriptor(cmd);
-            const key = this._motorDescriptorKey(descriptor);
-            return key && !seenKeys.has(key);
-        });
-        if (missing.length > 0) {
-            parsedResponse.motion.push(...missing);
-        }
     }
 
     _processMotion(motionItems) {
