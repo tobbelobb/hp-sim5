@@ -681,12 +681,13 @@ export class RrfHttpBridge {
         let match = regex.exec(reply);
         while (match) {
             if (match[0].toLowerCase().includes('pos_mode')) {
-                values.push({ torqueNm: 0, positionMode: true });
+                values.push({ torqueNm: 0, positionMode: true, torqueIsSigned: true });
             } else {
                 const value = parseFloat(match[1]);
                 values.push({
                     torqueNm: Number.isFinite(value) ? value : null,
                     positionMode: false,
+                    torqueIsSigned: true,
                 });
             }
             match = regex.exec(reply);
@@ -718,6 +719,7 @@ export class RrfHttpBridge {
                 motorId: descriptor.canAddress,
                 torqueNm,
                 positionMode: values[i]?.positionMode === true,
+                torqueIsSigned: values[i]?.torqueIsSigned === true,
             });
         }
         return events;
@@ -747,6 +749,8 @@ export class RrfHttpBridge {
             driver: descriptor.driver,
             motorId: descriptor.canAddress,
             torqueNm,
+            positionMode: false,
+            torqueIsSigned: false,
         }));
     }
 
@@ -813,9 +817,12 @@ export class RrfHttpBridge {
         }
 
         const direction = key ? this._driverDirections.get(key) : null;
-        const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
-        const effectiveTorque = torqueSign === null ? -torqueNm : torqueNm * torqueSign;
         const positionMode = event?.positionMode === true;
+        const torqueIsSigned = event?.torqueIsSigned === true;
+        const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
+        const effectiveTorque = torqueIsSigned
+            ? torqueNm
+            : (torqueSign === null ? -torqueNm : torqueNm * torqueSign);
 
         if (this.onTorqueModeChange) {
             try {
