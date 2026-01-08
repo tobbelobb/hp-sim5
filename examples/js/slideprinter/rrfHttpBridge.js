@@ -681,10 +681,13 @@ export class RrfHttpBridge {
         let match = regex.exec(reply);
         while (match) {
             if (match[0].toLowerCase().includes('pos_mode')) {
-                values.push(0);
+                values.push({ torqueNm: 0, positionMode: true });
             } else {
                 const value = parseFloat(match[1]);
-                values.push(Number.isFinite(value) ? value : null);
+                values.push({
+                    torqueNm: Number.isFinite(value) ? value : null,
+                    positionMode: false,
+                });
             }
             match = regex.exec(reply);
         }
@@ -703,7 +706,7 @@ export class RrfHttpBridge {
         const events = [];
         const count = Math.min(descriptors.length, values.length);
         for (let i = 0; i < count; i += 1) {
-            const torqueNm = values[i];
+            const torqueNm = values[i]?.torqueNm;
             if (!Number.isFinite(torqueNm)) {
                 continue;
             }
@@ -714,6 +717,7 @@ export class RrfHttpBridge {
                 driver: descriptor.driver,
                 motorId: descriptor.canAddress,
                 torqueNm,
+                positionMode: values[i]?.positionMode === true,
             });
         }
         return events;
@@ -811,17 +815,22 @@ export class RrfHttpBridge {
         const direction = key ? this._driverDirections.get(key) : null;
         const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
         const effectiveTorque = torqueSign === null ? -torqueNm : torqueNm * torqueSign;
+        const positionMode = event?.positionMode === true;
 
         if (this.onTorqueModeChange) {
             try {
-                this.onTorqueModeChange(descriptor.canAddress, axis, effectiveTorque);
+                this.onTorqueModeChange(
+                    descriptor.canAddress,
+                    axis,
+                    positionMode ? 0 : effectiveTorque,
+                );
             } catch (_err) {
                 /* ignore listener errors */
             }
         }
 
         if (this.remoteSpoolSystem) {
-            const isPositionMode = Math.abs(effectiveTorque) < 0.0001;
+            const isPositionMode = positionMode;
             this.remoteSpoolSystem.addCommand({
                 type: isPositionMode ? 'SetPositionMode' : 'SetTorqueMode',
                 axis,
