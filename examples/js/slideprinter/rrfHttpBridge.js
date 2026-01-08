@@ -634,10 +634,45 @@ export class RrfHttpBridge {
         if (!parsedResponse || !gcode || !Array.isArray(parsedResponse.motion)) {
             return;
         }
-        let torqueCommands = this._parseTorqueModeReply(gcode, parsedResponse.reply);
-        if (torqueCommands.length === 0) {
-            torqueCommands = this._parseTorqueModeCommand(gcode);
+        const replyCommands = this._parseTorqueModeReply(gcode, parsedResponse.reply);
+        if (replyCommands.length > 0) {
+            const replyByKey = new Map();
+            replyCommands.forEach((cmd) => {
+                const descriptor = this._getTorqueMotorDescriptor(cmd);
+                const key = this._motorDescriptorKey(descriptor);
+                if (key) {
+                    replyByKey.set(key, cmd);
+                }
+            });
+            const seenKeys = new Set();
+            parsedResponse.motion.forEach((item) => {
+                if (item?.type !== 'TorqueMode') {
+                    return;
+                }
+                const descriptor = this._getTorqueMotorDescriptor(item);
+                const key = this._motorDescriptorKey(descriptor);
+                if (!key) {
+                    return;
+                }
+                const replyCmd = replyByKey.get(key);
+                if (replyCmd) {
+                    item.torqueNm = replyCmd.torqueNm;
+                    item.positionMode = replyCmd.positionMode === true;
+                    seenKeys.add(key);
+                }
+            });
+            const missing = replyCommands.filter((cmd) => {
+                const descriptor = this._getTorqueMotorDescriptor(cmd);
+                const key = this._motorDescriptorKey(descriptor);
+                return key && !seenKeys.has(key);
+            });
+            if (missing.length > 0) {
+                parsedResponse.motion.push(...missing);
+            }
+            return;
         }
+
+        const torqueCommands = this._parseTorqueModeCommand(gcode);
         if (torqueCommands.length === 0) {
             return;
         }
