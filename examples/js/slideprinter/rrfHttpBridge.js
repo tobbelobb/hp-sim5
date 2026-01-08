@@ -48,8 +48,6 @@ export class RrfHttpBridge {
 
         this._pendingMotion = [];
         this._axisAngles = new Map();
-        this._driverDirections = new Map();
-        this._directionFetches = new Map();
         this._encoderReferences = new Map();
     }
 
@@ -87,10 +85,6 @@ export class RrfHttpBridge {
             this._injectTorqueModeFallback(parsed, gcode);
 
             if (parsed.motion.length > 0) {
-                const torqueItems = parsed.motion.filter((item) => item?.type === 'TorqueMode');
-                if (torqueItems.length > 0) {
-                    await this._primeDriverDirections(torqueItems);
-                }
                 this._processMotion(parsed.motion);
             }
 
@@ -113,7 +107,6 @@ export class RrfHttpBridge {
                 }
             }
 
-            this._maybeCacheDirectionFromReply(gcode, parsed.reply);
             return parsed;
         } catch (error) {
             clearTimeout(timeoutId);
@@ -121,41 +114,6 @@ export class RrfHttpBridge {
                 throw new Error(`G-code command timed out after ${timeout}ms`);
             }
             throw error;
-        }
-    }
-
-    async _primeDriverDirections(motionItems) {
-        const drivers = new Map();
-        for (const item of motionItems) {
-            if (!item || item.type !== 'TorqueMode') {
-                continue;
-            }
-            const descriptor = this._getTorqueMotorDescriptor(item);
-            if (!descriptor) {
-                continue;
-            }
-            const key = this._motorDescriptorKey(descriptor);
-            if (!key || drivers.has(key)) {
-                continue;
-            }
-            drivers.set(key, descriptor);
-        }
-
-        if (drivers.size === 0) {
-            return;
-        }
-
-        const tasks = [];
-        for (const descriptor of drivers.values()) {
-            const key = this._motorDescriptorKey(descriptor);
-            if (!key || this._driverDirections.has(key) || this._directionFetches.has(key)) {
-                continue;
-            }
-            tasks.push(this._fetchDriverDirection(descriptor));
-        }
-
-        if (tasks.length > 0) {
-            await Promise.allSettled(tasks);
         }
     }
 
@@ -360,85 +318,6 @@ export class RrfHttpBridge {
         };
         const content = values.map((v) => `${formatValue(v)}`).join(', ');
         return `[${content}, ]`;
-    }
-
-    async _fetchDriverDirection(identifier) {
-        const descriptor = this._getMotorDescriptorFromInput(identifier);
-        if (!descriptor) {
-            return null;
-        }
-        const key = this._motorDescriptorKey(descriptor);
-        if (!key) {
-            return null;
-        }
-        if (this._driverDirections.has(key)) {
-            return this._driverDirections.get(key);
-        }
-        if (this._directionFetches.has(key)) {
-            return this._directionFetches.get(key);
-        }
-
-        const inflight = (async () => {
-            try {
-                const result = await this.sendGCode(`M569 P${key}`, {
-                    suppressCallbacks: true,
-                });
-                const rawReply = result?.reply ?? '';
-                const direction = this._parseDriverDirectionFromReply(rawReply);
-                if (direction !== null) {
-                    this._driverDirections.set(key, direction);
-                    return direction;
-                }
-                if (typeof rawReply === 'string' && rawReply.trim().length === 0) {
-                    this._driverDirections.set(key, true); // assume forwards when firmware stays silent
-                    return true;
-                }
-            } catch (err) {
-                console.warn(`RrfHttpBridge: failed to fetch direction for driver ${key}: ${err?.message || err}`);
-            } finally {
-                this._directionFetches.delete(key);
-            }
-            return null;
-        })();
-
-        this._directionFetches.set(key, inflight);
-        return inflight;
-    }
-
-    _parseDriverDirectionFromReply(reply) {
-        if (typeof reply !== 'string' || reply.length === 0) {
-            return null;
-        }
-        const match = reply.match(/runs\s+(forwards?|forward|in\s+reverse|reverse)/i);
-        if (!match || !match[1]) {
-            return null;
-        }
-        const descriptor = match[1].toLowerCase();
-        if (descriptor.startsWith('forw')) {
-            return true;
-        }
-        if (descriptor.includes('reverse')) {
-            return false;
-        }
-        return null;
-    }
-
-    _maybeCacheDirectionFromReply(gcode, reply) {
-        if (typeof gcode !== 'string' || !gcode.trim().toUpperCase().startsWith('M569')) {
-            return;
-        }
-        const driverMatch = gcode.match(/P([0-9]+(?:\.[0-9]+)?)/i);
-        const descriptor = driverMatch ? this._normalizeMotorDescriptorValue(driverMatch[1]) : null;
-        const key = descriptor ? this._motorDescriptorKey(descriptor) : null;
-        if (!key) {
-            return;
-        }
-        const direction = this._parseDriverDirectionFromReply(reply);
-        if (direction !== null) {
-            this._driverDirections.set(key, direction);
-        } else if (typeof reply === 'string' && reply.trim().length === 0) {
-            this._driverDirections.set(key, true); // silent reply -> assume forwards
-        }
     }
 
     _ensureAxisState(axis) {
@@ -681,13 +560,12 @@ export class RrfHttpBridge {
         let match = regex.exec(reply);
         while (match) {
             if (match[0].toLowerCase().includes('pos_mode')) {
-                values.push({ torqueNm: 0, positionMode: true, torqueIsSigned: true });
+                values.push({ torqueNm: 0, positionMode: true });
             } else {
                 const value = parseFloat(match[1]);
                 values.push({
                     torqueNm: Number.isFinite(value) ? value : null,
                     positionMode: false,
-                    torqueIsSigned: true,
                 });
             }
             match = regex.exec(reply);
@@ -719,7 +597,6 @@ export class RrfHttpBridge {
                 motorId: descriptor.canAddress,
                 torqueNm,
                 positionMode: values[i]?.positionMode === true,
-                torqueIsSigned: values[i]?.torqueIsSigned === true,
             });
         }
         return events;
@@ -750,7 +627,6 @@ export class RrfHttpBridge {
             motorId: descriptor.canAddress,
             torqueNm,
             positionMode: false,
-            torqueIsSigned: false,
         }));
     }
 
@@ -807,7 +683,6 @@ export class RrfHttpBridge {
             console.warn('RrfHttpBridge: TorqueMode event missing motorId');
             return;
         }
-        const key = this._motorDescriptorKey(descriptor);
         const torqueNm = event?.torqueNm ?? 0;
         const axis = this.driverToAxis[descriptor.canAddress];
 
@@ -816,13 +691,8 @@ export class RrfHttpBridge {
             return;
         }
 
-        const direction = key ? this._driverDirections.get(key) : null;
         const positionMode = event?.positionMode === true;
-        const torqueIsSigned = event?.torqueIsSigned === true;
-        const torqueSign = direction === true ? -1 : direction === false ? 1 : null;
-        const effectiveTorque = torqueIsSigned
-            ? torqueNm
-            : (torqueSign === null ? -torqueNm : torqueNm * torqueSign);
+        const effectiveTorque = torqueNm;
 
         if (this.onTorqueModeChange) {
             try {
