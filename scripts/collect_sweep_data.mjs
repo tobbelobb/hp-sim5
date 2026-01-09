@@ -50,18 +50,21 @@ const DEFAULT_TORQUE_MIN = 0.01;
 const DEFAULT_TORQUE_MAX = 0.1;
 const DEFAULT_TORQUE_STEP = 0.01;
 const DEFAULT_TORQUE_STEP_DIVISOR = 6;
-const AUTO_TUNE_TARGET_VELOCITY_RPS = 1.0;
-const AUTO_TUNE_MIN_VELOCITY_RPS = AUTO_TUNE_TARGET_VELOCITY_RPS * 0.1;
-const AUTO_TUNE_FINE_TARGET_VELOCITY_RPS = AUTO_TUNE_TARGET_VELOCITY_RPS * 0.2;
 const AUTO_TUNE_MIN_TORQUE = 0.01;
-const AUTO_TUNE_START_TORQUE = AUTO_TUNE_MIN_TORQUE;
 const AUTO_TUNE_MAX_TORQUE = 20.0;
-const AUTO_TUNE_MAX_DOUBLES = 120;
-const AUTO_TUNE_DOUBLE_FACTOR = 2.0;
-const AUTO_TUNE_FINE_FACTOR = 1.1;
-const AUTO_TUNE_MAX_FINE_STEPS = 120;
-const AUTO_TUNE_PLATEAU_REDUCTION = 0.75;
 const AUTO_TUNE_SAMPLE_WINDOW_MS = 10000;
+const AUTO_TUNE_NOISE_SAMPLE_MS = 4000;
+const AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS = 200;
+const AUTO_TUNE_SAMPLE_INTERVAL_MS = 500;
+const AUTO_TUNE_STALL_WINDOW_MS = 2500;
+const AUTO_TUNE_MIN_STALL_SPEED_DEG_PER_SEC = 0.05;
+const AUTO_TUNE_BRACKET_FACTOR = 1.4;
+const AUTO_TUNE_MAX_BRACKET_STEPS = 120;
+const AUTO_TUNE_MAX_BISECT_STEPS = 60;
+const AUTO_TUNE_RELATIVE_TOLERANCE = 0.1;
+const AUTO_TUNE_ABSOLUTE_TOLERANCE = 0.01;
+const AUTO_TUNE_EDGE_RATIO = 0.95;
+const AUTO_TUNE_IDLE_FORCE_RATIO = 0.05;
 const DEFAULT_RAMP_WAIT_MS = 1000;
 const DEFAULT_SWAP_WAIT_MS = 2000;
 const DEFAULT_STABILITY_POLL_MS = 500;
@@ -259,6 +262,317 @@ function clampAutoTuneTorque(value) {
   return Math.min(AUTO_TUNE_MAX_TORQUE, Math.max(AUTO_TUNE_MIN_TORQUE, value));
 }
 
+function computeMedian(values) {
+  if (!Array.isArray(values)) {
+    return 0;
+  }
+  const filtered = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  if (filtered.length === 0) {
+    return 0;
+  }
+  const mid = Math.floor(filtered.length / 2);
+  if (filtered.length % 2 === 1) {
+    return filtered[mid];
+  }
+  return 0.5 * (filtered[mid - 1] + filtered[mid]);
+}
+
+function computeStallSpeedThresholdDegPerSec(sigmaActDeg, sampleIntervalSec) {
+  const interval = Number.isFinite(sampleIntervalSec) && sampleIntervalSec > 0 ? sampleIntervalSec : null;
+  const noiseSpeed = Number.isFinite(sigmaActDeg) && interval
+    ? (6 * sigmaActDeg) / interval
+    : 0;
+  return Math.max(AUTO_TUNE_MIN_STALL_SPEED_DEG_PER_SEC, noiseSpeed);
+}
+
+function buildMovementThresholds(noiseSigmaDeg, { activeAnchor, restAnchors = [] } = {}) {
+  const sigmaAct = Array.isArray(noiseSigmaDeg) ? noiseSigmaDeg[activeAnchor] : 0;
+  const thetaActThr = Math.max(0.5, 6 * (Number.isFinite(sigmaAct) ? sigmaAct : 0));
+  const thetaResThr = Math.max(0.3, 4 * (Number.isFinite(sigmaAct) ? sigmaAct : 0));
+
+  const thetaOtherByAnchor = new Map();
+  const restSigmas = [];
+  for (const anchorIdx of restAnchors) {
+    const sigma = Array.isArray(noiseSigmaDeg) ? noiseSigmaDeg[anchorIdx] : 0;
+    const thr = Math.max(0.5, 6 * (Number.isFinite(sigma) ? sigma : 0));
+    thetaOtherByAnchor.set(anchorIdx, thr);
+    restSigmas.push(Number.isFinite(sigma) ? sigma : 0);
+  }
+  const medianRestSigma = computeMedian(restSigmas);
+  const sumResidualThr = Math.max(0.8, 6 * medianRestSigma);
+
+  return {
+    sigmaAct,
+    medianRestSigma,
+    thetaActThr,
+    thetaResThr,
+    thetaOtherByAnchor,
+    sumResidualThr,
+  };
+}
+
+async function setForceTrialModes(sendFn, motorIds, options = {}) {
+  const {
+    activeAnchor = null,
+    fixedAnchor = null,
+    idleForce = DEFAULT_TORQUE_LOW,
+    activeForce = null,
+    forbiddenTorqueAnchors = [],
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return;
+  }
+  const forbidden = new Set(forbiddenTorqueAnchors ?? []);
+  const idle = Number.isFinite(idleForce) ? idleForce : DEFAULT_TORQUE_LOW;
+  const active = Number.isFinite(activeForce) ? activeForce : idle;
+
+  for (let idx = 0; idx < motorIds.length; idx += 1) {
+    const motorId = motorIds[idx];
+    if (idx === fixedAnchor || forbidden.has(idx)) {
+      await sendFn(`M569.4 P${motorId} T0.0`);
+    } else if (idx === activeAnchor) {
+      await sendFn(`M569.4 P${motorId} T${active}`);
+    } else {
+      await sendFn(`M569.4 P${motorId} T${idle}`);
+    }
+  }
+}
+
+async function calibrateEncoderNoise(sendFn, options = {}) {
+  const {
+    motorIds,
+    fixedAnchor = null,
+    idleForce = DEFAULT_TORQUE_LOW,
+    speedup = 1,
+    sampleDurationMs = AUTO_TUNE_NOISE_SAMPLE_MS,
+    sampleIntervalMs = AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS,
+    forbiddenTorqueAnchors = [],
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return { sigmaByMotorDeg: [], samples: 0, durationMs: 0 };
+  }
+  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
+  const durationMs = Math.max(1, sampleDurationMs / timeScale);
+  const intervalMs = Math.max(10, sampleIntervalMs / timeScale);
+  const sampleCount = Math.max(3, Math.floor(durationMs / intervalMs));
+
+  await setForceTrialModes(sendFn, motorIds, {
+    activeAnchor: null,
+    fixedAnchor,
+    idleForce,
+    activeForce: idleForce,
+    forbiddenTorqueAnchors,
+  });
+  await waitForStableEncoders(sendFn, motorIds, { speedup });
+
+  const sums = Array.from({ length: motorIds.length }, () => 0);
+  const sumsSq = Array.from({ length: motorIds.length }, () => 0);
+  let samples = 0;
+
+  for (let i = 0; i < sampleCount; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
+    const angles = parseEncoderReply(reply?.reply);
+    if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
+      for (let idx = 0; idx < angles.length; idx += 1) {
+        const v = angles[idx];
+        sums[idx] += v;
+        sumsSq[idx] += v * v;
+      }
+      samples += 1;
+    }
+    // eslint-disable-next-line no-await-in-loop
+    await sleep(intervalMs);
+  }
+
+  const sigmaByMotorDeg = sums.map((sum, idx) => {
+    if (samples <= 0) {
+      return 0;
+    }
+    const mean = sum / samples;
+    const variance = (sumsSq[idx] / samples) - mean * mean;
+    return Math.sqrt(Math.max(0, variance));
+  });
+
+  return { sigmaByMotorDeg, samples, durationMs };
+}
+
+async function runForceTrial(sendFn, options = {}) {
+  const {
+    motorIds,
+    activeAnchor,
+    fixedAnchor = null,
+    restAnchors = [],
+    idleForce = DEFAULT_TORQUE_LOW,
+    testForce = DEFAULT_TORQUE_LOW,
+    speedup = 1,
+    sampleWindowMs = AUTO_TUNE_SAMPLE_WINDOW_MS,
+    sampleIntervalMs = AUTO_TUNE_SAMPLE_INTERVAL_MS,
+    stallWindowMs = AUTO_TUNE_STALL_WINDOW_MS,
+    stallSpeedDegPerSec = null,
+    thresholds = null,
+    axes,
+    mmPerDeg,
+    feed = DEFAULT_FEED,
+    forbiddenTorqueAnchors = [],
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return {
+      moved: false,
+      travelDeg: 0,
+      stalled: false,
+      deltaEndDeg: [],
+      deltaResidualDeg: [],
+    };
+  }
+  if (!Number.isFinite(activeAnchor) || activeAnchor < 0 || activeAnchor >= motorIds.length) {
+    return {
+      moved: false,
+      travelDeg: 0,
+      stalled: false,
+      deltaEndDeg: [],
+      deltaResidualDeg: [],
+    };
+  }
+
+  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
+  const windowMs = Math.max(1, sampleWindowMs / timeScale);
+  const intervalMs = Math.max(20, sampleIntervalMs / timeScale);
+  const stallWindowScaledMs = Math.max(intervalMs, stallWindowMs / timeScale);
+  const sampleIntervalSec = intervalMs / 1000;
+  const speedThreshold = Number.isFinite(stallSpeedDegPerSec) && stallSpeedDegPerSec > 0
+    ? stallSpeedDegPerSec
+    : computeStallSpeedThresholdDegPerSec(thresholds?.sigmaAct ?? 0, sampleIntervalSec);
+
+  await setForceTrialModes(sendFn, motorIds, {
+    activeAnchor,
+    fixedAnchor,
+    idleForce,
+    activeForce: idleForce,
+    forbiddenTorqueAnchors,
+  });
+  const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup });
+  const startAngles = stableStart.anglesDeg;
+
+  await setForceTrialModes(sendFn, motorIds, {
+    activeAnchor,
+    fixedAnchor,
+    idleForce,
+    activeForce: testForce,
+    forbiddenTorqueAnchors,
+  });
+
+  let lastAngles = startAngles;
+  let endAngles = startAngles;
+  let lastMs = Date.now();
+  const startMs = lastMs;
+  let stallDurationMs = 0;
+  let stalled = false;
+  let stallAngle = null;
+
+  while (Date.now() - startMs < windowMs) {
+    // eslint-disable-next-line no-await-in-loop
+    await sleep(intervalMs);
+    // eslint-disable-next-line no-await-in-loop
+    const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
+    const angles = parseEncoderReply(reply?.reply);
+    const nowMs = Date.now();
+    if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
+      endAngles = angles;
+      const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
+      const prevAngle = lastAngles?.[activeAnchor];
+      const curAngle = angles?.[activeAnchor];
+      if (Number.isFinite(prevAngle) && Number.isFinite(curAngle)) {
+        const speed = Math.abs(curAngle - prevAngle) / dtSec;
+        if (speed < speedThreshold) {
+          stallDurationMs += (nowMs - lastMs);
+        } else {
+          stallDurationMs = 0;
+        }
+        if (!stalled && stallDurationMs >= stallWindowScaledMs) {
+          stalled = true;
+          stallAngle = curAngle;
+        }
+      }
+      lastAngles = angles;
+    }
+    lastMs = nowMs;
+  }
+
+  await setForceTrialModes(sendFn, motorIds, {
+    activeAnchor,
+    fixedAnchor,
+    idleForce,
+    activeForce: idleForce,
+    forbiddenTorqueAnchors,
+  });
+  const stableResidual = await waitForStableEncoders(sendFn, motorIds, { speedup });
+  const residualAngles = stableResidual.anglesDeg;
+
+  const deltaEndDeg = endAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
+  const deltaResidualDeg = residualAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
+  const activeDelta = deltaEndDeg[activeAnchor] ?? 0;
+  const activeResidual = deltaResidualDeg[activeAnchor] ?? 0;
+
+  const thetaActThr = thresholds?.thetaActThr ?? 0.5;
+  const thetaResThr = thresholds?.thetaResThr ?? 0.3;
+  const sumResidualThr = thresholds?.sumResidualThr ?? 0.8;
+  const thetaOtherByAnchor = thresholds?.thetaOtherByAnchor ?? new Map();
+
+  const activeMoved = Math.abs(activeDelta) >= thetaActThr;
+  let restMovedCount = 0;
+  let restResidualSum = 0;
+  for (const anchorIdx of restAnchors) {
+    const delta = deltaEndDeg[anchorIdx] ?? 0;
+    const thrOther = thetaOtherByAnchor.get(anchorIdx) ?? 0.5;
+    if (Math.abs(delta) >= thrOther) {
+      restMovedCount += 1;
+    }
+    restResidualSum += Math.abs(deltaResidualDeg[anchorIdx] ?? 0);
+  }
+  const residualActiveOk = Math.abs(activeResidual) >= thetaResThr;
+  const residualRestOk = restResidualSum >= sumResidualThr;
+
+  const moved = restAnchors.length > 0
+    ? (activeMoved && restMovedCount >= 1 && residualActiveOk && residualRestOk)
+    : false;
+
+  const travelDeg = Math.abs(
+    stalled && Number.isFinite(stallAngle)
+      ? stallAngle - (startAngles[activeAnchor] ?? 0)
+      : activeDelta,
+  );
+
+  if (Array.isArray(axes) && Array.isArray(mmPerDeg)) {
+    await returnAllMotorsToEncoderOrigin(sendFn, {
+      motorIds,
+      axes,
+      mmPerDeg,
+      feed,
+      speedup,
+      torqueHoldNm: idleForce,
+      forbiddenTorqueAnchors,
+      endInPositionMode: true,
+      positionModeFirstAnchorIdx: fixedAnchor,
+    });
+    await setForceTrialModes(sendFn, motorIds, {
+      activeAnchor,
+      fixedAnchor,
+      idleForce,
+      activeForce: idleForce,
+      forbiddenTorqueAnchors,
+    });
+  }
+
+  return {
+    moved,
+    travelDeg,
+    stalled,
+    deltaEndDeg,
+    deltaResidualDeg,
+  };
+}
+
 async function sampleTorqueTuningVelocityRps(sendFn, motorIds, targetAnchor, options = {}) {
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return 0;
@@ -445,121 +759,272 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     torqueMax: Number.isFinite(options.torqueMax) ? options.torqueMax : DEFAULT_TORQUE_MAX,
   };
 
-  let testTorque = clampAutoTuneTorque(AUTO_TUNE_START_TORQUE);
-  if (!Number.isFinite(testTorque)) {
-    testTorque = fallback.torqueMin;
+  const motorIds = options.motorIds;
+  const axes = options.axes;
+  const mmPerDeg = options.mmPerDeg;
+  const feed = Number.isFinite(options.feed) ? options.feed : DEFAULT_FEED;
+  const speedup = Number.isFinite(options.speedup) ? options.speedup : 1;
+  const forbiddenTorqueAnchors = options.forbiddenTorqueAnchors ?? [];
+
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    console.log('; auto-tune torque skipped (no motor IDs available)');
+    return {
+      ...fallback,
+      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+    };
   }
 
-  const baseLow = clampAutoTuneTorque(AUTO_TUNE_START_TORQUE) ?? DEFAULT_TORQUE_LOW;
-  const fixedTargets = Array.isArray(plan.fixedTargets) ? plan.fixedTargets : [];
   const fixedAnchors = plan.config?.fixedAnchors ?? [];
   const driveAnchor = Number.isFinite(plan.config?.driveAnchor)
     ? plan.config.driveAnchor
     : plan.pairAnchors?.[0];
-  const sensorAnchor = Number.isFinite(plan.config?.sensorAnchor)
-    ? plan.config.sensorAnchor
-    : plan.pairAnchors?.[1];
-  if (!Number.isFinite(driveAnchor) || !Number.isFinite(sensorAnchor) || driveAnchor === sensorAnchor) {
-    console.log('; auto-tune torque skipped (missing drive/sensor anchors)');
+  if (!Number.isFinite(driveAnchor) || driveAnchor < 0 || driveAnchor >= motorIds.length) {
+    console.log('; auto-tune torque skipped (missing active anchor)');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'half-sweep' },
+      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
     };
   }
 
-  const tuningTask = {
-    fixedAnchors,
-    fixedTargets,
-    driveAnchor,
-    sensorAnchor,
+  const forbidden = new Set(forbiddenTorqueAnchors ?? []);
+  if (forbidden.has(driveAnchor)) {
+    console.log('; auto-tune torque skipped (active anchor is forbidden)');
+    return {
+      ...fallback,
+      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+    };
+  }
+
+  let fixedAnchor = null;
+  const fixedCandidates = fixedAnchors
+    .filter((anchorIdx) => Number.isFinite(anchorIdx) && anchorIdx !== driveAnchor);
+  if (fixedCandidates.length > 0) {
+    fixedAnchor = fixedCandidates.find((idx) => forbidden.has(idx)) ?? fixedCandidates[0];
+  } else {
+    const otherCandidates = range(motorIds.length).filter((idx) => idx !== driveAnchor);
+    fixedAnchor = otherCandidates.find((idx) => forbidden.has(idx)) ?? otherCandidates[0] ?? null;
+  }
+  if (!Number.isFinite(fixedAnchor)) {
+    console.log('; auto-tune torque skipped (no fixed anchor available)');
+    return {
+      ...fallback,
+      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+    };
+  }
+
+  const restAnchors = range(motorIds.length).filter((idx) => idx !== driveAnchor && idx !== fixedAnchor);
+  if (restAnchors.length === 0) {
+    console.log('; auto-tune torque skipped (needs at least one non-fixed anchor)');
+    return {
+      ...fallback,
+      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+    };
+  }
+
+  const baseLow = clampAutoTuneTorque(options.torqueLow ?? DEFAULT_TORQUE_LOW) ?? DEFAULT_TORQUE_LOW;
+  let idleForce = baseLow;
+
+  if (Array.isArray(axes) && Array.isArray(mmPerDeg)) {
+    await returnAllMotorsToEncoderOrigin(sendFn, {
+      motorIds,
+      axes,
+      mmPerDeg,
+      feed,
+      speedup,
+      torqueHoldNm: baseLow,
+      forbiddenTorqueAnchors,
+      endInPositionMode: true,
+      positionModeFirstAnchorIdx: fixedAnchor,
+    });
+    await setForceTrialModes(sendFn, motorIds, {
+      activeAnchor: driveAnchor,
+      fixedAnchor,
+      idleForce: baseLow,
+      activeForce: baseLow,
+      forbiddenTorqueAnchors,
+    });
+  }
+
+  const noiseStats = await calibrateEncoderNoise(sendFn, {
+    motorIds,
+    fixedAnchor,
+    idleForce: baseLow,
+    speedup,
+    forbiddenTorqueAnchors,
+  });
+  const thresholds = buildMovementThresholds(noiseStats.sigmaByMotorDeg, {
+    activeAnchor: driveAnchor,
+    restAnchors,
+  });
+
+  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
+  const intervalMs = Math.max(20, AUTO_TUNE_SAMPLE_INTERVAL_MS / timeScale);
+  const stallSpeedDegPerSec = computeStallSpeedThresholdDegPerSec(thresholds.sigmaAct, intervalMs / 1000);
+
+  const formatValue = (value, digits = 4) => (Number.isFinite(value) ? value.toFixed(digits) : 'n/a');
+  const logTrial = (label, force, result) => {
+    const travel = formatValue(result?.travelDeg, 3);
+    console.log(`; auto-tune ${label}: test=${formatValue(force)} moved=${result?.moved ? 'yes' : 'no'} travel=${travel}deg stalled=${result?.stalled ? 'yes' : 'no'}`);
   };
-  let lastNoMoveTorque = null;
-  let firstMoveTorque = null;
-  let firstMoveVelocity = 0;
 
-  for (let i = 0; i < AUTO_TUNE_MAX_DOUBLES; i += 1) {
-    const velocityRps = await performTorqueTuningProbe(sendFn, tuningTask, {
-      ...options,
-      torqueLow: baseLow,
-      torqueTest: testTorque,
+  const runTrial = async (force, label) => {
+    const result = await runForceTrial(sendFn, {
+      motorIds,
+      activeAnchor: driveAnchor,
+      fixedAnchor,
+      restAnchors,
+      idleForce,
+      testForce: force,
+      speedup,
+      thresholds,
+      axes,
+      mmPerDeg,
+      feed,
+      forbiddenTorqueAnchors,
+      stallSpeedDegPerSec,
     });
-    console.log(`; auto-tune torque probe ${i + 1}/${AUTO_TUNE_MAX_DOUBLES}: test=${testTorque.toFixed(4)} velocity=${velocityRps.toFixed(3)}rps`);
-    if (velocityRps < AUTO_TUNE_MIN_VELOCITY_RPS) {
-      lastNoMoveTorque = testTorque;
+    if (label) {
+      logTrial(label, force, result);
     }
-    if (velocityRps >= AUTO_TUNE_TARGET_VELOCITY_RPS) {
-      firstMoveTorque = testTorque;
-      firstMoveVelocity = velocityRps;
+    return result;
+  };
+
+  let testForce = clampAutoTuneTorque(AUTO_TUNE_MIN_TORQUE) ?? baseLow;
+  let lastNoMoveForce = null;
+  let firstMoveForce = null;
+
+  for (let i = 0; i < AUTO_TUNE_MAX_BRACKET_STEPS; i += 1) {
+    const result = await runTrial(testForce, `probe ${i + 1}/${AUTO_TUNE_MAX_BRACKET_STEPS}`);
+    if (result.moved) {
+      firstMoveForce = testForce;
       break;
     }
-    const nextTorque = clampAutoTuneTorque(testTorque * AUTO_TUNE_DOUBLE_FACTOR);
-    if (!Number.isFinite(nextTorque) || nextTorque <= testTorque + 1e-12) {
+    lastNoMoveForce = testForce;
+    const nextForce = clampAutoTuneTorque(testForce * AUTO_TUNE_BRACKET_FACTOR);
+    if (!Number.isFinite(nextForce) || nextForce <= testForce + 1e-12) {
       break;
     }
-    testTorque = nextTorque;
+    testForce = nextForce;
   }
 
-  if (!Number.isFinite(firstMoveTorque)) {
-    console.log(`; auto-tune torque failed to reach ${AUTO_TUNE_TARGET_VELOCITY_RPS}rps; using provided/default torques`);
+  if (!Number.isFinite(firstMoveForce)) {
+    console.log('; auto-tune torque failed to find force-start; using provided/default torques');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'half-sweep' },
+      tuningMeta: {
+        tuning_failed: true,
+        method: 'force-thresholds',
+        noise_sigma_deg: noiseStats.sigmaByMotorDeg,
+      },
     };
   }
 
-  const minTorqueCandidate = lastNoMoveTorque ?? baseLow;
-  const minTorque = clampAutoTuneTorque(minTorqueCandidate) ?? baseLow;
+  let low = Number.isFinite(lastNoMoveForce) ? lastNoMoveForce : 0;
+  let high = firstMoveForce;
 
-  let prevTorque = firstMoveTorque;
-  let prevVelocity = firstMoveVelocity;
-  let plateauTorque = null;
-  let plateauVelocity = null;
-
-  for (let i = 0; i < AUTO_TUNE_MAX_FINE_STEPS; i += 1) {
-    const nextTorque = clampAutoTuneTorque(prevTorque * AUTO_TUNE_FINE_FACTOR);
-    if (!Number.isFinite(nextTorque) || nextTorque <= prevTorque + 1e-12) {
+  for (let i = 0; i < AUTO_TUNE_MAX_BISECT_STEPS; i += 1) {
+    const width = high - low;
+    if (width <= AUTO_TUNE_ABSOLUTE_TOLERANCE
+      || width / Math.max(high, 1e-6) <= AUTO_TUNE_RELATIVE_TOLERANCE) {
       break;
     }
-    const velocityRps = await performTorqueTuningProbe(sendFn, tuningTask, {
-      ...options,
-      torqueLow: baseLow,
-      torqueTest: nextTorque,
-    });
-    console.log(`; auto-tune torque ramp ${i + 1}/${AUTO_TUNE_MAX_FINE_STEPS}: test=${nextTorque.toFixed(4)} velocity=${velocityRps.toFixed(3)}rps`);
-    const improvement = velocityRps - prevVelocity;
-    if (improvement < AUTO_TUNE_FINE_TARGET_VELOCITY_RPS) {
-      plateauTorque = nextTorque;
-      plateauVelocity = velocityRps;
-      break;
+    const midRaw = 0.5 * (low + high);
+    const mid = clampAutoTuneTorque(midRaw) ?? midRaw;
+    const result = await runTrial(mid, `bisect-start ${i + 1}/${AUTO_TUNE_MAX_BISECT_STEPS}`);
+    if (result.moved) {
+      high = mid;
+    } else {
+      low = mid;
     }
-    prevTorque = nextTorque;
-    prevVelocity = velocityRps;
   }
 
-  let maxTorque = plateauTorque ? plateauTorque * AUTO_TUNE_PLATEAU_REDUCTION : prevTorque;
-  maxTorque = clampAutoTuneTorque(maxTorque) ?? prevTorque;
-  if (Number.isFinite(minTorque) && Number.isFinite(maxTorque) && maxTorque < minTorque) {
-    maxTorque = minTorque;
+  const forceStart = high;
+  const idleCandidate = Math.max(baseLow, DEFAULT_TORQUE_LOW, AUTO_TUNE_IDLE_FORCE_RATIO * forceStart);
+  const adjustedIdle = clampAutoTuneTorque(idleCandidate) ?? baseLow;
+  if (adjustedIdle > idleForce + 1e-12) {
+    idleForce = adjustedIdle;
   }
+
+  const capForce = clampAutoTuneTorque(
+    Number.isFinite(options.torqueMax) ? options.torqueMax : AUTO_TUNE_MAX_TORQUE,
+  ) ?? AUTO_TUNE_MAX_TORQUE;
+  const capForceUsed = Math.max(forceStart, capForce);
+  const capResult = await runTrial(capForceUsed, 'cap');
+  const dMax = capResult.travelDeg;
+
+  if (!Number.isFinite(dMax) || dMax <= 0) {
+    console.log('; auto-tune torque failed to measure D_max; using capped max');
+    return {
+      torqueLow: idleForce,
+      torqueMin: forceStart,
+      torqueMax: capForceUsed,
+      tuningMeta: {
+        method: 'force-thresholds',
+        tuning_failed: true,
+        force_start: forceStart,
+        force_cap: capForceUsed,
+        noise_sigma_deg: noiseStats.sigmaByMotorDeg,
+      },
+    };
+  }
+
+  const targetTravel = AUTO_TUNE_EDGE_RATIO * dMax;
+  let edgeLow = forceStart;
+  let edgeHigh = capForceUsed;
+
+  for (let i = 0; i < AUTO_TUNE_MAX_BISECT_STEPS; i += 1) {
+    const width = edgeHigh - edgeLow;
+    if (width <= AUTO_TUNE_ABSOLUTE_TOLERANCE
+      || width / Math.max(edgeHigh, 1e-6) <= AUTO_TUNE_RELATIVE_TOLERANCE) {
+      break;
+    }
+    const midRaw = 0.5 * (edgeLow + edgeHigh);
+    const mid = clampAutoTuneTorque(midRaw) ?? midRaw;
+    const result = await runTrial(mid, `bisect-edge ${i + 1}/${AUTO_TUNE_MAX_BISECT_STEPS}`);
+    if (result.travelDeg >= targetTravel) {
+      edgeHigh = mid;
+    } else {
+      edgeLow = mid;
+    }
+  }
+
+  const forceEdge = edgeHigh;
 
   console.log(
-    `; auto-tune selected: min=${minTorque.toFixed(4)} max=${maxTorque.toFixed(4)} `
-    + `plateau=${Number.isFinite(plateauTorque) ? plateauTorque.toFixed(4) : 'n/a'} `
-    + `velocity=${(plateauVelocity ?? prevVelocity).toFixed(3)}rps`,
+    `; auto-tune selected: idle=${formatValue(idleForce)} start=${formatValue(forceStart)} `
+    + `edge=${formatValue(forceEdge)} d_max=${formatValue(dMax, 3)}deg`,
   );
 
   return {
-    torqueLow: minTorque,
-    torqueMin: minTorque,
-    torqueMax: maxTorque,
+    torqueLow: idleForce,
+    torqueMin: forceStart,
+    torqueMax: forceEdge,
     tuningMeta: {
-      method: 'half-sweep',
-      min_no_move_nm: lastNoMoveTorque,
-      first_move_nm: firstMoveTorque,
-      first_move_rps: firstMoveVelocity,
-      plateau_nm: plateauTorque,
-      plateau_velocity_rps: plateauVelocity,
-      plateau_reduction: AUTO_TUNE_PLATEAU_REDUCTION,
+      method: 'force-thresholds',
+      active_anchor: driveAnchor,
+      fixed_anchor: fixedAnchor,
+      rest_anchors: restAnchors,
+      idle_force_initial: baseLow,
+      idle_force_final: idleForce,
+      force_start: forceStart,
+      force_edge: forceEdge,
+      force_cap: capForceUsed,
+      force_start_bracket_no: lastNoMoveForce,
+      force_start_bracket_yes: firstMoveForce,
+      d_max_deg: dMax,
+      d_target_deg: targetTravel,
+      edge_ratio: AUTO_TUNE_EDGE_RATIO,
+      noise_samples: noiseStats.samples,
+      noise_duration_ms: noiseStats.durationMs,
+      noise_sigma_deg: noiseStats.sigmaByMotorDeg,
+      move_thresholds_deg: {
+        active: thresholds.thetaActThr,
+        residual_active: thresholds.thetaResThr,
+        residual_sum: thresholds.sumResidualThr,
+        other_by_anchor: Object.fromEntries(thresholds.thetaOtherByAnchor.entries()),
+      },
+      stall_speed_deg_per_sec: stallSpeedDegPerSec,
+      stall_window_ms: AUTO_TUNE_STALL_WINDOW_MS,
     },
   };
 }
