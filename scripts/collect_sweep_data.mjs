@@ -955,7 +955,11 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     idleForce = adjustedIdle;
   }
 
-  const capForceUsed = capForceLimit;
+  let capForceUsed = capForceLimit;
+  if (capForceUsed < forceStart - 1e-12) {
+    console.log('; auto-tune torque cap below force-start; using force-start for cap');
+    capForceUsed = forceStart;
+  }
   const capResult = await runTrial(capForceUsed, 'cap');
   const dMax = capResult.travelDeg;
 
@@ -978,11 +982,15 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
   const targetTravel = AUTO_TUNE_EDGE_RATIO * dMax;
   let edgeLow = forceStart;
   let edgeHigh = capForceUsed;
+  let edgeHighUpdated = false;
 
   for (let i = 0; i < AUTO_TUNE_MAX_BISECT_STEPS; i += 1) {
     const width = edgeHigh - edgeLow;
-    if (width <= AUTO_TUNE_ABSOLUTE_TOLERANCE
-      || width / Math.max(edgeHigh, 1e-6) <= AUTO_TUNE_RELATIVE_TOLERANCE) {
+    const relWidth = width / Math.max(edgeHigh, 1e-6);
+    const stopAbs = width <= AUTO_TUNE_ABSOLUTE_TOLERANCE;
+    const stopRel = relWidth <= AUTO_TUNE_RELATIVE_TOLERANCE;
+    const capLocked = Math.abs(edgeHigh - capForceUsed) <= 1e-9 && !edgeHighUpdated;
+    if (stopAbs || (stopRel && !capLocked)) {
       break;
     }
     const midRaw = 0.5 * (edgeLow + edgeHigh);
@@ -990,6 +998,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     const result = await runTrial(mid, `bisect-edge ${i + 1}/${AUTO_TUNE_MAX_BISECT_STEPS}`);
     if (result.travelDeg >= targetTravel) {
       edgeHigh = mid;
+      edgeHighUpdated = true;
     } else {
       edgeLow = mid;
     }
@@ -1021,6 +1030,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       d_max_deg: dMax,
       d_target_deg: targetTravel,
       edge_ratio: AUTO_TUNE_EDGE_RATIO,
+      edge_at_cap: Math.abs(forceEdge - capForceUsed) <= 1e-9,
       noise_samples: noiseStats.samples,
       noise_duration_ms: noiseStats.durationMs,
       noise_sigma_deg: noiseStats.sigmaByMotorDeg,
