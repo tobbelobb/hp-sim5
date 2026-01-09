@@ -56,6 +56,7 @@ const AUTO_TUNE_SAMPLE_WINDOW_MS = 10000;
 const AUTO_TUNE_NOISE_SAMPLE_MS = 4000;
 const AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS = 200;
 const AUTO_TUNE_SAMPLE_INTERVAL_MS = 500;
+const AUTO_TUNE_FORCE_RAMP_WAIT_MS = 300;
 const AUTO_TUNE_STALL_WINDOW_MS = 2500;
 const AUTO_TUNE_MIN_STALL_SPEED_DEG_PER_SEC = 0.05;
 const AUTO_TUNE_BRACKET_FACTOR = 1.4;
@@ -311,6 +312,32 @@ function buildMovementThresholds(noiseSigmaDeg, { activeAnchor, restAnchors = []
   };
 }
 
+function buildForceRampValues(startForce, endForce, factor = AUTO_TUNE_BRACKET_FACTOR) {
+  const start = Number.isFinite(startForce) ? startForce : 0;
+  const end = Number.isFinite(endForce) ? endForce : start;
+  if (!Number.isFinite(end) || end <= 0) {
+    return [];
+  }
+  const stepFactor = Number.isFinite(factor) && factor > 1 ? factor : AUTO_TUNE_BRACKET_FACTOR;
+  let current = Math.max(start, AUTO_TUNE_MIN_TORQUE);
+  if (end <= current + 1e-12) {
+    return [end];
+  }
+  const values = [];
+  while (current < end - 1e-12) {
+    values.push(current);
+    const next = current * stepFactor;
+    if (!(next > current + 1e-12)) {
+      break;
+    }
+    current = Math.min(next, end);
+  }
+  if (values.length === 0 || Math.abs(values[values.length - 1] - end) > 1e-12) {
+    values.push(end);
+  }
+  return values;
+}
+
 async function setForceTrialModes(sendFn, motorIds, options = {}) {
   const {
     activeAnchor = null,
@@ -408,6 +435,9 @@ async function runForceTrial(sendFn, options = {}) {
     speedup = 1,
     sampleWindowMs = AUTO_TUNE_SAMPLE_WINDOW_MS,
     sampleIntervalMs = AUTO_TUNE_SAMPLE_INTERVAL_MS,
+    rampForces = null,
+    rampStepWaitMs = AUTO_TUNE_FORCE_RAMP_WAIT_MS,
+    rebaselineAfterRamp = false,
     stallWindowMs = AUTO_TUNE_STALL_WINDOW_MS,
     stallSpeedDegPerSec = null,
     thresholds = null,
@@ -452,15 +482,42 @@ async function runForceTrial(sendFn, options = {}) {
     forbiddenTorqueAnchors,
   });
   const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup });
-  const startAngles = stableStart.anglesDeg;
+  let startAngles = stableStart.anglesDeg;
 
-  await setForceTrialModes(sendFn, motorIds, {
-    activeAnchor,
-    fixedAnchor,
-    idleForce,
-    activeForce: testForce,
-    forbiddenTorqueAnchors,
-  });
+  const rampWaitMs = Math.max(0, rampStepWaitMs / timeScale);
+  if (Array.isArray(rampForces) && rampForces.length > 0) {
+    for (let idx = 0; idx < rampForces.length; idx += 1) {
+      const force = rampForces[idx];
+      if (!Number.isFinite(force)) {
+        continue;
+      }
+      await sendFn(`M569.4 P${motorIds[activeAnchor]} T${force}`);
+      if (rampWaitMs > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(rampWaitMs);
+      }
+    }
+    const lastForce = rampForces[rampForces.length - 1];
+    if (!Number.isFinite(lastForce) || Math.abs(lastForce - testForce) > 1e-12) {
+      await sendFn(`M569.4 P${motorIds[activeAnchor]} T${testForce}`);
+    }
+  } else {
+    await setForceTrialModes(sendFn, motorIds, {
+      activeAnchor,
+      fixedAnchor,
+      idleForce,
+      activeForce: testForce,
+      forbiddenTorqueAnchors,
+    });
+  }
+
+  if (rebaselineAfterRamp) {
+    const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
+    const angles = parseEncoderReply(reply?.reply);
+    if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
+      startAngles = angles;
+    }
+  }
 
   let lastAngles = startAngles;
   let endAngles = startAngles;
@@ -870,7 +927,10 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     console.log(`; auto-tune ${label}: test=${formatValue(force)} moved=${result?.moved ? 'yes' : 'no'} travel=${travel}deg stalled=${result?.stalled ? 'yes' : 'no'}`);
   };
 
-  const runTrial = async (force, label) => {
+  const runTrial = async (force, label, trialOptions = {}) => {
+    const useRamp = Number.isFinite(force) && force > idleForce + 1e-12;
+    const rampForces = trialOptions.rampForces
+      ?? (useRamp ? buildForceRampValues(Math.max(idleForce, AUTO_TUNE_MIN_TORQUE), force) : null);
     const result = await runForceTrial(sendFn, {
       motorIds,
       activeAnchor: driveAnchor,
@@ -884,6 +944,9 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       mmPerDeg,
       feed,
       forbiddenTorqueAnchors,
+      rampForces,
+      rampStepWaitMs: AUTO_TUNE_FORCE_RAMP_WAIT_MS,
+      rebaselineAfterRamp: trialOptions.rebaselineAfterRamp ?? false,
       stallSpeedDegPerSec,
     });
     if (label) {
