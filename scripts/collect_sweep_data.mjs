@@ -822,6 +822,9 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
   }
 
   const baseLow = clampAutoTuneTorque(options.torqueLow ?? DEFAULT_TORQUE_LOW) ?? DEFAULT_TORQUE_LOW;
+  const capForceLimit = clampAutoTuneTorque(
+    options.torqueMaxProvided ? options.torqueMax : AUTO_TUNE_MAX_TORQUE,
+  ) ?? AUTO_TUNE_MAX_TORQUE;
   let idleForce = baseLow;
 
   if (Array.isArray(axes) && Array.isArray(mmPerDeg)) {
@@ -890,6 +893,9 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
   };
 
   let testForce = clampAutoTuneTorque(AUTO_TUNE_MIN_TORQUE) ?? baseLow;
+  if (testForce > capForceLimit) {
+    testForce = capForceLimit;
+  }
   let lastNoMoveForce = null;
   let firstMoveForce = null;
 
@@ -900,7 +906,11 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
       break;
     }
     lastNoMoveForce = testForce;
-    const nextForce = clampAutoTuneTorque(testForce * AUTO_TUNE_BRACKET_FACTOR);
+    const nextForceRaw = testForce * AUTO_TUNE_BRACKET_FACTOR;
+    let nextForce = clampAutoTuneTorque(nextForceRaw) ?? nextForceRaw;
+    if (nextForce > capForceLimit) {
+      nextForce = capForceLimit;
+    }
     if (!Number.isFinite(nextForce) || nextForce <= testForce + 1e-12) {
       break;
     }
@@ -945,10 +955,7 @@ async function autoTuneTorqueRamp(sendFn, plan, options) {
     idleForce = adjustedIdle;
   }
 
-  const capForce = clampAutoTuneTorque(
-    Number.isFinite(options.torqueMax) ? options.torqueMax : AUTO_TUNE_MAX_TORQUE,
-  ) ?? AUTO_TUNE_MAX_TORQUE;
-  const capForceUsed = Math.max(forceStart, capForce);
+  const capForceUsed = capForceLimit;
   const capResult = await runTrial(capForceUsed, 'cap');
   const dMax = capResult.travelDeg;
 
@@ -2345,6 +2352,7 @@ async function main() {
           torqueLow,
           torqueMin,
           torqueMax,
+          torqueMaxProvided,
         });
         torqueLow = tuned.torqueLow;
         torqueMin = tuned.torqueMin;
