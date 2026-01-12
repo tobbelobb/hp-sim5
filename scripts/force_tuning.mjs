@@ -4,6 +4,7 @@ import {
   applyForceModeState,
   getCurrentLengths,
   primeEncoders,
+  returnMotorsToOriginAllAtOnce,
   returnMotorsToOriginOneAtATime,
   waitForStableEncoders,
 } from './uncalibrated_actions.mjs';
@@ -71,7 +72,7 @@ function computeMedian(values) {
   return 0.5 * (filtered[mid - 1] + filtered[mid]);
 }
 
-function computeStallSpeedThresholdDegPerSec(sigmaActDeg, sampleIntervalSec) {
+export function computeStallSpeedThresholdDegPerSec(sigmaActDeg, sampleIntervalSec) {
   const interval = Number.isFinite(sampleIntervalSec) && sampleIntervalSec > 0 ? sampleIntervalSec : null;
   const noiseSpeed = Number.isFinite(sigmaActDeg) && interval
     ? (6 * sigmaActDeg) / interval
@@ -79,7 +80,7 @@ function computeStallSpeedThresholdDegPerSec(sigmaActDeg, sampleIntervalSec) {
   return Math.max(AUTO_TUNE_MIN_STALL_SPEED_DEG_PER_SEC, noiseSpeed);
 }
 
-function buildMovementThresholds(noiseSigmaDeg, { activeAnchor, restAnchors = [] } = {}) {
+export function buildMovementThresholds(noiseSigmaDeg, { activeAnchor, restAnchors = [] } = {}) {
   const sigmaAct = Array.isArray(noiseSigmaDeg) ? noiseSigmaDeg[activeAnchor] : 0;
   const thetaActThr = Math.max(0.5, 6 * (Number.isFinite(sigmaAct) ? sigmaAct : 0));
   const thetaResThr = Math.max(0.3, 4 * (Number.isFinite(sigmaAct) ? sigmaAct : 0));
@@ -129,6 +130,92 @@ export function buildForceRampValues(startForce, endForce, factor = AUTO_TUNE_BR
     values.push(end);
   }
   return values;
+}
+
+export async function findMinimumMovingForce(sendFn, options = {}) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    feed = DEFAULT_FEED,
+    speedup = 1,
+    baseLow = DEFAULT_FORCE_LOW_N,
+    capForceLimit = AUTO_TUNE_MAX_FORCE_N,
+    trialFn = null,
+    returnToOriginFn = returnMotorsToOriginAllAtOnce,
+    maxBracketSteps = AUTO_TUNE_MAX_BRACKET_STEPS,
+    maxBisectSteps = AUTO_TUNE_MAX_BISECT_STEPS,
+    absTolerance = AUTO_TUNE_ABSOLUTE_TOLERANCE,
+    relTolerance = AUTO_TUNE_RELATIVE_TOLERANCE,
+    delayFn = baseSleep,
+  } = options;
+
+  if (typeof trialFn !== 'function') {
+    throw new Error('findMinimumMovingForce requires a trialFn');
+  }
+
+  const runTrial = async (force, label, trialOptions = {}) => trialFn(force, label, trialOptions);
+
+  let testForce = clampAutoTuneForce(AUTO_TUNE_MIN_FORCE_N) ?? baseLow;
+  if (testForce > capForceLimit) {
+    testForce = capForceLimit;
+  }
+  let lastNoMoveForce = null;
+  let firstMoveForce = null;
+
+  for (let i = 0; i < maxBracketSteps; i += 1) {
+    const result = await runTrial(testForce, `probe ${i + 1}/${maxBracketSteps}`);
+    if (result.moved) {
+      firstMoveForce = testForce;
+      break;
+    }
+    lastNoMoveForce = testForce;
+    const nextForceRaw = testForce * AUTO_TUNE_BRACKET_FACTOR;
+    let nextForce = clampAutoTuneForce(nextForceRaw) ?? nextForceRaw;
+    if (nextForce > capForceLimit) {
+      nextForce = capForceLimit;
+    }
+    if (!Number.isFinite(nextForce) || nextForce <= testForce + 1e-12) {
+      break;
+    }
+    testForce = nextForce;
+  }
+
+  if (!Number.isFinite(firstMoveForce)) {
+    return { forceStart: null, lastNoMoveForce, firstMoveForce };
+  }
+
+  let low = Number.isFinite(lastNoMoveForce) ? lastNoMoveForce : 0;
+  let high = firstMoveForce;
+
+  for (let i = 0; i < maxBisectSteps; i += 1) {
+    const width = high - low;
+    if (width <= absTolerance || width / Math.max(high, 1e-6) <= relTolerance) {
+      break;
+    }
+    const midRaw = 0.5 * (low + high);
+    const mid = clampAutoTuneForce(midRaw) ?? midRaw;
+    const result = await runTrial(mid, `bisect-start ${i + 1}/${maxBisectSteps}`);
+    if (result.moved) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+
+  const forceStart = high;
+  if (Array.isArray(axes) && Array.isArray(mmPerDeg) && Array.isArray(motorIds)) {
+    await returnToOriginFn(sendFn, {
+      motorIds,
+      axes,
+      mmPerDeg,
+      feed,
+      speedup,
+      delayFn,
+    });
+  }
+
+  return { forceStart, lastNoMoveForce, firstMoveForce };
 }
 
 async function setForceTrialModes(sendFn, motorIds, options = {}) {
@@ -217,7 +304,7 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
   return { sigmaByMotorDeg, samples, durationMs };
 }
 
-async function runForceTrial(sendFn, options = {}) {
+export async function runForceTrial(sendFn, options = {}) {
   const {
     motorIds,
     activeAnchor,
@@ -794,33 +881,19 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
     }
     return result;
   };
-
-  let testForce = clampAutoTuneForce(AUTO_TUNE_MIN_FORCE_N) ?? baseLow;
-  if (testForce > capForceLimit) {
-    testForce = capForceLimit;
-  }
-  let lastNoMoveForce = null;
-  let firstMoveForce = null;
-
-  for (let i = 0; i < AUTO_TUNE_MAX_BRACKET_STEPS; i += 1) {
-    const result = await runTrial(testForce, `probe ${i + 1}/${AUTO_TUNE_MAX_BRACKET_STEPS}`);
-    if (result.moved) {
-      firstMoveForce = testForce;
-      break;
-    }
-    lastNoMoveForce = testForce;
-    const nextForceRaw = testForce * AUTO_TUNE_BRACKET_FACTOR;
-    let nextForce = clampAutoTuneForce(nextForceRaw) ?? nextForceRaw;
-    if (nextForce > capForceLimit) {
-      nextForce = capForceLimit;
-    }
-    if (!Number.isFinite(nextForce) || nextForce <= testForce + 1e-12) {
-      break;
-    }
-    testForce = nextForce;
-  }
-
-  if (!Number.isFinite(firstMoveForce)) {
+  const minForceResult = await findMinimumMovingForce(sendFn, {
+    motorIds,
+    axes,
+    mmPerDeg,
+    feed,
+    speedup,
+    baseLow,
+    capForceLimit,
+    trialFn: runTrial,
+    delayFn,
+  });
+  const { forceStart, lastNoMoveForce, firstMoveForce } = minForceResult;
+  if (!Number.isFinite(forceStart)) {
     console.log('; auto-tune force failed to find force-start; using provided/default forces');
     return {
       ...fallback,
@@ -831,27 +904,6 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
       },
     };
   }
-
-  let low = Number.isFinite(lastNoMoveForce) ? lastNoMoveForce : 0;
-  let high = firstMoveForce;
-
-  for (let i = 0; i < AUTO_TUNE_MAX_BISECT_STEPS; i += 1) {
-    const width = high - low;
-    if (width <= AUTO_TUNE_ABSOLUTE_TOLERANCE
-      || width / Math.max(high, 1e-6) <= AUTO_TUNE_RELATIVE_TOLERANCE) {
-      break;
-    }
-    const midRaw = 0.5 * (low + high);
-    const mid = clampAutoTuneForce(midRaw) ?? midRaw;
-    const result = await runTrial(mid, `bisect-start ${i + 1}/${AUTO_TUNE_MAX_BISECT_STEPS}`);
-    if (result.moved) {
-      high = mid;
-    } else {
-      low = mid;
-    }
-  }
-
-  const forceStart = high;
   const idleCandidate = Math.max(baseLow, DEFAULT_FORCE_LOW_N, AUTO_TUNE_IDLE_FORCE_RATIO * forceStart);
   const adjustedIdle = clampAutoTuneForce(idleCandidate) ?? baseLow;
   if (adjustedIdle > idleForce + 1e-12) {
