@@ -102,10 +102,6 @@ export async function waitForStableEncoders(sendFn, motorIds, options = {}) {
   }
 }
 
-export async function waitForSettle(sendFn, motorIds, options = {}) {
-  return waitForStableEncoders(sendFn, motorIds, options);
-}
-
 export async function getCurrentLengths(sendFn, motorIds, mmPerDeg) {
   const encoderReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
   const anglesDeg = parseEncoderReply(encoderReply?.reply);
