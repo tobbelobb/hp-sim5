@@ -5,7 +5,6 @@ import {
   getCurrentLengths,
   primeEncoders,
   returnMotorsToOriginOneAtATime,
-  waitForSettle,
   waitForStableEncoders,
 } from './uncalibrated_actions.mjs';
 
@@ -969,7 +968,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     defaultForceNm: forceLow,
     forbiddenForceAnchors,
   });
-  await waitForSettle(sendFn, motorIds, { speedup, delayFn });
+  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
 
   const tuned = await autoTuneForceRamp(sendFn, plan, {
     ...options,
