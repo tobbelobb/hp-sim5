@@ -129,14 +129,14 @@ async function main() {
       modes: motorIds.map((_, idx) => (idx === 0 ? force : 0.001))
     });
 
-    console.log(`Waiting for stable encoders (${stableWindowMs}ms window, ${pollIntervalMs}ms poll)...`);
+    console.log(`Waiting for stable encoders (${stableWindowMs}ms (sim time) window, ${pollIntervalMs}ms (sim time) poll)...`);
     const stable = await waitForStableEncoders(send, motorIds, {
       speedup,
       stableWindowMs,
       pollIntervalMs,
     });
 
-    console.log(`Stable after ${stable.elapsedMs}ms with ${stable.samples} samples.`);
+    console.log(`Stable after ${stable.elapsedMs}ms (wall clock time) which is ${stable.elapsedMs*speedup}ms (sim time).`);
     console.log(`Angles (deg): ${stable.anglesDeg.map((val) => val.toFixed(3)).join(', ')}`);
     success = true;
   } catch (err) {
