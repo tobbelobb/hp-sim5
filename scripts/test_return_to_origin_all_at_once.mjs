@@ -17,7 +17,7 @@ async function testReturnToOriginAllAtOnce() {
 
   await returnMotorsToOriginAllAtOnce(send, {
     motorIds: ['40.0', '41.0', '42.0'],
-    axes: ['A', 'B', 'C'],
+    axes: ['X', 'Y', 'Z'],
     mmPerDeg: [1, 1, 1],
     feed: 100,
     speedup: 1,
@@ -27,9 +27,9 @@ async function testReturnToOriginAllAtOnce() {
 
   const gcode = sent.filter((line) => line.startsWith('G1 H2'));
   assert.equal(gcode.length, 1);
-  assert.ok(gcode[0].includes('A-10.000'));
-  assert.ok(gcode[0].includes('B-20.000'));
-  assert.ok(gcode[0].includes('C-5.000'));
+  assert.ok(gcode[0].includes('X-10.000'));
+  assert.ok(gcode[0].includes('Y-20.000'));
+  assert.ok(gcode[0].includes('Z-5.000'));
 }
 
 await testReturnToOriginAllAtOnce();
