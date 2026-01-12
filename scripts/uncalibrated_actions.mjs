@@ -3,7 +3,7 @@ import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from './encode
 const DEFAULT_STABILITY_POLL_MS = 500;
 const DEFAULT_STABILITY_WINDOW_MS = 2000;
 const DEFAULT_STABILITY_TOLERANCE_DEG = 1.0;
-const DEFAULT_LOW_FORCE_NM = 0.001;
+const DEFAULT_LOW_FORCE_N = 0.001;
 
 export function buildG92Command(axes) {
   if (!Array.isArray(axes) || axes.length === 0) {
@@ -171,7 +171,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     mmPerDeg,
     feed,
     speedup = 1,
-    lowForceNm = DEFAULT_LOW_FORCE_NM,
+    lowForce = DEFAULT_LOW_FORCE_N,
     fixedAnchors = [],
     forbiddenForceAnchors = [],
     delayFn = baseSleep,
@@ -201,13 +201,11 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
       if (idx === anchorIdx || idx === fixedIdx || forbidden.has(idx)) {
         return 'position';
       }
-      return lowForceNm;
+      return lowForce;
     });
     await applyForceModeState(sendFn, {
       motorIds,
-      modes,
-      defaultForceNm: lowForceNm,
-      forbiddenForceAnchors,
+      modes
     });
 
     const current = currentLengths[anchorIdx] ?? 0;
