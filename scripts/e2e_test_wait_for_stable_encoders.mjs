@@ -2,6 +2,7 @@
 import { parseBridgeArgs, createGcodeBridge } from './gcode_bridge.mjs';
 import {
   DEFAULT_RRF_PORT,
+  sendHpSimSpeedScale,
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
@@ -29,8 +30,10 @@ Options:
   --help, -h                 Show this help and exit
   --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
   --force <Nm>               Force applied in applyForceState (default: 0.02)
+  --speedup <scale>          Speed scale passed to waitForStableEncoders (default: 1)
   --stable-window-ms <ms>    Stable window for encoder settle (default: 500)
   --poll-ms <ms>             Poll interval for encoder settle (default: 100)
+  --sim, --simulation        Query hp-sim for encoder angles (auto-enables WebSocket)
   --ws                       Enable hp-sim websocket bridge
   --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
   --port <port>              Port for spawned rrf_simulator (default: ${DEFAULT_RRF_PORT})
@@ -47,6 +50,7 @@ async function main() {
     process.exit(0);
   }
 
+  const isSimulation = argv.includes('--sim') || argv.includes('--simulation');
   const forceNm = parseNumberArg(argv, '--force', 0.02);
   const stableWindowMs = parseNumberArg(argv, '--stable-window-ms', 500);
   const pollIntervalMs = parseNumberArg(argv, '--poll-ms', 100);
@@ -54,6 +58,7 @@ async function main() {
     ? parseFloat(args.speedup)
     : 1;
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
+  const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
 
   const machineType = (args.machineType || 'slideprinter').toLowerCase();
   const machineConfig = MACHINE_CONFIGS[machineType];
@@ -83,7 +88,7 @@ async function main() {
     }
   }
 
-  const useWs = argv.includes('--ws');
+  const useWs = isSimulation || argv.includes('--ws');
   const bridgeCtx = createGcodeBridge({
     server: targetServer,
     wsPort: useWs ? args.wsPort : 0,
@@ -91,10 +96,22 @@ async function main() {
     encoderTimeoutMs,
   });
 
+  if (useWs) {
+    await bridgeCtx.waitForHpSimConnection(waitForWsMs);
+    if (isSimulation && speedup !== 1) {
+      await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+    }
+  }
+
   const send = async (line, options = {}) => {
     const trimmed = line?.trim?.();
     if (args.debugGcode && trimmed) {
       console.log(`[rrf_gcode] ${trimmed}`);
+    }
+    if (isSimulation && trimmed?.startsWith('M569.3')) {
+      const response = await bridgeCtx.sendEncoderRequest(machineConfig.axes, encoderTimeoutMs);
+      const angles = response?.anglesDeg ?? response?.angles ?? [];
+      return { reply: Array.isArray(angles) ? angles.join(' ') : '' };
     }
     const res = await bridgeCtx.sendGcodeLine(line, options);
     if ((args.debug || args.debugGcodeResponses) && res?.reply) {
