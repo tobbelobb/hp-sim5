@@ -158,7 +158,7 @@ async function setForceTrialModes(sendFn, motorIds, options = {}) {
   }
 }
 
-async function calibrateEncoderNoise(sendFn, options = {}) {
+export async function calibrateEncoderNoise(sendFn, options = {}) {
   const {
     motorIds,
     fixedAnchor = null,
