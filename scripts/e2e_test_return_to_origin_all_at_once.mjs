@@ -9,7 +9,7 @@ import {
   stopProcess,
   waitForRrfSimulator,
 } from './encoder_utils.mjs';
-import { applyForceModeState, returnMotorsToOriginOneAtATime, waitForStableEncoders } from './uncalibrated_actions.mjs';
+import { applyForceModeState, returnMotorsToOriginOneAtATime, returnMotorsToOriginAllAtOnce, waitForStableEncoders } from './uncalibrated_actions.mjs';
 import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE, SWEEP_DEFAULTS } from './sweep_data_collection.mjs';
 
 const LOW_FORCE_N = 0.001;
@@ -26,10 +26,10 @@ function parseNumberArg(argv, flag, fallback) {
 }
 
 function printHelp() {
-  console.log(`Usage: node scripts/e2e_test_return_to_origin_one_at_a_time.mjs [options]
+  console.log(`Usage: node scripts/e2e_test_return_to_origin_all_at_once.mjs [options]
 
 Runs an end-to-end demo that applies force state, waits for stable encoders,
-then returns motors to origin one at a time.
+then returns motors to origin. First one at a time, then all at once.
 
 Options:
   --help, -h                 Show this help and exit
@@ -155,16 +155,13 @@ async function main() {
       pollIntervalMs,
     });
 
-    console.log('Returning motors to origin one at a time...');
-    let lengths = await returnMotorsToOriginOneAtATime(send, {
+    console.log('Returning motors to origin all at once...');
+    let lengths = await returnMotorsToOriginAllAtOnce(send, {
       motorIds,
       axes: machineConfig.axes,
       mmPerDeg,
       feed,
       speedup,
-      lowForceNm: LOW_FORCE_N,
-      fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
-      forbiddenForceAnchors: machineConfig.forbiddenSensors,
       settleOptions: {
         stableWindowMs,
         pollIntervalMs,
@@ -172,16 +169,13 @@ async function main() {
     });
     console.log(lengths);
     if (lengths.some(x => Math.abs(x) > 0.5)) {
-      console.log('Returning motors to origin one at a time one more time...');
-      lengths = await returnMotorsToOriginOneAtATime(send, {
+      console.log('Returning motors to origin all at once...');
+      lengths = await returnMotorsToOriginAllAtOnce(send, {
         motorIds,
         axes: machineConfig.axes,
         mmPerDeg,
         feed,
         speedup,
-        lowForceNm: LOW_FORCE_N,
-        fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
         settleOptions: {
           stableWindowMs,
           pollIntervalMs,

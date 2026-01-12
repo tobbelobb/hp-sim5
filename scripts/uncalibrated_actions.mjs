@@ -265,7 +265,10 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
       speedup,
       { axes, delayFn },
     );
-    await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn, ...settleOptions });
+    await applyForceModeState(sendFn, {
+      motorIds,
+      modes: motorIds.map(() => 'position')
+    });
   }
 
   return getCurrentLengths(sendFn, motorIds, mmPerDeg);
