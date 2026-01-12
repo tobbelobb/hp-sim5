@@ -29,7 +29,7 @@ Runs an end-to-end demo that applies force state, then waits for stable encoders
 Options:
   --help, -h                 Show this help and exit
   --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
-  --force <Nm>               Force applied in applyForceState (default: 0.02)
+  --force <N>                Force applied to motor 40.0 in applyForceState (default: 2.0)
   --speedup <scale>          Speed scale passed to waitForStableEncoders (default: 1)
   --stable-window-ms <ms>    Stable window for encoder settle (default: 500)
   --poll-ms <ms>             Poll interval for encoder settle (default: 100)
@@ -51,7 +51,7 @@ async function main() {
   }
 
   const isSimulation = argv.includes('--sim') || argv.includes('--simulation');
-  const forceNm = parseNumberArg(argv, '--force', 0.02);
+  const force = parseNumberArg(argv, '--force', 2.0);
   const stableWindowMs = parseNumberArg(argv, '--stable-window-ms', 500);
   const pollIntervalMs = parseNumberArg(argv, '--poll-ms', 100);
   const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
@@ -98,6 +98,9 @@ async function main() {
 
   if (useWs) {
     await bridgeCtx.waitForHpSimConnection(waitForWsMs);
+    if (isSimulation && bridgeCtx.getReadyWsClients().length === 0) {
+      throw new Error('hp-sim encoder bridge not connected (use --wait-ws or check ws port).');
+    }
     if (isSimulation && speedup !== 1) {
       await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
     }
@@ -107,11 +110,6 @@ async function main() {
     const trimmed = line?.trim?.();
     if (args.debugGcode && trimmed) {
       console.log(`[rrf_gcode] ${trimmed}`);
-    }
-    if (isSimulation && trimmed?.startsWith('M569.3')) {
-      const response = await bridgeCtx.sendEncoderRequest(machineConfig.axes, encoderTimeoutMs);
-      const angles = response?.anglesDeg ?? response?.angles ?? [];
-      return { reply: Array.isArray(angles) ? angles.join(' ') : '' };
     }
     const res = await bridgeCtx.sendGcodeLine(line, options);
     if ((args.debug || args.debugGcodeResponses) && res?.reply) {
@@ -125,12 +123,10 @@ async function main() {
 
   let success = false;
   try {
-    console.log(`Applying force state (${forceNm} Nm) on ${motorIds.length} motors...`);
+    console.log(`Applying force state (${force} N on motor 40.0) on ${motorIds.length} motors...`);
     await applyForceModeState(send, {
       motorIds,
-      modes: motorIds.map(() => forceNm),
-      defaultForceNm: forceNm,
-      forbiddenForceAnchors: machineConfig.forbiddenSensors,
+      modes: motorIds.map((_, idx) => (idx === 0 ? force : 0.001))
     });
 
     console.log(`Waiting for stable encoders (${stableWindowMs}ms window, ${pollIntervalMs}ms poll)...`);
