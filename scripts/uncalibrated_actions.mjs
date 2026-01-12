@@ -3,7 +3,7 @@ import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from './encode
 const DEFAULT_STABILITY_POLL_MS = 500;
 const DEFAULT_STABILITY_WINDOW_MS = 2000;
 const DEFAULT_STABILITY_TOLERANCE_DEG = 1.0;
-const DEFAULT_LOW_FORCE_NM = 0.01;
+const DEFAULT_LOW_FORCE_NM = 0.001;
 
 export function buildG92Command(axes) {
   if (!Array.isArray(axes) || axes.length === 0) {
