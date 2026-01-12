@@ -162,7 +162,6 @@ async function main() {
       mmPerDeg,
       feed,
       speedup,
-      lowForceNm: LOW_FORCE_N,
       fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
       forbiddenForceAnchors: machineConfig.forbiddenSensors,
       settleOptions: {
@@ -179,7 +178,6 @@ async function main() {
         mmPerDeg,
         feed,
         speedup,
-        lowForceNm: LOW_FORCE_N,
         fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
         settleOptions: {

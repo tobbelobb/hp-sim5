@@ -9,14 +9,14 @@ import {
 } from './uncalibrated_actions.mjs';
 
 const DEFAULT_FEED = 1400;
-const DEFAULT_FORCE_LOW_NM = 0.01;
-const DEFAULT_FORCE_MIN_NM = 0.01;
-const DEFAULT_FORCE_MAX_NM = 0.1;
-const DEFAULT_FORCE_STEP_NM = 0.01;
+const DEFAULT_FORCE_LOW_N = 0.01;
+const DEFAULT_FORCE_MIN_N = 0.01;
+const DEFAULT_FORCE_MAX_N = 0.1;
+const DEFAULT_FORCE_STEP_N = 0.01;
 const DEFAULT_FORCE_STEP_DIVISOR = 6;
 
-const AUTO_TUNE_MIN_FORCE_NM = 0.01;
-const AUTO_TUNE_MAX_FORCE_NM = 20.0;
+const AUTO_TUNE_MIN_FORCE_N = 0.01;
+const AUTO_TUNE_MAX_FORCE_N = 20.0;
 const AUTO_TUNE_SAMPLE_WINDOW_MS = 10000;
 const AUTO_TUNE_NOISE_SAMPLE_MS = 4000;
 const AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS = 200;
@@ -33,27 +33,27 @@ const AUTO_TUNE_EDGE_RATIO = 0.95;
 const AUTO_TUNE_IDLE_FORCE_RATIO = 0.05;
 
 export const FORCE_TUNING_DEFAULTS = {
-  DEFAULT_FORCE_LOW_NM,
-  DEFAULT_FORCE_MIN_NM,
-  DEFAULT_FORCE_MAX_NM,
-  DEFAULT_FORCE_STEP_NM,
+  DEFAULT_FORCE_LOW_N,
+  DEFAULT_FORCE_MIN_N,
+  DEFAULT_FORCE_MAX_N,
+  DEFAULT_FORCE_STEP_N,
   DEFAULT_FORCE_STEP_DIVISOR,
 };
 
 export function deriveForceStep(minForce, maxForce) {
   const span = Math.abs(maxForce - minForce);
   if (!Number.isFinite(span) || span <= 0) {
-    return DEFAULT_FORCE_STEP_NM;
+    return DEFAULT_FORCE_STEP_N;
   }
   const step = span / DEFAULT_FORCE_STEP_DIVISOR;
-  return step > 0 ? step : DEFAULT_FORCE_STEP_NM;
+  return step > 0 ? step : DEFAULT_FORCE_STEP_N;
 }
 
 function clampAutoTuneForce(value) {
   if (!Number.isFinite(value)) {
     return null;
   }
-  return Math.min(AUTO_TUNE_MAX_FORCE_NM, Math.max(AUTO_TUNE_MIN_FORCE_NM, value));
+  return Math.min(AUTO_TUNE_MAX_FORCE_N, Math.max(AUTO_TUNE_MIN_FORCE_N, value));
 }
 
 function computeMedian(values) {
@@ -112,7 +112,7 @@ export function buildForceRampValues(startForce, endForce, factor = AUTO_TUNE_BR
     return [];
   }
   const stepFactor = Number.isFinite(factor) && factor > 1 ? factor : AUTO_TUNE_BRACKET_FACTOR;
-  let current = Math.max(start, AUTO_TUNE_MIN_FORCE_NM);
+  let current = Math.max(start, AUTO_TUNE_MIN_FORCE_N);
   if (end <= current + 1e-12) {
     return [end];
   }
@@ -135,7 +135,7 @@ async function setForceTrialModes(sendFn, motorIds, options = {}) {
   const {
     activeAnchor = null,
     fixedAnchor = null,
-    idleForce = DEFAULT_FORCE_LOW_NM,
+    idleForce = DEFAULT_FORCE_LOW_N,
     activeForce = null,
     forbiddenForceAnchors = [],
   } = options;
@@ -143,26 +143,25 @@ async function setForceTrialModes(sendFn, motorIds, options = {}) {
     return;
   }
   const forbidden = new Set(forbiddenForceAnchors ?? []);
-  const idle = Number.isFinite(idleForce) ? idleForce : DEFAULT_FORCE_LOW_NM;
+  const idle = Number.isFinite(idleForce) ? idleForce : DEFAULT_FORCE_LOW_N;
   const active = Number.isFinite(activeForce) ? activeForce : idle;
-
-  for (let idx = 0; idx < motorIds.length; idx += 1) {
-    const motorId = motorIds[idx];
+  const modes = motorIds.map((_, idx) => {
     if (idx === fixedAnchor || forbidden.has(idx)) {
-      await sendFn(`M569.4 P${motorId} T0.0`);
-    } else if (idx === activeAnchor) {
-      await sendFn(`M569.4 P${motorId} T${active}`);
-    } else {
-      await sendFn(`M569.4 P${motorId} T${idle}`);
+      return 'position';
     }
-  }
+    if (idx === activeAnchor) {
+      return active;
+    }
+    return idle;
+  });
+  await applyForceModeState(sendFn, { motorIds, modes });
 }
 
 export async function calibrateEncoderNoise(sendFn, options = {}) {
   const {
     motorIds,
     fixedAnchor = null,
-    idleForce = DEFAULT_FORCE_LOW_NM,
+    idleForce = DEFAULT_FORCE_LOW_N,
     speedup = 1,
     sampleDurationMs = AUTO_TUNE_NOISE_SAMPLE_MS,
     sampleIntervalMs = AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS,
@@ -224,8 +223,8 @@ async function runForceTrial(sendFn, options = {}) {
     activeAnchor,
     fixedAnchor = null,
     restAnchors = [],
-    idleForce = DEFAULT_FORCE_LOW_NM,
-    testForce = DEFAULT_FORCE_LOW_NM,
+    idleForce = DEFAULT_FORCE_LOW_N,
+    testForce = DEFAULT_FORCE_LOW_N,
     speedup = 1,
     sampleWindowMs = AUTO_TUNE_SAMPLE_WINDOW_MS,
     sampleIntervalMs = AUTO_TUNE_SAMPLE_INTERVAL_MS,
@@ -402,7 +401,7 @@ async function runForceTrial(sendFn, options = {}) {
       mmPerDeg,
       feed,
       speedup,
-      lowForceNm: idleForce,
+      midForce: idleForce,
       fixedAnchors: [fixedAnchor],
       forbiddenForceAnchors,
       delayFn,
@@ -513,7 +512,7 @@ async function prepareForceTuningPositioning(sendFn, task, options) {
     axes,
     mmPerDeg,
     fixedTargets = [],
-    forceLow = DEFAULT_FORCE_LOW_NM,
+    forceLow = DEFAULT_FORCE_LOW_N,
     feed = DEFAULT_FEED,
     speedup = 1,
     currentPositions = [],
@@ -539,7 +538,7 @@ async function prepareForceTuningPositioning(sendFn, task, options) {
 
   const moveParts = [];
   const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
-  const lowForce = Number.isFinite(forceLow) ? forceLow : DEFAULT_FORCE_LOW_NM;
+  const lowForce = Number.isFinite(forceLow) ? forceLow : DEFAULT_FORCE_LOW_N;
   await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${lowForce}`);
 
   for (let i = 0; i < fixedAnchors.length; i += 1) {
@@ -589,7 +588,7 @@ async function performForceTuningProbe(sendFn, task, options) {
     return 0;
   }
 
-  const lowForce = Number.isFinite(forceLow) ? forceLow : DEFAULT_FORCE_LOW_NM;
+  const lowForce = Number.isFinite(forceLow) ? forceLow : DEFAULT_FORCE_LOW_N;
   const testForce = Number.isFinite(forceTest) ? forceTest : lowForce;
   const driveMotorId = motorIds[driveAnchor];
 
@@ -649,9 +648,9 @@ async function performForceTuningProbe(sendFn, task, options) {
 
 export async function autoTuneForceRamp(sendFn, plan, options) {
   const fallback = {
-    forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_NM,
-    forceMin: Number.isFinite(options.forceMin) ? options.forceMin : DEFAULT_FORCE_MIN_NM,
-    forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_NM,
+    forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
+    forceMin: Number.isFinite(options.forceMin) ? options.forceMin : DEFAULT_FORCE_MIN_N,
+    forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_N,
   };
 
   const motorIds = options.motorIds;
@@ -717,10 +716,10 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
     };
   }
 
-  const baseLow = clampAutoTuneForce(options.forceLow ?? DEFAULT_FORCE_LOW_NM) ?? DEFAULT_FORCE_LOW_NM;
+  const baseLow = clampAutoTuneForce(options.forceLow ?? DEFAULT_FORCE_LOW_N) ?? DEFAULT_FORCE_LOW_N;
   const capForceLimit = clampAutoTuneForce(
-    options.forceMaxProvided ? options.forceMax : AUTO_TUNE_MAX_FORCE_NM,
-  ) ?? AUTO_TUNE_MAX_FORCE_NM;
+    options.forceMaxProvided ? options.forceMax : AUTO_TUNE_MAX_FORCE_N,
+  ) ?? AUTO_TUNE_MAX_FORCE_N;
   let idleForce = baseLow;
 
   if (Array.isArray(axes) && Array.isArray(mmPerDeg)) {
@@ -730,7 +729,7 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
       mmPerDeg,
       feed,
       speedup,
-      lowForceNm: baseLow,
+      midForce: baseLow,
       fixedAnchors: [fixedAnchor],
       forbiddenForceAnchors,
       delayFn,
@@ -770,7 +769,7 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
   const runTrial = async (force, label, trialOptions = {}) => {
     const useRamp = Number.isFinite(force) && force > idleForce + 1e-12;
     const rampForces = trialOptions.rampForces
-      ?? (useRamp ? buildForceRampValues(Math.max(idleForce, AUTO_TUNE_MIN_FORCE_NM), force) : null);
+      ?? (useRamp ? buildForceRampValues(Math.max(idleForce, AUTO_TUNE_MIN_FORCE_N), force) : null);
     const result = await runForceTrial(sendFn, {
       motorIds,
       activeAnchor: driveAnchor,
@@ -796,7 +795,7 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
     return result;
   };
 
-  let testForce = clampAutoTuneForce(AUTO_TUNE_MIN_FORCE_NM) ?? baseLow;
+  let testForce = clampAutoTuneForce(AUTO_TUNE_MIN_FORCE_N) ?? baseLow;
   if (testForce > capForceLimit) {
     testForce = capForceLimit;
   }
@@ -853,7 +852,7 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
   }
 
   const forceStart = high;
-  const idleCandidate = Math.max(baseLow, DEFAULT_FORCE_LOW_NM, AUTO_TUNE_IDLE_FORCE_RATIO * forceStart);
+  const idleCandidate = Math.max(baseLow, DEFAULT_FORCE_LOW_N, AUTO_TUNE_IDLE_FORCE_RATIO * forceStart);
   const adjustedIdle = clampAutoTuneForce(idleCandidate) ?? baseLow;
   if (adjustedIdle > idleForce + 1e-12) {
     idleForce = adjustedIdle;
@@ -959,14 +958,12 @@ export async function tuneForce(sendFn, plan, options = {}) {
   const delayFn = options.delayFn ?? baseSleep;
   const forbiddenForceAnchors = options.forbiddenForceAnchors ?? [];
   const fixedAnchors = plan?.config?.fixedAnchors ?? [];
-  const forceLow = Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_NM;
+  const forceLow = Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N;
 
   await primeEncoders(sendFn, { motorIds, axes });
   await applyForceModeState(sendFn, {
     motorIds,
-    modes: motorIds.map(() => forceLow),
-    defaultForceNm: forceLow,
-    forbiddenForceAnchors,
+    modes: motorIds.map((_, idx) => (forbiddenForceAnchors.includes(idx) ? 'position' : forceLow)),
   });
   await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
 
@@ -982,7 +979,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     mmPerDeg,
     feed,
     speedup,
-    lowForceNm: tuned.forceLow,
+    midForce: tuned.forceLow,
     fixedAnchors,
     forbiddenForceAnchors,
     delayFn,
@@ -996,8 +993,8 @@ function range(n) {
 }
 
 export const FORCE_TUNING_CONSTANTS = {
-  AUTO_TUNE_MIN_FORCE_NM,
-  AUTO_TUNE_MAX_FORCE_NM,
+  AUTO_TUNE_MIN_FORCE_N,
+  AUTO_TUNE_MAX_FORCE_N,
   AUTO_TUNE_SAMPLE_WINDOW_MS,
   AUTO_TUNE_NOISE_SAMPLE_MS,
   AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS,

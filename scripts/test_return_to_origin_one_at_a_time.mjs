@@ -21,7 +21,7 @@ async function testReturnToOriginOneAtATime() {
     mmPerDeg: [1, 1, 1],
     feed: 100,
     speedup: 1,
-    lowForceNm: 0.01,
+    midForce: 0.01,
     fixedAnchors: [1],
     delayFn,
     settleOptions: { pollIntervalMs: 1, stableWindowMs: 2, delayFn: settleDelayFn },
