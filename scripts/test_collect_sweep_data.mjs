@@ -6,7 +6,7 @@ import {
   generateSweepConfigs,
   selectRepresentativeConfigs,
   validateSweepConfig,
-} from './collect_sweep_data.mjs';
+} from './sweep_data_collection.mjs';
 
 function testGenerateSweepConfigs() {
   const slideConfigs = generateSweepConfigs('slideprinter');

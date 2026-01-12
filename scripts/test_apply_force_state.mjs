@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+import { strict as assert } from 'node:assert';
+import { applyForceModeState } from './uncalibrated_actions.mjs';
+
+async function testApplyForceModeState() {
+  const sent = [];
+  const send = async (line) => {
+    sent.push(line);
+    return { reply: '' };
+  };
+
+  await applyForceModeState(send, {
+    motorIds: ['40.0', '41.0', '42.0'],
+    modes: ['position', 0.05, undefined],
+    defaultForceNm: 0.02,
+    forbiddenForceAnchors: [2],
+  });
+
+  assert.deepEqual(sent, [
+    'M569.4 P40.0 T0.0',
+    'M569.4 P41.0 T0.05',
+    'M569.4 P42.0 T0.0',
+  ]);
+}
+
+await testApplyForceModeState();
+console.log('apply_force_state tests: PASSED');
