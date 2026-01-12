@@ -119,22 +119,19 @@ export async function primeEncoders(sendFn, { motorIds, axes } = {}) {
 export async function applyForceModeState(sendFn, {
   motorIds,
   modes,
-  defaultForceNm = DEFAULT_LOW_FORCE_NM,
-  forbiddenForceAnchors = [],
 } = {}) {
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return;
-  }
-  const forbidden = new Set(forbiddenForceAnchors ?? []);
   for (let idx = 0; idx < motorIds.length; idx += 1) {
     const rawMode = Array.isArray(modes) ? modes[idx] : modes;
     const mode = typeof rawMode === 'string' ? rawMode.toLowerCase() : rawMode;
-    if (forbidden.has(idx) || mode === 'position' || mode === 'pos' || mode === 0 || mode === 0.0) {
+    if (mode === 'position' || mode === 'pos' || mode === 0 || mode === 0.0) {
       await sendFn(`M569.4 P${motorIds[idx]} T0.0`);
-      continue;
+    } else {
+      if (Number.isFinite(mode)) {
+        await sendFn(`M569.4 P${motorIds[idx]} T${mode}`);
+      } else {
+        throw new Error(`applyForceModeState can't set force ${mode}`);
+      }
     }
-    const force = Number.isFinite(mode) ? mode : defaultForceNm;
-    await sendFn(`M569.4 P${motorIds[idx]} T${force}`);
   }
 }
 

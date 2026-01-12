@@ -11,9 +11,7 @@ async function testApplyForceModeState() {
 
   await applyForceModeState(send, {
     motorIds: ['40.0', '41.0', '42.0'],
-    modes: ['position', 0.05, undefined],
-    defaultForceNm: 0.02,
-    forbiddenForceAnchors: [2],
+    modes: ['position', 0.05, 0]
   });
 
   assert.deepEqual(sent, [
