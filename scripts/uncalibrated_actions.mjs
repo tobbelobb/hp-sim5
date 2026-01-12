@@ -113,11 +113,6 @@ export async function getCurrentLengths(sendFn, motorIds, mmPerDeg) {
 }
 
 export async function primeEncoders(sendFn, { motorIds, axes } = {}) {
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return;
-  }
-  await sendFn(buildG92Command(axes));
-  await sendFn('G91');
   await sendFn(`M569.3 P${motorIds.join(':')} S`);
 }
 

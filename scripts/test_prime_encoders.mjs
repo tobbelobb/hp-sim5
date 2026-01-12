@@ -11,12 +11,9 @@ async function testPrimeEncoders() {
 
   await primeEncoders(send, {
     motorIds: ['40.0', '41.0'],
-    axes: ['A', 'B'],
   });
 
   assert.deepEqual(sent, [
-    'G92 A0 B0',
-    'G91',
     'M569.3 P40.0:41.0 S',
   ]);
 }
