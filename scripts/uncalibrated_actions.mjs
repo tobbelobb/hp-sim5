@@ -30,17 +30,15 @@ export async function waitForStableEncoders(sendFn, motorIds, options = {}) {
     timeoutMs = null,
     delayFn = baseSleep,
   } = options;
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return { anglesDeg: [], samples: 0, elapsedMs: 0 };
-  }
-
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const pollMs = Math.max(10, pollIntervalMs / timeScale);
+  const pollMs = pollIntervalMs / timeScale;
   const windowMs = Math.max(pollMs * 2, stableWindowMs / timeScale);
   const tol = Math.max(0, Number.isFinite(toleranceDeg) ? toleranceDeg : DEFAULT_STABILITY_TOLERANCE_DEG);
   const startMs = Date.now();
   const samples = [];
 
+  // This function is only sent samples collected within the current window,
+  // so looking at all samples is ok.
   const isStable = () => {
     if (samples.length < 2) {
       return false;
@@ -77,7 +75,7 @@ export async function waitForStableEncoders(sendFn, motorIds, options = {}) {
 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
       samples.push({ timestampMs: nowMs, anglesDeg });
-      const cutoff = nowMs - 2 * windowMs;
+      const cutoff = nowMs - windowMs;
       while (samples.length > 0 && samples[0].timestampMs < cutoff) {
         samples.shift();
       }
