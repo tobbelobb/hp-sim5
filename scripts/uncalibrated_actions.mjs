@@ -75,7 +75,7 @@ export async function waitForStableEncoders(sendFn, motorIds, options = {}) {
 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
       samples.push({ timestampMs: nowMs, anglesDeg });
-      const cutoff = nowMs - windowMs;
+      const cutoff = nowMs - windowMs - pollMs;
       while (samples.length > 0 && samples[0].timestampMs < cutoff) {
         samples.shift();
       }
