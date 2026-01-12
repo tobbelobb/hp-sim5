@@ -156,7 +156,7 @@ async function main() {
     });
 
     console.log('Returning motors to origin one at a time...');
-    await returnMotorsToOriginOneAtATime(send, {
+    const lengths = await returnMotorsToOriginOneAtATime(send, {
       motorIds,
       axes: machineConfig.axes,
       mmPerDeg,
@@ -170,6 +170,25 @@ async function main() {
         pollIntervalMs,
       },
     });
+    console.log(lengths);
+    if (lengths.some(x => Math.abs(x) > 0.5)) {
+      console.log('Returning motors to origin one at a time one more time...');
+      const lengths2 = await returnMotorsToOriginOneAtATime(send, {
+        motorIds,
+        axes: machineConfig.axes,
+        mmPerDeg,
+        feed,
+        speedup,
+        lowForceNm: LOW_FORCE_N,
+        fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
+        forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        settleOptions: {
+          stableWindowMs,
+          pollIntervalMs,
+        },
+      });
+      console.log(lengths2);
+    }
 
     success = true;
   } catch (err) {
