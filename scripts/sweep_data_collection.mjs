@@ -487,6 +487,11 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
 
+  const initialStable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const initialAngles = initialStable.anglesDeg;
+  const initialLengths = initialAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
+
   const modes = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
       return forceMax;
@@ -497,10 +502,10 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return forceLow;
   });
   await applyForceModeState(sendFn, { motorIds, modes });
-  const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-  const startAngles = stableStart.anglesDeg;
-  const startLengths = startAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
-  const startDrive = startLengths[driveAnchor] ?? 0;
+  const forceStable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const endAngles = forceStable.anglesDeg;
+  const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
 
   const dataPoints = [];
   const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount) => {
@@ -517,7 +522,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return lengths;
   };
 
-  recordPoint(startAngles, startDrive, 0, sweepPoints);
+  recordPoint(endAngles, driveEndPointMm, 0, sweepPoints);
 
   const returnModes = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
@@ -531,10 +536,11 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   await applyForceModeState(sendFn, { motorIds, modes: returnModes });
 
   const steps = Math.max(2, sweepPoints);
-  let currentDrive = startDrive;
+  const stepCount = steps - 1;
+  const stepDelta = (driveStartPointMm - driveEndPointMm) / Math.max(1, stepCount);
+  let currentDrive = driveEndPointMm;
   for (let stepIdx = 1; stepIdx < steps; stepIdx += 1) {
-    const t = stepIdx / (steps - 1);
-    const target = startDrive * (1 - t);
+    const target = driveEndPointMm + stepDelta * stepIdx;
     const delta = target - currentDrive;
     if (Math.abs(delta) > 1e-6) {
       // eslint-disable-next-line no-await-in-loop
@@ -546,7 +552,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     currentDrive = lengths[driveAnchor] ?? currentDrive;
   }
 
-  return { dataPoints, driveRange: { start: startDrive, end: 0 } };
+  return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm } };
 }
 
 function buildHistogram(dataPoints, bucketCount = 20) {
