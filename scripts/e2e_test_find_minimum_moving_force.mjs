@@ -221,6 +221,7 @@ async function main() {
         mmPerDeg,
         feed,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        waitForStall: true,
       });
       if (label) {
         logTrial(label, force, result);

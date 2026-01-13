@@ -328,6 +328,8 @@ export async function runForceTrial(sendFn, options = {}) {
     rebaselineAfterRamp = false,
     stallWindowMs = AUTO_TUNE_STALL_WINDOW_MS,
     stallSpeedDegPerSec = null,
+    waitForStall = false,
+    stallTimeoutMs = null,
     thresholds = null,
     axes,
     mmPerDeg,
@@ -360,6 +362,11 @@ export async function runForceTrial(sendFn, options = {}) {
   const intervalMs = Math.max(20, sampleIntervalMs / timeScale);
   const stallWindowScaledMs = Math.max(intervalMs, stallWindowMs / timeScale);
   const sampleIntervalSec = intervalMs / 1000;
+  const maxWindowRawMs = Number.isFinite(stallTimeoutMs) && stallTimeoutMs > 0
+    ? stallTimeoutMs
+    : (waitForStall ? sampleWindowMs * 3 : sampleWindowMs);
+  const maxWindowMs = Math.max(windowMs, maxWindowRawMs / timeScale);
+  const stopAfterMs = waitForStall ? maxWindowMs : windowMs;
   const speedThreshold = Number.isFinite(stallSpeedDegPerSec) && stallSpeedDegPerSec > 0
     ? stallSpeedDegPerSec
     : computeStallSpeedThresholdDegPerSec(thresholds?.sigmaAct ?? 0, sampleIntervalSec);
@@ -417,7 +424,7 @@ export async function runForceTrial(sendFn, options = {}) {
   let stalled = false;
   let stallAngle = null;
 
-  while (Date.now() - startMs < windowMs) {
+  while (Date.now() - startMs < stopAfterMs) {
     // eslint-disable-next-line no-await-in-loop
     await delayFn(intervalMs);
     // eslint-disable-next-line no-await-in-loop
@@ -444,6 +451,9 @@ export async function runForceTrial(sendFn, options = {}) {
       lastAngles = angles;
     }
     lastMs = nowMs;
+    if (waitForStall && stalled) {
+      break;
+    }
   }
 
   await setForceTrialModes(sendFn, motorIds, {
@@ -525,7 +535,6 @@ export async function findEdgeForce(sendFn, options = {}) {
     forceStart,
     capForceLimit,
     trialFn,
-    clampFn = (f) => (clampAutoTuneForce(f) ?? f),
 
     // Ramp / saturation detection
     bracketFactor = 1.5,                // multiply force each step
@@ -542,7 +551,7 @@ export async function findEdgeForce(sendFn, options = {}) {
     fitRefineFactor = 0.5,              // narrower window each refine
 
     // Optional extra stop: plateau after N stable steps
-    plateauStepsRequired = 1,           // 1 means "2 successive within tol" (your default)
+    plateauStepsRequired = 2,           // 1 means "2 successive within tol" (your default)
     delayFn = baseSleep,
   } = options;
 
@@ -572,7 +581,7 @@ export async function findEdgeForce(sendFn, options = {}) {
   };
 
   // --- 1) Bracket saturation safely by ramping up ---
-  let F = clampFn(forceStart);
+  let F = forceStart;
   if (F > cap) F = cap;
 
   let lastAccepted = null;
@@ -593,7 +602,7 @@ export async function findEdgeForce(sendFn, options = {}) {
     if (!ok) {
       if (F >= cap - 1e-12) break;
       const nextRaw = F * bracketFactor;
-      let next = clampFn(nextRaw);
+      let next = nextRaw;
       if (next > cap) next = cap;
       if (!Number.isFinite(next) || next <= F + 1e-12) break;
       F = next;
@@ -632,7 +641,7 @@ export async function findEdgeForce(sendFn, options = {}) {
     }
 
     const nextRaw = F * bracketFactor;
-    let next = clampFn(nextRaw);
+    let next = nextRaw;
     if (next > cap) next = cap;
     if (!Number.isFinite(next) || next <= F + 1e-12) break;
     F = next;
@@ -941,6 +950,8 @@ export async function autoTuneForce(sendFn, plan, options) {
       mmPerDeg,
       feed,
       forbiddenForceAnchors,
+      waitForStall: options.waitForStall ?? true,
+      stallTimeoutMs: options.stallTimeoutMs,
       delayFn,
     });
     if (label) {
