@@ -284,14 +284,16 @@ export function parseBridgeArgs(argv) {
     superSweepRange: null,
     superSweepPoints: null,
     fixedTargets: null,
-    torque: null,
     sweepMethod: null,
-    torqueLow: null,
-    torqueMin: null,
-    torqueMax: null,
-    torqueStep: null,
-    autoTuneTorque: false,
-    noAutoTuneTorque: false,
+    maxTravelMm: null,
+    sensorForce: null,
+    forceLow: null,
+    forceMid: null,
+    forceMax: null,
+    forceStep: null,
+    autoTuneForce: false,
+    noAutoTuneForce: false,
+    torque: null,
     rampWaitMs: null,
     swapWaitMs: null,
     debugSweep: false,
@@ -372,24 +374,40 @@ export function parseBridgeArgs(argv) {
       args.superSweepRange = argv[++i] || null;
     } else if (arg === '--superSweepPoints') {
       args.superSweepPoints = argv[++i] || null;
+    } else if (arg === '--max-travel-mm' || arg === '--max-travel') {
+      args.maxTravelMm = argv[++i] || null;
     } else if (arg === '--fixed-targets' || arg === '--fixedTargets' || arg === '--fixed-target') {
       args.fixedTargets = argv[++i] || null;
+    } else if (arg === '--sensor-force' || arg === '--force-sensor' || arg === '--sensorForce') {
+      args.sensorForce = argv[++i] || null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
       args.sweepMethod = argv[++i] || null;
+    } else if (arg === '--force-low' || arg === '--forceLow') {
+      args.forceLow = argv[++i] || null;
+    } else if (arg === '--force-mid' || arg === '--forceMid' || arg === '--force-min' || arg === '--forceMin') {
+      args.forceMid = argv[++i] || null;
+    } else if (arg === '--force-max' || arg === '--forceMax') {
+      args.forceMax = argv[++i] || null;
+    } else if (arg === '--force-step' || arg === '--forceStep') {
+      args.forceStep = argv[++i] || null;
+    } else if (arg === '--auto-tune-force' || arg === '--autoTuneForce') {
+      args.autoTuneForce = true;
+    } else if (arg === '--no-auto-tune-force' || arg === '--noAutoTuneForce') {
+      args.noAutoTuneForce = true;
     } else if (arg === '--torque-low') {
-      args.torqueLow = argv[++i] || null;
+      args.forceLow = argv[++i] || null;
     } else if (arg === '--torque-min') {
-      args.torqueMin = argv[++i] || null;
+      args.forceMid = argv[++i] || null;
     } else if (arg === '--torque-max') {
-      args.torqueMax = argv[++i] || null;
+      args.forceMax = argv[++i] || null;
     } else if (arg === '--torque-step') {
-      args.torqueStep = argv[++i] || null;
+      args.forceStep = argv[++i] || null;
     } else if (arg === '--auto-tune-torque' || arg === '--autoTuneTorque') {
-      args.autoTuneTorque = true;
+      args.autoTuneForce = true;
     } else if (arg === '--no-auto-tune-torque' || arg === '--noAutoTuneTorque') {
-      args.noAutoTuneTorque = true;
+      args.noAutoTuneForce = true;
     } else if (arg === '--ramp-wait-ms') {
       args.rampWaitMs = argv[++i] || null;
     } else if (arg === '--swap-wait-ms') {

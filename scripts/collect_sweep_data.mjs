@@ -78,10 +78,10 @@ Options:
   --sweepPoints <count>      Number of points per sweep (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_POINTS})
   --superSweepRange <mm>     Fixed-anchor half-range in mm (default: ${SWEEP_DEFAULTS.DEFAULT_SUPER_SWEEP_RANGE_MM})
   --superSweepPoints <count> Number of fixed-length samples per sweep config (default: ${SWEEP_DEFAULTS.DEFAULT_SUPER_SWEEP_POINTS})
-  --fixed-targets <spec>     Override fixed-anchor targets; e.g. "-600,-200,200,600" or "-100,0;0,100"
+  --max-travel-mm <spec>     Override fixed-anchor targets; e.g. "200" or "-100,0;0,100"
   --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${SWEEP_DEFAULTS.DEFAULT_MAX_SWEEPS})
   --feed <mm/min>            Feed rate for drive moves (default: ${SWEEP_DEFAULTS.DEFAULT_FEED})
-  --torque <N>               Force for sensor motor (default: ${SWEEP_DEFAULTS.DEFAULT_TORQUE})
+  --sensor-force <N>         Force for sensor motor (default: tuned force-mid or ${SWEEP_DEFAULTS.DEFAULT_SENSOR_FORCE})
   --settleMs <ms>            Deprecated (was fixed settle time; now waits for encoder stability)
   --speedup <scale>          hp-sim speed scale (default: 1)
   --continuous               Use continuous sweep mode (records at --sample-rate)

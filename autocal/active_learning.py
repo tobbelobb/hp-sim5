@@ -246,10 +246,10 @@ def generate_candidate_sweeps(
     fixed_delta_values_mm: Sequence[float],
 ) -> List[SweepConfig]:
     """
-    Generate sweep candidates compatible with torque-ramp collection.
+    Generate sweep candidates compatible with position sweep collection.
 
     Drive/sensor are emitted in sorted order (drive=min(pair), sensor=max(pair))
-    to match `scripts/collect_sweep_data.mjs` torque-ramp output.
+    to match `scripts/collect_sweep_data.mjs` sweep output.
     """
     n = int(num_anchors)
     dims = int(dimensions)
