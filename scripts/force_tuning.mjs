@@ -9,12 +9,10 @@ import {
   waitForStableEncoders,
 } from './uncalibrated_actions.mjs';
 
-const DEFAULT_FEED = 1400;
+const DEFAULT_FEED = 3000;
 const DEFAULT_FORCE_LOW_N = 0.01;
-const DEFAULT_FORCE_MIN_N = 0.01;
+const DEFAULT_FORCE_MID_N = 0.01;
 const DEFAULT_FORCE_MAX_N = 0.1;
-const DEFAULT_FORCE_STEP_N = 0.01;
-const DEFAULT_FORCE_STEP_DIVISOR = 6;
 
 const AUTO_TUNE_MIN_FORCE_N = 0.01;
 const AUTO_TUNE_MAX_FORCE_N = 20.0;
@@ -22,7 +20,6 @@ const AUTO_TUNE_SAMPLE_WINDOW_MS = 10000;
 const AUTO_TUNE_NOISE_SAMPLE_MS = 4000;
 const AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS = 200;
 const AUTO_TUNE_SAMPLE_INTERVAL_MS = 500;
-const AUTO_TUNE_FORCE_RAMP_WAIT_MS = 300;
 const AUTO_TUNE_STALL_WINDOW_MS = 2500;
 const AUTO_TUNE_MIN_STALL_SPEED_DEG_PER_SEC = 0.05;
 const AUTO_TUNE_BRACKET_FACTOR = 1.4;
@@ -35,20 +32,9 @@ const AUTO_TUNE_IDLE_FORCE_RATIO = 0.05;
 
 export const FORCE_TUNING_DEFAULTS = {
   DEFAULT_FORCE_LOW_N,
-  DEFAULT_FORCE_MIN_N,
+  DEFAULT_FORCE_MID_N,
   DEFAULT_FORCE_MAX_N,
-  DEFAULT_FORCE_STEP_N,
-  DEFAULT_FORCE_STEP_DIVISOR,
 };
-
-export function deriveForceStep(minForce, maxForce) {
-  const span = Math.abs(maxForce - minForce);
-  if (!Number.isFinite(span) || span <= 0) {
-    return DEFAULT_FORCE_STEP_N;
-  }
-  const step = span / DEFAULT_FORCE_STEP_DIVISOR;
-  return step > 0 ? step : DEFAULT_FORCE_STEP_N;
-}
 
 function clampAutoTuneForce(value) {
   if (!Number.isFinite(value)) {
@@ -819,7 +805,7 @@ function fitLogisticInLogForce(samples, opts = {}) {
 export async function autoTuneForce(sendFn, plan, options) {
   const fallback = {
     forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
-    forceMin: Number.isFinite(options.forceMin) ? options.forceMin : DEFAULT_FORCE_MIN_N,
+    forceMid: Number.isFinite(options.forceMid) ? options.forceMid : DEFAULT_FORCE_MID_N,
     forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_N,
   };
 
@@ -1012,7 +998,7 @@ export async function autoTuneForce(sendFn, plan, options) {
     console.log(`; auto-tune force failed to measure edge force (${reason}); using capped max`);
     return {
       forceLow: idleForce,
-      forceMin: forceStart,
+      forceMid: forceStart,
       forceMax: capForceUsed,
       tuningMeta: {
         method: 'force-thresholds',
@@ -1032,7 +1018,7 @@ export async function autoTuneForce(sendFn, plan, options) {
 
   return {
     forceLow: idleForce,
-    forceMin: forceStart,
+    forceMid: forceStart,
     forceMax: forceEdge,
     tuningMeta: {
       method: 'force-thresholds',

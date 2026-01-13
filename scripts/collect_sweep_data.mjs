@@ -86,15 +86,11 @@ Options:
   --speedup <scale>          hp-sim speed scale (default: 1)
   --continuous               Use continuous sweep mode (records at --sample-rate)
   --sample-rate <Hz>         Sample rate for continuous mode (default: ${SWEEP_DEFAULTS.DEFAULT_SAMPLE_RATE_HZ})
-  --sweep-method <name>      Sweep method: position | torque-ramp | force-ramp (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_METHOD})
-  --torque-low <N>           torque-ramp: idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
-  --torque-min <N>           torque-ramp: start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MIN_N})
-  --torque-max <N>           torque-ramp: end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
-  --torque-step <N>          torque-ramp: force increment (default: (torque-max - torque-min) / ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_STEP_DIVISOR})
-  --auto-tune-torque         torque-ramp: auto-tune force-low/min/max using a test sweep (default when no torque args)
-  --no-auto-tune-torque      torque-ramp: skip auto-tuning and use provided/default forces
-  --ramp-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
-  --swap-wait-ms <ms>        Deprecated (was fixed wait; now waits for encoder stability)
+  --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
+  --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
+  --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
+  --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
+  --no-auto-tune-force       skip auto-tuning and use provided/default forces
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
