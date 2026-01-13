@@ -208,9 +208,6 @@ async function main() {
     };
 
     const runTrial = async (force, label, trialOptions = {}) => {
-      const useRamp = Number.isFinite(force) && force > idleForce + 1e-12;
-      const rampForces = trialOptions.rampForces
-        ?? (useRamp ? buildForceRampValues(Math.max(idleForce, FORCE_TUNING_CONSTANTS.AUTO_TUNE_MIN_FORCE_N), force) : null);
       const result = await runForceTrial(send, {
         motorIds,
         activeAnchor: driveAnchor,
@@ -224,10 +221,6 @@ async function main() {
         mmPerDeg,
         feed,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
-        rampForces,
-        rampStepWaitMs: FORCE_TUNING_CONSTANTS.AUTO_TUNE_FORCE_RAMP_WAIT_MS,
-        rebaselineAfterRamp: trialOptions.rebaselineAfterRamp ?? false,
-        stallSpeedDegPerSec,
       });
       if (label) {
         logTrial(label, force, result);

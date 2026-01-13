@@ -80,11 +80,17 @@ export function computeStallSpeedThresholdDegPerSec(sigmaActDeg, sampleIntervalS
   return Math.max(AUTO_TUNE_MIN_STALL_SPEED_DEG_PER_SEC, noiseSpeed);
 }
 
+// Build thresholds for what should be considered a significant movement.
+// Basically just avoids having to hard code 0.5 deg as the limit for what counts as a movement.
+// It's more portable between machines this way.
 export function buildMovementThresholds(noiseSigmaDeg, { activeAnchor, restAnchors = [] } = {}) {
   const sigmaAct = Array.isArray(noiseSigmaDeg) ? noiseSigmaDeg[activeAnchor] : 0;
+  // require at least 6σ of active-motor change (with a hard floor of 0.5°).
   const thetaActThr = Math.max(0.5, 6 * (Number.isFinite(sigmaAct) ? sigmaAct : 0));
+  // require at least 4σ of residual change (floor 0.3°) after releasing force and settling.
   const thetaResThr = Math.max(0.3, 4 * (Number.isFinite(sigmaAct) ? sigmaAct : 0));
 
+  // The other (non active) motors are also required to have moved for us to record "movement occured".
   const thetaOtherByAnchor = new Map();
   const restSigmas = [];
   for (const anchorIdx of restAnchors) {
@@ -93,6 +99,8 @@ export function buildMovementThresholds(noiseSigmaDeg, { activeAnchor, restAncho
     thetaOtherByAnchor.set(anchorIdx, thr);
     restSigmas.push(Number.isFinite(sigma) ? sigma : 0);
   }
+  // after releasing and settling, the sum of residual motion across the rest must be significant,
+  // scaled by typical noise (median σ).
   const medianRestSigma = computeMedian(restSigmas);
   const sumResidualThr = Math.max(0.8, 6 * medianRestSigma);
 
@@ -164,7 +172,13 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
   let firstMoveForce = null;
 
   for (let i = 0; i < maxBracketSteps; i += 1) {
-    const result = await runTrial(testForce, `probe ${i + 1}/${maxBracketSteps}`);
+    const result = await runTrial(testForce, `probe ${i + 1}/${maxBracketSteps}`,
+      {
+        sampleWindowMs: 2500,
+        earlyExitOnMove: true,
+        enableStallDetection: false,
+        sampleIntervalMs: 100,
+      });
     if (result.moved) {
       firstMoveForce = testForce;
       break;
@@ -195,7 +209,13 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
     }
     const midRaw = 0.5 * (low + high);
     const mid = clampAutoTuneForce(midRaw) ?? midRaw;
-    const result = await runTrial(mid, `bisect-start ${i + 1}/${maxBisectSteps}`);
+    const result = await runTrial(mid, `bisect-start ${i + 1}/${maxBisectSteps}`,
+      {
+        sampleWindowMs: 2500,
+        earlyExitOnMove: true,
+        enableStallDetection: false,
+        sampleIntervalMs: 100,
+      });
     if (result.moved) {
       high = mid;
     } else {
@@ -326,6 +346,8 @@ export async function runForceTrial(sendFn, options = {}) {
     feed = DEFAULT_FEED,
     forbiddenForceAnchors = [],
     delayFn = baseSleep,
+    earlyExitOnMove = false,
+    enableStallDetection = true,
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return {
@@ -417,22 +439,40 @@ export async function runForceTrial(sendFn, options = {}) {
     const nowMs = Date.now();
     if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
       endAngles = angles;
-      const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
-      const prevAngle = lastAngles?.[activeAnchor];
-      const curAngle = angles?.[activeAnchor];
-      if (Number.isFinite(prevAngle) && Number.isFinite(curAngle)) {
-        const speed = Math.abs(curAngle - prevAngle) / dtSec;
-        if (speed < speedThreshold) {
-          stallDurationMs += (nowMs - lastMs);
-        } else {
-          stallDurationMs = 0;
-        }
-        if (!stalled && stallDurationMs >= stallWindowScaledMs) {
-          stalled = true;
-          stallAngle = curAngle;
+
+      if (earlyExitOnMove && thresholds) {
+        const act = activeAnchor;
+        const activeDeltaSoFar = (angles[act] ?? 0) - (startAngles[act] ?? 0);
+        if (Math.abs(activeDeltaSoFar) >= thresholds.thetaActThr) {
+          let restOk = false;
+          for (const idx of restAnchors) {
+            const d = (angles[idx] ?? 0) - (startAngles[idx] ?? 0);
+            const thr = thresholds.thetaOtherByAnchor.get(idx) ?? 0.5;
+            if (Math.abs(d) >= thr) { restOk = true; break; }
+          }
+          // Exit early if movement is already obvious and if that's all we were looking for
+          if (restOk) break;
         }
       }
-      lastAngles = angles;
+
+      if (enableStallDetection) {
+        const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
+        const prevAngle = lastAngles?.[activeAnchor];
+        const curAngle = angles?.[activeAnchor];
+        if (Number.isFinite(prevAngle) && Number.isFinite(curAngle)) {
+          const speed = Math.abs(curAngle - prevAngle) / dtSec;
+          if (speed < speedThreshold) {
+            stallDurationMs += (nowMs - lastMs);
+          } else {
+            stallDurationMs = 0;
+          }
+          if (!stalled && stallDurationMs >= stallWindowScaledMs) {
+            stalled = true;
+            stallAngle = curAngle;
+          }
+        }
+        lastAngles = angles;
+      }
     }
     lastMs = nowMs;
   }
@@ -481,7 +521,7 @@ export async function runForceTrial(sendFn, options = {}) {
       : activeDelta,
   );
 
-  if (Array.isArray(axes) && Array.isArray(mmPerDeg)) {
+  if (Array.isArray(axes) && Array.isArray(mmPerDeg) && travelDeg > 2 * thetaActThr) {
     await returnMotorsToOriginOneAtATime(sendFn, {
       motorIds,
       axes,
