@@ -256,6 +256,13 @@ def _plan_next_ellipse_sweep(
     cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
 
     if candidate_deltas is None:
+        config = dataset.get("config") if isinstance(dataset, dict) else None
+        max_travel_mm = None
+        if isinstance(config, dict):
+            raw_max_travel = config.get("max_travel_mm")
+            if isinstance(raw_max_travel, (int, float)) and np.isfinite(raw_max_travel):
+                max_travel_mm = float(raw_max_travel)
+        explicit_delta_range = delta_min is not None or delta_max is not None
         observed_deltas: List[float] = []
         for cfg in sweeps_obs:
             observed_deltas.extend(list(cfg.fixed_deltas_mm))
@@ -269,7 +276,13 @@ def _plan_next_ellipse_sweep(
         if delta_max is not None:
             hi = float(delta_max)
         if not np.isfinite(lo) or not np.isfinite(hi) or abs(hi - lo) < 1e-9:
-            lo, hi = -600.0, 600.0
+            if (not explicit_delta_range and max_travel_mm is not None
+                    and np.isfinite(max_travel_mm) and float(max_travel_mm) > 0.0):
+                span = 0.1 * float(max_travel_mm)
+                lo = max(0.0, float(max_travel_mm) - span)
+                hi = float(max_travel_mm)
+            else:
+                lo, hi = -600.0, 600.0
         values = np.linspace(lo, hi, max(3, int(candidate_count)))
         candidate_deltas = [float(v) for v in values.tolist()]
 
