@@ -172,13 +172,7 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
   let firstMoveForce = null;
 
   for (let i = 0; i < maxBracketSteps; i += 1) {
-    const result = await runTrial(testForce, `probe ${i + 1}/${maxBracketSteps}`,
-      {
-        sampleWindowMs: 2500,
-        earlyExitOnMove: true,
-        enableStallDetection: false,
-        sampleIntervalMs: 100,
-      });
+    const result = await runTrial(testForce, `probe ${i + 1}/${maxBracketSteps}`);
     if (result.moved) {
       firstMoveForce = testForce;
       break;
@@ -209,13 +203,7 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
     }
     const midRaw = 0.5 * (low + high);
     const mid = clampAutoTuneForce(midRaw) ?? midRaw;
-    const result = await runTrial(mid, `bisect-start ${i + 1}/${maxBisectSteps}`,
-      {
-        sampleWindowMs: 2500,
-        earlyExitOnMove: true,
-        enableStallDetection: false,
-        sampleIntervalMs: 100,
-      });
+    const result = await runTrial(mid, `bisect-start ${i + 1}/${maxBisectSteps}`);
     if (result.moved) {
       high = mid;
     } else {
@@ -346,9 +334,8 @@ export async function runForceTrial(sendFn, options = {}) {
     feed = DEFAULT_FEED,
     forbiddenForceAnchors = [],
     delayFn = baseSleep,
-    earlyExitOnMove = false,
-    enableStallDetection = true,
   } = options;
+
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return {
       moved: false,
@@ -439,40 +426,22 @@ export async function runForceTrial(sendFn, options = {}) {
     const nowMs = Date.now();
     if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
       endAngles = angles;
-
-      if (earlyExitOnMove && thresholds) {
-        const act = activeAnchor;
-        const activeDeltaSoFar = (angles[act] ?? 0) - (startAngles[act] ?? 0);
-        if (Math.abs(activeDeltaSoFar) >= thresholds.thetaActThr) {
-          let restOk = false;
-          for (const idx of restAnchors) {
-            const d = (angles[idx] ?? 0) - (startAngles[idx] ?? 0);
-            const thr = thresholds.thetaOtherByAnchor.get(idx) ?? 0.5;
-            if (Math.abs(d) >= thr) { restOk = true; break; }
-          }
-          // Exit early if movement is already obvious and if that's all we were looking for
-          if (restOk) break;
+      const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
+      const prevAngle = lastAngles?.[activeAnchor];
+      const curAngle = angles?.[activeAnchor];
+      if (Number.isFinite(prevAngle) && Number.isFinite(curAngle)) {
+        const speed = Math.abs(curAngle - prevAngle) / dtSec;
+        if (speed < speedThreshold) {
+          stallDurationMs += (nowMs - lastMs);
+        } else {
+          stallDurationMs = 0;
+        }
+        if (!stalled && stallDurationMs >= stallWindowScaledMs) {
+          stalled = true;
+          stallAngle = curAngle;
         }
       }
-
-      if (enableStallDetection) {
-        const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
-        const prevAngle = lastAngles?.[activeAnchor];
-        const curAngle = angles?.[activeAnchor];
-        if (Number.isFinite(prevAngle) && Number.isFinite(curAngle)) {
-          const speed = Math.abs(curAngle - prevAngle) / dtSec;
-          if (speed < speedThreshold) {
-            stallDurationMs += (nowMs - lastMs);
-          } else {
-            stallDurationMs = 0;
-          }
-          if (!stalled && stallDurationMs >= stallWindowScaledMs) {
-            stalled = true;
-            stallAngle = curAngle;
-          }
-        }
-        lastAngles = angles;
-      }
+      lastAngles = angles;
     }
     lastMs = nowMs;
   }
