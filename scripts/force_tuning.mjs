@@ -520,229 +520,294 @@ export async function runForceTrial(sendFn, options = {}) {
   };
 }
 
-async function sampleForceTuningVelocityRps(sendFn, motorIds, targetAnchor, options = {}) {
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return 0;
-  }
-  const anchorIdx = Number.isFinite(targetAnchor) ? targetAnchor : null;
-  if (anchorIdx === null || anchorIdx < 0 || anchorIdx >= motorIds.length) {
-    return 0;
-  }
+export async function findEdgeForce(sendFn, options = {}) {
   const {
-    speedup,
-    sampleWindowMs = AUTO_TUNE_SAMPLE_WINDOW_MS,
-    startAnglesDeg = null,
+    forceStart,
+    capForceLimit,                      // still used as a hard safety ceiling
+    trialFn,                             // (force, label) => { travelDeg, moved, ... }
+    clampFn = (f) => (clampAutoTuneForce(f) ?? f),
+
+    // Ramp / saturation detection
+    bracketFactor = 1.5,                // multiply force each step
+    maxBracketSteps = 12,               // safety
+    saturationRelTol = 0.10,            // "within 10%"
+    minUsefulTravelDeg = 0.5,           // ignore tiny near-noise numbers
+    requireMoved = false,               // optional: only accept points where moved=true
+
+    // Curve fit options
+    fitEnabled = true,
+    fitGridK = [0.5, 1, 2, 4, 8],       // slope candidates in log-space
+    fitGridX0Steps = 25,                // coarse grid for x0
+    fitRefineIters = 2,                 // refine around best
+    fitRefineFactor = 0.5,              // narrower window each refine
+
+    // Optional extra stop: plateau after N stable steps
+    plateauStepsRequired = 1,           // 1 means "2 successive within tol" (your default)
     delayFn = baseSleep,
   } = options;
 
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const windowMs = Math.max(1, sampleWindowMs / timeScale);
-  const windowSec = windowMs / 1000;
-  if (!Number.isFinite(windowSec) || windowSec <= 0) {
-    return 0;
+  if (typeof trialFn !== 'function') {
+    throw new Error('findEdgeForce requires a trialFn');
+  }
+  if (!Number.isFinite(forceStart) || forceStart <= 0) {
+    return { forceEdge: null, dMax: null, reason: 'invalid forceStart', samples: [] };
+  }
+  const cap = Number.isFinite(capForceLimit) && capForceLimit > 0 ? capForceLimit : Infinity;
+
+  const runTrial = async (force, label) => {
+    const res = await trialFn(force, label);
+    const travelDeg = Number.isFinite(res?.travelDeg) ? res.travelDeg : NaN;
+    const moved = !!res?.moved;
+    return { ...res, travelDeg, moved };
+  };
+
+  const samples = [];
+  const addSample = (force, res) => {
+    samples.push({
+      force,
+      travelDeg: res.travelDeg,
+      moved: res.moved,
+      stalled: !!res.stalled,
+    });
+  };
+
+  // --- 1) Bracket saturation safely by ramping up ---
+  let F = clampFn(forceStart);
+  if (F > cap) F = cap;
+
+  let lastAccepted = null;
+  let stableCount = 0;
+  let saturationPair = null;
+
+  for (let i = 0; i < maxBracketSteps; i += 1) {
+    const res = await runTrial(F, `edge-ramp ${i + 1}/${maxBracketSteps}`);
+    addSample(F, res);
+
+    const D = res.travelDeg;
+    const ok =
+      Number.isFinite(D) &&
+      D >= minUsefulTravelDeg &&
+      (!requireMoved || res.moved);
+
+    // If travel isn't meaningful, keep ramping (but don't let it loop forever).
+    if (!ok) {
+      if (F >= cap - 1e-12) break;
+      const nextRaw = F * bracketFactor;
+      let next = clampFn(nextRaw);
+      if (next > cap) next = cap;
+      if (!Number.isFinite(next) || next <= F + 1e-12) break;
+      F = next;
+      continue;
+    }
+
+    if (lastAccepted) {
+      const Dprev = lastAccepted.travelDeg;
+      const Dcur = D;
+      const denom = Math.max(Math.abs(Dcur), Math.abs(Dprev), 1e-9);
+      const relDiff = Math.abs(Dcur - Dprev) / denom;
+
+      if (relDiff <= saturationRelTol) {
+        stableCount += 1;
+      } else {
+        stableCount = 0;
+      }
+
+      if (stableCount >= plateauStepsRequired) {
+        // Saturation found: (previous, current) is our "within 10%" pair.
+        saturationPair = {
+          lowForce: lastAccepted.force,
+          highForce: F,
+          lowTravelDeg: Dprev,
+          highTravelDeg: Dcur,
+          relDiff,
+        };
+        break;
+      }
+    }
+
+    lastAccepted = { force: F, travelDeg: D };
+
+    if (F >= cap - 1e-12) {
+      break;
+    }
+
+    const nextRaw = F * bracketFactor;
+    let next = clampFn(nextRaw);
+    if (next > cap) next = cap;
+    if (!Number.isFinite(next) || next <= F + 1e-12) break;
+    F = next;
+
+    // Optional: tiny delay between ramp steps if you want extra safety margin.
+    if (typeof delayFn === 'function') {
+      // Keep it minimal; your trialFn likely already includes long windows.
+      await delayFn(0);
+    }
   }
 
-  let startAngles = Array.isArray(startAnglesDeg) ? startAnglesDeg : null;
-  if (!startAngles) {
-    const startReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
-    startAngles = parseEncoderReply(startReply?.reply);
-  }
-  const startAngle = startAngles?.[anchorIdx];
-  if (!Number.isFinite(startAngle)) {
-    return 0;
+  if (!saturationPair) {
+    // Could not detect a plateau safely.
+    // Fall back: pick best observed force by "largest travel at lowest force".
+    // This is conservative: chooses lowest force among points close to max travel.
+    const valid = samples
+      .filter((s) => Number.isFinite(s.travelDeg) && s.travelDeg >= minUsefulTravelDeg)
+      .sort((a, b) => a.force - b.force);
+
+    if (valid.length === 0) {
+      return {
+        forceEdge: null,
+        dMax: null,
+        reason: 'no valid travel measurements during ramp',
+        samples,
+      };
+    }
+
+    const maxD = Math.max(...valid.map((s) => s.travelDeg));
+    const target = (1 - saturationRelTol) * maxD;
+    const best = valid.find((s) => s.travelDeg >= target) ?? valid[valid.length - 1];
+
+    const dMaxFallback = maxD;
+
+    return {
+      forceEdge: best.force,
+      dMax: dMaxFallback,
+      reason: 'no plateau detected; conservative fallback from best observed',
+      samples,
+      saturation: null,
+      fit: null,
+    };
   }
 
-  await delayFn(windowMs);
+  // Required by you: choose LOWER of the two plateau forces as preferred edge.
+  const forceEdge = saturationPair.lowForce;
 
-  const endReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
-  const endAngles = parseEncoderReply(endReply?.reply);
-  const endAngle = endAngles?.[anchorIdx];
-  if (!Number.isFinite(endAngle)) {
-    return 0;
+  // --- 2) Fit S-curve to estimate dMax (optional) ---
+  let fit = null;
+  let dMax = Math.max(saturationPair.lowTravelDeg, saturationPair.highTravelDeg);
+
+  if (fitEnabled) {
+    fit = fitLogisticInLogForce(samples, {
+      minUsefulTravelDeg,
+      requireMoved,
+      fitGridK,
+      fitGridX0Steps,
+      fitRefineIters,
+      fitRefineFactor,
+    });
+    if (fit?.ok && Number.isFinite(fit.dMax) && fit.dMax > 0) {
+      dMax = fit.dMax;
+    }
   }
 
-  const revolutions = Math.abs(endAngle - startAngle) / 360;
-  return revolutions / windowSec;
+  return {
+    forceEdge,
+    dMax,
+    reason: 'plateau detected by successive-travel tolerance',
+    samples,
+    saturation: saturationPair,
+    fit,
+  };
 }
 
-async function returnDriveToTarget(sendFn, options) {
+/**
+ * Fit logistic curve in log-force space:
+ *   R(F) = dMax / (1 + exp(-k*(ln(F) - x0)))
+ * using grid-search over (k, x0) and closed-form dMax for each (k, x0).
+ *
+ * Returns {ok, dMax, k, x0, rmse, nUsed}.
+ */
+function fitLogisticInLogForce(samples, opts = {}) {
   const {
-    driveAxis,
-    targetLength = 0,
-    currentLength = 0,
-    segmentCount = 1,
-    feed = DEFAULT_FEED,
-    speedup = 1,
-    axes,
-    onSegment = null,
-    delayFn = baseSleep,
-  } = options;
-  if (!driveAxis) {
-    throw new Error('returnDriveToTarget requires a drive axis');
-  }
-  const segments = Math.max(1, Math.floor(Number.isFinite(segmentCount) ? segmentCount : 1));
-  const totalDelta = (Number.isFinite(targetLength) ? targetLength : 0)
-    - (Number.isFinite(currentLength) ? currentLength : 0);
-  const segmentDelta = segments > 0 ? totalDelta / segments : totalDelta;
-  const roundToGcodeMm = (value) => Math.round(value * 1000) / 1000;
-  let commanded = 0;
+    minUsefulTravelDeg = 0.5,
+    requireMoved = false,
+    fitGridK = [0.5, 1, 2, 4, 8],
+    fitGridX0Steps = 25,
+    fitRefineIters = 2,
+    fitRefineFactor = 0.5,
+  } = opts;
 
-  for (let segIdx = 0; segIdx < segments; segIdx += 1) {
-    const desired = segIdx === segments - 1
-      ? totalDelta - commanded
-      : segmentDelta;
-    const delta = roundToGcodeMm(desired);
-    commanded += delta;
-    if (Math.abs(delta) > 1e-6) {
-      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feed}`, speedup, { axes, delayFn });
-    }
-    if (typeof onSegment === 'function') {
-      await onSegment(segIdx + 1, segments);
-    }
+  const pts = samples
+    .filter((s) => Number.isFinite(s.force) && s.force > 0 && Number.isFinite(s.travelDeg))
+    .filter((s) => s.travelDeg >= minUsefulTravelDeg)
+    .filter((s) => (!requireMoved || s.moved));
+
+  if (pts.length < 3) {
+    return { ok: false, reason: 'not enough points for fit', nUsed: pts.length };
   }
+
+  // Build arrays in log-force.
+  const xs = pts.map((p) => Math.log(p.force));
+  const ys = pts.map((p) => p.travelDeg);
+
+  // Define search range for x0 based on observed log-forces.
+  let xMin = Math.min(...xs);
+  let xMax = Math.max(...xs);
+
+  let best = null;
+
+  const evalCandidate = (k, x0) => {
+    // For fixed k,x0, the model is y ≈ dMax * s_i, where s_i = logistic(...)
+    // Best dMax in least squares: dMax = (Σ s_i*y_i)/(Σ s_i^2)
+    const s = xs.map((x) => 1 / (1 + Math.exp(-k * (x - x0))));
+    let num = 0;
+    let den = 0;
+    for (let i = 0; i < s.length; i += 1) {
+      num += s[i] * ys[i];
+      den += s[i] * s[i];
+    }
+    if (den <= 1e-12) return null;
+    const dMax = num / den;
+
+    // Penalize non-physical fits.
+    if (!Number.isFinite(dMax) || dMax <= 0) return null;
+
+    let err2 = 0;
+    for (let i = 0; i < s.length; i += 1) {
+      const yHat = dMax * s[i];
+      const e = ys[i] - yHat;
+      err2 += e * e;
+    }
+    const rmse = Math.sqrt(err2 / Math.max(1, s.length));
+    return { dMax, k, x0, rmse, nUsed: s.length };
+  };
+
+  const gridSearch = (x0Lo, x0Hi) => {
+    for (const k of fitGridK) {
+      for (let j = 0; j <= fitGridX0Steps; j += 1) {
+        const t = j / fitGridX0Steps;
+        const x0 = x0Lo + t * (x0Hi - x0Lo);
+        const cand = evalCandidate(k, x0);
+        if (!cand) continue;
+        if (!best || cand.rmse < best.rmse) {
+          best = cand;
+        }
+      }
+    }
+  };
+
+  // Coarse search.
+  gridSearch(xMin, xMax);
+
+  // Refine around best x0.
+  for (let r = 0; r < fitRefineIters; r += 1) {
+    if (!best) break;
+    const span = (xMax - xMin) * Math.pow(fitRefineFactor, r + 1);
+    const lo = best.x0 - span;
+    const hi = best.x0 + span;
+    gridSearch(lo, hi);
+  }
+
+  if (!best) {
+    return { ok: false, reason: 'fit failed', nUsed: pts.length };
+  }
+
+  // Optional sanity: dMax should be >= max observed (usually).
+  const yMax = Math.max(...ys);
+  const dMax = Math.max(best.dMax, yMax);
+
+  return { ok: true, ...best, dMax };
 }
 
-async function prepareForceTuningPositioning(sendFn, task, options) {
-  const {
-    motorIds,
-    axes,
-    mmPerDeg,
-    fixedTargets = [],
-    forceLow = DEFAULT_FORCE_LOW_N,
-    feed = DEFAULT_FEED,
-    speedup = 1,
-    currentPositions = [],
-    delayFn = baseSleep,
-  } = options;
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return currentPositions.slice();
-  }
-  if (!Array.isArray(currentPositions) || currentPositions.length !== motorIds.length) {
-    throw new Error('currentPositions must match motorIds length');
-  }
-
-  const { fixedAnchors = [], driveAnchor, sensorAnchor } = task;
-  if (!Number.isFinite(driveAnchor) || !Number.isFinite(sensorAnchor)) {
-    throw new Error('prepareForceTuningPositioning requires drive and sensor anchors');
-  }
-
-  await sendFn(`M569.4 P${motorIds.join(':')} T0.0`);
-  const measured = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-  for (let idx = 0; idx < motorIds.length; idx += 1) {
-    currentPositions[idx] = Number.isFinite(measured[idx]) ? measured[idx] : 0;
-  }
-
-  const moveParts = [];
-  const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
-  const lowForce = Number.isFinite(forceLow) ? forceLow : DEFAULT_FORCE_LOW_N;
-  await sendFn(`M569.4 P${motorIds[sensorAnchor]} T${lowForce}`);
-
-  for (let i = 0; i < fixedAnchors.length; i += 1) {
-    const anchorIdx = fixedAnchors[i];
-    const target = Number.isFinite(fixedTargets[i]) ? fixedTargets[i] : 0;
-    const delta = target - (currentPositions[anchorIdx] ?? 0);
-    if (Math.abs(delta) > 1e-6) {
-      moveParts.push(formatDelta(axes[anchorIdx], delta));
-    }
-    currentPositions[anchorIdx] = target;
-  }
-
-  const tuningAnchors = new Set([driveAnchor, sensorAnchor]);
-  for (const anchorIdx of tuningAnchors) {
-    const target = 0;
-    const delta = target - (currentPositions[anchorIdx] ?? 0);
-    if (Math.abs(delta) > 1e-6) {
-      moveParts.push(formatDelta(axes[anchorIdx], delta));
-    }
-    currentPositions[anchorIdx] = target;
-  }
-
-  if (moveParts.length > 0) {
-    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes, delayFn });
-  }
-
-  return currentPositions.slice();
-}
-
-async function performForceTuningProbe(sendFn, task, options) {
-  const {
-    motorIds,
-    axes,
-    mmPerDeg,
-    feed,
-    speedup,
-    currentPositions,
-    forceLow,
-    forceTest,
-    delayFn = baseSleep,
-  } = options;
-  const { fixedAnchors = [], driveAnchor, sensorAnchor, fixedTargets = [] } = task;
-  if (!Number.isFinite(driveAnchor) || !Number.isFinite(sensorAnchor)) {
-    return 0;
-  }
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return 0;
-  }
-
-  const lowForce = Number.isFinite(forceLow) ? forceLow : DEFAULT_FORCE_LOW_N;
-  const testForce = Number.isFinite(forceTest) ? forceTest : lowForce;
-  const driveMotorId = motorIds[driveAnchor];
-
-  await prepareForceTuningPositioning(sendFn, {
-    fixedAnchors,
-    driveAnchor,
-    sensorAnchor,
-  }, {
-    motorIds,
-    axes,
-    mmPerDeg,
-    fixedTargets,
-    forceLow: lowForce,
-    feed,
-    speedup,
-    currentPositions,
-    delayFn,
-  });
-
-  const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-  const startAngles = stableStart.anglesDeg;
-  const startLengths = startAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
-
-  await sendFn(`M569.4 P${driveMotorId} T${testForce}`);
-  const velocityRps = await sampleForceTuningVelocityRps(sendFn, motorIds, driveAnchor, {
-    speedup,
-    startAnglesDeg: startAngles,
-    delayFn,
-  });
-
-  await sendFn(`M569.4 P${driveMotorId} T0.0`);
-  const stableCurrent = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-  const currentLengths = stableCurrent.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
-
-  const driveAxis = axes?.[driveAnchor];
-  if (!driveAxis) {
-    throw new Error('force-tuning requires axes mapping for reposition step');
-  }
-
-  await returnDriveToTarget(sendFn, {
-    driveAxis,
-    targetLength: startLengths[driveAnchor] ?? 0,
-    currentLength: currentLengths[driveAnchor] ?? 0,
-    segmentCount: 1,
-    feed,
-    speedup,
-    axes,
-    delayFn,
-    onSegment: async () => {
-      await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-    },
-  });
-
-  await sendFn(`M569.4 P${driveMotorId} T${lowForce}`);
-  return velocityRps;
-}
-
-export async function autoTuneForceRamp(sendFn, plan, options) {
+export async function autoTuneForce(sendFn, plan, options) {
   const fallback = {
     forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
     forceMin: Number.isFinite(options.forceMin) ? options.forceMin : DEFAULT_FORCE_MIN_N,
@@ -863,9 +928,6 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
   };
 
   const runTrial = async (force, label, trialOptions = {}) => {
-    const useRamp = Number.isFinite(force) && force > idleForce + 1e-12;
-    const rampForces = trialOptions.rampForces
-      ?? (useRamp ? buildForceRampValues(Math.max(idleForce, AUTO_TUNE_MIN_FORCE_N), force) : null);
     const result = await runForceTrial(sendFn, {
       motorIds,
       activeAnchor: driveAnchor,
@@ -879,10 +941,6 @@ export async function autoTuneForceRamp(sendFn, plan, options) {
       mmPerDeg,
       feed,
       forbiddenForceAnchors,
-      rampForces,
-      rampStepWaitMs: AUTO_TUNE_FORCE_RAMP_WAIT_MS,
-      rebaselineAfterRamp: trialOptions.rebaselineAfterRamp ?? false,
-      stallSpeedDegPerSec,
       delayFn,
     });
     if (label) {
@@ -1028,7 +1086,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
   });
   await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
 
-  const tuned = await autoTuneForceRamp(sendFn, plan, {
+  const tuned = await autoTuneForce(sendFn, plan, {
     ...options,
     forceLow,
     delayFn,
