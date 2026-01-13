@@ -523,8 +523,8 @@ export async function runForceTrial(sendFn, options = {}) {
 export async function findEdgeForce(sendFn, options = {}) {
   const {
     forceStart,
-    capForceLimit,                      // still used as a hard safety ceiling
-    trialFn,                             // (force, label) => { travelDeg, moved, ... }
+    capForceLimit,
+    trialFn,
     clampFn = (f) => (clampAutoTuneForce(f) ?? f),
 
     // Ramp / saturation detection
@@ -982,11 +982,23 @@ export async function autoTuneForce(sendFn, plan, options) {
     console.log('; auto-tune force cap below force-start; using force-start for cap');
     capForceUsed = forceStart;
   }
-  const capResult = await runTrial(capForceUsed, 'cap');
-  const dMax = capResult.travelDeg;
+  const edgeResult = await findEdgeForce(sendFn, {
+    forceStart,
+    capForceLimit: capForceUsed,
+    trialFn: runTrial,
+    bracketFactor: AUTO_TUNE_BRACKET_FACTOR,
+    maxBracketSteps: AUTO_TUNE_MAX_BRACKET_STEPS,
+    saturationRelTol: AUTO_TUNE_RELATIVE_TOLERANCE,
+    minUsefulTravelDeg: thresholds.thetaActThr,
+    delayFn,
+  });
 
-  if (!Number.isFinite(dMax) || dMax <= 0) {
-    console.log('; auto-tune force failed to measure D_max; using capped max');
+  const forceEdge = edgeResult?.forceEdge;
+  const dMax = edgeResult?.dMax;
+
+  if (!Number.isFinite(forceEdge) || !Number.isFinite(dMax) || dMax <= 0) {
+    const reason = edgeResult?.reason ?? 'unknown';
+    console.log(`; auto-tune force failed to measure edge force (${reason}); using capped max`);
     return {
       forceLow: idleForce,
       forceMin: forceStart,
@@ -996,37 +1008,11 @@ export async function autoTuneForce(sendFn, plan, options) {
         tuning_failed: true,
         force_start: forceStart,
         force_cap: capForceUsed,
+        edge_reason: reason,
         noise_sigma_deg: noiseStats.sigmaByMotorDeg,
       },
     };
   }
-
-  const targetTravel = AUTO_TUNE_EDGE_RATIO * dMax;
-  let edgeLow = forceStart;
-  let edgeHigh = capForceUsed;
-  let edgeHighUpdated = false;
-
-  for (let i = 0; i < AUTO_TUNE_MAX_BISECT_STEPS; i += 1) {
-    const width = edgeHigh - edgeLow;
-    const relWidth = width / Math.max(edgeHigh, 1e-6);
-    const stopAbs = width <= AUTO_TUNE_ABSOLUTE_TOLERANCE;
-    const stopRel = relWidth <= AUTO_TUNE_RELATIVE_TOLERANCE;
-    const capLocked = Math.abs(edgeHigh - capForceUsed) <= 1e-9 && !edgeHighUpdated;
-    if (stopAbs || (stopRel && !capLocked)) {
-      break;
-    }
-    const midRaw = 0.5 * (edgeLow + edgeHigh);
-    const mid = clampAutoTuneForce(midRaw) ?? midRaw;
-    const result = await runTrial(mid, `bisect-edge ${i + 1}/${AUTO_TUNE_MAX_BISECT_STEPS}`);
-    if (result.travelDeg >= targetTravel) {
-      edgeHigh = mid;
-      edgeHighUpdated = true;
-    } else {
-      edgeLow = mid;
-    }
-  }
-
-  const forceEdge = edgeHigh;
 
   console.log(
     `; auto-tune selected: idle=${formatValue(idleForce)} start=${formatValue(forceStart)} `
@@ -1050,9 +1036,11 @@ export async function autoTuneForce(sendFn, plan, options) {
       force_start_bracket_no: lastNoMoveForce,
       force_start_bracket_yes: firstMoveForce,
       d_max_deg: dMax,
-      d_target_deg: targetTravel,
-      edge_ratio: AUTO_TUNE_EDGE_RATIO,
       edge_at_cap: Math.abs(forceEdge - capForceUsed) <= 1e-9,
+      edge_reason: edgeResult?.reason,
+      edge_saturation: edgeResult?.saturation ?? null,
+      edge_fit: edgeResult?.fit ?? null,
+      edge_samples: edgeResult?.samples ?? [],
       noise_samples: noiseStats.samples,
       noise_duration_ms: noiseStats.durationMs,
       noise_sigma_deg: noiseStats.sigmaByMotorDeg,
