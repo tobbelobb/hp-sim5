@@ -69,23 +69,22 @@ function sleep(ms) {
 function printHelp() {
   console.log(`Usage: node scripts/collect_sweep_data.mjs [options]
 
-Collect circular sweep data where D-1 anchors are fixed, one anchor drives, and another is in force/sensor mode.
+Collect circular sweep data where N-1 anchors are fixed, one anchor drives, and another is in force/sensor mode.
 
 Options:
   --help, -h                 Show this help and exit
   --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
-  --sweepRange <mm>          Sweep half-range in mm (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_RANGE_MM})
   --sweepPoints <count>      Number of points per sweep (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_POINTS})
   --superSweepRange <mm>     Fixed-anchor half-range in mm (default: ${SWEEP_DEFAULTS.DEFAULT_SUPER_SWEEP_RANGE_MM})
   --superSweepPoints <count> Number of fixed-length samples per sweep config (default: ${SWEEP_DEFAULTS.DEFAULT_SUPER_SWEEP_POINTS})
   --max-travel-mm <spec>     Override fixed-anchor targets; e.g. "200" or "-100,0;0,100"
   --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${SWEEP_DEFAULTS.DEFAULT_MAX_SWEEPS})
   --feed <mm/min>            Feed rate for drive moves (default: ${SWEEP_DEFAULTS.DEFAULT_FEED})
-  --sensor-force <N>         Force for sensor motor (default: tuned force-mid or ${SWEEP_DEFAULTS.DEFAULT_SENSOR_FORCE})
+  --sensor-force <N>         Deprecated (sensor motor uses force-low)
   --settleMs <ms>            Deprecated (was fixed settle time; now waits for encoder stability)
   --speedup <scale>          hp-sim speed scale (default: 1)
-  --continuous               Use continuous sweep mode (records at --sample-rate)
-  --sample-rate <Hz>         Sample rate for continuous mode (default: ${SWEEP_DEFAULTS.DEFAULT_SAMPLE_RATE_HZ})
+  --continuous               Deprecated (force-drive sweeps only)
+  --sample-rate <Hz>         Deprecated (continuous mode removed)
   --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
   --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
   --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
@@ -111,7 +110,7 @@ Options:
   --return-to-origin         After collection, return all motors to encoder origin (useful across repeated runs)
 
 Examples:
-  node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepRange 100 --sweepPoints 41 --output-file sweep.json
+  node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json
   node scripts/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file scripts/sweep_configs/hangprinter_4.txt --debug-sweep`);
 }
 
