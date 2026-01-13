@@ -526,7 +526,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     if (fixedSet.has(idx) || forbidden.has(idx)) {
       return 'position';
     }
-    return forceLow;
+    return forceMid*2.0;
   });
   await applyForceModeState(sendFn, { motorIds, modes: returnModes });
 
@@ -741,7 +741,7 @@ export async function collectSweepData(send, context) {
         motorIds,
         mmPerDeg,
         forceLow,
-        forceMax: forceMax*0.8,
+        forceMax: forceMax*0.75,
         pairAnchors: sizeTunePair,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
         speedup,
