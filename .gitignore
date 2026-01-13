@@ -22,4 +22,4 @@ RRF/build*
 RRF/.cache
 */compile_commands.json
 RRF/run/vsd/logs/
-sweep_data_*
+sweep_data_*.json
