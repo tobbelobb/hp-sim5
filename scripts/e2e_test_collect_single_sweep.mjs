@@ -48,14 +48,15 @@ Options:
   --help, -h                 Show this help and exit
   --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
   --drive-anchor <index>     Anchor index to drive (default: 0)
-  --sensor-anchor <index>    Anchor index to use as sensor force (default: first non-drive)
-  --fixed-anchors <list>     Comma-separated fixed anchors (default: all except drive/sensor)
+  --sensor-anchor <index>    Anchor index to use as sensor force (default: first non-drive non-fixed)
+  --fixed-anchors <list>     Comma-separated fixed anchors (default: first D-1 non-drive anchors)
   --sweep-config-file <file> Use explicit sweep config file instead of generated one
   --max-travel-mm <spec>     Override fixed-anchor targets (single value or list spec)
+  --sweepRange <mm>          Sweep half-range in mm (default: 50)
   --sweepPoints <count>      Number of points per sweep (default: 21)
   --speedup <scale>          hp-sim speed scale (default: 1)
   --feed <mm/min>            Feed rate for drive moves (default: 1400)
-  --sensor-force <N>         Deprecated (sensor motor uses force-low)
+  --sensor-force <N>         Force for sensor motor (default: tuned force-mid)
   --force-low <N>            idle force (default: 0.01)
   --force-mid <N>            start force (default: 0.01)
   --force-max <N>            end force (default: 0.1)
@@ -96,25 +97,50 @@ async function main() {
     process.exit(1);
   }
 
-  let sensorAnchor = parseIntegerArg(argv, '--sensor-anchor', null);
-  if (!Number.isFinite(sensorAnchor)) {
-    const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
-    sensorAnchor = motorIds.findIndex((_, idx) => idx !== driveAnchor && !forbidden.has(idx));
-  }
-  if (!Number.isFinite(sensorAnchor) || sensorAnchor < 0 || sensorAnchor >= motorIds.length || sensorAnchor === driveAnchor) {
-    console.error('Invalid --sensor-anchor');
-    process.exit(1);
-  }
-
+  const sensorAnchorArg = parseIntegerArg(argv, '--sensor-anchor', null);
   let fixedAnchors = parseListArg(argv, '--fixed-anchors');
+  const requiredFixed = Math.max(0, machineConfig.dimensions - 1);
   if (!fixedAnchors) {
     fixedAnchors = motorIds
       .map((_, idx) => idx)
-      .filter((idx) => idx !== driveAnchor && idx !== sensorAnchor);
+      .filter((idx) => idx !== driveAnchor && (!Number.isFinite(sensorAnchorArg) || idx !== sensorAnchorArg))
+      .slice(0, requiredFixed);
+    if (fixedAnchors.length !== requiredFixed) {
+      console.error(`Unable to select ${requiredFixed} default fixed anchors`);
+      process.exit(1);
+    }
   }
-  const expectedFixedCount = machineConfig.numAnchors - 2;
-  if (fixedAnchors.length !== expectedFixedCount) {
-    console.error(`Invalid --fixed-anchors (expected ${expectedFixedCount} anchors)`);
+  fixedAnchors = [...new Set(fixedAnchors)];
+  if (fixedAnchors.some((idx) => !Number.isFinite(idx) || idx < 0 || idx >= motorIds.length)) {
+    console.error('Invalid --fixed-anchors');
+    process.exit(1);
+  }
+  if (fixedAnchors.includes(driveAnchor)) {
+    console.error('Invalid --fixed-anchors (includes drive anchor)');
+    process.exit(1);
+  }
+  if (fixedAnchors.length !== requiredFixed) {
+    console.error(`Invalid --fixed-anchors (expected ${requiredFixed} anchors)`);
+    process.exit(1);
+  }
+
+  const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
+  let sensorAnchor = sensorAnchorArg;
+  if (!Number.isFinite(sensorAnchor)) {
+    sensorAnchor = motorIds.findIndex(
+      (_, idx) => idx !== driveAnchor && !fixedAnchors.includes(idx) && !forbidden.has(idx),
+    );
+  }
+  if (!Number.isFinite(sensorAnchor) || sensorAnchor < 0 || sensorAnchor >= motorIds.length) {
+    console.error('Invalid --sensor-anchor');
+    process.exit(1);
+  }
+  if (sensorAnchor === driveAnchor || fixedAnchors.includes(sensorAnchor)) {
+    console.error('Invalid --sensor-anchor (must be distinct from drive/fixed anchors)');
+    process.exit(1);
+  }
+  if (forbidden.has(sensorAnchor)) {
+    console.error('Invalid --sensor-anchor (forbidden sensor anchor)');
     process.exit(1);
   }
 
