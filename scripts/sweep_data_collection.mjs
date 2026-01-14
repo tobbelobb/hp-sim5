@@ -326,7 +326,10 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
     await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
     await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes, delayFn });
     const lowForce = Number.isFinite(forceLow) ? forceLow : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N;
-    await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => lowForce) });
+    const postMoveModes = motorIds.map((_, idx) => (
+      movingAnchors.has(idx) ? 'position' : lowForce
+    ));
+    await applyForceModeState(sendFn, { motorIds, modes: postMoveModes });
     const sleep = (ms) => (delayFn ? delayFn(ms) : new Promise((resolve) => setTimeout(resolve, ms)));
     await sleep(500);
   }
@@ -363,23 +366,23 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     motorIds,
     modes: motorIds.map(() => 'position'),
   });
-  const startStable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-  const startLengths = startStable.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
-  const modes = motorIds.map((_, idx) => {
+  const modesPullPair = motorIds.map((_, idx) => {
     if (forbidden.has(idx)) {
       return 'position';
     }
     if (pairSet.has(idx)) {
-      return forceMax;
+      return forceMax*0.75;
     }
     return forceLow;
   });
-  await applyForceModeState(sendFn, { motorIds, modes });
-  const endStable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-  const endLengths = endStable.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
-  let maxTravel = null;
+  let maxTravel = 0;
   for (let idx = 0; idx < motorIds.length; idx += 1) {
     if (pairSet.has(idx) || forbidden.has(idx)) {
       continue;
@@ -393,7 +396,7 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     if (!Number.isFinite(delta)) {
       continue;
     }
-    maxTravel = Math.max(maxTravel ?? 0, delta);
+    maxTravel = Math.max(maxTravel, delta);
   }
 
   await applyForceModeState(sendFn, {
@@ -487,12 +490,11 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
 
-  const initialStable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-  const initialAngles = initialStable.anglesDeg;
-  const initialLengths = initialAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
   const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
 
-  const modes = motorIds.map((_, idx) => {
+  const modesPullout = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
       return forceMax;
     }
@@ -501,10 +503,23 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     }
     return forceLow;
   });
-  await applyForceModeState(sendFn, { motorIds, modes });
+  await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
+  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+
+  const modesRelax = motorIds.map((_, idx) => {
+    if (idx === driveAnchor) {
+      return forceLow;
+    }
+    if (fixedSet.has(idx) || forbidden.has(idx)) {
+      return 'position';
+    }
+    return forceLow;
+  });
+  await applyForceModeState(sendFn, { motorIds, modes: modesRelax });
   const forceStable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
   const endAngles = forceStable.anglesDeg;
   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+
   const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
 
   const dataPoints = [];
@@ -548,8 +563,21 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     }
     // eslint-disable-next-line no-await-in-loop
     const stable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-    const lengths = recordPoint(stable.anglesDeg, target, stepIdx, steps);
+    const relaxForDataCollectionModes = motorIds.map((_, idx) => {
+      if (idx === driveAnchor) {
+        return 'position';
+      }
+      if (fixedSet.has(idx) || forbidden.has(idx)) {
+        return 'position';
+      }
+      return forceLow;
+    });
+    await applyForceModeState(sendFn, { motorIds, modes: relaxForDataCollectionModes });
+    const stableData = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+    const lengths = recordPoint(stableData.anglesDeg, target, stepIdx, steps);
     currentDrive = lengths[driveAnchor] ?? currentDrive;
+    await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+    await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
   }
 
   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm } };
@@ -747,7 +775,7 @@ export async function collectSweepData(send, context) {
         motorIds,
         mmPerDeg,
         forceLow,
-        forceMax: forceMax*0.75,
+        forceMax,
         pairAnchors: sizeTunePair,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
         speedup,
