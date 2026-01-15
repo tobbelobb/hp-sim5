@@ -191,6 +191,85 @@ def _parse_csv_floats(spec: Optional[str]) -> Optional[List[float]]:
     return out or None
 
 
+def _dataset_force_tuning(dataset: Optional[dict]) -> Optional[dict]:
+    if not isinstance(dataset, dict):
+        return None
+    config = dataset.get("config")
+    if not isinstance(config, dict):
+        return None
+    tuning = config.get("force_tuning") or config.get("torque_tuning")
+    if not isinstance(tuning, dict):
+        return None
+
+    def _coerce(key: str, *aliases: str) -> Optional[float]:
+        for k in (key, *aliases):
+            val = tuning.get(k)
+            if isinstance(val, (int, float)) and np.isfinite(val):
+                return float(val)
+        return None
+
+    low = _coerce("force_low_n", "torque_low_n")
+    mid = _coerce("force_mid_n", "torque_mid_n")
+    max_force = _coerce("force_max_n", "torque_max_n")
+    if low is None or mid is None or max_force is None:
+        return None
+
+    normalized = dict(tuning)
+    normalized["force_low_n"] = low
+    normalized["force_mid_n"] = mid
+    normalized["force_max_n"] = max_force
+    return normalized
+
+
+def _collector_has_force_overrides(args: Sequence[str]) -> bool:
+    force_flags = {
+        "--force-low",
+        "--forceLow",
+        "--force-mid",
+        "--forceMid",
+        "--force-max",
+        "--forceMax",
+        "--auto-tune-force",
+        "--autoTuneForce",
+        "--no-auto-tune-force",
+        "--noAutoTuneForce",
+    }
+    for arg in args:
+        if not isinstance(arg, str):
+            continue
+        if arg in force_flags:
+            return True
+        if arg.startswith("--force-low=") or arg.startswith("--forceLow="):
+            return True
+        if arg.startswith("--force-mid=") or arg.startswith("--forceMid="):
+            return True
+        if arg.startswith("--force-max=") or arg.startswith("--forceMax="):
+            return True
+    return False
+
+
+def _inject_force_args(
+    dataset: dict, collector_args: Sequence[str]
+) -> Tuple[List[str], Optional[dict], bool]:
+    force_tuning = _dataset_force_tuning(dataset)
+    args = list(collector_args)
+    if force_tuning is None or _collector_has_force_overrides(args):
+        return args, force_tuning, False
+
+    args.extend(
+        [
+            "--force-low",
+            str(force_tuning["force_low_n"]),
+            "--force-mid",
+            str(force_tuning["force_mid_n"]),
+            "--force-max",
+            str(force_tuning["force_max_n"]),
+            "--no-auto-tune-force",
+        ]
+    )
+    return args, force_tuning, True
+
+
 
 
 def _plan_next_ellipse_sweep(
@@ -312,7 +391,7 @@ def _plan_next_ellipse_sweep(
     if best_cfg is not None:
         _write_sweep_config_file(cfg_path, best_cfg)
 
-    collector_args_eff = list(collector_args)
+    collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
         collector_args_eff.append("--return-to-origin")
 
@@ -340,6 +419,8 @@ def _plan_next_ellipse_sweep(
         "best_cfg": best_cfg,
         "cfg_path": cfg_path,
         "collect_command": cmd,
+        "force_tuning": force_tuning,
+        "force_args_applied": force_args_applied,
     }
 
 
@@ -378,6 +459,14 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
     if bool(print_command) and isinstance(cmd, list) and cmd:
         print("; collect_command:")
         print(";   " + " ".join(str(x) for x in cmd))
+    if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+        ft = plan["force_tuning"]
+        print(
+            "; reusing force tuning:"
+            f" low={float(ft.get('force_low_n', float('nan'))):.4g}N"
+            f" mid={float(ft.get('force_mid_n', float('nan'))):.4g}N"
+            f" max={float(ft.get('force_max_n', float('nan'))):.4g}N"
+        )
 
 
 def ellipse_active(
@@ -449,8 +538,15 @@ def ellipse_active(
     print(f"; running: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
+    base_dataset = _load_json(dataset_path)
     new_dataset = _load_json(collector_output)
-    merged = _merge_sweep_datasets(_load_json(dataset_path), new_dataset)
+    if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+        cfg = new_dataset.get("config")
+        if isinstance(cfg, dict):
+            cfg["force_tuning"] = dict(plan["force_tuning"])
+            _write_json(collector_output, new_dataset)
+
+    merged = _merge_sweep_datasets(base_dataset, new_dataset)
     out_path = merged_output_dataset or dataset_path
     _write_json(out_path, merged)
     print(f"; merged dataset written to {out_path}")
@@ -632,10 +728,18 @@ def ellipse_loop(
             print(f"\n; interrupted; dataset={work_path}")
             return 130
 
+        base_dataset = _load_json(work_path)
         print(f"; running: {' '.join(str(x) for x in cmd)}")
         subprocess.run(cmd, check=True)
 
-        merged = _merge_sweep_datasets(_load_json(work_path), _load_json(collector_output))
+        new_dataset = _load_json(collector_output)
+        if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+            cfg = new_dataset.get("config")
+            if isinstance(cfg, dict):
+                cfg["force_tuning"] = dict(plan["force_tuning"])
+                _write_json(collector_output, new_dataset)
+
+        merged = _merge_sweep_datasets(base_dataset, new_dataset)
         _write_json(work_path, merged)
         sweeps = merged.get("sweeps", [])
         count = len(sweeps) if isinstance(sweeps, list) else "?"
