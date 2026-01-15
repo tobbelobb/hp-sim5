@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   computeMmPerDegree,
-  parseEncoderReply,
   parseM666,
   runMoveWithWait,
   sleep as baseSleep,
@@ -51,8 +50,41 @@ export const SWEEP_DEFAULTS = {
   DATASET_VERSION,
 };
 
+/**
+ * Sweep collection field reference (input + normalized options).
+ * machineType: lowercase key in MACHINE_CONFIGS.
+ * machineConfig: { numAnchors, dimensions, axes, forbiddenSensors } for machineType.
+ * motorIds: array of motor ID strings, length == machineConfig.numAnchors.
+ * speedup: positive number, hp-sim speed scale (1 == realtime).
+ * sweepPoints: integer >= 2, number of points per sweep.
+ * maxSweepCount: integer >= 1, max sweeps selected from generated configs.
+ * feed: number, mm/min feed rate for drive moves.
+ * settleMs: number >= 0, metadata settle time.
+ * forceLow/Mid/Max: numbers, force thresholds in N.
+ * forceLowProvided/MidProvided/MaxProvided: booleans for user-provided force args.
+ * forceArgsProvided: boolean, true when all force args supplied by the user.
+ * fixedTargets: array of numbers or null, per-fixed-anchor deltas in mm.
+ * maxTravelMm: number or null, shared fixed-anchor delta in mm.
+ * sweepConfigFile: string or null, path to explicit sweep configs file.
+ * debugSweep: boolean, print planned sweep configs.
+ * autoTuneForce/noAutoTuneForce: booleans, auto-tuning behavior flags.
+ * returnToOrigin: boolean, return all motors to origin after collection.
+ * outputFile: string or null, output dataset JSON path.
+ */
+
 function range(n) {
   return Array.from({ length: n }, (_, i) => i);
+}
+
+function parseOptionalNumber(value, label, { integer = false } = {}) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const parsed = integer ? parseInt(value, 10) : parseFloat(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`${label} must be a number.`);
+  }
+  return parsed;
 }
 
 export function combinations(arr, k) {
@@ -147,6 +179,111 @@ function resolveFixedTargets(fixedCount, explicitTargets, maxTravelMm) {
   return Array.from({ length: fixedCount }, () => value);
 }
 
+function validateSweepCollectionInput(context) {
+  if (!context || typeof context !== 'object') {
+    throw new Error('collectSweepData requires a context object.');
+  }
+  const { args = {}, machineType, machineConfig, motorIds, speedup } = context;
+  const config = machineConfig ?? MACHINE_CONFIGS[machineType];
+  if (!config || !machineType) {
+    throw new Error(`Unknown machine type: ${machineType}`);
+  }
+  if (!Array.isArray(motorIds) || motorIds.length !== config.numAnchors) {
+    throw new Error(`Motor ID mapping missing or mismatched for ${machineType}`);
+  }
+  if (!Array.isArray(config.axes) || motorIds.length !== config.axes.length) {
+    throw new Error(`Motor ID count (${motorIds.length}) does not match axes count (${config.axes?.length ?? 0}) for ${machineType}`);
+  }
+
+  const sweepPoints = parseOptionalNumber(args.sweepPoints, 'sweepPoints', { integer: true });
+  if (Number.isFinite(sweepPoints) && sweepPoints < 2) {
+    throw new Error('sweepPoints must be at least 2');
+  }
+  const maxSweeps = parseOptionalNumber(args.maxSweeps, 'maxSweeps', { integer: true });
+  const feed = parseOptionalNumber(args.feed, 'feed');
+  const settleMs = parseOptionalNumber(args.settleMs, 'settleMs');
+  const forceLow = parseOptionalNumber(args.forceLow, 'force-low');
+  const forceMid = parseOptionalNumber(args.forceMid, 'force-mid');
+  const forceMax = parseOptionalNumber(args.forceMax, 'force-max');
+  const forceLowProvided = forceLow !== null;
+  const forceMidProvided = forceMid !== null;
+  const forceMaxProvided = forceMax !== null;
+  const fixedTargets = parseFixedTargetsSpec(args.fixedTargets ?? null);
+  const maxTravelMm = parseMaxTravelValue(args.maxTravelMm ?? null);
+  if (fixedTargets && maxTravelMm !== null) {
+    throw new Error('Use either --fixed-targets or --max-travel-mm, not both.');
+  }
+
+  return {
+    machineType,
+    machineConfig: config,
+    motorIds,
+    speedup: parseOptionalNumber(speedup, 'speedup'),
+    sweepPoints,
+    maxSweeps,
+    feed,
+    settleMs,
+    forceLow,
+    forceMid,
+    forceMax,
+    forceLowProvided,
+    forceMidProvided,
+    forceMaxProvided,
+    forceArgsProvided: forceLowProvided && forceMidProvided && forceMaxProvided,
+    fixedTargets,
+    maxTravelMm,
+    sweepConfigFile: args.sweepConfigFile ?? null,
+    debugSweep: !!args.debugSweep,
+    autoTuneForce: !!args.autoTuneForce,
+    noAutoTuneForce: !!args.noAutoTuneForce,
+    returnToOrigin: !!args.returnToOrigin,
+    outputFile: args.outputFile ?? null,
+  };
+}
+
+function applySweepDefaults(input) {
+  const sweepPoints = input.sweepPoints ?? DEFAULT_SWEEP_POINTS;
+  const maxSweepCount = Math.max(1, input.maxSweeps ?? DEFAULT_MAX_SWEEPS);
+  const feed = input.feed ?? DEFAULT_FEED;
+  const settleMs = Math.max(0, input.settleMs ?? DEFAULT_SETTLE_MS);
+  const speedup = Number.isFinite(input.speedup) && input.speedup > 0 ? input.speedup : 1;
+  const forceLow = input.forceLow ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N;
+  const forceMid = input.forceMid ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N;
+  const forceMax = input.forceMax ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N;
+  const maxTravelMm = Number.isFinite(input.maxTravelMm) ? Math.abs(input.maxTravelMm) : null;
+  const autoTuneForce = input.autoTuneForce || (!input.noAutoTuneForce && !input.forceArgsProvided);
+
+  return {
+    ...input,
+    sweepPoints,
+    maxSweepCount,
+    feed,
+    settleMs,
+    speedup,
+    forceLow,
+    forceMid,
+    forceMax,
+    maxTravelMm,
+    autoTuneForce,
+  };
+}
+
+async function resolveSweepConfigs({ sweepConfigFile, machineType, machineConfig, maxSweepCount }) {
+  if (sweepConfigFile) {
+    return loadSweepConfigFile(sweepConfigFile, machineConfig);
+  }
+  let sweepConfigs = generateSweepConfigs(machineType);
+  if (sweepConfigs.length > maxSweepCount) {
+    sweepConfigs = selectRepresentativeConfigs(
+      sweepConfigs,
+      machineConfig.numAnchors,
+      maxSweepCount,
+      machineConfig.forbiddenSensors,
+    );
+  }
+  return sweepConfigs;
+}
+
 export function generateSweepConfigs(machineType, forbiddenSensors = null) {
   const machineConfig = MACHINE_CONFIGS[machineType];
   if (!machineConfig) {
@@ -176,18 +313,13 @@ function selectSizeTunePair(sweepConfigs, forbiddenSensors = []) {
   }
   const forbidden = new Set(forbiddenSensors ?? []);
   for (const cfg of sweepConfigs) {
-    const drive = cfg?.driveAnchor;
-    const sensor = cfg?.sensorAnchor;
-    if (!Number.isFinite(drive) || !Number.isFinite(sensor)) {
+    if (forbidden.has(cfg.driveAnchor) || forbidden.has(cfg.sensorAnchor)) {
       continue;
     }
-    if (forbidden.has(drive) || forbidden.has(sensor)) {
+    if (cfg.driveAnchor === cfg.sensorAnchor) {
       continue;
     }
-    if (drive === sensor) {
-      continue;
-    }
-    return [drive, sensor];
+    return [cfg.driveAnchor, cfg.sensorAnchor];
   }
   return null;
 }
@@ -284,16 +416,6 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     speedup,
   } = options;
 
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return null;
-  }
-  if (!Array.isArray(pairAnchors) || pairAnchors.length !== 2) {
-    return null;
-  }
-  if (!Number.isFinite(forceLow) || !Number.isFinite(forceMax)) {
-    return null;
-  }
-
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const pairSet = new Set(pairAnchors);
 
@@ -304,38 +426,23 @@ async function measureMaxTravelMm(sendFn, options = {}) {
   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
   // Apply 75% of max force in three steps with 100 ms between
-  let modesPullPair = motorIds.map((_, idx) => {
-    if (forbidden.has(idx)) {
-      return 'position';
+  const pullFractions = [0.25, 0.5, 0.75];
+  for (let i = 0; i < pullFractions.length; i += 1) {
+    const fraction = pullFractions[i];
+    const modesPullPair = motorIds.map((_, idx) => {
+      if (forbidden.has(idx)) {
+        return 'position';
+      }
+      if (pairSet.has(idx)) {
+        return forceMax * fraction;
+      }
+      return forceLow;
+    });
+    await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+    if (i < pullFractions.length - 1) {
+      baseSleep(100);
     }
-    if (pairSet.has(idx)) {
-      return forceMax*0.25;
-    }
-    return forceLow;
-  });
-  await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
-  baseSleep(100);
-  modesPullPair = motorIds.map((_, idx) => {
-    if (forbidden.has(idx)) {
-      return 'position';
-    }
-    if (pairSet.has(idx)) {
-      return forceMax*0.5;
-    }
-    return forceLow;
-  });
-  await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
-  baseSleep(100);
-  modesPullPair = motorIds.map((_, idx) => {
-    if (forbidden.has(idx)) {
-      return 'position';
-    }
-    if (pairSet.has(idx)) {
-      return forceMax*0.75;
-    }
-    return forceLow;
-  });
-  await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+  }
   await waitForStableEncoders(sendFn, motorIds, speedup);
   const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
@@ -440,9 +547,6 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
-  if (!driveAxis) {
-    throw new Error('force sweep requires drive axis mapping');
-  }
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
 
@@ -541,64 +645,35 @@ async function performForceSweep(sendFn, sweepConfig, options) {
 
 // Collect sweeps for each config once; fixed anchors use explicit targets or size-tuned travel.
 export async function collectSweepData(send, context) {
+  const input = validateSweepCollectionInput(context);
+  const options = applySweepDefaults(input);
   const {
-    args,
     machineType,
     machineConfig,
     motorIds,
-    speedup: speedupArg,
-  } = context;
+    speedup,
+    sweepPoints,
+    maxSweepCount,
+    feed,
+    settleMs,
+    fixedTargets: fixedTargetsSpec,
+    maxTravelMm: maxTravelOverride,
+    debugSweep,
+    autoTuneForce,
+    returnToOrigin,
+    outputFile: outputFileOverride,
+    forceMaxProvided,
+  } = options;
+  let { forceLow, forceMid, forceMax } = options;
 
-  const sweepPoints = Number.isFinite(parseInt(args.sweepPoints, 10))
-    ? parseInt(args.sweepPoints, 10)
-    : DEFAULT_SWEEP_POINTS;
-  const maxSweeps = Number.isFinite(parseInt(args.maxSweeps, 10))
-    ? parseInt(args.maxSweeps, 10)
-    : DEFAULT_MAX_SWEEPS;
-  if (sweepPoints < 2) {
-    throw new Error('sweepPoints must be at least 2');
-  }
-  const maxSweepCount = Math.max(1, maxSweeps);
-  const feed = Number.isFinite(parseFloat(args.feed)) ? parseFloat(args.feed) : DEFAULT_FEED;
-  const forceLowProvided = Number.isFinite(parseFloat(args.forceLow));
-  const forceMidProvided = Number.isFinite(parseFloat(args.forceMid));
-  const forceMaxProvided = Number.isFinite(parseFloat(args.forceMax));
-  let forceLow = forceLowProvided ? parseFloat(args.forceLow) : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N;
-  let forceMid = forceMidProvided ? parseFloat(args.forceMid) : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N;
-  let forceMax = forceMaxProvided ? parseFloat(args.forceMax) : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N;
-  const maxTravelSpec = args.maxTravelMm ?? null;
-  const fixedTargetsSpec = parseFixedTargetsSpec(args.fixedTargets ?? null);
-  const maxTravelOverride = parseMaxTravelValue(maxTravelSpec);
-  if (fixedTargetsSpec && maxTravelOverride !== null) {
-    throw new Error('Use either --fixed-targets or --max-travel-mm, not both.');
-  }
-  const settleMs = Number.isFinite(parseFloat(args.settleMs))
-    ? Math.max(0, parseFloat(args.settleMs))
-    : DEFAULT_SETTLE_MS;
-  const speedup = Number.isFinite(speedupArg) && speedupArg > 0
-    ? speedupArg
-    : 1;
+  const sweepConfigs = await resolveSweepConfigs({
+    sweepConfigFile: options.sweepConfigFile,
+    machineType,
+    machineConfig,
+    maxSweepCount,
+  });
 
-  let sweepConfigs = null;
-  if (args.sweepConfigFile) {
-    sweepConfigs = await loadSweepConfigFile(args.sweepConfigFile, machineConfig);
-  } else {
-    sweepConfigs = generateSweepConfigs(machineType);
-    if (sweepConfigs.length > maxSweepCount) {
-      sweepConfigs = selectRepresentativeConfigs(
-        sweepConfigs,
-        machineConfig.numAnchors,
-        maxSweepCount,
-        machineConfig.forbiddenSensors,
-      );
-    }
-  }
-
-  for (const cfg of sweepConfigs) {
-    validateSweepConfig(cfg, machineConfig);
-  }
-
-  if (args.debugSweep) {
+  if (debugSweep) {
     console.log(`Planned sweeps (${sweepConfigs.length}):`);
     for (const sweep of sweepConfigs) {
       console.log(`  fix [${sweep.fixedAnchors.join(', ')}], drive ${sweep.driveAnchor}, sensor ${sweep.sensorAnchor}`);
@@ -629,8 +704,6 @@ export async function collectSweepData(send, context) {
 
   await primeEncoders(send, { motorIds, axes: machineConfig.axes });
 
-  const forceArgsProvided = forceLowProvided && forceMidProvided && forceMaxProvided;
-  const autoTuneForce = args.autoTuneForce || (!args.noAutoTuneForce && !forceArgsProvided);
   let forceTuningMeta = null;
   if (autoTuneForce) {
     const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
@@ -682,7 +755,7 @@ export async function collectSweepData(send, context) {
   await waitForStableEncoders(send, motorIds, speedup);
 
   const useFixedTargets = fixedTargetsSpec !== null;
-  let maxTravelMm = Number.isFinite(maxTravelOverride) ? Math.abs(maxTravelOverride) : null;
+  let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
   let sizeTunePair = null;
   if (!useFixedTargets && maxTravelOverride === null) {
     sizeTunePair = selectSizeTunePair(sweepConfigs, machineConfig.forbiddenSensors);
@@ -812,7 +885,7 @@ export async function collectSweepData(send, context) {
     sweeps,
   };
 
-  const outputFile = args.outputFile || `sweep_data_${machineType}_${Date.now()}.json`;
+  const outputFile = outputFileOverride || `sweep_data_${machineType}_${Date.now()}.json`;
   const outputDir = path.dirname(outputFile);
   if (outputDir && outputDir !== '.') {
     await fs.mkdir(outputDir, { recursive: true });
@@ -820,7 +893,7 @@ export async function collectSweepData(send, context) {
   await fs.writeFile(outputFile, JSON.stringify(dataset, null, 2));
   console.log(`\nSaved ${sweeps.length} sweeps to ${outputFile}`);
 
-  if (args.returnToOrigin) {
+  if (returnToOrigin) {
     try {
       await returnMotorsToOriginAllAtOnce(send, {
         motorIds,
