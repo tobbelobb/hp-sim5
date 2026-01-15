@@ -141,7 +141,6 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
     maxBisectSteps = AUTO_TUNE_MAX_BISECT_STEPS,
     absTolerance = AUTO_TUNE_ABSOLUTE_TOLERANCE,
     relTolerance = AUTO_TUNE_RELATIVE_TOLERANCE,
-    delayFn = baseSleep,
   } = options;
 
   if (typeof trialFn !== 'function') {
@@ -205,7 +204,6 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
       mmPerDeg,
       feed,
       speedup,
-      delayFn,
     });
   }
 
@@ -247,7 +245,6 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
     sampleDurationMs = AUTO_TUNE_NOISE_SAMPLE_MS,
     sampleIntervalMs = AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS,
     forbiddenForceAnchors = [],
-    delayFn = baseSleep,
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return { sigmaByMotorDeg: [], samples: 0, durationMs: 0 };
@@ -264,7 +261,7 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  await waitForStableEncoders(sendFn, motorIds, { speedup });
 
   const sums = Array.from({ length: motorIds.length }, () => 0);
   const sumsSq = Array.from({ length: motorIds.length }, () => 0);
@@ -283,7 +280,7 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
       samples += 1;
     }
     // eslint-disable-next-line no-await-in-loop
-    await delayFn(intervalMs);
+    await baseSleep(intervalMs);
   }
 
   const sigmaByMotorDeg = sums.map((sum, idx) => {
@@ -321,7 +318,6 @@ export async function runForceTrial(sendFn, options = {}) {
     mmPerDeg,
     feed = DEFAULT_FEED,
     forbiddenForceAnchors = [],
-    delayFn = baseSleep,
   } = options;
 
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -364,7 +360,7 @@ export async function runForceTrial(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup });
   let startAngles = stableStart.anglesDeg;
 
   const rampWaitMs = Math.max(0, rampStepWaitMs / timeScale);
@@ -377,7 +373,7 @@ export async function runForceTrial(sendFn, options = {}) {
       await sendFn(`M569.4 P${motorIds[activeAnchor]} T${force}`);
       if (rampWaitMs > 0) {
         // eslint-disable-next-line no-await-in-loop
-        await delayFn(rampWaitMs);
+        await baseSleep(rampWaitMs);
       }
     }
     const lastForce = rampForces[rampForces.length - 1];
@@ -412,7 +408,7 @@ export async function runForceTrial(sendFn, options = {}) {
 
   while (Date.now() - startMs < stopAfterMs) {
     // eslint-disable-next-line no-await-in-loop
-    await delayFn(intervalMs);
+    await baseSleep(intervalMs);
     // eslint-disable-next-line no-await-in-loop
     const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
     const angles = parseEncoderReply(reply?.reply);
@@ -449,7 +445,7 @@ export async function runForceTrial(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  const stableResidual = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  const stableResidual = await waitForStableEncoders(sendFn, motorIds, { speedup });
   const residualAngles = stableResidual.anglesDeg;
 
   const deltaEndDeg = endAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
@@ -496,7 +492,6 @@ export async function runForceTrial(sendFn, options = {}) {
       midForce: idleForce,
       fixedAnchors: [fixedAnchor],
       forbiddenForceAnchors,
-      delayFn,
     });
     await setForceTrialModes(sendFn, motorIds, {
       activeAnchor,
@@ -538,7 +533,6 @@ export async function findEdgeForce(sendFn, options = {}) {
 
     // Optional extra stop: plateau after N stable steps
     plateauStepsRequired = 2,           // 1 means "2 successive within tol" (your default)
-    delayFn = baseSleep,
   } = options;
 
   if (typeof trialFn !== 'function') {
@@ -632,11 +626,6 @@ export async function findEdgeForce(sendFn, options = {}) {
     if (!Number.isFinite(next) || next <= F + 1e-12) break;
     F = next;
 
-    // Optional: tiny delay between ramp steps if you want extra safety margin.
-    if (typeof delayFn === 'function') {
-      // Keep it minimal; your trialFn likely already includes long windows.
-      await delayFn(0);
-    }
   }
 
   if (!saturationPair) {
@@ -809,7 +798,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
   const mmPerDeg = options.mmPerDeg ?? [];
   const feed = Number.isFinite(options.feed) ? options.feed : DEFAULT_FEED;
   const speedup = Number.isFinite(options.speedup) ? options.speedup : 1;
-  const delayFn = options.delayFn ?? baseSleep;
   const forbiddenForceAnchors = options.forbiddenForceAnchors ?? [];
   const fixedAnchors = plan?.config?.fixedAnchors ?? [];
 
@@ -878,7 +866,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     motorIds,
     modes: motorIds.map((_, idx) => (forbiddenForceAnchors.includes(idx) ? 'position' : fallback.forceLow)),
   });
-  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
+  await waitForStableEncoders(sendFn, motorIds, { speedup });
 
   const baseLow = clampAutoTuneForce(options.forceLow ?? DEFAULT_FORCE_LOW_N) ?? DEFAULT_FORCE_LOW_N;
   const capForceLimit = clampAutoTuneForce(
@@ -896,7 +884,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
       midForce: baseLow,
       fixedAnchors: [fixedAnchor],
       forbiddenForceAnchors,
-      delayFn,
     });
     await setForceTrialModes(sendFn, motorIds, {
       activeAnchor: driveAnchor,
@@ -913,7 +900,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
     idleForce: baseLow,
     speedup,
     forbiddenForceAnchors,
-    delayFn,
   });
   const thresholds = buildMovementThresholds(noiseStats.sigmaByMotorDeg, {
     activeAnchor: driveAnchor,
@@ -946,7 +932,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
       forbiddenForceAnchors,
       waitForStall: options.waitForStall ?? true,
       stallTimeoutMs: options.stallTimeoutMs,
-      delayFn,
     });
     if (label) {
       logTrial(label, force, result);
@@ -962,7 +947,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
     baseLow,
     capForceLimit,
     trialFn: runTrial,
-    delayFn,
   });
   const { forceStart, lastNoMoveForce, firstMoveForce } = minForceResult;
   if (!Number.isFinite(forceStart)) {
@@ -995,7 +979,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
     maxBracketSteps: AUTO_TUNE_MAX_BRACKET_STEPS,
     saturationRelTol: AUTO_TUNE_RELATIVE_TOLERANCE,
     minUsefulTravelDeg: thresholds.thetaActThr,
-    delayFn,
   });
 
   const forceEdge = edgeResult?.forceEdge;
@@ -1069,7 +1052,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
     midForce: tuned.forceLow,
     fixedAnchors,
     forbiddenForceAnchors,
-    delayFn,
   });
 
   return tuned;

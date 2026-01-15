@@ -29,7 +29,6 @@ export async function waitForStableEncoders(sendFn, motorIds, options = {}) {
     stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
     toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
     timeoutMs = null,
-    delayFn = baseSleep,
   } = options;
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = pollIntervalMs / timeScale;
@@ -97,7 +96,7 @@ export async function waitForStableEncoders(sendFn, motorIds, options = {}) {
     }
 
     // eslint-disable-next-line no-await-in-loop
-    await delayFn(pollMs);
+    await baseSleep(pollMs);
   }
 }
 
@@ -175,7 +174,6 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     midForce = DEFAULT_MID_FORCE_N,
     fixedAnchors = [],
     forbiddenForceAnchors = [],
-    delayFn = baseSleep,
     settleOptions = {},
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -185,7 +183,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     throw new Error('returnMotorsToOriginOneAtATime requires full axes mapping');
   }
 
-  const stableBefore = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn, ...settleOptions });
+  const stableBefore = await waitForStableEncoders(sendFn, motorIds, { speedup, ...settleOptions });
   const lengths = stableBefore.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
   const order = calculateReturnOrder({ fixedAnchors, currentLengths: lengths });
   const forbidden = new Set(forbiddenForceAnchors ?? []);
@@ -195,7 +193,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     if (!axis) {
       throw new Error(`Missing axis mapping for anchor ${anchorIdx}`);
     }
-    const stable = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn, ...settleOptions });
+    const stable = await waitForStableEncoders(sendFn, motorIds, { speedup, ...settleOptions });
     const currentLengths = stable.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     const fixedIdx = pickClosestToOrigin(currentLengths, new Set([anchorIdx]));
     const modes = currentLengths.map((_, idx) => {
@@ -216,7 +214,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
         sendFn,
         `G1 H2 ${formatAxisDelta(axis, delta)} F${feed}`,
         speedup,
-        { axes, delayFn },
+        { axes },
       );
       await applyForceModeState(sendFn, {
         motorIds,
@@ -235,7 +233,6 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
     mmPerDeg,
     feed,
     speedup = 1,
-    delayFn = baseSleep,
     settleOptions = {},
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -245,7 +242,7 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
     throw new Error('returnMotorsToOriginAllAtOnce requires full axes mapping');
   }
 
-  const stableBefore = await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn, ...settleOptions });
+  const stableBefore = await waitForStableEncoders(sendFn, motorIds, { speedup, ...settleOptions });
   const lengths = stableBefore.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
   const moveParts = [];
   for (let idx = 0; idx < motorIds.length; idx += 1) {
@@ -263,7 +260,7 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
       sendFn,
       `G1 H2 ${moveParts.join(' ')} F${feed}`,
       speedup,
-      { axes, delayFn },
+      { axes },
     );
     await applyForceModeState(sendFn, {
       motorIds,
