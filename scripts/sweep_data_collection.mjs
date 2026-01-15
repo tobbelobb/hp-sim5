@@ -13,7 +13,6 @@ import {
   getCurrentLengths,
   primeEncoders,
   returnMotorsToOriginAllAtOnce,
-  returnMotorsToOriginOneAtATime,
   waitForStableEncoders,
 } from './uncalibrated_actions.mjs';
 import { FORCE_TUNING_DEFAULTS, tuneForce } from './force_tuning.mjs';
@@ -40,8 +39,6 @@ const DEFAULT_FEED = 1400;
 const DEFAULT_FORCE_MID_N = 0.05;
 const DEFAULT_SETTLE_MS = 200;
 const DEFAULT_SAMPLE_RATE_HZ = 40;
-const DEFAULT_SUPER_SWEEP_RANGE_MM = 0;
-const DEFAULT_SUPER_SWEEP_POINTS = 1;
 const DATASET_VERSION = '2.0';
 
 export const SWEEP_DEFAULTS = {
@@ -51,8 +48,6 @@ export const SWEEP_DEFAULTS = {
   DEFAULT_FORCE_MID_N,
   DEFAULT_SETTLE_MS,
   DEFAULT_SAMPLE_RATE_HZ,
-  DEFAULT_SUPER_SWEEP_RANGE_MM,
-  DEFAULT_SUPER_SWEEP_POINTS,
   DATASET_VERSION,
 };
 
@@ -87,86 +82,40 @@ export function permutations(arr, k) {
   return result;
 }
 
-function buildSweepValues(rangeMm, points) {
-  const count = Number.isFinite(points) ? Math.max(1, points) : 1;
-  const span = Number.isFinite(rangeMm) ? Math.abs(rangeMm) : 0;
-  if (count <= 1 || span < 1e-9) {
-    return [0];
-  }
-  if (count === 2) {
-    return [-span, span];
-  }
-  const step = (2 * span) / (count - 1);
-  return Array.from({ length: count }, (_, idx) => -span + idx * step);
-}
-
-function generateFixedLengthCombos(fixedCount, rangeMm, points) {
-  if (!Number.isFinite(fixedCount) || fixedCount <= 0) {
-    return [[]];
-  }
-  const values = buildSweepValues(rangeMm, points);
-  const combos = [];
-  const current = new Array(fixedCount);
-
-  function helper(idx) {
-    if (idx >= fixedCount) {
-      combos.push([...current]);
-      return;
-    }
-    for (const value of values) {
-      current[idx] = value;
-      helper(idx + 1);
-    }
-  }
-
-  helper(0);
-  return combos;
-}
-
-function parseFixedTargetsSpec(spec, fixedCount) {
-  if (!spec) {
+function parseFixedTargetsSpec(spec) {
+  if (spec == null) {
     return null;
-  }
-  if (!Number.isFinite(fixedCount) || fixedCount <= 0) {
-    return [[]];
   }
   const raw = spec.toString().trim();
   if (raw.length === 0) {
     return null;
   }
-  const groups = raw.split(';').map((entry) => entry.trim()).filter(Boolean);
-  if (groups.length === 0) {
+  if (raw.includes(';')) {
+    throw new Error('Multiple fixed-target groups are no longer supported (super sweep removed).');
+  }
+  const values = raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => parseFloat(entry));
+  if (values.length === 0) {
     return null;
   }
-  const combos = [];
-  for (const group of groups) {
-    const values = group.split(',').map((entry) => parseFloat(entry.trim()));
-    if (values.some((val) => !Number.isFinite(val))) {
-      continue;
-    }
-    combos.push(values);
+  if (values.some((val) => !Number.isFinite(val))) {
+    throw new Error('Fixed targets must be numeric values.');
   }
-  return combos.length > 0 ? combos : null;
+  return values;
 }
 
-function normalizeFixedTargetCombos(combos, fixedCount) {
-  if (!Array.isArray(combos)) {
-    return null;
+function normalizeFixedTargets(values, fixedCount) {
+  if (!Array.isArray(values) || fixedCount <= 0) {
+    return [];
   }
-  const normalized = combos.map((combo) => {
-    if (!Array.isArray(combo)) {
-      return [];
-    }
-    const trimmed = combo.slice(0, fixedCount).map((val) => (Number.isFinite(val) ? val : 0));
-    if (trimmed.length < fixedCount) {
-      const missing = fixedCount - trimmed.length;
-      for (let i = 0; i < missing; i += 1) {
-        trimmed.push(0);
-      }
-    }
-    return trimmed;
-  });
-  return normalized.length > 0 ? normalized : null;
+  const normalized = values.slice(0, fixedCount).map((val) => (Number.isFinite(val) ? val : 0));
+  while (normalized.length < fixedCount) {
+    normalized.push(0);
+  }
+  return normalized;
 }
 
 function parseMaxTravelValue(spec) {
@@ -178,21 +127,24 @@ function parseMaxTravelValue(spec) {
     return null;
   }
   if (raw.includes(',') || raw.includes(';')) {
-    return null;
+    throw new Error('Use --fixed-targets for per-anchor values; --max-travel-mm expects one number.');
   }
   const value = parseFloat(raw);
-  return Number.isFinite(value) ? value : null;
+  if (!Number.isFinite(value)) {
+    throw new Error('max-travel-mm must be a numeric value.');
+  }
+  return value;
 }
 
-function resolveFixedLengthCombos(fixedCount, rangeMm, points, fixedTargetsSpec) {
-  const targetCombos = normalizeFixedTargetCombos(
-    parseFixedTargetsSpec(fixedTargetsSpec, fixedCount),
-    fixedCount,
-  );
-  if (targetCombos) {
-    return targetCombos;
+function resolveFixedTargets(fixedCount, explicitTargets, maxTravelMm) {
+  if (fixedCount <= 0) {
+    return [];
   }
-  return generateFixedLengthCombos(fixedCount, rangeMm, points);
+  if (Array.isArray(explicitTargets)) {
+    return normalizeFixedTargets(explicitTargets, fixedCount);
+  }
+  const value = Number.isFinite(maxTravelMm) ? maxTravelMm : 0;
+  return Array.from({ length: fixedCount }, () => value);
 }
 
 export function generateSweepConfigs(machineType, forbiddenSensors = null) {
@@ -587,6 +539,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm } };
 }
 
+// Collect sweeps for each config once; fixed anchors use explicit targets or size-tuned travel.
 export async function collectSweepData(send, context) {
   const {
     args,
@@ -599,12 +552,6 @@ export async function collectSweepData(send, context) {
   const sweepPoints = Number.isFinite(parseInt(args.sweepPoints, 10))
     ? parseInt(args.sweepPoints, 10)
     : DEFAULT_SWEEP_POINTS;
-  const superSweepRangeMm = Number.isFinite(parseFloat(args.superSweepRange))
-    ? Math.abs(parseFloat(args.superSweepRange))
-    : DEFAULT_SUPER_SWEEP_RANGE_MM;
-  const superSweepPoints = Number.isFinite(parseInt(args.superSweepPoints, 10))
-    ? Math.max(1, parseInt(args.superSweepPoints, 10))
-    : DEFAULT_SUPER_SWEEP_POINTS;
   const maxSweeps = Number.isFinite(parseInt(args.maxSweeps, 10))
     ? parseInt(args.maxSweeps, 10)
     : DEFAULT_MAX_SWEEPS;
@@ -620,18 +567,17 @@ export async function collectSweepData(send, context) {
   let forceMid = forceMidProvided ? parseFloat(args.forceMid) : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N;
   let forceMax = forceMaxProvided ? parseFloat(args.forceMax) : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N;
   const maxTravelSpec = args.maxTravelMm ?? null;
-  const fixedTargetsSpec = args.fixedTargets ?? null;
+  const fixedTargetsSpec = parseFixedTargetsSpec(args.fixedTargets ?? null);
   const maxTravelOverride = parseMaxTravelValue(maxTravelSpec);
+  if (fixedTargetsSpec && maxTravelOverride !== null) {
+    throw new Error('Use either --fixed-targets or --max-travel-mm, not both.');
+  }
   const settleMs = Number.isFinite(parseFloat(args.settleMs))
     ? Math.max(0, parseFloat(args.settleMs))
     : DEFAULT_SETTLE_MS;
   const speedup = Number.isFinite(speedupArg) && speedupArg > 0
     ? speedupArg
     : 1;
-  const sampleRateHz = Number.isFinite(parseFloat(args.sampleRate))
-    ? parseFloat(args.sampleRate)
-    : DEFAULT_SAMPLE_RATE_HZ;
-  const explicitTargetsSpec = fixedTargetsSpec ?? (maxTravelOverride === null ? maxTravelSpec : null);
 
   let sweepConfigs = null;
   if (args.sweepConfigFile) {
@@ -712,7 +658,6 @@ export async function collectSweepData(send, context) {
     }
   }
 
-
   // A short tighten-release cycle before we set encoder reference points and set pos mode
   await applyForceModeState(send, {
     motorIds,
@@ -736,10 +681,10 @@ export async function collectSweepData(send, context) {
   });
   await waitForStableEncoders(send, motorIds, speedup);
 
-  const explicitTargetsProvided = explicitTargetsSpec !== null || maxTravelOverride !== null;
+  const useFixedTargets = fixedTargetsSpec !== null;
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? Math.abs(maxTravelOverride) : null;
   let sizeTunePair = null;
-  if (!explicitTargetsProvided) {
+  if (!useFixedTargets && maxTravelOverride === null) {
     sizeTunePair = selectSizeTunePair(sweepConfigs, machineConfig.forbiddenSensors);
     if (!sizeTunePair) {
       console.log('; size-tune skipped (no force-capable anchor pair)');
@@ -763,56 +708,18 @@ export async function collectSweepData(send, context) {
   if (!Number.isFinite(maxTravelMm)) {
     maxTravelMm = 0;
   }
-  const maxTravelMeta = explicitTargetsSpec === null && maxTravelOverride === null
-    ? maxTravelMm
-    : (maxTravelOverride !== null ? maxTravelMm : undefined);
-
-  const sweepTasks = [];
-  for (const config of sweepConfigs) {
-    const fixedCount = config.fixedAnchors.length;
-    let combos = null;
-    if (explicitTargetsSpec !== null) {
-      combos = resolveFixedLengthCombos(
-        fixedCount,
-        superSweepRangeMm,
-        superSweepPoints,
-        explicitTargetsSpec,
-      );
-    } else if (Number.isFinite(maxTravelMm)) {
-      combos = [Array.from({ length: fixedCount }, () => maxTravelMm)];
-    } else {
-      combos = resolveFixedLengthCombos(
-        fixedCount,
-        superSweepRangeMm,
-        superSweepPoints,
-        null,
-      );
-    }
-    for (let comboIdx = 0; comboIdx < combos.length; comboIdx += 1) {
-      sweepTasks.push({
-        config,
-        fixedTargets: combos[comboIdx] || [],
-        fixedComboIndex: comboIdx,
-        fixedComboCount: combos.length,
-      });
-    }
-  }
-
-  const plannedSweeps = sweepTasks.map((task) => ({ ...task }));
-
-  const totalPlannedSweeps = plannedSweeps.length || sweepConfigs.length;
+  const maxTravelMeta = useFixedTargets ? undefined : maxTravelMm;
+  const totalPlannedSweeps = sweepConfigs.length;
   let sweepOrdinal = 0;
 
-  for (let planIdx = 0; planIdx < plannedSweeps.length; planIdx += 1) {
-    const plan = plannedSweeps[planIdx];
-    const {
-      config: sweepConfig,
-      fixedTargets,
-      fixedComboIndex,
-      fixedComboCount,
-    } = plan;
+  for (const sweepConfig of sweepConfigs) {
     sweepOrdinal += 1;
-    const fixedDesc = fixedTargets.length > 0
+    const fixedTargets = resolveFixedTargets(
+      sweepConfig.fixedAnchors.length,
+      fixedTargetsSpec,
+      maxTravelMm,
+    );
+    const fixedDesc = useFixedTargets
       ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
       : '';
     const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';
@@ -867,24 +774,9 @@ export async function collectSweepData(send, context) {
         feed_rate: feed,
         sensor_force_n: forceMid,
         settle_ms: settleMs,
-        fixed_combo_index: fixedComboIndex,
-        fixed_combo_count: fixedComboCount,
-        sample_rate_hz: undefined,
       },
     });
     console.log(`  Collected ${dataPoints.length} points`);
-    if (fixedComboCount > 1 && fixedComboIndex === fixedComboCount - 1) {
-      await returnMotorsToOriginOneAtATime(send, {
-        motorIds,
-        axes: machineConfig.axes,
-        mmPerDeg,
-        feed,
-        speedup,
-        midForce: forceMid,
-        fixedAnchors: sweepConfig.fixedAnchors,
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
-      });
-    }
   }
 
   const forceTuning = {

@@ -75,9 +75,8 @@ Options:
   --help, -h                 Show this help and exit
   --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
   --sweepPoints <count>      Number of points per sweep (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_POINTS})
-  --superSweepRange <mm>     Fixed-anchor half-range in mm (default: ${SWEEP_DEFAULTS.DEFAULT_SUPER_SWEEP_RANGE_MM})
-  --superSweepPoints <count> Number of fixed-length samples per sweep config (default: ${SWEEP_DEFAULTS.DEFAULT_SUPER_SWEEP_POINTS})
-  --max-travel-mm <spec>     Override fixed-anchor targets; e.g. "200" or "-100,0;0,100"
+  --fixed-targets <csv>      Fixed-anchor target deltas in mm (comma-separated)
+  --max-travel-mm <mm>       Fixed-anchor delta applied to all fixed anchors
   --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${SWEEP_DEFAULTS.DEFAULT_MAX_SWEEPS})
   --feed <mm/min>            Feed rate for drive moves (default: ${SWEEP_DEFAULTS.DEFAULT_FEED})
   --sensor-force <N>         Deprecated (sensor motor uses force-low)

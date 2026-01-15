@@ -165,7 +165,7 @@ def _suggested_collect_command(
         str(machine_type),
         "--sweep-config-file",
         str(cfg_path),
-        "--max-travel-mm",
+        "--fixed-targets",
         _fixed_targets_spec(cfg),
     ]
     if output_file is not None:

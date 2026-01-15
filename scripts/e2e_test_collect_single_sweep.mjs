@@ -51,7 +51,8 @@ Options:
   --sensor-anchor <index>    Anchor index to use as sensor force (default: first non-drive non-fixed)
   --fixed-anchors <list>     Comma-separated fixed anchors (default: first non-drive; others are sensors)
   --sweep-config-file <file> Use explicit sweep config file instead of generated one
-  --max-travel-mm <spec>     Override fixed-anchor targets (single value or list spec)
+  --fixed-targets <csv>      Fixed-anchor target deltas in mm (comma-separated)
+  --max-travel-mm <mm>       Fixed-anchor delta applied to all fixed anchors
   --sweepPoints <count>      Number of points per sweep (default: 21)
   --speedup <scale>          hp-sim speed scale (default: 1)
   --feed <mm/min>            Feed rate for drive moves (default: 1400)
