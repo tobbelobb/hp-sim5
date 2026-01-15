@@ -238,7 +238,6 @@ async function main() {
 }
 
 export {
-  angleToLength,
   combinations,
   generateSweepConfigs,
   loadSweepConfigFile,
@@ -246,6 +245,10 @@ export {
   selectRepresentativeConfigs,
   validateSweepConfig,
 } from './sweep_data_collection.mjs';
+
+export {
+  angleToLength,
+} from './uncalibrated_actions.mjs';
 
 const isMain = import.meta.url === pathToFileURL(process.argv[1] || '').href;
 if (isMain) {
