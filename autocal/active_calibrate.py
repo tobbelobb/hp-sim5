@@ -362,6 +362,21 @@ def _plan_next_ellipse_sweep(
                 hi = float(max_travel_mm)
             else:
                 lo, hi = -600.0, 600.0
+        span = float(hi - lo)
+        if (
+            not explicit_delta_range
+            and span < 20.0  # Avoid near-degenerate grids when all observed deltas cluster
+            and max_travel_mm is not None
+            and np.isfinite(max_travel_mm)
+            and float(max_travel_mm) > 0.0
+        ):
+            hi = max(hi, float(max_travel_mm))
+            padded_lo = 10.0 if hi > 10.0 else max(0.0, hi - 20.0)
+            # If all observed deltas are positive and tightly packed near hi, expand downwards to ~10mm.
+            if lo >= 0.0:
+                lo = min(lo, padded_lo)
+            else:
+                lo = padded_lo
         values = np.linspace(lo, hi, max(3, int(candidate_count)))
         candidate_deltas = [float(v) for v in values.tolist()]
 
