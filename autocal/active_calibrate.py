@@ -139,7 +139,7 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
 
 def _write_sweep_config_file(path: Path, cfg: SweepConfig) -> None:
     fixed = ",".join(str(i) for i in cfg.fixed_anchors)
-    content = f"{fixed} {int(cfg.drive_anchor)} {int(cfg.sensor_anchor)}\n"
+    content = f"[{fixed}] {int(cfg.drive_anchor)} {int(cfg.sensor_anchor)}\n"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
@@ -369,6 +369,7 @@ def _plan_next_ellipse_sweep(
         num_anchors=num_anchors,
         dimensions=dimensions,
         fixed_delta_values_mm=candidate_deltas,
+        machine_type=machine_type,
     )
 
     ranked = rank_candidates_d_optimal(
@@ -609,7 +610,7 @@ def ellipse_loop(
             bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
             bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
             bootstrap_cfg.write_text(
-                "0 1 2\n1 0 2\n2 0 1\n",
+                "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
                 encoding="utf-8",
             )
 

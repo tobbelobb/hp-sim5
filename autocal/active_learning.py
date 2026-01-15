@@ -8,6 +8,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 import numpy as np
 
 from autocal.ellipse_cost import canonicalize_geometry
+from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import (
     anchors_matrix_to_vec,
     anchors_vec_to_matrix,
@@ -50,6 +51,21 @@ def l2_scale_for_machine(machine_type: str, num_anchors: int, dimensions: int) -
     ub_mat = np.asarray(ub, dtype=float).reshape(int(num_anchors), int(dimensions))
     max_anchor_norm = float(np.max(np.linalg.norm(ub_mat, axis=1))) if ub_mat.size else 1.0
     return float((2.0 * max_anchor_norm) ** 2)
+
+
+def _canonical_drive_sensor_pair(
+    anchor_a: int, anchor_b: int, forbidden_sensors: Iterable[int]
+) -> Optional[Tuple[int, int]]:
+    forbidden = set(int(x) for x in forbidden_sensors or [])
+    if anchor_a in forbidden and anchor_b in forbidden:
+        return None
+    if anchor_a in forbidden and anchor_b not in forbidden:
+        return int(anchor_a), int(anchor_b)
+    if anchor_b in forbidden and anchor_a not in forbidden:
+        return int(anchor_b), int(anchor_a)
+    if anchor_a <= anchor_b:
+        return int(anchor_a), int(anchor_b)
+    return int(anchor_b), int(anchor_a)
 
 
 def dataset_sweep_configs(dataset: Dict[str, object]) -> List[SweepConfig]:
@@ -244,18 +260,29 @@ def generate_candidate_sweeps(
     num_anchors: int,
     dimensions: int,
     fixed_delta_values_mm: Sequence[float],
+    machine_type: Optional[str] = None,
+    forbidden_sensors: Optional[Sequence[int]] = None,
 ) -> List[SweepConfig]:
     """
     Generate sweep candidates compatible with position sweep collection.
 
-    Drive/sensor are emitted in sorted order (drive=min(pair), sensor=max(pair))
-    to match `scripts/collect_sweep_data.mjs` sweep output.
+    Drive/sensor are emitted in a canonical order that keeps sensor anchors out of
+    the forbidden set (carrying anchors). This matches collect_sweep_data.mjs sweep output.
     """
     n = int(num_anchors)
     dims = int(dimensions)
     fixed_count = max(0, dims - 1)
     if fixed_count <= 0:
         return []
+
+    forbidden = set(int(x) for x in (forbidden_sensors or []))
+    if machine_type is not None:
+        try:
+            mt = MachineType(machine_type)
+            cfg = MachineConfig.from_type(mt)
+            forbidden.update(int(x) for x in cfg.carrying_anchors or [])
+        except ValueError:
+            pass
 
     deltas = [float(v) for v in fixed_delta_values_mm]
     deltas = [v for v in deltas if np.isfinite(v)]
@@ -268,7 +295,12 @@ def generate_candidate_sweeps(
         fixed = tuple(int(x) for x in fixed)
         free = [idx for idx in indices if idx not in fixed]
         for pair in combinations(free, 2):
-            drive, sensor = sorted(pair)
+            canonical = _canonical_drive_sensor_pair(int(pair[0]), int(pair[1]), forbidden)
+            if canonical is None:
+                continue
+            drive, sensor = canonical
+            if sensor in forbidden:
+                continue
             for fixed_deltas in product(deltas, repeat=fixed_count):
                 out.append(
                     SweepConfig(

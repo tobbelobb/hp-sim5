@@ -69,3 +69,14 @@ def test_generate_candidate_sweeps_slideprinter_count():
     # Slideprinter: choose 1 fixed anchor (3 choices), remaining 2 anchors form a single pair -> 3 * 2 = 6.
     assert len(cands) == 6
 
+
+def test_generate_candidate_sweeps_respects_forbidden_sensor():
+    cands = generate_candidate_sweeps(
+        num_anchors=4,
+        dimensions=3,
+        fixed_delta_values_mm=[0.0],
+        machine_type="hangprinter_4",
+    )
+    assert cands
+    assert all(cfg.sensor_anchor != 3 for cfg in cands)
+    assert all(len(cfg.fixed_anchors) == 2 for cfg in cands)

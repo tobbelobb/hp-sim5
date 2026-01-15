@@ -90,6 +90,7 @@ async function main() {
     console.error(`Motor ID mapping missing or mismatched for ${machineType}`);
     process.exit(1);
   }
+  const requiredFixed = Math.max(1, (machineConfig.dimensions || 3) - 1);
 
   const driveAnchor = parseIntegerArg(argv, '--drive-anchor', 0);
   if (!Number.isFinite(driveAnchor) || driveAnchor < 0 || driveAnchor >= motorIds.length) {
@@ -100,14 +101,14 @@ async function main() {
   const sensorAnchorArg = parseIntegerArg(argv, '--sensor-anchor', null);
   let fixedAnchors = parseListArg(argv, '--fixed-anchors');
   if (!fixedAnchors) {
-    const defaultFixed = motorIds.findIndex(
-      (_, idx) => idx !== driveAnchor && (!Number.isFinite(sensorAnchorArg) || idx !== sensorAnchorArg),
-    );
-    if (!Number.isFinite(defaultFixed) || defaultFixed < 0) {
-      console.error('Unable to select a default fixed anchor');
-      process.exit(1);
-    }
-    fixedAnchors = [defaultFixed];
+    const candidates = motorIds
+      .map((_, idx) => idx)
+      .filter((idx) => idx !== driveAnchor && (!Number.isFinite(sensorAnchorArg) || idx !== sensorAnchorArg));
+    fixedAnchors = candidates.slice(0, requiredFixed);
+  }
+  if (fixedAnchors.length !== requiredFixed) {
+    console.error(`Invalid --fixed-anchors (expected ${requiredFixed})`);
+    process.exit(1);
   }
   fixedAnchors = [...new Set(fixedAnchors)];
   if (fixedAnchors.some((idx) => !Number.isFinite(idx) || idx < 0 || idx >= motorIds.length)) {
@@ -118,8 +119,8 @@ async function main() {
     console.error('Invalid --fixed-anchors (includes drive anchor)');
     process.exit(1);
   }
-  if (fixedAnchors.length > machineConfig.numAnchors - 2) {
-    console.error('Invalid --fixed-anchors (must leave room for drive and sensor)');
+  if (fixedAnchors.length !== requiredFixed) {
+    console.error(`Invalid --fixed-anchors (need exactly ${requiredFixed} fixed anchors)`);
     process.exit(1);
   }
 
@@ -165,7 +166,7 @@ async function main() {
     tempSweepDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hp-sim5-sweep-'));
     tempSweepCfg = path.join(tempSweepDir, 'single_sweep_cfg.txt');
     const fixedSpec = fixedAnchors.join(',');
-    await fs.writeFile(tempSweepCfg, `${fixedSpec} ${driveAnchor} ${sensorAnchor}\n`, 'utf8');
+    await fs.writeFile(tempSweepCfg, `[${fixedSpec}] ${driveAnchor} ${sensorAnchor}\n`, 'utf8');
     args.sweepConfigFile = tempSweepCfg;
   }
 

@@ -4,16 +4,17 @@ import {
   angleToLength,
   combinations,
   generateSweepConfigs,
+  MACHINE_CONFIGS,
   selectRepresentativeConfigs,
   validateSweepConfig,
 } from './sweep_data_collection.mjs';
 
 function testGenerateSweepConfigs() {
   const slideConfigs = generateSweepConfigs('slideprinter');
-  assert.equal(slideConfigs.length, 6, 'Slideprinter should produce 6 sweep configs');
+  assert.equal(slideConfigs.length, 3, 'Slideprinter should produce 3 canonical sweep configs');
 
   const hp4Configs = generateSweepConfigs('hangprinter_4');
-  assert.equal(hp4Configs.length, 9, 'Hangprinter_4 should produce 9 sweep configs when sensor 3 is blocked');
+  assert.equal(hp4Configs.length, 6, 'Hangprinter_4 should produce 6 sweep configs when sensor 3 is blocked');
 }
 
 function testCombinations() {
@@ -23,7 +24,7 @@ function testCombinations() {
 
 function testSelectRepresentative() {
   const allConfigs = generateSweepConfigs('hangprinter_4');
-  const selected = selectRepresentativeConfigs(allConfigs, 4, 6, [3]);
+  const selected = selectRepresentativeConfigs(allConfigs, MACHINE_CONFIGS.hangprinter_4, 6);
   assert.equal(selected.length, 6);
   const drives = new Set(selected.map((c) => c.driveAnchor));
   assert(drives.size >= 3, 'Expected at least three distinct drive anchors in representative set');
