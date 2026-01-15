@@ -106,7 +106,7 @@ Options:
   --debug-gcode              Echo sent G-code
   --debug-gcode-responses    Echo G-code responses
   --step-gcode               Pause before each G-code; press Enter to send (prints source line + skipped waits)
-  --return-to-origin         After collection, return all motors to encoder origin (useful across repeated runs)
+  --return-to-origin         Return all motors to encoder origin between sweeps and after collection
 
 Examples:
   node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json

@@ -68,7 +68,7 @@ export const SWEEP_DEFAULTS = {
  * sweepConfigFile: string or null, path to explicit sweep configs file.
  * debugSweep: boolean, print planned sweep configs.
  * autoTuneForce/noAutoTuneForce: booleans, auto-tuning behavior flags.
- * returnToOrigin: boolean, return all motors to origin after collection.
+ * returnToOrigin: boolean, return all motors to origin between sweeps and after collection.
  * outputFile: string or null, output dataset JSON path.
  */
 
@@ -850,6 +850,20 @@ export async function collectSweepData(send, context) {
       },
     });
     console.log(`  Collected ${dataPoints.length} points`);
+    if (returnToOrigin && sweepOrdinal < totalPlannedSweeps) {
+      try {
+        await returnMotorsToOriginAllAtOnce(send, {
+          motorIds,
+          axes: machineConfig.axes,
+          mmPerDeg,
+          feed,
+          speedup,
+        });
+        console.log('Returned all motors to encoder origin (between sweeps).');
+      } catch (err) {
+        console.warn(`Warning: failed to return to encoder origin: ${err?.message || err}`);
+      }
+    }
   }
 
   const forceTuning = {
