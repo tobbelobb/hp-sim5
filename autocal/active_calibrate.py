@@ -794,7 +794,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse.add_argument("--fd-eps-mm", type=float, default=1.0)
     ellipse.add_argument("--regularization", type=float, default=1e-6)
     ellipse.add_argument("--no-exclude-existing", action="store_true")
-    ellipse.add_argument("--existing-tol-mm", type=float, default=1e-3)
+    ellipse.add_argument(
+        "--existing-tol-mm",
+        type=float,
+        default=10.0,
+        help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
+    )
     ellipse.add_argument("--top-k", type=int, default=10)
 
     ellipse.add_argument("--write-sweep-config", type=Path, default=None)
@@ -861,7 +866,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     loop.add_argument("--fd-eps-mm", type=float, default=1.0)
     loop.add_argument("--regularization", type=float, default=1e-6)
     loop.add_argument("--no-exclude-existing", action="store_true")
-    loop.add_argument("--existing-tol-mm", type=float, default=1e-3)
+    loop.add_argument(
+        "--existing-tol-mm",
+        type=float,
+        default=10.0,
+        help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
+    )
     loop.add_argument("--top-k", type=int, default=10)
     loop.add_argument("--write-sweep-config", type=Path, default=None)
     loop.add_argument(
