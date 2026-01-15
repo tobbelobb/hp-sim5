@@ -9,6 +9,27 @@ import {
   waitForStableEncoders,
 } from './uncalibrated_actions.mjs';
 
+/**
+ * Force tuning input reference (shared by validation/default helpers).
+ * motorIds: array of motor ID strings, length > 0 when talking to hardware.
+ * axes: array of axis letters aligned with motorIds.
+ * mmPerDeg: array of mm/deg values aligned with motorIds.
+ * feed: mm/min feed rate for return moves.
+ * speedup: positive number, hp-sim speed scale.
+ * forbiddenForceAnchors: anchor indices that must stay in position mode.
+ * activeAnchor/fixedAnchor: anchor indices for force trials.
+ * restAnchors: anchor indices expected to move during trials.
+ * idleForce/testForce/baseLow/capForceLimit: force values in N.
+ * sampleDurationMs/sampleIntervalMs/sampleWindowMs: timing controls in ms.
+ * rampForces/rampStepWaitMs/rebaselineAfterRamp: optional force ramp config.
+ * thresholds: movement thresholds from buildMovementThresholds.
+ * forceLow/forceMid/forceMax: fallback force levels for tuneForce.
+ * forceMaxProvided: boolean, true when forceMax is user-supplied.
+ * waitForStall/stallTimeoutMs: trial stopping parameters.
+ * forceStart: starting force for edge search.
+ * bracketFactor/maxBracketSteps/...: edge-force search tuning.
+ */
+
 const DEFAULT_FEED = 3000;
 const DEFAULT_FORCE_LOW_N = 0.01;
 const DEFAULT_FORCE_MID_N = 0.1;
