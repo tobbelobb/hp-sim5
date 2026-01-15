@@ -11,8 +11,8 @@ import {
 
 const DEFAULT_FEED = 3000;
 const DEFAULT_FORCE_LOW_N = 0.01;
-const DEFAULT_FORCE_MID_N = 0.01;
-const DEFAULT_FORCE_MAX_N = 0.1;
+const DEFAULT_FORCE_MID_N = 0.1;
+const DEFAULT_FORCE_MAX_N = 1.0;
 
 const AUTO_TUNE_MIN_FORCE_N = 0.01;
 const AUTO_TUNE_MAX_FORCE_N = 20.0;
@@ -802,20 +802,16 @@ function fitLogisticInLogForce(samples, opts = {}) {
   return { ok: true, ...best, dMax };
 }
 
-export async function autoTuneForce(sendFn, plan, options) {
-  const fallback = {
-    forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
-    forceMid: Number.isFinite(options.forceMid) ? options.forceMid : DEFAULT_FORCE_MID_N,
-    forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_N,
-  };
-
-  const motorIds = options.motorIds;
-  const axes = options.axes;
-  const mmPerDeg = options.mmPerDeg;
+export async function tuneForce(sendFn, plan, options = {}) {
+  // Validate and apply options
+  const motorIds = options.motorIds ?? [];
+  const axes = options.axes ?? [];
+  const mmPerDeg = options.mmPerDeg ?? [];
   const feed = Number.isFinite(options.feed) ? options.feed : DEFAULT_FEED;
   const speedup = Number.isFinite(options.speedup) ? options.speedup : 1;
-  const forbiddenForceAnchors = options.forbiddenForceAnchors ?? [];
   const delayFn = options.delayFn ?? baseSleep;
+  const forbiddenForceAnchors = options.forbiddenForceAnchors ?? [];
+  const fixedAnchors = plan?.config?.fixedAnchors ?? [];
 
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     console.log('; auto-tune force skipped (no motor IDs available)');
@@ -825,7 +821,6 @@ export async function autoTuneForce(sendFn, plan, options) {
     };
   }
 
-  const fixedAnchors = plan.config?.fixedAnchors ?? [];
   const driveAnchor = Number.isFinite(plan.config?.driveAnchor)
     ? plan.config.driveAnchor
     : plan.pairAnchors?.[0];
@@ -871,6 +866,19 @@ export async function autoTuneForce(sendFn, plan, options) {
       tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
     };
   }
+
+  const fallback = {
+    forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
+    forceMid: Number.isFinite(options.forceMid) ? options.forceMid : DEFAULT_FORCE_MID_N,
+    forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_N,
+  };
+  // End validate and apply options
+
+  await applyForceModeState(sendFn, {
+    motorIds,
+    modes: motorIds.map((_, idx) => (forbiddenForceAnchors.includes(idx) ? 'position' : fallback.forceLow)),
+  });
+  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
 
   const baseLow = clampAutoTuneForce(options.forceLow ?? DEFAULT_FORCE_LOW_N) ?? DEFAULT_FORCE_LOW_N;
   const capForceLimit = clampAutoTuneForce(
@@ -1016,7 +1024,7 @@ export async function autoTuneForce(sendFn, plan, options) {
     + `edge=${formatValue(forceEdge)} d_max=${formatValue(dMax, 3)}deg`,
   );
 
-  return {
+  const tuned = {
     forceLow: idleForce,
     forceMid: forceStart,
     forceMax: forceEdge,
@@ -1051,31 +1059,6 @@ export async function autoTuneForce(sendFn, plan, options) {
       stall_window_ms: AUTO_TUNE_STALL_WINDOW_MS,
     },
   };
-}
-
-export async function tuneForce(sendFn, plan, options = {}) {
-  const motorIds = options.motorIds ?? [];
-  const axes = options.axes ?? [];
-  const mmPerDeg = options.mmPerDeg ?? [];
-  const feed = Number.isFinite(options.feed) ? options.feed : DEFAULT_FEED;
-  const speedup = Number.isFinite(options.speedup) ? options.speedup : 1;
-  const delayFn = options.delayFn ?? baseSleep;
-  const forbiddenForceAnchors = options.forbiddenForceAnchors ?? [];
-  const fixedAnchors = plan?.config?.fixedAnchors ?? [];
-  const forceLow = Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N;
-
-  await primeEncoders(sendFn, { motorIds, axes });
-  await applyForceModeState(sendFn, {
-    motorIds,
-    modes: motorIds.map((_, idx) => (forbiddenForceAnchors.includes(idx) ? 'position' : forceLow)),
-  });
-  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
-
-  const tuned = await autoTuneForce(sendFn, plan, {
-    ...options,
-    forceLow,
-    delayFn,
-  });
 
   await returnMotorsToOriginOneAtATime(sendFn, {
     motorIds,

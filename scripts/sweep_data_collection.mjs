@@ -283,25 +283,13 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
     fixedTargets = [],
     feed = DEFAULT_FEED,
     speedup = 1,
-    currentPositions = [],
     delayFn,
   } = options;
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    return currentPositions.slice();
-  }
-  if (!Array.isArray(currentPositions) || currentPositions.length !== motorIds.length) {
-    throw new Error('currentPositions must match motorIds length');
-  }
-
   await applyForceModeState(sendFn, {
     motorIds,
     modes: motorIds.map(() => 'position'),
   });
   const measured = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-  for (let idx = 0; idx < motorIds.length; idx += 1) {
-    currentPositions[idx] = Number.isFinite(measured[idx]) ? measured[idx] : 0;
-  }
-
   const moveParts = [];
   const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
 
@@ -310,31 +298,27 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
   for (let i = 0; i < fixedAnchors.length; i += 1) {
     const anchorIdx = fixedAnchors[i];
     const target = Number.isFinite(fixedTargets[i]) ? fixedTargets[i] : 0;
-    const delta = target - (currentPositions[anchorIdx] ?? 0);
+    const delta = target - (measured[anchorIdx] ?? 0);
     if (Math.abs(delta) > 1e-6) {
       moveParts.push(formatDelta(axes[anchorIdx], delta));
       movingAnchors.add(anchorIdx);
     }
-    currentPositions[anchorIdx] = target;
   }
 
   if (moveParts.length > 0) {
-    const midForce = Number.isFinite(forceMid) ? forceMid : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N;
     const preMoveModes = motorIds.map((_, idx) => (
-      movingAnchors.has(idx) ? 'position' : midForce
+      movingAnchors.has(idx) ? 'position' : forceMid
     ));
     await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
     await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes, delayFn });
-    const lowForce = Number.isFinite(forceLow) ? forceLow : FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N;
     const postMoveModes = motorIds.map((_, idx) => (
-      movingAnchors.has(idx) ? 'position' : lowForce
+      movingAnchors.has(idx) ? 'position' : forceLow
     ));
     await applyForceModeState(sendFn, { motorIds, modes: postMoveModes });
-    const sleep = (ms) => (delayFn ? delayFn(ms) : new Promise((resolve) => setTimeout(resolve, ms)));
-    await sleep(500);
+    await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
   }
 
-  return currentPositions.slice();
+  return;
 }
 
 async function measureMaxTravelMm(sendFn, options = {}) {
@@ -366,10 +350,32 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     motorIds,
     modes: motorIds.map(() => 'position'),
   });
-  await waitForStableEncoders(sendFn, motorIds, { speedup, delayFn });
   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
-  const modesPullPair = motorIds.map((_, idx) => {
+  // Apply 75% of max force in three steps with 100 ms between
+  let modesPullPair = motorIds.map((_, idx) => {
+    if (forbidden.has(idx)) {
+      return 'position';
+    }
+    if (pairSet.has(idx)) {
+      return forceMax*0.25;
+    }
+    return forceLow;
+  });
+  await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+  delayFn(100);
+  modesPullPair = motorIds.map((_, idx) => {
+    if (forbidden.has(idx)) {
+      return 'position';
+    }
+    if (pairSet.has(idx)) {
+      return forceMax*0.5;
+    }
+    return forceLow;
+  });
+  await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+  delayFn(100);
+  modesPullPair = motorIds.map((_, idx) => {
     if (forbidden.has(idx)) {
       return 'position';
     }
@@ -583,53 +589,6 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm } };
 }
 
-function buildHistogram(dataPoints, bucketCount = 20) {
-  if (!Array.isArray(dataPoints) || dataPoints.length === 0) {
-    return null;
-  }
-  const bucket = Math.max(1, Math.floor(bucketCount));
-  const values = dataPoints.map((p) => p.l_drive).filter((v) => Number.isFinite(v));
-  if (values.length === 0) {
-    return null;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min;
-  if (span <= 0) {
-    return null;
-  }
-  const size = span / bucket;
-  const histogram = Array.from({ length: bucket }, () => 0);
-  for (const value of values) {
-    const idx = Math.min(bucket - 1, Math.floor((value - min) / size));
-    histogram[idx] += 1;
-  }
-  return { bucket_count: bucket, min, max, histogram };
-}
-
-async function writeObservabilitySidecar(targetPath, sweeps) {
-  if (!sweeps || sweeps.length === 0 || !targetPath) {
-    return null;
-  }
-  const histogram = buildHistogram(sweeps.flatMap((sweep) => sweep.data_points || []));
-  if (!histogram) {
-    return null;
-  }
-  const outputDir = path.dirname(targetPath);
-  if (outputDir && outputDir !== '.') {
-    await fs.mkdir(outputDir, { recursive: true });
-  }
-  const payload = {
-    sweeps: sweeps.map((sweep) => ({
-      id: sweep.id,
-      histogram: buildHistogram(sweep.data_points),
-    })),
-    combined: histogram,
-  };
-  await fs.writeFile(targetPath, JSON.stringify(payload, null, 2));
-  return targetPath;
-}
-
 export async function collectSweepData(send, context) {
   const {
     args,
@@ -705,7 +664,6 @@ export async function collectSweepData(send, context) {
 
   const sweeps = [];
   const datasetStartMs = Date.now();
-  const currentPositions = Array.from({ length: motorIds.length }, () => 0);
 
   const m666BeforeReply = await send('M666');
   const m666Before = parseM666(m666BeforeReply?.reply);
@@ -727,13 +685,8 @@ export async function collectSweepData(send, context) {
   }
 
   await primeEncoders(send, { motorIds, axes: machineConfig.axes });
-  await applyForceModeState(send, {
-    motorIds,
-    modes: motorIds.map(() => 'position'),
-  });
-  await waitForStableEncoders(send, motorIds, { speedup, delayFn });
 
-  const forceArgsProvided = forceLowProvided || forceMidProvided || forceMaxProvided;
+  const forceArgsProvided = forceLowProvided && forceMidProvided && forceMaxProvided;
   const autoTuneForce = args.autoTuneForce || (!args.noAutoTuneForce && !forceArgsProvided);
   let forceTuningMeta = null;
   if (autoTuneForce) {
@@ -762,6 +715,30 @@ export async function collectSweepData(send, context) {
       forceTuningMeta = tuned.tuningMeta ?? null;
     }
   }
+
+
+  // A short tighten-release cycle before we set encoder reference points and set pos mode
+  await applyForceModeState(send, {
+    motorIds,
+    modes: motorIds.map(() => forceMid),
+  });
+  await waitForStableEncoders(send, motorIds, { speedup, delayFn });
+  await applyForceModeState(send, {
+    motorIds,
+    modes: motorIds.map(() => forceMid*0.5),
+  });
+  await waitForStableEncoders(send, motorIds, { speedup, delayFn });
+  await applyForceModeState(send, {
+    motorIds,
+    modes: motorIds.map(() => forceLow),
+  });
+  await waitForStableEncoders(send, motorIds, { speedup, delayFn });
+  await primeEncoders(send, { motorIds, axes: machineConfig.axes });
+  await applyForceModeState(send, {
+    motorIds,
+    modes: motorIds.map(() => 'position'),
+  });
+  await waitForStableEncoders(send, motorIds, { speedup, delayFn });
 
   const explicitTargetsProvided = explicitTargetsSpec !== null || maxTravelOverride !== null;
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? Math.abs(maxTravelOverride) : null;
@@ -847,17 +824,7 @@ export async function collectSweepData(send, context) {
 
     console.log(`\nSweep ${sweepOrdinal}/${totalPlannedSweeps}: fix [${sweepConfig.fixedAnchors.join(', ')}], drive ${sweepConfig.driveAnchor}, sensor ${sweepConfig.sensorAnchor}${fixedInfo}`);
 
-    await returnMotorsToOriginAllAtOnce(send, {
-      motorIds,
-      axes: machineConfig.axes,
-      mmPerDeg,
-      feed,
-      speedup,
-      delayFn,
-    });
-    currentPositions.fill(0);
-
-    const preparedPositions = await prepareSweepPositioning(send, sweepConfig, {
+    await prepareSweepPositioning(send, sweepConfig, {
       motorIds,
       axes: machineConfig.axes,
       mmPerDeg,
@@ -866,13 +833,8 @@ export async function collectSweepData(send, context) {
       fixedTargets,
       feed,
       speedup,
-      currentPositions,
       delayFn,
     });
-
-    if (args.continuous) {
-      throw new Error('continuous sweeps are not supported in force-drive mode');
-    }
 
     const sweepResult = await performForceSweep(send, sweepConfig, {
       axes: machineConfig.axes,
@@ -891,9 +853,10 @@ export async function collectSweepData(send, context) {
     });
     const dataPoints = sweepResult.dataPoints;
 
+    const lengths = await getCurrentLengths(send, motorIds, mmPerDeg);
     const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
-      if (Number.isFinite(preparedPositions[idx])) {
-        return preparedPositions[idx];
+      if (Number.isFinite(lengths[idx])) {
+        return lengths[idx];
       }
       return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
     });
@@ -929,7 +892,6 @@ export async function collectSweepData(send, context) {
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
         delayFn,
       });
-      currentPositions.fill(0);
     }
   }
 
@@ -973,14 +935,6 @@ export async function collectSweepData(send, context) {
   }
   await fs.writeFile(outputFile, JSON.stringify(dataset, null, 2));
   console.log(`\nSaved ${sweeps.length} sweeps to ${outputFile}`);
-
-  const obsTarget = args.observabilityFile === null
-    ? `${outputFile.replace(/\.json$/i, '')}.obs.json`
-    : args.observabilityFile;
-  const sidecarPath = await writeObservabilitySidecar(obsTarget, sweeps);
-  if (sidecarPath) {
-    console.log(`Saved histogram sidecar to ${sidecarPath}`);
-  }
 
   if (args.returnToOrigin) {
     try {
