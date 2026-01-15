@@ -132,7 +132,7 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
     axes,
     mmPerDeg,
     feed = DEFAULT_FEED,
-    speedup = 1,
+    speedup,
     baseLow = DEFAULT_FORCE_LOW_N,
     capForceLimit = AUTO_TUNE_MAX_FORCE_N,
     trialFn = null,
@@ -241,7 +241,7 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
     motorIds,
     fixedAnchor = null,
     idleForce = DEFAULT_FORCE_LOW_N,
-    speedup = 1,
+    speedup,
     sampleDurationMs = AUTO_TUNE_NOISE_SAMPLE_MS,
     sampleIntervalMs = AUTO_TUNE_NOISE_SAMPLE_INTERVAL_MS,
     forbiddenForceAnchors = [],
@@ -261,7 +261,7 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  await waitForStableEncoders(sendFn, motorIds, { speedup });
+  await waitForStableEncoders(sendFn, motorIds, speedup);
 
   const sums = Array.from({ length: motorIds.length }, () => 0);
   const sumsSq = Array.from({ length: motorIds.length }, () => 0);
@@ -303,7 +303,7 @@ export async function runForceTrial(sendFn, options = {}) {
     restAnchors = [],
     idleForce = DEFAULT_FORCE_LOW_N,
     testForce = DEFAULT_FORCE_LOW_N,
-    speedup = 1,
+    speedup,
     sampleWindowMs = AUTO_TUNE_SAMPLE_WINDOW_MS,
     sampleIntervalMs = AUTO_TUNE_SAMPLE_INTERVAL_MS,
     rampForces = null,
@@ -360,7 +360,7 @@ export async function runForceTrial(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  const stableStart = await waitForStableEncoders(sendFn, motorIds, { speedup });
+  const stableStart = await waitForStableEncoders(sendFn, motorIds, speedup);
   let startAngles = stableStart.anglesDeg;
 
   const rampWaitMs = Math.max(0, rampStepWaitMs / timeScale);
@@ -445,7 +445,7 @@ export async function runForceTrial(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  const stableResidual = await waitForStableEncoders(sendFn, motorIds, { speedup });
+  const stableResidual = await waitForStableEncoders(sendFn, motorIds, speedup);
   const residualAngles = stableResidual.anglesDeg;
 
   const deltaEndDeg = endAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
@@ -866,7 +866,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     motorIds,
     modes: motorIds.map((_, idx) => (forbiddenForceAnchors.includes(idx) ? 'position' : fallback.forceLow)),
   });
-  await waitForStableEncoders(sendFn, motorIds, { speedup });
+  await waitForStableEncoders(sendFn, motorIds, speedup);
 
   const baseLow = clampAutoTuneForce(options.forceLow ?? DEFAULT_FORCE_LOW_N) ?? DEFAULT_FORCE_LOW_N;
   const capForceLimit = clampAutoTuneForce(

@@ -4,12 +4,10 @@ import { waitForStableEncoders } from './uncalibrated_actions.mjs';
 
 async function testWaitForStableEncoders() {
   const send = async () => ({ reply: '0 0' });
-  const delayFn = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(1, ms)));
 
-  const result = await waitForStableEncoders(send, ['40.0', '41.0'], {
+  const result = await waitForStableEncoders(send, ['40.0', '41.0'], 1, {
     pollIntervalMs: 1,
     stableWindowMs: 2,
-    delayFn,
   });
 
   assert.deepEqual(result.anglesDeg, [0, 0]);

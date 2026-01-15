@@ -12,12 +12,10 @@ function testCalculateReturnOrder() {
 
 async function testWaitForStableEncoders() {
   const send = async () => ({ reply: '1 1 1' });
-  const delayFn = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(1, ms)));
-  const result = await waitForStableEncoders(send, ['40.0', '41.0', '42.0'], {
+  const result = await waitForStableEncoders(send, ['40.0', '41.0', '42.0'], 1, {
     pollIntervalMs: 1,
     stableWindowMs: 2,
     toleranceDeg: 0.01,
-    delayFn,
   });
   assert.deepEqual(result.anglesDeg, [1, 1, 1]);
   assert.ok(result.samples >= 2);
