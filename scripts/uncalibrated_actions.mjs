@@ -113,19 +113,24 @@ export async function applyForceModeState(sendFn, {
   motorIds,
   modes,
 } = {}) {
+  const forces = [];
   for (let idx = 0; idx < motorIds.length; idx += 1) {
     const rawMode = Array.isArray(modes) ? modes[idx] : modes;
     const mode = typeof rawMode === 'string' ? rawMode.toLowerCase() : rawMode;
     if (mode === 'position' || mode === 'pos' || mode === 0 || mode === 0.0) {
-      await sendFn(`M569.4 P${motorIds[idx]} T0.0`);
+      forces.push('0.0');
     } else {
       if (Number.isFinite(mode)) {
-        await sendFn(`M569.4 P${motorIds[idx]} T${mode}`);
+        forces.push(`${mode}`);
       } else {
         throw new Error(`applyForceModeState can't set force ${mode}`);
       }
     }
   }
+  if (forces.length === 0) {
+    return;
+  }
+  await sendFn(`M569.4 P${motorIds.join(':')} T${forces.join(':')}`);
 }
 
 export function calculateReturnOrder({ fixedAnchors = [], currentLengths = [] } = {}) {
