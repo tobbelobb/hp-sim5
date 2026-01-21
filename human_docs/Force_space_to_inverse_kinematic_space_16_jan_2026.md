@@ -154,6 +154,10 @@ Having it literally and figuratively would take a Cable Robot's kinematics equat
 We therefore want to know:
  - Given a list of line tightnesses, what motor positions and relative line positions can we expect?
 
+Because of hysteresis effects we might need a list of previous line tightnesses as well...
+But that is so complicated, we need to get creative to try and get rid of hysteresis or possibly treat it in a clever way that
+makes it feel managable.
+
 
 # Move Around, Top Down Approach
 
@@ -166,6 +170,9 @@ and comment on what Approximations or error we expect, if they're the same as th
 
 We should comment on how to minimize each of them, particularly in the context of the 0->1 mapping.
 
+
+
+
 # Suggested Experiments
 
 What can we learn from simply tightening lines while the effector is at the origin point?
@@ -177,3 +184,23 @@ What can we learn from simply tightening lines while the effector is at the orig
  - How large the force imbalance at a min force of 0.001N needs to be in order to create a movement tells us something about anchor placement.
    If a different imbalance is required at a min force of 2N then that tells us something about how friction in the system increases with total tightness (at least at the
    origin point).
+
+Can we dampen the hysteresis effects in our collected data by wagging force back and forth around the setpoint, slowly approaching it from both sides, in a structured way
+so that we can collect some sort of average collection point?
+
+
+
+# Settle Position Hysteresis Challenges
+
+## Motor Cogging
+Right now we have a big challenge that motor cogging affects the "settle position" of the end effector so much that we need a filtering or compensation step
+to know where the end effector would have settled if there were no motor cogging.
+
+We could for example know how many "cog jumps"/full cog phases there are per full motor rotation (probably as many as there are rotor or stator magnets).
+Then we can fixate two lines (on a Slideprinter), and tighten the third until we know we've flexed past a few cog jumps.
+Then we can loosen the third line slowly while collecting data, and approximate a function that smoothens out the cogging,
+and use the function to calculate where we would have end up if there was no cogging at all.
+
+## Stiction Forces
+
+## Later: Gravity
