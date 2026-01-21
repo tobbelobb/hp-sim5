@@ -734,7 +734,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       if (fixedSet.has(idx) || forbidden.has(idx)) {
         return 'position';
       }
-      return forceLow;
+      return forceMid;
     });
     await applyForceModeState(sendFn, { motorIds, modes: relaxForDataCollectionModes });
     const stableData = await waitForStableEncoders(sendFn, motorIds, speedup);
