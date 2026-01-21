@@ -1,6 +1,7 @@
 #include <CAN/CanInterface.h>
 
 #include <CanMessageBuffer.h>
+#include <GCodes/GCodes.h>
 #include <GCodes/GCodeBuffer/GCodeBuffer.h>
 #include <Movement/Move.h>
 #include <RepRapFirmware.h>
@@ -220,11 +221,41 @@ GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const String
             return GCodeResult::error;
         }
 
-        const float forceNewtons = gb.GetFValue();
 #if SUPPORT_HANGPRINTER
         Kinematics& kin = reprap.GetMove().GetKinematics();
         if (kin.GetLegacyType() == KinematicsType::hangprinter)
         {
+            gb.MustSee('P');
+            size_t drivesCount = reprap.GetGCodes().GetVisibleAxes();
+            DriverId driverIds[drivesCount];
+            gb.GetDriverIdArray(driverIds, drivesCount);
+
+            gb.MustSee('T');
+            float forces[drivesCount];
+            size_t forceCount = drivesCount;
+            gb.GetFloatArray(forces, forceCount, true);
+            if (forceCount != drivesCount)
+            {
+                reply.copy("M569.4 requires one T value per P");
+                return GCodeResult::error;
+            }
+
+            size_t driverIndex = drivesCount;
+            for (size_t i = 0; i < drivesCount; ++i)
+            {
+                if (driverIds[i] == driver)
+                {
+                    driverIndex = i;
+                    break;
+                }
+            }
+            if (driverIndex == drivesCount)
+            {
+                reply.copy("M569.4 driver not found in P list");
+                return GCodeResult::error;
+            }
+
+            const float forceNewtons = forces[driverIndex];
             float motorTorqueNm = 0.0F;
             bool positionMode = false;
             const GCodeResult conversion =
@@ -242,6 +273,7 @@ GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const String
             return GCodeResult::ok;
         }
 #endif
+        const float forceNewtons = gb.GetFValue();
         const char* response =
             HostTorqueMode::Instance().SetTorqueMode(driver.boardAddress, forceNewtons);
         reply.cat(response);
