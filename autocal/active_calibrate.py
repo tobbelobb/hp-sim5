@@ -191,6 +191,69 @@ def _parse_csv_floats(spec: Optional[str]) -> Optional[List[float]]:
     return out or None
 
 
+def _default_delta_range(
+    *,
+    max_travel_mm: Optional[float],
+    observed_deltas: Sequence[float],
+) -> Optional[Tuple[float, float]]:
+    max_travel = None if max_travel_mm is None else float(max_travel_mm)
+    if max_travel is None or not np.isfinite(max_travel) or max_travel <= 0.0:
+        return None
+
+    has_neg = any(float(v) < -1e-6 for v in observed_deltas)
+    has_pos = any(float(v) > 1e-6 for v in observed_deltas)
+    min_floor = 10.0
+
+    if has_neg and has_pos:
+        return -max_travel, max_travel
+    if has_neg and not has_pos:
+        hi = -min_floor if max_travel > min_floor else 0.0
+        return -max_travel, hi
+    lo = min_floor if max_travel > min_floor else 0.0
+    return lo, max_travel
+
+
+def _filter_candidates_by_spacing(
+    candidates: Sequence[SweepConfig],
+    observed: Sequence[SweepConfig],
+    *,
+    min_spacing_mm: float,
+) -> List[SweepConfig]:
+    spacing = float(min_spacing_mm)
+    if not np.isfinite(spacing) or spacing <= 0.0:
+        return list(candidates)
+
+    history: Dict[int, Dict[int, List[float]]] = {}
+    for cfg in observed:
+        for anchor, delta in zip(cfg.fixed_anchors, cfg.fixed_deltas_mm):
+            if not np.isfinite(delta):
+                continue
+            sign = 1 if float(delta) >= 0.0 else -1
+            anchor_hist = history.setdefault(int(anchor), {1: [], -1: []})
+            anchor_hist[sign].append(float(delta))
+
+    if not history:
+        return list(candidates)
+
+    filtered: List[SweepConfig] = []
+    for cfg in candidates:
+        too_close = False
+        for anchor, delta in zip(cfg.fixed_anchors, cfg.fixed_deltas_mm):
+            if not np.isfinite(delta):
+                continue
+            anchor_hist = history.get(int(anchor))
+            if not anchor_hist:
+                continue
+            sign = 1 if float(delta) >= 0.0 else -1
+            if any(abs(float(delta) - obs) < spacing for obs in anchor_hist.get(sign, [])):
+                too_close = True
+                break
+        if not too_close:
+            filtered.append(cfg)
+
+    return filtered
+
+
 def _dataset_force_tuning(dataset: Optional[dict]) -> Optional[dict]:
     if not isinstance(dataset, dict):
         return None
@@ -292,6 +355,7 @@ def _plan_next_ellipse_sweep(
     regularization: float,
     exclude_existing: bool,
     existing_tol_mm: float,
+    min_fixed_delta_spacing_mm: float,
     top_k: int,
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
@@ -334,6 +398,10 @@ def _plan_next_ellipse_sweep(
     )
     cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
 
+    observed_deltas: List[float] = []
+    for cfg in sweeps_obs:
+        observed_deltas.extend(list(cfg.fixed_deltas_mm))
+
     if candidate_deltas is None:
         config = dataset.get("config") if isinstance(dataset, dict) else None
         max_travel_mm = None
@@ -342,10 +410,16 @@ def _plan_next_ellipse_sweep(
             if isinstance(raw_max_travel, (int, float)) and np.isfinite(raw_max_travel):
                 max_travel_mm = float(raw_max_travel)
         explicit_delta_range = delta_min is not None or delta_max is not None
-        observed_deltas: List[float] = []
-        for cfg in sweeps_obs:
-            observed_deltas.extend(list(cfg.fixed_deltas_mm))
-        if observed_deltas:
+
+        default_range = None
+        if not explicit_delta_range:
+            default_range = _default_delta_range(
+                max_travel_mm=max_travel_mm,
+                observed_deltas=observed_deltas,
+            )
+        if default_range is not None:
+            lo, hi = default_range
+        elif observed_deltas:
             lo = float(np.min(observed_deltas))
             hi = float(np.max(observed_deltas))
         else:
@@ -355,28 +429,14 @@ def _plan_next_ellipse_sweep(
         if delta_max is not None:
             hi = float(delta_max)
         if not np.isfinite(lo) or not np.isfinite(hi) or abs(hi - lo) < 1e-9:
-            if (not explicit_delta_range and max_travel_mm is not None
-                    and np.isfinite(max_travel_mm) and float(max_travel_mm) > 0.0):
-                span = 0.1 * float(max_travel_mm)
-                lo = max(0.0, float(max_travel_mm) - span)
-                hi = float(max_travel_mm)
+            fallback = _default_delta_range(
+                max_travel_mm=max_travel_mm,
+                observed_deltas=observed_deltas,
+            )
+            if fallback is not None:
+                lo, hi = fallback
             else:
                 lo, hi = -600.0, 600.0
-        span = float(hi - lo)
-        if (
-            not explicit_delta_range
-            and span < 20.0  # Avoid near-degenerate grids when all observed deltas cluster
-            and max_travel_mm is not None
-            and np.isfinite(max_travel_mm)
-            and float(max_travel_mm) > 0.0
-        ):
-            hi = max(hi, float(max_travel_mm))
-            padded_lo = 10.0 if hi > 10.0 else max(0.0, hi - 20.0)
-            # If all observed deltas are positive and tightly packed near hi, expand downwards to ~10mm.
-            if lo >= 0.0:
-                lo = min(lo, padded_lo)
-            else:
-                lo = padded_lo
         values = np.linspace(lo, hi, max(3, int(candidate_count)))
         candidate_deltas = [float(v) for v in values.tolist()]
 
@@ -385,6 +445,11 @@ def _plan_next_ellipse_sweep(
         dimensions=dimensions,
         fixed_delta_values_mm=candidate_deltas,
         machine_type=machine_type,
+    )
+    candidates = _filter_candidates_by_spacing(
+        candidates,
+        sweeps_obs,
+        min_spacing_mm=float(min_fixed_delta_spacing_mm),
     )
 
     ranked = rank_candidates_d_optimal(
@@ -505,6 +570,7 @@ def ellipse_active(
     regularization: float,
     exclude_existing: bool,
     existing_tol_mm: float,
+    min_fixed_delta_spacing_mm: float,
     top_k: int,
     write_cfg: Optional[Path],
     print_command: bool,
@@ -532,6 +598,7 @@ def ellipse_active(
         regularization=regularization,
         exclude_existing=exclude_existing,
         existing_tol_mm=existing_tol_mm,
+        min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
         top_k=top_k,
         write_cfg=write_cfg,
         collector_output=collector_output,
@@ -605,6 +672,7 @@ def ellipse_loop(
     regularization: float,
     exclude_existing: bool,
     existing_tol_mm: float,
+    min_fixed_delta_spacing_mm: float,
     top_k: int,
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
@@ -703,6 +771,7 @@ def ellipse_loop(
             regularization=regularization,
             exclude_existing=exclude_existing,
             existing_tol_mm=existing_tol_mm,
+            min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
             top_k=top_k,
             write_cfg=write_cfg,
             collector_output=collector_output,
@@ -800,6 +869,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=10.0,
         help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
     )
+    ellipse.add_argument(
+        "--min-fixed-delta-spacing-mm",
+        type=float,
+        default=20.0,
+        help="Minimum spacing (mm) from previously collected fixed deltas with the same sign",
+    )
     ellipse.add_argument("--top-k", type=int, default=10)
 
     ellipse.add_argument("--write-sweep-config", type=Path, default=None)
@@ -872,6 +947,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=10.0,
         help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
     )
+    loop.add_argument(
+        "--min-fixed-delta-spacing-mm",
+        type=float,
+        default=20.0,
+        help="Minimum spacing (mm) from previously collected fixed deltas with the same sign",
+    )
     loop.add_argument("--top-k", type=int, default=10)
     loop.add_argument("--write-sweep-config", type=Path, default=None)
     loop.add_argument(
@@ -906,6 +987,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             regularization=float(args.regularization),
             exclude_existing=not bool(args.no_exclude_existing),
             existing_tol_mm=float(args.existing_tol_mm),
+            min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
             top_k=int(args.top_k),
             write_cfg=args.write_sweep_config,
             print_command=not bool(args.no_print_command),
@@ -945,6 +1027,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             regularization=float(args.regularization),
             exclude_existing=not bool(args.no_exclude_existing),
             existing_tol_mm=float(args.existing_tol_mm),
+            min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
             top_k=int(args.top_k),
             write_cfg=args.write_sweep_config,
             collector_args=collector_args,
