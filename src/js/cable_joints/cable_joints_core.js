@@ -752,42 +752,75 @@ export class CableAttachmentUpdateSystem {
 
 export class PBDCableConstraintSolver {
   runInPause = false;
-  stepCount = 0;
 
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const epsilon = 1e-9; // Small value to avoid division by zero
     const dt = world.getResource('dt');
 
-    this.stepCount++;
-    const isForward = (this.stepCount % 2 === 0);
+    const ITERATIONS = 2; // 0: Forward, 1: Backward
 
-    const startPath = isForward ? 0 : pathEntities.length - 1;
-    const endPath = isForward ? pathEntities.length : -1;
-    const stepPath = isForward ? 1 : -1;
+    // Pre-calculate local offsets for all joints to ensure attachment points move with bodies
+    // during the multi-iteration solve. This prevents "stale" world points from distorting geometry.
+    const jointLocals = new Map();
 
-    for (let p = startPath; p !== endPath; p += stepPath) {
-      const pathId = pathEntities[p];
+    for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
-
-      const startJoint = isForward ? 0 : path.jointEntities.length - 1;
-      const endJoint = isForward ? path.jointEntities.length : -1;
-      const stepJoint = isForward ? 1 : -1;
-
-      for (let j = startJoint; j !== endJoint; j += stepJoint) {
-        const jointId = path.jointEntities[j];
+      for (const jointId of path.jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
+        
+        const computeLocal = (entityId, worldPoint) => {
+          const posComp = world.getComponent(entityId, PositionComponent);
+          const orientComp = world.getComponent(entityId, OrientationComponent);
+          if (!posComp) return new Vector2(0, 0); // Should not happen for valid bodies
+          
+          const rel = worldPoint.clone().subtract(posComp.pos);
+          if (orientComp) {
+            // Rotate backwards by -angle to get local frame
+            const c = Math.cos(-orientComp.angle);
+            const s = Math.sin(-orientComp.angle);
+            return new Vector2(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
+          }
+          return rel;
+        };
 
-        const entityA = joint.entityA;
-        const entityB = joint.entityB;
+        jointLocals.set(jointId, {
+          localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
+          localB: computeLocal(joint.entityB, joint.attachmentPointB_world)
+        });
+      }
+    }
 
-        const pA = joint.attachmentPointA_world;
-        const pB = joint.attachmentPointB_world;
+    for (let iter = 0; iter < ITERATIONS; iter++) {
+      const isForward = (iter % 2 === 0);
 
-        const currentSegmentLength = pA.distanceTo(pB);
-        const constraintError = currentSegmentLength - joint.restLength;
+      const startPath = isForward ? 0 : pathEntities.length - 1;
+      const endPath = isForward ? pathEntities.length : -1;
+      const stepPath = isForward ? 1 : -1;
 
+      for (let p = startPath; p !== endPath; p += stepPath) {
+        const pathId = pathEntities[p];
+        const path = world.getComponent(pathId, CablePathComponent);
+        if (path.jointEntities.length < 1) continue;
+
+        const startJoint = isForward ? 0 : path.jointEntities.length - 1;
+        const endJoint = isForward ? path.jointEntities.length : -1;
+        const stepJoint = isForward ? 1 : -1;
+
+        for (let j = startJoint; j !== endJoint; j += stepJoint) {
+          const jointId = path.jointEntities[j];
+          const joint = world.getComponent(jointId, CableJointComponent);
+          const locals = jointLocals.get(jointId);
+
+          const entityA = joint.entityA;
+          const entityB = joint.entityB;
+
+          const pA = _computeWorldAttachment(world, entityA, locals.localA);
+          const pB = _computeWorldAttachment(world, entityB, locals.localB);
+
+          const currentSegmentLength = pA.distanceTo(pB);
+          const constraintError = currentSegmentLength - joint.restLength;
         // Apply correction only if the segment is longer than its rest length
         if (constraintError > epsilon) {
           const massAComp = world.getComponent(entityA, MassComponent);
@@ -871,5 +904,6 @@ export class PBDCableConstraintSolver {
         }
       } // End loop through joints in path
     } // End loop through paths
+    } // End loop through iterations
   } // end update
 } // end PBDCableConstraintSolver
