@@ -148,6 +148,17 @@ def pseudo_huber_from_squared_error(squared_error: float, *, delta: float) -> fl
     return float(pseudo_huber_loss(np.array([r], dtype=float), delta=delta)[0])
 
 
+def _circular_mean_pi(angles: np.ndarray) -> float:
+    """Mean angle for periodicity pi (ellipse orientation)."""
+    a = np.asarray(angles, dtype=float)
+    if a.size == 0 or not np.all(np.isfinite(a)):
+        return 0.0
+    doubled = 2.0 * a
+    mean_sin = float(np.mean(np.sin(doubled)))
+    mean_cos = float(np.mean(np.cos(doubled)))
+    return 0.5 * float(np.arctan2(mean_sin, mean_cos))
+
+
 def pointwise_sampson_cost_normalized(
     coeffs: np.ndarray,
     x: np.ndarray,
@@ -268,6 +279,16 @@ class EllipseCostFunction:
         use_flex: bool = True,
         robust_loss: bool = False,
         huber_delta: float = 1.0,
+        ransac: bool = False,
+        ransac_trials: int = 60,
+        ransac_sample_size: int = 5,
+        ransac_min_inlier_ratio: float = 0.5,
+        ransac_threshold: Optional[float] = None,
+        ransac_seed: Optional[int] = 0,
+        mahalanobis_rejection: bool = False,
+        mahalanobis_threshold: float = 3.0,
+        mahalanobis_min_samples: int = 8,
+        mahalanobis_regularization: float = 1e-6,
     ) -> None:
         (
             self.machine_type,
@@ -290,6 +311,16 @@ class EllipseCostFunction:
         self.pointwise_cost_weight = float(pointwise_cost_weight)
         self.robust_loss = bool(robust_loss)
         self.huber_delta = float(huber_delta)
+        self.ransac = bool(ransac)
+        self.ransac_trials = int(ransac_trials)
+        self.ransac_sample_size = int(ransac_sample_size)
+        self.ransac_min_inlier_ratio = float(ransac_min_inlier_ratio)
+        self.ransac_threshold = ransac_threshold if ransac_threshold is None else float(ransac_threshold)
+        self.ransac_seed = ransac_seed if ransac_seed is None else int(ransac_seed)
+        self.mahalanobis_rejection = bool(mahalanobis_rejection)
+        self.mahalanobis_threshold = float(mahalanobis_threshold)
+        self.mahalanobis_min_samples = int(mahalanobis_min_samples)
+        self.mahalanobis_regularization = float(mahalanobis_regularization)
 
         lb, ub = get_anchor_bounds(self.machine_type)
         ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
@@ -434,6 +465,12 @@ class EllipseCostFunction:
             residual_threshold=float("inf"),
             min_points=self.min_points,
             square_inputs=True,
+            ransac=self.ransac,
+            ransac_trials=self.ransac_trials,
+            ransac_sample_size=self.ransac_sample_size,
+            ransac_min_inlier_ratio=self.ransac_min_inlier_ratio,
+            ransac_threshold=self.ransac_threshold if self.ransac_threshold is not None else self.residual_threshold,
+            ransac_seed=self.ransac_seed,
         )
 
         residual_ratio = float("inf")
@@ -453,6 +490,51 @@ class EllipseCostFunction:
 
         geom = canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle)
         return geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
+
+    def _mahalanobis_keep_mask(
+        self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
+    ) -> Optional[np.ndarray]:
+        if not self.mahalanobis_rejection:
+            return None
+        if not np.isfinite(self.mahalanobis_threshold) or self.mahalanobis_threshold <= 0.0:
+            return None
+
+        n = len(obs_geoms)
+        if n < max(2, self.mahalanobis_min_samples):
+            return None
+
+        centers = np.array([g[0] for g in obs_geoms], dtype=float)
+        axes = np.array([g[1] for g in obs_geoms], dtype=float)
+        thetas = np.array([g[2] for g in obs_geoms], dtype=float)
+        if not (np.all(np.isfinite(centers)) and np.all(np.isfinite(axes)) and np.all(np.isfinite(thetas))):
+            return None
+
+        center_scale = float(max(self._l2_scale, 1.0))
+        axes_scale = float(max(self._l2_scale, 1.0))
+        center_scaled = centers / center_scale
+        axes_scaled = axes / axes_scale
+        theta_mean = _circular_mean_pi(thetas)
+        theta_delta = ((thetas - theta_mean + np.pi / 2) % np.pi) - np.pi / 2
+
+        X = np.column_stack([center_scaled, axes_scaled, theta_delta])
+        mean = np.mean(X, axis=0)
+        Xc = X - mean
+        cov = np.cov(Xc, rowvar=False, bias=False)
+        if cov.ndim != 2 or cov.shape[0] != X.shape[1]:
+            return None
+
+        reg = float(max(self.mahalanobis_regularization, 0.0))
+        cov = cov + reg * np.eye(cov.shape[0])
+        inv_cov = np.linalg.pinv(cov)
+        d2 = np.einsum("ij,jk,ik->i", Xc, inv_cov, Xc)
+        if not np.all(np.isfinite(d2)):
+            return None
+
+        thresh2 = float(self.mahalanobis_threshold) ** 2
+        keep = d2 <= thresh2
+        if not np.any(keep):
+            return None
+        return keep
 
     def _pointwise_predicted_cost(
         self, sweep: Union[Sweep, dict], anchors: np.ndarray
@@ -530,8 +612,8 @@ class EllipseCostFunction:
         weighted_costs: List[float] = []
         weights: List[float] = []
 
-        for sweep in self.sweeps:
-            if self.cost_mode in ("pointwise", "sampson"):
+        if self.cost_mode in ("pointwise", "sampson"):
+            for sweep in self.sweeps:
                 cost, _rms, _max_abs, violation_penalty, _sid = self._pointwise_predicted_cost(
                     sweep, anchors
                 )
@@ -540,51 +622,76 @@ class EllipseCostFunction:
                     weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
                 else:
                     weighted_costs.append(float(cost + violation_penalty))
-                continue
+        else:
+            entries: List[Dict[str, object]] = []
+            for sweep in self.sweeps:
+                obs_geom, weight, fixed_lengths_abs, _sid, residual_ratio, violation_penalty = self._fit_observed_geometry(
+                    sweep, anchors
+                )
+                if obs_geom is None:
+                    weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
+                    weights.append(1.0)
+                    continue
 
-            obs_geom, weight, fixed_lengths_abs, _, residual_ratio, violation_penalty = self._fit_observed_geometry(
-                sweep, anchors
-            )
-            weights.append(weight)
+                fixed_indices, _, drive_idx, sensor_idx, _, _, _ = self._extract_sweep_arrays(sweep)
+                entries.append(
+                    {
+                        "obs_geom": obs_geom,
+                        "weight": float(weight),
+                        "fixed_lengths_abs": fixed_lengths_abs,
+                        "fixed_indices": fixed_indices,
+                        "drive_idx": drive_idx,
+                        "sensor_idx": sensor_idx,
+                        "residual_ratio": float(residual_ratio),
+                        "violation_penalty": float(violation_penalty),
+                    }
+                )
 
-            sweep_fields = self._extract_sweep_arrays(sweep)
-            fixed_indices, _, drive_idx, sensor_idx, _, _, _ = sweep_fields
+            keep_mask = self._mahalanobis_keep_mask([e["obs_geom"] for e in entries]) if entries else None
 
-            pred_geom = predict_ellipse_geometry(
-                anchors,
-                fixed_indices,
-                fixed_lengths_abs,
-                drive_idx,
-                sensor_idx,
-                self.dimensions,
-            )
+            for idx, entry in enumerate(entries):
+                if keep_mask is not None and not bool(keep_mask[idx]):
+                    weights.append(0.0)
+                    weighted_costs.append(0.0)
+                    continue
 
-            if obs_geom is None or pred_geom is None:
-                weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
-                continue
+                pred_geom = predict_ellipse_geometry(
+                    anchors,
+                    entry["fixed_indices"],
+                    entry["fixed_lengths_abs"],
+                    entry["drive_idx"],
+                    entry["sensor_idx"],
+                    self.dimensions,
+                )
 
-            pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
-            obs_center, obs_axes, obs_theta = obs_geom
+                if pred_geom is None:
+                    weighted_costs.append(float(self.invalid_penalty) + float(entry["violation_penalty"]))
+                    weights.append(1.0)
+                    continue
 
-            geom_cost = geometry_distance_squared_normalized(
-                obs_center,
-                obs_axes,
-                obs_theta,
-                pred_center,
-                pred_axes,
-                pred_theta,
-                self.geometry_weights,
-                center_scale=self._l2_scale,
-                axes_scale=self._l2_scale,
-            )
-            if self.robust_loss:
-                geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
+                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
+                obs_center, obs_axes, obs_theta = entry["obs_geom"]
 
-            residual_cost = 0.0
-            if np.isfinite(residual_ratio) and float(residual_ratio) > 1.0:
-                dr = float(residual_ratio) - 1.0
-                residual_cost = self.residual_cost_weight * float(dr * dr)
-            weighted_costs.append(float(geom_cost + residual_cost + violation_penalty))
+                geom_cost = geometry_distance_squared_normalized(
+                    obs_center,
+                    obs_axes,
+                    obs_theta,
+                    pred_center,
+                    pred_axes,
+                    pred_theta,
+                    self.geometry_weights,
+                    center_scale=self._l2_scale,
+                    axes_scale=self._l2_scale,
+                )
+                if self.robust_loss:
+                    geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
+
+                residual_cost = 0.0
+                if np.isfinite(entry["residual_ratio"]) and float(entry["residual_ratio"]) > 1.0:
+                    dr = float(entry["residual_ratio"]) - 1.0
+                    residual_cost = self.residual_cost_weight * float(dr * dr)
+                weighted_costs.append(float(geom_cost + residual_cost + float(entry["violation_penalty"])))
+                weights.append(float(entry["weight"]))
 
         weight_sum = float(sum(weights)) if weights else 1.0
         if weight_sum <= 0:
@@ -602,8 +709,8 @@ class EllipseCostFunction:
         num_invalid = 0
         weights: Dict[str, float] = {}
 
-        for sweep in self.sweeps:
-            if self.cost_mode in ("pointwise", "sampson"):
+        if self.cost_mode in ("pointwise", "sampson"):
+            for sweep in self.sweeps:
                 cost, _rms, _max_abs, violation_penalty, sweep_id = self._pointwise_predicted_cost(
                     sweep, anchors
                 )
@@ -614,50 +721,83 @@ class EllipseCostFunction:
                 else:
                     per_sweep_costs[sweep_id] = float(cost + violation_penalty)
                     num_valid += 1
-                continue
+        else:
+            entries: List[Dict[str, object]] = []
+            for sweep in self.sweeps:
+                obs_geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty = self._fit_observed_geometry(
+                    sweep, anchors
+                )
+                if obs_geom is None:
+                    per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
+                    weights[sweep_id] = 1.0
+                    num_invalid += 1
+                    continue
 
-            obs_geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty = self._fit_observed_geometry(
-                sweep, anchors
-            )
-            weights[sweep_id] = weight
+                fixed_indices, _, drive_idx, sensor_idx, _, _, _ = self._extract_sweep_arrays(sweep)
+                entries.append(
+                    {
+                        "sweep_id": sweep_id,
+                        "obs_geom": obs_geom,
+                        "weight": float(weight),
+                        "fixed_lengths_abs": fixed_lengths_abs,
+                        "fixed_indices": fixed_indices,
+                        "drive_idx": drive_idx,
+                        "sensor_idx": sensor_idx,
+                        "residual_ratio": float(residual_ratio),
+                        "violation_penalty": float(violation_penalty),
+                    }
+                )
 
-            fixed_indices, _, drive_idx, sensor_idx, _, _, _ = self._extract_sweep_arrays(sweep)
-            pred_geom = predict_ellipse_geometry(
-                anchors,
-                fixed_indices,
-                fixed_lengths_abs,
-                drive_idx,
-                sensor_idx,
-                self.dimensions,
-            )
+            keep_mask = self._mahalanobis_keep_mask([e["obs_geom"] for e in entries]) if entries else None
 
-            if obs_geom is None or pred_geom is None:
-                per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
-                num_invalid += 1
-                continue
+            for idx, entry in enumerate(entries):
+                sweep_id = str(entry["sweep_id"])
+                if keep_mask is not None and not bool(keep_mask[idx]):
+                    per_sweep_costs[sweep_id] = float(self.invalid_penalty)
+                    weights[sweep_id] = 0.0
+                    num_invalid += 1
+                    continue
 
-            pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
-            obs_center, obs_axes, obs_theta = obs_geom
+                pred_geom = predict_ellipse_geometry(
+                    anchors,
+                    entry["fixed_indices"],
+                    entry["fixed_lengths_abs"],
+                    entry["drive_idx"],
+                    entry["sensor_idx"],
+                    self.dimensions,
+                )
 
-            geom_cost = geometry_distance_squared_normalized(
-                obs_center,
-                obs_axes,
-                obs_theta,
-                pred_center,
-                pred_axes,
-                pred_theta,
-                self.geometry_weights,
-                center_scale=self._l2_scale,
-                axes_scale=self._l2_scale,
-            )
-            if self.robust_loss:
-                geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
-            residual_cost = 0.0
-            if np.isfinite(residual_ratio) and float(residual_ratio) > 1.0:
-                dr = float(residual_ratio) - 1.0
-                residual_cost = self.residual_cost_weight * float(dr * dr)
-            per_sweep_costs[sweep_id] = float(geom_cost + residual_cost + violation_penalty)
-            num_valid += 1
+                if pred_geom is None:
+                    per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(entry["violation_penalty"])
+                    weights[sweep_id] = 1.0
+                    num_invalid += 1
+                    continue
+
+                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
+                obs_center, obs_axes, obs_theta = entry["obs_geom"]
+
+                geom_cost = geometry_distance_squared_normalized(
+                    obs_center,
+                    obs_axes,
+                    obs_theta,
+                    pred_center,
+                    pred_axes,
+                    pred_theta,
+                    self.geometry_weights,
+                    center_scale=self._l2_scale,
+                    axes_scale=self._l2_scale,
+                )
+                if self.robust_loss:
+                    geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
+                residual_cost = 0.0
+                if np.isfinite(entry["residual_ratio"]) and float(entry["residual_ratio"]) > 1.0:
+                    dr = float(entry["residual_ratio"]) - 1.0
+                    residual_cost = self.residual_cost_weight * float(dr * dr)
+                per_sweep_costs[sweep_id] = float(
+                    geom_cost + residual_cost + float(entry["violation_penalty"])
+                )
+                weights[sweep_id] = float(entry["weight"])
+                num_valid += 1
 
         weight_sum = float(sum(weights.values())) if weights else 1.0
         if weight_sum <= 0:

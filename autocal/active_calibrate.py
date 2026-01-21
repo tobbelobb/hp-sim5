@@ -346,6 +346,16 @@ def _plan_next_ellipse_sweep(
     use_flex: bool,
     cost_mode: str,
     pointwise_residual_mode: str,
+    ransac: bool,
+    ransac_trials: int,
+    ransac_sample_size: int,
+    ransac_min_inlier_ratio: float,
+    ransac_threshold: Optional[float],
+    ransac_seed: Optional[int],
+    mahalanobis_rejection: bool,
+    mahalanobis_threshold: float,
+    mahalanobis_min_samples: int,
+    mahalanobis_regularization: float,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -379,6 +389,16 @@ def _plan_next_ellipse_sweep(
         use_parallel=False,
         cost_mode=str(cost_mode),
         pointwise_residual_mode=str(pointwise_residual_mode),
+        ransac=bool(ransac),
+        ransac_trials=int(ransac_trials),
+        ransac_sample_size=int(ransac_sample_size),
+        ransac_min_inlier_ratio=float(ransac_min_inlier_ratio),
+        ransac_threshold=ransac_threshold if ransac_threshold is None else float(ransac_threshold),
+        ransac_seed=ransac_seed if ransac_seed is None else int(ransac_seed),
+        mahalanobis_rejection=bool(mahalanobis_rejection),
+        mahalanobis_threshold=float(mahalanobis_threshold),
+        mahalanobis_min_samples=int(mahalanobis_min_samples),
+        mahalanobis_regularization=float(mahalanobis_regularization),
         generate_report=bool(generate_report),
         include_debug_fits=False,
     )
@@ -561,6 +581,16 @@ def ellipse_active(
     use_flex: bool,
     cost_mode: str,
     pointwise_residual_mode: str,
+    ransac: bool,
+    ransac_trials: int,
+    ransac_sample_size: int,
+    ransac_min_inlier_ratio: float,
+    ransac_threshold: Optional[float],
+    ransac_seed: Optional[int],
+    mahalanobis_rejection: bool,
+    mahalanobis_threshold: float,
+    mahalanobis_min_samples: int,
+    mahalanobis_regularization: float,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -589,6 +619,16 @@ def ellipse_active(
         use_flex=use_flex,
         cost_mode=cost_mode,
         pointwise_residual_mode=pointwise_residual_mode,
+        ransac=ransac,
+        ransac_trials=ransac_trials,
+        ransac_sample_size=ransac_sample_size,
+        ransac_min_inlier_ratio=ransac_min_inlier_ratio,
+        ransac_threshold=ransac_threshold,
+        ransac_seed=ransac_seed,
+        mahalanobis_rejection=mahalanobis_rejection,
+        mahalanobis_threshold=mahalanobis_threshold,
+        mahalanobis_min_samples=mahalanobis_min_samples,
+        mahalanobis_regularization=mahalanobis_regularization,
         generate_report=generate_report,
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
@@ -663,6 +703,16 @@ def ellipse_loop(
     use_flex: bool,
     cost_mode: str,
     pointwise_residual_mode: str,
+    ransac: bool,
+    ransac_trials: int,
+    ransac_sample_size: int,
+    ransac_min_inlier_ratio: float,
+    ransac_threshold: Optional[float],
+    ransac_seed: Optional[int],
+    mahalanobis_rejection: bool,
+    mahalanobis_threshold: float,
+    mahalanobis_min_samples: int,
+    mahalanobis_regularization: float,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -762,6 +812,16 @@ def ellipse_loop(
             use_flex=use_flex,
             cost_mode=cost_mode,
             pointwise_residual_mode=pointwise_residual_mode,
+            ransac=ransac,
+            ransac_trials=ransac_trials,
+            ransac_sample_size=ransac_sample_size,
+            ransac_min_inlier_ratio=ransac_min_inlier_ratio,
+            ransac_threshold=ransac_threshold,
+            ransac_seed=ransac_seed,
+            mahalanobis_rejection=mahalanobis_rejection,
+            mahalanobis_threshold=mahalanobis_threshold,
+            mahalanobis_min_samples=mahalanobis_min_samples,
+            mahalanobis_regularization=mahalanobis_regularization,
             generate_report=generate_report,
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
@@ -854,6 +914,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="sampson",
         help="Pointwise residual metric (only used when --cost-mode=pointwise)",
     )
+    ellipse.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
+    ellipse.add_argument("--ransac-trials", type=int, default=60)
+    ellipse.add_argument("--ransac-sample-size", type=int, default=5)
+    ellipse.add_argument("--ransac-min-inlier-ratio", type=float, default=0.5)
+    ellipse.add_argument("--ransac-threshold", type=float, default=None)
+    ellipse.add_argument("--ransac-seed", type=int, default=0)
+    ellipse.add_argument(
+        "--mahalanobis-reject",
+        action="store_true",
+        help="Discard sweeps whose ellipse geometry is a Mahalanobis outlier.",
+    )
+    ellipse.add_argument("--mahalanobis-threshold", type=float, default=3.0)
+    ellipse.add_argument("--mahalanobis-min-samples", type=int, default=8)
+    ellipse.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
     ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
 
     ellipse.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
@@ -932,6 +1006,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="sampson",
         help="Pointwise residual metric (only used when --cost-mode=pointwise)",
     )
+    loop.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
+    loop.add_argument("--ransac-trials", type=int, default=60)
+    loop.add_argument("--ransac-sample-size", type=int, default=5)
+    loop.add_argument("--ransac-min-inlier-ratio", type=float, default=0.5)
+    loop.add_argument("--ransac-threshold", type=float, default=None)
+    loop.add_argument("--ransac-seed", type=int, default=0)
+    loop.add_argument(
+        "--mahalanobis-reject",
+        action="store_true",
+        help="Discard sweeps whose ellipse geometry is a Mahalanobis outlier.",
+    )
+    loop.add_argument("--mahalanobis-threshold", type=float, default=3.0)
+    loop.add_argument("--mahalanobis-min-samples", type=int, default=8)
+    loop.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
     loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
 
     loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
@@ -978,6 +1066,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             use_flex=bool(args.flex),
             cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
+            ransac=bool(args.ransac),
+            ransac_trials=int(args.ransac_trials),
+            ransac_sample_size=int(args.ransac_sample_size),
+            ransac_min_inlier_ratio=float(args.ransac_min_inlier_ratio),
+            ransac_threshold=args.ransac_threshold,
+            ransac_seed=(None if args.ransac_seed is not None and args.ransac_seed < 0 else int(args.ransac_seed)),
+            mahalanobis_rejection=bool(args.mahalanobis_reject),
+            mahalanobis_threshold=float(args.mahalanobis_threshold),
+            mahalanobis_min_samples=int(args.mahalanobis_min_samples),
+            mahalanobis_regularization=float(args.mahalanobis_regularization),
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
@@ -1018,6 +1116,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             use_flex=bool(args.flex),
             cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
+            ransac=bool(args.ransac),
+            ransac_trials=int(args.ransac_trials),
+            ransac_sample_size=int(args.ransac_sample_size),
+            ransac_min_inlier_ratio=float(args.ransac_min_inlier_ratio),
+            ransac_threshold=args.ransac_threshold,
+            ransac_seed=(None if args.ransac_seed is not None and args.ransac_seed < 0 else int(args.ransac_seed)),
+            mahalanobis_rejection=bool(args.mahalanobis_reject),
+            mahalanobis_threshold=float(args.mahalanobis_threshold),
+            mahalanobis_min_samples=int(args.mahalanobis_min_samples),
+            mahalanobis_regularization=float(args.mahalanobis_regularization),
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),

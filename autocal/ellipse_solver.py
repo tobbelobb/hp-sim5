@@ -39,6 +39,16 @@ def _optimize_restart_worker(payload: dict) -> dict:
     use_flex = bool(payload["use_flex"])
     robust_loss = bool(payload.get("robust_loss", False))
     huber_delta = float(payload.get("huber_delta", 1.0))
+    ransac = bool(payload.get("ransac", False))
+    ransac_trials = int(payload.get("ransac_trials", 60))
+    ransac_sample_size = int(payload.get("ransac_sample_size", 5))
+    ransac_min_inlier_ratio = float(payload.get("ransac_min_inlier_ratio", 0.5))
+    ransac_threshold = payload.get("ransac_threshold")
+    ransac_seed = payload.get("ransac_seed", 0)
+    mahalanobis_rejection = bool(payload.get("mahalanobis_rejection", False))
+    mahalanobis_threshold = float(payload.get("mahalanobis_threshold", 3.0))
+    mahalanobis_min_samples = int(payload.get("mahalanobis_min_samples", 8))
+    mahalanobis_regularization = float(payload.get("mahalanobis_regularization", 1e-6))
 
     machine_type_raw = dataset.get("machine_type", "hangprinter_4")
     machine_type = machine_type_raw.value if isinstance(machine_type_raw, MachineType) else str(machine_type_raw)
@@ -59,6 +69,16 @@ def _optimize_restart_worker(payload: dict) -> dict:
         use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
         huber_delta=float(huber_delta),
+        ransac=bool(ransac),
+        ransac_trials=int(ransac_trials),
+        ransac_sample_size=int(ransac_sample_size),
+        ransac_min_inlier_ratio=float(ransac_min_inlier_ratio),
+        ransac_threshold=ransac_threshold if ransac_threshold is None else float(ransac_threshold),
+        ransac_seed=ransac_seed if ransac_seed is None else int(ransac_seed),
+        mahalanobis_rejection=bool(mahalanobis_rejection),
+        mahalanobis_threshold=float(mahalanobis_threshold),
+        mahalanobis_min_samples=int(mahalanobis_min_samples),
+        mahalanobis_regularization=float(mahalanobis_regularization),
     )
 
     method_norm = method_raw.strip().replace("_", "-").lower()
@@ -175,6 +195,16 @@ def solve_anchors(
     use_flex: bool = True,
     robust_loss: bool = False,
     huber_delta: float = 1.0,
+    ransac: bool = False,
+    ransac_trials: int = 60,
+    ransac_sample_size: int = 5,
+    ransac_min_inlier_ratio: float = 0.5,
+    ransac_threshold: Optional[float] = None,
+    ransac_seed: Optional[int] = 0,
+    mahalanobis_rejection: bool = False,
+    mahalanobis_threshold: float = 3.0,
+    mahalanobis_min_samples: int = 8,
+    mahalanobis_regularization: float = 1e-6,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -208,6 +238,16 @@ def solve_anchors(
         use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
         huber_delta=float(huber_delta),
+        ransac=bool(ransac),
+        ransac_trials=int(ransac_trials),
+        ransac_sample_size=int(ransac_sample_size),
+        ransac_min_inlier_ratio=float(ransac_min_inlier_ratio),
+        ransac_threshold=ransac_threshold if ransac_threshold is None else float(ransac_threshold),
+        ransac_seed=ransac_seed if ransac_seed is None else int(ransac_seed),
+        mahalanobis_rejection=bool(mahalanobis_rejection),
+        mahalanobis_threshold=float(mahalanobis_threshold),
+        mahalanobis_min_samples=int(mahalanobis_min_samples),
+        mahalanobis_regularization=float(mahalanobis_regularization),
     )
 
     method_raw = str(method or "L-BFGS-B")
@@ -353,6 +393,16 @@ def solve_anchors(
                 "use_flex": bool(use_flex),
                 "robust_loss": bool(robust_loss),
                 "huber_delta": float(huber_delta),
+                "ransac": bool(ransac),
+                "ransac_trials": int(ransac_trials),
+                "ransac_sample_size": int(ransac_sample_size),
+                "ransac_min_inlier_ratio": float(ransac_min_inlier_ratio),
+                "ransac_threshold": ransac_threshold if ransac_threshold is None else float(ransac_threshold),
+                "ransac_seed": ransac_seed if ransac_seed is None else int(ransac_seed),
+                "mahalanobis_rejection": bool(mahalanobis_rejection),
+                "mahalanobis_threshold": float(mahalanobis_threshold),
+                "mahalanobis_min_samples": int(mahalanobis_min_samples),
+                "mahalanobis_regularization": float(mahalanobis_regularization),
             }
             for x0 in initial_guesses
         ]

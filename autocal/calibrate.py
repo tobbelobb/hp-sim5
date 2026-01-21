@@ -486,6 +486,16 @@ def calibrate_elliptical(
     use_flex: bool = False,
     robust_loss: bool = False,
     huber_delta: float = 1.0,
+    ransac: bool = False,
+    ransac_trials: int = 60,
+    ransac_sample_size: int = 5,
+    ransac_min_inlier_ratio: float = 0.5,
+    ransac_threshold: Optional[float] = None,
+    ransac_seed: Optional[int] = 0,
+    mahalanobis_rejection: bool = False,
+    mahalanobis_threshold: float = 3.0,
+    mahalanobis_min_samples: int = 8,
+    mahalanobis_regularization: float = 1e-6,
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
@@ -537,6 +547,16 @@ def calibrate_elliptical(
         use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
         huber_delta=float(huber_delta),
+        ransac=bool(ransac),
+        ransac_trials=int(ransac_trials),
+        ransac_sample_size=int(ransac_sample_size),
+        ransac_min_inlier_ratio=float(ransac_min_inlier_ratio),
+        ransac_threshold=ransac_threshold if ransac_threshold is None else float(ransac_threshold),
+        ransac_seed=ransac_seed if ransac_seed is None else int(ransac_seed),
+        mahalanobis_rejection=bool(mahalanobis_rejection),
+        mahalanobis_threshold=float(mahalanobis_threshold),
+        mahalanobis_min_samples=int(mahalanobis_min_samples),
+        mahalanobis_regularization=float(mahalanobis_regularization),
         verbose=verbose,
     )
 
@@ -559,6 +579,12 @@ def calibrate_elliptical(
             abs_sweeps,
             residual_threshold=residual_threshold,
             square_inputs=True,
+            ransac=bool(ransac),
+            ransac_trials=int(ransac_trials),
+            ransac_sample_size=int(ransac_sample_size),
+            ransac_min_inlier_ratio=float(ransac_min_inlier_ratio),
+            ransac_threshold=ransac_threshold if ransac_threshold is None else float(ransac_threshold),
+            ransac_seed=ransac_seed if ransac_seed is None else int(ransac_seed),
         )
 
     result_payload: Dict[str, Any] = {
@@ -886,6 +912,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=1.0,
         help="Pseudo-Huber delta for ellipse cost (dimensionless, used with --huber-loss).",
     )
+    ellipse_parser.add_argument(
+        "--ransac",
+        action="store_true",
+        help="Use RANSAC when fitting per-sweep ellipses.",
+    )
+    ellipse_parser.add_argument("--ransac-trials", type=int, default=60)
+    ellipse_parser.add_argument("--ransac-sample-size", type=int, default=5)
+    ellipse_parser.add_argument("--ransac-min-inlier-ratio", type=float, default=0.5)
+    ellipse_parser.add_argument("--ransac-threshold", type=float, default=None)
+    ellipse_parser.add_argument("--ransac-seed", type=int, default=0)
+    ellipse_parser.add_argument(
+        "--mahalanobis-reject",
+        action="store_true",
+        help="Discard sweeps whose ellipse geometry is a Mahalanobis outlier.",
+    )
+    ellipse_parser.add_argument("--mahalanobis-threshold", type=float, default=3.0)
+    ellipse_parser.add_argument("--mahalanobis-min-samples", type=int, default=8)
+    ellipse_parser.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     ellipse_parallel_group = ellipse_parser.add_mutually_exclusive_group()
@@ -1068,6 +1112,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             use_flex=bool(args.use_flex),
             robust_loss=bool(args.huber_loss),
             huber_delta=float(args.huber_delta),
+            ransac=bool(args.ransac),
+            ransac_trials=int(args.ransac_trials),
+            ransac_sample_size=int(args.ransac_sample_size),
+            ransac_min_inlier_ratio=float(args.ransac_min_inlier_ratio),
+            ransac_threshold=args.ransac_threshold,
+            ransac_seed=(None if args.ransac_seed is not None and args.ransac_seed < 0 else int(args.ransac_seed)),
+            mahalanobis_rejection=bool(args.mahalanobis_reject),
+            mahalanobis_threshold=float(args.mahalanobis_threshold),
+            mahalanobis_min_samples=int(args.mahalanobis_min_samples),
+            mahalanobis_regularization=float(args.mahalanobis_regularization),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),

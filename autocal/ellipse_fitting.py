@@ -25,6 +25,8 @@ class EllipseFitResult:
     num_points: int
     valid: bool
     rejection_reason: Optional[str] = None
+    ransac_used: bool = False
+    num_inliers: Optional[int] = None
 
 
 def fit_ellipse_maini_stefano(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -315,6 +317,93 @@ def ellipse_sampson_residuals(coeffs: np.ndarray, x: np.ndarray, y: np.ndarray) 
     return algebraic / denom
 
 
+def _estimate_ransac_threshold(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    residual_threshold: float,
+) -> Optional[float]:
+    """Estimate a Sampson-residual threshold for RANSAC inlier selection."""
+    if np.isfinite(residual_threshold) and residual_threshold > 0.0:
+        return float(residual_threshold)
+
+    try:
+        coeffs = fit_ellipse_maini_stefano(x, y)
+    except Exception:
+        return None
+
+    residuals = ellipse_sampson_residuals(coeffs, x, y)
+    finite = residuals[np.isfinite(residuals)]
+    if finite.size == 0:
+        return None
+
+    med = float(np.median(np.abs(finite)))
+    if not np.isfinite(med) or med <= 0.0:
+        return None
+
+    return max(1e-12, 3.0 * med)
+
+
+def _ransac_fit_ellipse(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    threshold: float,
+    min_inliers: int,
+    trials: int,
+    sample_size: int,
+    rng: np.random.Generator,
+) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """Fit ellipse with a RANSAC loop; returns (coeffs, inlier_mask)."""
+    n = int(x.size)
+    if n < 5:
+        return None, None
+
+    sample_size = int(max(5, min(sample_size, n)))
+    min_inliers = int(max(min_inliers, 5))
+    trials = int(max(trials, 1))
+
+    best_coeffs: Optional[np.ndarray] = None
+    best_inliers: Optional[np.ndarray] = None
+    best_count = -1
+    best_rms = float("inf")
+
+    for _ in range(trials):
+        idx = rng.choice(n, size=sample_size, replace=False)
+        try:
+            coeffs = fit_ellipse_maini_stefano(x[idx], y[idx])
+        except Exception:
+            continue
+
+        residuals = ellipse_sampson_residuals(coeffs, x, y)
+        if residuals.size == 0 or not np.all(np.isfinite(residuals)):
+            continue
+        inliers = np.abs(residuals) <= threshold
+        count = int(np.sum(inliers))
+        if count < min_inliers:
+            continue
+        rms = float(np.sqrt(np.mean(residuals[inliers] ** 2)))
+        if count > best_count or (count == best_count and rms < best_rms):
+            best_count = count
+            best_rms = rms
+            best_coeffs = coeffs
+            best_inliers = inliers
+
+    if best_coeffs is None or best_inliers is None:
+        return None, None
+
+    try:
+        refined = fit_ellipse_maini_stefano(x[best_inliers], y[best_inliers])
+    except Exception:
+        refined = best_coeffs
+
+    residuals = ellipse_sampson_residuals(refined, x, y)
+    if residuals.size and np.all(np.isfinite(residuals)):
+        best_inliers = np.abs(residuals) <= threshold
+
+    return refined, best_inliers
+
+
 def closest_point_on_ellipse(
     center: Tuple[float, float],
     semi_axes: Tuple[float, float],
@@ -533,6 +622,13 @@ def fit_ellipse_from_sweep(
     residual_threshold: float = 0.01,
     min_points: int = 10,
     square_inputs: bool = True,
+    *,
+    ransac: bool = False,
+    ransac_trials: int = 60,
+    ransac_sample_size: int = 5,
+    ransac_min_inlier_ratio: float = 0.5,
+    ransac_threshold: Optional[float] = None,
+    ransac_seed: Optional[int] = 0,
 ) -> EllipseFitResult:
     """
     Fit ellipse to sweep data (l_drive, l_sensor).
@@ -547,6 +643,12 @@ def fit_ellipse_from_sweep(
         residual_threshold: Maximum RMS residual for valid fit
         min_points: Minimum points required
         square_inputs: Whether to square inputs before fitting
+        ransac: Enable RANSAC outlier rejection before the final fit
+        ransac_trials: Number of random hypothesis fits
+        ransac_sample_size: Points per hypothesis (min 5)
+        ransac_min_inlier_ratio: Minimum inlier fraction to accept a model
+        ransac_threshold: Sampson residual threshold for inliers (defaults to residual_threshold)
+        ransac_seed: RNG seed (set to None for non-deterministic runs)
 
     Returns:
         EllipseFitResult with fit parameters and quality metrics
@@ -589,25 +691,63 @@ def fit_ellipse_from_sweep(
         x = l_drive
         y = l_sensor
 
-    try:
-        coeffs = fit_ellipse_maini_stefano(x, y)
-    except Exception as exc:
-        return EllipseFitResult(
-            coefficients=np.zeros(6),
-            center=(0.0, 0.0),
-            semi_axes=(0.0, 0.0),
-            rotation_angle=0.0,
-            residual_rms=np.inf,
-            residual_max=np.inf,
-            num_points=num_points,
-            valid=False,
-        rejection_reason=f"Fitting failed: {exc}",
+    coeffs = None
+    sampson_residuals: Optional[np.ndarray] = None
+    inlier_mask: Optional[np.ndarray] = None
+    ransac_used = False
+
+    if bool(ransac):
+        thresh = (
+            float(ransac_threshold)
+            if ransac_threshold is not None and np.isfinite(ransac_threshold) and ransac_threshold > 0.0
+            else _estimate_ransac_threshold(x, y, residual_threshold=residual_threshold)
         )
+        if thresh is not None and np.isfinite(thresh) and thresh > 0.0:
+            ratio = float(ransac_min_inlier_ratio)
+            if not np.isfinite(ratio) or ratio <= 0.0:
+                ratio = 0.5
+            if ratio > 1.0:
+                ratio = 1.0
+            min_inliers = int(max(min_points, np.ceil(ratio * num_points)))
+            rng = np.random.default_rng(ransac_seed)
+            coeffs, inlier_mask = _ransac_fit_ellipse(
+                x,
+                y,
+                threshold=float(thresh),
+                min_inliers=min_inliers,
+                trials=int(ransac_trials),
+                sample_size=int(ransac_sample_size),
+                rng=rng,
+            )
+            if coeffs is not None:
+                ransac_used = True
+
+    if coeffs is None:
+        try:
+            coeffs = fit_ellipse_maini_stefano(x, y)
+        except Exception as exc:
+            return EllipseFitResult(
+                coefficients=np.zeros(6),
+                center=(0.0, 0.0),
+                semi_axes=(0.0, 0.0),
+                rotation_angle=0.0,
+                residual_rms=np.inf,
+                residual_max=np.inf,
+                num_points=num_points,
+                valid=False,
+                rejection_reason=f"Fitting failed: {exc}",
+            )
 
     sampson_residuals = ellipse_sampson_residuals(coeffs, x, y)
+    residuals_used = sampson_residuals
+    if ransac_used and inlier_mask is not None and inlier_mask.size == sampson_residuals.size:
+        if np.any(inlier_mask):
+            residuals_used = sampson_residuals[inlier_mask]
+        else:
+            inlier_mask = None
 
-    residual_rms = float(np.sqrt(np.mean(sampson_residuals**2)))
-    residual_max = float(np.max(np.abs(sampson_residuals)))
+    residual_rms = float(np.sqrt(np.mean(residuals_used**2)))
+    residual_max = float(np.max(np.abs(residuals_used)))
 
     center, semi_axes, rotation = ellipse_geometric_params(coeffs)
 
@@ -631,6 +771,8 @@ def fit_ellipse_from_sweep(
         num_points=num_points,
         valid=valid,
         rejection_reason=rejection_reason,
+        ransac_used=ransac_used,
+        num_inliers=int(np.sum(inlier_mask)) if ransac_used and inlier_mask is not None else None,
     )
 
 
@@ -639,6 +781,13 @@ def fit_all_sweeps(
     residual_threshold: float = 0.01,
     min_points: int = 10,
     square_inputs: bool = False,
+    *,
+    ransac: bool = False,
+    ransac_trials: int = 60,
+    ransac_sample_size: int = 5,
+    ransac_min_inlier_ratio: float = 0.5,
+    ransac_threshold: Optional[float] = None,
+    ransac_seed: Optional[int] = 0,
 ) -> List[dict]:
     """
     Fit ellipses to all sweeps in a dataset.
@@ -679,6 +828,12 @@ def fit_all_sweeps(
             residual_threshold=residual_threshold,
             min_points=min_points,
             square_inputs=square_inputs,
+            ransac=ransac,
+            ransac_trials=ransac_trials,
+            ransac_sample_size=ransac_sample_size,
+            ransac_min_inlier_ratio=ransac_min_inlier_ratio,
+            ransac_threshold=ransac_threshold,
+            ransac_seed=ransac_seed,
         )
 
         if result.valid:
@@ -707,6 +862,8 @@ def fit_all_sweeps(
                 "residual_series": residual_series.tolist(),
                 "valid": result.valid,
                 "num_points": result.num_points,
+                "num_inliers": result.num_inliers,
+                "ransac_used": result.ransac_used,
                 "rejection_reason": result.rejection_reason,
                 # Snapshot of the sweep roles so downstream consumers don't need
                 # the raw sweep payload to remain unchanged.
