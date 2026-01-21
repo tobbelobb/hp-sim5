@@ -752,17 +752,31 @@ export class CableAttachmentUpdateSystem {
 
 export class PBDCableConstraintSolver {
   runInPause = false;
+  stepCount = 0;
 
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const epsilon = 1e-9; // Small value to avoid division by zero
     const dt = world.getResource('dt');
 
-    for (const pathId of pathEntities) {
+    this.stepCount++;
+    const isForward = (this.stepCount % 2 === 0);
+
+    const startPath = isForward ? 0 : pathEntities.length - 1;
+    const endPath = isForward ? pathEntities.length : -1;
+    const stepPath = isForward ? 1 : -1;
+
+    for (let p = startPath; p !== endPath; p += stepPath) {
+      const pathId = pathEntities[p];
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
 
-      for (const jointId of path.jointEntities) {
+      const startJoint = isForward ? 0 : path.jointEntities.length - 1;
+      const endJoint = isForward ? path.jointEntities.length : -1;
+      const stepJoint = isForward ? 1 : -1;
+
+      for (let j = startJoint; j !== endJoint; j += stepJoint) {
+        const jointId = path.jointEntities[j];
         const joint = world.getComponent(jointId, CableJointComponent);
 
         const entityA = joint.entityA;
