@@ -205,6 +205,7 @@ def solve_anchors(
     mahalanobis_threshold: float = 3.0,
     mahalanobis_min_samples: int = 8,
     mahalanobis_regularization: float = 1e-6,
+    robust_debug: bool = False,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -347,6 +348,100 @@ def solve_anchors(
         except Exception:
             # Debug printing must never derail the solver.
             return
+
+    def _print_robust_diagnostics() -> None:
+        diag = cost_fn.robustness_diagnostics(best_result.x, top_n=5)
+        cost_mode_str = str(diag.get("cost_mode", ""))
+        note = None
+        if cost_mode_str and cost_mode_str not in ("geometry",):
+            if bool(diag.get("ransac", {}).get("enabled")) or bool(diag.get("mahalanobis", {}).get("enabled")):
+                note = (
+                    "cost_mode is pointwise; ellipse-fit filters are diagnostics only and are not applied"
+                )
+        print(f"[robust] cost_mode={cost_mode_str}")
+        if note:
+            print(f"[robust] note: {note}")
+
+        ransac = diag.get("ransac", {}) if isinstance(diag, dict) else {}
+        if not bool(ransac.get("enabled")):
+            print("[robust] ransac: disabled")
+        else:
+            threshold_mode = ransac.get("threshold_mode", "auto")
+            threshold = ransac.get("threshold")
+            if threshold_mode == "auto" or threshold is None:
+                thresh_str = "auto"
+            else:
+                thresh_str = f"{float(threshold):.6g}"
+            print(
+                "[robust] ransac:"
+                f" trials={int(ransac.get('trials', 0))}"
+                f" sample={int(ransac.get('sample_size', 0))}"
+                f" min_ratio={float(ransac.get('min_inlier_ratio', 0.0)):.3g}"
+                f" threshold={thresh_str}"
+            )
+            used = int(ransac.get("sweeps_used", 0))
+            total = int(ransac.get("sweeps_total", 0))
+            fallback = int(ransac.get("sweeps_fallback", 0))
+            stats = ransac.get("inlier_ratio_stats")
+            if isinstance(stats, dict):
+                stat_str = (
+                    f"min={float(stats.get('min', 0.0)):.3g}"
+                    f" med={float(stats.get('median', 0.0)):.3g}"
+                    f" max={float(stats.get('max', 0.0)):.3g}"
+                )
+            else:
+                stat_str = "n/a"
+            print(f"[robust] ransac: used={used}/{total} fallback={fallback} inlier_ratio={stat_str}")
+            worst = ransac.get("worst_inliers")
+            if isinstance(worst, list) and worst:
+                entries = []
+                for item in worst:
+                    if not isinstance(item, dict):
+                        continue
+                    sid = str(item.get("sweep_id", ""))
+                    nin = item.get("num_inliers")
+                    npt = item.get("num_points")
+                    ratio = item.get("inlier_ratio")
+                    if ratio is not None and np.isfinite(ratio):
+                        ratio_str = f"{float(ratio):.3g}"
+                    else:
+                        ratio_str = "n/a"
+                    entries.append(f"{sid} {nin}/{npt} ({ratio_str})")
+                if entries:
+                    print("[robust] ransac worst: " + ", ".join(entries))
+            fallbacks = ransac.get("fallback_sweeps")
+            if isinstance(fallbacks, list) and fallbacks:
+                print("[robust] ransac fallbacks: " + ", ".join(str(x) for x in fallbacks))
+
+        maha = diag.get("mahalanobis", {}) if isinstance(diag, dict) else {}
+        if not bool(maha.get("enabled")):
+            print("[robust] mahalanobis: disabled")
+        else:
+            status = str(maha.get("status", ""))
+            if status != "ok":
+                print(f"[robust] mahalanobis: skipped ({status})")
+            else:
+                valid = int(maha.get("valid_geometries", 0))
+                rejected = int(maha.get("rejected", 0))
+                threshold = float(maha.get("threshold", 0.0))
+                print(
+                    "[robust] mahalanobis:"
+                    f" threshold={threshold:.3g}"
+                    f" valid={valid}"
+                    f" rejected={rejected}"
+                )
+                worst = maha.get("worst_distances")
+                if isinstance(worst, list) and worst:
+                    entries = []
+                    for item in worst:
+                        if not isinstance(item, dict):
+                            continue
+                        sid = str(item.get("sweep_id", ""))
+                        dist = float(item.get("distance", float("nan")))
+                        keep = bool(item.get("keep", True))
+                        entries.append(f"{sid} d={dist:.3g} {'keep' if keep else 'drop'}")
+                    if entries:
+                        print("[robust] mahalanobis worst: " + ", ".join(entries))
 
     initial_guesses = []
     if initial_guess is not None:
@@ -572,6 +667,11 @@ def solve_anchors(
         print(f"  Best cost: {best_cost:.6e}")
         print(f"  Valid sweeps: {detailed.num_valid_sweeps}")
         print(f"  Invalid sweeps: {detailed.num_invalid_sweeps}")
+    if robust_debug:
+        try:
+            _print_robust_diagnostics()
+        except Exception as exc:
+            print(f"[robust] diagnostics failed: {exc}")
 
     return {
         "anchors": anchors_matrix,

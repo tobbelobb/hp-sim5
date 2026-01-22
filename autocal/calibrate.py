@@ -496,6 +496,7 @@ def calibrate_elliptical(
     mahalanobis_threshold: float = 3.0,
     mahalanobis_min_samples: int = 8,
     mahalanobis_regularization: float = 1e-6,
+    robust_debug: bool = False,
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
@@ -557,6 +558,7 @@ def calibrate_elliptical(
         mahalanobis_threshold=float(mahalanobis_threshold),
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
+        robust_debug=bool(robust_debug),
         verbose=verbose,
     )
 
@@ -930,6 +932,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.add_argument("--mahalanobis-threshold", type=float, default=3.0)
     ellipse_parser.add_argument("--mahalanobis-min-samples", type=int, default=8)
     ellipse_parser.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
+    ellipse_parser.add_argument(
+        "--robust-debug",
+        action="store_true",
+        help="Print diagnostics for RANSAC and Mahalanobis filtering.",
+    )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     ellipse_parallel_group = ellipse_parser.add_mutually_exclusive_group()
@@ -1122,6 +1129,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_threshold=float(args.mahalanobis_threshold),
             mahalanobis_min_samples=int(args.mahalanobis_min_samples),
             mahalanobis_regularization=float(args.mahalanobis_regularization),
+            robust_debug=bool(args.robust_debug),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),

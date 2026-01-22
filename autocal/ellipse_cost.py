@@ -491,23 +491,25 @@ class EllipseCostFunction:
         geom = canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle)
         return geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
 
-    def _mahalanobis_keep_mask(
+    def _mahalanobis_distances(
         self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
-    ) -> Optional[np.ndarray]:
+    ) -> Tuple[Optional[np.ndarray], Optional[str]]:
+        """Compute squared Mahalanobis distances for observed geometries."""
         if not self.mahalanobis_rejection:
-            return None
+            return None, "disabled"
         if not np.isfinite(self.mahalanobis_threshold) or self.mahalanobis_threshold <= 0.0:
-            return None
+            return None, "invalid-threshold"
 
         n = len(obs_geoms)
-        if n < max(2, self.mahalanobis_min_samples):
-            return None
+        min_samples = max(2, self.mahalanobis_min_samples)
+        if n < min_samples:
+            return None, f"insufficient-samples ({n} < {min_samples})"
 
         centers = np.array([g[0] for g in obs_geoms], dtype=float)
         axes = np.array([g[1] for g in obs_geoms], dtype=float)
         thetas = np.array([g[2] for g in obs_geoms], dtype=float)
         if not (np.all(np.isfinite(centers)) and np.all(np.isfinite(axes)) and np.all(np.isfinite(thetas))):
-            return None
+            return None, "non-finite-geometry"
 
         center_scale = float(max(self._l2_scale, 1.0))
         axes_scale = float(max(self._l2_scale, 1.0))
@@ -521,13 +523,22 @@ class EllipseCostFunction:
         Xc = X - mean
         cov = np.cov(Xc, rowvar=False, bias=False)
         if cov.ndim != 2 or cov.shape[0] != X.shape[1]:
-            return None
+            return None, "covariance-shape"
 
         reg = float(max(self.mahalanobis_regularization, 0.0))
         cov = cov + reg * np.eye(cov.shape[0])
         inv_cov = np.linalg.pinv(cov)
         d2 = np.einsum("ij,jk,ik->i", Xc, inv_cov, Xc)
         if not np.all(np.isfinite(d2)):
+            return None, "non-finite-distance"
+
+        return d2, None
+
+    def _mahalanobis_keep_mask(
+        self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
+    ) -> Optional[np.ndarray]:
+        d2, _reason = self._mahalanobis_distances(obs_geoms)
+        if d2 is None:
             return None
 
         thresh2 = float(self.mahalanobis_threshold) ** 2
@@ -535,6 +546,165 @@ class EllipseCostFunction:
         if not np.any(keep):
             return None
         return keep
+
+    def robustness_diagnostics(self, anchor_vec: np.ndarray, *, top_n: int = 5) -> Dict[str, object]:
+        """Return per-sweep diagnostics for RANSAC and Mahalanobis filtering."""
+        anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
+        diagnostics: Dict[str, object] = {"cost_mode": self.cost_mode}
+
+        sweep_entries: List[Dict[str, object]] = []
+        geom_entries: List[Tuple[str, Tuple[np.ndarray, np.ndarray, float]]] = []
+
+        for sweep in self.sweeps:
+            (
+                _fixed_lengths_abs,
+                drive_idx,
+                sensor_idx,
+                l_drive_abs,
+                l_sensor_abs,
+                sweep_id,
+                _violation_penalty,
+            ) = self._reconstruct_lengths(sweep, anchors)
+
+            if self.flex_model is not None:
+                t_drive, t_sensor = self._extract_tension_arrays(sweep)
+                if (
+                    t_drive is not None
+                    and t_sensor is not None
+                    and t_drive.shape == l_drive_abs.shape
+                    and t_sensor.shape == l_sensor_abs.shape
+                ):
+                    l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
+                    l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
+
+            fit = fit_ellipse_from_sweep(
+                l_drive_abs,
+                l_sensor_abs,
+                residual_threshold=float("inf"),
+                min_points=self.min_points,
+                square_inputs=True,
+                ransac=self.ransac,
+                ransac_trials=self.ransac_trials,
+                ransac_sample_size=self.ransac_sample_size,
+                ransac_min_inlier_ratio=self.ransac_min_inlier_ratio,
+                ransac_threshold=self.ransac_threshold if self.ransac_threshold is not None else self.residual_threshold,
+                ransac_seed=self.ransac_seed,
+            )
+
+            residual_ratio = float("inf")
+            if np.isfinite(fit.residual_rms):
+                denom = float(self.residual_threshold) if float(self.residual_threshold) > 0 else 1.0
+                residual_ratio = float(fit.residual_rms) / denom
+
+            inlier_ratio = None
+            if fit.ransac_used and fit.num_inliers is not None and fit.num_points > 0:
+                inlier_ratio = float(fit.num_inliers) / float(fit.num_points)
+
+            sweep_entries.append(
+                {
+                    "sweep_id": str(sweep_id),
+                    "num_points": int(fit.num_points),
+                    "num_inliers": fit.num_inliers,
+                    "inlier_ratio": inlier_ratio,
+                    "ransac_used": bool(fit.ransac_used),
+                    "valid": bool(fit.valid),
+                    "residual_rms": float(fit.residual_rms),
+                    "residual_ratio": residual_ratio,
+                    "rejection_reason": fit.rejection_reason,
+                }
+            )
+
+            if fit.valid:
+                geom_entries.append(
+                    (str(sweep_id), canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle))
+                )
+
+        ransac_used_entries = [e for e in sweep_entries if e["ransac_used"]]
+        ransac_fallbacks = [e for e in sweep_entries if self.ransac and not e["ransac_used"]]
+        inlier_ratios = [e["inlier_ratio"] for e in ransac_used_entries if e["inlier_ratio"] is not None]
+        inlier_stats = None
+        if inlier_ratios:
+            inlier_stats = {
+                "min": float(np.min(inlier_ratios)),
+                "median": float(np.median(inlier_ratios)),
+                "max": float(np.max(inlier_ratios)),
+            }
+
+        worst_inliers: List[Dict[str, object]] = []
+        if ransac_used_entries:
+            worst_sorted = sorted(
+                ransac_used_entries,
+                key=lambda e: (e["inlier_ratio"] if e["inlier_ratio"] is not None else float("inf")),
+            )
+            for entry in worst_sorted[: max(1, int(top_n))]:
+                worst_inliers.append(
+                    {
+                        "sweep_id": entry["sweep_id"],
+                        "num_inliers": entry["num_inliers"],
+                        "num_points": entry["num_points"],
+                        "inlier_ratio": entry["inlier_ratio"],
+                        "residual_rms": entry["residual_rms"],
+                        "valid": entry["valid"],
+                    }
+                )
+
+        diagnostics["ransac"] = {
+            "enabled": bool(self.ransac),
+            "threshold": self.ransac_threshold,
+            "threshold_mode": "auto" if self.ransac_threshold is None else "fixed",
+            "trials": int(self.ransac_trials),
+            "sample_size": int(self.ransac_sample_size),
+            "min_inlier_ratio": float(self.ransac_min_inlier_ratio),
+            "sweeps_total": int(len(sweep_entries)),
+            "sweeps_used": int(len(ransac_used_entries)),
+            "sweeps_fallback": int(len(ransac_fallbacks)),
+            "inlier_ratio_stats": inlier_stats,
+            "worst_inliers": worst_inliers,
+            "fallback_sweeps": [e["sweep_id"] for e in ransac_fallbacks[: max(1, int(top_n))]],
+        }
+
+        mah_status = "disabled"
+        mah_distances = None
+        mah_keep = None
+        mah_reason = None
+        if self.mahalanobis_rejection and not geom_entries:
+            mah_status = "no-valid-geometry"
+        if geom_entries:
+            obs_geoms = [entry[1] for entry in geom_entries]
+            mah_distances, mah_reason = self._mahalanobis_distances(obs_geoms)
+        if mah_distances is not None:
+            mah_status = "ok"
+            mah_keep = mah_distances <= float(self.mahalanobis_threshold) ** 2
+        elif mah_reason is not None:
+            mah_status = mah_reason
+
+        mah_worst: List[Dict[str, object]] = []
+        if mah_distances is not None:
+            distances = np.sqrt(mah_distances)
+            order = np.argsort(distances)[::-1]
+            top = order[: max(1, int(top_n))]
+            for idx in top:
+                sweep_id = geom_entries[int(idx)][0]
+                mah_worst.append(
+                    {
+                        "sweep_id": sweep_id,
+                        "distance": float(distances[int(idx)]),
+                        "keep": bool(mah_keep[int(idx)]) if mah_keep is not None else True,
+                    }
+                )
+
+        diagnostics["mahalanobis"] = {
+            "enabled": bool(self.mahalanobis_rejection),
+            "threshold": float(self.mahalanobis_threshold),
+            "min_samples": int(self.mahalanobis_min_samples),
+            "regularization": float(self.mahalanobis_regularization),
+            "status": mah_status,
+            "valid_geometries": int(len(geom_entries)),
+            "rejected": int(np.sum(~mah_keep)) if mah_keep is not None else 0,
+            "worst_distances": mah_worst,
+        }
+
+        return diagnostics
 
     def _pointwise_predicted_cost(
         self, sweep: Union[Sweep, dict], anchors: np.ndarray

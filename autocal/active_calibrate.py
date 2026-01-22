@@ -499,6 +499,7 @@ def _plan_next_ellipse_sweep(
     mahalanobis_threshold: float,
     mahalanobis_min_samples: int,
     mahalanobis_regularization: float,
+    robust_debug: bool,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -542,6 +543,7 @@ def _plan_next_ellipse_sweep(
         mahalanobis_threshold=float(mahalanobis_threshold),
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
+        robust_debug=bool(robust_debug),
         generate_report=bool(generate_report),
         include_debug_fits=False,
     )
@@ -734,6 +736,7 @@ def ellipse_active(
     mahalanobis_threshold: float,
     mahalanobis_min_samples: int,
     mahalanobis_regularization: float,
+    robust_debug: bool,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -788,6 +791,7 @@ def ellipse_active(
         mahalanobis_threshold=mahalanobis_threshold,
         mahalanobis_min_samples=mahalanobis_min_samples,
         mahalanobis_regularization=mahalanobis_regularization,
+        robust_debug=robust_debug,
         generate_report=generate_report,
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
@@ -878,6 +882,7 @@ def ellipse_loop(
     mahalanobis_threshold: float,
     mahalanobis_min_samples: int,
     mahalanobis_regularization: float,
+    robust_debug: bool,
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -1014,6 +1019,7 @@ def ellipse_loop(
             mahalanobis_threshold=mahalanobis_threshold,
             mahalanobis_min_samples=mahalanobis_min_samples,
             mahalanobis_regularization=mahalanobis_regularization,
+            robust_debug=robust_debug,
             generate_report=generate_report,
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
@@ -1134,6 +1140,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse.add_argument("--mahalanobis-threshold", type=float, default=3.0)
     ellipse.add_argument("--mahalanobis-min-samples", type=int, default=8)
     ellipse.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
+    ellipse.add_argument(
+        "--robust-debug",
+        action="store_true",
+        help="Print diagnostics for RANSAC and Mahalanobis filtering.",
+    )
     ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
 
     ellipse.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
@@ -1242,6 +1253,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     loop.add_argument("--mahalanobis-threshold", type=float, default=3.0)
     loop.add_argument("--mahalanobis-min-samples", type=int, default=8)
     loop.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
+    loop.add_argument(
+        "--robust-debug",
+        action="store_true",
+        help="Print diagnostics for RANSAC and Mahalanobis filtering.",
+    )
     loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
 
     loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
@@ -1314,6 +1330,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_threshold=float(args.mahalanobis_threshold),
             mahalanobis_min_samples=int(args.mahalanobis_min_samples),
             mahalanobis_regularization=float(args.mahalanobis_regularization),
+            robust_debug=bool(args.robust_debug),
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
@@ -1367,6 +1384,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_threshold=float(args.mahalanobis_threshold),
             mahalanobis_min_samples=int(args.mahalanobis_min_samples),
             mahalanobis_regularization=float(args.mahalanobis_regularization),
+            robust_debug=bool(args.robust_debug),
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
