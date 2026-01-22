@@ -32,7 +32,7 @@ To control which files get used in our build, we populate a physically isolated 
 # cd RRF # Assumed start directory
 # Possibly rm -rf build if a corrupted one already exists, then cmake -B build to make a new one
 cmake --build build --target rrf_simulator -j
-./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.gcode --can-log run/vsd/logs/first.jsonl -c sys/config_hangprinter.g
+./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.gcode --can-log run/vsd/logs/first.csv -c sys/config_hangprinter.g
 ```
 
 ## Instructions for Developers and AI Assistants
