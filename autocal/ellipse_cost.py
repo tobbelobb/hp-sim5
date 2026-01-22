@@ -30,6 +30,8 @@ _POINTWISE_SIGMA_MULT = 0.1
 _POINTWISE_MIN_SIGMA_MM = 0.001
 _SWEEP_WISE_K = 3.0
 _SWEEP_WISE_MIN_SAMPLES = 5
+_SWEEP_WISE_MIN_KEEP = 2
+_SWEEP_WISE_MIN_KEEP_RATIO = 0.5
 
 
 @dataclass
@@ -870,11 +872,23 @@ class EllipseCostFunction:
         scale = _MAD_SCALE * mad
         if not np.isfinite(scale) or scale <= 0.0:
             scale = max(med, 1e-12)
-        threshold = float(max(_SWEEP_WISE_K * scale, 1e-12))
+        scale = float(max(scale, self._pointwise_sigma_floor_norm, 1e-12))
+        threshold = float(max(med + _SWEEP_WISE_K * scale, 1e-12))
         keep = metrics <= threshold
+        keep_count = int(np.sum(keep & finite_mask))
+        min_keep = int(max(_SWEEP_WISE_MIN_KEEP, np.ceil(_SWEEP_WISE_MIN_KEEP_RATIO * count)))
+        reason = "ok"
+        if keep_count < min_keep:
+            sorted_vals = np.sort(data)
+            idx = min(min_keep - 1, sorted_vals.size - 1)
+            relaxed = float(sorted_vals[idx])
+            if np.isfinite(relaxed):
+                threshold = float(max(threshold, relaxed))
+                keep = metrics <= threshold
+                reason = "relaxed-min-keep"
         if not np.any(keep & finite_mask):
             return None, threshold, "all-rejected"
-        return keep, threshold, "ok"
+        return keep, threshold, reason
 
     def _mahalanobis_distances(
         self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
