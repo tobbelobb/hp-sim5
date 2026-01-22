@@ -100,7 +100,7 @@ Options:
   --no-spawn-rrf-simulator   Do not start rrf_simulator automatically
   --no-ws                    Disable hp-sim websocket bridge
   --ws-port <port>           WebSocket port (default: 8790)
-  --no-hp-sim-reset          Do not reset hp-sim on start
+  --hp-sim-reset             Reset hp-sim on start
   --wait-ws <ms>             Wait for hp-sim websocket connection (default: 0)
   --debug                    Verbose logging (includes G-code replies)
   --debug-gcode              Echo sent G-code
@@ -200,7 +200,7 @@ async function main() {
 
   if (!args.noWs) {
     await bridgeCtx.waitForHpSimConnection(waitForWsMs);
-    if (!args.noHpSimReset) {
+    if (args.hpSimReset) {
       await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
     }
     if (speedup !== 1) {

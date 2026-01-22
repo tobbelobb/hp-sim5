@@ -753,9 +753,12 @@ def ellipse_active(
     merged_output_dataset: Optional[Path],
     sim: bool,
     keep_sim_alive: bool,
+    hp_sim_reset: bool,
 ) -> int:
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    if sim and hp_sim_reset and collect_once and not _arg_has_flag(collector_args_eff, "--hp-sim-reset"):
+        collector_args_eff.append("--hp-sim-reset")
     _, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
 
@@ -890,6 +893,7 @@ def ellipse_loop(
     collector_args: Sequence[str],
     sim: bool,
     keep_sim_alive: bool,
+    hp_sim_reset: bool,
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
@@ -900,6 +904,7 @@ def ellipse_loop(
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    reset_pending = bool(sim and hp_sim_reset)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
 
@@ -959,6 +964,8 @@ def ellipse_loop(
                 return out
 
             argv_eff = _strip_conflicts(list(collector_args_eff))
+            if reset_pending and not _arg_has_flag(argv_eff, "--hp-sim-reset"):
+                argv_eff.append("--hp-sim-reset")
             if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
                 argv_eff.append("--return-to-origin")
 
@@ -976,11 +983,16 @@ def ellipse_loop(
             print("; bootstrapping dataset (3 sweeps, auto size-tune):")
             print(";   " + " ".join(cmd))
             subprocess.run(cmd, check=True)
+            reset_pending = False
             print(f"; bootstrap dataset written to {work_path}")
 
     for step in range(1, max(1, int(max_steps)) + 1):
         print(f"\n; === iteration {step}/{max_steps} dataset={work_path} ===")
         collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
+
+        plan_args = list(collector_args_eff)
+        if reset_pending and not _arg_has_flag(plan_args, "--hp-sim-reset"):
+            plan_args.append("--hp-sim-reset")
 
         plan = _plan_next_ellipse_sweep(
             work_path,
@@ -1015,7 +1027,7 @@ def ellipse_loop(
             top_k=top_k,
             write_cfg=write_cfg,
             collector_output=collector_output,
-            collector_args=collector_args_eff,
+            collector_args=plan_args,
         )
         _print_ellipse_plan(plan, top_n=5, print_command=True)
 
@@ -1069,6 +1081,7 @@ def ellipse_loop(
         base_dataset = _load_json(work_path)
         print(f"; running: {' '.join(str(x) for x in cmd)}")
         subprocess.run(cmd, check=True)
+        reset_pending = False
 
         new_dataset = _load_json(collector_output)
         if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
@@ -1162,6 +1175,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "--keep-sim-alive",
         action="store_true",
         help="Leave rrf_simulator running after exit (only when --sim)",
+    )
+    ellipse.add_argument(
+        "--hp-sim-reset",
+        action="store_true",
+        help="Reset hp-sim once before the first sweep (only when --sim)",
     )
 
     ellipse.add_argument("--collect-once", action="store_true", help="Collect the suggested sweep and merge")
@@ -1264,6 +1282,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="Leave rrf_simulator running after exit (only when --sim)",
     )
+    loop.add_argument(
+        "--hp-sim-reset",
+        action="store_true",
+        help="Reset hp-sim once before the first sweep (only when --sim)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -1310,6 +1333,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             merged_output_dataset=args.merged_output_dataset,
             sim=bool(args.sim),
             keep_sim_alive=bool(args.keep_sim_alive),
+            hp_sim_reset=bool(args.hp_sim_reset),
         )
 
     if args.command == "merge":
@@ -1358,6 +1382,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             collector_args=collector_args,
             sim=bool(args.sim),
             keep_sim_alive=bool(args.keep_sim_alive),
+            hp_sim_reset=bool(args.hp_sim_reset),
         )
 
     raise AssertionError("Unhandled command")

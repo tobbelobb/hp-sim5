@@ -277,7 +277,7 @@ export function parseBridgeArgs(argv) {
     outputFile: null,
     settleMs: null,
     persistRrfSimulator: false,
-    noHpSimReset: false,
+    hpSimReset: false,
     noSpawnRrfSimulator: false,
     speedup: null,
     port: null,
@@ -358,8 +358,8 @@ export function parseBridgeArgs(argv) {
       args.settleMs = argv[++i] || null;
     } else if (arg === '--persist-rrf-simulator') {
       args.persistRrfSimulator = true;
-    } else if (arg === '--no-hp-sim-reset') {
-      args.noHpSimReset = true;
+    } else if (arg === '--hp-sim-reset') {
+      args.hpSimReset = true;
     } else if (arg === '--no-spawn-rrf-simulator') {
       args.noSpawnRrfSimulator = true;
     } else if (arg === '--speedup') {
