@@ -1,0 +1,898 @@
+{
+  "table_of_contents": [
+    {
+      "title": "On the Convergence of IRLS and Its Variants in Outlier-Robust Estimation",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          66.9375,
+          105.9219970703125
+        ],
+        [
+          528.0507202148438,
+          105.9219970703125
+        ],
+        [
+          528.0507202148438,
+          120.2681884765625
+        ],
+        [
+          66.9375,
+          120.2681884765625
+        ]
+      ]
+    },
+    {
+      "title": "Abstract",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          144.6328125,
+          214.55615234375
+        ],
+        [
+          190.951171875,
+          214.55615234375
+        ],
+        [
+          190.951171875,
+          226.5113525390625
+        ],
+        [
+          144.6328125,
+          226.5113525390625
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          49.904296875,
+          566.8421478271484
+        ],
+        [
+          127.1513671875,
+          566.8421478271484
+        ],
+        [
+          127.1513671875,
+          578.91796875
+        ],
+        [
+          49.904296875,
+          578.91796875
+        ]
+      ]
+    },
+    {
+      "title": "1.1. The Outlier-Robust Estimation Problem",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          49.68017578125,
+          587.7758331298828
+        ],
+        [
+          257.5091552734375,
+          587.7758331298828
+        ],
+        [
+          257.5091552734375,
+          598.7347259521484
+        ],
+        [
+          49.68017578125,
+          598.7347259521484
+        ]
+      ]
+    },
+    {
+      "title": "1.2. IRLS and Its Variants in Vision & Optimization",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          308.8616943359375,
+          633.7887573242188
+        ],
+        [
+          545.1136474609375,
+          633.7887573242188
+        ],
+        [
+          545.1136474609375,
+          644.7476501464844
+        ],
+        [
+          308.8616943359375,
+          644.7476501464844
+        ]
+      ]
+    },
+    {
+      "title": "1.3. Our Contribution",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          308.862060546875,
+          551.2137298583984
+        ],
+        [
+          412.3828125,
+          551.2137298583984
+        ],
+        [
+          412.3828125,
+          562.1726226806641
+        ],
+        [
+          308.862060546875,
+          562.1726226806641
+        ]
+      ]
+    },
+    {
+      "title": "2. GNC-IRLSp: Interpretation & Convergence",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          49.306640625,
+          634.1747894287109
+        ],
+        [
+          286.875,
+          634.1747894287109
+        ],
+        [
+          286.875,
+          647.6530456542969
+        ],
+        [
+          49.306640625,
+          647.6530456542969
+        ]
+      ]
+    },
+    {
+      "title": "2.1. Interpretation of GNC-IRLSp",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          308.86199951171875,
+          233.87384033203125
+        ],
+        [
+          462.287109375,
+          233.87384033203125
+        ],
+        [
+          462.287109375,
+          245.3026123046875
+        ],
+        [
+          308.86199951171875,
+          245.3026123046875
+        ]
+      ]
+    },
+    {
+      "title": "2.2. Convergence of GNC-IRLSp",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          49.60546875,
+          296.18994140625
+        ],
+        [
+          196.02761840820312,
+          296.18994140625
+        ],
+        [
+          196.02761840820312,
+          307.61865234375
+        ],
+        [
+          49.60546875,
+          307.61865234375
+        ]
+      ]
+    },
+    {
+      "title": "3. Convergence Rates for Robust Regression",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          308.390625,
+          323.1242980957031
+        ],
+        [
+          534.3046875,
+          323.1242980957031
+        ],
+        [
+          534.3046875,
+          335.0794982910156
+        ],
+        [
+          308.390625,
+          335.0794982910156
+        ]
+      ]
+    },
+    {
+      "title": "3.1. Global Linear Convergence at p = 1?",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          49.4560546875,
+          630.8597869873047
+        ],
+        [
+          241.67442321777344,
+          630.8597869873047
+        ],
+        [
+          241.67442321777344,
+          641.8186798095703
+        ],
+        [
+          49.4560546875,
+          641.8186798095703
+        ]
+      ]
+    },
+    {
+      "title": "3.2. Local Quadratic Convergence at p = 0",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          307.79296875,
+          551.9316864013672
+        ],
+        [
+          505.8870544433594,
+          551.9316864013672
+        ],
+        [
+          505.8870544433594,
+          562.8905792236328
+        ],
+        [
+          307.79296875,
+          562.8905792236328
+        ]
+      ]
+    },
+    {
+      "title": "3.3. Graduated Rates From Linear to Quadratic?",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          49.23193359375,
+          407.8186340332031
+        ],
+        [
+          280.6434020996094,
+          407.8186340332031
+        ],
+        [
+          280.6434020996094,
+          418.77752685546875
+        ],
+        [
+          49.23193359375,
+          418.77752685546875
+        ]
+      ]
+    },
+    {
+      "title": "3.4. Quadratic Rates From The First Iteration?",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          49.4560546875,
+          660.7455749511719
+        ],
+        [
+          271.1865234375,
+          660.7455749511719
+        ],
+        [
+          271.1865234375,
+          671.704475402832
+        ],
+        [
+          49.4560546875,
+          671.704475402832
+        ]
+      ]
+    },
+    {
+      "title": "4. Experiments: Lp Versus TLS",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          308.091796875,
+          371.0310974121094
+        ],
+        [
+          470.78338623046875,
+          371.0310974121094
+        ],
+        [
+          470.78338623046875,
+          382.9862976074219
+        ],
+        [
+          308.091796875,
+          382.9862976074219
+        ]
+      ]
+    },
+    {
+      "title": "5. MS-GNC-TLS: Improving GNC-TLS",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          308.8619384765625,
+          205.34796142578125
+        ],
+        [
+          507.111328125,
+          205.34796142578125
+        ],
+        [
+          507.111328125,
+          218.07135009765625
+        ],
+        [
+          308.8619384765625,
+          218.07135009765625
+        ]
+      ]
+    },
+    {
+      "title": "6. Conclusion, Limitations, and Future Work",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          307.79296875,
+          316.244140625
+        ],
+        [
+          538.48828125,
+          316.244140625
+        ],
+        [
+          538.48828125,
+          328.1993408203125
+        ],
+        [
+          307.79296875,
+          328.1993408203125
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          49.82958984375,
+          72.787109375
+        ],
+        [
+          105.71044921875,
+          72.787109375
+        ],
+        [
+          105.71044921875,
+          84.7423095703125
+        ],
+        [
+          49.82958984375,
+          84.7423095703125
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          686
+        ],
+        [
+          "Line",
+          101
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "TextInlineMath",
+          7
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 32,
+        "llm_error_count": 3,
+        "llm_tokens_used": 99405
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1001
+        ],
+        [
+          "Line",
+          153
+        ],
+        [
+          "TextInlineMath",
+          13
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "Footnote",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 36,
+        "llm_error_count": 2,
+        "llm_tokens_used": 110639
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1357
+        ],
+        [
+          "Line",
+          125
+        ],
+        [
+          "TextInlineMath",
+          12
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 38,
+        "llm_error_count": 4,
+        "llm_tokens_used": 114669
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1491
+        ],
+        [
+          "Line",
+          152
+        ],
+        [
+          "TextInlineMath",
+          14
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "Equation",
+          5
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 47,
+        "llm_error_count": 4,
+        "llm_tokens_used": 146379
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1674
+        ],
+        [
+          "Line",
+          129
+        ],
+        [
+          "TextInlineMath",
+          11
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 39,
+        "llm_error_count": 0,
+        "llm_tokens_used": 129398
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1441
+        ],
+        [
+          "Line",
+          133
+        ],
+        [
+          "TextInlineMath",
+          11
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "ListItem",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 36,
+        "llm_error_count": 2,
+        "llm_tokens_used": 106129
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1017
+        ],
+        [
+          "Line",
+          155
+        ],
+        [
+          "TextInlineMath",
+          8
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 31,
+        "llm_error_count": 2,
+        "llm_tokens_used": 95951
+      }
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          959
+        ],
+        [
+          "Line",
+          143
+        ],
+        [
+          "TextInlineMath",
+          10
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Text",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 31,
+        "llm_error_count": 0,
+        "llm_tokens_used": 92958
+      }
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          483
+        ],
+        [
+          "Line",
+          116
+        ],
+        [
+          "ListItem",
+          31
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 3,
+        "llm_error_count": 1,
+        "llm_tokens_used": 8816
+      }
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          509
+        ],
+        [
+          "Line",
+          115
+        ],
+        [
+          "ListItem",
+          31
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 2,
+        "llm_error_count": 0,
+        "llm_tokens_used": 5968
+      }
+    },
+    {
+      "page_id": 10,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          200
+        ],
+        [
+          "Line",
+          46
+        ],
+        [
+          "ListItem",
+          13
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 1,
+        "llm_error_count": 0,
+        "llm_tokens_used": 3263
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/Peng_On_the_Convergence_of_IRLS_and_Its_Variants_in_Outlier-Robust_CVPR_2023_paper"
+}
