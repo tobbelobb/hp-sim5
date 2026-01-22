@@ -447,6 +447,19 @@ def solve_anchors(
                 f" hard_cut={bool(pw.get('hard_cut'))}"
                 f" huber_mult={float(pw.get('huber_multiplier', 0.0)):.3g}"
             )
+            scale_source = pw.get("scale_source")
+            if scale_source:
+                scale_global = pw.get("scale_global")
+                scale_floor = pw.get("scale_floor")
+                scale_floor_mm = pw.get("scale_floor_mm")
+                global_str = f"{float(scale_global):.3g}" if np.isfinite(scale_global) else "n/a"
+                floor_str = f"{float(scale_floor):.3g}" if np.isfinite(scale_floor) else "n/a"
+                floor_mm_str = f"{float(scale_floor_mm):.3g}" if np.isfinite(scale_floor_mm) else "n/a"
+                print(
+                    "[robust] pointwise scale:"
+                    f" source={scale_source} global={global_str}"
+                    f" floor={floor_str} floor_mm={floor_mm_str}"
+                )
             stats = pw.get("inlier_ratio_stats")
             if isinstance(stats, dict):
                 stat_str = (
