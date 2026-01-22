@@ -497,6 +497,8 @@ def calibrate_elliptical(
     mahalanobis_min_samples: int = 8,
     mahalanobis_regularization: float = 1e-6,
     robust_debug: bool = False,
+    pointwise_filtering: bool = True,
+    sweep_wise_filtering: bool = True,
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
@@ -559,6 +561,8 @@ def calibrate_elliptical(
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
         robust_debug=bool(robust_debug),
+        pointwise_filtering=bool(pointwise_filtering),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
         verbose=verbose,
     )
 
@@ -884,11 +888,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Pointwise residual metric (only used when --cost-mode=pointwise).",
     )
     ellipse_parser.add_argument(
+        "--pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_true",
+        help="Enable GNC-IRLS style pointwise filtering (default).",
+    )
+    ellipse_parser.add_argument(
+        "--no-pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_false",
+        help="Disable pointwise filtering.",
+    )
+    ellipse_parser.add_argument(
+        "--sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_true",
+        help="Enable sweep-wise outlier rejection (default).",
+    )
+    ellipse_parser.add_argument(
+        "--no-sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_false",
+        help="Disable sweep-wise outlier rejection.",
+    )
+    ellipse_parser.add_argument(
         "--progress-every",
         type=int,
         default=None,
         help="When verbose/debug, print progress every N iterations (default: 1 for --debug, 10 for --verbose).",
     )
+    ellipse_parser.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
     ellipse_parser.add_argument(
         "--optimizer",
         default="L-BFGS-B",
@@ -935,7 +964,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.add_argument(
         "--robust-debug",
         action="store_true",
-        help="Print diagnostics for RANSAC and Mahalanobis filtering.",
+        help="Print diagnostics for robustness filtering.",
     )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
@@ -1130,6 +1159,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_min_samples=int(args.mahalanobis_min_samples),
             mahalanobis_regularization=float(args.mahalanobis_regularization),
             robust_debug=bool(args.robust_debug),
+            pointwise_filtering=bool(args.pointwise_filtering),
+            sweep_wise_filtering=bool(args.sweep_wise_filtering),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),

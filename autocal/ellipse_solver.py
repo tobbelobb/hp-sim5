@@ -49,6 +49,9 @@ def _optimize_restart_worker(payload: dict) -> dict:
     mahalanobis_threshold = float(payload.get("mahalanobis_threshold", 3.0))
     mahalanobis_min_samples = int(payload.get("mahalanobis_min_samples", 8))
     mahalanobis_regularization = float(payload.get("mahalanobis_regularization", 1e-6))
+    pointwise_filtering = bool(payload.get("pointwise_filtering", True))
+    sweep_wise_filtering = bool(payload.get("sweep_wise_filtering", True))
+    pointwise_filter_stage = payload.get("pointwise_filter_stage", 0)
 
     machine_type_raw = dataset.get("machine_type", "hangprinter_4")
     machine_type = machine_type_raw.value if isinstance(machine_type_raw, MachineType) else str(machine_type_raw)
@@ -79,6 +82,9 @@ def _optimize_restart_worker(payload: dict) -> dict:
         mahalanobis_threshold=float(mahalanobis_threshold),
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
+        pointwise_filtering=bool(pointwise_filtering),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
     )
 
     method_norm = method_raw.strip().replace("_", "-").lower()
@@ -205,6 +211,9 @@ def solve_anchors(
     mahalanobis_threshold: float = 3.0,
     mahalanobis_min_samples: int = 8,
     mahalanobis_regularization: float = 1e-6,
+    pointwise_filtering: bool = True,
+    sweep_wise_filtering: bool = True,
+    pointwise_filter_stage: Optional[int] = None,
     robust_debug: bool = False,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
@@ -226,6 +235,67 @@ def solve_anchors(
 
     bounds = list(zip(lb, ub))
     rng = np.random.default_rng(0)
+
+    if (
+        pointwise_filter_stage is None
+        and str(cost_mode or "").strip().lower() in ("pointwise", "sampson")
+        and bool(pointwise_filtering)
+    ):
+        stages = [
+            {"stage": 0, "restarts": int(max(num_restarts, 1)), "iter_factor": 1.0, "label": "wide-huber"},
+            {"stage": 1, "restarts": 1, "iter_factor": 0.6, "label": "tight-huber"},
+            {"stage": 2, "restarts": 1, "iter_factor": 0.4, "label": "trim"},
+        ]
+        current_guess = initial_guess
+        final_result: Optional[Dict[str, object]] = None
+        for idx, stage in enumerate(stages):
+            stage_iters = int(max(1, round(max_iterations * stage["iter_factor"])))
+            stage_restarts = int(stage["restarts"])
+            if verbose or robust_debug:
+                print(f"[gnc] stage {idx + 1}/{len(stages)}: {stage['label']} maxiter={stage_iters}")
+            final_result = solve_anchors(
+                dataset,
+                initial_guess=current_guess,
+                method=method,
+                max_iterations=stage_iters,
+                num_restarts=stage_restarts,
+                use_parallel=bool(use_parallel) and stage_restarts > 1,
+                max_workers=max_workers,
+                progress_every=progress_every,
+                geometry_weights=geometry_weights,
+                residual_threshold=residual_threshold,
+                use_weights=use_weights,
+                cost_mode=cost_mode,
+                pointwise_residual_mode=pointwise_residual_mode,
+                invalid_sweep_penalty=invalid_sweep_penalty,
+                spring_k_multiplier=spring_k_multiplier,
+                use_flex=use_flex,
+                robust_loss=robust_loss,
+                huber_delta=huber_delta,
+                ransac=ransac,
+                ransac_trials=ransac_trials,
+                ransac_sample_size=ransac_sample_size,
+                ransac_min_inlier_ratio=ransac_min_inlier_ratio,
+                ransac_threshold=ransac_threshold,
+                ransac_seed=ransac_seed,
+                mahalanobis_rejection=mahalanobis_rejection,
+                mahalanobis_threshold=mahalanobis_threshold,
+                mahalanobis_min_samples=mahalanobis_min_samples,
+                mahalanobis_regularization=mahalanobis_regularization,
+                pointwise_filtering=pointwise_filtering,
+                sweep_wise_filtering=sweep_wise_filtering,
+                pointwise_filter_stage=int(stage["stage"]),
+                robust_debug=bool(robust_debug) if idx == len(stages) - 1 else False,
+                cost_callback=cost_callback if idx == len(stages) - 1 else None,
+                verbose=verbose,
+            )
+            if final_result is None:
+                break
+            anchors_out = final_result.get("anchors")
+            if anchors_out is not None:
+                current_guess = np.asarray(anchors_out, dtype=float).ravel()
+        if final_result is not None:
+            return final_result
 
     cost_fn = EllipseCostFunction(
         dataset,
@@ -249,6 +319,9 @@ def solve_anchors(
         mahalanobis_threshold=float(mahalanobis_threshold),
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
+        pointwise_filtering=bool(pointwise_filtering),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
     )
 
     method_raw = str(method or "L-BFGS-B")
@@ -354,13 +427,79 @@ def solve_anchors(
         cost_mode_str = str(diag.get("cost_mode", ""))
         note = None
         if cost_mode_str and cost_mode_str not in ("geometry",):
-            if bool(diag.get("ransac", {}).get("enabled")) or bool(diag.get("mahalanobis", {}).get("enabled")):
+            r_cfg = bool(diag.get("ransac", {}).get("configured")) or bool(diag.get("ransac", {}).get("enabled"))
+            m_cfg = bool(diag.get("mahalanobis", {}).get("configured")) or bool(diag.get("mahalanobis", {}).get("enabled"))
+            if r_cfg or m_cfg:
                 note = (
-                    "cost_mode is pointwise; ellipse-fit filters are diagnostics only and are not applied"
+                    "cost_mode is pointwise; ellipse-fit filters are diagnostics only (pointwise filtering still applies)"
                 )
         print(f"[robust] cost_mode={cost_mode_str}")
         if note:
             print(f"[robust] note: {note}")
+
+        pw = diag.get("pointwise_filtering") if isinstance(diag, dict) else None
+        sw = diag.get("sweep_wise_filtering") if isinstance(diag, dict) else None
+        if isinstance(pw, dict):
+            print(
+                "[robust] pointwise:"
+                f" enabled={bool(pw.get('enabled'))}"
+                f" stage={pw.get('stage')} ({pw.get('stage_name')})"
+                f" hard_cut={bool(pw.get('hard_cut'))}"
+                f" huber_mult={float(pw.get('huber_multiplier', 0.0)):.3g}"
+            )
+            stats = pw.get("inlier_ratio_stats")
+            if isinstance(stats, dict):
+                stat_str = (
+                    f"min={float(stats.get('min', 0.0)):.3g}"
+                    f" med={float(stats.get('median', 0.0)):.3g}"
+                    f" max={float(stats.get('max', 0.0)):.3g}"
+                )
+                print(f"[robust] pointwise inlier_ratio: {stat_str}")
+            worst = pw.get("worst_inliers")
+            if isinstance(worst, list) and worst:
+                entries = []
+                for item in worst:
+                    if not isinstance(item, dict):
+                        continue
+                    sid = str(item.get("sweep_id", ""))
+                    nin = item.get("num_inliers")
+                    npt = item.get("num_points")
+                    ratio = item.get("inlier_ratio")
+                    if ratio is not None and np.isfinite(ratio):
+                        ratio_str = f"{float(ratio):.3g}"
+                    else:
+                        ratio_str = "n/a"
+                    entries.append(f"{sid} {nin}/{npt} ({ratio_str})")
+                if entries:
+                    print("[robust] pointwise worst: " + ", ".join(entries))
+
+        if isinstance(sw, dict):
+            status = str(sw.get("status", ""))
+            if status and status != "disabled":
+                threshold = sw.get("threshold")
+                if threshold is None or not np.isfinite(threshold):
+                    thresh_str = "n/a"
+                else:
+                    thresh_str = f"{float(threshold):.3g}"
+                print(
+                    "[robust] sweep-wise:"
+                    f" enabled={bool(sw.get('enabled'))}"
+                    f" status={status}"
+                    f" threshold={thresh_str}"
+                    f" rejected={int(sw.get('rejected', 0))}"
+                )
+                worst = sw.get("worst_sweeps")
+                if isinstance(worst, list) and worst:
+                    entries = []
+                    for item in worst:
+                        if not isinstance(item, dict):
+                            continue
+                        sid = str(item.get("sweep_id", ""))
+                        dist = float(item.get("metric", float("nan")))
+                        keep = bool(item.get("keep", True))
+                        entries.append(f"{sid} m={dist:.3g} {'keep' if keep else 'drop'}")
+                    if entries:
+                        print("[robust] sweep-wise worst: " + ", ".join(entries))
 
         ransac = diag.get("ransac", {}) if isinstance(diag, dict) else {}
         if not bool(ransac.get("enabled")):
@@ -498,6 +637,11 @@ def solve_anchors(
                 "mahalanobis_threshold": float(mahalanobis_threshold),
                 "mahalanobis_min_samples": int(mahalanobis_min_samples),
                 "mahalanobis_regularization": float(mahalanobis_regularization),
+                "pointwise_filtering": bool(pointwise_filtering),
+                "sweep_wise_filtering": bool(sweep_wise_filtering),
+                "pointwise_filter_stage": (
+                    int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0
+                ),
             }
             for x0 in initial_guesses
         ]

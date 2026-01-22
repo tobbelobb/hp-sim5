@@ -489,6 +489,8 @@ def _plan_next_ellipse_sweep(
     use_flex: bool,
     cost_mode: str,
     pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    sweep_wise_filtering: bool,
     ransac: bool,
     ransac_trials: int,
     ransac_sample_size: int,
@@ -544,6 +546,8 @@ def _plan_next_ellipse_sweep(
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
         robust_debug=bool(robust_debug),
+        pointwise_filtering=bool(pointwise_filtering),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
         generate_report=bool(generate_report),
         include_debug_fits=False,
     )
@@ -726,6 +730,8 @@ def ellipse_active(
     use_flex: bool,
     cost_mode: str,
     pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    sweep_wise_filtering: bool,
     ransac: bool,
     ransac_trials: int,
     ransac_sample_size: int,
@@ -781,6 +787,8 @@ def ellipse_active(
         use_flex=use_flex,
         cost_mode=cost_mode,
         pointwise_residual_mode=pointwise_residual_mode,
+        pointwise_filtering=pointwise_filtering,
+        sweep_wise_filtering=sweep_wise_filtering,
         ransac=ransac,
         ransac_trials=ransac_trials,
         ransac_sample_size=ransac_sample_size,
@@ -872,6 +880,8 @@ def ellipse_loop(
     use_flex: bool,
     cost_mode: str,
     pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    sweep_wise_filtering: bool,
     ransac: bool,
     ransac_trials: int,
     ransac_sample_size: int,
@@ -1009,6 +1019,8 @@ def ellipse_loop(
             use_flex=use_flex,
             cost_mode=cost_mode,
             pointwise_residual_mode=pointwise_residual_mode,
+            pointwise_filtering=pointwise_filtering,
+            sweep_wise_filtering=sweep_wise_filtering,
             ransac=ransac,
             ransac_trials=ransac_trials,
             ransac_sample_size=ransac_sample_size,
@@ -1126,6 +1138,30 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="sampson",
         help="Pointwise residual metric (only used when --cost-mode=pointwise)",
     )
+    ellipse.add_argument(
+        "--pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_true",
+        help="Enable GNC-IRLS style pointwise filtering (default).",
+    )
+    ellipse.add_argument(
+        "--no-pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_false",
+        help="Disable pointwise filtering.",
+    )
+    ellipse.add_argument(
+        "--sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_true",
+        help="Enable sweep-wise outlier rejection (default).",
+    )
+    ellipse.add_argument(
+        "--no-sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_false",
+        help="Disable sweep-wise outlier rejection.",
+    )
     ellipse.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
     ellipse.add_argument("--ransac-trials", type=int, default=60)
     ellipse.add_argument("--ransac-sample-size", type=int, default=5)
@@ -1143,9 +1179,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse.add_argument(
         "--robust-debug",
         action="store_true",
-        help="Print diagnostics for RANSAC and Mahalanobis filtering.",
+        help="Print diagnostics for robustness filtering.",
     )
     ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
+    ellipse.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
 
     ellipse.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
     ellipse.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
@@ -1239,6 +1276,30 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="sampson",
         help="Pointwise residual metric (only used when --cost-mode=pointwise)",
     )
+    loop.add_argument(
+        "--pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_true",
+        help="Enable GNC-IRLS style pointwise filtering (default).",
+    )
+    loop.add_argument(
+        "--no-pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_false",
+        help="Disable pointwise filtering.",
+    )
+    loop.add_argument(
+        "--sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_true",
+        help="Enable sweep-wise outlier rejection (default).",
+    )
+    loop.add_argument(
+        "--no-sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_false",
+        help="Disable sweep-wise outlier rejection.",
+    )
     loop.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
     loop.add_argument("--ransac-trials", type=int, default=60)
     loop.add_argument("--ransac-sample-size", type=int, default=5)
@@ -1256,9 +1317,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     loop.add_argument(
         "--robust-debug",
         action="store_true",
-        help="Print diagnostics for RANSAC and Mahalanobis filtering.",
+        help="Print diagnostics for robustness filtering.",
     )
     loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
+    loop.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
 
     loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
     loop.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
@@ -1320,6 +1382,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             use_flex=bool(args.flex),
             cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
+            pointwise_filtering=bool(args.pointwise_filtering),
+            sweep_wise_filtering=bool(args.sweep_wise_filtering),
             ransac=bool(args.ransac),
             ransac_trials=int(args.ransac_trials),
             ransac_sample_size=int(args.ransac_sample_size),
@@ -1374,6 +1438,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             use_flex=bool(args.flex),
             cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
+            pointwise_filtering=bool(args.pointwise_filtering),
+            sweep_wise_filtering=bool(args.sweep_wise_filtering),
             ransac=bool(args.ransac),
             ransac_trials=int(args.ransac_trials),
             ransac_sample_size=int(args.ransac_sample_size),

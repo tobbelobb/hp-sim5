@@ -22,6 +22,12 @@ from autocal.theoretical_ellipse import (
 )
 
 _EPS_LEN_MM = 1.0  # Prevent squaring negative/near-zero lengths during reconstruction.
+_MAD_SCALE = 1.4826
+_POINTWISE_HUBER_MULTIPLIERS = (10.0, 3.0)
+_POINTWISE_TRIM_K = 3.0
+_POINTWISE_MIN_INLIER_RATIO = 0.5
+_SWEEP_WISE_K = 3.0
+_SWEEP_WISE_MIN_SAMPLES = 8
 
 
 @dataclass
@@ -289,6 +295,9 @@ class EllipseCostFunction:
         mahalanobis_threshold: float = 3.0,
         mahalanobis_min_samples: int = 8,
         mahalanobis_regularization: float = 1e-6,
+        pointwise_filtering: bool = True,
+        sweep_wise_filtering: bool = True,
+        pointwise_filter_stage: int = 0,
     ) -> None:
         (
             self.machine_type,
@@ -321,6 +330,9 @@ class EllipseCostFunction:
         self.mahalanobis_threshold = float(mahalanobis_threshold)
         self.mahalanobis_min_samples = int(mahalanobis_min_samples)
         self.mahalanobis_regularization = float(mahalanobis_regularization)
+        self.pointwise_filtering = bool(pointwise_filtering)
+        self.sweep_wise_filtering = bool(sweep_wise_filtering)
+        self.pointwise_filter_stage = int(pointwise_filter_stage)
 
         lb, ub = get_anchor_bounds(self.machine_type)
         ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
@@ -491,6 +503,224 @@ class EllipseCostFunction:
         geom = canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle)
         return geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
 
+    @staticmethod
+    def _mad_scale(values: np.ndarray) -> float:
+        v = np.asarray(values, dtype=float).ravel()
+        if v.size == 0 or not np.all(np.isfinite(v)):
+            return float("nan")
+        med = float(np.median(v))
+        mad = float(np.median(np.abs(v - med)))
+        scale = _MAD_SCALE * mad
+        if not np.isfinite(scale) or scale <= 0.0:
+            abs_med = float(np.median(np.abs(v)))
+            scale = abs_med
+        return float(scale)
+
+    def _pointwise_stage_settings(self) -> Tuple[int, str, float, bool]:
+        stage = int(self.pointwise_filter_stage)
+        if stage < 0:
+            stage = 0
+        if stage > 2:
+            stage = 2
+        if stage == 0:
+            return stage, "wide-huber", _POINTWISE_HUBER_MULTIPLIERS[0], False
+        if stage == 1:
+            return stage, "tight-huber", _POINTWISE_HUBER_MULTIPLIERS[1], False
+        return stage, "trim", _POINTWISE_HUBER_MULTIPLIERS[1], True
+
+    def _pointwise_residuals(
+        self, coeffs: np.ndarray, x: np.ndarray, y: np.ndarray
+    ) -> np.ndarray:
+        mode = self.pointwise_residual_mode
+        if mode in ("euclidean", "exact", "distance"):
+            return ellipse_euclidean_residuals(coeffs, x, y)
+        return ellipse_sampson_residuals(coeffs, x, y)
+
+    def _pointwise_cost_filtered(
+        self, residuals: np.ndarray
+    ) -> Tuple[float, float, float, Optional[np.ndarray], float, float, float]:
+        residuals = np.asarray(residuals, dtype=float).ravel()
+        if residuals.size == 0 or not np.all(np.isfinite(residuals)):
+            return float("inf"), float("inf"), float("inf"), None, float("nan"), float("nan"), float("nan")
+
+        rms = float(np.sqrt(np.mean(residuals**2)))
+        max_abs = float(np.max(np.abs(residuals)))
+
+        r_norm = residuals / float(max(self._l2_scale, 1.0))
+        scale = self._mad_scale(r_norm)
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = 1e-12
+        scale = float(max(scale, 1e-12))
+
+        stage, _stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
+        huber_delta = float(max(huber_mult * scale, 1e-12))
+        trim_threshold = float(max(_POINTWISE_TRIM_K * scale, 1e-12))
+
+        inlier_mask = None
+        inlier_ratio = 1.0
+        if hard_cut:
+            inlier_mask = np.abs(r_norm) <= trim_threshold
+            inlier_count = int(np.sum(inlier_mask))
+            min_inliers = int(max(5, np.ceil(_POINTWISE_MIN_INLIER_RATIO * r_norm.size)))
+            if inlier_count < min_inliers:
+                return float("inf"), rms, max_abs, inlier_mask, 0.0, scale, trim_threshold
+            inlier_ratio = float(inlier_count) / float(r_norm.size)
+            r_used = r_norm[inlier_mask]
+        else:
+            r_used = r_norm
+
+        if stage >= 0:
+            losses = pseudo_huber_loss(r_used, delta=huber_delta)
+            cost = float(np.mean(losses))
+        else:
+            cost = float(np.mean(r_used**2))
+
+        return cost, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold
+
+    def _pointwise_sweep_info(self, sweep: Union[Sweep, dict], anchors: np.ndarray) -> Dict[str, object]:
+        (
+            fixed_lengths_abs,
+            drive_idx,
+            sensor_idx,
+            l_drive_abs,
+            l_sensor_abs,
+            sweep_id,
+            violation_penalty,
+        ) = self._reconstruct_lengths(sweep, anchors)
+
+        if self.flex_model is not None:
+            t_drive, t_sensor = self._extract_tension_arrays(sweep)
+            if (
+                t_drive is not None
+                and t_sensor is not None
+                and t_drive.shape == l_drive_abs.shape
+                and t_sensor.shape == l_sensor_abs.shape
+            ):
+                l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
+                l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
+
+        fixed_indices, _, drive_idx2, sensor_idx2, *_rest = self._extract_sweep_arrays(sweep)
+        coeffs = predict_ellipse_coefficients(
+            anchors,
+            fixed_indices,
+            fixed_lengths_abs,
+            drive_idx2,
+            sensor_idx2,
+            dimensions=self.dimensions,
+        )
+        if coeffs is None:
+            return {
+                "sweep_id": str(sweep_id),
+                "valid": False,
+                "cost": float("inf"),
+                "rms": float("inf"),
+                "max_abs": float("inf"),
+                "violation_penalty": float(violation_penalty),
+                "num_points": int(l_drive_abs.size),
+                "num_inliers": None,
+                "inlier_ratio": None,
+                "scale": None,
+                "trim_threshold": None,
+                "sweep_metric": float("inf"),
+            }
+
+        x = l_drive_abs**2
+        y = l_sensor_abs**2
+        residuals = self._pointwise_residuals(coeffs, x, y)
+
+        if not self.pointwise_filtering:
+            cost, rms, max_abs = pointwise_sampson_cost_normalized(
+                coeffs,
+                x,
+                y,
+                l2_scale=self._l2_scale,
+                weight=self.pointwise_cost_weight,
+                robust_loss=self.robust_loss,
+                huber_delta=self.huber_delta,
+            )
+            if self.pointwise_residual_mode in ("euclidean", "exact", "distance"):
+                cost, rms, max_abs = pointwise_euclidean_cost_normalized(
+                    coeffs,
+                    x,
+                    y,
+                    l2_scale=self._l2_scale,
+                    weight=self.pointwise_cost_weight,
+                    robust_loss=self.robust_loss,
+                    huber_delta=self.huber_delta,
+                )
+            sweep_metric = float(np.median(np.abs(residuals / float(max(self._l2_scale, 1.0))))) if residuals.size else float("inf")
+            return {
+                "sweep_id": str(sweep_id),
+                "valid": np.isfinite(cost),
+                "cost": float(cost),
+                "rms": float(rms),
+                "max_abs": float(max_abs),
+                "violation_penalty": float(violation_penalty),
+                "num_points": int(residuals.size),
+                "num_inliers": None,
+                "inlier_ratio": None,
+                "scale": None,
+                "trim_threshold": None,
+                "sweep_metric": sweep_metric,
+            }
+
+        cost_unit, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold = self._pointwise_cost_filtered(residuals)
+        if not np.isfinite(cost_unit):
+            return {
+                "sweep_id": str(sweep_id),
+                "valid": False,
+                "cost": float("inf"),
+                "rms": float(rms),
+                "max_abs": float(max_abs),
+                "violation_penalty": float(violation_penalty),
+                "num_points": int(residuals.size),
+                "num_inliers": int(np.sum(inlier_mask)) if inlier_mask is not None else None,
+                "inlier_ratio": float(inlier_ratio) if np.isfinite(inlier_ratio) else None,
+                "scale": float(scale) if np.isfinite(scale) else None,
+                "trim_threshold": float(trim_threshold) if np.isfinite(trim_threshold) else None,
+                "sweep_metric": float("inf"),
+            }
+
+        r_norm = residuals / float(max(self._l2_scale, 1.0))
+        sweep_metric = float(np.median(np.abs(r_norm))) if r_norm.size else float("inf")
+        cost = float(cost_unit * self.pointwise_cost_weight)
+        return {
+            "sweep_id": str(sweep_id),
+            "valid": True,
+            "cost": float(cost),
+            "rms": float(rms),
+            "max_abs": float(max_abs),
+            "violation_penalty": float(violation_penalty),
+            "num_points": int(residuals.size),
+            "num_inliers": int(np.sum(inlier_mask)) if inlier_mask is not None else None,
+            "inlier_ratio": float(inlier_ratio) if np.isfinite(inlier_ratio) else None,
+            "scale": float(scale) if np.isfinite(scale) else None,
+            "trim_threshold": float(trim_threshold) if np.isfinite(trim_threshold) else None,
+            "sweep_metric": sweep_metric,
+        }
+
+    def _sweep_wise_keep_mask(
+        self, sweep_metrics: List[float]
+    ) -> Tuple[Optional[np.ndarray], Optional[float], Optional[str]]:
+        if not self.sweep_wise_filtering:
+            return None, None, "disabled"
+        metrics = np.asarray(sweep_metrics, dtype=float)
+        finite_mask = np.isfinite(metrics)
+        count = int(np.sum(finite_mask))
+        if count < max(2, _SWEEP_WISE_MIN_SAMPLES):
+            return None, None, f"insufficient-samples ({count} < {_SWEEP_WISE_MIN_SAMPLES})"
+        data = metrics[finite_mask]
+        med = float(np.median(data))
+        mad = float(np.median(np.abs(data - med)))
+        scale = _MAD_SCALE * mad
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = max(med, 1e-12)
+        threshold = float(max(_SWEEP_WISE_K * scale, 1e-12))
+        keep = metrics <= threshold
+        if not np.any(keep & finite_mask):
+            return None, threshold, "all-rejected"
+        return keep, threshold, "ok"
+
     def _mahalanobis_distances(
         self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
     ) -> Tuple[Optional[np.ndarray], Optional[str]]:
@@ -548,9 +778,93 @@ class EllipseCostFunction:
         return keep
 
     def robustness_diagnostics(self, anchor_vec: np.ndarray, *, top_n: int = 5) -> Dict[str, object]:
-        """Return per-sweep diagnostics for RANSAC and Mahalanobis filtering."""
+        """Return per-sweep diagnostics for active robustness filters."""
         anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
         diagnostics: Dict[str, object] = {"cost_mode": self.cost_mode}
+
+        if self.cost_mode in ("pointwise", "sampson"):
+            stage_idx, stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
+            entries = [self._pointwise_sweep_info(sweep, anchors) for sweep in self.sweeps]
+            inlier_ratios = [
+                e.get("inlier_ratio")
+                for e in entries
+                if isinstance(e.get("inlier_ratio"), (int, float)) and np.isfinite(e.get("inlier_ratio"))
+            ]
+            inlier_stats = None
+            if inlier_ratios:
+                inlier_stats = {
+                    "min": float(np.min(inlier_ratios)),
+                    "median": float(np.median(inlier_ratios)),
+                    "max": float(np.max(inlier_ratios)),
+                }
+
+            worst_inliers: List[Dict[str, object]] = []
+            if inlier_ratios:
+                sortable = [
+                    (e.get("inlier_ratio"), e)
+                    for e in entries
+                    if e.get("inlier_ratio") is not None
+                ]
+                sortable.sort(key=lambda pair: pair[0])
+                for _ratio, entry in sortable[: max(1, int(top_n))]:
+                    worst_inliers.append(
+                        {
+                            "sweep_id": entry.get("sweep_id"),
+                            "num_inliers": entry.get("num_inliers"),
+                            "num_points": entry.get("num_points"),
+                            "inlier_ratio": entry.get("inlier_ratio"),
+                            "rms": entry.get("rms"),
+                        }
+                    )
+
+            sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+            keep_mask, threshold, reason = self._sweep_wise_keep_mask(sweep_metrics)
+            sweep_rejected = 0
+            if keep_mask is not None:
+                sweep_rejected = int(np.sum(~keep_mask))
+
+            worst_sweeps: List[Dict[str, object]] = []
+            if sweep_metrics:
+                order = np.argsort(np.asarray(sweep_metrics, dtype=float))[::-1]
+                for idx in order[: max(1, int(top_n))]:
+                    entry = entries[int(idx)]
+                    worst_sweeps.append(
+                        {
+                            "sweep_id": entry.get("sweep_id"),
+                            "metric": float(entry.get("sweep_metric", float("nan"))),
+                            "keep": bool(keep_mask[int(idx)]) if keep_mask is not None else True,
+                        }
+                    )
+
+            diagnostics["pointwise_filtering"] = {
+                "enabled": bool(self.pointwise_filtering),
+                "stage": int(stage_idx),
+                "stage_name": stage_name,
+                "huber_multiplier": float(huber_mult),
+                "hard_cut": bool(hard_cut),
+                "sweeps_total": int(len(entries)),
+                "invalid_sweeps": int(len([e for e in entries if not e.get("valid", False)])),
+                "inlier_ratio_stats": inlier_stats,
+                "worst_inliers": worst_inliers,
+            }
+            diagnostics["sweep_wise_filtering"] = {
+                "enabled": bool(self.sweep_wise_filtering),
+                "status": str(reason or "disabled"),
+                "threshold": float(threshold) if threshold is not None else None,
+                "rejected": int(sweep_rejected),
+                "worst_sweeps": worst_sweeps,
+            }
+            diagnostics["ransac"] = {
+                "enabled": False,
+                "configured": bool(self.ransac),
+                "status": "pointwise",
+            }
+            diagnostics["mahalanobis"] = {
+                "enabled": False,
+                "configured": bool(self.mahalanobis_rejection),
+                "status": "pointwise",
+            }
+            return diagnostics
 
         sweep_entries: List[Dict[str, object]] = []
         geom_entries: List[Tuple[str, Tuple[np.ndarray, np.ndarray, float]]] = []
@@ -714,63 +1028,13 @@ class EllipseCostFunction:
 
         Returns (cost, rms, max_abs, violation_penalty, sweep_id).
         """
-        (
-            fixed_lengths_abs,
-            drive_idx,
-            sensor_idx,
-            l_drive_abs,
-            l_sensor_abs,
-            sweep_id,
-            violation_penalty,
-        ) = self._reconstruct_lengths(sweep, anchors)
-
-        if self.flex_model is not None:
-            t_drive, t_sensor = self._extract_tension_arrays(sweep)
-            if (
-                t_drive is not None
-                and t_sensor is not None
-                and t_drive.shape == l_drive_abs.shape
-                and t_sensor.shape == l_sensor_abs.shape
-            ):
-                l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
-                l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
-
-        fixed_indices, _, drive_idx2, sensor_idx2, *_rest = self._extract_sweep_arrays(sweep)
-        coeffs = predict_ellipse_coefficients(
-            anchors,
-            fixed_indices,
-            fixed_lengths_abs,
-            drive_idx2,
-            sensor_idx2,
-            dimensions=self.dimensions,
-        )
-        if coeffs is None:
-            return float("inf"), float("inf"), float("inf"), float(violation_penalty), sweep_id
-
-        x = l_drive_abs**2
-        y = l_sensor_abs**2
-        mode = self.pointwise_residual_mode
-        if mode in ("euclidean", "exact", "distance"):
-            cost, rms, max_abs = pointwise_euclidean_cost_normalized(
-                coeffs,
-                x,
-                y,
-                l2_scale=self._l2_scale,
-                weight=self.pointwise_cost_weight,
-                robust_loss=self.robust_loss,
-                huber_delta=self.huber_delta,
-            )
-        else:
-            cost, rms, max_abs = pointwise_sampson_cost_normalized(
-                coeffs,
-                x,
-                y,
-                l2_scale=self._l2_scale,
-                weight=self.pointwise_cost_weight,
-                robust_loss=self.robust_loss,
-                huber_delta=self.huber_delta,
-            )
-        return float(cost), float(rms), float(max_abs), float(violation_penalty), str(sweep_id)
+        info = self._pointwise_sweep_info(sweep, anchors)
+        cost = float(info.get("cost", float("inf")))
+        rms = float(info.get("rms", float("inf")))
+        max_abs = float(info.get("max_abs", float("inf")))
+        violation_penalty = float(info.get("violation_penalty", 0.0))
+        sweep_id = str(info.get("sweep_id", ""))
+        return cost, rms, max_abs, violation_penalty, sweep_id
 
     def evaluate(self, anchor_vec: np.ndarray) -> float:
         """Compute scalar cost for a flat anchor vector."""
@@ -783,15 +1047,31 @@ class EllipseCostFunction:
         weights: List[float] = []
 
         if self.cost_mode in ("pointwise", "sampson"):
+            entries: List[Dict[str, object]] = []
             for sweep in self.sweeps:
-                cost, _rms, _max_abs, violation_penalty, _sid = self._pointwise_predicted_cost(
-                    sweep, anchors
-                )
-                weights.append(1.0)
-                if not np.isfinite(cost):
+                info = self._pointwise_sweep_info(sweep, anchors)
+                entries.append(info)
+
+            sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+            keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
+
+            for idx, entry in enumerate(entries):
+                cost = float(entry.get("cost", float("inf")))
+                violation_penalty = float(entry.get("violation_penalty", 0.0))
+                valid = bool(entry.get("valid", False))
+
+                if not valid or not np.isfinite(cost):
+                    weights.append(1.0)
                     weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
-                else:
-                    weighted_costs.append(float(cost + violation_penalty))
+                    continue
+
+                if keep_mask is not None and not bool(keep_mask[idx]):
+                    weights.append(0.0)
+                    weighted_costs.append(0.0)
+                    continue
+
+                weights.append(1.0)
+                weighted_costs.append(float(cost + violation_penalty))
         else:
             entries: List[Dict[str, object]] = []
             for sweep in self.sweeps:
@@ -880,17 +1160,35 @@ class EllipseCostFunction:
         weights: Dict[str, float] = {}
 
         if self.cost_mode in ("pointwise", "sampson"):
+            entries: List[Dict[str, object]] = []
             for sweep in self.sweeps:
-                cost, _rms, _max_abs, violation_penalty, sweep_id = self._pointwise_predicted_cost(
-                    sweep, anchors
-                )
-                weights[sweep_id] = 1.0
-                if not np.isfinite(cost):
+                info = self._pointwise_sweep_info(sweep, anchors)
+                entries.append(info)
+
+            sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+            keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
+
+            for idx, entry in enumerate(entries):
+                sweep_id = str(entry.get("sweep_id", ""))
+                cost = float(entry.get("cost", float("inf")))
+                violation_penalty = float(entry.get("violation_penalty", 0.0))
+                valid = bool(entry.get("valid", False))
+
+                if not valid or not np.isfinite(cost):
+                    weights[sweep_id] = 1.0
                     per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
                     num_invalid += 1
-                else:
-                    per_sweep_costs[sweep_id] = float(cost + violation_penalty)
-                    num_valid += 1
+                    continue
+
+                if keep_mask is not None and not bool(keep_mask[idx]):
+                    weights[sweep_id] = 0.0
+                    per_sweep_costs[sweep_id] = 0.0
+                    num_invalid += 1
+                    continue
+
+                weights[sweep_id] = 1.0
+                per_sweep_costs[sweep_id] = float(cost + violation_penalty)
+                num_valid += 1
         else:
             entries: List[Dict[str, object]] = []
             for sweep in self.sweeps:
