@@ -206,17 +206,8 @@ export function createGcodeBridge({
   const helpers = buildWsHelpers({ wsPort, quiet, onClientChange });
   let currentGcode = null;
 
-  const bridge = new RrfHttpBridge({
-    baseUrl: server.replace(/\/$/, ''),
-    remoteSpoolSystem: {
-      addCommand: (command) => {
-        if (!command) {
-          return;
-        }
-        helpers.broadcast({ type: 'command', command, gcode: currentGcode });
-      },
-    },
-    encoderResolver: async ({ axes, timeoutMs }) => {
+  const encoderResolver = helpers.wss
+    ? async ({ axes, timeoutMs }) => {
       const timeout = Number.isFinite(timeoutMs)
         ? Math.max(1, Math.min(timeoutMs, 5000))
         : encoderTimeoutMs;
@@ -228,7 +219,20 @@ export function createGcodeBridge({
         return response.angles;
       }
       return [];
+    }
+    : null;
+
+  const bridge = new RrfHttpBridge({
+    baseUrl: server.replace(/\/$/, ''),
+    remoteSpoolSystem: {
+      addCommand: (command) => {
+        if (!command) {
+          return;
+        }
+        helpers.broadcast({ type: 'command', command, gcode: currentGcode });
+      },
     },
+    encoderResolver,
   });
 
   const sendGcodeLine = async (line, options = {}) => {

@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -14,6 +17,10 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+DEFAULT_RRF_PORT = 8081
+RRF_SIM_BINARY = REPO_ROOT / "RRF" / "build" / "rrf_simulator"
+RRF_SIM_ARGS = ["--vsd", "RRF/run/vsd", "-c", "sys/config_slideprinter.g", "--server", "-p"]
 
 from autocal.active_learning import (
     SweepConfig,
@@ -38,6 +45,142 @@ def _write_json(path: Path, payload: dict) -> None:
     with path.open("w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
 
+
+def _arg_has_flag(args: Sequence[str], *flags: str) -> bool:
+    for arg in args:
+        if not isinstance(arg, str):
+            continue
+        for flag in flags:
+            if arg == flag or arg.startswith(flag + "="):
+                return True
+    return False
+
+
+def _arg_value(args: Sequence[str], *flags: str) -> Optional[str]:
+    for idx, arg in enumerate(args):
+        if not isinstance(arg, str):
+            continue
+        for flag in flags:
+            if arg == flag:
+                return str(args[idx + 1]) if idx + 1 < len(args) else None
+            prefix = flag + "="
+            if arg.startswith(prefix):
+                return arg[len(prefix) :]
+    return None
+
+
+def _resolve_rrf_target(collector_args: Sequence[str]) -> Tuple[str, bool, Optional[int]]:
+    env_server = os.environ.get("RRF_SERVER_URL")
+    server = env_server or "http://localhost:8080"
+    server_explicit = bool(env_server)
+
+    server_arg = _arg_value(collector_args, "--server", "--rrf")
+    if server_arg:
+        server = server_arg
+        server_explicit = True
+
+    port = None
+    port_arg = _arg_value(collector_args, "--port")
+    if port_arg:
+        try:
+            parsed = int(port_arg)
+        except ValueError:
+            parsed = None
+        if parsed is not None and parsed > 0:
+            port = parsed
+
+    if not server_explicit:
+        port = port or DEFAULT_RRF_PORT
+        server = f"http://localhost:{int(port)}"
+    return server, server_explicit, port
+
+
+def _apply_simulation_defaults(collector_args: Sequence[str], *, sim: bool) -> List[str]:
+    args = list(collector_args)
+    if sim:
+        if not _arg_has_flag(args, "--no-spawn-rrf-simulator"):
+            args.append("--no-spawn-rrf-simulator")
+    else:
+        if not _arg_has_flag(args, "--no-ws"):
+            args.append("--no-ws")
+        if not _arg_has_flag(args, "--no-spawn-rrf-simulator"):
+            args.append("--no-spawn-rrf-simulator")
+    return args
+
+
+def _send_rrf_gcode(server: str, gcode: str, *, timeout_s: float = 5.0) -> str:
+    base = server.rstrip("/")
+    url = f"{base}/machine/code"
+    data = gcode.encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "text/plain"})
+    with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+        payload = resp.read()
+    return payload.decode("utf-8", errors="replace")
+
+
+def _wait_for_rrf_server(server: str, *, timeout_s: float = 7.0) -> None:
+    deadline = time.monotonic() + max(0.1, float(timeout_s))
+    while time.monotonic() < deadline:
+        try:
+            _send_rrf_gcode(server, "M115", timeout_s=1.5)
+            return
+        except Exception:
+            time.sleep(0.25)
+    raise RuntimeError(f"rrf_simulator at {server} did not become ready in time")
+
+
+def _start_rrf_simulator(port: int) -> subprocess.Popen:
+    if not RRF_SIM_BINARY.exists():
+        raise FileNotFoundError(f"rrf_simulator not found at {RRF_SIM_BINARY}")
+    args = [str(RRF_SIM_BINARY), *RRF_SIM_ARGS, str(int(port))]
+    return subprocess.Popen(
+        args,
+        cwd=str(REPO_ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def _stop_process(proc: Optional[subprocess.Popen]) -> None:
+    if not proc or proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=3.0)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def _format_m669_command(anchors: np.ndarray, machine_type: str) -> Optional[str]:
+    anchors = np.asarray(anchors, dtype=float)
+    if anchors.ndim != 2 or anchors.shape[0] == 0:
+        return None
+    if anchors.shape[1] < 3:
+        pad = np.zeros((anchors.shape[0], 3), dtype=float)
+        pad[:, : anchors.shape[1]] = anchors
+        anchors = pad
+    if str(machine_type) in ("hangprinter_4", "hangprinter_5"):
+        labels = ["A", "B", "C", "D", "I"]
+    else:
+        labels = ["A", "B", "C", "D", "I", "J", "K", "L", "O"]
+    parts = []
+    for idx, anchor in enumerate(anchors):
+        label = labels[idx] if idx < len(labels) else f"P{idx}"
+        parts.append(f"{label}{anchor[0]:.2f}:{anchor[1]:.2f}:{anchor[2]:.2f}")
+    return "M669 " + " ".join(parts)
+
+
+def _m669_from_plan(plan: Dict[str, object]) -> Optional[str]:
+    cal = plan.get("calibration")
+    if isinstance(cal, dict):
+        gcode = cal.get("gcode")
+        if isinstance(gcode, str) and gcode.strip().startswith("M669"):
+            return gcode.strip()
+    anchors = plan.get("anchors")
+    if anchors is None:
+        return None
+    machine_type = str(plan.get("machine_type", ""))
+    return _format_m669_command(np.asarray(anchors, dtype=float), machine_type)
 
 def _anchor_norms(anchors: np.ndarray) -> List[float]:
     anchors = np.asarray(anchors, dtype=float)
@@ -608,7 +751,20 @@ def ellipse_active(
     collect_once: bool,
     collector_output: Optional[Path],
     merged_output_dataset: Optional[Path],
+    sim: bool,
+    keep_sim_alive: bool,
 ) -> int:
+    user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
+    collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    _, server_explicit, port = _resolve_rrf_target(collector_args)
+    sim_process: Optional[subprocess.Popen] = None
+
+    if sim and collect_once and not server_explicit and not user_no_spawn:
+        target_port = port or DEFAULT_RRF_PORT
+        print(f"; starting rrf_simulator at http://localhost:{target_port}")
+        sim_process = _start_rrf_simulator(target_port)
+        _wait_for_rrf_server(f"http://localhost:{target_port}")
+
     plan = _plan_next_ellipse_sweep(
         dataset_path,
         solve_restarts=solve_restarts,
@@ -642,7 +798,7 @@ def ellipse_active(
         top_k=top_k,
         write_cfg=write_cfg,
         collector_output=collector_output,
-        collector_args=collector_args,
+        collector_args=collector_args_eff,
     )
 
     _print_ellipse_plan(plan, top_n=5, print_command=print_command)
@@ -653,13 +809,19 @@ def ellipse_active(
         return 2
 
     if not collect_once:
+        if sim_process and not keep_sim_alive:
+            _stop_process(sim_process)
         return 0
 
     if collector_output is None:
         raise ValueError("--collect-once requires --collector-output")
 
     print(f"; running: {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True)
+    finally:
+        if sim_process and not keep_sim_alive:
+            _stop_process(sim_process)
 
     base_dataset = _load_json(dataset_path)
     new_dataset = _load_json(collector_output)
@@ -726,6 +888,8 @@ def ellipse_loop(
     top_k: int,
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
+    sim: bool,
+    keep_sim_alive: bool,
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
@@ -733,6 +897,22 @@ def ellipse_loop(
         work_path = Path(seed_dataset).with_name(Path(seed_dataset).stem + "_active.json")
     else:
         work_path = Path("autocal/data/active_bootstrap_slideprinter.json")
+
+    user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
+    collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
+    sim_process: Optional[subprocess.Popen] = None
+
+    if sim and not server_explicit and not user_no_spawn:
+        target_port = port or DEFAULT_RRF_PORT
+        print(f"; starting rrf_simulator at http://localhost:{target_port}")
+        sim_process = _start_rrf_simulator(target_port)
+        _wait_for_rrf_server(f"http://localhost:{target_port}")
+
+    def _finalize(code: int) -> int:
+        if sim_process and not keep_sim_alive:
+            _stop_process(sim_process)
+        return code
 
     if not work_path.exists():
         if seed_dataset is not None:
@@ -778,7 +958,7 @@ def ellipse_loop(
                     i += 1
                 return out
 
-            argv_eff = _strip_conflicts(list(collector_args))
+            argv_eff = _strip_conflicts(list(collector_args_eff))
             if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
                 argv_eff.append("--return-to-origin")
 
@@ -835,7 +1015,7 @@ def ellipse_loop(
             top_k=top_k,
             write_cfg=write_cfg,
             collector_output=collector_output,
-            collector_args=collector_args,
+            collector_args=collector_args_eff,
         )
         _print_ellipse_plan(plan, top_n=5, print_command=True)
 
@@ -855,23 +1035,36 @@ def ellipse_loop(
         cmd = plan.get("collect_command")
         if not isinstance(cmd, list) or not cmd:
             print("; No valid candidate to collect; stopping.")
-            return 2
+            return _finalize(2)
 
         try:
             while True:
                 resp = input("Accept anchors [a], collect next sweep [c], quit [q]? ").strip().lower()
                 if resp in ("a", "accept", "ok", "y", "yes"):
+                    m669 = _m669_from_plan(plan)
+                    if m669:
+                        print(f"; sending {m669} to {rrf_server}")
+                        try:
+                            reply = _send_rrf_gcode(rrf_server, m669)
+                        except Exception as exc:
+                            print(f"; failed to send M669: {exc}")
+                            return _finalize(1)
+                        reply = reply.strip()
+                        if reply:
+                            print(f"; M669 reply: {reply}")
+                    else:
+                        print("; accepted anchors; no M669 command available")
                     print(f"; accepted anchors; dataset={work_path}")
-                    return 0
+                    return _finalize(0)
                 if resp in ("q", "quit", "exit", "n", "no"):
                     print(f"; stopped; dataset={work_path}")
-                    return 0
+                    return _finalize(0)
                 if resp in ("c", "collect", "next", ""):
                     break
                 print("Please enter a/c/q.")
         except KeyboardInterrupt:
             print(f"\n; interrupted; dataset={work_path}")
-            return 130
+            return _finalize(130)
 
         base_dataset = _load_json(work_path)
         print(f"; running: {' '.join(str(x) for x in cmd)}")
@@ -891,7 +1084,7 @@ def ellipse_loop(
         print(f"; merged {collector_output} -> {work_path} sweeps={count}")
 
     print(f"; reached max steps; dataset={work_path}")
-    return 0
+    return _finalize(0)
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -958,6 +1151,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         nargs=argparse.REMAINDER,
         default=(),
         help="Extra args passed to scripts/collect_sweep_data.mjs (after --collector-args)",
+    )
+    ellipse.add_argument(
+        "--sim",
+        "--simulation",
+        action="store_true",
+        help="Use rrf_simulator + hp-sim WebSocket bridge (default: talk to real firmware)",
+    )
+    ellipse.add_argument(
+        "--keep-sim-alive",
+        action="store_true",
+        help="Leave rrf_simulator running after exit (only when --sim)",
     )
 
     ellipse.add_argument("--collect-once", action="store_true", help="Collect the suggested sweep and merge")
@@ -1049,6 +1253,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=(),
         help="Extra args passed to scripts/collect_sweep_data.mjs (after --collector-args)",
     )
+    loop.add_argument(
+        "--sim",
+        "--simulation",
+        action="store_true",
+        help="Use rrf_simulator + hp-sim WebSocket bridge (default: talk to real firmware)",
+    )
+    loop.add_argument(
+        "--keep-sim-alive",
+        action="store_true",
+        help="Leave rrf_simulator running after exit (only when --sim)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -1093,6 +1308,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             collect_once=bool(args.collect_once),
             collector_output=args.collector_output,
             merged_output_dataset=args.merged_output_dataset,
+            sim=bool(args.sim),
+            keep_sim_alive=bool(args.keep_sim_alive),
         )
 
     if args.command == "merge":
@@ -1139,6 +1356,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             top_k=int(args.top_k),
             write_cfg=args.write_sweep_config,
             collector_args=collector_args,
+            sim=bool(args.sim),
+            keep_sim_alive=bool(args.keep_sim_alive),
         )
 
     raise AssertionError("Unhandled command")
