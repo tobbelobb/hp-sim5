@@ -464,6 +464,53 @@ def solve_anchors(
                     f" source={scale_source} global={global_str}"
                     f" floor={floor_str} floor_mm={floor_mm_str}"
                 )
+            sigma_noise = pw.get("sigma_noise_mm")
+            sigma_mult = pw.get("sigma_mult")
+            sigma_scaled = pw.get("sigma_scaled_mm")
+            sigma_min = pw.get("sigma_min_mm")
+            sigma_floor = pw.get("sigma_floor_mm")
+            sigma_source = pw.get("sigma_floor_source")
+            if (
+                sigma_noise is not None
+                or sigma_scaled is not None
+                or sigma_min is not None
+                or sigma_floor is not None
+            ):
+                noise_str = (
+                    f"{float(sigma_noise):.6g}"
+                    if sigma_noise is not None and np.isfinite(sigma_noise)
+                    else "n/a"
+                )
+                mult_str = (
+                    f"{float(sigma_mult):.3g}"
+                    if sigma_mult is not None and np.isfinite(sigma_mult)
+                    else "n/a"
+                )
+                scaled_str = (
+                    f"{float(sigma_scaled):.6g}"
+                    if sigma_scaled is not None and np.isfinite(sigma_scaled)
+                    else "n/a"
+                )
+                min_str = (
+                    f"{float(sigma_min):.6g}"
+                    if sigma_min is not None and np.isfinite(sigma_min)
+                    else "n/a"
+                )
+                used_str = (
+                    f"{float(sigma_floor):.6g}"
+                    if sigma_floor is not None and np.isfinite(sigma_floor)
+                    else "n/a"
+                )
+                source_str = str(sigma_source or "n/a")
+                print(
+                    "[robust] pointwise sigma_mm:"
+                    f" noise={noise_str}"
+                    f" mult={mult_str}"
+                    f" scaled={scaled_str}"
+                    f" min={min_str}"
+                    f" used={used_str}"
+                    f" source={source_str}"
+                )
             stats = pw.get("inlier_ratio_stats")
             if isinstance(stats, dict):
                 stat_str = (
@@ -854,6 +901,12 @@ def solve_anchors(
                             "l_sensor_mm",
                             "residual_l2",
                             "residual_mm",
+                            "sigma_noise_mm",
+                            "sigma_mult",
+                            "sigma_scaled_mm",
+                            "sigma_min_mm",
+                            "sigma_floor_mm",
+                            "sigma_floor_source",
                         ],
                     )
                     writer.writeheader()

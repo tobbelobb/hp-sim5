@@ -345,13 +345,29 @@ class EllipseCostFunction:
         max_anchor_norm = float(np.max(np.linalg.norm(ub_mat, axis=1))) if ub_mat.size else 1.0
         self._length_scale = float(max_anchor_norm) if np.isfinite(max_anchor_norm) else 1.0
         self._l2_scale = float((2.0 * max_anchor_norm) ** 2)
-        noise_mm = self._infer_encoder_noise_mm(dataset)
-        if noise_mm is None or not np.isfinite(noise_mm) or noise_mm < 0.0:
-            noise_mm = 0.0
-        sigma_floor_mm = float(max(_POINTWISE_MIN_SIGMA_MM, _POINTWISE_SIGMA_MULT * noise_mm))
+        raw_noise_mm = self._infer_encoder_noise_mm(dataset)
+        if raw_noise_mm is None or not np.isfinite(raw_noise_mm) or raw_noise_mm < 0.0:
+            raw_noise_mm = None
+        self._encoder_noise_mm = raw_noise_mm
+        self._pointwise_sigma_mult = float(_POINTWISE_SIGMA_MULT)
+        self._pointwise_sigma_min_mm = float(_POINTWISE_MIN_SIGMA_MM)
+        sigma_scaled_mm = None
+        if raw_noise_mm is not None:
+            sigma_scaled_mm = float(self._pointwise_sigma_mult * raw_noise_mm)
+        self._pointwise_sigma_scaled_mm = sigma_scaled_mm
+        if sigma_scaled_mm is None:
+            sigma_floor_mm = float(self._pointwise_sigma_min_mm)
+            sigma_source = "min"
+        elif sigma_scaled_mm >= self._pointwise_sigma_min_mm:
+            sigma_floor_mm = float(sigma_scaled_mm)
+            sigma_source = "noise"
+        else:
+            sigma_floor_mm = float(self._pointwise_sigma_min_mm)
+            sigma_source = "min"
         denom = float(max(2.0 * self._length_scale, 1.0))
-        self._pointwise_sigma_floor_mm = sigma_floor_mm
-        self._pointwise_sigma_floor_norm = float(sigma_floor_mm / denom)
+        self._pointwise_sigma_floor_mm = float(sigma_floor_mm)
+        self._pointwise_sigma_floor_source = sigma_source
+        self._pointwise_sigma_floor_norm = float(self._pointwise_sigma_floor_mm / denom)
 
         self.flex_model: Optional[FlexModel] = None
         if bool(use_flex) and isinstance(dataset, dict):
@@ -729,6 +745,12 @@ class EllipseCostFunction:
         """
         anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
         rows: List[Dict[str, object]] = []
+        sigma_noise_mm = self._encoder_noise_mm
+        sigma_mult = self._pointwise_sigma_mult
+        sigma_scaled_mm = self._pointwise_sigma_scaled_mm
+        sigma_min_mm = self._pointwise_sigma_min_mm
+        sigma_floor_mm = self._pointwise_sigma_floor_mm
+        sigma_floor_source = self._pointwise_sigma_floor_source
 
         for sweep in self.sweeps:
             (
@@ -790,6 +812,12 @@ class EllipseCostFunction:
                         "l_sensor_mm": float(ls),
                         "residual_l2": float(res_l2),
                         "residual_mm": float(res_mm),
+                        "sigma_noise_mm": float(sigma_noise_mm) if sigma_noise_mm is not None else None,
+                        "sigma_mult": float(sigma_mult),
+                        "sigma_scaled_mm": float(sigma_scaled_mm) if sigma_scaled_mm is not None else None,
+                        "sigma_min_mm": float(sigma_min_mm),
+                        "sigma_floor_mm": float(sigma_floor_mm),
+                        "sigma_floor_source": str(sigma_floor_source),
                     }
                 )
 
@@ -1094,6 +1122,14 @@ class EllipseCostFunction:
                 "scale_global": float(global_scale) if global_scale is not None else None,
                 "scale_floor": float(self._pointwise_sigma_floor_norm),
                 "scale_floor_mm": float(self._pointwise_sigma_floor_mm),
+                "sigma_noise_mm": float(self._encoder_noise_mm) if self._encoder_noise_mm is not None else None,
+                "sigma_mult": float(self._pointwise_sigma_mult),
+                "sigma_scaled_mm": float(self._pointwise_sigma_scaled_mm)
+                if self._pointwise_sigma_scaled_mm is not None
+                else None,
+                "sigma_min_mm": float(self._pointwise_sigma_min_mm),
+                "sigma_floor_mm": float(self._pointwise_sigma_floor_mm),
+                "sigma_floor_source": str(self._pointwise_sigma_floor_source),
             }
             diagnostics["sweep_wise_filtering"] = {
                 "enabled": bool(self.sweep_wise_filtering),
