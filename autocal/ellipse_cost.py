@@ -720,6 +720,81 @@ class EllipseCostFunction:
             "num_points": int(residuals.size) if residuals is not None else int(l_drive_abs.size),
         }
 
+    def pointwise_residual_rows(self, anchor_vec: np.ndarray) -> List[Dict[str, object]]:
+        """
+        Return per-point residuals (approx mm) for the current pointwise model.
+
+        Residuals are computed in the L^2 plane and converted to mm with a
+        local linearization: |r_mm| ≈ |r_l2| / (2 * mean_length).
+        """
+        anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
+        rows: List[Dict[str, object]] = []
+
+        for sweep in self.sweeps:
+            (
+                fixed_lengths_abs,
+                drive_idx,
+                sensor_idx,
+                l_drive_abs,
+                l_sensor_abs,
+                sweep_id,
+                _violation_penalty,
+            ) = self._reconstruct_lengths(sweep, anchors)
+
+            if self.flex_model is not None:
+                t_drive, t_sensor = self._extract_tension_arrays(sweep)
+                if (
+                    t_drive is not None
+                    and t_sensor is not None
+                    and t_drive.shape == l_drive_abs.shape
+                    and t_sensor.shape == l_sensor_abs.shape
+                ):
+                    l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
+                    l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
+
+            fixed_indices, _, drive_idx2, sensor_idx2, *_rest = self._extract_sweep_arrays(sweep)
+            coeffs = predict_ellipse_coefficients(
+                anchors,
+                fixed_indices,
+                fixed_lengths_abs,
+                drive_idx2,
+                sensor_idx2,
+                dimensions=self.dimensions,
+            )
+            if coeffs is None:
+                continue
+
+            x = l_drive_abs**2
+            y = l_sensor_abs**2
+            residuals = self._pointwise_residuals(coeffs, x, y)
+            if residuals.size == 0 or not np.all(np.isfinite(residuals)):
+                continue
+
+            l_mean = 0.5 * (l_drive_abs + l_sensor_abs)
+            denom = np.maximum(2.0 * l_mean, 1e-9)
+            residuals_abs = np.abs(residuals)
+            residuals_mm = residuals_abs / denom
+
+            for idx, (res_l2, res_mm, ld, ls) in enumerate(
+                zip(residuals_abs, residuals_mm, l_drive_abs, l_sensor_abs)
+            ):
+                if not (np.isfinite(res_l2) and np.isfinite(res_mm)):
+                    continue
+                rows.append(
+                    {
+                        "sweep_id": str(sweep_id),
+                        "point_idx": int(idx),
+                        "drive_anchor": int(drive_idx2),
+                        "sensor_anchor": int(sensor_idx2),
+                        "l_drive_mm": float(ld),
+                        "l_sensor_mm": float(ls),
+                        "residual_l2": float(res_l2),
+                        "residual_mm": float(res_mm),
+                    }
+                )
+
+        return rows
+
     def _pointwise_cost_unfiltered(self, residuals: np.ndarray) -> Tuple[float, float, float]:
         residuals = np.asarray(residuals, dtype=float).ravel()
         if residuals.size == 0 or not np.all(np.isfinite(residuals)):

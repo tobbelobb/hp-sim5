@@ -507,6 +507,7 @@ def calibrate_elliptical(
     generate_report: bool = True,
     include_debug_fits: bool = True,
     pointwise_residual_mode: str = "sampson",
+    residuals_csv: Optional[Path] = None,
 ) -> Dict[str, Any]:
     dataset = _load_json(input_path)
     # `regularize_supersweep` is primarily relevant for the legacy point solver (raw motor samples);
@@ -563,6 +564,7 @@ def calibrate_elliptical(
         robust_debug=bool(robust_debug),
         pointwise_filtering=bool(pointwise_filtering),
         sweep_wise_filtering=bool(sweep_wise_filtering),
+        residuals_csv=residuals_csv,
         verbose=verbose,
     )
 
@@ -966,6 +968,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="Print diagnostics for robustness filtering.",
     )
+    ellipse_parser.add_argument(
+        "--residuals-csv",
+        type=Path,
+        default=None,
+        help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
+    )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     ellipse_parallel_group = ellipse_parser.add_mutually_exclusive_group()
@@ -1173,6 +1181,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=not args.no_report,
             include_debug_fits=not args.no_debug_fits,
+            residuals_csv=args.residuals_csv,
         )
         print(result["gcode"])
         _print_solution_summary("ellipse", np.asarray(result["anchors"], dtype=float), cost=float(result.get("cost", float("nan"))))

@@ -3,6 +3,8 @@ from __future__ import annotations
 """Optimization helpers for ellipse-based calibration."""
 
 import concurrent.futures
+import csv
+from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -215,6 +217,7 @@ def solve_anchors(
     sweep_wise_filtering: bool = True,
     pointwise_filter_stage: Optional[int] = None,
     robust_debug: bool = False,
+    residuals_csv: Optional[Union[str, Path]] = None,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -286,6 +289,7 @@ def solve_anchors(
                 sweep_wise_filtering=sweep_wise_filtering,
                 pointwise_filter_stage=int(stage["stage"]),
                 robust_debug=bool(robust_debug) if idx == len(stages) - 1 else False,
+                residuals_csv=residuals_csv if idx == len(stages) - 1 else None,
                 cost_callback=cost_callback if idx == len(stages) - 1 else None,
                 verbose=verbose,
             )
@@ -829,6 +833,34 @@ def solve_anchors(
             _print_robust_diagnostics()
         except Exception as exc:
             print(f"[robust] diagnostics failed: {exc}")
+
+    if residuals_csv is not None:
+        try:
+            path = Path(residuals_csv)
+            rows = cost_fn.pointwise_residual_rows(best_result.x)
+            if not rows:
+                print(f"[residuals] no pointwise residuals to write for {path}")
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("w", encoding="utf-8", newline="") as f:
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "sweep_id",
+                            "point_idx",
+                            "drive_anchor",
+                            "sensor_anchor",
+                            "l_drive_mm",
+                            "l_sensor_mm",
+                            "residual_l2",
+                            "residual_mm",
+                        ],
+                    )
+                    writer.writeheader()
+                    writer.writerows(rows)
+                print(f"[residuals] wrote {len(rows)} points to {path}")
+        except Exception as exc:
+            print(f"[residuals] failed to write residuals: {exc}")
 
     return {
         "anchors": anchors_matrix,

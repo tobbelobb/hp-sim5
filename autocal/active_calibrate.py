@@ -502,6 +502,7 @@ def _plan_next_ellipse_sweep(
     mahalanobis_min_samples: int,
     mahalanobis_regularization: float,
     robust_debug: bool,
+    residuals_csv: Optional[Path],
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -550,6 +551,7 @@ def _plan_next_ellipse_sweep(
         sweep_wise_filtering=bool(sweep_wise_filtering),
         generate_report=bool(generate_report),
         include_debug_fits=False,
+        residuals_csv=residuals_csv,
     )
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
@@ -743,6 +745,7 @@ def ellipse_active(
     mahalanobis_min_samples: int,
     mahalanobis_regularization: float,
     robust_debug: bool,
+    residuals_csv: Optional[Path],
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -800,6 +803,7 @@ def ellipse_active(
         mahalanobis_min_samples=mahalanobis_min_samples,
         mahalanobis_regularization=mahalanobis_regularization,
         robust_debug=robust_debug,
+        residuals_csv=residuals_csv,
         generate_report=generate_report,
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
@@ -893,6 +897,7 @@ def ellipse_loop(
     mahalanobis_min_samples: int,
     mahalanobis_regularization: float,
     robust_debug: bool,
+    residuals_csv: Optional[Path],
     generate_report: bool,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
@@ -1004,6 +1009,11 @@ def ellipse_loop(
     for step in range(1, max(1, int(max_steps)) + 1):
         print(f"\n; === iteration {step}/{max_steps} dataset={work_path} ===")
         collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
+        step_residuals_csv = None
+        if residuals_csv is not None:
+            stem = residuals_csv.stem
+            suffix = residuals_csv.suffix or ".csv"
+            step_residuals_csv = residuals_csv.with_name(f"{stem}_{step:03d}{suffix}")
 
         plan_args = list(collector_args_eff)
         if reset_pending and not _arg_has_flag(plan_args, "--hp-sim-reset"):
@@ -1032,6 +1042,7 @@ def ellipse_loop(
             mahalanobis_min_samples=mahalanobis_min_samples,
             mahalanobis_regularization=mahalanobis_regularization,
             robust_debug=robust_debug,
+            residuals_csv=step_residuals_csv,
             generate_report=generate_report,
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
@@ -1181,6 +1192,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="Print diagnostics for robustness filtering.",
     )
+    ellipse.add_argument(
+        "--residuals-csv",
+        type=Path,
+        default=None,
+        help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
+    )
     ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
     ellipse.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
 
@@ -1319,6 +1336,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="Print diagnostics for robustness filtering.",
     )
+    loop.add_argument(
+        "--residuals-csv",
+        type=Path,
+        default=None,
+        help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
+    )
     loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
     loop.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
 
@@ -1395,6 +1418,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_min_samples=int(args.mahalanobis_min_samples),
             mahalanobis_regularization=float(args.mahalanobis_regularization),
             robust_debug=bool(args.robust_debug),
+            residuals_csv=args.residuals_csv,
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
@@ -1451,6 +1475,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_min_samples=int(args.mahalanobis_min_samples),
             mahalanobis_regularization=float(args.mahalanobis_regularization),
             robust_debug=bool(args.robust_debug),
+            residuals_csv=args.residuals_csv,
             generate_report=bool(args.report),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
