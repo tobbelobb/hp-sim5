@@ -473,11 +473,6 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
     ));
     await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
     await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
-    const postMoveModes = motorIds.map((_, idx) => (
-      movingAnchors.has(idx) ? 'position' : forceLow
-    ));
-    await applyForceModeState(sendFn, { motorIds, modes: postMoveModes });
-    await waitForStableEncoders(sendFn, motorIds, speedup);
   }
 
   return;
