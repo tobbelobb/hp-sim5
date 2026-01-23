@@ -696,16 +696,22 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return lengths;
   };
 
-  recordPoint(endAngles, driveEndPointMm, 0, sweepPoints);
+  //recordPoint(endAngles, driveEndPointMm, 0, sweepPoints);
 
   await applyForceModeState(sendFn, { motorIds, modes: returnModes });
 
-  const steps = Math.max(2, sweepPoints);
+  const steps = Math.max(2, sweepPoints + 1);
   const stepCount = steps - 1;
-  const stepDelta = (driveStartPointMm - driveEndPointMm) / Math.max(1, stepCount);
+  const totalDelta = driveStartPointMm - driveEndPointMm;
+  const stepDirection = Math.sign(totalDelta) || 1;
+  const initialStepMm = 10 * stepDirection;
+  const remainingSteps = Math.max(1, stepCount - 1);
+  const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
   let currentDrive = driveEndPointMm;
   for (let stepIdx = 1; stepIdx < steps; stepIdx += 1) {
-    const target = driveEndPointMm + stepDelta * stepIdx;
+    const target = stepIdx === 1
+      ? driveEndPointMm + initialStepMm
+      : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
     if (Math.abs(delta) > 1e-6) {
       // eslint-disable-next-line no-await-in-loop
@@ -724,7 +730,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     });
     await applyForceModeState(sendFn, { motorIds, modes: relaxForDataCollectionModes });
     const stableData = await waitForStableEncoders(sendFn, motorIds, speedup);
-    const lengths = recordPoint(stableData.anglesDeg, target, stepIdx, steps);
+    const lengths = recordPoint(stableData.anglesDeg, target, stepIdx - 1, stepCount);
     currentDrive = lengths[driveAnchor] ?? currentDrive;
     await applyForceModeState(sendFn, { motorIds, modes: returnModes });
     await waitForStableEncoders(sendFn, motorIds, speedup);
