@@ -99,6 +99,31 @@ def _sweep_top_values(rows: list[dict[str, object]], *, top_n: int = 2) -> list[
     return top_values
 
 
+def _parse_points_arg(raw: str | None) -> list[int]:
+    if not raw:
+        return []
+    out: list[int] = []
+    for chunk in str(raw).split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        try:
+            out.append(int(chunk))
+        except ValueError:
+            continue
+    return out
+
+
+def _point_values(rows: list[dict[str, object]], point_idx: int) -> list[float]:
+    values: list[float] = []
+    for row in rows:
+        idx = _parse_int(row.get("point_idx"))
+        if idx is None or idx != point_idx:
+            continue
+        values.append(float(row["_value"]))
+    return values
+
+
 def _extract_sigma_info(rows: list[dict[str, object]]) -> dict[str, object]:
     sigma_min = _first_float(rows, "sigma_min_mm")
     sigma_scaled = _first_float(rows, "sigma_scaled_mm")
@@ -134,6 +159,11 @@ def main(argv: list[str] | None = None) -> int:
         default="first-last",
         help="How to highlight per-sweep points in the histogram",
     )
+    parser.add_argument(
+        "--highlight-points",
+        default="21,22",
+        help="Comma-separated point_idx values to highlight (default: 21,22)",
+    )
     parser.add_argument("--output", type=Path, default=None, help="Optional output PNG path")
     args = parser.parse_args(argv)
 
@@ -150,6 +180,13 @@ def main(argv: list[str] | None = None) -> int:
     first_values: list[float] = []
     last_values: list[float] = []
     top2_values: list[float] = []
+    highlight_points = _parse_points_arg(args.highlight_points)
+    highlight_values: list[tuple[int, list[float]]] = []
+    if highlight_points:
+        for point_idx in highlight_points:
+            vals = _point_values(rows, point_idx)
+            if vals:
+                highlight_values.append((point_idx, vals))
 
     if args.highlight in ("first-last", "both"):
         bounds = _sweep_point_bounds(rows)
@@ -200,6 +237,19 @@ def main(argv: list[str] | None = None) -> int:
             color="#E17C05",
             label=f"top-2 residuals per sweep (n={len(top2_values)})",
         )
+    if highlight_values:
+        palette = ["#16A34A", "#7C3AED", "#F97316", "#0EA5E9", "#C026D3", "#4B5563"]
+        for idx, (point_idx, vals) in enumerate(highlight_values):
+            color = palette[idx % len(palette)]
+            ax.hist(
+                vals,
+                bins=bins,
+                histtype="step",
+                linewidth=1.6,
+                linestyle="--",
+                color=color,
+                label=f"point {point_idx} per sweep (n={len(vals)})",
+            )
 
     sigma_info = _extract_sigma_info(rows)
     sigma_min = sigma_info.get("sigma_min")
