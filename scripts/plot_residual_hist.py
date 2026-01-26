@@ -147,6 +147,19 @@ def _extract_sigma_info(rows: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def _cutoff_stats(rows: list[dict[str, object]]) -> dict[str, float] | None:
+    values = [_parse_float(row.get("cutoff_mm")) for row in rows]
+    cutoffs = [val for val in values if val is not None]
+    if not cutoffs:
+        return None
+    arr = np.asarray(cutoffs, dtype=float)
+    return {
+        "median": float(np.median(arr)),
+        "p10": float(np.percentile(arr, 10)),
+        "p90": float(np.percentile(arr, 90)),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Plot a residual histogram from CSV output.")
     parser.add_argument("csv_path", type=Path, help="CSV file produced by --residuals-csv")
@@ -291,6 +304,27 @@ def main(argv: list[str] | None = None) -> int:
             va="top",
             fontsize=9,
             color="#111827",
+        )
+
+    cutoff_stats = _cutoff_stats(rows)
+    if cutoff_stats is not None:
+        cutoff_med = cutoff_stats["median"]
+        cutoff_p10 = cutoff_stats["p10"]
+        cutoff_p90 = cutoff_stats["p90"]
+        if cutoff_p90 > cutoff_p10:
+            ax.axvspan(
+                cutoff_p10,
+                cutoff_p90,
+                color="#10B981",
+                alpha=0.12,
+                label=f"cutoff 10-90% ({cutoff_p10:.4g}-{cutoff_p90:.4g} mm)",
+            )
+        ax.axvline(
+            cutoff_med,
+            color="#047857",
+            linestyle="-",
+            linewidth=2.0,
+            label=f"cutoff median ({cutoff_med:.4g} mm)",
         )
 
     x_label = "Residual error (mm)" if str(args.column).endswith("_mm") else str(args.column)

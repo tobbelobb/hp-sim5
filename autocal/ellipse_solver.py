@@ -901,6 +901,7 @@ def solve_anchors(
                             "l_sensor_mm",
                             "residual_l2",
                             "residual_mm",
+                            "cutoff_mm",
                             "sigma_noise_mm",
                             "sigma_mult",
                             "sigma_scaled_mm",

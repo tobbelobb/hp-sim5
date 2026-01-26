@@ -745,12 +745,15 @@ class EllipseCostFunction:
         """
         anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
         rows: List[Dict[str, object]] = []
+        l2_scale = float(max(self._l2_scale, 1.0))
         sigma_noise_mm = self._encoder_noise_mm
         sigma_mult = self._pointwise_sigma_mult
         sigma_scaled_mm = self._pointwise_sigma_scaled_mm
         sigma_min_mm = self._pointwise_sigma_min_mm
         sigma_floor_mm = self._pointwise_sigma_floor_mm
         sigma_floor_source = self._pointwise_sigma_floor_source
+        sweep_cache: List[Dict[str, object]] = []
+        residuals_list: List[np.ndarray] = []
 
         for sweep in self.sweeps:
             (
@@ -792,13 +795,44 @@ class EllipseCostFunction:
             if residuals.size == 0 or not np.all(np.isfinite(residuals)):
                 continue
 
+            sweep_cache.append(
+                {
+                    "sweep_id": str(sweep_id),
+                    "drive_anchor": int(drive_idx2),
+                    "sensor_anchor": int(sensor_idx2),
+                    "l_drive_abs": l_drive_abs,
+                    "l_sensor_abs": l_sensor_abs,
+                    "residuals": residuals,
+                }
+            )
+            residuals_list.append(residuals)
+
+        scale_override = None
+        if self.pointwise_filtering and self.pointwise_global_mad and residuals_list:
+            scale_override = self._pointwise_global_scale(residuals_list)
+            if scale_override is not None and not np.isfinite(scale_override):
+                scale_override = None
+
+        for entry in sweep_cache:
+            residuals = np.asarray(entry["residuals"], dtype=float).ravel()
+            l_drive_abs = np.asarray(entry["l_drive_abs"], dtype=float).ravel()
+            l_sensor_abs = np.asarray(entry["l_sensor_abs"], dtype=float).ravel()
+            sweep_id = str(entry["sweep_id"])
+            drive_idx2 = int(entry["drive_anchor"])
+            sensor_idx2 = int(entry["sensor_anchor"])
+
             l_mean = 0.5 * (l_drive_abs + l_sensor_abs)
             denom = np.maximum(2.0 * l_mean, 1e-9)
             residuals_abs = np.abs(residuals)
             residuals_mm = residuals_abs / denom
 
-            for idx, (res_l2, res_mm, ld, ls) in enumerate(
-                zip(residuals_abs, residuals_mm, l_drive_abs, l_sensor_abs)
+            r_norm = residuals / l2_scale
+            scale = self._pointwise_scale(r_norm, scale_override=scale_override)
+            trim_threshold_norm = float(max(_POINTWISE_TRIM_K * scale, 1e-12))
+            cutoff_mm = (trim_threshold_norm * l2_scale) / denom
+
+            for idx, (res_l2, res_mm, ld, ls, cut_mm) in enumerate(
+                zip(residuals_abs, residuals_mm, l_drive_abs, l_sensor_abs, cutoff_mm)
             ):
                 if not (np.isfinite(res_l2) and np.isfinite(res_mm)):
                     continue
@@ -812,6 +846,7 @@ class EllipseCostFunction:
                         "l_sensor_mm": float(ls),
                         "residual_l2": float(res_l2),
                         "residual_mm": float(res_mm),
+                        "cutoff_mm": float(cut_mm) if np.isfinite(cut_mm) else None,
                         "sigma_noise_mm": float(sigma_noise_mm) if sigma_noise_mm is not None else None,
                         "sigma_mult": float(sigma_mult),
                         "sigma_scaled_mm": float(sigma_scaled_mm) if sigma_scaled_mm is not None else None,
