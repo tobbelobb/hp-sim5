@@ -492,6 +492,7 @@ def _plan_next_ellipse_sweep(
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
+    sweep_metric: str,
     ransac: bool,
     ransac_trials: int,
     ransac_sample_size: int,
@@ -536,7 +537,7 @@ def _plan_next_ellipse_sweep(
         verbose=False,
         use_parallel=False,
         cost_mode=str(cost_mode),
-       pointwise_residual_mode=str(pointwise_residual_mode),
+        pointwise_residual_mode=str(pointwise_residual_mode),
         ransac=bool(ransac),
         ransac_trials=int(ransac_trials),
         ransac_sample_size=int(ransac_sample_size),
@@ -551,6 +552,7 @@ def _plan_next_ellipse_sweep(
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
         generate_report=bool(generate_report),
         include_debug_fits=False,
         residuals_csv=residuals_csv,
@@ -737,6 +739,7 @@ def ellipse_active(
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
+    sweep_metric: str,
     ransac: bool,
     ransac_trials: int,
     ransac_sample_size: int,
@@ -796,6 +799,7 @@ def ellipse_active(
         pointwise_filtering=pointwise_filtering,
         pointwise_global_mad=pointwise_global_mad,
         sweep_wise_filtering=sweep_wise_filtering,
+        sweep_metric=sweep_metric,
         ransac=ransac,
         ransac_trials=ransac_trials,
         ransac_sample_size=ransac_sample_size,
@@ -891,6 +895,7 @@ def ellipse_loop(
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
+    sweep_metric: str,
     ransac: bool,
     ransac_trials: int,
     ransac_sample_size: int,
@@ -1037,6 +1042,7 @@ def ellipse_loop(
             pointwise_filtering=pointwise_filtering,
             pointwise_global_mad=pointwise_global_mad,
             sweep_wise_filtering=sweep_wise_filtering,
+            sweep_metric=sweep_metric,
             ransac=ransac,
             ransac_trials=ransac_trials,
             ransac_sample_size=ransac_sample_size,
@@ -1190,6 +1196,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         dest="sweep_wise_filtering",
         action="store_false",
         help="Disable sweep-wise outlier rejection.",
+    )
+    ellipse.add_argument(
+        "--sweep-metric",
+        choices=["mad", "median_abs"],
+        default="mad",
+        help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )
     ellipse.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
     ellipse.add_argument("--ransac-trials", type=int, default=60)
@@ -1351,6 +1363,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_false",
         help="Disable sweep-wise outlier rejection.",
     )
+    loop.add_argument(
+        "--sweep-metric",
+        choices=["mad", "median_abs"],
+        default="mad",
+        help="Per-sweep metric used by sweep-wise filtering (default: mad).",
+    )
     loop.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
     loop.add_argument("--ransac-trials", type=int, default=60)
     loop.add_argument("--ransac-sample-size", type=int, default=5)
@@ -1446,6 +1464,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_filtering=bool(args.pointwise_filtering),
             pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
+            sweep_metric=str(args.sweep_metric),
             ransac=bool(args.ransac),
             ransac_trials=int(args.ransac_trials),
             ransac_sample_size=int(args.ransac_sample_size),
@@ -1504,6 +1523,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_filtering=bool(args.pointwise_filtering),
             pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
+            sweep_metric=str(args.sweep_metric),
             ransac=bool(args.ransac),
             ransac_trials=int(args.ransac_trials),
             ransac_sample_size=int(args.ransac_sample_size),

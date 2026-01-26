@@ -54,6 +54,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
     pointwise_filtering = bool(payload.get("pointwise_filtering", True))
     pointwise_global_mad = bool(payload.get("pointwise_global_mad", True))
     sweep_wise_filtering = bool(payload.get("sweep_wise_filtering", True))
+    sweep_metric = str(payload.get("sweep_metric", "mad"))
     pointwise_filter_stage = payload.get("pointwise_filter_stage", 0)
 
     machine_type_raw = dataset.get("machine_type", "hangprinter_4")
@@ -88,6 +89,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
     )
 
@@ -218,6 +220,7 @@ def solve_anchors(
     pointwise_filtering: bool = True,
     pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
+    sweep_metric: str = "mad",
     pointwise_filter_stage: Optional[int] = None,
     robust_debug: bool = False,
     residuals_csv: Optional[Union[str, Path]] = None,
@@ -291,6 +294,7 @@ def solve_anchors(
                 pointwise_filtering=pointwise_filtering,
                 pointwise_global_mad=pointwise_global_mad,
                 sweep_wise_filtering=sweep_wise_filtering,
+                sweep_metric=sweep_metric,
                 pointwise_filter_stage=int(stage["stage"]),
                 robust_debug=bool(robust_debug) if idx == len(stages) - 1 else False,
                 residuals_csv=residuals_csv if idx == len(stages) - 1 else None,
@@ -330,6 +334,7 @@ def solve_anchors(
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
     )
 
@@ -559,10 +564,13 @@ def solve_anchors(
                     thresh_str = "n/a"
                 else:
                     thresh_str = f"{float(threshold):.3g}"
+                metric_mode = sw.get("metric_mode")
+                metric_str = str(metric_mode) if metric_mode else "n/a"
                 print(
                     "[robust] sweep-wise:"
                     f" enabled={bool(sw.get('enabled'))}"
                     f" status={status}"
+                    f" metric={metric_str}"
                     f" threshold={thresh_str}"
                     f" rejected={int(sw.get('rejected', 0))}"
                 )
@@ -718,6 +726,7 @@ def solve_anchors(
                 "pointwise_filtering": bool(pointwise_filtering),
                 "pointwise_global_mad": bool(pointwise_global_mad),
                 "sweep_wise_filtering": bool(sweep_wise_filtering),
+                "sweep_metric": str(sweep_metric),
                 "pointwise_filter_stage": (
                     int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0
                 ),

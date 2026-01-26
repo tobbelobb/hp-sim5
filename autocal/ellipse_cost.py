@@ -303,6 +303,7 @@ class EllipseCostFunction:
         sweep_wise_filtering: bool = True,
         pointwise_filter_stage: int = 0,
         pointwise_global_mad: bool = True,
+        sweep_metric: str = "mad",
     ) -> None:
         (
             self.machine_type,
@@ -339,6 +340,7 @@ class EllipseCostFunction:
         self.sweep_wise_filtering = bool(sweep_wise_filtering)
         self.pointwise_filter_stage = int(pointwise_filter_stage)
         self.pointwise_global_mad = bool(pointwise_global_mad)
+        self.sweep_metric = str(sweep_metric or "mad").strip().lower()
 
         lb, ub = get_anchor_bounds(self.machine_type)
         ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
@@ -871,6 +873,18 @@ class EllipseCostFunction:
             cost_unit = float(np.mean(r_norm**2))
         return float(cost_unit * self.pointwise_cost_weight), rms, max_abs
 
+    def _sweep_metric_value(self, r_norm: np.ndarray) -> float:
+        r_norm = np.asarray(r_norm, dtype=float).ravel()
+        if r_norm.size == 0 or not np.all(np.isfinite(r_norm)):
+            return float("inf")
+
+        mode = str(self.sweep_metric or "").strip().lower()
+        if mode in ("median_abs", "median-abs", "median"):
+            return float(np.median(np.abs(r_norm)))
+        if mode in ("mad", "median_abs_dev", "median-abs-dev"):
+            return self._mad_scale(r_norm)
+        return float(np.median(np.abs(r_norm)))
+
     def _pointwise_sweep_info_from_entry(
         self, entry: Dict[str, object], *, scale_override: Optional[float] = None
     ) -> Dict[str, object]:
@@ -898,7 +912,7 @@ class EllipseCostFunction:
         residuals = np.asarray(residuals, dtype=float).ravel()
         num_points = int(residuals.size)
         r_norm = residuals / float(max(self._l2_scale, 1.0))
-        sweep_metric = float(np.median(np.abs(r_norm))) if r_norm.size else float("inf")
+        sweep_metric = float(self._sweep_metric_value(r_norm))
 
         if not self.pointwise_filtering:
             cost, rms, max_abs = self._pointwise_cost_unfiltered(residuals)
@@ -1169,6 +1183,7 @@ class EllipseCostFunction:
             diagnostics["sweep_wise_filtering"] = {
                 "enabled": bool(self.sweep_wise_filtering),
                 "status": str(reason or "disabled"),
+                "metric_mode": str(self.sweep_metric),
                 "threshold": float(threshold) if threshold is not None else None,
                 "rejected": int(sweep_rejected),
                 "worst_sweeps": worst_sweeps,

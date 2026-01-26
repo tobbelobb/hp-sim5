@@ -500,6 +500,7 @@ def calibrate_elliptical(
     pointwise_filtering: bool = True,
     pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
+    sweep_metric: str = "mad",
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
@@ -566,6 +567,7 @@ def calibrate_elliptical(
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
         residuals_csv=residuals_csv,
         verbose=verbose,
     )
@@ -928,6 +930,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Disable sweep-wise outlier rejection.",
     )
     ellipse_parser.add_argument(
+        "--sweep-metric",
+        choices=["mad", "median_abs"],
+        default="mad",
+        help="Per-sweep metric used by sweep-wise filtering (default: mad).",
+    )
+    ellipse_parser.add_argument(
         "--progress-every",
         type=int,
         default=None,
@@ -1188,6 +1196,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_filtering=bool(args.pointwise_filtering),
             pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
+            sweep_metric=str(args.sweep_metric),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),
