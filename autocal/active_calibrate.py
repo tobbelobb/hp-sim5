@@ -1199,7 +1199,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     ellipse.add_argument(
         "--sweep-metric",
-        choices=["mad", "median_abs"],
+        choices=["mad", "median_abs", "outlier_ratio"],
         default="mad",
         help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )
@@ -1365,7 +1365,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     loop.add_argument(
         "--sweep-metric",
-        choices=["mad", "median_abs"],
+        choices=["mad", "median_abs", "outlier_ratio"],
         default="mad",
         help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )

@@ -873,7 +873,7 @@ class EllipseCostFunction:
             cost_unit = float(np.mean(r_norm**2))
         return float(cost_unit * self.pointwise_cost_weight), rms, max_abs
 
-    def _sweep_metric_value(self, r_norm: np.ndarray) -> float:
+    def _sweep_metric_value(self, r_norm: np.ndarray, *, inlier_ratio: Optional[float] = None) -> float:
         r_norm = np.asarray(r_norm, dtype=float).ravel()
         if r_norm.size == 0 or not np.all(np.isfinite(r_norm)):
             return float("inf")
@@ -881,6 +881,10 @@ class EllipseCostFunction:
         mode = str(self.sweep_metric or "").strip().lower()
         if mode in ("median_abs", "median-abs", "median"):
             return float(np.median(np.abs(r_norm)))
+        if mode in ("outlier_ratio", "outlier-ratio", "outliers"):
+            if inlier_ratio is None or not np.isfinite(inlier_ratio):
+                return float("inf")
+            return float(max(0.0, 1.0 - float(inlier_ratio)))
         if mode in ("mad", "median_abs_dev", "median-abs-dev"):
             return self._mad_scale(r_norm)
         return float(np.median(np.abs(r_norm)))
@@ -912,9 +916,8 @@ class EllipseCostFunction:
         residuals = np.asarray(residuals, dtype=float).ravel()
         num_points = int(residuals.size)
         r_norm = residuals / float(max(self._l2_scale, 1.0))
-        sweep_metric = float(self._sweep_metric_value(r_norm))
-
         if not self.pointwise_filtering:
+            sweep_metric = float(self._sweep_metric_value(r_norm))
             cost, rms, max_abs = self._pointwise_cost_unfiltered(residuals)
             return {
                 "sweep_id": sweep_id,
@@ -934,6 +937,10 @@ class EllipseCostFunction:
         cost_unit, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold = self._pointwise_cost_filtered(
             residuals, scale_override=scale_override
         )
+        metric_residuals = r_norm
+        if inlier_mask is not None and np.any(inlier_mask):
+            metric_residuals = r_norm[inlier_mask]
+        sweep_metric = float(self._sweep_metric_value(metric_residuals, inlier_ratio=inlier_ratio))
         if not np.isfinite(cost_unit):
             return {
                 "sweep_id": sweep_id,
@@ -947,7 +954,7 @@ class EllipseCostFunction:
                 "inlier_ratio": float(inlier_ratio) if np.isfinite(inlier_ratio) else None,
                 "scale": float(scale) if np.isfinite(scale) else None,
                 "trim_threshold": float(trim_threshold) if np.isfinite(trim_threshold) else None,
-                "sweep_metric": float("inf"),
+                "sweep_metric": sweep_metric if np.isfinite(sweep_metric) else float("inf"),
             }
 
         cost = float(cost_unit * self.pointwise_cost_weight)
@@ -963,7 +970,7 @@ class EllipseCostFunction:
             "inlier_ratio": float(inlier_ratio) if np.isfinite(inlier_ratio) else None,
             "scale": float(scale) if np.isfinite(scale) else None,
             "trim_threshold": float(trim_threshold) if np.isfinite(trim_threshold) else None,
-            "sweep_metric": sweep_metric,
+            "sweep_metric": sweep_metric if np.isfinite(sweep_metric) else float("inf"),
         }
 
     def _pointwise_sweep_info(
