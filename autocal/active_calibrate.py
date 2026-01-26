@@ -490,6 +490,7 @@ def _plan_next_ellipse_sweep(
     cost_mode: str,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
+    pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     ransac: bool,
     ransac_trials: int,
@@ -535,7 +536,7 @@ def _plan_next_ellipse_sweep(
         verbose=False,
         use_parallel=False,
         cost_mode=str(cost_mode),
-        pointwise_residual_mode=str(pointwise_residual_mode),
+       pointwise_residual_mode=str(pointwise_residual_mode),
         ransac=bool(ransac),
         ransac_trials=int(ransac_trials),
         ransac_sample_size=int(ransac_sample_size),
@@ -548,6 +549,7 @@ def _plan_next_ellipse_sweep(
         mahalanobis_regularization=float(mahalanobis_regularization),
         robust_debug=bool(robust_debug),
         pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         generate_report=bool(generate_report),
         include_debug_fits=False,
@@ -733,6 +735,7 @@ def ellipse_active(
     cost_mode: str,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
+    pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     ransac: bool,
     ransac_trials: int,
@@ -791,6 +794,7 @@ def ellipse_active(
         cost_mode=cost_mode,
         pointwise_residual_mode=pointwise_residual_mode,
         pointwise_filtering=pointwise_filtering,
+        pointwise_global_mad=pointwise_global_mad,
         sweep_wise_filtering=sweep_wise_filtering,
         ransac=ransac,
         ransac_trials=ransac_trials,
@@ -885,6 +889,7 @@ def ellipse_loop(
     cost_mode: str,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
+    pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     ransac: bool,
     ransac_trials: int,
@@ -1030,6 +1035,7 @@ def ellipse_loop(
             cost_mode=cost_mode,
             pointwise_residual_mode=pointwise_residual_mode,
             pointwise_filtering=pointwise_filtering,
+            pointwise_global_mad=pointwise_global_mad,
             sweep_wise_filtering=sweep_wise_filtering,
             ransac=ransac,
             ransac_trials=ransac_trials,
@@ -1162,6 +1168,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Disable pointwise filtering.",
     )
     ellipse.add_argument(
+        "--pointwise-global-mad",
+        dest="pointwise_global_mad",
+        action="store_true",
+        help="Use a single global MAD scale for pointwise filtering (default).",
+    )
+    ellipse.add_argument(
+        "--pointwise-per-sweep-mad",
+        dest="pointwise_global_mad",
+        action="store_false",
+        help="Use a per-sweep MAD scale for pointwise filtering.",
+    )
+    ellipse.add_argument(
         "--sweep-wise-filtering",
         dest="sweep_wise_filtering",
         action="store_true",
@@ -1199,7 +1217,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
     )
     ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
-    ellipse.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
+    ellipse.set_defaults(
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+    )
 
     ellipse.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
     ellipse.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
@@ -1306,6 +1328,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Disable pointwise filtering.",
     )
     loop.add_argument(
+        "--pointwise-global-mad",
+        dest="pointwise_global_mad",
+        action="store_true",
+        help="Use a single global MAD scale for pointwise filtering (default).",
+    )
+    loop.add_argument(
+        "--pointwise-per-sweep-mad",
+        dest="pointwise_global_mad",
+        action="store_false",
+        help="Use a per-sweep MAD scale for pointwise filtering.",
+    )
+    loop.add_argument(
         "--sweep-wise-filtering",
         dest="sweep_wise_filtering",
         action="store_true",
@@ -1343,7 +1377,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
     )
     loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
-    loop.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
+    loop.set_defaults(
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+    )
 
     loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
     loop.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
@@ -1406,6 +1444,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
             pointwise_filtering=bool(args.pointwise_filtering),
+            pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             ransac=bool(args.ransac),
             ransac_trials=int(args.ransac_trials),
@@ -1463,6 +1502,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
             pointwise_filtering=bool(args.pointwise_filtering),
+            pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             ransac=bool(args.ransac),
             ransac_trials=int(args.ransac_trials),

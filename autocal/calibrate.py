@@ -498,6 +498,7 @@ def calibrate_elliptical(
     mahalanobis_regularization: float = 1e-6,
     robust_debug: bool = False,
     pointwise_filtering: bool = True,
+    pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
     verbose: bool = False,
     progress_every: int = 10,
@@ -563,6 +564,7 @@ def calibrate_elliptical(
         mahalanobis_regularization=float(mahalanobis_regularization),
         robust_debug=bool(robust_debug),
         pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         residuals_csv=residuals_csv,
         verbose=verbose,
@@ -902,6 +904,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Disable pointwise filtering.",
     )
     ellipse_parser.add_argument(
+        "--pointwise-global-mad",
+        dest="pointwise_global_mad",
+        action="store_true",
+        help="Use a single global MAD scale for pointwise filtering (default).",
+    )
+    ellipse_parser.add_argument(
+        "--pointwise-per-sweep-mad",
+        dest="pointwise_global_mad",
+        action="store_false",
+        help="Use a per-sweep MAD scale for pointwise filtering.",
+    )
+    ellipse_parser.add_argument(
         "--sweep-wise-filtering",
         dest="sweep_wise_filtering",
         action="store_true",
@@ -919,7 +933,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=None,
         help="When verbose/debug, print progress every N iterations (default: 1 for --debug, 10 for --verbose).",
     )
-    ellipse_parser.set_defaults(pointwise_filtering=True, sweep_wise_filtering=True)
+    ellipse_parser.set_defaults(
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+    )
     ellipse_parser.add_argument(
         "--optimizer",
         default="L-BFGS-B",
@@ -1168,6 +1186,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             mahalanobis_regularization=float(args.mahalanobis_regularization),
             robust_debug=bool(args.robust_debug),
             pointwise_filtering=bool(args.pointwise_filtering),
+            pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),

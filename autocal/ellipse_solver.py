@@ -52,6 +52,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
     mahalanobis_min_samples = int(payload.get("mahalanobis_min_samples", 8))
     mahalanobis_regularization = float(payload.get("mahalanobis_regularization", 1e-6))
     pointwise_filtering = bool(payload.get("pointwise_filtering", True))
+    pointwise_global_mad = bool(payload.get("pointwise_global_mad", True))
     sweep_wise_filtering = bool(payload.get("sweep_wise_filtering", True))
     pointwise_filter_stage = payload.get("pointwise_filter_stage", 0)
 
@@ -85,6 +86,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
         pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
     )
@@ -214,6 +216,7 @@ def solve_anchors(
     mahalanobis_min_samples: int = 8,
     mahalanobis_regularization: float = 1e-6,
     pointwise_filtering: bool = True,
+    pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
     pointwise_filter_stage: Optional[int] = None,
     robust_debug: bool = False,
@@ -286,6 +289,7 @@ def solve_anchors(
                 mahalanobis_min_samples=mahalanobis_min_samples,
                 mahalanobis_regularization=mahalanobis_regularization,
                 pointwise_filtering=pointwise_filtering,
+                pointwise_global_mad=pointwise_global_mad,
                 sweep_wise_filtering=sweep_wise_filtering,
                 pointwise_filter_stage=int(stage["stage"]),
                 robust_debug=bool(robust_debug) if idx == len(stages) - 1 else False,
@@ -324,6 +328,7 @@ def solve_anchors(
         mahalanobis_min_samples=int(mahalanobis_min_samples),
         mahalanobis_regularization=float(mahalanobis_regularization),
         pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
     )
@@ -444,6 +449,15 @@ def solve_anchors(
         pw = diag.get("pointwise_filtering") if isinstance(diag, dict) else None
         sw = diag.get("sweep_wise_filtering") if isinstance(diag, dict) else None
         if isinstance(pw, dict):
+            def _fmt_float(value: object) -> str:
+                if value is None:
+                    return "n/a"
+                try:
+                    val = float(value)
+                except (TypeError, ValueError):
+                    return "n/a"
+                return f"{val:.3g}" if np.isfinite(val) else "n/a"
+
             print(
                 "[robust] pointwise:"
                 f" enabled={bool(pw.get('enabled'))}"
@@ -456,9 +470,9 @@ def solve_anchors(
                 scale_global = pw.get("scale_global")
                 scale_floor = pw.get("scale_floor")
                 scale_floor_mm = pw.get("scale_floor_mm")
-                global_str = f"{float(scale_global):.3g}" if np.isfinite(scale_global) else "n/a"
-                floor_str = f"{float(scale_floor):.3g}" if np.isfinite(scale_floor) else "n/a"
-                floor_mm_str = f"{float(scale_floor_mm):.3g}" if np.isfinite(scale_floor_mm) else "n/a"
+                global_str = _fmt_float(scale_global)
+                floor_str = _fmt_float(scale_floor)
+                floor_mm_str = _fmt_float(scale_floor_mm)
                 print(
                     "[robust] pointwise scale:"
                     f" source={scale_source} global={global_str}"
@@ -702,6 +716,7 @@ def solve_anchors(
                 "mahalanobis_min_samples": int(mahalanobis_min_samples),
                 "mahalanobis_regularization": float(mahalanobis_regularization),
                 "pointwise_filtering": bool(pointwise_filtering),
+                "pointwise_global_mad": bool(pointwise_global_mad),
                 "sweep_wise_filtering": bool(sweep_wise_filtering),
                 "pointwise_filter_stage": (
                     int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0
