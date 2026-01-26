@@ -54,7 +54,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
     pointwise_filtering = bool(payload.get("pointwise_filtering", True))
     pointwise_global_mad = bool(payload.get("pointwise_global_mad", True))
     sweep_wise_filtering = bool(payload.get("sweep_wise_filtering", True))
-    sweep_metric = str(payload.get("sweep_metric", "mad"))
+    sweep_metric = str(payload.get("sweep_metric", "outlier_ratio"))
     pointwise_filter_stage = payload.get("pointwise_filter_stage", 0)
 
     machine_type_raw = dataset.get("machine_type", "hangprinter_4")
@@ -220,7 +220,7 @@ def solve_anchors(
     pointwise_filtering: bool = True,
     pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
-    sweep_metric: str = "mad",
+    sweep_metric: str = "outlier_ratio",
     pointwise_filter_stage: Optional[int] = None,
     robust_debug: bool = False,
     residuals_csv: Optional[Union[str, Path]] = None,

@@ -303,7 +303,7 @@ class EllipseCostFunction:
         sweep_wise_filtering: bool = True,
         pointwise_filter_stage: int = 0,
         pointwise_global_mad: bool = True,
-        sweep_metric: str = "mad",
+        sweep_metric: str = "outlier_ratio",
     ) -> None:
         (
             self.machine_type,

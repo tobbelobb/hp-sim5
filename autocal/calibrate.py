@@ -500,7 +500,7 @@ def calibrate_elliptical(
     pointwise_filtering: bool = True,
     pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
-    sweep_metric: str = "mad",
+    sweep_metric: str = "outlier_ratio",
     verbose: bool = False,
     progress_every: int = 10,
     cost_mode: str = "pointwise",
@@ -932,7 +932,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.add_argument(
         "--sweep-metric",
         choices=["mad", "median_abs", "outlier_ratio"],
-        default="mad",
+        default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )
     ellipse_parser.add_argument(
