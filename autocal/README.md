@@ -1,34 +1,46 @@
 # Autocal
 
-Current state of the hp-sim auto calibration art:
+This directory contains the fully automated elliptical feature calibration pipeline. The default workflow uses active learning plus pointwise robust fitting.
 
-Collect data in a nice pattern with:
-```
-node scripts/collect_sweep_data.mjs --sweep-method torque-ramp --speedup 4 --trace --torque-low 0.03 --torque-min 0.03 --torque-max 0.3 --torque-step 0.05 --feed 400 --superSweepRange 600 --superSweepPoints 4
-```
+## Quick start (simulation)
 
-Compare the ellipse and point optimization methods with:
-```
-python autocal/calibrate.py ellipse autocal/data/big_even_pattern.json
-python autocal/calibrate.py point autocal/data/big_even_pattern.json
-```
-
-Combine datasets with:
-```
-python autocal/active_calibrate.py merge autocal/data/big_even_pattern.json sweep_data_slideprinter_1766060855696.json -o autocal/data/big_even_pattern_active.json
+```bash
+python autocal/active_calibrate.py ellipse-loop \
+  --residuals-csv /tmp/residuals1.csv \
+  --sim \
+  --work-dataset autocal/data/test1.json \
+  --robust-debug \
+  --collector-args --speedup 25
 ```
 
-Create a new optimal command to collect one more sweep witht he most valuable data to the ellipse algorithm:
-```
-python autocal/active_calibrate.py ellipse autocal/data/big_even_pattern_active.json --collector-args --speedup 4 --trace --torque-low 0.03 --torque-min 0.03 --torque-max 0.3 --torque-step 0.05 --feed 400
+Plot the residual histogram from the first iteration:
+
+```bash
+python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/residuals1_001.png
 ```
 
-Run this "combine" -> "suggest" -> "collect data" loop automatically:
-```
-python autocal/active_calibrate.py ellipse-loop autocal/data/big_even_pattern.json --work-dataset autocal/data/big_even_pattern_active.json --collector-args --speedup 4 --trace --torque-low 0.03 --torque-min 0.03 --torque-max 0.3 --torque-step 0.05 --feed 400
+## Typical workflow (real machine)
+
+- Remove `--sim` and any `--speedup` args.
+- Keep `--work-dataset` pointing at your calibration dataset JSON.
+- Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
+
+```bash
+python autocal/active_calibrate.py ellipse-loop \
+  --work-dataset autocal/data/my_active.json \
+  --robust-debug \
+  --collector-args --return-to-origin
 ```
 
-If you don't have a starting point data set you can just get started with
-```
-python autocal/active_calibrate.py ellipse-loop --work-dataset autocal/data/my_active.json --collector-args --speedup 4 --trace --torque-low 0.03 --torque-min 0.03 --torque-max 0.3 --torque-step 0.05 --feed 400
-```
+## Key commands
+
+- Merge datasets:
+  ```bash
+  python autocal/active_calibrate.py merge autocal/data/base.json extra.json -o autocal/data/merged.json
+  ```
+- Plan a single next sweep (no collection):
+  ```bash
+  python autocal/active_calibrate.py ellipse autocal/data/merged.json --collector-args --return-to-origin
+  ```
+
+For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.
