@@ -2,6 +2,8 @@
 import { strict as assert } from 'node:assert';
 import {
   angleToLength,
+} from './uncalibrated_actions.mjs';
+import {
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
