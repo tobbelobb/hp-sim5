@@ -15,9 +15,7 @@ async function testApplyForceModeState() {
   });
 
   assert.deepEqual(sent, [
-    'M569.4 P40.0 T0.0',
-    'M569.4 P41.0 T0.05',
-    'M569.4 P42.0 T0.0',
+    'M569.4 P40.0:41.0:42.0 T0.0:0.05:0.0'
   ]);
 }
 
