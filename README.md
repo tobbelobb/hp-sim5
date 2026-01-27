@@ -125,6 +125,49 @@ See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
    There's also <http://localhost:5173/hp-sim5/flipper> for the flipper demo.
 4. Hack away!
 
+## Tests
+
+### Run the full local suite (no simulator / no visuals)
+```bash
+npm test
+python -m pytest autocal/tests
+python -m pytest tests/python
+for f in scripts/test_*.mjs; do node "$f"; done
+```
+
+### Autocal-only filtering
+```bash
+python -m pytest autocal/tests
+python -m pytest autocal/tests -k active_calibrate
+python -m pytest autocal/tests/test_active_calibrate_golden.py
+```
+
+### Simulator / E2E tests (requires visible browser + rrf_simulator build)
+```bash
+cmake --build RRF/build --target rrf_simulator -j
+tests/run_all_e2e_tests.sh
+node scripts/e2e_test_collect_single_sweep.mjs --sim
+node scripts/e2e_test_find_minimum_moving_force.mjs --sim
+node scripts/e2e_test_find_edge_force.mjs --sim
+node scripts/e2e_test_wait_for_stable_encoders.mjs --sim
+node scripts/e2e_test_return_to_origin_one_at_a_time.mjs --sim
+node scripts/e2e_test_return_to_origin_all_at_once.mjs --sim
+node scripts/e2e_test_calibrate_encoder_noise.mjs --sim
+```
+
+### Visual/manual checks
+```bash
+npx vite
+# open tests/html/*.html in the browser for cable_joints 2D/3D visual tests
+```
+
+### Determinism scripts
+```bash
+./run_draw_squares_determinism_test.sh
+./run_logo_determinism_test.sh
+./run_logo_slideprinter_determinism_test.sh
+```
+
 ## hp-sim5 context: the Hangprinter Project
 hp-sim5 is part of an effort to automate the Hangprinter Project.
 We want to automate everything except the actual users,

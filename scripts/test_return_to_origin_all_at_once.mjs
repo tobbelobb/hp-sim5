@@ -12,17 +12,25 @@ async function testReturnToOriginAllAtOnce() {
     }
     return { reply: '' };
   };
-  const delayFn = () => Promise.resolve();
-  const settleDelayFn = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(1, ms)));
+  let nowMs = 0;
+  const delayFn = (ms = 0) => {
+    nowMs += ms;
+    return Promise.resolve();
+  };
+  const sleepFn = (ms = 0) => {
+    nowMs += ms;
+    return Promise.resolve();
+  };
+  const nowFn = () => nowMs;
 
   await returnMotorsToOriginAllAtOnce(send, {
     motorIds: ['40.0', '41.0', '42.0'],
     axes: ['X', 'Y', 'Z'],
     mmPerDeg: [1, 1, 1],
     feed: 100,
-    speedup: 1,
+    speedup: 100,
     delayFn,
-    settleOptions: { pollIntervalMs: 1, stableWindowMs: 2, delayFn: settleDelayFn },
+    settleOptions: { pollIntervalMs: 1, stableWindowMs: 2, sleepFn, nowFn },
   });
 
   const gcode = sent.filter((line) => line.startsWith('G1 H2'));

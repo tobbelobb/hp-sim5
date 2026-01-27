@@ -28,12 +28,14 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
     toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
     timeoutMs = null,
+    sleepFn = baseSleep,
+    nowFn = () => Date.now(),
   } = options;
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = pollIntervalMs / timeScale;
   const windowMs = Math.max(pollMs * 2, stableWindowMs / timeScale);
   const tol = Math.max(0, Number.isFinite(toleranceDeg) ? toleranceDeg : DEFAULT_STABILITY_TOLERANCE_DEG);
-  const startMs = Date.now();
+  const startMs = nowFn();
   const samples = [];
 
   // This function is only sent samples collected within the current window,
@@ -70,7 +72,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     // eslint-disable-next-line no-await-in-loop
     const encoderReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
     const anglesDeg = parseEncoderReply(encoderReply?.reply);
-    const nowMs = Date.now();
+    const nowMs = nowFn();
 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
       samples.push({ timestampMs: nowMs, anglesDeg });
@@ -95,7 +97,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     }
 
     // eslint-disable-next-line no-await-in-loop
-    await baseSleep(pollMs);
+    await sleepFn(pollMs);
   }
 }
 
@@ -175,6 +177,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     mmPerDeg,
     feed,
     speedup = 1,
+    delayFn,
     midForce = DEFAULT_MID_FORCE_N,
     fixedAnchors = [],
     forbiddenForceAnchors = [],
@@ -218,7 +221,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
         sendFn,
         `G1 H2 ${formatAxisDelta(axis, delta)} F${feed}`,
         speedup,
-        { axes },
+        { axes, delayFn },
       );
       await applyForceModeState(sendFn, {
         motorIds,
@@ -237,6 +240,7 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
     mmPerDeg,
     feed,
     speedup,
+    delayFn,
     settleOptions = {},
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -264,7 +268,7 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
       sendFn,
       `G1 H2 ${moveParts.join(' ')} F${feed}`,
       speedup,
-      { axes },
+      { axes, delayFn },
     );
     await applyForceModeState(sendFn, {
       motorIds,
