@@ -40,11 +40,11 @@ jobs:
       #     ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
       - name: Install dependencies
         run: npm ci
-      - name: Install Python, pytest, numpy, warp-lang[extras], websockets, pytest-asyncio, and usd-core
+      - name: Install Python, pytest, numpy, scipy, matplotlib, warp-lang[extras], websockets, pytest-asyncio, and usd-core
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip
-          pip3 install pytest numpy warp-lang[extras] websockets pytest-asyncio usd-core
+          pip3 install pytest numpy scipy matplotlib warp-lang[extras] websockets pytest-asyncio usd-core
       - name: Configure rrf_simulator build
         run: cmake -S RRF -B RRF/build
       - name: Build rrf_simulator
