@@ -95,7 +95,7 @@ The most important log lines (from a typical simulation run) are:
 - `size-tune max travel=...`
   - Auto-detects a safe travel range for sweeps.
 - `Sweep 1/3 ... Collected 42 points ...`
-  - Raw sweep collection. Each sweep has two sub-sweeps (drive/sensor swapped).
+  - Raw sweep collection. On a Slideprinter, each sweep has two sub-sweeps (drive/sensor swapped).
 - `[gnc] stage 1/3 ... stage 3/3 ...`
   - The pointwise robust solver progressing through its GNC stages.
 - `[robust] pointwise ...`
@@ -111,8 +111,14 @@ The most important log lines (from a typical simulation run) are:
 - `Accept anchors [a], collect next sweep [c], quit [q]?`
   - Interactive prompt to accept the current anchor estimate or collect more data.
 
-## Troubleshooting quick tips
 
-- `pointwise inlier_ratio: min=1 med=1 max=1` with large residuals often means the trim cutoff is still above most points. Plot the histogram and compare `residual_mm` to `cutoff_mm`.
-- `sweep-wise: insufficient-samples` happens when fewer than 5 sweeps exist; it will start filtering later once enough sweeps are collected.
-- If costs are flat and sweeps keep repeating, collect another sweep or increase `--max-steps`.
+## Subcommands, Debug Commands, and Internal Commands
+
+- Merge datasets:
+  ```bash
+  python autocal/active_calibrate.py merge autocal/data/base.json extra.json -o autocal/data/merged.json
+  ```
+- Plan a single next sweep (no collection):
+  ```bash
+  python autocal/active_calibrate.py ellipse autocal/data/merged.json --collector-args --return-to-origin
+  ```

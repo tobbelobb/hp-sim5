@@ -28,19 +28,7 @@ python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/resid
 ```bash
 python autocal/active_calibrate.py ellipse-loop \
   --work-dataset autocal/data/my_active.json \
-  --robust-debug \
-  --collector-args --return-to-origin
+  --robust-debug
 ```
-
-## Key commands
-
-- Merge datasets:
-  ```bash
-  python autocal/active_calibrate.py merge autocal/data/base.json extra.json -o autocal/data/merged.json
-  ```
-- Plan a single next sweep (no collection):
-  ```bash
-  python autocal/active_calibrate.py ellipse autocal/data/merged.json --collector-args --return-to-origin
-  ```
 
 For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.
