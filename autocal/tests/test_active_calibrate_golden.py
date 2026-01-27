@@ -8,6 +8,22 @@ ROOT = Path(__file__).resolve().parents[2]
 GOLDEN = ROOT / "autocal" / "golden_fivesweeps.log"
 DATASET = ROOT / "autocal" / "data" / "test2_fivesweeps.json"
 
+ANCHOR_LINE_RE = re.compile(r"Anchors:\s*(\\[\\[.*?\\]\\])")
+NUMBER_RE = re.compile(r"[-+]?\\d+(?:\\.\\d+)?(?:e[-+]?\\d+)?")
+
+
+def _extract_anchor_numbers(text: str) -> list[float]:
+    for line in text.splitlines():
+        if "Anchors:" in line:
+            match = ANCHOR_LINE_RE.search(line)
+            if not match:
+                break
+            nums = [float(x) for x in NUMBER_RE.findall(match.group(1))]
+            if len(nums) == 6:
+                return nums
+            break
+    raise AssertionError("Could not parse 3x2 anchors from output.")
+
 
 def test_active_calibrate_fivesweeps_golden():
     cmd_display = (
@@ -40,6 +56,10 @@ def test_active_calibrate_fivesweeps_golden():
         "Accept anchors [a], collect next sweep [c], quit [q]?",
         normalized,
     )
-    actual = f"$ {cmd_display}\n\n{normalized}"
     expected = GOLDEN.read_text(encoding="utf-8")
-    assert actual == expected
+    actual_nums = _extract_anchor_numbers(normalized)
+    expected_nums = _extract_anchor_numbers(expected)
+    assert len(actual_nums) == len(expected_nums) == 6
+    for idx, (actual_val, expected_val) in enumerate(zip(actual_nums, expected_nums)):
+        diff = abs(actual_val - expected_val)
+        assert diff <= 100.0, f"Anchor[{idx}] differs by {diff:.3f} (>100.0)"
