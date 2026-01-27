@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 GOLDEN = ROOT / "autocal" / "golden_fivesweeps.log"
 DATASET = ROOT / "autocal" / "data" / "test2_fivesweeps.json"
 
-ANCHOR_LINE_RE = re.compile(r"Anchors:\s*(\\[\\[.*?\\]\\])")
-NUMBER_RE = re.compile(r"[-+]?\\d+(?:\\.\\d+)?(?:e[-+]?\\d+)?")
+ANCHOR_LINE_RE = re.compile(r"Anchors:\s*(\[\[.*?\]\])")
+NUMBER_RE = re.compile(r"[-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?")
 
 
 def _extract_anchor_numbers(text: str) -> list[float]:
