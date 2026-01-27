@@ -19,8 +19,8 @@ jobs:
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
-          git submodule sync RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib
-          git submodule update --init RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib
+          git submodule sync RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib autocal/auto-calibration-simulation-for-hangprinter
+          git submodule update --init RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib autocal/auto-calibration-simulation-for-hangprinter
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
