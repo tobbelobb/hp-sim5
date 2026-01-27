@@ -15,12 +15,12 @@ jobs:
         node-version: [23.x]
     steps:
       - uses: actions/checkout@v3
-      - name: Fetch submodules (https)
+      - name: Fetch required submodules (https)
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          git submodule sync RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib
+          git submodule update --init RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
