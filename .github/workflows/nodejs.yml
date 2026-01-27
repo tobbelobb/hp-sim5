@@ -39,7 +39,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip
           pip3 install pytest numpy warp-lang[extras] websockets pytest-asyncio usd-core
-      - name: Run js tests
-        run: npm test
-      - name: Run python tests
-        run: python -m pytest
+      - name: Configure rrf_simulator build
+        run: cmake -S RRF -B RRF/build
+      - name: Build rrf_simulator
+        run: cmake --build RRF/build --target rrf_simulator -j
+      - name: Run test suite
+        run: scripts/run_ci_tests.sh
