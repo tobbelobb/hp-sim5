@@ -5,7 +5,7 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 ## Quick start (simulation)
 
 ```bash
-python autocal/active_calibrate.py ellipse-loop \
+python autocal/active_calibrate.py --semi-auto \
   --residuals-csv /tmp/residuals1.csv \
   --sim \
   --work-dataset autocal/data/test1.json \
@@ -112,13 +112,18 @@ The most important log lines (from a typical simulation run) are:
   - Interactive prompt to accept the current anchor estimate or collect more data.
 
 
-## Subcommands, Debug Commands, and Internal Commands
+`--semi-auto` is optional; the semi-auto loop is the default mode.
 
-- Merge datasets:
-  ```bash
-  python autocal/active_calibrate.py merge autocal/data/base.json extra.json -o autocal/data/merged.json
-  ```
+## Related utilities (used by the semi-auto loop)
+
+The semi-auto loop in `active_calibrate.py` uses the same sweep planner as `ellipse_active.py` and the same
+merge logic as `merge_sweep_datasets.py`. You can invoke them manually:
+
 - Plan a single next sweep (no collection):
   ```bash
-  python autocal/active_calibrate.py ellipse autocal/data/merged.json --collector-args --return-to-origin
+  python autocal/ellipse_active.py autocal/data/merged.json --collector-args --return-to-origin
+  ```
+- Merge datasets:
+  ```bash
+  python autocal/merge_sweep_datasets.py autocal/data/base.json extra.json -o autocal/data/merged.json
   ```

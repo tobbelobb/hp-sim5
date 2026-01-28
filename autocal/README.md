@@ -5,7 +5,7 @@ This directory contains the fully automated elliptical feature calibration pipel
 ## Quick start (simulation)
 
 ```bash
-python autocal/active_calibrate.py ellipse-loop \
+python autocal/active_calibrate.py \
   --residuals-csv /tmp/residuals1.csv \
   --sim \
   --work-dataset autocal/data/test1.json \
@@ -26,7 +26,7 @@ python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/resid
 - Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
 
 ```bash
-python autocal/active_calibrate.py ellipse-loop \
+python autocal/active_calibrate.py \
   --work-dataset autocal/data/my_active.json \
   --robust-debug
 ```

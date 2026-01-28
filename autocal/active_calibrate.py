@@ -1075,368 +1075,318 @@ def ellipse_loop(
     return _finalize(0)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Active-learning calibration helpers")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    ellipse = subparsers.add_parser("ellipse", help="Active sweep selection for ellipse calibration")
-    ellipse.add_argument("dataset", type=Path, help="Existing sweep dataset JSON")
-
-    ellipse.add_argument("--solve-restarts", type=int, default=4)
-    ellipse.add_argument("--solve-iterations", type=int, default=400)
-    ellipse.add_argument("--solve-optimizer", default="L-BFGS-B")
-    ellipse.add_argument("--threshold", type=float, default=250.0)
-    ellipse.add_argument("--spring-k-multiplier", type=float, default=1.0)
-    ellipse.add_argument("--flex", action="store_true")
-    ellipse.add_argument(
+def _add_solver_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--solve-restarts", type=int, default=4)
+    parser.add_argument("--solve-iterations", type=int, default=400)
+    parser.add_argument("--solve-optimizer", default="L-BFGS-B")
+    parser.add_argument("--threshold", type=float, default=250.0)
+    parser.add_argument("--spring-k-multiplier", type=float, default=1.0)
+    parser.add_argument("--flex", action="store_true")
+    parser.add_argument(
         "--pointwise-residual",
         choices=["sampson", "euclidean"],
         default="sampson",
         help="Pointwise residual metric (default: sampson)",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--pointwise-filtering",
         dest="pointwise_filtering",
         action="store_true",
         help="Enable GNC-IRLS style pointwise filtering (default).",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--no-pointwise-filtering",
         dest="pointwise_filtering",
         action="store_false",
         help="Disable pointwise filtering.",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--pointwise-global-mad",
         dest="pointwise_global_mad",
         action="store_true",
         help="Use a single global MAD scale for pointwise filtering (default).",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--pointwise-per-sweep-mad",
         dest="pointwise_global_mad",
         action="store_false",
         help="Use a per-sweep MAD scale for pointwise filtering.",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--sweep-wise-filtering",
         dest="sweep_wise_filtering",
         action="store_true",
         help="Enable sweep-wise outlier rejection (default).",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--no-sweep-wise-filtering",
         dest="sweep_wise_filtering",
         action="store_false",
         help="Disable sweep-wise outlier rejection.",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--sweep-metric",
         choices=["mad", "median_abs", "outlier_ratio"],
         default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--robust-debug",
         action="store_true",
         help="Print diagnostics for robustness filtering.",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--residuals-csv",
         type=Path,
         default=None,
         help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
     )
-    ellipse.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
-    ellipse.set_defaults(
+    parser.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
+    parser.set_defaults(
         pointwise_filtering=True,
         pointwise_global_mad=True,
         sweep_wise_filtering=True,
     )
 
-    ellipse.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
-    ellipse.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
-    ellipse.add_argument("--delta-min", type=float, default=None)
-    ellipse.add_argument("--delta-max", type=float, default=None)
-    ellipse.add_argument("--fd-eps-mm", type=float, default=1.0)
-    ellipse.add_argument("--regularization", type=float, default=1e-6)
-    ellipse.add_argument("--no-exclude-existing", action="store_true")
-    ellipse.add_argument(
+
+def _add_candidate_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
+    parser.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
+    parser.add_argument("--delta-min", type=float, default=None)
+    parser.add_argument("--delta-max", type=float, default=None)
+    parser.add_argument("--fd-eps-mm", type=float, default=1.0)
+    parser.add_argument("--regularization", type=float, default=1e-6)
+    parser.add_argument("--no-exclude-existing", action="store_true")
+    parser.add_argument(
         "--existing-tol-mm",
         type=float,
         default=10.0,
         help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--min-fixed-delta-spacing-mm",
         type=float,
         default=20.0,
         help="Minimum spacing (mm) from previously collected fixed deltas with the same sign",
     )
-    ellipse.add_argument("--top-k", type=int, default=10)
+    parser.add_argument("--top-k", type=int, default=10)
 
-    ellipse.add_argument("--write-sweep-config", type=Path, default=None)
-    ellipse.add_argument("--no-print-command", action="store_true")
-    ellipse.add_argument(
+
+def _add_collector_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
         "--collector-args",
         nargs=argparse.REMAINDER,
         default=(),
         help="Extra args passed to scripts/collect_sweep_data.mjs (after --collector-args)",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--sim",
         "--simulation",
         action="store_true",
         help="Use rrf_simulator + hp-sim WebSocket bridge (default: talk to real firmware)",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--keep-sim-alive",
         action="store_true",
         help="Leave rrf_simulator running after exit (only when --sim)",
     )
-    ellipse.add_argument(
+    parser.add_argument(
         "--hp-sim-reset",
         action="store_true",
         help="Reset hp-sim once before the first sweep (only when --sim)",
     )
 
-    ellipse.add_argument("--collect-once", action="store_true", help="Collect the suggested sweep and merge")
-    ellipse.add_argument("--collector-output", type=Path, default=None, help="Output JSON for collector")
-    ellipse.add_argument(
+
+def build_ellipse_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Active sweep selection for ellipse calibration")
+    parser.add_argument("dataset", type=Path, help="Existing sweep dataset JSON")
+    _add_solver_args(parser)
+    _add_candidate_args(parser)
+    parser.add_argument(
+        "--write-sweep-config",
+        type=Path,
+        default=None,
+        help="Write the suggested sweep config to this path (default: <dataset>.active_sweep_cfg.txt)",
+    )
+    parser.add_argument(
+        "--no-print-command",
+        action="store_true",
+        help="Suppress printing the suggested collector command.",
+    )
+    _add_collector_args(parser)
+    parser.add_argument(
+        "--collect-once",
+        action="store_true",
+        help="Collect the suggested sweep and merge (requires --collector-output)",
+    )
+    parser.add_argument(
+        "--collector-output",
+        type=Path,
+        default=None,
+        help="Output JSON for collector (required with --collect-once)",
+    )
+    parser.add_argument(
         "--merged-output-dataset",
         type=Path,
         default=None,
         help="Where to write the merged dataset (default: overwrite input dataset)",
     )
+    return parser
 
-    merge = subparsers.add_parser("merge", help="Merge one or more sweep datasets into a base dataset")
-    merge.add_argument("base", type=Path, help="Base dataset JSON (keeps config metadata)")
-    merge.add_argument("extra", type=Path, nargs="+", help="Additional dataset JSON files to append")
-    merge.add_argument("-o", "--output", type=Path, default=None, help="Output dataset path (default: overwrite base)")
 
-    loop = subparsers.add_parser("ellipse-loop", help="Interactive active-learning loop (plan → collect → merge)")
-    loop.add_argument(
+def build_merge_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Merge one or more sweep datasets into a base dataset")
+    parser.add_argument("base", type=Path, help="Base dataset JSON (keeps config metadata)")
+    parser.add_argument("extra", type=Path, nargs="+", help="Additional dataset JSON files to append")
+    parser.add_argument("-o", "--output", type=Path, default=None, help="Output dataset path (default: overwrite base)")
+    return parser
+
+
+def build_semi_auto_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Interactive active-learning loop (semi-auto by default)."
+    )
+    parser.add_argument(
+        "--semi-auto",
+        action="store_true",
+        help="Explicitly run the interactive semi-auto loop (default).",
+    )
+    parser.add_argument(
         "dataset",
         type=Path,
         nargs="?",
         default=None,
         help="Optional seed sweep dataset JSON; omitted bootstraps a 3-sweep slideprinter dataset with auto size-tuning",
     )
-    loop.add_argument(
+    parser.add_argument(
         "--work-dataset",
         type=Path,
         default=None,
         help="Working dataset file that is updated each iteration (default: <seed>_active.json)",
     )
-    loop.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
-    loop.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
-    loop.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
-
-    # Reuse the same knobs as the one-shot planner.
-    loop.add_argument("--solve-restarts", type=int, default=4)
-    loop.add_argument("--solve-iterations", type=int, default=400)
-    loop.add_argument("--solve-optimizer", default="L-BFGS-B")
-    loop.add_argument("--threshold", type=float, default=250.0)
-    loop.add_argument("--spring-k-multiplier", type=float, default=1.0)
-    loop.add_argument("--flex", action="store_true")
-    loop.add_argument(
-        "--pointwise-residual",
-        choices=["sampson", "euclidean"],
-        default="sampson",
-        help="Pointwise residual metric (default: sampson)",
-    )
-    loop.add_argument(
-        "--pointwise-filtering",
-        dest="pointwise_filtering",
-        action="store_true",
-        help="Enable GNC-IRLS style pointwise filtering (default).",
-    )
-    loop.add_argument(
-        "--no-pointwise-filtering",
-        dest="pointwise_filtering",
-        action="store_false",
-        help="Disable pointwise filtering.",
-    )
-    loop.add_argument(
-        "--pointwise-global-mad",
-        dest="pointwise_global_mad",
-        action="store_true",
-        help="Use a single global MAD scale for pointwise filtering (default).",
-    )
-    loop.add_argument(
-        "--pointwise-per-sweep-mad",
-        dest="pointwise_global_mad",
-        action="store_false",
-        help="Use a per-sweep MAD scale for pointwise filtering.",
-    )
-    loop.add_argument(
-        "--sweep-wise-filtering",
-        dest="sweep_wise_filtering",
-        action="store_true",
-        help="Enable sweep-wise outlier rejection (default).",
-    )
-    loop.add_argument(
-        "--no-sweep-wise-filtering",
-        dest="sweep_wise_filtering",
-        action="store_false",
-        help="Disable sweep-wise outlier rejection.",
-    )
-    loop.add_argument(
-        "--sweep-metric",
-        choices=["mad", "median_abs", "outlier_ratio"],
-        default="outlier_ratio",
-        help="Per-sweep metric used by sweep-wise filtering (default: mad).",
-    )
-    loop.add_argument(
-        "--robust-debug",
-        action="store_true",
-        help="Print diagnostics for robustness filtering.",
-    )
-    loop.add_argument(
-        "--residuals-csv",
+    parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
+    parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
+    parser.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
+    _add_solver_args(parser)
+    _add_candidate_args(parser)
+    parser.add_argument(
+        "--write-sweep-config",
         type=Path,
         default=None,
-        help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
+        help="Write the suggested sweep config to this path (default: <dataset>.active_sweep_cfg.txt)",
     )
-    loop.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
-    loop.set_defaults(
-        pointwise_filtering=True,
-        pointwise_global_mad=True,
-        sweep_wise_filtering=True,
-    )
+    _add_collector_args(parser)
+    return parser
 
-    loop.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
-    loop.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
-    loop.add_argument("--delta-min", type=float, default=None)
-    loop.add_argument("--delta-max", type=float, default=None)
-    loop.add_argument("--fd-eps-mm", type=float, default=1.0)
-    loop.add_argument("--regularization", type=float, default=1e-6)
-    loop.add_argument("--no-exclude-existing", action="store_true")
-    loop.add_argument(
-        "--existing-tol-mm",
-        type=float,
-        default=10.0,
-        help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
-    )
-    loop.add_argument(
-        "--min-fixed-delta-spacing-mm",
-        type=float,
-        default=20.0,
-        help="Minimum spacing (mm) from previously collected fixed deltas with the same sign",
-    )
-    loop.add_argument("--top-k", type=int, default=10)
-    loop.add_argument("--write-sweep-config", type=Path, default=None)
-    loop.add_argument(
-        "--collector-args",
-        nargs=argparse.REMAINDER,
-        default=(),
-        help="Extra args passed to scripts/collect_sweep_data.mjs (after --collector-args)",
-    )
-    loop.add_argument(
-        "--sim",
-        "--simulation",
-        action="store_true",
-        help="Use rrf_simulator + hp-sim WebSocket bridge (default: talk to real firmware)",
-    )
-    loop.add_argument(
-        "--keep-sim-alive",
-        action="store_true",
-        help="Leave rrf_simulator running after exit (only when --sim)",
-    )
-    loop.add_argument(
-        "--hp-sim-reset",
-        action="store_true",
-        help="Reset hp-sim once before the first sweep (only when --sim)",
-    )
 
+def _clean_collector_args(raw_args: Sequence[str]) -> List[str]:
+    collector_args = list(raw_args)
+    if collector_args and collector_args[0] == "--":
+        collector_args = collector_args[1:]
+    return collector_args
+
+
+def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
+    parser = build_ellipse_parser()
     args = parser.parse_args(argv)
+    collector_args = _clean_collector_args(args.collector_args)
+    return ellipse_active(
+        args.dataset,
+        solve_restarts=int(args.solve_restarts),
+        solve_iterations=int(args.solve_iterations),
+        solve_optimizer=str(args.solve_optimizer),
+        residual_threshold=float(args.threshold),
+        spring_k_multiplier=float(args.spring_k_multiplier),
+        use_flex=bool(args.flex),
+        pointwise_residual_mode=str(args.pointwise_residual),
+        pointwise_filtering=bool(args.pointwise_filtering),
+        pointwise_global_mad=bool(args.pointwise_global_mad),
+        sweep_wise_filtering=bool(args.sweep_wise_filtering),
+        sweep_metric=str(args.sweep_metric),
+        robust_debug=bool(args.robust_debug),
+        residuals_csv=args.residuals_csv,
+        generate_report=bool(args.report),
+        candidate_deltas=_parse_csv_floats(args.candidate_deltas),
+        candidate_count=int(args.candidate_count),
+        delta_min=args.delta_min,
+        delta_max=args.delta_max,
+        fd_eps_mm=float(args.fd_eps_mm),
+        regularization=float(args.regularization),
+        exclude_existing=not bool(args.no_exclude_existing),
+        existing_tol_mm=float(args.existing_tol_mm),
+        min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
+        top_k=int(args.top_k),
+        write_cfg=args.write_sweep_config,
+        print_command=not bool(args.no_print_command),
+        collector_args=collector_args,
+        collect_once=bool(args.collect_once),
+        collector_output=args.collector_output,
+        merged_output_dataset=args.merged_output_dataset,
+        sim=bool(args.sim),
+        keep_sim_alive=bool(args.keep_sim_alive),
+        hp_sim_reset=bool(args.hp_sim_reset),
+    )
 
-    if args.command == "ellipse":
-        collector_args = list(args.collector_args)
-        if collector_args and collector_args[0] == "--":
-            collector_args = collector_args[1:]
-        return ellipse_active(
-            args.dataset,
-            solve_restarts=int(args.solve_restarts),
-            solve_iterations=int(args.solve_iterations),
-            solve_optimizer=str(args.solve_optimizer),
-            residual_threshold=float(args.threshold),
-            spring_k_multiplier=float(args.spring_k_multiplier),
-            use_flex=bool(args.flex),
-            pointwise_residual_mode=str(args.pointwise_residual),
-            pointwise_filtering=bool(args.pointwise_filtering),
-            pointwise_global_mad=bool(args.pointwise_global_mad),
-            sweep_wise_filtering=bool(args.sweep_wise_filtering),
-            sweep_metric=str(args.sweep_metric),
-            robust_debug=bool(args.robust_debug),
-            residuals_csv=args.residuals_csv,
-            generate_report=bool(args.report),
-            candidate_deltas=_parse_csv_floats(args.candidate_deltas),
-            candidate_count=int(args.candidate_count),
-            delta_min=args.delta_min,
-            delta_max=args.delta_max,
-            fd_eps_mm=float(args.fd_eps_mm),
-            regularization=float(args.regularization),
-            exclude_existing=not bool(args.no_exclude_existing),
-            existing_tol_mm=float(args.existing_tol_mm),
-            min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
-            top_k=int(args.top_k),
-            write_cfg=args.write_sweep_config,
-            print_command=not bool(args.no_print_command),
-            collector_args=collector_args,
-            collect_once=bool(args.collect_once),
-            collector_output=args.collector_output,
-            merged_output_dataset=args.merged_output_dataset,
-            sim=bool(args.sim),
-            keep_sim_alive=bool(args.keep_sim_alive),
-            hp_sim_reset=bool(args.hp_sim_reset),
-        )
 
-    if args.command == "merge":
-        return merge_datasets(args.base, args.extra, output=args.output)
+def merge_cli(argv: Optional[Sequence[str]] = None) -> int:
+    parser = build_merge_parser()
+    args = parser.parse_args(argv)
+    return merge_datasets(args.base, args.extra, output=args.output)
 
-    if args.command == "ellipse-loop":
-        collector_args = list(args.collector_args)
-        if collector_args and collector_args[0] == "--":
-            collector_args = collector_args[1:]
-        return ellipse_loop(
-            args.dataset,
-            work_dataset=args.work_dataset,
-            max_steps=int(args.max_steps),
-            stop_cost=args.stop_cost,
-            stop_std_mm=args.stop_std_mm,
-            solve_restarts=int(args.solve_restarts),
-            solve_iterations=int(args.solve_iterations),
-            solve_optimizer=str(args.solve_optimizer),
-            residual_threshold=float(args.threshold),
-            spring_k_multiplier=float(args.spring_k_multiplier),
-            use_flex=bool(args.flex),
-            pointwise_residual_mode=str(args.pointwise_residual),
-            pointwise_filtering=bool(args.pointwise_filtering),
-            pointwise_global_mad=bool(args.pointwise_global_mad),
-            sweep_wise_filtering=bool(args.sweep_wise_filtering),
-            sweep_metric=str(args.sweep_metric),
-            robust_debug=bool(args.robust_debug),
-            residuals_csv=args.residuals_csv,
-            generate_report=bool(args.report),
-            candidate_deltas=_parse_csv_floats(args.candidate_deltas),
-            candidate_count=int(args.candidate_count),
-            delta_min=args.delta_min,
-            delta_max=args.delta_max,
-            fd_eps_mm=float(args.fd_eps_mm),
-            regularization=float(args.regularization),
-            exclude_existing=not bool(args.no_exclude_existing),
-            existing_tol_mm=float(args.existing_tol_mm),
-            min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
-            top_k=int(args.top_k),
-            write_cfg=args.write_sweep_config,
-            collector_args=collector_args,
-            sim=bool(args.sim),
-            keep_sim_alive=bool(args.keep_sim_alive),
-            hp_sim_reset=bool(args.hp_sim_reset),
-        )
 
-    raise AssertionError("Unhandled command")
+def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
+    parser = build_semi_auto_parser()
+    args = parser.parse_args(argv)
+    collector_args = _clean_collector_args(args.collector_args)
+    return ellipse_loop(
+        args.dataset,
+        work_dataset=args.work_dataset,
+        max_steps=int(args.max_steps),
+        stop_cost=args.stop_cost,
+        stop_std_mm=args.stop_std_mm,
+        solve_restarts=int(args.solve_restarts),
+        solve_iterations=int(args.solve_iterations),
+        solve_optimizer=str(args.solve_optimizer),
+        residual_threshold=float(args.threshold),
+        spring_k_multiplier=float(args.spring_k_multiplier),
+        use_flex=bool(args.flex),
+        pointwise_residual_mode=str(args.pointwise_residual),
+        pointwise_filtering=bool(args.pointwise_filtering),
+        pointwise_global_mad=bool(args.pointwise_global_mad),
+        sweep_wise_filtering=bool(args.sweep_wise_filtering),
+        sweep_metric=str(args.sweep_metric),
+        robust_debug=bool(args.robust_debug),
+        residuals_csv=args.residuals_csv,
+        generate_report=bool(args.report),
+        candidate_deltas=_parse_csv_floats(args.candidate_deltas),
+        candidate_count=int(args.candidate_count),
+        delta_min=args.delta_min,
+        delta_max=args.delta_max,
+        fd_eps_mm=float(args.fd_eps_mm),
+        regularization=float(args.regularization),
+        exclude_existing=not bool(args.no_exclude_existing),
+        existing_tol_mm=float(args.existing_tol_mm),
+        min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
+        top_k=int(args.top_k),
+        write_cfg=args.write_sweep_config,
+        collector_args=collector_args,
+        sim=bool(args.sim),
+        keep_sim_alive=bool(args.keep_sim_alive),
+        hp_sim_reset=bool(args.hp_sim_reset),
+    )
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    argv_list = list(sys.argv[1:] if argv is None else argv)
+    if argv_list:
+        cmd = argv_list[0]
+        if cmd == "ellipse-loop":
+            return semi_auto_cli(argv_list[1:])
+        if cmd == "ellipse":
+            return ellipse_cli(argv_list[1:])
+        if cmd == "merge":
+            return merge_cli(argv_list[1:])
+    return semi_auto_cli(argv_list)
 
 
 if __name__ == "__main__":
