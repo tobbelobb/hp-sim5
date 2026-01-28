@@ -886,6 +886,7 @@ def ellipse_loop(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     plot_residual_histogram: bool,
+    sweep_points: Optional[int],
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
@@ -894,6 +895,24 @@ def ellipse_loop(
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    sweep_points_value = None
+    raw_sweep_points = _arg_value(collector_args_eff, "--sweepPoints", "--sweep-points")
+    if raw_sweep_points is not None:
+        try:
+            parsed = int(raw_sweep_points)
+        except ValueError:
+            parsed = None
+        if parsed is not None and parsed > 0:
+            sweep_points_value = parsed
+    if sweep_points is not None:
+        try:
+            parsed = int(sweep_points)
+        except (TypeError, ValueError):
+            parsed = None
+        if parsed is not None and parsed > 0:
+            sweep_points_value = parsed
+            if raw_sweep_points is None:
+                collector_args_eff.extend(["--sweepPoints", str(parsed)])
     reset_pending = bool(sim and hp_sim_reset)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
@@ -1035,6 +1054,8 @@ def ellipse_loop(
                     "--output",
                     str(plot_output),
                 ]
+                if sweep_points_value is not None:
+                    cmd.extend(["--sweep-points", str(int(sweep_points_value))])
                 print("; plotting residual histogram:")
                 print(";   " + " ".join(cmd))
                 subprocess.run(cmd, check=True)
@@ -1307,6 +1328,12 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Dataset file updated each iteration (default: autocal/data/default_dataset.json).",
     )
     parser.add_argument(
+        "--sweep-points",
+        type=int,
+        default=None,
+        help="Points per sub-sweep (passed to the collector and histogram plot).",
+    )
+    parser.add_argument(
         "--plot-residual-histogram",
         action="store_true",
         help="Write residuals CSV next to the dataset and render a histogram PNG (gamma fit included).",
@@ -1420,6 +1447,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         keep_sim_alive=bool(args.keep_sim_alive),
         hp_sim_reset=bool(args.hp_sim_reset),
         plot_residual_histogram=bool(args.plot_residual_histogram),
+        sweep_points=args.sweep_points,
     )
 
 

@@ -47,40 +47,6 @@ def _load_rows(csv_path: Path, *, column: str) -> list[dict[str, object]]:
     return rows
 
 
-def _first_float(rows: list[dict[str, object]], key: str) -> float | None:
-    for row in rows:
-        val = _parse_float(row.get(key))
-        if val is not None:
-            return val
-    return None
-
-
-def _first_str(rows: list[dict[str, object]], key: str) -> str | None:
-    for row in rows:
-        val = row.get(key)
-        if isinstance(val, str) and val:
-            return val
-    return None
-
-
-def _sweep_point_bounds(rows: list[dict[str, object]]) -> dict[str, tuple[int, int]]:
-    bounds: dict[str, tuple[int, int]] = {}
-    for row in rows:
-        sweep_id = row.get("sweep_id")
-        if sweep_id is None:
-            continue
-        idx = _parse_int(row.get("point_idx"))
-        if idx is None:
-            continue
-        sid = str(sweep_id)
-        if sid not in bounds:
-            bounds[sid] = (idx, idx)
-        else:
-            cur_min, cur_max = bounds[sid]
-            bounds[sid] = (min(cur_min, idx), max(cur_max, idx))
-    return bounds
-
-
 def _sweep_top_values(rows: list[dict[str, object]], *, top_n: int = 2) -> list[float]:
     by_sweep: dict[str, list[float]] = {}
     for row in rows:
@@ -125,29 +91,6 @@ def _point_values(rows: list[dict[str, object]], point_idx: int) -> list[float]:
     return values
 
 
-def _extract_sigma_info(rows: list[dict[str, object]]) -> dict[str, object]:
-    sigma_min = _first_float(rows, "sigma_min_mm")
-    sigma_scaled = _first_float(rows, "sigma_scaled_mm")
-    sigma_noise = _first_float(rows, "sigma_noise_mm")
-    sigma_mult = _first_float(rows, "sigma_mult")
-    if sigma_scaled is None and sigma_noise is not None and sigma_mult is not None:
-        sigma_scaled = sigma_noise * sigma_mult
-    sigma_floor = _first_float(rows, "sigma_floor_mm")
-    sigma_source = _first_str(rows, "sigma_floor_source")
-    if sigma_floor is None and sigma_min is not None and sigma_scaled is not None:
-        sigma_floor = max(sigma_min, sigma_scaled)
-        if sigma_source is None:
-            sigma_source = "noise" if sigma_scaled >= sigma_min else "min"
-    return {
-        "sigma_min": sigma_min,
-        "sigma_scaled": sigma_scaled,
-        "sigma_floor": sigma_floor,
-        "sigma_source": sigma_source,
-        "sigma_noise": sigma_noise,
-        "sigma_mult": sigma_mult,
-    }
-
-
 def _cutoff_stats(rows: list[dict[str, object]]) -> dict[str, float] | None:
     values = [_parse_float(row.get("cutoff_mm")) for row in rows]
     cutoffs = [val for val in values if val is not None]
@@ -159,6 +102,59 @@ def _cutoff_stats(rows: list[dict[str, object]]) -> dict[str, float] | None:
         "p10": float(np.percentile(arr, 10)),
         "p90": float(np.percentile(arr, 90)),
     }
+
+
+def _subsweep_marker_values(
+    rows: list[dict[str, object]],
+    *,
+    sweep_points: int | None,
+) -> dict[str, list[float]]:
+    by_sweep: dict[str, dict[int, float]] = {}
+    max_idx: dict[str, int] = {}
+    for row in rows:
+        sweep_id = row.get("sweep_id")
+        idx = _parse_int(row.get("point_idx"))
+        if sweep_id is None or idx is None:
+            continue
+        sid = str(sweep_id)
+        by_sweep.setdefault(sid, {})[idx] = float(row["_value"])
+        if sid not in max_idx or idx > max_idx[sid]:
+            max_idx[sid] = idx
+
+    results = {
+        "first_sub1": [],
+        "last_sub1": [],
+        "first_sub2": [],
+        "last_sub2": [],
+    }
+
+    for sid, values in by_sweep.items():
+        total_points = max_idx.get(sid, -1) + 1
+        if total_points <= 0:
+            continue
+        if sweep_points is not None and sweep_points > 0:
+            points = int(sweep_points)
+        elif total_points % 2 == 0 and total_points >= 2:
+            points = total_points // 2
+        else:
+            points = total_points
+
+        idx0 = 0
+        idx_last1 = points - 1
+        if idx0 in values:
+            results["first_sub1"].append(values[idx0])
+        if idx_last1 in values:
+            results["last_sub1"].append(values[idx_last1])
+
+        if points > 0 and total_points >= 2 * points:
+            idx_first2 = points
+            idx_last2 = (2 * points) - 1
+            if idx_first2 in values:
+                results["first_sub2"].append(values[idx_first2])
+            if idx_last2 in values:
+                results["last_sub2"].append(values[idx_last2])
+
+    return results
 
 
 def _gamma_fit(values: list[float]) -> tuple[float, float] | None:
@@ -250,6 +246,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bins", type=int, default=60, help="Histogram bins (default: 60)")
     parser.add_argument("--max-mm", type=float, default=None, help="Optional max residual to include (mm)")
     parser.add_argument(
+        "--sweep-points",
+        type=int,
+        default=None,
+        help="Points per sub-sweep (used to label subsweep endpoints).",
+    )
+    parser.add_argument(
         "--density",
         dest="density",
         action="store_true",
@@ -263,14 +265,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--highlight",
-        choices=("first-last", "top2", "both", "none"),
-        default="first-last",
+        choices=("subsweeps", "first-last", "top2", "both", "none"),
+        default="subsweeps",
         help="How to highlight per-sweep points in the histogram",
     )
     parser.add_argument(
         "--highlight-points",
-        default="21,22",
-        help="Comma-separated point_idx values to highlight (default: 21,22)",
+        default=None,
+        help="Comma-separated point_idx values to highlight (optional).",
     )
     parser.add_argument(
         "--gamma-fit",
@@ -298,8 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     values = [float(row["_value"]) for row in rows]
     bins = np.histogram_bin_edges(values, bins=int(args.bins))
 
-    first_values: list[float] = []
-    last_values: list[float] = []
+    subsweep_values = {"first_sub1": [], "last_sub1": [], "first_sub2": [], "last_sub2": []}
     top2_values: list[float] = []
     highlight_points = _parse_points_arg(args.highlight_points)
     highlight_values: list[tuple[int, list[float]]] = []
@@ -309,21 +310,8 @@ def main(argv: list[str] | None = None) -> int:
             if vals:
                 highlight_values.append((point_idx, vals))
 
-    if args.highlight in ("first-last", "both"):
-        bounds = _sweep_point_bounds(rows)
-        for row in rows:
-            sweep_id = row.get("sweep_id")
-            idx = _parse_int(row.get("point_idx"))
-            if sweep_id is None or idx is None:
-                continue
-            sid = str(sweep_id)
-            if sid not in bounds:
-                continue
-            min_idx, max_idx = bounds[sid]
-            if idx == min_idx:
-                first_values.append(float(row["_value"]))
-            elif idx == max_idx:
-                last_values.append(float(row["_value"]))
+    if args.highlight in ("subsweeps", "first-last", "both"):
+        subsweep_values = _subsweep_marker_values(rows, sweep_points=args.sweep_points)
 
     if args.highlight in ("top2", "both"):
         top2_values = _sweep_top_values(rows, top_n=2)
@@ -339,23 +327,43 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     total_count = len(values)
-    if first_values:
+    if subsweep_values["first_sub1"]:
         _overlay_hist(
             ax,
-            first_values,
+            subsweep_values["first_sub1"],
             bins=bins,
-            label=f"first point per sweep (n={len(first_values)})",
+            label=f"first point subsweep 1 (n={len(subsweep_values['first_sub1'])})",
             color="#D1495B",
             density=bool(args.density),
             total_count=total_count,
         )
-    if last_values:
+    if subsweep_values["last_sub1"]:
         _overlay_hist(
             ax,
-            last_values,
+            subsweep_values["last_sub1"],
             bins=bins,
-            label=f"last point per sweep (n={len(last_values)})",
+            label=f"last point subsweep 1 (n={len(subsweep_values['last_sub1'])})",
             color="#2E86AB",
+            density=bool(args.density),
+            total_count=total_count,
+        )
+    if subsweep_values["first_sub2"]:
+        _overlay_hist(
+            ax,
+            subsweep_values["first_sub2"],
+            bins=bins,
+            label=f"first point subsweep 2 (n={len(subsweep_values['first_sub2'])})",
+            color="#7C3AED",
+            density=bool(args.density),
+            total_count=total_count,
+        )
+    if subsweep_values["last_sub2"]:
+        _overlay_hist(
+            ax,
+            subsweep_values["last_sub2"],
+            bins=bins,
+            label=f"last point subsweep 2 (n={len(subsweep_values['last_sub2'])})",
+            color="#0EA5E9",
             density=bool(args.density),
             total_count=total_count,
         )
@@ -402,48 +410,6 @@ def main(argv: list[str] | None = None) -> int:
             bin_width = float(np.mean(np.diff(bins))) if len(bins) > 1 else 1.0
             y = y * len(values) * bin_width
         ax.plot(x, y, color="#F97316", linewidth=2.0, label=f"gamma fit (k={k:.2f}, theta={theta:.3f} mm)")
-
-    sigma_info = _extract_sigma_info(rows)
-    sigma_min = sigma_info.get("sigma_min")
-    sigma_scaled = sigma_info.get("sigma_scaled")
-    sigma_floor = sigma_info.get("sigma_floor")
-    sigma_source = sigma_info.get("sigma_source")
-
-    if sigma_min is not None:
-        ax.axvline(
-            float(sigma_min),
-            color="#9CA3AF",
-            linestyle="--",
-            linewidth=1.2,
-            label=f"sigma_min ({sigma_min:.4g} mm)",
-        )
-    if sigma_scaled is not None:
-        ax.axvline(
-            float(sigma_scaled),
-            color="#3B82F6",
-            linestyle="--",
-            linewidth=1.2,
-            label=f"sigma_scaled ({sigma_scaled:.4g} mm)",
-        )
-    if sigma_floor is not None:
-        source_label = f" ({sigma_source})" if isinstance(sigma_source, str) and sigma_source else ""
-        ax.axvline(
-            float(sigma_floor),
-            color="#111827",
-            linestyle="-",
-            linewidth=2.2,
-            label=f"sigma_used{source_label} ({sigma_floor:.4g} mm)",
-        )
-        ax.text(
-            0.98,
-            0.96,
-            f"sigma used: {sigma_floor:.4g} mm{source_label}",
-            transform=ax.transAxes,
-            ha="right",
-            va="top",
-            fontsize=9,
-            color="#111827",
-        )
 
     cutoff_stats = _cutoff_stats(rows)
     if cutoff_stats is not None:
