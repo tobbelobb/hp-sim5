@@ -237,6 +237,18 @@ def _covariance_report(cov: np.ndarray, *, top: int = 6) -> str:
     return "std(" + ", ".join(parts) + ")"
 
 
+def _unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    stem = path.stem
+    suffix = path.suffix
+    for idx in range(1, 10_000):
+        candidate = path.with_name(f"{stem}_{idx}{suffix}")
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError(f"Could not find available filename for {path}")
+
+
 def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     if not isinstance(base, dict) or not isinstance(new, dict):
         raise TypeError("datasets must be dicts")
@@ -1013,7 +1025,7 @@ def ellipse_loop(
         _print_ellipse_plan(plan, top_n=5, print_command=True)
 
         if plot_residual_histogram and step_residuals_csv is not None:
-            plot_output = work_path.with_suffix(".png")
+            plot_output = _unique_path(work_path.with_suffix(".png"))
             plot_script = REPO_ROOT / "autocal" / "plot_residual_hist.py"
             if step_residuals_csv.exists() and plot_script.exists():
                 cmd = [
@@ -1026,6 +1038,7 @@ def ellipse_loop(
                 print("; plotting residual histogram:")
                 print(";   " + " ".join(cmd))
                 subprocess.run(cmd, check=True)
+                print(f"; histogram saved to {plot_output}")
             else:
                 print("; residual histogram skipped (missing CSV or plotter)")
 

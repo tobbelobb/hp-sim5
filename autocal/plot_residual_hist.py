@@ -183,7 +183,23 @@ def _gamma_fit(values: list[float]) -> tuple[float, float] | None:
 def _gamma_pdf(x: np.ndarray, k: float, theta: float) -> np.ndarray:
     x = np.asarray(x, dtype=float)
     coef = 1.0 / (math.gamma(k) * (theta ** k))
-    return coef * np.power(x, k - 1.0) * np.exp(-x / theta)
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore", under="ignore"):
+        y = coef * np.power(x, k - 1.0) * np.exp(-x / theta)
+    y = np.where(np.isfinite(y), y, 0.0)
+    y = np.where(x <= 0.0, 0.0, y)
+    return y
+
+
+def _unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    stem = path.stem
+    suffix = path.suffix
+    for idx in range(1, 10_000):
+        candidate = path.with_name(f"{stem}_{idx}{suffix}")
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError(f"Could not find available filename for {path}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -329,8 +345,15 @@ def main(argv: list[str] | None = None) -> int:
     gamma_fit = _gamma_fit(values) if args.gamma_fit else None
     if gamma_fit is not None:
         k, theta = gamma_fit
-        max_val = max(values)
-        x = np.linspace(0.0, max_val, 240)
+        positive = [v for v in values if v > 0.0]
+        max_val = max(positive) if positive else max(values)
+        if positive:
+            x_min = max(min(positive) * 0.5, max_val * 1e-6, 1e-6)
+        else:
+            x_min = max_val * 1e-6
+        if x_min >= max_val:
+            x_min = max_val * 1e-6
+        x = np.linspace(x_min, max_val, 240)
         y = _gamma_pdf(x, k, theta)
         if not args.density:
             bin_width = float(np.mean(np.diff(bins))) if len(bins) > 1 else 1.0
@@ -413,8 +436,9 @@ def main(argv: list[str] | None = None) -> int:
     fig.tight_layout()
 
     if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(args.output, dpi=150)
+        output_path = _unique_path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=150)
     else:
         plt.show()
     return 0
