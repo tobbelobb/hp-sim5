@@ -202,6 +202,47 @@ def _unique_path(path: Path) -> Path:
     raise RuntimeError(f"Could not find available filename for {path}")
 
 
+def _overlay_hist(
+    ax: plt.Axes,
+    values: list[float],
+    *,
+    bins: np.ndarray,
+    label: str,
+    color: str,
+    linestyle: str = "-",
+    linewidth: float = 1.6,
+    density: bool,
+    total_count: int,
+) -> None:
+    if not values:
+        return
+    if density:
+        counts, _ = np.histogram(values, bins=bins)
+        widths = np.diff(bins)
+        scale = float(total_count) if total_count > 0 else 1.0
+        dens = counts / (scale * widths)
+        ax.stairs(
+            dens,
+            bins,
+            fill=False,
+            color=color,
+            linestyle=linestyle,
+            linewidth=linewidth,
+            label=label,
+        )
+    else:
+        ax.hist(
+            values,
+            bins=bins,
+            histtype="step",
+            linewidth=linewidth,
+            color=color,
+            linestyle=linestyle,
+            label=label,
+            density=False,
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Plot a residual histogram from CSV output.")
     parser.add_argument("csv_path", type=Path, help="CSV file produced by --residuals-csv")
@@ -297,49 +338,51 @@ def main(argv: list[str] | None = None) -> int:
         density=bool(args.density),
     )
 
+    total_count = len(values)
     if first_values:
-        ax.hist(
+        _overlay_hist(
+            ax,
             first_values,
             bins=bins,
-            histtype="step",
-            linewidth=1.6,
-            color="#D1495B",
             label=f"first point per sweep (n={len(first_values)})",
+            color="#D1495B",
             density=bool(args.density),
+            total_count=total_count,
         )
     if last_values:
-        ax.hist(
+        _overlay_hist(
+            ax,
             last_values,
             bins=bins,
-            histtype="step",
-            linewidth=1.6,
-            color="#2E86AB",
             label=f"last point per sweep (n={len(last_values)})",
+            color="#2E86AB",
             density=bool(args.density),
+            total_count=total_count,
         )
     if top2_values:
-        ax.hist(
+        _overlay_hist(
+            ax,
             top2_values,
             bins=bins,
-            histtype="step",
-            linewidth=1.8,
-            color="#E17C05",
             label=f"top-2 residuals per sweep (n={len(top2_values)})",
+            color="#E17C05",
+            linewidth=1.8,
             density=bool(args.density),
+            total_count=total_count,
         )
     if highlight_values:
         palette = ["#16A34A", "#7C3AED", "#F97316", "#0EA5E9", "#C026D3", "#4B5563"]
         for idx, (point_idx, vals) in enumerate(highlight_values):
             color = palette[idx % len(palette)]
-            ax.hist(
+            _overlay_hist(
+                ax,
                 vals,
                 bins=bins,
-                histtype="step",
-                linewidth=1.6,
-                linestyle="--",
-                color=color,
                 label=f"point {point_idx} per sweep (n={len(vals)})",
+                color=color,
+                linestyle="--",
                 density=bool(args.density),
+                total_count=total_count,
             )
 
     gamma_fit = _gamma_fit(values) if args.gamma_fit else None
