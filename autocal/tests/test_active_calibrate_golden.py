@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "autocal" / "golden_fivesweeps.log"
-DATASET = ROOT / "autocal" / "data" / "test2_fivesweeps.json"
+GOLDEN = ROOT / "autocal" / "tests" / "data" / "golden_fivesweeps.log"
+DATASET = ROOT / "autocal" / "tests" / "data" / "test2_fivesweeps.json"
 
 ANCHOR_LINE_RE = re.compile(r"Anchors:\s*(\[\[.*?\]\])")
 NUMBER_RE = re.compile(r"[-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?")
