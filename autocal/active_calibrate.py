@@ -1270,7 +1270,10 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         "--work-dataset",
         type=Path,
         default=None,
-        help="Working dataset file that is updated each iteration (default: <seed>_active.json)",
+        help=(
+            "Working dataset file that is updated each iteration "
+            "(default: <seed>_active.json, or autocal/data/active_bootstrap_slideprinter.json when no seed)."
+        ),
     )
     parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
     parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")

@@ -8,7 +8,6 @@ This directory contains the fully automated elliptical feature calibration pipel
 python autocal/active_calibrate.py \
   --residuals-csv /tmp/residuals1.csv \
   --sim \
-  --work-dataset autocal/data/test1.json \
   --collector-args --speedup 25
 ```
 
@@ -26,7 +25,10 @@ python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/resid
 
 ```bash
 python autocal/active_calibrate.py \
-  --work-dataset autocal/data/my_active.json
+  autocal/data/my_active.json
 ```
+
+You can specify an old, or a new explicitly named dataset with ???.
+See `python autocal/active_calibrate.py --help` for more options.
 
 For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.

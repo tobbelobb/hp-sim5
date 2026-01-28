@@ -8,7 +8,6 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 python autocal/active_calibrate.py \
   --residuals-csv /tmp/residuals1.csv \
   --sim \
-  --work-dataset autocal/data/test1.json \
   --collector-args --speedup 25
 ```
 
@@ -35,7 +34,7 @@ A dataset JSON contains:
 
 All `l_*` values in the dataset are encoder deltas from origin. The optimizer reconstructs absolute lengths from the current anchor guess.
 
-## Why this is fully automated now
+## Automation Features
 
 Four ingredients make the new workflow hands-off:
 
@@ -48,7 +47,7 @@ Four ingredients make the new workflow hands-off:
 4. Active learning
    - The solver evaluates the current dataset, finds the most informative next sweep, and collects it automatically (see `ai_docs/Active_learning_calibration.md`).
 
-Together these steps let the loop calibrate from scratch with minimal operator input, far beyond the old `autocal/calibrate.py point ...` workflow.
+Together these steps let the loop calibrate from scratch with minimal operator input.
 
 ## How the active loop works
 
@@ -56,7 +55,7 @@ Together these steps let the loop calibrate from scratch with minimal operator i
    - The loop auto-tunes force, auto-sizes travel, and collects an initial set of sweeps.
 2. **Solve anchors (pointwise cost mode)**
    - Uses GNC stages (wide Huber -> tight Huber -> trim) on pointwise residuals.
-3. **Write residuals + diagnostics**
+3. **Write residuals + diagnostics (optional)**
    - The loop writes per-point residuals to CSV and prints robust filtering stats.
 4. **Pick next sweep (active learning)**
    - Chooses the next sweep that improves observability and writes a sweep config.
@@ -108,10 +107,16 @@ The most important log lines (from a typical simulation run) are:
 - `collect_command ...`
   - The exact node command the loop will run to collect that sweep.
 - `Accept anchors [a], collect next sweep [c], quit [q]?`
-  - Interactive prompt to accept the current anchor estimate or collect more data.
+  - Interactive prompt to accept the current anchor estimate or collect more data. Accepting will send the found values to your machine.
 
 
-`--semi-auto` is optional; the semi-auto loop is the default mode. Robust diagnostics are enabled by default; use `--no-robust-debug` to silence them.
+## Options
+
+See `--help` for the full list of options.
+
+`--semi-auto` is optional; the semi-auto loop is the default mode.
+
+If you omit `--work-dataset`, the loop writes to `<seed>_active.json` (or `autocal/data/active_bootstrap_slideprinter.json` when no seed is provided).
 
 ## Related utilities (used by the semi-auto loop)
 
