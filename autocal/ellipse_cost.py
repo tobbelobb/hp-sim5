@@ -10,7 +10,6 @@ import numpy as np
 from autocal.ellipse_fitting import (
     ellipse_euclidean_residuals,
     ellipse_sampson_residuals,
-    fit_ellipse_from_sweep,
 )
 from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
@@ -18,7 +17,6 @@ from autocal.theoretical_ellipse import (
     anchors_vec_to_matrix,
     get_anchor_bounds,
     predict_ellipse_coefficients,
-    predict_ellipse_geometry,
 )
 
 _EPS_LEN_MM = 1.0  # Prevent squaring negative/near-zero lengths during reconstruction.
@@ -66,75 +64,6 @@ def canonicalize_geometry(
     return np.array([x0, y0], dtype=float), np.array([a, b], dtype=float), theta_wrapped
 
 
-def geometry_distance(
-    obs_center: np.ndarray,
-    obs_axes: np.ndarray,
-    obs_theta: float,
-    pred_center: np.ndarray,
-    pred_axes: np.ndarray,
-    pred_theta: float,
-    weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
-) -> float:
-    """
-    Weighted Euclidean distance in canonical geometry space.
-
-    Weights order: (center, axes, theta).
-    """
-    w_center, w_axes, w_theta = weights
-
-    delta_center = obs_center - pred_center
-    delta_axes = obs_axes - pred_axes
-
-    delta_theta = (obs_theta - pred_theta + np.pi) % (2 * np.pi) - np.pi
-
-    return float(
-        np.sqrt(
-            w_center * np.dot(delta_center, delta_center)
-            + w_axes * np.dot(delta_axes, delta_axes)
-            + w_theta * (delta_theta**2)
-        )
-    )
-
-def geometry_distance_squared_normalized(
-    obs_center: np.ndarray,
-    obs_axes: np.ndarray,
-    obs_theta: float,
-    pred_center: np.ndarray,
-    pred_axes: np.ndarray,
-    pred_theta: float,
-    weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
-    *,
-    center_scale: float,
-    axes_scale: float,
-) -> float:
-    """
-    Dimensionless squared distance in canonical geometry space.
-
-    The raw ellipse geometry lives in the (L_drive^2, L_sensor^2) plane, so center/axes are O(1e7)
-    for mm-scale machines. Comparing those directly produces O(1e10..1e14) costs that swamp
-    gradients and make penalties meaningless. This function compares *relative* geometry error.
-    """
-    w_center, w_axes, w_theta = weights
-
-    obs_center = np.asarray(obs_center, dtype=float).reshape(2)
-    pred_center = np.asarray(pred_center, dtype=float).reshape(2)
-    obs_axes = np.asarray(obs_axes, dtype=float).reshape(2)
-    pred_axes = np.asarray(pred_axes, dtype=float).reshape(2)
-
-    center_scale = float(max(center_scale, 1.0))
-    axes_scale = float(max(axes_scale, 1.0))
-
-    delta_center = (obs_center - pred_center) / center_scale
-    delta_axes = (obs_axes - pred_axes) / axes_scale
-
-    delta_theta = (obs_theta - pred_theta + np.pi) % (2 * np.pi) - np.pi
-
-    return float(
-        w_center * np.dot(delta_center, delta_center)
-        + w_axes * np.dot(delta_axes, delta_axes)
-        + w_theta * (delta_theta**2)
-    )
-
 def pseudo_huber_loss(residuals: np.ndarray, *, delta: float) -> np.ndarray:
     """
     Smooth robust loss (quadratic near zero, linear for outliers).
@@ -147,26 +76,6 @@ def pseudo_huber_loss(residuals: np.ndarray, *, delta: float) -> np.ndarray:
         return np.square(r)
     scaled = r / d
     return 2.0 * (d**2) * (np.sqrt(1.0 + np.square(scaled)) - 1.0)
-
-
-def pseudo_huber_from_squared_error(squared_error: float, *, delta: float) -> float:
-    """Apply pseudo-Huber to a scalar squared error by interpreting it as r^2."""
-    se = float(squared_error)
-    if not np.isfinite(se) or se < 0.0:
-        return float("inf")
-    r = float(np.sqrt(se))
-    return float(pseudo_huber_loss(np.array([r], dtype=float), delta=delta)[0])
-
-
-def _circular_mean_pi(angles: np.ndarray) -> float:
-    """Mean angle for periodicity pi (ellipse orientation)."""
-    a = np.asarray(angles, dtype=float)
-    if a.size == 0 or not np.all(np.isfinite(a)):
-        return 0.0
-    doubled = 2.0 * a
-    mean_sin = float(np.mean(np.sin(doubled)))
-    mean_cos = float(np.mean(np.cos(doubled)))
-    return 0.5 * float(np.arctan2(mean_sin, mean_cos))
 
 
 def pointwise_sampson_cost_normalized(
@@ -273,32 +182,15 @@ class EllipseCostFunction:
     def __init__(
         self,
         dataset: Union[dict, "SweepDataset"],
-        geometry_weights: Tuple[float, float, float] = (1.0, 1.0, 0.2),
         residual_threshold: float = 0.01,
         min_points: int = 10,
-        use_weights: bool = True,
-        cost_mode: str = "geometry",
         pointwise_residual_mode: str = "sampson",
         invalid_sweep_penalty: float = 1e6,
-        weight_floor: float = 1e-3,
-        min_weight: float = 0.2,
-        max_weight: float = 1.0,
-        residual_cost_weight: float = 0.1,
         pointwise_cost_weight: float = 1e8,
         spring_k_multiplier: float = 1.0,
         use_flex: bool = True,
         robust_loss: bool = False,
         huber_delta: float = 1.0,
-        ransac: bool = False,
-        ransac_trials: int = 60,
-        ransac_sample_size: int = 5,
-        ransac_min_inlier_ratio: float = 0.5,
-        ransac_threshold: Optional[float] = None,
-        ransac_seed: Optional[int] = 0,
-        mahalanobis_rejection: bool = False,
-        mahalanobis_threshold: float = 3.0,
-        mahalanobis_min_samples: int = 8,
-        mahalanobis_regularization: float = 1e-6,
         pointwise_filtering: bool = True,
         sweep_wise_filtering: bool = True,
         pointwise_filter_stage: int = 0,
@@ -312,30 +204,13 @@ class EllipseCostFunction:
             self.sweeps,
         ) = _dataset_metadata(dataset)
 
-        self.geometry_weights = geometry_weights
         self.residual_threshold = residual_threshold
         self.min_points = min_points
-        self.use_weights = use_weights
-        self.cost_mode = str(cost_mode or "geometry").strip().lower()
         self.pointwise_residual_mode = str(pointwise_residual_mode or "sampson").strip().lower()
         self.invalid_penalty = invalid_sweep_penalty
-        self.weight_floor = weight_floor
-        self.min_weight = float(min_weight)
-        self.max_weight = float(max_weight)
-        self.residual_cost_weight = float(residual_cost_weight)
         self.pointwise_cost_weight = float(pointwise_cost_weight)
         self.robust_loss = bool(robust_loss)
         self.huber_delta = float(huber_delta)
-        self.ransac = bool(ransac)
-        self.ransac_trials = int(ransac_trials)
-        self.ransac_sample_size = int(ransac_sample_size)
-        self.ransac_min_inlier_ratio = float(ransac_min_inlier_ratio)
-        self.ransac_threshold = ransac_threshold if ransac_threshold is None else float(ransac_threshold)
-        self.ransac_seed = ransac_seed if ransac_seed is None else int(ransac_seed)
-        self.mahalanobis_rejection = bool(mahalanobis_rejection)
-        self.mahalanobis_threshold = float(mahalanobis_threshold)
-        self.mahalanobis_min_samples = int(mahalanobis_min_samples)
-        self.mahalanobis_regularization = float(mahalanobis_regularization)
         self.pointwise_filtering = bool(pointwise_filtering)
         self.sweep_wise_filtering = bool(sweep_wise_filtering)
         self.pointwise_filter_stage = int(pointwise_filter_stage)
@@ -472,68 +347,6 @@ class EllipseCostFunction:
         )
         penalty = penalty / (typical * typical)
         return fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id, penalty
-
-    def _fit_observed_geometry(
-        self, sweep: Union[Sweep, dict], anchors: np.ndarray
-    ) -> Tuple[Optional[Tuple[np.ndarray, np.ndarray, float]], float, List[float], str, float, float]:
-        """
-        Fit ellipse geometry for a sweep given the current anchor guess.
-
-        Returns:
-            (canonical_geometry or None, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty)
-        """
-        (
-            fixed_lengths_abs,
-            drive_idx,
-            sensor_idx,
-            l_drive_abs,
-            l_sensor_abs,
-            sweep_id,
-            violation_penalty,
-        ) = self._reconstruct_lengths(sweep, anchors)
-
-        if self.flex_model is not None:
-            t_drive, t_sensor = self._extract_tension_arrays(sweep)
-            if (
-                t_drive is not None
-                and t_sensor is not None
-                and t_drive.shape == l_drive_abs.shape
-                and t_sensor.shape == l_sensor_abs.shape
-            ):
-                l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
-                l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
-
-        fit = fit_ellipse_from_sweep(
-            l_drive_abs,
-            l_sensor_abs,
-            residual_threshold=float("inf"),
-            min_points=self.min_points,
-            square_inputs=True,
-            ransac=self.ransac,
-            ransac_trials=self.ransac_trials,
-            ransac_sample_size=self.ransac_sample_size,
-            ransac_min_inlier_ratio=self.ransac_min_inlier_ratio,
-            ransac_threshold=self.ransac_threshold if self.ransac_threshold is not None else self.residual_threshold,
-            ransac_seed=self.ransac_seed,
-        )
-
-        residual_ratio = float("inf")
-        if np.isfinite(fit.residual_rms):
-            denom = float(self.residual_threshold) if float(self.residual_threshold) > 0 else 1.0
-            residual_ratio = float(fit.residual_rms) / denom
-
-        # Keep weights conservative: never overweight a sweep; don't downweight too hard either.
-        weight = 1.0
-        if self.use_weights and np.isfinite(residual_ratio):
-            weight = 1.0 / max(1.0, residual_ratio)
-            weight = float(np.clip(weight, self.min_weight, self.max_weight))
-
-        # Only reject when geometry cannot be extracted (non-ellipse / degeneracy).
-        if not fit.valid:
-            return None, 1.0, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
-
-        geom = canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle)
-        return geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty
 
     @staticmethod
     def _mean_finite(values: Iterable[float]) -> Optional[float]:
@@ -1049,234 +862,18 @@ class EllipseCostFunction:
             return None, threshold, "all-rejected"
         return keep, threshold, reason
 
-    def _mahalanobis_distances(
-        self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
-    ) -> Tuple[Optional[np.ndarray], Optional[str]]:
-        """Compute squared Mahalanobis distances for observed geometries."""
-        if not self.mahalanobis_rejection:
-            return None, "disabled"
-        if not np.isfinite(self.mahalanobis_threshold) or self.mahalanobis_threshold <= 0.0:
-            return None, "invalid-threshold"
-
-        n = len(obs_geoms)
-        min_samples = max(2, self.mahalanobis_min_samples)
-        if n < min_samples:
-            return None, f"insufficient-samples ({n} < {min_samples})"
-
-        centers = np.array([g[0] for g in obs_geoms], dtype=float)
-        axes = np.array([g[1] for g in obs_geoms], dtype=float)
-        thetas = np.array([g[2] for g in obs_geoms], dtype=float)
-        if not (np.all(np.isfinite(centers)) and np.all(np.isfinite(axes)) and np.all(np.isfinite(thetas))):
-            return None, "non-finite-geometry"
-
-        center_scale = float(max(self._l2_scale, 1.0))
-        axes_scale = float(max(self._l2_scale, 1.0))
-        center_scaled = centers / center_scale
-        axes_scaled = axes / axes_scale
-        theta_mean = _circular_mean_pi(thetas)
-        theta_delta = ((thetas - theta_mean + np.pi / 2) % np.pi) - np.pi / 2
-
-        X = np.column_stack([center_scaled, axes_scaled, theta_delta])
-        mean = np.mean(X, axis=0)
-        Xc = X - mean
-        cov = np.cov(Xc, rowvar=False, bias=False)
-        if cov.ndim != 2 or cov.shape[0] != X.shape[1]:
-            return None, "covariance-shape"
-
-        reg = float(max(self.mahalanobis_regularization, 0.0))
-        cov = cov + reg * np.eye(cov.shape[0])
-        inv_cov = np.linalg.pinv(cov)
-        d2 = np.einsum("ij,jk,ik->i", Xc, inv_cov, Xc)
-        if not np.all(np.isfinite(d2)):
-            return None, "non-finite-distance"
-
-        return d2, None
-
-    def _mahalanobis_keep_mask(
-        self, obs_geoms: List[Tuple[np.ndarray, np.ndarray, float]]
-    ) -> Optional[np.ndarray]:
-        d2, _reason = self._mahalanobis_distances(obs_geoms)
-        if d2 is None:
-            return None
-
-        thresh2 = float(self.mahalanobis_threshold) ** 2
-        keep = d2 <= thresh2
-        if not np.any(keep):
-            return None
-        return keep
-
     def robustness_diagnostics(self, anchor_vec: np.ndarray, *, top_n: int = 5) -> Dict[str, object]:
         """Return per-sweep diagnostics for active robustness filters."""
         anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
-        diagnostics: Dict[str, object] = {"cost_mode": self.cost_mode}
+        diagnostics: Dict[str, object] = {}
 
-        if self.cost_mode in ("pointwise", "sampson"):
-            stage_idx, stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
-            entries, global_scale = self._pointwise_entries(anchors)
-            inlier_ratios = [
-                e.get("inlier_ratio")
-                for e in entries
-                if isinstance(e.get("inlier_ratio"), (int, float)) and np.isfinite(e.get("inlier_ratio"))
-            ]
-            inlier_stats = None
-            if inlier_ratios:
-                inlier_stats = {
-                    "min": float(np.min(inlier_ratios)),
-                    "median": float(np.median(inlier_ratios)),
-                    "max": float(np.max(inlier_ratios)),
-                }
-
-            worst_inliers: List[Dict[str, object]] = []
-            if inlier_ratios:
-                sortable = [
-                    (e.get("inlier_ratio"), e)
-                    for e in entries
-                    if e.get("inlier_ratio") is not None
-                ]
-                sortable.sort(key=lambda pair: pair[0])
-                for _ratio, entry in sortable[: max(1, int(top_n))]:
-                    worst_inliers.append(
-                        {
-                            "sweep_id": entry.get("sweep_id"),
-                            "num_inliers": entry.get("num_inliers"),
-                            "num_points": entry.get("num_points"),
-                            "inlier_ratio": entry.get("inlier_ratio"),
-                            "rms": entry.get("rms"),
-                        }
-                    )
-
-            sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
-            keep_mask, threshold, reason = self._sweep_wise_keep_mask(sweep_metrics)
-            sweep_rejected = 0
-            if keep_mask is not None:
-                sweep_rejected = int(np.sum(~keep_mask))
-
-            worst_sweeps: List[Dict[str, object]] = []
-            if sweep_metrics:
-                order = np.argsort(np.asarray(sweep_metrics, dtype=float))[::-1]
-                for idx in order[: max(1, int(top_n))]:
-                    entry = entries[int(idx)]
-                    worst_sweeps.append(
-                        {
-                            "sweep_id": entry.get("sweep_id"),
-                            "metric": float(entry.get("sweep_metric", float("nan"))),
-                            "keep": bool(keep_mask[int(idx)]) if keep_mask is not None else True,
-                        }
-                    )
-
-            diagnostics["pointwise_filtering"] = {
-                "enabled": bool(self.pointwise_filtering),
-                "stage": int(stage_idx),
-                "stage_name": stage_name,
-                "huber_multiplier": float(huber_mult),
-                "hard_cut": bool(hard_cut),
-                "sweeps_total": int(len(entries)),
-                "invalid_sweeps": int(len([e for e in entries if not e.get("valid", False)])),
-                "inlier_ratio_stats": inlier_stats,
-                "worst_inliers": worst_inliers,
-                "scale_source": "global" if bool(self.pointwise_global_mad) else "per-sweep",
-                "scale_global": float(global_scale) if global_scale is not None else None,
-                "scale_floor": float(self._pointwise_sigma_floor_norm),
-                "scale_floor_mm": float(self._pointwise_sigma_floor_mm),
-                "sigma_noise_mm": float(self._encoder_noise_mm) if self._encoder_noise_mm is not None else None,
-                "sigma_mult": float(self._pointwise_sigma_mult),
-                "sigma_scaled_mm": float(self._pointwise_sigma_scaled_mm)
-                if self._pointwise_sigma_scaled_mm is not None
-                else None,
-                "sigma_min_mm": float(self._pointwise_sigma_min_mm),
-                "sigma_floor_mm": float(self._pointwise_sigma_floor_mm),
-                "sigma_floor_source": str(self._pointwise_sigma_floor_source),
-            }
-            diagnostics["sweep_wise_filtering"] = {
-                "enabled": bool(self.sweep_wise_filtering),
-                "status": str(reason or "disabled"),
-                "metric_mode": str(self.sweep_metric),
-                "threshold": float(threshold) if threshold is not None else None,
-                "rejected": int(sweep_rejected),
-                "worst_sweeps": worst_sweeps,
-            }
-            diagnostics["ransac"] = {
-                "enabled": False,
-                "configured": bool(self.ransac),
-                "status": "pointwise",
-            }
-            diagnostics["mahalanobis"] = {
-                "enabled": False,
-                "configured": bool(self.mahalanobis_rejection),
-                "status": "pointwise",
-            }
-            return diagnostics
-
-        sweep_entries: List[Dict[str, object]] = []
-        geom_entries: List[Tuple[str, Tuple[np.ndarray, np.ndarray, float]]] = []
-
-        for sweep in self.sweeps:
-            (
-                _fixed_lengths_abs,
-                drive_idx,
-                sensor_idx,
-                l_drive_abs,
-                l_sensor_abs,
-                sweep_id,
-                _violation_penalty,
-            ) = self._reconstruct_lengths(sweep, anchors)
-
-            if self.flex_model is not None:
-                t_drive, t_sensor = self._extract_tension_arrays(sweep)
-                if (
-                    t_drive is not None
-                    and t_sensor is not None
-                    and t_drive.shape == l_drive_abs.shape
-                    and t_sensor.shape == l_sensor_abs.shape
-                ):
-                    l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
-                    l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
-
-            fit = fit_ellipse_from_sweep(
-                l_drive_abs,
-                l_sensor_abs,
-                residual_threshold=float("inf"),
-                min_points=self.min_points,
-                square_inputs=True,
-                ransac=self.ransac,
-                ransac_trials=self.ransac_trials,
-                ransac_sample_size=self.ransac_sample_size,
-                ransac_min_inlier_ratio=self.ransac_min_inlier_ratio,
-                ransac_threshold=self.ransac_threshold if self.ransac_threshold is not None else self.residual_threshold,
-                ransac_seed=self.ransac_seed,
-            )
-
-            residual_ratio = float("inf")
-            if np.isfinite(fit.residual_rms):
-                denom = float(self.residual_threshold) if float(self.residual_threshold) > 0 else 1.0
-                residual_ratio = float(fit.residual_rms) / denom
-
-            inlier_ratio = None
-            if fit.ransac_used and fit.num_inliers is not None and fit.num_points > 0:
-                inlier_ratio = float(fit.num_inliers) / float(fit.num_points)
-
-            sweep_entries.append(
-                {
-                    "sweep_id": str(sweep_id),
-                    "num_points": int(fit.num_points),
-                    "num_inliers": fit.num_inliers,
-                    "inlier_ratio": inlier_ratio,
-                    "ransac_used": bool(fit.ransac_used),
-                    "valid": bool(fit.valid),
-                    "residual_rms": float(fit.residual_rms),
-                    "residual_ratio": residual_ratio,
-                    "rejection_reason": fit.rejection_reason,
-                }
-            )
-
-            if fit.valid:
-                geom_entries.append(
-                    (str(sweep_id), canonicalize_geometry(fit.center, fit.semi_axes, fit.rotation_angle))
-                )
-
-        ransac_used_entries = [e for e in sweep_entries if e["ransac_used"]]
-        ransac_fallbacks = [e for e in sweep_entries if self.ransac and not e["ransac_used"]]
-        inlier_ratios = [e["inlier_ratio"] for e in ransac_used_entries if e["inlier_ratio"] is not None]
+        stage_idx, stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
+        entries, global_scale = self._pointwise_entries(anchors)
+        inlier_ratios = [
+            e.get("inlier_ratio")
+            for e in entries
+            if isinstance(e.get("inlier_ratio"), (int, float)) and np.isfinite(e.get("inlier_ratio"))
+        ]
         inlier_stats = None
         if inlier_ratios:
             inlier_stats = {
@@ -1286,79 +883,74 @@ class EllipseCostFunction:
             }
 
         worst_inliers: List[Dict[str, object]] = []
-        if ransac_used_entries:
-            worst_sorted = sorted(
-                ransac_used_entries,
-                key=lambda e: (e["inlier_ratio"] if e["inlier_ratio"] is not None else float("inf")),
-            )
-            for entry in worst_sorted[: max(1, int(top_n))]:
+        if inlier_ratios:
+            sortable = [
+                (e.get("inlier_ratio"), e)
+                for e in entries
+                if e.get("inlier_ratio") is not None
+            ]
+            sortable.sort(key=lambda pair: pair[0])
+            for _ratio, entry in sortable[: max(1, int(top_n))]:
                 worst_inliers.append(
                     {
-                        "sweep_id": entry["sweep_id"],
-                        "num_inliers": entry["num_inliers"],
-                        "num_points": entry["num_points"],
-                        "inlier_ratio": entry["inlier_ratio"],
-                        "residual_rms": entry["residual_rms"],
-                        "valid": entry["valid"],
+                        "sweep_id": entry.get("sweep_id"),
+                        "num_inliers": entry.get("num_inliers"),
+                        "num_points": entry.get("num_points"),
+                        "inlier_ratio": entry.get("inlier_ratio"),
+                        "rms": entry.get("rms"),
                     }
                 )
 
-        diagnostics["ransac"] = {
-            "enabled": bool(self.ransac),
-            "threshold": self.ransac_threshold,
-            "threshold_mode": "auto" if self.ransac_threshold is None else "fixed",
-            "trials": int(self.ransac_trials),
-            "sample_size": int(self.ransac_sample_size),
-            "min_inlier_ratio": float(self.ransac_min_inlier_ratio),
-            "sweeps_total": int(len(sweep_entries)),
-            "sweeps_used": int(len(ransac_used_entries)),
-            "sweeps_fallback": int(len(ransac_fallbacks)),
+        sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+        keep_mask, threshold, reason = self._sweep_wise_keep_mask(sweep_metrics)
+        sweep_rejected = 0
+        if keep_mask is not None:
+            sweep_rejected = int(np.sum(~keep_mask))
+
+        worst_sweeps: List[Dict[str, object]] = []
+        if sweep_metrics:
+            order = np.argsort(np.asarray(sweep_metrics, dtype=float))[::-1]
+            for idx in order[: max(1, int(top_n))]:
+                entry = entries[int(idx)]
+                worst_sweeps.append(
+                    {
+                        "sweep_id": entry.get("sweep_id"),
+                        "metric": float(entry.get("sweep_metric", float("nan"))),
+                        "keep": bool(keep_mask[int(idx)]) if keep_mask is not None else True,
+                    }
+                )
+
+        diagnostics["pointwise_filtering"] = {
+            "enabled": bool(self.pointwise_filtering),
+            "stage": int(stage_idx),
+            "stage_name": stage_name,
+            "huber_multiplier": float(huber_mult),
+            "hard_cut": bool(hard_cut),
+            "sweeps_total": int(len(entries)),
+            "invalid_sweeps": int(len([e for e in entries if not e.get("valid", False)])),
             "inlier_ratio_stats": inlier_stats,
             "worst_inliers": worst_inliers,
-            "fallback_sweeps": [e["sweep_id"] for e in ransac_fallbacks[: max(1, int(top_n))]],
+            "scale_source": "global" if bool(self.pointwise_global_mad) else "per-sweep",
+            "scale_global": float(global_scale) if global_scale is not None else None,
+            "scale_floor": float(self._pointwise_sigma_floor_norm),
+            "scale_floor_mm": float(self._pointwise_sigma_floor_mm),
+            "sigma_noise_mm": float(self._encoder_noise_mm) if self._encoder_noise_mm is not None else None,
+            "sigma_mult": float(self._pointwise_sigma_mult),
+            "sigma_scaled_mm": float(self._pointwise_sigma_scaled_mm)
+            if self._pointwise_sigma_scaled_mm is not None
+            else None,
+            "sigma_min_mm": float(self._pointwise_sigma_min_mm),
+            "sigma_floor_mm": float(self._pointwise_sigma_floor_mm),
+            "sigma_floor_source": str(self._pointwise_sigma_floor_source),
         }
-
-        mah_status = "disabled"
-        mah_distances = None
-        mah_keep = None
-        mah_reason = None
-        if self.mahalanobis_rejection and not geom_entries:
-            mah_status = "no-valid-geometry"
-        if geom_entries:
-            obs_geoms = [entry[1] for entry in geom_entries]
-            mah_distances, mah_reason = self._mahalanobis_distances(obs_geoms)
-        if mah_distances is not None:
-            mah_status = "ok"
-            mah_keep = mah_distances <= float(self.mahalanobis_threshold) ** 2
-        elif mah_reason is not None:
-            mah_status = mah_reason
-
-        mah_worst: List[Dict[str, object]] = []
-        if mah_distances is not None:
-            distances = np.sqrt(mah_distances)
-            order = np.argsort(distances)[::-1]
-            top = order[: max(1, int(top_n))]
-            for idx in top:
-                sweep_id = geom_entries[int(idx)][0]
-                mah_worst.append(
-                    {
-                        "sweep_id": sweep_id,
-                        "distance": float(distances[int(idx)]),
-                        "keep": bool(mah_keep[int(idx)]) if mah_keep is not None else True,
-                    }
-                )
-
-        diagnostics["mahalanobis"] = {
-            "enabled": bool(self.mahalanobis_rejection),
-            "threshold": float(self.mahalanobis_threshold),
-            "min_samples": int(self.mahalanobis_min_samples),
-            "regularization": float(self.mahalanobis_regularization),
-            "status": mah_status,
-            "valid_geometries": int(len(geom_entries)),
-            "rejected": int(np.sum(~mah_keep)) if mah_keep is not None else 0,
-            "worst_distances": mah_worst,
+        diagnostics["sweep_wise_filtering"] = {
+            "enabled": bool(self.sweep_wise_filtering),
+            "status": str(reason or "disabled"),
+            "metric_mode": str(self.sweep_metric),
+            "threshold": float(threshold) if threshold is not None else None,
+            "rejected": int(sweep_rejected),
+            "worst_sweeps": worst_sweeps,
         }
-
         return diagnostics
 
     def _pointwise_predicted_cost(
@@ -1387,99 +979,28 @@ class EllipseCostFunction:
         weighted_costs: List[float] = []
         weights: List[float] = []
 
-        if self.cost_mode in ("pointwise", "sampson"):
-            entries, _global_scale = self._pointwise_entries(anchors)
+        entries, _global_scale = self._pointwise_entries(anchors)
 
-            sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
-            keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
+        sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+        keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
 
-            for idx, entry in enumerate(entries):
-                cost = float(entry.get("cost", float("inf")))
-                violation_penalty = float(entry.get("violation_penalty", 0.0))
-                valid = bool(entry.get("valid", False))
+        for idx, entry in enumerate(entries):
+            cost = float(entry.get("cost", float("inf")))
+            violation_penalty = float(entry.get("violation_penalty", 0.0))
+            valid = bool(entry.get("valid", False))
 
-                if not valid or not np.isfinite(cost):
-                    weights.append(1.0)
-                    weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
-                    continue
-
-                if keep_mask is not None and not bool(keep_mask[idx]):
-                    weights.append(0.0)
-                    weighted_costs.append(0.0)
-                    continue
-
+            if not valid or not np.isfinite(cost):
                 weights.append(1.0)
-                weighted_costs.append(float(cost + violation_penalty))
-        else:
-            entries: List[Dict[str, object]] = []
-            for sweep in self.sweeps:
-                obs_geom, weight, fixed_lengths_abs, _sid, residual_ratio, violation_penalty = self._fit_observed_geometry(
-                    sweep, anchors
-                )
-                if obs_geom is None:
-                    weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
-                    weights.append(1.0)
-                    continue
+                weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
+                continue
 
-                fixed_indices, _, drive_idx, sensor_idx, _, _, _ = self._extract_sweep_arrays(sweep)
-                entries.append(
-                    {
-                        "obs_geom": obs_geom,
-                        "weight": float(weight),
-                        "fixed_lengths_abs": fixed_lengths_abs,
-                        "fixed_indices": fixed_indices,
-                        "drive_idx": drive_idx,
-                        "sensor_idx": sensor_idx,
-                        "residual_ratio": float(residual_ratio),
-                        "violation_penalty": float(violation_penalty),
-                    }
-                )
+            if keep_mask is not None and not bool(keep_mask[idx]):
+                weights.append(0.0)
+                weighted_costs.append(0.0)
+                continue
 
-            keep_mask = self._mahalanobis_keep_mask([e["obs_geom"] for e in entries]) if entries else None
-
-            for idx, entry in enumerate(entries):
-                if keep_mask is not None and not bool(keep_mask[idx]):
-                    weights.append(0.0)
-                    weighted_costs.append(0.0)
-                    continue
-
-                pred_geom = predict_ellipse_geometry(
-                    anchors,
-                    entry["fixed_indices"],
-                    entry["fixed_lengths_abs"],
-                    entry["drive_idx"],
-                    entry["sensor_idx"],
-                    self.dimensions,
-                )
-
-                if pred_geom is None:
-                    weighted_costs.append(float(self.invalid_penalty) + float(entry["violation_penalty"]))
-                    weights.append(1.0)
-                    continue
-
-                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
-                obs_center, obs_axes, obs_theta = entry["obs_geom"]
-
-                geom_cost = geometry_distance_squared_normalized(
-                    obs_center,
-                    obs_axes,
-                    obs_theta,
-                    pred_center,
-                    pred_axes,
-                    pred_theta,
-                    self.geometry_weights,
-                    center_scale=self._l2_scale,
-                    axes_scale=self._l2_scale,
-                )
-                if self.robust_loss:
-                    geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
-
-                residual_cost = 0.0
-                if np.isfinite(entry["residual_ratio"]) and float(entry["residual_ratio"]) > 1.0:
-                    dr = float(entry["residual_ratio"]) - 1.0
-                    residual_cost = self.residual_cost_weight * float(dr * dr)
-                weighted_costs.append(float(geom_cost + residual_cost + float(entry["violation_penalty"])))
-                weights.append(float(entry["weight"]))
+            weights.append(1.0)
+            weighted_costs.append(float(cost + violation_penalty))
 
         weight_sum = float(sum(weights)) if weights else 1.0
         if weight_sum <= 0:
@@ -1497,110 +1018,32 @@ class EllipseCostFunction:
         num_invalid = 0
         weights: Dict[str, float] = {}
 
-        if self.cost_mode in ("pointwise", "sampson"):
-            entries, _global_scale = self._pointwise_entries(anchors)
+        entries, _global_scale = self._pointwise_entries(anchors)
 
-            sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
-            keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
+        sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+        keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
 
-            for idx, entry in enumerate(entries):
-                sweep_id = str(entry.get("sweep_id", ""))
-                cost = float(entry.get("cost", float("inf")))
-                violation_penalty = float(entry.get("violation_penalty", 0.0))
-                valid = bool(entry.get("valid", False))
+        for idx, entry in enumerate(entries):
+            sweep_id = str(entry.get("sweep_id", ""))
+            cost = float(entry.get("cost", float("inf")))
+            violation_penalty = float(entry.get("violation_penalty", 0.0))
+            valid = bool(entry.get("valid", False))
 
-                if not valid or not np.isfinite(cost):
-                    weights[sweep_id] = 1.0
-                    per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
-                    num_invalid += 1
-                    continue
-
-                if keep_mask is not None and not bool(keep_mask[idx]):
-                    weights[sweep_id] = 0.0
-                    per_sweep_costs[sweep_id] = 0.0
-                    num_invalid += 1
-                    continue
-
+            if not valid or not np.isfinite(cost):
                 weights[sweep_id] = 1.0
-                per_sweep_costs[sweep_id] = float(cost + violation_penalty)
-                num_valid += 1
-        else:
-            entries: List[Dict[str, object]] = []
-            for sweep in self.sweeps:
-                obs_geom, weight, fixed_lengths_abs, sweep_id, residual_ratio, violation_penalty = self._fit_observed_geometry(
-                    sweep, anchors
-                )
-                if obs_geom is None:
-                    per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
-                    weights[sweep_id] = 1.0
-                    num_invalid += 1
-                    continue
+                per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
+                num_invalid += 1
+                continue
 
-                fixed_indices, _, drive_idx, sensor_idx, _, _, _ = self._extract_sweep_arrays(sweep)
-                entries.append(
-                    {
-                        "sweep_id": sweep_id,
-                        "obs_geom": obs_geom,
-                        "weight": float(weight),
-                        "fixed_lengths_abs": fixed_lengths_abs,
-                        "fixed_indices": fixed_indices,
-                        "drive_idx": drive_idx,
-                        "sensor_idx": sensor_idx,
-                        "residual_ratio": float(residual_ratio),
-                        "violation_penalty": float(violation_penalty),
-                    }
-                )
+            if keep_mask is not None and not bool(keep_mask[idx]):
+                weights[sweep_id] = 0.0
+                per_sweep_costs[sweep_id] = 0.0
+                num_invalid += 1
+                continue
 
-            keep_mask = self._mahalanobis_keep_mask([e["obs_geom"] for e in entries]) if entries else None
-
-            for idx, entry in enumerate(entries):
-                sweep_id = str(entry["sweep_id"])
-                if keep_mask is not None and not bool(keep_mask[idx]):
-                    per_sweep_costs[sweep_id] = float(self.invalid_penalty)
-                    weights[sweep_id] = 0.0
-                    num_invalid += 1
-                    continue
-
-                pred_geom = predict_ellipse_geometry(
-                    anchors,
-                    entry["fixed_indices"],
-                    entry["fixed_lengths_abs"],
-                    entry["drive_idx"],
-                    entry["sensor_idx"],
-                    self.dimensions,
-                )
-
-                if pred_geom is None:
-                    per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(entry["violation_penalty"])
-                    weights[sweep_id] = 1.0
-                    num_invalid += 1
-                    continue
-
-                pred_center, pred_axes, pred_theta = canonicalize_geometry(*pred_geom)
-                obs_center, obs_axes, obs_theta = entry["obs_geom"]
-
-                geom_cost = geometry_distance_squared_normalized(
-                    obs_center,
-                    obs_axes,
-                    obs_theta,
-                    pred_center,
-                    pred_axes,
-                    pred_theta,
-                    self.geometry_weights,
-                    center_scale=self._l2_scale,
-                    axes_scale=self._l2_scale,
-                )
-                if self.robust_loss:
-                    geom_cost = pseudo_huber_from_squared_error(geom_cost, delta=self.huber_delta)
-                residual_cost = 0.0
-                if np.isfinite(entry["residual_ratio"]) and float(entry["residual_ratio"]) > 1.0:
-                    dr = float(entry["residual_ratio"]) - 1.0
-                    residual_cost = self.residual_cost_weight * float(dr * dr)
-                per_sweep_costs[sweep_id] = float(
-                    geom_cost + residual_cost + float(entry["violation_penalty"])
-                )
-                weights[sweep_id] = float(entry["weight"])
-                num_valid += 1
+            weights[sweep_id] = 1.0
+            per_sweep_costs[sweep_id] = float(cost + violation_penalty)
+            num_valid += 1
 
         weight_sum = float(sum(weights.values())) if weights else 1.0
         if weight_sum <= 0:

@@ -4,7 +4,6 @@ import pytest
 from autocal.ellipse_cost import (
     EllipseCostFunction,
     canonicalize_geometry,
-    geometry_distance,
 )
 
 
@@ -68,15 +67,6 @@ def test_canonicalize_geometry_enforces_order_and_wrap():
     assert np.isclose(np.linalg.norm(center_can - np.array([10.0, -5.0])), 0.0)
 
 
-def test_geometry_distance_zero_for_match():
-    obs_c = np.array([0.0, 0.0])
-    obs_axes = np.array([10.0, 8.0])
-    obs_theta = 0.15
-
-    dist = geometry_distance(obs_c, obs_axes, obs_theta, obs_c, obs_axes, obs_theta)
-    assert dist == pytest.approx(0.0)
-
-
 def test_cost_is_low_for_true_anchors():
     dataset, anchors = _synthetic_dataset()
     cost_fn = EllipseCostFunction(dataset, residual_threshold=0.01)
@@ -94,9 +84,7 @@ def test_pointwise_euclidean_cost_is_low_for_true_anchors():
     cost_fn = EllipseCostFunction(
         dataset,
         residual_threshold=0.01,
-        cost_mode="pointwise",
         pointwise_residual_mode="euclidean",
-        use_weights=False,
     )
     cost = cost_fn.evaluate(anchors.ravel())
     assert cost < 1e-6
@@ -108,7 +96,12 @@ def test_invalid_sweep_adds_penalty():
     dataset["sweeps"][0]["data_points"] = dataset["sweeps"][0]["data_points"][:3]
 
     penalty = 123.0
-    cost_fn = EllipseCostFunction(dataset, invalid_sweep_penalty=penalty)
+    cost_fn = EllipseCostFunction(
+        dataset,
+        invalid_sweep_penalty=penalty,
+        pointwise_filtering=True,
+        pointwise_filter_stage=2,
+    )
     result = cost_fn.evaluate_detailed(anchors.ravel())
 
     assert result.num_invalid_sweeps == 1

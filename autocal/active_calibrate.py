@@ -487,22 +487,11 @@ def _plan_next_ellipse_sweep(
     residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
-    cost_mode: str,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     sweep_metric: str,
-    ransac: bool,
-    ransac_trials: int,
-    ransac_sample_size: int,
-    ransac_min_inlier_ratio: float,
-    ransac_threshold: Optional[float],
-    ransac_seed: Optional[int],
-    mahalanobis_rejection: bool,
-    mahalanobis_threshold: float,
-    mahalanobis_min_samples: int,
-    mahalanobis_regularization: float,
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
@@ -536,18 +525,7 @@ def _plan_next_ellipse_sweep(
         use_flex=bool(use_flex),
         verbose=False,
         use_parallel=False,
-        cost_mode=str(cost_mode),
         pointwise_residual_mode=str(pointwise_residual_mode),
-        ransac=bool(ransac),
-        ransac_trials=int(ransac_trials),
-        ransac_sample_size=int(ransac_sample_size),
-        ransac_min_inlier_ratio=float(ransac_min_inlier_ratio),
-        ransac_threshold=ransac_threshold if ransac_threshold is None else float(ransac_threshold),
-        ransac_seed=ransac_seed if ransac_seed is None else int(ransac_seed),
-        mahalanobis_rejection=bool(mahalanobis_rejection),
-        mahalanobis_threshold=float(mahalanobis_threshold),
-        mahalanobis_min_samples=int(mahalanobis_min_samples),
-        mahalanobis_regularization=float(mahalanobis_regularization),
         robust_debug=bool(robust_debug),
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
@@ -734,22 +712,11 @@ def ellipse_active(
     residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
-    cost_mode: str,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     sweep_metric: str,
-    ransac: bool,
-    ransac_trials: int,
-    ransac_sample_size: int,
-    ransac_min_inlier_ratio: float,
-    ransac_threshold: Optional[float],
-    ransac_seed: Optional[int],
-    mahalanobis_rejection: bool,
-    mahalanobis_threshold: float,
-    mahalanobis_min_samples: int,
-    mahalanobis_regularization: float,
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
@@ -794,22 +761,11 @@ def ellipse_active(
         residual_threshold=residual_threshold,
         spring_k_multiplier=spring_k_multiplier,
         use_flex=use_flex,
-        cost_mode=cost_mode,
         pointwise_residual_mode=pointwise_residual_mode,
         pointwise_filtering=pointwise_filtering,
         pointwise_global_mad=pointwise_global_mad,
         sweep_wise_filtering=sweep_wise_filtering,
         sweep_metric=sweep_metric,
-        ransac=ransac,
-        ransac_trials=ransac_trials,
-        ransac_sample_size=ransac_sample_size,
-        ransac_min_inlier_ratio=ransac_min_inlier_ratio,
-        ransac_threshold=ransac_threshold,
-        ransac_seed=ransac_seed,
-        mahalanobis_rejection=mahalanobis_rejection,
-        mahalanobis_threshold=mahalanobis_threshold,
-        mahalanobis_min_samples=mahalanobis_min_samples,
-        mahalanobis_regularization=mahalanobis_regularization,
         robust_debug=robust_debug,
         residuals_csv=residuals_csv,
         generate_report=generate_report,
@@ -890,22 +846,11 @@ def ellipse_loop(
     residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
-    cost_mode: str,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     sweep_metric: str,
-    ransac: bool,
-    ransac_trials: int,
-    ransac_sample_size: int,
-    ransac_min_inlier_ratio: float,
-    ransac_threshold: Optional[float],
-    ransac_seed: Optional[int],
-    mahalanobis_rejection: bool,
-    mahalanobis_threshold: float,
-    mahalanobis_min_samples: int,
-    mahalanobis_regularization: float,
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
@@ -1037,22 +982,11 @@ def ellipse_loop(
             residual_threshold=residual_threshold,
             spring_k_multiplier=spring_k_multiplier,
             use_flex=use_flex,
-            cost_mode=cost_mode,
             pointwise_residual_mode=pointwise_residual_mode,
             pointwise_filtering=pointwise_filtering,
             pointwise_global_mad=pointwise_global_mad,
             sweep_wise_filtering=sweep_wise_filtering,
             sweep_metric=sweep_metric,
-            ransac=ransac,
-            ransac_trials=ransac_trials,
-            ransac_sample_size=ransac_sample_size,
-            ransac_min_inlier_ratio=ransac_min_inlier_ratio,
-            ransac_threshold=ransac_threshold,
-            ransac_seed=ransac_seed,
-            mahalanobis_rejection=mahalanobis_rejection,
-            mahalanobis_threshold=mahalanobis_threshold,
-            mahalanobis_min_samples=mahalanobis_min_samples,
-            mahalanobis_regularization=mahalanobis_regularization,
             robust_debug=robust_debug,
             residuals_csv=step_residuals_csv,
             generate_report=generate_report,
@@ -1154,12 +1088,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse.add_argument("--threshold", type=float, default=250.0)
     ellipse.add_argument("--spring-k-multiplier", type=float, default=1.0)
     ellipse.add_argument("--flex", action="store_true")
-    ellipse.add_argument("--cost-mode", choices=["pointwise", "geometry"], default="pointwise")
     ellipse.add_argument(
         "--pointwise-residual",
         choices=["sampson", "euclidean"],
         default="sampson",
-        help="Pointwise residual metric (only used when --cost-mode=pointwise)",
+        help="Pointwise residual metric (default: sampson)",
     )
     ellipse.add_argument(
         "--pointwise-filtering",
@@ -1203,20 +1136,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).",
     )
-    ellipse.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
-    ellipse.add_argument("--ransac-trials", type=int, default=60)
-    ellipse.add_argument("--ransac-sample-size", type=int, default=5)
-    ellipse.add_argument("--ransac-min-inlier-ratio", type=float, default=0.5)
-    ellipse.add_argument("--ransac-threshold", type=float, default=None)
-    ellipse.add_argument("--ransac-seed", type=int, default=0)
-    ellipse.add_argument(
-        "--mahalanobis-reject",
-        action="store_true",
-        help="Discard sweeps whose ellipse geometry is a Mahalanobis outlier.",
-    )
-    ellipse.add_argument("--mahalanobis-threshold", type=float, default=3.0)
-    ellipse.add_argument("--mahalanobis-min-samples", type=int, default=8)
-    ellipse.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
     ellipse.add_argument(
         "--robust-debug",
         action="store_true",
@@ -1320,12 +1239,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     loop.add_argument("--threshold", type=float, default=250.0)
     loop.add_argument("--spring-k-multiplier", type=float, default=1.0)
     loop.add_argument("--flex", action="store_true")
-    loop.add_argument("--cost-mode", choices=["pointwise", "geometry"], default="pointwise")
     loop.add_argument(
         "--pointwise-residual",
         choices=["sampson", "euclidean"],
         default="sampson",
-        help="Pointwise residual metric (only used when --cost-mode=pointwise)",
+        help="Pointwise residual metric (default: sampson)",
     )
     loop.add_argument(
         "--pointwise-filtering",
@@ -1369,20 +1287,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )
-    loop.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
-    loop.add_argument("--ransac-trials", type=int, default=60)
-    loop.add_argument("--ransac-sample-size", type=int, default=5)
-    loop.add_argument("--ransac-min-inlier-ratio", type=float, default=0.5)
-    loop.add_argument("--ransac-threshold", type=float, default=None)
-    loop.add_argument("--ransac-seed", type=int, default=0)
-    loop.add_argument(
-        "--mahalanobis-reject",
-        action="store_true",
-        help="Discard sweeps whose ellipse geometry is a Mahalanobis outlier.",
-    )
-    loop.add_argument("--mahalanobis-threshold", type=float, default=3.0)
-    loop.add_argument("--mahalanobis-min-samples", type=int, default=8)
-    loop.add_argument("--mahalanobis-regularization", type=float, default=1e-6)
     loop.add_argument(
         "--robust-debug",
         action="store_true",
@@ -1459,22 +1363,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             residual_threshold=float(args.threshold),
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.flex),
-            cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
             pointwise_filtering=bool(args.pointwise_filtering),
             pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             sweep_metric=str(args.sweep_metric),
-            ransac=bool(args.ransac),
-            ransac_trials=int(args.ransac_trials),
-            ransac_sample_size=int(args.ransac_sample_size),
-            ransac_min_inlier_ratio=float(args.ransac_min_inlier_ratio),
-            ransac_threshold=args.ransac_threshold,
-            ransac_seed=(None if args.ransac_seed is not None and args.ransac_seed < 0 else int(args.ransac_seed)),
-            mahalanobis_rejection=bool(args.mahalanobis_reject),
-            mahalanobis_threshold=float(args.mahalanobis_threshold),
-            mahalanobis_min_samples=int(args.mahalanobis_min_samples),
-            mahalanobis_regularization=float(args.mahalanobis_regularization),
             robust_debug=bool(args.robust_debug),
             residuals_csv=args.residuals_csv,
             generate_report=bool(args.report),
@@ -1518,22 +1411,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             residual_threshold=float(args.threshold),
             spring_k_multiplier=float(args.spring_k_multiplier),
             use_flex=bool(args.flex),
-            cost_mode=str(args.cost_mode),
             pointwise_residual_mode=str(args.pointwise_residual),
             pointwise_filtering=bool(args.pointwise_filtering),
             pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             sweep_metric=str(args.sweep_metric),
-            ransac=bool(args.ransac),
-            ransac_trials=int(args.ransac_trials),
-            ransac_sample_size=int(args.ransac_sample_size),
-            ransac_min_inlier_ratio=float(args.ransac_min_inlier_ratio),
-            ransac_threshold=args.ransac_threshold,
-            ransac_seed=(None if args.ransac_seed is not None and args.ransac_seed < 0 else int(args.ransac_seed)),
-            mahalanobis_rejection=bool(args.mahalanobis_reject),
-            mahalanobis_threshold=float(args.mahalanobis_threshold),
-            mahalanobis_min_samples=int(args.mahalanobis_min_samples),
-            mahalanobis_regularization=float(args.mahalanobis_regularization),
             robust_debug=bool(args.robust_debug),
             residuals_csv=args.residuals_csv,
             generate_report=bool(args.report),
