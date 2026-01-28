@@ -43,6 +43,7 @@ def _require_machine_type(
     *,
     expected: Optional[str] = None,
     context: str = "dataset",
+    mismatch: str = "error",
 ) -> str:
     raw_machine_type = dataset.get("machine_type")
     if not raw_machine_type:
@@ -55,10 +56,14 @@ def _require_machine_type(
             f"{context} machine_type '{machine_type}' is not supported. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
         )
     if expected is not None and str(expected) != machine_type:
-        raise ValueError(
+        message = (
             f"{context} machine_type '{machine_type}' does not match --machine-type '{expected}'. "
-            f"Expected one of: {MACHINE_TYPE_CHOICES_STR}"
+            f"Using '{machine_type}'. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
         )
+        if mismatch == "warn":
+            print(f"; warning: {message}", file=sys.stderr)
+        else:
+            raise ValueError(message)
     return machine_type
 
 
@@ -780,7 +785,12 @@ def ellipse_active(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
 ) -> int:
-    _require_machine_type(_load_json(dataset_path), expected=machine_type, context=str(dataset_path))
+    machine_type = _require_machine_type(
+        _load_json(dataset_path),
+        expected=machine_type,
+        context=str(dataset_path),
+        mismatch="warn",
+    )
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
     if sim and hp_sim_reset and collect_once and not _arg_has_flag(collector_args_eff, "--hp-sim-reset"):
@@ -923,7 +933,12 @@ def ellipse_loop(
     else:
         work_path = Path("autocal/data/default_dataset.json")
     if work_path.exists():
-        _require_machine_type(_load_json(work_path), expected=machine_type, context=str(work_path))
+        machine_type = _require_machine_type(
+            _load_json(work_path),
+            expected=machine_type,
+            context=str(work_path),
+            mismatch="warn",
+        )
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
