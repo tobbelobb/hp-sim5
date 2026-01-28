@@ -23,7 +23,7 @@ _EPS_LEN_MM = 1.0  # Prevent squaring negative/near-zero lengths during reconstr
 _MAD_SCALE = 1.4826
 _POINTWISE_HUBER_MULTIPLIERS = (10.0, 3.0)
 _POINTWISE_TRIM_K = 3.0
-_POINTWISE_MIN_INLIERS = 5
+_POINTWISE_MIN_INLIERS = 3
 _POINTWISE_SIGMA_MULT = 3
 _POINTWISE_MIN_SIGMA_MM = 0.05
 _SWEEP_WISE_K = 3.0
@@ -990,8 +990,9 @@ class EllipseCostFunction:
             valid = bool(entry.get("valid", False))
 
             if not valid or not np.isfinite(cost):
-                weights.append(1.0)
-                weighted_costs.append(float(self.invalid_penalty) + float(violation_penalty))
+                # Treat invalid sweeps like rejected sweeps: no weight, no cost contribution.
+                weights.append(0.0)
+                weighted_costs.append(0.0)
                 continue
 
             if keep_mask is not None and not bool(keep_mask[idx]):
@@ -1030,8 +1031,9 @@ class EllipseCostFunction:
             valid = bool(entry.get("valid", False))
 
             if not valid or not np.isfinite(cost):
-                weights[sweep_id] = 1.0
-                per_sweep_costs[sweep_id] = float(self.invalid_penalty) + float(violation_penalty)
+                # Treat invalid sweeps like rejected sweeps: no weight, no cost contribution.
+                weights[sweep_id] = 0.0
+                per_sweep_costs[sweep_id] = 0.0
                 num_invalid += 1
                 continue
 
