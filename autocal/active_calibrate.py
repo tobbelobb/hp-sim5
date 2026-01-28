@@ -1201,7 +1201,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "--sweep-metric",
         choices=["mad", "median_abs", "outlier_ratio"],
         default="outlier_ratio",
-        help="Per-sweep metric used by sweep-wise filtering (default: mad).",
+        help="Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).",
     )
     ellipse.add_argument("--ransac", action="store_true", help="Use RANSAC for per-sweep ellipse fits.")
     ellipse.add_argument("--ransac-trials", type=int, default=60)
