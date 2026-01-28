@@ -6,16 +6,12 @@ This directory contains the fully automated elliptical feature calibration pipel
 
 ```bash
 python autocal/active_calibrate.py \
-  --residuals-csv /tmp/residuals1.csv \
   --sim \
+  --plot-residual-histogram \
   --collector-args --speedup 25
 ```
 
-Plot the residual histogram from the first iteration:
-
-```bash
-python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/residuals1_001.png
-```
+`--plot-residual-histogram` writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
 
 ## Typical workflow (real machine)
 

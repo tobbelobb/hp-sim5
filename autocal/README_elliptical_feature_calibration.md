@@ -6,16 +6,11 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 
 ```bash
 python autocal/active_calibrate.py \
-  --residuals-csv /tmp/residuals1.csv \
   --sim \
+  --plot-residual-histogram \
   --collector-args --speedup 25
 ```
-
-To plot the residual histogram for the first iteration:
-
-```bash
-python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/residuals1_001.png
-```
+`--plot-residual-histogram` writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
 
 ## Data format recap (current)
 
@@ -72,11 +67,7 @@ The pointwise mode compares each measured point against the predicted ellipse (i
 
 Residuals are written as `residual_mm` (approximate mm via local linearization) along with `cutoff_mm`, which is the per-point trim threshold used in stage 3.
 
-Use the histogram plotter to inspect quality without needing anchor context:
-
-```bash
-python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/residuals1_001.png
-```
+Use `--plot-residual-histogram` to generate a residual CSV and histogram plot (with gamma fit) without needing anchor context.
 
 If most points are far above the cutoff, the solver is likely underconstrained or the dataset is too sparse; collect more sweeps and let active learning plug the gaps.
 
@@ -119,6 +110,8 @@ See `--help` for the full list of options.
 If you omit `--dataset`, the loop writes to `autocal/data/default_dataset.json` (and bootstraps it if missing).
 
 The dataset file is updated each iteration; if you point it at an existing dataset, it will be updated in place.
+
+Use `--plot-residual-histogram` to write a residual CSV/PNG next to the dataset (gamma fit included).
 
 ## Related utilities (used by the semi-auto loop)
 

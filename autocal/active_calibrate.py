@@ -873,6 +873,7 @@ def ellipse_loop(
     sim: bool,
     keep_sim_alive: bool,
     hp_sim_reset: bool,
+    plot_residual_histogram: bool,
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
@@ -959,14 +960,21 @@ def ellipse_loop(
         reset_pending = False
         print(f"; bootstrap dataset written to {work_path}")
 
+    base_residuals_csv = residuals_csv
+    if plot_residual_histogram:
+        base_residuals_csv = work_path.with_suffix(".csv")
+
     for step in range(1, max(1, int(max_steps)) + 1):
         print(f"\n; === iteration {step}/{max_steps} dataset={work_path} ===")
         collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
         step_residuals_csv = None
-        if residuals_csv is not None:
-            stem = residuals_csv.stem
-            suffix = residuals_csv.suffix or ".csv"
-            step_residuals_csv = residuals_csv.with_name(f"{stem}_{step:03d}{suffix}")
+        if base_residuals_csv is not None:
+            if plot_residual_histogram:
+                step_residuals_csv = base_residuals_csv
+            else:
+                stem = base_residuals_csv.stem
+                suffix = base_residuals_csv.suffix or ".csv"
+                step_residuals_csv = base_residuals_csv.with_name(f"{stem}_{step:03d}{suffix}")
 
         plan_args = list(collector_args_eff)
         if reset_pending and not _arg_has_flag(plan_args, "--hp-sim-reset"):
@@ -1003,6 +1011,23 @@ def ellipse_loop(
             collector_args=plan_args,
         )
         _print_ellipse_plan(plan, top_n=5, print_command=True)
+
+        if plot_residual_histogram and step_residuals_csv is not None:
+            plot_output = work_path.with_suffix(".png")
+            plot_script = REPO_ROOT / "autocal" / "plot_residual_hist.py"
+            if step_residuals_csv.exists() and plot_script.exists():
+                cmd = [
+                    sys.executable,
+                    str(plot_script),
+                    str(step_residuals_csv),
+                    "--output",
+                    str(plot_output),
+                ]
+                print("; plotting residual histogram:")
+                print(";   " + " ".join(cmd))
+                subprocess.run(cmd, check=True)
+            else:
+                print("; residual histogram skipped (missing CSV or plotter)")
 
         cost = float(plan.get("cost", float("nan")))
         cov = np.asarray(plan.get("covariance"), dtype=float)
@@ -1268,6 +1293,11 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         default=None,
         help="Dataset file updated each iteration (default: autocal/data/default_dataset.json).",
     )
+    parser.add_argument(
+        "--plot-residual-histogram",
+        action="store_true",
+        help="Write residuals CSV next to the dataset and render a histogram PNG (gamma fit included).",
+    )
     parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
     parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
     parser.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
@@ -1376,6 +1406,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         sim=bool(args.sim),
         keep_sim_alive=bool(args.keep_sim_alive),
         hp_sim_reset=bool(args.hp_sim_reset),
+        plot_residual_histogram=bool(args.plot_residual_histogram),
     )
 
 

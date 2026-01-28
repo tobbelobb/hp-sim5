@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -160,12 +161,49 @@ def _cutoff_stats(rows: list[dict[str, object]]) -> dict[str, float] | None:
     }
 
 
+def _gamma_fit(values: list[float]) -> tuple[float, float] | None:
+    arr = np.asarray(values, dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size == 0:
+        return None
+    arr = arr[arr > 0.0]
+    if arr.size == 0:
+        return None
+    mean = float(np.mean(arr))
+    var = float(np.var(arr, ddof=0))
+    if mean <= 0.0 or var <= 0.0:
+        return None
+    k = (mean * mean) / var
+    theta = var / mean
+    if not np.isfinite(k) or not np.isfinite(theta) or k <= 0.0 or theta <= 0.0:
+        return None
+    return k, theta
+
+
+def _gamma_pdf(x: np.ndarray, k: float, theta: float) -> np.ndarray:
+    x = np.asarray(x, dtype=float)
+    coef = 1.0 / (math.gamma(k) * (theta ** k))
+    return coef * np.power(x, k - 1.0) * np.exp(-x / theta)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Plot a residual histogram from CSV output.")
     parser.add_argument("csv_path", type=Path, help="CSV file produced by --residuals-csv")
     parser.add_argument("--column", default="residual_mm", help="Column to plot (default: residual_mm)")
     parser.add_argument("--bins", type=int, default=60, help="Histogram bins (default: 60)")
     parser.add_argument("--max-mm", type=float, default=None, help="Optional max residual to include (mm)")
+    parser.add_argument(
+        "--density",
+        dest="density",
+        action="store_true",
+        help="Plot a density histogram (default).",
+    )
+    parser.add_argument(
+        "--counts",
+        dest="density",
+        action="store_false",
+        help="Plot histogram counts instead of density.",
+    )
     parser.add_argument(
         "--highlight",
         choices=("first-last", "top2", "both", "none"),
@@ -177,7 +215,20 @@ def main(argv: list[str] | None = None) -> int:
         default="21,22",
         help="Comma-separated point_idx values to highlight (default: 21,22)",
     )
+    parser.add_argument(
+        "--gamma-fit",
+        dest="gamma_fit",
+        action="store_true",
+        help="Fit and overlay a gamma distribution (default).",
+    )
+    parser.add_argument(
+        "--no-gamma-fit",
+        dest="gamma_fit",
+        action="store_false",
+        help="Disable the gamma fit overlay.",
+    )
     parser.add_argument("--output", type=Path, default=None, help="Optional output PNG path")
+    parser.set_defaults(density=True, gamma_fit=True)
     args = parser.parse_args(argv)
 
     rows = _load_rows(args.csv_path, column=args.column)
@@ -221,7 +272,14 @@ def main(argv: list[str] | None = None) -> int:
         top2_values = _sweep_top_values(rows, top_n=2)
 
     fig, ax = plt.subplots(figsize=(8.5, 5.0))
-    ax.hist(values, bins=bins, color="#4B5563", alpha=0.6, label=f"all points (n={len(values)})")
+    ax.hist(
+        values,
+        bins=bins,
+        color="#4B5563",
+        alpha=0.6,
+        label=f"all points (n={len(values)})",
+        density=bool(args.density),
+    )
 
     if first_values:
         ax.hist(
@@ -231,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
             linewidth=1.6,
             color="#D1495B",
             label=f"first point per sweep (n={len(first_values)})",
+            density=bool(args.density),
         )
     if last_values:
         ax.hist(
@@ -240,6 +299,7 @@ def main(argv: list[str] | None = None) -> int:
             linewidth=1.6,
             color="#2E86AB",
             label=f"last point per sweep (n={len(last_values)})",
+            density=bool(args.density),
         )
     if top2_values:
         ax.hist(
@@ -249,6 +309,7 @@ def main(argv: list[str] | None = None) -> int:
             linewidth=1.8,
             color="#E17C05",
             label=f"top-2 residuals per sweep (n={len(top2_values)})",
+            density=bool(args.density),
         )
     if highlight_values:
         palette = ["#16A34A", "#7C3AED", "#F97316", "#0EA5E9", "#C026D3", "#4B5563"]
@@ -262,7 +323,19 @@ def main(argv: list[str] | None = None) -> int:
                 linestyle="--",
                 color=color,
                 label=f"point {point_idx} per sweep (n={len(vals)})",
+                density=bool(args.density),
             )
+
+    gamma_fit = _gamma_fit(values) if args.gamma_fit else None
+    if gamma_fit is not None:
+        k, theta = gamma_fit
+        max_val = max(values)
+        x = np.linspace(0.0, max_val, 240)
+        y = _gamma_pdf(x, k, theta)
+        if not args.density:
+            bin_width = float(np.mean(np.diff(bins))) if len(bins) > 1 else 1.0
+            y = y * len(values) * bin_width
+        ax.plot(x, y, color="#F97316", linewidth=2.0, label=f"gamma fit (k={k:.2f}, theta={theta:.3f} mm)")
 
     sigma_info = _extract_sigma_info(rows)
     sigma_min = sigma_info.get("sigma_min")
@@ -329,8 +402,12 @@ def main(argv: list[str] | None = None) -> int:
 
     x_label = "Residual error (mm)" if str(args.column).endswith("_mm") else str(args.column)
     ax.set_xlabel(x_label)
-    ax.set_ylabel("Count of points")
-    ax.set_title(f"Residual histogram ({args.column})")
+    ax.set_ylabel("Density" if args.density else "Count of points")
+    if gamma_fit is not None:
+        k, theta = gamma_fit
+        ax.set_title(f"Gamma fit (k={k:.2f}, theta={theta:.3f} mm)")
+    else:
+        ax.set_title(f"Residual histogram ({args.column})")
     ax.grid(axis="y", alpha=0.25)
     ax.legend(frameon=False, fontsize=9)
     fig.tight_layout()
