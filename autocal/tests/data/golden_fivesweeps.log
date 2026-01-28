@@ -1,4 +1,4 @@
-$ python autocal/active_calibrate.py ellipse-loop --work-dataset autocal/data/test2_fivesweeps.json
+$ python autocal/active_calibrate.py --dataset autocal/tests/data/test2_fivesweeps.json
 
 ; === iteration 1/20 dataset=autocal/data/test2_fivesweeps.json ===
 ; Active ellipse calibration

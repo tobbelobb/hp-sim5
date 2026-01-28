@@ -818,6 +818,11 @@ def ellipse_active(
     out_path = merged_output_dataset or dataset_path
     _write_json(out_path, merged)
     print(f"; merged dataset written to {out_path}")
+    try:
+        if collector_output is not None and out_path != collector_output:
+            collector_output.unlink()
+    except OSError:
+        pass
     return 0
 
 
@@ -834,7 +839,6 @@ def merge_datasets(base_dataset: Path, extra_datasets: Sequence[Path], *, output
 
 
 def ellipse_loop(
-    seed_dataset: Optional[Path],
     *,
     work_dataset: Optional[Path],
     max_steps: int,
@@ -872,10 +876,8 @@ def ellipse_loop(
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
-    elif seed_dataset is not None:
-        work_path = Path(seed_dataset).with_name(Path(seed_dataset).stem + "_active.json")
     else:
-        work_path = Path("autocal/data/active_bootstrap_slideprinter.json")
+        work_path = Path("autocal/data/default_dataset.json")
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
@@ -895,71 +897,67 @@ def ellipse_loop(
         return code
 
     if not work_path.exists():
-        if seed_dataset is not None:
-            _write_json(work_path, _load_json(Path(seed_dataset)))
-            print(f"; created working dataset {work_path}")
-        else:
-            work_path.parent.mkdir(parents=True, exist_ok=True)
-            bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
-            bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
-            bootstrap_cfg.write_text(
-                "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
-                encoding="utf-8",
-            )
+        work_path.parent.mkdir(parents=True, exist_ok=True)
+        bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
+        bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
+        bootstrap_cfg.write_text(
+            "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
+            encoding="utf-8",
+        )
 
-            def _strip_conflicts(argv: Sequence[str]) -> List[str]:
-                skip_with_value = {
-                    "--output-file",
-                    "--output",
-                    "--out",
-                    "--observability-file",
-                    "--obs-file",
-                    "--machineType",
-                    "--machine-type",
-                    "--sweepMethod",
-                    "--sweep-method",
-                    "--sweep-config-file",
-                    "--sweep-config",
-                    "--sweepFile",
-                    "--fixed-targets",
-                    "--fixedTargets",
-                    "--fixed-target",
-                    "--max-travel-mm",
-                    "--max-travel",
-                }
-                out: List[str] = []
-                i = 0
-                while i < len(argv):
-                    arg = str(argv[i])
-                    if arg in skip_with_value:
-                        i += 2
-                        continue
-                    out.append(arg)
-                    i += 1
-                return out
-
-            argv_eff = _strip_conflicts(list(collector_args_eff))
-            if reset_pending and not _arg_has_flag(argv_eff, "--hp-sim-reset"):
-                argv_eff.append("--hp-sim-reset")
-            if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
-                argv_eff.append("--return-to-origin")
-
-            cmd = [
-                "node",
-                "scripts/collect_sweep_data.mjs",
-                "--machineType",
-                "slideprinter",
-                "--sweep-config-file",
-                str(bootstrap_cfg),
+        def _strip_conflicts(argv: Sequence[str]) -> List[str]:
+            skip_with_value = {
                 "--output-file",
-                str(work_path),
-                *argv_eff,
-            ]
-            print("; bootstrapping dataset (3 sweeps, auto size-tune):")
-            print(";   " + " ".join(cmd))
-            subprocess.run(cmd, check=True)
-            reset_pending = False
-            print(f"; bootstrap dataset written to {work_path}")
+                "--output",
+                "--out",
+                "--observability-file",
+                "--obs-file",
+                "--machineType",
+                "--machine-type",
+                "--sweepMethod",
+                "--sweep-method",
+                "--sweep-config-file",
+                "--sweep-config",
+                "--sweepFile",
+                "--fixed-targets",
+                "--fixedTargets",
+                "--fixed-target",
+                "--max-travel-mm",
+                "--max-travel",
+            }
+            out: List[str] = []
+            i = 0
+            while i < len(argv):
+                arg = str(argv[i])
+                if arg in skip_with_value:
+                    i += 2
+                    continue
+                out.append(arg)
+                i += 1
+            return out
+
+        argv_eff = _strip_conflicts(list(collector_args_eff))
+        if reset_pending and not _arg_has_flag(argv_eff, "--hp-sim-reset"):
+            argv_eff.append("--hp-sim-reset")
+        if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
+            argv_eff.append("--return-to-origin")
+
+        cmd = [
+            "node",
+            "scripts/collect_sweep_data.mjs",
+            "--machineType",
+            "slideprinter",
+            "--sweep-config-file",
+            str(bootstrap_cfg),
+            "--output-file",
+            str(work_path),
+            *argv_eff,
+        ]
+        print("; bootstrapping dataset (3 sweeps, auto size-tune):")
+        print(";   " + " ".join(cmd))
+        subprocess.run(cmd, check=True)
+        reset_pending = False
+        print(f"; bootstrap dataset written to {work_path}")
 
     for step in range(1, max(1, int(max_steps)) + 1):
         print(f"\n; === iteration {step}/{max_steps} dataset={work_path} ===")
@@ -1070,6 +1068,11 @@ def ellipse_loop(
         sweeps = merged.get("sweeps", [])
         count = len(sweeps) if isinstance(sweeps, list) else "?"
         print(f"; merged {collector_output} -> {work_path} sweeps={count}")
+        try:
+            if collector_output != work_path:
+                collector_output.unlink()
+        except OSError:
+            pass
 
     print(f"; reached max steps; dataset={work_path}")
     return _finalize(0)
@@ -1260,20 +1263,10 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Explicitly run the interactive semi-auto loop (default).",
     )
     parser.add_argument(
-        "dataset",
-        type=Path,
-        nargs="?",
-        default=None,
-        help="Optional seed sweep dataset JSON; omitted bootstraps a 3-sweep slideprinter dataset with auto size-tuning",
-    )
-    parser.add_argument(
-        "--work-dataset",
+        "--dataset",
         type=Path,
         default=None,
-        help=(
-            "Working dataset file that is updated each iteration "
-            "(default: <seed>_active.json, or autocal/data/active_bootstrap_slideprinter.json when no seed)."
-        ),
+        help="Dataset file updated each iteration (default: autocal/data/default_dataset.json).",
     )
     parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
     parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
@@ -1350,8 +1343,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     collector_args = _clean_collector_args(args.collector_args)
     return ellipse_loop(
-        args.dataset,
-        work_dataset=args.work_dataset,
+        work_dataset=args.dataset,
         max_steps=int(args.max_steps),
         stop_cost=args.stop_cost,
         stop_std_mm=args.stop_std_mm,

@@ -26,14 +26,10 @@ def _extract_anchor_numbers(text: str) -> list[float]:
 
 
 def test_active_calibrate_fivesweeps_golden():
-    cmd_display = (
-        "python autocal/active_calibrate.py ellipse-loop --work-dataset autocal/data/test2_fivesweeps.json"
-    )
     cmd = [
         sys.executable,
         "autocal/active_calibrate.py",
-        "ellipse-loop",
-        "--work-dataset",
+        "--dataset",
         str(DATASET),
     ]
     result = subprocess.run(

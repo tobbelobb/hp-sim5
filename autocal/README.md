@@ -20,15 +20,12 @@ python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/resid
 ## Typical workflow (real machine)
 
 - Remove `--sim` and any `--speedup` args.
-- Keep `--work-dataset` pointing at your calibration dataset JSON.
+- Use `--dataset` to choose where the working dataset is stored, or to continue working on a pre-existing dataset.
 - Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
 
 ```bash
 python autocal/active_calibrate.py \
-  autocal/data/my_active.json
+  --dataset autocal/data/my_active.json
 ```
-
-You can specify an old, or a new explicitly named dataset with ???.
-See `python autocal/active_calibrate.py --help` for more options.
 
 For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.

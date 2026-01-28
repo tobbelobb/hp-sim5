@@ -116,7 +116,9 @@ See `--help` for the full list of options.
 
 `--semi-auto` is optional; the semi-auto loop is the default mode.
 
-If you omit `--work-dataset`, the loop writes to `<seed>_active.json` (or `autocal/data/active_bootstrap_slideprinter.json` when no seed is provided).
+If you omit `--dataset`, the loop writes to `autocal/data/default_dataset.json` (and bootstraps it if missing).
+
+The dataset file is updated each iteration; if you point it at an existing dataset, it will be updated in place.
 
 ## Related utilities (used by the semi-auto loop)
 
