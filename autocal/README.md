@@ -9,7 +9,6 @@ python autocal/active_calibrate.py \
   --residuals-csv /tmp/residuals1.csv \
   --sim \
   --work-dataset autocal/data/test1.json \
-  --robust-debug \
   --collector-args --speedup 25
 ```
 
@@ -27,8 +26,7 @@ python scripts/plot_residual_hist.py /tmp/residuals1_001.csv --output /tmp/resid
 
 ```bash
 python autocal/active_calibrate.py \
-  --work-dataset autocal/data/my_active.json \
-  --robust-debug
+  --work-dataset autocal/data/my_active.json
 ```
 
 For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.

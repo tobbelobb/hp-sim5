@@ -5,11 +5,10 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 ## Quick start (simulation)
 
 ```bash
-python autocal/active_calibrate.py --semi-auto \
+python autocal/active_calibrate.py \
   --residuals-csv /tmp/residuals1.csv \
   --sim \
   --work-dataset autocal/data/test1.json \
-  --robust-debug \
   --collector-args --speedup 25
 ```
 
@@ -112,7 +111,7 @@ The most important log lines (from a typical simulation run) are:
   - Interactive prompt to accept the current anchor estimate or collect more data.
 
 
-`--semi-auto` is optional; the semi-auto loop is the default mode.
+`--semi-auto` is optional; the semi-auto loop is the default mode. Robust diagnostics are enabled by default; use `--no-robust-debug` to silence them.
 
 ## Related utilities (used by the semi-auto loop)
 

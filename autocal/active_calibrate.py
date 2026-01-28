@@ -1132,8 +1132,15 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--robust-debug",
+        dest="robust_debug",
         action="store_true",
-        help="Print diagnostics for robustness filtering.",
+        help="Print diagnostics for robustness filtering (default).",
+    )
+    parser.add_argument(
+        "--no-robust-debug",
+        dest="robust_debug",
+        action="store_false",
+        help="Disable robustness filtering diagnostics.",
     )
     parser.add_argument(
         "--residuals-csv",
@@ -1146,6 +1153,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         pointwise_filtering=True,
         pointwise_global_mad=True,
         sweep_wise_filtering=True,
+        robust_debug=True,
     )
 
 
