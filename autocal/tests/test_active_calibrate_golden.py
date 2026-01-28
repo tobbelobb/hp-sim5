@@ -29,6 +29,8 @@ def test_active_calibrate_fivesweeps_golden():
     cmd = [
         sys.executable,
         "autocal/active_calibrate.py",
+        "--machine-type",
+        "slideprinter",
         "--dataset",
         str(DATASET),
     ]

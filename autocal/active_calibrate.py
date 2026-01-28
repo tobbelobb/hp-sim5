@@ -31,8 +31,35 @@ from autocal.active_learning import (
     total_information_matrix,
 )
 from autocal.calibrate import calibrate_elliptical
+from autocal.sweep_types import MachineType
 
 GeometryWeights = Tuple[float, float, float]
+MACHINE_TYPE_CHOICES = tuple(machine.value for machine in MachineType)
+MACHINE_TYPE_CHOICES_STR = " | ".join(MACHINE_TYPE_CHOICES)
+
+
+def _require_machine_type(
+    dataset: dict,
+    *,
+    expected: Optional[str] = None,
+    context: str = "dataset",
+) -> str:
+    raw_machine_type = dataset.get("machine_type")
+    if not raw_machine_type:
+        raise ValueError(
+            f"{context} missing machine_type. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
+        )
+    machine_type = str(raw_machine_type)
+    if machine_type not in MACHINE_TYPE_CHOICES:
+        raise ValueError(
+            f"{context} machine_type '{machine_type}' is not supported. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
+        )
+    if expected is not None and str(expected) != machine_type:
+        raise ValueError(
+            f"{context} machine_type '{machine_type}' does not match --machine-type '{expected}'. "
+            f"Expected one of: {MACHINE_TYPE_CHOICES_STR}"
+        )
+    return machine_type
 
 
 def _load_json(path: Path) -> dict:
@@ -522,7 +549,7 @@ def _plan_next_ellipse_sweep(
     collector_args: Sequence[str],
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
-    machine_type = str(dataset.get("machine_type", "hangprinter_4"))
+    machine_type = _require_machine_type(dataset, context=str(dataset_path))
     num_anchors = int(dataset.get("num_anchors", 4))
     dimensions = int(dataset.get("dimensions", 3))
 
@@ -718,6 +745,7 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
 def ellipse_active(
     dataset_path: Path,
     *,
+    machine_type: str,
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
@@ -752,6 +780,7 @@ def ellipse_active(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
 ) -> int:
+    _require_machine_type(_load_json(dataset_path), expected=machine_type, context=str(dataset_path))
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
     if sim and hp_sim_reset and collect_once and not _arg_has_flag(collector_args_eff, "--hp-sim-reset"):
@@ -853,6 +882,7 @@ def merge_datasets(base_dataset: Path, extra_datasets: Sequence[Path], *, output
 def ellipse_loop(
     *,
     work_dataset: Optional[Path],
+    machine_type: str,
     max_steps: int,
     stop_cost: Optional[float],
     stop_std_mm: Optional[float],
@@ -892,6 +922,8 @@ def ellipse_loop(
         work_path = Path(work_dataset)
     else:
         work_path = Path("autocal/data/default_dataset.json")
+    if work_path.exists():
+        _require_machine_type(_load_json(work_path), expected=machine_type, context=str(work_path))
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
@@ -978,7 +1010,7 @@ def ellipse_loop(
             "node",
             "scripts/collect_sweep_data.mjs",
             "--machineType",
-            "slideprinter",
+            str(machine_type),
             "--sweep-config-file",
             str(bootstrap_cfg),
             "--output-file",
@@ -1270,6 +1302,12 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
 def build_ellipse_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Active sweep selection for ellipse calibration")
     parser.add_argument("dataset", type=Path, help="Existing sweep dataset JSON")
+    parser.add_argument(
+        "--machine-type",
+        choices=MACHINE_TYPE_CHOICES,
+        required=True,
+        help=f"Machine type ({MACHINE_TYPE_CHOICES_STR})",
+    )
     _add_solver_args(parser)
     _add_candidate_args(parser)
     parser.add_argument(
@@ -1315,6 +1353,12 @@ def build_merge_parser() -> argparse.ArgumentParser:
 def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Interactive active-learning loop (semi-auto by default)."
+    )
+    parser.add_argument(
+        "--machine-type",
+        choices=MACHINE_TYPE_CHOICES,
+        required=True,
+        help=f"Machine type ({MACHINE_TYPE_CHOICES_STR})",
     )
     parser.add_argument(
         "--semi-auto",
@@ -1366,6 +1410,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
     collector_args = _clean_collector_args(args.collector_args)
     return ellipse_active(
         args.dataset,
+        machine_type=str(args.machine_type),
         solve_restarts=int(args.solve_restarts),
         solve_iterations=int(args.solve_iterations),
         solve_optimizer=str(args.solve_optimizer),
@@ -1414,6 +1459,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     collector_args = _clean_collector_args(args.collector_args)
     return ellipse_loop(
         work_dataset=args.dataset,
+        machine_type=str(args.machine_type),
         max_steps=int(args.max_steps),
         stop_cost=args.stop_cost,
         stop_std_mm=args.stop_std_mm,
