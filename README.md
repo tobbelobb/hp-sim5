@@ -29,24 +29,37 @@ Intended uses:
  - **Software design** -- enables rapid firmware development and experiments
    with advanced control and AI.
 
-hp-sim5 have two fully functional, equivalent implementations; one in JavaScript and one in Python.
+## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
 Müller](https://matthias-research.github.io/pages/index.html).
+hp-sim5 includes two fully functional Cable Joints implementations; one in JavaScript and one in Python.
 
-For a deeper dive into the physics engine and the classic flipper demo see
+For a deeper dive into the physics engine and the flipper demo see
 `README_adv.md`.
 
+The physics engine is the heart of hp-sim, and lives in the src directory.
+
+hp-sim5 also includes lots of other code (subrepos, or "sub-projects") to make the best use of the simulation within the Hangprinter Project:
+ - Klipper fork, up-to-date Hangprinter compatibility, tested with hp-sim5.
+ - ReprapFirmware fork, up-to-date Hangprinter compatibility, includes a new host version to enable hp-sim5 compatibility.
+ - flex-compensation-dev. Our own repo solely devoted to developing flex compensation for all cable robots.
+ - forward-transform-dev. Our own repo devoted to developing forward transforms for all cable robots.
+ - autocal. Our own repo for developing automatic calibration.
+
+
+
+## Host Version of ReprapFirmware
 To compile and invoke the `x86_64` version of ReprapFirmware, do:
 ```
 cmake --build RRF/build --target rrf_simulator -j
 ./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
 ```
 
-## HTTP Endpoint Mode
+### HTTP Endpoint Mode
 
 The rrf_simulator supports an HTTP server mode for interactive G-code execution:
 
-### Starting the Server
+#### Starting the Server
 
 ```bash
 ./RRF/build/rrf_simulator \
@@ -62,12 +75,12 @@ or just
 ./scripts/rrf_server_slideprinter.sh
 ```
 
-### Endpoints
+#### Endpoints
 
 - `POST /machine/code` - Execute G-code, returns reply text
 - `GET /machine/status` - Get server status
 
-### Example Usage
+#### Example Usage
 
 ```bash
 # Set torque mode
@@ -101,16 +114,18 @@ gcode> G1 H2 X10
 > G1 H2 X10
 ```
 
-### JavaScript Integration
+#### JavaScript Integration
 
 See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
 
-### hp-sim CLI bridge (no UI changes)
+#### hp-sim CLI bridge (no UI changes)
 
 - Start the simulator in server mode (as above), then run
   `node scripts/rrf_http_bridge.mjs --server http://localhost:8080 --ws-port 8790`
 - Type G-code lines into the CLI (or pass `--cmd "G1 X10"` for one shots); replies are printed immediately.
 - Open hp-sim locally with `?gcode_ws=ws://localhost:8790` appended to the URL so the visualization consumes the streamed motion without new UI controls.
+
+
 
 ## Quick Start
 
@@ -129,11 +144,11 @@ See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
 
 ### Run the full local suite (no simulator / no visuals)
 ```bash
-npm test
-python -m pytest autocal/tests
-python -m pytest tests/python
-for f in scripts/test_*.mjs; do node "$f"; done
+npx test
+python -m pytest
 ```
+
+Also check out `scripts/run_ci_tests.sh`.
 
 ### Autocal-only filtering
 ```bash
