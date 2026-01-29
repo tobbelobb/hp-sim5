@@ -13,9 +13,9 @@ echo ""
 
 TESTS=(
     "$ROOT/tests/rrf_http_endpoint/test_01_connectivity.sh"
-    "$ROOT/tests/rrf_http_endpoint/test_02_torque_mode.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_02_set_force_mode.sh"
     "$ROOT/tests/rrf_http_endpoint/test_03_motion.sh"
-    "$ROOT/tests/rrf_http_endpoint/test_05_autocal_workflow.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_05_force_mode_then_pos_mode.sh"
 )
 
 PASSED=0
@@ -25,9 +25,9 @@ for TEST in "${TESTS[@]}"; do
     echo ""
     if [ -f "$TEST" ]; then
         if bash "$TEST"; then
-            ((PASSED++))
+            PASSED=$((PASSED + 1))
         else
-            ((FAILED++))
+            FAILED=$((FAILED + 1))
         fi
     else
         echo "SKIP: $TEST not found"
@@ -41,7 +41,12 @@ if command -v node &> /dev/null; then
     SERVER_CFG="$SERVER_VSD/sys/config_slideprinter.g"
     SERVER_PORT="${PORT:-8080}"
 
-    "$SERVER_BIN" --vsd "$SERVER_VSD" -c "$SERVER_CFG" --server -p "$SERVER_PORT" &
+    LOG_FILE="${RRF_HTTP_LOG_FILE:-/tmp/rrf_http_js_integration.log}"
+    if [[ "${RRF_HTTP_DEBUG:-}" == "1" ]]; then
+        "$SERVER_BIN" --vsd "$SERVER_VSD" -c "$SERVER_CFG" --server -p "$SERVER_PORT" &
+    else
+        "$SERVER_BIN" --vsd "$SERVER_VSD" -c "$SERVER_CFG" --server -p "$SERVER_PORT" >"$LOG_FILE" 2>&1 &
+    fi
     SERVER_PID=$!
     cleanup_js() {
         kill "$SERVER_PID" 2>/dev/null || true
@@ -50,9 +55,9 @@ if command -v node &> /dev/null; then
     sleep 3
 
     if node --experimental-modules "$ROOT/tests/rrf_http_endpoint/test_04_js_integration.mjs"; then
-        ((PASSED++))
+        PASSED=$((PASSED + 1))
     else
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 
     cleanup_js

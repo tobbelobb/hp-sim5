@@ -8,10 +8,15 @@ BIN="$ROOT/RRF/build/rrf_simulator"
 VSD="$ROOT/RRF/run/vsd"
 CFG="$VSD/sys/config_slideprinter.g"
 PORT="${PORT:-8080}"
+LOG_FILE="${RRF_HTTP_LOG_FILE:-/tmp/rrf_http_$(basename "$0" .sh).log}"
 
 cmake --build "$ROOT/RRF/build" --target rrf_simulator -j
 
-"$BIN" --vsd "$VSD" -c "$CFG" --server -p "$PORT" &
+if [[ "${RRF_HTTP_DEBUG:-}" == "1" ]]; then
+    "$BIN" --vsd "$VSD" -c "$CFG" --server -p "$PORT" &
+else
+    "$BIN" --vsd "$VSD" -c "$CFG" --server -p "$PORT" >"$LOG_FILE" 2>&1 &
+fi
 SERVER_PID=$!
 cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
