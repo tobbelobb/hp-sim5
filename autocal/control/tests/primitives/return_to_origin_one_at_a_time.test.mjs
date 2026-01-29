@@ -1,48 +1,45 @@
-#!/usr/bin/env node
-import { strict as assert } from 'node:assert';
 import { returnMotorsToOriginOneAtATime } from '../../primitives/uncalibrated_actions.mjs';
 
-async function testReturnToOriginOneAtATime() {
-  const sent = [];
-  const encoderReply = '10 20 5';
-  const send = async (line) => {
-    sent.push(line);
-    if (line.startsWith('M569.3')) {
-      return { reply: encoderReply };
-    }
-    return { reply: '' };
-  };
-  let nowMs = 0;
-  const delayFn = (ms = 0) => {
-    nowMs += ms;
-    return Promise.resolve();
-  };
-  const sleepFn = (ms = 0) => {
-    nowMs += ms;
-    return Promise.resolve();
-  };
-  const nowFn = () => nowMs;
+describe('returnMotorsToOriginOneAtATime', () => {
+  test('returns motors in expected order', async () => {
+    const sent = [];
+    const encoderReply = '10 20 5';
+    const send = async (line) => {
+      sent.push(line);
+      if (line.startsWith('M569.3')) {
+        return { reply: encoderReply };
+      }
+      return { reply: '' };
+    };
+    let nowMs = 0;
+    const delayFn = (ms = 0) => {
+      nowMs += ms;
+      return Promise.resolve();
+    };
+    const sleepFn = (ms = 0) => {
+      nowMs += ms;
+      return Promise.resolve();
+    };
+    const nowFn = () => nowMs;
 
-  await returnMotorsToOriginOneAtATime(send, {
-    motorIds: ['40.0', '41.0', '42.0'],
-    axes: ['A', 'B', 'C'],
-    mmPerDeg: [1, 1, 1],
-    feed: 100,
-    speedup: 100,
-    midForce: 0.01,
-    fixedAnchors: [1],
-    delayFn,
-    settleOptions: { pollIntervalMs: 1, stableWindowMs: 2, sleepFn, nowFn },
+    await returnMotorsToOriginOneAtATime(send, {
+      motorIds: ['40.0', '41.0', '42.0'],
+      axes: ['A', 'B', 'C'],
+      mmPerDeg: [1, 1, 1],
+      feed: 100,
+      speedup: 100,
+      midForce: 0.01,
+      fixedAnchors: [1],
+      delayFn,
+      settleOptions: { pollIntervalMs: 1, stableWindowMs: 2, sleepFn, nowFn },
+    });
+
+    const moveLines = sent.filter((line) => line.startsWith('G1 H2'));
+    const axesOrder = moveLines.map((line) => {
+      const match = line.match(/H2\s+([A-Z])/);
+      return match ? match[1] : null;
+    });
+
+    expect(axesOrder).toEqual(['A', 'C', 'B']);
   });
-
-  const moveLines = sent.filter((line) => line.startsWith('G1 H2'));
-  const axesOrder = moveLines.map((line) => {
-    const match = line.match(/H2\s+([A-Z])/);
-    return match ? match[1] : null;
-  });
-
-  assert.deepEqual(axesOrder, ['A', 'C', 'B']);
-}
-
-await testReturnToOriginOneAtATime();
-console.log('return_to_origin_one_at_a_time tests: PASSED');
+});
