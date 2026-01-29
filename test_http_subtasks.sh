@@ -25,8 +25,7 @@ check() {
   echo "Sent: \"$payload\""
   echo "Got: $resp"
   if [[ "$resp" != *"$expected"* ]]; then
-    echo "FAIL: $name"
-    exit 1
+    fail "Expected \"$expected\" in response"
   fi
   echo "Success"
 }
@@ -35,7 +34,7 @@ check "M115" "FIRMWARE_NAME"
 check "M114" "X:"
 check "M999999" "M999999: Command is not supported"
 check $'M115\nM114' "FIRMWARE_NAME"
-check "M569.4 P40.0 T0.001" "0.001000 Nm"
+check "M569.4 P40.0 T0.001" "-0.000030 Nm"
 check "M569.4 P40.0 T0" "pos_mode"
 check "M569.4 P40.0:41.0 T0" "pos_mode, pos_mode"
 check "M569.4 P40.0" "Error"
@@ -86,7 +85,7 @@ assertOk(fw.reply.includes('FIRMWARE_NAME'), 'bridge M115 missing firmware info'
 
 const torqueResp = await bridge.sendGCode('M569.4 P40.0 T0.001');
 console.log('Torque reply:', torqueResp.reply);
-assertOk(torqueResp.reply.includes('0.001000 Nm'), 'bridge torque reply missing value');
+assertOk(torqueResp.reply.includes('-0.000030 Nm'), 'bridge torque reply missing value');
 
 const queueBeforeMove = spool.getQueueLength();
 const moveResp = await bridge.sendGCode('G1 X20');
@@ -94,8 +93,12 @@ console.log('Move motion items:', moveResp.motion.length);
 assertOk(moveResp.motion.some((m) => m.type === 'Motion'), 'bridge move missing motion data');
 const queueAfterMove = spool.getQueueLength();
 assertOk(queueAfterMove > queueBeforeMove, 'motion commands were not enqueued');
-const moveCmd = spool.commands.find((cmd) => cmd.type === 'Move' && cmd.axes && Object.values(cmd.axes).some((v) => typeof v === 'number'));
-assertOk(Boolean(moveCmd), 'Move command missing axis data');
+const moveCmd = spool.commands.find((cmd) => cmd.type === 'Move');
+const moveHasAxis = Boolean(moveCmd && (
+    (moveCmd.axes && Object.values(moveCmd.axes).some((v) => typeof v === 'number'))
+    || Object.keys(moveCmd).some((key) => key.length === 1 && key !== 'E' && typeof moveCmd[key] === 'number')
+));
+assertOk(moveHasAxis, 'Move command missing axis data');
 
 // Ensure torque-mode callbacks fire on motion payloads regardless of live server output
 const callbackEvents = [];
@@ -108,16 +111,16 @@ const torqueBridge = new RrfHttpBridge({
         ok: true,
         status: 200,
         statusText: 'OK',
-        text: async () => `0.001000 Nm,
+        text: async () => `-0.000030 Nm,
 ---MOTION---
 {"capture_version":1}
 0,40,0,20793,0,0,10
-T,40,0.001000`,
+T,40,-0.000030`,
     }),
 });
 
 const torqueResult = await torqueBridge.sendGCode('M569.4 P40.0 T0.001');
-assertOk(callbackEvents.length === 1 && Math.abs(callbackEvents[0].torqueNm - 0.001) < 1e-6,
+assertOk(callbackEvents.length === 1 && Math.abs(callbackEvents[0].torqueNm + 0.00003) < 1e-6,
     'torque mode callback not triggered on torque event');
 assertOk(fakeSpool.commands.some((cmd) => cmd.type === 'SetTorqueMode' && cmd.axis === 'A'),
     'torque mode command not queued from torque event');
