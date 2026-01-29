@@ -12,10 +12,10 @@ echo "=============================="
 echo ""
 
 TESTS=(
-    "$ROOT/tests/e2e/test_01_connectivity.sh"
-    "$ROOT/tests/e2e/test_02_torque_mode.sh"
-    "$ROOT/tests/e2e/test_03_motion.sh"
-    "$ROOT/tests/e2e/test_05_autocal_workflow.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_01_connectivity.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_02_torque_mode.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_03_motion.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_05_autocal_workflow.sh"
 )
 
 PASSED=0
@@ -49,7 +49,7 @@ if command -v node &> /dev/null; then
     trap cleanup_js EXIT
     sleep 3
 
-    if node --experimental-modules "$ROOT/tests/e2e/test_04_js_integration.mjs"; then
+    if node --experimental-modules "$ROOT/tests/rrf_http_endpoint/test_04_js_integration.mjs"; then
         ((PASSED++))
     else
         ((FAILED++))
