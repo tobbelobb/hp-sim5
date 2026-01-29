@@ -103,6 +103,8 @@ hp-sim5 has added quite a bit to each of its sub-projects:
 
 ## Tests
 
+These commands cover hp-sim5-specific checks. Subrepos (like RRF, klipper, autocal, etc.) often have their own internal test suites; run those from within each subrepo when you need deeper coverage.
+
 ### Run the full local suite (no simulator / no visuals)
 ```bash
 npx test
@@ -118,17 +120,21 @@ python -m pytest autocal/tests -k active_calibrate
 python -m pytest autocal/tests/test_active_calibrate_golden.py
 ```
 
+### Tests of ReprapFirmware's http endpoint
+```
+tests/run_all_rrf_http_endpoint_tests.sh
+```
+
 ### Simulator / E2E tests (requires visible browser + rrf_simulator build)
 ```bash
 cmake --build RRF/build --target rrf_simulator -j
-tests/run_all_e2e_tests.sh
-node scripts/e2e_test_collect_single_sweep.mjs --sim
-node scripts/e2e_test_find_minimum_moving_force.mjs --sim
-node scripts/e2e_test_find_edge_force.mjs --sim
-node scripts/e2e_test_wait_for_stable_encoders.mjs --sim
-node scripts/e2e_test_return_to_origin_one_at_a_time.mjs --sim
-node scripts/e2e_test_return_to_origin_all_at_once.mjs --sim
-node scripts/e2e_test_calibrate_encoder_noise.mjs --sim
+node autocal/control/tests/e2e/collect_single_sweep.e2e.test.mjs --sim
+node autocal/control/tests/e2e/find_minimum_moving_force.e2e.test.mjs --sim
+node autocal/control/tests/e2e/find_edge_force.e2e.test.mjs --sim
+node autocal/control/tests/e2e/wait_for_stable_encoders.e2e.test.mjs --sim
+node autocal/control/tests/e2e/return_to_origin_one_at_a_time.e2e.test.mjs --sim
+node autocal/control/tests/e2e/return_to_origin_all_at_once.e2e.test.mjs --sim
+node autocal/control/tests/e2e/calibrate_encoder_noise.e2e.test.mjs --sim
 ```
 
 ### Visual/manual checks
