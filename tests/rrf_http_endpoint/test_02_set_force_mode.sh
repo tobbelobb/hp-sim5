@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== Test 2: M569.4 Torque Mode ==="
+echo "=== Test 2: M569.4 Force Mode ==="
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BIN="$ROOT/RRF/build/rrf_simulator"
@@ -25,8 +25,8 @@ sleep 3
 
 RESPONSE=$(curl -s "http://localhost:${PORT}/machine/code" \
     -d "M569.4 P40.0 T0.001" -H "Content-Type: text/plain")
-[[ "$RESPONSE" == *"0.001000 Nm"* ]] || fail "Expected '0.001000 Nm' in response (got: $RESPONSE)"
-echo "  Set torque 0.001 Nm: OK"
+[[ "$RESPONSE" == *"-0.000030 Nm"* ]] || fail "Expected '-0.000030 Nm' in response (got: $RESPONSE)"
+echo "  Set force 0.001 N: OK"
 
 RESPONSE=$(curl -s "http://localhost:${PORT}/machine/code" \
     -d "M569.4 P40.0 T0" -H "Content-Type: text/plain")
@@ -35,8 +35,8 @@ echo "  Set position mode: OK"
 
 RESPONSE=$(curl -s "http://localhost:${PORT}/machine/code" \
     -d "M569.4 P40.0:41.0:42.0 T0.002" -H "Content-Type: text/plain")
-COUNT=$(echo "$RESPONSE" | grep -o "0.002000 Nm" | wc -l | tr -d '[:space:]')
-[[ "$COUNT" == "3" ]] || fail "Expected 3 torque values (got: $COUNT) - $RESPONSE"
+COUNT=$(echo "$RESPONSE" | grep -o "\-0.000060 Nm" | wc -l | tr -d '[:space:]')
+[[ "$COUNT" == "3" ]] || fail "Expected 3 force values (got: $COUNT) - $RESPONSE"
 echo "  Multiple drivers: OK"
 
 RESPONSE=$(curl -s "http://localhost:${PORT}/machine/code" \
@@ -46,4 +46,4 @@ if [[ "$RESPONSE" != *"Error"* && "$RESPONSE" != *"error"* && "$RESPONSE" != *"m
 fi
 echo "  Error handling: OK"
 
-echo "PASS: M569.4 torque mode test"
+echo "PASS: M569.4 force mode test"
