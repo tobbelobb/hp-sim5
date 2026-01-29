@@ -8,7 +8,7 @@ import {
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from '../../../../scripts/encoder_utils.mjs';
+} from '../../primitives/encoder_utils.mjs';
 import {
   buildForceRampValues,
   buildMovementThresholds,

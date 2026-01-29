@@ -6,7 +6,7 @@ import {
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from '../../../../scripts/encoder_utils.mjs';
+} from '../../primitives/encoder_utils.mjs';
 import { applyForceModeState, waitForStableEncoders } from '../../primitives/uncalibrated_actions.mjs';
 import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from '../../behaviors/sweep_data_collection.mjs';
 

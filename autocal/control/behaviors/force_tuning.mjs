@@ -1,4 +1,4 @@
-import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../../../scripts/encoder_utils.mjs';
+import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../primitives/encoder_utils.mjs';
 import {
   angleToLength,
   applyForceModeState,

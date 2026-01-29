@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { STEP_CLOCK_HZ } from '../examples/js/slideprinter/rrfMotionUtils.js';
+import { STEP_CLOCK_HZ } from '../../../examples/js/slideprinter/rrfMotionUtils.js';
 
 export const DEFAULT_FEED = 2000;
 export const DEFAULT_RRF_PORT = 8081;

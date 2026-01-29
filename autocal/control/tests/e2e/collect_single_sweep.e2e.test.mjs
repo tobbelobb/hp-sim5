@@ -9,9 +9,9 @@ import {
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from '../../../../scripts/encoder_utils.mjs';
+} from '../../primitives/encoder_utils.mjs';
 import { collectSweepData, MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from '../../behaviors/sweep_data_collection.mjs';
-import { sleep as baseSleep } from '../../../../scripts/encoder_utils.mjs';
+import { sleep as baseSleep } from '../../primitives/encoder_utils.mjs';
 
 function parseIntegerArg(argv, flag, fallback) {
   const idx = argv.indexOf(flag);

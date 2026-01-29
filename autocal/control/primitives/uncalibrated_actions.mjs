@@ -1,4 +1,4 @@
-import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../../../scripts/encoder_utils.mjs';
+import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../primitives/encoder_utils.mjs';
 
 const DEFAULT_STABILITY_POLL_MS = 500;
 const DEFAULT_STABILITY_WINDOW_MS = 2000;
