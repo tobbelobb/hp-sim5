@@ -139,9 +139,9 @@ npx vite
 
 ### Determinism scripts
 ```bash
-./run_draw_squares_determinism_test.sh
-./run_logo_determinism_test.sh
-./run_logo_slideprinter_determinism_test.sh
+RRF/tests/run_draw_squares_determinism_test.sh
+RRF/tests/run_logo_determinism_test.sh
+RRF/tests/run_logo_slideprinter_determinism_test.sh
 ```
 
 ## hp-sim5 context: the Hangprinter Project

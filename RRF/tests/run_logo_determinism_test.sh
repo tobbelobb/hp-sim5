@@ -2,12 +2,12 @@
 set -u
 set -o pipefail
 
-# Usage: ./run_draw_squares_tests.sh [iterations]
+# Usage: ./run_logo_determinism_test.sh [iterations]
 ITERATIONS="${1:-10}"
 LINES_TO_IGNORE=4 # Define this constant globally for clarity
 
 # Resolve repo root (directory where this script lives)
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 BUILD_DIR="$ROOT_DIR/RRF/build"
@@ -156,3 +156,6 @@ if [[ "$failed" -gt 0 || "$incorrect" -gt 0 ]]; then
     fi
 fi
 
+if [[ "$incorrect" -gt 0 || "$failed" -gt 0 ]]; then
+    exit 1
+fi

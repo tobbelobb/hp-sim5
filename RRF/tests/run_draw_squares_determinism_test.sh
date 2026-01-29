@@ -2,11 +2,11 @@
 set -u
 set -o pipefail
 
-# Usage: ./run_draw_squares_tests.sh [iterations]
+# Usage: ./run_draw_squares_determinism_test.sh [iterations]
 ITERATIONS="${1:-10}"
 
 # Resolve repo root (directory where this script lives)
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 BUILD_DIR="$ROOT_DIR/RRF/build"
@@ -62,3 +62,7 @@ done
 # Summary: single line, wrapped in leading+trailing newline
 echo
 echo "Total runs: $tries, Correct: $correct, Incorrect: $incorrect, Failed: $failed"
+
+if [[ "$incorrect" -gt 0 || "$failed" -gt 0 ]]; then
+    exit 1
+fi

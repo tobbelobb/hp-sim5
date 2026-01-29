@@ -14,6 +14,31 @@ echo ""
 echo "== Python unit tests (cable_joints/slideprinter/flipper) =="
 (cd "$ROOT" && python -m pytest tests/python)
 
+run_with_retries() {
+  local label="$1"
+  local cmd="$2"
+  local max_tries=3
+  local attempt=1
+
+  while true; do
+    echo "$label (attempt $attempt/$max_tries)"
+    if (cd "$ROOT" && eval "$cmd"); then
+      return 0
+    fi
+    if [[ "$attempt" -ge "$max_tries" ]]; then
+      return 1
+    fi
+    attempt=$((attempt + 1))
+    echo "Retrying..."
+  done
+}
+
+echo ""
+echo "== RRF determinism tests (retry up to 3 times) =="
+run_with_retries "draw_squares" "RRF/tests/run_draw_squares_determinism_test.sh"
+run_with_retries "logo" "RRF/tests/run_logo_determinism_test.sh"
+run_with_retries "logo_slideprinter" "RRF/tests/run_logo_slideprinter_determinism_test.sh"
+
 if [[ "${RUN_E2E:-0}" == "1" ]]; then
   echo ""
   echo "== RRF HTTP E2E tests =="
