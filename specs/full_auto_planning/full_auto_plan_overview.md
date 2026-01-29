@@ -1,14 +1,21 @@
 # Full-auto calibration implementation plan (overview)
 
 ## Goal
-Deliver a `--full-auto` mode that:
-- collects/merges sweeps,
-- runs calibrations with multiple robustness settings (including all `--sweep-metric` options),
-- compares results using a noise-normalized objective,
-- stops when a confidence interval and convergence criteria indicate “good enough”,
-- updates machine config on success, and emits data-quality warnings on failure.
+Deliver a `--full-auto` mode to autocal/active_calibrate.py that extends the existing `--semi-auto` mode.
+That means the full auto mode:
+1. collects/merges sweeps,
+2. runs calibrations with multiple robustness settings (including all `--sweep-metric` options),
+3. compares results using a noise-normalized objective,
+4. stops when a confidence interval and convergence criteria indicate "good enough",
+5. updates machine config on success, and emits data-quality warnings on failure.
 
-This plan assumes the existing calibration pipeline already computes Fisher information and a covariance estimate for anchors (via the information matrix and pseudo-inverse). It also assumes sweep-wise filtering options are already present (including the three `--sweep-metric` choices).
+A simpler versions of step 1 is already working with `--semi-auto`.
+We need to extend it with noise measurements.
+Step 2 is already implemented, at least if flags are sent manually.
+We need to automate the permutations of configs.
+Steps 3, 4, and 5 are brand new to the implementation of `--full-auto`.
+
+This plan uses the existing calibration pipeline that already computes Fisher information and a covariance estimate for anchors (via the information matrix and pseudo-inverse). It also uses the sweep-wise filtering options that are already present (including the three `--sweep-metric` choices).
 
 ## High-level flow
 1. **Collect**: For each static pose, record encoder samples per cable and store the mean + robust noise estimate.

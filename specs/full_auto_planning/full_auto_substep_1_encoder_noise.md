@@ -12,6 +12,8 @@ At each static pose:
    - `sigma[i][k]`: robust noise estimate per cable (MAD-based std).
    - Optional: sampling rate, timestamp, `S`.
 
+See the existing function `calibrateEncoderNoise` in `force_tuning.mjs`. Maybe extend it.
+
 ## Dataset schema additions
 For each pose entry:
 ```json
