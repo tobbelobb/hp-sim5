@@ -34,97 +34,58 @@ hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and cod
 Müller](https://matthias-research.github.io/pages/index.html).
 hp-sim5 includes two fully functional Cable Joints implementations; one in JavaScript and one in Python.
 
+The physics engine is the heart of hp-sim, and lives in the src directory.
+
 For a deeper dive into the physics engine and the flipper demo see
 `README_adv.md`.
 
-The physics engine is the heart of hp-sim, and lives in the src directory.
-
 hp-sim5 also includes lots of other code (subrepos, or "sub-projects") to make the best use of the simulation within the Hangprinter Project:
- - Klipper fork, up-to-date Hangprinter compatibility, tested with hp-sim5.
- - ReprapFirmware fork, up-to-date Hangprinter compatibility, includes a new host version to enable hp-sim5 compatibility.
- - flex-compensation-dev. Our own repo solely devoted to developing flex compensation for all cable robots.
- - forward-transform-dev. Our own repo devoted to developing forward transforms for all cable robots.
- - autocal. Our own repo for developing automatic calibration.
+ - *Klipper fork*, up-to-date Hangprinter compatibility, tested with hp-sim5.
+ - *ReprapFirmware fork*, up-to-date Hangprinter compatibility, includes a new host version to enable hp-sim5 compatibility.
+ - *flex-compensation-dev*. Our own repo solely devoted to developing flex compensation for all cable robots.
+ - *forward-transform-dev*. Our own repo devoted to developing forward transforms for all cable robots.
+ - *autocal*. Our own repo for developing automatic calibration.
 
+hp-sim5 has added quite a bit to each of its sub-projects:
 
+## Klipper fork
+ - Has flex compensation from flex-compensation-dev
+ - Has forward transform from forward-transform-dev
+ - Has Hangprinter (and other cable robots) support on par with ReprapFirmware
 
-## Host Version of ReprapFirmware
-To compile and invoke the `x86_64` version of ReprapFirmware, do:
-```
-cmake --build RRF/build --target rrf_simulator -j
-./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
-```
+## ReprapFirmware
+ - Has flex compensation from flex-compensation-dev
+ - Has forward transform from forward-transform-dev
+ - Has host control mode support on par with Klipper.
+ - Learn more in RRF/README.md
 
-### HTTP Endpoint Mode
+## Flex Compensation Dev
+ - Provides two algorithms for flex compensation, called QP and Tikhonov.
+ - Supports any anchor configuration, up to 26 anchors.
+ - Tested on simulated data for 3 and 4 anchor configurations.
+ - Learn more here in a Klipper pull request I made: [klipper/pull/7093](https://github.com/Klipper3d/klipper/pull/7093)
 
-The rrf_simulator supports an HTTP server mode for interactive G-code execution:
+## Forward Transform Dev
+ - Provides state-of-the-art forward transform for a wide range of cable robots.
+ - Tested on simulated data for five setups called Slideprinter, Hangprinter v3, Hangprinter v4, CubeCorners, and SkyCam.
+ - Implements three approaches:
+   * "Pott", based on "On the forward kinematics of cable-driven parallel robots", Pott & Schmidt (2015).
+   * "Nice", based on "Kinematics and statics of cable-driven parallel robots by interval-analysis-based methods", Berti (2015)
+   * "Quadratic", based on "Fast and Reliable Iterative Cable-Driven Parallel Robot Forward Kinematics: A Quadratic Approximation Approach", by Mahnke & Caverly (2025)
+ - The quadratic approach is generally best, and was chosen for ReprapFirmware and Klipper.
+ - See detailed comparisons in `Comparison_report_of_the_three_algorithms.md`.
 
-#### Starting the Server
-
-```bash
-./RRF/build/rrf_simulator \
-    --vsd RRF/run/vsd \
-    -c sys/config_slideprinter.g \
-    --server \
-    -p 8080
-```
-
-or just
-
-```
-./scripts/rrf_server_slideprinter.sh
-```
-
-#### Endpoints
-
-- `POST /machine/code` - Execute G-code, returns reply text
-- `GET /machine/status` - Get server status
-
-#### Example Usage
-
-```bash
-# Set torque mode
-curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0.001" -H "Content-Type: text/plain"
-# Response: 0.001000 Nm,
-
-# Return to position mode
-curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0" -H "Content-Type: text/plain"
-# Response: pos_mode,
-
-# Execute move
-curl http://localhost:8080/machine/code -d "G1 X10 F1000" -H "Content-Type: text/plain"
-```
-
-or just open a `rrf_http_bridge` like this:
-
-```
-node scripts/rrf_http_bridge.mjs
-```
-
-... Wait for it to connect with the RRF Http Bridge and type the Gcodes in directly, like this:
-
-```
-$ node scripts/rrf_http_bridge.mjs
-disconnected> WebSocket feed ready on ws://localhost:8790
-Open hp-sim with ?gcode_ws=ws://localhost:8790 to follow along.
-gcode> M569.3 P40.0:41.0:42.0
-> M569.3 P40.0:41.0:42.0
-[0.00, -0.00, 0.00, ]
-gcode> G1 H2 X10
-> G1 H2 X10
-```
-
-#### JavaScript Integration
-
-See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
-
-#### hp-sim CLI bridge (no UI changes)
-
-- Start the simulator in server mode (as above), then run
-  `node scripts/rrf_http_bridge.mjs --server http://localhost:8080 --ws-port 8790`
-- Type G-code lines into the CLI (or pass `--cmd "G1 X10"` for one shots); replies are printed immediately.
-- Open hp-sim locally with `?gcode_ws=ws://localhost:8790` appended to the URL so the visualization consumes the streamed motion without new UI controls.
-
+## Autocal
+ - Provides a uniquely user friendly way to find anchor positions using torque/force mode + encoders only.
+ - Very high level of abstraction, enabled by
+   * Self-tuning of torques/forces to use during calibration
+   * Self-calibrating encoder noise
+   * Feature based optimizations, exploiting geometric patterns rather than collecting random samples
+   * Active learning, actively searching for the best places to collect the next data
+   * Outlier-robust filtering on two levels. If a few data points are bad, they will be detected and discarded thanks to its GNC-IRLS style pointwise loss.
+ - As a result, it will try very hard to find the anchors, without requiring any human guidance.
+ - Compatible with all cable driven robots, real and sim. (Currently only been tested on simulated Slideprinters).
+ - Learn more in `autocal/README.md` and `autocal/README_elliptical_feature_calibration.md`
 
 
 ## Quick Start

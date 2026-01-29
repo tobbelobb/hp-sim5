@@ -35,6 +35,86 @@ cmake --build build --target rrf_simulator -j
 ./build/rrf_simulator --vsd run/vsd --gcode gcodes/test_cartesian.gcode --can-log run/vsd/logs/first.csv -c sys/config_hangprinter.g
 ```
 
+## hp-sim5 Integration (repo root)
+
+Commands in this section assume you are running them from the repository root.
+
+To compile and invoke the `x86_64` version of ReprapFirmware, do:
+```
+cmake --build RRF/build --target rrf_simulator -j
+./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
+```
+
+### HTTP Endpoint Mode
+
+The rrf_simulator supports an HTTP server mode for interactive G-code execution:
+
+#### Starting the Server
+
+```bash
+./RRF/build/rrf_simulator \
+    --vsd RRF/run/vsd \
+    -c sys/config_slideprinter.g \
+    --server \
+    -p 8080
+```
+
+or just
+
+```
+./scripts/rrf_server_slideprinter.sh
+```
+
+#### Endpoints
+
+- `POST /machine/code` - Execute G-code, returns reply text
+- `GET /machine/status` - Get server status
+
+#### Example Usage
+
+```bash
+# Set torque mode
+curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0.001" -H "Content-Type: text/plain"
+# Response: 0.001000 Nm,
+
+# Return to position mode
+curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0" -H "Content-Type: text/plain"
+# Response: pos_mode,
+
+# Execute move
+curl http://localhost:8080/machine/code -d "G1 X10 F1000" -H "Content-Type: text/plain"
+```
+
+or just open a `rrf_http_bridge` like this:
+
+```
+node scripts/rrf_http_bridge.mjs
+```
+
+... Wait for it to connect with the RRF Http Bridge and type the Gcodes in directly, like this:
+
+```
+$ node scripts/rrf_http_bridge.mjs
+disconnected> WebSocket feed ready on ws://localhost:8790
+Open hp-sim with ?gcode_ws=ws://localhost:8790 to follow along.
+gcode> M569.3 P40.0:41.0:42.0
+> M569.3 P40.0:41.0:42.0
+[0.00, -0.00, 0.00, ]
+gcode> G1 H2 X10
+> G1 H2 X10
+```
+
+#### JavaScript Integration
+
+See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
+
+#### hp-sim CLI bridge (no UI changes)
+
+- Start the simulator in server mode (as above), then run
+  `node scripts/rrf_http_bridge.mjs --server http://localhost:8080 --ws-port 8790`
+- Type G-code lines into the CLI (or pass `--cmd "G1 X10"` for one shots); replies are printed immediately.
+- Open hp-sim locally with `?gcode_ws=ws://localhost:8790` appended to the URL so the visualization consumes the streamed motion without new UI controls.
+
 ## Instructions for Developers and AI Assistants
 
 The ReprapFirmware code is in ./ReprapFirmware/src, ./RRFLibraries/src and ./CANlib/src.
