@@ -2,16 +2,16 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { parseBridgeArgs, createGcodeBridge } from './gcode_bridge.mjs';
+import { parseBridgeArgs, createGcodeBridge } from '../../primitives/gcode_bridge.mjs';
 import {
   DEFAULT_RRF_PORT,
   sendHpSimSpeedScale,
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from './encoder_utils.mjs';
-import { collectSweepData, MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from './sweep_data_collection.mjs';
-import { sleep as baseSleep } from './encoder_utils.mjs';
+} from '../../../../scripts/encoder_utils.mjs';
+import { collectSweepData, MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from '../../behaviors/sweep_data_collection.mjs';
+import { sleep as baseSleep } from '../../../../scripts/encoder_utils.mjs';
 
 function parseIntegerArg(argv, flag, fallback) {
   const idx = argv.indexOf(flag);
@@ -40,9 +40,9 @@ function parseListArg(argv, flag) {
 }
 
 function printHelp() {
-  console.log(`Usage: node scripts/e2e_test_collect_single_sweep.mjs [options]
+  console.log(`Usage: node autocal/control/tests/e2e/collect_single_sweep.e2e.test.mjs [options]
 
-Runs a single sweep collection end-to-end using collect_sweep_data.mjs logic.
+Runs a single sweep collection end-to-end using autocal/control/cli/collect_sweep_data.mjs logic.
 
 Options:
   --help, -h                 Show this help and exit

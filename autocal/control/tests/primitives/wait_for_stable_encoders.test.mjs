@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { strict as assert } from 'node:assert';
-import { waitForStableEncoders } from './uncalibrated_actions.mjs';
+import { waitForStableEncoders } from '../../primitives/uncalibrated_actions.mjs';
 
 async function testWaitForStableEncoders() {
   const send = async () => ({ reply: '0 0' });

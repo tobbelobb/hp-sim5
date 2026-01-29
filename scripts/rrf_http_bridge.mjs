@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
+import { createGcodeBridge, parseBridgeArgs } from '../autocal/control/primitives/gcode_bridge.mjs';
 
 function printHelp() {
   console.log(`Usage: node scripts/rrf_http_bridge.mjs [options]

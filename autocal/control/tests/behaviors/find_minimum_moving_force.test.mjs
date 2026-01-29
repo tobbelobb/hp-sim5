@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { strict as assert } from 'node:assert';
-import { findMinimumMovingForce, FORCE_TUNING_CONSTANTS } from './force_tuning.mjs';
+import { findMinimumMovingForce, FORCE_TUNING_CONSTANTS } from '../../behaviors/force_tuning.mjs';
 
 async function testFindMinimumMovingForce() {
   const threshold = 0.8;

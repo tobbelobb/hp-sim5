@@ -347,7 +347,7 @@ def _suggested_collect_command(
 ) -> List[str]:
     cmd = [
         "node",
-        "scripts/collect_sweep_data.mjs",
+        "autocal/control/cli/collect_sweep_data.mjs",
         "--machineType",
         str(machine_type),
         "--sweep-config-file",
@@ -1023,7 +1023,7 @@ def ellipse_loop(
 
         cmd = [
             "node",
-            "scripts/collect_sweep_data.mjs",
+            "autocal/control/cli/collect_sweep_data.mjs",
             "--machineType",
             str(machine_type),
             "--sweep-config-file",
@@ -1294,7 +1294,7 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         "--collector-args",
         nargs=argparse.REMAINDER,
         default=(),
-        help="Extra args passed to scripts/collect_sweep_data.mjs (after --collector-args)",
+        help="Extra args passed to autocal/control/cli/collect_sweep_data.mjs (after --collector-args)",
     )
     parser.add_argument(
         "--sim",

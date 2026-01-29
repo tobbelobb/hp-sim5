@@ -1,18 +1,14 @@
 #!/usr/bin/env node
-import { parseBridgeArgs, createGcodeBridge } from './gcode_bridge.mjs';
+import { parseBridgeArgs, createGcodeBridge } from '../../primitives/gcode_bridge.mjs';
 import {
   DEFAULT_RRF_PORT,
-  computeMmPerDegree,
-  parseM666,
   sendHpSimSpeedScale,
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from './encoder_utils.mjs';
-import { applyForceModeState, returnMotorsToOriginOneAtATime, returnMotorsToOriginAllAtOnce, waitForStableEncoders } from './uncalibrated_actions.mjs';
-import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE, SWEEP_DEFAULTS } from './sweep_data_collection.mjs';
-
-const LOW_FORCE_N = 0.001;
+} from '../../../../scripts/encoder_utils.mjs';
+import { calibrateEncoderNoise } from '../../behaviors/force_tuning.mjs';
+import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from '../../behaviors/sweep_data_collection.mjs';
 
 function parseNumberArg(argv, flag, fallback) {
   const idx = argv.indexOf(flag);
@@ -25,20 +21,30 @@ function parseNumberArg(argv, flag, fallback) {
   return fallback;
 }
 
-function printHelp() {
-  console.log(`Usage: node scripts/e2e_test_return_to_origin_all_at_once.mjs [options]
+function parseIntegerArg(argv, flag, fallback) {
+  const idx = argv.indexOf(flag);
+  if (idx >= 0 && idx < argv.length - 1) {
+    const value = parseInt(argv[idx + 1], 10);
+    if (Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return fallback;
+}
 
-Runs an end-to-end demo that applies force state, waits for stable encoders,
-then returns motors to origin. First one at a time, then all at once.
+function printHelp() {
+  console.log(`Usage: node autocal/control/tests/e2e/calibrate_encoder_noise.e2e.test.mjs [options]
+
+Runs an end-to-end demo that samples encoder noise and prints the result.
 
 Options:
   --help, -h                 Show this help and exit
   --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
-  --force <N>                Force applied to motor 42.0 in applyForceState (default: 2.0)
+  --force <N>                Idle force applied during sampling (default: 0.02)
+  --fixed-anchor <index>     Anchor index to keep fixed in position mode (default: none)
+  --sample-ms <ms>           Total sample duration (default: 4000)
+  --sample-interval-ms <ms>  Sample interval (default: 200)
   --speedup <scale>          Speed scale passed to waitForStableEncoders (default: 1)
-  --feed <mm/min>            Feed rate for return moves (default: ${SWEEP_DEFAULTS.DEFAULT_FEED})
-  --stable-window-ms <ms>    Stable window for encoder settle (default: 500)
-  --poll-ms <ms>             Poll interval for encoder settle (default: 100)
   --sim, --simulation        Query hp-sim for encoder angles (auto-enables WebSocket)
   --ws                       Enable hp-sim websocket bridge
   --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
@@ -57,10 +63,10 @@ async function main() {
   }
 
   const isSimulation = argv.includes('--sim') || argv.includes('--simulation');
-  const force = parseNumberArg(argv, '--force', 2.0);
-  const stableWindowMs = parseNumberArg(argv, '--stable-window-ms', 500);
-  const pollIntervalMs = parseNumberArg(argv, '--poll-ms', 100);
-  const feed = Number.isFinite(parseFloat(args.feed)) ? parseFloat(args.feed) : SWEEP_DEFAULTS.DEFAULT_FEED;
+  const idleForce = parseNumberArg(argv, '--force', 0.02);
+  const fixedAnchor = parseIntegerArg(argv, '--fixed-anchor', null);
+  const sampleDurationMs = parseNumberArg(argv, '--sample-ms', 4000);
+  const sampleIntervalMs = parseNumberArg(argv, '--sample-interval-ms', 200);
   const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
     ? parseFloat(args.speedup)
     : 1;
@@ -130,67 +136,31 @@ async function main() {
 
   let success = false;
   try {
-    const m666Reply = await send('M666');
-    const m666Values = parseM666(m666Reply?.reply);
-    const mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666Values, idx));
-
-    console.log(`Applying force state (40.0 position, 42.0 ${force} N, others ${LOW_FORCE_N} N)...`);
-    await applyForceModeState(send, {
+    const fixedAnchorIdx = Number.isFinite(fixedAnchor) ? fixedAnchor : null;
+    console.log(`Calibrating encoder noise (idle force ${idleForce} N)...`);
+    const noise = await calibrateEncoderNoise(send, {
       motorIds,
-      modes: motorIds.map((id) => {
-        if (id === '40.0') {
-          return 'position';
-        }
-        if (id === '42.0') {
-          return force;
-        }
-        return LOW_FORCE_N;
-      })
+      fixedAnchor: fixedAnchorIdx,
+      idleForce,
+      speedup,
+      sampleDurationMs,
+      sampleIntervalMs,
+      forbiddenForceAnchors: machineConfig.forbiddenSensors,
     });
 
-    console.log(`Waiting for stable encoders (${stableWindowMs}ms window, ${pollIntervalMs}ms poll)...`);
-    await waitForStableEncoders(send, motorIds, {
-      speedup,
-      stableWindowMs,
-      pollIntervalMs,
-    });
-
-    console.log('Returning motors to origin all at once...');
-    let lengths = await returnMotorsToOriginAllAtOnce(send, {
-      motorIds,
-      axes: machineConfig.axes,
-      mmPerDeg,
-      feed,
-      speedup,
-      settleOptions: {
-        stableWindowMs,
-        pollIntervalMs,
-      },
-    });
-    console.log(lengths);
-    if (lengths.some(x => Math.abs(x) > 0.5)) {
-      console.log('Returning motors to origin all at once...');
-      lengths = await returnMotorsToOriginAllAtOnce(send, {
-        motorIds,
-        axes: machineConfig.axes,
-        mmPerDeg,
-        feed,
-        speedup,
-        settleOptions: {
-          stableWindowMs,
-          pollIntervalMs,
-        },
+    console.log(JSON.stringify(noise, null, 2));
+    if (Array.isArray(noise.sigmaByMotorDeg)) {
+      console.log('Noise sigma per motor (deg):');
+      noise.sigmaByMotorDeg.forEach((value, idx) => {
+        const motorId = motorIds[idx] ?? `motor_${idx}`;
+        const display = Number.isFinite(value) ? value.toFixed(4) : 'n/a';
+        console.log(`  ${motorId}: ${display}`);
       });
-      console.log(lengths);
     }
 
-    if (lengths.every(x => Math.abs(x) < 1.0)) {
-      success = true;
-    } else {
-      success = false;
-    }
+    success = true;
   } catch (err) {
-    console.error(`E2E return-to-origin failed: ${err?.message || err}`);
+    console.error(`E2E calibrate-encoder-noise failed: ${err?.message || err}`);
   } finally {
     if (rrfProcess && !args.persistRrfSimulator) {
       stopProcess(rrfProcess);

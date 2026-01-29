@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { strict as assert } from 'node:assert';
-import { primeEncoders } from './uncalibrated_actions.mjs';
+import { primeEncoders } from '../../primitives/uncalibrated_actions.mjs';
 
 async function testPrimeEncoders() {
   const sent = [];

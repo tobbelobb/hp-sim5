@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { strict as assert } from 'node:assert';
-import { calculateReturnOrder, waitForStableEncoders } from './uncalibrated_actions.mjs';
+import { calculateReturnOrder, waitForStableEncoders } from '../../primitives/uncalibrated_actions.mjs';
 
 function testCalculateReturnOrder() {
   const order = calculateReturnOrder({

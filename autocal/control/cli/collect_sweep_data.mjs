@@ -2,7 +2,7 @@
 import path from 'node:path';
 import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
-import { createGcodeBridge, parseBridgeArgs } from './gcode_bridge.mjs';
+import { createGcodeBridge, parseBridgeArgs } from '../primitives/gcode_bridge.mjs';
 import {
   DEFAULT_RRF_PORT,
   sendHpSimPositionTraceMode,
@@ -12,16 +12,16 @@ import {
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from './encoder_utils.mjs';
+} from '../../../scripts/encoder_utils.mjs';
 import {
   collectSweepData,
   MACHINE_CONFIGS,
   MOTOR_IDS_BY_MACHINE,
   SWEEP_DEFAULTS,
-} from './sweep_data_collection.mjs';
-import { FORCE_TUNING_DEFAULTS } from './force_tuning.mjs';
+} from '../behaviors/sweep_data_collection.mjs';
+import { FORCE_TUNING_DEFAULTS } from '../behaviors/force_tuning.mjs';
 
-const SOURCE_FILE_LABEL = 'scripts/collect_sweep_data.mjs';
+const SOURCE_FILE_LABEL = 'autocal/control/cli/collect_sweep_data.mjs';
 let stepGcodeMode = false;
 let pendingPreSendDelayMs = 0;
 let stepReadline = null;
@@ -30,7 +30,7 @@ function getSourceLineFromStack(stack, { skipMatches = 0 } = {}) {
   if (!stack) {
     return null;
   }
-  const matches = [...stack.matchAll(/(scripts\/[^:\n]+\.mjs):(\d+):\d+/g)];
+  const matches = [...stack.matchAll(/((?:scripts|autocal\/control)\/[^:\n]+\.mjs):(\d+):\d+/g)];
   if (matches.length === 0) {
     return null;
   }
@@ -67,7 +67,7 @@ function sleep(ms) {
 }
 
 function printHelp() {
-  console.log(`Usage: node scripts/collect_sweep_data.mjs [options]
+  console.log(`Usage: node autocal/control/cli/collect_sweep_data.mjs [options]
 
 Collect circular sweep data where N-1 anchors are fixed, one anchor drives, and another is in force/sensor mode.
 
@@ -109,8 +109,8 @@ Options:
   --return-to-origin         Return all motors to encoder origin between sweeps and after collection
 
 Examples:
-  node scripts/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json
-  node scripts/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file scripts/sweep_configs/hangprinter_4.txt --debug-sweep`);
+  node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json
+  node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file scripts/sweep_configs/hangprinter_4.txt --debug-sweep`);
 }
 
 async function main() {
@@ -244,11 +244,11 @@ export {
   permutations,
   selectRepresentativeConfigs,
   validateSweepConfig,
-} from './sweep_data_collection.mjs';
+} from '../behaviors/sweep_data_collection.mjs';
 
 export {
   angleToLength,
-} from './uncalibrated_actions.mjs';
+} from '../primitives/uncalibrated_actions.mjs';
 
 const isMain = import.meta.url === pathToFileURL(process.argv[1] || '').href;
 if (isMain) {

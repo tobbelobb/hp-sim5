@@ -2,14 +2,14 @@
 import { strict as assert } from 'node:assert';
 import {
   angleToLength,
-} from './uncalibrated_actions.mjs';
+} from '../../primitives/uncalibrated_actions.mjs';
 import {
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
   selectRepresentativeConfigs,
   validateSweepConfig,
-} from './sweep_data_collection.mjs';
+} from '../../behaviors/sweep_data_collection.mjs';
 
 function testGenerateSweepConfigs() {
   const slideConfigs = generateSweepConfigs('slideprinter');

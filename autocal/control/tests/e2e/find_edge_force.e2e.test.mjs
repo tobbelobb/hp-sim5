@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { parseBridgeArgs, createGcodeBridge } from './gcode_bridge.mjs';
+import { parseBridgeArgs, createGcodeBridge } from '../../primitives/gcode_bridge.mjs';
 import {
   DEFAULT_RRF_PORT,
   computeMmPerDegree,
@@ -8,7 +8,7 @@ import {
   startRrfSimulator,
   stopProcess,
   waitForRrfSimulator,
-} from './encoder_utils.mjs';
+} from '../../../../scripts/encoder_utils.mjs';
 import {
   buildMovementThresholds,
   calibrateEncoderNoise,
@@ -17,9 +17,9 @@ import {
   findMinimumMovingForce,
   FORCE_TUNING_CONSTANTS,
   runForceTrial,
-} from './force_tuning.mjs';
-import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from './sweep_data_collection.mjs';
-import { applyForceModeState, primeEncoders } from './uncalibrated_actions.mjs';
+} from '../../behaviors/force_tuning.mjs';
+import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from '../../behaviors/sweep_data_collection.mjs';
+import { applyForceModeState, primeEncoders } from '../../primitives/uncalibrated_actions.mjs';
 
 function parseNumberArg(argv, flag, fallback) {
   const idx = argv.indexOf(flag);
@@ -44,7 +44,7 @@ function parseIntegerArg(argv, flag, fallback) {
 }
 
 function printHelp() {
-  console.log(`Usage: node scripts/e2e_test_find_edge_force.mjs [options]
+  console.log(`Usage: node autocal/control/tests/e2e/find_edge_force.e2e.test.mjs [options]
 
 Runs an end-to-end demo that finds the edge force (plateau entry) after movement starts.
 

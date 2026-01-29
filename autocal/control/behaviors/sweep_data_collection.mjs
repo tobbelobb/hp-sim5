@@ -5,7 +5,7 @@ import {
   parseM666,
   runMoveWithWait,
   sleep as baseSleep,
-} from './encoder_utils.mjs';
+} from '../../../scripts/encoder_utils.mjs';
 import {
   angleToLength,
   applyForceModeState,
@@ -13,7 +13,7 @@ import {
   primeEncoders,
   returnMotorsToOriginAllAtOnce,
   waitForStableEncoders,
-} from './uncalibrated_actions.mjs';
+} from '../primitives/uncalibrated_actions.mjs';
 import { FORCE_TUNING_DEFAULTS, tuneForce } from './force_tuning.mjs';
 
 export const MACHINE_CONFIGS = {

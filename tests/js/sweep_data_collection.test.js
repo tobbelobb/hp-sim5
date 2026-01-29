@@ -2,7 +2,7 @@ import {
   expandSubSweepsForConfig,
   generateSweepConfigs,
   MACHINE_CONFIGS,
-} from '../../scripts/sweep_data_collection.mjs';
+} from '../../autocal/control/behaviors/sweep_data_collection.mjs';
 
 describe('sweep config generation', () => {
   test('slideprinter sweeps cover both drive/sensor directions per fixed anchor', () => {

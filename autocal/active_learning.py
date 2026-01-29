@@ -267,7 +267,7 @@ def generate_candidate_sweeps(
     Generate sweep candidates compatible with position sweep collection.
 
     Drive/sensor are emitted in a canonical order that keeps sensor anchors out of
-    the forbidden set (carrying anchors). This matches collect_sweep_data.mjs sweep output.
+    the forbidden set (carrying anchors). This matches autocal/control/cli/collect_sweep_data.mjs sweep output.
     """
     n = int(num_anchors)
     dims = int(dimensions)

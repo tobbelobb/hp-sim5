@@ -1,4 +1,4 @@
-import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from './encoder_utils.mjs';
+import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../../../scripts/encoder_utils.mjs';
 import {
   angleToLength,
   applyForceModeState,
@@ -7,7 +7,7 @@ import {
   returnMotorsToOriginAllAtOnce,
   returnMotorsToOriginOneAtATime,
   waitForStableEncoders,
-} from './uncalibrated_actions.mjs';
+} from '../primitives/uncalibrated_actions.mjs';
 
 /**
  * Force tuning input reference (shared by validation/default helpers).

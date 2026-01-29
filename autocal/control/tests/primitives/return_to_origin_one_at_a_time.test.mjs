@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { strict as assert } from 'node:assert';
-import { returnMotorsToOriginOneAtATime } from './uncalibrated_actions.mjs';
+import { returnMotorsToOriginOneAtATime } from '../../primitives/uncalibrated_actions.mjs';
 
 async function testReturnToOriginOneAtATime() {
   const sent = [];

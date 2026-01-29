@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { WebSocketServer } from 'ws';
-import { RrfHttpBridge } from '../examples/js/slideprinter/rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../examples/js/slideprinter/rrfHttpBridge.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_ENCODER_TIMEOUT_MS = 2000;
