@@ -9,6 +9,15 @@ VSD="$ROOT/RRF/run/vsd"
 CFG="$VSD/sys/config_slideprinter.g"
 PORT="${PORT:-8080}"
 LOG_FILE="${RRF_HTTP_LOG_FILE:-/tmp/rrf_http_$(basename "$0" .sh).log}"
+ENDPOINT="http://localhost:${PORT}/machine/code"
+
+fail() {
+    echo "FAIL: $1"
+    if [[ "${RRF_HTTP_DEBUG:-}" != "1" ]]; then
+        echo "  (rrf_simulator log: $LOG_FILE)"
+    fi
+    exit 1
+}
 
 cmake --build "$ROOT/RRF/build" --target rrf_simulator -j
 
@@ -25,8 +34,8 @@ trap cleanup EXIT
 
 sleep 3
 
-RESPONSE=$(curl -s -w "\n%{http_code}" "http://localhost:${PORT}/machine/code" \
-    -d "M115" -H "Content-Type: text/plain")
+RESPONSE=$(curl -s -w "\n%{http_code}" "$ENDPOINT" \
+    -d "M115" -H "Content-Type: text/plain") || fail "curl failed for M115"
 HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
 BODY=$(echo "$RESPONSE" | head -n -1)
 

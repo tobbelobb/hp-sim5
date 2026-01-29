@@ -17,14 +17,17 @@ TESTS=(
     "$ROOT/tests/rrf_http_endpoint/test_03_motion.sh"
     "$ROOT/tests/rrf_http_endpoint/test_05_force_mode_then_pos_mode.sh"
 )
+BASE_PORT="${RRF_HTTP_BASE_PORT:-8080}"
 
 PASSED=0
 FAILED=0
 
-for TEST in "${TESTS[@]}"; do
+for INDEX in "${!TESTS[@]}"; do
+    TEST="${TESTS[$INDEX]}"
+    TEST_PORT=$((BASE_PORT + INDEX))
     echo ""
     if [ -f "$TEST" ]; then
-        if bash "$TEST"; then
+        if PORT="$TEST_PORT" bash "$TEST"; then
             PASSED=$((PASSED + 1))
         else
             FAILED=$((FAILED + 1))
@@ -39,7 +42,7 @@ if command -v node &> /dev/null; then
     SERVER_BIN="$ROOT/RRF/build/rrf_simulator"
     SERVER_VSD="$ROOT/RRF/run/vsd"
     SERVER_CFG="$SERVER_VSD/sys/config_slideprinter.g"
-    SERVER_PORT="${PORT:-8080}"
+    SERVER_PORT="${RRF_HTTP_JS_PORT:-$((BASE_PORT + ${#TESTS[@]}))}"
 
     LOG_FILE="${RRF_HTTP_LOG_FILE:-/tmp/rrf_http_js_integration.log}"
     if [[ "${RRF_HTTP_DEBUG:-}" == "1" ]]; then
@@ -54,7 +57,7 @@ if command -v node &> /dev/null; then
     trap cleanup_js EXIT
     sleep 3
 
-    if node --experimental-modules "$ROOT/tests/rrf_http_endpoint/test_04_js_integration.mjs"; then
+    if RRF_SERVER_URL="http://localhost:${SERVER_PORT}" node --experimental-modules "$ROOT/tests/rrf_http_endpoint/test_04_js_integration.mjs"; then
         PASSED=$((PASSED + 1))
     else
         FAILED=$((FAILED + 1))

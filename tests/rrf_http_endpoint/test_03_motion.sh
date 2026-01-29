@@ -9,10 +9,21 @@ VSD="$ROOT/RRF/run/vsd"
 CFG="$VSD/sys/config_slideprinter.g"
 PORT="${PORT:-8080}"
 LOG_FILE="${RRF_HTTP_LOG_FILE:-/tmp/rrf_http_$(basename "$0" .sh).log}"
+ENDPOINT="http://localhost:${PORT}/machine/code"
 
 fail() {
     echo "FAIL: $1"
+    if [[ "${RRF_HTTP_DEBUG:-}" != "1" ]]; then
+        echo "  (rrf_simulator log: $LOG_FILE)"
+    fi
     exit 1
+}
+
+curl_post() {
+    local data="$1"
+    local response
+    response=$(curl -s "$ENDPOINT" -d "$data" -H "Content-Type: text/plain") || fail "curl failed for '$data'"
+    echo "$response"
 }
 
 if [[ "${RRF_HTTP_DEBUG:-}" == "1" ]]; then
@@ -28,10 +39,9 @@ trap cleanup EXIT
 
 sleep 3
 
-curl -s "http://localhost:${PORT}/machine/code" -d "G28" -H "Content-Type: text/plain" > /dev/null
+curl_post "G28" > /dev/null
 
-RESPONSE=$(curl -s "http://localhost:${PORT}/machine/code" \
-    -d "G1 X10 Y10 F1000" -H "Content-Type: text/plain")
+RESPONSE=$(curl_post "G1 X10 Y10 F1000")
 
 if [[ "$RESPONSE" == *"---MOTION---"* ]]; then
     echo "  Motion data present: OK"
@@ -44,8 +54,7 @@ else
     echo "INFO: No motion delimiter (motion may be in separate channel)"
 fi
 
-RESPONSE=$(curl -s "http://localhost:${PORT}/machine/code" \
-    -d "M114" -H "Content-Type: text/plain")
+RESPONSE=$(curl_post "M114")
 
 if [[ "$RESPONSE" == *"X:"* || "$RESPONSE" == *"A:"* ]]; then
     echo "  Position report: OK"
