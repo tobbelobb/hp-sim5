@@ -110,7 +110,7 @@ Options:
 
 Examples:
   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json
-  node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file scripts/sweep_configs/hangprinter_4.txt --debug-sweep`);
+  node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/sweep_configs/hangprinter_4.txt --debug-sweep`);
 }
 
 async function main() {
