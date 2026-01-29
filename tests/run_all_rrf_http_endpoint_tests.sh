@@ -16,6 +16,7 @@ TESTS=(
     "$ROOT/tests/rrf_http_endpoint/test_02_set_force_mode.sh"
     "$ROOT/tests/rrf_http_endpoint/test_03_motion.sh"
     "$ROOT/tests/rrf_http_endpoint/test_05_force_mode_then_pos_mode.sh"
+    "$ROOT/tests/rrf_http_endpoint/test_06_subtask_extras.sh"
 )
 BASE_PORT="${RRF_HTTP_BASE_PORT:-8080}"
 
