@@ -22,6 +22,12 @@ if [[ "${RUN_E2E:-0}" == "1" ]]; then
   (cd "$ROOT" && ./test_http_subtasks.sh)
 fi
 
+if [[ "${RUN_RRF_HTTP_ENDPOINT_TESTS:-1}" == "1" ]]; then
+  echo ""
+  echo "== RRF HTTP endpoint tests =="
+  (cd "$ROOT" && tests/run_all_rrf_http_endpoint_tests.sh)
+fi
+
 if [[ "${RUN_SIM_E2E:-0}" == "1" ]]; then
   echo ""
   echo "== hp-sim UI E2E tests (requires visible browser) =="
