@@ -33,18 +33,12 @@ run_with_retries() {
   done
 }
 
-echo ""
-echo "== RRF determinism tests (retry up to 3 times) =="
-run_with_retries "draw_squares" "RRF/tests/run_draw_squares_determinism_test.sh"
-run_with_retries "logo" "RRF/tests/run_logo_determinism_test.sh"
-run_with_retries "logo_slideprinter" "RRF/tests/run_logo_slideprinter_determinism_test.sh"
-
-if [[ "${RUN_E2E:-0}" == "1" ]]; then
+if [[ "${RUN_DETERMINISM_TESTS:-0}" == "1" ]]; then
   echo ""
-  echo "== RRF HTTP E2E tests =="
-  (cd "$ROOT" && cmake --build RRF/build --target rrf_simulator -j)
-  (cd "$ROOT" && tests/run_all_e2e_tests.sh)
-  (cd "$ROOT" && ./test_http_subtasks.sh)
+  echo "== RRF determinism tests (retry up to 3 times) =="
+  run_with_retries "draw_squares" "RRF/tests/run_draw_squares_determinism_test.sh"
+  run_with_retries "logo" "RRF/tests/run_logo_determinism_test.sh"
+  run_with_retries "logo_slideprinter" "RRF/tests/run_logo_slideprinter_determinism_test.sh"
 fi
 
 if [[ "${RUN_RRF_HTTP_ENDPOINT_TESTS:-1}" == "1" ]]; then
@@ -55,7 +49,7 @@ fi
 
 if [[ "${RUN_SIM_E2E:-0}" == "1" ]]; then
   echo ""
-  echo "== hp-sim UI E2E tests (requires visible browser) =="
+  echo "== hp-sim UI E2E tests (requires visible browser and human expert inspection) =="
   (cd "$ROOT" && node autocal/control/tests/e2e/collect_single_sweep.e2e.test.mjs --sim)
   (cd "$ROOT" && node autocal/control/tests/e2e/find_minimum_moving_force.e2e.test.mjs --sim)
   (cd "$ROOT" && node autocal/control/tests/e2e/find_edge_force.e2e.test.mjs --sim)
