@@ -5,25 +5,24 @@
 hp-sim5 simulates the physics of [Hangprinter](https://hangprinter.org).
 Lines, spools, motors, and firmware are all simulated in great detail.
 
-Simulation makes Hangprinter experimentation blazingly fast and cheap.
-Structured experiments is what ultimately makes us able to improve Hangprinter.
+Simulation makes experimentation fast and cheap.
+Structured experiments enable us to improve Hangprinter.
 
 Example usecases:
- - **Automate and Validate Hardware Design** -- reduce guesswork when building new machines.
- - **Digital Twin** -- run the simulator before and during prints to optimise
-   speed and quality while avoiding catastrophes.
- - **Software design** -- enables rapid firmware development and experiments
-   with advanced control.
+ - **Automate and Validate Hardware Design**
+ - **Digital Twin**
+ - **Automate and Validate Software Design**
 
 Try the live apps:
-- A family of Slideprinters (2d Hangprinters) is currently deployed at [tobbelobb.github.io/hp-sim5/hp-sim/](https://tobbelobb.github.io/hp-sim5/hp-sim/)
-- A flipper game that tests the Cable Physics engine at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html)
+- A family of Slideprinters (2d Hangprinters) is currently deployed here: [hp-sim](https://tobbelobb.github.io/hp-sim5/hp-sim/).
+- A flipper game that tests the Cable Physics engine here: [flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html).
 
 ## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
 Müller](https://matthias-research.github.io/pages/index.html).
-hp-sim5 includes two Cable Joints implementations; one in JavaScript and one in Python.
-The JavaScript one is most commonly used because of its ease of deployment.
+
+hp-sim5 includes two implementations of both the physics engine and its Cable Joints library; one JavaScript and one in Python.
+They are equivalent so for simplicity we call sometimes refer to them as "the physics engine".
 
 The physics engine is the heart of hp-sim5, and lives in the src directory.
 For a deeper dive into the physics engine and the flipper demo see
@@ -41,7 +40,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
 ## Klipper fork
  - Has flex compensation from flex-compensation-dev
  - Has forward transform from forward-transform-dev
- - Much improved support for Hangprinter and other cable robots. On par with ReprapFirmware.
+ - Much improved support for Hangprinter and other cable robots. On par with ReprapFirmware (except the closed-loop parts, such as autocal and force/torque mode).
  - Learn more in this Klipper pull request: [klipper/pull/7093](https://github.com/Klipper3d/klipper/pull/7093)
 
 ## ReprapFirmware
@@ -54,7 +53,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
  - Our own repo solely devoted to developing flex compensation for all cable robots.
  - Provides two algorithms for flex compensation, called QP and Tikhonov. Both are implemented in our ReprapFirmware and Klipper forks.
  - Supports any anchor configuration.
- - Learn more in flex-compensation-dev/hangprinter-flex-compensation/README.md.
+ - Learn more in [flex-compensation-dev/hangprinter-flex-compensation/README.md](flex-compensation-dev/hangprinter-flex-compensation/README.md).
 
 ## Forward Transform Dev
  - Our own repo devoted to developing forward transforms for all cable robots.
@@ -65,7 +64,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    * "Nice", based on "Kinematics and statics of cable-driven parallel robots by interval-analysis-based methods", Berti (2015)
    * "Quadratic", based on "Fast and Reliable Iterative Cable-Driven Parallel Robot Forward Kinematics: A Quadratic Approximation Approach", by Mahnke & Caverly (2025)
  - The quadratic approach is generally best, and was chosen for ReprapFirmware and Klipper.
- - Learn more in forward-transform-dev/hangprinter-forward-transform/README.md.
+ - Learn more in [forward-transform-dev/hangprinter-forward-transform/README.md](forward-transform-dev/hangprinter-forward-transform/README.md).
 
 ## Autocal
  - Our own directory for developing automatic calibration.
@@ -78,7 +77,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    * Outlier-robust filtering on two levels. If a few data points are bad, they will be detected and discarded thanks to its GNC-IRLS style pointwise loss.
  - As a result, it will try very hard to find the anchors, without requiring any human guidance.
  - Compatible with all cable driven robots, real and sim. (Currently only been tested on simulated Slideprinters).
- - Learn more in `autocal/README.md` and `autocal/README_elliptical_feature_calibration.md`
+ - Learn more in [autocal/README.md](autocal/README.md) and [autocal/README_elliptical_feature_calibration.md](autocal/README_elliptical_feature_calibration.md).
 
 
 ## Quick Start
