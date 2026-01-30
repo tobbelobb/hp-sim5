@@ -3,69 +3,61 @@
 ![Demo](slideprinter_Hangprinter_logo_wiggling_and_losing_steps2.gif)
 
 hp-sim5 simulates the physics of [Hangprinter](https://hangprinter.org).
-hp-sim5 currently simulates:
+Lines, spools, motors, and firmware are all simulated in great detail.
 
- - How lines behave
- - How spools behave
- - How motors behave
- - etc etc
+Simulation makes Hangprinter experimentation blazingly fast and cheap.
+Structured experiments is what ultimately makes us able to improve Hangprinter.
 
-The goal is to reproduce real world Hangprints as closely as possible.
-
-The `Slideprinter` demo reproduces infills with resonance patterns, ringing after
-sharp corners, slack lines along smooth curves and even lost steps from overly
-aggressive moves.  All these issues become easier to understand and fix with
-this tool.
-
-Try the live demos:
-
-- A 2d Hangprinter called Slideprinter at [tobbelobb.github.io/hp-sim5/hp-sim/](https://tobbelobb.github.io/hp-sim5/hp-sim/)
-- A flipper game that tests the Cable Physics engine at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html)
-
-Intended uses:
- - **Hardware design** -- reduce guesswork when building new machines.
- - **Digital twin** -- run the simulator before and during prints to optimise
+Example usecases:
+ - **Automate and Validate Hardware Design** -- reduce guesswork when building new machines.
+ - **Digital Twin** -- run the simulator before and during prints to optimise
    speed and quality while avoiding catastrophes.
  - **Software design** -- enables rapid firmware development and experiments
-   with advanced control and AI.
+   with advanced control.
+
+Try the live apps:
+- A family of Slideprinters (2d Hangprinters) is currently deployed at [tobbelobb.github.io/hp-sim5/hp-sim/](https://tobbelobb.github.io/hp-sim5/hp-sim/)
+- A flipper game that tests the Cable Physics engine at [tobbelobb.github.io/hp-sim5/flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html)
 
 ## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
 Müller](https://matthias-research.github.io/pages/index.html).
-hp-sim5 includes two fully functional Cable Joints implementations; one in JavaScript and one in Python.
+hp-sim5 includes two Cable Joints implementations; one in JavaScript and one in Python.
+The JavaScript one is most commonly used because of its ease of deployment.
 
-The physics engine is the heart of hp-sim, and lives in the src directory.
-
+The physics engine is the heart of hp-sim5, and lives in the src directory.
 For a deeper dive into the physics engine and the flipper demo see
 `README_adv.md`.
 
 hp-sim5 also includes lots of other code (subrepos, or "sub-projects") to make the best use of the simulation within the Hangprinter Project:
- - *Klipper fork*, up-to-date Hangprinter compatibility, tested with hp-sim5.
- - *ReprapFirmware fork*, up-to-date Hangprinter compatibility, includes a new host version to enable hp-sim5 compatibility.
- - *flex-compensation-dev*. Our own repo solely devoted to developing flex compensation for all cable robots.
- - *forward-transform-dev*. Our own repo devoted to developing forward transforms for all cable robots.
- - *autocal*. Our own repo for developing automatic calibration.
+ - **klipper (fork)**
+ - **ReprapFirmware (fork)**
+ - **flex-compensation-dev**
+ - **forward-transform-dev**
+ - **autocal**
 
 hp-sim5 has added quite a bit to each of its sub-projects:
 
 ## Klipper fork
  - Has flex compensation from flex-compensation-dev
  - Has forward transform from forward-transform-dev
- - Has Hangprinter (and other cable robots) support on par with ReprapFirmware
+ - Much improved support for Hangprinter and other cable robots. On par with ReprapFirmware.
+ - Learn more in this Klipper pull request: [klipper/pull/7093](https://github.com/Klipper3d/klipper/pull/7093)
 
 ## ReprapFirmware
  - Has flex compensation from flex-compensation-dev
  - Has forward transform from forward-transform-dev
- - Has host control mode support on par with Klipper.
- - Learn more in RRF/README.md
+ - Has host control mode support similar to Klipper.
+ - Learn more in [RRF/README.md](RRF/README.md).
 
 ## Flex Compensation Dev
- - Provides two algorithms for flex compensation, called QP and Tikhonov.
- - Supports any anchor configuration, up to 26 anchors.
- - Tested on simulated data for 3 and 4 anchor configurations.
- - Learn more here in a Klipper pull request I made: [klipper/pull/7093](https://github.com/Klipper3d/klipper/pull/7093)
+ - Our own repo solely devoted to developing flex compensation for all cable robots.
+ - Provides two algorithms for flex compensation, called QP and Tikhonov. Both are implemented in our ReprapFirmware and Klipper forks.
+ - Supports any anchor configuration.
+ - Learn more in flex-compensation-dev/hangprinter-flex-compensation/README.md.
 
 ## Forward Transform Dev
+ - Our own repo devoted to developing forward transforms for all cable robots.
  - Provides state-of-the-art forward transform for a wide range of cable robots.
  - Tested on simulated data for five setups called Slideprinter, Hangprinter v3, Hangprinter v4, CubeCorners, and SkyCam.
  - Implements three approaches:
@@ -73,9 +65,10 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    * "Nice", based on "Kinematics and statics of cable-driven parallel robots by interval-analysis-based methods", Berti (2015)
    * "Quadratic", based on "Fast and Reliable Iterative Cable-Driven Parallel Robot Forward Kinematics: A Quadratic Approximation Approach", by Mahnke & Caverly (2025)
  - The quadratic approach is generally best, and was chosen for ReprapFirmware and Klipper.
- - See detailed comparisons in `Comparison_report_of_the_three_algorithms.md`.
+ - Learn more in forward-transform-dev/hangprinter-forward-transform/README.md.
 
 ## Autocal
+ - Our own directory for developing automatic calibration.
  - Provides a uniquely user friendly way to find anchor positions using torque/force mode + encoders only.
  - Very high level of abstraction, enabled by
    * Self-tuning of torques/forces to use during calibration
