@@ -12,10 +12,11 @@ The autocal requires a websocket between it and hp-sim5. Open it by adding `?gco
 If you see this, you're good to go:
 ![Image of hp-sim app](doc/hp-sim-startscreen.png)
 
+Initiate simulated data collection and semi-automatic (human-in-the-loop) calibration with:
+
 ```bash
 python autocal/active_calibrate.py \
   --sim \
-  --plot-residual-histogram \
   --collector-args --speedup 25
 ```
 
