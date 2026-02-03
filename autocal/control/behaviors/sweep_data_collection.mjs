@@ -1252,6 +1252,19 @@ export async function collectSweepData(send, context) {
     force_max_n: forceMax,
     ...(forceTuningMeta ?? {}),
   };
+  const noiseOriginDeg = Array.isArray(forceTuning?.noise_sigma_deg)
+    ? forceTuning.noise_sigma_deg.map((val) => (Number.isFinite(val) ? val : null))
+    : null;
+  let noiseOriginMm = null;
+  if (noiseOriginDeg && Array.isArray(mmPerDeg) && mmPerDeg.length > 0) {
+    noiseOriginMm = noiseOriginDeg.map((val, idx) => {
+      const mmPer = mmPerDeg[idx];
+      if (!Number.isFinite(val) || !Number.isFinite(mmPer)) {
+        return null;
+      }
+      return val * mmPer;
+    });
+  }
 
   const dataset = {
     version: DATASET_VERSION,
@@ -1272,6 +1285,8 @@ export async function collectSweepData(send, context) {
       },
       force_tuning: forceTuning,
       max_travel_mm: Number.isFinite(maxTravelMeta) ? maxTravelMeta : undefined,
+      encoder_noise_origin_deg: noiseOriginDeg ?? undefined,
+      encoder_noise_origin_mm: noiseOriginMm ?? undefined,
       encoder_noise: {
         method: 'mad',
         units: 'deg',

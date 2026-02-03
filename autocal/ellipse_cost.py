@@ -240,13 +240,7 @@ class EllipseCostFunction:
         if raw_noise_mm is None or not np.isfinite(raw_noise_mm) or raw_noise_mm < 0.0:
             raw_noise_mm = None
         self._encoder_noise_mm = raw_noise_mm
-        self._noise_norm_available = bool(self.noise_normalized) and (
-            self._encoder_noise_mm is not None
-            or (
-                self._mm_per_degree_by_axis is not None
-                and (self._sigma_floor_deg is not None or self._has_point_sigma)
-            )
-        )
+        self._noise_norm_available = bool(self.noise_normalized)
         if self._noise_norm_available:
             self.pointwise_cost_weight = 1.0
         self._pointwise_sigma_mult = float(_POINTWISE_SIGMA_MULT)
@@ -458,11 +452,16 @@ class EllipseCostFunction:
                         return mean
             return None
 
-        noise_mm = pick("encoder_noise_mm", "encoder_noise_mm_per_axis")
+        noise_mm = pick("encoder_noise_origin_mm", "encoder_noise_origin_mm_per_axis")
         if noise_mm is not None:
             return float(noise_mm)
 
-        noise_deg = pick("encoder_noise_deg", "encoder_noise_deg_per_axis")
+        noise_deg = pick("encoder_noise_origin_deg", "encoder_noise_origin_deg_per_axis")
+        if noise_deg is None:
+            noise_mm = pick("encoder_noise_mm", "encoder_noise_mm_per_axis")
+            if noise_mm is not None:
+                return float(noise_mm)
+            noise_deg = pick("encoder_noise_deg", "encoder_noise_deg_per_axis")
         if noise_deg is None:
             return None
         mm_per_deg = pick("mm_per_degree", "mm_per_degree_by_axis")
@@ -622,19 +621,15 @@ class EllipseCostFunction:
         floor_deg = self._sigma_floor_deg
         if sigma_deg is not None and floor_deg is not None and np.isfinite(floor_deg):
             sigma_deg = max(sigma_deg, float(floor_deg))
-        elif sigma_deg is None and floor_deg is not None and np.isfinite(floor_deg):
-            sigma_deg = float(floor_deg)
 
         if self._mm_per_degree_by_axis is not None and 0 <= axis_idx < len(self._mm_per_degree_by_axis):
             mm_per = self._mm_per_degree_by_axis[axis_idx]
             if np.isfinite(mm_per) and sigma_deg is not None:
                 return float(sigma_deg) * float(mm_per)
-            if np.isfinite(mm_per) and sigma_deg is None and floor_deg is not None and np.isfinite(floor_deg):
-                return float(floor_deg) * float(mm_per)
 
         if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
             return float(self._encoder_noise_mm)
-        return None
+        return float(self._pointwise_sigma_min_mm)
 
     def _extract_point_arrays(
         self,
