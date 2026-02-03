@@ -493,6 +493,7 @@ def calibrate_elliptical(
     sweep_metric: str = "outlier_ratio",
     use_noise_mean: bool = True,
     noise_normalized: bool = True,
+    sigma_source: str = "auto",
     verbose: bool = False,
     progress_every: int = 10,
     use_parallel: bool = True,
@@ -549,6 +550,7 @@ def calibrate_elliptical(
         sweep_metric=str(sweep_metric),
         use_noise_mean=bool(use_noise_mean),
         noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
         residuals_csv=residuals_csv,
         verbose=verbose,
     )
@@ -904,6 +906,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )
+    ellipse_parser.add_argument(
+        "--sigma-source",
+        choices=["auto", "point", "origin", "min"],
+        default="auto",
+        help="Sigma source for normalization: per-point, origin, or fallback min (default: auto).",
+    )
     ellipse_lengths_group = ellipse_parser.add_mutually_exclusive_group()
     ellipse_lengths_group.add_argument(
         "--use-noise-mean",
@@ -1153,6 +1161,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             sweep_metric=str(args.sweep_metric),
             use_noise_mean=bool(args.use_noise_mean),
+            sigma_source=str(args.sigma_source),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),

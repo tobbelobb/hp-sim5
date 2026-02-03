@@ -179,6 +179,7 @@ def solve_anchors(
     residuals_csv: Optional[Union[str, Path]] = None,
     use_noise_mean: bool = True,
     noise_normalized: bool = True,
+    sigma_source: str = "auto",
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -238,6 +239,7 @@ def solve_anchors(
                 residuals_csv=residuals_csv if idx == len(stages) - 1 else None,
                 use_noise_mean=use_noise_mean,
                 noise_normalized=noise_normalized,
+                sigma_source=sigma_source,
                 cost_callback=cost_callback if idx == len(stages) - 1 else None,
                 verbose=verbose,
             )
@@ -265,6 +267,7 @@ def solve_anchors(
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
         use_noise_mean=bool(use_noise_mean),
         noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
     )
 
     method_raw = str(method or "L-BFGS-B")

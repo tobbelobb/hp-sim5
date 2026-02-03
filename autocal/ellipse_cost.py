@@ -199,6 +199,7 @@ class EllipseCostFunction:
         sweep_metric: str = "outlier_ratio",
         use_noise_mean: bool = True,
         noise_normalized: bool = True,
+        sigma_source: str = "auto",
     ) -> None:
         (
             self.machine_type,
@@ -221,6 +222,9 @@ class EllipseCostFunction:
         self.sweep_metric = str(sweep_metric or "mad").strip().lower()
         self.use_noise_mean = bool(use_noise_mean)
         self.noise_normalized = bool(noise_normalized)
+        self.sigma_source = str(sigma_source or "auto").strip().lower()
+        if self.sigma_source not in ("auto", "point", "origin", "min"):
+            self.sigma_source = "auto"
         self._mm_per_degree_by_axis = self._extract_mm_per_degree_by_axis(dataset, self.num_anchors)
         self._sigma_floor_deg = self._extract_sigma_floor_deg(dataset)
         self._sigma_floor_mm_by_axis = None
@@ -602,6 +606,15 @@ class EllipseCostFunction:
         return float(val)
 
     def _sigma_mm_for_point(self, point: Union[Sweep, dict, object], axis_idx: int) -> Optional[float]:
+        source = self.sigma_source
+        if source == "min":
+            return float(self._pointwise_sigma_min_mm)
+
+        if source == "origin":
+            if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
+                return float(self._encoder_noise_mm)
+            return float(self._pointwise_sigma_min_mm)
+
         sigma_deg: Optional[float] = None
         sigma_raw = self._point_field(point, "sigma")
         if isinstance(sigma_raw, np.ndarray):
@@ -626,6 +639,9 @@ class EllipseCostFunction:
             mm_per = self._mm_per_degree_by_axis[axis_idx]
             if np.isfinite(mm_per) and sigma_deg is not None:
                 return float(sigma_deg) * float(mm_per)
+
+        if source == "point":
+            return float(self._pointwise_sigma_min_mm)
 
         if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
             return float(self._encoder_noise_mm)
