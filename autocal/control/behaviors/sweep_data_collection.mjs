@@ -41,6 +41,7 @@ const DEFAULT_FEED = 1400;
 const DEFAULT_FORCE_MID_N = 0.05;
 const DEFAULT_SETTLE_MS = 200;
 const DEFAULT_SAMPLE_RATE_HZ = 40;
+const DEFAULT_FIXED_TOLERANCE_MM = 0.01;
 const DATASET_VERSION = '2.0';
 
 export const SWEEP_DEFAULTS = {
@@ -50,6 +51,7 @@ export const SWEEP_DEFAULTS = {
   DEFAULT_FORCE_MID_N,
   DEFAULT_SETTLE_MS,
   DEFAULT_SAMPLE_RATE_HZ,
+  DEFAULT_FIXED_TOLERANCE_MM,
   DATASET_VERSION,
 };
 
@@ -461,6 +463,7 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
   const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
 
   const fixedAnchors = sweepConfig.fixedAnchors || [];
+  const fixedSet = new Set(fixedAnchors);
   const movingAnchors = new Set();
   for (let i = 0; i < fixedAnchors.length; i += 1) {
     const anchorIdx = fixedAnchors[i];
@@ -474,13 +477,75 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
 
   if (moveParts.length > 0) {
     const preMoveModes = motorIds.map((_, idx) => (
-      movingAnchors.has(idx) ? 'position' : forceMid
+      (movingAnchors.has(idx) || fixedSet.has(idx)) ? 'position' : forceMid
     ));
     await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
     await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
   }
 
   return;
+}
+
+function buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorCount) {
+  if (!Array.isArray(fixedAnchors) || fixedAnchors.length === 0) {
+    return null;
+  }
+  const targets = new Array(motorCount).fill(null);
+  for (let i = 0; i < fixedAnchors.length; i += 1) {
+    const anchorIdx = fixedAnchors[i];
+    if (!Number.isFinite(anchorIdx)) {
+      continue;
+    }
+    const target = Array.isArray(fixedTargets) && Number.isFinite(fixedTargets[i])
+      ? fixedTargets[i]
+      : 0;
+    targets[anchorIdx] = target;
+  }
+  return targets;
+}
+
+async function enforceFixedAnchors(sendFn, options = {}) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    fixedTargetByAnchor,
+    feed = DEFAULT_FEED,
+    speedup,
+    toleranceMm = DEFAULT_FIXED_TOLERANCE_MM,
+  } = options;
+  if (!Array.isArray(fixedTargetByAnchor) || fixedTargetByAnchor.length === 0) {
+    return null;
+  }
+  const lengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  const moveParts = [];
+  for (let idx = 0; idx < fixedTargetByAnchor.length; idx += 1) {
+    const target = fixedTargetByAnchor[idx];
+    if (!Number.isFinite(target)) {
+      continue;
+    }
+    const mmPer = Array.isArray(mmPerDeg) ? mmPerDeg[idx] : null;
+    if (!Number.isFinite(mmPer)) {
+      continue;
+    }
+    const current = lengths[idx];
+    if (!Number.isFinite(current)) {
+      continue;
+    }
+    const delta = target - current;
+    if (Math.abs(delta) > toleranceMm) {
+      const axis = axes[idx];
+      if (axis) {
+        moveParts.push(`${axis}${delta.toFixed(3)}`);
+      }
+    }
+  }
+  if (moveParts.length === 0) {
+    return lengths;
+  }
+  await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
+  await waitForStableEncoders(sendFn, motorIds, speedup);
+  return getCurrentLengths(sendFn, motorIds, mmPerDeg);
 }
 
 async function measureMaxTravelMm(sendFn, options = {}) {
@@ -647,6 +712,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     forceMid,
     forceMax,
     fixedAnchors,
+    fixedTargets,
     projectZeroTension,
     forbiddenForceAnchors = [],
   } = options;
@@ -654,6 +720,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const driveAxis = axes[driveAnchor];
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
+  const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
 
   await waitForStableEncoders(sendFn, motorIds, speedup);
   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
@@ -732,6 +799,17 @@ async function performForceSweep(sendFn, sweepConfig, options) {
         forceMid,
         speedup,
       });
+      if (fixedTargetByAnchor) {
+        // eslint-disable-next-line no-await-in-loop
+        await enforceFixedAnchors(sendFn, {
+          motorIds,
+          axes,
+          mmPerDeg,
+          fixedTargetByAnchor,
+          feed,
+          speedup,
+        });
+      }
       // eslint-disable-next-line no-await-in-loop
       await runMoveWithWait(
         sendFn,
@@ -976,6 +1054,7 @@ export async function collectSweepData(send, context) {
         forceMid,
         forceMax,
         fixedAnchors: sweepConfig.fixedAnchors,
+        fixedTargets,
         projectZeroTension: options.projectZeroTension,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
       });
