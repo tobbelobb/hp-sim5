@@ -653,7 +653,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
 
-  waitForStableEncoders(sendFn, motorIds, speedup);
+  await waitForStableEncoders(sendFn, motorIds, speedup);
   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
   const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
 
