@@ -135,6 +135,175 @@ export async function applyForceModeState(sendFn, {
   await sendFn(`M569.4 P${motorIds.join(':')} T${forces.join(':')}`);
 }
 
+export async function collectDataPoint(sendFn, options = {}) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    driveAnchor,
+    sensorAnchors,
+    fixedAnchors = [],
+    forbiddenForceAnchors = [],
+    forceMax,
+    forceMin,
+    forceMid,
+    driveAxis,
+    moveDeltaMm,
+    feed,
+    speedup,
+    settleOptions = {},
+    recordPoint,
+    driveSetpointMm,
+    stepIndex,
+    stepCount,
+    restoreToModeWhenFinished,
+    projectZeroTension = false,
+  } = options;
+
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    throw new Error('collectDataPoint requires motorIds');
+  }
+  if (!Array.isArray(axes) || axes.length !== motorIds.length) {
+    throw new Error('collectDataPoint requires axes mapping');
+  }
+  if (!Array.isArray(mmPerDeg) || mmPerDeg.length !== motorIds.length) {
+    throw new Error('collectDataPoint requires mmPerDeg mapping');
+  }
+
+  const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+  const sensorSet = new Set(
+    (Array.isArray(sensorAnchors) ? sensorAnchors : [sensorAnchors])
+      .filter((idx) => Number.isFinite(idx)),
+  );
+  const forbidden = new Set((forbiddenForceAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+  const fallbackForce = Number.isFinite(forceMid)
+    ? forceMid
+    : (Number.isFinite(forceMin) ? forceMin : 0);
+
+  const buildModes = (sensorForce) => motorIds.map((_, idx) => {
+    if (idx === driveAnchor) {
+      return 'position';
+    }
+    if (fixedSet.has(idx) || forbidden.has(idx)) {
+      return 'position';
+    }
+    if (sensorSet.has(idx)) {
+      return sensorForce;
+    }
+    return fallbackForce;
+  });
+
+  const returnModes = buildModes(
+    Number.isFinite(forceMid)
+      ? forceMid * 2.0
+      : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
+  );
+  await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+
+  if (Number.isFinite(moveDeltaMm) && Math.abs(moveDeltaMm) > 1e-6) {
+    if (!driveAxis) {
+      throw new Error('collectDataPoint requires driveAxis when moveDeltaMm is provided');
+    }
+    await runMoveWithWait(
+      sendFn,
+      `G1 H2 ${driveAxis}${moveDeltaMm.toFixed(3)} F${feed}`,
+      speedup,
+      { axes },
+    );
+  }
+
+  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+
+  let anglesDeg = null;
+  let stableData = null;
+
+  if (projectZeroTension) {
+    const maxForce = Number.isFinite(forceMax) ? forceMax : null;
+    const minForce = Number.isFinite(forceMin) ? forceMin : null;
+    const samples = [];
+    if (maxForce !== null && minForce !== null) {
+      const steps = 10;
+      const stepDelta = steps > 1 ? (minForce - maxForce) / (steps - 1) : 0;
+      for (let idx = 0; idx < steps; idx += 1) {
+        const f = maxForce + stepDelta * idx;
+        await applyForceModeState(sendFn, { motorIds, modes: buildModes(f) });
+        // eslint-disable-next-line no-await-in-loop
+        const stable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+        samples.push({ force: f, anglesDeg: stable.anglesDeg });
+        stableData = stable;
+      }
+    }
+
+    const valid = samples.filter((sample) =>
+      Number.isFinite(sample.force)
+      && Array.isArray(sample.anglesDeg)
+      && sample.anglesDeg.length === motorIds.length
+      && sample.anglesDeg.every((val) => Number.isFinite(val)),
+    );
+    const fallbackAngles = valid.length > 0 ? valid[valid.length - 1].anglesDeg : null;
+    let projected = null;
+    if (valid.length >= 2) {
+      const forces = valid.map((sample) => sample.force);
+      const meanForce = forces.reduce((acc, v) => acc + v, 0) / forces.length;
+      const varForce = forces.reduce((acc, v) => acc + (v - meanForce) ** 2, 0);
+      if (varForce > 1e-9) {
+        projected = new Array(motorIds.length).fill(0);
+        for (let axisIdx = 0; axisIdx < motorIds.length; axisIdx += 1) {
+          let meanAngle = 0;
+          for (let i = 0; i < valid.length; i += 1) {
+            meanAngle += valid[i].anglesDeg[axisIdx];
+          }
+          meanAngle /= valid.length;
+          let cov = 0;
+          for (let i = 0; i < valid.length; i += 1) {
+            cov += (forces[i] - meanForce) * (valid[i].anglesDeg[axisIdx] - meanAngle);
+          }
+          const slope = cov / varForce;
+          const intercept = meanAngle - slope * meanForce;
+          if (!Number.isFinite(intercept)) {
+            projected = null;
+            break;
+          }
+          projected[axisIdx] = intercept;
+        }
+      }
+    }
+    anglesDeg = projected ?? fallbackAngles;
+    if (!Array.isArray(anglesDeg)) {
+      stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+      anglesDeg = stableData.anglesDeg;
+    }
+  } else {
+    const relaxModes = buildModes(fallbackForce);
+    await applyForceModeState(sendFn, { motorIds, modes: relaxModes });
+    stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    anglesDeg = stableData.anglesDeg;
+  }
+
+  let lengths = null;
+  if (Array.isArray(anglesDeg)) {
+    lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+    if (typeof recordPoint === 'function') {
+      recordPoint(anglesDeg, driveSetpointMm, stepIndex, stepCount);
+    }
+  }
+
+  if (restoreToModeWhenFinished !== undefined) {
+    await applyForceModeState(sendFn, { motorIds, modes: restoreToModeWhenFinished });
+    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  } else {
+    await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  }
+
+  return {
+    stableData,
+    anglesDeg,
+    lengths,
+  };
+}
+
 export function calculateReturnOrder({ fixedAnchors = [], currentLengths = [] } = {}) {
   const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
   const others = [];

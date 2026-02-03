@@ -9,6 +9,7 @@ import {
 import {
   angleToLength,
   applyForceModeState,
+  collectDataPoint,
   getCurrentLengths,
   primeEncoders,
   returnMotorsToOriginAllAtOnce,
@@ -70,6 +71,7 @@ export const SWEEP_DEFAULTS = {
  * autoTuneForce/noAutoTuneForce: booleans, auto-tuning behavior flags.
  * returnToOrigin: boolean, return all motors to origin between sweeps and after collection.
  * outputFile: string or null, output dataset JSON path.
+ * projectZeroTension: boolean, project encoder readings to zero tension during collection.
  */
 
 function range(n) {
@@ -254,6 +256,7 @@ function validateSweepCollectionInput(context) {
     autoTuneForce: !!args.autoTuneForce,
     noAutoTuneForce: !!args.noAutoTuneForce,
     returnToOrigin: !!args.returnToOrigin,
+    projectZeroTension: !!args.projectZeroTension,
     outputFile: args.outputFile ?? null,
   };
 }
@@ -642,6 +645,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     forceMid,
     forceMax,
     fixedAnchors,
+    projectZeroTension,
     forbiddenForceAnchors = [],
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
@@ -713,27 +717,32 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       ? driveEndPointMm + initialStepMm
       : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
-    if (Math.abs(delta) > 1e-6) {
-      // eslint-disable-next-line no-await-in-loop
-      await runMoveWithWait(sendFn, `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feed}`, speedup, { axes });
-    }
     // eslint-disable-next-line no-await-in-loop
-    const stable = await waitForStableEncoders(sendFn, motorIds, speedup);
-    const relaxForDataCollectionModes = motorIds.map((_, idx) => {
-      if (idx === driveAnchor) {
-        return 'position';
-      }
-      if (fixedSet.has(idx) || forbidden.has(idx)) {
-        return 'position';
-      }
-      return forceMid;
+    const collected = await collectDataPoint(sendFn, {
+      motorIds,
+      axes,
+      mmPerDeg,
+      driveAnchor,
+      sensorAnchors: [sensorAnchor],
+      fixedAnchors,
+      forbiddenForceAnchors,
+      forceMax,
+      forceMin: forceMid,
+      forceMid,
+      driveAxis,
+      moveDeltaMm: delta,
+      feed,
+      speedup,
+      recordPoint,
+      driveSetpointMm: target,
+      stepIndex: stepIdx - 1,
+      stepCount,
+      projectZeroTension: !!projectZeroTension,
     });
-    await applyForceModeState(sendFn, { motorIds, modes: relaxForDataCollectionModes });
-    const stableData = await waitForStableEncoders(sendFn, motorIds, speedup);
-    const lengths = recordPoint(stableData.anglesDeg, target, stepIdx - 1, stepCount);
-    currentDrive = lengths[driveAnchor] ?? currentDrive;
-    await applyForceModeState(sendFn, { motorIds, modes: returnModes });
-    await waitForStableEncoders(sendFn, motorIds, speedup);
+    const lengths = collected?.lengths;
+    if (Array.isArray(lengths)) {
+      currentDrive = lengths[driveAnchor] ?? currentDrive;
+    }
   }
 
   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm } };
@@ -943,6 +952,7 @@ export async function collectSweepData(send, context) {
         forceMid,
         forceMax,
         fixedAnchors: sweepConfig.fixedAnchors,
+        projectZeroTension: options.projectZeroTension,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
       });
       const remapped = remapDataPointsToCanonical(

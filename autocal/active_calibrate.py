@@ -1312,6 +1312,11 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Reset hp-sim once before the first sweep (only when --sim)",
     )
+    parser.add_argument(
+        "--project-zero-tension",
+        action="store_true",
+        help="Project encoder readings to zero tension during each data point.",
+    )
 
 
 def build_ellipse_parser() -> argparse.ArgumentParser:
@@ -1423,6 +1428,8 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_ellipse_parser()
     args = parser.parse_args(argv)
     collector_args = _clean_collector_args(args.collector_args)
+    if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
+        collector_args.append("--project-zero-tension")
     return ellipse_active(
         args.dataset,
         machine_type=str(args.machine_type),
@@ -1472,6 +1479,8 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
     args = parser.parse_args(argv)
     collector_args = _clean_collector_args(args.collector_args)
+    if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
+        collector_args.append("--project-zero-tension")
     return ellipse_loop(
         work_dataset=args.dataset,
         machine_type=str(args.machine_type),
