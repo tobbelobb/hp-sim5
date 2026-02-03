@@ -626,6 +626,7 @@ def _plan_next_ellipse_sweep(
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     sweep_metric: str,
+    use_noise_mean: bool,
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
@@ -665,6 +666,7 @@ def _plan_next_ellipse_sweep(
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         sweep_metric=str(sweep_metric),
+        use_noise_mean=bool(use_noise_mean),
         generate_report=bool(generate_report),
         include_debug_fits=False,
         residuals_csv=residuals_csv,
@@ -806,6 +808,40 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
     if isinstance(cal, dict) and "gcode" in cal:
         print(str(cal["gcode"]))
     print(f"; cost={cost:.6g} {_format_anchor_stats(anchors)}")
+    if isinstance(cal, dict):
+        details = cal.get("details")
+        if isinstance(details, dict):
+            noise_metrics = details.get("noise_metrics")
+            if isinstance(noise_metrics, dict):
+                j_val = noise_metrics.get("normalized_cost")
+                chi2_red = noise_metrics.get("chi2_red")
+                z_med = noise_metrics.get("median_abs_z")
+                z_p95 = noise_metrics.get("p95_abs_z")
+                outlier_ratio = noise_metrics.get("outlier_ratio")
+                n_obs = noise_metrics.get("n_obs")
+                norm_mode = noise_metrics.get("norm_mode")
+                lengths_mode = noise_metrics.get("lengths_mode")
+                def _fmt(value: object, *, suffix: str = "") -> str:
+                    try:
+                        f = float(value)
+                    except (TypeError, ValueError):
+                        return "n/a"
+                    if not np.isfinite(f):
+                        return "n/a"
+                    return f"{f:.4g}{suffix}"
+
+                j_str = _fmt(j_val)
+                chi2_str = _fmt(chi2_red)
+                med_str = _fmt(z_med)
+                p95_str = _fmt(z_p95)
+                outlier_str = _fmt(outlier_ratio)
+                n_str = f"{int(n_obs)}" if isinstance(n_obs, (int, float)) and np.isfinite(n_obs) else "n/a"
+                mode_str = str(norm_mode) if norm_mode is not None else "n/a"
+                lengths_str = str(lengths_mode) if lengths_mode is not None else "n/a"
+                print(
+                    f"; noise_cost: J={j_str} chi2_red={chi2_str} |z|_med={med_str} |z|_p95={p95_str} "
+                    f"outlier_ratio={outlier_str} N={n_str} mode={mode_str} lengths={lengths_str}"
+                )
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
         print(f"; info rank: {int(np.linalg.matrix_rank(info))}/{info.shape[0]} {_covariance_report(cov)}")
     if isinstance(noise_summary, dict):
@@ -875,6 +911,7 @@ def ellipse_active(
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     sweep_metric: str,
+    use_noise_mean: bool,
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
@@ -930,6 +967,7 @@ def ellipse_active(
         pointwise_global_mad=pointwise_global_mad,
         sweep_wise_filtering=sweep_wise_filtering,
         sweep_metric=sweep_metric,
+        use_noise_mean=use_noise_mean,
         robust_debug=robust_debug,
         residuals_csv=residuals_csv,
         generate_report=generate_report,
@@ -1020,6 +1058,7 @@ def ellipse_loop(
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
     sweep_metric: str,
+    use_noise_mean: bool,
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
@@ -1184,6 +1223,7 @@ def ellipse_loop(
             pointwise_global_mad=pointwise_global_mad,
             sweep_wise_filtering=sweep_wise_filtering,
             sweep_metric=sweep_metric,
+            use_noise_mean=use_noise_mean,
             robust_debug=robust_debug,
             residuals_csv=step_residuals_csv,
             generate_report=generate_report,
@@ -1352,6 +1392,19 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).",
     )
+    lengths_group = parser.add_mutually_exclusive_group()
+    lengths_group.add_argument(
+        "--use-noise-mean",
+        dest="use_noise_mean",
+        action="store_true",
+        help="Use encoder noise mean lengths when available (default).",
+    )
+    lengths_group.add_argument(
+        "--use-raw-lengths",
+        dest="use_noise_mean",
+        action="store_false",
+        help="Use raw l_drive/l_sensor lengths (disable noise-mean datapoints).",
+    )
     parser.add_argument(
         "--robust-debug",
         dest="robust_debug",
@@ -1376,6 +1429,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         pointwise_global_mad=True,
         sweep_wise_filtering=True,
         robust_debug=True,
+        use_noise_mean=True,
     )
 
 
@@ -1564,6 +1618,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         pointwise_global_mad=bool(args.pointwise_global_mad),
         sweep_wise_filtering=bool(args.sweep_wise_filtering),
         sweep_metric=str(args.sweep_metric),
+        use_noise_mean=bool(args.use_noise_mean),
         robust_debug=bool(args.robust_debug),
         residuals_csv=args.residuals_csv,
         generate_report=bool(args.report),
@@ -1620,6 +1675,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         pointwise_global_mad=bool(args.pointwise_global_mad),
         sweep_wise_filtering=bool(args.sweep_wise_filtering),
         sweep_metric=str(args.sweep_metric),
+        use_noise_mean=bool(args.use_noise_mean),
         robust_debug=bool(args.robust_debug),
         residuals_csv=args.residuals_csv,
         generate_report=bool(args.report),

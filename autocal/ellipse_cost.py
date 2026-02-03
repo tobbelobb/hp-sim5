@@ -41,6 +41,7 @@ class CostResult:
     num_valid_sweeps: int
     num_invalid_sweeps: int
     anchor_estimate: np.ndarray
+    noise_metrics: Optional[Dict[str, object]] = None
 
 
 def canonicalize_geometry(
@@ -196,6 +197,8 @@ class EllipseCostFunction:
         pointwise_filter_stage: int = 0,
         pointwise_global_mad: bool = True,
         sweep_metric: str = "outlier_ratio",
+        use_noise_mean: bool = True,
+        noise_normalized: bool = True,
     ) -> None:
         (
             self.machine_type,
@@ -216,6 +219,17 @@ class EllipseCostFunction:
         self.pointwise_filter_stage = int(pointwise_filter_stage)
         self.pointwise_global_mad = bool(pointwise_global_mad)
         self.sweep_metric = str(sweep_metric or "mad").strip().lower()
+        self.use_noise_mean = bool(use_noise_mean)
+        self.noise_normalized = bool(noise_normalized)
+        self._mm_per_degree_by_axis = self._extract_mm_per_degree_by_axis(dataset, self.num_anchors)
+        self._sigma_floor_deg = self._extract_sigma_floor_deg(dataset)
+        self._sigma_floor_mm_by_axis = None
+        if self._sigma_floor_deg is not None and self._mm_per_degree_by_axis is not None:
+            self._sigma_floor_mm_by_axis = [
+                float(self._sigma_floor_deg) * float(v) if np.isfinite(v) else float("nan")
+                for v in self._mm_per_degree_by_axis
+            ]
+        self._has_point_sigma = self._dataset_has_sigma(dataset)
 
         lb, ub = get_anchor_bounds(self.machine_type)
         ub_mat = np.asarray(ub, dtype=float).reshape(self.num_anchors, self.dimensions)
@@ -226,6 +240,15 @@ class EllipseCostFunction:
         if raw_noise_mm is None or not np.isfinite(raw_noise_mm) or raw_noise_mm < 0.0:
             raw_noise_mm = None
         self._encoder_noise_mm = raw_noise_mm
+        self._noise_norm_available = bool(self.noise_normalized) and (
+            self._encoder_noise_mm is not None
+            or (
+                self._mm_per_degree_by_axis is not None
+                and (self._sigma_floor_deg is not None or self._has_point_sigma)
+            )
+        )
+        if self._noise_norm_available:
+            self.pointwise_cost_weight = 1.0
         self._pointwise_sigma_mult = float(_POINTWISE_SIGMA_MULT)
         self._pointwise_sigma_min_mm = float(_POINTWISE_MIN_SIGMA_MM)
         sigma_scaled_mm = None
@@ -255,18 +278,26 @@ class EllipseCostFunction:
                 spring_k_multiplier=float(spring_k_multiplier),
             )
 
-    @staticmethod
     def _extract_sweep_arrays(
-        sweep: Union[Sweep, dict]
-    ) -> Tuple[List[int], List[float], int, int, np.ndarray, np.ndarray, str]:
+        self, sweep: Union[Sweep, dict]
+    ) -> Tuple[
+        List[int],
+        List[float],
+        int,
+        int,
+        np.ndarray,
+        np.ndarray,
+        str,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+    ]:
         """Extract sweep role metadata and drive/sensor arrays."""
         if isinstance(sweep, Sweep):
             fixed_indices = list(sweep.fixed_anchors)
             fixed_deltas = list(sweep.fixed_lengths)
             drive_idx = sweep.drive_anchor
             sensor_idx = sweep.sensor_anchor
-            l_drive = np.array([p.l_drive for p in sweep.data_points], dtype=float)
-            l_sensor = np.array([p.l_sensor for p in sweep.data_points], dtype=float)
+            data_points = list(sweep.data_points or [])
             sweep_id = sweep.id
         else:
             fixed_indices = list(sweep.get("fixed_anchors", []))
@@ -274,11 +305,24 @@ class EllipseCostFunction:
             drive_idx = int(sweep.get("drive_anchor"))
             sensor_idx = int(sweep.get("sensor_anchor"))
             data_points = sweep.get("data_points", [])
-            l_drive = np.array([p.get("l_drive", 0.0) for p in data_points], dtype=float)
-            l_sensor = np.array([p.get("l_sensor", 0.0) for p in data_points], dtype=float)
+            if not isinstance(data_points, list):
+                data_points = []
             sweep_id = sweep.get("id", "")
 
-        return fixed_indices, fixed_deltas, drive_idx, sensor_idx, l_drive, l_sensor, sweep_id
+        l_drive, l_sensor, sigma_drive, sigma_sensor = self._extract_point_arrays(
+            data_points, int(drive_idx), int(sensor_idx)
+        )
+        return (
+            fixed_indices,
+            fixed_deltas,
+            int(drive_idx),
+            int(sensor_idx),
+            l_drive,
+            l_sensor,
+            str(sweep_id),
+            sigma_drive,
+            sigma_sensor,
+        )
 
     @staticmethod
     def _extract_tension_arrays(
@@ -309,6 +353,8 @@ class EllipseCostFunction:
             l_drive,
             l_sensor,
             sweep_id,
+            sigma_drive_mm,
+            sigma_sensor_mm,
         ) = self._extract_sweep_arrays(sweep)
 
         # Baseline reconstruction is only valid when absolute lengths remain positive. If a guess
@@ -346,7 +392,17 @@ class EllipseCostFunction:
             )
         )
         penalty = penalty / (typical * typical)
-        return fixed_lengths_abs, drive_idx, sensor_idx, l_drive_abs, l_sensor_abs, sweep_id, penalty
+        return (
+            fixed_lengths_abs,
+            drive_idx,
+            sensor_idx,
+            l_drive_abs,
+            l_sensor_abs,
+            sweep_id,
+            penalty,
+            sigma_drive_mm,
+            sigma_sensor_mm,
+        )
 
     @staticmethod
     def _mean_finite(values: Iterable[float]) -> Optional[float]:
@@ -414,6 +470,227 @@ class EllipseCostFunction:
             return None
         return float(noise_deg) * float(mm_per_deg)
 
+    @classmethod
+    def _extract_mm_per_degree_by_axis(
+        cls, dataset: Union[dict, "SweepDataset"], num_anchors: int
+    ) -> Optional[List[float]]:
+        if not isinstance(dataset, dict):
+            return None
+        config = dataset.get("config", {}) or {}
+        if not isinstance(config, dict):
+            return None
+        raw = config.get("mm_per_degree")
+        if raw is None:
+            raw = config.get("mm_per_degree_by_axis")
+        if raw is None:
+            return None
+
+        values: List[object]
+        if isinstance(raw, dict):
+            keyed: List[Tuple[int, object]] = []
+            for key, val in raw.items():
+                try:
+                    idx = int(key)
+                except (TypeError, ValueError):
+                    continue
+                keyed.append((idx, val))
+            if keyed:
+                keyed.sort(key=lambda pair: pair[0])
+                values = [val for _idx, val in keyed]
+            else:
+                values = list(raw.values())
+        elif isinstance(raw, (list, tuple, np.ndarray)):
+            values = list(raw)
+        else:
+            values = [raw]
+
+        out: List[float] = []
+        for v in values:
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                f = float("nan")
+            out.append(f if np.isfinite(f) else float("nan"))
+
+        if not out:
+            return None
+
+        count = int(num_anchors)
+        if count <= 0:
+            return None
+        if len(out) < count:
+            if len(out) == 1:
+                out = out * count
+            else:
+                out = out + [out[-1]] * (count - len(out))
+        if len(out) > count:
+            out = out[:count]
+        return out
+
+    @classmethod
+    def _extract_sigma_floor_deg(cls, dataset: Union[dict, "SweepDataset"]) -> Optional[float]:
+        if not isinstance(dataset, dict):
+            return None
+        config = dataset.get("config", {}) or {}
+        if not isinstance(config, dict):
+            return None
+        noise_cfg = config.get("encoder_noise")
+        if not isinstance(noise_cfg, dict):
+            return None
+        floor_raw = noise_cfg.get("sigma_floor_deg")
+        if isinstance(floor_raw, (int, float)) and np.isfinite(floor_raw):
+            return float(floor_raw)
+        return None
+
+    @staticmethod
+    def _dataset_has_sigma(dataset: Union[dict, "SweepDataset"]) -> bool:
+        sweeps: Iterable[object]
+        if hasattr(dataset, "sweeps"):
+            sweeps = getattr(dataset, "sweeps", []) or []
+        elif isinstance(dataset, dict):
+            sweeps = dataset.get("sweeps", []) or []
+        else:
+            return False
+        for sweep in sweeps:
+            if isinstance(sweep, dict):
+                points = sweep.get("data_points", []) or []
+            else:
+                points = getattr(sweep, "data_points", []) or []
+            for point in points:
+                sigmas = point.get("sigma") if isinstance(point, dict) else getattr(point, "sigma", None)
+                if isinstance(sigmas, np.ndarray):
+                    sig_vals = sigmas.tolist()
+                elif isinstance(sigmas, (list, tuple)):
+                    sig_vals = list(sigmas)
+                else:
+                    sig_vals = []
+                for val in sig_vals:
+                    try:
+                        f = float(val)
+                    except (TypeError, ValueError):
+                        continue
+                    if np.isfinite(f):
+                        return True
+        return False
+
+    @staticmethod
+    def _point_field(point: Union[Sweep, dict, object], name: str) -> Optional[object]:
+        if isinstance(point, dict):
+            return point.get(name)
+        return getattr(point, name, None)
+
+    def _length_from_mu(self, point: Union[Sweep, dict, object], axis_idx: int) -> Optional[float]:
+        mu_raw = self._point_field(point, "mu")
+        if isinstance(mu_raw, np.ndarray):
+            mu_vals = mu_raw.tolist()
+        elif isinstance(mu_raw, (list, tuple)):
+            mu_vals = list(mu_raw)
+        else:
+            return None
+        if axis_idx < 0 or axis_idx >= len(mu_vals):
+            return None
+        if self._mm_per_degree_by_axis is None or axis_idx >= len(self._mm_per_degree_by_axis):
+            return None
+        mm_per = self._mm_per_degree_by_axis[axis_idx]
+        if not np.isfinite(mm_per):
+            return None
+        try:
+            val = float(mu_vals[axis_idx]) * float(mm_per)
+        except (TypeError, ValueError):
+            return None
+        if not np.isfinite(val):
+            return None
+        return float(val)
+
+    def _sigma_mm_for_point(self, point: Union[Sweep, dict, object], axis_idx: int) -> Optional[float]:
+        sigma_deg: Optional[float] = None
+        sigma_raw = self._point_field(point, "sigma")
+        if isinstance(sigma_raw, np.ndarray):
+            sigma_vals = sigma_raw.tolist()
+        elif isinstance(sigma_raw, (list, tuple)):
+            sigma_vals = list(sigma_raw)
+        else:
+            sigma_vals = []
+        if 0 <= axis_idx < len(sigma_vals):
+            try:
+                sigma_deg = float(sigma_vals[axis_idx])
+            except (TypeError, ValueError):
+                sigma_deg = None
+            if sigma_deg is not None and not np.isfinite(sigma_deg):
+                sigma_deg = None
+
+        floor_deg = self._sigma_floor_deg
+        if sigma_deg is not None and floor_deg is not None and np.isfinite(floor_deg):
+            sigma_deg = max(sigma_deg, float(floor_deg))
+        elif sigma_deg is None and floor_deg is not None and np.isfinite(floor_deg):
+            sigma_deg = float(floor_deg)
+
+        if self._mm_per_degree_by_axis is not None and 0 <= axis_idx < len(self._mm_per_degree_by_axis):
+            mm_per = self._mm_per_degree_by_axis[axis_idx]
+            if np.isfinite(mm_per) and sigma_deg is not None:
+                return float(sigma_deg) * float(mm_per)
+            if np.isfinite(mm_per) and sigma_deg is None and floor_deg is not None and np.isfinite(floor_deg):
+                return float(floor_deg) * float(mm_per)
+
+        if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
+            return float(self._encoder_noise_mm)
+        return None
+
+    def _extract_point_arrays(
+        self,
+        data_points: Iterable[Union[dict, object]],
+        drive_idx: int,
+        sensor_idx: int,
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+        l_drive_vals: List[float] = []
+        l_sensor_vals: List[float] = []
+        sigma_drive_vals: List[float] = []
+        sigma_sensor_vals: List[float] = []
+
+        for point in data_points:
+            raw_drive = self._point_field(point, "l_drive")
+            raw_sensor = self._point_field(point, "l_sensor")
+            try:
+                drive_len = float(raw_drive)
+            except (TypeError, ValueError):
+                drive_len = 0.0
+            try:
+                sensor_len = float(raw_sensor)
+            except (TypeError, ValueError):
+                sensor_len = 0.0
+
+            if self.use_noise_mean:
+                drive_mu = self._point_field(point, "l_drive_mu")
+                sensor_mu = self._point_field(point, "l_sensor_mu")
+                if drive_mu is None:
+                    drive_mu = self._length_from_mu(point, drive_idx)
+                if sensor_mu is None:
+                    sensor_mu = self._length_from_mu(point, sensor_idx)
+                try:
+                    if drive_mu is not None and np.isfinite(float(drive_mu)):
+                        drive_len = float(drive_mu)
+                except (TypeError, ValueError):
+                    pass
+                try:
+                    if sensor_mu is not None and np.isfinite(float(sensor_mu)):
+                        sensor_len = float(sensor_mu)
+                except (TypeError, ValueError):
+                    pass
+
+            l_drive_vals.append(float(drive_len))
+            l_sensor_vals.append(float(sensor_len))
+
+            sigma_drive = self._sigma_mm_for_point(point, drive_idx)
+            sigma_sensor = self._sigma_mm_for_point(point, sensor_idx)
+            sigma_drive_vals.append(float(sigma_drive) if sigma_drive is not None else float("nan"))
+            sigma_sensor_vals.append(float(sigma_sensor) if sigma_sensor is not None else float("nan"))
+
+        l_drive = np.asarray(l_drive_vals, dtype=float)
+        l_sensor = np.asarray(l_sensor_vals, dtype=float)
+        sigma_drive = np.asarray(sigma_drive_vals, dtype=float) if sigma_drive_vals else None
+        sigma_sensor = np.asarray(sigma_sensor_vals, dtype=float) if sigma_sensor_vals else None
+        return l_drive, l_sensor, sigma_drive, sigma_sensor
+
     @staticmethod
     def _mad_scale(values: np.ndarray) -> float:
         v = np.asarray(values, dtype=float).ravel()
@@ -447,6 +724,43 @@ class EllipseCostFunction:
             return ellipse_euclidean_residuals(coeffs, x, y)
         return ellipse_sampson_residuals(coeffs, x, y)
 
+    def _sigma_l2_for_points(
+        self,
+        coeffs: np.ndarray,
+        l_drive_abs: np.ndarray,
+        l_sensor_abs: np.ndarray,
+        sigma_drive_mm: np.ndarray,
+        sigma_sensor_mm: np.ndarray,
+    ) -> Optional[np.ndarray]:
+        if not bool(self._noise_norm_available):
+            return None
+        if l_drive_abs.size == 0 or l_sensor_abs.size == 0:
+            return None
+        sigma_drive_mm = np.asarray(sigma_drive_mm, dtype=float).ravel()
+        sigma_sensor_mm = np.asarray(sigma_sensor_mm, dtype=float).ravel()
+        if sigma_drive_mm.size != l_drive_abs.size or sigma_sensor_mm.size != l_sensor_abs.size:
+            return None
+        if not np.all(np.isfinite(sigma_drive_mm)) or not np.all(np.isfinite(sigma_sensor_mm)):
+            return None
+
+        x = np.asarray(l_drive_abs, dtype=float).ravel() ** 2
+        y = np.asarray(l_sensor_abs, dtype=float).ravel() ** 2
+        A, B, C, D, E, _F = np.asarray(coeffs, dtype=float).reshape(6)
+        grad_x = 2 * A * x + B * y + D
+        grad_y = B * x + 2 * C * y + E
+        grad_norm = np.sqrt(grad_x**2 + grad_y**2)
+        grad_norm = np.where(grad_norm < 1e-12, 1e-12, grad_norm)
+        n_x = grad_x / grad_norm
+        n_y = grad_y / grad_norm
+
+        sigma_x = 2.0 * np.asarray(l_drive_abs, dtype=float).ravel() * sigma_drive_mm
+        sigma_y = 2.0 * np.asarray(l_sensor_abs, dtype=float).ravel() * sigma_sensor_mm
+        sigma_l2 = np.sqrt((n_x**2) * (sigma_x**2) + (n_y**2) * (sigma_y**2))
+        if not np.all(np.isfinite(sigma_l2)):
+            return None
+        sigma_l2 = np.where(sigma_l2 < 1e-12, 1e-12, sigma_l2)
+        return sigma_l2
+
     def _pointwise_scale(
         self, r_norm: np.ndarray, *, scale_override: Optional[float] = None
     ) -> float:
@@ -461,7 +775,11 @@ class EllipseCostFunction:
         return float(max(scale, floor))
 
     def _pointwise_cost_filtered(
-        self, residuals: np.ndarray, *, scale_override: Optional[float] = None
+        self,
+        residuals: np.ndarray,
+        *,
+        scale_override: Optional[float] = None,
+        r_norm_override: Optional[np.ndarray] = None,
     ) -> Tuple[float, float, float, Optional[np.ndarray], float, float, float]:
         residuals = np.asarray(residuals, dtype=float).ravel()
         if residuals.size == 0 or not np.all(np.isfinite(residuals)):
@@ -470,7 +788,12 @@ class EllipseCostFunction:
         rms = float(np.sqrt(np.mean(residuals**2)))
         max_abs = float(np.max(np.abs(residuals)))
 
-        r_norm = residuals / float(max(self._l2_scale, 1.0))
+        if r_norm_override is None:
+            r_norm = residuals / float(max(self._l2_scale, 1.0))
+        else:
+            r_norm = np.asarray(r_norm_override, dtype=float).ravel()
+            if r_norm.size != residuals.size or not np.all(np.isfinite(r_norm)):
+                return float("inf"), rms, max_abs, None, float("nan"), float("nan"), float("nan")
         scale = self._pointwise_scale(r_norm, scale_override=scale_override)
 
         stage, _stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
@@ -508,6 +831,8 @@ class EllipseCostFunction:
             l_sensor_abs,
             sweep_id,
             violation_penalty,
+            sigma_drive_mm,
+            sigma_sensor_mm,
         ) = self._reconstruct_lengths(sweep, anchors)
 
         if self.flex_model is not None:
@@ -544,9 +869,25 @@ class EllipseCostFunction:
         if residuals.size == 0 or not np.all(np.isfinite(residuals)):
             residuals = None
 
+        sigma_l2 = None
+        if (
+            residuals is not None
+            and bool(self._noise_norm_available)
+            and sigma_drive_mm is not None
+            and sigma_sensor_mm is not None
+        ):
+            sigma_l2 = self._sigma_l2_for_points(
+                coeffs,
+                l_drive_abs,
+                l_sensor_abs,
+                sigma_drive_mm,
+                sigma_sensor_mm,
+            )
+
         return {
             "sweep_id": str(sweep_id),
             "residuals": residuals,
+            "sigma_l2": sigma_l2,
             "violation_penalty": float(violation_penalty),
             "num_points": int(residuals.size) if residuals is not None else int(l_drive_abs.size),
         }
@@ -579,6 +920,8 @@ class EllipseCostFunction:
                 l_sensor_abs,
                 sweep_id,
                 _violation_penalty,
+                sigma_drive_mm,
+                sigma_sensor_mm,
             ) = self._reconstruct_lengths(sweep, anchors)
 
             if self.flex_model is not None:
@@ -609,6 +952,13 @@ class EllipseCostFunction:
             residuals = self._pointwise_residuals(coeffs, x, y)
             if residuals.size == 0 or not np.all(np.isfinite(residuals)):
                 continue
+            sigma_l2 = self._sigma_l2_for_points(
+                coeffs,
+                l_drive_abs,
+                l_sensor_abs,
+                sigma_drive_mm,
+                sigma_sensor_mm,
+            )
 
             sweep_cache.append(
                 {
@@ -618,13 +968,24 @@ class EllipseCostFunction:
                     "l_drive_abs": l_drive_abs,
                     "l_sensor_abs": l_sensor_abs,
                     "residuals": residuals,
+                    "sigma_l2": sigma_l2,
                 }
             )
             residuals_list.append(residuals)
 
         scale_override = None
         if self.pointwise_filtering and self.pointwise_global_mad and residuals_list:
-            scale_override = self._pointwise_global_scale(residuals_list)
+            norm_residuals: List[np.ndarray] = []
+            for entry in sweep_cache:
+                residuals = np.asarray(entry["residuals"], dtype=float).ravel()
+                sigma_l2 = entry.get("sigma_l2")
+                if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
+                    sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
+                    if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
+                        norm_residuals.append(residuals / sigma_arr)
+                        continue
+                norm_residuals.append(residuals / float(max(self._l2_scale, 1.0)))
+            scale_override = self._pointwise_global_scale(norm_residuals)
             if scale_override is not None and not np.isfinite(scale_override):
                 scale_override = None
 
@@ -635,16 +996,27 @@ class EllipseCostFunction:
             sweep_id = str(entry["sweep_id"])
             drive_idx2 = int(entry["drive_anchor"])
             sensor_idx2 = int(entry["sensor_anchor"])
+            sigma_l2 = entry.get("sigma_l2")
 
             l_mean = 0.5 * (l_drive_abs + l_sensor_abs)
             denom = np.maximum(2.0 * l_mean, 1e-9)
             residuals_abs = np.abs(residuals)
             residuals_mm = residuals_abs / denom
 
+            use_sigma = False
             r_norm = residuals / l2_scale
+            if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
+                sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
+                if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
+                    r_norm = residuals / sigma_arr
+                    use_sigma = True
+
             scale = self._pointwise_scale(r_norm, scale_override=scale_override)
-            trim_threshold_norm = float(max(_POINTWISE_TRIM_K * scale, 1e-12))
-            cutoff_mm = (trim_threshold_norm * l2_scale) / denom
+            trim_threshold = float(max(_POINTWISE_TRIM_K * scale, 1e-12))
+            if use_sigma:
+                cutoff_mm = (trim_threshold * sigma_arr) / denom
+            else:
+                cutoff_mm = (trim_threshold * l2_scale) / denom
 
             for idx, (res_l2, res_mm, ld, ls, cut_mm) in enumerate(
                 zip(residuals_abs, residuals_mm, l_drive_abs, l_sensor_abs, cutoff_mm)
@@ -673,13 +1045,20 @@ class EllipseCostFunction:
 
         return rows
 
-    def _pointwise_cost_unfiltered(self, residuals: np.ndarray) -> Tuple[float, float, float]:
+    def _pointwise_cost_unfiltered(
+        self, residuals: np.ndarray, *, r_norm_override: Optional[np.ndarray] = None
+    ) -> Tuple[float, float, float]:
         residuals = np.asarray(residuals, dtype=float).ravel()
         if residuals.size == 0 or not np.all(np.isfinite(residuals)):
             return float("inf"), float("inf"), float("inf")
         rms = float(np.sqrt(np.mean(residuals**2)))
         max_abs = float(np.max(np.abs(residuals)))
-        r_norm = residuals / float(max(self._l2_scale, 1.0))
+        if r_norm_override is None:
+            r_norm = residuals / float(max(self._l2_scale, 1.0))
+        else:
+            r_norm = np.asarray(r_norm_override, dtype=float).ravel()
+            if r_norm.size != residuals.size or not np.all(np.isfinite(r_norm)):
+                return float("inf"), float("inf"), float("inf")
         if self.robust_loss:
             cost_unit = float(np.mean(pseudo_huber_loss(r_norm, delta=self.huber_delta)))
         else:
@@ -728,10 +1107,17 @@ class EllipseCostFunction:
 
         residuals = np.asarray(residuals, dtype=float).ravel()
         num_points = int(residuals.size)
+        sigma_l2 = entry.get("sigma_l2")
+        norm_mode = "l2_scale"
         r_norm = residuals / float(max(self._l2_scale, 1.0))
+        if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
+            sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
+            if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
+                r_norm = residuals / sigma_arr
+                norm_mode = "sigma"
         if not self.pointwise_filtering:
             sweep_metric = float(self._sweep_metric_value(r_norm))
-            cost, rms, max_abs = self._pointwise_cost_unfiltered(residuals)
+            cost, rms, max_abs = self._pointwise_cost_unfiltered(residuals, r_norm_override=r_norm)
             return {
                 "sweep_id": sweep_id,
                 "valid": np.isfinite(cost),
@@ -745,10 +1131,12 @@ class EllipseCostFunction:
                 "scale": None,
                 "trim_threshold": None,
                 "sweep_metric": sweep_metric,
+                "norm_mode": norm_mode,
+                "_r_norm": r_norm,
             }
 
         cost_unit, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold = self._pointwise_cost_filtered(
-            residuals, scale_override=scale_override
+            residuals, scale_override=scale_override, r_norm_override=r_norm
         )
         metric_residuals = r_norm
         if inlier_mask is not None and np.any(inlier_mask):
@@ -768,6 +1156,8 @@ class EllipseCostFunction:
                 "scale": float(scale) if np.isfinite(scale) else None,
                 "trim_threshold": float(trim_threshold) if np.isfinite(trim_threshold) else None,
                 "sweep_metric": sweep_metric if np.isfinite(sweep_metric) else float("inf"),
+                "norm_mode": norm_mode,
+                "_r_norm": r_norm,
             }
 
         cost = float(cost_unit * self.pointwise_cost_weight)
@@ -784,6 +1174,8 @@ class EllipseCostFunction:
             "scale": float(scale) if np.isfinite(scale) else None,
             "trim_threshold": float(trim_threshold) if np.isfinite(trim_threshold) else None,
             "sweep_metric": sweep_metric if np.isfinite(sweep_metric) else float("inf"),
+            "norm_mode": norm_mode,
+            "_r_norm": r_norm,
         }
 
     def _pointwise_sweep_info(
@@ -802,7 +1194,7 @@ class EllipseCostFunction:
         flat = [r.ravel() for r in residuals_list if r.size and np.all(np.isfinite(r))]
         if not flat:
             return None
-        r_norm = np.concatenate([r / float(max(self._l2_scale, 1.0)) for r in flat])
+        r_norm = np.concatenate(flat)
         if r_norm.size == 0 or not np.all(np.isfinite(r_norm)):
             return None
         return self._pointwise_scale(r_norm)
@@ -813,11 +1205,18 @@ class EllipseCostFunction:
         residual_entries = [self._pointwise_sweep_residuals(sweep, anchors) for sweep in self.sweeps]
         scale_override = None
         if self.pointwise_filtering and self.pointwise_global_mad:
-            residuals_list = [
-                entry["residuals"]
-                for entry in residual_entries
-                if isinstance(entry.get("residuals"), np.ndarray)
-            ]
+            residuals_list: List[np.ndarray] = []
+            for entry in residual_entries:
+                residuals = entry.get("residuals")
+                if not isinstance(residuals, np.ndarray):
+                    continue
+                sigma_l2 = entry.get("sigma_l2")
+                if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
+                    sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
+                    if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
+                        residuals_list.append(residuals / sigma_arr)
+                        continue
+                residuals_list.append(residuals / float(max(self._l2_scale, 1.0)))
             scale_override = self._pointwise_global_scale(residuals_list)
             if scale_override is not None and not np.isfinite(scale_override):
                 scale_override = None
@@ -1055,12 +1454,63 @@ class EllipseCostFunction:
             per_sweep_costs[sid] * (weights.get(sid, 1.0) / weight_sum) for sid in per_sweep_costs
         )
 
+        noise_metrics = None
+        z_values: List[np.ndarray] = []
+        norm_modes: List[str] = []
+        for idx, entry in enumerate(entries):
+            sweep_id = str(entry.get("sweep_id", ""))
+            if sweep_id not in per_sweep_costs:
+                continue
+            if not bool(entry.get("valid", False)):
+                continue
+            if keep_mask is not None and not bool(keep_mask[idx]):
+                continue
+            r_norm = entry.get("_r_norm")
+            if isinstance(r_norm, np.ndarray):
+                vals = np.asarray(r_norm, dtype=float).ravel()
+                vals = vals[np.isfinite(vals)]
+                if vals.size:
+                    z_values.append(vals)
+                    mode = entry.get("norm_mode")
+                    if isinstance(mode, str) and mode:
+                        norm_modes.append(mode)
+
+        if z_values:
+            z_all = np.concatenate(z_values)
+            z_abs = np.abs(z_all)
+            n_obs = int(z_all.size)
+            if n_obs > 0:
+                norm_mode = None
+                if norm_modes:
+                    unique_modes = sorted(set(norm_modes))
+                    if len(unique_modes) == 1:
+                        norm_mode = unique_modes[0]
+                    else:
+                        norm_mode = "mixed"
+                p_count = int(self.num_anchors * self.dimensions)
+                chi2_red = None
+                if n_obs > p_count:
+                    chi2_red = float(np.sum(z_all**2) / float(n_obs - p_count))
+                noise_metrics = {
+                    "normalized_cost": float(np.mean(z_all**2)),
+                    "chi2_red": chi2_red,
+                    "n_obs": n_obs,
+                    "params": p_count,
+                    "median_abs_z": float(np.median(z_abs)),
+                    "p95_abs_z": float(np.percentile(z_abs, 95)),
+                    "outlier_ratio": float(np.mean(z_abs > _POINTWISE_TRIM_K)),
+                    "norm_mode": norm_mode,
+                    "noise_normalized": bool(norm_mode == "sigma"),
+                    "lengths_mode": "mu" if bool(self.use_noise_mean) else "raw",
+                }
+
         return CostResult(
             total_cost=float(total_cost),
             per_sweep_costs=per_sweep_costs,
             num_valid_sweeps=num_valid,
             num_invalid_sweeps=num_invalid,
             anchor_estimate=anchors,
+            noise_metrics=noise_metrics,
         )
 
     def gradient_numerical(self, anchor_vec: np.ndarray, epsilon: float = 1e-6) -> np.ndarray:

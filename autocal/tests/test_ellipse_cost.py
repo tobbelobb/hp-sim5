@@ -104,3 +104,18 @@ def test_invalid_sweep_is_ignored_in_cost():
 
     assert result.num_invalid_sweeps == 1
     assert result.total_cost == pytest.approx(0.0)
+
+
+def test_noise_mean_lengths_reduce_cost():
+    dataset, anchors = _synthetic_dataset()
+    points = dataset["sweeps"][0]["data_points"]
+    for point in points:
+        point["l_drive_mu"] = point["l_drive"]
+        point["l_sensor_mu"] = point["l_sensor"]
+        point["l_drive"] = float(point["l_drive"]) + 25.0
+        point["l_sensor"] = float(point["l_sensor"]) - 25.0
+
+    cost_raw = EllipseCostFunction(dataset, use_noise_mean=False).evaluate(anchors.ravel())
+    cost_mu = EllipseCostFunction(dataset, use_noise_mean=True).evaluate(anchors.ravel())
+
+    assert cost_mu < cost_raw

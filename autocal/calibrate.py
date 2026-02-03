@@ -491,6 +491,8 @@ def calibrate_elliptical(
     pointwise_global_mad: bool = True,
     sweep_wise_filtering: bool = True,
     sweep_metric: str = "outlier_ratio",
+    use_noise_mean: bool = True,
+    noise_normalized: bool = True,
     verbose: bool = False,
     progress_every: int = 10,
     use_parallel: bool = True,
@@ -545,6 +547,8 @@ def calibrate_elliptical(
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         sweep_metric=str(sweep_metric),
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
         residuals_csv=residuals_csv,
         verbose=verbose,
     )
@@ -900,6 +904,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="outlier_ratio",
         help="Per-sweep metric used by sweep-wise filtering (default: mad).",
     )
+    ellipse_lengths_group = ellipse_parser.add_mutually_exclusive_group()
+    ellipse_lengths_group.add_argument(
+        "--use-noise-mean",
+        dest="use_noise_mean",
+        action="store_true",
+        help="Use encoder noise mean lengths when available (default).",
+    )
+    ellipse_lengths_group.add_argument(
+        "--use-raw-lengths",
+        dest="use_noise_mean",
+        action="store_false",
+        help="Use raw l_drive/l_sensor lengths (disable noise-mean datapoints).",
+    )
     ellipse_parser.add_argument(
         "--progress-every",
         type=int,
@@ -910,6 +927,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         pointwise_filtering=True,
         pointwise_global_mad=True,
         sweep_wise_filtering=True,
+        use_noise_mean=True,
     )
     ellipse_parser.add_argument(
         "--optimizer",
@@ -1134,6 +1152,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_global_mad=bool(args.pointwise_global_mad),
             sweep_wise_filtering=bool(args.sweep_wise_filtering),
             sweep_metric=str(args.sweep_metric),
+            use_noise_mean=bool(args.use_noise_mean),
             verbose=bool(args.verbose or args.debug),
             use_parallel=bool(args.parallel),
             regularize_supersweep=bool(args.regularize_supersweep),

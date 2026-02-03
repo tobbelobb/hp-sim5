@@ -177,6 +177,8 @@ def solve_anchors(
     pointwise_filter_stage: Optional[int] = None,
     robust_debug: bool = False,
     residuals_csv: Optional[Union[str, Path]] = None,
+    use_noise_mean: bool = True,
+    noise_normalized: bool = True,
     cost_callback: Optional[callable] = None,
     verbose: bool = False,
 ) -> Dict[str, object]:
@@ -234,6 +236,8 @@ def solve_anchors(
                 pointwise_filter_stage=int(stage["stage"]),
                 robust_debug=bool(robust_debug) if idx == len(stages) - 1 else False,
                 residuals_csv=residuals_csv if idx == len(stages) - 1 else None,
+                use_noise_mean=use_noise_mean,
+                noise_normalized=noise_normalized,
                 cost_callback=cost_callback if idx == len(stages) - 1 else None,
                 verbose=verbose,
             )
@@ -259,6 +263,8 @@ def solve_anchors(
         sweep_wise_filtering=bool(sweep_wise_filtering),
         sweep_metric=str(sweep_metric),
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
     )
 
     method_raw = str(method or "L-BFGS-B")

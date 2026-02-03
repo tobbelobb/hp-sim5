@@ -501,6 +501,13 @@ function remapDataPointsToCanonical(dataPoints, canonicalConfig, actualConfig) {
       p.l_drive = point.l_sensor;
       p.l_sensor = point.l_drive;
       if (
+        Object.prototype.hasOwnProperty.call(point, 'l_drive_mu')
+        || Object.prototype.hasOwnProperty.call(point, 'l_sensor_mu')
+      ) {
+        p.l_drive_mu = point.l_sensor_mu;
+        p.l_sensor_mu = point.l_drive_mu;
+      }
+      if (
         Object.prototype.hasOwnProperty.call(point, 'assumed_tension_drive_n')
         || Object.prototype.hasOwnProperty.call(point, 'assumed_tension_sensor_n')
       ) {
@@ -930,6 +937,15 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       point.sampling_hz = noiseStats.samplingHz;
       if (Number.isFinite(noiseStats.durationMs)) {
         point.sample_duration_ms = noiseStats.durationMs;
+      }
+      if (Array.isArray(noiseStats.muByMotorDeg)) {
+        const muLengths = noiseStats.muByMotorDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+        if (Number.isFinite(muLengths[driveAnchor])) {
+          point.l_drive_mu = muLengths[driveAnchor];
+        }
+        if (Number.isFinite(muLengths[sensorAnchor])) {
+          point.l_sensor_mu = muLengths[sensorAnchor];
+        }
       }
       const warnings = summarizeNoiseWarnings(noiseStats, {
         minSamples: noiseMinSamples,

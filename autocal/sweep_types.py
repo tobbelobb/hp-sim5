@@ -62,6 +62,8 @@ class DataPoint:
 
     l_drive: float  # Drive cable length delta (mm)
     l_sensor: float  # Sensor cable length delta (mm)
+    l_drive_mu: Optional[float] = None  # Mean drive length delta (mm)
+    l_sensor_mu: Optional[float] = None  # Mean sensor length delta (mm)
     timestamp_ms: Optional[float] = None  # Relative timestamp
     raw_angles_deg: Optional[List[float]] = None  # Raw encoder angles
     mu: Optional[List[float]] = None  # Mean encoder angles (deg)
