@@ -6,6 +6,7 @@ import {
   runMoveWithWait,
   sleep as baseSleep,
 } from '../primitives/encoder_utils.mjs';
+import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
 import {
   angleToLength,
   applyDataPointReturnModes,
@@ -41,6 +42,10 @@ const DEFAULT_FEED = 1400;
 const DEFAULT_FORCE_MID_N = 0.05;
 const DEFAULT_SETTLE_MS = 200;
 const DEFAULT_SAMPLE_RATE_HZ = 40;
+const DEFAULT_NOISE_SAMPLE_COUNT = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SAMPLE_COUNT;
+const DEFAULT_NOISE_SAMPLE_RATE_HZ = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SAMPLE_RATE_HZ;
+const DEFAULT_NOISE_MIN_SAMPLES = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_MIN_SAMPLES;
+const DEFAULT_NOISE_SIGMA_FLOOR_DEG = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SIGMA_FLOOR_DEG;
 const DEFAULT_FIXED_TOLERANCE_MM = 0.01;
 const DATASET_VERSION = '2.0';
 
@@ -51,6 +56,10 @@ export const SWEEP_DEFAULTS = {
   DEFAULT_FORCE_MID_N,
   DEFAULT_SETTLE_MS,
   DEFAULT_SAMPLE_RATE_HZ,
+  DEFAULT_NOISE_SAMPLE_COUNT,
+  DEFAULT_NOISE_SAMPLE_RATE_HZ,
+  DEFAULT_NOISE_MIN_SAMPLES,
+  DEFAULT_NOISE_SIGMA_FLOOR_DEG,
   DEFAULT_FIXED_TOLERANCE_MM,
   DATASET_VERSION,
 };
@@ -91,6 +100,31 @@ function parseOptionalNumber(value, label, { integer = false } = {}) {
     throw new Error(`${label} must be a number.`);
   }
   return parsed;
+}
+
+function summarizeNoiseWarnings(noiseStats, { minSamples, sigmaFloorDeg } = {}) {
+  if (!noiseStats || typeof noiseStats !== 'object') {
+    return [];
+  }
+  const warnings = [];
+  const sampleCount = noiseStats.sampleCount;
+  if (Number.isFinite(minSamples) && Number.isFinite(sampleCount) && sampleCount < minSamples) {
+    warnings.push('samples_low');
+  }
+  const sigmas = noiseStats.sigmaByMotorDeg;
+  if (Array.isArray(sigmas)) {
+    const anyNonFinite = sigmas.some((val) => !Number.isFinite(val));
+    if (anyNonFinite) {
+      warnings.push('sigma_nonfinite');
+    }
+    if (Number.isFinite(sigmaFloorDeg)) {
+      const belowFloor = sigmas.some((val) => Number.isFinite(val) && val < sigmaFloorDeg);
+      if (belowFloor) {
+        warnings.push('sigma_below_floor');
+      }
+    }
+  }
+  return warnings;
 }
 
 export function combinations(arr, k) {
@@ -228,6 +262,17 @@ function validateSweepCollectionInput(context) {
   const forceLow = parseOptionalNumber(args.forceLow, 'force-low');
   const forceMid = parseOptionalNumber(args.forceMid, 'force-mid');
   const forceMax = parseOptionalNumber(args.forceMax, 'force-max');
+  const noiseSampleCount = parseOptionalNumber(args.noiseSamples ?? args.noiseSampleCount, 'noise-samples', { integer: true });
+  const noiseSampleRateHz = parseOptionalNumber(
+    args.noiseSampleRateHz ?? args.noiseSampleRate ?? args.noiseSampleHz,
+    'noise-sample-rate',
+  );
+  const noiseSampleIntervalMs = parseOptionalNumber(
+    args.noiseSampleIntervalMs ?? args.noiseSampleInterval,
+    'noise-sample-interval-ms',
+  );
+  const noiseMinSamples = parseOptionalNumber(args.noiseMinSamples, 'noise-min-samples', { integer: true });
+  const noiseSigmaFloorDeg = parseOptionalNumber(args.noiseSigmaFloorDeg ?? args.noiseSigmaFloor, 'noise-sigma-floor');
   const forceLowProvided = forceLow !== null;
   const forceMidProvided = forceMid !== null;
   const forceMaxProvided = forceMax !== null;
@@ -249,6 +294,11 @@ function validateSweepCollectionInput(context) {
     forceLow,
     forceMid,
     forceMax,
+    noiseSampleCount,
+    noiseSampleRateHz,
+    noiseSampleIntervalMs,
+    noiseMinSamples,
+    noiseSigmaFloorDeg,
     forceLowProvided,
     forceMidProvided,
     forceMaxProvided,
@@ -274,6 +324,23 @@ function applySweepDefaults(input) {
   const forceLow = input.forceLow ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N;
   const forceMid = input.forceMid ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N;
   const forceMax = input.forceMax ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N;
+  const noiseSampleCount = Math.max(1, input.noiseSampleCount ?? DEFAULT_NOISE_SAMPLE_COUNT);
+  let noiseSampleRateHz = Number.isFinite(input.noiseSampleRateHz)
+    ? input.noiseSampleRateHz
+    : DEFAULT_NOISE_SAMPLE_RATE_HZ;
+  let noiseSampleIntervalMs = Number.isFinite(input.noiseSampleIntervalMs)
+    ? input.noiseSampleIntervalMs
+    : (1000 / Math.max(1e-6, noiseSampleRateHz));
+  if (!Number.isFinite(noiseSampleRateHz) || noiseSampleRateHz <= 0) {
+    noiseSampleRateHz = DEFAULT_NOISE_SAMPLE_RATE_HZ;
+  }
+  if (!Number.isFinite(noiseSampleIntervalMs) || noiseSampleIntervalMs <= 0) {
+    noiseSampleIntervalMs = 1000 / Math.max(1e-6, noiseSampleRateHz);
+  } else {
+    noiseSampleRateHz = 1000 / noiseSampleIntervalMs;
+  }
+  const noiseMinSamples = Math.max(1, input.noiseMinSamples ?? DEFAULT_NOISE_MIN_SAMPLES);
+  const noiseSigmaFloorDeg = Math.max(0, input.noiseSigmaFloorDeg ?? DEFAULT_NOISE_SIGMA_FLOOR_DEG);
   const maxTravelMm = Number.isFinite(input.maxTravelMm) ? Math.abs(input.maxTravelMm) : null;
   const autoTuneForce = input.autoTuneForce || (!input.noAutoTuneForce && !input.forceArgsProvided);
 
@@ -287,6 +354,11 @@ function applySweepDefaults(input) {
     forceLow,
     forceMid,
     forceMax,
+    noiseSampleCount,
+    noiseSampleRateHz,
+    noiseSampleIntervalMs,
+    noiseMinSamples,
+    noiseSigmaFloorDeg,
     maxTravelMm,
     autoTuneForce,
   };
@@ -711,6 +783,10 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     forceLow,
     forceMid,
     forceMax,
+    noiseSampleCount,
+    noiseSampleIntervalMs,
+    noiseMinSamples,
+    noiseSigmaFloorDeg,
     fixedAnchors,
     fixedTargets,
     projectZeroTension,
@@ -839,7 +915,30 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       stepCount,
       projectZeroTension: !!projectZeroTension,
       skipReturnModePrep: Number.isFinite(delta) && Math.abs(delta) > 1e-6,
+      encoderNoiseOptions: {
+        sampleCount: noiseSampleCount,
+        sampleIntervalMs: noiseSampleIntervalMs,
+        speedup,
+      },
     });
+    const noiseStats = collected?.noiseStats;
+    if (noiseStats && dataPoints.length > 0) {
+      const point = dataPoints[dataPoints.length - 1];
+      point.mu = noiseStats.muByMotorDeg;
+      point.sigma = noiseStats.sigmaByMotorDeg;
+      point.sample_count = noiseStats.sampleCount;
+      point.sampling_hz = noiseStats.samplingHz;
+      if (Number.isFinite(noiseStats.durationMs)) {
+        point.sample_duration_ms = noiseStats.durationMs;
+      }
+      const warnings = summarizeNoiseWarnings(noiseStats, {
+        minSamples: noiseMinSamples,
+        sigmaFloorDeg: noiseSigmaFloorDeg,
+      });
+      if (warnings.length > 0) {
+        point.noise_warnings = warnings;
+      }
+    }
     const lengths = collected?.lengths;
     if (Array.isArray(lengths)) {
       currentDrive = lengths[driveAnchor] ?? currentDrive;
@@ -862,6 +961,11 @@ export async function collectSweepData(send, context) {
     maxSweepCount,
     feed,
     settleMs,
+    noiseSampleCount,
+    noiseSampleRateHz,
+    noiseSampleIntervalMs,
+    noiseMinSamples,
+    noiseSigmaFloorDeg,
     fixedTargets: fixedTargetsSpec,
     maxTravelMm: maxTravelOverride,
     debugSweep,
@@ -1053,6 +1157,10 @@ export async function collectSweepData(send, context) {
         forceLow,
         forceMid,
         forceMax,
+        noiseSampleCount,
+        noiseSampleIntervalMs,
+        noiseMinSamples,
+        noiseSigmaFloorDeg,
         fixedAnchors: sweepConfig.fixedAnchors,
         fixedTargets,
         projectZeroTension: options.projectZeroTension,
@@ -1148,6 +1256,15 @@ export async function collectSweepData(send, context) {
       },
       force_tuning: forceTuning,
       max_travel_mm: Number.isFinite(maxTravelMeta) ? maxTravelMeta : undefined,
+      encoder_noise: {
+        method: 'mad',
+        units: 'deg',
+        sigma_floor_deg: noiseSigmaFloorDeg,
+        min_samples: noiseMinSamples,
+        sample_count: noiseSampleCount,
+        sample_interval_ms: noiseSampleIntervalMs,
+        sample_rate_hz: noiseSampleRateHz,
+      },
     },
     sweeps,
   };

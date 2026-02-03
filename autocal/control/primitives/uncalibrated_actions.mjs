@@ -1,4 +1,5 @@
 import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../primitives/encoder_utils.mjs';
+import { sampleEncoderNoise } from './encoder_noise.mjs';
 import {
   formatCallSite,
   getDebugState,
@@ -250,6 +251,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     restoreToModeWhenFinished,
     projectZeroTension = false,
     skipReturnModePrep = false,
+    encoderNoiseOptions = null,
   } = options;
 
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -362,6 +364,14 @@ export async function collectDataPoint(sendFn, options = {}) {
     }
   }
 
+  let noiseStats = null;
+  if (encoderNoiseOptions) {
+    noiseStats = await sampleEncoderNoise(sendFn, motorIds, {
+      ...encoderNoiseOptions,
+      speedup,
+    });
+  }
+
   if (restoreToModeWhenFinished !== undefined) {
     await applyForceModeState(sendFn, { motorIds, modes: restoreToModeWhenFinished });
     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
@@ -374,6 +384,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     stableData,
     anglesDeg,
     lengths,
+    noiseStats,
   };
 }
 

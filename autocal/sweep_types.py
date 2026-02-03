@@ -64,6 +64,12 @@ class DataPoint:
     l_sensor: float  # Sensor cable length delta (mm)
     timestamp_ms: Optional[float] = None  # Relative timestamp
     raw_angles_deg: Optional[List[float]] = None  # Raw encoder angles
+    mu: Optional[List[float]] = None  # Mean encoder angles (deg)
+    sigma: Optional[List[float]] = None  # Robust encoder noise (deg, MAD-based)
+    sample_count: Optional[int] = None  # Encoder samples used for mu/sigma
+    sampling_hz: Optional[float] = None  # Effective sampling rate
+    sample_duration_ms: Optional[float] = None  # Sampling duration
+    noise_warnings: Optional[List[str]] = None  # Data quality flags
 
 
 @dataclass
@@ -192,4 +198,3 @@ class SweepDataset:
     machine_config: MachineConfig
     timestamp: str
     sweeps: List[Sweep]
-

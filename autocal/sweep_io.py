@@ -45,10 +45,18 @@ def save_sweep_dataset(dataset: SweepDataset, path: Union[str, Path]) -> None:
                 "sensor_anchor": s.sensor_anchor,
                 "data_points": [
                     {
-                        "l_drive": p.l_drive,
-                        "l_sensor": p.l_sensor,
-                        "timestamp_ms": p.timestamp_ms,
-                        "raw_angles_deg": p.raw_angles_deg,
+                        **{
+                            "l_drive": p.l_drive,
+                            "l_sensor": p.l_sensor,
+                            "timestamp_ms": p.timestamp_ms,
+                            "raw_angles_deg": p.raw_angles_deg,
+                        },
+                        **({"mu": p.mu} if p.mu is not None else {}),
+                        **({"sigma": p.sigma} if p.sigma is not None else {}),
+                        **({"sample_count": p.sample_count} if p.sample_count is not None else {}),
+                        **({"sampling_hz": p.sampling_hz} if p.sampling_hz is not None else {}),
+                        **({"sample_duration_ms": p.sample_duration_ms} if p.sample_duration_ms is not None else {}),
+                        **({"noise_warnings": p.noise_warnings} if p.noise_warnings is not None else {}),
                     }
                     for p in s.data_points
                 ],
@@ -89,6 +97,12 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
                 l_sensor=p["l_sensor"],
                 timestamp_ms=p.get("timestamp_ms"),
                 raw_angles_deg=p.get("raw_angles_deg"),
+                mu=p.get("mu"),
+                sigma=p.get("sigma"),
+                sample_count=p.get("sample_count"),
+                sampling_hz=p.get("sampling_hz"),
+                sample_duration_ms=p.get("sample_duration_ms"),
+                noise_warnings=p.get("noise_warnings"),
             )
             for p in s["data_points"]
         ]
@@ -118,4 +132,3 @@ def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
         raise ValueError(f"Invalid sweep dataset: {validation_errors}")
 
     return dataset
-

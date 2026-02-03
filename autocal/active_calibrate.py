@@ -21,6 +21,8 @@ if str(REPO_ROOT) not in sys.path:
 DEFAULT_RRF_PORT = 8081
 RRF_SIM_BINARY = REPO_ROOT / "RRF" / "build" / "rrf_simulator"
 RRF_SIM_ARGS = ["--vsd", "RRF/run/vsd", "-c", "sys/config_slideprinter.g", "--server", "-p"]
+DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
+DEFAULT_NOISE_MIN_SAMPLES = 10
 
 from autocal.active_learning import (
     SweepConfig,
@@ -99,6 +101,94 @@ def _arg_value(args: Sequence[str], *flags: str) -> Optional[str]:
             if arg.startswith(prefix):
                 return arg[len(prefix) :]
     return None
+
+
+def _noise_settings_from_dataset(dataset: Optional[dict]) -> Tuple[float, int]:
+    sigma_floor = float(DEFAULT_NOISE_SIGMA_FLOOR_DEG)
+    min_samples = int(DEFAULT_NOISE_MIN_SAMPLES)
+    if not isinstance(dataset, dict):
+        return sigma_floor, min_samples
+    config = dataset.get("config")
+    if not isinstance(config, dict):
+        return sigma_floor, min_samples
+    noise_cfg = config.get("encoder_noise")
+    if isinstance(noise_cfg, dict):
+        floor_raw = noise_cfg.get("sigma_floor_deg")
+        if isinstance(floor_raw, (int, float)) and np.isfinite(floor_raw):
+            sigma_floor = float(floor_raw)
+        min_raw = noise_cfg.get("min_samples")
+        if isinstance(min_raw, (int, float)) and np.isfinite(min_raw):
+            min_samples = int(min_raw)
+    return sigma_floor, min_samples
+
+
+def _summarize_encoder_noise(dataset: Optional[dict]) -> Optional[dict]:
+    if not isinstance(dataset, dict):
+        return None
+    sweeps = dataset.get("sweeps")
+    if not isinstance(sweeps, list):
+        return None
+    sigma_floor, min_samples = _noise_settings_from_dataset(dataset)
+    total_points = 0
+    points_with_sigma = 0
+    low_samples = 0
+    sigma_low = 0
+    sigma_nonfinite = 0
+    sigma_values: List[float] = []
+    for sweep in sweeps:
+        if not isinstance(sweep, dict):
+            continue
+        points = sweep.get("data_points")
+        if not isinstance(points, list):
+            continue
+        for point in points:
+            if not isinstance(point, dict):
+                continue
+            total_points += 1
+            sigmas = point.get("sigma")
+            if not isinstance(sigmas, list):
+                continue
+            points_with_sigma += 1
+            if any(
+                (not isinstance(v, (int, float)) or not np.isfinite(v))
+                for v in sigmas
+            ):
+                sigma_nonfinite += 1
+            if any(
+                (isinstance(v, (int, float)) and np.isfinite(v) and v < sigma_floor)
+                for v in sigmas
+            ):
+                sigma_low += 1
+            sample_count = point.get("sample_count")
+            if (
+                isinstance(sample_count, (int, float))
+                and np.isfinite(sample_count)
+                and sample_count < min_samples
+            ):
+                low_samples += 1
+            for v in sigmas:
+                if isinstance(v, (int, float)) and np.isfinite(v):
+                    sigma_values.append(float(v))
+    if points_with_sigma == 0:
+        if total_points > 0:
+            return {
+                "total_points": total_points,
+                "points_with_sigma": 0,
+                "sigma_floor": sigma_floor,
+                "min_samples": min_samples,
+            }
+        return None
+    median_sigma = float(np.median(sigma_values)) if sigma_values else float("nan")
+    return {
+        "total_points": total_points,
+        "points_with_sigma": points_with_sigma,
+        "median_sigma": median_sigma,
+        "sigma_floor": sigma_floor,
+        "min_samples": min_samples,
+        "low_samples": low_samples,
+        "sigma_low": sigma_low,
+        "sigma_nonfinite": sigma_nonfinite,
+    }
 
 
 def _resolve_rrf_target(collector_args: Sequence[str]) -> Tuple[str, bool, Optional[int]]:
@@ -710,6 +800,7 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
     cov = np.asarray(plan.get("covariance"), dtype=float)
     ranked = plan.get("ranked") or []
     cmd = plan.get("collect_command")
+    noise_summary = _summarize_encoder_noise(plan.get("dataset") if isinstance(plan, dict) else None)
 
     print("; Active ellipse calibration")
     if isinstance(cal, dict) and "gcode" in cal:
@@ -717,6 +808,28 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
     print(f"; cost={cost:.6g} {_format_anchor_stats(anchors)}")
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
         print(f"; info rank: {int(np.linalg.matrix_rank(info))}/{info.shape[0]} {_covariance_report(cov)}")
+    if isinstance(noise_summary, dict):
+        total_points = int(noise_summary.get("total_points", 0))
+        points_with_sigma = int(noise_summary.get("points_with_sigma", 0))
+        if points_with_sigma == 0 and total_points > 0:
+            print("; encoder_noise: missing (legacy dataset)")
+        else:
+            median_sigma = noise_summary.get("median_sigma")
+            sigma_floor = noise_summary.get("sigma_floor")
+            min_samples = int(noise_summary.get("min_samples", 0))
+            sigma_str = f"{float(median_sigma):.4g}deg" if np.isfinite(median_sigma) else "n/a"
+            print(
+                f"; encoder_noise: points={points_with_sigma}/{total_points} "
+                f"median_sigma={sigma_str} floor={float(sigma_floor):.4g}deg min_samples={min_samples}"
+            )
+            low_samples = int(noise_summary.get("low_samples", 0))
+            sigma_low = int(noise_summary.get("sigma_low", 0))
+            sigma_nonfinite = int(noise_summary.get("sigma_nonfinite", 0))
+            if low_samples > 0 or sigma_low > 0 or sigma_nonfinite > 0:
+                print(
+                    f"; encoder_noise_flags: low_samples={low_samples} "
+                    f"sigma_below_floor={sigma_low} sigma_nonfinite={sigma_nonfinite}"
+                )
 
     if isinstance(ranked, list) and ranked:
         best_score, best_cfg = ranked[0]
