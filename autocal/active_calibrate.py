@@ -1317,6 +1317,11 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Project encoder readings to zero tension during each data point.",
     )
+    parser.add_argument(
+        "--debug-sweep-actions",
+        action="store_true",
+        help="Enable sweep collector debug traces (force modes, waits, moves, data points).",
+    )
 
 
 def build_ellipse_parser() -> argparse.ArgumentParser:
@@ -1430,6 +1435,8 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
     collector_args = _clean_collector_args(args.collector_args)
     if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
         collector_args.append("--project-zero-tension")
+    if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
+        collector_args.append("--debug-sweep-actions")
     return ellipse_active(
         args.dataset,
         machine_type=str(args.machine_type),
@@ -1481,6 +1488,8 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     collector_args = _clean_collector_args(args.collector_args)
     if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
         collector_args.append("--project-zero-tension")
+    if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
+        collector_args.append("--debug-sweep-actions")
     return ellipse_loop(
         work_dataset=args.dataset,
         machine_type=str(args.machine_type),

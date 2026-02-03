@@ -8,6 +8,7 @@ import {
 } from '../primitives/encoder_utils.mjs';
 import {
   angleToLength,
+  applyDataPointReturnModes,
   applyForceModeState,
   collectDataPoint,
   getCurrentLengths,
@@ -15,6 +16,7 @@ import {
   returnMotorsToOriginAllAtOnce,
   waitForStableEncoders,
 } from '../primitives/uncalibrated_actions.mjs';
+import { attachDebugState } from '../primitives/debug_trace.mjs';
 import { FORCE_TUNING_DEFAULTS, tuneForce } from './force_tuning.mjs';
 
 export const MACHINE_CONFIGS = {
@@ -717,6 +719,29 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       ? driveEndPointMm + initialStepMm
       : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
+    if (Number.isFinite(delta) && Math.abs(delta) > 1e-6) {
+      // eslint-disable-next-line no-await-in-loop
+      await applyDataPointReturnModes(sendFn, {
+        motorIds,
+        driveAnchor,
+        sensorAnchors: [sensorAnchor],
+        fixedAnchors,
+        forbiddenForceAnchors,
+        forceMax,
+        forceMin: forceMid,
+        forceMid,
+        speedup,
+      });
+      // eslint-disable-next-line no-await-in-loop
+      await runMoveWithWait(
+        sendFn,
+        `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feed}`,
+        speedup,
+        { axes },
+      );
+      // eslint-disable-next-line no-await-in-loop
+      await waitForStableEncoders(sendFn, motorIds, speedup);
+    }
     // eslint-disable-next-line no-await-in-loop
     const collected = await collectDataPoint(sendFn, {
       motorIds,
@@ -729,15 +754,13 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       forceMax,
       forceMin: forceMid,
       forceMid,
-      driveAxis,
-      moveDeltaMm: delta,
-      feed,
       speedup,
       recordPoint,
       driveSetpointMm: target,
       stepIndex: stepIdx - 1,
       stepCount,
       projectZeroTension: !!projectZeroTension,
+      skipReturnModePrep: Number.isFinite(delta) && Math.abs(delta) > 1e-6,
     });
     const lengths = collected?.lengths;
     if (Array.isArray(lengths)) {
@@ -812,6 +835,7 @@ export async function collectSweepData(send, context) {
   if (missingAxes.length > 0) {
     console.warn(`Warning: missing mm/deg calibration for axes [${missingAxes.join(', ')}]; lengths will default to 0 on those axes.`);
   }
+  attachDebugState(send, { mmPerDeg });
 
   await primeEncoders(send, { motorIds, axes: machineConfig.axes });
 

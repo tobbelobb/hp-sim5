@@ -3,6 +3,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
 import { createGcodeBridge, parseBridgeArgs } from '../primitives/gcode_bridge.mjs';
+import { attachDebugState } from '../primitives/debug_trace.mjs';
 import {
   DEFAULT_RRF_PORT,
   sendHpSimPositionTraceMode,
@@ -106,6 +107,7 @@ Options:
   --debug                    Verbose logging (includes G-code replies)
   --debug-gcode              Echo sent G-code
   --debug-gcode-responses    Echo G-code responses
+  --debug-sweep-actions      Print sweep debug traces (force modes, waits, moves, data points)
   --step-gcode               Pause before each G-code; press Enter to send (prints source line + skipped waits)
   --return-to-origin         Return all motors to encoder origin between sweeps and after collection
 
@@ -147,6 +149,7 @@ async function main() {
   const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
     ? parseFloat(args.speedup)
     : 1;
+  const debugSweepActions = !!args.debugSweepActions;
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
   const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
 
@@ -198,6 +201,11 @@ async function main() {
     }
     return res;
   };
+  attachDebugState(send, {
+    enabled: debugSweepActions,
+    axes: machineConfig.axes,
+    motorIds,
+  });
 
   if (!args.noWs) {
     await bridgeCtx.waitForHpSimConnection(waitForWsMs);

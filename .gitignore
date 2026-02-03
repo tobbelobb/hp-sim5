@@ -4,6 +4,8 @@ tags
 attic/
 node_modules/
 done
+someday_maybe
+tankespørsmål
 **/__pycache__*
 **/scratch
 dist/

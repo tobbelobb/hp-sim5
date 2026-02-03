@@ -1,10 +1,26 @@
 import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../primitives/encoder_utils.mjs';
+import {
+  formatCallSite,
+  getDebugState,
+  parseCallSite,
+  updateDebugAngles,
+} from '../primitives/debug_trace.mjs';
 
 const DEFAULT_STABILITY_POLL_MS = 500;
 const DEFAULT_STABILITY_WINDOW_MS = 2000;
 const DEFAULT_STABILITY_TOLERANCE_DEG = 1.0;
 const DEFAULT_LOW_FORCE_N = 0.001; // Just pull out more line
 const DEFAULT_MID_FORCE_N = 1.0; // Carefully wind in automatically
+
+function formatForceValue(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '?';
+  }
+  const rounded = Math.round(num * 1000) / 1000;
+  const asString = rounded.toFixed(3);
+  return asString.replace(/\.?0+$/, '');
+}
 
 export function buildG92Command(axes) {
   if (!Array.isArray(axes) || axes.length === 0) {
@@ -23,6 +39,11 @@ export function angleToLength(angleDeg, axisIdx, mmPerDeg) {
 }
 
 export async function waitForStableEncoders(sendFn, motorIds, speedup, options = {}) {
+  const debugState = getDebugState(sendFn);
+  if (debugState?.enabled) {
+    const callSite = parseCallSite(new Error().stack, { skip: 1 });
+    console.log(`waitForStableEncoders called from ${formatCallSite(callSite)}`);
+  }
   const {
     pollIntervalMs = DEFAULT_STABILITY_POLL_MS,
     stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
@@ -85,11 +106,13 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     }
 
     if (isStable()) {
-      return {
+      const result = {
         anglesDeg: samples[samples.length - 1].anglesDeg.slice(),
         samples: samples.length,
         elapsedMs: nowMs - startMs,
       };
+      updateDebugAngles(sendFn, result.anglesDeg);
+      return result;
     }
 
     if (Number.isFinite(timeoutMs) && timeoutMs > 0 && nowMs - startMs > timeoutMs) {
@@ -116,14 +139,17 @@ export async function applyForceModeState(sendFn, {
   modes,
 } = {}) {
   const forces = [];
+  const normalizedModes = [];
   for (let idx = 0; idx < motorIds.length; idx += 1) {
     const rawMode = Array.isArray(modes) ? modes[idx] : modes;
     const mode = typeof rawMode === 'string' ? rawMode.toLowerCase() : rawMode;
     if (mode === 'position' || mode === 'pos' || mode === 0 || mode === 0.0) {
       forces.push('0.0');
+      normalizedModes.push('position');
     } else {
       if (Number.isFinite(mode)) {
         forces.push(`${mode}`);
+        normalizedModes.push(mode);
       } else {
         throw new Error(`applyForceModeState can't set force ${mode}`);
       }
@@ -132,44 +158,28 @@ export async function applyForceModeState(sendFn, {
   if (forces.length === 0) {
     return;
   }
+  const debugState = getDebugState(sendFn);
+  if (debugState?.enabled) {
+    const callSite = parseCallSite(new Error().stack, { skip: 1 });
+    const labels = normalizedModes.map((mode) => (
+      mode === 'position' ? 'pos_mode' : `${formatForceValue(mode)} N`
+    ));
+    console.log(`applyForceModeState [${labels.join(', ')}] from ${formatCallSite(callSite)}`);
+    debugState.lastModes = normalizedModes.slice();
+  }
   await sendFn(`M569.4 P${motorIds.join(':')} T${forces.join(':')}`);
 }
 
-export async function collectDataPoint(sendFn, options = {}) {
-  const {
-    motorIds,
-    axes,
-    mmPerDeg,
-    driveAnchor,
-    sensorAnchors,
-    fixedAnchors = [],
-    forbiddenForceAnchors = [],
-    forceMax,
-    forceMin,
-    forceMid,
-    driveAxis,
-    moveDeltaMm,
-    feed,
-    speedup,
-    settleOptions = {},
-    recordPoint,
-    driveSetpointMm,
-    stepIndex,
-    stepCount,
-    restoreToModeWhenFinished,
-    projectZeroTension = false,
-  } = options;
-
-  if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    throw new Error('collectDataPoint requires motorIds');
-  }
-  if (!Array.isArray(axes) || axes.length !== motorIds.length) {
-    throw new Error('collectDataPoint requires axes mapping');
-  }
-  if (!Array.isArray(mmPerDeg) || mmPerDeg.length !== motorIds.length) {
-    throw new Error('collectDataPoint requires mmPerDeg mapping');
-  }
-
+function buildDataPointModes({
+  motorIds,
+  driveAnchor,
+  sensorAnchors,
+  fixedAnchors = [],
+  forbiddenForceAnchors = [],
+  forceMax,
+  forceMin,
+  forceMid,
+} = {}) {
   const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
   const sensorSet = new Set(
     (Array.isArray(sensorAnchors) ? sensorAnchors : [sensorAnchors])
@@ -198,22 +208,86 @@ export async function collectDataPoint(sendFn, options = {}) {
       ? forceMid * 2.0
       : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
   );
+  const relaxModes = buildModes(fallbackForce);
+
+  return {
+    buildModes,
+    returnModes,
+    relaxModes,
+    fallbackForce,
+  };
+}
+
+export async function applyDataPointReturnModes(sendFn, options = {}) {
+  const { motorIds, speedup, settleOptions = {} } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    throw new Error('applyDataPointReturnModes requires motorIds');
+  }
+  const { returnModes } = buildDataPointModes(options);
   await applyForceModeState(sendFn, { motorIds, modes: returnModes });
   await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  return returnModes;
+}
 
-  if (Number.isFinite(moveDeltaMm) && Math.abs(moveDeltaMm) > 1e-6) {
-    if (!driveAxis) {
-      throw new Error('collectDataPoint requires driveAxis when moveDeltaMm is provided');
-    }
-    await runMoveWithWait(
-      sendFn,
-      `G1 H2 ${driveAxis}${moveDeltaMm.toFixed(3)} F${feed}`,
-      speedup,
-      { axes },
-    );
+export async function collectDataPoint(sendFn, options = {}) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    driveAnchor,
+    sensorAnchors,
+    fixedAnchors = [],
+    forbiddenForceAnchors = [],
+    forceMax,
+    forceMin,
+    forceMid,
+    speedup,
+    settleOptions = {},
+    recordPoint,
+    driveSetpointMm,
+    stepIndex,
+    stepCount,
+    restoreToModeWhenFinished,
+    projectZeroTension = false,
+    skipReturnModePrep = false,
+  } = options;
+
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    throw new Error('collectDataPoint requires motorIds');
+  }
+  if (!Array.isArray(axes) || axes.length !== motorIds.length) {
+    throw new Error('collectDataPoint requires axes mapping');
+  }
+  if (!Array.isArray(mmPerDeg) || mmPerDeg.length !== motorIds.length) {
+    throw new Error('collectDataPoint requires mmPerDeg mapping');
   }
 
-  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  const debugState = getDebugState(sendFn);
+  if (debugState?.enabled) {
+    const callSite = parseCallSite(new Error().stack, { skip: 1 });
+    console.log(`collectDataPoint called from ${formatCallSite(callSite)}`);
+  }
+
+  const {
+    buildModes,
+    returnModes,
+    relaxModes,
+    fallbackForce,
+  } = buildDataPointModes({
+    motorIds,
+    driveAnchor,
+    sensorAnchors,
+    fixedAnchors,
+    forbiddenForceAnchors,
+    forceMax,
+    forceMin,
+    forceMid,
+  });
+
+  if (!skipReturnModePrep) {
+    await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  }
 
   let anglesDeg = null;
   let stableData = null;
@@ -275,7 +349,6 @@ export async function collectDataPoint(sendFn, options = {}) {
       anglesDeg = stableData.anglesDeg;
     }
   } else {
-    const relaxModes = buildModes(fallbackForce);
     await applyForceModeState(sendFn, { motorIds, modes: relaxModes });
     stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
     anglesDeg = stableData.anglesDeg;

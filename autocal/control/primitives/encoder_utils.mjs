@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { formatCallSite, getDebugState, parseCallSite } from './debug_trace.mjs';
 import { STEP_CLOCK_HZ } from '../../../examples/js/slideprinter/rrfMotionUtils.js';
 
 export const DEFAULT_FEED = 2000;
@@ -136,11 +137,95 @@ export function estimateMoveLengthMm(gcode, axes = null) {
   return Math.sqrt(sumSquares);
 }
 
+function parseAxisValues(gcode, axes) {
+  if (typeof gcode !== 'string' || !Array.isArray(axes) || axes.length === 0) {
+    return {};
+  }
+  const axisChars = axes.map((axis) => String(axis).toUpperCase()).join('');
+  if (!axisChars) {
+    return {};
+  }
+  const coords = {};
+  const regex = new RegExp(`\\b([${axisChars}])(-?[0-9]+(?:\\.[0-9]+)?)`, 'gi');
+  let match = regex.exec(gcode);
+  while (match) {
+    coords[match[1].toUpperCase()] = parseFloat(match[2]);
+    match = regex.exec(gcode);
+  }
+  return coords;
+}
+
+function formatForceValue(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '?';
+  }
+  const rounded = Math.round(num * 1000) / 1000;
+  const asString = rounded.toFixed(3);
+  return asString.replace(/\.?0+$/, '');
+}
+
 export async function runMoveWithWait(sendFn, gcode, speedup = 1, {
   defaultFeed = DEFAULT_FEED,
   axes = null,
   delayFn = sleep,
 } = {}) {
+  const debugState = getDebugState(sendFn);
+  if (debugState?.enabled) {
+    const callSite = parseCallSite(new Error().stack, { skip: 1 });
+    const axisList = Array.isArray(debugState.axes) && debugState.axes.length > 0
+      ? debugState.axes
+      : axes;
+    const axisValues = parseAxisValues(gcode, axisList);
+    const lastLengths = Array.isArray(debugState.lastLengths) ? debugState.lastLengths.slice() : null;
+    const lastModes = Array.isArray(debugState.lastModes) ? debugState.lastModes : [];
+    const isRelative = /\bH2\b/i.test(gcode) || /\bG91\b/i.test(gcode);
+    const labels = [];
+    let nextLengths = lastLengths ? lastLengths.slice() : null;
+
+    if (Array.isArray(axisList) && axisList.length > 0) {
+      for (let idx = 0; idx < axisList.length; idx += 1) {
+        const mode = lastModes[idx];
+        const isForce = mode !== undefined && mode !== null && mode !== 'position' && mode !== 'pos';
+        if (isForce) {
+          labels.push(`(force mode ${formatForceValue(mode)} N)`);
+          continue;
+        }
+        const axis = String(axisList[idx]).toUpperCase();
+        const deltaOrTarget = axisValues[axis];
+        const current = lastLengths ? lastLengths[idx] : null;
+        let next = null;
+        if (Number.isFinite(deltaOrTarget)) {
+          if (isRelative) {
+            next = Number.isFinite(current) ? current + deltaOrTarget : null;
+          } else {
+            next = deltaOrTarget;
+          }
+        } else if (Number.isFinite(current)) {
+          next = current;
+        }
+        if (Number.isFinite(next)) {
+          labels.push(`${next.toFixed(1)} mm`);
+          if (nextLengths) {
+            nextLengths[idx] = next;
+          }
+        } else {
+          labels.push('?');
+        }
+      }
+    }
+
+    if (labels.length > 0) {
+      console.log(`runMoveWithWait -> [${labels.join(', ')}] from ${formatCallSite(callSite)}`);
+    } else {
+      console.log(`runMoveWithWait from ${formatCallSite(callSite)}`);
+    }
+
+    if (nextLengths && debugState) {
+      debugState.lastLengths = nextLengths;
+    }
+  }
+
   const result = await sendFn(gcode);
   const durationSeconds = motionDurationSeconds(result);
   const divisor = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;

@@ -299,6 +299,7 @@ export function parseBridgeArgs(argv) {
     rampWaitMs: null,
     swapWaitMs: null,
     debugSweep: false,
+    debugSweepActions: false,
     trace: false,
     sweepConfigFile: null,
     continuous: false,
@@ -412,6 +413,8 @@ export function parseBridgeArgs(argv) {
       args.swapWaitMs = argv[++i] || null;
     } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
       args.debugSweep = true;
+    } else if (arg === '--debug-sweep-actions') {
+      args.debugSweepActions = true;
     } else if (arg === '--trace' || arg === '--trace-positions') {
       args.trace = true;
     } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
