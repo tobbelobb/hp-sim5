@@ -17,9 +17,11 @@ Initiate simulated data collection and semi-automatic (human-in-the-loop) calibr
 ```bash
 python autocal/active_calibrate.py \
   --sim \
+  --machine-type slideprinter \
   --collector-args --speedup 25
 ```
 
+Replace `slideprinter` with your actual type of machine (one of `slideprinter`,`hangprinter_4`,`hangprinter_5`,`cubecorners`, or `skycam`).
 Keep the hp-sim web page visible during the whole procedure, otherwise your browser might pause the simulation and break the autocalibration.
 
 If everything went well you should see something like this:
@@ -36,6 +38,7 @@ It writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.p
 
 ```bash
 python autocal/active_calibrate.py \
+  --machine-type slideprinter \
   --dataset autocal/data/my_active.json
 ```
 
