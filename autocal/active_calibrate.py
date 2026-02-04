@@ -341,7 +341,7 @@ def _estimate_anchor_covariance(info: np.ndarray, *, regularization: float) -> n
     return np.linalg.pinv(info)
 
 
-def _covariance_report(cov: np.ndarray, *, top: int = 6) -> str:
+def _covariance_report(cov: np.ndarray, *, top: int = 6, prefix: str = "std") -> str:
     cov = np.asarray(cov, dtype=float)
     if cov.ndim != 2 or cov.shape[0] != cov.shape[1]:
         return "covariance: n/a"
@@ -356,7 +356,124 @@ def _covariance_report(cov: np.ndarray, *, top: int = 6) -> str:
         if not np.isfinite(v):
             continue
         parts.append(f"p{i}={v:.3g}mm")
-    return "std(" + ", ".join(parts) + ")"
+    tag = str(prefix) if prefix else "std"
+    return f"{tag}(" + ", ".join(parts) + ")"
+
+
+def _fmt_float(value: object, *, fmt: str = ".4g", suffix: str = "") -> str:
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return "n/a"
+    if not np.isfinite(f):
+        return "n/a"
+    return f"{f:{fmt}}{suffix}"
+
+
+def _covariance_scale_from_noise(noise_metrics: Optional[dict]) -> Tuple[Optional[float], Optional[str]]:
+    if not isinstance(noise_metrics, dict):
+        return None, None
+    for key, label in (("chi2_red", "chi2_red"), ("normalized_cost", "J")):
+        val = noise_metrics.get(key)
+        try:
+            scale = float(val)
+        except (TypeError, ValueError):
+            continue
+        if np.isfinite(scale) and scale > 0.0:
+            return scale, label
+    return None, None
+
+
+def _scale_covariance(
+    cov: np.ndarray, noise_metrics: Optional[dict]
+) -> Tuple[np.ndarray, Optional[float], Optional[str]]:
+    cov = np.asarray(cov, dtype=float)
+    if cov.ndim != 2 or cov.shape[0] != cov.shape[1]:
+        return cov, None, None
+    scale, label = _covariance_scale_from_noise(noise_metrics)
+    if scale is None:
+        return cov, None, None
+    return cov * float(scale), float(scale), label
+
+
+def _covariance_diag_std(cov: np.ndarray) -> Optional[np.ndarray]:
+    cov = np.asarray(cov, dtype=float)
+    if cov.ndim != 2 or cov.shape[0] != cov.shape[1]:
+        return None
+    diag = np.diag(cov)
+    if diag.size == 0:
+        return None
+    std = np.sqrt(np.maximum(diag, 0.0))
+    if not np.any(np.isfinite(std)):
+        return None
+    return std
+
+
+def _confidence_intervals(
+    cov: np.ndarray, *, z_value: float = 1.96
+) -> Optional[Dict[str, object]]:
+    std = _covariance_diag_std(cov)
+    if std is None:
+        return None
+    z = float(z_value)
+    if not np.isfinite(z) or z <= 0.0:
+        z = 1.96
+    ci_half = z * std
+    finite = np.isfinite(std)
+    if not np.any(finite):
+        return None
+    max_std = float(np.max(std[finite]))
+    max_ci = float(np.max(ci_half[finite]))
+    return {
+        "z": z,
+        "std_mm": std.tolist(),
+        "ci_half_mm": ci_half.tolist(),
+        "max_std_mm": max_std,
+        "max_ci_half_mm": max_ci,
+    }
+
+
+def _workspace_diag_mm(
+    dataset: Optional[dict],
+    anchors: Optional[np.ndarray],
+    *,
+    machine_type: Optional[str],
+    num_anchors: Optional[int],
+    dimensions: Optional[int],
+) -> Optional[float]:
+    dims = int(dimensions) if isinstance(dimensions, int) and dimensions > 0 else None
+    if isinstance(dataset, dict):
+        config = dataset.get("config")
+        if isinstance(config, dict):
+            raw_max_travel = config.get("max_travel_mm")
+            if isinstance(raw_max_travel, (int, float)) and np.isfinite(raw_max_travel):
+                travel = float(raw_max_travel)
+                if travel > 0.0:
+                    scale = float(np.sqrt(float(dims))) if dims else 1.0
+                    return float(2.0 * travel * scale)
+
+    if anchors is not None:
+        anchors = np.asarray(anchors, dtype=float)
+        if anchors.ndim == 2 and anchors.shape[0] >= 2:
+            max_dist = 0.0
+            for i in range(anchors.shape[0]):
+                for j in range(i + 1, anchors.shape[0]):
+                    dist = float(np.linalg.norm(anchors[i] - anchors[j]))
+                    if np.isfinite(dist) and dist > max_dist:
+                        max_dist = dist
+            if max_dist > 0.0:
+                return max_dist
+
+    if machine_type is not None and num_anchors is not None and dimensions is not None:
+        try:
+            scale = float(
+                np.sqrt(l2_scale_for_machine(str(machine_type), int(num_anchors), int(dimensions)))
+            )
+        except Exception:
+            scale = float("nan")
+        if np.isfinite(scale) and scale > 0.0:
+            return scale
+    return None
 
 
 def _unique_path(path: Path) -> Path:
@@ -668,6 +785,7 @@ def _plan_next_ellipse_sweep(
         sweep_wise_filtering=bool(sweep_wise_filtering),
         sweep_metric=str(sweep_metric),
         use_noise_mean=bool(use_noise_mean),
+        sigma_source=str(sigma_source),
         generate_report=bool(generate_report),
         include_debug_fits=False,
         residuals_csv=residuals_csv,
@@ -687,6 +805,33 @@ def _plan_next_ellipse_sweep(
         fd_eps_mm=float(fd_eps_mm),
     )
     cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
+    noise_metrics = None
+    if isinstance(cal, dict):
+        details = cal.get("details")
+        if isinstance(details, dict):
+            nm = details.get("noise_metrics")
+            if isinstance(nm, dict):
+                noise_metrics = nm
+    cov_scaled, cov_scale, cov_scale_label = _scale_covariance(cov, noise_metrics)
+    ci = _confidence_intervals(cov_scaled)
+    workspace_diag = _workspace_diag_mm(
+        dataset,
+        anchors,
+        machine_type=machine_type,
+        num_anchors=num_anchors,
+        dimensions=dimensions,
+    )
+    rank = None
+    rank_deficient = False
+    if info_obs.ndim == 2 and info_obs.shape[0] == info_obs.shape[1]:
+        rank = int(np.linalg.matrix_rank(info_obs))
+        rank_deficient = rank < info_obs.shape[0]
+    warnings: List[str] = []
+    if rank_deficient and rank is not None:
+        warnings.append(f"info_rank_deficient {rank}/{info_obs.shape[0]}")
+    cov_scaled_std = _covariance_diag_std(cov_scaled)
+    if cov_scaled_std is None or not np.all(np.isfinite(cov_scaled_std)):
+        warnings.append("covariance_nonfinite")
 
     observed_deltas: List[float] = []
     for cfg in sweeps_obs:
@@ -786,6 +931,14 @@ def _plan_next_ellipse_sweep(
         "cost": cost,
         "info": info_obs,
         "covariance": cov,
+        "covariance_scaled": cov_scaled,
+        "covariance_scale": cov_scale,
+        "covariance_scale_label": cov_scale_label,
+        "confidence_intervals": ci,
+        "workspace_diag_mm": workspace_diag,
+        "info_rank": rank,
+        "info_rank_deficient": rank_deficient,
+        "warnings": warnings,
         "ranked": ranked,
         "best_cfg": best_cfg,
         "cfg_path": cfg_path,
@@ -801,6 +954,14 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
     cost = float(plan.get("cost", float("nan")))
     info = np.asarray(plan.get("info"), dtype=float)
     cov = np.asarray(plan.get("covariance"), dtype=float)
+    cov_scaled = np.asarray(plan.get("covariance_scaled", cov), dtype=float)
+    cov_scale = plan.get("covariance_scale")
+    cov_scale_label = plan.get("covariance_scale_label")
+    ci = plan.get("confidence_intervals")
+    workspace_diag = plan.get("workspace_diag_mm")
+    info_rank = plan.get("info_rank")
+    rank_deficient = bool(plan.get("info_rank_deficient", False))
+    warnings = plan.get("warnings") or []
     ranked = plan.get("ranked") or []
     cmd = plan.get("collect_command")
     noise_summary = _summarize_encoder_noise(plan.get("dataset") if isinstance(plan, dict) else None)
@@ -822,20 +983,11 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
                 n_obs = noise_metrics.get("n_obs")
                 norm_mode = noise_metrics.get("norm_mode")
                 lengths_mode = noise_metrics.get("lengths_mode")
-                def _fmt(value: object, *, suffix: str = "") -> str:
-                    try:
-                        f = float(value)
-                    except (TypeError, ValueError):
-                        return "n/a"
-                    if not np.isfinite(f):
-                        return "n/a"
-                    return f"{f:.4g}{suffix}"
-
-                j_str = _fmt(j_val)
-                chi2_str = _fmt(chi2_red)
-                med_str = _fmt(z_med)
-                p95_str = _fmt(z_p95)
-                outlier_str = _fmt(outlier_ratio)
+                j_str = _fmt_float(j_val)
+                chi2_str = _fmt_float(chi2_red)
+                med_str = _fmt_float(z_med)
+                p95_str = _fmt_float(z_p95)
+                outlier_str = _fmt_float(outlier_ratio)
                 n_str = f"{int(n_obs)}" if isinstance(n_obs, (int, float)) and np.isfinite(n_obs) else "n/a"
                 mode_str = str(norm_mode) if norm_mode is not None else "n/a"
                 lengths_str = str(lengths_mode) if lengths_mode is not None else "n/a"
@@ -844,7 +996,48 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
                     f"outlier_ratio={outlier_str} N={n_str} mode={mode_str} lengths={lengths_str}"
                 )
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
-        print(f"; info rank: {int(np.linalg.matrix_rank(info))}/{info.shape[0]} {_covariance_report(cov)}")
+        rank_val = int(info_rank) if isinstance(info_rank, int) else int(np.linalg.matrix_rank(info))
+        print(f"; info rank: {rank_val}/{info.shape[0]} {_covariance_report(cov)}")
+        if cov_scale is not None:
+            scale_str = _fmt_float(cov_scale)
+            label = str(cov_scale_label or "scale")
+            print(
+                f"; covariance_scaled: {label}={scale_str} "
+                f"{_covariance_report(cov_scaled, prefix='std_scaled')}"
+            )
+        if isinstance(ci, dict):
+            max_std = ci.get("max_std_mm")
+            max_ci = ci.get("max_ci_half_mm")
+            scale_note = "scale=unscaled"
+            if cov_scale is not None:
+                scale_note = f"scale={str(cov_scale_label or 'scale')}={_fmt_float(cov_scale)}"
+            rel_std = None
+            rel_ci = None
+            if (
+                isinstance(workspace_diag, (int, float))
+                and np.isfinite(workspace_diag)
+                and workspace_diag > 0.0
+            ):
+                rel_std = float(max_std) / float(workspace_diag) if max_std is not None else None
+                rel_ci = float(max_ci) / float(workspace_diag) if max_ci is not None else None
+            ws_str = _fmt_float(workspace_diag)
+            max_std_str = _fmt_float(max_std, suffix="mm")
+            max_ci_str = _fmt_float(max_ci, suffix="mm")
+            rel_std_str = _fmt_float(rel_std)
+            rel_ci_str = _fmt_float(rel_ci)
+            print(
+                f"; CI95: max_std={max_std_str} max_ci={max_ci_str} "
+                f"workspace={ws_str} rel_std={rel_std_str} rel_ci={rel_ci_str} {scale_note}"
+            )
+        if rank_deficient:
+            print(
+                f"; warning: info rank deficient ({rank_val}/{info.shape[0]}). "
+                "Consider more diverse sweeps or constraints."
+            )
+        if isinstance(warnings, list) and warnings:
+            extra = [w for w in warnings if isinstance(w, str) and not w.startswith("info_rank_deficient")]
+            if extra:
+                print("; warning_flags: " + ", ".join(extra))
     if isinstance(noise_summary, dict):
         total_points = int(noise_summary.get("total_points", 0))
         points_with_sigma = int(noise_summary.get("points_with_sigma", 0))
@@ -1269,7 +1462,7 @@ def ellipse_loop(
                 print("; residual histogram skipped (missing CSV or plotter)")
 
         cost = float(plan.get("cost", float("nan")))
-        cov = np.asarray(plan.get("covariance"), dtype=float)
+        cov = np.asarray(plan.get("covariance_scaled", plan.get("covariance")), dtype=float)
         max_std = float("nan")
         if cov.ndim == 2 and cov.shape[0] == cov.shape[1] and cov.size:
             diag = np.diag(cov)
