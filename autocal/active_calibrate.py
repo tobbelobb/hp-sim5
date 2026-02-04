@@ -9,6 +9,9 @@ import subprocess
 import sys
 import time
 import urllib.request
+import contextlib
+from contextlib import redirect_stderr, redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -1376,13 +1379,82 @@ def full_auto_loop(
         work_path = Path(work_dataset)
     else:
         work_path = Path("autocal/data/default_dataset.json")
+    text_log_path = work_path.with_name(f"{work_path.stem}.full_auto.log")
+    text_log_path.parent.mkdir(parents=True, exist_ok=True)
+    text_log_path.write_text("", encoding="utf-8")
+    log_handle = text_log_path.open("a", encoding="utf-8")
+
+    def _log_line(msg: str) -> None:
+        log_handle.write(str(msg) + "\n")
+        log_handle.flush()
+
+    def _log_console(msg: str) -> None:
+        print(msg)
+        _log_line(msg)
+
+    def _log_context():
+        stack = contextlib.ExitStack()
+        stack.enter_context(redirect_stdout(log_handle))
+        stack.enter_context(redirect_stderr(log_handle))
+        return stack
+
+    def _emit_summary_and_send(best_plan: Dict[str, object]) -> int:
+        dataset_now = _load_json(work_path)
+        sweep_ids: List[str] = []
+        sweeps_now = dataset_now.get("sweeps")
+        if isinstance(sweeps_now, list):
+            for sweep in sweeps_now:
+                if isinstance(sweep, dict) and sweep.get("id"):
+                    sweep_ids.append(str(sweep["id"]))
+        m669 = _m669_from_plan(best_plan)
+        anchors = best_plan.get("anchors")
+        anchor_str = ""
+        if isinstance(anchors, np.ndarray):
+            anchor_str = np.array2string(anchors, precision=2, separator=", ")
+        elif anchors is not None:
+            anchor_str = str(np.asarray(anchors))
+        quality_label = _solution_quality_label(best_cost)
+        _log_console("")
+        _log_console("== Calibration summary ==")
+        _log_console(f"Found parameters of {quality_label} quality")
+        _log_console(f"Best cost: {_fmt_float(best_cost)}")
+        if m669:
+            _log_console(f"Parameters (M669): {m669}")
+        elif anchor_str:
+            _log_console(f"Anchors: {anchor_str}")
+        if sweep_ids:
+            _log_console("Sweeps used: " + ", ".join(sweep_ids))
+        if has_variants:
+            best_flags = str(best_meta.get("flags", "")).strip()
+            best_run = str(best_meta.get("run_id", "")).strip()
+            label = best_flags or best_run or "default"
+            _log_console(f"Variant/flag setup giving best cost: {label}")
+        _log_console(_solution_quality_message(best_cost))
+
+        if m669:
+            _log_console(f"Sending M669 {m669} to {rrf_server}")
+            try:
+                reply = _send_rrf_gcode(rrf_server, m669)
+            except Exception as exc:
+                _log_console(f"; failed to send M669: {exc}")
+                return _finalize(1)
+            reply = reply.strip()
+            if reply:
+                _log_line(f"; M669 reply: {reply}")
+        else:
+            _log_console("Sending M669 skipped (no command available)")
+        return _finalize(0)
+
+    print(f"Writing additional info to log: {text_log_path}")
+    _log_line(f"Writing additional info to log: {text_log_path}")
     if work_path.exists():
-        machine_type = _require_machine_type(
-            _load_json(work_path),
-            expected=machine_type,
-            context=str(work_path),
-            mismatch="warn",
-        )
+        with _log_context():
+            machine_type = _require_machine_type(
+                _load_json(work_path),
+                expected=machine_type,
+                context=str(work_path),
+                mismatch="warn",
+            )
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
@@ -1410,13 +1482,17 @@ def full_auto_loop(
 
     if sim and not server_explicit and not user_no_spawn:
         target_port = port or DEFAULT_RRF_PORT
-        print(f"; starting rrf_simulator at http://localhost:{target_port}")
+        _log_line(f"; starting rrf_simulator at http://localhost:{target_port}")
         sim_process = _start_rrf_simulator(target_port)
         _wait_for_rrf_server(f"http://localhost:{target_port}")
 
     def _finalize(code: int) -> int:
         if sim_process and not keep_sim_alive:
             _stop_process(sim_process)
+        try:
+            log_handle.close()
+        except Exception:
+            pass
         return code
 
     if not work_path.exists():
@@ -1476,11 +1552,12 @@ def full_auto_loop(
             str(work_path),
             *argv_eff,
         ]
-        print("; bootstrapping dataset (3 sweeps, auto size-tune):")
-        print(";   " + " ".join(cmd))
-        subprocess.run(cmd, check=True)
+        _log_line("; bootstrapping dataset (3 sweeps, auto size-tune):")
+        _log_line(";   " + " ".join(cmd))
+        with _log_context():
+            subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
         reset_pending = False
-        print(f"; bootstrap dataset written to {work_path}")
+        _log_line(f"; bootstrap dataset written to {work_path}")
 
     replay_mode = False
     replay_sweeps: List[dict] = []
@@ -1497,7 +1574,7 @@ def full_auto_loop(
             dataset_work["sweeps"] = initial
             _renumber_sweeps(initial)
             _write_json(work_path, dataset_work)
-            print(
+            _log_line(
                 f"; full-auto replay: starting from 3 sweeps, "
                 f"replaying {len(replay_sweeps)} additional sweeps"
             )
@@ -1517,7 +1594,7 @@ def full_auto_loop(
             "replay_remaining": len(replay_sweeps),
         },
     )
-    print(f"; full-auto log: {log_path}")
+    _log_line(f"; full-auto log: {log_path}")
 
     base_solver = {
         "solve_restarts": int(solve_restarts),
@@ -1543,9 +1620,13 @@ def full_auto_loop(
     no_improve = 0
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     patience_limit = max(1, int(patience))
+    has_variants = bool(full_auto_runs)
+    selected_costs: List[float] = []
 
     for step in range(1, max(1, int(max_steps)) + 1):
-        print(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+        _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+        _log_console("")
+        _log_console(f"; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
         collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
         run_results: List[Dict[str, object]] = []
 
@@ -1568,38 +1649,39 @@ def full_auto_loop(
                 else:
                     residuals_csv_run = res_base
 
-            plan = _plan_next_ellipse_sweep(
-                work_path,
-                solve_restarts=int(settings["solve_restarts"]),
-                solve_iterations=int(settings["solve_iterations"]),
-                solve_optimizer=str(settings["solve_optimizer"]),
-                residual_threshold=float(settings["residual_threshold"]),
-                spring_k_multiplier=float(settings["spring_k_multiplier"]),
-                use_flex=bool(settings["use_flex"]),
-                pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
-                pointwise_filtering=bool(settings["pointwise_filtering"]),
-                pointwise_global_mad=bool(settings["pointwise_global_mad"]),
-                sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
-                sweep_metric=str(settings["sweep_metric"]),
-                use_noise_mean=bool(settings["use_noise_mean"]),
-                sigma_source=str(settings["sigma_source"]),
-                robust_debug=bool(settings["robust_debug"]),
-                residuals_csv=residuals_csv_run,
-                generate_report=bool(settings["generate_report"]),
-                candidate_deltas=candidate_deltas,
-                candidate_count=int(candidate_count),
-                delta_min=delta_min,
-                delta_max=delta_max,
-                fd_eps_mm=float(fd_eps_mm),
-                regularization=float(regularization),
-                exclude_existing=bool(exclude_existing),
-                existing_tol_mm=float(existing_tol_mm),
-                min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
-                top_k=int(top_k),
-                write_cfg=cfg_path,
-                collector_output=collector_output,
-                collector_args=collector_args_eff,
-            )
+            with _log_context():
+                plan = _plan_next_ellipse_sweep(
+                    work_path,
+                    solve_restarts=int(settings["solve_restarts"]),
+                    solve_iterations=int(settings["solve_iterations"]),
+                    solve_optimizer=str(settings["solve_optimizer"]),
+                    residual_threshold=float(settings["residual_threshold"]),
+                    spring_k_multiplier=float(settings["spring_k_multiplier"]),
+                    use_flex=bool(settings["use_flex"]),
+                    pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
+                    pointwise_filtering=bool(settings["pointwise_filtering"]),
+                    pointwise_global_mad=bool(settings["pointwise_global_mad"]),
+                    sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
+                    sweep_metric=str(settings["sweep_metric"]),
+                    use_noise_mean=bool(settings["use_noise_mean"]),
+                    sigma_source=str(settings["sigma_source"]),
+                    robust_debug=bool(settings["robust_debug"]),
+                    residuals_csv=residuals_csv_run,
+                    generate_report=bool(settings["generate_report"]),
+                    candidate_deltas=candidate_deltas,
+                    candidate_count=int(candidate_count),
+                    delta_min=delta_min,
+                    delta_max=delta_max,
+                    fd_eps_mm=float(fd_eps_mm),
+                    regularization=float(regularization),
+                    exclude_existing=bool(exclude_existing),
+                    existing_tol_mm=float(existing_tol_mm),
+                    min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
+                    top_k=int(top_k),
+                    write_cfg=cfg_path,
+                    collector_output=collector_output,
+                    collector_args=collector_args_eff,
+                )
 
             primary_cost = _plan_primary_cost(plan)
             max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
@@ -1652,8 +1734,9 @@ def full_auto_loop(
                     ],
                 },
             )
-            print("; full-auto: no valid calibration runs (non-finite cost or covariance).")
-            print("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+            _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
+            _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
+            _log_console("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
             return _finalize(2)
 
         def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
@@ -1673,11 +1756,11 @@ def full_auto_loop(
         selected_rel_std = metrics.get("rel_std")
         selected_warnings = list(metrics.get("warnings") or [])
 
-        if full_auto_verbose:
+        with _log_context():
             _print_ellipse_plan(
                 plan,
                 top_n=5,
-                print_command=False,
+                print_command=True,
                 output_with_explanations=bool(output_with_explanations),
             )
 
@@ -1685,7 +1768,7 @@ def full_auto_loop(
             try:
                 _write_sweep_config_file(Path(write_cfg), plan["best_cfg"])
             except Exception as exc:
-                print(f"; full-auto warning: failed to write sweep config {write_cfg}: {exc}")
+                _log_line(f"; full-auto warning: failed to write sweep config {write_cfg}: {exc}")
 
         improvement = None
         if np.isfinite(selected_cost):
@@ -1720,29 +1803,28 @@ def full_auto_loop(
                     and float(best_meta["max_std_mm"]) <= float(stop_std_mm)
                 )
 
+        selected_costs.append(selected_cost)
         summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
         summary_rel = _fmt_float(selected_rel_std)
         summary_std = _fmt_float(selected_max_std, suffix="mm")
         summary_cost = _fmt_float(selected_cost)
-        print(
+        _log_line(
             f"; selected run={selected_id}{summary_flags} cost={summary_cost} "
             f"rel_std={summary_rel} max_std={summary_std}"
         )
-        if selected_warnings:
-            print("; data_quality_warnings: " + ", ".join(selected_warnings))
+        if has_variants:
+            _log_console(f"; selected run={selected_id}{summary_flags}")
+        _log_console(f"cost: {summary_cost}")
 
-        if selected_warnings:
-            decision = "stop_warning"
+        threshold_accept = False
+        if stop_cost is not None and stop_cost_hit:
+            threshold_accept = True
+        if stop_std_mm is not None and stop_std_hit:
+            threshold_accept = True
+        if threshold_accept or no_improve >= patience_limit:
+            decision = "accept"
         else:
-            threshold_accept = False
-            if stop_cost is not None and stop_cost_hit:
-                threshold_accept = True
-            if stop_std_mm is not None and stop_std_hit:
-                threshold_accept = True
-            if threshold_accept or no_improve >= patience_limit:
-                decision = "accept"
-            else:
-                decision = "collect"
+            decision = "collect"
 
         _append_jsonl(
             log_path,
@@ -1778,54 +1860,19 @@ def full_auto_loop(
 
         if decision == "accept":
             if best_plan is None:
-                print("; full-auto: no best plan available; stopping.")
-                print("; " + _solution_quality_message(None))
+                _log_console("; full-auto: no best plan available; stopping.")
+                _log_console("; " + _solution_quality_message(None))
                 return _finalize(2)
-            m669 = _m669_from_plan(best_plan)
-            if m669:
-                print(f"; sending {m669} to {rrf_server}")
-                try:
-                    reply = _send_rrf_gcode(rrf_server, m669)
-                except Exception as exc:
-                    print(f"; failed to send M669: {exc}")
-                    return _finalize(1)
-                reply = reply.strip()
-                if reply:
-                    print(f"; M669 reply: {reply}")
-            else:
-                print("; accepted anchors; no M669 command available")
-            print(f"; accepted anchors (best_cost={_fmt_float(best_cost)}); dataset={work_path}")
-            print("; " + _solution_quality_message(best_cost))
-            return _finalize(0)
-
-        if decision == "stop_warning":
-            print(f"; stopping full-auto due to data-quality warnings; dataset={work_path}")
-            print("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
-            return _finalize(2)
+            return _emit_summary_and_send(best_plan)
 
         if replay_mode:
             if replay_index >= len(replay_sweeps):
-                print("; full-auto: no more sweeps to replay; accepting best-so-far.")
+                _log_console("; full-auto: no more sweeps to replay; accepting best-so-far.")
                 if best_plan is None:
-                    print("; full-auto: no best plan available; stopping.")
-                    print("; " + _solution_quality_message(None))
+                    _log_console("; full-auto: no best plan available; stopping.")
+                    _log_console("; " + _solution_quality_message(None))
                     return _finalize(2)
-                m669 = _m669_from_plan(best_plan)
-                if m669:
-                    print(f"; sending {m669} to {rrf_server}")
-                    try:
-                        reply = _send_rrf_gcode(rrf_server, m669)
-                    except Exception as exc:
-                        print(f"; failed to send M669: {exc}")
-                        return _finalize(1)
-                    reply = reply.strip()
-                    if reply:
-                        print(f"; M669 reply: {reply}")
-                else:
-                    print("; accepted anchors; no M669 command available")
-                print(f"; accepted anchors (best_cost={_fmt_float(best_cost)}); dataset={work_path}")
-                print("; " + _solution_quality_message(best_cost))
-                return _finalize(0)
+                return _emit_summary_and_send(best_plan)
 
             next_sweep = replay_sweeps[replay_index]
             replay_index += 1
@@ -1837,21 +1884,34 @@ def full_auto_loop(
             _write_json(work_path, merged)
             sweeps = merged.get("sweeps", [])
             count = len(sweeps) if isinstance(sweeps, list) else "?"
-            print(
+            _log_line(
                 f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
                 f"-> {work_path} sweeps={count}"
             )
+            _log_console(f"Collected sweep nr {count}")
             continue
 
         cmd = plan.get("collect_command")
         if not isinstance(cmd, list) or not cmd:
-            print("; No valid candidate to collect; stopping.")
-            print("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+            _log_line("; No valid candidate to collect; stopping.")
+            _log_console("; No valid candidate to collect; stopping.")
+            _log_console("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
             return _finalize(2)
 
-        print(f"; collecting next sweep ({selected_id})")
-        print(f"; running: {' '.join(str(x) for x in cmd)}")
-        subprocess.run(cmd, check=True)
+        finite_costs = [c for c in selected_costs if np.isfinite(c)]
+        if not np.isfinite(selected_cost) or not finite_costs:
+            cost_rank = 1
+        else:
+            cost_rank = sorted(finite_costs).index(selected_cost) + 1
+        rank_label = "best" if cost_rank == 1 else _ordinal(cost_rank) + " best"
+        remaining = max(0, patience_limit - no_improve)
+        _log_console(f"The {rank_label} try so far.")
+        _log_console("Collecting new sweep to try and beat it.")
+        _log_console(f"Still has patience for {remaining} more attempts.")
+        _log_line(f"; collecting next sweep ({selected_id})")
+        _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
+        with _log_context():
+            subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
         reset_pending = False
 
         base_dataset = _load_json(work_path)
@@ -1866,15 +1926,17 @@ def full_auto_loop(
         _write_json(work_path, merged)
         sweeps = merged.get("sweeps", [])
         count = len(sweeps) if isinstance(sweeps, list) else "?"
-        print(f"; merged {collector_output} -> {work_path} sweeps={count}")
+        _log_line(f"; merged {collector_output} -> {work_path} sweeps={count}")
+        _log_console(f"Collected sweep nr {count}")
         try:
             if collector_output != work_path:
                 collector_output.unlink()
         except OSError:
             pass
 
-    print(f"; reached max steps; dataset={work_path}")
-    print("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+    _log_line(f"; reached max steps; dataset={work_path}")
+    _log_console(f"; reached max steps; dataset={work_path}")
+    _log_console("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
     return _finalize(0)
 
 
@@ -2705,6 +2767,28 @@ def _solution_quality_message(best_cost: Optional[float]) -> str:
     if cost < 10.0:
         return "solution quality: Still usable. This is still a reasonable fit."
     return "solution quality: Concerning. This usually means a bad fit."
+
+
+def _solution_quality_label(best_cost: Optional[float]) -> str:
+    if best_cost is None or not np.isfinite(best_cost):
+        return "unknown"
+    cost = float(best_cost)
+    if cost < 2.0:
+        return "ideal"
+    if cost < 5.0:
+        return "good"
+    if cost < 10.0:
+        return "usable"
+    return "concerning"
+
+
+def _ordinal(n: int) -> str:
+    n = int(n)
+    if 10 <= (n % 100) <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
 
 
 def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
