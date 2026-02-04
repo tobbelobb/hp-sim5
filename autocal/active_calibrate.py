@@ -27,7 +27,7 @@ RRF_SIM_BINARY = REPO_ROOT / "RRF" / "build" / "rrf_simulator"
 RRF_SIM_ARGS = ["--vsd", "RRF/run/vsd", "-c", "sys/config_slideprinter.g", "--server", "-p"]
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
-DEFAULT_FULL_AUTO_MIN_DELTA = 0.05
+DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 
 from autocal.active_learning import (
     SweepConfig,
@@ -1629,11 +1629,16 @@ def full_auto_loop(
 
         for run in runs:
             run_id = str(run.get("id", "run"))
+            run_flags = str(run.get("flags", "")).strip()
             overrides = run.get("overrides") or {}
             if not isinstance(overrides, dict):
                 overrides = {}
             settings = dict(base_solver)
             settings.update(overrides)
+            if run_flags:
+                _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
+            else:
+                _log_line(f"; full-auto run {run_id}: flags=''")
 
             cfg_path = _full_auto_cfg_path(work_path, run_id)
             residuals_csv_run = None
@@ -1685,6 +1690,15 @@ def full_auto_loop(
             warnings = _plan_data_quality_warnings(plan)
             noise_metrics = _plan_noise_metrics(plan)
             valid = bool(np.isfinite(primary_cost) and cov_ok)
+            cost_raw = plan.get("cost_raw")
+            cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
+            j_val = noise_metrics.get("J") if isinstance(noise_metrics, dict) else None
+            chi2_val = noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None
+            _log_line(
+                f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
+                f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
+                f"chi2_red={_fmt_float(chi2_val)}"
+            )
 
             run_results.append(
                 {
