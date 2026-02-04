@@ -1607,7 +1607,7 @@ def full_auto_loop(
         "sweep_metric": str(sweep_metric),
         "use_noise_mean": bool(use_noise_mean),
         "sigma_source": str(sigma_source),
-        "robust_debug": bool(robust_debug and full_auto_verbose),
+        "robust_debug": bool(robust_debug),
         "generate_report": bool(generate_report),
     }
 
