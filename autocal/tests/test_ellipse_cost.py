@@ -1,13 +1,11 @@
 import numpy as np
-import pytest
-
 from autocal.ellipse_cost import (
     EllipseCostFunction,
     canonicalize_geometry,
 )
 
 
-def _synthetic_dataset():
+def _synthetic_dataset(num_sweeps: int = 3):
     """
     Build a simple Slideprinter-style sweep where the fixed cable length
     defines a clean circle and recorded lengths are origin-relative deltas.
@@ -36,24 +34,29 @@ def _synthetic_dataset():
     l_sensor_delta = l_sensor_abs - np.linalg.norm(anchors[sensor_idx])
     fixed_delta = fixed_length_abs - np.linalg.norm(anchors[fixed_anchor])
 
-    sweep = {
-        "id": "sweep_001",
-        "fixed_anchors": [fixed_anchor],
-        "fixed_lengths": [fixed_delta],
-        "drive_anchor": drive_idx,
-        "sensor_anchor": sensor_idx,
-        "data_points": [
-            {"l_drive": float(ld), "l_sensor": float(ls)}
-            for ld, ls in zip(l_drive_delta, l_sensor_delta)
-        ],
-    }
+    base_points = [
+        {"l_drive": float(ld), "l_sensor": float(ls)}
+        for ld, ls in zip(l_drive_delta, l_sensor_delta)
+    ]
+    sweeps = []
+    for idx in range(num_sweeps):
+        sweeps.append(
+            {
+                "id": f"sweep_{idx + 1:03d}",
+                "fixed_anchors": [fixed_anchor],
+                "fixed_lengths": [fixed_delta],
+                "drive_anchor": drive_idx,
+                "sensor_anchor": sensor_idx,
+                "data_points": [dict(point) for point in base_points],
+            }
+        )
 
     dataset = {
         "version": "1.0",
         "machine_type": "slideprinter",
         "num_anchors": 3,
         "dimensions": 2,
-        "sweeps": [sweep],
+        "sweeps": sweeps,
     }
 
     return dataset, anchors
@@ -76,7 +79,7 @@ def test_cost_is_low_for_true_anchors():
 
     assert cost < 1e-3
     assert detailed.num_invalid_sweeps == 0
-    assert detailed.num_valid_sweeps == 1
+    assert detailed.num_valid_sweeps == 3
 
 
 def test_pointwise_euclidean_cost_is_low_for_true_anchors():
@@ -91,7 +94,7 @@ def test_pointwise_euclidean_cost_is_low_for_true_anchors():
 
 
 def test_invalid_sweep_is_ignored_in_cost():
-    dataset, anchors = _synthetic_dataset()
+    dataset, anchors = _synthetic_dataset(num_sweeps=4)
     # Trim to force an invalid fit (min_points default is 3)
     dataset["sweeps"][0]["data_points"] = dataset["sweeps"][0]["data_points"][:2]
 
@@ -103,7 +106,7 @@ def test_invalid_sweep_is_ignored_in_cost():
     result = cost_fn.evaluate_detailed(anchors.ravel())
 
     assert result.num_invalid_sweeps == 1
-    assert result.total_cost == pytest.approx(0.0)
+    assert result.total_cost < 1e-3
 
 
 def test_noise_mean_lengths_reduce_cost():

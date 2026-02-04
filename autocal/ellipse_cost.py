@@ -30,6 +30,14 @@ _SWEEP_WISE_K = 3.0
 _SWEEP_WISE_MIN_SAMPLES = 5
 _SWEEP_WISE_MIN_KEEP = 2
 _SWEEP_WISE_MIN_KEEP_RATIO = 0.5
+_MIN_SWEEPS_AFTER_TRIM_DEFAULT = 3
+_MIN_SWEEPS_AFTER_TRIM_BY_MACHINE = {
+    "slideprinter": 3,
+    "hangprinter_4": 3,
+    "hangprinter_5": 3,
+    "cubecorners": 3,
+    "skycam": 3,
+}
 
 
 @dataclass
@@ -207,6 +215,10 @@ class EllipseCostFunction:
             self.dimensions,
             self.sweeps,
         ) = _dataset_metadata(dataset)
+        machine_key = str(self.machine_type).lower()
+        self._min_sweeps_after_trim = int(
+            _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE.get(machine_key, _MIN_SWEEPS_AFTER_TRIM_DEFAULT)
+        )
 
         self.residual_threshold = residual_threshold
         self.min_points = min_points
@@ -1300,8 +1312,8 @@ class EllipseCostFunction:
         metrics = np.asarray(sweep_metrics, dtype=float)
         finite_mask = np.isfinite(metrics)
         count = int(np.sum(finite_mask))
-        if count < max(2, _SWEEP_WISE_MIN_SAMPLES):
-            return None, None, f"insufficient-samples ({count} < {_SWEEP_WISE_MIN_SAMPLES})"
+        if count <= 0:
+            return None, None, "no-finite"
         data = metrics[finite_mask]
         med = float(np.median(data))
         mad = float(np.median(np.abs(data - med)))
@@ -1314,6 +1326,8 @@ class EllipseCostFunction:
         keep_count = int(np.sum(keep & finite_mask))
         min_keep = int(max(_SWEEP_WISE_MIN_KEEP, np.ceil(_SWEEP_WISE_MIN_KEEP_RATIO * count)))
         reason = "ok"
+        if count < _SWEEP_WISE_MIN_SAMPLES:
+            reason = f"few-samples ({count} < {_SWEEP_WISE_MIN_SAMPLES})"
         if keep_count < min_keep:
             sorted_vals = np.sort(data)
             idx = min(min_keep - 1, sorted_vals.size - 1)
@@ -1321,7 +1335,7 @@ class EllipseCostFunction:
             if np.isfinite(relaxed):
                 threshold = float(max(threshold, relaxed))
                 keep = metrics <= threshold
-                reason = "relaxed-min-keep"
+                reason = f"{reason}; relaxed-min-keep" if reason != "ok" else "relaxed-min-keep"
         if not np.any(keep & finite_mask):
             return None, threshold, "all-rejected"
         return keep, threshold, reason
@@ -1469,6 +1483,7 @@ class EllipseCostFunction:
 
         weighted_costs: List[float] = []
         weights: List[float] = []
+        kept_count = 0
 
         entries, _global_scale = self._pointwise_entries(anchors)
 
@@ -1493,6 +1508,10 @@ class EllipseCostFunction:
 
             weights.append(1.0)
             weighted_costs.append(float(cost + violation_penalty))
+            kept_count += 1
+
+        if kept_count < self._min_sweeps_after_trim:
+            return float("inf")
 
         weight_sum = float(sum(weights)) if weights else 1.0
         if weight_sum <= 0:
@@ -1538,13 +1557,16 @@ class EllipseCostFunction:
             per_sweep_costs[sweep_id] = float(cost + violation_penalty)
             num_valid += 1
 
-        weight_sum = float(sum(weights.values())) if weights else 1.0
-        if weight_sum <= 0:
-            weight_sum = 1.0
+        if num_valid < self._min_sweeps_after_trim:
+            total_cost = float("inf")
+        else:
+            weight_sum = float(sum(weights.values())) if weights else 1.0
+            if weight_sum <= 0:
+                weight_sum = 1.0
 
-        total_cost = sum(
-            per_sweep_costs[sid] * (weights.get(sid, 1.0) / weight_sum) for sid in per_sweep_costs
-        )
+            total_cost = sum(
+                per_sweep_costs[sid] * (weights.get(sid, 1.0) / weight_sum) for sid in per_sweep_costs
+            )
 
         noise_metrics = None
         z_values: List[np.ndarray] = []
