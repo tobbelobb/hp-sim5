@@ -649,13 +649,16 @@ class EllipseCostFunction:
 
     def _sigma_mm_for_point(self, point: Union[Sweep, dict, object], axis_idx: int) -> Optional[float]:
         source = self.sigma_source
+        sigma_min = float(self._pointwise_sigma_min_mm)
         if source == "min":
-            return float(self._pointwise_sigma_min_mm)
+            return sigma_min
 
         if source == "origin":
             if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
-                return float(self._encoder_noise_mm)
-            return float(self._pointwise_sigma_min_mm)
+                sigma_mm = float(self._encoder_noise_mm)
+            else:
+                sigma_mm = sigma_min
+            return float(max(sigma_mm, sigma_min))
 
         sigma_deg = self._sigma_deg_for_point(point, axis_idx)
 
@@ -666,14 +669,19 @@ class EllipseCostFunction:
         if self._mm_per_degree_by_axis is not None and 0 <= axis_idx < len(self._mm_per_degree_by_axis):
             mm_per = self._mm_per_degree_by_axis[axis_idx]
             if np.isfinite(mm_per) and sigma_deg is not None:
-                return float(sigma_deg) * float(mm_per)
+                sigma_mm = float(sigma_deg) * float(mm_per)
+                return float(max(sigma_mm, sigma_min))
 
         if source == "point":
-            return float(self._pointwise_sigma_min_mm)
+            return sigma_min
 
         if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
-            return float(self._encoder_noise_mm)
-        return float(self._pointwise_sigma_min_mm)
+            sigma_mm = float(self._encoder_noise_mm)
+        else:
+            sigma_mm = sigma_min
+        if not np.isfinite(sigma_mm):
+            sigma_mm = sigma_min
+        return float(max(sigma_mm, sigma_min))
 
     def _extract_point_arrays(
         self,
