@@ -853,9 +853,12 @@ class EllipseCostFunction:
             inlier_mask = np.abs(r_norm) <= trim_threshold
             inlier_count = int(np.sum(inlier_mask))
             if inlier_count < _POINTWISE_MIN_INLIERS:
-                return float("inf"), rms, max_abs, inlier_mask, 0.0, scale, trim_threshold
-            inlier_ratio = float(inlier_count) / float(r_norm.size)
-            r_used = r_norm[inlier_mask]
+                # Fallback: keep cost finite even if trimming rejects everything.
+                inlier_ratio = float(inlier_count) / float(r_norm.size) if r_norm.size else 0.0
+                r_used = r_norm
+            else:
+                inlier_ratio = float(inlier_count) / float(r_norm.size)
+                r_used = r_norm[inlier_mask]
         else:
             r_used = r_norm
 
@@ -1154,6 +1157,21 @@ class EllipseCostFunction:
 
         residuals = np.asarray(residuals, dtype=float).ravel()
         num_points = int(residuals.size)
+        if num_points < int(self.min_points):
+            return {
+                "sweep_id": sweep_id,
+                "valid": False,
+                "cost": float("inf"),
+                "rms": float("inf"),
+                "max_abs": float("inf"),
+                "violation_penalty": float(violation_penalty),
+                "num_points": int(num_points),
+                "num_inliers": None,
+                "inlier_ratio": None,
+                "scale": None,
+                "trim_threshold": None,
+                "sweep_metric": float("inf"),
+            }
         sigma_l2 = entry.get("sigma_l2")
         norm_mode = "l2_scale"
         r_norm = residuals / float(max(self._l2_scale, 1.0))
@@ -1566,7 +1584,7 @@ class EllipseCostFunction:
                 if n_obs > p_count:
                     chi2_red = float(np.sum(z_all**2) / float(n_obs - p_count))
                 noise_metrics = {
-                    "normalized_cost": float(np.mean(z_all**2)),
+                    "J": float(np.mean(z_all**2)),
                     "chi2_red": chi2_red,
                     "n_obs": n_obs,
                     "params": p_count,

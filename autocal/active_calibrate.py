@@ -379,7 +379,7 @@ def _fmt_float(value: object, *, fmt: str = ".4g", suffix: str = "") -> str:
 def _covariance_scale_from_noise(noise_metrics: Optional[dict]) -> Tuple[Optional[float], Optional[str]]:
     if not isinstance(noise_metrics, dict):
         return None, None
-    for key, label in (("chi2_red", "chi2_red"), ("normalized_cost", "J")):
+    for key, label in (("chi2_red", "chi2_red"), ("J", "J")):
         val = noise_metrics.get(key)
         try:
             scale = float(val)
@@ -1051,7 +1051,7 @@ def _print_ellipse_plan(
         if isinstance(details, dict):
             noise_metrics = details.get("noise_metrics")
             if isinstance(noise_metrics, dict):
-                j_val = noise_metrics.get("normalized_cost")
+                j_val = noise_metrics.get("J")
                 chi2_red = noise_metrics.get("chi2_red")
                 z_med = noise_metrics.get("median_abs_z")
                 z_p95 = noise_metrics.get("p95_abs_z")
@@ -1697,7 +1697,7 @@ def full_auto_loop(
                         "primary_cost": primary_cost,
                         "cost_noise_normalized": plan.get("cost_noise_normalized"),
                         "chi2_red": noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None,
-                        "normalized_cost": noise_metrics.get("normalized_cost")
+                        "J": noise_metrics.get("J")
                         if isinstance(noise_metrics, dict)
                         else None,
                         "info_rank": plan.get("info_rank"),
