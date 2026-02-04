@@ -332,6 +332,20 @@ def solve_anchors(
                     return "n/a"
                 return f"{val:.3g}" if np.isfinite(val) else "n/a"
 
+            sigma_source_mode = str(pw.get("sigma_source") or "auto")
+            sigma_counts = pw.get("sigma_source_counts")
+            if isinstance(sigma_counts, dict):
+                total = sigma_counts.get("total", 0)
+                counts_str = " ".join(
+                    f"{k}={int(sigma_counts.get(k, 0))}"
+                    for k in ("point", "origin", "min", "mixed")
+                    if k in sigma_counts
+                )
+                total_str = f"total={int(total)}" if isinstance(total, (int, float)) else "total=n/a"
+                print(f"[robust] pointwise sigma_source: mode={sigma_source_mode} {counts_str} {total_str}")
+            else:
+                print(f"[robust] pointwise sigma_source: mode={sigma_source_mode}")
+
             print(
                 "[robust] pointwise:"
                 f" enabled={bool(pw.get('enabled'))}"
@@ -358,11 +372,13 @@ def solve_anchors(
             sigma_min = pw.get("sigma_min_mm")
             sigma_floor = pw.get("sigma_floor_mm")
             sigma_source = pw.get("sigma_floor_source")
+            sigma_floor_deg = pw.get("sigma_floor_deg")
             if (
                 sigma_noise is not None
                 or sigma_scaled is not None
                 or sigma_min is not None
                 or sigma_floor is not None
+                or sigma_floor_deg is not None
             ):
                 noise_str = (
                     f"{float(sigma_noise):.6g}"
@@ -389,14 +405,20 @@ def solve_anchors(
                     if sigma_floor is not None and np.isfinite(sigma_floor)
                     else "n/a"
                 )
+                floor_deg_str = (
+                    f"{float(sigma_floor_deg):.6g}"
+                    if sigma_floor_deg is not None and np.isfinite(sigma_floor_deg)
+                    else "n/a"
+                )
                 source_str = str(sigma_source or "n/a")
                 print(
-                    "[robust] pointwise sigma_mm:"
-                    f" noise={noise_str}"
+                    "[robust] pointwise sigma_floor_mm:"
+                    f" origin={noise_str}"
                     f" mult={mult_str}"
                     f" scaled={scaled_str}"
                     f" min={min_str}"
                     f" used={used_str}"
+                    f" floor_deg={floor_deg_str}"
                     f" source={source_str}"
                 )
             stats = pw.get("inlier_ratio_stats")

@@ -582,6 +582,48 @@ class EllipseCostFunction:
             return point.get(name)
         return getattr(point, name, None)
 
+    def _sigma_deg_for_point(self, point: Union[Sweep, dict, object], axis_idx: int) -> Optional[float]:
+        sigma_raw = self._point_field(point, "sigma")
+        if isinstance(sigma_raw, np.ndarray):
+            sigma_vals = sigma_raw.tolist()
+        elif isinstance(sigma_raw, (list, tuple)):
+            sigma_vals = list(sigma_raw)
+        else:
+            sigma_vals = []
+        if axis_idx < 0 or axis_idx >= len(sigma_vals):
+            return None
+        try:
+            sigma_deg = float(sigma_vals[axis_idx])
+        except (TypeError, ValueError):
+            return None
+        if not np.isfinite(sigma_deg):
+            return None
+        return sigma_deg
+
+    def _sigma_source_for_point(self, point: Union[Sweep, dict, object], axis_idx: int) -> str:
+        source = self.sigma_source
+        if source == "min":
+            return "min"
+        if source == "origin":
+            return "origin" if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm) else "min"
+
+        sigma_deg = self._sigma_deg_for_point(point, axis_idx)
+        has_mm = (
+            self._mm_per_degree_by_axis is not None
+            and 0 <= axis_idx < len(self._mm_per_degree_by_axis)
+            and np.isfinite(self._mm_per_degree_by_axis[axis_idx])
+        )
+        point_available = sigma_deg is not None and has_mm
+
+        if source == "point":
+            return "point" if point_available else "min"
+
+        if point_available:
+            return "point"
+        if self._encoder_noise_mm is not None and np.isfinite(self._encoder_noise_mm):
+            return "origin"
+        return "min"
+
     def _length_from_mu(self, point: Union[Sweep, dict, object], axis_idx: int) -> Optional[float]:
         mu_raw = self._point_field(point, "mu")
         if isinstance(mu_raw, np.ndarray):
@@ -615,21 +657,7 @@ class EllipseCostFunction:
                 return float(self._encoder_noise_mm)
             return float(self._pointwise_sigma_min_mm)
 
-        sigma_deg: Optional[float] = None
-        sigma_raw = self._point_field(point, "sigma")
-        if isinstance(sigma_raw, np.ndarray):
-            sigma_vals = sigma_raw.tolist()
-        elif isinstance(sigma_raw, (list, tuple)):
-            sigma_vals = list(sigma_raw)
-        else:
-            sigma_vals = []
-        if 0 <= axis_idx < len(sigma_vals):
-            try:
-                sigma_deg = float(sigma_vals[axis_idx])
-            except (TypeError, ValueError):
-                sigma_deg = None
-            if sigma_deg is not None and not np.isfinite(sigma_deg):
-                sigma_deg = None
+        sigma_deg = self._sigma_deg_for_point(point, axis_idx)
 
         floor_deg = self._sigma_floor_deg
         if sigma_deg is not None and floor_deg is not None and np.isfinite(floor_deg):
@@ -1277,6 +1305,28 @@ class EllipseCostFunction:
         anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
         diagnostics: Dict[str, object] = {}
 
+        sigma_counts: Dict[str, int] = {"point": 0, "origin": 0, "min": 0, "mixed": 0}
+        sigma_total = 0
+        for sweep in self.sweeps:
+            if isinstance(sweep, Sweep):
+                drive_idx = int(sweep.drive_anchor)
+                sensor_idx = int(sweep.sensor_anchor)
+                points = sweep.data_points or []
+            else:
+                drive_idx = int(sweep.get("drive_anchor")) if sweep.get("drive_anchor") is not None else -1
+                sensor_idx = int(sweep.get("sensor_anchor")) if sweep.get("sensor_anchor") is not None else -1
+                points = sweep.get("data_points", []) if isinstance(sweep, dict) else []
+            if drive_idx < 0 or sensor_idx < 0:
+                continue
+            for point in points:
+                src_drive = self._sigma_source_for_point(point, drive_idx)
+                src_sensor = self._sigma_source_for_point(point, sensor_idx)
+                sigma_total += 1
+                if src_drive == src_sensor:
+                    sigma_counts[src_drive] = sigma_counts.get(src_drive, 0) + 1
+                else:
+                    sigma_counts["mixed"] = sigma_counts.get("mixed", 0) + 1
+
         stage_idx, stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
         entries, global_scale = self._pointwise_entries(anchors)
         inlier_ratios = [
@@ -1344,6 +1394,11 @@ class EllipseCostFunction:
             "scale_global": float(global_scale) if global_scale is not None else None,
             "scale_floor": float(self._pointwise_sigma_floor_norm),
             "scale_floor_mm": float(self._pointwise_sigma_floor_mm),
+            "sigma_source": str(self.sigma_source),
+            "sigma_source_counts": {**sigma_counts, "total": int(sigma_total)},
+            "sigma_floor_deg": float(self._sigma_floor_deg)
+            if self._sigma_floor_deg is not None and np.isfinite(self._sigma_floor_deg)
+            else None,
             "sigma_noise_mm": float(self._encoder_noise_mm) if self._encoder_noise_mm is not None else None,
             "sigma_mult": float(self._pointwise_sigma_mult),
             "sigma_scaled_mm": float(self._pointwise_sigma_scaled_mm)
