@@ -1390,7 +1390,7 @@ def full_auto_loop(
 
     def _log_console(msg: str) -> None:
         print(msg)
-        _log_line(msg)
+        _log_line(f"Wrote to console: {msg}")
 
     def _log_context():
         stack = contextlib.ExitStack()
@@ -1422,8 +1422,6 @@ def full_auto_loop(
             _log_console(f"Parameters (M669): {m669}")
         elif anchor_str:
             _log_console(f"Anchors: {anchor_str}")
-        if sweep_ids:
-            _log_console("Sweeps used: " + ", ".join(sweep_ids))
         if has_variants:
             best_flags = str(best_meta.get("flags", "")).strip()
             best_run = str(best_meta.get("run_id", "")).strip()
@@ -1432,7 +1430,7 @@ def full_auto_loop(
         _log_console(_solution_quality_message(best_cost))
 
         if m669:
-            _log_console(f"Sending M669 {m669} to {rrf_server}")
+            _log_console(f"Sending {m669} to {rrf_server}")
             try:
                 reply = _send_rrf_gcode(rrf_server, m669)
             except Exception as exc:
@@ -1445,8 +1443,7 @@ def full_auto_loop(
             _log_console("Sending M669 skipped (no command available)")
         return _finalize(0)
 
-    print(f"Writing additional info to log: {text_log_path}")
-    _log_line(f"Writing additional info to log: {text_log_path}")
+    _log_console(f"Writing additional info to log: {text_log_path}")
     if work_path.exists():
         with _log_context():
             machine_type = _require_machine_type(
@@ -1736,7 +1733,7 @@ def full_auto_loop(
             )
             _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
             _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
-            _log_console("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+            _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
             return _finalize(2)
 
         def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
@@ -1861,7 +1858,7 @@ def full_auto_loop(
         if decision == "accept":
             if best_plan is None:
                 _log_console("; full-auto: no best plan available; stopping.")
-                _log_console("; " + _solution_quality_message(None))
+                _log_console(_solution_quality_message(None))
                 return _finalize(2)
             return _emit_summary_and_send(best_plan)
 
@@ -1870,7 +1867,7 @@ def full_auto_loop(
                 _log_console("; full-auto: no more sweeps to replay; accepting best-so-far.")
                 if best_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
-                    _log_console("; " + _solution_quality_message(None))
+                    _log_console(_solution_quality_message(None))
                     return _finalize(2)
                 return _emit_summary_and_send(best_plan)
 
@@ -1895,7 +1892,7 @@ def full_auto_loop(
         if not isinstance(cmd, list) or not cmd:
             _log_line("; No valid candidate to collect; stopping.")
             _log_console("; No valid candidate to collect; stopping.")
-            _log_console("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+            _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
             return _finalize(2)
 
         finite_costs = [c for c in selected_costs if np.isfinite(c)]
@@ -1936,7 +1933,7 @@ def full_auto_loop(
 
     _log_line(f"; reached max steps; dataset={work_path}")
     _log_console(f"; reached max steps; dataset={work_path}")
-    _log_console("; " + _solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+    _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
     return _finalize(0)
 
 
@@ -2672,11 +2669,6 @@ def _plan_noise_metrics(plan: Dict[str, object]) -> Optional[dict]:
 
 
 def _plan_primary_cost(plan: Dict[str, object]) -> float:
-    noise_metrics = _plan_noise_metrics(plan)
-    if isinstance(noise_metrics, dict):
-        val = noise_metrics.get("normalized_cost")
-        if isinstance(val, (int, float)) and np.isfinite(val):
-            return float(val)
     raw = plan.get("cost_noise_normalized", plan.get("cost", float("nan")))
     try:
         return float(raw)
@@ -2752,21 +2744,20 @@ def _append_jsonl(path: Path, payload: dict) -> None:
 
 def _solution_quality_message(best_cost: Optional[float]) -> str:
     if best_cost is None or not np.isfinite(best_cost):
-        return "solution quality: n/a"
+        return "Interpretation: Cost unavailable."
     cost = float(best_cost)
     if cost < 2.0:
         return (
-            "solution quality: Ideal. Good result, the recovered parameters are nearly perfect. "
-            "Residuals are roughly at the noise level."
+            "Interpretation: Cost below 2 is considered ideal; residuals are roughly at the noise level."
         )
     if cost < 5.0:
         return (
-            "solution quality: Good result, the recovered parameters are nearly perfect. "
-            "That's typical when the noise model is slightly optimistic or the model isn't perfect."
+            "Interpretation: Cost between 2 and 5 is good/acceptable; "
+            "the noise model may be slightly optimistic or the model isn't perfect."
         )
     if cost < 10.0:
-        return "solution quality: Still usable. This is still a reasonable fit."
-    return "solution quality: Concerning. This usually means a bad fit."
+        return "Interpretation: Cost between 5 and 10 is still usable; this is a reasonable fit."
+    return "Interpretation: Cost above 10 is concerning; this usually means a bad fit."
 
 
 def _solution_quality_label(best_cost: Optional[float]) -> str:
