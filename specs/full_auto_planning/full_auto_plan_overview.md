@@ -20,7 +20,7 @@ This plan uses the existing calibration pipeline that already computes Fisher in
 ## High-level flow
 1. **Collect**: For each static pose, record encoder samples per cable and store the mean + robust noise estimate.
 2. **Normalize & optimize**: Use noise-normalized residuals (whitened by per-pose, per-cable `sigma_eff[i][k]`) to drive objective scores and allow cross-dataset comparison via `J(theta) = (1 / N_obs) * sum z^2`.
-3. **Multi-run selection**: Try multiple robustness settings (including all `--sweep-metric` values), rank runs by a common cost + covariance scoring, and select the best run.
+3. **Multi-run selection**: Try multiple robustness settings (including all `--sweep-metric` values), rank runs by a common cost, and select the best run.
 4. **Stop conditions**: Accept when confidence intervals and convergence meet thresholds; otherwise retry or warn.
 5. **Apply configuration**: On success, update config and running machine (per existing desired behavior).
 
