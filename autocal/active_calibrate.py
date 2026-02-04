@@ -1380,7 +1380,7 @@ def full_auto_loop(
     else:
         dataset_path = Path("autocal/data/default_dataset.json")
     work_path = dataset_path
-    text_log_path = dataset_path.with_name(f"{dataset_path.stem}.full_auto.log")
+    text_log_path = _unique_path(dataset_path.with_name(f"{dataset_path.stem}.full_auto.log"))
     text_log_path.parent.mkdir(parents=True, exist_ok=True)
     text_log_path.write_text("", encoding="utf-8")
     log_handle = text_log_path.open("a", encoding="utf-8")
@@ -1585,8 +1585,8 @@ def full_auto_loop(
             )
 
     runs = _build_full_auto_runs(full_auto_runs)
-    log_path = Path(full_auto_log) if full_auto_log is not None else dataset_path.with_name(
-        f"{dataset_path.stem}.full_auto_log.jsonl"
+    log_path = Path(full_auto_log) if full_auto_log is not None else _unique_path(
+        dataset_path.with_name(f"{dataset_path.stem}.full_auto_log.jsonl")
     )
     stop_file = _full_auto_stop_path(dataset_path)
     _append_jsonl(
