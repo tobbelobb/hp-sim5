@@ -2509,6 +2509,11 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Full-auto run override flags (repeatable). Example: --full-auto-run \"--sweep-metric mad --use-raw-lengths\"",
     )
     parser.add_argument(
+        "--shotgun",
+        action="store_true",
+        help="Append full-auto runs from shotgun.conf (use with --full-auto).",
+    )
+    parser.add_argument(
         "--full-auto-log",
         type=Path,
         default=None,
@@ -2655,6 +2660,25 @@ def _build_full_auto_runs(raw_runs: Optional[Sequence[str]]) -> List[Dict[str, o
     if not runs:
         runs.append({"id": "default", "flags": "", "overrides": {}})
     return runs
+
+
+def _shotgun_conf_path() -> Path:
+    return Path(__file__).with_name("shotgun.conf")
+
+
+def _load_shotgun_runs() -> List[str]:
+    path = _shotgun_conf_path()
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            lines = []
+            for raw in f:
+                stripped = raw.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                lines.append(stripped)
+            return lines
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"shotgun config not found: {path}") from exc
 
 
 def _plan_noise_metrics(plan: Dict[str, object]) -> Optional[dict]:
@@ -2841,6 +2865,14 @@ def merge_cli(argv: Optional[Sequence[str]] = None) -> int:
 def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
     args = parser.parse_args(argv)
+    if bool(args.shotgun) and not bool(args.full_auto):
+        parser.error("--shotgun requires --full-auto")
+    full_auto_runs = list(args.full_auto_run or [])
+    if bool(args.shotgun):
+        try:
+            full_auto_runs.extend(_load_shotgun_runs())
+        except FileNotFoundError as exc:
+            parser.error(str(exc))
     collector_args = _clean_collector_args(args.collector_args)
     if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
         collector_args.append("--project-zero-tension")
@@ -2886,7 +2918,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             hp_sim_reset=bool(args.hp_sim_reset),
             sweep_points=args.sweep_points,
             output_with_explanations=bool(args.output_with_explanations),
-            full_auto_runs=args.full_auto_run,
+            full_auto_runs=full_auto_runs,
             full_auto_log=args.full_auto_log,
             patience=int(args.patience),
             full_auto_verbose=bool(args.full_auto_verbose),
