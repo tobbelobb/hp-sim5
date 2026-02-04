@@ -1376,10 +1376,11 @@ def full_auto_loop(
     full_auto_verbose: bool,
 ) -> int:
     if work_dataset is not None:
-        work_path = Path(work_dataset)
+        dataset_path = Path(work_dataset)
     else:
-        work_path = Path("autocal/data/default_dataset.json")
-    text_log_path = work_path.with_name(f"{work_path.stem}.full_auto.log")
+        dataset_path = Path("autocal/data/default_dataset.json")
+    work_path = dataset_path
+    text_log_path = dataset_path.with_name(f"{dataset_path.stem}.full_auto.log")
     text_log_path.parent.mkdir(parents=True, exist_ok=True)
     text_log_path.write_text("", encoding="utf-8")
     log_handle = text_log_path.open("a", encoding="utf-8")
@@ -1444,12 +1445,12 @@ def full_auto_loop(
         return _finalize(0)
 
     _log_console(f"Writing additional info to log: {text_log_path}")
-    if work_path.exists():
+    if dataset_path.exists():
         with _log_context():
             machine_type = _require_machine_type(
-                _load_json(work_path),
+                _load_json(dataset_path),
                 expected=machine_type,
-                context=str(work_path),
+                context=str(dataset_path),
                 mismatch="warn",
             )
 
@@ -1492,9 +1493,9 @@ def full_auto_loop(
             pass
         return code
 
-    if not work_path.exists():
-        work_path.parent.mkdir(parents=True, exist_ok=True)
-        bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
+    if not dataset_path.exists():
+        dataset_path.parent.mkdir(parents=True, exist_ok=True)
+        bootstrap_cfg = dataset_path.with_suffix(".bootstrap_cfg.txt")
         bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
         bootstrap_cfg.write_text(
             "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
@@ -1546,7 +1547,7 @@ def full_auto_loop(
             "--sweep-config-file",
             str(bootstrap_cfg),
             "--output-file",
-            str(work_path),
+            str(dataset_path),
             *argv_eff,
         ]
         _log_line("; bootstrapping dataset (3 sweeps, auto size-tune):")
@@ -1554,16 +1555,19 @@ def full_auto_loop(
         with _log_context():
             subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
         reset_pending = False
-        _log_line(f"; bootstrap dataset written to {work_path}")
+        _log_line(f"; bootstrap dataset written to {dataset_path}")
 
     replay_mode = False
     replay_sweeps: List[dict] = []
     replay_index = 0
-    if work_path.exists():
-        dataset_full = _load_json(work_path)
+    replay_work_path: Optional[Path] = None
+    if dataset_path.exists():
+        dataset_full = _load_json(dataset_path)
         sweeps_full = dataset_full.get("sweeps")
         if isinstance(sweeps_full, list) and len(sweeps_full) > 3:
             replay_mode = True
+            replay_work_path = dataset_path.with_suffix(".replay_tmp.json")
+            work_path = replay_work_path
             initial = [s for s in sweeps_full[:3] if isinstance(s, dict)]
             replay_sweeps = [s for s in sweeps_full[3:] if isinstance(s, dict)]
             dataset_work = dict(dataset_full)
@@ -1575,18 +1579,22 @@ def full_auto_loop(
                 f"; full-auto replay: starting from 3 sweeps, "
                 f"replaying {len(replay_sweeps)} additional sweeps"
             )
+            _log_line(
+                f"; full-auto replay: using {work_path} "
+                f"(original {dataset_path} left untouched)"
+            )
 
     runs = _build_full_auto_runs(full_auto_runs)
-    log_path = Path(full_auto_log) if full_auto_log is not None else work_path.with_name(
-        f"{work_path.stem}.full_auto_log.jsonl"
+    log_path = Path(full_auto_log) if full_auto_log is not None else dataset_path.with_name(
+        f"{dataset_path.stem}.full_auto_log.jsonl"
     )
-    stop_file = _full_auto_stop_path(work_path)
+    stop_file = _full_auto_stop_path(dataset_path)
     _append_jsonl(
         log_path,
         {
             "timestamp": datetime.now().isoformat(),
             "event": "start",
-            "dataset": str(work_path),
+            "dataset": str(dataset_path),
             "runs": runs,
             "replay_mode": replay_mode,
             "replay_remaining": len(replay_sweeps),
@@ -1757,7 +1765,7 @@ def full_auto_loop(
                         "timestamp": datetime.now().isoformat(),
                         "event": "stop",
                         "iteration": step,
-                        "dataset": str(work_path),
+                        "dataset": str(dataset_path),
                         "reason": "no_valid_runs",
                         "runs": [
                             {
@@ -1870,7 +1878,7 @@ def full_auto_loop(
                 {
                     "timestamp": datetime.now().isoformat(),
                     "iteration": step,
-                    "dataset": str(work_path),
+                    "dataset": str(dataset_path),
                     "runs": [
                         {
                             "id": r["id"],
@@ -1906,29 +1914,33 @@ def full_auto_loop(
 
             if replay_mode:
                 if replay_index >= len(replay_sweeps):
-                    _log_console("; full-auto: no more sweeps to replay; accepting best-so-far.")
-                    if best_plan is None:
-                        _log_console("; full-auto: no best plan available; stopping.")
-                        _log_console(_solution_quality_message(None))
-                        return _finalize(2)
-                    return _emit_summary_and_send(best_plan)
+                    _log_console(
+                        "; full-auto replay: no more sweeps to replay; switching to live collection."
+                    )
+                    _log_line(
+                        "; full-auto replay: no more sweeps to replay; switching to live collection."
+                    )
+                    replay_mode = False
+                    if work_path != dataset_path:
+                        work_path = dataset_path
 
-                next_sweep = replay_sweeps[replay_index]
-                replay_index += 1
-                base_dataset = _load_json(work_path)
-                new_dataset = dict(base_dataset)
-                new_dataset["timestamp"] = datetime.now().isoformat()
-                new_dataset["sweeps"] = [next_sweep]
-                merged = _merge_sweep_datasets(base_dataset, new_dataset)
-                _write_json(work_path, merged)
-                sweeps = merged.get("sweeps", [])
-                count = len(sweeps) if isinstance(sweeps, list) else "?"
-                _log_line(
-                    f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
-                    f"-> {work_path} sweeps={count}"
-                )
-                _log_console(f"Collected sweep nr {count}")
-                continue
+                if replay_mode:
+                    next_sweep = replay_sweeps[replay_index]
+                    replay_index += 1
+                    base_dataset = _load_json(work_path)
+                    new_dataset = dict(base_dataset)
+                    new_dataset["timestamp"] = datetime.now().isoformat()
+                    new_dataset["sweeps"] = [next_sweep]
+                    merged = _merge_sweep_datasets(base_dataset, new_dataset)
+                    _write_json(work_path, merged)
+                    sweeps = merged.get("sweeps", [])
+                    count = len(sweeps) if isinstance(sweeps, list) else "?"
+                    _log_line(
+                        f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
+                        f"-> {work_path} sweeps={count}"
+                    )
+                    _log_console(f"Collected sweep nr {count}")
+                    continue
 
             cmd = plan.get("collect_command")
             if not isinstance(cmd, list) or not cmd:
