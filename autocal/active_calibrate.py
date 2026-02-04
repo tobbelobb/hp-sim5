@@ -33,6 +33,7 @@ from autocal.active_learning import (
     total_information_matrix,
 )
 from autocal.calibrate import calibrate_elliptical
+from autocal.ellipse_cost import EllipseCostFunction
 from autocal.sweep_types import MachineType
 
 GeometryWeights = Tuple[float, float, float]
@@ -476,6 +477,42 @@ def _workspace_diag_mm(
     return None
 
 
+def _evaluate_cost_at_anchors(
+    dataset: dict,
+    anchors: np.ndarray,
+    *,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    use_noise_mean: bool,
+    noise_normalized: bool,
+    sigma_source: str,
+) -> float:
+    stage = 2 if bool(pointwise_filtering) else 0
+    cost_fn = EllipseCostFunction(
+        dataset,
+        residual_threshold=float(residual_threshold),
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=int(stage),
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+    anchor_vec = np.asarray(anchors, dtype=float).ravel()
+    return float(cost_fn.evaluate(anchor_vec))
+
+
 def _unique_path(path: Path) -> Path:
     if not path.exists():
         return path
@@ -792,6 +829,23 @@ def _plan_next_ellipse_sweep(
     )
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
+    cost_raw = float(
+        _evaluate_cost_at_anchors(
+            dataset,
+            anchors,
+            residual_threshold=float(residual_threshold),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            noise_normalized=False,
+            sigma_source=str(sigma_source),
+        )
+    )
 
     sweeps_obs = dataset_sweep_configs(dataset)
     l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
@@ -827,8 +881,6 @@ def _plan_next_ellipse_sweep(
         rank = int(np.linalg.matrix_rank(info_obs))
         rank_deficient = rank < info_obs.shape[0]
     warnings: List[str] = []
-    if rank_deficient and rank is not None:
-        warnings.append(f"info_rank_deficient {rank}/{info_obs.shape[0]}")
     cov_scaled_std = _covariance_diag_std(cov_scaled)
     if cov_scaled_std is None or not np.all(np.isfinite(cov_scaled_std)):
         warnings.append("covariance_nonfinite")
@@ -929,6 +981,8 @@ def _plan_next_ellipse_sweep(
         "calibration": cal,
         "anchors": anchors,
         "cost": cost,
+        "cost_raw": cost_raw,
+        "cost_noise_normalized": cost,
         "info": info_obs,
         "covariance": cov,
         "covariance_scaled": cov_scaled,
@@ -948,10 +1002,17 @@ def _plan_next_ellipse_sweep(
     }
 
 
-def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_command: bool = True) -> None:
+def _print_ellipse_plan(
+    plan: Dict[str, object],
+    *,
+    top_n: int = 5,
+    print_command: bool = True,
+    output_with_explanations: bool = False,
+) -> None:
     cal = plan.get("calibration") or {}
     anchors = np.asarray(plan.get("anchors"), dtype=float)
-    cost = float(plan.get("cost", float("nan")))
+    cost = float(plan.get("cost_noise_normalized", plan.get("cost", float("nan"))))
+    cost_raw = plan.get("cost_raw")
     info = np.asarray(plan.get("info"), dtype=float)
     cov = np.asarray(plan.get("covariance"), dtype=float)
     cov_scaled = np.asarray(plan.get("covariance_scaled", cov), dtype=float)
@@ -969,7 +1030,11 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
     print("; Active ellipse calibration")
     if isinstance(cal, dict) and "gcode" in cal:
         print(str(cal["gcode"]))
-    print(f"; cost={cost:.6g} {_format_anchor_stats(anchors)}")
+    cost_raw_str = _fmt_float(cost_raw)
+    cost_norm_str = _fmt_float(cost)
+    print(
+        f"; cost={cost_raw_str} cost_noise_normalized={cost_norm_str} {_format_anchor_stats(anchors)}"
+    )
     if isinstance(cal, dict):
         details = cal.get("details")
         if isinstance(details, dict):
@@ -995,6 +1060,16 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
                     f"; noise_cost: J={j_str} chi2_red={chi2_str} |z|_med={med_str} |z|_p95={p95_str} "
                     f"outlier_ratio={outlier_str} N={n_str} mode={mode_str} lengths={lengths_str}"
                 )
+                sigma_min_mm = noise_metrics.get("sigma_min_mm")
+                sigma_floor_deg = noise_metrics.get("sigma_floor_deg")
+                sigma_source = noise_metrics.get("sigma_source")
+                if sigma_min_mm is not None or sigma_floor_deg is not None or sigma_source is not None:
+                    min_str = _fmt_float(sigma_min_mm, suffix="mm")
+                    floor_str = _fmt_float(sigma_floor_deg, suffix="deg")
+                    source_str = str(sigma_source) if sigma_source is not None else "n/a"
+                    print(
+                        f"; noise_norm_floor: min_sigma={min_str} floor_deg={floor_str} source={source_str}"
+                    )
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
         rank_val = int(info_rank) if isinstance(info_rank, int) else int(np.linalg.matrix_rank(info))
         print(f"; info rank: {rank_val}/{info.shape[0]} {_covariance_report(cov)}")
@@ -1029,10 +1104,12 @@ def _print_ellipse_plan(plan: Dict[str, object], *, top_n: int = 5, print_comman
                 f"; CI95: max_std={max_std_str} max_ci={max_ci_str} "
                 f"workspace={ws_str} rel_std={rel_std_str} rel_ci={rel_ci_str} {scale_note}"
             )
-        if rank_deficient:
+        if output_with_explanations and rank_deficient:
             print(
-                f"; warning: info rank deficient ({rank_val}/{info.shape[0]}). "
-                "Consider more diverse sweeps or constraints."
+                "; note: info rank deficiency can arise from symmetric setups or limited sweep/constraint diversity."
+            )
+            print(
+                "; note: covariance values can grow under rank deficiency, even when recovered anchors are good."
             )
         if isinstance(warnings, list) and warnings:
             extra = [w for w in warnings if isinstance(w, str) and not w.startswith("info_rank_deficient")]
@@ -1129,6 +1206,7 @@ def ellipse_active(
     sim: bool,
     keep_sim_alive: bool,
     hp_sim_reset: bool,
+    output_with_explanations: bool,
 ) -> int:
     machine_type = _require_machine_type(
         _load_json(dataset_path),
@@ -1182,7 +1260,12 @@ def ellipse_active(
         collector_args=collector_args_eff,
     )
 
-    _print_ellipse_plan(plan, top_n=5, print_command=print_command)
+    _print_ellipse_plan(
+        plan,
+        top_n=5,
+        print_command=print_command,
+        output_with_explanations=bool(output_with_explanations),
+    )
 
     ranked = plan.get("ranked") or []
     cmd = plan.get("collect_command")
@@ -1276,6 +1359,7 @@ def ellipse_loop(
     hp_sim_reset: bool,
     plot_residual_histogram: bool,
     sweep_points: Optional[int],
+    output_with_explanations: bool,
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
@@ -1439,7 +1523,12 @@ def ellipse_loop(
             collector_output=collector_output,
             collector_args=plan_args,
         )
-        _print_ellipse_plan(plan, top_n=5, print_command=True)
+        _print_ellipse_plan(
+            plan,
+            top_n=5,
+            print_command=True,
+            output_with_explanations=bool(output_with_explanations),
+        )
 
         if plot_residual_histogram and step_residuals_csv is not None:
             plot_output = _unique_path(work_path.with_suffix(".png"))
@@ -1695,6 +1784,14 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_output_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--output-with-explanations",
+        action="store_true",
+        help="Include explanatory notes for rank deficiency and covariance behavior.",
+    )
+
+
 def build_ellipse_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Active sweep selection for ellipse calibration")
     parser.add_argument("dataset", type=Path, help="Existing sweep dataset JSON")
@@ -1706,6 +1803,7 @@ def build_ellipse_parser() -> argparse.ArgumentParser:
     )
     _add_solver_args(parser)
     _add_candidate_args(parser)
+    _add_output_args(parser)
     parser.add_argument(
         "--write-sweep-config",
         type=Path,
@@ -1783,6 +1881,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
     _add_solver_args(parser)
     _add_candidate_args(parser)
+    _add_output_args(parser)
     parser.add_argument(
         "--write-sweep-config",
         type=Path,
@@ -1846,6 +1945,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         sim=bool(args.sim),
         keep_sim_alive=bool(args.keep_sim_alive),
         hp_sim_reset=bool(args.hp_sim_reset),
+        output_with_explanations=bool(args.output_with_explanations),
     )
 
 
@@ -1902,6 +2002,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         hp_sim_reset=bool(args.hp_sim_reset),
         plot_residual_histogram=bool(args.plot_residual_histogram),
         sweep_points=args.sweep_points,
+        output_with_explanations=bool(args.output_with_explanations),
     )
 
 

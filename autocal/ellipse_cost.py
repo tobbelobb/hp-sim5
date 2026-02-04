@@ -1576,6 +1576,11 @@ class EllipseCostFunction:
                     "norm_mode": norm_mode,
                     "noise_normalized": bool(norm_mode == "sigma"),
                     "lengths_mode": "mu" if bool(self.use_noise_mean) else "raw",
+                    "sigma_min_mm": float(self._pointwise_sigma_min_mm),
+                    "sigma_floor_deg": float(self._sigma_floor_deg)
+                    if self._sigma_floor_deg is not None and np.isfinite(self._sigma_floor_deg)
+                    else None,
+                    "sigma_source": str(self.sigma_source),
                 }
 
         return CostResult(
