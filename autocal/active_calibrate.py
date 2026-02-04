@@ -266,6 +266,7 @@ def _start_rrf_simulator(port: int) -> subprocess.Popen:
         cwd=str(REPO_ROOT),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
 
 
