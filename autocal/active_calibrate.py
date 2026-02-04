@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -1319,6 +1320,472 @@ def merge_datasets(base_dataset: Path, extra_datasets: Sequence[Path], *, output
     return 0
 
 
+def full_auto_loop(
+    *,
+    work_dataset: Optional[Path],
+    machine_type: str,
+    max_steps: int,
+    stop_cost: Optional[float],
+    stop_std_mm: Optional[float],
+    solve_restarts: int,
+    solve_iterations: int,
+    solve_optimizer: str,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    use_noise_mean: bool,
+    sigma_source: str,
+    robust_debug: bool,
+    residuals_csv: Optional[Path],
+    generate_report: bool,
+    candidate_deltas: Optional[List[float]],
+    candidate_count: int,
+    delta_min: Optional[float],
+    delta_max: Optional[float],
+    fd_eps_mm: float,
+    regularization: float,
+    exclude_existing: bool,
+    existing_tol_mm: float,
+    min_fixed_delta_spacing_mm: float,
+    top_k: int,
+    write_cfg: Optional[Path],
+    collector_args: Sequence[str],
+    sim: bool,
+    keep_sim_alive: bool,
+    hp_sim_reset: bool,
+    sweep_points: Optional[int],
+    output_with_explanations: bool,
+    full_auto_runs: Optional[Sequence[str]],
+    full_auto_log: Optional[Path],
+    full_auto_cost_epsilon: float,
+    full_auto_converge_k: int,
+    full_auto_verbose: bool,
+) -> int:
+    if work_dataset is not None:
+        work_path = Path(work_dataset)
+    else:
+        work_path = Path("autocal/data/default_dataset.json")
+    if work_path.exists():
+        machine_type = _require_machine_type(
+            _load_json(work_path),
+            expected=machine_type,
+            context=str(work_path),
+            mismatch="warn",
+        )
+
+    user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
+    collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    sweep_points_value = None
+    raw_sweep_points = _arg_value(collector_args_eff, "--sweepPoints", "--sweep-points")
+    if raw_sweep_points is not None:
+        try:
+            parsed = int(raw_sweep_points)
+        except ValueError:
+            parsed = None
+        if parsed is not None and parsed > 0:
+            sweep_points_value = parsed
+    if sweep_points is not None:
+        try:
+            parsed = int(sweep_points)
+        except (TypeError, ValueError):
+            parsed = None
+        if parsed is not None and parsed > 0:
+            sweep_points_value = parsed
+            if raw_sweep_points is None:
+                collector_args_eff.extend(["--sweepPoints", str(parsed)])
+    reset_pending = bool(sim and hp_sim_reset)
+    rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
+    sim_process: Optional[subprocess.Popen] = None
+
+    if sim and not server_explicit and not user_no_spawn:
+        target_port = port or DEFAULT_RRF_PORT
+        print(f"; starting rrf_simulator at http://localhost:{target_port}")
+        sim_process = _start_rrf_simulator(target_port)
+        _wait_for_rrf_server(f"http://localhost:{target_port}")
+
+    def _finalize(code: int) -> int:
+        if sim_process and not keep_sim_alive:
+            _stop_process(sim_process)
+        return code
+
+    if not work_path.exists():
+        work_path.parent.mkdir(parents=True, exist_ok=True)
+        bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
+        bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
+        bootstrap_cfg.write_text(
+            "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
+            encoding="utf-8",
+        )
+
+        def _strip_conflicts(argv: Sequence[str]) -> List[str]:
+            skip_with_value = {
+                "--output-file",
+                "--output",
+                "--out",
+                "--observability-file",
+                "--obs-file",
+                "--machineType",
+                "--machine-type",
+                "--sweepMethod",
+                "--sweep-method",
+                "--sweep-config-file",
+                "--sweep-config",
+                "--sweepFile",
+                "--fixed-targets",
+                "--fixedTargets",
+                "--fixed-target",
+                "--max-travel-mm",
+                "--max-travel",
+            }
+            out: List[str] = []
+            i = 0
+            while i < len(argv):
+                arg = str(argv[i])
+                if arg in skip_with_value:
+                    i += 2
+                    continue
+                out.append(arg)
+                i += 1
+            return out
+
+        argv_eff = _strip_conflicts(list(collector_args_eff))
+        if reset_pending and not _arg_has_flag(argv_eff, "--hp-sim-reset"):
+            argv_eff.append("--hp-sim-reset")
+        if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
+            argv_eff.append("--return-to-origin")
+
+        cmd = [
+            "node",
+            "autocal/control/cli/collect_sweep_data.mjs",
+            "--machineType",
+            str(machine_type),
+            "--sweep-config-file",
+            str(bootstrap_cfg),
+            "--output-file",
+            str(work_path),
+            *argv_eff,
+        ]
+        print("; bootstrapping dataset (3 sweeps, auto size-tune):")
+        print(";   " + " ".join(cmd))
+        subprocess.run(cmd, check=True)
+        reset_pending = False
+        print(f"; bootstrap dataset written to {work_path}")
+
+    runs = _build_full_auto_runs(full_auto_runs)
+    log_path = Path(full_auto_log) if full_auto_log is not None else work_path.with_name(
+        f"{work_path.stem}.full_auto_log.jsonl"
+    )
+    _append_jsonl(
+        log_path,
+        {
+            "timestamp": datetime.now().isoformat(),
+            "event": "start",
+            "dataset": str(work_path),
+            "runs": runs,
+        },
+    )
+    print(f"; full-auto log: {log_path}")
+
+    base_solver = {
+        "solve_restarts": int(solve_restarts),
+        "solve_iterations": int(solve_iterations),
+        "solve_optimizer": str(solve_optimizer),
+        "residual_threshold": float(residual_threshold),
+        "spring_k_multiplier": float(spring_k_multiplier),
+        "use_flex": bool(use_flex),
+        "pointwise_residual_mode": str(pointwise_residual_mode),
+        "pointwise_filtering": bool(pointwise_filtering),
+        "pointwise_global_mad": bool(pointwise_global_mad),
+        "sweep_wise_filtering": bool(sweep_wise_filtering),
+        "sweep_metric": str(sweep_metric),
+        "use_noise_mean": bool(use_noise_mean),
+        "sigma_source": str(sigma_source),
+        "robust_debug": bool(robust_debug and full_auto_verbose),
+        "generate_report": bool(generate_report),
+    }
+
+    cost_history: List[float] = []
+    small_improve_streak = 0
+    epsilon = float(full_auto_cost_epsilon)
+    if not np.isfinite(epsilon) or epsilon < 0.0:
+        epsilon = 0.0
+    k_required = max(1, int(full_auto_converge_k))
+
+    for step in range(1, max(1, int(max_steps)) + 1):
+        print(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+        collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
+        run_results: List[Dict[str, object]] = []
+
+        for run in runs:
+            run_id = str(run.get("id", "run"))
+            overrides = run.get("overrides") or {}
+            if not isinstance(overrides, dict):
+                overrides = {}
+            settings = dict(base_solver)
+            settings.update(overrides)
+
+            cfg_path = _full_auto_cfg_path(work_path, run_id)
+            residuals_csv_run = None
+            if residuals_csv is not None:
+                res_base = Path(residuals_csv)
+                if len(runs) > 1:
+                    residuals_csv_run = res_base.with_name(
+                        f"{res_base.stem}.{run_id}{res_base.suffix}"
+                    )
+                else:
+                    residuals_csv_run = res_base
+
+            plan = _plan_next_ellipse_sweep(
+                work_path,
+                solve_restarts=int(settings["solve_restarts"]),
+                solve_iterations=int(settings["solve_iterations"]),
+                solve_optimizer=str(settings["solve_optimizer"]),
+                residual_threshold=float(settings["residual_threshold"]),
+                spring_k_multiplier=float(settings["spring_k_multiplier"]),
+                use_flex=bool(settings["use_flex"]),
+                pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
+                pointwise_filtering=bool(settings["pointwise_filtering"]),
+                pointwise_global_mad=bool(settings["pointwise_global_mad"]),
+                sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
+                sweep_metric=str(settings["sweep_metric"]),
+                use_noise_mean=bool(settings["use_noise_mean"]),
+                sigma_source=str(settings["sigma_source"]),
+                robust_debug=bool(settings["robust_debug"]),
+                residuals_csv=residuals_csv_run,
+                generate_report=bool(settings["generate_report"]),
+                candidate_deltas=candidate_deltas,
+                candidate_count=int(candidate_count),
+                delta_min=delta_min,
+                delta_max=delta_max,
+                fd_eps_mm=float(fd_eps_mm),
+                regularization=float(regularization),
+                exclude_existing=bool(exclude_existing),
+                existing_tol_mm=float(existing_tol_mm),
+                min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
+                top_k=int(top_k),
+                write_cfg=cfg_path,
+                collector_output=collector_output,
+                collector_args=collector_args_eff,
+            )
+
+            primary_cost = _plan_primary_cost(plan)
+            max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
+            warnings = _plan_data_quality_warnings(plan)
+            noise_metrics = _plan_noise_metrics(plan)
+            valid = bool(np.isfinite(primary_cost) and cov_ok)
+
+            run_results.append(
+                {
+                    "id": run_id,
+                    "flags": run.get("flags", ""),
+                    "overrides": overrides,
+                    "settings": settings,
+                    "plan": plan,
+                    "metrics": {
+                        "primary_cost": primary_cost,
+                        "cost_noise_normalized": plan.get("cost_noise_normalized"),
+                        "chi2_red": noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None,
+                        "normalized_cost": noise_metrics.get("normalized_cost")
+                        if isinstance(noise_metrics, dict)
+                        else None,
+                        "info_rank": plan.get("info_rank"),
+                        "info_rank_deficient": plan.get("info_rank_deficient"),
+                        "max_std_mm": max_std_mm,
+                        "rel_std": rel_std,
+                        "covariance_ok": cov_ok,
+                        "warnings": warnings,
+                        "valid": valid,
+                    },
+                }
+            )
+
+        valid_runs = [r for r in run_results if r["metrics"]["valid"]]
+        if not valid_runs:
+            _append_jsonl(
+                log_path,
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "event": "stop",
+                    "iteration": step,
+                    "dataset": str(work_path),
+                    "reason": "no_valid_runs",
+                    "runs": [
+                        {
+                            "id": r["id"],
+                            "flags": r["flags"],
+                            "metrics": r["metrics"],
+                        }
+                        for r in run_results
+                    ],
+                },
+            )
+            print("; full-auto: no valid calibration runs (non-finite cost or covariance).")
+            return _finalize(2)
+
+        def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
+            metrics = entry["metrics"]
+            cost = float(metrics.get("primary_cost", float("inf")))
+            rel = metrics.get("rel_std")
+            rel_val = float(rel) if isinstance(rel, (int, float)) and np.isfinite(rel) else float("inf")
+            return cost, rel_val, str(entry.get("id", ""))
+
+        selected = sorted(valid_runs, key=_sort_key)[0]
+        plan = selected["plan"]
+        metrics = selected["metrics"]
+        selected_id = str(selected.get("id", "run"))
+        selected_flags = str(selected.get("flags", "")).strip()
+        selected_cost = float(metrics.get("primary_cost", float("nan")))
+        selected_max_std = metrics.get("max_std_mm")
+        selected_rel_std = metrics.get("rel_std")
+        selected_warnings = list(metrics.get("warnings") or [])
+
+        if full_auto_verbose:
+            _print_ellipse_plan(
+                plan,
+                top_n=5,
+                print_command=False,
+                output_with_explanations=bool(output_with_explanations),
+            )
+
+        if write_cfg is not None and plan.get("best_cfg") is not None:
+            try:
+                _write_sweep_config_file(Path(write_cfg), plan["best_cfg"])
+            except Exception as exc:
+                print(f"; full-auto warning: failed to write sweep config {write_cfg}: {exc}")
+
+        prev_cost = cost_history[-1] if cost_history else None
+        improvement = None
+        if prev_cost is not None and np.isfinite(prev_cost) and np.isfinite(selected_cost):
+            improvement = float(prev_cost) - float(selected_cost)
+            if 0.0 <= improvement <= epsilon:
+                small_improve_streak += 1
+            elif improvement > epsilon:
+                small_improve_streak = 0
+            else:
+                small_improve_streak = 0
+        else:
+            small_improve_streak = 0
+
+        cost_history.append(selected_cost)
+        converged = bool(np.isfinite(selected_cost) and small_improve_streak >= k_required)
+
+        stop_cost_hit = (
+            stop_cost is not None and np.isfinite(selected_cost) and selected_cost <= float(stop_cost)
+        )
+        stop_std_hit = False
+        if stop_std_mm is not None and isinstance(selected_max_std, (int, float)):
+            stop_std_hit = np.isfinite(selected_max_std) and float(selected_max_std) <= float(stop_std_mm)
+
+        summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
+        summary_rel = _fmt_float(selected_rel_std)
+        summary_std = _fmt_float(selected_max_std, suffix="mm")
+        summary_cost = _fmt_float(selected_cost)
+        print(
+            f"; selected run={selected_id}{summary_flags} cost={summary_cost} "
+            f"rel_std={summary_rel} max_std={summary_std}"
+        )
+        if selected_warnings:
+            print("; data_quality_warnings: " + ", ".join(selected_warnings))
+
+        accept = converged and not selected_warnings
+        if stop_cost is not None:
+            accept = bool(accept and stop_cost_hit)
+        if stop_std_mm is not None:
+            accept = bool(accept and stop_std_hit)
+
+        if accept:
+            decision = "accept"
+        elif selected_warnings:
+            decision = "stop_warning"
+        else:
+            decision = "collect"
+
+        _append_jsonl(
+            log_path,
+            {
+                "timestamp": datetime.now().isoformat(),
+                "iteration": step,
+                "dataset": str(work_path),
+                "runs": [
+                    {
+                        "id": r["id"],
+                        "flags": r["flags"],
+                        "settings": r["settings"],
+                        "metrics": r["metrics"],
+                    }
+                    for r in run_results
+                ],
+                "selected_run": selected_id,
+                "decision": decision,
+                "converged": converged,
+                "cost": selected_cost,
+                "cost_improvement": improvement,
+                "small_improve_streak": small_improve_streak,
+                "stop_cost_hit": stop_cost_hit,
+                "stop_std_hit": stop_std_hit,
+                "warnings": selected_warnings,
+            },
+        )
+
+        if decision == "accept":
+            m669 = _m669_from_plan(plan)
+            if m669:
+                print(f"; sending {m669} to {rrf_server}")
+                try:
+                    reply = _send_rrf_gcode(rrf_server, m669)
+                except Exception as exc:
+                    print(f"; failed to send M669: {exc}")
+                    return _finalize(1)
+                reply = reply.strip()
+                if reply:
+                    print(f"; M669 reply: {reply}")
+            else:
+                print("; accepted anchors; no M669 command available")
+            print(f"; accepted anchors; dataset={work_path}")
+            return _finalize(0)
+
+        if decision == "stop_warning":
+            print(f"; stopping full-auto due to data-quality warnings; dataset={work_path}")
+            return _finalize(2)
+
+        cmd = plan.get("collect_command")
+        if not isinstance(cmd, list) or not cmd:
+            print("; No valid candidate to collect; stopping.")
+            return _finalize(2)
+
+        print(f"; collecting next sweep ({selected_id})")
+        print(f"; running: {' '.join(str(x) for x in cmd)}")
+        subprocess.run(cmd, check=True)
+        reset_pending = False
+
+        base_dataset = _load_json(work_path)
+        new_dataset = _load_json(collector_output)
+        if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+            cfg = new_dataset.get("config")
+            if isinstance(cfg, dict):
+                cfg["force_tuning"] = dict(plan["force_tuning"])
+                _write_json(collector_output, new_dataset)
+
+        merged = _merge_sweep_datasets(base_dataset, new_dataset)
+        _write_json(work_path, merged)
+        sweeps = merged.get("sweeps", [])
+        count = len(sweeps) if isinstance(sweeps, list) else "?"
+        print(f"; merged {collector_output} -> {work_path} sweeps={count}")
+        try:
+            if collector_output != work_path:
+                collector_output.unlink()
+        except OSError:
+            pass
+
+    print(f"; reached max steps; dataset={work_path}")
+    return _finalize(0)
+
+
 def ellipse_loop(
     *,
     work_dataset: Optional[Path],
@@ -1860,6 +2327,11 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Explicitly run the interactive semi-auto loop (default).",
     )
     parser.add_argument(
+        "--full-auto",
+        action="store_true",
+        help="Run the non-interactive full-auto loop.",
+    )
+    parser.add_argument(
         "--dataset",
         type=Path,
         default=None,
@@ -1879,6 +2351,35 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
     parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
     parser.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
+    parser.add_argument(
+        "--full-auto-run",
+        action="append",
+        default=None,
+        help="Full-auto run override flags (repeatable). Example: --full-auto-run \"--sweep-metric mad --use-raw-lengths\"",
+    )
+    parser.add_argument(
+        "--full-auto-log",
+        type=Path,
+        default=None,
+        help="Write full-auto JSONL logs to this path (default: <dataset>.full_auto_log.jsonl).",
+    )
+    parser.add_argument(
+        "--full-auto-cost-eps",
+        type=float,
+        default=0.05,
+        help="Convergence epsilon for noise-normalized cost improvements (default: 0.05).",
+    )
+    parser.add_argument(
+        "--full-auto-converge-k",
+        type=int,
+        default=2,
+        help="Number of consecutive <= epsilon improvements required for convergence (default: 2).",
+    )
+    parser.add_argument(
+        "--full-auto-verbose",
+        action="store_true",
+        help="Enable verbose solver diagnostics during full-auto runs.",
+    )
     _add_solver_args(parser)
     _add_candidate_args(parser)
     _add_output_args(parser)
@@ -1897,6 +2398,208 @@ def _clean_collector_args(raw_args: Sequence[str]) -> List[str]:
     if collector_args and collector_args[0] == "--":
         collector_args = collector_args[1:]
     return collector_args
+
+
+def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--pointwise-residual",
+        choices=["sampson", "euclidean"],
+        default=None,
+    )
+    parser.add_argument(
+        "--pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_true",
+        default=None,
+    )
+    parser.add_argument(
+        "--no-pointwise-filtering",
+        dest="pointwise_filtering",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--pointwise-global-mad",
+        dest="pointwise_global_mad",
+        action="store_true",
+        default=None,
+    )
+    parser.add_argument(
+        "--pointwise-per-sweep-mad",
+        dest="pointwise_global_mad",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_true",
+        default=None,
+    )
+    parser.add_argument(
+        "--no-sweep-wise-filtering",
+        dest="sweep_wise_filtering",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--sweep-metric",
+        choices=["mad", "median_abs", "outlier_ratio"],
+        default=None,
+    )
+    parser.add_argument(
+        "--sigma-source",
+        choices=["auto", "point", "origin", "min"],
+        default=None,
+    )
+    parser.add_argument(
+        "--use-noise-mean",
+        dest="use_noise_mean",
+        action="store_true",
+        default=None,
+    )
+    parser.add_argument(
+        "--use-raw-lengths",
+        dest="use_noise_mean",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--flex",
+        dest="use_flex",
+        action="store_true",
+        default=None,
+    )
+    parser.add_argument("--spring-k-multiplier", type=float, default=None)
+    parser.add_argument("--threshold", type=float, default=None)
+    parser.add_argument("--solve-restarts", type=int, default=None)
+    parser.add_argument("--solve-iterations", type=int, default=None)
+    parser.add_argument("--solve-optimizer", default=None)
+    return parser
+
+
+def _parse_full_auto_run_spec(spec: str) -> Tuple[List[str], Dict[str, object]]:
+    tokens = shlex.split(spec)
+    if not tokens:
+        return [], {}
+    parser = _build_full_auto_run_override_parser()
+    parsed, unknown = parser.parse_known_args(tokens)
+    if unknown:
+        raise ValueError(f"Unknown full-auto run flags: {' '.join(unknown)}")
+    overrides = {k: v for k, v in vars(parsed).items() if v is not None}
+    return tokens, overrides
+
+
+def _build_full_auto_runs(raw_runs: Optional[Sequence[str]]) -> List[Dict[str, object]]:
+    runs: List[Dict[str, object]] = []
+    if not raw_runs:
+        runs.append({"id": "default", "flags": "", "overrides": {}})
+        return runs
+    for idx, spec in enumerate(raw_runs, start=1):
+        if spec is None:
+            continue
+        spec_str = str(spec).strip()
+        if not spec_str:
+            continue
+        tokens, overrides = _parse_full_auto_run_spec(spec_str)
+        run_id = f"run_{idx:02d}"
+        runs.append(
+            {
+                "id": run_id,
+                "flags": " ".join(tokens),
+                "overrides": overrides,
+            }
+        )
+    if not runs:
+        runs.append({"id": "default", "flags": "", "overrides": {}})
+    return runs
+
+
+def _plan_noise_metrics(plan: Dict[str, object]) -> Optional[dict]:
+    cal = plan.get("calibration")
+    if isinstance(cal, dict):
+        details = cal.get("details")
+        if isinstance(details, dict):
+            nm = details.get("noise_metrics")
+            if isinstance(nm, dict):
+                return nm
+    return None
+
+
+def _plan_primary_cost(plan: Dict[str, object]) -> float:
+    noise_metrics = _plan_noise_metrics(plan)
+    if isinstance(noise_metrics, dict):
+        val = noise_metrics.get("normalized_cost")
+        if isinstance(val, (int, float)) and np.isfinite(val):
+            return float(val)
+    raw = plan.get("cost_noise_normalized", plan.get("cost", float("nan")))
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return float("nan")
+
+
+def _plan_covariance_summary(
+    plan: Dict[str, object],
+) -> Tuple[Optional[float], Optional[float], bool]:
+    max_std = None
+    ci = plan.get("confidence_intervals")
+    if isinstance(ci, dict):
+        raw = ci.get("max_std_mm")
+        if isinstance(raw, (int, float)) and np.isfinite(raw):
+            max_std = float(raw)
+    cov_scaled = plan.get("covariance_scaled", plan.get("covariance"))
+    cov_std = _covariance_diag_std(np.asarray(cov_scaled, dtype=float))
+    cov_ok = cov_std is not None and np.all(np.isfinite(cov_std))
+    if max_std is None and cov_std is not None:
+        finite = cov_std[np.isfinite(cov_std)]
+        if finite.size:
+            max_std = float(np.max(finite))
+    workspace = plan.get("workspace_diag_mm")
+    rel_std = None
+    if (
+        max_std is not None
+        and isinstance(workspace, (int, float))
+        and np.isfinite(workspace)
+        and workspace > 0.0
+    ):
+        rel_std = float(max_std) / float(workspace)
+    return max_std, rel_std, bool(cov_ok)
+
+
+def _plan_data_quality_warnings(plan: Dict[str, object]) -> List[str]:
+    warnings: List[str] = []
+    plan_warnings = plan.get("warnings")
+    if isinstance(plan_warnings, list):
+        for entry in plan_warnings:
+            if isinstance(entry, str) and entry:
+                warnings.append(entry)
+    noise_summary = _summarize_encoder_noise(plan.get("dataset") if isinstance(plan, dict) else None)
+    if isinstance(noise_summary, dict):
+        total_points = int(noise_summary.get("total_points", 0))
+        points_with_sigma = int(noise_summary.get("points_with_sigma", 0))
+        if total_points > 0 and points_with_sigma == 0:
+            warnings.append("encoder_noise_missing")
+        low_samples = int(noise_summary.get("low_samples", 0))
+        sigma_nonfinite = int(noise_summary.get("sigma_nonfinite", 0))
+        if low_samples > 0:
+            warnings.append("encoder_noise_low_samples")
+        if sigma_nonfinite > 0:
+            warnings.append("encoder_noise_nonfinite")
+    seen = set()
+    out: List[str] = []
+    for w in warnings:
+        if w not in seen:
+            out.append(w)
+            seen.add(w)
+    return out
+
+
+def _full_auto_cfg_path(dataset_path: Path, run_id: str) -> Path:
+    return dataset_path.with_name(f"{dataset_path.stem}.active_sweep_cfg.{run_id}.txt")
+
+
+def _append_jsonl(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload) + "\n")
 
 
 def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
@@ -1963,6 +2666,52 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")
+    if bool(args.full_auto):
+        return full_auto_loop(
+            work_dataset=args.dataset,
+            machine_type=str(args.machine_type),
+            max_steps=int(args.max_steps),
+            stop_cost=args.stop_cost,
+            stop_std_mm=args.stop_std_mm,
+            solve_restarts=int(args.solve_restarts),
+            solve_iterations=int(args.solve_iterations),
+            solve_optimizer=str(args.solve_optimizer),
+            residual_threshold=float(args.threshold),
+            spring_k_multiplier=float(args.spring_k_multiplier),
+            use_flex=bool(args.flex),
+            pointwise_residual_mode=str(args.pointwise_residual),
+            pointwise_filtering=bool(args.pointwise_filtering),
+            pointwise_global_mad=bool(args.pointwise_global_mad),
+            sweep_wise_filtering=bool(args.sweep_wise_filtering),
+            sweep_metric=str(args.sweep_metric),
+            use_noise_mean=bool(args.use_noise_mean),
+            sigma_source=str(args.sigma_source),
+            robust_debug=bool(args.robust_debug),
+            residuals_csv=args.residuals_csv,
+            generate_report=bool(args.report),
+            candidate_deltas=_parse_csv_floats(args.candidate_deltas),
+            candidate_count=int(args.candidate_count),
+            delta_min=args.delta_min,
+            delta_max=args.delta_max,
+            fd_eps_mm=float(args.fd_eps_mm),
+            regularization=float(args.regularization),
+            exclude_existing=not bool(args.no_exclude_existing),
+            existing_tol_mm=float(args.existing_tol_mm),
+            min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
+            top_k=int(args.top_k),
+            write_cfg=args.write_sweep_config,
+            collector_args=collector_args,
+            sim=bool(args.sim),
+            keep_sim_alive=bool(args.keep_sim_alive),
+            hp_sim_reset=bool(args.hp_sim_reset),
+            sweep_points=args.sweep_points,
+            output_with_explanations=bool(args.output_with_explanations),
+            full_auto_runs=args.full_auto_run,
+            full_auto_log=args.full_auto_log,
+            full_auto_cost_epsilon=float(args.full_auto_cost_eps),
+            full_auto_converge_k=int(args.full_auto_converge_k),
+            full_auto_verbose=bool(args.full_auto_verbose),
+        )
     return ellipse_loop(
         work_dataset=args.dataset,
         machine_type=str(args.machine_type),
