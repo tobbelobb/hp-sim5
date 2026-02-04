@@ -1580,6 +1580,7 @@ def full_auto_loop(
     log_path = Path(full_auto_log) if full_auto_log is not None else work_path.with_name(
         f"{work_path.stem}.full_auto_log.jsonl"
     )
+    stop_file = _full_auto_stop_path(work_path)
     _append_jsonl(
         log_path,
         {
@@ -1592,6 +1593,10 @@ def full_auto_loop(
         },
     )
     _log_line(f"; full-auto log: {log_path}")
+    _log_console(
+        f"; full-auto stop: press Ctrl-C to accept best-so-far, "
+        f"or create {stop_file} to request stop (cross-platform)"
+    )
 
     base_solver = {
         "solve_restarts": int(solve_restarts),
@@ -1620,330 +1625,355 @@ def full_auto_loop(
     has_variants = bool(full_auto_runs)
     selected_costs: List[float] = []
 
-    for step in range(1, max(1, int(max_steps)) + 1):
-        _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
-        _log_console("")
-        _log_console(f"; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
-        collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
-        run_results: List[Dict[str, object]] = []
+    def _accept_best(reason: str) -> int:
+        if best_plan is None:
+            _log_console(f"; full-auto: stop requested ({reason}) but no best plan available; stopping.")
+            _log_console(_solution_quality_message(None))
+            return _finalize(2)
+        _log_console(f"; full-auto: stop requested ({reason}); accepting best-so-far.")
+        return _emit_summary_and_send(best_plan)
 
-        for run in runs:
-            run_id = str(run.get("id", "run"))
-            run_flags = str(run.get("flags", "")).strip()
-            overrides = run.get("overrides") or {}
-            if not isinstance(overrides, dict):
-                overrides = {}
-            settings = dict(base_solver)
-            settings.update(overrides)
-            if run_flags:
-                _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
-            else:
-                _log_line(f"; full-auto run {run_id}: flags=''")
+    def _stop_file_requested() -> bool:
+        try:
+            return stop_file.exists()
+        except OSError:
+            return False
 
-            cfg_path = _full_auto_cfg_path(work_path, run_id)
-            residuals_csv_run = None
-            if residuals_csv is not None:
-                res_base = Path(residuals_csv)
-                if len(runs) > 1:
-                    residuals_csv_run = res_base.with_name(
-                        f"{res_base.stem}.{run_id}{res_base.suffix}"
-                    )
+    try:
+        for step in range(1, max(1, int(max_steps)) + 1):
+            if _stop_file_requested():
+                return _accept_best(f"stop-file {stop_file}")
+            _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+            _log_console("")
+            _log_console(f"; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+            collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
+            run_results: List[Dict[str, object]] = []
+
+            for run in runs:
+                if _stop_file_requested():
+                    return _accept_best(f"stop-file {stop_file}")
+                run_id = str(run.get("id", "run"))
+                run_flags = str(run.get("flags", "")).strip()
+                overrides = run.get("overrides") or {}
+                if not isinstance(overrides, dict):
+                    overrides = {}
+                settings = dict(base_solver)
+                settings.update(overrides)
+                if run_flags:
+                    _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
                 else:
-                    residuals_csv_run = res_base
+                    _log_line(f"; full-auto run {run_id}: flags=''")
 
-            with _log_context():
-                plan = _plan_next_ellipse_sweep(
-                    work_path,
-                    solve_restarts=int(settings["solve_restarts"]),
-                    solve_iterations=int(settings["solve_iterations"]),
-                    solve_optimizer=str(settings["solve_optimizer"]),
-                    residual_threshold=float(settings["residual_threshold"]),
-                    spring_k_multiplier=float(settings["spring_k_multiplier"]),
-                    use_flex=bool(settings["use_flex"]),
-                    pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
-                    pointwise_filtering=bool(settings["pointwise_filtering"]),
-                    pointwise_global_mad=bool(settings["pointwise_global_mad"]),
-                    sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
-                    sweep_metric=str(settings["sweep_metric"]),
-                    use_noise_mean=bool(settings["use_noise_mean"]),
-                    sigma_source=str(settings["sigma_source"]),
-                    robust_debug=bool(settings["robust_debug"]),
-                    residuals_csv=residuals_csv_run,
-                    generate_report=bool(settings["generate_report"]),
-                    candidate_deltas=candidate_deltas,
-                    candidate_count=int(candidate_count),
-                    delta_min=delta_min,
-                    delta_max=delta_max,
-                    fd_eps_mm=float(fd_eps_mm),
-                    regularization=float(regularization),
-                    exclude_existing=bool(exclude_existing),
-                    existing_tol_mm=float(existing_tol_mm),
-                    min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
-                    top_k=int(top_k),
-                    write_cfg=cfg_path,
-                    collector_output=collector_output,
-                    collector_args=collector_args_eff,
+                cfg_path = _full_auto_cfg_path(work_path, run_id)
+                residuals_csv_run = None
+                if residuals_csv is not None:
+                    res_base = Path(residuals_csv)
+                    if len(runs) > 1:
+                        residuals_csv_run = res_base.with_name(
+                            f"{res_base.stem}.{run_id}{res_base.suffix}"
+                        )
+                    else:
+                        residuals_csv_run = res_base
+
+                with _log_context():
+                    plan = _plan_next_ellipse_sweep(
+                        work_path,
+                        solve_restarts=int(settings["solve_restarts"]),
+                        solve_iterations=int(settings["solve_iterations"]),
+                        solve_optimizer=str(settings["solve_optimizer"]),
+                        residual_threshold=float(settings["residual_threshold"]),
+                        spring_k_multiplier=float(settings["spring_k_multiplier"]),
+                        use_flex=bool(settings["use_flex"]),
+                        pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
+                        pointwise_filtering=bool(settings["pointwise_filtering"]),
+                        pointwise_global_mad=bool(settings["pointwise_global_mad"]),
+                        sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
+                        sweep_metric=str(settings["sweep_metric"]),
+                        use_noise_mean=bool(settings["use_noise_mean"]),
+                        sigma_source=str(settings["sigma_source"]),
+                        robust_debug=bool(settings["robust_debug"]),
+                        residuals_csv=residuals_csv_run,
+                        generate_report=bool(settings["generate_report"]),
+                        candidate_deltas=candidate_deltas,
+                        candidate_count=int(candidate_count),
+                        delta_min=delta_min,
+                        delta_max=delta_max,
+                        fd_eps_mm=float(fd_eps_mm),
+                        regularization=float(regularization),
+                        exclude_existing=bool(exclude_existing),
+                        existing_tol_mm=float(existing_tol_mm),
+                        min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
+                        top_k=int(top_k),
+                        write_cfg=cfg_path,
+                        collector_output=collector_output,
+                        collector_args=collector_args_eff,
+                    )
+
+                primary_cost = _plan_primary_cost(plan)
+                max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
+                warnings = _plan_data_quality_warnings(plan)
+                noise_metrics = _plan_noise_metrics(plan)
+                valid = bool(np.isfinite(primary_cost) and cov_ok)
+                cost_raw = plan.get("cost_raw")
+                cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
+                j_val = noise_metrics.get("J") if isinstance(noise_metrics, dict) else None
+                chi2_val = noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None
+                _log_line(
+                    f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
+                    f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
+                    f"chi2_red={_fmt_float(chi2_val)}"
                 )
 
-            primary_cost = _plan_primary_cost(plan)
-            max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
-            warnings = _plan_data_quality_warnings(plan)
-            noise_metrics = _plan_noise_metrics(plan)
-            valid = bool(np.isfinite(primary_cost) and cov_ok)
-            cost_raw = plan.get("cost_raw")
-            cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
-            j_val = noise_metrics.get("J") if isinstance(noise_metrics, dict) else None
-            chi2_val = noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None
-            _log_line(
-                f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
-                f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
-                f"chi2_red={_fmt_float(chi2_val)}"
-            )
+                run_results.append(
+                    {
+                        "id": run_id,
+                        "flags": run.get("flags", ""),
+                        "overrides": overrides,
+                        "settings": settings,
+                        "plan": plan,
+                        "metrics": {
+                            "primary_cost": primary_cost,
+                            "cost_noise_normalized": plan.get("cost_noise_normalized"),
+                            "chi2_red": noise_metrics.get("chi2_red")
+                            if isinstance(noise_metrics, dict)
+                            else None,
+                            "J": noise_metrics.get("J") if isinstance(noise_metrics, dict) else None,
+                            "info_rank": plan.get("info_rank"),
+                            "info_rank_deficient": plan.get("info_rank_deficient"),
+                            "max_std_mm": max_std_mm,
+                            "rel_std": rel_std,
+                            "covariance_ok": cov_ok,
+                            "warnings": warnings,
+                            "valid": valid,
+                        },
+                    }
+                )
 
-            run_results.append(
-                {
-                    "id": run_id,
-                    "flags": run.get("flags", ""),
-                    "overrides": overrides,
-                    "settings": settings,
-                    "plan": plan,
-                    "metrics": {
-                        "primary_cost": primary_cost,
-                        "cost_noise_normalized": plan.get("cost_noise_normalized"),
-                        "chi2_red": noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None,
-                        "J": noise_metrics.get("J")
-                        if isinstance(noise_metrics, dict)
-                        else None,
-                        "info_rank": plan.get("info_rank"),
-                        "info_rank_deficient": plan.get("info_rank_deficient"),
-                        "max_std_mm": max_std_mm,
-                        "rel_std": rel_std,
-                        "covariance_ok": cov_ok,
-                        "warnings": warnings,
-                        "valid": valid,
+            valid_runs = [r for r in run_results if r["metrics"]["valid"]]
+            if not valid_runs:
+                _append_jsonl(
+                    log_path,
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "event": "stop",
+                        "iteration": step,
+                        "dataset": str(work_path),
+                        "reason": "no_valid_runs",
+                        "runs": [
+                            {
+                                "id": r["id"],
+                                "flags": r["flags"],
+                                "metrics": r["metrics"],
+                            }
+                            for r in run_results
+                        ],
                     },
-                }
-            )
+                )
+                _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
+                _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
+                _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+                return _finalize(2)
 
-        valid_runs = [r for r in run_results if r["metrics"]["valid"]]
-        if not valid_runs:
+            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
+                metrics = entry["metrics"]
+                cost = float(metrics.get("primary_cost", float("inf")))
+                rel = metrics.get("rel_std")
+                rel_val = (
+                    float(rel)
+                    if isinstance(rel, (int, float)) and np.isfinite(rel)
+                    else float("inf")
+                )
+                return cost, rel_val, str(entry.get("id", ""))
+
+            selected = sorted(valid_runs, key=_sort_key)[0]
+            plan = selected["plan"]
+            metrics = selected["metrics"]
+            selected_id = str(selected.get("id", "run"))
+            selected_flags = str(selected.get("flags", "")).strip()
+            selected_cost = float(metrics.get("primary_cost", float("nan")))
+            selected_max_std = metrics.get("max_std_mm")
+            selected_rel_std = metrics.get("rel_std")
+            selected_warnings = list(metrics.get("warnings") or [])
+
+            with _log_context():
+                _print_ellipse_plan(
+                    plan,
+                    top_n=5,
+                    print_command=True,
+                    output_with_explanations=bool(output_with_explanations),
+                )
+
+            if write_cfg is not None and plan.get("best_cfg") is not None:
+                try:
+                    _write_sweep_config_file(Path(write_cfg), plan["best_cfg"])
+                except Exception as exc:
+                    _log_line(f"; full-auto warning: failed to write sweep config {write_cfg}: {exc}")
+
+            improvement = None
+            if np.isfinite(selected_cost):
+                improvement = float(best_cost) - float(selected_cost) if np.isfinite(best_cost) else None
+            improved = False
+            if np.isfinite(selected_cost) and (
+                best_plan is None or selected_cost <= best_cost - min_delta
+            ):
+                best_cost = float(selected_cost)
+                best_plan = plan
+                best_meta = {
+                    "iteration": step,
+                    "run_id": selected_id,
+                    "flags": selected_flags,
+                    "cost": selected_cost,
+                    "rel_std": selected_rel_std,
+                    "max_std_mm": selected_max_std,
+                }
+                no_improve = 0
+                improved = True
+            else:
+                no_improve += 1
+
+            stop_cost_hit = False
+            stop_std_hit = False
+            if best_plan is not None:
+                if stop_cost is not None and np.isfinite(best_cost) and best_cost <= float(stop_cost):
+                    stop_cost_hit = True
+                if stop_std_mm is not None and isinstance(best_meta.get("max_std_mm"), (int, float)):
+                    stop_std_hit = bool(
+                        np.isfinite(float(best_meta["max_std_mm"]))
+                        and float(best_meta["max_std_mm"]) <= float(stop_std_mm)
+                    )
+
+            selected_costs.append(selected_cost)
+            summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
+            summary_rel = _fmt_float(selected_rel_std)
+            summary_std = _fmt_float(selected_max_std, suffix="mm")
+            summary_cost = _fmt_float(selected_cost)
+            _log_line(
+                f"; selected run={selected_id}{summary_flags} cost={summary_cost} "
+                f"rel_std={summary_rel} max_std={summary_std}"
+            )
+            if has_variants:
+                _log_console(f"; selected run={selected_id}{summary_flags}")
+            _log_console(f"cost: {summary_cost}")
+
+            threshold_accept = False
+            if stop_cost is not None and stop_cost_hit:
+                threshold_accept = True
+            if stop_std_mm is not None and stop_std_hit:
+                threshold_accept = True
+            if threshold_accept or no_improve >= patience_limit:
+                decision = "accept"
+            else:
+                decision = "collect"
+
             _append_jsonl(
                 log_path,
                 {
                     "timestamp": datetime.now().isoformat(),
-                    "event": "stop",
                     "iteration": step,
                     "dataset": str(work_path),
-                    "reason": "no_valid_runs",
                     "runs": [
                         {
                             "id": r["id"],
                             "flags": r["flags"],
+                            "settings": r["settings"],
                             "metrics": r["metrics"],
                         }
                         for r in run_results
                     ],
+                    "selected_run": selected_id,
+                    "decision": decision,
+                    "cost": selected_cost,
+                    "cost_improvement": improvement,
+                    "improved_best": improved,
+                    "best_cost": best_cost,
+                    "best_run": best_meta.get("run_id"),
+                    "best_iteration": best_meta.get("iteration"),
+                    "no_improve_count": no_improve,
+                    "patience": patience_limit,
+                    "min_delta": min_delta,
+                    "stop_cost_hit": stop_cost_hit,
+                    "stop_std_hit": stop_std_hit,
+                    "warnings": selected_warnings,
                 },
             )
-            _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
-            _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
-            _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
-            return _finalize(2)
 
-        def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
-            metrics = entry["metrics"]
-            cost = float(metrics.get("primary_cost", float("inf")))
-            rel = metrics.get("rel_std")
-            rel_val = float(rel) if isinstance(rel, (int, float)) and np.isfinite(rel) else float("inf")
-            return cost, rel_val, str(entry.get("id", ""))
-
-        selected = sorted(valid_runs, key=_sort_key)[0]
-        plan = selected["plan"]
-        metrics = selected["metrics"]
-        selected_id = str(selected.get("id", "run"))
-        selected_flags = str(selected.get("flags", "")).strip()
-        selected_cost = float(metrics.get("primary_cost", float("nan")))
-        selected_max_std = metrics.get("max_std_mm")
-        selected_rel_std = metrics.get("rel_std")
-        selected_warnings = list(metrics.get("warnings") or [])
-
-        with _log_context():
-            _print_ellipse_plan(
-                plan,
-                top_n=5,
-                print_command=True,
-                output_with_explanations=bool(output_with_explanations),
-            )
-
-        if write_cfg is not None and plan.get("best_cfg") is not None:
-            try:
-                _write_sweep_config_file(Path(write_cfg), plan["best_cfg"])
-            except Exception as exc:
-                _log_line(f"; full-auto warning: failed to write sweep config {write_cfg}: {exc}")
-
-        improvement = None
-        if np.isfinite(selected_cost):
-            improvement = float(best_cost) - float(selected_cost) if np.isfinite(best_cost) else None
-        improved = False
-        if np.isfinite(selected_cost) and (
-            best_plan is None or selected_cost <= best_cost - min_delta
-        ):
-            best_cost = float(selected_cost)
-            best_plan = plan
-            best_meta = {
-                "iteration": step,
-                "run_id": selected_id,
-                "flags": selected_flags,
-                "cost": selected_cost,
-                "rel_std": selected_rel_std,
-                "max_std_mm": selected_max_std,
-            }
-            no_improve = 0
-            improved = True
-        else:
-            no_improve += 1
-
-        stop_cost_hit = False
-        stop_std_hit = False
-        if best_plan is not None:
-            if stop_cost is not None and np.isfinite(best_cost) and best_cost <= float(stop_cost):
-                stop_cost_hit = True
-            if stop_std_mm is not None and isinstance(best_meta.get("max_std_mm"), (int, float)):
-                stop_std_hit = bool(
-                    np.isfinite(float(best_meta["max_std_mm"]))
-                    and float(best_meta["max_std_mm"]) <= float(stop_std_mm)
-                )
-
-        selected_costs.append(selected_cost)
-        summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
-        summary_rel = _fmt_float(selected_rel_std)
-        summary_std = _fmt_float(selected_max_std, suffix="mm")
-        summary_cost = _fmt_float(selected_cost)
-        _log_line(
-            f"; selected run={selected_id}{summary_flags} cost={summary_cost} "
-            f"rel_std={summary_rel} max_std={summary_std}"
-        )
-        if has_variants:
-            _log_console(f"; selected run={selected_id}{summary_flags}")
-        _log_console(f"cost: {summary_cost}")
-
-        threshold_accept = False
-        if stop_cost is not None and stop_cost_hit:
-            threshold_accept = True
-        if stop_std_mm is not None and stop_std_hit:
-            threshold_accept = True
-        if threshold_accept or no_improve >= patience_limit:
-            decision = "accept"
-        else:
-            decision = "collect"
-
-        _append_jsonl(
-            log_path,
-            {
-                "timestamp": datetime.now().isoformat(),
-                "iteration": step,
-                "dataset": str(work_path),
-                "runs": [
-                    {
-                        "id": r["id"],
-                        "flags": r["flags"],
-                        "settings": r["settings"],
-                        "metrics": r["metrics"],
-                    }
-                    for r in run_results
-                ],
-                "selected_run": selected_id,
-                "decision": decision,
-                "cost": selected_cost,
-                "cost_improvement": improvement,
-                "improved_best": improved,
-                "best_cost": best_cost,
-                "best_run": best_meta.get("run_id"),
-                "best_iteration": best_meta.get("iteration"),
-                "no_improve_count": no_improve,
-                "patience": patience_limit,
-                "min_delta": min_delta,
-                "stop_cost_hit": stop_cost_hit,
-                "stop_std_hit": stop_std_hit,
-                "warnings": selected_warnings,
-            },
-        )
-
-        if decision == "accept":
-            if best_plan is None:
-                _log_console("; full-auto: no best plan available; stopping.")
-                _log_console(_solution_quality_message(None))
-                return _finalize(2)
-            return _emit_summary_and_send(best_plan)
-
-        if replay_mode:
-            if replay_index >= len(replay_sweeps):
-                _log_console("; full-auto: no more sweeps to replay; accepting best-so-far.")
+            if decision == "accept":
                 if best_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
                     _log_console(_solution_quality_message(None))
                     return _finalize(2)
                 return _emit_summary_and_send(best_plan)
 
-            next_sweep = replay_sweeps[replay_index]
-            replay_index += 1
+            if replay_mode:
+                if replay_index >= len(replay_sweeps):
+                    _log_console("; full-auto: no more sweeps to replay; accepting best-so-far.")
+                    if best_plan is None:
+                        _log_console("; full-auto: no best plan available; stopping.")
+                        _log_console(_solution_quality_message(None))
+                        return _finalize(2)
+                    return _emit_summary_and_send(best_plan)
+
+                next_sweep = replay_sweeps[replay_index]
+                replay_index += 1
+                base_dataset = _load_json(work_path)
+                new_dataset = dict(base_dataset)
+                new_dataset["timestamp"] = datetime.now().isoformat()
+                new_dataset["sweeps"] = [next_sweep]
+                merged = _merge_sweep_datasets(base_dataset, new_dataset)
+                _write_json(work_path, merged)
+                sweeps = merged.get("sweeps", [])
+                count = len(sweeps) if isinstance(sweeps, list) else "?"
+                _log_line(
+                    f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
+                    f"-> {work_path} sweeps={count}"
+                )
+                _log_console(f"Collected sweep nr {count}")
+                continue
+
+            cmd = plan.get("collect_command")
+            if not isinstance(cmd, list) or not cmd:
+                _log_line("; No valid candidate to collect; stopping.")
+                _log_console("; No valid candidate to collect; stopping.")
+                _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+                return _finalize(2)
+
+            finite_costs = [c for c in selected_costs if np.isfinite(c)]
+            if not np.isfinite(selected_cost) or not finite_costs:
+                cost_rank = 1
+            else:
+                cost_rank = sorted(finite_costs).index(selected_cost) + 1
+            rank_label = "best" if cost_rank == 1 else _ordinal(cost_rank) + " best"
+            remaining = max(0, patience_limit - no_improve)
+            _log_console(f"The {rank_label} try so far.")
+            _log_console("Collecting new sweep to try and beat it.")
+            _log_console(f"Still has patience for {remaining} more attempts.")
+            _log_line(f"; collecting next sweep ({selected_id})")
+            _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
+            with _log_context():
+                subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
+            reset_pending = False
+
             base_dataset = _load_json(work_path)
-            new_dataset = dict(base_dataset)
-            new_dataset["timestamp"] = datetime.now().isoformat()
-            new_dataset["sweeps"] = [next_sweep]
+            new_dataset = _load_json(collector_output)
+            if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+                cfg = new_dataset.get("config")
+                if isinstance(cfg, dict):
+                    cfg["force_tuning"] = dict(plan["force_tuning"])
+                    _write_json(collector_output, new_dataset)
+
             merged = _merge_sweep_datasets(base_dataset, new_dataset)
             _write_json(work_path, merged)
             sweeps = merged.get("sweeps", [])
             count = len(sweeps) if isinstance(sweeps, list) else "?"
-            _log_line(
-                f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
-                f"-> {work_path} sweeps={count}"
-            )
+            _log_line(f"; merged {collector_output} -> {work_path} sweeps={count}")
             _log_console(f"Collected sweep nr {count}")
-            continue
-
-        cmd = plan.get("collect_command")
-        if not isinstance(cmd, list) or not cmd:
-            _log_line("; No valid candidate to collect; stopping.")
-            _log_console("; No valid candidate to collect; stopping.")
-            _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
-            return _finalize(2)
-
-        finite_costs = [c for c in selected_costs if np.isfinite(c)]
-        if not np.isfinite(selected_cost) or not finite_costs:
-            cost_rank = 1
-        else:
-            cost_rank = sorted(finite_costs).index(selected_cost) + 1
-        rank_label = "best" if cost_rank == 1 else _ordinal(cost_rank) + " best"
-        remaining = max(0, patience_limit - no_improve)
-        _log_console(f"The {rank_label} try so far.")
-        _log_console("Collecting new sweep to try and beat it.")
-        _log_console(f"Still has patience for {remaining} more attempts.")
-        _log_line(f"; collecting next sweep ({selected_id})")
-        _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
-        with _log_context():
-            subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
-        reset_pending = False
-
-        base_dataset = _load_json(work_path)
-        new_dataset = _load_json(collector_output)
-        if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
-            cfg = new_dataset.get("config")
-            if isinstance(cfg, dict):
-                cfg["force_tuning"] = dict(plan["force_tuning"])
-                _write_json(collector_output, new_dataset)
-
-        merged = _merge_sweep_datasets(base_dataset, new_dataset)
-        _write_json(work_path, merged)
-        sweeps = merged.get("sweeps", [])
-        count = len(sweeps) if isinstance(sweeps, list) else "?"
-        _log_line(f"; merged {collector_output} -> {work_path} sweeps={count}")
-        _log_console(f"Collected sweep nr {count}")
-        try:
-            if collector_output != work_path:
-                collector_output.unlink()
-        except OSError:
-            pass
+            try:
+                if collector_output != work_path:
+                    collector_output.unlink()
+            except OSError:
+                pass
+    except KeyboardInterrupt:
+        return _accept_best("Ctrl-C")
 
     _log_line(f"; reached max steps; dataset={work_path}")
     _log_console(f"; reached max steps; dataset={work_path}")
@@ -2772,6 +2802,10 @@ def _plan_data_quality_warnings(plan: Dict[str, object]) -> List[str]:
 
 def _full_auto_cfg_path(dataset_path: Path, run_id: str) -> Path:
     return dataset_path.with_name(f"{dataset_path.stem}.active_sweep_cfg.{run_id}.txt")
+
+
+def _full_auto_stop_path(dataset_path: Path) -> Path:
+    return dataset_path.with_name(f"{dataset_path.stem}.full_auto.stop")
 
 
 def _append_jsonl(path: Path, payload: dict) -> None:
