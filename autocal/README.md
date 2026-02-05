@@ -1,5 +1,7 @@
 # Autocal
 
+![Autocal's own logo](autocal_logo_shine.jpeg)
+
 This directory contains the fully automated elliptical feature calibration pipeline. The default workflow uses active learning plus pointwise robust fitting.
 
 ## Quick start (simulation)
