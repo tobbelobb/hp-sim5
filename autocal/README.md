@@ -32,16 +32,24 @@ If everything went well you should see something like this:
 You can add `--plot-residual-histogram` to learn about the quality of your data.
 It writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
 
+Here's a demo of the `--full-auto` option on a simulated Slideprinter: https://youtu.be/XLmpuAQYbG4
+
+
 ## Typical workflow (real machine)
 
 - Remove `--sim` and any `--speedup` args.
-- Use `--dataset` to choose where the working dataset is stored, or to continue working on a pre-existing dataset.
-- Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
+- Or you can let the script do everything automatically with `--full-auto`.
 
 ```bash
 python autocal/active_calibrate.py \
   --machine-type slideprinter \
-  --dataset autocal/data/my_active.json
+  --full-auto
 ```
+
+More quick tips:
+- Use `--dataset` to choose where the working dataset is stored, or to continue working on a pre-existing dataset.
+- Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
+- There's also a `--shotgun` flag that makes `--full-auto` try harder.
+
 
 For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.
