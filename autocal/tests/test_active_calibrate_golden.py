@@ -33,6 +33,8 @@ def test_active_calibrate_fivesweeps_golden():
         "slideprinter",
         "--dataset",
         str(DATASET),
+        "--sweep-metric",
+        "median_abs"
     ]
     result = subprocess.run(
         cmd,
