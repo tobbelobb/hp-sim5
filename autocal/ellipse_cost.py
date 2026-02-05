@@ -30,6 +30,7 @@ _SWEEP_WISE_K = 3.0
 _SWEEP_WISE_MIN_SAMPLES = 5
 _SWEEP_WISE_MIN_KEEP = 2
 _SWEEP_WISE_MIN_KEEP_RATIO = 0.5
+_UNDERCONSTRAINED_PENALTY = 100.0  # Soft-reject: good costs are ~0-5, so 100 is ~20x worse yet finite for optimizers.
 _MIN_SWEEPS_AFTER_TRIM_DEFAULT = 3
 _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE = {
     "slideprinter": 3,
@@ -1210,11 +1211,16 @@ class EllipseCostFunction:
                 "sweep_metric": sweep_metric,
                 "norm_mode": norm_mode,
                 "_r_norm": r_norm,
+                "_r_norm_used": r_norm,
             }
 
         cost_unit, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold = self._pointwise_cost_filtered(
             residuals, scale_override=scale_override, r_norm_override=r_norm
         )
+        r_norm_used = r_norm
+        if inlier_mask is not None and np.any(inlier_mask):
+            if int(np.sum(inlier_mask)) >= _POINTWISE_MIN_INLIERS:
+                r_norm_used = r_norm[inlier_mask]
         metric_residuals = r_norm
         if inlier_mask is not None and np.any(inlier_mask):
             metric_residuals = r_norm[inlier_mask]
@@ -1235,6 +1241,7 @@ class EllipseCostFunction:
                 "sweep_metric": sweep_metric if np.isfinite(sweep_metric) else float("inf"),
                 "norm_mode": norm_mode,
                 "_r_norm": r_norm,
+                "_r_norm_used": r_norm_used,
             }
 
         cost = float(cost_unit * self.pointwise_cost_weight)
@@ -1253,6 +1260,7 @@ class EllipseCostFunction:
             "sweep_metric": sweep_metric if np.isfinite(sweep_metric) else float("inf"),
             "norm_mode": norm_mode,
             "_r_norm": r_norm,
+            "_r_norm_used": r_norm_used,
         }
 
     def _pointwise_sweep_info(
@@ -1511,7 +1519,7 @@ class EllipseCostFunction:
             kept_count += 1
 
         if kept_count < self._min_sweeps_after_trim:
-            return float("inf")
+            return float(_UNDERCONSTRAINED_PENALTY)
 
         weight_sum = float(sum(weights)) if weights else 1.0
         if weight_sum <= 0:
@@ -1558,7 +1566,7 @@ class EllipseCostFunction:
             num_valid += 1
 
         if num_valid < self._min_sweeps_after_trim:
-            total_cost = float("inf")
+            total_cost = float(_UNDERCONSTRAINED_PENALTY)
         else:
             weight_sum = float(sum(weights.values())) if weights else 1.0
             if weight_sum <= 0:
@@ -1570,6 +1578,7 @@ class EllipseCostFunction:
 
         noise_metrics = None
         z_values: List[np.ndarray] = []
+        z_trim_values: List[np.ndarray] = []
         norm_modes: List[str] = []
         for idx, entry in enumerate(entries):
             sweep_id = str(entry.get("sweep_id", ""))
@@ -1588,6 +1597,12 @@ class EllipseCostFunction:
                     mode = entry.get("norm_mode")
                     if isinstance(mode, str) and mode:
                         norm_modes.append(mode)
+            r_norm_used = entry.get("_r_norm_used")
+            if isinstance(r_norm_used, np.ndarray):
+                vals_used = np.asarray(r_norm_used, dtype=float).ravel()
+                vals_used = vals_used[np.isfinite(vals_used)]
+                if vals_used.size:
+                    z_trim_values.append(vals_used)
 
         if z_values:
             z_all = np.concatenate(z_values)
@@ -1605,11 +1620,24 @@ class EllipseCostFunction:
                 chi2_red = None
                 if n_obs > p_count:
                     chi2_red = float(np.sum(z_all**2) / float(n_obs - p_count))
+                trim_j = None
+                trim_chi2 = None
+                trim_n = None
+                if z_trim_values:
+                    z_trim = np.concatenate(z_trim_values)
+                    trim_n = int(z_trim.size)
+                    if trim_n > 0:
+                        trim_j = float(np.mean(z_trim**2))
+                        if trim_n > p_count:
+                            trim_chi2 = float(np.sum(z_trim**2) / float(trim_n - p_count))
                 noise_metrics = {
                     "J": float(np.mean(z_all**2)),
                     "chi2_red": chi2_red,
                     "n_obs": n_obs,
                     "params": p_count,
+                    "J_trimmed": trim_j,
+                    "chi2_red_trimmed": trim_chi2,
+                    "n_obs_trimmed": trim_n,
                     "median_abs_z": float(np.median(z_abs)),
                     "p95_abs_z": float(np.percentile(z_abs, 95)),
                     "outlier_ratio": float(np.mean(z_abs > _POINTWISE_TRIM_K)),

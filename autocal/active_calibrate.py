@@ -1054,6 +1054,9 @@ def _print_ellipse_plan(
             if isinstance(noise_metrics, dict):
                 j_val = noise_metrics.get("J")
                 chi2_red = noise_metrics.get("chi2_red")
+                j_trim = noise_metrics.get("J_trimmed")
+                chi2_trim = noise_metrics.get("chi2_red_trimmed")
+                n_trim = noise_metrics.get("n_obs_trimmed")
                 z_med = noise_metrics.get("median_abs_z")
                 z_p95 = noise_metrics.get("p95_abs_z")
                 outlier_ratio = noise_metrics.get("outlier_ratio")
@@ -1062,15 +1065,21 @@ def _print_ellipse_plan(
                 lengths_mode = noise_metrics.get("lengths_mode")
                 j_str = _fmt_float(j_val)
                 chi2_str = _fmt_float(chi2_red)
+                j_trim_str = _fmt_float(j_trim)
+                chi2_trim_str = _fmt_float(chi2_trim)
                 med_str = _fmt_float(z_med)
                 p95_str = _fmt_float(z_p95)
                 outlier_str = _fmt_float(outlier_ratio)
                 n_str = f"{int(n_obs)}" if isinstance(n_obs, (int, float)) and np.isfinite(n_obs) else "n/a"
+                n_trim_str = (
+                    f"{int(n_trim)}" if isinstance(n_trim, (int, float)) and np.isfinite(n_trim) else "n/a"
+                )
                 mode_str = str(norm_mode) if norm_mode is not None else "n/a"
                 lengths_str = str(lengths_mode) if lengths_mode is not None else "n/a"
                 print(
                     f"; noise_cost: J={j_str} chi2_red={chi2_str} |z|_med={med_str} |z|_p95={p95_str} "
-                    f"outlier_ratio={outlier_str} N={n_str} mode={mode_str} lengths={lengths_str}"
+                    f"outlier_ratio={outlier_str} N={n_str} mode={mode_str} lengths={lengths_str} "
+                    f"J_trim={j_trim_str} chi2_red_trim={chi2_trim_str} N_trim={n_trim_str}"
                 )
                 sigma_min_mm = noise_metrics.get("sigma_min_mm")
                 sigma_floor_deg = noise_metrics.get("sigma_floor_deg")
