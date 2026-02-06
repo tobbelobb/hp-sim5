@@ -1,4 +1,5 @@
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
 import {
   PositionComponent,
   VelocityComponent,
@@ -6,6 +7,9 @@ import {
   MassComponent,
   RestitutionComponent,
   PrevFinalPosComponent,
+  OrientationComponent,
+  PrevFinalOrientationComponent,
+  AngularVelocityComponent,
   CoefficientOfFrictionComponent,
   BallTagComponent,
   ObstacleTagComponent,
@@ -21,13 +25,129 @@ import {
   rightOfPlane
 } from '../../../src/js/cable_joints_3d/geometry3.js';
 
-export { PBDBallBallCollisions } from '../../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
-export { PBDBallObstacleCollisions } from '../../../src/js/cable_joints_3d/pbd_ball_obstacle_collisions.js';
 export { BallTagComponent, ObstacleTagComponent, ObstaclePushComponent };
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
+function normalizePlaneNormal(planeNormal) {
+  const n = (planeNormal || DEFAULT_PLANE_NORMAL).clone();
+  if (n.lengthSq() <= 1e-12) {
+    n.set(DEFAULT_PLANE_NORMAL);
+  } else {
+    n.normalize();
+  }
+  return n;
+}
+
+function projectPointToPlane(point, planeNormal, planeOffset) {
+  const signedDistance = point.dot(planeNormal) - planeOffset;
+  point.subtract(planeNormal, signedDistance);
+}
+
+function projectVectorToPlane(vector, planeNormal) {
+  const normalComponent = vector.dot(planeNormal);
+  vector.subtract(planeNormal, normalComponent);
+}
+
+function buildPlaneBasis(planeNormal) {
+  const n = planeNormal.clone();
+  const eps = 1e-9;
+  if (n.lengthSq() <= eps) {
+    return {
+      n: new Vector3(0, 0, 1),
+      u: new Vector3(1, 0, 0),
+      v: new Vector3(0, 1, 0)
+    };
+  }
+
+  n.normalize();
+  let reference = Math.abs(n.x) < 0.9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0);
+  const nDotRef = n.dot(reference);
+  let u = reference.clone().subtract(n, nDotRef);
+  if (u.lengthSq() <= eps) {
+    reference = new Vector3(0, 0, 1);
+    const nDotRef2 = n.dot(reference);
+    u = reference.clone().subtract(n, nDotRef2);
+  }
+  u.normalize();
+  const v = n.cross(u);
+  return { n, u, v };
+}
+
 export class FlipperTagComponent {}
+
+export class PlanarConstraintSystem3D {
+  runInPause = false;
+
+  constructor(planeNormal = DEFAULT_PLANE_NORMAL, planeOffset = 0.0) {
+    this.basis = buildPlaneBasis(planeNormal);
+    this.planeOffset = planeOffset;
+    this._axisQuat = new Quaternion();
+  }
+
+  _projectPointToPlane(point) {
+    const signedDistance = point.dot(this.basis.n) - this.planeOffset;
+    point.subtract(this.basis.n, signedDistance);
+  }
+
+  _projectVectorToPlane(vector) {
+    const normalComponent = vector.dot(this.basis.n);
+    vector.subtract(this.basis.n, normalComponent);
+  }
+
+  _projectAngularVelocityToNormal(vector) {
+    const scalar = vector.dot(this.basis.n);
+    vector.x = this.basis.n.x * scalar;
+    vector.y = this.basis.n.y * scalar;
+    vector.z = this.basis.n.z * scalar;
+  }
+
+  _clampOrientationToPlaneAxis(quaternion) {
+    const rotatedU = quaternion.transformVector(this.basis.u);
+    this._projectVectorToPlane(rotatedU);
+
+    if (rotatedU.lengthSq() <= 1e-12) {
+      quaternion.set(this._axisQuat.setFromAxisAngle(this.basis.n, 0.0));
+      return;
+    }
+
+    rotatedU.normalize();
+    const angle = Math.atan2(rotatedU.dot(this.basis.v), rotatedU.dot(this.basis.u));
+    quaternion.set(this._axisQuat.setFromAxisAngle(this.basis.n, angle));
+  }
+
+  update(world, _dt_unused) {
+    for (const entityId of world.query([PositionComponent])) {
+      const pos = world.getComponent(entityId, PositionComponent).pos;
+      this._projectPointToPlane(pos);
+    }
+
+    for (const entityId of world.query([PrevFinalPosComponent])) {
+      const prevPos = world.getComponent(entityId, PrevFinalPosComponent).pos;
+      this._projectPointToPlane(prevPos);
+    }
+
+    for (const entityId of world.query([VelocityComponent])) {
+      const vel = world.getComponent(entityId, VelocityComponent).vel;
+      this._projectVectorToPlane(vel);
+    }
+
+    for (const entityId of world.query([AngularVelocityComponent])) {
+      const omega = world.getComponent(entityId, AngularVelocityComponent).omega;
+      this._projectAngularVelocityToNormal(omega);
+    }
+
+    for (const entityId of world.query([OrientationComponent])) {
+      const quat = world.getComponent(entityId, OrientationComponent).quaternion;
+      this._clampOrientationToPlaneAxis(quat);
+    }
+
+    for (const entityId of world.query([PrevFinalOrientationComponent])) {
+      const prevQuat = world.getComponent(entityId, PrevFinalOrientationComponent).quaternion;
+      this._clampOrientationToPlaneAxis(prevQuat);
+    }
+  }
+}
 
 export class FlipperStateComponent {
   constructor(length, restAngle, maxRotation, angularVelocity, planeNormal = DEFAULT_PLANE_NORMAL) {
@@ -184,6 +304,9 @@ export class InputSystem {
   }
 
   handlePointerDown(event) {
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
     if (!this._shouldHandlePointerEvent(event)) {
       return;
     }
@@ -273,6 +396,9 @@ export class InputSystem {
   }
 
   handlePointerUp(event) {
+    if (!this.grabSpring && event.button !== undefined && event.button !== 0) {
+      return;
+    }
     if (!this._shouldHandlePointerEvent(event)) {
       return;
     }
@@ -314,10 +440,10 @@ export class InputSystem {
   }
 
   handlePointerMove(event) {
-    event.preventDefault();
     if (!this.grabSpring) {
       return;
     }
+    event.preventDefault();
 
     const simPos = this._pointerToSim(event);
     if (!simPos) {
@@ -542,13 +668,15 @@ export class PBDBallBorderCollisions {
       return;
     }
 
-    const planeNormal = borderComp.planeNormal || DEFAULT_PLANE_NORMAL;
+    const planeNormal = normalizePlaneNormal(borderComp.planeNormal || DEFAULT_PLANE_NORMAL);
+    const planeOffset = borderPoints.length > 0 ? planeNormal.dot(borderPoints[0]) : 0.0;
 
     for (const ballId of ballEntities) {
       const ballPos = world.getComponent(ballId, PositionComponent).pos;
       const radius = world.getComponent(ballId, RadiusComponent).radius;
       const massComp = world.getComponent(ballId, MassComponent);
       const invMass = massComp && massComp.mass > 0 ? 1.0 / massComp.mass : 0.0;
+      projectPointToPlane(ballPos, planeNormal, planeOffset);
 
       let minDistSq = Infinity;
       let closestSegPoint = null;
@@ -556,8 +684,10 @@ export class PBDBallBorderCollisions {
       let edgeEnd = null;
 
       for (let i = 0; i < borderPoints.length; i++) {
-        const a = borderPoints[i];
-        const b = borderPoints[(i + 1) % borderPoints.length];
+        const a = borderPoints[i].clone();
+        const b = borderPoints[(i + 1) % borderPoints.length].clone();
+        projectPointToPlane(a, planeNormal, planeOffset);
+        projectPointToPlane(b, planeNormal, planeOffset);
         const closest = closestPointOnSegment(ballPos, a, b);
         const distSq = ballPos.distanceToSq(closest);
 
@@ -594,6 +724,7 @@ export class PBDBallBorderCollisions {
       let deltaLambda = 0;
       if (penetration > 0 && invMass > 0) {
         ballPos.add(collisionNormal, penetration);
+        projectPointToPlane(ballPos, planeNormal, planeOffset);
         deltaLambda = penetration / invMass;
       }
 
@@ -604,6 +735,98 @@ export class PBDBallBorderCollisions {
         restitution,
         friction
       });
+    }
+  }
+}
+
+export class PBDBallBallCollisions {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    for (let i = 0; i < ballEntities.length; i++) {
+      for (let j = i + 1; j < ballEntities.length; j++) {
+        const e1 = ballEntities[i];
+        const e2 = ballEntities[j];
+
+        const p1Comp = world.getComponent(e1, PositionComponent);
+        const r1 = world.getComponent(e1, RadiusComponent).radius;
+        const m1Comp = world.getComponent(e1, MassComponent);
+
+        const p2Comp = world.getComponent(e2, PositionComponent);
+        const r2 = world.getComponent(e2, RadiusComponent).radius;
+        const m2Comp = world.getComponent(e2, MassComponent);
+
+        const p1 = p1Comp.pos;
+        const p2 = p2Comp.pos;
+        const m1 = m1Comp ? m1Comp.mass : 0.0;
+        const m2 = m2Comp ? m2Comp.mass : 0.0;
+
+        const dir = new Vector3(p2.x - p1.x, p2.y - p1.y, 0.0);
+        const dSq = dir.lengthSq();
+        const rSum = r1 + r2;
+
+        if (dSq === 0.0 || dSq > rSum * rSum) continue;
+
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d);
+
+        const penetration = rSum - d;
+        const invMass1 = m1 > 0 ? 1.0 / m1 : 0.0;
+        const invMass2 = m2 > 0 ? 1.0 / m2 : 0.0;
+        const totalInvMass = invMass1 + invMass2;
+
+        if (totalInvMass <= 1e-9) continue;
+
+        const corr = dir.clone().scale(penetration / totalInvMass);
+        p1.add(corr, -invMass1);
+        p2.add(corr, invMass2);
+      }
+    }
+  }
+}
+
+export class PBDBallObstacleCollisions {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent]);
+    const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+
+    let contacts = world.getResource('ball_obstacle_contacts');
+    if (!contacts) {
+      contacts = [];
+      world.setResource('ball_obstacle_contacts', contacts);
+    }
+    contacts.length = 0;
+
+    for (const ballId of ballEntities) {
+      const p1 = world.getComponent(ballId, PositionComponent).pos;
+      const r1 = world.getComponent(ballId, RadiusComponent).radius;
+
+      for (const obsId of obstacleEntities) {
+        const p2 = world.getComponent(obsId, PositionComponent).pos;
+        const r2 = world.getComponent(obsId, RadiusComponent).radius;
+
+        const dir = new Vector3(p1.x - p2.x, p1.y - p2.y, 0.0);
+        const dSq = dir.lengthSq();
+        const rSum = r1 + r2;
+
+        if (dSq === 0.0 || dSq > rSum * rSum) continue;
+
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d);
+
+        contacts.push({ ball_id: ballId, obs_id: obsId, direction: dir.clone() });
+
+        const corr = rSum - d;
+        p1.add(dir, corr);
+
+        const grabbed = world.getResource('grabbedBall');
+        if (ballId !== grabbed) {
+          world.addComponent(ballId, new ScoredTagComponent());
+        }
+      }
     }
   }
 }

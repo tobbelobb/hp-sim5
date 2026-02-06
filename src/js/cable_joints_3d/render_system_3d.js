@@ -140,19 +140,34 @@ export class RenderSystem3D {
     this.camera.position.set(targetX, targetY + 0.04, camZ);
     this.camera.lookAt(targetX, targetY, 0);
 
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.debugEnabled = options.debugEnabled ?? Boolean(window._flipper3dDebug);
+    this._debugFrame = 0;
+    this.renderOnSimulationStep = options.renderOnSimulationStep ?? false;
+
+    this.controls = null;
     this.controlsEnabled = options.controlsEnabled ?? true;
-    this.controls.enabled = this.controlsEnabled;
-    this.controls.enableDamping = this.controlsEnabled && (options.enableDamping ?? true);
-    this.controls.enablePan = this.controlsEnabled && (options.enablePan ?? false);
-    this.controls.enableRotate = this.controlsEnabled && (options.enableRotate ?? false);
-    this.controls.enableZoom = this.controlsEnabled && (options.enableZoom ?? false);
-    this.controls.minDistance = 0.45;
-    this.controls.maxDistance = 8.0;
-    this.controls.target.set(targetX, targetY, 0);
     if (this.controlsEnabled) {
+      this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls.enabled = true;
+      this.controls.enableDamping = options.enableDamping ?? true;
+      this.controls.enablePan = options.enablePan ?? false;
+      this.controls.enableRotate = options.enableRotate ?? false;
+      this.controls.enableZoom = options.enableZoom ?? false;
+      this.controls.minDistance = 0.45;
+      this.controls.maxDistance = 8.0;
+      this.controls.target.set(targetX, targetY, 0);
+      if (options.rotateWithRightMouse) {
+        this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+        this.controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+        this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+        this.controls.touches.ONE = THREE.TOUCH.ROTATE;
+        this.controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+      }
       this.controls.update();
     }
+
+    this._fixedCameraPosition = this.camera.position.clone();
+    this._fixedCameraQuaternion = this.camera.quaternion.clone();
 
     const lights = new THREE.Group();
     lights.add(new THREE.AmbientLight(0x5f7389, 0.8));
@@ -243,7 +258,11 @@ export class RenderSystem3D {
     return new Vector3(hit.x, hit.y, hit.z);
   }
 
-  update(world, _dt_unused) {
+  update(world, dt = 0) {
+    if (!this.renderOnSimulationStep && Number.isFinite(dt) && dt > 0) {
+      return;
+    }
+
     this._resizeIfNeeded();
     this._syncBoard(world);
     this._syncBorder(world);
@@ -251,8 +270,37 @@ export class RenderSystem3D {
     this._syncFlippers(world);
     this._syncCable(world);
 
-    if (this.controlsEnabled) {
+    if (this.controlsEnabled && this.controls) {
       this.controls.update();
+    } else {
+      // Hard lock to eliminate any camera drift from external handlers/layout churn.
+      this.camera.position.copy(this._fixedCameraPosition);
+      this.camera.quaternion.copy(this._fixedCameraQuaternion);
+      this.camera.updateMatrixWorld();
+    }
+
+    if (this.debugEnabled) {
+      this._debugFrame += 1;
+      if (this._debugFrame % 120 === 0) {
+        const ballIds = world.query([PositionComponent, RadiusComponent, RenderableComponent]).filter((id) => {
+          const r = world.getComponent(id, RenderableComponent);
+          return r?.shape === 'circle';
+        });
+        const firstBallPos = ballIds.length > 0 ? world.getComponent(ballIds[0], PositionComponent)?.pos : null;
+        console.debug('[flipper3d-render]', {
+          cameraPos: {
+            x: this.camera.position.x.toFixed(4),
+            y: this.camera.position.y.toFixed(4),
+            z: this.camera.position.z.toFixed(4)
+          },
+          firstBall: firstBallPos ? {
+            x: firstBallPos.x.toFixed(4),
+            y: firstBallPos.y.toFixed(4),
+            z: firstBallPos.z.toFixed(4)
+          } : null,
+          paused: world.getResource('pauseState')?.paused
+        });
+      }
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -307,7 +355,9 @@ export class RenderSystem3D {
 
     disposeObject(this.board);
 
-    this.controls.dispose();
+    if (this.controls) {
+      this.controls.dispose();
+    }
     this.renderer.dispose();
   }
 

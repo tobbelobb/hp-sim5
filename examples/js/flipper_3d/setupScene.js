@@ -45,6 +45,7 @@ import {
   ScoreDisplaySystem,
   FlipperTagComponent,
   FlipperStateComponent,
+  PlanarConstraintSystem3D,
   FlipperTipComponent,
   FlipperMotionSystem,
   FlipperTipLinkSystem,
@@ -87,6 +88,8 @@ export function setupScene(world, stage, canvas) {
   const gravityDir = getAttribute(physicsScene, 'physics:gravityDirection');
   const gravityMag = getAttribute(physicsScene, 'physics:gravityMagnitude');
   const gravity = new Vector3(gravityDir[0] * gravityMag, gravityDir[1] * gravityMag, gravityDir[2] * gravityMag);
+  const gravityOutOfPlane = gravity.dot(FLIPPER_PLANE_NORMAL);
+  gravity.subtract(FLIPPER_PLANE_NORMAL, gravityOutOfPlane);
 
   const timeCodesPerSecond = stage.ast.descriptor.assignments.find(
     (statement) => statement.type === 'assignment' && statement.identifier === 'timeCodesPerSecond'
@@ -337,9 +340,13 @@ export function setupScene(world, stage, canvas) {
       targetX: 0.5,
       targetY: 0.85,
       cameraZ: 2.2,
-      controlsEnabled: false,
-      enableRotate: false,
-      enablePan: false
+      controlsEnabled: true,
+      enableDamping: true,
+      enableRotate: true,
+      enablePan: false,
+      enableZoom: true,
+      rotateWithRightMouse: true,
+      renderOnSimulationStep: false
     });
 
     world.registerSystem(new PrevFinalPosSystem());
@@ -353,6 +360,7 @@ export function setupScene(world, stage, canvas) {
     world.registerSystem(new GravitySystem());
     world.registerSystem(new MovementSystem());
     world.registerSystem(new AngularMovementSystem());
+    world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 
     world.registerSystem(new FlipperTipLinkSystem());
     world.registerSystem(new CableAttachmentUpdateSystem());
@@ -365,6 +373,7 @@ export function setupScene(world, stage, canvas) {
     world.registerSystem(new PBDBallBallCollisions());
     world.registerSystem(new PBDBallObstacleCollisions());
     world.registerSystem(new PBDBallFlipperCollisions());
+    world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 
     world.registerSystem(new CableFrictionSystem());
 
@@ -373,6 +382,7 @@ export function setupScene(world, stage, canvas) {
 
     world.registerSystem(new BallObstacleBumpSystem());
     world.registerSystem(new BallBorderOrFlipperVelocityContactSystem3D());
+    world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 
     world.registerSystem(new ScoreSystem());
     world.registerSystem(new ScoreDisplaySystem('score'));
