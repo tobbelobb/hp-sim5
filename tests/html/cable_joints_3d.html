@@ -182,10 +182,11 @@
     import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
     import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
     import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
-    import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
+    import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem, PBDAngularVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import { PBDBallBallCollisions } from '../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
     import { PBDBallObstacleCollisions } from '../../src/js/cable_joints_3d/pbd_ball_obstacle_collisions.js';
+    import { BallObstacleBumpSystem } from '../../src/js/cable_joints_3d/ball_obstacle_bump_system.js';
     import {
       tangentFromPointToSphere,
       tangentFromSphereToPoint
@@ -398,6 +399,8 @@
       world.registerSystem(new CableFrictionSystem());
 
       world.registerSystem(new PBDVelocityUpdateSystem());
+      world.registerSystem(new PBDAngularVelocityUpdateSystem());
+      world.registerSystem(new BallObstacleBumpSystem());
 
       entityIds = { ballA, wheel, ballB };
       jointIds = [joint1, joint2];

@@ -6,7 +6,8 @@ import {
   GravityAffectedComponent,
   PositionComponent,
   PrevFinalPosComponent,
-  MassComponent
+  MassComponent,
+  MomentOfInertiaComponent
 } from './ecs.js';
 
 export class GravitySystem {
@@ -107,6 +108,60 @@ export class PBDVelocityUpdateSystem {
       const prevFinalPosComp = world.getComponent(entityId, PrevFinalPosComponent);
 
       velComp.vel.subtractVectors(posComp.pos, prevFinalPosComp.pos).scale(1.0 / dt);
+    }
+  }
+}
+
+export class PBDAngularVelocityUpdateSystem {
+  runInPause = false;
+  update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
+    const entities = world.query([
+      OrientationComponent,
+      AngularVelocityComponent,
+      PrevFinalOrientationComponent,
+      MomentOfInertiaComponent
+    ]);
+    const epsilon = 1e-9;
+
+    if (dt <= epsilon) return;
+
+    for (const entityId of entities) {
+      if (entityId === grabbed) continue;
+
+      const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
+      if (moiComp && moiComp.invInertia <= 0) continue;
+
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+      const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
+
+      const qCurr = orientationComp.quaternion;
+      const qPrevInv = prevFinalOrientationComp.quaternion.clone().conjugate().normalize();
+      const qDelta = qCurr.clone().multiplyQuaternions(qCurr, qPrevInv).normalize();
+
+      if (qDelta.w < 0) {
+        qDelta.x *= -1;
+        qDelta.y *= -1;
+        qDelta.z *= -1;
+        qDelta.w *= -1;
+      }
+
+      const w = Math.max(-1.0, Math.min(1.0, qDelta.w));
+      const angle = 2.0 * Math.acos(w);
+      const sinHalf = Math.sqrt(Math.max(0.0, 1.0 - w * w));
+
+      if (sinHalf <= 1e-12 || angle <= epsilon) {
+        angularVelComp.omega.x = 0.0;
+        angularVelComp.omega.y = 0.0;
+        angularVelComp.omega.z = 0.0;
+        continue;
+      }
+
+      const scale = angle / (dt * sinHalf);
+      angularVelComp.omega.x = qDelta.x * scale;
+      angularVelComp.omega.y = qDelta.y * scale;
+      angularVelComp.omega.z = qDelta.z * scale;
     }
   }
 }
