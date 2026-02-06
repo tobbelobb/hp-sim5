@@ -160,6 +160,8 @@
       VelocityComponent,
       PrevFinalPosComponent,
       BallTagComponent,
+      ObstacleTagComponent,
+      ObstaclePushComponent,
       RadiusComponent,
       MassComponent,
       GravityAffectedComponent,
@@ -182,6 +184,7 @@
     import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import { PBDBallBallCollisions } from '../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
+    import { PBDBallObstacleCollisions } from '../../src/js/cable_joints_3d/pbd_ball_obstacle_collisions.js';
     import {
       tangentFromPointToSphere,
       tangentFromSphereToPoint
@@ -331,6 +334,8 @@
       world.addComponent(ballA, new CableLinkComponent(ballAPos.x, ballAPos.y, ballAPos.z, null, PLANE_NORMAL));
 
       world.addComponent(wheel, new PositionComponent(wheelPos.x, wheelPos.y, wheelPos.z));
+      world.addComponent(wheel, new ObstacleTagComponent());
+      world.addComponent(wheel, new ObstaclePushComponent(1.7));
       world.addComponent(wheel, new RadiusComponent(wheelRadius));
       world.addComponent(wheel, new MassComponent(-1.0));
       world.addComponent(wheel, new OrientationComponent(0, 0, 0, 1));
@@ -388,6 +393,7 @@
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDBallBallCollisions());
+      world.registerSystem(new PBDBallObstacleCollisions());
 
       world.registerSystem(new PBDVelocityUpdateSystem());
 

@@ -23,7 +23,11 @@ export {
   CoefficientOfFrictionComponent,
 } from '../cable_joints/ecs.js';
 
-export { BallTagComponent } from '../../../examples/js/flipper/flipper_common.js';
+export {
+  BallTagComponent,
+  ObstacleTagComponent,
+  ObstaclePushComponent
+} from '../../../examples/js/flipper/flipper_common.js';
 
 export class PositionComponent {
   constructor(x = 0, y = 0, z = 0) {
