@@ -247,8 +247,8 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.minDistance = 1.2;
-    controls.maxDistance = 8.0;
+    controls.minDistance = 0.3;
+    controls.maxDistance = 50.0;
 
     const lights = new THREE.Group();
     const ambient = new THREE.AmbientLight(0x4c6a7f, 0.7);
@@ -287,9 +287,10 @@
     const shared = {
       sphereGeom: baseSphereGeom,
       wheelGeom: createDualColorSphereGeometry(baseSphereGeom, 0xff8a3d, 0x2a3542),
+      ballAGeom: createDualColorSphereGeometry(baseSphereGeom, 0xff4d4d, 0x2a3542),
+      ballBGeom: createDualColorSphereGeometry(baseSphereGeom, 0x45d46f, 0x2a3542),
       wheelMat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.2 }),
-      ballAMat: new THREE.MeshStandardMaterial({ color: 0xff4d4d, roughness: 0.35, metalness: 0.1 }),
-      ballBMat: new THREE.MeshStandardMaterial({ color: 0x45d46f, roughness: 0.35, metalness: 0.1 }),
+      ballMat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.1 }),
       attachmentMat: new THREE.MeshBasicMaterial({ color: 0xffd166 }),
       orientationMat: new THREE.LineBasicMaterial({ color: 0x111111 }),
       velocityMat: new THREE.LineBasicMaterial({ color: 0x5fd0f2 })
@@ -310,8 +311,8 @@
       velocityHelpers: []
     };
 
-    function createSphere(radius, material) {
-      const mesh = new THREE.Mesh(shared.sphereGeom, material);
+    function createSphere(radius, material, geometry = shared.sphereGeom) {
+      const mesh = new THREE.Mesh(geometry, material);
       mesh.scale.set(radius, radius, radius);
       return mesh;
     }
@@ -488,8 +489,8 @@
       clearVisuals();
 
       visuals.wheel = createWheel(world.getComponent(entityIds.wheel, RadiusComponent).radius);
-      visuals.ballA = createSphere(world.getComponent(entityIds.ballA, RadiusComponent).radius, shared.ballAMat);
-      visuals.ballB = createSphere(world.getComponent(entityIds.ballB, RadiusComponent).radius, shared.ballBMat);
+      visuals.ballA = createSphere(world.getComponent(entityIds.ballA, RadiusComponent).radius, shared.ballMat, shared.ballAGeom);
+      visuals.ballB = createSphere(world.getComponent(entityIds.ballB, RadiusComponent).radius, shared.ballMat, shared.ballBGeom);
 
       root.add(visuals.wheel, visuals.ballA, visuals.ballB);
 
@@ -657,8 +658,7 @@
 
     function setWireframe(enabled) {
       shared.wheelMat.wireframe = enabled;
-      shared.ballAMat.wireframe = enabled;
-      shared.ballBMat.wireframe = enabled;
+      shared.ballMat.wireframe = enabled;
       shared.attachmentMat.wireframe = enabled;
     }
 
