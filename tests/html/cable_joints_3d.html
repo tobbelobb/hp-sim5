@@ -181,6 +181,7 @@
 
     import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
     import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
+    import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
     import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import { PBDBallBallCollisions } from '../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
@@ -319,7 +320,7 @@
       const wheelRadius = 0.1;
       const ballRadius = 0.03;
       const ballAMass = 0.1001;
-      const ballBMass = 0.1;
+      const ballBMass = 1.1;
 
       world.addComponent(ballA, new PositionComponent(ballAPos.x, ballAPos.y, ballAPos.z));
       world.addComponent(ballA, new BallTagComponent());
@@ -394,6 +395,7 @@
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDBallBallCollisions());
       world.registerSystem(new PBDBallObstacleCollisions());
+      world.registerSystem(new CableFrictionSystem());
 
       world.registerSystem(new PBDVelocityUpdateSystem());
 
