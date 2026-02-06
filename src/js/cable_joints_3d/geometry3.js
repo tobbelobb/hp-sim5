@@ -1,4 +1,43 @@
 import Vector3 from './vector3.js';
+import Vector2 from '../cable_joints/vector2.js';
+import { _tangentPointCircle, tangentFromCircleToCircle } from '../cable_joints/geometry.js';
+
+const EPSILON = 1e-9;
+
+function buildPlaneBasis(planeNormal) {
+  const n = planeNormal.clone();
+  if (n.lengthSq() <= EPSILON) {
+    console.warn('Cable tangent calculation: planeNormal is near zero. Using default basis.');
+    return {
+      n: new Vector3(0, 0, 1),
+      u: new Vector3(1, 0, 0),
+      v: new Vector3(0, 1, 0)
+    };
+  }
+
+  n.normalize();
+  let reference = Math.abs(n.x) < 0.9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0);
+  // Remove the normal component to keep reference in the plane.
+  const nDotRef = n.dot(reference);
+  let u = reference.clone().subtract(n, nDotRef);
+  if (u.lengthSq() <= EPSILON) {
+    reference = new Vector3(0, 0, 1);
+    const nDotRef2 = n.dot(reference);
+    u = reference.clone().subtract(n, nDotRef2);
+  }
+  u.normalize();
+  const v = n.cross(u);
+  return { n, u, v };
+}
+
+function projectToPlane2D(point, origin, basis) {
+  const rel = new Vector3().subtractVectors(point, origin);
+  return new Vector2(rel.dot(basis.u), rel.dot(basis.v));
+}
+
+function liftFromPlane2D(point2, origin, basis) {
+  return origin.clone().add(basis.u, point2.x).add(basis.v, point2.y);
+}
 
 export function closestPointOnSegment(p, a, b) {
   const ab = new Vector3().subtractVectors(b, a);
@@ -34,16 +73,25 @@ export function lineSegmentSphereIntersection(p1, p2, center, radius) {
  * @param {Vector3} wrap_axis - A vector defining the plane of wrapping (normal to the plane).
  * @returns {{a_attach: Vector3, a_sphere: Vector3}} The attachment point and the tangent point on the sphere.
  */
-export function tangentFromPointToSphere(p_attach, p_sphere, r_sphere, wrap_axis) {
-    // This is a complex geometric problem that depends on the wrapping strategy.
-    // The 2D version had a 'cw' flag to resolve ambiguity between two tangents.
-    // In 3D, there's a circle of possible tangent points.
-    // This simplified version returns a point on the direct line of sight.
-    const dir = new Vector3().subtractVectors(p_attach, p_sphere).normalize();
-    return {
-        a_attach: p_attach.clone(),
-        a_sphere: p_sphere.clone().add(dir, r_sphere)
-    };
+export function _tangentPointSphere(p_attach, p_sphere, r_sphere, planeNormal, cw, pointIsFirst) {
+  const basis = buildPlaneBasis(planeNormal);
+  const origin = p_sphere;
+  const pAttach2 = projectToPlane2D(p_attach, origin, basis);
+  const pSphere2 = projectToPlane2D(p_sphere, origin, basis);
+
+  const result2 = _tangentPointCircle(pAttach2, pSphere2, r_sphere, cw, pointIsFirst);
+  return {
+    a_attach: p_attach.clone(),
+    a_sphere: liftFromPlane2D(result2.a_circle, origin, basis)
+  };
+}
+
+export function tangentFromPointToSphere(p_attach, p_sphere, r_sphere, planeNormal, cw) {
+  return _tangentPointSphere(p_attach, p_sphere, r_sphere, planeNormal, cw, true);
+}
+
+export function tangentFromSphereToPoint(p_attach, p_sphere, r_sphere, planeNormal, cw) {
+  return _tangentPointSphere(p_attach, p_sphere, r_sphere, planeNormal, cw, false);
 }
 
 /**
@@ -57,15 +105,17 @@ export function tangentFromPointToSphere(p_attach, p_sphere, r_sphere, wrap_axis
  * @param {Vector3} wrap_axisB - Wrap axis for sphere B.
  * @returns {{a_sphere: Vector3, b_sphere: Vector3}} The tangent points on each sphere.
  */
-export function tangentFromSphereToSphere(posA, radiusA, wrap_axisA, posB, radiusB, wrap_axisB) {
-    // This is a very complex geometric problem.
-    // A simplified approach is to find the tangent on a 2D plane and project back to 3D.
-    // For now, returning a simple straight line connection on the direct line of sight.
-    const dir = new Vector3().subtractVectors(posB, posA).normalize();
-    return {
-        a_sphere: posA.clone().add(dir, radiusA),
-        b_sphere: posB.clone().subtract(dir, radiusB)
-    };
+export function tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB, planeNormal) {
+  const basis = buildPlaneBasis(planeNormal);
+  const origin = posA;
+  const posA2 = projectToPlane2D(posA, origin, basis);
+  const posB2 = projectToPlane2D(posB, origin, basis);
+
+  const result2 = tangentFromCircleToCircle(posA2, radiusA, cwA, posB2, radiusB, cwB);
+  return {
+    a_sphere: liftFromPlane2D(result2.a_circle, origin, basis),
+    b_sphere: liftFromPlane2D(result2.b_circle, origin, basis)
+  };
 }
 
 /**
