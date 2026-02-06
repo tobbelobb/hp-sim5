@@ -159,6 +159,7 @@
       PositionComponent,
       VelocityComponent,
       PrevFinalPosComponent,
+      BallTagComponent,
       RadiusComponent,
       MassComponent,
       GravityAffectedComponent,
@@ -180,6 +181,7 @@
     import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
     import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
+    import { PBDBallBallCollisions } from '../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
     import {
       tangentFromPointToSphere,
       tangentFromSphereToPoint
@@ -317,6 +319,7 @@
       const ballBMass = 0.1;
 
       world.addComponent(ballA, new PositionComponent(ballAPos.x, ballAPos.y, ballAPos.z));
+      world.addComponent(ballA, new BallTagComponent());
       world.addComponent(ballA, new VelocityComponent(0.0, 0.0, 0.0));
       world.addComponent(ballA, new PrevFinalPosComponent(ballAPos.x, ballAPos.y, ballAPos.z));
       world.addComponent(ballA, new RadiusComponent(ballRadius));
@@ -335,6 +338,7 @@
       world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y, wheelPos.z, null, PLANE_NORMAL));
 
       world.addComponent(ballB, new PositionComponent(ballBPos.x, ballBPos.y, ballBPos.z));
+      world.addComponent(ballB, new BallTagComponent());
       world.addComponent(ballB, new VelocityComponent(0.0, 0.0, 0.0));
       world.addComponent(ballB, new PrevFinalPosComponent(ballBPos.x, ballBPos.y, ballBPos.z));
       world.addComponent(ballB, new RadiusComponent(ballRadius));
@@ -383,6 +387,7 @@
       world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
+      world.registerSystem(new PBDBallBallCollisions());
 
       world.registerSystem(new PBDVelocityUpdateSystem());
 
