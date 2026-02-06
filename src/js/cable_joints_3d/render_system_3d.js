@@ -141,13 +141,18 @@ export class RenderSystem3D {
     this.camera.lookAt(targetX, targetY, 0);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.enablePan = options.enablePan ?? false;
-    this.controls.enableRotate = options.enableRotate ?? false;
+    this.controlsEnabled = options.controlsEnabled ?? true;
+    this.controls.enabled = this.controlsEnabled;
+    this.controls.enableDamping = this.controlsEnabled && (options.enableDamping ?? true);
+    this.controls.enablePan = this.controlsEnabled && (options.enablePan ?? false);
+    this.controls.enableRotate = this.controlsEnabled && (options.enableRotate ?? false);
+    this.controls.enableZoom = this.controlsEnabled && (options.enableZoom ?? false);
     this.controls.minDistance = 0.45;
     this.controls.maxDistance = 8.0;
     this.controls.target.set(targetX, targetY, 0);
-    this.controls.update();
+    if (this.controlsEnabled) {
+      this.controls.update();
+    }
 
     const lights = new THREE.Group();
     lights.add(new THREE.AmbientLight(0x5f7389, 0.8));
@@ -246,7 +251,9 @@ export class RenderSystem3D {
     this._syncFlippers(world);
     this._syncCable(world);
 
-    this.controls.update();
+    if (this.controlsEnabled) {
+      this.controls.update();
+    }
     this.renderer.render(this.scene, this.camera);
   }
 

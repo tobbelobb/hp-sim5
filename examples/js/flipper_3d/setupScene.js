@@ -337,6 +337,7 @@ export function setupScene(world, stage, canvas) {
       targetX: 0.5,
       targetY: 0.85,
       cameraZ: 2.2,
+      controlsEnabled: false,
       enableRotate: false,
       enablePan: false
     });

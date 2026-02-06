@@ -97,6 +97,14 @@ export class InputSystem {
     this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
   }
 
+  _shouldHandlePointerEvent(event) {
+    if (this.grabSpring) {
+      return true;
+    }
+    const target = event.target;
+    return target === this.canvas || this.canvas.contains(target);
+  }
+
   reset() {
     this.clicks.length = 0;
     this.releases.length = 0;
@@ -176,6 +184,9 @@ export class InputSystem {
   }
 
   handlePointerDown(event) {
+    if (!this._shouldHandlePointerEvent(event)) {
+      return;
+    }
     event.preventDefault();
     const clickPos = this._pointerToSim(event);
     if (!clickPos) {
@@ -262,6 +273,9 @@ export class InputSystem {
   }
 
   handlePointerUp(event) {
+    if (!this._shouldHandlePointerEvent(event)) {
+      return;
+    }
     event.preventDefault();
 
     if (this.canvas.releasePointerCapture) {

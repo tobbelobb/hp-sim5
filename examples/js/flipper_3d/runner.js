@@ -11,10 +11,11 @@ export function runGame(world, setupScene, sceneData) {
 
   let lastTime = 0;
   let accumulator = 0.0;
-  let doStep = true;
+  let doStep = false;
   let speedSamples = [];
   const numSpeedSamples = 60;
   let frameCounter = 0;
+  const debugEnabled = Boolean(window._flipper3dDebug);
 
   function getRenderSystem() {
     return world.systems.find((system) => system instanceof RenderSystem3D);
@@ -100,6 +101,9 @@ export function runGame(world, setupScene, sceneData) {
 
     pauseState.paused = !pauseState.paused;
     pauseBtn.textContent = pauseState.paused ? 'Resume' : 'Pause';
+    if (debugEnabled) {
+      console.debug('[flipper3d] pause toggle', { paused: pauseState.paused });
+    }
 
     if (!pauseState.paused) {
       lastTime = performance.now();
@@ -126,7 +130,10 @@ export function runGame(world, setupScene, sceneData) {
     }
 
     pauseBtn.textContent = 'Start';
-    doStep = true;
+    doStep = false;
+    if (debugEnabled) {
+      console.debug('[flipper3d] reset', { paused: true });
+    }
   });
 
   stepBtn.addEventListener('click', (event) => {
@@ -134,6 +141,9 @@ export function runGame(world, setupScene, sceneData) {
     const pauseState = world.getResource('pauseState');
     if (pauseState && pauseState.paused) {
       doStep = true;
+      if (debugEnabled) {
+        console.debug('[flipper3d] step requested');
+      }
     }
   });
 
