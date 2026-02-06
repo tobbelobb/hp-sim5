@@ -138,6 +138,14 @@
         <input id="attachmentsToggle" type="checkbox" checked />
         Attachments
       </label>
+      <label class="toggle">
+        <input id="orientationToggle" type="checkbox" checked />
+        Orientation
+      </label>
+      <label class="toggle">
+        <input id="velocityToggle" type="checkbox" />
+        Velocities
+      </label>
     </div>
     <div id="stats">
       <span>Steps: <span id="stepCount">0</span></span>
@@ -164,10 +172,13 @@
       ObstaclePushComponent,
       RadiusComponent,
       MassComponent,
+      RestitutionComponent,
       GravityAffectedComponent,
       OrientationComponent,
       PrevFinalOrientationComponent,
+      AngularVelocityComponent,
       MomentOfInertiaComponent,
+      CoefficientOfFrictionComponent,
       SimulationErrorStateComponent
     } from '../../src/js/cable_joints_3d/ecs.js';
 
@@ -198,6 +209,8 @@
     const stepBtn = document.getElementById('stepBtn');
     const wireframeToggle = document.getElementById('wireframeToggle');
     const attachmentsToggle = document.getElementById('attachmentsToggle');
+    const orientationToggle = document.getElementById('orientationToggle');
+    const velocityToggle = document.getElementById('velocityToggle');
     const stepCountEl = document.getElementById('stepCount');
     const lengthReadout = document.getElementById('lengthReadout');
     const restReadout = document.getElementById('restReadout');
@@ -206,6 +219,7 @@
     const PLANE_NORMAL = new Vector3(0, 0, 1);
     const FIXED_DT = 1.0 / 120.0;
     const MAX_STEPS_PER_FRAME = 6;
+    const VELOCITY_SCALE = 0.12;
     let world = null;
     let entityIds = null;
     let jointIds = [];
@@ -251,12 +265,34 @@
     const root = new THREE.Group();
     scene.add(root);
 
+    function createDualColorSphereGeometry(baseGeom, colorA, colorB) {
+      const geom = baseGeom.clone();
+      const pos = geom.attributes.position;
+      const colors = new Float32Array(pos.count * 3);
+      const cA = new THREE.Color(colorA);
+      const cB = new THREE.Color(colorB);
+      for (let i = 0; i < pos.count; i++) {
+        const useA = pos.getX(i) >= 0;
+        const c = useA ? cA : cB;
+        const idx = i * 3;
+        colors[idx] = c.r;
+        colors[idx + 1] = c.g;
+        colors[idx + 2] = c.b;
+      }
+      geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return geom;
+    }
+
+    const baseSphereGeom = new THREE.SphereGeometry(1, 28, 20);
     const shared = {
-      sphereGeom: new THREE.SphereGeometry(1, 28, 20),
-      wheelMat: new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.45, metalness: 0.2 }),
+      sphereGeom: baseSphereGeom,
+      wheelGeom: createDualColorSphereGeometry(baseSphereGeom, 0xff8a3d, 0x2a3542),
+      wheelMat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.2 }),
       ballAMat: new THREE.MeshStandardMaterial({ color: 0xff4d4d, roughness: 0.35, metalness: 0.1 }),
       ballBMat: new THREE.MeshStandardMaterial({ color: 0x45d46f, roughness: 0.35, metalness: 0.1 }),
-      attachmentMat: new THREE.MeshBasicMaterial({ color: 0xffd166 })
+      attachmentMat: new THREE.MeshBasicMaterial({ color: 0xffd166 }),
+      orientationMat: new THREE.LineBasicMaterial({ color: 0x111111 }),
+      velocityMat: new THREE.LineBasicMaterial({ color: 0x5fd0f2 })
     };
 
     const lineMaterials = [
@@ -269,11 +305,19 @@
       wheel: null,
       ballB: null,
       joints: [],
-      attachments: []
+      attachments: [],
+      orientationHelpers: [],
+      velocityHelpers: []
     };
 
     function createSphere(radius, material) {
       const mesh = new THREE.Mesh(shared.sphereGeom, material);
+      mesh.scale.set(radius, radius, radius);
+      return mesh;
+    }
+
+    function createWheel(radius) {
+      const mesh = new THREE.Mesh(shared.wheelGeom, shared.wheelMat);
       mesh.scale.set(radius, radius, radius);
       return mesh;
     }
@@ -288,10 +332,22 @@
       return line;
     }
 
+    function createOrientationHelper(radius, material) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array([0, 0, 0, radius, 0, 0]);
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const line = new THREE.Line(geometry, material);
+      line.frustumCulled = false;
+      line.userData.ownsGeometry = true;
+      return line;
+    }
+
     function disposeObject(obj) {
       if (!obj) return;
-      if (obj.geometry && obj.userData.ownsGeometry) obj.geometry.dispose();
-      if (obj.material && obj.userData.ownsMaterial) obj.material.dispose();
+      obj.traverse(child => {
+        if (child.geometry && child.userData.ownsGeometry) child.geometry.dispose();
+        if (child.material && child.userData.ownsMaterial) child.material.dispose();
+      });
     }
 
     function clearVisuals() {
@@ -299,7 +355,15 @@
         disposeObject(child);
       });
       root.clear();
-      visuals = { ballA: null, wheel: null, ballB: null, joints: [], attachments: [] };
+      visuals = {
+        ballA: null,
+        wheel: null,
+        ballB: null,
+        joints: [],
+        attachments: [],
+        orientationHelpers: [],
+        velocityHelpers: []
+      };
     }
 
     function setupWorld() {
@@ -321,7 +385,10 @@
       const wheelRadius = 0.1;
       const ballRadius = 0.03;
       const ballAMass = 0.1001;
-      const ballBMass = 1.1;
+      const ballBMass = 0.1;
+      const ballRestitution = 0.4;
+      const frictionCoefficient = 0.2;
+      const wheelInertia = 0.4 * 1.0 * wheelRadius * wheelRadius;
 
       world.addComponent(ballA, new PositionComponent(ballAPos.x, ballAPos.y, ballAPos.z));
       world.addComponent(ballA, new BallTagComponent());
@@ -329,9 +396,12 @@
       world.addComponent(ballA, new PrevFinalPosComponent(ballAPos.x, ballAPos.y, ballAPos.z));
       world.addComponent(ballA, new RadiusComponent(ballRadius));
       world.addComponent(ballA, new MassComponent(ballAMass));
+      world.addComponent(ballA, new RestitutionComponent(ballRestitution));
       world.addComponent(ballA, new MomentOfInertiaComponent(0.4 * ballAMass * ballRadius * ballRadius));
       world.addComponent(ballA, new OrientationComponent(0, 0, 0, 1));
       world.addComponent(ballA, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      world.addComponent(ballA, new AngularVelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(ballA, new CoefficientOfFrictionComponent(frictionCoefficient));
       world.addComponent(ballA, new GravityAffectedComponent());
       world.addComponent(ballA, new CableLinkComponent(ballAPos.x, ballAPos.y, ballAPos.z, null, PLANE_NORMAL));
 
@@ -340,8 +410,11 @@
       world.addComponent(wheel, new ObstaclePushComponent(1.7));
       world.addComponent(wheel, new RadiusComponent(wheelRadius));
       world.addComponent(wheel, new MassComponent(-1.0));
+      world.addComponent(wheel, new MomentOfInertiaComponent(wheelInertia));
       world.addComponent(wheel, new OrientationComponent(0, 0, 0, 1));
       world.addComponent(wheel, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      world.addComponent(wheel, new AngularVelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(wheel, new CoefficientOfFrictionComponent(frictionCoefficient));
       world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y, wheelPos.z, null, PLANE_NORMAL));
 
       world.addComponent(ballB, new PositionComponent(ballBPos.x, ballBPos.y, ballBPos.z));
@@ -350,9 +423,12 @@
       world.addComponent(ballB, new PrevFinalPosComponent(ballBPos.x, ballBPos.y, ballBPos.z));
       world.addComponent(ballB, new RadiusComponent(ballRadius));
       world.addComponent(ballB, new MassComponent(ballBMass));
+      world.addComponent(ballB, new RestitutionComponent(ballRestitution));
       world.addComponent(ballB, new MomentOfInertiaComponent(0.4 * ballBMass * ballRadius * ballRadius));
       world.addComponent(ballB, new OrientationComponent(0, 0, 0, 1));
       world.addComponent(ballB, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      world.addComponent(ballB, new AngularVelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(ballB, new CoefficientOfFrictionComponent(frictionCoefficient));
       world.addComponent(ballB, new GravityAffectedComponent());
       world.addComponent(ballB, new CableLinkComponent(ballBPos.x, ballBPos.y, ballBPos.z, null, PLANE_NORMAL));
 
@@ -411,7 +487,7 @@
     function setupVisuals() {
       clearVisuals();
 
-      visuals.wheel = createSphere(world.getComponent(entityIds.wheel, RadiusComponent).radius, shared.wheelMat);
+      visuals.wheel = createWheel(world.getComponent(entityIds.wheel, RadiusComponent).radius);
       visuals.ballA = createSphere(world.getComponent(entityIds.ballA, RadiusComponent).radius, shared.ballAMat);
       visuals.ballB = createSphere(world.getComponent(entityIds.ballB, RadiusComponent).radius, shared.ballBMat);
 
@@ -428,6 +504,34 @@
         const b = createSphere(0.015, shared.attachmentMat);
         root.add(a, b);
         return [a, b];
+      });
+
+      const ballARadius = world.getComponent(entityIds.ballA, RadiusComponent).radius;
+      const wheelRadius = world.getComponent(entityIds.wheel, RadiusComponent).radius;
+      const ballBRadius = world.getComponent(entityIds.ballB, RadiusComponent).radius;
+
+      visuals.orientationHelpers = [
+        createOrientationHelper(ballARadius * 1.2, shared.orientationMat),
+        createOrientationHelper(wheelRadius * 1.25, shared.orientationMat),
+        createOrientationHelper(ballBRadius * 1.2, shared.orientationMat)
+      ];
+
+      visuals.ballA.add(visuals.orientationHelpers[0]);
+      visuals.wheel.add(visuals.orientationHelpers[1]);
+      visuals.ballB.add(visuals.orientationHelpers[2]);
+
+      visuals.orientationHelpers.forEach(helper => {
+        helper.visible = orientationToggle.checked;
+      });
+
+      visuals.velocityHelpers = [
+        { entityId: entityIds.ballA, line: createLine(shared.velocityMat) },
+        { entityId: entityIds.ballB, line: createLine(shared.velocityMat) }
+      ];
+
+      visuals.velocityHelpers.forEach(helper => {
+        helper.line.visible = velocityToggle.checked;
+        root.add(helper.line);
       });
     }
 
@@ -473,6 +577,36 @@
       }
     }
 
+    function setOrientationHelpersVisible(show) {
+      visuals.orientationHelpers.forEach(helper => {
+        helper.visible = show;
+      });
+    }
+
+    function updateVelocities() {
+      const show = velocityToggle.checked;
+      visuals.velocityHelpers.forEach(helper => {
+        helper.line.visible = show;
+      });
+      if (!show) return;
+
+      for (const helper of visuals.velocityHelpers) {
+        const posComp = world.getComponent(helper.entityId, PositionComponent);
+        const velComp = world.getComponent(helper.entityId, VelocityComponent);
+        if (!posComp || !velComp) continue;
+        const pos = posComp.pos;
+        const vel = velComp.vel;
+        const positions = helper.line.geometry.attributes.position.array;
+        positions[0] = pos.x;
+        positions[1] = pos.y;
+        positions[2] = pos.z;
+        positions[3] = pos.x + vel.x * VELOCITY_SCALE;
+        positions[4] = pos.y + vel.y * VELOCITY_SCALE;
+        positions[5] = pos.z + vel.z * VELOCITY_SCALE;
+        helper.line.geometry.attributes.position.needsUpdate = true;
+      }
+    }
+
     function syncScene() {
       const posBallA = world.getComponent(entityIds.ballA, PositionComponent).pos;
       const posWheel = world.getComponent(entityIds.wheel, PositionComponent).pos;
@@ -502,6 +636,7 @@
 
       updateLines();
       updateAttachments();
+      updateVelocities();
       updateLengthReadout();
     }
 
@@ -584,6 +719,14 @@
 
     wireframeToggle.addEventListener('change', () => {
       setWireframe(wireframeToggle.checked);
+    });
+
+    orientationToggle.addEventListener('change', () => {
+      setOrientationHelpersVisible(orientationToggle.checked);
+    });
+
+    velocityToggle.addEventListener('change', () => {
+      updateVelocities();
     });
 
     window.addEventListener('resize', resizeRenderer);
