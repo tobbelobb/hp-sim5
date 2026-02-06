@@ -146,6 +146,9 @@ export class RenderSystem3D {
 
     this.controls = null;
     this.controlsEnabled = options.controlsEnabled ?? true;
+    this.rotateWithShiftRightMouse = Boolean(options.rotateWithShiftRightMouse);
+    this._onShiftKeyDown = null;
+    this._onShiftKeyUp = null;
     if (this.controlsEnabled) {
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enabled = true;
@@ -158,14 +161,29 @@ export class RenderSystem3D {
       this.controls.minDistance = 0.45;
       this.controls.maxDistance = 8.0;
       this.controls.target.set(targetX, targetY, 0);
-      if (options.rotateWithRightMouse) {
-        this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+      if (options.rotateWithRightMouse || this.rotateWithShiftRightMouse) {
+        this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
         this.controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
-        this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+        this.controls.mouseButtons.RIGHT = options.rotateWithRightMouse ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
         this.controls.touches.ONE = THREE.TOUCH.ROTATE;
         this.controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
       }
       this.controls.update();
+    }
+
+    if (this.controls && this.rotateWithShiftRightMouse && typeof window !== 'undefined') {
+      this._onShiftKeyDown = (event) => {
+        if (event.key === 'Shift') {
+          this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+        }
+      };
+      this._onShiftKeyUp = (event) => {
+        if (event.key === 'Shift') {
+          this.controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+        }
+      };
+      window.addEventListener('keydown', this._onShiftKeyDown);
+      window.addEventListener('keyup', this._onShiftKeyUp);
     }
 
     this._fixedCameraPosition = this.camera.position.clone();
@@ -434,6 +452,12 @@ export class RenderSystem3D {
     }
     if (this._onWindowResize && typeof window !== 'undefined') {
       window.removeEventListener('resize', this._onWindowResize);
+    }
+    if (this._onShiftKeyDown && typeof window !== 'undefined') {
+      window.removeEventListener('keydown', this._onShiftKeyDown);
+    }
+    if (this._onShiftKeyUp && typeof window !== 'undefined') {
+      window.removeEventListener('keyup', this._onShiftKeyUp);
     }
     this.renderer.dispose();
   }

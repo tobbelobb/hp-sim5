@@ -210,11 +210,14 @@ export class InputSystem {
     this.canvas.style.outline = 'none';
     this.canvas.focus();
 
+    this.canvas.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
     document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
     document.addEventListener('pointerup', this.handlePointerUp.bind(this));
     this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
-    this.canvas.addEventListener('keydown', this.handleKeydown.bind(this));
-    this.canvas.addEventListener('keyup', this.handleKeyup.bind(this));
+    window.addEventListener('keydown', this.handleKeydown.bind(this));
+    window.addEventListener('keyup', this.handleKeyup.bind(this));
   }
 
   _shouldHandlePointerEvent(event) {
@@ -283,6 +286,9 @@ export class InputSystem {
   }
 
   handleKeyup(event) {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+    }
     if (event.key === 'ArrowLeft') {
       this._queueFlipperEdgeInput(true, false);
     }
@@ -295,6 +301,9 @@ export class InputSystem {
     if (event.code === 'Space') {
       this.dumpDebugScenario();
     }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+    }
     if (event.key === 'ArrowLeft') {
       this._queueFlipperEdgeInput(true, true);
     }
@@ -304,7 +313,11 @@ export class InputSystem {
   }
 
   handlePointerDown(event) {
-    if (event.button !== undefined && event.button !== 0) {
+    const button = event.button;
+    if (button !== undefined && button !== 0 && button !== 2) {
+      return;
+    }
+    if (button === 2 && event.shiftKey) {
       return;
     }
     if (!this._shouldHandlePointerEvent(event)) {
@@ -396,7 +409,11 @@ export class InputSystem {
   }
 
   handlePointerUp(event) {
-    if (!this.grabSpring && event.button !== undefined && event.button !== 0) {
+    const button = event.button;
+    if (!this.grabSpring && button !== undefined && button !== 0 && button !== 2) {
+      return;
+    }
+    if (!this.grabSpring && button === 2 && event.shiftKey) {
       return;
     }
     if (!this._shouldHandlePointerEvent(event)) {

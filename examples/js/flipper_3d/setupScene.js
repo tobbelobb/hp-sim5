@@ -345,7 +345,8 @@ export function setupScene(world, stage, canvas) {
       enableRotate: true,
       enablePan: false,
       enableZoom: true,
-      rotateWithRightMouse: true,
+      rotateWithRightMouse: false,
+      rotateWithShiftRightMouse: true,
       renderOnSimulationStep: false
     });
 
