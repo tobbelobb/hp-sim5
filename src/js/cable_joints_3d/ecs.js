@@ -25,6 +25,12 @@ export class VelocityComponent {
 
 export class GravityAffectedComponent { }
 
+export class RadiusComponent {
+  constructor(radius = 0.1) {
+    this.radius = radius;
+  }
+}
+
 export class OrientationComponent {
   constructor(x = 0, y = 0, z = 0, w = 1) {
     this.orientation = new Quaternion(x, y, z, w);
