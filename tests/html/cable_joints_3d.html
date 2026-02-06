@@ -158,6 +158,7 @@
       World,
       PositionComponent,
       VelocityComponent,
+      PrevFinalPosComponent,
       RadiusComponent,
       MassComponent,
       GravityAffectedComponent,
@@ -175,7 +176,7 @@
     } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
     import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-    import { GravitySystem, MovementSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
+    import { GravitySystem, MovementSystem, PrevFinalPosSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import {
       tangentFromPointToSphere,
@@ -196,14 +197,10 @@
     const PLANE_NORMAL = new Vector3(0, 0, 1);
     const FIXED_DT = 1.0 / 120.0;
     const MAX_STEPS_PER_FRAME = 6;
-    const VELOCITY_DAMPING = 0.015;
-
     let world = null;
     let entityIds = null;
     let jointIds = [];
     let pathId = null;
-    let dynamicEntities = [];
-    let prevPositions = [];
 
     let stepCount = 0;
     let paused = true;
@@ -328,6 +325,7 @@
 
       world.addComponent(ball, new PositionComponent(ballPos.x, ballPos.y, ballPos.z));
       world.addComponent(ball, new VelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(ball, new PrevFinalPosComponent(ballPos.x, ballPos.y, ballPos.z));
       world.addComponent(ball, new RadiusComponent(ballRadius));
       world.addComponent(ball, new MassComponent(ballMass));
       world.addComponent(ball, new MomentOfInertiaComponent(0.4 * ballMass * ballRadius * ballRadius));
@@ -362,19 +360,19 @@
         1e6
       ));
 
+      world.registerSystem(new PrevFinalPosSystem());
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
+      world.registerSystem(new PBDVelocityUpdateSystem());
 
       entityIds = { anchor, wheel, ball };
       jointIds = [joint1, joint2];
       pathId = path;
 
-      dynamicEntities = [ball];
-      prevPositions = dynamicEntities.map(() => new Vector3(0, 0, 0));
     }
 
     function setupVisuals() {
@@ -404,34 +402,10 @@
       pauseBtn.textContent = paused ? 'Start' : 'Pause';
     }
 
-    function cachePrevPositions() {
-      for (let i = 0; i < dynamicEntities.length; i++) {
-        const entityId = dynamicEntities[i];
-        const posComp = world.getComponent(entityId, PositionComponent);
-        prevPositions[i].set(posComp.pos);
-      }
-    }
-
-    function updateVelocities(dt) {
-      const invDt = dt > 0 ? 1.0 / dt : 0.0;
-      for (let i = 0; i < dynamicEntities.length; i++) {
-        const entityId = dynamicEntities[i];
-        const posComp = world.getComponent(entityId, PositionComponent);
-        const velComp = world.getComponent(entityId, VelocityComponent);
-        const prev = prevPositions[i];
-        velComp.vel.x = (posComp.pos.x - prev.x) * invDt;
-        velComp.vel.y = (posComp.pos.y - prev.y) * invDt;
-        velComp.vel.z = (posComp.pos.z - prev.z) * invDt;
-        velComp.vel.scale(1.0 - VELOCITY_DAMPING);
-      }
-    }
-
     function stepSimulation(dt) {
       const pauseState = world.getResource('pauseState');
       if (pauseState) pauseState.paused = false;
-      cachePrevPositions();
       world.update(dt);
-      updateVelocities(dt);
       stepCount += 1;
       stepCountEl.textContent = stepCount.toString();
     }
