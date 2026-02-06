@@ -163,6 +163,7 @@
       MassComponent,
       GravityAffectedComponent,
       OrientationComponent,
+      PrevFinalOrientationComponent,
       MomentOfInertiaComponent,
       SimulationErrorStateComponent
     } from '../../src/js/cable_joints_3d/ecs.js';
@@ -176,7 +177,7 @@
     } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
     import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-    import { GravitySystem, MovementSystem, PrevFinalPosSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
+    import { GravitySystem, MovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import {
       tangentFromPointToSphere,
@@ -321,6 +322,7 @@
       world.addComponent(ballA, new MassComponent(ballAMass));
       world.addComponent(ballA, new MomentOfInertiaComponent(0.4 * ballAMass * ballRadius * ballRadius));
       world.addComponent(ballA, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(ballA, new PrevFinalOrientationComponent(0, 0, 0, 1));
       world.addComponent(ballA, new GravityAffectedComponent());
       world.addComponent(ballA, new CableLinkComponent(ballAPos.x, ballAPos.y, ballAPos.z, null, PLANE_NORMAL));
 
@@ -328,6 +330,7 @@
       world.addComponent(wheel, new RadiusComponent(wheelRadius));
       world.addComponent(wheel, new MassComponent(-1.0));
       world.addComponent(wheel, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(wheel, new PrevFinalOrientationComponent(0, 0, 0, 1));
       world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y, wheelPos.z, null, PLANE_NORMAL));
 
       world.addComponent(ballB, new PositionComponent(ballBPos.x, ballBPos.y, ballBPos.z));
@@ -337,6 +340,7 @@
       world.addComponent(ballB, new MassComponent(ballBMass));
       world.addComponent(ballB, new MomentOfInertiaComponent(0.4 * ballBMass * ballRadius * ballRadius));
       world.addComponent(ballB, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(ballB, new PrevFinalOrientationComponent(0, 0, 0, 1));
       world.addComponent(ballB, new GravityAffectedComponent());
       world.addComponent(ballB, new CableLinkComponent(ballBPos.x, ballBPos.y, ballBPos.z, null, PLANE_NORMAL));
 
@@ -369,10 +373,11 @@
       ));
 
       world.registerSystem(new PrevFinalPosSystem());
-      world.registerSystem(new CableAttachmentCacheSystem());
+      world.registerSystem(new PrevFinalOrientationSystem());
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
+      world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDVelocityUpdateSystem());

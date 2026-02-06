@@ -1,4 +1,6 @@
 import {
+  OrientationComponent,
+  PrevFinalOrientationComponent,
   VelocityComponent,
   GravityAffectedComponent,
   PositionComponent,
@@ -33,6 +35,18 @@ export class MovementSystem {
       const posComp = world.getComponent(entityId, PositionComponent);
       const velComp = world.getComponent(entityId, VelocityComponent);
       posComp.pos.add(velComp.vel, dt);
+    }
+  }
+}
+
+export class PrevFinalOrientationSystem {
+  runInPause = false;
+  update(world, dt) {
+    const entities = world.query([OrientationComponent, PrevFinalOrientationComponent]);
+    for (const entityId of entities) {
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
+      prevFinalOrientationComp.quaternion.set(orientationComp.quaternion);
     }
   }
 }
