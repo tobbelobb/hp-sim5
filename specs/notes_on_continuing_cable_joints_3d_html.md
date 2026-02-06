@@ -7,11 +7,11 @@ This is a handoff note for the 3D HTML demo in `tests/html/cable_joints_3d.html`
 - 3D core and tests: `src/js/cable_joints_3d/`, `tests/js/cable_joints_3d/`
 - 3D spec notes: `specs/cable_joints_3d_up_until_rendering/*`
 
-## Current State (Post-Alignment)
+## Current State
 - The 3D demo now mirrors the 2D topology: **two dynamic balls + one static rolling wheel**.
 - Start positions are aligned with the 2D reference (`ball1: (1.05, 0.75)`, `obs1: (1.5, 1.5)`, `ball2: (1.6, 0.55)` with `z = 0`).
 - Link types and `cw` are aligned with 2D (`['hybrid-attachment', 'rolling', 'hybrid-attachment']`, `cw = [true, true, true]`).
-- 3D now uses the XPBD velocity update path (`PrevFinalPosSystem` + `PBDVelocityUpdateSystem`) instead of ad-hoc render-loop velocity updates.
+- 3D now uses the XPBD velocity update path (`PrevFinalPosSystem` + `PBDVelocityUpdateSystem`).
 
 ## Remaining Issues + Likely Causes
 
@@ -53,7 +53,6 @@ This is a handoff note for the 3D HTML demo in `tests/html/cable_joints_3d.html`
    - The 3D demo does not currently mirror this full chain. It uses `CableAttachmentCacheSystem` **before** `CableAttachmentUpdateSystem` (which aligns with the 3D spec/tests), while the 2D HTML runs cache after update. That mismatch is a likely source of subtle parity issues and should be resolved intentionally (either follow the spec in both, or match the 2D demo exactly).
 
 ## Principles For Continuing Work
-- **Match the 2D demo topology and positions first.** Use the same coordinates with `z = 0` to validate parity.
 - **Keep link ordering and `cw` semantics identical** to 2D. The `_effectiveCW` rules are easy to get wrong; see the 2D tests and comments in `tests/js/cable_joints/cableAttachmentUpdateSystem_updateAttachmentPoints.test.js`.
 - **Stick to plane-based geometry** (`geometry3.js`). All tangents and arc-lengths should use the link’s `cablePlaneNormal`.
 - **Port systems one-for-one** from 2D when behavior depends on them (slack, friction, collisions, velocity/ang velocity updates).
