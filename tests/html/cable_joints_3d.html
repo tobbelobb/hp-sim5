@@ -385,7 +385,7 @@
 
       const wheelRadius = 0.1;
       const ballRadius = 0.03;
-      const ballAMass = 0.1001;
+      const ballAMass = 0.101;
       const ballBMass = 0.1;
       const ballRestitution = 0.4;
       const frictionCoefficient = 0.2;
@@ -540,6 +540,27 @@
       pauseBtn.textContent = paused ? 'Start' : 'Pause';
     }
 
+    function getCurrentJointIds() {
+      const path = world.getComponent(pathId, CablePathComponent);
+      return path ? path.jointEntities : [];
+    }
+
+    function ensureJointVisualCapacity(count) {
+      while (visuals.joints.length < count) {
+        const line = createLine(lineMaterials[visuals.joints.length % lineMaterials.length]);
+        root.add(line);
+        visuals.joints.push(line);
+      }
+
+      const neededAttachments = count * 2;
+      while (visuals.attachments.length < neededAttachments) {
+        const a = createSphere(0.015, shared.attachmentMat);
+        const b = createSphere(0.015, shared.attachmentMat);
+        root.add(a, b);
+        visuals.attachments.push(a, b);
+      }
+    }
+
     function stepSimulation(dt) {
       const pauseState = world.getResource('pauseState');
       if (pauseState) pauseState.paused = false;
@@ -549,9 +570,21 @@
     }
 
     function updateLines() {
-      for (let i = 0; i < jointIds.length; i++) {
-        const joint = world.getComponent(jointIds[i], CableJointComponent);
+      const joints = getCurrentJointIds();
+      ensureJointVisualCapacity(joints.length);
+
+      for (let i = 0; i < visuals.joints.length; i++) {
         const line = visuals.joints[i];
+        if (i >= joints.length) {
+          line.visible = false;
+          continue;
+        }
+        const joint = world.getComponent(joints[i], CableJointComponent);
+        if (!joint) {
+          line.visible = false;
+          continue;
+        }
+        line.visible = true;
         const positions = line.geometry.attributes.position.array;
         positions[0] = joint.attachmentPointA_world.x;
         positions[1] = joint.attachmentPointA_world.y;
@@ -565,14 +598,22 @@
 
     function updateAttachments() {
       const show = attachmentsToggle.checked;
-      visuals.attachments.forEach(mesh => { mesh.visible = show; });
-      if (!show) return;
+      const joints = getCurrentJointIds();
+      ensureJointVisualCapacity(joints.length);
+      visuals.attachments.forEach(mesh => { mesh.visible = false; });
+      if (!show || joints.length === 0) return;
 
       let idx = 0;
-      for (let i = 0; i < jointIds.length; i++) {
-        const joint = world.getComponent(jointIds[i], CableJointComponent);
+      for (let i = 0; i < joints.length; i++) {
+        const joint = world.getComponent(joints[i], CableJointComponent);
+        if (!joint) {
+          idx += 2;
+          continue;
+        }
         const a = visuals.attachments[idx++];
         const b = visuals.attachments[idx++];
+        a.visible = true;
+        b.visible = true;
         a.position.set(joint.attachmentPointA_world.x, joint.attachmentPointA_world.y, joint.attachmentPointA_world.z);
         b.position.set(joint.attachmentPointB_world.x, joint.attachmentPointB_world.y, joint.attachmentPointB_world.z);
       }
@@ -643,9 +684,11 @@
 
     function updateLengthReadout() {
       const path = world.getComponent(pathId, CablePathComponent);
+      if (!path) return;
       let current = 0.0;
-      for (let i = 0; i < jointIds.length; i++) {
-        const joint = world.getComponent(jointIds[i], CableJointComponent);
+      for (let i = 0; i < path.jointEntities.length; i++) {
+        const joint = world.getComponent(path.jointEntities[i], CableJointComponent);
+        if (!joint) continue;
         current += joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
       }
       for (let i = 0; i < path.stored.length; i++) {
