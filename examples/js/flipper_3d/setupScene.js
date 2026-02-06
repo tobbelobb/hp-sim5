@@ -1,0 +1,387 @@
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import {
+  getAttribute,
+  getChild,
+  getChildren,
+  getRelationship,
+  materialProperties
+} from '../../../src/js/usd/stage.js';
+import {
+  PositionComponent,
+  VelocityComponent,
+  RadiusComponent,
+  MassComponent,
+  GravityAffectedComponent,
+  OrientationComponent,
+  AngularVelocityComponent,
+  MomentOfInertiaComponent,
+  PrevFinalOrientationComponent,
+  PrevFinalPosComponent,
+  RestitutionComponent,
+  CoefficientOfFrictionComponent,
+  SimulationErrorStateComponent
+} from '../../../src/js/cable_joints_3d/ecs.js';
+import { RenderableComponent } from '../../../src/js/cable_joints/ecs.js';
+import {
+  CableLinkComponent,
+  CableJointComponent,
+  CablePathComponent,
+  linecolor1,
+  CableAttachmentUpdateSystem,
+  PBDCableConstraintSolver
+} from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
+
+import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
+import { CableSlackSystem } from '../../../src/js/cable_joints_3d/cable_slack_system.js';
+import { CableFrictionSystem } from '../../../src/js/cable_joints_3d/cable_friction_system.js';
+import {
+  BallTagComponent,
+  ObstacleTagComponent,
+  ObstaclePushComponent,
+  ScoreComponent,
+  BorderComponent,
+  ScoreSystem,
+  ScoreDisplaySystem,
+  FlipperTagComponent,
+  FlipperStateComponent,
+  FlipperTipComponent,
+  FlipperMotionSystem,
+  FlipperTipLinkSystem,
+  PBDBallBorderCollisions,
+  PBDBallBallCollisions,
+  PBDBallObstacleCollisions,
+  PBDBallFlipperCollisions,
+  PauseStateComponent,
+  InputReplaySystem,
+  InputSystem
+} from './flipper_common_3d.js';
+
+import { BallObstacleBumpSystem } from '../../../src/js/cable_joints_3d/ball_obstacle_bump_system.js';
+import { BallBorderOrFlipperVelocityContactSystem3D } from './ball_border_or_flipper_velocity_contact_system_3d.js';
+import { RenderSystem3D } from '../../../src/js/cable_joints_3d/render_system_3d.js';
+import {
+  PrevFinalPosSystem,
+  PrevFinalOrientationSystem,
+  GravitySystem,
+  MovementSystem,
+  AngularMovementSystem,
+  PBDVelocityUpdateSystem,
+  PBDAngularVelocityUpdateSystem
+} from '../../../src/js/cable_joints_3d/commonSystems.js';
+
+const FLIPPER_PLANE_NORMAL = new Vector3(0, 0, 1);
+
+export function setupScene(world, stage, canvas) {
+  const existingRenderSystem = world.systems.find((system) => system instanceof RenderSystem3D);
+  if (existingRenderSystem) {
+    existingRenderSystem.resetVisuals();
+  }
+
+  world.clear();
+
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  const physicsScene = stage.GetPrimAtPath('/World/PhysicsScene');
+  const gravityDir = getAttribute(physicsScene, 'physics:gravityDirection');
+  const gravityMag = getAttribute(physicsScene, 'physics:gravityMagnitude');
+  const gravity = new Vector3(gravityDir[0] * gravityMag, gravityDir[1] * gravityMag, gravityDir[2] * gravityMag);
+
+  const timeCodesPerSecond = stage.ast.descriptor.assignments.find(
+    (statement) => statement.type === 'assignment' && statement.identifier === 'timeCodesPerSecond'
+  ).value;
+  const dt = 1.0 / timeCodesPerSecond;
+
+  world.setResource('gravity', gravity);
+  world.setResource('dt', dt);
+  world.setResource('pauseState', new PauseStateComponent(true));
+  world.setResource('debugRenderPoints', {});
+  world.setResource('errorState', new SimulationErrorStateComponent(false));
+  world.setResource('grabbedBall', null);
+  world.setResource('ball_obstacle_contacts', []);
+  world.setResource('ball_border_contacts', []);
+  world.setResource('ball_flipper_contacts', []);
+
+  const simWidth = 1.0;
+  const simHeight = 1.7;
+  world.setResource('simWidth', simWidth);
+  world.setResource('simHeight', simHeight);
+  world.setResource('cScale', canvas.height / simHeight);
+
+  const sceneRoot = stage.GetPrimAtPath('/World/FlipperScene');
+  const nameToEntityId = {};
+
+  const borderPrim = getChild(sceneRoot, 'Border');
+  if (borderPrim) {
+    const points = getAttribute(borderPrim, 'points');
+    if (!points) {
+      console.error("Failed to get 'points' for Border prim.");
+      world.getResource('errorState').hasError = true;
+      return;
+    }
+
+    const borderEntity = world.createEntity();
+    const borderPoints = points.slice(0, 8).map((p) => new Vector3(p[0], p[1], p[2] || 0));
+    world.addComponent(borderEntity, new BorderComponent(borderPoints, FLIPPER_PLANE_NORMAL));
+
+    const { color, friction, restitution } = materialProperties(stage, borderPrim);
+    world.addComponent(borderEntity, new RenderableComponent('border', color || '#000000'));
+    if (restitution !== null) world.addComponent(borderEntity, new RestitutionComponent(restitution));
+    if (friction !== null) world.addComponent(borderEntity, new CoefficientOfFrictionComponent(friction));
+  } else {
+    console.error('Could not find Border prim in scene.');
+    world.getResource('errorState').hasError = true;
+    return;
+  }
+
+  for (const prim of getChildren(sceneRoot)) {
+    const tags = getAttribute(prim, 'ecs:tags') || [];
+    if (!tags.length) continue;
+
+    const posArr = getAttribute(prim, 'xformOp:translate');
+    if (!posArr) continue;
+
+    const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+    const { color, friction, restitution } = materialProperties(stage, prim);
+
+    if (tags.includes('Ball')) {
+      const entity = world.createEntity();
+      const radius = getAttribute(prim, 'radius');
+      const mass = getAttribute(prim, 'physics:mass');
+      const inertiaTensor = getAttribute(prim, 'physics:inertiaTensor');
+
+      if (radius === null || mass === null || inertiaTensor === null) {
+        console.warn(`Skipping Ball prim ${prim.name} due to missing attributes.`);
+        continue;
+      }
+
+      const inertia = inertiaTensor[2][2];
+      world.addComponent(entity, new BallTagComponent());
+      world.addComponent(entity, new PositionComponent(pos.x, pos.y, pos.z));
+      world.addComponent(entity, new VelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(entity, new RadiusComponent(radius));
+      world.addComponent(entity, new MassComponent(mass));
+      world.addComponent(entity, new GravityAffectedComponent());
+      world.addComponent(entity, new RenderableComponent('circle', color || '#a0a0a0'));
+      world.addComponent(entity, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(entity, new AngularVelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(entity, new MomentOfInertiaComponent(inertia));
+      world.addComponent(entity, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      world.addComponent(entity, new PrevFinalPosComponent(pos.x, pos.y, pos.z));
+
+      if (restitution !== null) world.addComponent(entity, new RestitutionComponent(restitution));
+      if (friction !== null) world.addComponent(entity, new CoefficientOfFrictionComponent(friction));
+      if (getAttribute(prim, 'cable:linkable')) {
+        world.addComponent(entity, new CableLinkComponent(pos.x, pos.y, pos.z, null, FLIPPER_PLANE_NORMAL));
+      }
+
+      nameToEntityId[prim.name] = entity;
+      continue;
+    }
+
+    if (tags.includes('Obstacle')) {
+      const entity = world.createEntity();
+      const radius = getAttribute(prim, 'radius');
+
+      if (radius === null) {
+        console.warn(`Skipping Obstacle prim ${prim.name} due to missing radius.`);
+        continue;
+      }
+
+      const push = getAttribute(prim, 'obstacle:pushVel') || 0.0;
+      const angVelAttr = getAttribute(prim, 'physics:angularVelocity');
+      const angularVelocityZ = angVelAttr ? (angVelAttr[2] * Math.PI) / 180.0 : 0.0;
+
+      const inertiaAttr = getAttribute(prim, 'physics:inertiaTensor');
+      const inertia = inertiaAttr ? inertiaAttr[2][2] : 0.0;
+
+      world.addComponent(entity, new ObstacleTagComponent());
+      world.addComponent(entity, new PositionComponent(pos.x, pos.y, pos.z));
+      world.addComponent(entity, new MassComponent(-1.0));
+      world.addComponent(entity, new RadiusComponent(radius));
+      world.addComponent(entity, new ObstaclePushComponent(push));
+      world.addComponent(entity, new RenderableComponent('circle', color || '#ffffff'));
+
+      if (friction !== null) world.addComponent(entity, new CoefficientOfFrictionComponent(friction));
+      if (angularVelocityZ !== 0.0) {
+        world.addComponent(entity, new OrientationComponent(0, 0, 0, 1));
+        world.addComponent(entity, new AngularVelocityComponent(0.0, 0.0, angularVelocityZ));
+        world.addComponent(entity, new MomentOfInertiaComponent(inertia));
+        world.addComponent(entity, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      }
+      if (getAttribute(prim, 'cable:linkable')) {
+        world.addComponent(entity, new CableLinkComponent(pos.x, pos.y, pos.z, null, FLIPPER_PLANE_NORMAL));
+      }
+
+      nameToEntityId[prim.name] = entity;
+      continue;
+    }
+
+    if (tags.includes('Flipper')) {
+      const entity = world.createEntity();
+      const length = getAttribute(prim, 'flipper:length');
+      const restAngle = getAttribute(prim, 'flipper:restAngle');
+      const maxRotation = getAttribute(prim, 'flipper:maxRotation');
+      const angularVelocity = getAttribute(prim, 'flipper:angularVelocity');
+
+      if (length === null || restAngle === null || maxRotation === null || angularVelocity === null) {
+        console.warn(`Skipping Flipper prim ${prim.name} due to missing attributes.`);
+        continue;
+      }
+
+      const geom = getChild(prim, 'Geom');
+      const radius = geom ? getAttribute(geom, 'radius') : 0.0;
+
+      world.addComponent(entity, new FlipperTagComponent());
+      world.addComponent(entity, new PositionComponent(pos.x, pos.y, pos.z));
+      world.addComponent(entity, new RadiusComponent(radius));
+      world.addComponent(entity, new FlipperStateComponent(length, restAngle, maxRotation, angularVelocity, FLIPPER_PLANE_NORMAL));
+      world.addComponent(entity, new RenderableComponent('flipper', color || '#ff0000'));
+
+      if (restitution !== null) world.addComponent(entity, new RestitutionComponent(restitution));
+      if (getAttribute(prim, 'cable:linkable')) {
+        world.addComponent(entity, new CableLinkComponent(pos.x, pos.y, pos.z, null, FLIPPER_PLANE_NORMAL));
+      }
+
+      nameToEntityId[prim.name] = entity;
+
+      const tipPrim = getChild(prim, 'Tip');
+      if (tipPrim) {
+        const tipEntity = world.createEntity();
+        world.addComponent(tipEntity, new PositionComponent(pos.x, pos.y, pos.z));
+        world.addComponent(tipEntity, new RadiusComponent(radius));
+        world.addComponent(tipEntity, new FlipperTipComponent(entity));
+
+        if (getAttribute(tipPrim, 'cable:linkable')) {
+          world.addComponent(tipEntity, new CableLinkComponent(pos.x, pos.y, pos.z, null, FLIPPER_PLANE_NORMAL));
+        }
+        if (friction !== null) {
+          world.addComponent(tipEntity, new CoefficientOfFrictionComponent(friction));
+        }
+      }
+    }
+  }
+
+  const scoreEntity = world.createEntity();
+  world.addComponent(scoreEntity, new ScoreComponent(0));
+
+  const cablePathPrim = getChild(sceneRoot, 'CablePath');
+  if (cablePathPrim) {
+    const jointPaths = getRelationship(cablePathPrim, 'cablePath:joints');
+    const jointEntityMap = {};
+
+    for (const jointPath of jointPaths) {
+      const jointPrim = stage.GetPrimAtPath(jointPath);
+      if (!jointPrim) continue;
+
+      const body0Path = getRelationship(jointPrim, 'physics:body0')[0];
+      const body1Path = getRelationship(jointPrim, 'physics:body1')[0];
+
+      const entityA = nameToEntityId[body0Path.split('/').pop()];
+      const entityB = nameToEntityId[body1Path.split('/').pop()];
+
+      const restLength = getAttribute(jointPrim, 'restLength');
+      const attachAArr = getAttribute(jointPrim, 'localPos0');
+      const attachBArr = getAttribute(jointPrim, 'localPos1');
+
+      if (!entityA || !entityB || restLength === null || !attachAArr || !attachBArr) {
+        console.warn(`Skipping CableJoint ${jointPrim.name} due to missing data.`);
+        continue;
+      }
+
+      const attachALocal = new Vector3(attachAArr[0], attachAArr[1], attachAArr[2] || 0);
+      const attachBLocal = new Vector3(attachBArr[0], attachBArr[1], attachBArr[2] || 0);
+
+      const jointEntity = world.createEntity();
+      const jointComponent = CableJointComponent.fromLocal(
+        world,
+        entityA,
+        entityB,
+        restLength,
+        attachALocal,
+        attachBLocal
+      );
+
+      world.addComponent(jointEntity, jointComponent);
+      world.addComponent(jointEntity, new RenderableComponent('line', linecolor1));
+      jointEntityMap[jointPrim.name] = jointEntity;
+    }
+
+    const cablePathEntity = world.createEntity();
+    const jointNames = getRelationship(cablePathPrim, 'cablePath:joints').map((path) => path.split('/').pop());
+    const jointEntities = jointNames.map((jointName) => jointEntityMap[jointName]).filter(Boolean);
+    const linkTypes = getAttribute(cablePathPrim, 'cablePath:linkTypes');
+    const clockwise = getAttribute(cablePathPrim, 'cablePath:clockwise');
+    const stored = getAttribute(cablePathPrim, 'cablePath:stored');
+
+    world.addComponent(
+      cablePathEntity,
+      new CablePathComponent(
+        world,
+        jointEntities,
+        linkTypes ? [...linkTypes] : null,
+        clockwise ? [...clockwise] : null,
+        getAttribute(cablePathPrim, 'stiffness') || Infinity,
+        stored ? [...stored] : null
+      )
+    );
+  }
+
+  if (world.systems.length === 0) {
+    const renderSystem = new RenderSystem3D(canvas, {
+      BorderComponent,
+      FlipperTagComponent,
+      FlipperStateComponent,
+      planeNormal: FLIPPER_PLANE_NORMAL,
+      targetX: 0.5,
+      targetY: 0.85,
+      cameraZ: 2.2,
+      enableRotate: false,
+      enablePan: false
+    });
+
+    world.registerSystem(new PrevFinalPosSystem());
+    world.registerSystem(new PrevFinalOrientationSystem());
+
+    const inputSystem = new InputSystem(canvas, world, (clientX, clientY) => renderSystem.projectClientToSim(clientX, clientY));
+    world.registerSystem(inputSystem);
+    world.registerSystem(new InputReplaySystem([], inputSystem));
+    world.registerSystem(new FlipperMotionSystem());
+
+    world.registerSystem(new GravitySystem());
+    world.registerSystem(new MovementSystem());
+    world.registerSystem(new AngularMovementSystem());
+
+    world.registerSystem(new FlipperTipLinkSystem());
+    world.registerSystem(new CableAttachmentUpdateSystem());
+    world.registerSystem(new CableAttachmentCacheSystem());
+    world.registerSystem(new CableSlackSystem());
+
+    world.registerSystem(new PBDCableConstraintSolver());
+    world.registerSystem(new PBDResolveCableOverCorrections());
+    world.registerSystem(new PBDBallBorderCollisions());
+    world.registerSystem(new PBDBallBallCollisions());
+    world.registerSystem(new PBDBallObstacleCollisions());
+    world.registerSystem(new PBDBallFlipperCollisions());
+
+    world.registerSystem(new CableFrictionSystem());
+
+    world.registerSystem(new PBDVelocityUpdateSystem());
+    world.registerSystem(new PBDAngularVelocityUpdateSystem());
+
+    world.registerSystem(new BallObstacleBumpSystem());
+    world.registerSystem(new BallBorderOrFlipperVelocityContactSystem3D());
+
+    world.registerSystem(new ScoreSystem());
+    world.registerSystem(new ScoreDisplaySystem('score'));
+    world.registerSystem(renderSystem);
+  } else if (existingRenderSystem) {
+    existingRenderSystem.setComponentClasses({
+      BorderComponent,
+      FlipperTagComponent,
+      FlipperStateComponent
+    });
+    existingRenderSystem.setCanvasSize(canvas.clientWidth, canvas.clientHeight);
+  }
+}

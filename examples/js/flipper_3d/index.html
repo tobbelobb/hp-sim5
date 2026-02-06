@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mindfulness Pinball 3D</title>
+
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iIzI2MzY0YiIvPjwvc3ZnPg==" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+
+  <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.182.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.182.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap');
+
+    :root {
+      --bg-1: #0e141d;
+      --bg-2: #1a2a3c;
+      --panel: rgba(12, 19, 29, 0.92);
+      --panel-border: rgba(110, 140, 170, 0.35);
+      --text-main: #edf3f8;
+      --text-dim: #aac0d3;
+      --btn-1: #24588c;
+      --btn-2: #3f89c4;
+      --radius: 8px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100dvh;
+      overflow: hidden;
+      background: radial-gradient(1100px 700px at 12% 10%, var(--bg-2), var(--bg-1));
+      color: var(--text-main);
+      font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      display: grid;
+      place-items: center;
+    }
+
+    #gameContainer {
+      width: min(96vw, 1020px);
+      height: min(96dvh, 940px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+    }
+
+    #controls {
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      user-select: none;
+      backdrop-filter: blur(6px);
+    }
+
+    #controls button {
+      all: unset;
+      cursor: pointer;
+      color: #f8fbff;
+      background: linear-gradient(135deg, var(--btn-1), var(--btn-2));
+      border-radius: 6px;
+      border: 1px solid rgba(180, 210, 235, 0.35);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+
+    #controls button:hover,
+    #controls button:focus-visible {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    #controls button:active {
+      transform: scale(0.98);
+    }
+
+    #stats {
+      margin-left: auto;
+      font-size: 0.84rem;
+      color: var(--text-dim);
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 140, 170, 0.35);
+      touch-action: none;
+    }
+
+    @media (max-width: 780px) {
+      #gameContainer {
+        width: 100vw;
+        height: 100dvh;
+        gap: 0;
+      }
+
+      #controls {
+        border-radius: 0;
+        border-inline: 0;
+        border-top: 0;
+      }
+
+      canvas {
+        border-radius: 0;
+        border-inline: 0;
+        border-bottom: 0;
+      }
+
+      #stats {
+        width: 100%;
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="controls">
+      <button id="pauseBtn" tabindex="-1">Pause</button>
+      <button id="resetBtn" tabindex="-1">Reset</button>
+      <button id="stepBtn">Step</button>
+      <button id="dumpBtn" tabindex="-1">Dump State</button>
+      <span>Score: <span id="score">0</span></span>
+      <div id="stats">
+        <span>dt: <span id="dt">N/A</span></span>
+        <span>Speed: <span id="speed">N/A</span></span>
+      </div>
+    </div>
+    <canvas id="myCanvas"></canvas>
+  </div>
+
+  <script type="module">
+    import {
+      Open as UsdOpen
+    } from '../../../src/js/usd/stage.js';
+    import {
+      World,
+      PositionComponent,
+      BallTagComponent
+    } from '../../../src/js/cable_joints_3d/ecs.js';
+    import { ScoreComponent } from './flipper_common_3d.js';
+    import { runGame } from './runner.js';
+    import { setupScene } from './setupScene.js';
+
+    const canvas = document.getElementById('myCanvas');
+
+    const world = new World();
+    window.world = world;
+
+    window.getGameStateForTest = () => {
+      if (!world || !world.query) {
+        return null;
+      }
+
+      const ballEntities = world.query([BallTagComponent, PositionComponent]);
+      const balls = ballEntities.map((id) => {
+        const posComp = world.getComponent(id, PositionComponent);
+        return {
+          id,
+          x: posComp ? posComp.pos.x : -Infinity,
+          y: posComp ? posComp.pos.y : -Infinity,
+          z: posComp ? posComp.pos.z : -Infinity
+        };
+      });
+
+      const scoreEntity = world.query([ScoreComponent])[0];
+      const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
+      const score = scoreComp ? scoreComp.value : -1;
+
+      return { balls, score };
+    };
+
+    window.dumpFlipper3DState = (activeWorld) => {
+      const targetWorld = activeWorld || world;
+      const snapshot = window.getGameStateForTest();
+      console.log('Flipper3D State', {
+        snapshot,
+        paused: targetWorld.getResource('pauseState')?.paused,
+        dt: targetWorld.getResource('dt'),
+        entityCount: targetWorld.entities.size
+      });
+    };
+
+    const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;
+    UsdOpen(usdaPath)
+      .then((stage) => {
+        runGame(world, () => setupScene(world, stage, canvas));
+      })
+      .catch((error) => {
+        console.error('Failed to load 3D flipper scene:', error);
+      });
+  </script>
+</body>
+</html>

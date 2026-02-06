@@ -43,6 +43,26 @@ export class CableJointComponent {
     this.attachmentPointA_world = attachmentPointA_world.clone();
     this.attachmentPointB_world = attachmentPointB_world.clone();
   }
+
+  static fromWorld(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
+    return new CableJointComponent(
+      entityA,
+      entityB,
+      restLength,
+      attachmentPointA_world,
+      attachmentPointB_world
+    );
+  }
+
+  static fromLocal(world, entityA, entityB, restLength, attachmentPointA_local, attachmentPointB_local) {
+    return new CableJointComponent(
+      entityA,
+      entityB,
+      restLength,
+      _computeWorldAttachment(world, entityA, attachmentPointA_local),
+      _computeWorldAttachment(world, entityB, attachmentPointB_local)
+    );
+  }
 }
 
 // Connects individual cable joints into a cable path
