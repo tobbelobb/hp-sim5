@@ -1,4 +1,4 @@
-import { VelocityComponent, GravityAffectedComponent } from './ecs.js';
+import { VelocityComponent, GravityAffectedComponent, PositionComponent } from './ecs.js';
 
 export class GravitySystem {
   runInPause = false;
@@ -13,6 +13,20 @@ export class GravitySystem {
       if (entityId === grabbed) continue;
       const velComp = world.getComponent(entityId, VelocityComponent);
       velComp.vel.add(gravity, dt);
+    }
+  }
+}
+
+export class MovementSystem {
+  runInPause = false;
+  update(world, dt) {
+    const grabbed = world.getResource('grabbedBall');
+    const linearEntities = world.query([PositionComponent, VelocityComponent]);
+    for (const entityId of linearEntities) {
+      if (entityId === grabbed) continue;
+      const posComp = world.getComponent(entityId, PositionComponent);
+      const velComp = world.getComponent(entityId, VelocityComponent);
+      posComp.pos.add(velComp.vel, dt);
     }
   }
 }
