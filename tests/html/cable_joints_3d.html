@@ -220,7 +220,7 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.01, 50);
-    camera.position.set(0.4, 1.4, 3.5);
+    camera.position.set(1.4, 1.4, 3.0);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -236,7 +236,7 @@
 
     const grid = new THREE.GridHelper(6, 12, 0x2f3f4a, 0x1a222b);
     grid.rotation.x = Math.PI / 2;
-    grid.position.z = 0;
+    grid.position.set(1.4, 1.0, 0);
     scene.add(grid);
 
     const root = new THREE.Group();
@@ -244,9 +244,9 @@
 
     const shared = {
       sphereGeom: new THREE.SphereGeometry(1, 28, 20),
-      anchorMat: new THREE.MeshStandardMaterial({ color: 0xdad7cd, roughness: 0.4, metalness: 0.2 }),
-      wheelMat: new THREE.MeshStandardMaterial({ color: 0x405870, roughness: 0.5, metalness: 0.4 }),
-      ballMat: new THREE.MeshStandardMaterial({ color: 0x57b3e4, roughness: 0.3, metalness: 0.1 }),
+      wheelMat: new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.45, metalness: 0.2 }),
+      ballAMat: new THREE.MeshStandardMaterial({ color: 0xff4d4d, roughness: 0.35, metalness: 0.1 }),
+      ballBMat: new THREE.MeshStandardMaterial({ color: 0x45d46f, roughness: 0.35, metalness: 0.1 }),
       attachmentMat: new THREE.MeshBasicMaterial({ color: 0xffd166 })
     };
 
@@ -256,9 +256,9 @@
     ];
 
     let visuals = {
-      anchor: null,
+      ballA: null,
       wheel: null,
-      ball: null,
+      ballB: null,
       joints: [],
       attachments: []
     };
@@ -290,7 +290,7 @@
         disposeObject(child);
       });
       root.clear();
-      visuals = { anchor: null, wheel: null, ball: null, joints: [], attachments: [] };
+      visuals = { ballA: null, wheel: null, ballB: null, joints: [], attachments: [] };
     }
 
     function setupWorld() {
@@ -301,21 +301,28 @@
       world.setResource('errorState', new SimulationErrorStateComponent(false));
       world.setResource('debugRenderPoints', {});
 
-      const anchor = world.createEntity();
+      const ballA = world.createEntity();
       const wheel = world.createEntity();
-      const ball = world.createEntity();
+      const ballB = world.createEntity();
 
-      const anchorPos = new Vector3(-1.6, 1.0, 0.0);
-      const wheelPos = new Vector3(0.0, 0.0, 0.0);
-      const ballPos = new Vector3(1.7, 0.4, 0.0);
+      const ballAPos = new Vector3(1.05, 0.75, 0.0);
+      const wheelPos = new Vector3(1.5, 1.5, 0.0);
+      const ballBPos = new Vector3(1.6, 0.55, 0.0);
 
-      const wheelRadius = 0.45;
-      const ballRadius = 0.25;
-      const ballMass = 0.6;
+      const wheelRadius = 0.1;
+      const ballRadius = 0.03;
+      const ballAMass = 0.1001;
+      const ballBMass = 0.1;
 
-      world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y, anchorPos.z));
-      world.addComponent(anchor, new MassComponent(-1.0));
-      world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y, anchorPos.z, null, PLANE_NORMAL));
+      world.addComponent(ballA, new PositionComponent(ballAPos.x, ballAPos.y, ballAPos.z));
+      world.addComponent(ballA, new VelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(ballA, new PrevFinalPosComponent(ballAPos.x, ballAPos.y, ballAPos.z));
+      world.addComponent(ballA, new RadiusComponent(ballRadius));
+      world.addComponent(ballA, new MassComponent(ballAMass));
+      world.addComponent(ballA, new MomentOfInertiaComponent(0.4 * ballAMass * ballRadius * ballRadius));
+      world.addComponent(ballA, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(ballA, new GravityAffectedComponent());
+      world.addComponent(ballA, new CableLinkComponent(ballAPos.x, ballAPos.y, ballAPos.z, null, PLANE_NORMAL));
 
       world.addComponent(wheel, new PositionComponent(wheelPos.x, wheelPos.y, wheelPos.z));
       world.addComponent(wheel, new RadiusComponent(wheelRadius));
@@ -323,39 +330,40 @@
       world.addComponent(wheel, new OrientationComponent(0, 0, 0, 1));
       world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y, wheelPos.z, null, PLANE_NORMAL));
 
-      world.addComponent(ball, new PositionComponent(ballPos.x, ballPos.y, ballPos.z));
-      world.addComponent(ball, new VelocityComponent(0.0, 0.0, 0.0));
-      world.addComponent(ball, new PrevFinalPosComponent(ballPos.x, ballPos.y, ballPos.z));
-      world.addComponent(ball, new RadiusComponent(ballRadius));
-      world.addComponent(ball, new MassComponent(ballMass));
-      world.addComponent(ball, new MomentOfInertiaComponent(0.4 * ballMass * ballRadius * ballRadius));
-      world.addComponent(ball, new OrientationComponent(0, 0, 0, 1));
-      world.addComponent(ball, new GravityAffectedComponent());
-      world.addComponent(ball, new CableLinkComponent(ballPos.x, ballPos.y, ballPos.z, null, PLANE_NORMAL));
+      world.addComponent(ballB, new PositionComponent(ballBPos.x, ballBPos.y, ballBPos.z));
+      world.addComponent(ballB, new VelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(ballB, new PrevFinalPosComponent(ballBPos.x, ballBPos.y, ballBPos.z));
+      world.addComponent(ballB, new RadiusComponent(ballRadius));
+      world.addComponent(ballB, new MassComponent(ballBMass));
+      world.addComponent(ballB, new MomentOfInertiaComponent(0.4 * ballBMass * ballRadius * ballRadius));
+      world.addComponent(ballB, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(ballB, new GravityAffectedComponent());
+      world.addComponent(ballB, new CableLinkComponent(ballBPos.x, ballBPos.y, ballBPos.z, null, PLANE_NORMAL));
 
       const cw = true;
-      const tangentAnchorWheel = tangentFromPointToSphere(anchorPos, wheelPos, wheelRadius, PLANE_NORMAL, cw);
-      const attachAnchor = anchorPos.clone();
-      const attachWheelA = tangentAnchorWheel.a_sphere.clone();
-      const rest1 = attachAnchor.distanceTo(attachWheelA);
+      const tangentBallAWheel = tangentFromPointToSphere(ballAPos, wheelPos, wheelRadius, PLANE_NORMAL, cw);
+      const attachWheelA = tangentBallAWheel.a_sphere.clone();
+      const dirBallA = attachWheelA.clone().subtract(ballAPos).normalize();
+      const attachBallA = ballAPos.clone().add(dirBallA, ballRadius);
+      const rest1 = attachBallA.distanceTo(attachWheelA);
 
-      const tangentWheelBall = tangentFromSphereToPoint(ballPos, wheelPos, wheelRadius, PLANE_NORMAL, cw);
-      const attachWheelB = tangentWheelBall.a_sphere.clone();
-      const dirBall = attachWheelB.clone().subtract(ballPos).normalize();
-      const attachBall = ballPos.clone().add(dirBall, ballRadius);
-      const rest2 = attachWheelB.distanceTo(attachBall);
+      const tangentWheelBallB = tangentFromSphereToPoint(ballBPos, wheelPos, wheelRadius, PLANE_NORMAL, cw);
+      const attachWheelB = tangentWheelBallB.a_sphere.clone();
+      const dirBallB = attachWheelB.clone().subtract(ballBPos).normalize();
+      const attachBallB = ballBPos.clone().add(dirBallB, ballRadius);
+      const rest2 = attachWheelB.distanceTo(attachBallB);
 
       const joint1 = world.createEntity();
-      world.addComponent(joint1, new CableJointComponent(anchor, wheel, rest1, attachAnchor, attachWheelA));
+      world.addComponent(joint1, new CableJointComponent(ballA, wheel, rest1, attachBallA, attachWheelA));
 
       const joint2 = world.createEntity();
-      world.addComponent(joint2, new CableJointComponent(wheel, ball, rest2, attachWheelB, attachBall));
+      world.addComponent(joint2, new CableJointComponent(wheel, ballB, rest2, attachWheelB, attachBallB));
 
       const path = world.createEntity();
       world.addComponent(path, new CablePathComponent(
         world,
         [joint1, joint2],
-        ['attachment', 'rolling', 'hybrid-attachment'],
+        ['hybrid-attachment', 'rolling', 'hybrid-attachment'],
         [true, true, true],
         1e6
       ));
@@ -369,7 +377,7 @@
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDVelocityUpdateSystem());
 
-      entityIds = { anchor, wheel, ball };
+      entityIds = { ballA, wheel, ballB };
       jointIds = [joint1, joint2];
       pathId = path;
 
@@ -378,11 +386,11 @@
     function setupVisuals() {
       clearVisuals();
 
-      visuals.anchor = createSphere(0.08, shared.anchorMat);
       visuals.wheel = createSphere(world.getComponent(entityIds.wheel, RadiusComponent).radius, shared.wheelMat);
-      visuals.ball = createSphere(world.getComponent(entityIds.ball, RadiusComponent).radius, shared.ballMat);
+      visuals.ballA = createSphere(world.getComponent(entityIds.ballA, RadiusComponent).radius, shared.ballAMat);
+      visuals.ballB = createSphere(world.getComponent(entityIds.ballB, RadiusComponent).radius, shared.ballBMat);
 
-      root.add(visuals.anchor, visuals.wheel, visuals.ball);
+      root.add(visuals.wheel, visuals.ballA, visuals.ballB);
 
       visuals.joints = jointIds.map((_, idx) => {
         const line = createLine(lineMaterials[idx % lineMaterials.length]);
@@ -391,8 +399,8 @@
       });
 
       visuals.attachments = jointIds.flatMap(() => {
-        const a = createSphere(0.05, shared.attachmentMat);
-        const b = createSphere(0.05, shared.attachmentMat);
+        const a = createSphere(0.015, shared.attachmentMat);
+        const b = createSphere(0.015, shared.attachmentMat);
         root.add(a, b);
         return [a, b];
       });
@@ -441,13 +449,13 @@
     }
 
     function syncScene() {
-      const posAnchor = world.getComponent(entityIds.anchor, PositionComponent).pos;
+      const posBallA = world.getComponent(entityIds.ballA, PositionComponent).pos;
       const posWheel = world.getComponent(entityIds.wheel, PositionComponent).pos;
-      const posBall = world.getComponent(entityIds.ball, PositionComponent).pos;
+      const posBallB = world.getComponent(entityIds.ballB, PositionComponent).pos;
 
-      visuals.anchor.position.set(posAnchor.x, posAnchor.y, posAnchor.z);
+      visuals.ballA.position.set(posBallA.x, posBallA.y, posBallA.z);
       visuals.wheel.position.set(posWheel.x, posWheel.y, posWheel.z);
-      visuals.ball.position.set(posBall.x, posBall.y, posBall.z);
+      visuals.ballB.position.set(posBallB.x, posBallB.y, posBallB.z);
 
       const wheelOrientation = world.getComponent(entityIds.wheel, OrientationComponent);
       if (wheelOrientation) {
@@ -455,10 +463,16 @@
         visuals.wheel.quaternion.set(q.x, q.y, q.z, q.w);
       }
 
-      const ballOrientation = world.getComponent(entityIds.ball, OrientationComponent);
-      if (ballOrientation) {
-        const q = ballOrientation.quaternion;
-        visuals.ball.quaternion.set(q.x, q.y, q.z, q.w);
+      const ballAOrientation = world.getComponent(entityIds.ballA, OrientationComponent);
+      if (ballAOrientation) {
+        const q = ballAOrientation.quaternion;
+        visuals.ballA.quaternion.set(q.x, q.y, q.z, q.w);
+      }
+
+      const ballBOrientation = world.getComponent(entityIds.ballB, OrientationComponent);
+      if (ballBOrientation) {
+        const q = ballBOrientation.quaternion;
+        visuals.ballB.quaternion.set(q.x, q.y, q.z, q.w);
       }
 
       updateLines();
@@ -482,9 +496,9 @@
     }
 
     function setWireframe(enabled) {
-      shared.anchorMat.wireframe = enabled;
       shared.wheelMat.wireframe = enabled;
-      shared.ballMat.wireframe = enabled;
+      shared.ballAMat.wireframe = enabled;
+      shared.ballBMat.wireframe = enabled;
       shared.attachmentMat.wireframe = enabled;
     }
 
