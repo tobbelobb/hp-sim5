@@ -1,6 +1,11 @@
 import Vector3 from './vector3.js';
 import Vector2 from '../cable_joints/vector2.js';
-import { _tangentPointCircle, tangentFromCircleToCircle } from '../cable_joints/geometry.js';
+import {
+  _tangentPointCircle,
+  tangentFromCircleToCircle,
+  signedArcLengthOnWheel as signedArcLengthOnWheel2D,
+  rightOfLine
+} from '../cable_joints/geometry.js';
 
 const EPSILON = 1e-9;
 
@@ -116,6 +121,22 @@ export function tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB
     a_sphere: liftFromPlane2D(result2.a_circle, origin, basis),
     b_sphere: liftFromPlane2D(result2.b_circle, origin, basis)
   };
+}
+
+export function signedArcLengthOnWheel(prevPoint, currPoint, center, radius, clockwisePreference, planeNormal, force_positive = false) {
+  const basis = buildPlaneBasis(planeNormal ?? new Vector3(0, 0, 1));
+  const prev2 = projectToPlane2D(prevPoint, center, basis);
+  const curr2 = projectToPlane2D(currPoint, center, basis);
+  const center2 = new Vector2(0, 0);
+  return signedArcLengthOnWheel2D(prev2, curr2, center2, radius, clockwisePreference, force_positive);
+}
+
+export function rightOfPlane(x, p0, p1, planeNormal) {
+  const basis = buildPlaneBasis(planeNormal ?? new Vector3(0, 0, 1));
+  const x2 = projectToPlane2D(x, p0, basis);
+  const p12 = projectToPlane2D(p1, p0, basis);
+  const p02 = new Vector2(0, 0);
+  return rightOfLine(x2, p02, p12);
 }
 
 /**
