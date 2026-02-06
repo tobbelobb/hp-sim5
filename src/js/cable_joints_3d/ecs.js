@@ -7,6 +7,7 @@ export {
   World,
   RadiusComponent,
   MassComponent,
+  MomentOfInertiaComponent,
   RestitutionComponent,
   GravityAffectedComponent,
   SimulationErrorStateComponent,
