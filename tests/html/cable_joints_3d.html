@@ -1,52 +1,624 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Cable Joints 3D Demo</title>
+  <meta charset="utf-8" />
+  <title>Cable Joints 3D</title>
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iIzQ0NCIvPjwvc3ZnPg==" />
   <style>
-    body { margin: 0; }
-    canvas { display: block; }
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --bg-1: #0e1116;
+      --bg-2: #0c1b1f;
+      --panel: rgba(16, 22, 32, 0.9);
+      --panel-border: rgba(120, 140, 160, 0.3);
+      --text: #e6edf3;
+      --muted: #9aa7b2;
+      --accent: #5fd0f2;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(1200px 800px at 10% 10%, var(--bg-2), var(--bg-1));
+      font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #hud {
+      position: absolute;
+      inset: 12px 12px auto 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      backdrop-filter: blur(6px);
+      z-index: 5;
+    }
+
+    #hud .title {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-right: 8px;
+    }
+
+    #hud .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    #hud button {
+      background: #1a2635;
+      color: var(--text);
+      border: 1px solid rgba(120, 140, 160, 0.4);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    #hud button:hover {
+      border-color: var(--accent);
+    }
+
+    #hud .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    #hud input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    #stats {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    #errorPanel {
+      position: absolute;
+      inset: auto 12px 12px 12px;
+      padding: 12px;
+      background: rgba(80, 10, 10, 0.85);
+      border: 1px solid rgba(255, 120, 120, 0.5);
+      border-radius: 10px;
+      color: #ffd9d9;
+      font-size: 13px;
+      display: none;
+      white-space: pre-wrap;
+      max-height: 30vh;
+      overflow-y: auto;
+    }
   </style>
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.177.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.177.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-<script type="module">
-import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
+  <div id="hud">
+    <div class="title">Cable Joints 3D</div>
+    <div class="controls">
+      <button id="pauseBtn" tabindex="-1">Start</button>
+      <button id="stepBtn">Step</button>
+      <button id="resetBtn" tabindex="-1">Reset</button>
+      <label class="toggle">
+        <input id="wireframeToggle" type="checkbox" />
+        Wireframe
+      </label>
+      <label class="toggle">
+        <input id="attachmentsToggle" type="checkbox" checked />
+        Attachments
+      </label>
+    </div>
+    <div id="stats">
+      <span>Steps: <span id="stepCount">0</span></span>
+      <span>Length: <span id="lengthReadout">0.000</span></span>
+      <span>Rest: <span id="restReadout">0.000</span></span>
+    </div>
+  </div>
 
-// Basic three.js setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+  <canvas id="canvas"></canvas>
+  <div id="errorPanel"></div>
 
-const balls = [];
-function addBall(pos, radius=0.1, color=0x888888) {
-  const geom = new THREE.SphereGeometry(radius, 16, 16);
-  const mat = new THREE.MeshStandardMaterial({ color });
-  const mesh = new THREE.Mesh(geom, mat);
-  mesh.position.set(pos.x, pos.y, pos.z);
-  scene.add(mesh);
-  balls.push({mesh, pos});
-}
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// Simple lighting
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5,5,5);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040));
+    import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
+    import {
+      World,
+      PositionComponent,
+      VelocityComponent,
+      RadiusComponent,
+      MassComponent,
+      GravityAffectedComponent,
+      OrientationComponent,
+      MomentOfInertiaComponent,
+      SimulationErrorStateComponent
+    } from '../../src/js/cable_joints_3d/ecs.js';
 
-// Example balls representing cable joint endpoints
-addBall(new Vector3(0,0,0), 0.1, 0xff0000);
-addBall(new Vector3(1,0,0), 0.1, 0x00ff00);
-addBall(new Vector3(1,1,0), 0.1, 0x0000ff);
+    import {
+      CableLinkComponent,
+      CableJointComponent,
+      CablePathComponent,
+      CableAttachmentUpdateSystem,
+      PBDCableConstraintSolver
+    } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
-camera.position.z = 3;
+    import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
+    import { GravitySystem, MovementSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
+    import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
+    import {
+      tangentFromPointToSphere,
+      tangentFromSphereToPoint
+    } from '../../src/js/cable_joints_3d/geometry3.js';
 
-function animate() {
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-}
-animate();
-</script>
+    const canvas = document.getElementById('canvas');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const stepBtn = document.getElementById('stepBtn');
+    const wireframeToggle = document.getElementById('wireframeToggle');
+    const attachmentsToggle = document.getElementById('attachmentsToggle');
+    const stepCountEl = document.getElementById('stepCount');
+    const lengthReadout = document.getElementById('lengthReadout');
+    const restReadout = document.getElementById('restReadout');
+    const errorPanel = document.getElementById('errorPanel');
+
+    const PLANE_NORMAL = new Vector3(0, 0, 1);
+    const FIXED_DT = 1.0 / 120.0;
+    const MAX_STEPS_PER_FRAME = 6;
+    const VELOCITY_DAMPING = 0.015;
+
+    let world = null;
+    let entityIds = null;
+    let jointIds = [];
+    let pathId = null;
+    let dynamicEntities = [];
+    let prevPositions = [];
+
+    let stepCount = 0;
+    let paused = true;
+    let stepOnce = false;
+    let accumulator = 0.0;
+    let lastTime = 0.0;
+    let lastWidth = 0;
+    let lastHeight = 0;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0f14);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.01, 50);
+    camera.position.set(0.4, 1.4, 3.5);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.minDistance = 1.2;
+    controls.maxDistance = 8.0;
+
+    const lights = new THREE.Group();
+    const ambient = new THREE.AmbientLight(0x4c6a7f, 0.7);
+    const dirLight = new THREE.DirectionalLight(0xe6f7ff, 1.1);
+    dirLight.position.set(2, 3, 4);
+    lights.add(ambient, dirLight);
+    scene.add(lights);
+
+    const grid = new THREE.GridHelper(6, 12, 0x2f3f4a, 0x1a222b);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = 0;
+    scene.add(grid);
+
+    const root = new THREE.Group();
+    scene.add(root);
+
+    const shared = {
+      sphereGeom: new THREE.SphereGeometry(1, 28, 20),
+      anchorMat: new THREE.MeshStandardMaterial({ color: 0xdad7cd, roughness: 0.4, metalness: 0.2 }),
+      wheelMat: new THREE.MeshStandardMaterial({ color: 0x405870, roughness: 0.5, metalness: 0.4 }),
+      ballMat: new THREE.MeshStandardMaterial({ color: 0x57b3e4, roughness: 0.3, metalness: 0.1 }),
+      attachmentMat: new THREE.MeshBasicMaterial({ color: 0xffd166 })
+    };
+
+    const lineMaterials = [
+      new THREE.LineBasicMaterial({ color: 0xff6b6b }),
+      new THREE.LineBasicMaterial({ color: 0xffd166 })
+    ];
+
+    let visuals = {
+      anchor: null,
+      wheel: null,
+      ball: null,
+      joints: [],
+      attachments: []
+    };
+
+    function createSphere(radius, material) {
+      const mesh = new THREE.Mesh(shared.sphereGeom, material);
+      mesh.scale.set(radius, radius, radius);
+      return mesh;
+    }
+
+    function createLine(material) {
+      const positions = new Float32Array(6);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const line = new THREE.Line(geometry, material);
+      line.frustumCulled = false;
+      line.userData.ownsGeometry = true;
+      return line;
+    }
+
+    function disposeObject(obj) {
+      if (!obj) return;
+      if (obj.geometry && obj.userData.ownsGeometry) obj.geometry.dispose();
+      if (obj.material && obj.userData.ownsMaterial) obj.material.dispose();
+    }
+
+    function clearVisuals() {
+      root.children.forEach(child => {
+        disposeObject(child);
+      });
+      root.clear();
+      visuals = { anchor: null, wheel: null, ball: null, joints: [], attachments: [] };
+    }
+
+    function setupWorld() {
+      world = new World();
+      world.setResource('dt', FIXED_DT);
+      world.setResource('gravity', new Vector3(0, -9.81, 0));
+      world.setResource('pauseState', { paused: true });
+      world.setResource('errorState', new SimulationErrorStateComponent(false));
+      world.setResource('debugRenderPoints', {});
+
+      const anchor = world.createEntity();
+      const wheel = world.createEntity();
+      const ball = world.createEntity();
+
+      const anchorPos = new Vector3(-1.6, 1.0, 0.0);
+      const wheelPos = new Vector3(0.0, 0.0, 0.0);
+      const ballPos = new Vector3(1.7, 0.4, 0.0);
+
+      const wheelRadius = 0.45;
+      const ballRadius = 0.25;
+      const ballMass = 0.6;
+
+      world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y, anchorPos.z));
+      world.addComponent(anchor, new MassComponent(-1.0));
+      world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y, anchorPos.z, null, PLANE_NORMAL));
+
+      world.addComponent(wheel, new PositionComponent(wheelPos.x, wheelPos.y, wheelPos.z));
+      world.addComponent(wheel, new RadiusComponent(wheelRadius));
+      world.addComponent(wheel, new MassComponent(-1.0));
+      world.addComponent(wheel, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y, wheelPos.z, null, PLANE_NORMAL));
+
+      world.addComponent(ball, new PositionComponent(ballPos.x, ballPos.y, ballPos.z));
+      world.addComponent(ball, new VelocityComponent(0.0, 0.0, 0.0));
+      world.addComponent(ball, new RadiusComponent(ballRadius));
+      world.addComponent(ball, new MassComponent(ballMass));
+      world.addComponent(ball, new MomentOfInertiaComponent(0.4 * ballMass * ballRadius * ballRadius));
+      world.addComponent(ball, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(ball, new GravityAffectedComponent());
+      world.addComponent(ball, new CableLinkComponent(ballPos.x, ballPos.y, ballPos.z, null, PLANE_NORMAL));
+
+      const cw = true;
+      const tangentAnchorWheel = tangentFromPointToSphere(anchorPos, wheelPos, wheelRadius, PLANE_NORMAL, cw);
+      const attachAnchor = anchorPos.clone();
+      const attachWheelA = tangentAnchorWheel.a_sphere.clone();
+      const rest1 = attachAnchor.distanceTo(attachWheelA);
+
+      const tangentWheelBall = tangentFromSphereToPoint(ballPos, wheelPos, wheelRadius, PLANE_NORMAL, cw);
+      const attachWheelB = tangentWheelBall.a_sphere.clone();
+      const dirBall = attachWheelB.clone().subtract(ballPos).normalize();
+      const attachBall = ballPos.clone().add(dirBall, ballRadius);
+      const rest2 = attachWheelB.distanceTo(attachBall);
+
+      const joint1 = world.createEntity();
+      world.addComponent(joint1, new CableJointComponent(anchor, wheel, rest1, attachAnchor, attachWheelA));
+
+      const joint2 = world.createEntity();
+      world.addComponent(joint2, new CableJointComponent(wheel, ball, rest2, attachWheelB, attachBall));
+
+      const path = world.createEntity();
+      world.addComponent(path, new CablePathComponent(
+        world,
+        [joint1, joint2],
+        ['attachment', 'rolling', 'hybrid-attachment'],
+        [true, true, true],
+        1e6
+      ));
+
+      world.registerSystem(new CableAttachmentCacheSystem());
+      world.registerSystem(new GravitySystem());
+      world.registerSystem(new MovementSystem());
+      world.registerSystem(new CableAttachmentUpdateSystem());
+      world.registerSystem(new PBDCableConstraintSolver());
+      world.registerSystem(new PBDResolveCableOverCorrections());
+
+      entityIds = { anchor, wheel, ball };
+      jointIds = [joint1, joint2];
+      pathId = path;
+
+      dynamicEntities = [ball];
+      prevPositions = dynamicEntities.map(() => new Vector3(0, 0, 0));
+    }
+
+    function setupVisuals() {
+      clearVisuals();
+
+      visuals.anchor = createSphere(0.08, shared.anchorMat);
+      visuals.wheel = createSphere(world.getComponent(entityIds.wheel, RadiusComponent).radius, shared.wheelMat);
+      visuals.ball = createSphere(world.getComponent(entityIds.ball, RadiusComponent).radius, shared.ballMat);
+
+      root.add(visuals.anchor, visuals.wheel, visuals.ball);
+
+      visuals.joints = jointIds.map((_, idx) => {
+        const line = createLine(lineMaterials[idx % lineMaterials.length]);
+        root.add(line);
+        return line;
+      });
+
+      visuals.attachments = jointIds.flatMap(() => {
+        const a = createSphere(0.05, shared.attachmentMat);
+        const b = createSphere(0.05, shared.attachmentMat);
+        root.add(a, b);
+        return [a, b];
+      });
+    }
+
+    function updatePauseLabel() {
+      pauseBtn.textContent = paused ? 'Start' : 'Pause';
+    }
+
+    function cachePrevPositions() {
+      for (let i = 0; i < dynamicEntities.length; i++) {
+        const entityId = dynamicEntities[i];
+        const posComp = world.getComponent(entityId, PositionComponent);
+        prevPositions[i].set(posComp.pos);
+      }
+    }
+
+    function updateVelocities(dt) {
+      const invDt = dt > 0 ? 1.0 / dt : 0.0;
+      for (let i = 0; i < dynamicEntities.length; i++) {
+        const entityId = dynamicEntities[i];
+        const posComp = world.getComponent(entityId, PositionComponent);
+        const velComp = world.getComponent(entityId, VelocityComponent);
+        const prev = prevPositions[i];
+        velComp.vel.x = (posComp.pos.x - prev.x) * invDt;
+        velComp.vel.y = (posComp.pos.y - prev.y) * invDt;
+        velComp.vel.z = (posComp.pos.z - prev.z) * invDt;
+        velComp.vel.scale(1.0 - VELOCITY_DAMPING);
+      }
+    }
+
+    function stepSimulation(dt) {
+      const pauseState = world.getResource('pauseState');
+      if (pauseState) pauseState.paused = false;
+      cachePrevPositions();
+      world.update(dt);
+      updateVelocities(dt);
+      stepCount += 1;
+      stepCountEl.textContent = stepCount.toString();
+    }
+
+    function updateLines() {
+      for (let i = 0; i < jointIds.length; i++) {
+        const joint = world.getComponent(jointIds[i], CableJointComponent);
+        const line = visuals.joints[i];
+        const positions = line.geometry.attributes.position.array;
+        positions[0] = joint.attachmentPointA_world.x;
+        positions[1] = joint.attachmentPointA_world.y;
+        positions[2] = joint.attachmentPointA_world.z;
+        positions[3] = joint.attachmentPointB_world.x;
+        positions[4] = joint.attachmentPointB_world.y;
+        positions[5] = joint.attachmentPointB_world.z;
+        line.geometry.attributes.position.needsUpdate = true;
+      }
+    }
+
+    function updateAttachments() {
+      const show = attachmentsToggle.checked;
+      visuals.attachments.forEach(mesh => { mesh.visible = show; });
+      if (!show) return;
+
+      let idx = 0;
+      for (let i = 0; i < jointIds.length; i++) {
+        const joint = world.getComponent(jointIds[i], CableJointComponent);
+        const a = visuals.attachments[idx++];
+        const b = visuals.attachments[idx++];
+        a.position.set(joint.attachmentPointA_world.x, joint.attachmentPointA_world.y, joint.attachmentPointA_world.z);
+        b.position.set(joint.attachmentPointB_world.x, joint.attachmentPointB_world.y, joint.attachmentPointB_world.z);
+      }
+    }
+
+    function syncScene() {
+      const posAnchor = world.getComponent(entityIds.anchor, PositionComponent).pos;
+      const posWheel = world.getComponent(entityIds.wheel, PositionComponent).pos;
+      const posBall = world.getComponent(entityIds.ball, PositionComponent).pos;
+
+      visuals.anchor.position.set(posAnchor.x, posAnchor.y, posAnchor.z);
+      visuals.wheel.position.set(posWheel.x, posWheel.y, posWheel.z);
+      visuals.ball.position.set(posBall.x, posBall.y, posBall.z);
+
+      const wheelOrientation = world.getComponent(entityIds.wheel, OrientationComponent);
+      if (wheelOrientation) {
+        const q = wheelOrientation.quaternion;
+        visuals.wheel.quaternion.set(q.x, q.y, q.z, q.w);
+      }
+
+      const ballOrientation = world.getComponent(entityIds.ball, OrientationComponent);
+      if (ballOrientation) {
+        const q = ballOrientation.quaternion;
+        visuals.ball.quaternion.set(q.x, q.y, q.z, q.w);
+      }
+
+      updateLines();
+      updateAttachments();
+      updateLengthReadout();
+    }
+
+    function updateLengthReadout() {
+      const path = world.getComponent(pathId, CablePathComponent);
+      let current = 0.0;
+      for (let i = 0; i < jointIds.length; i++) {
+        const joint = world.getComponent(jointIds[i], CableJointComponent);
+        current += joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+      }
+      for (let i = 0; i < path.stored.length; i++) {
+        current += path.stored[i];
+      }
+
+      lengthReadout.textContent = current.toFixed(3);
+      restReadout.textContent = path.totalRestLength.toFixed(3);
+    }
+
+    function setWireframe(enabled) {
+      shared.anchorMat.wireframe = enabled;
+      shared.wheelMat.wireframe = enabled;
+      shared.ballMat.wireframe = enabled;
+      shared.attachmentMat.wireframe = enabled;
+    }
+
+    function resizeRenderer() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (width === 0 || height === 0) return;
+      if (width === lastWidth && height === lastHeight) return;
+      lastWidth = width;
+      lastHeight = height;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    function showError(err) {
+      const message = err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err);
+      errorPanel.textContent = message.trim();
+      errorPanel.style.display = 'block';
+    }
+
+    function clearError() {
+      errorPanel.textContent = '';
+      errorPanel.style.display = 'none';
+    }
+
+    function resetSimulation() {
+      stepCount = 0;
+      paused = true;
+      stepOnce = false;
+      accumulator = 0.0;
+      clearError();
+
+      setupWorld();
+      setupVisuals();
+      const wheelPos = world.getComponent(entityIds.wheel, PositionComponent).pos;
+      controls.target.set(wheelPos.x, wheelPos.y, wheelPos.z);
+      controls.update();
+      setWireframe(wireframeToggle.checked);
+      syncScene();
+      updatePauseLabel();
+    }
+
+    pauseBtn.addEventListener('click', () => {
+      paused = !paused;
+      world.getResource('pauseState').paused = paused;
+      updatePauseLabel();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      resetSimulation();
+    });
+
+    stepBtn.addEventListener('click', () => {
+      if (!paused) return;
+      stepOnce = true;
+    });
+
+    wireframeToggle.addEventListener('change', () => {
+      setWireframe(wireframeToggle.checked);
+    });
+
+    window.addEventListener('resize', resizeRenderer);
+
+    function animate(timeMs) {
+      const time = timeMs * 0.001;
+      const delta = Math.min(0.1, time - lastTime);
+      lastTime = time;
+
+      if (stepOnce) {
+        try {
+          stepSimulation(FIXED_DT);
+        } catch (err) {
+          paused = true;
+          world.getResource('pauseState').paused = true;
+          updatePauseLabel();
+          showError(err);
+        }
+        stepOnce = false;
+        paused = true;
+        world.getResource('pauseState').paused = true;
+        updatePauseLabel();
+      } else if (!paused) {
+        accumulator += delta;
+        let steps = 0;
+        while (accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
+          try {
+            stepSimulation(FIXED_DT);
+          } catch (err) {
+            paused = true;
+            world.getResource('pauseState').paused = true;
+            updatePauseLabel();
+            showError(err);
+            break;
+          }
+          accumulator -= FIXED_DT;
+          steps += 1;
+        }
+      }
+
+      syncScene();
+      controls.update();
+      resizeRenderer();
+      renderer.render(scene, camera);
+    }
+
+    resetSimulation();
+    renderer.setAnimationLoop(animate);
+  </script>
 </body>
 </html>
