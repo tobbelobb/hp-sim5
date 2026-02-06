@@ -177,7 +177,7 @@
     } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
     import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-    import { GravitySystem, MovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
+    import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import {
       tangentFromPointToSphere,
@@ -376,6 +376,7 @@
       world.registerSystem(new PrevFinalOrientationSystem());
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
+      world.registerSystem(new AngularMovementSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new PBDCableConstraintSolver());

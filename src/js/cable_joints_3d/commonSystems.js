@@ -1,6 +1,7 @@
 import {
   OrientationComponent,
   PrevFinalOrientationComponent,
+  AngularVelocityComponent,
   VelocityComponent,
   GravityAffectedComponent,
   PositionComponent,
@@ -47,6 +48,29 @@ export class PrevFinalOrientationSystem {
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
       prevFinalOrientationComp.quaternion.set(orientationComp.quaternion);
+    }
+  }
+}
+
+export class AngularMovementSystem {
+  runInPause = false;
+  update(world, dt) {
+    const entities = world.query([OrientationComponent, AngularVelocityComponent]);
+    const epsilon = 1e-12;
+
+    for (const entityId of entities) {
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+
+      const omega = angularVelComp.omega;
+      const speed = omega.length();
+      if (speed <= epsilon) continue;
+
+      const axis = omega.clone().scale(1.0 / speed);
+      const angle = speed * dt;
+
+      const dq = orientationComp.quaternion.clone().setFromAxisAngle(axis, angle);
+      orientationComp.quaternion.multiplyQuaternions(dq, orientationComp.quaternion).normalize();
     }
   }
 }
