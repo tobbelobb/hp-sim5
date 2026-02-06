@@ -9,7 +9,7 @@ function _storeCableLinkPoses(world) {
     const linkComp = world.getComponent(linkId, CableLinkComponent);
     linkComp.prevCableAttachmentTimePos.set(posComp.pos);
     if (orientationComp) {
-      linkComp.prevCableAttachmentTimeOrientation.set(orientationComp.orientation);
+      linkComp.prevCableAttachmentTimeOrientation.set(orientationComp.quaternion);
     }
   }
 }

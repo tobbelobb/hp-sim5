@@ -163,12 +163,14 @@ export class AngularVelocityComponent {
         this.angularVelocity = velocity; // Radians per second
     }
 }
+// Moment Of Inertia in 3D is described by a 3x3 matrix, so it needs its own component in cable_joints_3d/ecs.js
 export class MomentOfInertiaComponent {
     constructor(inertia = 1.0) {
         this.inertia = inertia; // kg * m^2 (approximate for 2D)
         this.invInertia = inertia > 0 ? 1.0 / inertia : 0.0;
     }
 }
+// RenderableComponent needs to be redefined in cable_joints_3d/ecs.js to fit 3d rendering needs.
 export class RenderableComponent {
   constructor(shape = 'circle', color = '#888888') {
     this.shape = shape; // 'circle', 'line', 'flipper', 'border'
@@ -187,6 +189,7 @@ export class CoefficientOfFrictionComponent {
   }
 }
 
+// DistanceConstraintComponent might be possible to reuse in 3D (re-export in cable_joints_3d/ecs.js)?
 export class DistanceConstraintComponent {
   constructor(entityA, entityB, restLength, compliance = 0.0) {
     this.entityA = entityA;
@@ -197,6 +200,7 @@ export class DistanceConstraintComponent {
   }
 }
 
+// RigidGroupComponent might be possible to reuse in 3D (re-export in cable_joints_3d/ecs.js)?
 // Groups multiple bodies to move as a single rigid cluster using shape matching.
 // - members: array of entityIds
 // - restLocal: array of Vector2 offsets (initialized on first update)

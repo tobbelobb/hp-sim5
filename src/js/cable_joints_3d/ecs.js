@@ -3,7 +3,16 @@ import Quaternion from './quaternion.js';
 
 // 3D analogs of 2D components live here (Vector3 + Quaternion).
 // Reuse the 2D World implementation to avoid duplication.
-export { World } from '../cable_joints/ecs.js';
+export {
+  World,
+  RadiusComponent,
+  MassComponent,
+  RestitutionComponent,
+  GravityAffectedComponent,
+  SimulationErrorStateComponent,
+  MachineTagComponent,
+  CoefficientOfFrictionComponent,
+} from '../cable_joints/ecs.js';
 
 export class PositionComponent {
   constructor(x = 0, y = 0, z = 0) {
@@ -23,16 +32,20 @@ export class VelocityComponent {
   }
 }
 
-export class GravityAffectedComponent { }
-
-export class RadiusComponent {
-  constructor(radius = 0.1) {
-    this.radius = radius;
+export class OrientationComponent {
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.quaternion = new Quaternion(x, y, z, w);
   }
 }
 
-export class OrientationComponent {
+export class PrevFinalOrientationComponent {
   constructor(x = 0, y = 0, z = 0, w = 1) {
-    this.orientation = new Quaternion(x, y, z, w);
+    this.quaternion = new Quaternion(x, y, z, w);
   }
+}
+
+export class AngularVelocityComponent {
+    constructor(x = 0, y = 0, z = 0) {
+        this.omega = new Vector3(x, y, z); // Axis = normalize(omega), speed = norm_L2(omega) [Radians per second]
+    }
 }
