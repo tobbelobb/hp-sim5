@@ -341,7 +341,7 @@ export function setupScene(world, stage, canvas) {
       targetY: 0.85,
       cameraZ: 2.2,
       controlsEnabled: true,
-      enableDamping: true,
+      enableDamping: false,
       enableRotate: true,
       enablePan: false,
       enableZoom: true,

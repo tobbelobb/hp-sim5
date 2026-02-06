@@ -149,15 +149,17 @@ export class RenderSystem3D {
     if (this.controlsEnabled) {
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enabled = true;
-      this.controls.enableDamping = options.enableDamping ?? true;
+      this.controls.enableDamping = options.enableDamping ?? false;
       this.controls.enablePan = options.enablePan ?? false;
       this.controls.enableRotate = options.enableRotate ?? false;
       this.controls.enableZoom = options.enableZoom ?? false;
+      this.controls.minPolarAngle = Number.isFinite(options.minPolarAngle) ? options.minPolarAngle : 0.0;
+      this.controls.maxPolarAngle = Number.isFinite(options.maxPolarAngle) ? options.maxPolarAngle : Math.PI;
       this.controls.minDistance = 0.45;
       this.controls.maxDistance = 8.0;
       this.controls.target.set(targetX, targetY, 0);
       if (options.rotateWithRightMouse) {
-        this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+        this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
         this.controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
         this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
         this.controls.touches.ONE = THREE.TOUCH.ROTATE;
@@ -216,6 +218,96 @@ export class RenderSystem3D {
 
     this._lastWidth = width;
     this._lastHeight = height;
+
+    this._onWindowResize = null;
+    if (options.autoResize !== false && typeof window !== 'undefined') {
+      this._onWindowResize = () => this._resizeToDisplaySize();
+      window.addEventListener('resize', this._onWindowResize);
+    }
+  }
+
+  _collectPoseDebug(world) {
+    const pose = {
+      camera: {
+        position: {
+          x: this.camera.position.x,
+          y: this.camera.position.y,
+          z: this.camera.position.z
+        },
+        quaternion: {
+          x: this.camera.quaternion.x,
+          y: this.camera.quaternion.y,
+          z: this.camera.quaternion.z,
+          w: this.camera.quaternion.w
+        }
+      },
+      controlsTarget: this.controls
+        ? {
+            x: this.controls.target.x,
+            y: this.controls.target.y,
+            z: this.controls.target.z
+          }
+        : null,
+      paused: world.getResource('pauseState')?.paused ?? null,
+      flippers: [],
+      borderCenter: null
+    };
+
+    if (this.flipperTagComponentClass && this.flipperStateComponentClass) {
+      const flippers = world.query([
+        this.flipperTagComponentClass,
+        PositionComponent,
+        this.flipperStateComponentClass
+      ]);
+
+      for (const entityId of flippers) {
+        const pos = world.getComponent(entityId, PositionComponent)?.pos;
+        const state = world.getComponent(entityId, this.flipperStateComponentClass);
+        if (!pos || !state) continue;
+
+        const angle = state.restAngle + state.sign * state.rotation;
+        const tip = {
+          x: pos.x + Math.cos(angle) * state.length,
+          y: pos.y + Math.sin(angle) * state.length,
+          z: pos.z
+        };
+
+        pose.flippers.push({
+          id: entityId,
+          pivot: { x: pos.x, y: pos.y, z: pos.z },
+          tip,
+          angle
+        });
+      }
+    }
+
+    if (this.borderComponentClass) {
+      const borderEntities = world.query([this.borderComponentClass]);
+      if (borderEntities.length > 0) {
+        const border = world.getComponent(borderEntities[0], this.borderComponentClass);
+        const points = border?.points ?? [];
+        if (points.length > 0) {
+          const center = { x: 0, y: 0, z: 0 };
+          for (const point of points) {
+            center.x += point.x;
+            center.y += point.y;
+            center.z += point.z;
+          }
+          const inv = 1.0 / points.length;
+          center.x *= inv;
+          center.y *= inv;
+          center.z *= inv;
+          pose.borderCenter = center;
+        }
+      }
+    }
+
+    return pose;
+  }
+
+  dumpPose(world) {
+    if (!world) return null;
+    return this._collectPoseDebug(world);
   }
 
   setAnimationLoop(callback) {
@@ -263,7 +355,6 @@ export class RenderSystem3D {
       return;
     }
 
-    this._resizeIfNeeded();
     this._syncBoard(world);
     this._syncBorder(world);
     this._syncCircles(world);
@@ -281,25 +372,8 @@ export class RenderSystem3D {
 
     if (this.debugEnabled) {
       this._debugFrame += 1;
-      if (this._debugFrame % 120 === 0) {
-        const ballIds = world.query([PositionComponent, RadiusComponent, RenderableComponent]).filter((id) => {
-          const r = world.getComponent(id, RenderableComponent);
-          return r?.shape === 'circle';
-        });
-        const firstBallPos = ballIds.length > 0 ? world.getComponent(ballIds[0], PositionComponent)?.pos : null;
-        console.debug('[flipper3d-render]', {
-          cameraPos: {
-            x: this.camera.position.x.toFixed(4),
-            y: this.camera.position.y.toFixed(4),
-            z: this.camera.position.z.toFixed(4)
-          },
-          firstBall: firstBallPos ? {
-            x: firstBallPos.x.toFixed(4),
-            y: firstBallPos.y.toFixed(4),
-            z: firstBallPos.z.toFixed(4)
-          } : null,
-          paused: world.getResource('pauseState')?.paused
-        });
+      if (this._debugFrame % 30 === 0) {
+        console.debug('[flipper3d-pose]', this._collectPoseDebug(world));
       }
     }
     this.renderer.render(this.scene, this.camera);
@@ -358,12 +432,16 @@ export class RenderSystem3D {
     if (this.controls) {
       this.controls.dispose();
     }
+    if (this._onWindowResize && typeof window !== 'undefined') {
+      window.removeEventListener('resize', this._onWindowResize);
+    }
     this.renderer.dispose();
   }
 
-  _resizeIfNeeded() {
-    const width = Math.max(1, this.canvas.clientWidth || this.canvas.width || 1);
-    const height = Math.max(1, this.canvas.clientHeight || this.canvas.height || 1);
+  _resizeToDisplaySize() {
+    const rect = this.canvas.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width || this.canvas.clientWidth || this.canvas.width || 1));
+    const height = Math.max(1, Math.round(rect.height || this.canvas.clientHeight || this.canvas.height || 1));
 
     if (width === this._lastWidth && height === this._lastHeight) {
       return;
