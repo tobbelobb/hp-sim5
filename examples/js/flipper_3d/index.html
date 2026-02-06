@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mindfulness Pinball 3D</title>
+
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iIzI2MzY0YiIvPjwvc3ZnPg==" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+
+
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap');
+
+    :root {
+      --bg-1: #0e141d;
+      --bg-2: #1a2a3c;
+      --panel: rgba(12, 19, 29, 0.92);
+      --panel-border: rgba(110, 140, 170, 0.35);
+      --text-main: #edf3f8;
+      --text-dim: #aac0d3;
+      --btn-1: #24588c;
+      --btn-2: #3f89c4;
+      --radius: 8px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100dvh;
+      overflow: hidden;
+      background: radial-gradient(1100px 700px at 12% 10%, var(--bg-2), var(--bg-1));
+      color: var(--text-main);
+      font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      display: grid;
+      place-items: center;
+    }
+
+    #gameContainer {
+      width: min(96vw, 1020px);
+      height: min(96dvh, 940px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #controls {
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      user-select: none;
+      backdrop-filter: blur(6px);
+    }
+
+    #controls button {
+      all: unset;
+      cursor: pointer;
+      color: #f8fbff;
+      background: linear-gradient(135deg, var(--btn-1), var(--btn-2));
+      border-radius: 6px;
+      border: 1px solid rgba(180, 210, 235, 0.35);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+
+    #controls button:hover,
+    #controls button:focus-visible {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    #controls button:active {
+      transform: scale(0.98);
+    }
+
+    #stats {
+      margin-left: auto;
+      font-size: 0.84rem;
+      color: var(--text-dim);
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      box-sizing: border-box;
+      display: block;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 140, 170, 0.35);
+      touch-action: none;
+    }
+
+    @media (max-width: 780px) {
+      #gameContainer {
+        width: 100vw;
+        height: 100dvh;
+        gap: 0;
+      }
+
+      #controls {
+        border-radius: 0;
+        border-inline: 0;
+        border-top: 0;
+      }
+
+      canvas {
+        border-radius: 0;
+        border-inline: 0;
+        border-bottom: 0;
+      }
+
+      #stats {
+        width: 100%;
+        margin-left: 0;
+      }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "../../../node_modules/three/build/three.module.js",
+      "three/addons/": "../../../node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/flipper_3d/index.html-BwyX4rfz.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-BsBYxQSu.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BAB2q2Ln.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/geometry3-jIrPtjjR.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-B9DoWRyc.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/ball_obstacle_bump_system-BJMb7mba.js">
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="controls">
+      <button id="pauseBtn" tabindex="-1">Pause</button>
+      <button id="resetBtn" tabindex="-1">Reset</button>
+      <button id="stepBtn">Step</button>
+      <button id="dumpBtn" tabindex="-1">Dump State</button>
+      <span>Score: <span id="score">0</span></span>
+      <div id="stats">
+        <span>dt: <span id="dt">N/A</span></span>
+        <span>Speed: <span id="speed">N/A</span></span>
+      </div>
+    </div>
+    <canvas id="myCanvas"></canvas>
+  </div>
+
+</body>
+</html>
