@@ -808,11 +808,13 @@ export class PBDCableConstraintSolver {
             const massAComp = world.getComponent(entityA, MassComponent);
             const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
             const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
+            // Scalar inertia here is treated as effective inertia about the constraint axis.
             const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
 
             const massBComp = world.getComponent(entityB, MassComponent);
             const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
             const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
+            // Scalar inertia here is treated as effective inertia about the constraint axis.
             const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
 
             if (invMassA + invMassB + invInertiaA + invInertiaB <= EPSILON) {
