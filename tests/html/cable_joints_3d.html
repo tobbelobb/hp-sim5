@@ -177,6 +177,7 @@
     } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
     import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
+    import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
     import { GravitySystem, MovementSystem, AngularMovementSystem, PrevFinalPosSystem, PrevFinalOrientationSystem, PBDVelocityUpdateSystem } from '../../src/js/cable_joints_3d/commonSystems.js';
     import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
     import {
@@ -379,8 +380,10 @@
       world.registerSystem(new AngularMovementSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
       world.registerSystem(new CableAttachmentCacheSystem());
+      world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
+
       world.registerSystem(new PBDVelocityUpdateSystem());
 
       entityIds = { ballA, wheel, ballB };
