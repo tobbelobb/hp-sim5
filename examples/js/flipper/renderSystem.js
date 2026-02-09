@@ -698,10 +698,88 @@ export class RenderSystem {
       }
     }
 
+    const drawEndpointStoredWrap = (path, linkIndex, center, bodyRadius, attachmentPoint, renderComp) => {
+      if (!center || !Number.isFinite(bodyRadius) || bodyRadius <= 1e-9 || !attachmentPoint) {
+        return;
+      }
+      const halfWidth = path.cableHalfWidth ?? 0.0;
+      const baseRadius = bodyRadius + halfWidth;
+      if (!(baseRadius > 1e-9)) {
+        return;
+      }
+
+      let remainingLength = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+      if (!(remainingLength > 1e-9)) {
+        return;
+      }
+
+      const startAngle = Math.atan2(attachmentPoint.y - center.y, attachmentPoint.x - center.x);
+      const cw = Boolean(path.cw[linkIndex]);
+      const anticlockwise = !cw;
+      const fullWidth = 2.0 * halfWidth;
+      const maxRenderableAngle = 2.0 * Math.PI - 0.0001;
+      const MAX_LAYERS = 128;
+
+      if (renderComp) {
+        this.c.strokeStyle = renderComp.color;
+      } else {
+        this.c.strokeStyle = 'yellow';
+      }
+
+      let layerIndex = 0;
+      while (remainingLength > 1e-9 && layerIndex < MAX_LAYERS) {
+        const layerRadius = baseRadius + fullWidth * layerIndex;
+        if (!(layerRadius > 1e-9)) {
+          break;
+        }
+        const layerCircumference = 2.0 * Math.PI * layerRadius;
+        if (!(layerCircumference > 1e-9)) {
+          break;
+        }
+        const layerArcLength = Math.min(remainingLength, layerCircumference);
+        if (!(layerArcLength > 1e-9)) {
+          break;
+        }
+
+        this.c.beginPath();
+        if (layerArcLength >= layerCircumference - 1e-6) {
+          this.c.arc(
+            this.cX(center.x),
+            this.cY(center.y),
+            layerRadius * this.effectiveCScale,
+            0.0,
+            2.0 * Math.PI
+          );
+        } else {
+          let deltaTheta = layerArcLength / layerRadius;
+          if (deltaTheta >= maxRenderableAngle) {
+            deltaTheta = maxRenderableAngle;
+          }
+          const endAngle = cw ? startAngle - deltaTheta : startAngle + deltaTheta;
+          this.c.arc(
+            this.cX(center.x),
+            this.cY(center.y),
+            layerRadius * this.effectiveCScale,
+            -startAngle,
+            -endAngle,
+            anticlockwise
+          );
+        }
+        this.c.stroke();
+
+        remainingLength -= layerArcLength;
+        if (!(fullWidth > 1e-12)) {
+          break;
+        }
+        layerIndex++;
+      }
+    };
+
     for (const pathId of pathEntities) {
       const path   = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
+      const halfWidth = path.cableHalfWidth ?? 0.0;
       // rolling or hybrid link types mean the cable can wrap on that entity
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
         // Only draw wrap-around arc for rolling and hybrid links (when in rolling mode)
@@ -717,7 +795,7 @@ export class RenderSystem {
         const renderComp = world.getComponent(joints[i], RenderableComponent);
         if (!centerComp || !radiusComp) continue;
         const C    = centerComp.pos;
-        const R    = radiusComp.radius;
+        const R    = radiusComp.radius + halfWidth;
         const P1   = jPrev.attachmentPointB_world;
         const P2   = jNext.attachmentPointA_world;
         // angles in sim coords
@@ -768,28 +846,7 @@ export class RenderSystem {
         const rA    = world.getComponent(rollerA, RadiusComponent)?.radius;
         const P0    = joint0.attachmentPointA_world;
         if (cA && rA !== null) {
-          const a1     = Math.atan2(P0.y - cA.y, P0.x - cA.x);
-          const s      = path.stored[0];
-          const max_renderable_ang = 2.0*Math.PI - 0.0001
-          let delta_theta     = s / rA;
-          if (delta_theta >= max_renderable_ang) {
-            delta_theta = max_renderable_ang;
-          }
-          const cw0    = path.cw[0];
-          const anticw = !cw0;
-          const a2     = cw0 ? a1 - delta_theta : a1 + delta_theta;
-          this.c.beginPath();
-          if (renderComp) {
-            this.c.strokeStyle = renderComp.color;
-          } else {
-            this.c.strokeStyle = 'yellow';
-          }
-          this.c.arc(
-            this.cX(cA.x), this.cY(cA.y),
-            rA * this.effectiveCScale,
-            -a1, -a2, anticw
-          );
-          this.c.stroke();
+          drawEndpointStoredWrap(path, 0, cA, rA, P0, renderComp);
         }
       }
 
@@ -804,31 +861,7 @@ export class RenderSystem {
         const P1    = jointN.attachmentPointB_world;
 
         if (cB && rB && rB > 1e-6) { // Added check for rB being reasonably positive
-          const a1 = Math.atan2(P1.y - cB.y, P1.x - cB.x);
-          const s = path.stored[nLinks - 1];
-          const max_renderable_ang = 2.0*Math.PI - 0.0001
-          let delta_theta = s / rB;
-          if (delta_theta >= max_renderable_ang) {
-            delta_theta = max_renderable_ang;
-          }
-          const cw1 = path.cw[nLinks - 1];
-          const anticw = !cw1;
-
-          // Calculate a2 based on the render_sweep_angle
-          const a2 = cw1 ? a1 - delta_theta : a1 + delta_theta;
-
-          this.c.beginPath();
-          if (renderComp) {
-            this.c.strokeStyle = renderComp.color;
-          } else {
-            this.c.strokeStyle = 'yellow';
-          }
-          this.c.arc(
-            this.cX(cB.x), this.cY(cB.y),
-            rB * this.effectiveCScale,
-            -a1, -a2, anticw
-          );
-          this.c.stroke();
+          drawEndpointStoredWrap(path, nLinks - 1, cB, rB, P1, renderComp);
         }
       }
     }

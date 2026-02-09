@@ -1077,6 +1077,142 @@ function _isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pointO
   return (arcToPoint + arcFromPoint) <= totalArc + (2.0 * arcTolerance);
 }
 
+function _decomposeStoredWrapLayers(storedLength, baseRadius, halfWidth) {
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  if (!(stored > EPSILON) || !(baseRadius > EPSILON) || !(halfWidth > EPSILON)) {
+    return null;
+  }
+
+  const fullWidth = 2.0 * halfWidth;
+  let remaining = stored;
+  let fullLayers = 0;
+  const MAX_LAYERS = 2048;
+  while (fullLayers < MAX_LAYERS) {
+    const layerRadius = baseRadius + fullWidth * fullLayers;
+    if (!(layerRadius > EPSILON)) {
+      break;
+    }
+    const layerCircumference = 2.0 * Math.PI * layerRadius;
+    if (remaining + EPSILON >= layerCircumference) {
+      remaining -= layerCircumference;
+      if (remaining < 0.0) {
+        remaining = 0.0;
+      }
+      fullLayers++;
+      continue;
+    }
+
+    const partialLength = remaining;
+    return {
+      fullLayers,
+      partialLength,
+      partialRadius: layerRadius,
+      hasPartial: partialLength > EPSILON,
+      extraDistanceForFullCoverage: 2.0 * halfWidth * Math.max(0, fullLayers - 1),
+      extraDistanceForPartialCoverage: 2.0 * halfWidth * fullLayers
+    };
+  }
+
+  const fallbackRadius = baseRadius + fullWidth * fullLayers;
+  return {
+    fullLayers,
+    partialLength: 0.0,
+    partialRadius: fallbackRadius,
+    hasPartial: false,
+    extraDistanceForFullCoverage: 2.0 * halfWidth * Math.max(0, fullLayers - 1),
+    extraDistanceForPartialCoverage: 2.0 * halfWidth * fullLayers
+  };
+}
+
+function _getEndpointRollingArcContext(world, path, linkIndex) {
+  if (path.jointEntities.length < 1) {
+    return null;
+  }
+
+  let joint;
+  let bodyA;
+  let neighborBody;
+  let attachmentPoint;
+  if (linkIndex === 0) {
+    joint = world.getComponent(path.jointEntities[0], CableJointComponent);
+    if (!joint) {
+      return null;
+    }
+    bodyA = joint.entityA;
+    neighborBody = joint.entityB;
+    attachmentPoint = joint.attachmentPointA_world;
+  } else if (linkIndex === (path.linkTypes.length - 1)) {
+    joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+    if (!joint) {
+      return null;
+    }
+    bodyA = joint.entityB;
+    neighborBody = joint.entityA;
+    attachmentPoint = joint.attachmentPointB_world;
+  } else {
+    return null;
+  }
+
+  const center = world.getComponent(bodyA, PositionComponent)?.pos;
+  const radius = _effectiveRadius(path, world.getComponent(bodyA, RadiusComponent)?.radius);
+  if (!center || !Number.isFinite(radius) || radius <= EPSILON || !attachmentPoint) {
+    return null;
+  }
+
+  return {
+    bodyA,
+    neighborBody,
+    center,
+    baseRadius: radius,
+    attachmentPoint,
+    cwDirection: _effectiveCW(path, linkIndex, true)
+  };
+}
+
+function _selectEndpointWrapExtraDistance(
+  context,
+  decomposition,
+  pointOnBody,
+  baseMinDistance,
+  surfaceDistance
+) {
+  if (!context || !decomposition || !pointOnBody) {
+    return null;
+  }
+
+  const arcOnBase = signedArcLengthOnWheel(
+    context.attachmentPoint,
+    pointOnBody,
+    context.center,
+    context.baseRadius,
+    context.cwDirection,
+    true
+  );
+  const deltaAngle = arcOnBase / context.baseRadius;
+  const partialArcLength = deltaAngle * decomposition.partialRadius;
+  const partialTolerance = Math.max(1e-6, decomposition.partialLength * 1e-4);
+  const inPartialCoverage =
+    decomposition.hasPartial &&
+    partialArcLength > partialTolerance &&
+    partialArcLength < (decomposition.partialLength - partialTolerance);
+
+  const minDistancePartial = baseMinDistance + decomposition.extraDistanceForPartialCoverage;
+  if (inPartialCoverage && surfaceDistance <= minDistancePartial + EPSILON) {
+    return decomposition.extraDistanceForPartialCoverage;
+  }
+
+  const minDistanceFull = baseMinDistance + decomposition.extraDistanceForFullCoverage;
+  const hasFullCoverageEverywhere = decomposition.fullLayers > 0;
+  if (
+    (hasFullCoverageEverywhere || inPartialCoverage) &&
+    surfaceDistance <= minDistanceFull + EPSILON
+  ) {
+    return decomposition.extraDistanceForFullCoverage;
+  }
+
+  return null;
+}
+
 function _detectPinchCandidates(world) {
   const candidates = [];
   const nonTransitionalByKey = new Map();
@@ -1208,6 +1344,95 @@ function _detectPinchCandidates(world) {
             entityA: bodyA,
             entityB: bodyB,
             minDistance,
+            normal: surfacePair.normal.clone(),
+            surfaceDistance: surfacePair.surfaceDistance
+          });
+        }
+      }
+    }
+
+    for (const linkIndex of [0, path.linkTypes.length - 1]) {
+      if (!_isHybrid(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      if (!(path.stored[linkIndex] > EPSILON)) {
+        continue;
+      }
+
+      const endpointContext = _getEndpointRollingArcContext(world, path, linkIndex);
+      if (!endpointContext) {
+        continue;
+      }
+      const decomposition = _decomposeStoredWrapLayers(
+        path.stored[linkIndex],
+        endpointContext.baseRadius,
+        halfWidth
+      );
+      if (!decomposition) {
+        continue;
+      }
+
+      const maxMinDistance = minDistance + (
+        decomposition.hasPartial
+          ? decomposition.extraDistanceForPartialCoverage
+          : decomposition.extraDistanceForFullCoverage
+      );
+      for (const bodyB of potentialBodies) {
+        if (
+          bodyB === endpointContext.bodyA ||
+          bodyB === endpointContext.neighborBody
+        ) {
+          continue;
+        }
+        if (pathMachine !== getMachineId(world, bodyB)) {
+          continue;
+        }
+
+        const surfacePair = _computeCircleSurfacePair(world, endpointContext.bodyA, bodyB, null);
+        if (!surfacePair) {
+          continue;
+        }
+        if (surfacePair.surfaceDistance > maxMinDistance + EPSILON) {
+          continue;
+        }
+
+        const pinchPair = _computePinchAttachmentPair(
+          world,
+          path,
+          endpointContext.bodyA,
+          bodyB,
+          surfacePair.normal
+        );
+        if (!pinchPair) {
+          continue;
+        }
+
+        const extraDistance = _selectEndpointWrapExtraDistance(
+          endpointContext,
+          decomposition,
+          pinchPair.pointA_world,
+          minDistance,
+          surfacePair.surfaceDistance
+        );
+        if (extraDistance === null) {
+          continue;
+        }
+        const minDistanceWithLayers = minDistance + extraDistance;
+
+        const key = `${pathId}:${linkIndex}:${bodyB}`;
+        const existing = nonTransitionalByKey.get(key);
+        if (
+          !existing ||
+          minDistanceWithLayers > existing.minDistance + EPSILON ||
+          surfacePair.surfaceDistance < existing.surfaceDistance - EPSILON
+        ) {
+          nonTransitionalByKey.set(key, {
+            kind: 'non-transitional-endpoint',
+            pathId,
+            linkIndex,
+            entityA: endpointContext.bodyA,
+            entityB: bodyB,
+            minDistance: minDistanceWithLayers,
             normal: surfacePair.normal.clone(),
             surfaceDistance: surfacePair.surfaceDistance
           });
@@ -1395,6 +1620,42 @@ function _insertNonTransitionalPinch(world, candidate, pinchConfigs) {
   return true;
 }
 
+function _configureEndpointNonTransitionalPinch(world, candidate, pinchConfigs) {
+  const path = world.getComponent(candidate.pathId, CablePathComponent);
+  if (!path) {
+    return false;
+  }
+
+  const pinchPair = _computePinchAttachmentPair(
+    world,
+    path,
+    candidate.entityA,
+    candidate.entityB,
+    candidate.normal
+  );
+  if (!pinchPair) {
+    return false;
+  }
+
+  const key = `endpoint:${candidate.pathId}:${candidate.linkIndex}:${candidate.entityA}:${candidate.entityB}`;
+  pinchConfigs.set(key, {
+    pathId: candidate.pathId,
+    jointId: null,
+    entityA: candidate.entityA,
+    entityB: candidate.entityB,
+    minDistance: candidate.minDistance,
+    normal: pinchPair.normal.clone(),
+    pinchPointA_world: pinchPair.pointA_world.clone(),
+    pinchPointB_world: pinchPair.pointB_world.clone()
+  });
+  _debugCable(
+    world,
+    `configure endpoint-non-transitional path=${candidate.pathId} link=${candidate.linkIndex} ` +
+    `bodies=${candidate.entityA}<->${candidate.entityB} minDistance=${candidate.minDistance.toFixed(6)}`
+  );
+  return true;
+}
+
 function _configurePinches(world) {
   const candidates = world.getResource(PINCH_CANDIDATES_RESOURCE);
   const pinchConfigs = new Map();
@@ -1412,6 +1673,11 @@ function _configurePinches(world) {
   });
   for (const candidate of nonTransitional) {
     _insertNonTransitionalPinch(world, candidate, pinchConfigs);
+  }
+
+  const endpointNonTransitional = candidates.filter((candidate) => candidate.kind === 'non-transitional-endpoint');
+  for (const candidate of endpointNonTransitional) {
+    _configureEndpointNonTransitionalPinch(world, candidate, pinchConfigs);
   }
 
   for (const candidate of candidates) {
