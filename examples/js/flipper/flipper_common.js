@@ -861,6 +861,13 @@ export class PBDBallFlipperCollisions {
     const maxWrapEnhancedCorrection = Number.isFinite(contactTuning.maxWrapEnhancedCorrection)
       ? Math.max(0.0, contactTuning.maxWrapEnhancedCorrection)
       : 0.0015;
+    const softRawEntryContacts = contactTuning.softRawEntryContacts === true;
+    const rawEntryCorrectionFraction = Number.isFinite(contactTuning.rawEntryCorrectionFraction)
+      ? Math.max(0.0, Math.min(1.0, contactTuning.rawEntryCorrectionFraction))
+      : 0.12;
+    const maxRawEntryCorrection = Number.isFinite(contactTuning.maxRawEntryCorrection)
+      ? Math.max(0.0, contactTuning.maxRawEntryCorrection)
+      : 0.0008;
     const previousWrapRampResource = world.getResource('flipperWrapRadiusRamp');
     const previousWrapRamp = (previousWrapRampResource instanceof Map) ? previousWrapRampResource : new Map();
     const nextWrapRamp = new Map();
@@ -935,7 +942,9 @@ export class PBDBallFlipperCollisions {
           continue;
         }
         const pairKey = `${ballId}:${flipId}`;
+        const prevPair = previousByPair.get(pairKey);
         const rawContact = centerDistance <= (r1 + fr + 1e-9);
+        const rawEntered = rawContact && !(prevPair?.raw === true);
         const ballContactOffsetTarget = support.point.clone().subtract(p1);
         const ballContactRadiusTarget = Math.max(r1, Math.max(0.0, -ballContactOffsetTarget.dot(normal)));
         const targetWrapExtra = Math.max(0.0, ballContactRadiusTarget - r1);
@@ -971,6 +980,12 @@ export class PBDBallFlipperCollisions {
             continue;
           }
         }
+        if (rawEntered && softRawEntryContacts) {
+          corr = Math.min(corr * rawEntryCorrectionFraction, maxRawEntryCorrection);
+          if (corr <= 0.0) {
+            continue;
+          }
+        }
 
         if (invMass > 0) {
             p1.add(normal, corr);
@@ -997,6 +1012,7 @@ export class PBDBallFlipperCollisions {
             'wrap_enhanced': wrapEnhanced,
             'ball_contact_offset': ballContactOffset,
             'raw_contact': rawContact,
+            'raw_entered': rawEntered,
             'trace_step': traceStep,
             'support_source': support.source,
             'pinch_pair_active': pinchPairActive
@@ -1008,6 +1024,7 @@ export class PBDBallFlipperCollisions {
           ball_id: ballId,
           flip_id: flipId,
           raw_contact: rawContact,
+          raw_entered: rawEntered,
           wrap_enhanced: wrapEnhanced,
           support_source: support.source,
           support_corner: support.cornerMeta ?? null,
@@ -1035,16 +1052,15 @@ export class PBDBallFlipperCollisions {
           flipper_radius_raw: _toNumberOrNull(fr),
         });
 
-        const prev = previousByPair.get(pairKey);
-        if (collisionWarnings && prev && !rawContact) {
-          const radiusJump = Math.abs(ballContactRadius - prev.ballRadius);
-          const corrJump = Math.abs(corr - prev.corr);
-          const normalDot = prev.normal.dot(normal);
-          const sourceChanged = prev.source !== support.source;
+        if (collisionWarnings && prevPair && !rawContact) {
+          const radiusJump = Math.abs(ballContactRadius - prevPair.ballRadius);
+          const corrJump = Math.abs(corr - prevPair.corr);
+          const normalDot = prevPair.normal.dot(normal);
+          const sourceChanged = prevPair.source !== support.source;
           if (radiusJump > 0.01 || corrJump > 0.01 || normalDot < 0.95 || sourceChanged) {
             console.warn(
               `[FlipperCollisionWarn] wrap-only contact jump pair=${pairKey} ` +
-              `source=${prev.source}->${support.source} ` +
+              `source=${prevPair.source}->${support.source} ` +
               `radiusJump=${radiusJump.toFixed(6)} corrJump=${corrJump.toFixed(6)} normalDot=${normalDot.toFixed(6)} ` +
               `rBall=${ballContactRadius.toFixed(6)} corr=${corr.toFixed(6)}`
             );

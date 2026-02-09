@@ -130,4 +130,25 @@ describe('BallBorderOrFlipperVelocityContactSystem flipper wrap gating', () => {
     expect(vel.x).toBeCloseTo(-1.0, 9);
     expect(vel.y).toBeCloseTo(0.0, 9);
   });
+
+  test('raw-entry flipper contact can suppress all velocity impulse via tuning', () => {
+    const { world, ballId, flipperId } = makeWorldWithFlipperContact(true);
+    world.setResource('flipperContactTuning', {
+      softenRawEntryVelocity: true
+    });
+    world.getComponent(flipperId, FlipperStateComponent).currentAngularVelocity = 0.0;
+    world.getComponent(ballId, VelocityComponent).vel.set(new Vector2(-1.0, 0.5));
+    const contact = world.getResource('ball_flipper_contacts')[0];
+    contact.normal = new Vector2(1.0, 0.0);
+    contact.contact_point_on_flipper = new Vector2(0.0, 1.0);
+    contact.delta_lambda = 1.0;
+    contact.raw_entered = true;
+
+    const system = new BallBorderOrFlipperVelocityContactSystem();
+    system.update(world, 0.016);
+
+    const vel = world.getComponent(ballId, VelocityComponent).vel;
+    expect(vel.x).toBeCloseTo(-1.0, 9);
+    expect(vel.y).toBeCloseTo(0.5, 9);
+  });
 });

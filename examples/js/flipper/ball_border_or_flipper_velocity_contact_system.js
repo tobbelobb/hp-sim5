@@ -193,6 +193,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
             contactTuning.disableRestitutionForWrapEnhanced !== false;
         const disableFrictionForWrapEnhanced =
             contactTuning.disableFrictionForWrapEnhanced === true;
+        const softenRawEntryVelocity = contactTuning.softenRawEntryVelocity === true;
         if (flipperContacts) {
             for (const contact of flipperContacts) {
                 const {
@@ -204,6 +205,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     ball_contact_radius
                 } = contact;
                 const rawContact = contact.raw_contact !== false;
+                const rawEntered = contact.raw_entered === true;
                 const wrapEnhanced = contact.wrap_enhanced === true;
                 const traceStep = contact.trace_step ?? world.getResource('flipperCamTraceStep') ?? null;
                 const pinchPairActive = contact.pinch_pair_active === true;
@@ -224,6 +226,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                         ball_id,
                         flip_id,
                         raw_contact: false,
+                        raw_entered: rawEntered,
                         wrap_enhanced: wrapEnhanced,
                         pinch_pair_active: pinchPairActive,
                         delta_lambda
@@ -262,6 +265,15 @@ export class BallBorderOrFlipperVelocityContactSystem {
                 const velBefore = velComp ? velComp.vel.clone() : null;
                 const angBefore = angVelComp ? angVelComp.angularVelocity : null;
 
+                const disableRestitution =
+                    (wrapEnhanced && disableRestitutionForWrapEnhanced) ||
+                    (rawEntered && softenRawEntryVelocity);
+                const disableFriction =
+                    (wrapEnhanced && disableFrictionForWrapEnhanced) ||
+                    (rawEntered && softenRawEntryVelocity);
+                const includeConstraintForceForFriction =
+                    !((wrapEnhanced && excludeConstraintForceForWrapEnhancedFriction) ||
+                      (rawEntered && softenRawEntryVelocity));
                 const diag = this._handleBallContact(
                     world,
                     ball_id,
@@ -273,9 +285,9 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     dt,
                     ball_contact_radius,
                     contact.ball_contact_offset,
-                    !(wrapEnhanced && excludeConstraintForceForWrapEnhancedFriction),
-                    wrapEnhanced && disableRestitutionForWrapEnhanced,
-                    wrapEnhanced && disableFrictionForWrapEnhanced
+                    includeConstraintForceForFriction,
+                    disableRestitution,
+                    disableFriction
                 );
 
                 const velAfter = velComp ? velComp.vel.clone() : null;
@@ -289,6 +301,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     ball_id,
                     flip_id,
                     raw_contact: true,
+                    raw_entered: rawEntered,
                     wrap_enhanced: wrapEnhanced,
                     pinch_pair_active: pinchPairActive,
                     delta_lambda,

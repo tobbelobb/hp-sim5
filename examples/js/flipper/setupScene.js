@@ -108,7 +108,11 @@ export function setupScene(world, stage, canvas) {
       wrapRadiusFallRate: 0.05,
       softWrapEnhancedContacts: true,
       wrapEnhancedCorrectionFraction: 0.2,
-      maxWrapEnhancedCorrection: 0.0015
+      maxWrapEnhancedCorrection: 0.0015,
+      softRawEntryContacts: true,
+      rawEntryCorrectionFraction: 0.12,
+      maxRawEntryCorrection: 0.0008,
+      softenRawEntryVelocity: true
     });
     world.setResource('flipperWrapRadiusRamp', new Map());
     world.setResource('flipperCamTraceStep', 0);
