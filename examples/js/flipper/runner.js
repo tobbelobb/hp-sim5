@@ -14,6 +14,7 @@ export function runGame(world, setupScene, sceneData) {
     let lastTime = 0;
     let accumulator = 0.0;
     let doStep = true;
+    let stepWhileTHeld = false;
     let speedSamples = [];
     const numSpeedSamples = 60;
     let frameCounter = 0;
@@ -46,7 +47,8 @@ export function runGame(world, setupScene, sceneData) {
             const maxAccum = dt * maxSteps;
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {
-                if (!pauseState.paused || doStep) {
+                const shouldStepWhilePaused = doStep || stepWhileTHeld;
+                if (!pauseState.paused || shouldStepWhilePaused) {
                     if (doStep) pauseState.paused = false;
                     world.update(dt);
                     simTimeProcessed += dt;
@@ -55,7 +57,7 @@ export function runGame(world, setupScene, sceneData) {
                         doStep = false;
                     }
                 }
-                if (pauseState.paused) {
+                if (pauseState.paused && !stepWhileTHeld) {
                     accumulator = 0;
                     break;
                 }
@@ -135,7 +137,19 @@ export function runGame(world, setupScene, sceneData) {
         }
         if (typeof e.key === 'string' && e.key.toLowerCase() === 't') {
             e.preventDefault();
+            stepWhileTHeld = true;
             requestSingleStep();
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        const targetTag = e.target && e.target.tagName;
+        const isEditableTarget = targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT' || e.target?.isContentEditable;
+        if (isEditableTarget) {
+            return;
+        }
+        if (typeof e.key === 'string' && e.key.toLowerCase() === 't') {
+            stepWhileTHeld = false;
         }
     });
 
