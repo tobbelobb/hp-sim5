@@ -125,12 +125,21 @@ class CablePathComponent:
     spring_constant: float = 1e6
     stored: List[float] = field(default_factory=list)
     total_rest_length: float = 0.0
+    cable_half_width: float = 0.0
     compliance: float = field(init=False)
 
     def __post_init__(self):
         self.compliance = 1.0 / self.spring_constant
 
-def create_cable_path_component(world, joint_entities, link_types, cw, spring_constant=1e6, stored=None):
+def create_cable_path_component(
+    world,
+    joint_entities,
+    link_types,
+    cw,
+    spring_constant=1e6,
+    stored=None,
+    cable_half_width=0.0
+):
     """
     Factory function to create and initialize a CablePathComponent.
     This ports the logic from the original JavaScript constructor.
@@ -140,6 +149,7 @@ def create_cable_path_component(world, joint_entities, link_types, cw, spring_co
         link_types=link_types,
         cw=cw,
         spring_constant=spring_constant,
+        cable_half_width=max(0.0, float(cable_half_width)),
         stored=[0.0] * len(cw)
     )
 
@@ -162,7 +172,7 @@ def create_cable_path_component(world, joint_entities, link_types, cw, spring_co
             radius_comp = world.get_component(link_id, RadiusComponent)
             if center_comp and radius_comp:
                 center = center_comp.pos
-                radius = radius_comp.radius
+                radius = radius_comp.radius + path_comp.cable_half_width
                 is_cw = cw[i + 1]
 
                 initial_stored_length = signed_arc_length_on_wheel(

@@ -76,7 +76,15 @@ function rebuildWorldFromState(world, state) {
                         componentInstance.attachmentPointB_world = new Vector2(compData.attachment_point_b_world[0], compData.attachment_point_b_world[1]);
                     }
                 } else if (compName === 'CablePathComponent') {
-                     componentInstance = new CablePathComponent(world, compData.joint_entities, compData.link_types, compData.cw, compData.spring_constant, compData.stored);
+                     componentInstance = new CablePathComponent(
+                        world,
+                        compData.joint_entities,
+                        compData.link_types,
+                        compData.cw,
+                        compData.spring_constant,
+                        compData.stored,
+                        compData.cable_half_width ?? 0.0
+                     );
                      componentInstance.totalRestLength = compData.total_rest_length;
                 } else if (compName === 'DistanceConstraintComponent') {
                     componentInstance = new DistanceConstraintComponent(compData.entity_a, compData.entity_b, compData.rest_length, compData.compliance);

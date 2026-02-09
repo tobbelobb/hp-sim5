@@ -10,7 +10,8 @@ def create_cable_paths(
     link_types: Optional[List[str]] = None,
     cw: Optional[List[bool]] = None,
     spring_constant: float = 1e6,
-    user_stored: Optional[List[Optional[float]]] = None
+    user_stored: Optional[List[Optional[float]]] = None,
+    cable_half_width: float = 0.0
 ) -> List[int]:
     """
     Creates one or more CablePathComponent entities from a definition of joints and links.
@@ -57,7 +58,15 @@ def create_cable_paths(
     if not joint_entities:
         # This means link_types has length 1. A single link, no joints.
         path_entity_id = world.create_entity()
-        path_component = create_cable_path_component(world, [], link_types, cw, spring_constant, user_stored)
+        path_component = create_cable_path_component(
+            world,
+            [],
+            link_types,
+            cw,
+            spring_constant,
+            user_stored,
+            cable_half_width
+        )
         world.add_component(path_entity_id, path_component)
         created_path_entity_ids.append(path_entity_id)
         return created_path_entity_ids
@@ -90,7 +99,13 @@ def create_cable_paths(
             # Finalize current path
             path_entity_id = world.create_entity()
             path_component = create_cable_path_component(
-                world, current_path_joints, current_path_link_types, current_path_cw, spring_constant, current_path_stored
+                world,
+                current_path_joints,
+                current_path_link_types,
+                current_path_cw,
+                spring_constant,
+                current_path_stored,
+                cable_half_width
             )
             world.add_component(path_entity_id, path_component)
             created_path_entity_ids.append(path_entity_id)
@@ -107,7 +122,13 @@ def create_cable_paths(
     if current_path_joints or (not created_path_entity_ids and link_types):
         path_entity_id = world.create_entity()
         path_component = create_cable_path_component(
-            world, current_path_joints, current_path_link_types, current_path_cw, spring_constant, current_path_stored
+            world,
+            current_path_joints,
+            current_path_link_types,
+            current_path_cw,
+            spring_constant,
+            current_path_stored,
+            cable_half_width
         )
         world.add_component(path_entity_id, path_component)
         created_path_entity_ids.append(path_entity_id)

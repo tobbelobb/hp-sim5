@@ -30,6 +30,10 @@ import {
 } from './commonSystems.js';
 
 export const linecolor1 = '#FFFF00';
+const EPSILON = 1e-9;
+const PINCH_CANDIDATES_RESOURCE = 'cablePinchCandidates';
+const PINCH_CONFIGS_RESOURCE = 'cablePinchJointConfigs';
+const PINCH_CONTACTS_RESOURCE = 'cablePinchContacts';
 
 function getMachineId(world, entityId) {
   if (entityId == null) {
@@ -109,7 +113,15 @@ export class CableJointComponent {
 
 // Connects individual cable joints into a cable path
 export class CablePathComponent {
-  constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6, stored = null) {
+  constructor(
+    world,
+    jointEntities = [],
+    linkTypes = [],
+    cw = [],
+    spring_constant = 1e6,
+    stored = null,
+    cableHalfWidth = 0.0
+  ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
@@ -117,6 +129,7 @@ export class CablePathComponent {
     this.spring_constant = spring_constant;
     this.compliance = 1.0/spring_constant;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
+    this.cableHalfWidth = Number.isFinite(cableHalfWidth) ? Math.max(0.0, cableHalfWidth) : 0.0;
 
     for (const jointId of jointEntities) {
       const joint = world.getComponent(jointId, CableJointComponent);
@@ -136,9 +149,8 @@ export class CablePathComponent {
       const isRolling = linkTypes[i + 1] === 'rolling';
       // Assuming standard path structure A->B, A->B, check B_i == A_i+1
       if (isRolling) {
-        const rolling_link = world.getComponent(linkId, CableLinkComponent);
         const center = world.getComponent(linkId, PositionComponent).pos;
-        const radius = world.getComponent(linkId, RadiusComponent).radius;
+        const radius = world.getComponent(linkId, RadiusComponent).radius + this.cableHalfWidth;
         const isCw = cw[i + 1];
 
         const initialStoredLength = signedArcLengthOnWheel(
@@ -169,11 +181,29 @@ export class CablePathComponent {
   }
 }
 
+export class PinchContact {
+  constructor(entityA, entityB, pathId, minDistance, normal, compliance = 0.0) {
+    this.entityA = entityA;
+    this.entityB = entityB;
+    this.pathId = pathId;
+    this.minDistance = minDistance;
+    this.normal = normal.clone();
+    this.compliance = compliance;
+  }
+}
+
 
 function _effectiveCW(path, linkIndex, travellingFromCircle) {
   if (linkIndex === 0 && travellingFromCircle)
     return !path.cw[linkIndex];
   return path.cw[linkIndex];
+}
+
+function _effectiveRadius(path, radius) {
+  if (radius === undefined || radius === null) {
+    return radius;
+  }
+  return radius + (path?.cableHalfWidth ?? 0.0);
 }
 
 function _clearDebugPoints(world) {
@@ -213,7 +243,7 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const posA = posAComp?.pos;
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-  const radiusA = radiusAComp?.radius;
+  const radiusA = _effectiveRadius(path, radiusAComp?.radius);
   const angleA = orientationAComp?.angle ?? 0.0;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleA = angleA - prevAngleA;
@@ -239,7 +269,7 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const posB = posBComp?.pos;
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-  const radiusB = radiusBComp?.radius;
+  const radiusB = _effectiveRadius(path, radiusBComp?.radius);
   const angleB = orientationBComp?.angle ?? 0.0;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleB = angleB - prevAngleB;
@@ -318,7 +348,7 @@ export function _updateAttachmentPoints(world) {
       const orientationAComp = world.getComponent(entityA, OrientationComponent);
       const posA = posAComp?.pos;
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-      const radiusA = radiusAComp?.radius;
+      const radiusA = _effectiveRadius(path, radiusAComp?.radius);
       const angleA = orientationAComp?.angle ?? 0.0;
       const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleA = angleA - prevAngleA;
@@ -334,7 +364,7 @@ export function _updateAttachmentPoints(world) {
       const orientationBComp = world.getComponent(entityB, OrientationComponent);
       const posB = posBComp?.pos;
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-      const radiusB = radiusBComp?.radius;
+      const radiusB = _effectiveRadius(path, radiusBComp?.radius);
       const angleB = orientationBComp?.angle ?? 0.0;
       const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleB = angleB - prevAngleB;
@@ -425,10 +455,10 @@ export function _mergeJoints(world) {
           const pA1 = joint_i.attachmentPointA_world;
           const pB2 = joint_i_plus_1.attachmentPointB_world;
           const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
-          const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
+          const radiusA = _effectiveRadius(path, world.getComponent(joint_i.entityA, RadiusComponent)?.radius);
           const cwA = _effectiveCW(path, i, true);
           const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
-          const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
+          const radiusB = _effectiveRadius(path, world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius);
           const cwB = path.cw[i+2];
 
           joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
@@ -502,7 +532,7 @@ export function _splitJoints(world) {
           continue;
         }
         const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
-        const radiusSplitter = world.getComponent(splitterId, RadiusComponent)?.radius;
+        const radiusSplitter = _effectiveRadius(path, world.getComponent(splitterId, RadiusComponent)?.radius);
         if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
           // console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
           const entityA = joint.entityA;
@@ -515,7 +545,7 @@ export function _splitJoints(world) {
           const linkTypeA = path.linkTypes[i];
           const isAttachmentA = _isAttachment(linkTypeA);
           const isRollingA = _isRolling(linkTypeA);
-          const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
+          const radiusA = _effectiveRadius(path, world.getComponent(entityA, RadiusComponent)?.radius);
           const cwA = _effectiveCW(path, i, true);
 
           // Get components for Entity B
@@ -523,7 +553,7 @@ export function _splitJoints(world) {
           const linkTypeB = path.linkTypes[i + 1];
           const isAttachmentB = _isAttachment(linkTypeB);
           const isRollingB = _isRolling(linkTypeB);
-          const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
+          const radiusB = _effectiveRadius(path, world.getComponent(entityB, RadiusComponent)?.radius);
           const cwB = path.cw[i + 1];
 
           // Calculate components for new joint
@@ -670,7 +700,7 @@ export function _updateHybridLinkStates(world) {
           path.linkTypes[i] = 'hybrid-attachment';
           const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
-          const radius = world.getComponent(linkEntity, RadiusComponent).radius;
+          const radius = _effectiveRadius(path, world.getComponent(linkEntity, RadiusComponent).radius);
           const pos = world.getComponent(linkEntity, PositionComponent).pos;
           // We have "fed out negative line", undo that
           joint.restLength += path.stored[i];
@@ -704,7 +734,7 @@ export function _updateHybridLinkStates(world) {
 
         const C = world.getComponent(entityId, PositionComponent).pos;
         const P = world.getComponent(neighborId, PositionComponent).pos;
-        const R = world.getComponent(entityId, RadiusComponent).radius;
+        const R = _effectiveRadius(path, world.getComponent(entityId, RadiusComponent).radius);
 
         const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
         const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;
@@ -738,15 +768,219 @@ export function _updateHybridLinkStates(world) {
   }
 }
 
+function _computeCircleSurfacePair(world, entityA, entityB, fallbackNormal = null) {
+  const posAComp = world.getComponent(entityA, PositionComponent);
+  const posBComp = world.getComponent(entityB, PositionComponent);
+  const radiusAComp = world.getComponent(entityA, RadiusComponent);
+  const radiusBComp = world.getComponent(entityB, RadiusComponent);
+  if (!posAComp || !posBComp || !radiusAComp || !radiusBComp) {
+    return null;
+  }
+
+  const centerDelta = new Vector2().subtractVectors(posBComp.pos, posAComp.pos);
+  const centerDistance = centerDelta.length();
+  let normal;
+  if (centerDistance > EPSILON) {
+    normal = centerDelta.clone().scale(1.0 / centerDistance);
+  } else if (fallbackNormal && fallbackNormal.lengthSq() > EPSILON) {
+    normal = fallbackNormal.clone().normalize();
+  } else {
+    normal = new Vector2(1.0, 0.0);
+  }
+
+  const radiusA = radiusAComp.radius;
+  const radiusB = radiusBComp.radius;
+  const pointA_world = posAComp.pos.clone().add(normal, radiusA);
+  const pointB_world = posBComp.pos.clone().subtract(normal, radiusB);
+  const surfaceDistance = centerDistance - (radiusA + radiusB);
+
+  return {
+    normal,
+    pointA_world,
+    pointB_world,
+    centerDistance,
+    surfaceDistance,
+    radiusA,
+    radiusB
+  };
+}
+
+function _detectTransitionalPinches(world) {
+  const candidates = [];
+  const pathEntities = world.query([CablePathComponent]);
+
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (!path || path.jointEntities.length < 1) {
+      continue;
+    }
+    const halfWidth = path.cableHalfWidth ?? 0.0;
+    if (!(halfWidth > EPSILON)) {
+      continue;
+    }
+
+    for (const jointId of path.jointEntities) {
+      const joint = world.getComponent(jointId, CableJointComponent);
+      if (!joint) {
+        continue;
+      }
+
+      const fallbackNormal = joint.attachmentPointB_world.clone().subtract(joint.attachmentPointA_world);
+      const surfacePair = _computeCircleSurfacePair(world, joint.entityA, joint.entityB, fallbackNormal);
+      if (!surfacePair) {
+        continue;
+      }
+
+      const minDistance = 2.0 * halfWidth;
+      const broadDistance = surfacePair.radiusA + surfacePair.radiusB + minDistance;
+      if (surfacePair.centerDistance > broadDistance + EPSILON) {
+        continue;
+      }
+      if (surfacePair.surfaceDistance > minDistance + EPSILON) {
+        continue;
+      }
+
+      candidates.push({
+        pathId,
+        jointId,
+        entityA: joint.entityA,
+        entityB: joint.entityB,
+        minDistance,
+        normal: surfacePair.normal.clone(),
+        pointA_world: surfacePair.pointA_world.clone(),
+        pointB_world: surfacePair.pointB_world.clone()
+      });
+    }
+  }
+
+  world.setResource(PINCH_CANDIDATES_RESOURCE, candidates);
+}
+
+function _configureTransitionalPinches(world) {
+  const candidates = world.getResource(PINCH_CANDIDATES_RESOURCE);
+  const pinchConfigs = new Map();
+  if (!Array.isArray(candidates)) {
+    world.setResource(PINCH_CONFIGS_RESOURCE, pinchConfigs);
+    return;
+  }
+
+  for (const candidate of candidates) {
+    const joint = world.getComponent(candidate.jointId, CableJointComponent);
+    if (!joint) {
+      continue;
+    }
+
+    const segmentDir = new Vector2(-candidate.normal.y, candidate.normal.x).normalize();
+    if (segmentDir.lengthSq() <= EPSILON) {
+      continue;
+    }
+
+    const pinchPoint = candidate.pointA_world.clone().add(candidate.pointB_world).scale(0.5);
+    joint.attachmentPointA_world.set(pinchPoint);
+    joint.attachmentPointB_world.set(pinchPoint);
+
+    pinchConfigs.set(candidate.jointId, {
+      pathId: candidate.pathId,
+      jointId: candidate.jointId,
+      entityA: candidate.entityA,
+      entityB: candidate.entityB,
+      minDistance: candidate.minDistance,
+      normal: candidate.normal.clone().normalize(),
+      segmentDir,
+      pinchPoint_world: pinchPoint
+    });
+  }
+
+  world.setResource(PINCH_CONFIGS_RESOURCE, pinchConfigs);
+}
+
+function _buildPinchContacts(world) {
+  const pinchConfigs = world.getResource(PINCH_CONFIGS_RESOURCE);
+  const dedupedContacts = new Map();
+  if (!(pinchConfigs instanceof Map)) {
+    world.setResource(PINCH_CONTACTS_RESOURCE, []);
+    return;
+  }
+
+  for (const config of pinchConfigs.values()) {
+    let entityA = config.entityA;
+    let entityB = config.entityB;
+    let normal = config.normal.clone();
+    if (entityA > entityB) {
+      entityA = config.entityB;
+      entityB = config.entityA;
+      normal.scale(-1.0);
+    }
+    const key = `${entityA}:${entityB}`;
+    const existing = dedupedContacts.get(key);
+    if (!existing || config.minDistance > existing.minDistance) {
+      dedupedContacts.set(
+        key,
+        new PinchContact(
+          entityA,
+          entityB,
+          config.pathId,
+          config.minDistance,
+          normal,
+          0.0
+        )
+      );
+    }
+  }
+
+  world.setResource(PINCH_CONTACTS_RESOURCE, Array.from(dedupedContacts.values()));
+}
+
 export class CableAttachmentUpdateSystem {
+  constructor(options = {}) {
+    this.includeTopology = options.includeTopology ?? true;
+  }
+
   runInPause = false;
 
   update(world, dt) {
     _clearDebugPoints(world);
     _updateAttachmentPoints(world);
+    if (!this.includeTopology) {
+      return;
+    }
     _mergeJoints(world);
     _splitJoints(world);
     _updateHybridLinkStates(world);
+  }
+}
+
+export class CableTopologySystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    _mergeJoints(world);
+    _splitJoints(world);
+    _updateHybridLinkStates(world);
+  }
+}
+
+export class PinchDetectionSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    _detectTransitionalPinches(world);
+  }
+}
+
+export class PinchConfigureSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    _configureTransitionalPinches(world);
+  }
+}
+
+export class PinchConstraintBuildSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    _buildPinchContacts(world);
   }
 }
 
@@ -755,36 +989,117 @@ export class PBDCableConstraintSolver {
 
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
-    const epsilon = 1e-9; // Small value to avoid division by zero
     const dt = world.getResource('dt');
+    const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
+    const pinchContactsResource = world.getResource(PINCH_CONTACTS_RESOURCE);
+    const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
+    const pinchContacts = Array.isArray(pinchContactsResource) ? pinchContactsResource : [];
 
     const ITERATIONS = 2; // 0: Forward, 1: Backward
 
     // Pre-calculate local offsets for all joints to ensure attachment points move with bodies
     // during the multi-iteration solve. This prevents "stale" world points from distorting geometry.
     const jointLocals = new Map();
+    const computeLocal = (entityId, worldPoint) => {
+      const posComp = world.getComponent(entityId, PositionComponent);
+      const orientComp = world.getComponent(entityId, OrientationComponent);
+      if (!posComp) return new Vector2(0, 0); // Should not happen for valid bodies
+
+      const rel = worldPoint.clone().subtract(posComp.pos);
+      if (orientComp) {
+        // Rotate backwards by -angle to get local frame
+        const c = Math.cos(-orientComp.angle);
+        const s = Math.sin(-orientComp.angle);
+        return new Vector2(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
+      }
+      return rel;
+    };
+
+    const applyConstraint = (
+      entityA,
+      entityB,
+      pointA_world,
+      pointB_world,
+      gradPosA,
+      gradPosB,
+      constraintError,
+      compliance
+    ) => {
+      if (constraintError <= EPSILON) {
+        return;
+      }
+
+      const massAComp = world.getComponent(entityA, MassComponent);
+      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
+      const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
+      const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+
+      const massBComp = world.getComponent(entityB, MassComponent);
+      const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
+      const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
+      const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+
+      // If both entities are effectively immovable for this constraint, skip.
+      if (invMassA + invMassB + invInertiaA + invInertiaB <= EPSILON) {
+        return;
+      }
+
+      const posAComp = world.getComponent(entityA, PositionComponent);
+      const posBComp = world.getComponent(entityB, PositionComponent);
+      if (!posAComp || !posBComp) {
+        return;
+      }
+
+      const rA = new Vector2().subtractVectors(pointA_world, posAComp.pos);
+      const rB = new Vector2().subtractVectors(pointB_world, posBComp.pos);
+      const gradAngA = rA.x * gradPosA.y - rA.y * gradPosA.x;
+      const gradAngB = rB.x * gradPosB.y - rB.y * gradPosB.x;
+
+      let denom = 0.0;
+      denom += invMassA * gradPosA.lengthSq();
+      denom += invInertiaA * gradAngA * gradAngA;
+      denom += invMassB * gradPosB.lengthSq();
+      denom += invInertiaB * gradAngB * gradAngB;
+      if (Number.isFinite(dt) && dt > EPSILON) {
+        denom += (compliance ?? 0.0) / (dt * dt);
+      }
+
+      if (denom <= EPSILON) {
+        return;
+      }
+
+      const lambda = -constraintError / denom;
+
+      if (invMassA > 0.0) {
+        const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
+        posAComp.pos.add(deltaPosA);
+      }
+      if (invInertiaA > 0.0) {
+        const deltaAngA = -invInertiaA * lambda * gradAngA;
+        const orientationAComp = world.getComponent(entityA, OrientationComponent);
+        if (orientationAComp) {
+          orientationAComp.angle += deltaAngA;
+        }
+      }
+
+      if (invMassB > 0.0) {
+        const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
+        posBComp.pos.add(deltaPosB);
+      }
+      if (invInertiaB > 0.0) {
+        const deltaAngB = -invInertiaB * lambda * gradAngB;
+        const orientationBComp = world.getComponent(entityB, OrientationComponent);
+        if (orientationBComp) {
+          orientationBComp.angle += deltaAngB;
+        }
+      }
+    };
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
       for (const jointId of path.jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
-        
-        const computeLocal = (entityId, worldPoint) => {
-          const posComp = world.getComponent(entityId, PositionComponent);
-          const orientComp = world.getComponent(entityId, OrientationComponent);
-          if (!posComp) return new Vector2(0, 0); // Should not happen for valid bodies
-          
-          const rel = worldPoint.clone().subtract(posComp.pos);
-          if (orientComp) {
-            // Rotate backwards by -angle to get local frame
-            const c = Math.cos(-orientComp.angle);
-            const s = Math.sin(-orientComp.angle);
-            return new Vector2(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
-          }
-          return rel;
-        };
-
         jointLocals.set(jointId, {
           localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
           localB: computeLocal(joint.entityB, joint.attachmentPointB_world)
@@ -819,91 +1134,65 @@ export class PBDCableConstraintSolver {
           const pA = _computeWorldAttachment(world, entityA, locals.localA);
           const pB = _computeWorldAttachment(world, entityB, locals.localB);
 
-          const currentSegmentLength = pA.distanceTo(pB);
-          const constraintError = currentSegmentLength - joint.restLength;
-        // Apply correction only if the segment is longer than its rest length
-        if (constraintError > epsilon) {
-          const massAComp = world.getComponent(entityA, MassComponent);
-          const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-          const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
-          const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
-
-          const massBComp = world.getComponent(entityB, MassComponent);
-          const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-          const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
-          const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
-
-          // If both entities are effectively immovable for this constraint, skip
-          if (invMassA + invMassB + invInertiaA + invInertiaB <= epsilon) {
+          let currentSegmentLength = pA.distanceTo(pB);
+          const pinchConfig = pinchConfigs.get(jointId);
+          let dir = null;
+          if (pinchConfig) {
+            dir = pinchConfig.segmentDir.clone().normalize();
+            currentSegmentLength = 0.0;
+          } else if (currentSegmentLength > EPSILON) {
+            dir = new Vector2().subtractVectors(pB, pA).scale(1.0 / currentSegmentLength);
+          }
+          if (!dir || dir.lengthSq() <= EPSILON) {
             continue;
           }
 
-          const diff = new Vector2().subtractVectors(pB, pA);
-          const len = diff.length();
-          if (len <= epsilon) continue;
-          const dir = diff.clone().scale(1.0 / len); // Normalized direction from A to B
+          const constraintError = currentSegmentLength - joint.restLength;
+          if (constraintError <= EPSILON) {
+            continue;
+          }
 
-          // Gradients of the constraint C = |pB - pA| - restLength
-          // ∇_pA C = (pA - pB) / |pA - pB| = -dir
-          // ∇_pB C = (pB - pA) / |pB - pA| = dir
-          // However, the existing PBD solver code structure implies gradients for |pB-pA|
-          // gradPosA = dir (for entity A's contribution to |pB-pA|)
-          // gradPosB = -dir (for entity B's contribution to |pB-pA|)
           const gradPosA = dir.clone();
           const gradPosB = dir.clone().scale(-1.0);
+          applyConstraint(
+            entityA,
+            entityB,
+            pA,
+            pB,
+            gradPosA,
+            gradPosB,
+            constraintError,
+            path.compliance
+          );
+        } // End loop through joints in path
 
-          const posAComp = world.getComponent(entityA, PositionComponent);
-          const rA = new Vector2().subtractVectors(pA, posAComp.pos); // Vector from CoM of A to attachment point A
-          // gradAngA = rA × gradPosA_contrib_to_pA = rA × dir
-          const gradAngA = rA.x * dir.y - rA.y * dir.x;
+      } // End loop through paths
 
-          const posBComp = world.getComponent(entityB, PositionComponent);
-          const rB = new Vector2().subtractVectors(pB, posBComp.pos); // Vector from CoM of B to attachment point B
-          // gradAngB = rB × gradPosB_contrib_to_pB = rB × (-dir)
-          const gradAngB = rB.x * (-dir.y) - rB.y * (-dir.x); // which is -(rB.x * dir.y - rB.y * dir.x)
-
-          let denom = 0.0;
-          denom += invMassA * gradPosA.lengthSq();
-          denom += invInertiaA * gradAngA * gradAngA;
-          denom += invMassB * gradPosB.lengthSq();
-          denom += invInertiaB * gradAngB * gradAngB;
-          denom += path.compliance / (dt * dt);
-
-          if (denom <= epsilon) {
-            // console.warn("PBDCableConstraintSolver: zero denominator for joint " + jointId);
-            continue;
-          }
-
-          const lambda = -constraintError / denom;
-
-          // Apply corrections to Entity A
-          if (invMassA > 0.0) {
-            const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
-            posAComp.pos.add(deltaPosA);
-          }
-          if (invInertiaA > 0.0) {
-            const deltaAngA = -invInertiaA * lambda * gradAngA;
-            const orientationAComp = world.getComponent(entityA, OrientationComponent);
-            if (orientationAComp) {
-              orientationAComp.angle += deltaAngA;
-            }
-          }
-
-          // Apply corrections to Entity B
-          if (invMassB > 0.0) {
-            const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
-            posBComp.pos.add(deltaPosB);
-          }
-          if (invInertiaB > 0.0) {
-            const deltaAngB = -invInertiaB * lambda * gradAngB;
-            const orientationBComp = world.getComponent(entityB, OrientationComponent);
-            if (orientationBComp) {
-              orientationBComp.angle += deltaAngB;
-            }
-          }
+      for (const contact of pinchContacts) {
+        const surfacePair = _computeCircleSurfacePair(world, contact.entityA, contact.entityB, contact.normal);
+        if (!surfacePair) {
+          continue;
         }
-      } // End loop through joints in path
-    } // End loop through paths
+
+        // Contact inequality C = 2w - d <= 0, where d is the closest surface distance.
+        const constraintError = contact.minDistance - surfacePair.surfaceDistance;
+        if (constraintError <= EPSILON) {
+          continue;
+        }
+
+        const gradPosA = surfacePair.normal.clone().scale(-1.0);
+        const gradPosB = surfacePair.normal.clone();
+        applyConstraint(
+          contact.entityA,
+          contact.entityB,
+          surfacePair.pointA_world,
+          surfacePair.pointB_world,
+          gradPosA,
+          gradPosB,
+          constraintError,
+          contact.compliance
+        );
+      }
     } // End loop through iterations
   } // end update
 } // end PBDCableConstraintSolver

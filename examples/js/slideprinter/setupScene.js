@@ -500,6 +500,7 @@ export function setupScene(world, stage, canvas, options = {}) {
             const clockwise = getAttribute(prim, "cablePath:clockwise");
             const stored = getAttribute(prim, "cablePath:stored");
             const stiffness = getAttribute(prim, "stiffness");
+            const cableHalfWidth = getAttribute(prim, "cablePath:halfWidth");
 
             const pathComp = new CablePathComponent(
               world,
@@ -507,7 +508,8 @@ export function setupScene(world, stage, canvas, options = {}) {
               linkTypes ? [...linkTypes] : null,
               clockwise ? [...clockwise] : null,
               stiffness || Infinity,
-              stored ? [...stored] : null
+              stored ? [...stored] : null,
+              cableHalfWidth ?? 0.0
             );
             world.addComponent(cablePath, pathComp);
             world.addComponent(cablePath, new MachineTagComponent(machineId));

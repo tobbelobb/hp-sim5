@@ -46,6 +46,9 @@ export function parseUsdaText(text) {
               attrs[a] = parseFloat(l.split('=')[1]);
             }
           }
+          if (l.startsWith('custom double cablePath:halfWidth') || l.startsWith('double cablePath:halfWidth')) {
+            attrs.halfWidth = parseFloat(l.split('=')[1]);
+          }
           if (l.startsWith('token entityA')) attrs.entityA = l.split('=')[1].trim().replace(/"/g,'');
           if (l.startsWith('token entityB')) attrs.entityB = l.split('=')[1].trim().replace(/"/g,'');
           if (l.startsWith('double3 attachA')) {

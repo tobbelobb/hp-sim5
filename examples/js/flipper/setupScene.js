@@ -28,6 +28,10 @@ import {
   CablePathComponent,
   linecolor1,
   CableAttachmentUpdateSystem,
+  CableTopologySystem,
+  PinchDetectionSystem,
+  PinchConfigureSystem,
+  PinchConstraintBuildSystem,
   PBDCableConstraintSolver
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import {
@@ -285,13 +289,15 @@ export function setupScene(world, stage, canvas) {
         const linkTypes = getAttribute(cablePathPrim, "cablePath:linkTypes");
         const clockwise = getAttribute(cablePathPrim, "cablePath:clockwise");
         const stored = getAttribute(cablePathPrim, "cablePath:stored");
+        const cableHalfWidth = getAttribute(cablePathPrim, "cablePath:halfWidth");
         const pathComp = new CablePathComponent(
           world,
           jointEntities,
           linkTypes ? [...linkTypes] : null,
           clockwise ? [...clockwise] : null,
           getAttribute(cablePathPrim, "stiffness") || Infinity,
-          stored ? [...stored] : null
+          stored ? [...stored] : null,
+          cableHalfWidth ?? 0.0
         );
         world.addComponent(cablePath, pathComp);
     }
@@ -315,7 +321,11 @@ export function setupScene(world, stage, canvas) {
 
         // 4. Update derived geometry and cable state
         world.registerSystem(new FlipperTipLinkSystem());
-        world.registerSystem(new CableAttachmentUpdateSystem());
+        world.registerSystem(new CableAttachmentUpdateSystem({ includeTopology: false }));
+        world.registerSystem(new CableTopologySystem());
+        world.registerSystem(new PinchDetectionSystem());
+        world.registerSystem(new PinchConfigureSystem());
+        world.registerSystem(new PinchConstraintBuildSystem());
         world.registerSystem(new CableAttachmentCacheSystem());
         world.registerSystem(new CableSlackSystem());
 

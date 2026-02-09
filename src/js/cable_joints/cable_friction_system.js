@@ -51,12 +51,13 @@ function _evenOutTensionFriction(world) {
 
         const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
         const radius = radiusComp ? radiusComp.radius : 0.0;
+        const effectiveRadius = radius + (path.cableHalfWidth ?? 0.0);
 
         if (mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
           let wrapAngle = 0;
-          if (linkType === 'rolling' && radius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {
-            wrapAngle = Math.abs(storedLengthOnLink / radius);
+          if (linkType === 'rolling' && effectiveRadius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {
+            wrapAngle = Math.abs(storedLengthOnLink / effectiveRadius);
           } else if (linkType === 'pinhole') {
             const v0 = j0_comp.attachmentPointA_world.clone().subtract(j0_comp.attachmentPointB_world).normalize();
             const v1 = j1_comp.attachmentPointB_world.clone().subtract(j1_comp.attachmentPointA_world).normalize();

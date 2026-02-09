@@ -67,7 +67,15 @@ export class CableJointComponent {
 
 // Connects individual cable joints into a cable path
 export class CablePathComponent {
-  constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6, stored = null) {
+  constructor(
+    world,
+    jointEntities = [],
+    linkTypes = [],
+    cw = [],
+    spring_constant = 1e6,
+    stored = null,
+    cableHalfWidth = 0.0
+  ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
@@ -75,6 +83,7 @@ export class CablePathComponent {
     this.spring_constant = spring_constant;
     this.compliance = 1.0 / spring_constant;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
+    this.cableHalfWidth = Number.isFinite(cableHalfWidth) ? Math.max(0.0, cableHalfWidth) : 0.0;
 
     for (const jointId of jointEntities) {
       const joint = world.getComponent(jointId, CableJointComponent);
@@ -94,7 +103,7 @@ export class CablePathComponent {
       const isRolling = linkTypes[i + 1] === 'rolling';
       if (isRolling) {
         const center = world.getComponent(linkId, PositionComponent).pos;
-        const radius = world.getComponent(linkId, RadiusComponent).radius;
+        const radius = world.getComponent(linkId, RadiusComponent).radius + this.cableHalfWidth;
         const isCw = cw[i + 1];
 
         const planeNormal = world.getComponent(linkId, CableLinkComponent)?.cablePlaneNormal;

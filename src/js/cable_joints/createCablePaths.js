@@ -4,7 +4,15 @@ import {
   CablePathComponent
 } from './cable_joints_core.js';
 
-export function createCablePaths(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6, userStored = null) {
+export function createCablePaths(
+  world,
+  jointEntities = [],
+  linkTypes = [],
+  cw = [],
+  spring_constant = 1e6,
+  userStored = null,
+  cableHalfWidth = 0.0
+) {
     const createdPathEntityIds = [];
 
     // Validate input array lengths relative to each other for a single conceptual path
@@ -25,7 +33,7 @@ export function createCablePaths(world, jointEntities = [], linkTypes = [], cw =
         // This means linkTypes.length is 1 (due to validation above). A single link, no joints.
         // Create one CablePathComponent.
         const pathEntityId = world.createEntity();
-        const pathComponent = new CablePathComponent(world, [], linkTypes, cw, spring_constant, userStored);
+        const pathComponent = new CablePathComponent(world, [], linkTypes, cw, spring_constant, userStored, cableHalfWidth);
         world.addComponent(pathEntityId, pathComponent);
         createdPathEntityIds.push(pathEntityId);
         return createdPathEntityIds;
@@ -63,7 +71,15 @@ export function createCablePaths(world, jointEntities = [], linkTypes = [], cw =
         if (linkTypeAfterJoint === 'attachment' && (i + 1) < (linkTypes.length - 1)) {
             // Finalize current path
             const pathEntityId = world.createEntity();
-            const pathComponent = new CablePathComponent(world, currentPathJoints, currentPathLinkTypes, currentPathCw, spring_constant, currentPathStored);
+            const pathComponent = new CablePathComponent(
+              world,
+              currentPathJoints,
+              currentPathLinkTypes,
+              currentPathCw,
+              spring_constant,
+              currentPathStored,
+              cableHalfWidth
+            );
             world.addComponent(pathEntityId, pathComponent);
             createdPathEntityIds.push(pathEntityId);
 
@@ -85,11 +101,18 @@ export function createCablePaths(world, jointEntities = [], linkTypes = [], cw =
         // but kept for robustness in case of unusual inputs that might bypass earlier checks
         // and result in no joints processed but still a valid single segment.
         const pathEntityId = world.createEntity();
-        const pathComponent = new CablePathComponent(world, currentPathJoints, currentPathLinkTypes, currentPathCw, spring_constant, currentPathStored);
+        const pathComponent = new CablePathComponent(
+          world,
+          currentPathJoints,
+          currentPathLinkTypes,
+          currentPathCw,
+          spring_constant,
+          currentPathStored,
+          cableHalfWidth
+        );
         world.addComponent(pathEntityId, pathComponent);
         createdPathEntityIds.push(pathEntityId);
     }
 
     return createdPathEntityIds;
 }
-
