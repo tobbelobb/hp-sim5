@@ -14,7 +14,6 @@ import {
   CableJointComponent,
   CablePathComponent,
   getHybridEndpointWrapExpansion,
-  getHybridEndpointRollingRadius,
   getHybridEndpointCamCorners,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import { closestPointOnSegment, rightOfLine } from '../../../src/js/cable_joints/geometry.js';
@@ -110,13 +109,6 @@ export function getEffectiveCollisionRadius(world, entityId, baseRadius, normalT
       const wrapExpansion = getHybridEndpointWrapExpansion(world, entityId, pointOnBody);
       effectiveRadius = Math.max(effectiveRadius, baseRadius + wrapExpansion);
     }
-  }
-
-  // Guard against tangent degeneracy in cable updates: if an endpoint is in
-  // rolling mode, the opposite attachment must stay outside that rolling radius.
-  const rollingRadius = getHybridEndpointRollingRadius(world, entityId);
-  if (Number.isFinite(rollingRadius)) {
-    effectiveRadius = Math.max(effectiveRadius, rollingRadius);
   }
   return effectiveRadius;
 }
