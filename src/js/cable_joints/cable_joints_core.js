@@ -324,6 +324,8 @@ export function calculateAttachmentPoints(world, joint, path, i) {
 
 export function _updateAttachmentPoints(world) {
   const pathEntities = world.query([CablePathComponent]);
+  const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
+  const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -335,12 +337,26 @@ export function _updateAttachmentPoints(world) {
       const attachmentA_previous = joint.attachmentPointA_world.clone();
       const attachmentB_previous = joint.attachmentPointB_world.clone();
 
-      const { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i);
+      let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i);
 
       const A = i;
       const B = i + 1;
       const entityA = joint.entityA;
       const entityB = joint.entityB;
+
+      const pinchConfig = pinchConfigs.get(jointId);
+      if (pinchConfig) {
+        const surfacePair = _computeCircleSurfacePair(world, entityA, entityB, pinchConfig.normal);
+        const pinchPair = _computePinchAttachmentPair(world, path, entityA, entityB, pinchConfig.normal);
+        if (
+          surfacePair &&
+          pinchPair &&
+          surfacePair.surfaceDistance <= pinchConfig.minDistance + EPSILON
+        ) {
+          attachmentA_current = pinchPair.pointA_world;
+          attachmentB_current = pinchPair.pointB_world;
+        }
+      }
 
       // Get components for Entity A
       const posAComp = world.getComponent(entityA, PositionComponent);
@@ -713,11 +729,20 @@ export function _splitJoints(world) {
 export function _updateHybridLinkStates(world) {
   const debugPoints = world.getResource('debugRenderPoints');
   const pathEntities = world.query([CablePathComponent]);
+  const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
+  const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     for (const i of [0, path.linkTypes.length - 1]) {
       const epsilon = 1e-9;
+      const endpointJointId = (i === 0 ? path.jointEntities[0] : path.jointEntities[path.jointEntities.length - 1]);
+      if (endpointJointId !== undefined && pinchConfigs.has(endpointJointId)) {
+        // Transitional pinches create near-degenerate endpoint geometry where
+        // hybrid state switching is numerically ambiguous. Keep the endpoint
+        // mode/cw stable while pinched.
+        continue;
+      }
       if (path.linkTypes[i] === 'hybrid') {
         if (path.stored[i] < 0.0) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
@@ -759,6 +784,13 @@ export function _updateHybridLinkStates(world) {
         const C = world.getComponent(entityId, PositionComponent).pos;
         const P = world.getComponent(neighborId, PositionComponent).pos;
         const R = _effectiveRadius(path, world.getComponent(entityId, RadiusComponent).radius);
+
+        // When the endpoint and neighbor attachment collapse to (near) the same
+        // point, both CW/CCW tangent solutions become ill-conditioned.
+        const degenerateThreshold = Math.max(1e-6, 2.0 * (path.cableHalfWidth ?? 0.0) + 1e-6);
+        if (attachmentPoint.distanceTo(neighborAttachmentPoint) <= degenerateThreshold) {
+          continue;
+        }
 
         const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
         const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;

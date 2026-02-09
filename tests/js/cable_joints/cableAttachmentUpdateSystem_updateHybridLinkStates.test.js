@@ -192,4 +192,87 @@ describe('_updateHybridLinkStates', () => {
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - arc, 8);
   });
+
+  test('hybrid-attachment endpoint does not switch while endpoint joint is pinched', () => {
+    const world  = new World();
+    const wheel  = addWheel(world, new Vector2(0, 0), 1);
+    const anchor = addAnchor(world, new Vector2(0, 3));
+
+    const joint = world.createEntity();
+    const initialRest = 3.2;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        new Vector2(1, 0),
+        new Vector2(0, 3),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid-attachment', 'attachment'],
+      [false, false],
+    );
+    world.addComponent(path, pathComp);
+
+    world.setResource('cablePinchJointConfigs', new Map([
+      [joint, {
+        pathId: path,
+        jointId: joint,
+        entityA: wheel,
+        entityB: anchor,
+        minDistance: 0.02,
+        normal: new Vector2(1, 0),
+        segmentDir: new Vector2(0, 1)
+      }]
+    ]));
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.cw[0]).toBe(false);
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
+  });
+
+  test('hybrid-attachment endpoint keeps cw stable for near-degenerate endpoint geometry', () => {
+    const world  = new World();
+    const wheel  = addWheel(world, new Vector2(0, 0), 1);
+    const anchor = addAnchor(world, new Vector2(0.001, 0.0));
+
+    const joint = world.createEntity();
+    const initialRest = 1.0;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        new Vector2(1.0, 0.0),
+        new Vector2(1.0005, 0.0),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid-attachment', 'attachment'],
+      [true, false],
+      1e6,
+      null,
+      0.01
+    );
+    world.addComponent(path, pathComp);
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.cw[0]).toBe(true);
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
+  });
 });
