@@ -698,19 +698,7 @@ export function _updateHybridLinkStates(world) {
         if (path.stored[i] < 0.0) {
           path.linkTypes[i] = 'hybrid-attachment';
           const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
-          const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
-          const radius = world.getComponent(linkEntity, RadiusComponent).radius;
-          const pos = world.getComponent(linkEntity, PositionComponent).pos;
-          const planeNormal = _getPlaneNormal(world, linkEntity);
           joint.restLength += path.stored[i];
-          const rotAng = -path.stored[i] / radius;
-          if (i === 0) {
-            const rotated = _rotateAroundAxis(joint.attachmentPointA_world, pos, planeNormal, rotAng, path.cw[i]);
-            joint.attachmentPointA_world.set(rotated);
-          } else if (i === path.linkTypes.length - 1) {
-            const rotated = _rotateAroundAxis(joint.attachmentPointB_world, pos, planeNormal, rotAng, path.cw[i]);
-            joint.attachmentPointB_world.set(rotated);
-          }
           path.stored[i] = 0;
         }
       }

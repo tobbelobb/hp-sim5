@@ -367,14 +367,16 @@ export class InputSystem {
            const borderEnts = world.query([BorderComponent]);
            if (borderEnts.length > 0) {
                const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
-               const rightClick =
+               const canUseBorderZones = Array.isArray(borderPoints) && borderPoints.length >= 8;
+               const flippers = world.query([FlipperStateComponent, PositionComponent]);
+               const canUseFlipperZones = flippers.length >= 2;
+               const rightClick = canUseBorderZones &&
                  rightOfLine(clickPos, borderPoints[0], borderPoints[1]) &&
                  rightOfLine(clickPos, borderPoints[1], borderPoints[2]);
-               const leftClick =
+               const leftClick = canUseBorderZones &&
                  rightOfLine(clickPos, borderPoints[5], borderPoints[6]) &&
                  rightOfLine(clickPos, borderPoints[6], borderPoints[7]);
-               if (rightClick) {
-                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
+               if (rightClick && canUseFlipperZones) {
                  const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
                  const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
                  if (flipperPos0.x > flipperPos1.x) {
@@ -382,8 +384,7 @@ export class InputSystem {
                  } else {
                    world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
                  }
-               } else if (leftClick) {
-                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
+               } else if (leftClick && canUseFlipperZones) {
                  const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
                  const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
                  if (flipperPos0.x < flipperPos1.x) {
@@ -678,6 +679,9 @@ export class PBDBallBallCollisions {
     const wrapMotionPenetrationSlack = Number.isFinite(contactTuning.ballBallWrapMotionPenetrationSlack)
       ? Math.max(0.0, contactTuning.ballBallWrapMotionPenetrationSlack)
       : 0.00015;
+    const wrapMotionPenetrationCap = Number.isFinite(contactTuning.maxBallBallWrapMotionPenetration)
+      ? Math.max(0.0, contactTuning.maxBallBallWrapMotionPenetration)
+      : Number.POSITIVE_INFINITY;
     const prevContactStateResource = world.getResource('ball_ball_prev_contact_state');
     const prevContactState = (prevContactStateResource instanceof Map) ? prevContactStateResource : new Map();
     const nextContactState = new Map();
@@ -728,6 +732,11 @@ export class PBDBallBallCollisions {
           // normal rotates while bodies slide; using a strict normal gate here
           // misclassifies growth as motion and can inject kinetic energy.
           geometricPenetration = Math.max(0.0, rSum - prevState.rSum);
+        } else if (wrapEnhanced) {
+          // Entry-frame wrap expansion can make rSum jump even when centers
+          // have not moved. Treat the expanded portion as geometric so it does
+          // not become synthetic velocity through delta_lambda.
+          geometricPenetration = Math.max(0.0, rSum - (r1 + r2));
         }
         nextContactState.set(pairKey, {
           rSum,
@@ -761,6 +770,7 @@ export class PBDBallBallCollisions {
             const maxMotionPenetration = vIntoContact * dt + wrapMotionPenetrationSlack;
             motionCorrectionPenetration = Math.min(correctionPenetration, maxMotionPenetration);
           }
+          motionCorrectionPenetration = Math.min(motionCorrectionPenetration, wrapMotionPenetrationCap);
         }
         const nonVelocityCorrection = Math.max(0.0, correctionPenetration - motionCorrectionPenetration);
         const nonVelocityApplied = nonVelocityCorrection;

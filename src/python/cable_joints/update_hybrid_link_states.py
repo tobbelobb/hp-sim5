@@ -3,7 +3,6 @@ import numpy as np
 from .ecs import PositionComponent, RadiusComponent
 from .cable_joints_components import CablePathComponent, CableJointComponent
 from .geometry import tangent_from_circle_to_point, signed_arc_length_on_wheel
-from .vector2 import rotate_inplace
 
 def update_hybrid_link_states(world):
     """
@@ -19,7 +18,8 @@ def update_hybrid_link_states(world):
         The link's state is changed to 'hybrid-attachment', its `stored` length
         is reset to zero, and the `rest_length` of the adjacent joint is adjusted
         to account for the "negative" length that was just consumed. The
-        attachment point is rotated to its new position on the circumference.
+        attachment point remains fixed at its current world-space location
+        (and then follows body motion as a rigid attachment).
 
     2.  'hybrid-attachment' -> 'hybrid':
         If a 'hybrid-attachment' link is positioned such that the cable should
@@ -62,19 +62,11 @@ def update_hybrid_link_states(world):
                     pos_comp = world.get_component(link_entity, PositionComponent)
                     
                     if not radius_comp or not pos_comp or radius_comp.radius < epsilon:
-                        # Cannot rotate if there's no radius
                         path.stored[i] = 0.0
                         continue
 
                     # We have "fed out negative line", undo that
                     joint.rest_length += path.stored[i]
-                    rot_ang = -path.stored[i] / radius_comp.radius
-                    
-                    if i == 0:
-                        rotate_inplace(joint.attachment_point_a_world, rot_ang, pos_comp.pos, path.cw[i])
-                    else: # i == len(path.link_types) - 1
-                        rotate_inplace(joint.attachment_point_b_world, rot_ang, pos_comp.pos, path.cw[i])
-                    
                     path.stored[i] = 0.0
 
             elif path.link_types[i] == 'hybrid-attachment':

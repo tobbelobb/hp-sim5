@@ -66,6 +66,10 @@ describe('_updateHybridLinkStates (3D)', () => {
       [false, false],
     );
     world.addComponent(path, pathComp);
+    const attachmentBefore = world
+      .getComponent(joint, CableJointComponent)
+      .attachmentPointA_world
+      .clone();
 
     // Feed out a bit of "negative" rope
     pathComp.stored[0] = -0.2;
@@ -79,6 +83,7 @@ describe('_updateHybridLinkStates (3D)', () => {
     // restLength shortened by exactly 0.2
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
+    expect(j.attachmentPointA_world).toEqual(attachmentBefore);
   });
 
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
@@ -106,6 +111,10 @@ describe('_updateHybridLinkStates (3D)', () => {
       [false, false],
     );
     world.addComponent(path, pathComp);
+    const attachmentBefore = world
+      .getComponent(joint, CableJointComponent)
+      .attachmentPointB_world
+      .clone();
 
     pathComp.stored[1] = -0.15;
 
@@ -115,6 +124,7 @@ describe('_updateHybridLinkStates (3D)', () => {
     expect(pathComp.stored[1]).toBeCloseTo(0);
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.15, 8);
+    expect(j.attachmentPointB_world).toEqual(attachmentBefore);
   });
 
   test('first link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {

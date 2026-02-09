@@ -1053,25 +1053,16 @@ export function _updateHybridLinkStates(world) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
           path.linkTypes[i] = 'hybrid-attachment';
           const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
-          const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
-          const radius = _effectiveRadius(path, world.getComponent(linkEntity, RadiusComponent).radius);
-          const pos = world.getComponent(linkEntity, PositionComponent).pos;
           const rawCW = path.cw[i];
           const effectiveCW = _effectiveCW(path, i, true);
           const oldStored = path.stored[i];
           // We have "fed out negative line", undo that
           joint.restLength += oldStored;
-          const rotAng = -oldStored/radius;
-          if (i === 0) {
-            joint.attachmentPointA_world.rotate(rotAng, pos, rawCW);
-          } else if (i === path.linkTypes.length - 1) {
-            joint.attachmentPointB_world.rotate(rotAng, pos, rawCW);
-          }
           _debugCable(
             world,
             `hybrid->hybrid-attachment path=${pathId} link=${i} ` +
             `joint=${endpointJointId} rawCW=${rawCW} effectiveCW=${effectiveCW} ` +
-            `storedBefore=${oldStored.toFixed(6)} rotAng=${rotAng.toFixed(6)}`
+            `storedBefore=${oldStored.toFixed(6)}`
           );
           path.stored[i] = 0;
         }

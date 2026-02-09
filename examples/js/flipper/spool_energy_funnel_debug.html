@@ -151,6 +151,10 @@ canvas {
     CablePathComponent,
     linecolor1,
     CableAttachmentUpdateSystem,
+    CableTopologySystem,
+    PinchDetectionSystem,
+    PinchConfigureSystem,
+    PinchConstraintBuildSystem,
     PBDCableConstraintSolver
   } from '../../../src/js/cable_joints/cable_joints_core.js';
   import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
@@ -170,11 +174,20 @@ canvas {
   import {
     BallTagComponent,
     PauseStateComponent,
+    InputSystem,
+    InputReplaySystem,
+    ScoreSystem,
+    ScoreDisplaySystem,
     BorderComponent,
+    FlipperMotionSystem,
+    FlipperTipLinkSystem,
     PBDBallBorderCollisions,
     PBDBallBallCollisions,
+    PBDBallObstacleCollisions,
+    PBDBallFlipperCollisions,
     getEffectiveCollisionRadius
   } from './flipper_common.js';
+  import { BallObstacleBumpSystem } from './ball_obstacle_bump_system.js';
   import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
   import { RenderSystem } from './renderSystem.js';
   import { runGame } from './runner.js';
@@ -213,8 +226,13 @@ canvas {
     attachmentPotentialRiseClamp: true,
     attachmentPotentialRiseBudgetScale: 1.0,
     attachmentPotentialRiseSlack: 0.0,
+    enableCableTopologySystem: false,
+    enablePinchDetectionSystem: false,
+    enablePinchConfigureSystem: false,
+    enablePinchConstraintBuildSystem: false,
     borderMotionPenetrationSlack: 0.00015,
-    ballBallWrapMotionPenetrationSlack: 0.00015
+    ballBallWrapMotionPenetrationSlack: 0.00015,
+    maxBallBallWrapMotionPenetration: 0.0008
   };
 
   const PALETTE = ['#A9ADB6', '#7AB6FF', '#FFA15F', '#8DD17E', '#E8A5FF', '#FFCD56'];
@@ -555,7 +573,8 @@ canvas {
     });
     world.setResource('flipperContactTuning', {
       borderMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.borderMotionPenetrationSlack, 0.00015)),
-      ballBallWrapMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.ballBallWrapMotionPenetrationSlack, 0.00015))
+      ballBallWrapMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.ballBallWrapMotionPenetrationSlack, 0.00015)),
+      maxBallBallWrapMotionPenetration: Math.max(0.0, _readFinite(spoolEnergyConfig.maxBallBallWrapMotionPenetration, 0.0008))
     });
 
     const bottom = 0.04;
@@ -700,24 +719,47 @@ canvas {
     if (world.systems.length === 0) {
       world.registerSystem(new PrevFinalPosSystem());
       world.registerSystem(new PrevFinalOrientationSystem());
+      const inputSystemInstance = new InputSystem(canvas, world);
+      world.registerSystem(inputSystemInstance);
+      world.registerSystem(new InputReplaySystem([], inputSystemInstance));
+      world.registerSystem(new FlipperMotionSystem());
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
       world.registerSystem(new AngularMovementSystem());
+      world.registerSystem(new FlipperTipLinkSystem());
+      const enableTopology = spoolEnergyConfig.enableCableTopologySystem !== false;
       world.registerSystem(new CableAttachmentUpdateSystem({
         includeTopology: false,
-        updateHybridWithoutTopology: true
+        updateHybridWithoutTopology: !enableTopology
       }));
+      if (enableTopology) {
+        world.registerSystem(new CableTopologySystem());
+      }
+      if (spoolEnergyConfig.enablePinchDetectionSystem === true) {
+        world.registerSystem(new PinchDetectionSystem());
+      }
+      if (spoolEnergyConfig.enablePinchConfigureSystem === true) {
+        world.registerSystem(new PinchConfigureSystem());
+      }
+      if (spoolEnergyConfig.enablePinchConstraintBuildSystem === true) {
+        world.registerSystem(new PinchConstraintBuildSystem());
+      }
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDBallBorderCollisions());
       world.registerSystem(new PBDBallBallCollisions());
+      world.registerSystem(new PBDBallObstacleCollisions());
+      world.registerSystem(new PBDBallFlipperCollisions());
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());
       world.registerSystem(new CableEnergyTransferSystem());
+      world.registerSystem(new BallObstacleBumpSystem());
       world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
+      world.registerSystem(new ScoreSystem());
+      world.registerSystem(new ScoreDisplaySystem('score'));
       world.registerSystem(new EnergyTraceSystem());
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, simWidth / 2.0, simHeight / 2.0, 0.0));
     }
