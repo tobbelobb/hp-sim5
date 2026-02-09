@@ -14,6 +14,7 @@ import {
   CableJointComponent,
   CablePathComponent,
   getHybridEndpointWrapExpansion,
+  getHybridEndpointRollingRadius,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import { closestPointOnSegment, rightOfLine } from '../../../src/js/cable_joints/geometry.js';
 
@@ -54,16 +55,27 @@ export class ScoreComponent { constructor(score = 0) { this.value = score; } }
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 
 export function getEffectiveCollisionRadius(world, entityId, baseRadius, normalTowardContact) {
-  if (!(baseRadius > 0.0) || !normalTowardContact || normalTowardContact.lengthSq() <= 1e-12) {
+  if (!(baseRadius > 0.0)) {
     return baseRadius;
   }
-  const pos = world.getComponent(entityId, PositionComponent)?.pos;
-  if (!pos) {
-    return baseRadius;
+
+  let effectiveRadius = baseRadius;
+  if (normalTowardContact && normalTowardContact.lengthSq() > 1e-12) {
+    const pos = world.getComponent(entityId, PositionComponent)?.pos;
+    if (pos) {
+      const pointOnBody = pos.clone().add(normalTowardContact, baseRadius);
+      const wrapExpansion = getHybridEndpointWrapExpansion(world, entityId, pointOnBody);
+      effectiveRadius = Math.max(effectiveRadius, baseRadius + wrapExpansion);
+    }
   }
-  const pointOnBody = pos.clone().add(normalTowardContact, baseRadius);
-  const wrapExpansion = getHybridEndpointWrapExpansion(world, entityId, pointOnBody);
-  return baseRadius + wrapExpansion;
+
+  // Guard against tangent degeneracy in cable updates: if an endpoint is in
+  // rolling mode, the opposite attachment must stay outside that rolling radius.
+  const rollingRadius = getHybridEndpointRollingRadius(world, entityId);
+  if (Number.isFinite(rollingRadius)) {
+    effectiveRadius = Math.max(effectiveRadius, rollingRadius);
+  }
+  return effectiveRadius;
 }
 
 // --- System: Input --- (Simplified Click Handling)

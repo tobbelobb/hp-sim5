@@ -15,7 +15,8 @@ import {
 
 import {
   BallTagComponent,
-  PBDBallBallCollisions
+  PBDBallBallCollisions,
+  getEffectiveCollisionRadius
 } from '../../../examples/js/flipper/flipper_common.js';
 
 function addEndpointHybridWrap(world, endpointId, storedLength, halfWidth = 0.1) {
@@ -33,6 +34,41 @@ function addEndpointHybridWrap(world, endpointId, storedLength, halfWidth = 0.1)
       0.0,
       new Vector2(1.0, 0.0),
       new Vector2(2.9, 0.0)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'attachment'],
+      [true, true],
+      1e4,
+      [storedLength, 0.0],
+      halfWidth
+    )
+  );
+}
+
+function addEndpointHybridWrapCustomAttachment(world, endpointId, storedLength, attachmentDirX, halfWidth = 0.1) {
+  const endpointPos = world.getComponent(endpointId, PositionComponent).pos;
+  const dirSign = attachmentDirX >= 0 ? 1.0 : -1.0;
+  const anchorId = world.createEntity();
+  world.addComponent(anchorId, new PositionComponent(endpointPos.x + 3.0 * dirSign, endpointPos.y));
+  world.addComponent(anchorId, new RadiusComponent(0.1));
+  world.addComponent(anchorId, new CableLinkComponent(endpointPos.x + 3.0 * dirSign, endpointPos.y));
+
+  const jointId = world.createEntity();
+  world.addComponent(
+    jointId,
+    new CableJointComponent(
+      endpointId,
+      anchorId,
+      0.0,
+      new Vector2(endpointPos.x + 1.0 * dirSign, endpointPos.y),
+      new Vector2(endpointPos.x + 2.9 * dirSign, endpointPos.y)
     )
   );
 
@@ -311,5 +347,45 @@ describe('PBDBallBallCollisions', () => {
     const withWrapBall2X = withWrapWorld.getComponent(withWrap.ball2, PositionComponent).pos.x;
     expect(withWrapBall1X).toBeLessThan(0.0);
     expect(withWrapBall2X).toBeGreaterThan(2.15);
+  });
+
+  test('collision radius keeps wrapped endpoints outside rolling circle near partial-arc boundary', () => {
+    const world = new World();
+    const dt = 0.016;
+    const partialStored = 0.06;
+
+    const left = world.createEntity();
+    world.addComponent(left, new BallTagComponent());
+    world.addComponent(left, new PositionComponent(0.0, 0.0));
+    world.addComponent(left, new VelocityComponent(0, 0));
+    world.addComponent(left, new RadiusComponent(1));
+    world.addComponent(left, new MassComponent(1));
+    world.addComponent(left, new RestitutionComponent(1));
+    world.addComponent(left, new CableLinkComponent(0.0, 0.0));
+
+    const right = world.createEntity();
+    world.addComponent(right, new BallTagComponent());
+    world.addComponent(right, new PositionComponent(2.15, 0.0));
+    world.addComponent(right, new VelocityComponent(0, 0));
+    world.addComponent(right, new RadiusComponent(1));
+    world.addComponent(right, new MassComponent(1));
+    world.addComponent(right, new RestitutionComponent(1));
+    world.addComponent(right, new CableLinkComponent(2.15, 0.0));
+
+    addEndpointHybridWrapCustomAttachment(world, left, partialStored, +1.0);
+    addEndpointHybridWrapCustomAttachment(world, right, partialStored, -1.0);
+
+    const leftRadius = getEffectiveCollisionRadius(world, left, 1.0, new Vector2(1.0, 0.0));
+    const rightRadius = getEffectiveCollisionRadius(world, right, 1.0, new Vector2(-1.0, 0.0));
+    expect(leftRadius).toBeGreaterThanOrEqual(1.1 - 1e-9);
+    expect(rightRadius).toBeGreaterThanOrEqual(1.1 - 1e-9);
+
+    const system = new PBDBallBallCollisions();
+    system.update(world, dt);
+
+    const leftX = world.getComponent(left, PositionComponent).pos.x;
+    const rightX = world.getComponent(right, PositionComponent).pos.x;
+    expect(leftX).toBeLessThan(0.0);
+    expect(rightX).toBeGreaterThan(2.15);
   });
 });

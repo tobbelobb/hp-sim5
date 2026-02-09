@@ -1401,6 +1401,45 @@ export function getHybridEndpointWrapExpansion(world, entityId, pointOnBody) {
   return maxExpansion;
 }
 
+export function getHybridEndpointRollingRadius(world, entityId) {
+  if (!world || entityId === undefined || entityId === null) {
+    return 0.0;
+  }
+
+  let maxRollingRadius = 0.0;
+  const pathEntities = world.query([CablePathComponent]);
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (!path || path.jointEntities.length < 1) {
+      continue;
+    }
+    if (!Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
+      continue;
+    }
+
+    const endpointIndices = [0, path.linkTypes.length - 1];
+    for (const linkIndex of endpointIndices) {
+      if (!_isHybrid(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      if (!(path.stored[linkIndex] > EPSILON)) {
+        continue;
+      }
+
+      const context = _getEndpointRollingArcContext(world, path, linkIndex);
+      if (!context || context.bodyA !== entityId) {
+        continue;
+      }
+      const rollingRadius = _effectiveRollingRadius(path, linkIndex, context.baseRadius);
+      if (Number.isFinite(rollingRadius) && rollingRadius > maxRollingRadius) {
+        maxRollingRadius = rollingRadius;
+      }
+    }
+  }
+
+  return maxRollingRadius;
+}
+
 function _detectPinchCandidates(world) {
   const candidates = [];
   const nonTransitionalByKey = new Map();
