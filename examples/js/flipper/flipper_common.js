@@ -689,6 +689,10 @@ export class PBDBallFlipperCollisions {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
     const collisionDebug = world.getResource('flipperCollisionDebug') === true;
+    const collisionWarnings = world.getResource('flipperCollisionWarnings') === true;
+    const previousContacts = world.getResource('flipper_prev_contact_state');
+    const previousByPair = (previousContacts instanceof Map) ? previousContacts : new Map();
+    const nextByPair = new Map();
 
     let contacts = world.getResource('ball_flipper_contacts');
     if (!contacts) {
@@ -723,6 +727,7 @@ export class PBDBallFlipperCollisions {
         const effectiveFlipperRadius = getEffectiveCollisionRadius(world, flipId, fr, dir.clone());
         const rSum = effectiveBallRadius + effectiveFlipperRadius;
         if (d > rSum) continue;
+        const rawContact = d <= (r1 + fr + 1e-9);
 
         const corr = rSum - d;
         if (invMass > 0) {
@@ -741,7 +746,29 @@ export class PBDBallFlipperCollisions {
             'normal': dir.clone(),
             'contact_point_on_flipper': closest.clone(),
             'delta_lambda': delta_lambda,
-            'ball_contact_radius': effectiveBallRadius
+            'ball_contact_radius': effectiveBallRadius,
+            'raw_contact': rawContact
+        });
+
+        const pairKey = `${ballId}:${flipId}`;
+        const prev = previousByPair.get(pairKey);
+        if (collisionWarnings && prev && !rawContact) {
+          const radiusJump = Math.abs(effectiveBallRadius - prev.ballRadius);
+          const corrJump = Math.abs(corr - prev.corr);
+          const normalDot = prev.normal.dot(dir);
+          if (radiusJump > 0.01 || corrJump > 0.01 || normalDot < 0.95) {
+            console.warn(
+              `[FlipperCollisionWarn] wrap-only contact jump pair=${pairKey} ` +
+              `radiusJump=${radiusJump.toFixed(6)} corrJump=${corrJump.toFixed(6)} normalDot=${normalDot.toFixed(6)} ` +
+              `rBall=${effectiveBallRadius.toFixed(6)} corr=${corr.toFixed(6)}`
+            );
+          }
+        }
+        nextByPair.set(pairKey, {
+          ballRadius: effectiveBallRadius,
+          corr,
+          normal: dir.clone(),
+          raw: rawContact
         });
         if (collisionDebug) {
           console.debug(
@@ -753,5 +780,6 @@ export class PBDBallFlipperCollisions {
         }
       }
     }
+    world.setResource('flipper_prev_contact_state', nextByPair);
   }
 }

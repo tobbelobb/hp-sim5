@@ -49,8 +49,10 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const muBall = frictionComp ? frictionComp.mu : 0.0;
         const angVel = angVelComp.angularVelocity;
 
-        const restitution = (restitutionBall + restitution_other) / 2.0;
-        const mu = (muBall + friction_other) / 2.0;
+        const restitutionOther = Number.isFinite(restitution_other) ? restitution_other : 0.0;
+        const frictionOther = Number.isFinite(friction_other) ? friction_other : 0.0;
+        const restitution = (restitutionBall + restitutionOther) / 2.0;
+        const mu = (muBall + frictionOther) / 2.0;
 
         const r_ball = normal.clone().scale(-radius);
 
@@ -105,6 +107,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
     }
 
     update(world, dt) {
+        const collisionWarnings = world.getResource('flipperCollisionWarnings') === true;
         // --- Handle Border Contacts ---
         const borderContacts = world.getResource('ball_border_contacts');
         if (borderContacts) {
@@ -129,7 +132,28 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const flipperContacts = world.getResource('ball_flipper_contacts');
         if (flipperContacts) {
             for (const contact of flipperContacts) {
-                const { ball_id, flip_id, normal, contact_point_on_flipper, delta_lambda, ball_contact_radius } = contact;
+                const {
+                    ball_id,
+                    flip_id,
+                    normal,
+                    contact_point_on_flipper,
+                    delta_lambda,
+                    ball_contact_radius
+                } = contact;
+                const rawContact = contact.raw_contact !== false;
+
+                // Wrap-only contacts are geometric stand-ins for cable thickness.
+                // Let position solve keep separation, but avoid injecting bumper-like
+                // velocity impulses from restitution/friction at this stage.
+                if (!rawContact) {
+                    if (collisionWarnings && Math.abs(delta_lambda) > 1e-3) {
+                        console.warn(
+                          `[FlipperCollisionWarn] skipped wrap-only flipper velocity impulse ` +
+                          `ball=${ball_id} flip=${flip_id} deltaLambda=${delta_lambda.toFixed(6)}`
+                        );
+                    }
+                    continue;
+                }
 
                 const flipperPosComp = world.getComponent(flip_id, PositionComponent);
                 const flipperStateComp = world.getComponent(flip_id, FlipperStateComponent);
