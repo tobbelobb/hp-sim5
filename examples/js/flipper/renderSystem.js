@@ -1156,19 +1156,39 @@ export class RenderSystem {
                 if (tangentPoint) {
                   // Calculate and draw GREEN dot at the end of the stored arc
                   const center = posComp.pos;
-                  const radius = radiusComp.radius;
-                  const storedLength = path.stored[i];
+                  const halfWidth = path.cableHalfWidth ?? 0.0;
+                  const baseRadius = radiusComp.radius + halfWidth;
+                  const storedLength = Math.max(0.0, path.stored[i] ?? 0.0);
                   const cw = path.cw[i];
 
-                  if (radius > 1e-9) {
+                  if (baseRadius > 1e-9) {
                     const toTangent = tangentPoint.clone().subtract(center);
                     const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
-                    const deltaAngle = storedLength / radius;
-                    const endAngle = cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
+                    let layerRadius = baseRadius;
+                    let partialLength = storedLength;
+                    const fullWidth = 2.0 * halfWidth;
+                    const MAX_LAYERS = 128;
+                    let layerCount = 0;
+                    while (
+                      fullWidth > 1e-12 &&
+                      layerCount < MAX_LAYERS
+                    ) {
+                      const layerCircumference = 2.0 * Math.PI * layerRadius;
+                      if (!(partialLength > layerCircumference + 1e-9)) {
+                        break;
+                      }
+                      partialLength -= layerCircumference;
+                      layerCount += 1;
+                      layerRadius = baseRadius + fullWidth * layerCount;
+                    }
+                    const deltaAngle = (partialLength > 1e-9 && layerRadius > 1e-9)
+                      ? (partialLength / layerRadius)
+                      : 0.0;
+                    const attachmentAngle = cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
 
                     const endOfArcPoint = new Vector2(
-                      center.x + radius * Math.cos(endAngle),
-                      center.y + radius * Math.sin(endAngle)
+                      center.x + baseRadius * Math.cos(attachmentAngle),
+                      center.y + baseRadius * Math.sin(attachmentAngle)
                     );
 
                     this.c.beginPath();

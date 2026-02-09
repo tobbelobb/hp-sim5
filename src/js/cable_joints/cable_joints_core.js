@@ -214,6 +214,40 @@ function _effectiveRadius(path, radius) {
   return radius + (path?.cableHalfWidth ?? 0.0);
 }
 
+function _effectiveRollingRadius(path, linkIndex, baseRadius) {
+  if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
+    return baseRadius;
+  }
+  if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
+    return baseRadius;
+  }
+  if (!_isHybrid(path.linkTypes[linkIndex])) {
+    return baseRadius;
+  }
+  if (!(linkIndex === 0 || linkIndex === path.linkTypes.length - 1)) {
+    return baseRadius;
+  }
+
+  const halfWidth = path.cableHalfWidth ?? 0.0;
+  if (!(halfWidth > EPSILON)) {
+    return baseRadius;
+  }
+
+  const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+  if (!(stored > EPSILON)) {
+    return baseRadius;
+  }
+
+  const decomposition = _decomposeStoredWrapLayers(stored, baseRadius, halfWidth);
+  if (!decomposition) {
+    return baseRadius;
+  }
+  if (decomposition.hasPartial) {
+    return decomposition.partialRadius;
+  }
+  return baseRadius + 2.0 * halfWidth * Math.max(0, decomposition.fullLayers - 1);
+}
+
 function _clearDebugPoints(world) {
   const debugPoints = world.getResource('debugRenderPoints');
   if (debugPoints) {
@@ -251,7 +285,8 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const posA = posAComp?.pos;
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-  const radiusA = _effectiveRadius(path, radiusAComp?.radius);
+  const baseRadiusA = _effectiveRadius(path, radiusAComp?.radius);
+  const radiusA = _effectiveRollingRadius(path, A, baseRadiusA);
   const angleA = orientationAComp?.angle ?? 0.0;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleA = angleA - prevAngleA;
@@ -277,7 +312,8 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const posB = posBComp?.pos;
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-  const radiusB = _effectiveRadius(path, radiusBComp?.radius);
+  const baseRadiusB = _effectiveRadius(path, radiusBComp?.radius);
+  const radiusB = _effectiveRollingRadius(path, B, baseRadiusB);
   const angleB = orientationBComp?.angle ?? 0.0;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleB = angleB - prevAngleB;
@@ -372,7 +408,8 @@ export function _updateAttachmentPoints(world) {
       const orientationAComp = world.getComponent(entityA, OrientationComponent);
       const posA = posAComp?.pos;
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-      const radiusA = _effectiveRadius(path, radiusAComp?.radius);
+      const baseRadiusA = _effectiveRadius(path, radiusAComp?.radius);
+      const radiusA = _effectiveRollingRadius(path, A, baseRadiusA);
       const angleA = orientationAComp?.angle ?? 0.0;
       const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleA = angleA - prevAngleA;
@@ -388,7 +425,8 @@ export function _updateAttachmentPoints(world) {
       const orientationBComp = world.getComponent(entityB, OrientationComponent);
       const posB = posBComp?.pos;
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-      const radiusB = _effectiveRadius(path, radiusBComp?.radius);
+      const baseRadiusB = _effectiveRadius(path, radiusBComp?.radius);
+      const radiusB = _effectiveRollingRadius(path, B, baseRadiusB);
       const angleB = orientationBComp?.angle ?? 0.0;
       const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleB = angleB - prevAngleB;

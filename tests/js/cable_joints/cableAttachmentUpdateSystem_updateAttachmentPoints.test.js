@@ -406,4 +406,56 @@ describe('_updateAttachmentPoints', () => {
     const firstJoint = world.getComponent(jointIds[0], CableJointComponent);
     expect(firstJoint.attachmentPointA_world).toEqual(t0.a_circle);
   });
+
+  test('hybrid endpoint tangent uses layered rolling radius when stored exceeds one full wrap', () => {
+    const world = new World();
+
+    const spool = world.createEntity();
+    const anchor = world.createEntity();
+    const spoolPos = new Vector2(0.0, 0.0);
+    const anchorPos = new Vector2(0.0, 3.0);
+    const spoolRadius = 1.0;
+    const halfWidth = 0.05;
+    const baseRadius = spoolRadius + halfWidth;
+    const fullWidth = 2.0 * halfWidth;
+
+    world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y));
+    world.addComponent(spool, new RadiusComponent(spoolRadius));
+    world.addComponent(spool, new CableLinkComponent(spoolPos.x, spoolPos.y));
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
+    world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y));
+
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(
+        spool,
+        anchor,
+        3.0,
+        new Vector2(baseRadius, 0.0),
+        anchorPos.clone()
+      )
+    );
+
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      halfWidth
+    );
+    const oneFullWrap = 2.0 * Math.PI * baseRadius;
+    pathComp.stored[0] = oneFullWrap + 0.2;
+    pathComp.totalRestLength += oneFullWrap + 0.2;
+    world.addComponent(pathId, pathComp);
+
+    _updateAttachmentPoints(world);
+
+    const joint = world.getComponent(jointId, CableJointComponent);
+    const expectedTopRadius = baseRadius + fullWidth;
+    expect(joint.attachmentPointA_world.distanceTo(spoolPos)).toBeCloseTo(expectedTopRadius, 6);
+  });
 });
