@@ -110,6 +110,7 @@ describe('Flipper Node Simulation', () => {
     console.warn = originalWarn; // restore after test
     expect(settled).toBe(false);
     // Score is sensitive to physics ordering and floating-point drift across Node versions.
-    expect(state.score).toBe(22);
+    // Pinch contacts now keep a wider cable-body separation, reducing bumper hits in this scenario.
+    expect(state.score).toBe(13);
   });
 });

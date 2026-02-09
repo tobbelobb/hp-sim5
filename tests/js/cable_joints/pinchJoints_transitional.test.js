@@ -56,7 +56,7 @@ function setupTransitionalPinchWorld() {
 }
 
 describe('Transitional pinch joints', () => {
-  test('detects and configures a transitional pinch with zero-length segment', () => {
+  test('detects and configures a transitional pinch with margined attachment points', () => {
     const { world, jointId } = setupTransitionalPinchWorld();
     const detect = new PinchDetectionSystem();
     const configure = new PinchConfigureSystem();
@@ -70,13 +70,87 @@ describe('Transitional pinch joints', () => {
     const pinchConfigs = world.getResource('cablePinchJointConfigs');
     expect(pinchConfigs instanceof Map).toBe(true);
     expect(pinchConfigs.size).toBe(1);
+
     const joint = world.getComponent(jointId, CableJointComponent);
-    expect(joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world)).toBeCloseTo(0.0, 9);
+    const posA = world.getComponent(joint.entityA, PositionComponent).pos;
+    const posB = world.getComponent(joint.entityB, PositionComponent).pos;
+    const rEffA = world.getComponent(joint.entityA, RadiusComponent).radius + 0.05;
+    const rEffB = world.getComponent(joint.entityB, RadiusComponent).radius + 0.05;
+    expect(joint.attachmentPointA_world.distanceTo(posA)).toBeCloseTo(rEffA, 7);
+    expect(joint.attachmentPointB_world.distanceTo(posB)).toBeCloseTo(rEffB, 7);
+
+    const pinchConfig = pinchConfigs.get(jointId);
+    expect(pinchConfig).toBeDefined();
+    expect(Math.abs(pinchConfig.segmentDir.dot(pinchConfig.normal))).toBeLessThan(1e-9);
 
     build.update(world, 0.016);
     const contacts = world.getResource('cablePinchContacts');
     expect(contacts).toHaveLength(1);
     expect(contacts[0].minDistance).toBeCloseTo(0.1, 9);
+  });
+
+  test('does not detect transitional pinch if bodies are farther apart than 2w', () => {
+    const { world, entityB } = setupTransitionalPinchWorld();
+    world.getComponent(entityB, PositionComponent).pos.set(new Vector2(0.41, 0.0));
+
+    const detect = new PinchDetectionSystem();
+    const configure = new PinchConfigureSystem();
+    detect.update(world, 0.016);
+
+    const candidates = world.getResource('cablePinchCandidates');
+    expect(Array.isArray(candidates)).toBe(true);
+    expect(candidates).toHaveLength(0);
+
+    configure.update(world, 0.016);
+    const pinchConfigs = world.getResource('cablePinchJointConfigs');
+    expect(pinchConfigs instanceof Map).toBe(true);
+    expect(pinchConfigs.size).toBe(0);
+  });
+
+  test('deduplicates contacts for multiple transitional joints between same body pair', () => {
+    const { world, entityA, entityB, jointId } = setupTransitionalPinchWorld();
+    const secondJointId = world.createEntity();
+    world.addComponent(
+      secondJointId,
+      new CableJointComponent(
+        entityA,
+        entityB,
+        0.0,
+        new Vector2(0.15, 0.02),
+        new Vector2(0.19, 0.02)
+      )
+    );
+    const secondPathId = world.createEntity();
+    world.addComponent(
+      secondPathId,
+      new CablePathComponent(
+        world,
+        [secondJointId],
+        ['rolling', 'rolling'],
+        [true, true],
+        Infinity,
+        null,
+        0.05
+      )
+    );
+
+    const detect = new PinchDetectionSystem();
+    const configure = new PinchConfigureSystem();
+    const build = new PinchConstraintBuildSystem();
+
+    detect.update(world, 0.016);
+    const candidates = world.getResource('cablePinchCandidates');
+    expect(candidates).toHaveLength(2);
+
+    configure.update(world, 0.016);
+    const pinchConfigs = world.getResource('cablePinchJointConfigs');
+    expect(pinchConfigs.size).toBe(2);
+    expect(pinchConfigs.has(jointId)).toBe(true);
+    expect(pinchConfigs.has(secondJointId)).toBe(true);
+
+    build.update(world, 0.016);
+    const contacts = world.getResource('cablePinchContacts');
+    expect(contacts).toHaveLength(1);
   });
 
   test('contact inequality solver enforces d >= 2w', () => {
@@ -100,4 +174,3 @@ describe('Transitional pinch joints', () => {
     expect(surfaceDistance).toBeGreaterThanOrEqual(0.1 - 1e-6);
   });
 });
-

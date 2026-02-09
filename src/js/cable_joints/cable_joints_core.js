@@ -31,6 +31,7 @@ import {
 
 export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
+const PINCH_NON_TRANSITIONAL_STORED_BUFFER = 1e-5;
 const PINCH_CANDIDATES_RESOURCE = 'cablePinchCandidates';
 const PINCH_CONFIGS_RESOURCE = 'cablePinchJointConfigs';
 const PINCH_CONTACTS_RESOURCE = 'cablePinchContacts';
@@ -444,11 +445,34 @@ export function _mergeJoints(world) {
           console.warn("Merge loop saw disconnected cable path");
           continue;
         }
-        if (joint_i.entityA === joint_i_plus_1.entityB) {
-          // A cable has wrapped around a link, and back. This will not be a merge candidate.
-          continue;
-        }
         if (path.stored[i + 1] < 0.0) {
+          if (joint_i.entityA === joint_i_plus_1.entityB) {
+            // Non-transitional pinch removal case:
+            // ... -> A->B, B->A -> ...
+            // Remove the two transitional joints and merge their length budget back
+            // into the remaining wrapped link on body A.
+            if (i <= 0 || (i + 2) >= path.stored.length) {
+              console.warn("Pinch merge loop saw non-transitional pair without both neighbors.");
+              continue;
+            }
+
+            const removedBudget =
+              joint_i.restLength +
+              joint_i_plus_1.restLength +
+              path.stored[i + 1] +
+              path.stored[i + 2];
+            path.stored[i] += removedBudget;
+
+            path.jointEntities.splice(i, 2);
+            path.stored.splice(i + 1, 2);
+            path.cw.splice(i + 1, 2);
+            path.linkTypes.splice(i + 1, 2);
+            world.destroyEntity(jointId_i);
+            world.destroyEntity(jointId_i_plus_1);
+
+            reRunMerge = true;
+            continue;
+          }
           // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${path.stored[i + 1].toFixed(4)})`);
 
           // Calculate angle between the two segments, just for debug
@@ -768,7 +792,14 @@ export function _updateHybridLinkStates(world) {
   }
 }
 
-function _computeCircleSurfacePair(world, entityA, entityB, fallbackNormal = null) {
+function _computeCircleSurfacePair(
+  world,
+  entityA,
+  entityB,
+  fallbackNormal = null,
+  radiusOffsetA = 0.0,
+  radiusOffsetB = 0.0
+) {
   const posAComp = world.getComponent(entityA, PositionComponent);
   const posBComp = world.getComponent(entityB, PositionComponent);
   const radiusAComp = world.getComponent(entityA, RadiusComponent);
@@ -788,8 +819,8 @@ function _computeCircleSurfacePair(world, entityA, entityB, fallbackNormal = nul
     normal = new Vector2(1.0, 0.0);
   }
 
-  const radiusA = radiusAComp.radius;
-  const radiusB = radiusBComp.radius;
+  const radiusA = Math.max(0.0, radiusAComp.radius + radiusOffsetA);
+  const radiusB = Math.max(0.0, radiusBComp.radius + radiusOffsetB);
   const pointA_world = posAComp.pos.clone().add(normal, radiusA);
   const pointB_world = posBComp.pos.clone().subtract(normal, radiusB);
   const surfaceDistance = centerDistance - (radiusA + radiusB);
@@ -805,9 +836,82 @@ function _computeCircleSurfacePair(world, entityA, entityB, fallbackNormal = nul
   };
 }
 
-function _detectTransitionalPinches(world) {
+function _computePinchAttachmentPair(world, path, entityA, entityB, fallbackNormal = null) {
+  const halfWidth = path?.cableHalfWidth ?? 0.0;
+  return _computeCircleSurfacePair(
+    world,
+    entityA,
+    entityB,
+    fallbackNormal,
+    halfWidth,
+    halfWidth
+  );
+}
+
+function _pinchSegmentDirection(normal, referenceDir = null) {
+  const segmentDir = new Vector2(-normal.y, normal.x);
+  if (segmentDir.lengthSq() <= EPSILON) {
+    return null;
+  }
+  segmentDir.normalize();
+  if (referenceDir && referenceDir.lengthSq() > EPSILON && segmentDir.dot(referenceDir) < 0.0) {
+    segmentDir.scale(-1.0);
+  }
+  return segmentDir;
+}
+
+function _pathCurrentLengthBudget(world, path) {
+  let total = 0.0;
+  for (const jointId of path.jointEntities) {
+    const joint = world.getComponent(jointId, CableJointComponent);
+    if (joint) {
+      total += joint.restLength;
+    }
+  }
+  for (const value of path.stored) {
+    total += value;
+  }
+  return total;
+}
+
+function _isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pointOnBody, center, radius) {
+  if (!leftJoint || !rightJoint || !pointOnBody || !center) {
+    return false;
+  }
+  if (!Number.isFinite(radius) || radius <= EPSILON) {
+    return false;
+  }
+
+  const tailPoint = leftJoint.attachmentPointB_world;
+  const headPoint = rightJoint.attachmentPointA_world;
+  const cw = path.cw[linkIndex];
+
+  let totalArc = signedArcLengthOnWheel(tailPoint, headPoint, center, radius, cw, true);
+  if (!(totalArc > EPSILON)) {
+    totalArc = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+    if (!(totalArc > EPSILON)) {
+      return false;
+    }
+  }
+
+  const arcToPoint = signedArcLengthOnWheel(tailPoint, pointOnBody, center, radius, cw, true);
+  const arcFromPoint = signedArcLengthOnWheel(pointOnBody, headPoint, center, radius, cw, true);
+
+  const arcTolerance = Math.max(1e-6, totalArc * 1e-4);
+  if (arcToPoint <= arcTolerance || arcFromPoint <= arcTolerance) {
+    return false;
+  }
+  if (arcToPoint > totalArc + arcTolerance || arcFromPoint > totalArc + arcTolerance) {
+    return false;
+  }
+  return (arcToPoint + arcFromPoint) <= totalArc + (2.0 * arcTolerance);
+}
+
+function _detectPinchCandidates(world) {
   const candidates = [];
+  const nonTransitionalByKey = new Map();
   const pathEntities = world.query([CablePathComponent]);
+  const potentialBodies = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -818,6 +922,9 @@ function _detectTransitionalPinches(world) {
     if (!(halfWidth > EPSILON)) {
       continue;
     }
+
+    const minDistance = 2.0 * halfWidth;
+    const pathMachine = getMachineId(world, pathId);
 
     for (const jointId of path.jointEntities) {
       const joint = world.getComponent(jointId, CableJointComponent);
@@ -831,32 +938,273 @@ function _detectTransitionalPinches(world) {
         continue;
       }
 
-      const minDistance = 2.0 * halfWidth;
-      const broadDistance = surfacePair.radiusA + surfacePair.radiusB + minDistance;
-      if (surfacePair.centerDistance > broadDistance + EPSILON) {
-        continue;
-      }
       if (surfacePair.surfaceDistance > minDistance + EPSILON) {
         continue;
       }
 
+      const pinchPair = _computePinchAttachmentPair(world, path, joint.entityA, joint.entityB, surfacePair.normal);
+      if (!pinchPair) {
+        continue;
+      }
+
       candidates.push({
+        kind: 'transitional',
         pathId,
         jointId,
         entityA: joint.entityA,
         entityB: joint.entityB,
         minDistance,
         normal: surfacePair.normal.clone(),
-        pointA_world: surfacePair.pointA_world.clone(),
-        pointB_world: surfacePair.pointB_world.clone()
+        pointA_world: pinchPair.pointA_world.clone(),
+        pointB_world: pinchPair.pointB_world.clone(),
+        surfaceDistance: surfacePair.surfaceDistance
       });
     }
+
+    for (let linkIndex = 1; linkIndex < path.linkTypes.length - 1; linkIndex++) {
+      if (!_isRolling(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      if (!(path.stored[linkIndex] > EPSILON)) {
+        continue;
+      }
+
+      const leftJointId = path.jointEntities[linkIndex - 1];
+      const rightJointId = path.jointEntities[linkIndex];
+      const leftJoint = world.getComponent(leftJointId, CableJointComponent);
+      const rightJoint = world.getComponent(rightJointId, CableJointComponent);
+      if (!leftJoint || !rightJoint) {
+        continue;
+      }
+      const bodyA = leftJoint.entityB;
+      if (bodyA !== rightJoint.entityA) {
+        continue;
+      }
+
+      const centerA = world.getComponent(bodyA, PositionComponent)?.pos;
+      const radiusA = _effectiveRadius(path, world.getComponent(bodyA, RadiusComponent)?.radius);
+      if (!centerA || !Number.isFinite(radiusA) || radiusA <= EPSILON) {
+        continue;
+      }
+
+      const neighborTail = leftJoint.entityA;
+      const neighborHead = rightJoint.entityB;
+      for (const bodyB of potentialBodies) {
+        if (bodyB === bodyA || bodyB === neighborTail || bodyB === neighborHead) {
+          continue;
+        }
+        if (pathMachine !== getMachineId(world, bodyB)) {
+          continue;
+        }
+
+        const surfacePair = _computeCircleSurfacePair(world, bodyA, bodyB, null);
+        if (!surfacePair) {
+          continue;
+        }
+        if (surfacePair.surfaceDistance > minDistance + EPSILON) {
+          continue;
+        }
+
+        const pinchPair = _computePinchAttachmentPair(world, path, bodyA, bodyB, surfacePair.normal);
+        if (!pinchPair) {
+          continue;
+        }
+        if (!_isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pinchPair.pointA_world, centerA, radiusA)) {
+          continue;
+        }
+
+        const key = `${pathId}:${linkIndex}:${bodyB}`;
+        const existing = nonTransitionalByKey.get(key);
+        if (!existing || surfacePair.surfaceDistance < existing.surfaceDistance) {
+          nonTransitionalByKey.set(key, {
+            kind: 'non-transitional',
+            pathId,
+            linkIndex,
+            entityA: bodyA,
+            entityB: bodyB,
+            minDistance,
+            normal: surfacePair.normal.clone(),
+            surfaceDistance: surfacePair.surfaceDistance
+          });
+        }
+      }
+    }
+  }
+
+  for (const candidate of nonTransitionalByKey.values()) {
+    candidates.push(candidate);
   }
 
   world.setResource(PINCH_CANDIDATES_RESOURCE, candidates);
 }
 
-function _configureTransitionalPinches(world) {
+function _configureTransitionalPinch(world, candidate, pinchConfigs) {
+  const path = world.getComponent(candidate.pathId, CablePathComponent);
+  const joint = world.getComponent(candidate.jointId, CableJointComponent);
+  if (!path || !joint) {
+    return false;
+  }
+
+  const referenceDir = joint.attachmentPointB_world.clone().subtract(joint.attachmentPointA_world);
+  const pinchPair = _computePinchAttachmentPair(world, path, joint.entityA, joint.entityB, candidate.normal);
+  if (!pinchPair) {
+    return false;
+  }
+
+  const segmentDir = _pinchSegmentDirection(pinchPair.normal, referenceDir);
+  if (!segmentDir) {
+    return false;
+  }
+
+  joint.attachmentPointA_world.set(pinchPair.pointA_world);
+  joint.attachmentPointB_world.set(pinchPair.pointB_world);
+
+  pinchConfigs.set(candidate.jointId, {
+    pathId: candidate.pathId,
+    jointId: candidate.jointId,
+    entityA: candidate.entityA,
+    entityB: candidate.entityB,
+    minDistance: candidate.minDistance,
+    normal: pinchPair.normal.clone(),
+    segmentDir,
+    pinchPointA_world: pinchPair.pointA_world.clone(),
+    pinchPointB_world: pinchPair.pointB_world.clone()
+  });
+  return true;
+}
+
+function _insertNonTransitionalPinch(world, candidate, pinchConfigs) {
+  const path = world.getComponent(candidate.pathId, CablePathComponent);
+  if (!path) {
+    return false;
+  }
+  const linkIndex = candidate.linkIndex;
+  if (linkIndex <= 0 || linkIndex >= path.jointEntities.length) {
+    return false;
+  }
+  if (!_isRolling(path.linkTypes[linkIndex])) {
+    return false;
+  }
+
+  const leftJointId = path.jointEntities[linkIndex - 1];
+  const rightJointId = path.jointEntities[linkIndex];
+  const leftJoint = world.getComponent(leftJointId, CableJointComponent);
+  const rightJoint = world.getComponent(rightJointId, CableJointComponent);
+  if (!leftJoint || !rightJoint) {
+    return false;
+  }
+
+  const bodyA = leftJoint.entityB;
+  if (bodyA !== rightJoint.entityA || bodyA !== candidate.entityA) {
+    return false;
+  }
+  const bodyB = candidate.entityB;
+  if (bodyB === bodyA || bodyB === leftJoint.entityA || bodyB === rightJoint.entityB) {
+    return false;
+  }
+
+  const centerA = world.getComponent(bodyA, PositionComponent)?.pos;
+  const radiusA = _effectiveRadius(path, world.getComponent(bodyA, RadiusComponent)?.radius);
+  if (!centerA || !Number.isFinite(radiusA) || radiusA <= EPSILON) {
+    return false;
+  }
+
+  const pinchPair = _computePinchAttachmentPair(world, path, bodyA, bodyB, candidate.normal);
+  if (!pinchPair) {
+    return false;
+  }
+  if (!_isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pinchPair.pointA_world, centerA, radiusA)) {
+    return false;
+  }
+
+  const totalBefore = _pathCurrentLengthBudget(world, path);
+
+  const oldTail = leftJoint.attachmentPointB_world.clone();
+  const oldHead = rightJoint.attachmentPointA_world.clone();
+  const splitPointA = pinchPair.pointA_world.clone();
+  const splitPointB = pinchPair.pointB_world.clone();
+  const referenceDir = oldHead.clone().subtract(oldTail);
+  const segmentDir = _pinchSegmentDirection(pinchPair.normal, referenceDir);
+  if (!segmentDir) {
+    return false;
+  }
+
+  leftJoint.attachmentPointB_world.set(splitPointA);
+  rightJoint.attachmentPointA_world.set(splitPointA);
+
+  const machineId = getMachineId(world, candidate.pathId);
+  const jointABId = world.createEntity();
+  ensureMachineTag(world, jointABId, machineId);
+  world.addComponent(
+    jointABId,
+    new CableJointComponent(bodyA, bodyB, 0.0, splitPointA.clone(), splitPointB.clone())
+  );
+  world.addComponent(jointABId, new RenderableComponent('line', linecolor1));
+
+  const jointBAId = world.createEntity();
+  ensureMachineTag(world, jointBAId, machineId);
+  world.addComponent(
+    jointBAId,
+    new CableJointComponent(bodyB, bodyA, 0.0, splitPointB.clone(), splitPointA.clone())
+  );
+  world.addComponent(jointBAId, new RenderableComponent('line', linecolor1));
+
+  path.jointEntities.splice(linkIndex, 0, jointABId, jointBAId);
+
+  const cwA = path.cw[linkIndex];
+  const leftArc = signedArcLengthOnWheel(oldTail, splitPointA, centerA, radiusA, cwA, true);
+  const rightArc = signedArcLengthOnWheel(splitPointA, oldHead, centerA, radiusA, cwA, true);
+  const bodyBPrevPos = world.getComponent(bodyB, CableLinkComponent)?.prevCableAttachmentTimePos;
+  const bodyBPos = world.getComponent(bodyB, PositionComponent)?.pos;
+  const cwB = rightOfLine(
+    bodyBPrevPos ?? bodyBPos ?? splitPointB,
+    oldTail,
+    oldHead
+  );
+
+  path.linkTypes.splice(linkIndex, 1, 'rolling', 'rolling', 'rolling');
+  path.cw.splice(linkIndex, 1, cwA, cwB, cwA);
+  path.stored.splice(
+    linkIndex,
+    1,
+    leftArc,
+    PINCH_NON_TRANSITIONAL_STORED_BUFFER,
+    rightArc
+  );
+
+  const totalAfter = _pathCurrentLengthBudget(world, path);
+  const deltaBudget = totalBefore - totalAfter;
+  const jointBA = world.getComponent(jointBAId, CableJointComponent);
+  if (jointBA) {
+    jointBA.restLength += deltaBudget;
+  }
+
+  pinchConfigs.set(jointABId, {
+    pathId: candidate.pathId,
+    jointId: jointABId,
+    entityA: bodyA,
+    entityB: bodyB,
+    minDistance: candidate.minDistance,
+    normal: pinchPair.normal.clone(),
+    segmentDir: segmentDir.clone(),
+    pinchPointA_world: splitPointA.clone(),
+    pinchPointB_world: splitPointB.clone()
+  });
+  pinchConfigs.set(jointBAId, {
+    pathId: candidate.pathId,
+    jointId: jointBAId,
+    entityA: bodyB,
+    entityB: bodyA,
+    minDistance: candidate.minDistance,
+    normal: pinchPair.normal.clone().scale(-1.0),
+    segmentDir: segmentDir.clone(),
+    pinchPointA_world: splitPointB.clone(),
+    pinchPointB_world: splitPointA.clone()
+  });
+  return true;
+}
+
+function _configurePinches(world) {
   const candidates = world.getResource(PINCH_CANDIDATES_RESOURCE);
   const pinchConfigs = new Map();
   if (!Array.isArray(candidates)) {
@@ -864,31 +1212,22 @@ function _configureTransitionalPinches(world) {
     return;
   }
 
+  const nonTransitional = candidates.filter((candidate) => candidate.kind === 'non-transitional');
+  nonTransitional.sort((a, b) => {
+    if (a.pathId !== b.pathId) {
+      return a.pathId - b.pathId;
+    }
+    return b.linkIndex - a.linkIndex;
+  });
+  for (const candidate of nonTransitional) {
+    _insertNonTransitionalPinch(world, candidate, pinchConfigs);
+  }
+
   for (const candidate of candidates) {
-    const joint = world.getComponent(candidate.jointId, CableJointComponent);
-    if (!joint) {
+    if (candidate.kind !== 'transitional') {
       continue;
     }
-
-    const segmentDir = new Vector2(-candidate.normal.y, candidate.normal.x).normalize();
-    if (segmentDir.lengthSq() <= EPSILON) {
-      continue;
-    }
-
-    const pinchPoint = candidate.pointA_world.clone().add(candidate.pointB_world).scale(0.5);
-    joint.attachmentPointA_world.set(pinchPoint);
-    joint.attachmentPointB_world.set(pinchPoint);
-
-    pinchConfigs.set(candidate.jointId, {
-      pathId: candidate.pathId,
-      jointId: candidate.jointId,
-      entityA: candidate.entityA,
-      entityB: candidate.entityB,
-      minDistance: candidate.minDistance,
-      normal: candidate.normal.clone().normalize(),
-      segmentDir,
-      pinchPoint_world: pinchPoint
-    });
+    _configureTransitionalPinch(world, candidate, pinchConfigs);
   }
 
   world.setResource(PINCH_CONFIGS_RESOURCE, pinchConfigs);
@@ -964,7 +1303,7 @@ export class PinchDetectionSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
-    _detectTransitionalPinches(world);
+    _detectPinchCandidates(world);
   }
 }
 
@@ -972,7 +1311,7 @@ export class PinchConfigureSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
-    _configureTransitionalPinches(world);
+    _configurePinches(world);
   }
 }
 
