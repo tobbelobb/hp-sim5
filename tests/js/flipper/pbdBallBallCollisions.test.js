@@ -6,11 +6,50 @@ import {
   MassComponent,
   RestitutionComponent,
 } from '../../../src/js/cable_joints/ecs.js';
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
+import {
+  CableLinkComponent,
+  CableJointComponent,
+  CablePathComponent,
+} from '../../../src/js/cable_joints/cable_joints_core.js';
 
 import {
   BallTagComponent,
   PBDBallBallCollisions
 } from '../../../examples/js/flipper/flipper_common.js';
+
+function addEndpointHybridWrap(world, endpointId, storedLength, halfWidth = 0.1) {
+  const anchorId = world.createEntity();
+  world.addComponent(anchorId, new PositionComponent(3.0, 0.0));
+  world.addComponent(anchorId, new RadiusComponent(0.1));
+  world.addComponent(anchorId, new CableLinkComponent(3.0, 0.0));
+
+  const jointId = world.createEntity();
+  world.addComponent(
+    jointId,
+    new CableJointComponent(
+      endpointId,
+      anchorId,
+      0.0,
+      new Vector2(1.0, 0.0),
+      new Vector2(2.9, 0.0)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'attachment'],
+      [true, true],
+      1e4,
+      [storedLength, 0.0],
+      halfWidth
+    )
+  );
+}
 
 describe('PBDBallBallCollisions', () => {
   test('velocities remain unchanged on perfectly elastic head-on collision', () => {
@@ -226,5 +265,51 @@ describe('PBDBallBallCollisions', () => {
     expect(v2_r.x).toBeCloseTo(-1);
     expect(v1_r.y).toBeCloseTo(0.0);
     expect(v2_r.y).toBeCloseTo(0.0);
+  });
+
+  test('uses wrapped effective radius for collision detection', () => {
+    const baseLayerCircumference = 2.0 * Math.PI * 1.1;
+
+    const withoutWrapWorld = new World();
+    const withWrapWorld = new World();
+
+    const createPair = (world) => {
+      const ball1 = world.createEntity();
+      world.addComponent(ball1, new BallTagComponent());
+      world.addComponent(ball1, new PositionComponent(0, 0));
+      world.addComponent(ball1, new VelocityComponent(0, 0));
+      world.addComponent(ball1, new RadiusComponent(1));
+      world.addComponent(ball1, new MassComponent(1));
+      world.addComponent(ball1, new RestitutionComponent(1));
+      world.addComponent(ball1, new CableLinkComponent(0, 0));
+
+      const ball2 = world.createEntity();
+      world.addComponent(ball2, new BallTagComponent());
+      world.addComponent(ball2, new PositionComponent(2.15, 0)); // no base collision (2.0), but collides with +0.2 wrap
+      world.addComponent(ball2, new VelocityComponent(0, 0));
+      world.addComponent(ball2, new RadiusComponent(1));
+      world.addComponent(ball2, new MassComponent(1));
+      world.addComponent(ball2, new RestitutionComponent(1));
+      world.addComponent(ball2, new CableLinkComponent(2.15, 0));
+      return { ball1, ball2 };
+    };
+
+    const noWrap = createPair(withoutWrapWorld);
+    const withWrap = createPair(withWrapWorld);
+    addEndpointHybridWrap(withWrapWorld, withWrap.ball1, baseLayerCircumference);
+
+    const system = new PBDBallBallCollisions();
+    system.update(withoutWrapWorld, 0.016);
+    system.update(withWrapWorld, 0.016);
+
+    const noWrapBall1X = withoutWrapWorld.getComponent(noWrap.ball1, PositionComponent).pos.x;
+    const noWrapBall2X = withoutWrapWorld.getComponent(noWrap.ball2, PositionComponent).pos.x;
+    expect(noWrapBall1X).toBeCloseTo(0.0, 9);
+    expect(noWrapBall2X).toBeCloseTo(2.15, 9);
+
+    const withWrapBall1X = withWrapWorld.getComponent(withWrap.ball1, PositionComponent).pos.x;
+    const withWrapBall2X = withWrapWorld.getComponent(withWrap.ball2, PositionComponent).pos.x;
+    expect(withWrapBall1X).toBeLessThan(0.0);
+    expect(withWrapBall2X).toBeGreaterThan(2.15);
   });
 });

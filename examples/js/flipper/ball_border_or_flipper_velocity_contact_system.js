@@ -12,13 +12,14 @@ import {
 
 import {
     FlipperStateComponent,
-    FlipperTipComponent
+    FlipperTipComponent,
+    getEffectiveCollisionRadius
 } from './flipper_common.js';
 
 export class BallBorderOrFlipperVelocityContactSystem {
     runInPause = false;
 
-    _handleBallContact(world, ballId, normal, v_surface, restitution_other, friction_other, delta_lambda, dt) {
+    _handleBallContact(world, ballId, normal, v_surface, restitution_other, friction_other, delta_lambda, dt, contactRadiusOverride = null) {
         // Get all required components for the ball
         const posComp = world.getComponent(ballId, PositionComponent);
         const velComp = world.getComponent(ballId, VelocityComponent);
@@ -41,7 +42,9 @@ export class BallBorderOrFlipperVelocityContactSystem {
             return;
         }
 
-        const radius = radiusComp.radius;
+        const radius = Number.isFinite(contactRadiusOverride)
+            ? contactRadiusOverride
+            : getEffectiveCollisionRadius(world, ballId, radiusComp.radius, normal.clone().scale(-1.0));
         const restitutionBall = restitutionComp.restitution;
         const muBall = frictionComp ? frictionComp.mu : 0.0;
         const angVel = angVelComp.angularVelocity;
@@ -108,7 +111,17 @@ export class BallBorderOrFlipperVelocityContactSystem {
             for (const contact of borderContacts) {
                 const restitutionBorder = contact.restitution;
                 const frictionBorder = contact.friction;
-                this._handleBallContact(world, contact.ball_id, contact.normal, new Vector2(0, 0), restitutionBorder, frictionBorder, contact.delta_lambda, dt);
+                this._handleBallContact(
+                    world,
+                    contact.ball_id,
+                    contact.normal,
+                    new Vector2(0, 0),
+                    restitutionBorder,
+                    frictionBorder,
+                    contact.delta_lambda,
+                    dt,
+                    contact.ball_contact_radius
+                );
             }
         }
 
@@ -116,7 +129,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const flipperContacts = world.getResource('ball_flipper_contacts');
         if (flipperContacts) {
             for (const contact of flipperContacts) {
-                const { ball_id, flip_id, normal, contact_point_on_flipper, delta_lambda } = contact;
+                const { ball_id, flip_id, normal, contact_point_on_flipper, delta_lambda, ball_contact_radius } = contact;
 
                 const flipperPosComp = world.getComponent(flip_id, PositionComponent);
                 const flipperStateComp = world.getComponent(flip_id, FlipperStateComponent);
@@ -145,7 +158,17 @@ export class BallBorderOrFlipperVelocityContactSystem {
                 const restitutionFlipper = flipperRestitutionComp.restitution;
                 const frictionFlipper = flipperFrictionComp ? flipperFrictionComp.mu : null;
 
-                this._handleBallContact(world, ball_id, normal, v_flipper, restitutionFlipper, frictionFlipper, delta_lambda, dt);
+                this._handleBallContact(
+                    world,
+                    ball_id,
+                    normal,
+                    v_flipper,
+                    restitutionFlipper,
+                    frictionFlipper,
+                    delta_lambda,
+                    dt,
+                    ball_contact_radius
+                );
             }
         }
     }

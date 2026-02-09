@@ -53,7 +53,7 @@ export class ScoreComponent { constructor(score = 0) { this.value = score; } }
 
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 
-function _effectiveWrappedRadius(world, entityId, baseRadius, normalTowardContact) {
+export function getEffectiveCollisionRadius(world, entityId, baseRadius, normalTowardContact) {
   if (!(baseRadius > 0.0) || !normalTowardContact || normalTowardContact.lengthSq() <= 1e-12) {
     return baseRadius;
   }
@@ -487,8 +487,6 @@ export class PBDBallBorderCollisions {
                 }
             }
 
-            if (minDistSq > r1 * r1) continue;
-
             const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
             const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
             const normal = new Vector2(-edgeVec.y, edgeVec.x).normalize();
@@ -505,20 +503,23 @@ export class PBDBallBorderCollisions {
             }
 
             const dist = Math.sqrt(minDistSq);
-            const penetration = r1 - dist;
+            const effectiveRadius = getEffectiveCollisionRadius(world, ballId, r1, collisionNormal.clone().scale(-1.0));
+            const penetration = effectiveRadius - dist;
+            if (penetration <= 0) {
+                continue;
+            }
             let delta_lambda = 0;
-            if (penetration > 0) {
-                if (invMass > 0) {
-                    p1.add(collisionNormal, penetration);
-                    const w_inv = invMass;
-                    delta_lambda = penetration / w_inv;
-                }
+            if (invMass > 0) {
+                p1.add(collisionNormal, penetration);
+                const w_inv = invMass;
+                delta_lambda = penetration / w_inv;
             }
 
             contacts.push({
                 'ball_id': ballId,
                 'normal': collisionNormal.clone(),
                 'delta_lambda': delta_lambda,
+                'ball_contact_radius': effectiveRadius,
                 'restitution': restitution,
                 'friction': friction
             });
@@ -551,12 +552,15 @@ export class PBDBallBallCollisions {
 
         const dir = new Vector2().subtractVectors(p2, p1);
         const dSq = dir.lengthSq();
-        const rSum = r1 + r2;
-
-        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+        if (dSq == 0.0) continue;
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
+
+        const effectiveR1 = getEffectiveCollisionRadius(world, e1, r1, dir.clone());
+        const effectiveR2 = getEffectiveCollisionRadius(world, e2, r2, dir.clone().scale(-1.0));
+        const rSum = effectiveR1 + effectiveR2;
+        if (d > rSum) continue;
 
         // Resolve penetration
         const penetration = rSum - d;
@@ -608,15 +612,24 @@ export class PBDBallObstacleCollisions {
 
         const dir = new Vector2().subtractVectors(p1, p2);
         const dSq = dir.lengthSq();
-        const rSum = r1 + r2;
-
-        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+        if (dSq == 0.0) continue;
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
 
+        const effectiveBallRadius = getEffectiveCollisionRadius(world, ballId, r1, dir.clone().scale(-1.0));
+        const effectiveObsRadius = getEffectiveCollisionRadius(world, obsId, r2, dir.clone());
+        const rSum = effectiveBallRadius + effectiveObsRadius;
+        if (d > rSum) continue;
+
         // Store contact info for the velocity-based bump system
-        contacts.push({ ball_id: ballId, obs_id: obsId, direction: dir.clone() });
+        contacts.push({
+          ball_id: ballId,
+          obs_id: obsId,
+          direction: dir.clone(),
+          ball_contact_radius: effectiveBallRadius,
+          obs_contact_radius: effectiveObsRadius
+        });
 
         // Resolve penetration
         const corr = rSum - d;
@@ -634,7 +647,8 @@ export class PBDBallObstacleCollisions {
         if (collisionDebug) {
           console.debug(
             `[FlipperCollisionDebug] obstacle-contact ball=${ballId} obs=${obsId} ` +
-            `entered=${enteredThisFrame} d=${d.toFixed(6)} rSum=${rSum.toFixed(6)}`
+            `entered=${enteredThisFrame} d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} ` +
+            `rBall=${effectiveBallRadius.toFixed(6)} rObs=${effectiveObsRadius.toFixed(6)}`
           );
         }
       }
@@ -688,8 +702,9 @@ export class PBDBallFlipperCollisions {
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d);
 
-        const effectiveBallRadius = _effectiveWrappedRadius(world, ballId, r1, dir.clone().scale(-1.0));
-        const rSum = effectiveBallRadius + fr;
+        const effectiveBallRadius = getEffectiveCollisionRadius(world, ballId, r1, dir.clone().scale(-1.0));
+        const effectiveFlipperRadius = getEffectiveCollisionRadius(world, flipId, fr, dir.clone());
+        const rSum = effectiveBallRadius + effectiveFlipperRadius;
         if (d > rSum) continue;
 
         const corr = rSum - d;
@@ -708,12 +723,15 @@ export class PBDBallFlipperCollisions {
             'flip_id': flipId,
             'normal': dir.clone(),
             'contact_point_on_flipper': closest.clone(),
-            'delta_lambda': delta_lambda
+            'delta_lambda': delta_lambda,
+            'ball_contact_radius': effectiveBallRadius
         });
         if (collisionDebug) {
           console.debug(
             `[FlipperCollisionDebug] flipper-contact ball=${ballId} flip=${flipId} ` +
-            `d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} wrapExtra=${(effectiveBallRadius - r1).toFixed(6)}`
+            `d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} ` +
+            `wrapExtraBall=${(effectiveBallRadius - r1).toFixed(6)} ` +
+            `wrapExtraFlipper=${(effectiveFlipperRadius - fr).toFixed(6)}`
           );
         }
       }
