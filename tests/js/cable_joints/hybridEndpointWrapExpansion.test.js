@@ -66,6 +66,23 @@ describe('getHybridEndpointWrapExpansion', () => {
     expect(southExpansion).toBeCloseTo(0.0, 9);
   });
 
+  test('ramps expansion smoothly across partial-wrap boundaries', () => {
+    const { world, endpointId } = createEndpointWrapWorld(2.0);
+    const pointNearStart = new Vector2(Math.cos(0.05), Math.sin(0.05));
+    const pointInterior = new Vector2(Math.cos(Math.PI * 0.5), Math.sin(Math.PI * 0.5));
+    const pointNearEnd = new Vector2(Math.cos(1.75), Math.sin(1.75));
+
+    const nearStart = getHybridEndpointWrapExpansion(world, endpointId, pointNearStart);
+    const interior = getHybridEndpointWrapExpansion(world, endpointId, pointInterior);
+    const nearEnd = getHybridEndpointWrapExpansion(world, endpointId, pointNearEnd);
+
+    expect(interior).toBeCloseTo(0.2, 6);
+    expect(nearStart).toBeGreaterThan(0.0);
+    expect(nearStart).toBeLessThan(interior);
+    expect(nearEnd).toBeGreaterThan(0.0);
+    expect(nearEnd).toBeLessThan(interior);
+  });
+
   test('returns full-layer expansion globally and larger expansion on partial second layer', () => {
     const baseLayerCircumference = 2.0 * Math.PI * 1.1;
     const { world, endpointId } = createEndpointWrapWorld(baseLayerCircumference + 2.2);
@@ -75,7 +92,8 @@ describe('getHybridEndpointWrapExpansion', () => {
     const northExpansion = getHybridEndpointWrapExpansion(world, endpointId, pointNorth);
     const southExpansion = getHybridEndpointWrapExpansion(world, endpointId, pointSouth);
 
-    expect(northExpansion).toBeCloseTo(0.4, 6);
     expect(southExpansion).toBeCloseTo(0.2, 6);
+    expect(northExpansion).toBeGreaterThan(southExpansion);
+    expect(northExpansion).toBeLessThanOrEqual(0.4 + 1e-6);
   });
 });

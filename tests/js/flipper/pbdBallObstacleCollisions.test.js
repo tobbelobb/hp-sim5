@@ -166,6 +166,8 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
     const withWrapContacts = withWrap.world.getResource('ball_obstacle_contacts');
     expect(noWrapContacts).toHaveLength(0);
     expect(withWrapContacts).toHaveLength(1);
+    expect(withWrapContacts[0].raw_contact).toBe(false);
+    expect(withWrap.world.hasComponent(withWrap.ballId, ScoredTagComponent)).toBe(false);
 
     const noWrapX = noWrap.world.getComponent(noWrap.ballId, PositionComponent).pos.x;
     const withWrapX = withWrap.world.getComponent(withWrap.ballId, PositionComponent).pos.x;

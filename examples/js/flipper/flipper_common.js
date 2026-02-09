@@ -621,6 +621,8 @@ export class PBDBallObstacleCollisions {
         const effectiveObsRadius = getEffectiveCollisionRadius(world, obsId, r2, dir.clone());
         const rSum = effectiveBallRadius + effectiveObsRadius;
         if (d > rSum) continue;
+        const rawRSum = r1 + r2;
+        const rawContact = d <= rawRSum + 1e-9;
 
         // Store contact info for the velocity-based bump system
         contacts.push({
@@ -628,7 +630,8 @@ export class PBDBallObstacleCollisions {
           obs_id: obsId,
           direction: dir.clone(),
           ball_contact_radius: effectiveBallRadius,
-          obs_contact_radius: effectiveObsRadius
+          obs_contact_radius: effectiveObsRadius,
+          raw_contact: rawContact
         });
 
         // Resolve penetration
@@ -639,16 +642,18 @@ export class PBDBallObstacleCollisions {
         nextActivePairs.add(pairKey);
         const enteredThisFrame = !activePairs.has(pairKey);
 
-        // Velocity resolution is now handled by BallObstacleBumpSystem
+        // Velocity resolution is handled by BallObstacleBumpSystem, but only raw
+        // circle-circle hits should trigger bumper push/scoring.
         const grabbed = world.getResource('grabbedBall');
-        if (enteredThisFrame && ballId !== grabbed) {
+        if (rawContact && enteredThisFrame && ballId !== grabbed) {
           world.addComponent(ballId, new ScoredTagComponent());
         }
         if (collisionDebug) {
           console.debug(
             `[FlipperCollisionDebug] obstacle-contact ball=${ballId} obs=${obsId} ` +
             `entered=${enteredThisFrame} d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} ` +
-            `rBall=${effectiveBallRadius.toFixed(6)} rObs=${effectiveObsRadius.toFixed(6)}`
+            `rBall=${effectiveBallRadius.toFixed(6)} rObs=${effectiveObsRadius.toFixed(6)} ` +
+            `raw=${rawContact}`
           );
         }
       }

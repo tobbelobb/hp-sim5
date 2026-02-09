@@ -1263,15 +1263,33 @@ function _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, ha
   );
   const deltaAngle = arcOnBase / context.baseRadius;
   const partialArcLength = deltaAngle * decomposition.partialRadius;
-  const partialTolerance = Math.max(1e-6, decomposition.partialLength * 1e-4);
-  const inPartialCoverage =
-    partialArcLength > partialTolerance &&
-    partialArcLength < (decomposition.partialLength - partialTolerance);
-
-  if (inPartialCoverage) {
-    return partialCoverageDistance;
+  const partialSpan = Math.max(0.0, decomposition.partialLength);
+  if (!(partialSpan > EPSILON)) {
+    return fullCoverageDistance;
   }
-  return fullCoverageDistance;
+
+  // Smooth transition over one cable line-width of arc length to avoid
+  // step-wise radius jumps when a contact point crosses the partial-layer edge.
+  const rampArcLength = Math.max(EPSILON, 2.0 * halfWidth);
+  const arc = partialArcLength;
+  const edge0Up = 0.0;
+  const edge1Up = rampArcLength;
+  const edge0Down = Math.max(0.0, partialSpan - rampArcLength);
+  const edge1Down = partialSpan;
+
+  const smoothStep = (edge0, edge1, value) => {
+    if (edge1 <= edge0 + EPSILON) {
+      return value >= edge1 ? 1.0 : 0.0;
+    }
+    const t = Math.max(0.0, Math.min(1.0, (value - edge0) / (edge1 - edge0)));
+    return t * t * (3.0 - 2.0 * t);
+  };
+
+  const rise = smoothStep(edge0Up, edge1Up, arc);
+  const fall = 1.0 - smoothStep(edge0Down, edge1Down, arc);
+  const partialCoverage = Math.max(0.0, Math.min(1.0, rise * fall));
+
+  return fullCoverageDistance + (partialCoverageDistance - fullCoverageDistance) * partialCoverage;
 }
 
 export function getHybridEndpointWrapExpansion(world, entityId, pointOnBody) {

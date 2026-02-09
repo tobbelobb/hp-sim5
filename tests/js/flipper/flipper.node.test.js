@@ -110,7 +110,8 @@ describe('Flipper Node Simulation', () => {
     console.warn = originalWarn; // restore after test
     expect(settled).toBe(false);
     // Score is sensitive to physics ordering and floating-point drift across Node versions.
-    // This baseline reflects entry-based obstacle scoring with wrapped effective-shape collisions.
-    expect(state.score).toBe(152);
+    // This baseline reflects entry-based scoring on raw obstacle hits only,
+    // with wrapped effective-shape collisions enabled.
+    expect(state.score).toBe(14);
   });
 });

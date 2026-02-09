@@ -24,6 +24,9 @@ export class BallObstacleBumpSystem {
 
         for (const contact of contacts) {
             const { ball_id, obs_id, direction } = contact;
+            if (contact.raw_contact === false) {
+                continue;
+            }
 
             const v1Comp = world.getComponent(ball_id, VelocityComponent);
             const r1Comp = world.getComponent(ball_id, RadiusComponent);
