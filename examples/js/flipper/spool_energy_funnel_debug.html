@@ -166,6 +166,7 @@ canvas {
   import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
   import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
   import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
+  import { CableEnergyTransferSystem } from '../../../src/js/cable_joints/cable_energy_transfer_system.js';
   import {
     BallTagComponent,
     PauseStateComponent,
@@ -205,7 +206,15 @@ canvas {
     funnelTopHalfWidth: 0.25,
     funnelNeckHalfWidth: 0.074,
     cwAlternating: true,
-    debugCableLogs: false
+    debugCableLogs: false,
+    attachmentTransferClamp: false,
+    attachmentTransferClampSlack: 0.0006,
+    attachmentTransferBudgetScale: 1.0,
+    attachmentPotentialRiseClamp: true,
+    attachmentPotentialRiseBudgetScale: 1.0,
+    attachmentPotentialRiseSlack: 0.0,
+    borderMotionPenetrationSlack: 0.00015,
+    ballBallWrapMotionPenetrationSlack: 0.00015
   };
 
   const PALETTE = ['#A9ADB6', '#7AB6FF', '#FFA15F', '#8DD17E', '#E8A5FF', '#FFCD56'];
@@ -399,8 +408,10 @@ canvas {
 
       const pinchContacts = world.getResource('cablePinchContacts');
       const pinchContactCount = Array.isArray(pinchContacts) ? pinchContacts.length : 0;
+      const cableAttachmentDiag = world.getResource('cableAttachmentUpdateDiag') || {};
       const cableSolverDiag = world.getResource('cableConstraintDiag') || {};
       const cableOverDiag = world.getResource('cableOverCorrectionDiag') || {};
+      const cableEnergyDiag = world.getResource('cableEnergyTransferDiag') || {};
       const eTotal = kTrans + kRot + uGravity + uCable;
 
       let trace = world.getResource('energyTrace');
@@ -446,6 +457,28 @@ canvas {
         max_ball_ball_geometric_penetration: maxBallBallGeometricPenetration,
         ball_ball_wrap_count: wrapEnhancedBallBallCount,
         pinch_contact_count: pinchContactCount,
+        max_attachment_sA: _readFinite(cableAttachmentDiag.maxAbsSA, 0.0),
+        max_attachment_sB: _readFinite(cableAttachmentDiag.maxAbsSB, 0.0),
+        max_attachment_rest_delta: _readFinite(cableAttachmentDiag.maxAbsJointRestDelta, 0.0),
+        max_attachment_stored_delta: _readFinite(cableAttachmentDiag.maxAbsStoredDelta, 0.0),
+        peak_attachment_path_id: _readFinite(cableAttachmentDiag.peakPathId, -1),
+        peak_attachment_joint_id: _readFinite(cableAttachmentDiag.peakJointId, -1),
+        peak_attachment_entity_a: _readFinite(cableAttachmentDiag.peakEntityA, -1),
+        peak_attachment_entity_b: _readFinite(cableAttachmentDiag.peakEntityB, -1),
+        peak_attachment_sA: _readFinite(cableAttachmentDiag.peakSA, 0.0),
+        peak_attachment_sB: _readFinite(cableAttachmentDiag.peakSB, 0.0),
+        peak_attachment_rest_before: _readFinite(cableAttachmentDiag.peakRestBefore, 0.0),
+        peak_attachment_rest_after: _readFinite(cableAttachmentDiag.peakRestAfter, 0.0),
+        peak_attachment_segment_length: _readFinite(cableAttachmentDiag.peakSegmentLength, 0.0),
+        attachment_large_transfer_count: _readFinite(cableAttachmentDiag.largeTransferCount, 0),
+        attachment_clamped_transfer_count: _readFinite(cableAttachmentDiag.clampedTransferCount, 0),
+        max_attachment_clamp_reduction: _readFinite(cableAttachmentDiag.maxClampReduction, 0.0),
+        attachment_rest_clamp_count: _readFinite(cableAttachmentDiag.restLengthClampCount, 0),
+        max_attachment_rest_clamp: _readFinite(cableAttachmentDiag.maxRestLengthClamp, 0.0),
+        attachment_potential_clamp_count: _readFinite(cableAttachmentDiag.potentialRiseClampCount, 0),
+        max_attachment_potential_clamp: _readFinite(cableAttachmentDiag.maxPotentialRiseClamp, 0.0),
+        max_attachment_potential_rise: _readFinite(cableAttachmentDiag.maxPotentialRise, 0.0),
+        max_attachment_potential_rise_allowed: _readFinite(cableAttachmentDiag.maxPotentialRiseAllowed, 0.0),
         max_cable_constraint_error: _readFinite(cableSolverDiag.maxConstraintError, 0.0),
         max_cable_lambda: _readFinite(cableSolverDiag.maxLambda, 0.0),
         max_cable_linear_delta: _readFinite(cableSolverDiag.maxLinearDelta, 0.0),
@@ -457,6 +490,11 @@ canvas {
         over_ang_adjust_count: _readFinite(cableOverDiag.entitiesAngAdjusted, 0),
         max_over_pos_adjust: _readFinite(cableOverDiag.maxPosAdjustment, 0.0),
         max_over_ang_adjust: _readFinite(cableOverDiag.maxAngAdjustment, 0.0),
+        cable_energy_positive_joint_count: _readFinite(cableEnergyDiag.positivePotentialJoints, 0),
+        cable_energy_removed_rot: _readFinite(cableEnergyDiag.energyRemovedRotational, 0.0),
+        cable_energy_removed_lin: _readFinite(cableEnergyDiag.energyRemovedLinear, 0.0),
+        cable_energy_unmet_rise: _readFinite(cableEnergyDiag.unmetPotentialRise, 0.0),
+        cable_energy_max_joint_rise: _readFinite(cableEnergyDiag.maxJointPotentialRise, 0.0),
         negative_stored_count: negativeStoredCount,
         max_joint_stretch: maxJointStretch,
         ball_count: validBallCount,
@@ -499,6 +537,26 @@ canvas {
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
     world.setResource('cableDebugLogs', spoolEnergyConfig.debugCableLogs === true);
+    world.setResource(
+      'cableSolverIterations',
+      Math.max(1, Math.min(16, Math.floor(_readFinite(spoolEnergyConfig.cableSolverIterations, 2))))
+    );
+    world.setResource('cableAttachmentTransferTuning', {
+      enableKinematicClamp: spoolEnergyConfig.attachmentTransferClamp === true,
+      clampSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentTransferClampSlack, 0.0006)),
+      kinematicBudgetScale: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentTransferBudgetScale, 1.0)),
+      limitPotentialRiseByKineticBudget: spoolEnergyConfig.attachmentPotentialRiseClamp !== false,
+      potentialRiseBudgetScale: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentPotentialRiseBudgetScale, 1.0)),
+      potentialRiseSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentPotentialRiseSlack, 0.0))
+    });
+    world.setResource('cableEnergyTransferTuning', {
+      enabled: true,
+      transferScale: 1.0
+    });
+    world.setResource('flipperContactTuning', {
+      borderMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.borderMotionPenetrationSlack, 0.00015)),
+      ballBallWrapMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.ballBallWrapMotionPenetrationSlack, 0.00015))
+    });
 
     const bottom = 0.04;
     const top = simHeight - 0.03;
@@ -658,6 +716,7 @@ canvas {
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());
+      world.registerSystem(new CableEnergyTransferSystem());
       world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
       world.registerSystem(new EnergyTraceSystem());
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, simWidth / 2.0, simHeight / 2.0, 0.0));

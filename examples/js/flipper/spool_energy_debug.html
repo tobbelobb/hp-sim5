@@ -166,6 +166,7 @@ canvas {
   import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
   import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
   import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
+  import { CableEnergyTransferSystem } from '../../../src/js/cable_joints/cable_energy_transfer_system.js';
   import {
     BallTagComponent,
     PauseStateComponent,
@@ -367,6 +368,18 @@ canvas {
     world.setResource('energyTraceStep', 0);
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
+    world.setResource('cableAttachmentTransferTuning', {
+      enableKinematicClamp: false,
+      clampSlack: 0.0006,
+      kinematicBudgetScale: 1.0,
+      limitPotentialRiseByKineticBudget: true,
+      potentialRiseBudgetScale: 1.0,
+      potentialRiseSlack: 0.0
+    });
+    world.setResource('cableEnergyTransferTuning', {
+      enabled: true,
+      transferScale: 1.0
+    });
 
     const left = 0.03;
     const right = simWidth - 0.03;
@@ -472,6 +485,7 @@ canvas {
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());
+      world.registerSystem(new CableEnergyTransferSystem());
       world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
       world.registerSystem(new EnergyTraceSystem());
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, simWidth / 2.0, simHeight / 2.0, 0.0));

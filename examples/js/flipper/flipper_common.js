@@ -537,7 +537,7 @@ export class PBDBallBorderCollisions {
     const contactTuning = world.getResource('flipperContactTuning') || {};
     const borderMotionPenetrationSlack = Number.isFinite(contactTuning.borderMotionPenetrationSlack)
       ? Math.max(0.0, contactTuning.borderMotionPenetrationSlack)
-      : 0.0008;
+      : 0.00015;
     const borderEntities = world.query([BorderComponent]);
     if (borderEntities.length === 0) return;
 
@@ -677,7 +677,7 @@ export class PBDBallBallCollisions {
     const contactTuning = world.getResource('flipperContactTuning') || {};
     const wrapMotionPenetrationSlack = Number.isFinite(contactTuning.ballBallWrapMotionPenetrationSlack)
       ? Math.max(0.0, contactTuning.ballBallWrapMotionPenetrationSlack)
-      : 0.0010;
+      : 0.00015;
     const prevContactStateResource = world.getResource('ball_ball_prev_contact_state');
     const prevContactState = (prevContactStateResource instanceof Map) ? prevContactStateResource : new Map();
     const nextContactState = new Map();
@@ -763,12 +763,13 @@ export class PBDBallBallCollisions {
           }
         }
         const nonVelocityCorrection = Math.max(0.0, correctionPenetration - motionCorrectionPenetration);
+        const nonVelocityApplied = nonVelocityCorrection;
 
         const corr = dir.clone().scale(correctionPenetration / totalInvMass);
         p1.add(corr, -invMass1);
         p2.add(corr, invMass2);
-        if (nonVelocityCorrection > 0.0) {
-          const corrNoVel = dir.clone().scale(nonVelocityCorrection / totalInvMass);
+        if (nonVelocityApplied > 0.0) {
+          const corrNoVel = dir.clone().scale(nonVelocityApplied / totalInvMass);
           const prevFinalPos1 = world.getComponent(e1, PrevFinalPosComponent);
           const prevFinalPos2 = world.getComponent(e2, PrevFinalPosComponent);
           if (prevFinalPos1) {
@@ -983,6 +984,9 @@ export class PBDBallFlipperCollisions {
     const maxRawEntryCorrection = Number.isFinite(contactTuning.maxRawEntryCorrection)
       ? Math.max(0.0, contactTuning.maxRawEntryCorrection)
       : 0.0008;
+    const flipperMotionPenetrationSlack = Number.isFinite(contactTuning.flipperMotionPenetrationSlack)
+      ? Math.max(0.0, contactTuning.flipperMotionPenetrationSlack)
+      : 0.0008;
     const previousWrapRampResource = world.getResource('flipperWrapRadiusRamp');
     const previousWrapRamp = (previousWrapRampResource instanceof Map) ? previousWrapRampResource : new Map();
     const nextWrapRamp = new Map();
@@ -1102,14 +1106,27 @@ export class PBDBallFlipperCollisions {
           }
         }
 
+        let motionCorrection = corr;
+        if (Number.isFinite(dt) && dt > 1e-9) {
+            const velComp = world.getComponent(ballId, VelocityComponent);
+            const vIntoSurface = velComp ? Math.max(0.0, -velComp.vel.dot(normal)) : 0.0;
+            const maxMotionCorrection = vIntoSurface * dt + flipperMotionPenetrationSlack;
+            motionCorrection = Math.min(corr, maxMotionCorrection);
+        }
+        const nonVelocityCorrection = Math.max(0.0, corr - motionCorrection);
+
         if (invMass > 0) {
             p1.add(normal, corr);
+            const prevFinalPosComp = world.getComponent(ballId, PrevFinalPosComponent);
+            if (prevFinalPosComp && nonVelocityCorrection > 0.0) {
+                prevFinalPosComp.pos.add(normal, nonVelocityCorrection);
+            }
         }
 
         let delta_lambda = 0;
         if (invMass > 0) {
             const w_inv = invMass;
-            delta_lambda = corr / w_inv;
+            delta_lambda = motionCorrection / w_inv;
         }
         const flipperSurfacePoint = closest.clone().add(normal, effectiveFlipperRadius);
         const lowPair = Math.min(ballId, flipId);

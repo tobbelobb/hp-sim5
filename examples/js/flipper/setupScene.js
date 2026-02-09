@@ -41,6 +41,7 @@ import {
 import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
 import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
 import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
+import { CableEnergyTransferSystem } from '../../../src/js/cable_joints/cable_energy_transfer_system.js';
 import {
   ScoreComponent,
   BallTagComponent,
@@ -112,8 +113,24 @@ export function setupScene(world, stage, canvas) {
       softRawEntryContacts: true,
       rawEntryCorrectionFraction: 0.12,
       maxRawEntryCorrection: 0.0008,
-      softenRawEntryVelocity: true
+      softenRawEntryVelocity: true,
+      flipperMotionPenetrationSlack: 0.0008,
+      borderMotionPenetrationSlack: 0.00015,
+      ballBallWrapMotionPenetrationSlack: 0.00015
     });
+    world.setResource('cableAttachmentTransferTuning', {
+      enableKinematicClamp: false,
+      clampSlack: 0.0006,
+      kinematicBudgetScale: 1.0,
+      limitPotentialRiseByKineticBudget: true,
+      potentialRiseBudgetScale: 1.0,
+      potentialRiseSlack: 0.0
+    });
+    world.setResource('cableEnergyTransferTuning', {
+      enabled: true,
+      transferScale: 1.0
+    });
+    world.setResource('cableSolverIterations', 2);
     world.setResource('flipperWrapRadiusRamp', new Map());
     world.setResource('flipperCamTraceStep', 0);
     world.setResource('flipperCamTraceConfig', {
@@ -370,6 +387,7 @@ export function setupScene(world, stage, canvas) {
         // 7. UPDATE VELOCITY: Derive final velocities from the position changes
         world.registerSystem(new PBDVelocityUpdateSystem());
         world.registerSystem(new PBDAngularVelocityUpdateSystem());
+        world.registerSystem(new CableEnergyTransferSystem());
 
         // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
         world.registerSystem(new BallObstacleBumpSystem());
