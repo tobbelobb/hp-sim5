@@ -4,7 +4,9 @@
   "type":"module",
   "main": "src/js/cable_joints/cable_joints_core.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "probe:spool-energy": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --report tests/benchmark/spool_energy_report_latest.json",
+    "probe:spool-energy:gate": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --fail-on-unsolved --report tests/benchmark/spool_energy_report_latest.json"
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",

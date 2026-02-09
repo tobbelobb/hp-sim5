@@ -63,6 +63,22 @@ Recorded per step:
 - effective bottom collision radius
 - max border `delta_lambda` for the ball
 
+## Automated Probe
+
+Run from repo root:
+
+`npm run probe:spool-energy`
+
+This launches the scene headlessly and writes:
+
+- `tests/benchmark/spool_energy_report_latest.json` (summary + verdict)
+
+Optional gate mode:
+
+`npm run probe:spool-energy:gate`
+
+In gate mode, process exit code is non-zero when verdict is unsolved.
+
 ## How To Capture Data
 
 1. Open the scene and reproduce a jump/fling.

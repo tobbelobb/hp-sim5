@@ -30,3 +30,5 @@ autocal/tests/data/*.png
 autocal/old_data
 .agents
 autocal/logo_work
+tests/benchmark/spool_energy_report_latest.json
+tests/benchmark/spool_energy_trace_latest.json
