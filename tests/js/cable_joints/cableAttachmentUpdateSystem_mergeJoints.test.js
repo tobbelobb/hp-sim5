@@ -252,4 +252,87 @@ describe('_mergeJoints', () => {
     // Link types should now indicate no rolling segment
     expect(pathComp.linkTypes).toEqual(['attachment', 'attachment']);
   });
+
+  test('_mergeJoints uses layered hybrid endpoint radius for merged tangent attachment', () => {
+    const world = new World();
+
+    const hybrid = world.createEntity();
+    const wheel = world.createEntity();
+    const anchor = world.createEntity();
+
+    const hybridPos = new Vector2(0, 0);
+    const wheelPos = new Vector2(2.8, -0.2);
+    const anchorPos = new Vector2(5.0, 1.8);
+    const rawHybridRadius = 1.0;
+    const rawWheelRadius = 0.5;
+    const halfWidth = 0.1;
+    const baseHybridRadius = rawHybridRadius + halfWidth;
+    const layeredHybridRadius = baseHybridRadius + 2.0 * halfWidth;
+
+    world.addComponent(hybrid, new PositionComponent(hybridPos.x, hybridPos.y));
+    world.addComponent(hybrid, new RadiusComponent(rawHybridRadius));
+    world.addComponent(hybrid, new CableLinkComponent(hybridPos.x, hybridPos.y));
+
+    world.addComponent(wheel, new PositionComponent(wheelPos.x, wheelPos.y));
+    world.addComponent(wheel, new RadiusComponent(rawWheelRadius));
+    world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y));
+
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
+    world.addComponent(anchor, new RadiusComponent(0.05));
+    world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y));
+
+    const cwHybrid = true; // _effectiveCW(path, 0, true) when path.cw[0] is false
+    const expectedAttachmentOnHybrid = tangentFromCircleToPoint(
+      anchorPos,
+      hybridPos,
+      layeredHybridRadius,
+      cwHybrid
+    ).a_circle;
+
+    const joint1 = world.createEntity();
+    world.addComponent(
+      joint1,
+      new CableJointComponent(
+        hybrid,
+        wheel,
+        1.0,
+        expectedAttachmentOnHybrid.clone(),
+        wheelPos.clone().add(new Vector2(-0.6, 0.0))
+      )
+    );
+
+    const joint2 = world.createEntity();
+    world.addComponent(
+      joint2,
+      new CableJointComponent(
+        wheel,
+        anchor,
+        1.0,
+        wheelPos.clone().add(new Vector2(0.6, 0.0)),
+        anchorPos.clone()
+      )
+    );
+
+    const oneFullWrap = 2.0 * Math.PI * baseHybridRadius;
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint1, joint2],
+      ['hybrid', 'rolling', 'attachment'],
+      [false, true, true],
+      1e4,
+      [oneFullWrap + 0.25, -1e-4, 0.0],
+      halfWidth
+    );
+    world.addComponent(pathId, pathComp);
+
+    _mergeJoints(world);
+
+    expect(pathComp.jointEntities).toHaveLength(1);
+    const mergedJoint = world.getComponent(pathComp.jointEntities[0], CableJointComponent);
+    const actualAttachment = mergedJoint.attachmentPointA_world;
+    expect(actualAttachment.distanceTo(hybridPos)).toBeCloseTo(layeredHybridRadius, 6);
+    expect(actualAttachment.x).toBeCloseTo(expectedAttachmentOnHybrid.x, 6);
+    expect(actualAttachment.y).toBeCloseTo(expectedAttachmentOnHybrid.y, 6);
+  });
 });

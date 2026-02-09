@@ -248,6 +248,67 @@ function _effectiveRollingRadius(path, linkIndex, baseRadius) {
   return baseRadius + 2.0 * halfWidth * Math.max(0, decomposition.fullLayers - 1);
 }
 
+function _pathLinkIndicesForEntity(world, path, entityId) {
+  if (!world || !path || entityId === undefined || entityId === null) {
+    return [];
+  }
+  if (!Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities)) {
+    return [];
+  }
+  if (path.linkTypes.length < 1 || path.jointEntities.length < 1) {
+    return [];
+  }
+
+  const indices = [];
+  const firstJoint = world.getComponent(path.jointEntities[0], CableJointComponent);
+  if (firstJoint && firstJoint.entityA === entityId) {
+    indices.push(0);
+  }
+
+  for (let i = 1; i < path.linkTypes.length - 1; i++) {
+    const leftJoint = world.getComponent(path.jointEntities[i - 1], CableJointComponent);
+    const rightJoint = world.getComponent(path.jointEntities[i], CableJointComponent);
+    if (!leftJoint || !rightJoint) {
+      continue;
+    }
+    if (leftJoint.entityB === entityId && rightJoint.entityA === entityId) {
+      indices.push(i);
+    }
+  }
+
+  const lastJoint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+  const lastIndex = path.linkTypes.length - 1;
+  if (lastJoint && lastJoint.entityB === entityId) {
+    indices.push(lastIndex);
+  }
+
+  return indices;
+}
+
+function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex = null) {
+  const baseRadius = _effectiveRadius(path, world.getComponent(entityId, RadiusComponent)?.radius);
+  if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
+    return baseRadius;
+  }
+
+  let effectiveRadius = baseRadius;
+  if (Number.isInteger(preferredLinkIndex) && preferredLinkIndex >= 0 && preferredLinkIndex < path.linkTypes.length) {
+    effectiveRadius = Math.max(
+      effectiveRadius,
+      _effectiveRollingRadius(path, preferredLinkIndex, baseRadius)
+    );
+  }
+
+  const candidateIndices = _pathLinkIndicesForEntity(world, path, entityId);
+  for (const linkIndex of candidateIndices) {
+    effectiveRadius = Math.max(
+      effectiveRadius,
+      _effectiveRollingRadius(path, linkIndex, baseRadius)
+    );
+  }
+  return effectiveRadius;
+}
+
 function _clearDebugPoints(world) {
   const debugPoints = world.getResource('debugRenderPoints');
   if (debugPoints) {
@@ -546,10 +607,10 @@ export function _mergeJoints(world) {
           const pA1 = joint_i.attachmentPointA_world;
           const pB2 = joint_i_plus_1.attachmentPointB_world;
           const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
-          const radiusA = _effectiveRadius(path, world.getComponent(joint_i.entityA, RadiusComponent)?.radius);
+          const radiusA = _effectivePathRadiusForEntity(world, path, joint_i.entityA, i);
           const cwA = _effectiveCW(path, i, true);
           const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
-          const radiusB = _effectiveRadius(path, world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius);
+          const radiusB = _effectivePathRadiusForEntity(world, path, joint_i_plus_1.entityB, i + 2);
           const cwB = path.cw[i+2];
 
           joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
@@ -623,7 +684,7 @@ export function _splitJoints(world) {
           continue;
         }
         const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
-        const radiusSplitter = _effectiveRadius(path, world.getComponent(splitterId, RadiusComponent)?.radius);
+        const radiusSplitter = _effectivePathRadiusForEntity(world, path, splitterId, null);
         if (lineSegmentCircleIntersection(pA, pB, posSplitter, radiusSplitter)) {
           // console.log(`Splitting joint ${jointId} due to intersection with ${splitterId}`);
           const entityA = joint.entityA;
@@ -636,7 +697,7 @@ export function _splitJoints(world) {
           const linkTypeA = path.linkTypes[i];
           const isAttachmentA = _isAttachment(linkTypeA);
           const isRollingA = _isRolling(linkTypeA);
-          const radiusA = _effectiveRadius(path, world.getComponent(entityA, RadiusComponent)?.radius);
+          const radiusA = _effectivePathRadiusForEntity(world, path, entityA, i);
           const cwA = _effectiveCW(path, i, true);
 
           // Get components for Entity B
@@ -644,7 +705,7 @@ export function _splitJoints(world) {
           const linkTypeB = path.linkTypes[i + 1];
           const isAttachmentB = _isAttachment(linkTypeB);
           const isRollingB = _isRolling(linkTypeB);
-          const radiusB = _effectiveRadius(path, world.getComponent(entityB, RadiusComponent)?.radius);
+          const radiusB = _effectivePathRadiusForEntity(world, path, entityB, i + 1);
           const cwB = path.cw[i + 1];
 
           // Calculate components for new joint

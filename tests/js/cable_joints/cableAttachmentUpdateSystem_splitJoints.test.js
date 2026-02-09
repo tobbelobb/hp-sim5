@@ -228,4 +228,76 @@ describe('_splitJoints', () => {
     expect(pathComp.stored[1]).toBeGreaterThanOrEqual(0);
     expect(pathComp.stored[2]).toBeGreaterThanOrEqual(0);
   });
+
+  test('_splitJoints uses layered hybrid endpoint radius when creating new tangent attachment', () => {
+    const world = new World();
+
+    const hybrid = world.createEntity();
+    const anchor = world.createEntity();
+    const splitter = world.createEntity();
+
+    const hybridPos = new Vector2(0.0, 0.0);
+    const anchorPos = new Vector2(6.0, 0.0);
+    const rawHybridRadius = 1.0;
+    const halfWidth = 0.1;
+    const baseHybridRadius = rawHybridRadius + halfWidth;
+    const layeredHybridRadius = baseHybridRadius + 2.0 * halfWidth;
+
+    world.addComponent(hybrid, new PositionComponent(hybridPos.x, hybridPos.y));
+    world.addComponent(hybrid, new RadiusComponent(rawHybridRadius));
+    world.addComponent(hybrid, new CableLinkComponent(hybridPos.x, hybridPos.y));
+
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
+    world.addComponent(anchor, new RadiusComponent(0.1));
+    world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y));
+
+    const cwHybrid = true; // _effectiveCW(path, 0, true) when path.cw[0] is false
+    const initialAttachmentOnHybrid = tangentFromCircleToPoint(
+      anchorPos,
+      hybridPos,
+      layeredHybridRadius,
+      cwHybrid
+    ).a_circle;
+    const initialAttachmentOnAnchor = anchorPos.clone();
+
+    const segment = initialAttachmentOnAnchor.clone().subtract(initialAttachmentOnHybrid);
+    const normal = new Vector2(-segment.y, segment.x).normalize();
+    const splitterPos = initialAttachmentOnHybrid.clone().add(segment, 0.5).add(normal, 0.12);
+
+    world.addComponent(splitter, new PositionComponent(splitterPos.x, splitterPos.y));
+    world.addComponent(splitter, new RadiusComponent(0.4));
+    world.addComponent(splitter, new CableLinkComponent(splitterPos.x, splitterPos.y));
+
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(
+        hybrid,
+        anchor,
+        initialAttachmentOnHybrid.distanceTo(initialAttachmentOnAnchor),
+        initialAttachmentOnHybrid.clone(),
+        initialAttachmentOnAnchor.clone()
+      )
+    );
+
+    const oneFullWrap = 2.0 * Math.PI * baseHybridRadius;
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'attachment'],
+      [false, true],
+      1e4,
+      [oneFullWrap + 0.2, 0.0],
+      halfWidth
+    );
+    world.addComponent(pathId, pathComp);
+
+    _splitJoints(world);
+
+    expect(pathComp.jointEntities).toHaveLength(2);
+    const updatedJoint = world.getComponent(jointId, CableJointComponent);
+    const attachmentAfterSplit = updatedJoint.attachmentPointA_world;
+    expect(attachmentAfterSplit.distanceTo(hybridPos)).toBeCloseTo(layeredHybridRadius, 6);
+  });
 });
