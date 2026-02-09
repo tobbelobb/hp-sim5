@@ -148,6 +148,8 @@ describe('_updateHybridLinkStates', () => {
 
     //  switched back to hybrid
     expect(pathComp.linkTypes[0]).toBe('hybrid');
+    // index 0 stores raw cw; effective cw (used for circle->point) is inverted
+    expect(pathComp.cw[0]).toBe(true);
     // some positive arc was added
     expect(pathComp.stored[0]).toBeGreaterThan(0);
     // restLength reduced by exactly that arc
@@ -186,6 +188,8 @@ describe('_updateHybridLinkStates', () => {
 
     // switched back to hybrid
     expect(pathComp.linkTypes[1]).toBe('hybrid');
+    // last-link cw is not inverted
+    expect(pathComp.cw[1]).toBe(true);
     // positive stored arc, restLength shorter by that arc
     expect(pathComp.stored[1]).toBeGreaterThan(0);
     const arc = pathComp.stored[1];

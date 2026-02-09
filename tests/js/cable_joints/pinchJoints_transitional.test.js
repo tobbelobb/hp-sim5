@@ -107,6 +107,30 @@ describe('Transitional pinch joints', () => {
     expect(pinchConfigs.size).toBe(0);
   });
 
+  test('does not detect transitional pinch when current joint segment is far from pinch contact region', () => {
+    const { world, jointId } = setupTransitionalPinchWorld();
+    const joint = world.getComponent(jointId, CableJointComponent);
+    joint.attachmentPointA_world.set(new Vector2(0.0, 0.15));
+    joint.attachmentPointB_world.set(new Vector2(0.34, 0.15));
+    const beforeA = joint.attachmentPointA_world.clone();
+    const beforeB = joint.attachmentPointB_world.clone();
+
+    const detect = new PinchDetectionSystem();
+    const configure = new PinchConfigureSystem();
+    detect.update(world, 0.016);
+
+    const candidates = world.getResource('cablePinchCandidates');
+    expect(Array.isArray(candidates)).toBe(true);
+    expect(candidates).toHaveLength(0);
+
+    configure.update(world, 0.016);
+    const pinchConfigs = world.getResource('cablePinchJointConfigs');
+    expect(pinchConfigs instanceof Map).toBe(true);
+    expect(pinchConfigs.size).toBe(0);
+    expect(joint.attachmentPointA_world).toEqual(beforeA);
+    expect(joint.attachmentPointB_world).toEqual(beforeB);
+  });
+
   test('deduplicates contacts for multiple transitional joints between same body pair', () => {
     const { world, entityA, entityB, jointId } = setupTransitionalPinchWorld();
     const secondJointId = world.createEntity();

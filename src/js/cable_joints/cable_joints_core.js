@@ -1,6 +1,7 @@
 import Vector2 from './vector2.js';
 
 import {
+  closestPointOnSegment,
   tangentFromPointToCircle,
   tangentFromCircleToPoint,
   tangentFromCircleToCircle,
@@ -35,6 +36,7 @@ const PINCH_NON_TRANSITIONAL_STORED_BUFFER = 1e-5;
 const PINCH_CANDIDATES_RESOURCE = 'cablePinchCandidates';
 const PINCH_CONFIGS_RESOURCE = 'cablePinchJointConfigs';
 const PINCH_CONTACTS_RESOURCE = 'cablePinchContacts';
+const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 
 function getMachineId(world, entityId) {
   if (entityId == null) {
@@ -727,7 +729,6 @@ export function _splitJoints(world) {
 }
 
 export function _updateHybridLinkStates(world) {
-  const debugPoints = world.getResource('debugRenderPoints');
   const pathEntities = world.query([CablePathComponent]);
   const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
   const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
@@ -735,7 +736,6 @@ export function _updateHybridLinkStates(world) {
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     for (const i of [0, path.linkTypes.length - 1]) {
-      const epsilon = 1e-9;
       const endpointJointId = (i === 0 ? path.jointEntities[0] : path.jointEntities[path.jointEntities.length - 1]);
       if (endpointJointId !== undefined && pinchConfigs.has(endpointJointId)) {
         // Transitional pinches create near-degenerate endpoint geometry where
@@ -751,14 +751,21 @@ export function _updateHybridLinkStates(world) {
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
           const radius = _effectiveRadius(path, world.getComponent(linkEntity, RadiusComponent).radius);
           const pos = world.getComponent(linkEntity, PositionComponent).pos;
+          const effectiveCW = _effectiveCW(path, i, true);
+          const oldStored = path.stored[i];
           // We have "fed out negative line", undo that
-          joint.restLength += path.stored[i];
-          const rotAng = -path.stored[i]/radius;
+          joint.restLength += oldStored;
+          const rotAng = -oldStored/radius;
           if (i === 0) {
-            joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
+            joint.attachmentPointA_world.rotate(rotAng, pos, effectiveCW);
           } else if (i === path.linkTypes.length - 1) {
-            joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
+            joint.attachmentPointB_world.rotate(rotAng, pos, effectiveCW);
           }
+          console.debug(
+            `${CABLE_DEBUG_PREFIX} hybrid->hybrid-attachment path=${pathId} link=${i} ` +
+            `joint=${endpointJointId} rawCW=${path.cw[i]} effectiveCW=${effectiveCW} ` +
+            `storedBefore=${oldStored.toFixed(6)} rotAng=${rotAng.toFixed(6)}`
+          );
           path.stored[i] = 0;
         }
       }
@@ -784,6 +791,17 @@ export function _updateHybridLinkStates(world) {
         const C = world.getComponent(entityId, PositionComponent).pos;
         const P = world.getComponent(neighborId, PositionComponent).pos;
         const R = _effectiveRadius(path, world.getComponent(entityId, RadiusComponent).radius);
+        const halfWidth = path.cableHalfWidth ?? 0.0;
+        const nearPinchThreshold = 2.0 * halfWidth + 1e-6;
+        let nearPinchSurfaceDistance = null;
+        let nearPinch = false;
+        if (halfWidth > EPSILON) {
+          const surfacePair = _computeCircleSurfacePair(world, entityId, neighborId, null);
+          if (surfacePair) {
+            nearPinchSurfaceDistance = surfacePair.surfaceDistance;
+            nearPinch = surfacePair.surfaceDistance <= nearPinchThreshold;
+          }
+        }
 
         // When the endpoint and neighbor attachment collapse to (near) the same
         // point, both CW/CCW tangent solutions become ill-conditioned.
@@ -800,25 +818,89 @@ export function _updateHybridLinkStates(world) {
         const distSqCW = attachmentPoint.distanceToSq(tanCW);
         const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
-        let newCW = null, crossingTangent = null;
+        let newEffectiveCW = null;
+        let crossingTangent = null;
         if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
-            newCW = true;
+            newEffectiveCW = false;
             crossingTangent = tanCCW;
             path.stored[i] = crossedCCW;
             joint.restLength -= crossedCCW;
         } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
-            newCW = false;
+            newEffectiveCW = true;
             crossingTangent = tanCW;
             path.stored[i] = crossedCW;
             joint.restLength -= crossedCW;
         }
 
-        if (newCW !== null) {
+        if (newEffectiveCW !== null) {
+          if (nearPinch) {
+            console.debug(
+              `${CABLE_DEBUG_PREFIX} defer hybrid-attachment->hybrid near-pinch path=${pathId} link=${i} ` +
+              `joint=${jointId} candidateEffectiveCW=${newEffectiveCW} ` +
+              `surfaceDistance=${nearPinchSurfaceDistance?.toFixed(6)} threshold=${nearPinchThreshold.toFixed(6)} ` +
+              `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)}`
+            );
+            continue;
+          }
+          const oldRawCW = path.cw[i];
+          const oldEffectiveCW = (i === 0 ? !oldRawCW : oldRawCW);
+          const newRawCW = (i === 0 ? !newEffectiveCW : newEffectiveCW);
           // console.log(`Switching joint ${jointId} to hybrid`);
           path.linkTypes[i] = 'hybrid';
-          path.cw[i]        = newCW;
+          path.cw[i]        = newRawCW;
           attachmentPoint.set(crossingTangent);
+          console.debug(
+            `${CABLE_DEBUG_PREFIX} hybrid-attachment->hybrid path=${pathId} link=${i} joint=${jointId} ` +
+            `rawCW=${oldRawCW}->${newRawCW} effectiveCW=${oldEffectiveCW}->${newEffectiveCW} ` +
+            `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)} ` +
+            `distSqCW=${distSqCW.toExponential(3)} distSqCCW=${distSqCCW.toExponential(3)}`
+          );
         }
+      }
+    }
+
+    for (let linkIndex = 1; linkIndex < path.linkTypes.length - 1; linkIndex++) {
+      if (!_isRolling(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      const leftJointId = path.jointEntities[linkIndex - 1];
+      const rightJointId = path.jointEntities[linkIndex];
+      const leftJoint = world.getComponent(leftJointId, CableJointComponent);
+      const rightJoint = world.getComponent(rightJointId, CableJointComponent);
+      if (!leftJoint || !rightJoint || leftJoint.entityB !== rightJoint.entityA) {
+        continue;
+      }
+      const bodyId = leftJoint.entityB;
+      const center = world.getComponent(bodyId, PositionComponent)?.pos;
+      const radius = _effectiveRadius(path, world.getComponent(bodyId, RadiusComponent)?.radius);
+      if (!center || !Number.isFinite(radius) || radius <= EPSILON) {
+        continue;
+      }
+
+      const cw = path.cw[linkIndex];
+      const arc = signedArcLengthOnWheel(
+        leftJoint.attachmentPointB_world,
+        rightJoint.attachmentPointA_world,
+        center,
+        radius,
+        cw,
+        true
+      );
+      const altArc = signedArcLengthOnWheel(
+        leftJoint.attachmentPointB_world,
+        rightJoint.attachmentPointA_world,
+        center,
+        radius,
+        !cw,
+        true
+      );
+      const stored = path.stored[linkIndex] ?? 0.0;
+      if (arc <= 1e-6 && altArc > arc + 1e-4 && stored > 1e-6) {
+        console.debug(
+          `${CABLE_DEBUG_PREFIX} rolling-arc-mismatch path=${pathId} link=${linkIndex} body=${bodyId} ` +
+          `cw=${cw} arc=${arc.toFixed(6)} altArc=${altArc.toFixed(6)} stored=${stored.toFixed(6)} ` +
+          `leftJoint=${leftJointId} rightJoint=${rightJointId}`
+        );
       }
     }
   }
@@ -890,6 +972,23 @@ function _pinchSegmentDirection(normal, referenceDir = null) {
     segmentDir.scale(-1.0);
   }
   return segmentDir;
+}
+
+function _transitionalPinchSegmentProximity(path, joint, pinchPair) {
+  if (!joint || !pinchPair) {
+    return null;
+  }
+  const segmentA = joint.attachmentPointA_world;
+  const segmentB = joint.attachmentPointB_world;
+  if (!segmentA || !segmentB || !pinchPair.pointA_world || !pinchPair.pointB_world) {
+    return null;
+  }
+  const pinchMidpoint = pinchPair.pointA_world.clone().add(pinchPair.pointB_world).scale(0.5);
+  const closestOnSegment = closestPointOnSegment(pinchMidpoint, segmentA, segmentB);
+  const distance = closestOnSegment.distanceTo(pinchMidpoint);
+  const halfWidth = path?.cableHalfWidth ?? 0.0;
+  const corridor = Math.max(1e-6, 2.0 * halfWidth + 1e-6);
+  return { distance, corridor };
 }
 
 function _pathCurrentLengthBudget(world, path) {
@@ -976,6 +1075,17 @@ function _detectPinchCandidates(world) {
 
       const pinchPair = _computePinchAttachmentPair(world, path, joint.entityA, joint.entityB, surfacePair.normal);
       if (!pinchPair) {
+        continue;
+      }
+      const segmentProximity = _transitionalPinchSegmentProximity(path, joint, pinchPair);
+      if (!segmentProximity || segmentProximity.distance > segmentProximity.corridor) {
+        if (segmentProximity) {
+          console.debug(
+            `${CABLE_DEBUG_PREFIX} skip transitional path=${pathId} joint=${jointId} ` +
+            `surfaceDistance=${surfacePair.surfaceDistance.toFixed(6)} ` +
+            `segmentDistance=${segmentProximity.distance.toFixed(6)} corridor=${segmentProximity.corridor.toFixed(6)}`
+          );
+        }
         continue;
       }
 
