@@ -279,4 +279,63 @@ describe('_updateHybridLinkStates', () => {
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
+
+  test('hybrid-attachment near-pinch defer keeps stored/rest-length unchanged', () => {
+    const world = new World();
+    const wheel = addWheel(world, new Vector2(0, 0), 1);
+    const neighbor = addWheel(world, new Vector2(0, 1.95), 1);
+
+    const joint = world.createEntity();
+    const initialRest = 3.2;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel,
+        neighbor,
+        initialRest,
+        new Vector2(1.0, 0.0),
+        new Vector2(0.0, 3.0),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid-attachment', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.05
+    );
+    world.addComponent(path, pathComp);
+
+    const wheelPos = world.getComponent(wheel, PositionComponent).pos;
+    const neighborPos = world.getComponent(neighbor, PositionComponent).pos;
+    const surfaceDistance = wheelPos.distanceTo(neighborPos) - 2.0;
+    expect(surfaceDistance).toBeLessThanOrEqual(0.1 + 1e-6);
+
+    const jBefore = world.getComponent(joint, CableJointComponent);
+    const R = world.getComponent(wheel, RadiusComponent).radius + pathComp.cableHalfWidth;
+    const tanCW = tangentFromCircleToPoint(jBefore.attachmentPointB_world, wheelPos, R, true).a_circle;
+    const tanCCW = tangentFromCircleToPoint(jBefore.attachmentPointB_world, wheelPos, R, false).a_circle;
+    const crossedCW = signedArcLengthOnWheel(jBefore.attachmentPointA_world, tanCW, wheelPos, R, true);
+    const crossedCCW = signedArcLengthOnWheel(jBefore.attachmentPointA_world, tanCCW, wheelPos, R, false);
+    const distSqCW = jBefore.attachmentPointA_world.distanceToSq(tanCW);
+    const distSqCCW = jBefore.attachmentPointA_world.distanceToSq(tanCCW);
+    const hasSwitchCandidate =
+      (crossedCCW > 0.0 && distSqCCW < distSqCW) ||
+      (crossedCW > 0.0 && distSqCW < distSqCCW);
+    expect(hasSwitchCandidate).toBe(true);
+
+    const totalBefore = jBefore.restLength + pathComp.stored[0] + pathComp.stored[1];
+    _updateHybridLinkStates(world);
+
+    const jAfter = world.getComponent(joint, CableJointComponent);
+    const totalAfter = jAfter.restLength + pathComp.stored[0] + pathComp.stored[1];
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    expect(jAfter.restLength).toBeCloseTo(initialRest, 12);
+    expect(totalAfter).toBeCloseTo(totalBefore, 12);
+  });
 });

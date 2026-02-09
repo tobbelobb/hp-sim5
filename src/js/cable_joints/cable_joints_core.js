@@ -484,6 +484,12 @@ export function _mergeJoints(world) {
               joint_i_plus_1.restLength +
               path.stored[i + 1] +
               path.stored[i + 2];
+            _debugCable(
+              world,
+              `merge pinch-pair path=${pathId} idx=${i} joints=${jointId_i},${jointId_i_plus_1} ` +
+              `storedMid=${path.stored[i + 1].toFixed(6)} storedNext=${path.stored[i + 2].toFixed(6)} ` +
+              `removedBudget=${removedBudget.toFixed(6)}`
+            );
             path.stored[i] += removedBudget;
 
             path.jointEntities.splice(i, 2);
@@ -827,16 +833,15 @@ export function _updateHybridLinkStates(world) {
 
         let newCW = null;
         let crossingTangent = null;
+        let candidateStored = null;
         if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
             newCW = true;
             crossingTangent = tanCCW;
-            path.stored[i] = crossedCCW;
-            joint.restLength -= crossedCCW;
+            candidateStored = crossedCCW;
         } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
             newCW = false;
             crossingTangent = tanCW;
-            path.stored[i] = crossedCW;
-            joint.restLength -= crossedCW;
+            candidateStored = crossedCW;
         }
 
         if (newCW !== null) {
@@ -846,22 +851,28 @@ export function _updateHybridLinkStates(world) {
               `defer hybrid-attachment->hybrid near-pinch path=${pathId} link=${i} ` +
               `joint=${jointId} candidateCW=${newCW} ` +
               `surfaceDistance=${nearPinchSurfaceDistance?.toFixed(6)} threshold=${nearPinchThreshold.toFixed(6)} ` +
-              `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)}`
+              `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)} ` +
+              `stored=${(path.stored[i] ?? 0.0).toFixed(6)}`
             );
             continue;
           }
           const oldRawCW = path.cw[i];
           const oldEffectiveCW = (i === 0 ? !oldRawCW : oldRawCW);
           const newEffectiveCW = (i === 0 ? !newCW : newCW);
+          const oldStored = path.stored[i] ?? 0.0;
+          const newStored = candidateStored ?? oldStored;
           // console.log(`Switching joint ${jointId} to hybrid`);
           path.linkTypes[i] = 'hybrid';
           path.cw[i]        = newCW;
+          path.stored[i] = newStored;
+          joint.restLength -= (newStored - oldStored);
           attachmentPoint.set(crossingTangent);
           _debugCable(
             world,
             `hybrid-attachment->hybrid path=${pathId} link=${i} joint=${jointId} ` +
             `rawCW=${oldRawCW}->${newCW} effectiveCW=${oldEffectiveCW}->${newEffectiveCW} ` +
             `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)} ` +
+            `stored=${oldStored.toFixed(6)}->${newStored.toFixed(6)} ` +
             `distSqCW=${distSqCW.toExponential(3)} distSqCCW=${distSqCCW.toExponential(3)}`
           );
         }
@@ -1375,6 +1386,12 @@ function _insertNonTransitionalPinch(world, candidate, pinchConfigs) {
     pinchPointA_world: splitPointB.clone(),
     pinchPointB_world: splitPointA.clone()
   });
+  _debugCable(
+    world,
+    `insert non-transitional path=${candidate.pathId} link=${linkIndex} bodies=${bodyA}<->${bodyB} ` +
+    `joints=${jointABId},${jointBAId} arcs=${leftArc.toFixed(6)},${rightArc.toFixed(6)} ` +
+    `buffer=${PINCH_NON_TRANSITIONAL_STORED_BUFFER.toFixed(6)} deltaBudget=${deltaBudget.toFixed(6)}`
+  );
   return true;
 }
 
