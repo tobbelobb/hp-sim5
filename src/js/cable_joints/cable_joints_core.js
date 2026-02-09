@@ -1440,6 +1440,102 @@ export function getHybridEndpointRollingRadius(world, entityId) {
   return maxRollingRadius;
 }
 
+export function getHybridEndpointCamCorners(world, entityId) {
+  if (!world || entityId === undefined || entityId === null) {
+    return [];
+  }
+
+  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  const rawRadius = world.getComponent(entityId, RadiusComponent)?.radius;
+  if (!center || !Number.isFinite(rawRadius) || rawRadius <= EPSILON) {
+    return [];
+  }
+
+  const corners = [];
+  const pathEntities = world.query([CablePathComponent]);
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (!path || path.jointEntities.length < 1) {
+      continue;
+    }
+    const halfWidth = path.cableHalfWidth ?? 0.0;
+    if (!(halfWidth > EPSILON)) {
+      continue;
+    }
+    if (!Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
+      continue;
+    }
+
+    const endpointIndices = [0, path.linkTypes.length - 1];
+    for (const linkIndex of endpointIndices) {
+      if (!_isHybrid(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      if (!(path.stored[linkIndex] > EPSILON)) {
+        continue;
+      }
+
+      const context = _getEndpointRollingArcContext(world, path, linkIndex);
+      if (!context || context.bodyA !== entityId) {
+        continue;
+      }
+      const decomposition = _decomposeStoredWrapLayers(
+        path.stored[linkIndex],
+        context.baseRadius,
+        halfWidth
+      );
+      if (!decomposition || !decomposition.hasPartial || !(decomposition.partialLength > EPSILON)) {
+        continue;
+      }
+
+      const startVec = context.attachmentPoint.clone().subtract(context.center);
+      if (startVec.lengthSq() <= EPSILON) {
+        continue;
+      }
+
+      const partialRadius = decomposition.partialRadius;
+      if (!(partialRadius > EPSILON)) {
+        continue;
+      }
+      const span = decomposition.partialLength / partialRadius;
+      if (!(span > EPSILON)) {
+        continue;
+      }
+
+      const outerRadius = rawRadius + 2.0 * halfWidth * (decomposition.fullLayers + 1);
+      if (!(outerRadius > EPSILON)) {
+        continue;
+      }
+
+      const startAngle = Math.atan2(startVec.y, startVec.x);
+      const directionSign = context.cwDirection ? -1.0 : 1.0;
+      const endAngle = startAngle + directionSign * span;
+
+      const startPoint = new Vector2(
+        center.x + outerRadius * Math.cos(startAngle),
+        center.y + outerRadius * Math.sin(startAngle)
+      );
+      const endPoint = new Vector2(
+        center.x + outerRadius * Math.cos(endAngle),
+        center.y + outerRadius * Math.sin(endAngle)
+      );
+
+      corners.push({
+        pathId,
+        linkIndex,
+        outerRadius,
+        startAngle,
+        endAngle,
+        cwDirection: context.cwDirection,
+        startPoint,
+        endPoint
+      });
+    }
+  }
+
+  return corners;
+}
+
 function _detectPinchCandidates(world) {
   const candidates = [];
   const nonTransitionalByKey = new Map();

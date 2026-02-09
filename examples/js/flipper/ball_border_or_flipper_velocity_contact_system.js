@@ -19,7 +19,18 @@ import {
 export class BallBorderOrFlipperVelocityContactSystem {
     runInPause = false;
 
-    _handleBallContact(world, ballId, normal, v_surface, restitution_other, friction_other, delta_lambda, dt, contactRadiusOverride = null) {
+    _handleBallContact(
+        world,
+        ballId,
+        normal,
+        v_surface,
+        restitution_other,
+        friction_other,
+        delta_lambda,
+        dt,
+        contactRadiusOverride = null,
+        contactOffsetOverride = null
+    ) {
         // Get all required components for the ball
         const posComp = world.getComponent(ballId, PositionComponent);
         const velComp = world.getComponent(ballId, VelocityComponent);
@@ -54,7 +65,14 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const restitution = (restitutionBall + restitutionOther) / 2.0;
         const mu = (muBall + frictionOther) / 2.0;
 
-        const r_ball = normal.clone().scale(-radius);
+        const useOffset =
+            contactOffsetOverride &&
+            Number.isFinite(contactOffsetOverride.x) &&
+            Number.isFinite(contactOffsetOverride.y) &&
+            contactOffsetOverride.lengthSq() > 1e-12;
+        const r_ball = useOffset
+            ? contactOffsetOverride.clone()
+            : normal.clone().scale(-radius);
 
         const v_angular_at_contact = new Vector2(-angVel * r_ball.y, angVel * r_ball.x);
         const v_ball_at_contact = velComp.vel.clone().add(v_angular_at_contact);
@@ -191,7 +209,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     frictionFlipper,
                     delta_lambda,
                     dt,
-                    ball_contact_radius
+                    ball_contact_radius,
+                    contact.ball_contact_offset
                 );
             }
         }

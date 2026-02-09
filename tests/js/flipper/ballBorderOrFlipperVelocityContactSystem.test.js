@@ -64,4 +64,18 @@ describe('BallBorderOrFlipperVelocityContactSystem flipper wrap gating', () => {
     const vel = world.getComponent(ballId, VelocityComponent).vel;
     expect(vel.x).toBeGreaterThan(0.0);
   });
+
+  test('uses ball_contact_offset for non-radial raw flipper impulse', () => {
+    const { world, ballId } = makeWorldWithFlipperContact(true);
+    const contact = world.getResource('ball_flipper_contacts')[0];
+    contact.normal = new Vector2(0.0, -1.0);
+    contact.contact_point_on_flipper = new Vector2(1.0, 0.0);
+    contact.ball_contact_offset = new Vector2(1.0, 0.0);
+
+    const system = new BallBorderOrFlipperVelocityContactSystem();
+    system.update(world, 0.016);
+
+    const angVel = world.getComponent(ballId, AngularVelocityComponent).angularVelocity;
+    expect(Math.abs(angVel)).toBeGreaterThan(1e-6);
+  });
 });

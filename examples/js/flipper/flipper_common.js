@@ -15,6 +15,7 @@ import {
   CablePathComponent,
   getHybridEndpointWrapExpansion,
   getHybridEndpointRollingRadius,
+  getHybridEndpointCamCorners,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import { closestPointOnSegment, rightOfLine } from '../../../src/js/cable_joints/geometry.js';
 
@@ -76,6 +77,52 @@ export function getEffectiveCollisionRadius(world, entityId, baseRadius, normalT
     effectiveRadius = Math.max(effectiveRadius, rollingRadius);
   }
   return effectiveRadius;
+}
+
+export function getEffectiveCollisionSupportPoint(world, entityId, baseRadius, directionTowardContact) {
+  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!center) {
+    return null;
+  }
+
+  let dir = directionTowardContact?.clone() ?? new Vector2(1.0, 0.0);
+  if (dir.lengthSq() <= 1e-12) {
+    dir = new Vector2(1.0, 0.0);
+  } else {
+    dir.normalize();
+  }
+
+  const radialRadius = getEffectiveCollisionRadius(world, entityId, baseRadius, dir.clone());
+  let bestPoint = center.clone().add(dir, radialRadius);
+  let bestProjection = radialRadius;
+  let source = 'radial';
+  let cornerMeta = null;
+
+  const camCorners = getHybridEndpointCamCorners(world, entityId);
+  for (const corner of camCorners) {
+    for (const endpoint of ['start', 'end']) {
+      const point = endpoint === 'start' ? corner.startPoint : corner.endPoint;
+      const rel = point.clone().subtract(center);
+      const projection = rel.dot(dir);
+      if (projection > bestProjection + 1e-9) {
+        bestProjection = projection;
+        bestPoint = point.clone();
+        source = 'corner';
+        cornerMeta = {
+          pathId: corner.pathId,
+          linkIndex: corner.linkIndex,
+          endpoint
+        };
+      }
+    }
+  }
+
+  return {
+    point: bestPoint,
+    projection: bestProjection,
+    source,
+    cornerMeta
+  };
 }
 
 // --- System: Input --- (Simplified Click Handling)
@@ -685,6 +732,77 @@ export class PBDBallFlipperCollisions {
     return flipperPos.clone().add(dir, flipperState.length);
   }
 
+  _segmentNormalToward(segStart, segEnd, towardPoint) {
+    const tangent = new Vector2().subtractVectors(segEnd, segStart);
+    if (tangent.lengthSq() <= 1e-12) {
+      return null;
+    }
+    const normal = new Vector2(-tangent.y, tangent.x).normalize();
+    if (towardPoint) {
+      const toPoint = towardPoint.clone().subtract(segStart);
+      if (toPoint.dot(normal) < 0.0) {
+        normal.scale(-1.0);
+      }
+    }
+    return normal;
+  }
+
+  _computeBallSupportAgainstSegment(world, ballId, baseRadius, segStart, segEnd, initialNormal) {
+    let normal = initialNormal?.clone() ?? this._segmentNormalToward(segStart, segEnd, null);
+    if (!normal || normal.lengthSq() <= 1e-12) {
+      return null;
+    }
+    normal.normalize();
+
+    let support = null;
+    let closest = null;
+    for (let iter = 0; iter < 2; iter++) {
+      support = getEffectiveCollisionSupportPoint(
+        world,
+        ballId,
+        baseRadius,
+        normal.clone().scale(-1.0)
+      );
+      if (!support) {
+        return null;
+      }
+      closest = closestPointOnSegment(support.point, segStart, segEnd);
+      const separation = new Vector2().subtractVectors(support.point, closest);
+      if (separation.lengthSq() > 1e-12) {
+        normal = separation.clone().normalize();
+      } else {
+        const fallback = this._segmentNormalToward(segStart, segEnd, support.point);
+        if (!fallback) {
+          return null;
+        }
+        normal = fallback;
+      }
+    }
+
+    if (!support || !closest) {
+      return null;
+    }
+
+    const finalSeparation = new Vector2().subtractVectors(support.point, closest);
+    const separationDistance = finalSeparation.length();
+    if (separationDistance > 1e-12) {
+      normal = finalSeparation.clone().scale(1.0 / separationDistance);
+    } else {
+      const fallback = this._segmentNormalToward(segStart, segEnd, support.point);
+      if (!fallback) {
+        return null;
+      }
+      normal = fallback;
+    }
+
+    return {
+      support,
+      closest,
+      normal,
+      separationDistance
+    };
+  }
+
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
@@ -714,24 +832,42 @@ export class PBDBallFlipperCollisions {
         const fs = world.getComponent(flipId, FlipperStateComponent);
 
         const tip = this._getFlipperTip(fp, fs);
-        const closest = closestPointOnSegment(p1, fp, tip);
+        const closestToCenter = closestPointOnSegment(p1, fp, tip);
+        const centerToSegment = new Vector2().subtractVectors(p1, closestToCenter);
+        const centerDistance = centerToSegment.length();
+        let initialNormal = null;
+        if (centerDistance > 1e-12) {
+          initialNormal = centerToSegment.clone().scale(1.0 / centerDistance);
+        } else {
+          initialNormal = this._segmentNormalToward(fp, tip, p1);
+        }
+        if (!initialNormal) {
+          continue;
+        }
 
-        const dir = new Vector2().subtractVectors(p1, closest);
-        const dSq = dir.lengthSq();
-        if (dSq == 0.0) continue;
+        const supportData = this._computeBallSupportAgainstSegment(
+          world,
+          ballId,
+          r1,
+          fp,
+          tip,
+          initialNormal
+        );
+        if (!supportData) {
+          continue;
+        }
+        const { support, closest, normal, separationDistance } = supportData;
+        const effectiveFlipperRadius = getEffectiveCollisionRadius(world, flipId, fr, normal.clone());
+        const corr = effectiveFlipperRadius - separationDistance;
+        if (corr <= 0.0) {
+          continue;
+        }
+        const rawContact = centerDistance <= (r1 + fr + 1e-9);
+        const ballContactOffset = support.point.clone().subtract(p1);
+        const ballContactRadius = Math.max(r1, Math.max(0.0, -ballContactOffset.dot(normal)));
 
-        const d = Math.sqrt(dSq);
-        dir.scale(1.0 / d);
-
-        const effectiveBallRadius = getEffectiveCollisionRadius(world, ballId, r1, dir.clone().scale(-1.0));
-        const effectiveFlipperRadius = getEffectiveCollisionRadius(world, flipId, fr, dir.clone());
-        const rSum = effectiveBallRadius + effectiveFlipperRadius;
-        if (d > rSum) continue;
-        const rawContact = d <= (r1 + fr + 1e-9);
-
-        const corr = rSum - d;
         if (invMass > 0) {
-            p1.add(dir, corr);
+            p1.add(normal, corr);
         }
 
         let delta_lambda = 0;
@@ -739,43 +875,48 @@ export class PBDBallFlipperCollisions {
             const w_inv = invMass;
             delta_lambda = corr / w_inv;
         }
+        const flipperSurfacePoint = closest.clone().add(normal, effectiveFlipperRadius);
 
         contacts.push({
             'ball_id': ballId,
             'flip_id': flipId,
-            'normal': dir.clone(),
-            'contact_point_on_flipper': closest.clone(),
+            'normal': normal.clone(),
+            'contact_point_on_flipper': flipperSurfacePoint,
             'delta_lambda': delta_lambda,
-            'ball_contact_radius': effectiveBallRadius,
+            'ball_contact_radius': ballContactRadius,
+            'ball_contact_offset': ballContactOffset,
             'raw_contact': rawContact
         });
 
         const pairKey = `${ballId}:${flipId}`;
         const prev = previousByPair.get(pairKey);
         if (collisionWarnings && prev && !rawContact) {
-          const radiusJump = Math.abs(effectiveBallRadius - prev.ballRadius);
+          const radiusJump = Math.abs(ballContactRadius - prev.ballRadius);
           const corrJump = Math.abs(corr - prev.corr);
-          const normalDot = prev.normal.dot(dir);
-          if (radiusJump > 0.01 || corrJump > 0.01 || normalDot < 0.95) {
+          const normalDot = prev.normal.dot(normal);
+          const sourceChanged = prev.source !== support.source;
+          if (radiusJump > 0.01 || corrJump > 0.01 || normalDot < 0.95 || sourceChanged) {
             console.warn(
               `[FlipperCollisionWarn] wrap-only contact jump pair=${pairKey} ` +
+              `source=${prev.source}->${support.source} ` +
               `radiusJump=${radiusJump.toFixed(6)} corrJump=${corrJump.toFixed(6)} normalDot=${normalDot.toFixed(6)} ` +
-              `rBall=${effectiveBallRadius.toFixed(6)} corr=${corr.toFixed(6)}`
+              `rBall=${ballContactRadius.toFixed(6)} corr=${corr.toFixed(6)}`
             );
           }
         }
         nextByPair.set(pairKey, {
-          ballRadius: effectiveBallRadius,
+          ballRadius: ballContactRadius,
           corr,
-          normal: dir.clone(),
-          raw: rawContact
+          normal: normal.clone(),
+          raw: rawContact,
+          source: support.source
         });
         if (collisionDebug) {
           console.debug(
             `[FlipperCollisionDebug] flipper-contact ball=${ballId} flip=${flipId} ` +
-            `d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} ` +
-            `wrapExtraBall=${(effectiveBallRadius - r1).toFixed(6)} ` +
-            `wrapExtraFlipper=${(effectiveFlipperRadius - fr).toFixed(6)}`
+            `source=${support.source} dCenter=${centerDistance.toFixed(6)} sep=${separationDistance.toFixed(6)} ` +
+            `rBall=${ballContactRadius.toFixed(6)} rFlip=${effectiveFlipperRadius.toFixed(6)} ` +
+            `corr=${corr.toFixed(6)} raw=${rawContact}`
           );
         }
       }
