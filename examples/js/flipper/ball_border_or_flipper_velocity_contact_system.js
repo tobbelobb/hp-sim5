@@ -32,7 +32,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
         contactRadiusOverride = null,
         contactOffsetOverride = null,
         includeConstraintForceForFriction = true,
-        disableRestitution = false
+        disableRestitution = false,
+        disableFriction = false
     ) {
         // Get all required components for the ball
         const posComp = world.getComponent(ballId, PositionComponent);
@@ -66,7 +67,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const restitutionOther = Number.isFinite(restitution_other) ? restitution_other : 0.0;
         const frictionOther = Number.isFinite(friction_other) ? friction_other : 0.0;
         const restitution = disableRestitution ? 0.0 : (restitutionBall + restitutionOther) / 2.0;
-        const mu = (muBall + frictionOther) / 2.0;
+        const mu = disableFriction ? 0.0 : (muBall + frictionOther) / 2.0;
 
         const useOffset =
             contactOffsetOverride &&
@@ -177,6 +178,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     contact.ball_contact_radius,
                     null,
                     true,
+                    false,
                     false
                 );
             }
@@ -189,6 +191,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
             contactTuning.excludeConstraintForceForWrapEnhancedFriction === true;
         const disableRestitutionForWrapEnhanced =
             contactTuning.disableRestitutionForWrapEnhanced !== false;
+        const disableFrictionForWrapEnhanced =
+            contactTuning.disableFrictionForWrapEnhanced === true;
         if (flipperContacts) {
             for (const contact of flipperContacts) {
                 const {
@@ -270,7 +274,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     ball_contact_radius,
                     contact.ball_contact_offset,
                     !(wrapEnhanced && excludeConstraintForceForWrapEnhancedFriction),
-                    wrapEnhanced && disableRestitutionForWrapEnhanced
+                    wrapEnhanced && disableRestitutionForWrapEnhanced,
+                    wrapEnhanced && disableFrictionForWrapEnhanced
                 );
 
                 const velAfter = velComp ? velComp.vel.clone() : null;

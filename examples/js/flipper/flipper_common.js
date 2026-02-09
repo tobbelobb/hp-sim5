@@ -854,6 +854,13 @@ export class PBDBallFlipperCollisions {
     const smoothWrapRadiusOnset = contactTuning.smoothWrapRadiusOnset === true;
     const wrapRadiusRiseRate = Number.isFinite(contactTuning.wrapRadiusRiseRate) ? Math.max(0.0, contactTuning.wrapRadiusRiseRate) : 0.01;
     const wrapRadiusFallRate = Number.isFinite(contactTuning.wrapRadiusFallRate) ? Math.max(0.0, contactTuning.wrapRadiusFallRate) : 0.05;
+    const softWrapEnhancedContacts = contactTuning.softWrapEnhancedContacts === true;
+    const wrapEnhancedCorrectionFraction = Number.isFinite(contactTuning.wrapEnhancedCorrectionFraction)
+      ? Math.max(0.0, Math.min(1.0, contactTuning.wrapEnhancedCorrectionFraction))
+      : 0.2;
+    const maxWrapEnhancedCorrection = Number.isFinite(contactTuning.maxWrapEnhancedCorrection)
+      ? Math.max(0.0, contactTuning.maxWrapEnhancedCorrection)
+      : 0.0015;
     const previousWrapRampResource = world.getResource('flipperWrapRadiusRamp');
     const previousWrapRamp = (previousWrapRampResource instanceof Map) ? previousWrapRampResource : new Map();
     const nextWrapRamp = new Map();
@@ -953,11 +960,17 @@ export class PBDBallFlipperCollisions {
           const scale = Math.max(0.0, Math.min(1.0, ballContactRadius / ballContactRadiusTarget));
           ballContactOffset.scale(scale);
         }
-        const corr = Math.max(0.0, corrTarget - (ballContactRadiusTarget - ballContactRadius));
+        let corr = Math.max(0.0, corrTarget - (ballContactRadiusTarget - ballContactRadius));
         if (corr <= 0.0) {
           continue;
         }
         const wrapEnhanced = ballContactRadius > (r1 + 1e-9);
+        if (wrapEnhanced && softWrapEnhancedContacts) {
+          corr = Math.min(corr * wrapEnhancedCorrectionFraction, maxWrapEnhancedCorrection);
+          if (corr <= 0.0) {
+            continue;
+          }
+        }
 
         if (invMass > 0) {
             p1.add(normal, corr);

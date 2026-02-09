@@ -102,9 +102,13 @@ export function setupScene(world, stage, canvas) {
     world.setResource('flipperContactTuning', {
       excludeConstraintForceForWrapEnhancedFriction: true,
       disableRestitutionForWrapEnhanced: true,
+      disableFrictionForWrapEnhanced: true,
       smoothWrapRadiusOnset: true,
       wrapRadiusRiseRate: 0.01,
-      wrapRadiusFallRate: 0.05
+      wrapRadiusFallRate: 0.05,
+      softWrapEnhancedContacts: true,
+      wrapEnhancedCorrectionFraction: 0.2,
+      maxWrapEnhancedCorrection: 0.0015
     });
     world.setResource('flipperWrapRadiusRamp', new Map());
     world.setResource('flipperCamTraceStep', 0);
