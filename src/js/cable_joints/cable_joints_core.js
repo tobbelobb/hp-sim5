@@ -2054,6 +2054,7 @@ function _buildPinchContacts(world) {
 export class CableAttachmentUpdateSystem {
   constructor(options = {}) {
     this.includeTopology = options.includeTopology ?? true;
+    this.updateHybridWithoutTopology = options.updateHybridWithoutTopology === true;
   }
 
   runInPause = false;
@@ -2062,6 +2063,9 @@ export class CableAttachmentUpdateSystem {
     _clearDebugPoints(world);
     _updateAttachmentPoints(world);
     if (!this.includeTopology) {
+      if (this.updateHybridWithoutTopology) {
+        _updateHybridLinkStates(world);
+      }
       return;
     }
     _mergeJoints(world);
@@ -2114,6 +2118,14 @@ export class PBDCableConstraintSolver {
     const pinchContactsResource = world.getResource(PINCH_CONTACTS_RESOURCE);
     const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
     const pinchContacts = Array.isArray(pinchContactsResource) ? pinchContactsResource : [];
+    const solverDiag = {
+      maxConstraintError: 0.0,
+      maxLambda: 0.0,
+      maxLinearDelta: 0.0,
+      maxAngularDelta: 0.0,
+      jointAppliedCount: 0,
+      pinchAppliedCount: 0
+    };
 
     const ITERATIONS = 2; // 0: Forward, 1: Backward
 
@@ -2143,7 +2155,8 @@ export class PBDCableConstraintSolver {
       gradPosA,
       gradPosB,
       constraintError,
-      compliance
+      compliance,
+      source = 'joint'
     ) => {
       if (constraintError <= EPSILON) {
         return;
@@ -2189,6 +2202,22 @@ export class PBDCableConstraintSolver {
       }
 
       const lambda = -constraintError / denom;
+      const absLambda = Math.abs(lambda);
+      const gradPosALen = gradPosA.length();
+      const gradPosBLen = gradPosB.length();
+      const linearDeltaA = invMassA * absLambda * gradPosALen;
+      const linearDeltaB = invMassB * absLambda * gradPosBLen;
+      const angularDeltaA = Math.abs(invInertiaA * lambda * gradAngA);
+      const angularDeltaB = Math.abs(invInertiaB * lambda * gradAngB);
+      solverDiag.maxConstraintError = Math.max(solverDiag.maxConstraintError, constraintError);
+      solverDiag.maxLambda = Math.max(solverDiag.maxLambda, absLambda);
+      solverDiag.maxLinearDelta = Math.max(solverDiag.maxLinearDelta, linearDeltaA, linearDeltaB);
+      solverDiag.maxAngularDelta = Math.max(solverDiag.maxAngularDelta, angularDeltaA, angularDeltaB);
+      if (source === 'pinch') {
+        solverDiag.pinchAppliedCount += 1;
+      } else {
+        solverDiag.jointAppliedCount += 1;
+      }
 
       if (invMassA > 0.0) {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
@@ -2282,7 +2311,8 @@ export class PBDCableConstraintSolver {
             gradPosA,
             gradPosB,
             constraintError,
-            path.compliance
+            path.compliance,
+            'joint'
           );
         } // End loop through joints in path
 
@@ -2310,9 +2340,11 @@ export class PBDCableConstraintSolver {
           gradPosA,
           gradPosB,
           constraintError,
-          contact.compliance
+          contact.compliance,
+          'pinch'
         );
       }
     } // End loop through iterations
+    world.setResource('cableConstraintDiag', solverDiag);
   } // end update
 } // end PBDCableConstraintSolver

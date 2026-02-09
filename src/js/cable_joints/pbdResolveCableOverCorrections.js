@@ -26,6 +26,13 @@ export class PBDResolveCableOverCorrections {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     if (!pathEntities) return;
+    const diag = {
+      overCorrectedJointCount: 0,
+      entitiesPosAdjusted: 0,
+      entitiesAngAdjusted: 0,
+      maxPosAdjustment: 0.0,
+      maxAngAdjustment: 0.0
+    };
 
     const jointToPathAndIndex = new Map();
     const allJointIds = new Set();
@@ -58,7 +65,11 @@ export class PBDResolveCableOverCorrections {
       }
     }
 
-    if (overCorrected.length < 2) return;
+    diag.overCorrectedJointCount = overCorrected.length;
+    if (overCorrected.length < 2) {
+      world.setResource('cableOverCorrectionDiag', diag);
+      return;
+    }
 
     const posCorrections = new Map();
     const angCorrections = new Map();
@@ -76,6 +87,8 @@ export class PBDResolveCableOverCorrections {
         const posComp = world.getComponent(entityId, PositionComponent);
         if (posComp) {
           posComp.pos.add(avg);
+          diag.entitiesPosAdjusted += 1;
+          diag.maxPosAdjustment = Math.max(diag.maxPosAdjustment, avg.length());
         }
       }
     }
@@ -90,9 +103,12 @@ export class PBDResolveCableOverCorrections {
         const orientComp = world.getComponent(entityId, OrientationComponent);
         if (orientComp) {
           orientComp.angle += avg;
+          diag.entitiesAngAdjusted += 1;
+          diag.maxAngAdjustment = Math.max(diag.maxAngAdjustment, Math.abs(avg));
         }
       }
     }
+    world.setResource('cableOverCorrectionDiag', diag);
   }
 
   calculateJointCorrection(world, jointId, jointToPathAndIndex, posCorrections, angCorrections) {

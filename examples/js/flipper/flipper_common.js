@@ -534,6 +534,10 @@ export class FlipperTipLinkSystem {
 export class PBDBallBorderCollisions {
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const contactTuning = world.getResource('flipperContactTuning') || {};
+    const borderMotionPenetrationSlack = Number.isFinite(contactTuning.borderMotionPenetrationSlack)
+      ? Math.max(0.0, contactTuning.borderMotionPenetrationSlack)
+      : 0.0008;
     const borderEntities = world.query([BorderComponent]);
     if (borderEntities.length === 0) return;
 
@@ -626,15 +630,23 @@ export class PBDBallBorderCollisions {
                 });
             }
 
-            const motionPenetration = Math.max(0.0, penetration - geometricPenetration);
+            const rawMotionPenetration = Math.max(0.0, penetration - geometricPenetration);
+            let motionPenetration = rawMotionPenetration;
+            if (Number.isFinite(dt) && dt > 1e-9) {
+                const velComp = world.getComponent(ballId, VelocityComponent);
+                const vIntoSurface = velComp ? Math.max(0.0, -velComp.vel.dot(collisionNormal)) : 0.0;
+                const maxMotionPenetration = vIntoSurface * dt + borderMotionPenetrationSlack;
+                motionPenetration = Math.min(rawMotionPenetration, maxMotionPenetration);
+            }
+            const nonVelocityPenetration = Math.max(0.0, penetration - motionPenetration);
             let delta_lambda = 0;
             if (invMass > 0) {
                 p1.add(collisionNormal, penetration);
                 const prevFinalPosComp = world.getComponent(ballId, PrevFinalPosComponent);
-                if (prevFinalPosComp && geometricPenetration > 0.0) {
-                    // Radius growth is geometry evolution, not center-of-mass motion.
-                    // Remove that portion from reconstructed velocity to avoid energy injection.
-                    prevFinalPosComp.pos.add(collisionNormal, geometricPenetration);
+                if (prevFinalPosComp && nonVelocityPenetration > 0.0) {
+                    // Keep geometric / excess penetration projection from synthesizing
+                    // velocity during reconstruction.
+                    prevFinalPosComp.pos.add(collisionNormal, nonVelocityPenetration);
                 }
                 const w_inv = invMass;
                 delta_lambda = motionPenetration / w_inv;
@@ -644,6 +656,10 @@ export class PBDBallBorderCollisions {
                 'ball_id': ballId,
                 'normal': collisionNormal.clone(),
                 'delta_lambda': delta_lambda,
+                'penetration': penetration,
+                'geometric_penetration': geometricPenetration,
+                'raw_motion_penetration': rawMotionPenetration,
+                'motion_penetration': motionPenetration,
                 'ball_contact_radius': effectiveRadius,
                 'restitution': restitution,
                 'friction': friction
@@ -657,7 +673,20 @@ export class PBDBallBorderCollisions {
 export class PBDBallBallCollisions {
   runInPause = false;
   update(world, dt) {
-    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent, VelocityComponent]);
+    const contactTuning = world.getResource('flipperContactTuning') || {};
+    const wrapMotionPenetrationSlack = Number.isFinite(contactTuning.ballBallWrapMotionPenetrationSlack)
+      ? Math.max(0.0, contactTuning.ballBallWrapMotionPenetrationSlack)
+      : 0.0010;
+    const prevContactStateResource = world.getResource('ball_ball_prev_contact_state');
+    const prevContactState = (prevContactStateResource instanceof Map) ? prevContactStateResource : new Map();
+    const nextContactState = new Map();
+    let contacts = world.getResource('ball_ball_contacts');
+    if (!Array.isArray(contacts)) {
+      contacts = [];
+      world.setResource('ball_ball_contacts', contacts);
+    }
+    contacts.length = 0;
     for (let i = 0; i < ballEntities.length; i++) {
       for (let j = i + 1; j < ballEntities.length; j++) {
         const e1 = ballEntities[i];
@@ -687,6 +716,24 @@ export class PBDBallBallCollisions {
         const effectiveR2 = getEffectiveCollisionRadius(world, e2, r2, dir.clone().scale(-1.0));
         const rSum = effectiveR1 + effectiveR2;
         if (d > rSum) continue;
+        const wrapEnhanced = (effectiveR1 > r1 + 1e-9) || (effectiveR2 > r2 + 1e-9);
+
+        const pairLow = Math.min(e1, e2);
+        const pairHigh = Math.max(e1, e2);
+        const pairKey = `${pairLow}:${pairHigh}`;
+        const prevState = prevContactState.get(pairKey);
+        let geometricPenetration = 0.0;
+        if (prevState && Number.isFinite(prevState.rSum)) {
+          // Radius-growth penetration is geometric even when the pair's contact
+          // normal rotates while bodies slide; using a strict normal gate here
+          // misclassifies growth as motion and can inject kinetic energy.
+          geometricPenetration = Math.max(0.0, rSum - prevState.rSum);
+        }
+        nextContactState.set(pairKey, {
+          rSum,
+          normal: dir.clone(),
+          distance: d
+        });
 
         // Resolve penetration
         const penetration = rSum - d;
@@ -696,11 +743,54 @@ export class PBDBallBallCollisions {
 
         if (totalInvMass <= 1e-9) continue;
 
-        const corr = dir.clone().scale(penetration / totalInvMass);
+        const geometricPenetrationClamped = Math.min(penetration, geometricPenetration);
+        const correctionPenetration = wrapEnhanced
+          ? Math.max(0.0, penetration - geometricPenetrationClamped)
+          : penetration;
+        if (correctionPenetration <= 0.0) {
+          continue;
+        }
+
+        let motionCorrectionPenetration = correctionPenetration;
+        if (wrapEnhanced && Number.isFinite(dt) && dt > 1e-9) {
+          const vel1 = world.getComponent(e1, VelocityComponent)?.vel;
+          const vel2 = world.getComponent(e2, VelocityComponent)?.vel;
+          if (vel1 && vel2) {
+            const relVel = vel2.clone().subtract(vel1);
+            const vIntoContact = Math.max(0.0, -relVel.dot(dir));
+            const maxMotionPenetration = vIntoContact * dt + wrapMotionPenetrationSlack;
+            motionCorrectionPenetration = Math.min(correctionPenetration, maxMotionPenetration);
+          }
+        }
+        const nonVelocityCorrection = Math.max(0.0, correctionPenetration - motionCorrectionPenetration);
+
+        const corr = dir.clone().scale(correctionPenetration / totalInvMass);
         p1.add(corr, -invMass1);
         p2.add(corr, invMass2);
+        if (nonVelocityCorrection > 0.0) {
+          const corrNoVel = dir.clone().scale(nonVelocityCorrection / totalInvMass);
+          const prevFinalPos1 = world.getComponent(e1, PrevFinalPosComponent);
+          const prevFinalPos2 = world.getComponent(e2, PrevFinalPosComponent);
+          if (prevFinalPos1) {
+            prevFinalPos1.pos.add(corrNoVel, -invMass1);
+          }
+          if (prevFinalPos2) {
+            prevFinalPos2.pos.add(corrNoVel, invMass2);
+          }
+        }
+        contacts.push({
+          ballA: e1,
+          ballB: e2,
+          delta_lambda: motionCorrectionPenetration / totalInvMass,
+          penetration,
+          geometric_penetration: geometricPenetrationClamped,
+          correction_penetration: correctionPenetration,
+          motion_correction_penetration: motionCorrectionPenetration,
+          wrap_enhanced: wrapEnhanced
+        });
       }
     }
+    world.setResource('ball_ball_prev_contact_state', nextContactState);
   }
 }
 

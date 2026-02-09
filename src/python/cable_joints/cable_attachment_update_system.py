@@ -35,14 +35,21 @@ class CableAttachmentUpdateSystem:
     the state of hybrid links. This system should run after the prediction
     step and before the main PBD constraint solver.
     """
-    def __init__(self):
+    def __init__(self, include_topology=True, update_hybrid_without_topology=False):
         self.run_in_pause = False
+        self.include_topology = include_topology
+        self.update_hybrid_without_topology = update_hybrid_without_topology
 
     def update(self, world, dt):
         _clear_debug_points(world)
 
         # Update attachment points based on predicted geometry
         update_attachment_points(world)
+
+        if not self.include_topology:
+            if self.update_hybrid_without_topology:
+                update_hybrid_link_states(world)
+            return
 
         # Handle topological and state changes
         merge_joints(world)

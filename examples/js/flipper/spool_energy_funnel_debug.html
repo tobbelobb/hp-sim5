@@ -108,7 +108,9 @@ canvas {
         r_eff(bottom,max): <span id="eEffRadius">0</span> |
         border dl_max: <span id="eBorderDelta">0</span><br />
         balls: <span id="eBallCount">0</span> |
-        pinch contacts: <span id="ePinchCount">0</span>
+        pinch contacts: <span id="ePinchCount">0</span> |
+        ball-ball contacts: <span id="eBallBallCount">0</span> |
+        ball-ball dl_max: <span id="eBallBallDelta">0</span>
       </div>
       <div id="note">
         Funnel stress profile: hybrid-hybrid pairs winding while pressed in a funnel.<br />
@@ -149,10 +151,6 @@ canvas {
     CablePathComponent,
     linecolor1,
     CableAttachmentUpdateSystem,
-    CableTopologySystem,
-    PinchDetectionSystem,
-    PinchConfigureSystem,
-    PinchConstraintBuildSystem,
     PBDCableConstraintSolver
   } from '../../../src/js/cable_joints/cable_joints_core.js';
   import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
@@ -206,7 +204,8 @@ canvas {
     initialHeightJitter: 0.008,
     funnelTopHalfWidth: 0.25,
     funnelNeckHalfWidth: 0.074,
-    cwAlternating: true
+    cwAlternating: true,
+    debugCableLogs: false
   };
 
   const PALETTE = ['#A9ADB6', '#7AB6FF', '#FFA15F', '#8DD17E', '#E8A5FF', '#FFCD56'];
@@ -242,6 +241,8 @@ canvas {
     _setText('eBorderDelta', _fmt(sample.max_border_delta_lambda));
     _setText('eBallCount', `${sample.ball_count ?? 0}`);
     _setText('ePinchCount', `${sample.pinch_contact_count ?? 0}`);
+    _setText('eBallBallCount', `${sample.ball_ball_contact_count ?? 0}`);
+    _setText('eBallBallDelta', _fmt(sample.max_ball_ball_delta_lambda));
   }
 
   class EnergyTraceSystem {
@@ -249,13 +250,14 @@ canvas {
 
     _estimateCablePotentialForPath(world, pathComp) {
       if (!pathComp || !Array.isArray(pathComp.jointEntities)) {
-        return 0.0;
+        return { uCable: 0.0, maxStretch: 0.0 };
       }
       const k = pathComp.spring_constant;
       if (!(Number.isFinite(k) && k > 0.0)) {
-        return 0.0;
+        return { uCable: 0.0, maxStretch: 0.0 };
       }
       let uCable = 0.0;
+      let maxStretch = 0.0;
       for (const jointId of pathComp.jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
         if (!joint) {
@@ -263,9 +265,12 @@ canvas {
         }
         const currentLen = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
         const stretch = Math.max(0.0, currentLen - joint.restLength);
+        if (stretch > maxStretch) {
+          maxStretch = stretch;
+        }
         uCable += 0.5 * k * stretch * stretch;
       }
-      return uCable;
+      return { uCable, maxStretch };
     }
 
     update(world, dt) {
@@ -285,6 +290,8 @@ canvas {
       let uGravity = 0.0;
       let uCable = 0.0;
       let storedTotal = 0.0;
+      let negativeStoredCount = 0;
+      let maxJointStretch = 0.0;
       let maxEffRadiusBottom = 0.0;
       let avgRawRadius = 0.0;
       let sumPos = new Vector2(0.0, 0.0);
@@ -328,25 +335,72 @@ canvas {
         if (!pathComp) {
           continue;
         }
-        uCable += this._estimateCablePotentialForPath(world, pathComp);
+        const cableStats = this._estimateCablePotentialForPath(world, pathComp);
+        uCable += cableStats.uCable;
+        if (cableStats.maxStretch > maxJointStretch) {
+          maxJointStretch = cableStats.maxStretch;
+        }
         if (Array.isArray(pathComp.stored)) {
           for (const value of pathComp.stored) {
-            storedTotal += _readFinite(value, 0.0);
+            const storedValue = _readFinite(value, 0.0);
+            storedTotal += storedValue;
+            if (storedValue < -1e-9) {
+              negativeStoredCount += 1;
+            }
           }
         }
       }
 
       const borderContacts = world.getResource('ball_border_contacts') || [];
       let maxBorderDeltaLambda = 0.0;
+      let maxBorderPenetration = 0.0;
+      let maxBorderGeometricPenetration = 0.0;
+      let maxBorderMotionPenetration = 0.0;
       for (const contact of borderContacts) {
         const dl = Math.abs(_readFinite(contact.delta_lambda, 0.0));
         if (dl > maxBorderDeltaLambda) {
           maxBorderDeltaLambda = dl;
         }
+        const pen = Math.abs(_readFinite(contact.penetration, 0.0));
+        if (pen > maxBorderPenetration) {
+          maxBorderPenetration = pen;
+        }
+        const geomPen = Math.abs(_readFinite(contact.geometric_penetration, 0.0));
+        if (geomPen > maxBorderGeometricPenetration) {
+          maxBorderGeometricPenetration = geomPen;
+        }
+        const motionPen = Math.abs(_readFinite(contact.motion_penetration, 0.0));
+        if (motionPen > maxBorderMotionPenetration) {
+          maxBorderMotionPenetration = motionPen;
+        }
+      }
+      const ballBallContacts = world.getResource('ball_ball_contacts') || [];
+      let maxBallBallDeltaLambda = 0.0;
+      let maxBallBallCorrectionPenetration = 0.0;
+      let maxBallBallGeometricPenetration = 0.0;
+      let wrapEnhancedBallBallCount = 0;
+      for (const contact of ballBallContacts) {
+        const dl = Math.abs(_readFinite(contact.delta_lambda, 0.0));
+        if (dl > maxBallBallDeltaLambda) {
+          maxBallBallDeltaLambda = dl;
+        }
+        const corrPen = Math.abs(_readFinite(contact.correction_penetration, 0.0));
+        if (corrPen > maxBallBallCorrectionPenetration) {
+          maxBallBallCorrectionPenetration = corrPen;
+        }
+        const geomPen = Math.abs(_readFinite(contact.geometric_penetration, 0.0));
+        if (geomPen > maxBallBallGeometricPenetration) {
+          maxBallBallGeometricPenetration = geomPen;
+        }
+        if (contact.wrap_enhanced === true) {
+          wrapEnhancedBallBallCount += 1;
+        }
       }
 
       const pinchContacts = world.getResource('cablePinchContacts');
       const pinchContactCount = Array.isArray(pinchContacts) ? pinchContacts.length : 0;
+      const cableSolverDiag = world.getResource('cableConstraintDiag') || {};
+      const cableOverDiag = world.getResource('cableOverCorrectionDiag') || {};
       const eTotal = kTrans + kRot + uGravity + uCable;
 
       let trace = world.getResource('energyTrace');
@@ -383,7 +437,28 @@ canvas {
         raw_radius: avgRawRadius,
         border_contact_count: borderContacts.length,
         max_border_delta_lambda: maxBorderDeltaLambda,
+        max_border_penetration: maxBorderPenetration,
+        max_border_geometric_penetration: maxBorderGeometricPenetration,
+        max_border_motion_penetration: maxBorderMotionPenetration,
+        ball_ball_contact_count: ballBallContacts.length,
+        max_ball_ball_delta_lambda: maxBallBallDeltaLambda,
+        max_ball_ball_correction_penetration: maxBallBallCorrectionPenetration,
+        max_ball_ball_geometric_penetration: maxBallBallGeometricPenetration,
+        ball_ball_wrap_count: wrapEnhancedBallBallCount,
         pinch_contact_count: pinchContactCount,
+        max_cable_constraint_error: _readFinite(cableSolverDiag.maxConstraintError, 0.0),
+        max_cable_lambda: _readFinite(cableSolverDiag.maxLambda, 0.0),
+        max_cable_linear_delta: _readFinite(cableSolverDiag.maxLinearDelta, 0.0),
+        max_cable_angular_delta: _readFinite(cableSolverDiag.maxAngularDelta, 0.0),
+        cable_joint_applied_count: _readFinite(cableSolverDiag.jointAppliedCount, 0),
+        cable_pinch_applied_count: _readFinite(cableSolverDiag.pinchAppliedCount, 0),
+        over_corrected_joint_count: _readFinite(cableOverDiag.overCorrectedJointCount, 0),
+        over_pos_adjust_count: _readFinite(cableOverDiag.entitiesPosAdjusted, 0),
+        over_ang_adjust_count: _readFinite(cableOverDiag.entitiesAngAdjusted, 0),
+        max_over_pos_adjust: _readFinite(cableOverDiag.maxPosAdjustment, 0.0),
+        max_over_ang_adjust: _readFinite(cableOverDiag.maxAngAdjustment, 0.0),
+        negative_stored_count: negativeStoredCount,
+        max_joint_stretch: maxJointStretch,
         ball_count: validBallCount,
         pair_count: _readFinite(refs.pairCount, 0)
       };
@@ -423,6 +498,7 @@ canvas {
     world.setResource('energyTraceStep', 0);
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
+    world.setResource('cableDebugLogs', spoolEnergyConfig.debugCableLogs === true);
 
     const bottom = 0.04;
     const top = simHeight - 0.03;
@@ -569,11 +645,10 @@ canvas {
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
       world.registerSystem(new AngularMovementSystem());
-      world.registerSystem(new CableAttachmentUpdateSystem({ includeTopology: false }));
-      world.registerSystem(new CableTopologySystem());
-      world.registerSystem(new PinchDetectionSystem());
-      world.registerSystem(new PinchConfigureSystem());
-      world.registerSystem(new PinchConstraintBuildSystem());
+      world.registerSystem(new CableAttachmentUpdateSystem({
+        includeTopology: false,
+        updateHybridWithoutTopology: true
+      }));
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());
@@ -599,6 +674,14 @@ canvas {
       stored_0: storedLength * pairCount * 2.0,
       effective_radius_bottom: rawRadius,
       max_border_delta_lambda: 0,
+      max_border_penetration: 0,
+      max_border_geometric_penetration: 0,
+      max_border_motion_penetration: 0,
+      ball_ball_contact_count: 0,
+      max_ball_ball_delta_lambda: 0,
+      max_ball_ball_correction_penetration: 0,
+      max_ball_ball_geometric_penetration: 0,
+      ball_ball_wrap_count: 0,
       ball_count: ballIds.length,
       pinch_contact_count: 0
     });

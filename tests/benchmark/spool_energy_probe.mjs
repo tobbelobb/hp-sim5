@@ -309,10 +309,22 @@ async function runProbe(args) {
 
     await page.evaluate(() => window.clearSpoolEnergyTrace());
     await page.click('#pauseBtn');
-    await page.waitForFunction((target) => window.getSpoolEnergyTrace().length >= target, {
+    await page.waitForFunction((target) => {
+      const trace = window.getSpoolEnergyTrace();
+      if (!Array.isArray(trace)) {
+        return false;
+      }
+      if (trace.length < target) {
+        return false;
+      }
+      const pauseState = window.world?.getResource?.('pauseState');
+      if (pauseState) {
+        pauseState.paused = true;
+      }
+      return true;
+    }, {
       timeout: args.timeoutMs
     }, args.steps);
-    await page.click('#pauseBtn');
 
     const trace = await page.evaluate(() => window.getSpoolEnergyTrace());
     const summary = buildSummary(trace, args.criteria, args.analysisStartStep);
