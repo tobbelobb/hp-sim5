@@ -1212,10 +1212,45 @@ function _selectEndpointWrapExtraDistance(
   decomposition,
   pointOnBody,
   baseMinDistance,
-  surfaceDistance
+  surfaceDistance,
+  halfWidth
 ) {
   if (!context || !decomposition || !pointOnBody) {
     return null;
+  }
+  if (!(halfWidth > EPSILON)) {
+    return null;
+  }
+
+  const minDistanceAtPoint = _endpointWrapMinDistanceAtPoint(
+    context,
+    decomposition,
+    pointOnBody,
+    halfWidth
+  );
+  if (!(minDistanceAtPoint > EPSILON)) {
+    return null;
+  }
+  if (surfaceDistance <= minDistanceAtPoint + EPSILON) {
+    return Math.max(0.0, minDistanceAtPoint - baseMinDistance);
+  }
+
+  return null;
+}
+
+function _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, halfWidth) {
+  if (!context || !decomposition || !pointOnBody || !(halfWidth > EPSILON)) {
+    return 0.0;
+  }
+  if (!(context.baseRadius > EPSILON)) {
+    return 0.0;
+  }
+
+  const fullCoverageDistance = 2.0 * halfWidth * decomposition.fullLayers;
+  const partialCoverageDistance = 2.0 * halfWidth * (decomposition.fullLayers + 1);
+
+  if (!decomposition.hasPartial) {
+    return fullCoverageDistance;
   }
 
   const arcOnBase = signedArcLengthOnWheel(
@@ -1230,25 +1265,61 @@ function _selectEndpointWrapExtraDistance(
   const partialArcLength = deltaAngle * decomposition.partialRadius;
   const partialTolerance = Math.max(1e-6, decomposition.partialLength * 1e-4);
   const inPartialCoverage =
-    decomposition.hasPartial &&
     partialArcLength > partialTolerance &&
     partialArcLength < (decomposition.partialLength - partialTolerance);
 
-  const minDistancePartial = baseMinDistance + decomposition.extraDistanceForPartialCoverage;
-  if (inPartialCoverage && surfaceDistance <= minDistancePartial + EPSILON) {
-    return decomposition.extraDistanceForPartialCoverage;
+  if (inPartialCoverage) {
+    return partialCoverageDistance;
+  }
+  return fullCoverageDistance;
+}
+
+export function getHybridEndpointWrapExpansion(world, entityId, pointOnBody) {
+  if (!world || entityId === undefined || entityId === null || !pointOnBody) {
+    return 0.0;
   }
 
-  const minDistanceFull = baseMinDistance + decomposition.extraDistanceForFullCoverage;
-  const hasFullCoverageEverywhere = decomposition.fullLayers > 0;
-  if (
-    (hasFullCoverageEverywhere || inPartialCoverage) &&
-    surfaceDistance <= minDistanceFull + EPSILON
-  ) {
-    return decomposition.extraDistanceForFullCoverage;
+  let maxExpansion = 0.0;
+  const pathEntities = world.query([CablePathComponent]);
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (!path || path.jointEntities.length < 1) {
+      continue;
+    }
+    const halfWidth = path.cableHalfWidth ?? 0.0;
+    if (!(halfWidth > EPSILON)) {
+      continue;
+    }
+
+    const endpointIndices = [0, path.linkTypes.length - 1];
+    for (const linkIndex of endpointIndices) {
+      if (!_isHybrid(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      if (!(path.stored[linkIndex] > EPSILON)) {
+        continue;
+      }
+
+      const context = _getEndpointRollingArcContext(world, path, linkIndex);
+      if (!context || context.bodyA !== entityId) {
+        continue;
+      }
+      const decomposition = _decomposeStoredWrapLayers(
+        path.stored[linkIndex],
+        context.baseRadius,
+        halfWidth
+      );
+      if (!decomposition) {
+        continue;
+      }
+      const minDistance = _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, halfWidth);
+      if (minDistance > maxExpansion) {
+        maxExpansion = minDistance;
+      }
+    }
   }
 
-  return null;
+  return maxExpansion;
 }
 
 function _detectPinchCandidates(world) {
@@ -1450,7 +1521,8 @@ function _detectPinchCandidates(world) {
           decomposition,
           pinchPair.pointA_world,
           minDistance,
-          surfacePair.surfaceDistance
+          surfacePair.surfaceDistance,
+          halfWidth
         );
         if (extraDistance === null) {
           continue;

@@ -13,6 +13,7 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
+  getHybridEndpointWrapExpansion,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import { closestPointOnSegment, rightOfLine } from '../../../src/js/cable_joints/geometry.js';
 
@@ -51,6 +52,19 @@ export class ScoredTagComponent { }
 export class ScoreComponent { constructor(score = 0) { this.value = score; } }
 
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
+
+function _effectiveWrappedRadius(world, entityId, baseRadius, normalTowardContact) {
+  if (!(baseRadius > 0.0) || !normalTowardContact || normalTowardContact.lengthSq() <= 1e-12) {
+    return baseRadius;
+  }
+  const pos = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!pos) {
+    return baseRadius;
+  }
+  const pointOnBody = pos.clone().add(normalTowardContact, baseRadius);
+  const wrapExpansion = getHybridEndpointWrapExpansion(world, entityId, pointOnBody);
+  return baseRadius + wrapExpansion;
+}
 
 // --- System: Input --- (Simplified Click Handling)
 export class InputSystem {
@@ -565,6 +579,7 @@ export class PBDBallObstacleCollisions {
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent]);
     const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+    const collisionDebug = world.getResource('flipperCollisionDebug') === true;
 
     let contacts = world.getResource('ball_obstacle_contacts');
     if (!contacts) {
@@ -573,11 +588,21 @@ export class PBDBallObstacleCollisions {
     }
     contacts.length = 0; // Clear existing contacts
 
+    let activePairs = world.getResource('ball_obstacle_active_pairs');
+    if (!(activePairs instanceof Set)) {
+      activePairs = new Set();
+      world.setResource('ball_obstacle_active_pairs', activePairs);
+    }
+    const nextActivePairs = new Set();
+
     for (const ballId of ballEntities) {
       const p1 = world.getComponent(ballId, PositionComponent).pos;
       const r1 = world.getComponent(ballId, RadiusComponent).radius;
 
       for (const obsId of obstacleEntities) {
+        if (world.hasComponent(obsId, FlipperTagComponent)) {
+          continue;
+        }
         const p2 = world.getComponent(obsId, PositionComponent).pos;
         const r2 = world.getComponent(obsId, RadiusComponent).radius;
 
@@ -597,12 +622,27 @@ export class PBDBallObstacleCollisions {
         const corr = rSum - d;
         p1.add(dir, corr);
 
+        const pairKey = `${ballId}:${obsId}`;
+        nextActivePairs.add(pairKey);
+        const enteredThisFrame = !activePairs.has(pairKey);
+
         // Velocity resolution is now handled by BallObstacleBumpSystem
         const grabbed = world.getResource('grabbedBall');
-        if (ballId !== grabbed) {
+        if (enteredThisFrame && ballId !== grabbed) {
           world.addComponent(ballId, new ScoredTagComponent());
         }
+        if (collisionDebug) {
+          console.debug(
+            `[FlipperCollisionDebug] obstacle-contact ball=${ballId} obs=${obsId} ` +
+            `entered=${enteredThisFrame} d=${d.toFixed(6)} rSum=${rSum.toFixed(6)}`
+          );
+        }
       }
+    }
+
+    activePairs.clear();
+    for (const pairKey of nextActivePairs) {
+      activePairs.add(pairKey);
     }
   }
 }
@@ -617,6 +657,7 @@ export class PBDBallFlipperCollisions {
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
+    const collisionDebug = world.getResource('flipperCollisionDebug') === true;
 
     let contacts = world.getResource('ball_flipper_contacts');
     if (!contacts) {
@@ -642,12 +683,14 @@ export class PBDBallFlipperCollisions {
 
         const dir = new Vector2().subtractVectors(p1, closest);
         const dSq = dir.lengthSq();
-        const rSum = r1 + fr;
-
-        if (dSq == 0.0 || dSq > rSum * rSum) continue;
+        if (dSq == 0.0) continue;
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d);
+
+        const effectiveBallRadius = _effectiveWrappedRadius(world, ballId, r1, dir.clone().scale(-1.0));
+        const rSum = effectiveBallRadius + fr;
+        if (d > rSum) continue;
 
         const corr = rSum - d;
         if (invMass > 0) {
@@ -667,6 +710,12 @@ export class PBDBallFlipperCollisions {
             'contact_point_on_flipper': closest.clone(),
             'delta_lambda': delta_lambda
         });
+        if (collisionDebug) {
+          console.debug(
+            `[FlipperCollisionDebug] flipper-contact ball=${ballId} flip=${flipId} ` +
+            `d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} wrapExtra=${(effectiveBallRadius - r1).toFixed(6)}`
+          );
+        }
       }
     }
   }
