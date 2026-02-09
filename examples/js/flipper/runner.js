@@ -18,6 +18,14 @@ export function runGame(world, setupScene, sceneData) {
     const numSpeedSamples = 60;
     let frameCounter = 0;
 
+    const requestSingleStep = () => {
+        const pauseState = world.getResource('pauseState');
+        if (pauseState && pauseState.paused) {
+            doStep = true;
+            requestAnimationFrame(gameLoop);
+        }
+    };
+
     function gameLoop(currentTime) {
         const dt = world.getResource('dt');
         if (dtEl && dtEl.textContent === 'N/A') {
@@ -116,10 +124,18 @@ export function runGame(world, setupScene, sceneData) {
 
     stepBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const pauseState = world.getResource('pauseState');
-        if (pauseState && pauseState.paused) {
-            doStep = true;
-            requestAnimationFrame(gameLoop);
+        requestSingleStep();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        const targetTag = e.target && e.target.tagName;
+        const isEditableTarget = targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT' || e.target?.isContentEditable;
+        if (isEditableTarget || e.repeat) {
+            return;
+        }
+        if (typeof e.key === 'string' && e.key.toLowerCase() === 't') {
+            e.preventDefault();
+            requestSingleStep();
         }
     });
 
