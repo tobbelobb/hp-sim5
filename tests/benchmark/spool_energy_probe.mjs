@@ -22,7 +22,8 @@ function parseArgs(argv) {
       coupledBorderDeltaLambdaThreshold: 2e-4,
       maxPositiveDeltaE: 1.5e-3,
       maxJumpEpisodes: 0,
-      maxCoupledJumpEpisodes: 0
+      maxCoupledJumpEpisodes: 0,
+      minStoredGain: null
     }
   };
 
@@ -48,6 +49,7 @@ function parseArgs(argv) {
     else if (a === '--max-positive-delta-e') args.criteria.maxPositiveDeltaE = readNumber(argv[++i], args.criteria.maxPositiveDeltaE);
     else if (a === '--max-jump-episodes') args.criteria.maxJumpEpisodes = Math.max(0, readNumber(argv[++i], args.criteria.maxJumpEpisodes) | 0);
     else if (a === '--max-coupled-jump-episodes') args.criteria.maxCoupledJumpEpisodes = Math.max(0, readNumber(argv[++i], args.criteria.maxCoupledJumpEpisodes) | 0);
+    else if (a === '--min-stored-gain') args.criteria.minStoredGain = readNumber(argv[++i], 0);
   }
   return args;
 }
@@ -117,6 +119,15 @@ function buildSummary(trace, criteria, analysisStartStep) {
   const totalEnergyDrift = (first && last) ? (last.e_total - first.e_total) : 0;
   const avgEnergyDriftPerStep = samples.length > 1 ? totalEnergyDrift / (samples.length - 1) : 0;
 
+  const storedSeries = allSamples
+    .map((s) => s.stored_0)
+    .filter((v) => Number.isFinite(v));
+  const storedStart = storedSeries.length > 0 ? storedSeries[0] : 0;
+  const storedEnd = storedSeries.length > 0 ? storedSeries[storedSeries.length - 1] : 0;
+  const storedMin = storedSeries.length > 0 ? Math.min(...storedSeries) : 0;
+  const storedMax = storedSeries.length > 0 ? Math.max(...storedSeries) : 0;
+  const storedGain = storedMax - storedStart;
+
   const topJumpSamples = [...samples]
     .sort((a, b) => b.delta_e - a.delta_e)
     .slice(0, 10)
@@ -137,6 +148,11 @@ function buildSummary(trace, criteria, analysisStartStep) {
     p99PositiveDeltaE: quantile(positiveDeltaE, 0.99),
     totalEnergyDrift,
     avgEnergyDriftPerStep,
+    storedStart,
+    storedEnd,
+    storedMin,
+    storedMax,
+    storedGain,
     jumpEpisodeCount: jumpEpisodes.length,
     coupledJumpEpisodeCount: coupledJumpEpisodes.length,
     jumpEpisodes,
@@ -146,10 +162,13 @@ function buildSummary(trace, criteria, analysisStartStep) {
 }
 
 function evaluateSolved(summary, criteria) {
+  const hasStoredGainRequirement = Number.isFinite(criteria.minStoredGain);
+  const storedGainSolved = !hasStoredGainRequirement || summary.storedGain >= criteria.minStoredGain;
   return (
     summary.maxPositiveDeltaE <= criteria.maxPositiveDeltaE &&
     summary.jumpEpisodeCount <= criteria.maxJumpEpisodes &&
-    summary.coupledJumpEpisodeCount <= criteria.maxCoupledJumpEpisodes
+    summary.coupledJumpEpisodeCount <= criteria.maxCoupledJumpEpisodes &&
+    storedGainSolved
   );
 }
 
@@ -338,6 +357,7 @@ async function runProbe(args) {
     console.log(`SPOOL_ENERGY_JUMP_EPISODES ${summary.jumpEpisodeCount}`);
     console.log(`SPOOL_ENERGY_COUPLED_JUMP_EPISODES ${summary.coupledJumpEpisodeCount}`);
     console.log(`SPOOL_ENERGY_TOTAL_DRIFT ${summary.totalEnergyDrift}`);
+    console.log(`SPOOL_ENERGY_STORED_GAIN ${summary.storedGain}`);
     console.log(`SPOOL_ENERGY_SOLVED ${solved ? 'true' : 'false'}`);
 
     if (args.failOnUnsolved && !solved) {

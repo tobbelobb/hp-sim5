@@ -79,6 +79,22 @@ Optional gate mode:
 
 In gate mode, process exit code is non-zero when verdict is unsolved.
 
+Hard high-speed winding profile (fast rolling/spinning while collecting line):
+
+`npm run probe:spool-energy:hard`
+
+Hard gate mode:
+
+`npm run probe:spool-energy:hard:gate`
+
+The hard gate profile uses:
+
+- `initialLinearSpeed: 1.2`
+- `initialStoredTurns: 1.5`
+- `cableHalfWidth: 0.0035`
+- stricter energy limits (`maxPositiveDeltaE <= 3e-4`, `jumpDeltaEThreshold = 2.5e-4`)
+- required winding progress (`storedGain >= 0.2`)
+
 ## How To Capture Data
 
 1. Open the scene and reproduce a jump/fling.

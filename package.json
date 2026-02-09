@@ -6,7 +6,9 @@
   "scripts": {
     "test": "jest",
     "probe:spool-energy": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --report tests/benchmark/spool_energy_report_latest.json",
-    "probe:spool-energy:gate": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --fail-on-unsolved --report tests/benchmark/spool_energy_report_latest.json"
+    "probe:spool-energy:gate": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --fail-on-unsolved --report tests/benchmark/spool_energy_report_latest.json",
+    "probe:spool-energy:hard": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --analysis-start-step 500 --config-json '{\"initialStoredTurns\":1.5,\"cableHalfWidth\":0.0035,\"cableStiffness\":1400,\"initialLinearSpeed\":1.2,\"restLengthScale\":1,\"ballRadius\":0.04,\"ballMass\":0.008,\"borderFriction\":0.6,\"cw\":true}' --jump-delta-e-threshold 0.00025 --max-positive-delta-e 0.0003 --max-jump-episodes 0 --min-stored-gain 0.2 --report tests/benchmark/spool_energy_report_hard_latest.json",
+    "probe:spool-energy:hard:gate": "node tests/benchmark/spool_energy_probe.mjs --steps 4000 --analysis-start-step 500 --config-json '{\"initialStoredTurns\":1.5,\"cableHalfWidth\":0.0035,\"cableStiffness\":1400,\"initialLinearSpeed\":1.2,\"restLengthScale\":1,\"ballRadius\":0.04,\"ballMass\":0.008,\"borderFriction\":0.6,\"cw\":true}' --jump-delta-e-threshold 0.00025 --max-positive-delta-e 0.0003 --max-jump-episodes 0 --min-stored-gain 0.2 --fail-on-unsolved --report tests/benchmark/spool_energy_report_hard_latest.json"
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",

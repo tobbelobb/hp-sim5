@@ -552,6 +552,9 @@ export class PBDBallBorderCollisions {
         world.setResource('ball_border_contacts', contacts);
     }
     contacts.length = 0;
+    const prevContactStateResource = world.getResource('ball_border_prev_contact_state');
+    const prevContactState = (prevContactStateResource instanceof Map) ? prevContactStateResource : new Map();
+    const nextContactState = new Map();
 
     if (borderPoints.length >= 2) {
         for (const ballId of ballEntities) {
@@ -565,6 +568,7 @@ export class PBDBallBorderCollisions {
             let closestSegPoint = new Vector2();
             let edgeStart = null;
             let edgeEnd = null;
+            let closestEdgeIndex = -1;
 
             for (let i = 0; i < borderPoints.length; i++) {
                 const a = borderPoints[i];
@@ -577,6 +581,7 @@ export class PBDBallBorderCollisions {
                     closestSegPoint.set(closestPtOnSeg);
                     edgeStart = a;
                     edgeEnd = b;
+                    closestEdgeIndex = i;
                 }
             }
 
@@ -601,11 +606,38 @@ export class PBDBallBorderCollisions {
             if (penetration <= 0) {
                 continue;
             }
+
+            let geometricPenetration = 0.0;
+            if (closestEdgeIndex >= 0) {
+                const pairKey = `${ballId}:${closestEdgeIndex}`;
+                const prevState = prevContactState.get(pairKey);
+                const prevRadius = prevState?.effectiveRadius;
+                const prevNormal = prevState?.normal;
+                if (
+                    Number.isFinite(prevRadius) &&
+                    prevNormal &&
+                    prevNormal.dot(collisionNormal) > 0.95
+                ) {
+                    geometricPenetration = Math.max(0.0, effectiveRadius - prevRadius);
+                }
+                nextContactState.set(pairKey, {
+                    effectiveRadius,
+                    normal: collisionNormal.clone()
+                });
+            }
+
+            const motionPenetration = Math.max(0.0, penetration - geometricPenetration);
             let delta_lambda = 0;
             if (invMass > 0) {
                 p1.add(collisionNormal, penetration);
+                const prevFinalPosComp = world.getComponent(ballId, PrevFinalPosComponent);
+                if (prevFinalPosComp && geometricPenetration > 0.0) {
+                    // Radius growth is geometry evolution, not center-of-mass motion.
+                    // Remove that portion from reconstructed velocity to avoid energy injection.
+                    prevFinalPosComp.pos.add(collisionNormal, geometricPenetration);
+                }
                 const w_inv = invMass;
-                delta_lambda = penetration / w_inv;
+                delta_lambda = motionPenetration / w_inv;
             }
 
             contacts.push({
@@ -618,6 +650,7 @@ export class PBDBallBorderCollisions {
             });
         }
     }
+    world.setResource('ball_border_prev_contact_state', nextContactState);
   }
 }
 
