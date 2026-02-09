@@ -49,11 +49,12 @@ export function runGame(world, setupScene, sceneData) {
             while (accumulator >= dt) {
                 const shouldStepWhilePaused = doStep || stepWhileTHeld;
                 if (!pauseState.paused || shouldStepWhilePaused) {
-                    if (doStep) pauseState.paused = false;
+                    const steppingWhilePaused = pauseState.paused && shouldStepWhilePaused;
+                    if (steppingWhilePaused) pauseState.paused = false;
                     world.update(dt);
                     simTimeProcessed += dt;
+                    if (steppingWhilePaused) pauseState.paused = true;
                     if (doStep) {
-                        pauseState.paused = true;
                         doStep = false;
                     }
                 }
