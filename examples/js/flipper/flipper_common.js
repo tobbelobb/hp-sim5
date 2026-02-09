@@ -55,6 +55,48 @@ export class ScoreComponent { constructor(score = 0) { this.value = score; } }
 
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 
+const FLIPPER_CAM_TRACE_CONFIG_RESOURCE = 'flipperCamTraceConfig';
+const FLIPPER_CAM_TRACE_SAMPLES_RESOURCE = 'flipperCamTraceSamples';
+
+function _toNumberOrNull(value) {
+  return Number.isFinite(value) ? value : null;
+}
+
+export function appendFlipperCamTrace(world, sample) {
+  if (!world || !sample) {
+    return;
+  }
+  const cfg = world.getResource(FLIPPER_CAM_TRACE_CONFIG_RESOURCE);
+  if (!cfg || cfg.enabled !== true) {
+    return;
+  }
+  if (Number.isInteger(cfg.ballId) && sample.ball_id !== cfg.ballId) {
+    return;
+  }
+  if (Number.isInteger(cfg.flipId) && sample.flip_id !== cfg.flipId) {
+    return;
+  }
+  if (cfg.onlyWrap === true && sample.raw_contact !== false) {
+    return;
+  }
+
+  let samples = world.getResource(FLIPPER_CAM_TRACE_SAMPLES_RESOURCE);
+  if (!Array.isArray(samples)) {
+    samples = [];
+    world.setResource(FLIPPER_CAM_TRACE_SAMPLES_RESOURCE, samples);
+  }
+
+  samples.push(sample);
+  const maxSamples = Number.isFinite(cfg.maxSamples) ? Math.max(100, Math.floor(cfg.maxSamples)) : 3000;
+  if (samples.length > maxSamples) {
+    samples.splice(0, samples.length - maxSamples);
+  }
+
+  if (cfg.logToConsole === true) {
+    console.debug('[FlipperCamTrace]', sample);
+  }
+}
+
 export function getEffectiveCollisionRadius(world, entityId, baseRadius, normalTowardContact) {
   if (!(baseRadius > 0.0)) {
     return baseRadius;
@@ -808,6 +850,29 @@ export class PBDBallFlipperCollisions {
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
     const collisionDebug = world.getResource('flipperCollisionDebug') === true;
     const collisionWarnings = world.getResource('flipperCollisionWarnings') === true;
+    const contactTuning = world.getResource('flipperContactTuning') || {};
+    const smoothWrapRadiusOnset = contactTuning.smoothWrapRadiusOnset === true;
+    const wrapRadiusRiseRate = Number.isFinite(contactTuning.wrapRadiusRiseRate) ? Math.max(0.0, contactTuning.wrapRadiusRiseRate) : 0.01;
+    const wrapRadiusFallRate = Number.isFinite(contactTuning.wrapRadiusFallRate) ? Math.max(0.0, contactTuning.wrapRadiusFallRate) : 0.05;
+    const previousWrapRampResource = world.getResource('flipperWrapRadiusRamp');
+    const previousWrapRamp = (previousWrapRampResource instanceof Map) ? previousWrapRampResource : new Map();
+    const nextWrapRamp = new Map();
+    const traceStep = (world.getResource('flipperCamTraceStep') ?? 0) + 1;
+    world.setResource('flipperCamTraceStep', traceStep);
+    const pinchContacts = world.getResource('cablePinchContacts');
+    const pinchedPairs = new Set();
+    if (Array.isArray(pinchContacts)) {
+      for (const pinch of pinchContacts) {
+        const a = pinch.entityA;
+        const b = pinch.entityB;
+        if (!Number.isInteger(a) || !Number.isInteger(b)) {
+          continue;
+        }
+        const low = Math.min(a, b);
+        const high = Math.max(a, b);
+        pinchedPairs.add(`${low}:${high}`);
+      }
+    }
     const previousContacts = world.getResource('flipper_prev_contact_state');
     const previousByPair = (previousContacts instanceof Map) ? previousContacts : new Map();
     const nextByPair = new Map();
@@ -858,13 +923,41 @@ export class PBDBallFlipperCollisions {
         }
         const { support, closest, normal, separationDistance } = supportData;
         const effectiveFlipperRadius = getEffectiveCollisionRadius(world, flipId, fr, normal.clone());
-        const corr = effectiveFlipperRadius - separationDistance;
+        const corrTarget = effectiveFlipperRadius - separationDistance;
+        if (corrTarget <= 0.0) {
+          continue;
+        }
+        const pairKey = `${ballId}:${flipId}`;
+        const rawContact = centerDistance <= (r1 + fr + 1e-9);
+        const ballContactOffsetTarget = support.point.clone().subtract(p1);
+        const ballContactRadiusTarget = Math.max(r1, Math.max(0.0, -ballContactOffsetTarget.dot(normal)));
+        const targetWrapExtra = Math.max(0.0, ballContactRadiusTarget - r1);
+        const previousWrapExtra = Math.max(0.0, previousWrapRamp.get(pairKey) ?? 0.0);
+        let wrapExtra = targetWrapExtra;
+        if (smoothWrapRadiusOnset) {
+          const stepDt = Number.isFinite(dt) ? Math.max(0.0, dt) : 0.0;
+          const rate = targetWrapExtra >= previousWrapExtra ? wrapRadiusRiseRate : wrapRadiusFallRate;
+          const maxDelta = rate * stepDt;
+          if (maxDelta > 0.0) {
+            const delta = targetWrapExtra - previousWrapExtra;
+            const clampedDelta = Math.max(-maxDelta, Math.min(maxDelta, delta));
+            wrapExtra = previousWrapExtra + clampedDelta;
+          }
+        }
+        wrapExtra = Math.max(0.0, Math.min(targetWrapExtra, wrapExtra));
+        nextWrapRamp.set(pairKey, wrapExtra);
+
+        const ballContactRadius = r1 + wrapExtra;
+        let ballContactOffset = ballContactOffsetTarget.clone();
+        if (ballContactRadiusTarget > 1e-9) {
+          const scale = Math.max(0.0, Math.min(1.0, ballContactRadius / ballContactRadiusTarget));
+          ballContactOffset.scale(scale);
+        }
+        const corr = Math.max(0.0, corrTarget - (ballContactRadiusTarget - ballContactRadius));
         if (corr <= 0.0) {
           continue;
         }
-        const rawContact = centerDistance <= (r1 + fr + 1e-9);
-        const ballContactOffset = support.point.clone().subtract(p1);
-        const ballContactRadius = Math.max(r1, Math.max(0.0, -ballContactOffset.dot(normal)));
+        const wrapEnhanced = ballContactRadius > (r1 + 1e-9);
 
         if (invMass > 0) {
             p1.add(normal, corr);
@@ -876,6 +969,9 @@ export class PBDBallFlipperCollisions {
             delta_lambda = corr / w_inv;
         }
         const flipperSurfacePoint = closest.clone().add(normal, effectiveFlipperRadius);
+        const lowPair = Math.min(ballId, flipId);
+        const highPair = Math.max(ballId, flipId);
+        const pinchPairActive = pinchedPairs.has(`${lowPair}:${highPair}`);
 
         contacts.push({
             'ball_id': ballId,
@@ -884,11 +980,48 @@ export class PBDBallFlipperCollisions {
             'contact_point_on_flipper': flipperSurfacePoint,
             'delta_lambda': delta_lambda,
             'ball_contact_radius': ballContactRadius,
+            'ball_raw_radius': r1,
+            'wrap_enhanced': wrapEnhanced,
             'ball_contact_offset': ballContactOffset,
-            'raw_contact': rawContact
+            'raw_contact': rawContact,
+            'trace_step': traceStep,
+            'support_source': support.source,
+            'pinch_pair_active': pinchPairActive
         });
 
-        const pairKey = `${ballId}:${flipId}`;
+        appendFlipperCamTrace(world, {
+          type: 'position_contact',
+          step: traceStep,
+          ball_id: ballId,
+          flip_id: flipId,
+          raw_contact: rawContact,
+          wrap_enhanced: wrapEnhanced,
+          support_source: support.source,
+          support_corner: support.cornerMeta ?? null,
+          pinch_pair_active: pinchPairActive,
+          wrap_extra_target: _toNumberOrNull(targetWrapExtra),
+          wrap_extra_applied: _toNumberOrNull(wrapExtra),
+          center_distance: _toNumberOrNull(centerDistance),
+          support_separation: _toNumberOrNull(separationDistance),
+          correction: _toNumberOrNull(corr),
+          delta_lambda: _toNumberOrNull(delta_lambda),
+          normal_x: _toNumberOrNull(normal.x),
+          normal_y: _toNumberOrNull(normal.y),
+          ball_center_x: _toNumberOrNull(p1.x),
+          ball_center_y: _toNumberOrNull(p1.y),
+          support_x: _toNumberOrNull(support.point.x),
+          support_y: _toNumberOrNull(support.point.y),
+          contact_on_flipper_x: _toNumberOrNull(flipperSurfacePoint.x),
+          contact_on_flipper_y: _toNumberOrNull(flipperSurfacePoint.y),
+          ball_contact_offset_x: _toNumberOrNull(ballContactOffset.x),
+          ball_contact_offset_y: _toNumberOrNull(ballContactOffset.y),
+          ball_contact_radius: _toNumberOrNull(ballContactRadius),
+          ball_contact_radius_target: _toNumberOrNull(ballContactRadiusTarget),
+          ball_radius_raw: _toNumberOrNull(r1),
+          flipper_radius_effective: _toNumberOrNull(effectiveFlipperRadius),
+          flipper_radius_raw: _toNumberOrNull(fr),
+        });
+
         const prev = previousByPair.get(pairKey);
         if (collisionWarnings && prev && !rawContact) {
           const radiusJump = Math.abs(ballContactRadius - prev.ballRadius);
@@ -922,5 +1055,6 @@ export class PBDBallFlipperCollisions {
       }
     }
     world.setResource('flipper_prev_contact_state', nextByPair);
+    world.setResource('flipperWrapRadiusRamp', nextWrapRamp);
   }
 }

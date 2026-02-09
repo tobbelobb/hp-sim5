@@ -13,7 +13,8 @@ import {
 import {
     FlipperStateComponent,
     FlipperTipComponent,
-    getEffectiveCollisionRadius
+    getEffectiveCollisionRadius,
+    appendFlipperCamTrace
 } from './flipper_common.js';
 
 export class BallBorderOrFlipperVelocityContactSystem {
@@ -29,7 +30,9 @@ export class BallBorderOrFlipperVelocityContactSystem {
         delta_lambda,
         dt,
         contactRadiusOverride = null,
-        contactOffsetOverride = null
+        contactOffsetOverride = null,
+        includeConstraintForceForFriction = true,
+        disableRestitution = false
     ) {
         // Get all required components for the ball
         const posComp = world.getComponent(ballId, PositionComponent);
@@ -62,7 +65,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
 
         const restitutionOther = Number.isFinite(restitution_other) ? restitution_other : 0.0;
         const frictionOther = Number.isFinite(friction_other) ? friction_other : 0.0;
-        const restitution = (restitutionBall + restitutionOther) / 2.0;
+        const restitution = disableRestitution ? 0.0 : (restitutionBall + restitutionOther) / 2.0;
         const mu = (muBall + frictionOther) / 2.0;
 
         const useOffset =
@@ -82,9 +85,10 @@ export class BallBorderOrFlipperVelocityContactSystem {
 
         // --- 1. Restitution (Normal Impulse) ---
         let j_n_restitution = 0;
-        if (v_rel_n_scalar < 0) {
+        let w_inv_n = 0;
+        if (!disableRestitution && v_rel_n_scalar < 0) {
             const r_cross_n_z = r_ball.x * normal.y - r_ball.y * normal.x;
-            const w_inv_n = invMass + invInertia * (r_cross_n_z ** 2);
+            w_inv_n = invMass + invInertia * (r_cross_n_z ** 2);
             if (w_inv_n > 1e-9) {
                 j_n_restitution = -(1.0 + restitution) * v_rel_n_scalar / w_inv_n;
                 const impulse_n_vec = normal.clone().scale(j_n_restitution);
@@ -99,7 +103,9 @@ export class BallBorderOrFlipperVelocityContactSystem {
         if (dt > 1e-9) {
             j_n_force = delta_lambda / dt;
         }
-        const j_n_for_friction = j_n_restitution + j_n_force;
+        const j_n_for_friction = includeConstraintForceForFriction
+            ? (j_n_restitution + j_n_force)
+            : j_n_restitution;
 
         const v_angular_at_contact_new = new Vector2(-angVelComp.angularVelocity * r_ball.y, angVelComp.angularVelocity * r_ball.x);
         const v_ball_at_contact_new = velComp.vel.clone().add(v_angular_at_contact_new);
@@ -120,8 +126,35 @@ export class BallBorderOrFlipperVelocityContactSystem {
                 velComp.vel.add(impulse_t_vec, invMass);
                 const torque_t_impulse = r_cross_t_z * j_t;
                 angVelComp.angularVelocity += torque_t_impulse * invInertia;
+                return {
+                    applied: true,
+                    v_rel_n_scalar,
+                    w_inv_n,
+                    restitution_disabled: disableRestitution,
+                    j_n_restitution,
+                    j_n_force,
+                    j_n_for_friction,
+                    j_t,
+                    used_offset: useOffset,
+                    contact_offset_x: r_ball.x,
+                    contact_offset_y: r_ball.y
+                };
             }
         }
+
+        return {
+            applied: true,
+            v_rel_n_scalar,
+            w_inv_n,
+            restitution_disabled: disableRestitution,
+            j_n_restitution,
+            j_n_force,
+            j_n_for_friction,
+            j_t: 0.0,
+            used_offset: useOffset,
+            contact_offset_x: r_ball.x,
+            contact_offset_y: r_ball.y
+        };
     }
 
     update(world, dt) {
@@ -141,13 +174,21 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     frictionBorder,
                     contact.delta_lambda,
                     dt,
-                    contact.ball_contact_radius
+                    contact.ball_contact_radius,
+                    null,
+                    true,
+                    false
                 );
             }
         }
 
         // --- Handle Flipper Contacts ---
         const flipperContacts = world.getResource('ball_flipper_contacts');
+        const contactTuning = world.getResource('flipperContactTuning') || {};
+        const excludeConstraintForceForWrapEnhancedFriction =
+            contactTuning.excludeConstraintForceForWrapEnhancedFriction === true;
+        const disableRestitutionForWrapEnhanced =
+            contactTuning.disableRestitutionForWrapEnhanced !== false;
         if (flipperContacts) {
             for (const contact of flipperContacts) {
                 const {
@@ -159,6 +200,9 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     ball_contact_radius
                 } = contact;
                 const rawContact = contact.raw_contact !== false;
+                const wrapEnhanced = contact.wrap_enhanced === true;
+                const traceStep = contact.trace_step ?? world.getResource('flipperCamTraceStep') ?? null;
+                const pinchPairActive = contact.pinch_pair_active === true;
 
                 // Wrap-only contacts are geometric stand-ins for cable thickness.
                 // Let position solve keep separation, but avoid injecting bumper-like
@@ -170,6 +214,16 @@ export class BallBorderOrFlipperVelocityContactSystem {
                           `ball=${ball_id} flip=${flip_id} deltaLambda=${delta_lambda.toFixed(6)}`
                         );
                     }
+                    appendFlipperCamTrace(world, {
+                        type: 'velocity_skip',
+                        step: traceStep,
+                        ball_id,
+                        flip_id,
+                        raw_contact: false,
+                        wrap_enhanced: wrapEnhanced,
+                        pinch_pair_active: pinchPairActive,
+                        delta_lambda
+                    });
                     continue;
                 }
 
@@ -199,8 +253,12 @@ export class BallBorderOrFlipperVelocityContactSystem {
 
                 const restitutionFlipper = flipperRestitutionComp.restitution;
                 const frictionFlipper = flipperFrictionComp ? flipperFrictionComp.mu : null;
+                const velComp = world.getComponent(ball_id, VelocityComponent);
+                const angVelComp = world.getComponent(ball_id, AngularVelocityComponent);
+                const velBefore = velComp ? velComp.vel.clone() : null;
+                const angBefore = angVelComp ? angVelComp.angularVelocity : null;
 
-                this._handleBallContact(
+                const diag = this._handleBallContact(
                     world,
                     ball_id,
                     normal,
@@ -210,8 +268,42 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     delta_lambda,
                     dt,
                     ball_contact_radius,
-                    contact.ball_contact_offset
+                    contact.ball_contact_offset,
+                    !(wrapEnhanced && excludeConstraintForceForWrapEnhancedFriction),
+                    wrapEnhanced && disableRestitutionForWrapEnhanced
                 );
+
+                const velAfter = velComp ? velComp.vel.clone() : null;
+                const angAfter = angVelComp ? angVelComp.angularVelocity : null;
+                const deltaV = (velBefore && velAfter) ? velAfter.clone().subtract(velBefore).length() : null;
+                const deltaW = (Number.isFinite(angBefore) && Number.isFinite(angAfter)) ? (angAfter - angBefore) : null;
+
+                appendFlipperCamTrace(world, {
+                    type: 'velocity_contact',
+                    step: traceStep,
+                    ball_id,
+                    flip_id,
+                    raw_contact: true,
+                    wrap_enhanced: wrapEnhanced,
+                    pinch_pair_active: pinchPairActive,
+                    delta_lambda,
+                    normal_x: normal.x,
+                    normal_y: normal.y,
+                    v_surface_x: v_flipper.x,
+                    v_surface_y: v_flipper.y,
+                    delta_v: deltaV,
+                    delta_w: deltaW,
+                    diag: diag ?? null
+                });
+
+                const traceCfg = world.getResource('flipperCamTraceConfig');
+                const jumpDeltaVThreshold = Number.isFinite(traceCfg?.jumpDeltaVThreshold) ? traceCfg.jumpDeltaVThreshold : 1.0;
+                if ((traceCfg?.enabled === true) && Number.isFinite(deltaV) && deltaV > jumpDeltaVThreshold) {
+                    console.warn(
+                      `[FlipperCollisionWarn] large velocity jump step=${traceStep} ball=${ball_id} flip=${flip_id} ` +
+                      `deltaV=${deltaV.toFixed(6)} deltaW=${Number.isFinite(deltaW) ? deltaW.toFixed(6) : 'NaN'}`
+                    );
+                }
             }
         }
     }

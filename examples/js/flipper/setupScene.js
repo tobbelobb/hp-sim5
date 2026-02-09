@@ -99,6 +99,25 @@ export function setupScene(world, stage, canvas) {
     world.setResource('ball_obstacle_contacts', []);
     world.setResource('ball_border_contacts', []);
     world.setResource('ball_flipper_contacts', []);
+    world.setResource('flipperContactTuning', {
+      excludeConstraintForceForWrapEnhancedFriction: true,
+      disableRestitutionForWrapEnhanced: true,
+      smoothWrapRadiusOnset: true,
+      wrapRadiusRiseRate: 0.01,
+      wrapRadiusFallRate: 0.05
+    });
+    world.setResource('flipperWrapRadiusRamp', new Map());
+    world.setResource('flipperCamTraceStep', 0);
+    world.setResource('flipperCamTraceConfig', {
+      enabled: false,
+      ballId: null,
+      flipId: null,
+      onlyWrap: false,
+      maxSamples: 3000,
+      logToConsole: false,
+      jumpDeltaVThreshold: 1.0
+    });
+    world.setResource('flipperCamTraceSamples', []);
     const simWidth = 1.0;
     const simHeight = 1.7;
     world.setResource('simWidth', simWidth);
