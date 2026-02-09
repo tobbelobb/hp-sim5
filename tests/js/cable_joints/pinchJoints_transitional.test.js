@@ -32,8 +32,8 @@ function setupTransitionalPinchWorld() {
       entityA,
       entityB,
       0.0,
-      new Vector2(0.15, 0.0),
-      new Vector2(0.19, 0.0)
+      new Vector2(0.15, 0.02),
+      new Vector2(0.19, -0.02)
     )
   );
 
@@ -140,8 +140,8 @@ describe('Transitional pinch joints', () => {
         entityA,
         entityB,
         0.0,
-        new Vector2(0.15, 0.02),
-        new Vector2(0.19, 0.02)
+        new Vector2(0.15, 0.04),
+        new Vector2(0.19, -0.04)
       )
     );
     const secondPathId = world.createEntity();

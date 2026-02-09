@@ -1,7 +1,6 @@
 import Vector2 from './vector2.js';
 
 import {
-  closestPointOnSegment,
   tangentFromPointToCircle,
   tangentFromCircleToPoint,
   tangentFromCircleToCircle,
@@ -37,6 +36,12 @@ const PINCH_CANDIDATES_RESOURCE = 'cablePinchCandidates';
 const PINCH_CONFIGS_RESOURCE = 'cablePinchJointConfigs';
 const PINCH_CONTACTS_RESOURCE = 'cablePinchContacts';
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
+
+function _debugCable(world, message) {
+  if (world?.getResource('cableDebugLogs') === true) {
+    console.debug(`${CABLE_DEBUG_PREFIX} ${message}`);
+  }
+}
 
 function getMachineId(world, entityId) {
   if (entityId == null) {
@@ -751,19 +756,21 @@ export function _updateHybridLinkStates(world) {
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
           const radius = _effectiveRadius(path, world.getComponent(linkEntity, RadiusComponent).radius);
           const pos = world.getComponent(linkEntity, PositionComponent).pos;
+          const rawCW = path.cw[i];
           const effectiveCW = _effectiveCW(path, i, true);
           const oldStored = path.stored[i];
           // We have "fed out negative line", undo that
           joint.restLength += oldStored;
           const rotAng = -oldStored/radius;
           if (i === 0) {
-            joint.attachmentPointA_world.rotate(rotAng, pos, effectiveCW);
+            joint.attachmentPointA_world.rotate(rotAng, pos, rawCW);
           } else if (i === path.linkTypes.length - 1) {
-            joint.attachmentPointB_world.rotate(rotAng, pos, effectiveCW);
+            joint.attachmentPointB_world.rotate(rotAng, pos, rawCW);
           }
-          console.debug(
-            `${CABLE_DEBUG_PREFIX} hybrid->hybrid-attachment path=${pathId} link=${i} ` +
-            `joint=${endpointJointId} rawCW=${path.cw[i]} effectiveCW=${effectiveCW} ` +
+          _debugCable(
+            world,
+            `hybrid->hybrid-attachment path=${pathId} link=${i} ` +
+            `joint=${endpointJointId} rawCW=${rawCW} effectiveCW=${effectiveCW} ` +
             `storedBefore=${oldStored.toFixed(6)} rotAng=${rotAng.toFixed(6)}`
           );
           path.stored[i] = 0;
@@ -818,25 +825,26 @@ export function _updateHybridLinkStates(world) {
         const distSqCW = attachmentPoint.distanceToSq(tanCW);
         const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
-        let newEffectiveCW = null;
+        let newCW = null;
         let crossingTangent = null;
         if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
-            newEffectiveCW = false;
+            newCW = true;
             crossingTangent = tanCCW;
             path.stored[i] = crossedCCW;
             joint.restLength -= crossedCCW;
         } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
-            newEffectiveCW = true;
+            newCW = false;
             crossingTangent = tanCW;
             path.stored[i] = crossedCW;
             joint.restLength -= crossedCW;
         }
 
-        if (newEffectiveCW !== null) {
+        if (newCW !== null) {
           if (nearPinch) {
-            console.debug(
-              `${CABLE_DEBUG_PREFIX} defer hybrid-attachment->hybrid near-pinch path=${pathId} link=${i} ` +
-              `joint=${jointId} candidateEffectiveCW=${newEffectiveCW} ` +
+            _debugCable(
+              world,
+              `defer hybrid-attachment->hybrid near-pinch path=${pathId} link=${i} ` +
+              `joint=${jointId} candidateCW=${newCW} ` +
               `surfaceDistance=${nearPinchSurfaceDistance?.toFixed(6)} threshold=${nearPinchThreshold.toFixed(6)} ` +
               `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)}`
             );
@@ -844,14 +852,15 @@ export function _updateHybridLinkStates(world) {
           }
           const oldRawCW = path.cw[i];
           const oldEffectiveCW = (i === 0 ? !oldRawCW : oldRawCW);
-          const newRawCW = (i === 0 ? !newEffectiveCW : newEffectiveCW);
+          const newEffectiveCW = (i === 0 ? !newCW : newCW);
           // console.log(`Switching joint ${jointId} to hybrid`);
           path.linkTypes[i] = 'hybrid';
-          path.cw[i]        = newRawCW;
+          path.cw[i]        = newCW;
           attachmentPoint.set(crossingTangent);
-          console.debug(
-            `${CABLE_DEBUG_PREFIX} hybrid-attachment->hybrid path=${pathId} link=${i} joint=${jointId} ` +
-            `rawCW=${oldRawCW}->${newRawCW} effectiveCW=${oldEffectiveCW}->${newEffectiveCW} ` +
+          _debugCable(
+            world,
+            `hybrid-attachment->hybrid path=${pathId} link=${i} joint=${jointId} ` +
+            `rawCW=${oldRawCW}->${newCW} effectiveCW=${oldEffectiveCW}->${newEffectiveCW} ` +
             `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)} ` +
             `distSqCW=${distSqCW.toExponential(3)} distSqCCW=${distSqCCW.toExponential(3)}`
           );
@@ -896,8 +905,9 @@ export function _updateHybridLinkStates(world) {
       );
       const stored = path.stored[linkIndex] ?? 0.0;
       if (arc <= 1e-6 && altArc > arc + 1e-4 && stored > 1e-6) {
-        console.debug(
-          `${CABLE_DEBUG_PREFIX} rolling-arc-mismatch path=${pathId} link=${linkIndex} body=${bodyId} ` +
+        _debugCable(
+          world,
+          `rolling-arc-mismatch path=${pathId} link=${linkIndex} body=${bodyId} ` +
           `cw=${cw} arc=${arc.toFixed(6)} altArc=${altArc.toFixed(6)} stored=${stored.toFixed(6)} ` +
           `leftJoint=${leftJointId} rightJoint=${rightJointId}`
         );
@@ -974,21 +984,39 @@ function _pinchSegmentDirection(normal, referenceDir = null) {
   return segmentDir;
 }
 
-function _transitionalPinchSegmentProximity(path, joint, pinchPair) {
-  if (!joint || !pinchPair) {
+function _orient2D(a, b, c) {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+function _transitionalPinchCrossData(world, joint) {
+  if (!joint) {
     return null;
   }
-  const segmentA = joint.attachmentPointA_world;
-  const segmentB = joint.attachmentPointB_world;
-  if (!segmentA || !segmentB || !pinchPair.pointA_world || !pinchPair.pointB_world) {
+  const posA = world.getComponent(joint.entityA, PositionComponent)?.pos;
+  const posB = world.getComponent(joint.entityB, PositionComponent)?.pos;
+  const attachmentA = joint.attachmentPointA_world;
+  const attachmentB = joint.attachmentPointB_world;
+  if (!posA || !posB || !attachmentA || !attachmentB) {
     return null;
   }
-  const pinchMidpoint = pinchPair.pointA_world.clone().add(pinchPair.pointB_world).scale(0.5);
-  const closestOnSegment = closestPointOnSegment(pinchMidpoint, segmentA, segmentB);
-  const distance = closestOnSegment.distanceTo(pinchMidpoint);
-  const halfWidth = path?.cableHalfWidth ?? 0.0;
-  const corridor = Math.max(1e-6, 2.0 * halfWidth + 1e-6);
-  return { distance, corridor };
+
+  const orientCentersAtAttachA = _orient2D(posA, posB, attachmentA);
+  const orientCentersAtAttachB = _orient2D(posA, posB, attachmentB);
+  const orientAttachmentsAtCenterA = _orient2D(attachmentA, attachmentB, posA);
+  const orientAttachmentsAtCenterB = _orient2D(attachmentA, attachmentB, posB);
+  const oppositeOnCenterLine =
+    (orientCentersAtAttachA > EPSILON && orientCentersAtAttachB < -EPSILON) ||
+    (orientCentersAtAttachA < -EPSILON && orientCentersAtAttachB > EPSILON);
+  const oppositeOnAttachmentLine =
+    (orientAttachmentsAtCenterA > EPSILON && orientAttachmentsAtCenterB < -EPSILON) ||
+    (orientAttachmentsAtCenterA < -EPSILON && orientAttachmentsAtCenterB > EPSILON);
+  return {
+    crosses: oppositeOnCenterLine && oppositeOnAttachmentLine,
+    orientCentersAtAttachA,
+    orientCentersAtAttachB,
+    orientAttachmentsAtCenterA,
+    orientAttachmentsAtCenterB
+  };
 }
 
 function _pathCurrentLengthBudget(world, path) {
@@ -1077,13 +1105,17 @@ function _detectPinchCandidates(world) {
       if (!pinchPair) {
         continue;
       }
-      const segmentProximity = _transitionalPinchSegmentProximity(path, joint, pinchPair);
-      if (!segmentProximity || segmentProximity.distance > segmentProximity.corridor) {
-        if (segmentProximity) {
-          console.debug(
-            `${CABLE_DEBUG_PREFIX} skip transitional path=${pathId} joint=${jointId} ` +
+      const crossData = _transitionalPinchCrossData(world, joint);
+      if (!crossData || !crossData.crosses) {
+        if (crossData) {
+          _debugCable(
+            world,
+            `skip transitional path=${pathId} joint=${jointId} ` +
             `surfaceDistance=${surfacePair.surfaceDistance.toFixed(6)} ` +
-            `segmentDistance=${segmentProximity.distance.toFixed(6)} corridor=${segmentProximity.corridor.toFixed(6)}`
+            `oCA=${crossData.orientCentersAtAttachA.toExponential(3)} ` +
+            `oCB=${crossData.orientCentersAtAttachB.toExponential(3)} ` +
+            `oAC=${crossData.orientAttachmentsAtCenterA.toExponential(3)} ` +
+            `oBC=${crossData.orientAttachmentsAtCenterB.toExponential(3)}`
           );
         }
         continue;

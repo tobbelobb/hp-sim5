@@ -189,7 +189,7 @@ describe('_updateHybridLinkStates', () => {
     // switched back to hybrid
     expect(pathComp.linkTypes[1]).toBe('hybrid');
     // last-link cw is not inverted
-    expect(pathComp.cw[1]).toBe(true);
+    expect(pathComp.cw[1]).toBe(false);
     // positive stored arc, restLength shorter by that arc
     expect(pathComp.stored[1]).toBeGreaterThan(0);
     const arc = pathComp.stored[1];
