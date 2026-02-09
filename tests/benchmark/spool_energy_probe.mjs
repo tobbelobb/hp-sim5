@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 function parseArgs(argv) {
   const args = {
+    scenePath: 'examples/js/flipper/spool_energy_debug.html',
     steps: 4000,
     analysisStartStep: 500,
     timeoutMs: 120000,
@@ -34,6 +35,8 @@ function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
+    if (a === '--scene-path') args.scenePath = argv[++i] || args.scenePath;
+    else
     if (a === '--steps') args.steps = Math.max(100, readNumber(argv[++i], args.steps) | 0);
     else if (a === '--analysis-start-step') args.analysisStartStep = Math.max(0, readNumber(argv[++i], args.analysisStartStep) | 0);
     else if (a === '--timeout-ms') args.timeoutMs = Math.max(10000, readNumber(argv[++i], args.timeoutMs) | 0);
@@ -281,7 +284,7 @@ async function runProbe(args) {
       window._flipperMaxSubSteps = maxSubSteps;
     }, args.speedScale, args.maxSubSteps);
 
-    await page.goto(`http://127.0.0.1:${port}/examples/js/flipper/spool_energy_debug.html`, {
+    await page.goto(`http://127.0.0.1:${port}/${args.scenePath}`, {
       waitUntil: 'networkidle0',
       timeout: args.timeoutMs
     });
@@ -317,7 +320,7 @@ async function runProbe(args) {
 
     const report = {
       timestamp: new Date().toISOString(),
-      scene: 'examples/js/flipper/spool_energy_debug.html',
+      scene: args.scenePath,
       args: {
         steps: args.steps,
         analysisStartStep: args.analysisStartStep,
