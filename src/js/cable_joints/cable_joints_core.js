@@ -32,10 +32,6 @@ import {
 export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
-const PINCH_NON_TRANSITIONAL_STORED_BUFFER = 1e-5;
-const PINCH_CANDIDATES_RESOURCE = 'cablePinchCandidates';
-const PINCH_CONFIGS_RESOURCE = 'cablePinchJointConfigs';
-const PINCH_CONTACTS_RESOURCE = 'cablePinchContacts';
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 
 function _debugCable(world, message) {
@@ -159,7 +155,9 @@ export class CablePathComponent {
       // Assuming standard path structure A->B, A->B, check B_i == A_i+1
       if (isRolling) {
         const center = world.getComponent(linkId, PositionComponent).pos;
-        const radius = world.getComponent(linkId, RadiusComponent).radius;
+        const baseRadius = world.getComponent(linkId, RadiusComponent).radius;
+        const layeringEnabled = world?.getResource?.('enableLayering') !== false;
+        const radius = baseRadius + (layeringEnabled ? this.cableHalfWidth : 0.0);
         const isCw = cw[i + 1];
 
         const initialStoredLength = signedArcLengthOnWheel(
@@ -190,42 +188,23 @@ export class CablePathComponent {
   }
 }
 
-export class PinchContact {
-  constructor(entityA, entityB, pathId, minDistance, normal, compliance = 0.0) {
-    this.entityA = entityA;
-    this.entityB = entityB;
-    this.pathId = pathId;
-    this.minDistance = minDistance;
-    this.normal = normal.clone();
-    this.compliance = compliance;
-  }
-}
-
-
 function _effectiveCW(path, linkIndex, travellingFromCircle) {
   if (linkIndex === 0 && travellingFromCircle)
     return !path.cw[linkIndex];
   return path.cw[linkIndex];
 }
 
-function _effectiveRadius(path, radius) {
-  if (radius === undefined || radius === null) {
-    return radius;
-  }
-  return radius;
-}
-
-function _effectiveRollingRadius(path, linkIndex, baseRadius) {
+function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
+    return baseRadius;
+  }
+  if (world?.getResource?.('enableLayering') === false) {
     return baseRadius;
   }
   if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
     return baseRadius;
   }
-  if (!_isHybrid(path.linkTypes[linkIndex])) {
-    return baseRadius;
-  }
-  if (!(linkIndex === 0 || linkIndex === path.linkTypes.length - 1)) {
+  if (!_isRolling(path.linkTypes[linkIndex])) {
     return baseRadius;
   }
 
@@ -234,19 +213,30 @@ function _effectiveRollingRadius(path, linkIndex, baseRadius) {
     return baseRadius;
   }
 
+  const fullWidth = 2.0 * halfWidth;
+  let effectiveRadius = baseRadius + halfWidth;
+
+  // Layered winding is only modeled for hybrid endpoints.
+  const isEndpoint = linkIndex === 0 || linkIndex === path.linkTypes.length - 1;
+  if (!isEndpoint || !_isHybrid(path.linkTypes[linkIndex])) {
+    return effectiveRadius;
+  }
+
   const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
   if (!(stored > EPSILON)) {
-    return baseRadius;
+    return effectiveRadius;
   }
 
   const decomposition = _decomposeStoredWrapLayers(stored, baseRadius, halfWidth);
   if (!decomposition) {
-    return baseRadius;
+    return effectiveRadius;
   }
   if (decomposition.hasPartial) {
-    return decomposition.partialRadius;
+    return Math.max(effectiveRadius, decomposition.partialRadius);
   }
-  return baseRadius + 2.0 * halfWidth * Math.max(0, decomposition.fullLayers - 1);
+
+  const topLayerRadius = baseRadius + halfWidth + fullWidth * Math.max(0, decomposition.fullLayers - 1);
+  return Math.max(effectiveRadius, topLayerRadius);
 }
 
 function _pathLinkIndicesForEntity(world, path, entityId) {
@@ -287,7 +277,7 @@ function _pathLinkIndicesForEntity(world, path, entityId) {
 }
 
 function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex = null) {
-  const baseRadius = _effectiveRadius(path, world.getComponent(entityId, RadiusComponent)?.radius);
+  const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
   if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
     return baseRadius;
   }
@@ -296,7 +286,7 @@ function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex
   if (Number.isInteger(preferredLinkIndex) && preferredLinkIndex >= 0 && preferredLinkIndex < path.linkTypes.length) {
     effectiveRadius = Math.max(
       effectiveRadius,
-      _effectiveRollingRadius(path, preferredLinkIndex, baseRadius)
+      _effectiveRollingRadius(world, path, preferredLinkIndex, baseRadius)
     );
   }
 
@@ -304,7 +294,7 @@ function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex
   for (const linkIndex of candidateIndices) {
     effectiveRadius = Math.max(
       effectiveRadius,
-      _effectiveRollingRadius(path, linkIndex, baseRadius)
+      _effectiveRollingRadius(world, path, linkIndex, baseRadius)
     );
   }
   return effectiveRadius;
@@ -347,8 +337,8 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const posA = posAComp?.pos;
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-  const baseRadiusA = _effectiveRadius(path, radiusAComp?.radius);
-  const radiusA = _effectiveRollingRadius(path, A, baseRadiusA);
+  const baseRadiusA = radiusAComp?.radius;
+  const radiusA = _effectiveRollingRadius(world, path, A, baseRadiusA);
   const angleA = orientationAComp?.angle ?? 0.0;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleA = angleA - prevAngleA;
@@ -374,8 +364,8 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const posB = posBComp?.pos;
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-  const baseRadiusB = _effectiveRadius(path, radiusBComp?.radius);
-  const radiusB = _effectiveRollingRadius(path, B, baseRadiusB);
+  const baseRadiusB = radiusBComp?.radius;
+  const radiusB = _effectiveRollingRadius(world, path, B, baseRadiusB);
   const angleB = orientationBComp?.angle ?? 0.0;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleB = angleB - prevAngleB;
@@ -429,8 +419,6 @@ export function calculateAttachmentPoints(world, joint, path, i) {
 
 export function _updateAttachmentPoints(world) {
   const pathEntities = world.query([CablePathComponent]);
-  const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
-  const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -449,20 +437,6 @@ export function _updateAttachmentPoints(world) {
       const entityA = joint.entityA;
       const entityB = joint.entityB;
 
-      const pinchConfig = pinchConfigs.get(jointId);
-      if (pinchConfig) {
-        const surfacePair = _computeCircleSurfacePair(world, entityA, entityB, pinchConfig.normal);
-        const pinchPair = _computePinchAttachmentPair(world, path, entityA, entityB, pinchConfig.normal);
-        if (
-          surfacePair &&
-          pinchPair &&
-          surfacePair.surfaceDistance <= pinchConfig.minDistance + EPSILON
-        ) {
-          attachmentA_current = pinchPair.pointA_world;
-          attachmentB_current = pinchPair.pointB_world;
-        }
-      }
-
       // Get components for Entity A
       const posAComp = world.getComponent(entityA, PositionComponent);
       const radiusAComp = world.getComponent(entityA, RadiusComponent);
@@ -470,8 +444,8 @@ export function _updateAttachmentPoints(world) {
       const orientationAComp = world.getComponent(entityA, OrientationComponent);
       const posA = posAComp?.pos;
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-      const baseRadiusA = _effectiveRadius(path, radiusAComp?.radius);
-      const radiusA = _effectiveRollingRadius(path, A, baseRadiusA);
+      const baseRadiusA = radiusAComp?.radius;
+      const radiusA = _effectiveRollingRadius(world, path, A, baseRadiusA);
       const angleA = orientationAComp?.angle ?? 0.0;
       const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleA = angleA - prevAngleA;
@@ -487,8 +461,8 @@ export function _updateAttachmentPoints(world) {
       const orientationBComp = world.getComponent(entityB, OrientationComponent);
       const posB = posBComp?.pos;
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-      const baseRadiusB = _effectiveRadius(path, radiusBComp?.radius);
-      const radiusB = _effectiveRollingRadius(path, B, baseRadiusB);
+      const baseRadiusB = radiusBComp?.radius;
+      const radiusB = _effectiveRollingRadius(world, path, B, baseRadiusB);
       const angleB = orientationBComp?.angle ?? 0.0;
       const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleB = angleB - prevAngleB;
@@ -569,39 +543,6 @@ export function _mergeJoints(world) {
           continue;
         }
         if (path.stored[i + 1] < 0.0) {
-          if (joint_i.entityA === joint_i_plus_1.entityB) {
-            // Non-transitional pinch removal case:
-            // ... -> A->B, B->A -> ...
-            // Remove the two transitional joints and merge their length budget back
-            // into the remaining wrapped link on body A.
-            if (i <= 0 || (i + 2) >= path.stored.length) {
-              console.warn("Pinch merge loop saw non-transitional pair without both neighbors.");
-              continue;
-            }
-
-            const removedBudget =
-              joint_i.restLength +
-              joint_i_plus_1.restLength +
-              path.stored[i + 1] +
-              path.stored[i + 2];
-            _debugCable(
-              world,
-              `merge pinch-pair path=${pathId} idx=${i} joints=${jointId_i},${jointId_i_plus_1} ` +
-              `storedMid=${path.stored[i + 1].toFixed(6)} storedNext=${path.stored[i + 2].toFixed(6)} ` +
-              `removedBudget=${removedBudget.toFixed(6)}`
-            );
-            path.stored[i] += removedBudget;
-
-            path.jointEntities.splice(i, 2);
-            path.stored.splice(i + 1, 2);
-            path.cw.splice(i + 1, 2);
-            path.linkTypes.splice(i + 1, 2);
-            world.destroyEntity(jointId_i);
-            world.destroyEntity(jointId_i_plus_1);
-
-            reRunMerge = true;
-            continue;
-          }
           // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${path.stored[i + 1].toFixed(4)})`);
 
           // Calculate angle between the two segments, just for debug
@@ -841,35 +782,38 @@ export function _splitJoints(world) {
 
 export function _updateHybridLinkStates(world) {
   const pathEntities = world.query([CablePathComponent]);
-  const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
-  const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     for (const i of [0, path.linkTypes.length - 1]) {
-      const endpointJointId = (i === 0 ? path.jointEntities[0] : path.jointEntities[path.jointEntities.length - 1]);
-      if (endpointJointId !== undefined && pinchConfigs.has(endpointJointId)) {
-        // Transitional pinches create near-degenerate endpoint geometry where
-        // hybrid state switching is numerically ambiguous. Keep the endpoint
-        // mode/cw stable while pinched.
-        continue;
-      }
       if (path.linkTypes[i] === 'hybrid') {
         if (path.stored[i] < 0.0) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
           path.linkTypes[i] = 'hybrid-attachment';
-          const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
-          const rawCW = path.cw[i];
-          const effectiveCW = _effectiveCW(path, i, true);
-          const oldStored = path.stored[i];
+          const joint = (
+            i === 0
+              ? world.getComponent(path.jointEntities[i], CableJointComponent)
+              : world.getComponent(path.jointEntities[i - 1], CableJointComponent)
+          );
+          const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
+          const pos = world.getComponent(linkEntity, PositionComponent)?.pos;
+          const radius = _effectiveRollingRadius(
+            world,
+            path,
+            i,
+            world.getComponent(linkEntity, RadiusComponent)?.radius
+          );
+          const oldStored = path.stored[i] ?? 0.0;
           // We have "fed out negative line", undo that
           joint.restLength += oldStored;
-          _debugCable(
-            world,
-            `hybrid->hybrid-attachment path=${pathId} link=${i} ` +
-            `joint=${endpointJointId} rawCW=${rawCW} effectiveCW=${effectiveCW} ` +
-            `storedBefore=${oldStored.toFixed(6)}`
-          );
+          if (pos && Number.isFinite(radius) && radius > EPSILON) {
+            const rotAng = -oldStored / radius;
+            if (i === 0) {
+              joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
+            } else if (i === path.linkTypes.length - 1) {
+              joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
+            }
+          }
           path.stored[i] = 0;
         }
       }
@@ -893,18 +837,14 @@ export function _updateHybridLinkStates(world) {
         }
 
         const C = world.getComponent(entityId, PositionComponent).pos;
-        const P = world.getComponent(neighborId, PositionComponent).pos;
-        const R = _effectiveRadius(path, world.getComponent(entityId, RadiusComponent).radius);
-        const halfWidth = path.cableHalfWidth ?? 0.0;
-        const nearPinchThreshold = 2.0 * halfWidth + 1e-6;
-        let nearPinchSurfaceDistance = null;
-        let nearPinch = false;
-        if (halfWidth > EPSILON) {
-          const surfacePair = _computeCircleSurfacePair(world, entityId, neighborId, null);
-          if (surfacePair) {
-            nearPinchSurfaceDistance = surfacePair.surfaceDistance;
-            nearPinch = surfacePair.surfaceDistance <= nearPinchThreshold;
-          }
+        const R = _effectiveRollingRadius(
+          world,
+          path,
+          i,
+          world.getComponent(entityId, RadiusComponent)?.radius
+        );
+        if (!C || !Number.isFinite(R) || R <= EPSILON) {
+          continue;
         }
 
         // When the endpoint and neighbor attachment collapse to (near) the same
@@ -936,20 +876,6 @@ export function _updateHybridLinkStates(world) {
         }
 
         if (newCW !== null) {
-          if (nearPinch) {
-            _debugCable(
-              world,
-              `defer hybrid-attachment->hybrid near-pinch path=${pathId} link=${i} ` +
-              `joint=${jointId} candidateCW=${newCW} ` +
-              `surfaceDistance=${nearPinchSurfaceDistance?.toFixed(6)} threshold=${nearPinchThreshold.toFixed(6)} ` +
-              `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)} ` +
-              `stored=${(path.stored[i] ?? 0.0).toFixed(6)}`
-            );
-            continue;
-          }
-          const oldRawCW = path.cw[i];
-          const oldEffectiveCW = (i === 0 ? !oldRawCW : oldRawCW);
-          const newEffectiveCW = (i === 0 ? !newCW : newCW);
           const oldStored = path.stored[i] ?? 0.0;
           const newStored = candidateStored ?? oldStored;
           // console.log(`Switching joint ${jointId} to hybrid`);
@@ -958,14 +884,6 @@ export function _updateHybridLinkStates(world) {
           path.stored[i] = newStored;
           joint.restLength -= (newStored - oldStored);
           attachmentPoint.set(crossingTangent);
-          _debugCable(
-            world,
-            `hybrid-attachment->hybrid path=${pathId} link=${i} joint=${jointId} ` +
-            `rawCW=${oldRawCW}->${newCW} effectiveCW=${oldEffectiveCW}->${newEffectiveCW} ` +
-            `crossedCW=${crossedCW.toFixed(6)} crossedCCW=${crossedCCW.toFixed(6)} ` +
-            `stored=${oldStored.toFixed(6)}->${newStored.toFixed(6)} ` +
-            `distSqCW=${distSqCW.toExponential(3)} distSqCCW=${distSqCCW.toExponential(3)}`
-          );
         }
       }
     }
@@ -983,7 +901,12 @@ export function _updateHybridLinkStates(world) {
       }
       const bodyId = leftJoint.entityB;
       const center = world.getComponent(bodyId, PositionComponent)?.pos;
-      const radius = _effectiveRadius(path, world.getComponent(bodyId, RadiusComponent)?.radius);
+      const radius = _effectiveRollingRadius(
+        world,
+        path,
+        linkIndex,
+        world.getComponent(bodyId, RadiusComponent)?.radius
+      );
       if (!center || !Number.isFinite(radius) || radius <= EPSILON) {
         continue;
       }
@@ -1018,156 +941,6 @@ export function _updateHybridLinkStates(world) {
   }
 }
 
-function _computeCircleSurfacePair(
-  world,
-  entityA,
-  entityB,
-  fallbackNormal = null,
-  radiusOffsetA = 0.0,
-  radiusOffsetB = 0.0
-) {
-  const posAComp = world.getComponent(entityA, PositionComponent);
-  const posBComp = world.getComponent(entityB, PositionComponent);
-  const radiusAComp = world.getComponent(entityA, RadiusComponent);
-  const radiusBComp = world.getComponent(entityB, RadiusComponent);
-  if (!posAComp || !posBComp || !radiusAComp || !radiusBComp) {
-    return null;
-  }
-
-  const centerDelta = new Vector2().subtractVectors(posBComp.pos, posAComp.pos);
-  const centerDistance = centerDelta.length();
-  let normal;
-  if (centerDistance > EPSILON) {
-    normal = centerDelta.clone().scale(1.0 / centerDistance);
-  } else if (fallbackNormal && fallbackNormal.lengthSq() > EPSILON) {
-    normal = fallbackNormal.clone().normalize();
-  } else {
-    normal = new Vector2(1.0, 0.0);
-  }
-
-  const radiusA = Math.max(0.0, radiusAComp.radius + radiusOffsetA);
-  const radiusB = Math.max(0.0, radiusBComp.radius + radiusOffsetB);
-  const pointA_world = posAComp.pos.clone().add(normal, radiusA);
-  const pointB_world = posBComp.pos.clone().subtract(normal, radiusB);
-  const surfaceDistance = centerDistance - (radiusA + radiusB);
-
-  return {
-    normal,
-    pointA_world,
-    pointB_world,
-    centerDistance,
-    surfaceDistance,
-    radiusA,
-    radiusB
-  };
-}
-
-function _computePinchAttachmentPair(world, path, entityA, entityB, fallbackNormal = null) {
-  const halfWidth = path?.cableHalfWidth ?? 0.0;
-  return _computeCircleSurfacePair(
-    world,
-    entityA,
-    entityB,
-    fallbackNormal,
-    halfWidth,
-    halfWidth
-  );
-}
-
-function _pinchSegmentDirection(normal, referenceDir = null) {
-  const segmentDir = new Vector2(-normal.y, normal.x);
-  if (segmentDir.lengthSq() <= EPSILON) {
-    return null;
-  }
-  segmentDir.normalize();
-  if (referenceDir && referenceDir.lengthSq() > EPSILON && segmentDir.dot(referenceDir) < 0.0) {
-    segmentDir.scale(-1.0);
-  }
-  return segmentDir;
-}
-
-function _orient2D(a, b, c) {
-  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-
-function _transitionalPinchCrossData(world, joint) {
-  if (!joint) {
-    return null;
-  }
-  const posA = world.getComponent(joint.entityA, PositionComponent)?.pos;
-  const posB = world.getComponent(joint.entityB, PositionComponent)?.pos;
-  const attachmentA = joint.attachmentPointA_world;
-  const attachmentB = joint.attachmentPointB_world;
-  if (!posA || !posB || !attachmentA || !attachmentB) {
-    return null;
-  }
-
-  const orientCentersAtAttachA = _orient2D(posA, posB, attachmentA);
-  const orientCentersAtAttachB = _orient2D(posA, posB, attachmentB);
-  const orientAttachmentsAtCenterA = _orient2D(attachmentA, attachmentB, posA);
-  const orientAttachmentsAtCenterB = _orient2D(attachmentA, attachmentB, posB);
-  const oppositeOnCenterLine =
-    (orientCentersAtAttachA > EPSILON && orientCentersAtAttachB < -EPSILON) ||
-    (orientCentersAtAttachA < -EPSILON && orientCentersAtAttachB > EPSILON);
-  const oppositeOnAttachmentLine =
-    (orientAttachmentsAtCenterA > EPSILON && orientAttachmentsAtCenterB < -EPSILON) ||
-    (orientAttachmentsAtCenterA < -EPSILON && orientAttachmentsAtCenterB > EPSILON);
-  return {
-    crosses: oppositeOnCenterLine && oppositeOnAttachmentLine,
-    orientCentersAtAttachA,
-    orientCentersAtAttachB,
-    orientAttachmentsAtCenterA,
-    orientAttachmentsAtCenterB
-  };
-}
-
-function _pathCurrentLengthBudget(world, path) {
-  let total = 0.0;
-  for (const jointId of path.jointEntities) {
-    const joint = world.getComponent(jointId, CableJointComponent);
-    if (joint) {
-      total += joint.restLength;
-    }
-  }
-  for (const value of path.stored) {
-    total += value;
-  }
-  return total;
-}
-
-function _isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pointOnBody, center, radius) {
-  if (!leftJoint || !rightJoint || !pointOnBody || !center) {
-    return false;
-  }
-  if (!Number.isFinite(radius) || radius <= EPSILON) {
-    return false;
-  }
-
-  const tailPoint = leftJoint.attachmentPointB_world;
-  const headPoint = rightJoint.attachmentPointA_world;
-  const cw = path.cw[linkIndex];
-
-  let totalArc = signedArcLengthOnWheel(tailPoint, headPoint, center, radius, cw, true);
-  if (!(totalArc > EPSILON)) {
-    totalArc = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
-    if (!(totalArc > EPSILON)) {
-      return false;
-    }
-  }
-
-  const arcToPoint = signedArcLengthOnWheel(tailPoint, pointOnBody, center, radius, cw, true);
-  const arcFromPoint = signedArcLengthOnWheel(pointOnBody, headPoint, center, radius, cw, true);
-
-  const arcTolerance = Math.max(1e-6, totalArc * 1e-4);
-  if (arcToPoint <= arcTolerance || arcFromPoint <= arcTolerance) {
-    return false;
-  }
-  if (arcToPoint > totalArc + arcTolerance || arcFromPoint > totalArc + arcTolerance) {
-    return false;
-  }
-  return (arcToPoint + arcFromPoint) <= totalArc + (2.0 * arcTolerance);
-}
-
 function _decomposeStoredWrapLayers(storedLength, baseRadius, halfWidth) {
   const stored = Math.max(0.0, storedLength ?? 0.0);
   if (!(stored > EPSILON) || !(baseRadius > EPSILON) || !(halfWidth > EPSILON)) {
@@ -1175,11 +948,12 @@ function _decomposeStoredWrapLayers(storedLength, baseRadius, halfWidth) {
   }
 
   const fullWidth = 2.0 * halfWidth;
+  const firstLayerRadius = baseRadius + halfWidth;
   let remaining = stored;
   let fullLayers = 0;
   const MAX_LAYERS = 2048;
   while (fullLayers < MAX_LAYERS) {
-    const layerRadius = baseRadius + fullWidth * fullLayers;
+    const layerRadius = firstLayerRadius + fullWidth * fullLayers;
     if (!(layerRadius > EPSILON)) {
       break;
     }
@@ -1198,670 +972,17 @@ function _decomposeStoredWrapLayers(storedLength, baseRadius, halfWidth) {
       fullLayers,
       partialLength,
       partialRadius: layerRadius,
-      hasPartial: partialLength > EPSILON,
-      extraDistanceForFullCoverage: 2.0 * halfWidth * Math.max(0, fullLayers - 1),
-      extraDistanceForPartialCoverage: 2.0 * halfWidth * fullLayers
+      hasPartial: partialLength > EPSILON
     };
   }
 
-  const fallbackRadius = baseRadius + fullWidth * fullLayers;
+  const fallbackRadius = firstLayerRadius + fullWidth * fullLayers;
   return {
     fullLayers,
     partialLength: 0.0,
     partialRadius: fallbackRadius,
-    hasPartial: false,
-    extraDistanceForFullCoverage: 2.0 * halfWidth * Math.max(0, fullLayers - 1),
-    extraDistanceForPartialCoverage: 2.0 * halfWidth * fullLayers
+    hasPartial: false
   };
-}
-
-function _getEndpointRollingArcContext(world, path, linkIndex) {
-  if (path.jointEntities.length < 1) {
-    return null;
-  }
-
-  let joint;
-  let bodyA;
-  let neighborBody;
-  let attachmentPoint;
-  if (linkIndex === 0) {
-    joint = world.getComponent(path.jointEntities[0], CableJointComponent);
-    if (!joint) {
-      return null;
-    }
-    bodyA = joint.entityA;
-    neighborBody = joint.entityB;
-    attachmentPoint = joint.attachmentPointA_world;
-  } else if (linkIndex === (path.linkTypes.length - 1)) {
-    joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
-    if (!joint) {
-      return null;
-    }
-    bodyA = joint.entityB;
-    neighborBody = joint.entityA;
-    attachmentPoint = joint.attachmentPointB_world;
-  } else {
-    return null;
-  }
-
-  const center = world.getComponent(bodyA, PositionComponent)?.pos;
-  const radius = _effectiveRadius(path, world.getComponent(bodyA, RadiusComponent)?.radius);
-  if (!center || !Number.isFinite(radius) || radius <= EPSILON || !attachmentPoint) {
-    return null;
-  }
-
-  return {
-    bodyA,
-    neighborBody,
-    center,
-    baseRadius: radius,
-    attachmentPoint,
-    cwDirection: _effectiveCW(path, linkIndex, true)
-  };
-}
-
-function _selectEndpointWrapExtraDistance(
-  context,
-  decomposition,
-  pointOnBody,
-  baseMinDistance,
-  surfaceDistance,
-  halfWidth
-) {
-  // Endpoint non-transitional pinch uses this to determine whether a candidate
-  // can use partial-layer clearance (> 2w) at its specific contact point.
-  if (!context || !decomposition || !pointOnBody) {
-    return null;
-  }
-  if (!(halfWidth > EPSILON)) {
-    return null;
-  }
-
-  const minDistanceAtPoint = _endpointWrapMinDistanceAtPoint(
-    context,
-    decomposition,
-    pointOnBody,
-    halfWidth
-  );
-  if (!(minDistanceAtPoint > EPSILON)) {
-    return null;
-  }
-  if (surfaceDistance <= minDistanceAtPoint + EPSILON) {
-    return Math.max(0.0, minDistanceAtPoint - baseMinDistance);
-  }
-
-  return null;
-}
-
-function _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, halfWidth) {
-  // Returns the local minimum separation for a point on an endpoint wheel.
-  // Full layers contribute globally; partial layers contribute only on their arc.
-  if (!context || !decomposition || !pointOnBody || !(halfWidth > EPSILON)) {
-    return 0.0;
-  }
-  if (!(context.baseRadius > EPSILON)) {
-    return 0.0;
-  }
-
-  const fullCoverageDistance = 2.0 * halfWidth * decomposition.fullLayers;
-  const partialCoverageDistance = 2.0 * halfWidth * (decomposition.fullLayers + 1);
-
-  if (!decomposition.hasPartial) {
-    return fullCoverageDistance;
-  }
-
-  const arcOnBase = signedArcLengthOnWheel(
-    context.attachmentPoint,
-    pointOnBody,
-    context.center,
-    context.baseRadius,
-    context.cwDirection,
-    true
-  );
-  const deltaAngle = arcOnBase / context.baseRadius;
-  const partialArcLength = deltaAngle * decomposition.partialRadius;
-  const partialSpan = Math.max(0.0, decomposition.partialLength);
-  if (!(partialSpan > EPSILON)) {
-    return fullCoverageDistance;
-  }
-
-  // Smooth transition over one cable line-width of arc length to avoid
-  // step-wise radius jumps when a contact point crosses the partial-layer edge.
-  const rampArcLength = Math.max(EPSILON, 2.0 * halfWidth);
-  const arc = partialArcLength;
-  const edge0Up = 0.0;
-  const edge1Up = rampArcLength;
-  const edge0Down = Math.max(0.0, partialSpan - rampArcLength);
-  const edge1Down = partialSpan;
-
-  const smoothStep = (edge0, edge1, value) => {
-    if (edge1 <= edge0 + EPSILON) {
-      return value >= edge1 ? 1.0 : 0.0;
-    }
-    const t = Math.max(0.0, Math.min(1.0, (value - edge0) / (edge1 - edge0)));
-    return t * t * (3.0 - 2.0 * t);
-  };
-
-  const rise = smoothStep(edge0Up, edge1Up, arc);
-  const fall = 1.0 - smoothStep(edge0Down, edge1Down, arc);
-  const partialCoverage = Math.max(0.0, Math.min(1.0, rise * fall));
-
-  return fullCoverageDistance + (partialCoverageDistance - fullCoverageDistance) * partialCoverage;
-}
-
-function _detectPinchCandidates(world) {
-  const candidates = [];
-  const nonTransitionalByKey = new Map();
-  const pathEntities = world.query([CablePathComponent]);
-  const potentialBodies = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
-
-  for (const pathId of pathEntities) {
-    const path = world.getComponent(pathId, CablePathComponent);
-    if (!path || path.jointEntities.length < 1) {
-      continue;
-    }
-    const halfWidth = path.cableHalfWidth ?? 0.0;
-    if (!(halfWidth > EPSILON)) {
-      continue;
-    }
-
-    const minDistance = 2.0 * halfWidth;
-    const pathMachine = getMachineId(world, pathId);
-
-    for (const jointId of path.jointEntities) {
-      const joint = world.getComponent(jointId, CableJointComponent);
-      if (!joint) {
-        continue;
-      }
-
-      const fallbackNormal = joint.attachmentPointB_world.clone().subtract(joint.attachmentPointA_world);
-      const surfacePair = _computeCircleSurfacePair(world, joint.entityA, joint.entityB, fallbackNormal);
-      if (!surfacePair) {
-        continue;
-      }
-
-      if (surfacePair.surfaceDistance > minDistance + EPSILON) {
-        continue;
-      }
-
-      const pinchPair = _computePinchAttachmentPair(world, path, joint.entityA, joint.entityB, surfacePair.normal);
-      if (!pinchPair) {
-        continue;
-      }
-      const crossData = _transitionalPinchCrossData(world, joint);
-      if (!crossData || !crossData.crosses) {
-        if (crossData) {
-          _debugCable(
-            world,
-            `skip transitional path=${pathId} joint=${jointId} ` +
-            `surfaceDistance=${surfacePair.surfaceDistance.toFixed(6)} ` +
-            `oCA=${crossData.orientCentersAtAttachA.toExponential(3)} ` +
-            `oCB=${crossData.orientCentersAtAttachB.toExponential(3)} ` +
-            `oAC=${crossData.orientAttachmentsAtCenterA.toExponential(3)} ` +
-            `oBC=${crossData.orientAttachmentsAtCenterB.toExponential(3)}`
-          );
-        }
-        continue;
-      }
-
-      candidates.push({
-        kind: 'transitional',
-        pathId,
-        jointId,
-        entityA: joint.entityA,
-        entityB: joint.entityB,
-        minDistance,
-        normal: surfacePair.normal.clone(),
-        pointA_world: pinchPair.pointA_world.clone(),
-        pointB_world: pinchPair.pointB_world.clone(),
-        surfaceDistance: surfacePair.surfaceDistance
-      });
-    }
-
-    for (let linkIndex = 1; linkIndex < path.linkTypes.length - 1; linkIndex++) {
-      if (!_isRolling(path.linkTypes[linkIndex])) {
-        continue;
-      }
-      if (!(path.stored[linkIndex] > EPSILON)) {
-        continue;
-      }
-
-      const leftJointId = path.jointEntities[linkIndex - 1];
-      const rightJointId = path.jointEntities[linkIndex];
-      const leftJoint = world.getComponent(leftJointId, CableJointComponent);
-      const rightJoint = world.getComponent(rightJointId, CableJointComponent);
-      if (!leftJoint || !rightJoint) {
-        continue;
-      }
-      const bodyA = leftJoint.entityB;
-      if (bodyA !== rightJoint.entityA) {
-        continue;
-      }
-
-      const centerA = world.getComponent(bodyA, PositionComponent)?.pos;
-      const radiusA = _effectiveRadius(path, world.getComponent(bodyA, RadiusComponent)?.radius);
-      if (!centerA || !Number.isFinite(radiusA) || radiusA <= EPSILON) {
-        continue;
-      }
-
-      const neighborTail = leftJoint.entityA;
-      const neighborHead = rightJoint.entityB;
-      for (const bodyB of potentialBodies) {
-        if (bodyB === bodyA || bodyB === neighborTail || bodyB === neighborHead) {
-          continue;
-        }
-        if (pathMachine !== getMachineId(world, bodyB)) {
-          continue;
-        }
-
-        const surfacePair = _computeCircleSurfacePair(world, bodyA, bodyB, null);
-        if (!surfacePair) {
-          continue;
-        }
-        if (surfacePair.surfaceDistance > minDistance + EPSILON) {
-          continue;
-        }
-
-        const pinchPair = _computePinchAttachmentPair(world, path, bodyA, bodyB, surfacePair.normal);
-        if (!pinchPair) {
-          continue;
-        }
-        if (!_isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pinchPair.pointA_world, centerA, radiusA)) {
-          continue;
-        }
-
-        const key = `${pathId}:${linkIndex}:${bodyB}`;
-        const existing = nonTransitionalByKey.get(key);
-        if (!existing || surfacePair.surfaceDistance < existing.surfaceDistance) {
-          nonTransitionalByKey.set(key, {
-            kind: 'non-transitional',
-            pathId,
-            linkIndex,
-            entityA: bodyA,
-            entityB: bodyB,
-            minDistance,
-            normal: surfacePair.normal.clone(),
-            surfaceDistance: surfacePair.surfaceDistance
-          });
-        }
-      }
-    }
-
-    for (const linkIndex of [0, path.linkTypes.length - 1]) {
-      if (!_isHybrid(path.linkTypes[linkIndex])) {
-        continue;
-      }
-      if (!(path.stored[linkIndex] > EPSILON)) {
-        continue;
-      }
-
-      const endpointContext = _getEndpointRollingArcContext(world, path, linkIndex);
-      if (!endpointContext) {
-        continue;
-      }
-      const decomposition = _decomposeStoredWrapLayers(
-        path.stored[linkIndex],
-        endpointContext.baseRadius,
-        halfWidth
-      );
-      if (!decomposition) {
-        continue;
-      }
-
-      const maxMinDistance = minDistance + (
-        decomposition.hasPartial
-          ? decomposition.extraDistanceForPartialCoverage
-          : decomposition.extraDistanceForFullCoverage
-      );
-      for (const bodyB of potentialBodies) {
-        if (
-          bodyB === endpointContext.bodyA ||
-          bodyB === endpointContext.neighborBody
-        ) {
-          continue;
-        }
-        if (pathMachine !== getMachineId(world, bodyB)) {
-          continue;
-        }
-
-        const surfacePair = _computeCircleSurfacePair(world, endpointContext.bodyA, bodyB, null);
-        if (!surfacePair) {
-          continue;
-        }
-        if (surfacePair.surfaceDistance > maxMinDistance + EPSILON) {
-          continue;
-        }
-
-        const pinchPair = _computePinchAttachmentPair(
-          world,
-          path,
-          endpointContext.bodyA,
-          bodyB,
-          surfacePair.normal
-        );
-        if (!pinchPair) {
-          continue;
-        }
-
-        const extraDistance = _selectEndpointWrapExtraDistance(
-          endpointContext,
-          decomposition,
-          pinchPair.pointA_world,
-          minDistance,
-          surfacePair.surfaceDistance,
-          halfWidth
-        );
-        if (extraDistance === null) {
-          continue;
-        }
-        const minDistanceWithLayers = minDistance + extraDistance;
-
-        const key = `${pathId}:${linkIndex}:${bodyB}`;
-        const existing = nonTransitionalByKey.get(key);
-        if (
-          !existing ||
-          minDistanceWithLayers > existing.minDistance + EPSILON ||
-          surfacePair.surfaceDistance < existing.surfaceDistance - EPSILON
-        ) {
-          nonTransitionalByKey.set(key, {
-            kind: 'non-transitional-endpoint',
-            pathId,
-            linkIndex,
-            entityA: endpointContext.bodyA,
-            entityB: bodyB,
-            minDistance: minDistanceWithLayers,
-            normal: surfacePair.normal.clone(),
-            surfaceDistance: surfacePair.surfaceDistance
-          });
-        }
-      }
-    }
-  }
-
-  for (const candidate of nonTransitionalByKey.values()) {
-    candidates.push(candidate);
-  }
-
-  world.setResource(PINCH_CANDIDATES_RESOURCE, candidates);
-}
-
-function _configureTransitionalPinch(world, candidate, pinchConfigs) {
-  const path = world.getComponent(candidate.pathId, CablePathComponent);
-  const joint = world.getComponent(candidate.jointId, CableJointComponent);
-  if (!path || !joint) {
-    return false;
-  }
-
-  const referenceDir = joint.attachmentPointB_world.clone().subtract(joint.attachmentPointA_world);
-  const pinchPair = _computePinchAttachmentPair(world, path, joint.entityA, joint.entityB, candidate.normal);
-  if (!pinchPair) {
-    return false;
-  }
-
-  const segmentDir = _pinchSegmentDirection(pinchPair.normal, referenceDir);
-  if (!segmentDir) {
-    return false;
-  }
-
-  joint.attachmentPointA_world.set(pinchPair.pointA_world);
-  joint.attachmentPointB_world.set(pinchPair.pointB_world);
-
-  pinchConfigs.set(candidate.jointId, {
-    pathId: candidate.pathId,
-    jointId: candidate.jointId,
-    entityA: candidate.entityA,
-    entityB: candidate.entityB,
-    minDistance: candidate.minDistance,
-    normal: pinchPair.normal.clone(),
-    segmentDir,
-    pinchPointA_world: pinchPair.pointA_world.clone(),
-    pinchPointB_world: pinchPair.pointB_world.clone()
-  });
-  return true;
-}
-
-function _insertNonTransitionalPinch(world, candidate, pinchConfigs) {
-  const path = world.getComponent(candidate.pathId, CablePathComponent);
-  if (!path) {
-    return false;
-  }
-  const linkIndex = candidate.linkIndex;
-  if (linkIndex <= 0 || linkIndex >= path.jointEntities.length) {
-    return false;
-  }
-  if (!_isRolling(path.linkTypes[linkIndex])) {
-    return false;
-  }
-
-  const leftJointId = path.jointEntities[linkIndex - 1];
-  const rightJointId = path.jointEntities[linkIndex];
-  const leftJoint = world.getComponent(leftJointId, CableJointComponent);
-  const rightJoint = world.getComponent(rightJointId, CableJointComponent);
-  if (!leftJoint || !rightJoint) {
-    return false;
-  }
-
-  const bodyA = leftJoint.entityB;
-  if (bodyA !== rightJoint.entityA || bodyA !== candidate.entityA) {
-    return false;
-  }
-  const bodyB = candidate.entityB;
-  if (bodyB === bodyA || bodyB === leftJoint.entityA || bodyB === rightJoint.entityB) {
-    return false;
-  }
-
-  const centerA = world.getComponent(bodyA, PositionComponent)?.pos;
-  const radiusA = _effectiveRadius(path, world.getComponent(bodyA, RadiusComponent)?.radius);
-  if (!centerA || !Number.isFinite(radiusA) || radiusA <= EPSILON) {
-    return false;
-  }
-
-  const pinchPair = _computePinchAttachmentPair(world, path, bodyA, bodyB, candidate.normal);
-  if (!pinchPair) {
-    return false;
-  }
-  if (!_isPointInsideRollingArc(path, leftJoint, rightJoint, linkIndex, pinchPair.pointA_world, centerA, radiusA)) {
-    return false;
-  }
-
-  const totalBefore = _pathCurrentLengthBudget(world, path);
-
-  const oldTail = leftJoint.attachmentPointB_world.clone();
-  const oldHead = rightJoint.attachmentPointA_world.clone();
-  const splitPointA = pinchPair.pointA_world.clone();
-  const splitPointB = pinchPair.pointB_world.clone();
-  const referenceDir = oldHead.clone().subtract(oldTail);
-  const segmentDir = _pinchSegmentDirection(pinchPair.normal, referenceDir);
-  if (!segmentDir) {
-    return false;
-  }
-
-  leftJoint.attachmentPointB_world.set(splitPointA);
-  rightJoint.attachmentPointA_world.set(splitPointA);
-
-  const machineId = getMachineId(world, candidate.pathId);
-  const jointABId = world.createEntity();
-  ensureMachineTag(world, jointABId, machineId);
-  world.addComponent(
-    jointABId,
-    new CableJointComponent(bodyA, bodyB, 0.0, splitPointA.clone(), splitPointB.clone())
-  );
-  world.addComponent(jointABId, new RenderableComponent('line', linecolor1));
-
-  const jointBAId = world.createEntity();
-  ensureMachineTag(world, jointBAId, machineId);
-  world.addComponent(
-    jointBAId,
-    new CableJointComponent(bodyB, bodyA, 0.0, splitPointB.clone(), splitPointA.clone())
-  );
-  world.addComponent(jointBAId, new RenderableComponent('line', linecolor1));
-
-  path.jointEntities.splice(linkIndex, 0, jointABId, jointBAId);
-
-  const cwA = path.cw[linkIndex];
-  const leftArc = signedArcLengthOnWheel(oldTail, splitPointA, centerA, radiusA, cwA, true);
-  const rightArc = signedArcLengthOnWheel(splitPointA, oldHead, centerA, radiusA, cwA, true);
-  const bodyBPrevPos = world.getComponent(bodyB, CableLinkComponent)?.prevCableAttachmentTimePos;
-  const bodyBPos = world.getComponent(bodyB, PositionComponent)?.pos;
-  const cwB = rightOfLine(
-    bodyBPrevPos ?? bodyBPos ?? splitPointB,
-    oldTail,
-    oldHead
-  );
-
-  path.linkTypes.splice(linkIndex, 1, 'rolling', 'rolling', 'rolling');
-  path.cw.splice(linkIndex, 1, cwA, cwB, cwA);
-  path.stored.splice(
-    linkIndex,
-    1,
-    leftArc,
-    PINCH_NON_TRANSITIONAL_STORED_BUFFER,
-    rightArc
-  );
-
-  const totalAfter = _pathCurrentLengthBudget(world, path);
-  const deltaBudget = totalBefore - totalAfter;
-  const jointBA = world.getComponent(jointBAId, CableJointComponent);
-  if (jointBA) {
-    jointBA.restLength += deltaBudget;
-  }
-
-  pinchConfigs.set(jointABId, {
-    pathId: candidate.pathId,
-    jointId: jointABId,
-    entityA: bodyA,
-    entityB: bodyB,
-    minDistance: candidate.minDistance,
-    normal: pinchPair.normal.clone(),
-    segmentDir: segmentDir.clone(),
-    pinchPointA_world: splitPointA.clone(),
-    pinchPointB_world: splitPointB.clone()
-  });
-  pinchConfigs.set(jointBAId, {
-    pathId: candidate.pathId,
-    jointId: jointBAId,
-    entityA: bodyB,
-    entityB: bodyA,
-    minDistance: candidate.minDistance,
-    normal: pinchPair.normal.clone().scale(-1.0),
-    segmentDir: segmentDir.clone(),
-    pinchPointA_world: splitPointB.clone(),
-    pinchPointB_world: splitPointA.clone()
-  });
-  _debugCable(
-    world,
-    `insert non-transitional path=${candidate.pathId} link=${linkIndex} bodies=${bodyA}<->${bodyB} ` +
-    `joints=${jointABId},${jointBAId} arcs=${leftArc.toFixed(6)},${rightArc.toFixed(6)} ` +
-    `buffer=${PINCH_NON_TRANSITIONAL_STORED_BUFFER.toFixed(6)} deltaBudget=${deltaBudget.toFixed(6)}`
-  );
-  return true;
-}
-
-function _configureEndpointNonTransitionalPinch(world, candidate, pinchConfigs) {
-  const path = world.getComponent(candidate.pathId, CablePathComponent);
-  if (!path) {
-    return false;
-  }
-
-  const pinchPair = _computePinchAttachmentPair(
-    world,
-    path,
-    candidate.entityA,
-    candidate.entityB,
-    candidate.normal
-  );
-  if (!pinchPair) {
-    return false;
-  }
-
-  const key = `endpoint:${candidate.pathId}:${candidate.linkIndex}:${candidate.entityA}:${candidate.entityB}`;
-  pinchConfigs.set(key, {
-    pathId: candidate.pathId,
-    jointId: null,
-    entityA: candidate.entityA,
-    entityB: candidate.entityB,
-    minDistance: candidate.minDistance,
-    normal: pinchPair.normal.clone(),
-    pinchPointA_world: pinchPair.pointA_world.clone(),
-    pinchPointB_world: pinchPair.pointB_world.clone()
-  });
-  _debugCable(
-    world,
-    `configure endpoint-non-transitional path=${candidate.pathId} link=${candidate.linkIndex} ` +
-    `bodies=${candidate.entityA}<->${candidate.entityB} minDistance=${candidate.minDistance.toFixed(6)}`
-  );
-  return true;
-}
-
-function _configurePinches(world) {
-  const candidates = world.getResource(PINCH_CANDIDATES_RESOURCE);
-  const pinchConfigs = new Map();
-  if (!Array.isArray(candidates)) {
-    world.setResource(PINCH_CONFIGS_RESOURCE, pinchConfigs);
-    return;
-  }
-
-  const nonTransitional = candidates.filter((candidate) => candidate.kind === 'non-transitional');
-  nonTransitional.sort((a, b) => {
-    if (a.pathId !== b.pathId) {
-      return a.pathId - b.pathId;
-    }
-    return b.linkIndex - a.linkIndex;
-  });
-  for (const candidate of nonTransitional) {
-    _insertNonTransitionalPinch(world, candidate, pinchConfigs);
-  }
-
-  const endpointNonTransitional = candidates.filter((candidate) => candidate.kind === 'non-transitional-endpoint');
-  for (const candidate of endpointNonTransitional) {
-    _configureEndpointNonTransitionalPinch(world, candidate, pinchConfigs);
-  }
-
-  for (const candidate of candidates) {
-    if (candidate.kind !== 'transitional') {
-      continue;
-    }
-    _configureTransitionalPinch(world, candidate, pinchConfigs);
-  }
-
-  world.setResource(PINCH_CONFIGS_RESOURCE, pinchConfigs);
-}
-
-function _buildPinchContacts(world) {
-  const pinchConfigs = world.getResource(PINCH_CONFIGS_RESOURCE);
-  const dedupedContacts = new Map();
-  if (!(pinchConfigs instanceof Map)) {
-    world.setResource(PINCH_CONTACTS_RESOURCE, []);
-    return;
-  }
-
-  for (const config of pinchConfigs.values()) {
-    let entityA = config.entityA;
-    let entityB = config.entityB;
-    let normal = config.normal.clone();
-    if (entityA > entityB) {
-      entityA = config.entityB;
-      entityB = config.entityA;
-      normal.scale(-1.0);
-    }
-    const key = `${entityA}:${entityB}`;
-    const existing = dedupedContacts.get(key);
-    if (!existing || config.minDistance > existing.minDistance) {
-      dedupedContacts.set(
-        key,
-        new PinchContact(
-          entityA,
-          entityB,
-          config.pathId,
-          config.minDistance,
-          normal,
-          0.0
-        )
-      );
-    }
-  }
-
-  world.setResource(PINCH_CONTACTS_RESOURCE, Array.from(dedupedContacts.values()));
 }
 
 export class CableAttachmentUpdateSystem {
@@ -1876,53 +997,12 @@ export class CableAttachmentUpdateSystem {
   }
 }
 
-export class PinchDetectionSystem {
-  runInPause = false;
-
-  update(world, _dt_unused) {
-    if (world.getResource('enablePinch') === false) {
-      world.setResource(PINCH_CANDIDATES_RESOURCE, []);
-      return;
-    }
-    _detectPinchCandidates(world);
-  }
-}
-
-export class PinchConfigureSystem {
-  runInPause = false;
-
-  update(world, _dt_unused) {
-    if (world.getResource('enablePinch') === false) {
-      world.setResource(PINCH_CONFIGS_RESOURCE, new Map());
-      return;
-    }
-    _configurePinches(world);
-  }
-}
-
-export class PinchConstraintBuildSystem {
-  runInPause = false;
-
-  update(world, _dt_unused) {
-    if (world.getResource('enablePinch') === false) {
-      world.setResource(PINCH_CONTACTS_RESOURCE, []);
-      return;
-    }
-    _buildPinchContacts(world);
-  }
-}
-
 export class PBDCableConstraintSolver {
   runInPause = false;
 
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
-    const pinchEnabled = world.getResource('enablePinch') !== false;
-    const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
-    const pinchContactsResource = world.getResource(PINCH_CONTACTS_RESOURCE);
-    const pinchConfigs = (pinchEnabled && pinchConfigsResource instanceof Map) ? pinchConfigsResource : new Map();
-    const pinchContacts = (pinchEnabled && Array.isArray(pinchContactsResource)) ? pinchContactsResource : [];
     const ITERATIONS = 2; // 0: Forward, 1: Backward
 
     // Pre-calculate local offsets for all joints to ensure attachment points move with bodies
@@ -2062,13 +1142,9 @@ export class PBDCableConstraintSolver {
           const pA = _computeWorldAttachment(world, entityA, locals.localA);
           const pB = _computeWorldAttachment(world, entityB, locals.localB);
 
-          let currentSegmentLength = pA.distanceTo(pB);
-          const pinchConfig = pinchConfigs.get(jointId);
+          const currentSegmentLength = pA.distanceTo(pB);
           let dir = null;
-          if (pinchConfig) {
-            dir = pinchConfig.segmentDir.clone().normalize();
-            currentSegmentLength = 0.0;
-          } else if (currentSegmentLength > EPSILON) {
+          if (currentSegmentLength > EPSILON) {
             dir = new Vector2().subtractVectors(pB, pA).scale(1.0 / currentSegmentLength);
           }
           if (!dir || dir.lengthSq() <= EPSILON) {
@@ -2095,32 +1171,6 @@ export class PBDCableConstraintSolver {
         } // End loop through joints in path
 
       } // End loop through paths
-
-      for (const contact of pinchContacts) {
-        const surfacePair = _computeCircleSurfacePair(world, contact.entityA, contact.entityB, contact.normal);
-        if (!surfacePair) {
-          continue;
-        }
-
-        // Contact inequality C = 2w - d <= 0, where d is the closest surface distance.
-        const constraintError = contact.minDistance - surfacePair.surfaceDistance;
-        if (constraintError <= EPSILON) {
-          continue;
-        }
-
-        const gradPosA = surfacePair.normal.clone().scale(-1.0);
-        const gradPosB = surfacePair.normal.clone();
-        applyConstraint(
-          contact.entityA,
-          contact.entityB,
-          surfacePair.pointA_world,
-          surfacePair.pointB_world,
-          gradPosA,
-          gradPosB,
-          constraintError,
-          contact.compliance
-        );
-      }
     } // End loop through iterations
   } // end update
 } // end PBDCableConstraintSolver

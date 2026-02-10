@@ -146,9 +146,6 @@ canvas {
     CablePathComponent,
     linecolor1,
     CableAttachmentUpdateSystem,
-    PinchDetectionSystem,
-    PinchConfigureSystem,
-    PinchConstraintBuildSystem,
     PBDCableConstraintSolver
   } from '../../../src/js/cable_joints/cable_joints_core.js';
   import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
@@ -171,7 +168,7 @@ canvas {
     PBDBorderCircleSectorCollisions,
     PBDBallBorderCollisions,
     OverlayRadiusAndCircleSectorSystem,
-    getCollisionRadiusToward
+    getMaxCollisionRadius
   } from './flipper_common.js';
   import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
   import { RenderSystem } from './renderSystem.js';
@@ -282,8 +279,7 @@ canvas {
       const eTotal = kTrans + kRot + uGravity + uCable;
 
       const rawRadius = radiusComp.radius;
-      const floorDirection = new Vector2(0.0, -1.0);
-      const effectiveRadiusBottom = getCollisionRadiusToward(world, ballId, floorDirection);
+      const effectiveRadiusBottom = getMaxCollisionRadius(world, ballId);
       const stored0 = _readFinite(pathComp.stored?.[0], 0.0);
 
       const borderContacts = world.getResource('ball_border_contacts') || [];
@@ -366,7 +362,6 @@ canvas {
     world.setResource('energyTraceStep', 0);
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
-    world.setResource('enablePinch', true);
     world.setResource('enableLayering', true);
 
     const left = 0.03;
@@ -462,9 +457,6 @@ canvas {
       world.registerSystem(new AngularMovementSystem());
       world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
-      world.registerSystem(new PinchDetectionSystem());
-      world.registerSystem(new PinchConfigureSystem());
-      world.registerSystem(new PinchConstraintBuildSystem());
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());

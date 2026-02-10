@@ -28,9 +28,6 @@ import {
   CablePathComponent,
   linecolor1,
   CableAttachmentUpdateSystem,
-  PinchDetectionSystem,
-  PinchConfigureSystem,
-  PinchConstraintBuildSystem,
   PBDCableConstraintSolver
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import {
@@ -103,7 +100,6 @@ export function setupScene(world, stage, canvas) {
     world.setResource('ball_obstacle_contacts', []);
     world.setResource('ball_border_contacts', []);
     world.setResource('ball_flipper_contacts', []);
-    world.setResource('enablePinch', true);
     world.setResource('enableLayering', true);
     const simWidth = 1.0;
     const simHeight = 1.7;
@@ -329,9 +325,6 @@ export function setupScene(world, stage, canvas) {
         world.registerSystem(new FlipperTipLinkSystem());
         world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
         world.registerSystem(new CableAttachmentUpdateSystem());
-        world.registerSystem(new PinchDetectionSystem());
-        world.registerSystem(new PinchConfigureSystem());
-        world.registerSystem(new PinchConstraintBuildSystem());
         world.registerSystem(new CableAttachmentCacheSystem());
         world.registerSystem(new CableSlackSystem());
 

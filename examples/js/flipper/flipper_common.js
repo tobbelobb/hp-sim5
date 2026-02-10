@@ -61,13 +61,11 @@ export class OverlayRadiusComponent {
 }
 
 export class CircleSectorComponent {
-  constructor(sectors = []) {
-    this.sectors = Array.isArray(sectors) ? sectors.map((sector) => ({
-      radius: Number.isFinite(sector?.radius) ? Math.max(0.0, sector.radius) : 0.0,
-      startAngle: Number.isFinite(sector?.startAngle) ? sector.startAngle : 0.0,
-      endAngle: Number.isFinite(sector?.endAngle) ? sector.endAngle : 0.0,
-      cw: sector?.cw === true
-    })) : [];
+  constructor(radius = 0.0, startAngle = 0.0, endAngle = 0.0, cw = false) {
+    this.radius = Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
+    this.startAngle = Number.isFinite(startAngle) ? startAngle : 0.0;
+    this.endAngle = Number.isFinite(endAngle) ? endAngle : 0.0;
+    this.cw = cw === true;
   }
 }
 
@@ -109,11 +107,20 @@ export function getRawCollisionRadius(world, entityId) {
   return Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
 }
 
-export function getCollisionRadiusToward(world, entityId, directionFromCenter = null) {
+function _getBaseCollisionRadius(world, entityId) {
   let radius = getRawCollisionRadius(world, entityId);
   const overlayComp = world.getComponent(entityId, OverlayRadiusComponent);
   if (overlayComp && Number.isFinite(overlayComp.radius)) {
     radius = Math.max(radius, overlayComp.radius);
+  }
+  return radius;
+}
+
+export function getMaxCollisionRadius(world, entityId) {
+  let radius = _getBaseCollisionRadius(world, entityId);
+  const sectorComp = world.getComponent(entityId, CircleSectorComponent);
+  if (sectorComp && Number.isFinite(sectorComp.radius)) {
+    radius = Math.max(radius, sectorComp.radius);
   }
   return radius;
 }
@@ -131,34 +138,33 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
     return null;
   }
   const dir = _normalizedDirection(directionTowardOther);
-  const baseRadius = getCollisionRadiusToward(world, entityId);
+  const baseRadius = _getBaseCollisionRadius(world, entityId);
   let projection = baseRadius;
   let offset = dir.clone().scale(baseRadius);
   const sectorComp = world.getComponent(entityId, CircleSectorComponent);
-  if (sectorComp && Array.isArray(sectorComp.sectors)) {
+  if (
+    sectorComp &&
+    Number.isFinite(sectorComp.radius) &&
+    sectorComp.radius > baseRadius + 1e-9
+  ) {
     const angle = Math.atan2(dir.y, dir.x);
-    for (const sector of sectorComp.sectors) {
-      if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > baseRadius + 1e-9)) {
-        continue;
+    if (_isAngleInSector(angle, sectorComp.startAngle, sectorComp.endAngle, sectorComp.cw === true)) {
+      if (sectorComp.radius > projection + 1e-9) {
+        projection = sectorComp.radius;
+        offset = dir.clone().scale(projection);
       }
-      if (_isAngleInSector(angle, sector.startAngle, sector.endAngle, sector.cw === true)) {
-        if (sector.radius > projection + 1e-9) {
-          projection = sector.radius;
-          offset = dir.clone().scale(projection);
-        }
-      }
+    }
 
-      const cornerAngles = [sector.startAngle, sector.endAngle];
-      for (const cornerAngle of cornerAngles) {
-        const cornerOffset = new Vector2(
-          Math.cos(cornerAngle) * sector.radius,
-          Math.sin(cornerAngle) * sector.radius
-        );
-        const cornerProjection = cornerOffset.dot(dir);
-        if (cornerProjection > projection + 1e-9) {
-          projection = cornerProjection;
-          offset = cornerOffset;
-        }
+    const cornerAngles = [sectorComp.startAngle, sectorComp.endAngle];
+    for (const cornerAngle of cornerAngles) {
+      const cornerOffset = new Vector2(
+        Math.cos(cornerAngle) * sectorComp.radius,
+        Math.sin(cornerAngle) * sectorComp.radius
+      );
+      const cornerProjection = cornerOffset.dot(dir);
+      if (cornerProjection > projection + 1e-9) {
+        projection = cornerProjection;
+        offset = cornerOffset;
       }
     }
   }
@@ -263,7 +269,7 @@ export class OverlayRadiusAndCircleSectorSystem {
     }
 
     const overlayByEntity = new Map();
-    const sectorsByEntity = new Map();
+    const sectorByEntity = new Map();
     const pathEntities = world.query([CablePathComponent]);
 
     for (const pathId of pathEntities) {
@@ -304,7 +310,7 @@ export class OverlayRadiusAndCircleSectorSystem {
         }
 
         if (decomposition.fullLayers > 0) {
-          const overlayRadius = firstLayerRadius + (decomposition.fullLayers - 1) * layerStep;
+          const overlayRadius = rawRadius + layerStep * decomposition.fullLayers;
           const prev = overlayByEntity.get(entityId) ?? 0.0;
           overlayByEntity.set(entityId, Math.max(prev, overlayRadius));
         }
@@ -322,26 +328,26 @@ export class OverlayRadiusAndCircleSectorSystem {
           const span = decomposition.partialLength / decomposition.partialRadius;
           const cw = path.cw[linkIndex] === true;
           const endAngle = cw ? (startAngle - span) : (startAngle + span);
-          const sectors = sectorsByEntity.get(entityId) ?? [];
-          sectors.push({
+          const sector = {
             radius: decomposition.partialRadius,
             startAngle,
             endAngle,
             cw
-          });
-          sectorsByEntity.set(entityId, sectors);
+          };
+          const prev = sectorByEntity.get(entityId);
+          if (!prev || sector.radius > prev.radius) {
+            sectorByEntity.set(entityId, sector);
+          }
         }
       }
     }
 
-    const camEntities = new Set();
     for (const [entityId, radius] of overlayByEntity.entries()) {
       if (world.hasComponent(entityId, OverlayRadiusComponent)) {
         world.getComponent(entityId, OverlayRadiusComponent).radius = radius;
       } else {
         world.addComponent(entityId, new OverlayRadiusComponent(radius));
       }
-      camEntities.add(entityId);
     }
     for (const entityId of world.query([OverlayRadiusComponent])) {
       if (!overlayByEntity.has(entityId)) {
@@ -349,20 +355,27 @@ export class OverlayRadiusAndCircleSectorSystem {
       }
     }
 
-    for (const [entityId, sectors] of sectorsByEntity.entries()) {
+    for (const [entityId, sector] of sectorByEntity.entries()) {
       if (world.hasComponent(entityId, CircleSectorComponent)) {
-        world.getComponent(entityId, CircleSectorComponent).sectors = sectors;
+        const comp = world.getComponent(entityId, CircleSectorComponent);
+        comp.radius = sector.radius;
+        comp.startAngle = sector.startAngle;
+        comp.endAngle = sector.endAngle;
+        comp.cw = sector.cw;
       } else {
-        world.addComponent(entityId, new CircleSectorComponent(sectors));
+        world.addComponent(
+          entityId,
+          new CircleSectorComponent(sector.radius, sector.startAngle, sector.endAngle, sector.cw)
+        );
       }
-      camEntities.add(entityId);
     }
     for (const entityId of world.query([CircleSectorComponent])) {
-      if (!sectorsByEntity.has(entityId)) {
+      if (!sectorByEntity.has(entityId)) {
         world.removeComponent(entityId, CircleSectorComponent);
       }
     }
 
+    const camEntities = new Set([...overlayByEntity.keys(), ...sectorByEntity.keys()]);
     for (const entityId of camEntities) {
       if (!world.hasComponent(entityId, CircleCamTag)) {
         world.addComponent(entityId, new CircleCamTag());
@@ -486,9 +499,10 @@ export class InputSystem {
          let closestDistSq = Infinity;
          for (const b of this.world.query([BallTagComponent, PositionComponent, RadiusComponent])) {
            const pos = this.world.getComponent(b, PositionComponent).pos;
-           const r = this.world.getComponent(b, RadiusComponent).radius + extraClickableRadius;
+           const r1 = getMaxCollisionRadius(this.world, b) + extraClickableRadius;
            const distSq = clickVec.clone().subtract(pos).lengthSq();
-           if (distSq <= r * r && distSq < closestDistSq) {
+           if (distSq > r1 * r1) continue;
+           if (distSq < closestDistSq) {
              closestBall = b;
              closestDistSq = distSq;
            }
@@ -812,7 +826,7 @@ export class PBDBallBorderCollisions {
             }
 
             const dist = Math.sqrt(minDistSq);
-            const r1 = getCollisionRadiusToward(world, ballId, collisionNormal.clone().scale(-1.0));
+            const r1 = getMaxCollisionRadius(world, ballId);
             if (dist > r1) {
               continue;
             }
@@ -865,8 +879,8 @@ export class PBDBallBallCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
-        const r1 = getCollisionRadiusToward(world, e1, dir.clone());
-        const r2 = getCollisionRadiusToward(world, e2, dir.clone().scale(-1.0));
+        const r1 = getMaxCollisionRadius(world, e1);
+        const r2 = getMaxCollisionRadius(world, e2);
         const rSum = r1 + r2;
         if (d > rSum) continue;
 
@@ -919,8 +933,8 @@ export class PBDBallObstacleCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
-        const r1 = getCollisionRadiusToward(world, ballId, dir.clone().scale(-1.0));
-        const r2 = getCollisionRadiusToward(world, obsId, dir.clone());
+        const r1 = getMaxCollisionRadius(world, ballId);
+        const r2 = getMaxCollisionRadius(world, obsId);
         const rSum = r1 + r2;
         if (d > rSum) continue;
         const rawHit = d <= (rawBallRadius + rawObsRadius + 1e-9);
@@ -990,12 +1004,8 @@ export class PBDBallFlipperCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d);
-        const r1 = getCollisionRadiusToward(world, ballId, dir.clone().scale(-1.0));
-        const flipperDir = new Vector2().subtractVectors(p1, fp);
-        if (flipperDir.lengthSq() > 1e-12) {
-          flipperDir.normalize();
-        }
-        const fr = getCollisionRadiusToward(world, flipId, flipperDir);
+        const r1 = getMaxCollisionRadius(world, ballId);
+        const fr = getMaxCollisionRadius(world, flipId);
         const rSum = r1 + fr;
         if (d > rSum) continue;
 
@@ -1072,6 +1082,91 @@ function _borderCollisionNormal(point, closestPoint, edgeStart, edgeEnd) {
   return collisionNormal;
 }
 
+function _resolveRigidContactSingle(world, entityId, contactOffset, normal, penetration) {
+  if (!(penetration > 0.0)) {
+    return 0.0;
+  }
+  const posComp = world.getComponent(entityId, PositionComponent);
+  if (!posComp?.pos) {
+    return 0.0;
+  }
+
+  const massComp = world.getComponent(entityId, MassComponent);
+  const invMass = (massComp && massComp.mass > 0.0) ? 1.0 / massComp.mass : 0.0;
+  const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
+  const invInertia = moiComp ? moiComp.invInertia : 0.0;
+  const orientComp = world.getComponent(entityId, OrientationComponent);
+
+  const r = contactOffset?.clone?.() ?? new Vector2(0.0, 0.0);
+  const rn = r.x * normal.y - r.y * normal.x;
+  const denom = invMass + invInertia * rn * rn;
+  if (denom <= 1e-12) {
+    return 0.0;
+  }
+
+  const lambda = penetration / denom;
+  if (invMass > 0.0) {
+    posComp.pos.add(normal, invMass * lambda);
+  }
+  if (invInertia > 0.0 && orientComp) {
+    orientComp.angle += invInertia * rn * lambda;
+  }
+  return lambda;
+}
+
+function _resolveRigidContactPair(world, entityA, offsetA, entityB, offsetB, normalAB, penetration) {
+  if (!(penetration > 0.0)) {
+    return 0.0;
+  }
+  const posAComp = world.getComponent(entityA, PositionComponent);
+  const posBComp = world.getComponent(entityB, PositionComponent);
+  if (!posAComp?.pos || !posBComp?.pos) {
+    return 0.0;
+  }
+
+  const massAComp = world.getComponent(entityA, MassComponent);
+  const massBComp = world.getComponent(entityB, MassComponent);
+  const invMassA = (massAComp && massAComp.mass > 0.0) ? 1.0 / massAComp.mass : 0.0;
+  const invMassB = (massBComp && massBComp.mass > 0.0) ? 1.0 / massBComp.mass : 0.0;
+
+  const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
+  const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
+  const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+  const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+
+  const orientAComp = world.getComponent(entityA, OrientationComponent);
+  const orientBComp = world.getComponent(entityB, OrientationComponent);
+
+  const rA = offsetA?.clone?.() ?? new Vector2(0.0, 0.0);
+  const rB = offsetB?.clone?.() ?? new Vector2(0.0, 0.0);
+  const rnA = rA.x * normalAB.y - rA.y * normalAB.x;
+  const rnB = rB.x * normalAB.y - rB.y * normalAB.x;
+  const denom = (
+    invMassA +
+    invMassB +
+    invInertiaA * rnA * rnA +
+    invInertiaB * rnB * rnB
+  );
+  if (denom <= 1e-12) {
+    return 0.0;
+  }
+
+  const lambda = penetration / denom;
+  if (invMassA > 0.0) {
+    posAComp.pos.add(normalAB, -invMassA * lambda);
+  }
+  if (invMassB > 0.0) {
+    posBComp.pos.add(normalAB, invMassB * lambda);
+  }
+  if (invInertiaA > 0.0 && orientAComp) {
+    orientAComp.angle += -invInertiaA * rnA * lambda;
+  }
+  if (invInertiaB > 0.0 && orientBComp) {
+    orientBComp.angle += invInertiaB * rnB * lambda;
+  }
+  return lambda;
+}
+
 export class PBDBorderCircleSectorCollisions {
   runInPause = false;
 
@@ -1096,9 +1191,7 @@ export class PBDBorderCircleSectorCollisions {
 
     for (const ballId of ballEntities) {
       const posComp = world.getComponent(ballId, PositionComponent);
-      const massComp = world.getComponent(ballId, MassComponent);
       const p1 = posComp?.pos;
-      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
       if (!p1) continue;
 
       const closestData = _findClosestBorderSegment(borderPoints, p1);
@@ -1113,11 +1206,13 @@ export class PBDBorderCircleSectorCollisions {
       const penetration = support.projection - dist;
       if (penetration <= 0.0) continue;
 
-      let deltaLambda = 0.0;
-      if (invMass > 0.0) {
-        p1.add(normal, penetration);
-        deltaLambda = penetration / invMass;
-      }
+      const deltaLambda = _resolveRigidContactSingle(
+        world,
+        ballId,
+        support.offset,
+        normal,
+        penetration
+      );
 
       const existing = contacts.find((c) => c.ball_id === ballId);
       if (existing) {
@@ -1173,17 +1268,15 @@ export class PBDBallCircleSectorCollisions {
         const rSum = support1.projection + support2.projection;
         if (d > rSum) continue;
         const penetration = rSum - d;
-
-        const m1Comp = world.getComponent(e1, MassComponent);
-        const m2Comp = world.getComponent(e2, MassComponent);
-        const invMass1 = (m1Comp && m1Comp.mass > 0) ? 1.0 / m1Comp.mass : 0.0;
-        const invMass2 = (m2Comp && m2Comp.mass > 0) ? 1.0 / m2Comp.mass : 0.0;
-        const totalInvMass = invMass1 + invMass2;
-        if (totalInvMass <= 1e-12) continue;
-
-        const corr = dir.clone().scale(penetration / totalInvMass);
-        p1.add(corr, -invMass1);
-        p2.add(corr, invMass2);
+        _resolveRigidContactPair(
+          world,
+          e1,
+          support1.offset,
+          e2,
+          support2.offset,
+          dir,
+          penetration
+        );
       }
     }
   }
@@ -1204,8 +1297,6 @@ export class PBDObstacleCircleSectorCollisions {
 
     for (const ballId of ballEntities) {
       const pBall = world.getComponent(ballId, PositionComponent)?.pos;
-      const massComp = world.getComponent(ballId, MassComponent);
-      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
       if (!pBall) continue;
 
       for (const obsId of obstacleEntities) {
@@ -1232,9 +1323,7 @@ export class PBDObstacleCircleSectorCollisions {
         if (d > rSum) continue;
         const penetration = rSum - d;
         if (penetration <= 0.0) continue;
-        if (invMass > 0.0) {
-          pBall.add(normal, penetration);
-        }
+        _resolveRigidContactSingle(world, ballId, supportBall.offset, normal, penetration);
 
         const existing = contacts.find((c) => c.ball_id === ballId && c.obs_id === obsId);
         if (!existing) {
@@ -1271,8 +1360,6 @@ export class FlipperCircleSectorCollisions {
 
     for (const ballId of ballEntities) {
       const pBall = world.getComponent(ballId, PositionComponent)?.pos;
-      const massComp = world.getComponent(ballId, MassComponent);
-      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
       if (!pBall) continue;
 
       for (const flipId of flipperEntities) {
@@ -1292,17 +1379,19 @@ export class FlipperCircleSectorCollisions {
         if (!supportBall) continue;
         if (supportBall.projection <= supportBall.baseRadius + 1e-9) continue;
 
-        const flipperRadius = getCollisionRadiusToward(world, flipId);
+        const flipperRadius = getMaxCollisionRadius(world, flipId);
         const rSum = supportBall.projection + flipperRadius;
         if (d > rSum) continue;
         const penetration = rSum - d;
         if (penetration <= 0.0) continue;
 
-        let deltaLambda = 0.0;
-        if (invMass > 0.0) {
-          pBall.add(normal, penetration);
-          deltaLambda = penetration / invMass;
-        }
+        const deltaLambda = _resolveRigidContactSingle(
+          world,
+          ballId,
+          supportBall.offset,
+          normal,
+          penetration
+        );
 
         const existing = contacts.find((c) => c.ball_id === ballId && c.flip_id === flipId);
         if (existing) {

@@ -171,13 +171,9 @@ canvas {
     window.getGameStateForTest = getGameStateForTest;
 
     window.getCableFeatureFlags = () => ({
-        pinch: world.getResource('enablePinch') !== false,
         layering: world.getResource('enableLayering') !== false
     });
-    window.setCableFeatureFlags = ({ pinch, layering } = {}) => {
-        if (typeof pinch === 'boolean') {
-            world.setResource('enablePinch', pinch);
-        }
+    window.setCableFeatureFlags = ({ layering } = {}) => {
         if (typeof layering === 'boolean') {
             world.setResource('enableLayering', layering);
         }
