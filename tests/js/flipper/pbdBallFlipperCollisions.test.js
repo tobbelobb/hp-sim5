@@ -9,6 +9,7 @@ import {
   FlipperTagComponent,
   FlipperStateComponent,
   PBDBallFlipperCollisions,
+  FlipperCircleSectorCollisions,
   OverlayRadiusComponent,
   CircleSectorComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
@@ -81,8 +82,11 @@ describe('PBDBallFlipperCollisions with overlay geometry', () => {
     );
 
     const system = new PBDBallFlipperCollisions();
+    const sectorSystem = new FlipperCircleSectorCollisions();
     system.update(worldA.world, 0.016);
+    sectorSystem.update(worldA.world, 0.016);
     system.update(worldB.world, 0.016);
+    sectorSystem.update(worldB.world, 0.016);
 
     const contactsA = worldA.world.getResource('ball_flipper_contacts') || [];
     const contactsB = worldB.world.getResource('ball_flipper_contacts') || [];

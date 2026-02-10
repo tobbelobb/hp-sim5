@@ -10,6 +10,7 @@ import {
 import {
   BallTagComponent,
   PBDBallBallCollisions,
+  PBDBallCircleSectorCollisions,
   OverlayRadiusComponent,
   CircleSectorComponent
 } from '../../../examples/js/flipper/flipper_common.js';
@@ -317,10 +318,14 @@ describe('PBDBallBallCollisions', () => {
       }])
     );
 
-    const systemNoSectors = new PBDBallBallCollisions();
-    systemNoSectors.update(withoutSectors, dt);
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
+    const baseNoSectors = new PBDBallBallCollisions();
+    const sectorNoSectors = new PBDBallCircleSectorCollisions();
+    baseNoSectors.update(withoutSectors, dt);
+    sectorNoSectors.update(withoutSectors, dt);
+    const base = new PBDBallBallCollisions();
+    const sector = new PBDBallCircleSectorCollisions();
+    base.update(world, dt);
+    sector.update(world, dt);
 
     const noLeftX = withoutSectors.getComponent(noSectorsPair.left, PositionComponent).pos.x;
     const noRightX = withoutSectors.getComponent(noSectorsPair.right, PositionComponent).pos.x;

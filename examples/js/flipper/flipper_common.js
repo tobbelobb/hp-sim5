@@ -115,26 +115,72 @@ export function getCollisionRadiusToward(world, entityId, directionFromCenter = 
   if (overlayComp && Number.isFinite(overlayComp.radius)) {
     radius = Math.max(radius, overlayComp.radius);
   }
-
-  if (!directionFromCenter || directionFromCenter.lengthSq() <= 1e-12) {
-    return radius;
-  }
-
-  const sectorComp = world.getComponent(entityId, CircleSectorComponent);
-  if (!sectorComp || !Array.isArray(sectorComp.sectors)) {
-    return radius;
-  }
-
-  const angle = Math.atan2(directionFromCenter.y, directionFromCenter.x);
-  for (const sector of sectorComp.sectors) {
-    if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 0.0)) {
-      continue;
-    }
-    if (_isAngleInSector(angle, sector.startAngle, sector.endAngle, sector.cw === true)) {
-      radius = Math.max(radius, sector.radius);
-    }
-  }
   return radius;
+}
+
+function _normalizedDirection(vec, fallback = new Vector2(1.0, 0.0)) {
+  if (!vec || vec.lengthSq() <= 1e-12) {
+    return fallback.clone();
+  }
+  return vec.clone().normalize();
+}
+
+function _compositeSupportToward(world, entityId, directionTowardOther) {
+  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!center) {
+    return null;
+  }
+  const dir = _normalizedDirection(directionTowardOther);
+  const baseRadius = getCollisionRadiusToward(world, entityId);
+  let projection = baseRadius;
+  let offset = dir.clone().scale(baseRadius);
+  const sectorComp = world.getComponent(entityId, CircleSectorComponent);
+  if (sectorComp && Array.isArray(sectorComp.sectors)) {
+    const angle = Math.atan2(dir.y, dir.x);
+    for (const sector of sectorComp.sectors) {
+      if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > baseRadius + 1e-9)) {
+        continue;
+      }
+      if (_isAngleInSector(angle, sector.startAngle, sector.endAngle, sector.cw === true)) {
+        if (sector.radius > projection + 1e-9) {
+          projection = sector.radius;
+          offset = dir.clone().scale(projection);
+        }
+      }
+
+      const cornerAngles = [sector.startAngle, sector.endAngle];
+      for (const cornerAngle of cornerAngles) {
+        const cornerOffset = new Vector2(
+          Math.cos(cornerAngle) * sector.radius,
+          Math.sin(cornerAngle) * sector.radius
+        );
+        const cornerProjection = cornerOffset.dot(dir);
+        if (cornerProjection > projection + 1e-9) {
+          projection = cornerProjection;
+          offset = cornerOffset;
+        }
+      }
+    }
+  }
+
+  return {
+    center,
+    baseRadius,
+    projection,
+    offset
+  };
+}
+
+export function getCompositeSupportToward(world, entityId, directionTowardOther) {
+  const support = _compositeSupportToward(world, entityId, directionTowardOther);
+  if (!support) {
+    return null;
+  }
+  return {
+    baseRadius: support.baseRadius,
+    projection: support.projection,
+    offset: support.offset.clone()
+  };
 }
 
 function _pathLinkEntity(world, path, linkIndex) {
@@ -972,6 +1018,310 @@ export class PBDBallFlipperCollisions {
             'ball_contact_radius': r1,
             'delta_lambda': delta_lambda
         });
+      }
+    }
+  }
+}
+
+function _findClosestBorderSegment(borderPoints, point) {
+  if (!Array.isArray(borderPoints) || borderPoints.length < 2) {
+    return null;
+  }
+  let minDistSq = Infinity;
+  let closestPoint = null;
+  let edgeStart = null;
+  let edgeEnd = null;
+  for (let i = 0; i < borderPoints.length; i++) {
+    const a = borderPoints[i];
+    const b = borderPoints[(i + 1) % borderPoints.length];
+    const closest = closestPointOnSegment(point, a, b);
+    const distSq = point.distanceToSq(closest);
+    if (distSq < minDistSq) {
+      minDistSq = distSq;
+      closestPoint = closest;
+      edgeStart = a;
+      edgeEnd = b;
+    }
+  }
+  if (!closestPoint || !edgeStart || !edgeEnd) {
+    return null;
+  }
+  return {
+    minDistSq,
+    closestPoint,
+    edgeStart,
+    edgeEnd
+  };
+}
+
+function _borderCollisionNormal(point, closestPoint, edgeStart, edgeEnd) {
+  const ballToClosest = new Vector2().subtractVectors(point, closestPoint);
+  const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
+  const normal = new Vector2(-edgeVec.y, edgeVec.x).normalize();
+
+  let collisionNormal;
+  if (ballToClosest.lengthSq() < 1e-9) {
+    collisionNormal = normal.clone();
+  } else {
+    collisionNormal = ballToClosest.clone().normalize();
+  }
+
+  if (ballToClosest.dot(normal) < 0) {
+    collisionNormal = normal.clone();
+  }
+  return collisionNormal;
+}
+
+export class PBDBorderCircleSectorCollisions {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent, CircleSectorComponent]);
+    const borderEntities = world.query([BorderComponent]);
+    if (borderEntities.length === 0) return;
+
+    const borderId = borderEntities[0];
+    const borderComp = world.getComponent(borderId, BorderComponent);
+    const borderPoints = borderComp.points;
+    const borderRestitutionComp = world.getComponent(borderId, RestitutionComponent);
+    const borderFrictionComp = world.getComponent(borderId, CoefficientOfFrictionComponent);
+    const restitution = borderRestitutionComp ? borderRestitutionComp.restitution : null;
+    const friction = borderFrictionComp ? borderFrictionComp.mu : null;
+
+    let contacts = world.getResource('ball_border_contacts');
+    if (!Array.isArray(contacts)) {
+      contacts = [];
+      world.setResource('ball_border_contacts', contacts);
+    }
+
+    for (const ballId of ballEntities) {
+      const posComp = world.getComponent(ballId, PositionComponent);
+      const massComp = world.getComponent(ballId, MassComponent);
+      const p1 = posComp?.pos;
+      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
+      if (!p1) continue;
+
+      const closestData = _findClosestBorderSegment(borderPoints, p1);
+      if (!closestData) continue;
+      const { minDistSq, closestPoint, edgeStart, edgeEnd } = closestData;
+      const dist = Math.sqrt(minDistSq);
+      const normal = _borderCollisionNormal(p1, closestPoint, edgeStart, edgeEnd);
+      const towardBorder = normal.clone().scale(-1.0);
+      const support = _compositeSupportToward(world, ballId, towardBorder);
+      if (!support) continue;
+      if (support.projection <= support.baseRadius + 1e-9) continue;
+      const penetration = support.projection - dist;
+      if (penetration <= 0.0) continue;
+
+      let deltaLambda = 0.0;
+      if (invMass > 0.0) {
+        p1.add(normal, penetration);
+        deltaLambda = penetration / invMass;
+      }
+
+      const existing = contacts.find((c) => c.ball_id === ballId);
+      if (existing) {
+        existing.normal = normal.clone();
+        existing.delta_lambda = (Number.isFinite(existing.delta_lambda) ? existing.delta_lambda : 0.0) + deltaLambda;
+        existing.ball_contact_radius = support.projection;
+        existing.ball_contact_offset = support.offset.clone();
+      } else {
+        contacts.push({
+          ball_id: ballId,
+          normal: normal.clone(),
+          delta_lambda: deltaLambda,
+          ball_contact_radius: support.projection,
+          ball_contact_offset: support.offset.clone(),
+          restitution,
+          friction
+        });
+      }
+    }
+  }
+}
+
+export class PBDBallCircleSectorCollisions {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    for (let i = 0; i < ballEntities.length; i++) {
+      for (let j = i + 1; j < ballEntities.length; j++) {
+        const e1 = ballEntities[i];
+        const e2 = ballEntities[j];
+
+        const p1 = world.getComponent(e1, PositionComponent)?.pos;
+        const p2 = world.getComponent(e2, PositionComponent)?.pos;
+        if (!p1 || !p2) continue;
+
+        const dir = new Vector2().subtractVectors(p2, p1);
+        const dSq = dir.lengthSq();
+        if (dSq <= 1e-12) continue;
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d);
+
+        const support1 = _compositeSupportToward(world, e1, dir);
+        const support2 = _compositeSupportToward(world, e2, dir.clone().scale(-1.0));
+        if (!support1 || !support2) continue;
+        if (
+          support1.projection <= support1.baseRadius + 1e-9 &&
+          support2.projection <= support2.baseRadius + 1e-9
+        ) {
+          continue;
+        }
+
+        const rSum = support1.projection + support2.projection;
+        if (d > rSum) continue;
+        const penetration = rSum - d;
+
+        const m1Comp = world.getComponent(e1, MassComponent);
+        const m2Comp = world.getComponent(e2, MassComponent);
+        const invMass1 = (m1Comp && m1Comp.mass > 0) ? 1.0 / m1Comp.mass : 0.0;
+        const invMass2 = (m2Comp && m2Comp.mass > 0) ? 1.0 / m2Comp.mass : 0.0;
+        const totalInvMass = invMass1 + invMass2;
+        if (totalInvMass <= 1e-12) continue;
+
+        const corr = dir.clone().scale(penetration / totalInvMass);
+        p1.add(corr, -invMass1);
+        p2.add(corr, invMass2);
+      }
+    }
+  }
+}
+
+export class PBDObstacleCircleSectorCollisions {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+
+    let contacts = world.getResource('ball_obstacle_contacts');
+    if (!Array.isArray(contacts)) {
+      contacts = [];
+      world.setResource('ball_obstacle_contacts', contacts);
+    }
+
+    for (const ballId of ballEntities) {
+      const pBall = world.getComponent(ballId, PositionComponent)?.pos;
+      const massComp = world.getComponent(ballId, MassComponent);
+      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
+      if (!pBall) continue;
+
+      for (const obsId of obstacleEntities) {
+        const pObs = world.getComponent(obsId, PositionComponent)?.pos;
+        if (!pObs) continue;
+
+        const normal = new Vector2().subtractVectors(pBall, pObs);
+        const dSq = normal.lengthSq();
+        if (dSq <= 1e-12) continue;
+        const d = Math.sqrt(dSq);
+        normal.scale(1.0 / d); // obstacle -> ball
+
+        const supportBall = _compositeSupportToward(world, ballId, normal.clone().scale(-1.0));
+        const supportObs = _compositeSupportToward(world, obsId, normal);
+        if (!supportBall || !supportObs) continue;
+        if (
+          supportBall.projection <= supportBall.baseRadius + 1e-9 &&
+          supportObs.projection <= supportObs.baseRadius + 1e-9
+        ) {
+          continue;
+        }
+
+        const rSum = supportBall.projection + supportObs.projection;
+        if (d > rSum) continue;
+        const penetration = rSum - d;
+        if (penetration <= 0.0) continue;
+        if (invMass > 0.0) {
+          pBall.add(normal, penetration);
+        }
+
+        const existing = contacts.find((c) => c.ball_id === ballId && c.obs_id === obsId);
+        if (!existing) {
+          contacts.push({
+            ball_id: ballId,
+            obs_id: obsId,
+            direction: normal.clone(),
+            raw_hit: false
+          });
+        }
+      }
+    }
+  }
+}
+
+export class FlipperCircleSectorCollisions {
+  runInPause = false;
+
+  _getFlipperTip(flipperPos, flipperState) {
+    const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+    const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+    return flipperPos.clone().add(dir, flipperState.length);
+  }
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
+
+    let contacts = world.getResource('ball_flipper_contacts');
+    if (!Array.isArray(contacts)) {
+      contacts = [];
+      world.setResource('ball_flipper_contacts', contacts);
+    }
+
+    for (const ballId of ballEntities) {
+      const pBall = world.getComponent(ballId, PositionComponent)?.pos;
+      const massComp = world.getComponent(ballId, MassComponent);
+      const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
+      if (!pBall) continue;
+
+      for (const flipId of flipperEntities) {
+        const fp = world.getComponent(flipId, PositionComponent)?.pos;
+        const fs = world.getComponent(flipId, FlipperStateComponent);
+        if (!fp || !fs) continue;
+
+        const tip = this._getFlipperTip(fp, fs);
+        const closest = closestPointOnSegment(pBall, fp, tip);
+        const normal = new Vector2().subtractVectors(pBall, closest); // flipper segment -> ball
+        const dSq = normal.lengthSq();
+        if (dSq <= 1e-12) continue;
+        const d = Math.sqrt(dSq);
+        normal.scale(1.0 / d);
+
+        const supportBall = _compositeSupportToward(world, ballId, normal.clone().scale(-1.0));
+        if (!supportBall) continue;
+        if (supportBall.projection <= supportBall.baseRadius + 1e-9) continue;
+
+        const flipperRadius = getCollisionRadiusToward(world, flipId);
+        const rSum = supportBall.projection + flipperRadius;
+        if (d > rSum) continue;
+        const penetration = rSum - d;
+        if (penetration <= 0.0) continue;
+
+        let deltaLambda = 0.0;
+        if (invMass > 0.0) {
+          pBall.add(normal, penetration);
+          deltaLambda = penetration / invMass;
+        }
+
+        const existing = contacts.find((c) => c.ball_id === ballId && c.flip_id === flipId);
+        if (existing) {
+          existing.normal = normal.clone();
+          existing.contact_point_on_flipper = closest.clone();
+          existing.ball_contact_radius = supportBall.projection;
+          existing.ball_contact_offset = supportBall.offset.clone();
+          existing.delta_lambda = (Number.isFinite(existing.delta_lambda) ? existing.delta_lambda : 0.0) + deltaLambda;
+        } else {
+          contacts.push({
+            ball_id: ballId,
+            flip_id: flipId,
+            normal: normal.clone(),
+            contact_point_on_flipper: closest.clone(),
+            ball_contact_radius: supportBall.projection,
+            ball_contact_offset: supportBall.offset.clone(),
+            delta_lambda: deltaLambda
+          });
+        }
       }
     }
   }

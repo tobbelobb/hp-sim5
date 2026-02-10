@@ -181,9 +181,13 @@ canvas {
     FlipperTipLinkSystem,
     OverlayRadiusAndCircleSectorSystem,
     PBDBallBorderCollisions,
+    PBDBorderCircleSectorCollisions,
     PBDBallBallCollisions,
+    PBDBallCircleSectorCollisions,
     PBDBallObstacleCollisions,
+    PBDObstacleCircleSectorCollisions,
     PBDBallFlipperCollisions,
+    FlipperCircleSectorCollisions,
     getCollisionRadiusToward
   } from './flipper_common.js';
   import { BallObstacleBumpSystem } from './ball_obstacle_bump_system.js';
@@ -647,9 +651,13 @@ canvas {
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDBallBorderCollisions());
+      world.registerSystem(new PBDBorderCircleSectorCollisions());
       world.registerSystem(new PBDBallBallCollisions());
+      world.registerSystem(new PBDBallCircleSectorCollisions());
       world.registerSystem(new PBDBallObstacleCollisions());
+      world.registerSystem(new PBDObstacleCircleSectorCollisions());
       world.registerSystem(new PBDBallFlipperCollisions());
+      world.registerSystem(new FlipperCircleSectorCollisions());
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());

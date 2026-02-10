@@ -168,6 +168,7 @@ canvas {
     BallTagComponent,
     PauseStateComponent,
     BorderComponent,
+    PBDBorderCircleSectorCollisions,
     PBDBallBorderCollisions,
     OverlayRadiusAndCircleSectorSystem,
     getCollisionRadiusToward
@@ -469,6 +470,7 @@ canvas {
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
       world.registerSystem(new PBDBallBorderCollisions());
+      world.registerSystem(new PBDBorderCircleSectorCollisions());
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());

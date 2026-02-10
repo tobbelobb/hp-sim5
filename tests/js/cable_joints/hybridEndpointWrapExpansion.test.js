@@ -13,7 +13,7 @@ import {
   OverlayRadiusAndCircleSectorSystem,
   OverlayRadiusComponent,
   CircleSectorComponent,
-  getCollisionRadiusToward,
+  getCompositeSupportToward,
 } from '../../../examples/js/flipper/flipper_common.js';
 
 function createEndpointWrapWorld(storedLength) {
@@ -67,10 +67,10 @@ describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
     expect(world.hasComponent(endpointId, OverlayRadiusComponent)).toBe(false);
     expect(world.hasComponent(endpointId, CircleSectorComponent)).toBe(true);
 
-    const rEast = getCollisionRadiusToward(world, endpointId, new Vector2(1.0, 0.0));
-    const rNorth = getCollisionRadiusToward(world, endpointId, new Vector2(0.0, 1.0));
-    expect(rEast).toBeCloseTo(1.1, 6);
-    expect(rNorth).toBeCloseTo(1.0, 6);
+    const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
+    const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
+    expect(supportEast.projection).toBeCloseTo(1.1, 6);
+    expect(supportNorth.projection).toBeCloseTo(1.0, 6);
   });
 
   test('combines full-layer overlay with partial-layer sector', () => {
@@ -86,10 +86,10 @@ describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
     expect(sectors).toBeTruthy();
     expect(sectors.sectors.length).toBeGreaterThan(0);
 
-    const rEast = getCollisionRadiusToward(world, endpointId, new Vector2(1.0, 0.0));
-    const rNorth = getCollisionRadiusToward(world, endpointId, new Vector2(0.0, 1.0));
-    expect(rEast).toBeGreaterThan(1.1);
-    expect(rNorth).toBeCloseTo(1.1, 6);
+    const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
+    const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
+    expect(supportEast.projection).toBeGreaterThan(1.1);
+    expect(supportNorth.projection).toBeCloseTo(1.1, 6);
   });
 
   test('removes overlay/sector components when no stored wrap exists', () => {

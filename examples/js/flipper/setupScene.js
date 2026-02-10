@@ -55,9 +55,13 @@ import {
   FlipperTipLinkSystem,
   OverlayRadiusAndCircleSectorSystem,
   PBDBallBorderCollisions,
+  PBDBorderCircleSectorCollisions,
   PBDBallBallCollisions,
+  PBDBallCircleSectorCollisions,
   PBDBallObstacleCollisions,
+  PBDObstacleCircleSectorCollisions,
   PBDBallFlipperCollisions,
+  FlipperCircleSectorCollisions,
   PauseStateComponent,
   InputReplaySystem,
   InputSystem
@@ -335,9 +339,13 @@ export function setupScene(world, stage, canvas) {
         world.registerSystem(new PBDCableConstraintSolver());
         world.registerSystem(new PBDResolveCableOverCorrections());
         world.registerSystem(new PBDBallBorderCollisions());
+        world.registerSystem(new PBDBorderCircleSectorCollisions());
         world.registerSystem(new PBDBallBallCollisions());
+        world.registerSystem(new PBDBallCircleSectorCollisions());
         world.registerSystem(new PBDBallObstacleCollisions());
+        world.registerSystem(new PBDObstacleCircleSectorCollisions());
         world.registerSystem(new PBDBallFlipperCollisions());
+        world.registerSystem(new FlipperCircleSectorCollisions());
 
         // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
         world.registerSystem(new CableFrictionSystem());
