@@ -1,4 +1,3 @@
-import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
   World,
   PositionComponent,
@@ -6,20 +5,15 @@ import {
   MassComponent,
 } from '../../../src/js/cable_joints/ecs.js';
 import {
-  CableLinkComponent,
-  CableJointComponent,
-  CablePathComponent,
-} from '../../../src/js/cable_joints/cable_joints_core.js';
-import {
   BallTagComponent,
   FlipperTagComponent,
   FlipperStateComponent,
   PBDBallFlipperCollisions,
-  getEffectiveCollisionRadius,
-  getEffectiveCollisionSupportPoint,
+  OverlayRadiusComponent,
+  CircleSectorComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
-function createWorldWithFlipperContactCandidate(storedOnHybrid) {
+function makeWorld() {
   const world = new World();
 
   const ballId = world.createEntity();
@@ -27,38 +21,6 @@ function createWorldWithFlipperContactCandidate(storedOnHybrid) {
   world.addComponent(ballId, new PositionComponent(0.5, 1.25));
   world.addComponent(ballId, new RadiusComponent(1.0));
   world.addComponent(ballId, new MassComponent(1.0));
-  world.addComponent(ballId, new CableLinkComponent(0.5, 1.25));
-
-  const anchorId = world.createEntity();
-  world.addComponent(anchorId, new PositionComponent(3.0, 1.25));
-  world.addComponent(anchorId, new RadiusComponent(0.1));
-  world.addComponent(anchorId, new CableLinkComponent(3.0, 1.25));
-
-  const jointId = world.createEntity();
-  world.addComponent(
-    jointId,
-    new CableJointComponent(
-      ballId,
-      anchorId,
-      0.0,
-      new Vector2(1.5, 1.25),
-      new Vector2(2.9, 1.25)
-    )
-  );
-
-  const pathId = world.createEntity();
-  world.addComponent(
-    pathId,
-    new CablePathComponent(
-      world,
-      [jointId],
-      ['hybrid', 'attachment'],
-      [true, true],
-      1e4,
-      [storedOnHybrid, 0.0],
-      0.1
-    )
-  );
 
   const flipperId = world.createEntity();
   world.addComponent(flipperId, new FlipperTagComponent());
@@ -66,114 +28,65 @@ function createWorldWithFlipperContactCandidate(storedOnHybrid) {
   world.addComponent(flipperId, new RadiusComponent(0.1));
   world.addComponent(flipperId, new FlipperStateComponent(1.0, 0.0, 1.0, 0.0));
 
-  return { world, ballId };
+  return { world, ballId, flipperId };
 }
 
-function createWorldWithVerticalFlipperAndHybridCorner(storedOnHybrid) {
-  const world = new World();
-
-  const ballId = world.createEntity();
-  world.addComponent(ballId, new BallTagComponent());
-  world.addComponent(ballId, new PositionComponent(0.0, 0.0));
-  world.addComponent(ballId, new RadiusComponent(1.0));
-  world.addComponent(ballId, new MassComponent(1.0));
-  world.addComponent(ballId, new CableLinkComponent(0.0, 0.0));
-
-  const anchorId = world.createEntity();
-  world.addComponent(anchorId, new PositionComponent(3.0, 0.0));
-  world.addComponent(anchorId, new RadiusComponent(0.1));
-  world.addComponent(anchorId, new CableLinkComponent(3.0, 0.0));
-
-  const jointId = world.createEntity();
-  world.addComponent(
-    jointId,
-    new CableJointComponent(
-      ballId,
-      anchorId,
-      0.0,
-      new Vector2(1.0, 0.0),
-      new Vector2(2.9, 0.0)
-    )
-  );
-
-  const pathId = world.createEntity();
-  world.addComponent(
-    pathId,
-    new CablePathComponent(
-      world,
-      [jointId],
-      ['hybrid', 'attachment'],
-      [true, true],
-      1e4,
-      [storedOnHybrid, 0.0],
-      0.1
-    )
-  );
-
-  const flipperId = world.createEntity();
-  world.addComponent(flipperId, new FlipperTagComponent());
-  world.addComponent(flipperId, new PositionComponent(1.29, -1.0));
-  world.addComponent(flipperId, new RadiusComponent(0.1));
-  world.addComponent(flipperId, new FlipperStateComponent(2.0, Math.PI / 2.0, 1.0, 0.0));
-
-  return { world, ballId };
-}
-
-describe('PBDBallFlipperCollisions wrapped hybrid radius', () => {
-  test('uses endpoint wrap expansion when colliding against flipper segment', () => {
-    const baseLayerCircumference = 2.0 * Math.PI * 1.1;
-    const withWrap = createWorldWithFlipperContactCandidate(baseLayerCircumference);
-    const withoutWrap = createWorldWithFlipperContactCandidate(0.0);
+describe('PBDBallFlipperCollisions with overlay geometry', () => {
+  test('overlay radius can create a flipper collision when raw radius does not', () => {
+    const withoutOverlay = makeWorld();
+    const withOverlay = makeWorld();
+    withOverlay.world.addComponent(withOverlay.ballId, new OverlayRadiusComponent(1.2));
 
     const system = new PBDBallFlipperCollisions();
-    system.update(withoutWrap.world, 0.016);
-    system.update(withWrap.world, 0.016);
+    system.update(withoutOverlay.world, 0.016);
+    system.update(withOverlay.world, 0.016);
 
-    const withoutWrapContacts = withoutWrap.world.getResource('ball_flipper_contacts');
-    const withWrapContacts = withWrap.world.getResource('ball_flipper_contacts');
+    const contactsWithout = withoutOverlay.world.getResource('ball_flipper_contacts') || [];
+    const contactsWith = withOverlay.world.getResource('ball_flipper_contacts') || [];
 
-    expect(withoutWrapContacts).toHaveLength(0);
-    expect(withWrapContacts).toHaveLength(1);
-
-    const yWithoutWrap = withoutWrap.world.getComponent(withoutWrap.ballId, PositionComponent).pos.y;
-    const yWithWrap = withWrap.world.getComponent(withWrap.ballId, PositionComponent).pos.y;
-    expect(yWithoutWrap).toBeCloseTo(1.25, 9);
-    expect(yWithWrap).toBeGreaterThan(1.25);
-    expect(yWithWrap).toBeCloseTo(1.30, 6);
+    expect(contactsWithout).toHaveLength(0);
+    expect(contactsWith).toHaveLength(1);
+    expect(contactsWith[0].ball_contact_radius).toBeCloseTo(1.2, 9);
   });
 
-  test('cam corner support extends contact farther than radial support near lobe start', () => {
-    const storedOnHybrid = 1.1;
-    const { world, ballId } = createWorldWithVerticalFlipperAndHybridCorner(storedOnHybrid);
-    const towardFlipper = new Vector2(1.0, 0.0);
+  test('circle sector applies only in matching direction', () => {
+    const worldA = makeWorld();
+    worldA.world.getComponent(worldA.ballId, PositionComponent).pos.set({ x: 0.0, y: 0.0 });
+    worldA.world.getComponent(worldA.flipperId, PositionComponent).pos.set({ x: 2.35, y: -1.0 });
+    worldA.world.getComponent(worldA.flipperId, FlipperStateComponent).length = 2.0;
+    worldA.world.getComponent(worldA.flipperId, FlipperStateComponent).restAngle = Math.PI / 2.0;
+    worldA.world.addComponent(
+      worldA.ballId,
+      new CircleSectorComponent([{
+        radius: 2.3,
+        startAngle: -0.2,
+        endAngle: 0.2,
+        cw: false
+      }])
+    );
 
-    const radial = getEffectiveCollisionRadius(world, ballId, 1.0, towardFlipper.clone());
-    const support = getEffectiveCollisionSupportPoint(world, ballId, 1.0, towardFlipper.clone());
-
-    expect(support).not.toBeNull();
-    expect(support.source).toBe('corner');
-    expect(support.projection).toBeGreaterThan(radial + 0.05);
-    expect(support.point.x).toBeCloseTo(1.2, 6);
-    expect(support.point.y).toBeCloseTo(0.0, 6);
-  });
-
-  test('corner support creates wrap-only flipper contact with non-radial contact offset', () => {
-    const storedOnHybrid = 1.1;
-    const withWrap = createWorldWithVerticalFlipperAndHybridCorner(storedOnHybrid);
-    const withoutWrap = createWorldWithVerticalFlipperAndHybridCorner(0.0);
+    const worldB = makeWorld();
+    worldB.world.getComponent(worldB.ballId, PositionComponent).pos.set({ x: 0.0, y: 0.0 });
+    worldB.world.getComponent(worldB.flipperId, PositionComponent).pos.set({ x: 2.35, y: -1.0 });
+    worldB.world.getComponent(worldB.flipperId, FlipperStateComponent).length = 2.0;
+    worldB.world.getComponent(worldB.flipperId, FlipperStateComponent).restAngle = Math.PI / 2.0;
+    worldB.world.addComponent(
+      worldB.ballId,
+      new CircleSectorComponent([{
+        radius: 2.3,
+        startAngle: Math.PI - 0.2,
+        endAngle: Math.PI + 0.2,
+        cw: false
+      }])
+    );
 
     const system = new PBDBallFlipperCollisions();
-    system.update(withoutWrap.world, 0.016);
-    system.update(withWrap.world, 0.016);
+    system.update(worldA.world, 0.016);
+    system.update(worldB.world, 0.016);
 
-    const withoutWrapContacts = withoutWrap.world.getResource('ball_flipper_contacts');
-    const withWrapContacts = withWrap.world.getResource('ball_flipper_contacts');
-    expect(withoutWrapContacts).toHaveLength(0);
-    expect(withWrapContacts).toHaveLength(1);
-
-    const contact = withWrapContacts[0];
-    expect(contact.raw_contact).toBe(false);
-    expect(contact.ball_contact_offset.x).toBeGreaterThan(1.1);
-    expect(Math.abs(contact.ball_contact_offset.y)).toBeLessThan(1e-6);
+    const contactsA = worldA.world.getResource('ball_flipper_contacts') || [];
+    const contactsB = worldB.world.getResource('ball_flipper_contacts') || [];
+    expect(contactsA).toHaveLength(1);
+    expect(contactsB).toHaveLength(0);
   });
 });

@@ -8,8 +8,13 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  getHybridEndpointWrapExpansion,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
+import {
+  OverlayRadiusAndCircleSectorSystem,
+  OverlayRadiusComponent,
+  CircleSectorComponent,
+  getCollisionRadiusToward,
+} from '../../../examples/js/flipper/flipper_common.js';
 
 function createEndpointWrapWorld(storedLength) {
   const world = new World();
@@ -43,7 +48,7 @@ function createEndpointWrapWorld(storedLength) {
       world,
       [jointId],
       ['hybrid', 'attachment'],
-      [true, true], // endpoint effective direction is CCW from attachment
+      [true, true],
       1e4,
       [storedLength, 0.0],
       0.1
@@ -53,47 +58,46 @@ function createEndpointWrapWorld(storedLength) {
   return { world, endpointId };
 }
 
-describe('getHybridEndpointWrapExpansion', () => {
-  test('returns zero outside first partial wrap and 2w inside it', () => {
+describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
+  test('creates partial layer circle sector and directional radius response', () => {
     const { world, endpointId } = createEndpointWrapWorld(2.0);
-    const pointNorth = new Vector2(0.0, 1.0);
-    const pointSouth = new Vector2(0.0, -1.0);
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(world, 0.016);
 
-    const northExpansion = getHybridEndpointWrapExpansion(world, endpointId, pointNorth);
-    const southExpansion = getHybridEndpointWrapExpansion(world, endpointId, pointSouth);
+    expect(world.hasComponent(endpointId, OverlayRadiusComponent)).toBe(false);
+    expect(world.hasComponent(endpointId, CircleSectorComponent)).toBe(true);
 
-    expect(northExpansion).toBeCloseTo(0.2, 6);
-    expect(southExpansion).toBeCloseTo(0.0, 9);
+    const rEast = getCollisionRadiusToward(world, endpointId, new Vector2(1.0, 0.0));
+    const rNorth = getCollisionRadiusToward(world, endpointId, new Vector2(0.0, 1.0));
+    expect(rEast).toBeCloseTo(1.1, 6);
+    expect(rNorth).toBeCloseTo(1.0, 6);
   });
 
-  test('ramps expansion smoothly across partial-wrap boundaries', () => {
-    const { world, endpointId } = createEndpointWrapWorld(2.0);
-    const pointNearStart = new Vector2(Math.cos(0.05), Math.sin(0.05));
-    const pointInterior = new Vector2(Math.cos(Math.PI * 0.5), Math.sin(Math.PI * 0.5));
-    const pointNearEnd = new Vector2(Math.cos(1.75), Math.sin(1.75));
-
-    const nearStart = getHybridEndpointWrapExpansion(world, endpointId, pointNearStart);
-    const interior = getHybridEndpointWrapExpansion(world, endpointId, pointInterior);
-    const nearEnd = getHybridEndpointWrapExpansion(world, endpointId, pointNearEnd);
-
-    expect(interior).toBeCloseTo(0.2, 6);
-    expect(nearStart).toBeGreaterThan(0.0);
-    expect(nearStart).toBeLessThan(interior);
-    expect(nearEnd).toBeGreaterThan(0.0);
-    expect(nearEnd).toBeLessThan(interior);
-  });
-
-  test('returns full-layer expansion globally and larger expansion on partial second layer', () => {
+  test('combines full-layer overlay with partial-layer sector', () => {
     const baseLayerCircumference = 2.0 * Math.PI * 1.1;
-    const { world, endpointId } = createEndpointWrapWorld(baseLayerCircumference + 2.2);
-    const pointNorth = new Vector2(0.0, 1.0);
-    const pointSouth = new Vector2(0.0, -1.0);
+    const { world, endpointId } = createEndpointWrapWorld(baseLayerCircumference + 1.0);
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(world, 0.016);
 
-    const northExpansion = getHybridEndpointWrapExpansion(world, endpointId, pointNorth);
-    const southExpansion = getHybridEndpointWrapExpansion(world, endpointId, pointSouth);
+    const overlay = world.getComponent(endpointId, OverlayRadiusComponent);
+    const sectors = world.getComponent(endpointId, CircleSectorComponent);
+    expect(overlay).toBeTruthy();
+    expect(overlay.radius).toBeCloseTo(1.1, 6);
+    expect(sectors).toBeTruthy();
+    expect(sectors.sectors.length).toBeGreaterThan(0);
 
-    expect(southExpansion).toBeCloseTo(0.2, 6);
-    expect(northExpansion).toBeGreaterThan(southExpansion);
-    expect(northExpansion).toBeLessThanOrEqual(0.4 + 1e-6);
+    const rEast = getCollisionRadiusToward(world, endpointId, new Vector2(1.0, 0.0));
+    const rNorth = getCollisionRadiusToward(world, endpointId, new Vector2(0.0, 1.0));
+    expect(rEast).toBeGreaterThan(1.1);
+    expect(rNorth).toBeCloseTo(1.1, 6);
+  });
+
+  test('removes overlay/sector components when no stored wrap exists', () => {
+    const { world, endpointId } = createEndpointWrapWorld(0.0);
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(world, 0.016);
+
+    expect(world.hasComponent(endpointId, OverlayRadiusComponent)).toBe(false);
+    expect(world.hasComponent(endpointId, CircleSectorComponent)).toBe(false);
   });
 });

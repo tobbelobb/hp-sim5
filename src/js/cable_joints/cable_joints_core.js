@@ -159,7 +159,7 @@ export class CablePathComponent {
       // Assuming standard path structure A->B, A->B, check B_i == A_i+1
       if (isRolling) {
         const center = world.getComponent(linkId, PositionComponent).pos;
-        const radius = world.getComponent(linkId, RadiusComponent).radius + this.cableHalfWidth;
+        const radius = world.getComponent(linkId, RadiusComponent).radius;
         const isCw = cw[i + 1];
 
         const initialStoredLength = signedArcLengthOnWheel(
@@ -212,7 +212,7 @@ function _effectiveRadius(path, radius) {
   if (radius === undefined || radius === null) {
     return radius;
   }
-  return radius + (path?.cableHalfWidth ?? 0.0);
+  return radius;
 }
 
 function _effectiveRollingRadius(path, linkIndex, baseRadius) {
@@ -431,45 +431,6 @@ export function _updateAttachmentPoints(world) {
   const pathEntities = world.query([CablePathComponent]);
   const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
   const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
-  const transferTuning = world.getResource('cableAttachmentTransferTuning') || {};
-  const enableKinematicTransferClamp = transferTuning.enableKinematicClamp === true;
-  const transferBudgetScale = Number.isFinite(transferTuning.kinematicBudgetScale)
-    ? Math.max(0.0, transferTuning.kinematicBudgetScale)
-    : 1.0;
-  const enablePotentialRiseClamp = transferTuning.limitPotentialRiseByKineticBudget !== false;
-  const potentialRiseBudgetScale = Number.isFinite(transferTuning.potentialRiseBudgetScale)
-    ? Math.max(0.0, transferTuning.potentialRiseBudgetScale)
-    : 1.0;
-  const potentialRiseSlack = Number.isFinite(transferTuning.potentialRiseSlack)
-    ? Math.max(0.0, transferTuning.potentialRiseSlack)
-    : 0.0;
-  const transferClampSlackConfigured = Number.isFinite(transferTuning.clampSlack)
-    ? Math.max(0.0, transferTuning.clampSlack)
-    : null;
-  const attachmentDiag = {
-    maxAbsSA: 0.0,
-    maxAbsSB: 0.0,
-    maxAbsJointRestDelta: 0.0,
-    maxAbsStoredDelta: 0.0,
-    largeTransferCount: 0,
-    clampedTransferCount: 0,
-    maxClampReduction: 0.0,
-    restLengthClampCount: 0,
-    maxRestLengthClamp: 0.0,
-    potentialRiseClampCount: 0,
-    maxPotentialRiseClamp: 0.0,
-    maxPotentialRise: 0.0,
-    maxPotentialRiseAllowed: 0.0,
-    peakPathId: null,
-    peakJointId: null,
-    peakEntityA: null,
-    peakEntityB: null,
-    peakSA: 0.0,
-    peakSB: 0.0,
-    peakRestBefore: 0.0,
-    peakRestAfter: 0.0,
-    peakSegmentLength: 0.0
-  };
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -538,8 +499,6 @@ export function _updateAttachmentPoints(world) {
 
       let sA = 0;
       let sB = 0;
-      const pADiffFromTranslation = (posA && prevPosA) ? posA.clone().subtract(prevPosA) : null;
-      const pBDiffFromTranslation = (posB && prevPosB) ? posB.clone().subtract(prevPosB) : null;
 
       if (rollingLinkA && attachmentA_previous && attachmentA_current && prevPosA && posA && radiusA !== undefined) {
           sA = signedArcLengthOnWheel(
@@ -567,162 +526,10 @@ export function _updateAttachmentPoints(world) {
           }
       }
 
-      if (enableKinematicTransferClamp) {
-        const transferClampSlack = transferClampSlackConfigured !== null
-          ? transferClampSlackConfigured
-          : Math.max(0.0, 0.25 * (path.cableHalfWidth ?? 0.0));
-        if (rollingLinkA) {
-          const translationBudgetA = pADiffFromTranslation ? pADiffFromTranslation.length() : 0.0;
-          const angularBudgetA =
-            (Number.isFinite(deltaAngleA) && Number.isFinite(radiusA))
-              ? Math.abs(deltaAngleA) * Math.max(0.0, radiusA)
-              : 0.0;
-          const maxTransferA = transferBudgetScale * (translationBudgetA + angularBudgetA) + transferClampSlack;
-          if (Number.isFinite(maxTransferA) && maxTransferA >= 0.0) {
-            const clampedSA = Math.max(-maxTransferA, Math.min(maxTransferA, sA));
-            const reduction = Math.abs(sA - clampedSA);
-            if (reduction > EPSILON) {
-              attachmentDiag.clampedTransferCount += 1;
-              attachmentDiag.maxClampReduction = Math.max(attachmentDiag.maxClampReduction, reduction);
-              sA = clampedSA;
-            }
-          }
-        }
-        if (rollingLinkB) {
-          const translationBudgetB = pBDiffFromTranslation ? pBDiffFromTranslation.length() : 0.0;
-          const angularBudgetB =
-            (Number.isFinite(deltaAngleB) && Number.isFinite(radiusB))
-              ? Math.abs(deltaAngleB) * Math.max(0.0, radiusB)
-              : 0.0;
-          const maxTransferB = transferBudgetScale * (translationBudgetB + angularBudgetB) + transferClampSlack;
-          if (Number.isFinite(maxTransferB) && maxTransferB >= 0.0) {
-            const clampedSB = Math.max(-maxTransferB, Math.min(maxTransferB, sB));
-            const reduction = Math.abs(sB - clampedSB);
-            if (reduction > EPSILON) {
-              attachmentDiag.clampedTransferCount += 1;
-              attachmentDiag.maxClampReduction = Math.max(attachmentDiag.maxClampReduction, reduction);
-              sB = clampedSB;
-            }
-          }
-        }
-      }
-
-      const increaseRestBy = (deltaRestIncrease) => {
-        if (!(deltaRestIncrease > 0.0)) {
-          return;
-        }
-        if (rollingLinkA && rollingLinkB) {
-          const halfDeficit = 0.5 * deltaRestIncrease;
-          sA -= halfDeficit;
-          sB += halfDeficit;
-        } else if (rollingLinkA) {
-          sA -= deltaRestIncrease;
-        } else if (rollingLinkB) {
-          sB += deltaRestIncrease;
-        } else {
-          const halfDeficit = 0.5 * deltaRestIncrease;
-          sA -= halfDeficit;
-          sB += halfDeficit;
-        }
-      };
-
-      const minJointRestLength = MIN_JOINT_REST_LENGTH;
-      const restBefore = joint.restLength;
-      let restAfterCandidate = restBefore - sA + sB;
-      if (restAfterCandidate < minJointRestLength) {
-        const deficit = minJointRestLength - restAfterCandidate;
-        increaseRestBy(deficit);
-        restAfterCandidate = minJointRestLength;
-        attachmentDiag.restLengthClampCount += 1;
-        attachmentDiag.maxRestLengthClamp = Math.max(attachmentDiag.maxRestLengthClamp, deficit);
-      }
-
-      if (
-        enablePotentialRiseClamp &&
-        attachmentA_current &&
-        attachmentB_current &&
-        Number.isFinite(path.spring_constant) &&
-        path.spring_constant > EPSILON
-      ) {
-        const segmentLength = attachmentA_current.distanceTo(attachmentB_current);
-        const stretchBefore = Math.max(0.0, segmentLength - restBefore);
-        const stretchAfter = Math.max(0.0, segmentLength - restAfterCandidate);
-        const potentialBefore = 0.5 * path.spring_constant * stretchBefore * stretchBefore;
-        const potentialAfter = 0.5 * path.spring_constant * stretchAfter * stretchAfter;
-        const potentialRise = potentialAfter - potentialBefore;
-        if (potentialRise > EPSILON) {
-          let availableKinetic = 0.0;
-          const massAComp = world.getComponent(entityA, MassComponent);
-          const velAComp = world.getComponent(entityA, VelocityComponent);
-          if (massAComp && velAComp && massAComp.mass > EPSILON) {
-            availableKinetic += 0.5 * massAComp.mass * velAComp.vel.lengthSq();
-          }
-          const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
-          const angAComp = world.getComponent(entityA, AngularVelocityComponent);
-          if (moiAComp && angAComp && moiAComp.inertia > EPSILON) {
-            availableKinetic += 0.5 * moiAComp.inertia * angAComp.angularVelocity * angAComp.angularVelocity;
-          }
-
-          const massBComp = world.getComponent(entityB, MassComponent);
-          const velBComp = world.getComponent(entityB, VelocityComponent);
-          if (massBComp && velBComp && massBComp.mass > EPSILON) {
-            availableKinetic += 0.5 * massBComp.mass * velBComp.vel.lengthSq();
-          }
-          const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
-          const angBComp = world.getComponent(entityB, AngularVelocityComponent);
-          if (moiBComp && angBComp && moiBComp.inertia > EPSILON) {
-            availableKinetic += 0.5 * moiBComp.inertia * angBComp.angularVelocity * angBComp.angularVelocity;
-          }
-
-          const allowedRise = potentialRiseBudgetScale * availableKinetic + potentialRiseSlack;
-          attachmentDiag.maxPotentialRise = Math.max(attachmentDiag.maxPotentialRise, potentialRise);
-          attachmentDiag.maxPotentialRiseAllowed = Math.max(attachmentDiag.maxPotentialRiseAllowed, allowedRise);
-          if (potentialRise > allowedRise + EPSILON) {
-            const targetPotentialAfter = potentialBefore + allowedRise;
-            const targetStretch = Math.sqrt(Math.max(0.0, (2.0 * targetPotentialAfter) / path.spring_constant));
-            const targetRestAfter = Math.max(minJointRestLength, segmentLength - targetStretch);
-            const restIncreaseNeeded = Math.max(0.0, targetRestAfter - restAfterCandidate);
-            if (restIncreaseNeeded > EPSILON) {
-              increaseRestBy(restIncreaseNeeded);
-              restAfterCandidate = targetRestAfter;
-              attachmentDiag.potentialRiseClampCount += 1;
-              attachmentDiag.maxPotentialRiseClamp = Math.max(attachmentDiag.maxPotentialRiseClamp, restIncreaseNeeded);
-            }
-          }
-        }
-      }
-
       path.stored[A] += sA;
       joint.restLength -= sA;
       path.stored[B] -= sB;
       joint.restLength += sB;
-      const restAfter = joint.restLength;
-      const segmentLength =
-        (attachmentA_current && attachmentB_current)
-          ? attachmentA_current.distanceTo(attachmentB_current)
-          : 0.0;
-      const absSA = Math.abs(sA);
-      const absSB = Math.abs(sB);
-      const absRestDelta = Math.abs(-sA + sB);
-      const absStoredDelta = Math.max(absSA, absSB);
-      attachmentDiag.maxAbsSA = Math.max(attachmentDiag.maxAbsSA, absSA);
-      attachmentDiag.maxAbsSB = Math.max(attachmentDiag.maxAbsSB, absSB);
-      attachmentDiag.maxAbsJointRestDelta = Math.max(attachmentDiag.maxAbsJointRestDelta, absRestDelta);
-      attachmentDiag.maxAbsStoredDelta = Math.max(attachmentDiag.maxAbsStoredDelta, absStoredDelta);
-      if (absStoredDelta >= attachmentDiag.maxAbsStoredDelta - EPSILON) {
-        attachmentDiag.peakPathId = pathId;
-        attachmentDiag.peakJointId = jointId;
-        attachmentDiag.peakEntityA = entityA;
-        attachmentDiag.peakEntityB = entityB;
-        attachmentDiag.peakSA = sA;
-        attachmentDiag.peakSB = sB;
-        attachmentDiag.peakRestBefore = restBefore;
-        attachmentDiag.peakRestAfter = restAfter;
-        attachmentDiag.peakSegmentLength = segmentLength;
-      }
-      if (absStoredDelta > 0.001) {
-        attachmentDiag.largeTransferCount += 1;
-      }
 
       if (attachmentA_current) {
         joint.attachmentPointA_world.set(attachmentA_current);
@@ -732,7 +539,6 @@ export function _updateAttachmentPoints(world) {
       }
     }
   }
-  world.setResource('cableAttachmentUpdateDiag', attachmentDiag);
 }
 
 export function _mergeJoints(world) {
@@ -1462,6 +1268,8 @@ function _selectEndpointWrapExtraDistance(
   surfaceDistance,
   halfWidth
 ) {
+  // Endpoint non-transitional pinch uses this to determine whether a candidate
+  // can use partial-layer clearance (> 2w) at its specific contact point.
   if (!context || !decomposition || !pointOnBody) {
     return null;
   }
@@ -1486,6 +1294,8 @@ function _selectEndpointWrapExtraDistance(
 }
 
 function _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, halfWidth) {
+  // Returns the local minimum separation for a point on an endpoint wheel.
+  // Full layers contribute globally; partial layers contribute only on their arc.
   if (!context || !decomposition || !pointOnBody || !(halfWidth > EPSILON)) {
     return 0.0;
   }
@@ -1537,189 +1347,6 @@ function _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, ha
   const partialCoverage = Math.max(0.0, Math.min(1.0, rise * fall));
 
   return fullCoverageDistance + (partialCoverageDistance - fullCoverageDistance) * partialCoverage;
-}
-
-export function getHybridEndpointWrapExpansion(world, entityId, pointOnBody) {
-  if (!world || entityId === undefined || entityId === null || !pointOnBody) {
-    return 0.0;
-  }
-
-  let maxExpansion = 0.0;
-  const pathEntities = world.query([CablePathComponent]);
-  for (const pathId of pathEntities) {
-    const path = world.getComponent(pathId, CablePathComponent);
-    if (!path || path.jointEntities.length < 1) {
-      continue;
-    }
-    const halfWidth = path.cableHalfWidth ?? 0.0;
-    if (!(halfWidth > EPSILON)) {
-      continue;
-    }
-
-    const endpointIndices = [0, path.linkTypes.length - 1];
-    for (const linkIndex of endpointIndices) {
-      if (!_isHybrid(path.linkTypes[linkIndex])) {
-        continue;
-      }
-      if (!(path.stored[linkIndex] > EPSILON)) {
-        continue;
-      }
-
-      const context = _getEndpointRollingArcContext(world, path, linkIndex);
-      if (!context || context.bodyA !== entityId) {
-        continue;
-      }
-      const decomposition = _decomposeStoredWrapLayers(
-        path.stored[linkIndex],
-        context.baseRadius,
-        halfWidth
-      );
-      if (!decomposition) {
-        continue;
-      }
-      const minDistance = _endpointWrapMinDistanceAtPoint(context, decomposition, pointOnBody, halfWidth);
-      if (minDistance > maxExpansion) {
-        maxExpansion = minDistance;
-      }
-    }
-  }
-
-  return maxExpansion;
-}
-
-export function getHybridEndpointRollingRadius(world, entityId) {
-  if (!world || entityId === undefined || entityId === null) {
-    return 0.0;
-  }
-
-  let maxRollingRadius = 0.0;
-  const pathEntities = world.query([CablePathComponent]);
-  for (const pathId of pathEntities) {
-    const path = world.getComponent(pathId, CablePathComponent);
-    if (!path || path.jointEntities.length < 1) {
-      continue;
-    }
-    if (!Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
-      continue;
-    }
-
-    const endpointIndices = [0, path.linkTypes.length - 1];
-    for (const linkIndex of endpointIndices) {
-      if (!_isHybrid(path.linkTypes[linkIndex])) {
-        continue;
-      }
-      if (!(path.stored[linkIndex] > EPSILON)) {
-        continue;
-      }
-
-      const context = _getEndpointRollingArcContext(world, path, linkIndex);
-      if (!context || context.bodyA !== entityId) {
-        continue;
-      }
-      const rollingRadius = _effectiveRollingRadius(path, linkIndex, context.baseRadius);
-      if (Number.isFinite(rollingRadius) && rollingRadius > maxRollingRadius) {
-        maxRollingRadius = rollingRadius;
-      }
-    }
-  }
-
-  return maxRollingRadius;
-}
-
-export function getHybridEndpointCamCorners(world, entityId) {
-  if (!world || entityId === undefined || entityId === null) {
-    return [];
-  }
-
-  const center = world.getComponent(entityId, PositionComponent)?.pos;
-  const rawRadius = world.getComponent(entityId, RadiusComponent)?.radius;
-  if (!center || !Number.isFinite(rawRadius) || rawRadius <= EPSILON) {
-    return [];
-  }
-
-  const corners = [];
-  const pathEntities = world.query([CablePathComponent]);
-  for (const pathId of pathEntities) {
-    const path = world.getComponent(pathId, CablePathComponent);
-    if (!path || path.jointEntities.length < 1) {
-      continue;
-    }
-    const halfWidth = path.cableHalfWidth ?? 0.0;
-    if (!(halfWidth > EPSILON)) {
-      continue;
-    }
-    if (!Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
-      continue;
-    }
-
-    const endpointIndices = [0, path.linkTypes.length - 1];
-    for (const linkIndex of endpointIndices) {
-      if (!_isHybrid(path.linkTypes[linkIndex])) {
-        continue;
-      }
-      if (!(path.stored[linkIndex] > EPSILON)) {
-        continue;
-      }
-
-      const context = _getEndpointRollingArcContext(world, path, linkIndex);
-      if (!context || context.bodyA !== entityId) {
-        continue;
-      }
-      const decomposition = _decomposeStoredWrapLayers(
-        path.stored[linkIndex],
-        context.baseRadius,
-        halfWidth
-      );
-      if (!decomposition || !decomposition.hasPartial || !(decomposition.partialLength > EPSILON)) {
-        continue;
-      }
-
-      const startVec = context.attachmentPoint.clone().subtract(context.center);
-      if (startVec.lengthSq() <= EPSILON) {
-        continue;
-      }
-
-      const partialRadius = decomposition.partialRadius;
-      if (!(partialRadius > EPSILON)) {
-        continue;
-      }
-      const span = decomposition.partialLength / partialRadius;
-      if (!(span > EPSILON)) {
-        continue;
-      }
-
-      const outerRadius = rawRadius + 2.0 * halfWidth * (decomposition.fullLayers + 1);
-      if (!(outerRadius > EPSILON)) {
-        continue;
-      }
-
-      const startAngle = Math.atan2(startVec.y, startVec.x);
-      const directionSign = context.cwDirection ? -1.0 : 1.0;
-      const endAngle = startAngle + directionSign * span;
-
-      const startPoint = new Vector2(
-        center.x + outerRadius * Math.cos(startAngle),
-        center.y + outerRadius * Math.sin(startAngle)
-      );
-      const endPoint = new Vector2(
-        center.x + outerRadius * Math.cos(endAngle),
-        center.y + outerRadius * Math.sin(endAngle)
-      );
-
-      corners.push({
-        pathId,
-        linkIndex,
-        outerRadius,
-        startAngle,
-        endAngle,
-        cwDirection: context.cwDirection,
-        startPoint,
-        endPoint
-      });
-    }
-  }
-
-  return corners;
 }
 
 function _detectPinchCandidates(world) {
@@ -2238,32 +1865,11 @@ function _buildPinchContacts(world) {
 }
 
 export class CableAttachmentUpdateSystem {
-  constructor(options = {}) {
-    this.includeTopology = options.includeTopology ?? true;
-    this.updateHybridWithoutTopology = options.updateHybridWithoutTopology === true;
-  }
-
-  runInPause = false;
-
-  update(world, dt) {
-    _clearDebugPoints(world);
-    _updateAttachmentPoints(world);
-    if (!this.includeTopology) {
-      if (this.updateHybridWithoutTopology) {
-        _updateHybridLinkStates(world);
-      }
-      return;
-    }
-    _mergeJoints(world);
-    _splitJoints(world);
-    _updateHybridLinkStates(world);
-  }
-}
-
-export class CableTopologySystem {
   runInPause = false;
 
   update(world, _dt_unused) {
+    _clearDebugPoints(world);
+    _updateAttachmentPoints(world);
     _mergeJoints(world);
     _splitJoints(world);
     _updateHybridLinkStates(world);
@@ -2274,6 +1880,10 @@ export class PinchDetectionSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
+    if (world.getResource('enablePinch') === false) {
+      world.setResource(PINCH_CANDIDATES_RESOURCE, []);
+      return;
+    }
     _detectPinchCandidates(world);
   }
 }
@@ -2282,6 +1892,10 @@ export class PinchConfigureSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
+    if (world.getResource('enablePinch') === false) {
+      world.setResource(PINCH_CONFIGS_RESOURCE, new Map());
+      return;
+    }
     _configurePinches(world);
   }
 }
@@ -2290,6 +1904,10 @@ export class PinchConstraintBuildSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
+    if (world.getResource('enablePinch') === false) {
+      world.setResource(PINCH_CONTACTS_RESOURCE, []);
+      return;
+    }
     _buildPinchContacts(world);
   }
 }
@@ -2300,23 +1918,12 @@ export class PBDCableConstraintSolver {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
+    const pinchEnabled = world.getResource('enablePinch') !== false;
     const pinchConfigsResource = world.getResource(PINCH_CONFIGS_RESOURCE);
     const pinchContactsResource = world.getResource(PINCH_CONTACTS_RESOURCE);
-    const pinchConfigs = pinchConfigsResource instanceof Map ? pinchConfigsResource : new Map();
-    const pinchContacts = Array.isArray(pinchContactsResource) ? pinchContactsResource : [];
-    const solverDiag = {
-      maxConstraintError: 0.0,
-      maxLambda: 0.0,
-      maxLinearDelta: 0.0,
-      maxAngularDelta: 0.0,
-      jointAppliedCount: 0,
-      pinchAppliedCount: 0
-    };
-
-    const solverIterationsResource = world.getResource('cableSolverIterations');
-    const ITERATIONS = Number.isFinite(solverIterationsResource)
-      ? Math.max(1, Math.min(16, Math.floor(solverIterationsResource)))
-      : 2; // 0: Forward, 1: Backward
+    const pinchConfigs = (pinchEnabled && pinchConfigsResource instanceof Map) ? pinchConfigsResource : new Map();
+    const pinchContacts = (pinchEnabled && Array.isArray(pinchContactsResource)) ? pinchContactsResource : [];
+    const ITERATIONS = 2; // 0: Forward, 1: Backward
 
     // Pre-calculate local offsets for all joints to ensure attachment points move with bodies
     // during the multi-iteration solve. This prevents "stale" world points from distorting geometry.
@@ -2344,8 +1951,7 @@ export class PBDCableConstraintSolver {
       gradPosA,
       gradPosB,
       constraintError,
-      compliance,
-      source = 'joint'
+      compliance
     ) => {
       if (constraintError <= EPSILON) {
         return;
@@ -2391,22 +1997,6 @@ export class PBDCableConstraintSolver {
       }
 
       const lambda = -constraintError / denom;
-      const absLambda = Math.abs(lambda);
-      const gradPosALen = gradPosA.length();
-      const gradPosBLen = gradPosB.length();
-      const linearDeltaA = invMassA * absLambda * gradPosALen;
-      const linearDeltaB = invMassB * absLambda * gradPosBLen;
-      const angularDeltaA = Math.abs(invInertiaA * lambda * gradAngA);
-      const angularDeltaB = Math.abs(invInertiaB * lambda * gradAngB);
-      solverDiag.maxConstraintError = Math.max(solverDiag.maxConstraintError, constraintError);
-      solverDiag.maxLambda = Math.max(solverDiag.maxLambda, absLambda);
-      solverDiag.maxLinearDelta = Math.max(solverDiag.maxLinearDelta, linearDeltaA, linearDeltaB);
-      solverDiag.maxAngularDelta = Math.max(solverDiag.maxAngularDelta, angularDeltaA, angularDeltaB);
-      if (source === 'pinch') {
-        solverDiag.pinchAppliedCount += 1;
-      } else {
-        solverDiag.jointAppliedCount += 1;
-      }
 
       if (invMassA > 0.0) {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
@@ -2500,8 +2090,7 @@ export class PBDCableConstraintSolver {
             gradPosA,
             gradPosB,
             constraintError,
-            path.compliance,
-            'joint'
+            path.compliance
           );
         } // End loop through joints in path
 
@@ -2529,11 +2118,9 @@ export class PBDCableConstraintSolver {
           gradPosA,
           gradPosB,
           constraintError,
-          contact.compliance,
-          'pinch'
+          contact.compliance
         );
       }
     } // End loop through iterations
-    world.setResource('cableConstraintDiag', solverDiag);
   } // end update
 } // end PBDCableConstraintSolver

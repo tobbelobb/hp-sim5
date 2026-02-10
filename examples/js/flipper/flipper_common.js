@@ -13,8 +13,6 @@ import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-  getHybridEndpointWrapExpansion,
-  getHybridEndpointCamCorners,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 import { closestPointOnSegment, rightOfLine } from '../../../src/js/cable_joints/geometry.js';
 
@@ -54,109 +52,282 @@ export class ScoreComponent { constructor(score = 0) { this.value = score; } }
 
 export class PauseStateComponent { constructor(paused = true) { this.paused = paused; } }
 
-const FLIPPER_CAM_TRACE_CONFIG_RESOURCE = 'flipperCamTraceConfig';
-const FLIPPER_CAM_TRACE_SAMPLES_RESOURCE = 'flipperCamTraceSamples';
+export class CircleCamTag { }
 
-function _toNumberOrNull(value) {
-  return Number.isFinite(value) ? value : null;
-}
-
-export function appendFlipperCamTrace(world, sample) {
-  if (!world || !sample) {
-    return;
-  }
-  const cfg = world.getResource(FLIPPER_CAM_TRACE_CONFIG_RESOURCE);
-  if (!cfg || cfg.enabled !== true) {
-    return;
-  }
-  if (Number.isInteger(cfg.ballId) && sample.ball_id !== cfg.ballId) {
-    return;
-  }
-  if (Number.isInteger(cfg.flipId) && sample.flip_id !== cfg.flipId) {
-    return;
-  }
-  if (cfg.onlyWrap === true && sample.raw_contact !== false) {
-    return;
-  }
-
-  let samples = world.getResource(FLIPPER_CAM_TRACE_SAMPLES_RESOURCE);
-  if (!Array.isArray(samples)) {
-    samples = [];
-    world.setResource(FLIPPER_CAM_TRACE_SAMPLES_RESOURCE, samples);
-  }
-
-  samples.push(sample);
-  const maxSamples = Number.isFinite(cfg.maxSamples) ? Math.max(100, Math.floor(cfg.maxSamples)) : 3000;
-  if (samples.length > maxSamples) {
-    samples.splice(0, samples.length - maxSamples);
-  }
-
-  if (cfg.logToConsole === true) {
-    console.debug('[FlipperCamTrace]', sample);
+export class OverlayRadiusComponent {
+  constructor(radius = 0.0) {
+    this.radius = Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
   }
 }
 
-export function getEffectiveCollisionRadius(world, entityId, baseRadius, normalTowardContact) {
-  if (!(baseRadius > 0.0)) {
-    return baseRadius;
+export class CircleSectorComponent {
+  constructor(sectors = []) {
+    this.sectors = Array.isArray(sectors) ? sectors.map((sector) => ({
+      radius: Number.isFinite(sector?.radius) ? Math.max(0.0, sector.radius) : 0.0,
+      startAngle: Number.isFinite(sector?.startAngle) ? sector.startAngle : 0.0,
+      endAngle: Number.isFinite(sector?.endAngle) ? sector.endAngle : 0.0,
+      cw: sector?.cw === true
+    })) : [];
+  }
+}
+
+function _normalizeAngle(angle) {
+  if (!Number.isFinite(angle)) {
+    return 0.0;
+  }
+  let value = angle;
+  const twoPi = 2.0 * Math.PI;
+  while (value <= -Math.PI) value += twoPi;
+  while (value > Math.PI) value -= twoPi;
+  return value;
+}
+
+function _ccwDiff(fromAngle, toAngle) {
+  const twoPi = 2.0 * Math.PI;
+  let diff = _normalizeAngle(toAngle - fromAngle);
+  if (diff < 0.0) {
+    diff += twoPi;
+  }
+  return diff;
+}
+
+function _isAngleInSector(angle, startAngle, endAngle, cw) {
+  const a = _normalizeAngle(angle);
+  const s = _normalizeAngle(startAngle);
+  const e = _normalizeAngle(endAngle);
+  if (cw) {
+    // Clockwise sector can be treated as CCW in mirrored angle space.
+    return _isAngleInSector(-a, -s, -e, false);
+  }
+  const span = _ccwDiff(s, e);
+  const rel = _ccwDiff(s, a);
+  return rel <= span + 1e-9;
+}
+
+export function getRawCollisionRadius(world, entityId) {
+  const radius = world.getComponent(entityId, RadiusComponent)?.radius;
+  return Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
+}
+
+export function getCollisionRadiusToward(world, entityId, directionFromCenter = null) {
+  let radius = getRawCollisionRadius(world, entityId);
+  const overlayComp = world.getComponent(entityId, OverlayRadiusComponent);
+  if (overlayComp && Number.isFinite(overlayComp.radius)) {
+    radius = Math.max(radius, overlayComp.radius);
   }
 
-  let effectiveRadius = baseRadius;
-  if (normalTowardContact && normalTowardContact.lengthSq() > 1e-12) {
-    const pos = world.getComponent(entityId, PositionComponent)?.pos;
-    if (pos) {
-      const pointOnBody = pos.clone().add(normalTowardContact, baseRadius);
-      const wrapExpansion = getHybridEndpointWrapExpansion(world, entityId, pointOnBody);
-      effectiveRadius = Math.max(effectiveRadius, baseRadius + wrapExpansion);
+  if (!directionFromCenter || directionFromCenter.lengthSq() <= 1e-12) {
+    return radius;
+  }
+
+  const sectorComp = world.getComponent(entityId, CircleSectorComponent);
+  if (!sectorComp || !Array.isArray(sectorComp.sectors)) {
+    return radius;
+  }
+
+  const angle = Math.atan2(directionFromCenter.y, directionFromCenter.x);
+  for (const sector of sectorComp.sectors) {
+    if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 0.0)) {
+      continue;
+    }
+    if (_isAngleInSector(angle, sector.startAngle, sector.endAngle, sector.cw === true)) {
+      radius = Math.max(radius, sector.radius);
     }
   }
-  return effectiveRadius;
+  return radius;
 }
 
-export function getEffectiveCollisionSupportPoint(world, entityId, baseRadius, directionTowardContact) {
-  const center = world.getComponent(entityId, PositionComponent)?.pos;
-  if (!center) {
+function _pathLinkEntity(world, path, linkIndex) {
+  if (!Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
     return null;
   }
-
-  let dir = directionTowardContact?.clone() ?? new Vector2(1.0, 0.0);
-  if (dir.lengthSq() <= 1e-12) {
-    dir = new Vector2(1.0, 0.0);
-  } else {
-    dir.normalize();
+  if (linkIndex === 0) {
+    const joint = world.getComponent(path.jointEntities[0], CableJointComponent);
+    return joint ? joint.entityA : null;
   }
+  if (linkIndex === path.linkTypes.length - 1) {
+    const joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+    return joint ? joint.entityB : null;
+  }
+  const leftJoint = world.getComponent(path.jointEntities[linkIndex - 1], CableJointComponent);
+  return leftJoint ? leftJoint.entityB : null;
+}
 
-  const radialRadius = getEffectiveCollisionRadius(world, entityId, baseRadius, dir.clone());
-  let bestPoint = center.clone().add(dir, radialRadius);
-  let bestProjection = radialRadius;
-  let source = 'radial';
-  let cornerMeta = null;
+function _pathLinkStartAttachment(world, path, linkIndex) {
+  if (!Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
+    return null;
+  }
+  if (linkIndex === 0) {
+    const joint = world.getComponent(path.jointEntities[0], CableJointComponent);
+    return joint?.attachmentPointA_world?.clone() ?? null;
+  }
+  if (linkIndex === path.linkTypes.length - 1) {
+    const joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+    return joint?.attachmentPointB_world?.clone() ?? null;
+  }
+  const leftJoint = world.getComponent(path.jointEntities[linkIndex - 1], CableJointComponent);
+  return leftJoint?.attachmentPointB_world?.clone() ?? null;
+}
 
-  const camCorners = getHybridEndpointCamCorners(world, entityId);
-  for (const corner of camCorners) {
-    for (const endpoint of ['start', 'end']) {
-      const point = endpoint === 'start' ? corner.startPoint : corner.endPoint;
-      const rel = point.clone().subtract(center);
-      const projection = rel.dot(dir);
-      if (projection > bestProjection + 1e-9) {
-        bestProjection = projection;
-        bestPoint = point.clone();
-        source = 'corner';
-        cornerMeta = {
-          pathId: corner.pathId,
-          linkIndex: corner.linkIndex,
-          endpoint
-        };
+function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  if (!(stored > 1e-9) || !(firstLayerRadius > 1e-9) || !(layerStep > 1e-9)) {
+    return null;
+  }
+  let remaining = stored;
+  let fullLayers = 0;
+  const maxLayers = 2048;
+  while (fullLayers < maxLayers) {
+    const layerRadius = firstLayerRadius + fullLayers * layerStep;
+    const circumference = 2.0 * Math.PI * layerRadius;
+    if (remaining + 1e-9 >= circumference) {
+      remaining -= circumference;
+      if (remaining < 0.0) remaining = 0.0;
+      fullLayers += 1;
+      continue;
+    }
+    return {
+      fullLayers,
+      partialLength: remaining,
+      partialRadius: layerRadius
+    };
+  }
+  return {
+    fullLayers,
+    partialLength: 0.0,
+    partialRadius: firstLayerRadius + fullLayers * layerStep
+  };
+}
+
+export class OverlayRadiusAndCircleSectorSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    if (world.getResource('enableLayering') === false) {
+      for (const entityId of world.query([OverlayRadiusComponent])) {
+        world.removeComponent(entityId, OverlayRadiusComponent);
+      }
+      for (const entityId of world.query([CircleSectorComponent])) {
+        world.removeComponent(entityId, CircleSectorComponent);
+      }
+      for (const entityId of world.query([CircleCamTag])) {
+        world.removeComponent(entityId, CircleCamTag);
+      }
+      return;
+    }
+
+    const overlayByEntity = new Map();
+    const sectorsByEntity = new Map();
+    const pathEntities = world.query([CablePathComponent]);
+
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored) || !Array.isArray(path.cw)) {
+        continue;
+      }
+      const halfWidth = Number.isFinite(path.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+      if (!(halfWidth > 1e-9)) {
+        continue;
+      }
+      const layerStep = 2.0 * halfWidth;
+
+      for (let linkIndex = 0; linkIndex < path.linkTypes.length; linkIndex++) {
+        const linkType = path.linkTypes[linkIndex];
+        if (!(linkType === 'rolling' || linkType === 'hybrid' || linkType === 'hybrid-attachment')) {
+          continue;
+        }
+        const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+        if (!(stored > 1e-9)) {
+          continue;
+        }
+
+        const entityId = _pathLinkEntity(world, path, linkIndex);
+        if (entityId === null || entityId === undefined) {
+          continue;
+        }
+        const center = world.getComponent(entityId, PositionComponent)?.pos;
+        const rawRadius = getRawCollisionRadius(world, entityId);
+        if (!center || !(rawRadius > 1e-9)) {
+          continue;
+        }
+
+        const firstLayerRadius = rawRadius + halfWidth;
+        const decomposition = _decomposeStoredWrap(stored, firstLayerRadius, layerStep);
+        if (!decomposition) {
+          continue;
+        }
+
+        if (decomposition.fullLayers > 0) {
+          const overlayRadius = firstLayerRadius + (decomposition.fullLayers - 1) * layerStep;
+          const prev = overlayByEntity.get(entityId) ?? 0.0;
+          overlayByEntity.set(entityId, Math.max(prev, overlayRadius));
+        }
+
+        if (decomposition.partialLength > 1e-9) {
+          const startPoint = _pathLinkStartAttachment(world, path, linkIndex);
+          if (!startPoint) {
+            continue;
+          }
+          const rel = startPoint.clone().subtract(center);
+          if (rel.lengthSq() <= 1e-12) {
+            continue;
+          }
+          const startAngle = Math.atan2(rel.y, rel.x);
+          const span = decomposition.partialLength / decomposition.partialRadius;
+          const cw = path.cw[linkIndex] === true;
+          const endAngle = cw ? (startAngle - span) : (startAngle + span);
+          const sectors = sectorsByEntity.get(entityId) ?? [];
+          sectors.push({
+            radius: decomposition.partialRadius,
+            startAngle,
+            endAngle,
+            cw
+          });
+          sectorsByEntity.set(entityId, sectors);
+        }
+      }
+    }
+
+    const camEntities = new Set();
+    for (const [entityId, radius] of overlayByEntity.entries()) {
+      if (world.hasComponent(entityId, OverlayRadiusComponent)) {
+        world.getComponent(entityId, OverlayRadiusComponent).radius = radius;
+      } else {
+        world.addComponent(entityId, new OverlayRadiusComponent(radius));
+      }
+      camEntities.add(entityId);
+    }
+    for (const entityId of world.query([OverlayRadiusComponent])) {
+      if (!overlayByEntity.has(entityId)) {
+        world.removeComponent(entityId, OverlayRadiusComponent);
+      }
+    }
+
+    for (const [entityId, sectors] of sectorsByEntity.entries()) {
+      if (world.hasComponent(entityId, CircleSectorComponent)) {
+        world.getComponent(entityId, CircleSectorComponent).sectors = sectors;
+      } else {
+        world.addComponent(entityId, new CircleSectorComponent(sectors));
+      }
+      camEntities.add(entityId);
+    }
+    for (const entityId of world.query([CircleSectorComponent])) {
+      if (!sectorsByEntity.has(entityId)) {
+        world.removeComponent(entityId, CircleSectorComponent);
+      }
+    }
+
+    for (const entityId of camEntities) {
+      if (!world.hasComponent(entityId, CircleCamTag)) {
+        world.addComponent(entityId, new CircleCamTag());
+      }
+    }
+    for (const entityId of world.query([CircleCamTag])) {
+      if (!camEntities.has(entityId)) {
+        world.removeComponent(entityId, CircleCamTag);
       }
     }
   }
-
-  return {
-    point: bestPoint,
-    projection: bestProjection,
-    source,
-    cornerMeta
-  };
 }
 
 // --- System: Input --- (Simplified Click Handling)
@@ -367,16 +538,14 @@ export class InputSystem {
            const borderEnts = world.query([BorderComponent]);
            if (borderEnts.length > 0) {
                const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
-               const canUseBorderZones = Array.isArray(borderPoints) && borderPoints.length >= 8;
-               const flippers = world.query([FlipperStateComponent, PositionComponent]);
-               const canUseFlipperZones = flippers.length >= 2;
-               const rightClick = canUseBorderZones &&
+               const rightClick =
                  rightOfLine(clickPos, borderPoints[0], borderPoints[1]) &&
                  rightOfLine(clickPos, borderPoints[1], borderPoints[2]);
-               const leftClick = canUseBorderZones &&
+               const leftClick =
                  rightOfLine(clickPos, borderPoints[5], borderPoints[6]) &&
                  rightOfLine(clickPos, borderPoints[6], borderPoints[7]);
-               if (rightClick && canUseFlipperZones) {
+               if (rightClick) {
+                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
                  const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
                  const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
                  if (flipperPos0.x > flipperPos1.x) {
@@ -384,7 +553,8 @@ export class InputSystem {
                  } else {
                    world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
                  }
-               } else if (leftClick && canUseFlipperZones) {
+               } else if (leftClick) {
+                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
                  const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
                  const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
                  if (flipperPos0.x < flipperPos1.x) {
@@ -535,10 +705,6 @@ export class FlipperTipLinkSystem {
 export class PBDBallBorderCollisions {
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
-    const contactTuning = world.getResource('flipperContactTuning') || {};
-    const borderMotionPenetrationSlack = Number.isFinite(contactTuning.borderMotionPenetrationSlack)
-      ? Math.max(0.0, contactTuning.borderMotionPenetrationSlack)
-      : 0.00015;
     const borderEntities = world.query([BorderComponent]);
     if (borderEntities.length === 0) return;
 
@@ -557,15 +723,11 @@ export class PBDBallBorderCollisions {
         world.setResource('ball_border_contacts', contacts);
     }
     contacts.length = 0;
-    const prevContactStateResource = world.getResource('ball_border_prev_contact_state');
-    const prevContactState = (prevContactStateResource instanceof Map) ? prevContactStateResource : new Map();
-    const nextContactState = new Map();
 
     if (borderPoints.length >= 2) {
         for (const ballId of ballEntities) {
             const p1Comp = world.getComponent(ballId, PositionComponent);
             const p1 = p1Comp.pos;
-            const r1 = world.getComponent(ballId, RadiusComponent).radius;
             const massComp = world.getComponent(ballId, MassComponent);
             const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
 
@@ -573,7 +735,6 @@ export class PBDBallBorderCollisions {
             let closestSegPoint = new Vector2();
             let edgeStart = null;
             let edgeEnd = null;
-            let closestEdgeIndex = -1;
 
             for (let i = 0; i < borderPoints.length; i++) {
                 const a = borderPoints[i];
@@ -586,7 +747,6 @@ export class PBDBallBorderCollisions {
                     closestSegPoint.set(closestPtOnSeg);
                     edgeStart = a;
                     edgeEnd = b;
-                    closestEdgeIndex = i;
                 }
             }
 
@@ -606,102 +766,46 @@ export class PBDBallBorderCollisions {
             }
 
             const dist = Math.sqrt(minDistSq);
-            const effectiveRadius = getEffectiveCollisionRadius(world, ballId, r1, collisionNormal.clone().scale(-1.0));
-            const penetration = effectiveRadius - dist;
-            if (penetration <= 0) {
-                continue;
+            const r1 = getCollisionRadiusToward(world, ballId, collisionNormal.clone().scale(-1.0));
+            if (dist > r1) {
+              continue;
             }
-
-            let geometricPenetration = 0.0;
-            if (closestEdgeIndex >= 0) {
-                const pairKey = `${ballId}:${closestEdgeIndex}`;
-                const prevState = prevContactState.get(pairKey);
-                const prevRadius = prevState?.effectiveRadius;
-                const prevNormal = prevState?.normal;
-                if (
-                    Number.isFinite(prevRadius) &&
-                    prevNormal &&
-                    prevNormal.dot(collisionNormal) > 0.95
-                ) {
-                    geometricPenetration = Math.max(0.0, effectiveRadius - prevRadius);
-                }
-                nextContactState.set(pairKey, {
-                    effectiveRadius,
-                    normal: collisionNormal.clone()
-                });
-            }
-
-            const rawMotionPenetration = Math.max(0.0, penetration - geometricPenetration);
-            let motionPenetration = rawMotionPenetration;
-            if (Number.isFinite(dt) && dt > 1e-9) {
-                const velComp = world.getComponent(ballId, VelocityComponent);
-                const vIntoSurface = velComp ? Math.max(0.0, -velComp.vel.dot(collisionNormal)) : 0.0;
-                const maxMotionPenetration = vIntoSurface * dt + borderMotionPenetrationSlack;
-                motionPenetration = Math.min(rawMotionPenetration, maxMotionPenetration);
-            }
-            const nonVelocityPenetration = Math.max(0.0, penetration - motionPenetration);
+            const penetration = r1 - dist;
             let delta_lambda = 0;
-            if (invMass > 0) {
-                p1.add(collisionNormal, penetration);
-                const prevFinalPosComp = world.getComponent(ballId, PrevFinalPosComponent);
-                if (prevFinalPosComp && nonVelocityPenetration > 0.0) {
-                    // Keep geometric / excess penetration projection from synthesizing
-                    // velocity during reconstruction.
-                    prevFinalPosComp.pos.add(collisionNormal, nonVelocityPenetration);
+            if (penetration > 0) {
+                if (invMass > 0) {
+                    p1.add(collisionNormal, penetration);
+                    const w_inv = invMass;
+                    delta_lambda = penetration / w_inv;
                 }
-                const w_inv = invMass;
-                delta_lambda = motionPenetration / w_inv;
             }
 
             contacts.push({
                 'ball_id': ballId,
                 'normal': collisionNormal.clone(),
                 'delta_lambda': delta_lambda,
-                'penetration': penetration,
-                'geometric_penetration': geometricPenetration,
-                'raw_motion_penetration': rawMotionPenetration,
-                'motion_penetration': motionPenetration,
-                'ball_contact_radius': effectiveRadius,
+                'ball_contact_radius': r1,
                 'restitution': restitution,
                 'friction': friction
             });
         }
     }
-    world.setResource('ball_border_prev_contact_state', nextContactState);
   }
 }
 
 export class PBDBallBallCollisions {
   runInPause = false;
   update(world, dt) {
-    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent, VelocityComponent]);
-    const contactTuning = world.getResource('flipperContactTuning') || {};
-    const wrapMotionPenetrationSlack = Number.isFinite(contactTuning.ballBallWrapMotionPenetrationSlack)
-      ? Math.max(0.0, contactTuning.ballBallWrapMotionPenetrationSlack)
-      : 0.00015;
-    const wrapMotionPenetrationCap = Number.isFinite(contactTuning.maxBallBallWrapMotionPenetration)
-      ? Math.max(0.0, contactTuning.maxBallBallWrapMotionPenetration)
-      : Number.POSITIVE_INFINITY;
-    const prevContactStateResource = world.getResource('ball_ball_prev_contact_state');
-    const prevContactState = (prevContactStateResource instanceof Map) ? prevContactStateResource : new Map();
-    const nextContactState = new Map();
-    let contacts = world.getResource('ball_ball_contacts');
-    if (!Array.isArray(contacts)) {
-      contacts = [];
-      world.setResource('ball_ball_contacts', contacts);
-    }
-    contacts.length = 0;
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     for (let i = 0; i < ballEntities.length; i++) {
       for (let j = i + 1; j < ballEntities.length; j++) {
         const e1 = ballEntities[i];
         const e2 = ballEntities[j];
 
         const p1Comp = world.getComponent(e1, PositionComponent);
-        const r1 = world.getComponent(e1, RadiusComponent).radius;
         const m1Comp = world.getComponent(e1, MassComponent);
 
         const p2Comp = world.getComponent(e2, PositionComponent);
-        const r2 = world.getComponent(e2, RadiusComponent).radius;
         const m2Comp = world.getComponent(e2, MassComponent);
 
         const p1 = p1Comp.pos;
@@ -715,34 +819,10 @@ export class PBDBallBallCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
-
-        const effectiveR1 = getEffectiveCollisionRadius(world, e1, r1, dir.clone());
-        const effectiveR2 = getEffectiveCollisionRadius(world, e2, r2, dir.clone().scale(-1.0));
-        const rSum = effectiveR1 + effectiveR2;
+        const r1 = getCollisionRadiusToward(world, e1, dir.clone());
+        const r2 = getCollisionRadiusToward(world, e2, dir.clone().scale(-1.0));
+        const rSum = r1 + r2;
         if (d > rSum) continue;
-        const wrapEnhanced = (effectiveR1 > r1 + 1e-9) || (effectiveR2 > r2 + 1e-9);
-
-        const pairLow = Math.min(e1, e2);
-        const pairHigh = Math.max(e1, e2);
-        const pairKey = `${pairLow}:${pairHigh}`;
-        const prevState = prevContactState.get(pairKey);
-        let geometricPenetration = 0.0;
-        if (prevState && Number.isFinite(prevState.rSum)) {
-          // Radius-growth penetration is geometric even when the pair's contact
-          // normal rotates while bodies slide; using a strict normal gate here
-          // misclassifies growth as motion and can inject kinetic energy.
-          geometricPenetration = Math.max(0.0, rSum - prevState.rSum);
-        } else if (wrapEnhanced) {
-          // Entry-frame wrap expansion can make rSum jump even when centers
-          // have not moved. Treat the expanded portion as geometric so it does
-          // not become synthetic velocity through delta_lambda.
-          geometricPenetration = Math.max(0.0, rSum - (r1 + r2));
-        }
-        nextContactState.set(pairKey, {
-          rSum,
-          normal: dir.clone(),
-          distance: d
-        });
 
         // Resolve penetration
         const penetration = rSum - d;
@@ -752,56 +832,11 @@ export class PBDBallBallCollisions {
 
         if (totalInvMass <= 1e-9) continue;
 
-        const geometricPenetrationClamped = Math.min(penetration, geometricPenetration);
-        const correctionPenetration = wrapEnhanced
-          ? Math.max(0.0, penetration - geometricPenetrationClamped)
-          : penetration;
-        if (correctionPenetration <= 0.0) {
-          continue;
-        }
-
-        let motionCorrectionPenetration = correctionPenetration;
-        if (wrapEnhanced && Number.isFinite(dt) && dt > 1e-9) {
-          const vel1 = world.getComponent(e1, VelocityComponent)?.vel;
-          const vel2 = world.getComponent(e2, VelocityComponent)?.vel;
-          if (vel1 && vel2) {
-            const relVel = vel2.clone().subtract(vel1);
-            const vIntoContact = Math.max(0.0, -relVel.dot(dir));
-            const maxMotionPenetration = vIntoContact * dt + wrapMotionPenetrationSlack;
-            motionCorrectionPenetration = Math.min(correctionPenetration, maxMotionPenetration);
-          }
-          motionCorrectionPenetration = Math.min(motionCorrectionPenetration, wrapMotionPenetrationCap);
-        }
-        const nonVelocityCorrection = Math.max(0.0, correctionPenetration - motionCorrectionPenetration);
-        const nonVelocityApplied = nonVelocityCorrection;
-
-        const corr = dir.clone().scale(correctionPenetration / totalInvMass);
+        const corr = dir.clone().scale(penetration / totalInvMass);
         p1.add(corr, -invMass1);
         p2.add(corr, invMass2);
-        if (nonVelocityApplied > 0.0) {
-          const corrNoVel = dir.clone().scale(nonVelocityApplied / totalInvMass);
-          const prevFinalPos1 = world.getComponent(e1, PrevFinalPosComponent);
-          const prevFinalPos2 = world.getComponent(e2, PrevFinalPosComponent);
-          if (prevFinalPos1) {
-            prevFinalPos1.pos.add(corrNoVel, -invMass1);
-          }
-          if (prevFinalPos2) {
-            prevFinalPos2.pos.add(corrNoVel, invMass2);
-          }
-        }
-        contacts.push({
-          ballA: e1,
-          ballB: e2,
-          delta_lambda: motionCorrectionPenetration / totalInvMass,
-          penetration,
-          geometric_penetration: geometricPenetrationClamped,
-          correction_penetration: correctionPenetration,
-          motion_correction_penetration: motionCorrectionPenetration,
-          wrap_enhanced: wrapEnhanced
-        });
       }
     }
-    world.setResource('ball_ball_prev_contact_state', nextContactState);
   }
 }
 
@@ -810,7 +845,6 @@ export class PBDBallObstacleCollisions {
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent]);
     const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
-    const collisionDebug = world.getResource('flipperCollisionDebug') === true;
 
     let contacts = world.getResource('ball_obstacle_contacts');
     if (!contacts) {
@@ -818,7 +852,6 @@ export class PBDBallObstacleCollisions {
         world.setResource('ball_obstacle_contacts', contacts);
     }
     contacts.length = 0; // Clear existing contacts
-
     let activePairs = world.getResource('ball_obstacle_active_pairs');
     if (!(activePairs instanceof Set)) {
       activePairs = new Set();
@@ -828,14 +861,11 @@ export class PBDBallObstacleCollisions {
 
     for (const ballId of ballEntities) {
       const p1 = world.getComponent(ballId, PositionComponent).pos;
-      const r1 = world.getComponent(ballId, RadiusComponent).radius;
+      const rawBallRadius = getRawCollisionRadius(world, ballId);
 
       for (const obsId of obstacleEntities) {
-        if (world.hasComponent(obsId, FlipperTagComponent)) {
-          continue;
-        }
         const p2 = world.getComponent(obsId, PositionComponent).pos;
-        const r2 = world.getComponent(obsId, RadiusComponent).radius;
+        const rawObsRadius = getRawCollisionRadius(world, obsId);
 
         const dir = new Vector2().subtractVectors(p1, p2);
         const dSq = dir.lengthSq();
@@ -843,49 +873,33 @@ export class PBDBallObstacleCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
-
-        const effectiveBallRadius = getEffectiveCollisionRadius(world, ballId, r1, dir.clone().scale(-1.0));
-        const effectiveObsRadius = getEffectiveCollisionRadius(world, obsId, r2, dir.clone());
-        const rSum = effectiveBallRadius + effectiveObsRadius;
+        const r1 = getCollisionRadiusToward(world, ballId, dir.clone().scale(-1.0));
+        const r2 = getCollisionRadiusToward(world, obsId, dir.clone());
+        const rSum = r1 + r2;
         if (d > rSum) continue;
-        const rawRSum = r1 + r2;
-        const rawContact = d <= rawRSum + 1e-9;
+        const rawHit = d <= (rawBallRadius + rawObsRadius + 1e-9);
 
         // Store contact info for the velocity-based bump system
         contacts.push({
           ball_id: ballId,
           obs_id: obsId,
           direction: dir.clone(),
-          ball_contact_radius: effectiveBallRadius,
-          obs_contact_radius: effectiveObsRadius,
-          raw_contact: rawContact
+          raw_hit: rawHit
         });
 
         // Resolve penetration
         const corr = rSum - d;
         p1.add(dir, corr);
-
         const pairKey = `${ballId}:${obsId}`;
         nextActivePairs.add(pairKey);
-        const enteredThisFrame = !activePairs.has(pairKey);
 
-        // Velocity resolution is handled by BallObstacleBumpSystem, but only raw
-        // circle-circle hits should trigger bumper push/scoring.
+        // Velocity resolution is now handled by BallObstacleBumpSystem
         const grabbed = world.getResource('grabbedBall');
-        if (rawContact && enteredThisFrame && ballId !== grabbed) {
+        if (rawHit && !activePairs.has(pairKey) && ballId !== grabbed) {
           world.addComponent(ballId, new ScoredTagComponent());
-        }
-        if (collisionDebug) {
-          console.debug(
-            `[FlipperCollisionDebug] obstacle-contact ball=${ballId} obs=${obsId} ` +
-            `entered=${enteredThisFrame} d=${d.toFixed(6)} rSum=${rSum.toFixed(6)} ` +
-            `rBall=${effectiveBallRadius.toFixed(6)} rObs=${effectiveObsRadius.toFixed(6)} ` +
-            `raw=${rawContact}`
-          );
         }
       }
     }
-
     activePairs.clear();
     for (const pairKey of nextActivePairs) {
       activePairs.add(pairKey);
@@ -900,125 +914,9 @@ export class PBDBallFlipperCollisions {
     return flipperPos.clone().add(dir, flipperState.length);
   }
 
-  _segmentNormalToward(segStart, segEnd, towardPoint) {
-    const tangent = new Vector2().subtractVectors(segEnd, segStart);
-    if (tangent.lengthSq() <= 1e-12) {
-      return null;
-    }
-    const normal = new Vector2(-tangent.y, tangent.x).normalize();
-    if (towardPoint) {
-      const toPoint = towardPoint.clone().subtract(segStart);
-      if (toPoint.dot(normal) < 0.0) {
-        normal.scale(-1.0);
-      }
-    }
-    return normal;
-  }
-
-  _computeBallSupportAgainstSegment(world, ballId, baseRadius, segStart, segEnd, initialNormal) {
-    let normal = initialNormal?.clone() ?? this._segmentNormalToward(segStart, segEnd, null);
-    if (!normal || normal.lengthSq() <= 1e-12) {
-      return null;
-    }
-    normal.normalize();
-
-    let support = null;
-    let closest = null;
-    for (let iter = 0; iter < 2; iter++) {
-      support = getEffectiveCollisionSupportPoint(
-        world,
-        ballId,
-        baseRadius,
-        normal.clone().scale(-1.0)
-      );
-      if (!support) {
-        return null;
-      }
-      closest = closestPointOnSegment(support.point, segStart, segEnd);
-      const separation = new Vector2().subtractVectors(support.point, closest);
-      if (separation.lengthSq() > 1e-12) {
-        normal = separation.clone().normalize();
-      } else {
-        const fallback = this._segmentNormalToward(segStart, segEnd, support.point);
-        if (!fallback) {
-          return null;
-        }
-        normal = fallback;
-      }
-    }
-
-    if (!support || !closest) {
-      return null;
-    }
-
-    const finalSeparation = new Vector2().subtractVectors(support.point, closest);
-    const separationDistance = finalSeparation.length();
-    if (separationDistance > 1e-12) {
-      normal = finalSeparation.clone().scale(1.0 / separationDistance);
-    } else {
-      const fallback = this._segmentNormalToward(segStart, segEnd, support.point);
-      if (!fallback) {
-        return null;
-      }
-      normal = fallback;
-    }
-
-    return {
-      support,
-      closest,
-      normal,
-      separationDistance
-    };
-  }
-
   update(world, dt) {
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
-    const collisionDebug = world.getResource('flipperCollisionDebug') === true;
-    const collisionWarnings = world.getResource('flipperCollisionWarnings') === true;
-    const contactTuning = world.getResource('flipperContactTuning') || {};
-    const smoothWrapRadiusOnset = contactTuning.smoothWrapRadiusOnset === true;
-    const wrapRadiusRiseRate = Number.isFinite(contactTuning.wrapRadiusRiseRate) ? Math.max(0.0, contactTuning.wrapRadiusRiseRate) : 0.01;
-    const wrapRadiusFallRate = Number.isFinite(contactTuning.wrapRadiusFallRate) ? Math.max(0.0, contactTuning.wrapRadiusFallRate) : 0.05;
-    const softWrapEnhancedContacts = contactTuning.softWrapEnhancedContacts === true;
-    const wrapEnhancedCorrectionFraction = Number.isFinite(contactTuning.wrapEnhancedCorrectionFraction)
-      ? Math.max(0.0, Math.min(1.0, contactTuning.wrapEnhancedCorrectionFraction))
-      : 0.2;
-    const maxWrapEnhancedCorrection = Number.isFinite(contactTuning.maxWrapEnhancedCorrection)
-      ? Math.max(0.0, contactTuning.maxWrapEnhancedCorrection)
-      : 0.0015;
-    const softRawEntryContacts = contactTuning.softRawEntryContacts === true;
-    const rawEntryCorrectionFraction = Number.isFinite(contactTuning.rawEntryCorrectionFraction)
-      ? Math.max(0.0, Math.min(1.0, contactTuning.rawEntryCorrectionFraction))
-      : 0.12;
-    const maxRawEntryCorrection = Number.isFinite(contactTuning.maxRawEntryCorrection)
-      ? Math.max(0.0, contactTuning.maxRawEntryCorrection)
-      : 0.0008;
-    const flipperMotionPenetrationSlack = Number.isFinite(contactTuning.flipperMotionPenetrationSlack)
-      ? Math.max(0.0, contactTuning.flipperMotionPenetrationSlack)
-      : 0.0008;
-    const previousWrapRampResource = world.getResource('flipperWrapRadiusRamp');
-    const previousWrapRamp = (previousWrapRampResource instanceof Map) ? previousWrapRampResource : new Map();
-    const nextWrapRamp = new Map();
-    const traceStep = (world.getResource('flipperCamTraceStep') ?? 0) + 1;
-    world.setResource('flipperCamTraceStep', traceStep);
-    const pinchContacts = world.getResource('cablePinchContacts');
-    const pinchedPairs = new Set();
-    if (Array.isArray(pinchContacts)) {
-      for (const pinch of pinchContacts) {
-        const a = pinch.entityA;
-        const b = pinch.entityB;
-        if (!Number.isInteger(a) || !Number.isInteger(b)) {
-          continue;
-        }
-        const low = Math.min(a, b);
-        const high = Math.max(a, b);
-        pinchedPairs.add(`${low}:${high}`);
-      }
-    }
-    const previousContacts = world.getResource('flipper_prev_contact_state');
-    const previousByPair = (previousContacts instanceof Map) ? previousContacts : new Map();
-    const nextByPair = new Map();
 
     let contacts = world.getResource('ball_flipper_contacts');
     if (!contacts) {
@@ -1030,202 +928,51 @@ export class PBDBallFlipperCollisions {
     for (const ballId of ballEntities) {
       const p1Comp = world.getComponent(ballId, PositionComponent);
       const p1 = p1Comp.pos;
-      const r1 = world.getComponent(ballId, RadiusComponent).radius;
       const massComp = world.getComponent(ballId, MassComponent);
       const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
 
       for (const flipId of flipperEntities) {
         const fp = world.getComponent(flipId, PositionComponent).pos;
-        const fr = world.getComponent(flipId, RadiusComponent).radius;
         const fs = world.getComponent(flipId, FlipperStateComponent);
 
         const tip = this._getFlipperTip(fp, fs);
-        const closestToCenter = closestPointOnSegment(p1, fp, tip);
-        const centerToSegment = new Vector2().subtractVectors(p1, closestToCenter);
-        const centerDistance = centerToSegment.length();
-        let initialNormal = null;
-        if (centerDistance > 1e-12) {
-          initialNormal = centerToSegment.clone().scale(1.0 / centerDistance);
-        } else {
-          initialNormal = this._segmentNormalToward(fp, tip, p1);
-        }
-        if (!initialNormal) {
-          continue;
-        }
+        const closest = closestPointOnSegment(p1, fp, tip);
 
-        const supportData = this._computeBallSupportAgainstSegment(
-          world,
-          ballId,
-          r1,
-          fp,
-          tip,
-          initialNormal
-        );
-        if (!supportData) {
-          continue;
-        }
-        const { support, closest, normal, separationDistance } = supportData;
-        const effectiveFlipperRadius = getEffectiveCollisionRadius(world, flipId, fr, normal.clone());
-        const corrTarget = effectiveFlipperRadius - separationDistance;
-        if (corrTarget <= 0.0) {
-          continue;
-        }
-        const pairKey = `${ballId}:${flipId}`;
-        const prevPair = previousByPair.get(pairKey);
-        const rawContact = centerDistance <= (r1 + fr + 1e-9);
-        const rawEntered = rawContact && !(prevPair?.raw === true);
-        const ballContactOffsetTarget = support.point.clone().subtract(p1);
-        const ballContactRadiusTarget = Math.max(r1, Math.max(0.0, -ballContactOffsetTarget.dot(normal)));
-        const targetWrapExtra = Math.max(0.0, ballContactRadiusTarget - r1);
-        const previousWrapExtra = Math.max(0.0, previousWrapRamp.get(pairKey) ?? 0.0);
-        let wrapExtra = targetWrapExtra;
-        if (smoothWrapRadiusOnset) {
-          const stepDt = Number.isFinite(dt) ? Math.max(0.0, dt) : 0.0;
-          const rate = targetWrapExtra >= previousWrapExtra ? wrapRadiusRiseRate : wrapRadiusFallRate;
-          const maxDelta = rate * stepDt;
-          if (maxDelta > 0.0) {
-            const delta = targetWrapExtra - previousWrapExtra;
-            const clampedDelta = Math.max(-maxDelta, Math.min(maxDelta, delta));
-            wrapExtra = previousWrapExtra + clampedDelta;
-          }
-        }
-        wrapExtra = Math.max(0.0, Math.min(targetWrapExtra, wrapExtra));
-        nextWrapRamp.set(pairKey, wrapExtra);
+        const dir = new Vector2().subtractVectors(p1, closest);
+        const dSq = dir.lengthSq();
+        if (dSq == 0.0) continue;
 
-        const ballContactRadius = r1 + wrapExtra;
-        let ballContactOffset = ballContactOffsetTarget.clone();
-        if (ballContactRadiusTarget > 1e-9) {
-          const scale = Math.max(0.0, Math.min(1.0, ballContactRadius / ballContactRadiusTarget));
-          ballContactOffset.scale(scale);
+        const d = Math.sqrt(dSq);
+        dir.scale(1.0 / d);
+        const r1 = getCollisionRadiusToward(world, ballId, dir.clone().scale(-1.0));
+        const flipperDir = new Vector2().subtractVectors(p1, fp);
+        if (flipperDir.lengthSq() > 1e-12) {
+          flipperDir.normalize();
         }
-        let corr = Math.max(0.0, corrTarget - (ballContactRadiusTarget - ballContactRadius));
-        if (corr <= 0.0) {
-          continue;
-        }
-        const wrapEnhanced = ballContactRadius > (r1 + 1e-9);
-        if (wrapEnhanced && softWrapEnhancedContacts) {
-          corr = Math.min(corr * wrapEnhancedCorrectionFraction, maxWrapEnhancedCorrection);
-          if (corr <= 0.0) {
-            continue;
-          }
-        }
-        if (rawEntered && softRawEntryContacts) {
-          corr = Math.min(corr * rawEntryCorrectionFraction, maxRawEntryCorrection);
-          if (corr <= 0.0) {
-            continue;
-          }
-        }
+        const fr = getCollisionRadiusToward(world, flipId, flipperDir);
+        const rSum = r1 + fr;
+        if (d > rSum) continue;
 
-        let motionCorrection = corr;
-        if (Number.isFinite(dt) && dt > 1e-9) {
-            const velComp = world.getComponent(ballId, VelocityComponent);
-            const vIntoSurface = velComp ? Math.max(0.0, -velComp.vel.dot(normal)) : 0.0;
-            const maxMotionCorrection = vIntoSurface * dt + flipperMotionPenetrationSlack;
-            motionCorrection = Math.min(corr, maxMotionCorrection);
-        }
-        const nonVelocityCorrection = Math.max(0.0, corr - motionCorrection);
-
+        const corr = rSum - d;
         if (invMass > 0) {
-            p1.add(normal, corr);
-            const prevFinalPosComp = world.getComponent(ballId, PrevFinalPosComponent);
-            if (prevFinalPosComp && nonVelocityCorrection > 0.0) {
-                prevFinalPosComp.pos.add(normal, nonVelocityCorrection);
-            }
+            p1.add(dir, corr);
         }
 
         let delta_lambda = 0;
         if (invMass > 0) {
             const w_inv = invMass;
-            delta_lambda = motionCorrection / w_inv;
+            delta_lambda = corr / w_inv;
         }
-        const flipperSurfacePoint = closest.clone().add(normal, effectiveFlipperRadius);
-        const lowPair = Math.min(ballId, flipId);
-        const highPair = Math.max(ballId, flipId);
-        const pinchPairActive = pinchedPairs.has(`${lowPair}:${highPair}`);
 
         contacts.push({
             'ball_id': ballId,
             'flip_id': flipId,
-            'normal': normal.clone(),
-            'contact_point_on_flipper': flipperSurfacePoint,
-            'delta_lambda': delta_lambda,
-            'ball_contact_radius': ballContactRadius,
-            'ball_raw_radius': r1,
-            'wrap_enhanced': wrapEnhanced,
-            'ball_contact_offset': ballContactOffset,
-            'raw_contact': rawContact,
-            'raw_entered': rawEntered,
-            'trace_step': traceStep,
-            'support_source': support.source,
-            'pinch_pair_active': pinchPairActive
+            'normal': dir.clone(),
+            'contact_point_on_flipper': closest.clone(),
+            'ball_contact_radius': r1,
+            'delta_lambda': delta_lambda
         });
-
-        appendFlipperCamTrace(world, {
-          type: 'position_contact',
-          step: traceStep,
-          ball_id: ballId,
-          flip_id: flipId,
-          raw_contact: rawContact,
-          raw_entered: rawEntered,
-          wrap_enhanced: wrapEnhanced,
-          support_source: support.source,
-          support_corner: support.cornerMeta ?? null,
-          pinch_pair_active: pinchPairActive,
-          wrap_extra_target: _toNumberOrNull(targetWrapExtra),
-          wrap_extra_applied: _toNumberOrNull(wrapExtra),
-          center_distance: _toNumberOrNull(centerDistance),
-          support_separation: _toNumberOrNull(separationDistance),
-          correction: _toNumberOrNull(corr),
-          delta_lambda: _toNumberOrNull(delta_lambda),
-          normal_x: _toNumberOrNull(normal.x),
-          normal_y: _toNumberOrNull(normal.y),
-          ball_center_x: _toNumberOrNull(p1.x),
-          ball_center_y: _toNumberOrNull(p1.y),
-          support_x: _toNumberOrNull(support.point.x),
-          support_y: _toNumberOrNull(support.point.y),
-          contact_on_flipper_x: _toNumberOrNull(flipperSurfacePoint.x),
-          contact_on_flipper_y: _toNumberOrNull(flipperSurfacePoint.y),
-          ball_contact_offset_x: _toNumberOrNull(ballContactOffset.x),
-          ball_contact_offset_y: _toNumberOrNull(ballContactOffset.y),
-          ball_contact_radius: _toNumberOrNull(ballContactRadius),
-          ball_contact_radius_target: _toNumberOrNull(ballContactRadiusTarget),
-          ball_radius_raw: _toNumberOrNull(r1),
-          flipper_radius_effective: _toNumberOrNull(effectiveFlipperRadius),
-          flipper_radius_raw: _toNumberOrNull(fr),
-        });
-
-        if (collisionWarnings && prevPair && !rawContact) {
-          const radiusJump = Math.abs(ballContactRadius - prevPair.ballRadius);
-          const corrJump = Math.abs(corr - prevPair.corr);
-          const normalDot = prevPair.normal.dot(normal);
-          const sourceChanged = prevPair.source !== support.source;
-          if (radiusJump > 0.01 || corrJump > 0.01 || normalDot < 0.95 || sourceChanged) {
-            console.warn(
-              `[FlipperCollisionWarn] wrap-only contact jump pair=${pairKey} ` +
-              `source=${prevPair.source}->${support.source} ` +
-              `radiusJump=${radiusJump.toFixed(6)} corrJump=${corrJump.toFixed(6)} normalDot=${normalDot.toFixed(6)} ` +
-              `rBall=${ballContactRadius.toFixed(6)} corr=${corr.toFixed(6)}`
-            );
-          }
-        }
-        nextByPair.set(pairKey, {
-          ballRadius: ballContactRadius,
-          corr,
-          normal: normal.clone(),
-          raw: rawContact,
-          source: support.source
-        });
-        if (collisionDebug) {
-          console.debug(
-            `[FlipperCollisionDebug] flipper-contact ball=${ballId} flip=${flipId} ` +
-            `source=${support.source} dCenter=${centerDistance.toFixed(6)} sep=${separationDistance.toFixed(6)} ` +
-            `rBall=${ballContactRadius.toFixed(6)} rFlip=${effectiveFlipperRadius.toFixed(6)} ` +
-            `corr=${corr.toFixed(6)} raw=${rawContact}`
-          );
-        }
       }
     }
-    world.setResource('flipper_prev_contact_state', nextByPair);
-    world.setResource('flipperWrapRadiusRamp', nextWrapRamp);
   }
 }

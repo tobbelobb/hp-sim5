@@ -151,7 +151,6 @@ canvas {
     CablePathComponent,
     linecolor1,
     CableAttachmentUpdateSystem,
-    CableTopologySystem,
     PinchDetectionSystem,
     PinchConfigureSystem,
     PinchConstraintBuildSystem,
@@ -170,7 +169,6 @@ canvas {
   import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
   import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
   import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
-  import { CableEnergyTransferSystem } from '../../../src/js/cable_joints/cable_energy_transfer_system.js';
   import {
     BallTagComponent,
     PauseStateComponent,
@@ -181,11 +179,12 @@ canvas {
     BorderComponent,
     FlipperMotionSystem,
     FlipperTipLinkSystem,
+    OverlayRadiusAndCircleSectorSystem,
     PBDBallBorderCollisions,
     PBDBallBallCollisions,
     PBDBallObstacleCollisions,
     PBDBallFlipperCollisions,
-    getEffectiveCollisionRadius
+    getCollisionRadiusToward
   } from './flipper_common.js';
   import { BallObstacleBumpSystem } from './ball_obstacle_bump_system.js';
   import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
@@ -220,19 +219,9 @@ canvas {
     funnelNeckHalfWidth: 0.074,
     cwAlternating: true,
     debugCableLogs: false,
-    attachmentTransferClamp: false,
-    attachmentTransferClampSlack: 0.0006,
-    attachmentTransferBudgetScale: 1.0,
-    attachmentPotentialRiseClamp: true,
-    attachmentPotentialRiseBudgetScale: 1.0,
-    attachmentPotentialRiseSlack: 0.0,
-    enableCableTopologySystem: false,
     enablePinchDetectionSystem: false,
     enablePinchConfigureSystem: false,
-    enablePinchConstraintBuildSystem: false,
-    borderMotionPenetrationSlack: 0.00015,
-    ballBallWrapMotionPenetrationSlack: 0.00015,
-    maxBallBallWrapMotionPenetration: 0.0008
+    enablePinchConstraintBuildSystem: false
   };
 
   const PALETTE = ['#A9ADB6', '#7AB6FF', '#FFA15F', '#8DD17E', '#E8A5FF', '#FFCD56'];
@@ -351,7 +340,7 @@ canvas {
 
         const rawRadius = radiusComp.radius;
         avgRawRadius += rawRadius;
-        const effectiveRadiusBottom = getEffectiveCollisionRadius(world, ballId, rawRadius, floorDirection);
+        const effectiveRadiusBottom = getCollisionRadiusToward(world, ballId, floorDirection);
         if (Number.isFinite(effectiveRadiusBottom) && effectiveRadiusBottom > maxEffRadiusBottom) {
           maxEffRadiusBottom = effectiveRadiusBottom;
         }
@@ -380,56 +369,24 @@ canvas {
 
       const borderContacts = world.getResource('ball_border_contacts') || [];
       let maxBorderDeltaLambda = 0.0;
-      let maxBorderPenetration = 0.0;
-      let maxBorderGeometricPenetration = 0.0;
-      let maxBorderMotionPenetration = 0.0;
       for (const contact of borderContacts) {
         const dl = Math.abs(_readFinite(contact.delta_lambda, 0.0));
         if (dl > maxBorderDeltaLambda) {
           maxBorderDeltaLambda = dl;
         }
-        const pen = Math.abs(_readFinite(contact.penetration, 0.0));
-        if (pen > maxBorderPenetration) {
-          maxBorderPenetration = pen;
-        }
-        const geomPen = Math.abs(_readFinite(contact.geometric_penetration, 0.0));
-        if (geomPen > maxBorderGeometricPenetration) {
-          maxBorderGeometricPenetration = geomPen;
-        }
-        const motionPen = Math.abs(_readFinite(contact.motion_penetration, 0.0));
-        if (motionPen > maxBorderMotionPenetration) {
-          maxBorderMotionPenetration = motionPen;
-        }
       }
       const ballBallContacts = world.getResource('ball_ball_contacts') || [];
       let maxBallBallDeltaLambda = 0.0;
-      let maxBallBallCorrectionPenetration = 0.0;
-      let maxBallBallGeometricPenetration = 0.0;
-      let wrapEnhancedBallBallCount = 0;
       for (const contact of ballBallContacts) {
         const dl = Math.abs(_readFinite(contact.delta_lambda, 0.0));
         if (dl > maxBallBallDeltaLambda) {
           maxBallBallDeltaLambda = dl;
         }
-        const corrPen = Math.abs(_readFinite(contact.correction_penetration, 0.0));
-        if (corrPen > maxBallBallCorrectionPenetration) {
-          maxBallBallCorrectionPenetration = corrPen;
-        }
-        const geomPen = Math.abs(_readFinite(contact.geometric_penetration, 0.0));
-        if (geomPen > maxBallBallGeometricPenetration) {
-          maxBallBallGeometricPenetration = geomPen;
-        }
-        if (contact.wrap_enhanced === true) {
-          wrapEnhancedBallBallCount += 1;
-        }
       }
 
       const pinchContacts = world.getResource('cablePinchContacts');
       const pinchContactCount = Array.isArray(pinchContacts) ? pinchContacts.length : 0;
-      const cableAttachmentDiag = world.getResource('cableAttachmentUpdateDiag') || {};
-      const cableSolverDiag = world.getResource('cableConstraintDiag') || {};
       const cableOverDiag = world.getResource('cableOverCorrectionDiag') || {};
-      const cableEnergyDiag = world.getResource('cableEnergyTransferDiag') || {};
       const eTotal = kTrans + kRot + uGravity + uCable;
 
       let trace = world.getResource('energyTrace');
@@ -466,53 +423,14 @@ canvas {
         raw_radius: avgRawRadius,
         border_contact_count: borderContacts.length,
         max_border_delta_lambda: maxBorderDeltaLambda,
-        max_border_penetration: maxBorderPenetration,
-        max_border_geometric_penetration: maxBorderGeometricPenetration,
-        max_border_motion_penetration: maxBorderMotionPenetration,
         ball_ball_contact_count: ballBallContacts.length,
         max_ball_ball_delta_lambda: maxBallBallDeltaLambda,
-        max_ball_ball_correction_penetration: maxBallBallCorrectionPenetration,
-        max_ball_ball_geometric_penetration: maxBallBallGeometricPenetration,
-        ball_ball_wrap_count: wrapEnhancedBallBallCount,
         pinch_contact_count: pinchContactCount,
-        max_attachment_sA: _readFinite(cableAttachmentDiag.maxAbsSA, 0.0),
-        max_attachment_sB: _readFinite(cableAttachmentDiag.maxAbsSB, 0.0),
-        max_attachment_rest_delta: _readFinite(cableAttachmentDiag.maxAbsJointRestDelta, 0.0),
-        max_attachment_stored_delta: _readFinite(cableAttachmentDiag.maxAbsStoredDelta, 0.0),
-        peak_attachment_path_id: _readFinite(cableAttachmentDiag.peakPathId, -1),
-        peak_attachment_joint_id: _readFinite(cableAttachmentDiag.peakJointId, -1),
-        peak_attachment_entity_a: _readFinite(cableAttachmentDiag.peakEntityA, -1),
-        peak_attachment_entity_b: _readFinite(cableAttachmentDiag.peakEntityB, -1),
-        peak_attachment_sA: _readFinite(cableAttachmentDiag.peakSA, 0.0),
-        peak_attachment_sB: _readFinite(cableAttachmentDiag.peakSB, 0.0),
-        peak_attachment_rest_before: _readFinite(cableAttachmentDiag.peakRestBefore, 0.0),
-        peak_attachment_rest_after: _readFinite(cableAttachmentDiag.peakRestAfter, 0.0),
-        peak_attachment_segment_length: _readFinite(cableAttachmentDiag.peakSegmentLength, 0.0),
-        attachment_large_transfer_count: _readFinite(cableAttachmentDiag.largeTransferCount, 0),
-        attachment_clamped_transfer_count: _readFinite(cableAttachmentDiag.clampedTransferCount, 0),
-        max_attachment_clamp_reduction: _readFinite(cableAttachmentDiag.maxClampReduction, 0.0),
-        attachment_rest_clamp_count: _readFinite(cableAttachmentDiag.restLengthClampCount, 0),
-        max_attachment_rest_clamp: _readFinite(cableAttachmentDiag.maxRestLengthClamp, 0.0),
-        attachment_potential_clamp_count: _readFinite(cableAttachmentDiag.potentialRiseClampCount, 0),
-        max_attachment_potential_clamp: _readFinite(cableAttachmentDiag.maxPotentialRiseClamp, 0.0),
-        max_attachment_potential_rise: _readFinite(cableAttachmentDiag.maxPotentialRise, 0.0),
-        max_attachment_potential_rise_allowed: _readFinite(cableAttachmentDiag.maxPotentialRiseAllowed, 0.0),
-        max_cable_constraint_error: _readFinite(cableSolverDiag.maxConstraintError, 0.0),
-        max_cable_lambda: _readFinite(cableSolverDiag.maxLambda, 0.0),
-        max_cable_linear_delta: _readFinite(cableSolverDiag.maxLinearDelta, 0.0),
-        max_cable_angular_delta: _readFinite(cableSolverDiag.maxAngularDelta, 0.0),
-        cable_joint_applied_count: _readFinite(cableSolverDiag.jointAppliedCount, 0),
-        cable_pinch_applied_count: _readFinite(cableSolverDiag.pinchAppliedCount, 0),
         over_corrected_joint_count: _readFinite(cableOverDiag.overCorrectedJointCount, 0),
         over_pos_adjust_count: _readFinite(cableOverDiag.entitiesPosAdjusted, 0),
         over_ang_adjust_count: _readFinite(cableOverDiag.entitiesAngAdjusted, 0),
         max_over_pos_adjust: _readFinite(cableOverDiag.maxPosAdjustment, 0.0),
         max_over_ang_adjust: _readFinite(cableOverDiag.maxAngAdjustment, 0.0),
-        cable_energy_positive_joint_count: _readFinite(cableEnergyDiag.positivePotentialJoints, 0),
-        cable_energy_removed_rot: _readFinite(cableEnergyDiag.energyRemovedRotational, 0.0),
-        cable_energy_removed_lin: _readFinite(cableEnergyDiag.energyRemovedLinear, 0.0),
-        cable_energy_unmet_rise: _readFinite(cableEnergyDiag.unmetPotentialRise, 0.0),
-        cable_energy_max_joint_rise: _readFinite(cableEnergyDiag.maxJointPotentialRise, 0.0),
         negative_stored_count: negativeStoredCount,
         max_joint_stretch: maxJointStretch,
         ball_count: validBallCount,
@@ -555,27 +473,13 @@ canvas {
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
     world.setResource('cableDebugLogs', spoolEnergyConfig.debugCableLogs === true);
+    world.setResource('enableLayering', true);
     world.setResource(
-      'cableSolverIterations',
-      Math.max(1, Math.min(16, Math.floor(_readFinite(spoolEnergyConfig.cableSolverIterations, 2))))
+      'enablePinch',
+      spoolEnergyConfig.enablePinchDetectionSystem === true ||
+      spoolEnergyConfig.enablePinchConfigureSystem === true ||
+      spoolEnergyConfig.enablePinchConstraintBuildSystem === true
     );
-    world.setResource('cableAttachmentTransferTuning', {
-      enableKinematicClamp: spoolEnergyConfig.attachmentTransferClamp === true,
-      clampSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentTransferClampSlack, 0.0006)),
-      kinematicBudgetScale: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentTransferBudgetScale, 1.0)),
-      limitPotentialRiseByKineticBudget: spoolEnergyConfig.attachmentPotentialRiseClamp !== false,
-      potentialRiseBudgetScale: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentPotentialRiseBudgetScale, 1.0)),
-      potentialRiseSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.attachmentPotentialRiseSlack, 0.0))
-    });
-    world.setResource('cableEnergyTransferTuning', {
-      enabled: true,
-      transferScale: 1.0
-    });
-    world.setResource('flipperContactTuning', {
-      borderMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.borderMotionPenetrationSlack, 0.00015)),
-      ballBallWrapMotionPenetrationSlack: Math.max(0.0, _readFinite(spoolEnergyConfig.ballBallWrapMotionPenetrationSlack, 0.00015)),
-      maxBallBallWrapMotionPenetration: Math.max(0.0, _readFinite(spoolEnergyConfig.maxBallBallWrapMotionPenetration, 0.0008))
-    });
 
     const bottom = 0.04;
     const top = simHeight - 0.03;
@@ -727,14 +631,8 @@ canvas {
       world.registerSystem(new MovementSystem());
       world.registerSystem(new AngularMovementSystem());
       world.registerSystem(new FlipperTipLinkSystem());
-      const enableTopology = spoolEnergyConfig.enableCableTopologySystem !== false;
-      world.registerSystem(new CableAttachmentUpdateSystem({
-        includeTopology: false,
-        updateHybridWithoutTopology: !enableTopology
-      }));
-      if (enableTopology) {
-        world.registerSystem(new CableTopologySystem());
-      }
+      world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
+      world.registerSystem(new CableAttachmentUpdateSystem());
       if (spoolEnergyConfig.enablePinchDetectionSystem === true) {
         world.registerSystem(new PinchDetectionSystem());
       }
@@ -755,7 +653,6 @@ canvas {
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());
-      world.registerSystem(new CableEnergyTransferSystem());
       world.registerSystem(new BallObstacleBumpSystem());
       world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
       world.registerSystem(new ScoreSystem());

@@ -4,64 +4,19 @@ import {
   RadiusComponent,
   MassComponent,
 } from '../../../src/js/cable_joints/ecs.js';
-import Vector2 from '../../../src/js/cable_joints/vector2.js';
-import {
-  CableLinkComponent,
-  CableJointComponent,
-  CablePathComponent,
-} from '../../../src/js/cable_joints/cable_joints_core.js';
 import {
   BallTagComponent,
   ObstacleTagComponent,
   ObstaclePushComponent,
-  FlipperTagComponent,
   ScoreComponent,
   ScoreSystem,
   ScoredTagComponent,
   PBDBallObstacleCollisions,
+  OverlayRadiusComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
-function addEndpointHybridWrap(world, endpointId, storedLength, halfWidth = 0.1) {
-  const anchorId = world.createEntity();
-  world.addComponent(anchorId, new PositionComponent(endpointId + 10.0, 0.0));
-  world.addComponent(anchorId, new RadiusComponent(0.1));
-  world.addComponent(anchorId, new CableLinkComponent(endpointId + 10.0, 0.0));
-
-  const endpointPos = world.getComponent(endpointId, PositionComponent).pos;
-  const endpointRadius = world.getComponent(endpointId, RadiusComponent).radius;
-  const baseRadius = endpointRadius + halfWidth;
-  const attachmentA = endpointPos.clone().add(new Vector2(-baseRadius, 0.0));
-  const attachmentB = attachmentA.clone().add(new Vector2(-0.8, 0.0));
-
-  const jointId = world.createEntity();
-  world.addComponent(
-    jointId,
-    new CableJointComponent(
-      endpointId,
-      anchorId,
-      0.0,
-      attachmentA,
-      attachmentB
-    )
-  );
-
-  const pathId = world.createEntity();
-  world.addComponent(
-    pathId,
-    new CablePathComponent(
-      world,
-      [jointId],
-      ['hybrid', 'attachment'],
-      [true, true],
-      1e4,
-      [storedLength, 0.0],
-      halfWidth
-    )
-  );
-}
-
 describe('PBDBallObstacleCollisions scoring behavior', () => {
-  test('scores only on obstacle contact enter, not every frame of persistent overlap', () => {
+  test('scores only on obstacle contact entry, not every frame of persistent overlap', () => {
     const world = new World();
 
     const scoreId = world.createEntity();
@@ -104,33 +59,7 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
     expect(world.getComponent(scoreId, ScoreComponent).value).toBe(2);
   });
 
-  test('ignores obstacle contacts on entities that are also tagged as flippers', () => {
-    const world = new World();
-
-    const ballId = world.createEntity();
-    world.addComponent(ballId, new BallTagComponent());
-    world.addComponent(ballId, new PositionComponent(0.0, 0.0));
-    world.addComponent(ballId, new RadiusComponent(1.0));
-    world.addComponent(ballId, new MassComponent(1.0));
-
-    const hybridObstacleFlipperId = world.createEntity();
-    world.addComponent(hybridObstacleFlipperId, new ObstacleTagComponent());
-    world.addComponent(hybridObstacleFlipperId, new FlipperTagComponent());
-    world.addComponent(hybridObstacleFlipperId, new PositionComponent(1.8, 0.0));
-    world.addComponent(hybridObstacleFlipperId, new RadiusComponent(1.0));
-    world.addComponent(hybridObstacleFlipperId, new ObstaclePushComponent(2.0));
-
-    const collisionSystem = new PBDBallObstacleCollisions();
-    collisionSystem.update(world, 0.016);
-
-    const contacts = world.getResource('ball_obstacle_contacts');
-    expect(Array.isArray(contacts)).toBe(true);
-    expect(contacts).toHaveLength(0);
-    expect(world.hasComponent(ballId, ScoredTagComponent)).toBe(false);
-  });
-
-  test('uses effective wrapped radius for obstacle side in circle-circle collision', () => {
-    const baseLayerCircumference = 2.0 * Math.PI * 1.1;
+  test('uses overlay radius for obstacle side in circle-circle collision', () => {
     const collisionSystem = new PBDBallObstacleCollisions();
 
     const makeWorld = (withWrap) => {
@@ -141,17 +70,15 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
       world.addComponent(ballId, new PositionComponent(0.0, 0.0));
       world.addComponent(ballId, new RadiusComponent(1.0));
       world.addComponent(ballId, new MassComponent(1.0));
-      world.addComponent(ballId, new CableLinkComponent(0.0, 0.0));
 
       const obsId = world.createEntity();
       world.addComponent(obsId, new ObstacleTagComponent());
       world.addComponent(obsId, new PositionComponent(2.15, 0.0));
       world.addComponent(obsId, new RadiusComponent(1.0));
       world.addComponent(obsId, new ObstaclePushComponent(2.0));
-      world.addComponent(obsId, new CableLinkComponent(2.15, 0.0));
 
       if (withWrap) {
-        addEndpointHybridWrap(world, obsId, baseLayerCircumference);
+        world.addComponent(obsId, new OverlayRadiusComponent(1.2));
       }
       return { world, ballId };
     };
@@ -166,7 +93,7 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
     const withWrapContacts = withWrap.world.getResource('ball_obstacle_contacts');
     expect(noWrapContacts).toHaveLength(0);
     expect(withWrapContacts).toHaveLength(1);
-    expect(withWrapContacts[0].raw_contact).toBe(false);
+    expect(withWrapContacts[0].raw_hit).toBe(false);
     expect(withWrap.world.hasComponent(withWrap.ballId, ScoredTagComponent)).toBe(false);
 
     const noWrapX = noWrap.world.getComponent(noWrap.ballId, PositionComponent).pos.x;

@@ -28,7 +28,6 @@ import {
   CablePathComponent,
   linecolor1,
   CableAttachmentUpdateSystem,
-  CableTopologySystem,
   PinchDetectionSystem,
   PinchConfigureSystem,
   PinchConstraintBuildSystem,
@@ -41,7 +40,6 @@ import {
 import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
 import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
 import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
-import { CableEnergyTransferSystem } from '../../../src/js/cable_joints/cable_energy_transfer_system.js';
 import {
   ScoreComponent,
   BallTagComponent,
@@ -55,6 +53,7 @@ import {
   FlipperTipComponent,
   FlipperMotionSystem,
   FlipperTipLinkSystem,
+  OverlayRadiusAndCircleSectorSystem,
   PBDBallBorderCollisions,
   PBDBallBallCollisions,
   PBDBallObstacleCollisions,
@@ -100,49 +99,8 @@ export function setupScene(world, stage, canvas) {
     world.setResource('ball_obstacle_contacts', []);
     world.setResource('ball_border_contacts', []);
     world.setResource('ball_flipper_contacts', []);
-    world.setResource('flipperContactTuning', {
-      excludeConstraintForceForWrapEnhancedFriction: true,
-      disableRestitutionForWrapEnhanced: true,
-      disableFrictionForWrapEnhanced: true,
-      smoothWrapRadiusOnset: true,
-      wrapRadiusRiseRate: 0.01,
-      wrapRadiusFallRate: 0.05,
-      softWrapEnhancedContacts: true,
-      wrapEnhancedCorrectionFraction: 0.2,
-      maxWrapEnhancedCorrection: 0.0015,
-      softRawEntryContacts: true,
-      rawEntryCorrectionFraction: 0.12,
-      maxRawEntryCorrection: 0.0008,
-      softenRawEntryVelocity: true,
-      flipperMotionPenetrationSlack: 0.0008,
-      borderMotionPenetrationSlack: 0.00015,
-      ballBallWrapMotionPenetrationSlack: 0.00015
-    });
-    world.setResource('cableAttachmentTransferTuning', {
-      enableKinematicClamp: false,
-      clampSlack: 0.0006,
-      kinematicBudgetScale: 1.0,
-      limitPotentialRiseByKineticBudget: true,
-      potentialRiseBudgetScale: 1.0,
-      potentialRiseSlack: 0.0
-    });
-    world.setResource('cableEnergyTransferTuning', {
-      enabled: true,
-      transferScale: 1.0
-    });
-    world.setResource('cableSolverIterations', 2);
-    world.setResource('flipperWrapRadiusRamp', new Map());
-    world.setResource('flipperCamTraceStep', 0);
-    world.setResource('flipperCamTraceConfig', {
-      enabled: false,
-      ballId: null,
-      flipId: null,
-      onlyWrap: false,
-      maxSamples: 3000,
-      logToConsole: false,
-      jumpDeltaVThreshold: 1.0
-    });
-    world.setResource('flipperCamTraceSamples', []);
+    world.setResource('enablePinch', true);
+    world.setResource('enableLayering', true);
     const simWidth = 1.0;
     const simHeight = 1.7;
     world.setResource('simWidth', simWidth);
@@ -365,8 +323,8 @@ export function setupScene(world, stage, canvas) {
 
         // 4. Update derived geometry and cable state
         world.registerSystem(new FlipperTipLinkSystem());
-        world.registerSystem(new CableAttachmentUpdateSystem({ includeTopology: false }));
-        world.registerSystem(new CableTopologySystem());
+        world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
+        world.registerSystem(new CableAttachmentUpdateSystem());
         world.registerSystem(new PinchDetectionSystem());
         world.registerSystem(new PinchConfigureSystem());
         world.registerSystem(new PinchConstraintBuildSystem());
@@ -387,7 +345,6 @@ export function setupScene(world, stage, canvas) {
         // 7. UPDATE VELOCITY: Derive final velocities from the position changes
         world.registerSystem(new PBDVelocityUpdateSystem());
         world.registerSystem(new PBDAngularVelocityUpdateSystem());
-        world.registerSystem(new CableEnergyTransferSystem());
 
         // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
         world.registerSystem(new BallObstacleBumpSystem());

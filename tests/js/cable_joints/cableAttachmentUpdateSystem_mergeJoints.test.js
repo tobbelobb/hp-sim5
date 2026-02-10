@@ -266,7 +266,7 @@ describe('_mergeJoints', () => {
     const rawHybridRadius = 1.0;
     const rawWheelRadius = 0.5;
     const halfWidth = 0.1;
-    const baseHybridRadius = rawHybridRadius + halfWidth;
+    const baseHybridRadius = rawHybridRadius;
     const layeredHybridRadius = baseHybridRadius + 2.0 * halfWidth;
 
     world.addComponent(hybrid, new PositionComponent(hybridPos.x, hybridPos.y));

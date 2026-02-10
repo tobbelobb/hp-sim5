@@ -28,15 +28,13 @@ describe('BallObstacleBumpSystem raw-contact gating', () => {
     return { world, ballId, obsId };
   }
 
-  test('skips push impulse for wrap-only contacts (raw_contact=false)', () => {
+  test('skips push impulse for wrap-only contacts (raw_hit=false)', () => {
     const { world, ballId, obsId } = createWorld();
     world.setResource('ball_obstacle_contacts', [{
       ball_id: ballId,
       obs_id: obsId,
       direction: new Vector2(1.0, 0.0),
-      raw_contact: false,
-      ball_contact_radius: 1.2,
-      obs_contact_radius: 1.2,
+      raw_hit: false,
     }]);
 
     const system = new BallObstacleBumpSystem();
@@ -47,15 +45,13 @@ describe('BallObstacleBumpSystem raw-contact gating', () => {
     expect(v.y).toBeCloseTo(0.0, 9);
   });
 
-  test('applies push impulse for raw contacts (raw_contact=true)', () => {
+  test('applies push impulse for raw contacts (raw_hit=true)', () => {
     const { world, ballId, obsId } = createWorld();
     world.setResource('ball_obstacle_contacts', [{
       ball_id: ballId,
       obs_id: obsId,
       direction: new Vector2(1.0, 0.0),
-      raw_contact: true,
-      ball_contact_radius: 1.0,
-      obs_contact_radius: 1.0,
+      raw_hit: true,
     }]);
 
     const system = new BallObstacleBumpSystem();

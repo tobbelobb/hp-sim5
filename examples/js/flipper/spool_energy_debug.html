@@ -146,12 +146,10 @@ canvas {
     CablePathComponent,
     linecolor1,
     CableAttachmentUpdateSystem,
-    CableTopologySystem,
     PinchDetectionSystem,
     PinchConfigureSystem,
     PinchConstraintBuildSystem,
-    PBDCableConstraintSolver,
-    getHybridEndpointRollingRadius
+    PBDCableConstraintSolver
   } from '../../../src/js/cable_joints/cable_joints_core.js';
   import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
   import {
@@ -166,13 +164,13 @@ canvas {
   import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints/cable_attachment_cache_system.js';
   import { CableSlackSystem } from '../../../src/js/cable_joints/cable_slack_system.js';
   import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction_system.js';
-  import { CableEnergyTransferSystem } from '../../../src/js/cable_joints/cable_energy_transfer_system.js';
   import {
     BallTagComponent,
     PauseStateComponent,
     BorderComponent,
     PBDBallBorderCollisions,
-    getEffectiveCollisionRadius
+    OverlayRadiusAndCircleSectorSystem,
+    getCollisionRadiusToward
   } from './flipper_common.js';
   import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
   import { RenderSystem } from './renderSystem.js';
@@ -284,8 +282,7 @@ canvas {
 
       const rawRadius = radiusComp.radius;
       const floorDirection = new Vector2(0.0, -1.0);
-      const effectiveRadiusBottom = getEffectiveCollisionRadius(world, ballId, rawRadius, floorDirection);
-      const rollingRadius = getHybridEndpointRollingRadius(world, ballId);
+      const effectiveRadiusBottom = getCollisionRadiusToward(world, ballId, floorDirection);
       const stored0 = _readFinite(pathComp.stored?.[0], 0.0);
 
       const borderContacts = world.getResource('ball_border_contacts') || [];
@@ -326,7 +323,7 @@ canvas {
         e_total: eTotal,
         delta_e: deltaE,
         stored_0: stored0,
-        rolling_radius: _readFinite(rollingRadius, rawRadius),
+        rolling_radius: _readFinite(effectiveRadiusBottom, rawRadius),
         effective_radius_bottom: _readFinite(effectiveRadiusBottom, rawRadius),
         raw_radius: rawRadius,
         border_contact_count: borderContactCount,
@@ -368,18 +365,8 @@ canvas {
     world.setResource('energyTraceStep', 0);
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
-    world.setResource('cableAttachmentTransferTuning', {
-      enableKinematicClamp: false,
-      clampSlack: 0.0006,
-      kinematicBudgetScale: 1.0,
-      limitPotentialRiseByKineticBudget: true,
-      potentialRiseBudgetScale: 1.0,
-      potentialRiseSlack: 0.0
-    });
-    world.setResource('cableEnergyTransferTuning', {
-      enabled: true,
-      transferScale: 1.0
-    });
+    world.setResource('enablePinch', true);
+    world.setResource('enableLayering', true);
 
     const left = 0.03;
     const right = simWidth - 0.03;
@@ -472,8 +459,8 @@ canvas {
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
       world.registerSystem(new AngularMovementSystem());
-      world.registerSystem(new CableAttachmentUpdateSystem({ includeTopology: false }));
-      world.registerSystem(new CableTopologySystem());
+      world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
+      world.registerSystem(new CableAttachmentUpdateSystem());
       world.registerSystem(new PinchDetectionSystem());
       world.registerSystem(new PinchConfigureSystem());
       world.registerSystem(new PinchConstraintBuildSystem());
@@ -485,7 +472,6 @@ canvas {
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());
-      world.registerSystem(new CableEnergyTransferSystem());
       world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
       world.registerSystem(new EnergyTraceSystem());
       world.registerSystem(new RenderSystem(canvas, cScale, simHeight, 1.0, simWidth / 2.0, simHeight / 2.0, 0.0));

@@ -131,7 +131,6 @@ canvas {
 
     import {
       BallTagComponent,
-      FlipperTagComponent,
       ScoredTagComponent,
       ScoreComponent
     } from './flipper_common.js';
@@ -171,53 +170,20 @@ canvas {
     };
     window.getGameStateForTest = getGameStateForTest;
 
-    window.enableFlipperCamTrace = (options = {}) => {
-        const current = world.getResource('flipperCamTraceConfig') || {};
-        const next = { ...current, ...options, enabled: true };
-        world.setResource('flipperCamTraceConfig', next);
-        world.setResource('flipperCamTraceSamples', []);
-        console.log('Flipper cam trace enabled:', next);
+    window.getCableFeatureFlags = () => ({
+        pinch: world.getResource('enablePinch') !== false,
+        layering: world.getResource('enableLayering') !== false
+    });
+    window.setCableFeatureFlags = ({ pinch, layering } = {}) => {
+        if (typeof pinch === 'boolean') {
+            world.setResource('enablePinch', pinch);
+        }
+        if (typeof layering === 'boolean') {
+            world.setResource('enableLayering', layering);
+        }
+        const next = window.getCableFeatureFlags();
+        console.log('Cable feature flags:', next);
         return next;
-    };
-    window.disableFlipperCamTrace = () => {
-        const current = world.getResource('flipperCamTraceConfig') || {};
-        const next = { ...current, enabled: false };
-        world.setResource('flipperCamTraceConfig', next);
-        console.log('Flipper cam trace disabled.');
-        return next;
-    };
-    window.getFlipperCamTrace = () => {
-        return world.getResource('flipperCamTraceSamples') || [];
-    };
-    window.setFlipperContactTuning = (partial = {}) => {
-        const current = world.getResource('flipperContactTuning') || {};
-        const next = { ...current, ...partial };
-        world.setResource('flipperContactTuning', next);
-        console.log('Flipper contact tuning:', next);
-        return next;
-    };
-    window.getFlipperContactTuning = () => {
-        return world.getResource('flipperContactTuning') || {};
-    };
-    window.listFlipperCamTraceTargets = () => {
-        const balls = world.query([BallTagComponent, PositionComponent]).map((id) => {
-            const pos = world.getComponent(id, PositionComponent)?.pos;
-            return { id, x: pos?.x ?? null, y: pos?.y ?? null };
-        });
-        const flippers = world.query([FlipperTagComponent, PositionComponent]).map((id) => {
-            const pos = world.getComponent(id, PositionComponent)?.pos;
-            return { id, x: pos?.x ?? null, y: pos?.y ?? null };
-        });
-        console.log('Balls:', balls);
-        console.log('Flippers:', flippers);
-        return { balls, flippers };
-    };
-    window.dumpFlipperCamTrace = () => {
-        const samples = world.getResource('flipperCamTraceSamples') || [];
-        console.log('FLIPPER_CAM_TRACE_JSON_START');
-        console.log(JSON.stringify(samples));
-        console.log('FLIPPER_CAM_TRACE_JSON_END');
-        return samples;
     };
 
 

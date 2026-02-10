@@ -9,8 +9,7 @@ import {
 } from '../../../src/js/cable_joints/ecs.js';
 
 import {
-    ObstaclePushComponent,
-    getEffectiveCollisionRadius
+    ObstaclePushComponent
 } from './flipper_common.js';
 
 export class BallObstacleBumpSystem {
@@ -24,7 +23,7 @@ export class BallObstacleBumpSystem {
 
         for (const contact of contacts) {
             const { ball_id, obs_id, direction } = contact;
-            if (contact.raw_contact === false) {
+            if (contact.raw_hit === false) {
                 continue;
             }
 
@@ -45,12 +44,8 @@ export class BallObstacleBumpSystem {
             }
 
             const v1 = v1Comp.vel;
-            const r1 = Number.isFinite(contact.ball_contact_radius)
-                ? contact.ball_contact_radius
-                : getEffectiveCollisionRadius(world, ball_id, r1Comp.radius, direction.clone().scale(-1.0));
-            const r2 = Number.isFinite(contact.obs_contact_radius)
-                ? contact.obs_contact_radius
-                : getEffectiveCollisionRadius(world, obs_id, r2Comp.radius, direction.clone());
+            const r1 = r1Comp.radius;
+            const r2 = r2Comp.radius;
             const pushVel = pushComp.pushVel;
 
             const omega_ball = ballAngVelComp ? ballAngVelComp.angularVelocity : 0.0;

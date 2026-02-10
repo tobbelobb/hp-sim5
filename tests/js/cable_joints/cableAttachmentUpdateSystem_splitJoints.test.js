@@ -240,7 +240,7 @@ describe('_splitJoints', () => {
     const anchorPos = new Vector2(6.0, 0.0);
     const rawHybridRadius = 1.0;
     const halfWidth = 0.1;
-    const baseHybridRadius = rawHybridRadius + halfWidth;
+    const baseHybridRadius = rawHybridRadius;
     const layeredHybridRadius = baseHybridRadius + 2.0 * halfWidth;
 
     world.addComponent(hybrid, new PositionComponent(hybridPos.x, hybridPos.y));

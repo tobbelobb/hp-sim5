@@ -6,58 +6,14 @@ import {
   MassComponent,
 } from '../../../src/js/cable_joints/ecs.js';
 import {
-  CableLinkComponent,
-  CableJointComponent,
-  CablePathComponent,
-} from '../../../src/js/cable_joints/cable_joints_core.js';
-import {
   BallTagComponent,
   BorderComponent,
   PBDBallBorderCollisions,
+  OverlayRadiusComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
-function addEndpointHybridWrap(world, endpointId, storedLength, halfWidth = 0.1) {
-  const anchorId = world.createEntity();
-  world.addComponent(anchorId, new PositionComponent(3.0, 0.0));
-  world.addComponent(anchorId, new RadiusComponent(0.1));
-  world.addComponent(anchorId, new CableLinkComponent(3.0, 0.0));
-
-  const endpointPos = world.getComponent(endpointId, PositionComponent).pos;
-  const endpointRadius = world.getComponent(endpointId, RadiusComponent).radius;
-  const baseRadius = endpointRadius + halfWidth;
-  const attachmentA = endpointPos.clone().add(new Vector2(0.0, baseRadius));
-  const attachmentB = attachmentA.clone().add(new Vector2(0.8, 0.0));
-
-  const jointId = world.createEntity();
-  world.addComponent(
-    jointId,
-    new CableJointComponent(
-      endpointId,
-      anchorId,
-      0.0,
-      attachmentA,
-      attachmentB
-    )
-  );
-
-  const pathId = world.createEntity();
-  world.addComponent(
-    pathId,
-    new CablePathComponent(
-      world,
-      [jointId],
-      ['hybrid', 'attachment'],
-      [true, true],
-      1e4,
-      [storedLength, 0.0],
-      halfWidth
-    )
-  );
-}
-
-describe('PBDBallBorderCollisions wrapped effective radius', () => {
-  test('detects border contact when wrapped effective radius exceeds base radius', () => {
-    const baseLayerCircumference = 2.0 * Math.PI * 1.1;
+describe('PBDBallBorderCollisions overlay radius', () => {
+  test('detects border contact when overlay radius exceeds raw radius', () => {
     const system = new PBDBallBorderCollisions();
 
     const makeWorld = (withWrap) => {
@@ -68,7 +24,6 @@ describe('PBDBallBorderCollisions wrapped effective radius', () => {
       world.addComponent(ballId, new PositionComponent(0.0, 1.15));
       world.addComponent(ballId, new RadiusComponent(1.0));
       world.addComponent(ballId, new MassComponent(1.0));
-      world.addComponent(ballId, new CableLinkComponent(0.0, 1.15));
 
       const borderId = world.createEntity();
       world.addComponent(
@@ -80,7 +35,7 @@ describe('PBDBallBorderCollisions wrapped effective radius', () => {
       );
 
       if (withWrap) {
-        addEndpointHybridWrap(world, ballId, baseLayerCircumference);
+        world.addComponent(ballId, new OverlayRadiusComponent(1.2));
       }
       return { world, ballId };
     };

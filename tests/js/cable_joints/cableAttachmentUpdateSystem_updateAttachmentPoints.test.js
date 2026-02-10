@@ -416,7 +416,7 @@ describe('_updateAttachmentPoints', () => {
     const anchorPos = new Vector2(0.0, 3.0);
     const spoolRadius = 1.0;
     const halfWidth = 0.05;
-    const baseRadius = spoolRadius + halfWidth;
+    const baseRadius = spoolRadius;
     const fullWidth = 2.0 * halfWidth;
 
     world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y));
