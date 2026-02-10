@@ -100,7 +100,7 @@ export function setupScene(world, stage, canvas) {
     world.setResource('ball_obstacle_contacts', []);
     world.setResource('ball_border_contacts', []);
     world.setResource('ball_flipper_contacts', []);
-    world.setResource('enableLayering', true);
+    world.setResource('enableLayering', world.getResource('enableLayering') !== false);
     const simWidth = 1.0;
     const simHeight = 1.7;
     world.setResource('simWidth', simWidth);
