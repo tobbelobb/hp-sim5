@@ -698,7 +698,9 @@ export class RenderSystem {
       }
     }
 
-    const layeringEnabled = world.getResource('enableLayering') !== false;
+    const layeringEnabled =
+      world.getResource('enableLayering') !== false &&
+      world.getResource('layeringRenderWraps') !== false;
 
     const drawEndpointStoredWrap = (path, linkIndex, center, bodyRadius, attachmentPoint, renderComp) => {
       if (!center || !Number.isFinite(bodyRadius) || bodyRadius <= 1e-9 || !attachmentPoint) {

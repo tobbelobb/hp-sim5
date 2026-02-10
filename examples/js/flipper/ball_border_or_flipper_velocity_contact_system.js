@@ -58,8 +58,12 @@ export class BallBorderOrFlipperVelocityContactSystem {
 
         const restitution = (restitutionBall + restitution_other) / 2.0;
         const mu = (muBall + friction_other) / 2.0;
+        const useContactOffset =
+            world.getResource('enableLayering') !== false &&
+            world.getResource('layeringVelocityContactOffset') !== false;
 
         const useOffset =
+            useContactOffset &&
             contactOffset &&
             Number.isFinite(contactOffset.x) &&
             Number.isFinite(contactOffset.y);

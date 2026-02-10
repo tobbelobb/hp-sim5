@@ -76,6 +76,7 @@ import {
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem,
 } from '../../../src/js/cable_joints/commonSystems.js';
+import { ensureCableFeatureFlags } from './cable_feature_flags.js';
 
 export function setupScene(world, stage, canvas) {
   world.clear(); // Clear entities and components
@@ -100,7 +101,7 @@ export function setupScene(world, stage, canvas) {
     world.setResource('ball_obstacle_contacts', []);
     world.setResource('ball_border_contacts', []);
     world.setResource('ball_flipper_contacts', []);
-    world.setResource('enableLayering', world.getResource('enableLayering') !== false);
+    ensureCableFeatureFlags(world);
     const simWidth = 1.0;
     const simHeight = 1.7;
     world.setResource('simWidth', simWidth);

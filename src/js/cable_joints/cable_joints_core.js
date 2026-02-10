@@ -40,6 +40,19 @@ function _debugCable(world, message) {
   }
 }
 
+function _resourceBool(world, key, fallback = true) {
+  const value = world?.getResource?.(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function _layeringEnabled(world) {
+  return _resourceBool(world, 'enableLayering', true);
+}
+
+function _layeringFlag(world, key, fallback = true) {
+  return _layeringEnabled(world) && _resourceBool(world, key, fallback);
+}
+
 function getMachineId(world, entityId) {
   if (entityId == null) {
     return '';
@@ -156,8 +169,8 @@ export class CablePathComponent {
       if (isRolling) {
         const center = world.getComponent(linkId, PositionComponent).pos;
         const baseRadius = world.getComponent(linkId, RadiusComponent).radius;
-        const layeringEnabled = world?.getResource?.('enableLayering') !== false;
-        const radius = baseRadius + (layeringEnabled ? this.cableHalfWidth : 0.0);
+        const useLayeredBaseRadius = _layeringFlag(world, 'layeringCableBaseRadius', true);
+        const radius = baseRadius + (useLayeredBaseRadius ? this.cableHalfWidth : 0.0);
         const isCw = cw[i + 1];
 
         const initialStoredLength = signedArcLengthOnWheel(
@@ -198,7 +211,7 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
     return baseRadius;
   }
-  if (world?.getResource?.('enableLayering') === false) {
+  if (!_layeringEnabled(world)) {
     return baseRadius;
   }
   if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
@@ -213,8 +226,16 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
     return baseRadius;
   }
 
+  if (!_layeringFlag(world, 'layeringCableBaseRadius', true)) {
+    return baseRadius;
+  }
+
   const fullWidth = 2.0 * halfWidth;
   let effectiveRadius = baseRadius + halfWidth;
+
+  if (!_layeringFlag(world, 'layeringCableStoredLayerRadius', true)) {
+    return effectiveRadius;
+  }
 
   // Layered winding is only modeled for hybrid endpoints.
   const isEndpoint = linkIndex === 0 || linkIndex === path.linkTypes.length - 1;

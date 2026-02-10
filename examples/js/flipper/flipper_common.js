@@ -104,6 +104,19 @@ function _isAngleInSector(angle, startAngle, endAngle, cw) {
   return rel <= span + 1e-9;
 }
 
+function _resourceBool(world, key, fallback = true) {
+  const value = world?.getResource?.(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function _layeringEnabled(world) {
+  return _resourceBool(world, 'enableLayering', true);
+}
+
+function _layeringFlag(world, key, fallback = true) {
+  return _layeringEnabled(world) && _resourceBool(world, key, fallback);
+}
+
 export function getRawCollisionRadius(world, entityId) {
   const radius = world.getComponent(entityId, RadiusComponent)?.radius;
   return Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
@@ -257,7 +270,7 @@ export class OverlayRadiusAndCircleSectorSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
-    if (world.getResource('enableLayering') === false) {
+    if (!_layeringEnabled(world)) {
       for (const entityId of world.query([OverlayRadiusComponent])) {
         world.removeComponent(entityId, OverlayRadiusComponent);
       }
@@ -269,6 +282,9 @@ export class OverlayRadiusAndCircleSectorSystem {
       }
       return;
     }
+
+    const overlayEnabled = _layeringFlag(world, 'layeringCollisionOverlayRadius', true);
+    const sectorEnabled = _layeringFlag(world, 'layeringCollisionCircleSectors', true);
 
     const overlayByEntity = new Map();
     const sectorByEntity = new Map();
@@ -311,13 +327,13 @@ export class OverlayRadiusAndCircleSectorSystem {
           continue;
         }
 
-        if (decomposition.fullLayers > 0) {
+        if (overlayEnabled && decomposition.fullLayers > 0) {
           const overlayRadius = rawRadius + layerStep * decomposition.fullLayers;
           const prev = overlayByEntity.get(entityId) ?? 0.0;
           overlayByEntity.set(entityId, Math.max(prev, overlayRadius));
         }
 
-        if (decomposition.partialLength > 1e-9) {
+        if (sectorEnabled && decomposition.partialLength > 1e-9) {
           const startPoint = _pathLinkStartAttachment(world, path, linkIndex);
           if (!startPoint) {
             continue;
@@ -597,9 +613,48 @@ export class InputSystem {
              FlipperStateComponent
            ]);
 
+           const pressExtremeFlipper = (preferRight) => {
+             if (flipperEntities.length < 1) {
+               return false;
+             }
+             let chosenId = null;
+             let chosenX = preferRight ? -Infinity : Infinity;
+             for (const id of flipperEntities) {
+               const pos = world.getComponent(id, PositionComponent)?.pos;
+               if (!pos || !Number.isFinite(pos.x)) {
+                 continue;
+               }
+               if ((preferRight && pos.x > chosenX) || (!preferRight && pos.x < chosenX)) {
+                 chosenX = pos.x;
+                 chosenId = id;
+               }
+             }
+             if (chosenId === null) {
+               return false;
+             }
+             const state = world.getComponent(chosenId, FlipperStateComponent);
+             if (!state) {
+               return false;
+             }
+             state.pressed = true;
+             return true;
+           };
+
            const borderEnts = world.query([BorderComponent]);
-           if (borderEnts.length > 0) {
-               const borderPoints = world.getComponent(borderEnts[0], BorderComponent).points;
+           let handled = false;
+           if (borderEnts.length > 0 && flipperEntities.length > 0) {
+             const borderPoints = world.getComponent(borderEnts[0], BorderComponent)?.points ?? [];
+             const isValidPoint = (p) => p && Number.isFinite(p.x) && Number.isFinite(p.y);
+             const hasClassicSideZones =
+               borderPoints.length >= 8 &&
+               isValidPoint(borderPoints[0]) &&
+               isValidPoint(borderPoints[1]) &&
+               isValidPoint(borderPoints[2]) &&
+               isValidPoint(borderPoints[5]) &&
+               isValidPoint(borderPoints[6]) &&
+               isValidPoint(borderPoints[7]);
+
+             if (hasClassicSideZones) {
                const rightClick =
                  rightOfLine(clickPos, borderPoints[0], borderPoints[1]) &&
                  rightOfLine(clickPos, borderPoints[1], borderPoints[2]);
@@ -607,32 +662,24 @@ export class InputSystem {
                  rightOfLine(clickPos, borderPoints[5], borderPoints[6]) &&
                  rightOfLine(clickPos, borderPoints[6], borderPoints[7]);
                if (rightClick) {
-                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
-                 const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
-                 const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
-                 if (flipperPos0.x > flipperPos1.x) {
-                   world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
-                 } else {
-                   world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
-                 }
+                 handled = pressExtremeFlipper(true);
                } else if (leftClick) {
-                 const flippers = world.query([FlipperStateComponent, PositionComponent]);
-                 const flipperPos0 = world.getComponent(flippers[0], PositionComponent).pos;
-                 const flipperPos1 = world.getComponent(flippers[1], PositionComponent).pos;
-                 if (flipperPos0.x < flipperPos1.x) {
-                   world.getComponent(flippers[0], FlipperStateComponent).pressed = true;
-                 } else {
-                   world.getComponent(flippers[1], FlipperStateComponent).pressed = true;
-                 }
-               } else {
-                 for (const id of flipperEntities) {
-                   const pos   = world.getComponent(id, PositionComponent).pos;
-                   const state = world.getComponent(id, FlipperStateComponent);
-                   if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) {
-                     state.pressed = true;
-                   }
-                 }
+                 handled = pressExtremeFlipper(false);
                }
+             }
+           }
+
+           if (!handled) {
+             for (const id of flipperEntities) {
+               const pos   = world.getComponent(id, PositionComponent)?.pos;
+               const state = world.getComponent(id, FlipperStateComponent);
+               if (!pos || !state) {
+                 continue;
+               }
+               if (clickPos.clone().subtract(pos).lengthSq() < state.length ** 2) {
+                 state.pressed = true;
+               }
+             }
            }
          }
 
@@ -1181,7 +1228,7 @@ export class PBDBorderCircleSectorCollisions {
   runInPause = false;
 
   update(world, _dt_unused) {
-    if (world.getResource('enableLayering') === false) {
+    if (!_layeringFlag(world, 'layeringCollisionSectorSolvers', true)) {
       return;
     }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent, CircleSectorComponent]);
@@ -1252,7 +1299,7 @@ export class PBDBallCircleSectorCollisions {
   runInPause = false;
 
   update(world, _dt_unused) {
-    if (world.getResource('enableLayering') === false) {
+    if (!_layeringFlag(world, 'layeringCollisionSectorSolvers', true)) {
       return;
     }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
@@ -1302,7 +1349,7 @@ export class PBDObstacleCircleSectorCollisions {
   runInPause = false;
 
   update(world, _dt_unused) {
-    if (world.getResource('enableLayering') === false) {
+    if (!_layeringFlag(world, 'layeringCollisionSectorSolvers', true)) {
       return;
     }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
@@ -1368,7 +1415,7 @@ export class FlipperCircleSectorCollisions {
   }
 
   update(world, _dt_unused) {
-    if (world.getResource('enableLayering') === false) {
+    if (!_layeringFlag(world, 'layeringCollisionSectorSolvers', true)) {
       return;
     }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);

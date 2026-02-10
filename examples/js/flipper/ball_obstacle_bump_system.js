@@ -20,10 +20,14 @@ export class BallObstacleBumpSystem {
         if (!contacts || contacts.length === 0) {
             return;
         }
+        const requireRawHit = (
+            world.getResource('enableLayering') !== false &&
+            world.getResource('layeringObstacleRawHitFilter') !== false
+        );
 
         for (const contact of contacts) {
             const { ball_id, obs_id, direction } = contact;
-            if (contact.raw_hit === false) {
+            if (requireRawHit && contact.raw_hit === false) {
                 continue;
             }
 

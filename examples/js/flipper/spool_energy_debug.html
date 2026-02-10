@@ -92,6 +92,7 @@ canvas {
       <button id="resetBtn" tabindex="-1">Reset</button>
       <button id="stepBtn">Step</button>
       <button id="dumpBtn" tabindex="-1">Dump State</button>
+      <div id="cableFeatureFlags"></div>
       <div id="stats">
         dt: <span id="dt">N/A</span> |
         Speed: <span id="speed">N/A</span>
@@ -173,10 +174,18 @@ canvas {
   import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
   import { RenderSystem } from './renderSystem.js';
   import { runGame } from './runner.js';
+  import {
+    bindCableFeatureFlagCheckboxes,
+    ensureCableFeatureFlags,
+    getCableFeatureFlags,
+    setCableFeatureFlags
+  } from './cable_feature_flags.js';
 
   const canvas = document.getElementById('myCanvas');
+  const cableFeatureFlags = document.getElementById('cableFeatureFlags');
   const world = new World();
   window.world = world;
+  const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
 
   const ENERGY_TRACE_MAX_SAMPLES = 12000;
   const gFallback = new Vector2(0.0, -9.81);
@@ -362,7 +371,8 @@ canvas {
     world.setResource('energyTraceStep', 0);
     world.setResource('energyLastSample', null);
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });
-    world.setResource('enableLayering', true);
+    ensureCableFeatureFlags(world);
+    cableFlagUi.syncFromWorld();
 
     const left = 0.03;
     const right = simWidth - 0.03;
@@ -486,6 +496,15 @@ canvas {
   }
 
   window.getSpoolEnergyConfig = () => ({ ...spoolEnergyConfig });
+  window.getCableFeatureFlags = () => {
+    return getCableFeatureFlags(world);
+  };
+  window.setCableFeatureFlags = (partial = {}) => {
+    const next = setCableFeatureFlags(world, partial);
+    cableFlagUi.syncFromWorld();
+    console.log('Cable feature flags:', next);
+    return next;
+  };
   window.setSpoolEnergyConfig = (partial = {}) => {
     spoolEnergyConfig = { ...spoolEnergyConfig, ...partial };
     world.setResource('spoolEnergyConfig', { ...spoolEnergyConfig });

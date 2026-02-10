@@ -104,9 +104,7 @@ canvas {
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button><br />
-          <label for="layeringToggle" style="margin-right: 8px;">
-            <input id="layeringToggle" type="checkbox" checked /> enableLayering
-          </label>
+          <div id="cableFeatureFlags"></div>
           Score: <span id="score">0</span>
           <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
             dt: <span id="dt">N/A</span> |
@@ -142,10 +140,16 @@ canvas {
     import { runGame } from './runner.js';
 
     import { setupScene } from './setupScene.js';
+    import {
+      bindCableFeatureFlagCheckboxes,
+      ensureCableFeatureFlags,
+      getCableFeatureFlags,
+      setCableFeatureFlags
+    } from './cable_feature_flags.js';
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
-    const layeringToggle = document.getElementById("layeringToggle");
+    const cableFeatureFlags = document.getElementById("cableFeatureFlags");
 
     // --- Global World ---
     let world = new World();
@@ -174,26 +178,17 @@ canvas {
     };
     window.getGameStateForTest = getGameStateForTest;
 
-    window.getCableFeatureFlags = () => ({
-        layering: world.getResource('enableLayering') !== false
-    });
-    window.setCableFeatureFlags = ({ layering } = {}) => {
-        if (typeof layering === 'boolean') {
-            if (layeringToggle) {
-                layeringToggle.checked = layering;
-            }
-            world.setResource('enableLayering', layering);
-        }
-        const next = window.getCableFeatureFlags();
+    const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
+
+    window.getCableFeatureFlags = () => {
+      return getCableFeatureFlags(world);
+    };
+    window.setCableFeatureFlags = (partial = {}) => {
+        const next = setCableFeatureFlags(world, partial);
+        cableFlagUi.syncFromWorld();
         console.log('Cable feature flags:', next);
         return next;
     };
-
-    if (layeringToggle) {
-      layeringToggle.addEventListener('change', () => {
-        world.setResource('enableLayering', layeringToggle.checked);
-      });
-    }
 
 
     const base = import.meta.env.BASE_URL || '/';
@@ -201,9 +196,8 @@ canvas {
 
     UsdOpen(usdaPath).then(stage => {
       runGame(world, () => {
-        if (layeringToggle) {
-          world.setResource('enableLayering', layeringToggle.checked);
-        }
+        ensureCableFeatureFlags(world);
+        cableFlagUi.syncFromWorld();
         setupScene(world, stage, canvas);
       });
     });

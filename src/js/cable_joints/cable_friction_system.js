@@ -18,6 +18,15 @@ import {
 const BASE_ITERATIONS = 4;
 const TARGET_DT = 1 / 500;
 
+function _resourceBool(world, key, fallback = true) {
+  const value = world?.getResource?.(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function _layeringFlag(world, key, fallback = true) {
+  return _resourceBool(world, 'enableLayering', true) && _resourceBool(world, key, fallback);
+}
+
 
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
@@ -51,7 +60,9 @@ function _evenOutTensionFriction(world) {
 
         const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
         const radius = radiusComp ? radiusComp.radius : 0.0;
-        const effectiveRadius = radius + (path.cableHalfWidth ?? 0.0);
+        const useLayeredFrictionRadius = _layeringFlag(world, 'layeringFrictionEffectiveRadius', true)
+          && _layeringFlag(world, 'layeringCableBaseRadius', true);
+        const effectiveRadius = radius + (useLayeredFrictionRadius ? (path.cableHalfWidth ?? 0.0) : 0.0);
 
         if (mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
