@@ -563,6 +563,11 @@ export function _mergeJoints(world) {
           console.warn("Merge loop saw disconnected cable path");
           continue;
         }
+        if (!_layeringEnabled(world) && joint_i.entityA === joint_i_plus_1.entityB) {
+          // Legacy behavior: if cable wraps around a link and back to the same body,
+          // do not merge this pair.
+          continue;
+        }
         if (path.stored[i + 1] < 0.0) {
           // console.log(`Merging joints ${jointId_i} and ${jointId_i_plus_1} (stored: ${path.stored[i + 1].toFixed(4)})`);
 

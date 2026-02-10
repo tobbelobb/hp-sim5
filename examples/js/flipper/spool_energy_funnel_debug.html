@@ -201,9 +201,18 @@ canvas {
 
   const canvas = document.getElementById('myCanvas');
   const cableFeatureFlags = document.getElementById('cableFeatureFlags');
+  const resetBtnEl = document.getElementById('resetBtn');
   const world = new World();
   window.world = world;
   const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
+  if (cableFeatureFlags && resetBtnEl) {
+    cableFeatureFlags.addEventListener('change', (event) => {
+      const target = event.target;
+      if (target && target.tagName === 'INPUT' && target.type === 'checkbox') {
+        resetBtnEl.click();
+      }
+    });
+  }
 
   const ENERGY_TRACE_MAX_SAMPLES = 20000;
   const gFallback = new Vector2(0.0, -9.81);
@@ -512,7 +521,10 @@ canvas {
     const ballFriction = Math.max(0.0, _readFinite(spoolEnergyConfig.ballFriction, 0.72));
     const ballI = 0.5 * ballMass * rawRadius * rawRadius;
 
-    const cableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
+    const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
+    const flags = getCableFeatureFlags(world);
+    const useLayeredBaseRadius = flags.enableLayering === true && flags.layeringCableBaseRadius === true;
+    const cableHalfWidth = useLayeredBaseRadius ? configuredCableHalfWidth : 0.0;
     const storedTurns = Math.max(0.0, _readFinite(spoolEnergyConfig.initialStoredTurns, 1.0));
     const storedLength = storedTurns * 2.0 * Math.PI * (rawRadius + cableHalfWidth);
     const cableStiffness = Math.max(1.0, _readFinite(spoolEnergyConfig.cableStiffness, 1600.0));

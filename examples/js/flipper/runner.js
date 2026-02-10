@@ -14,7 +14,7 @@ export function runGame(world, setupScene, sceneData) {
     let lastTime = 0;
     let accumulator = 0.0;
     let doStep = true;
-    let stepWhileTHeld = false;
+    let stepWhileKeyHeld = false;
     let speedSamples = [];
     const numSpeedSamples = 60;
     let frameCounter = 0;
@@ -47,7 +47,7 @@ export function runGame(world, setupScene, sceneData) {
             const maxAccum = dt * maxSteps;
             accumulator = Math.min(accumulator + frameSec, maxAccum);
             while (accumulator >= dt) {
-                const shouldStepWhilePaused = doStep || stepWhileTHeld;
+                const shouldStepWhilePaused = doStep || stepWhileKeyHeld;
                 if (!pauseState.paused || shouldStepWhilePaused) {
                     const steppingWhilePaused = pauseState.paused && shouldStepWhilePaused;
                     if (steppingWhilePaused) pauseState.paused = false;
@@ -58,7 +58,7 @@ export function runGame(world, setupScene, sceneData) {
                         doStep = false;
                     }
                 }
-                if (pauseState.paused && !stepWhileTHeld) {
+                if (pauseState.paused && !stepWhileKeyHeld) {
                     accumulator = 0;
                     break;
                 }
@@ -136,9 +136,10 @@ export function runGame(world, setupScene, sceneData) {
         if (isEditableTarget || e.repeat) {
             return;
         }
-        if (typeof e.key === 'string' && e.key.toLowerCase() === 't') {
+        const key = (typeof e.key === 'string') ? e.key.toLowerCase() : '';
+        if (key === 's' || key === 't') {
             e.preventDefault();
-            stepWhileTHeld = true;
+            stepWhileKeyHeld = true;
             requestSingleStep();
         }
     });
@@ -149,8 +150,9 @@ export function runGame(world, setupScene, sceneData) {
         if (isEditableTarget) {
             return;
         }
-        if (typeof e.key === 'string' && e.key.toLowerCase() === 't') {
-            stepWhileTHeld = false;
+        const key = (typeof e.key === 'string') ? e.key.toLowerCase() : '';
+        if (key === 's' || key === 't') {
+            stepWhileKeyHeld = false;
         }
     });
 
