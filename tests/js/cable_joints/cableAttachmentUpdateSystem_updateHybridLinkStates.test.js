@@ -3,8 +3,7 @@ import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
   World,
   PositionComponent,
-  RadiusComponent,
-  OrientationComponent
+  RadiusComponent
 } from '../../../src/js/cable_joints/ecs.js';
 
 import {
@@ -15,10 +14,7 @@ import {
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 
 import {
-  tangentFromPointToCircle,
-  tangentFromCircleToPoint,
-  tangentFromCircleToCircle,
-  signedArcLengthOnWheel
+  tangentFromPointToCircle
 } from '../../../src/js/cable_joints/geometry.js';
 
 
@@ -37,9 +33,6 @@ describe('_updateHybridLinkStates', () => {
     world.addComponent(id, new CableLinkComponent(pos.x, pos.y));
     return id;
   };
-
-  const EAST = new Vector2(1, 0);
-  const WEST = new Vector2(-1, 0);
 
   test('first link: hybrid -> hybrid-attachment when stored is negative', () => {
     const world  = new World();
@@ -65,11 +58,6 @@ describe('_updateHybridLinkStates', () => {
       [false, false],
     );
     world.addComponent(path, pathComp);
-    const attachmentBefore = world
-      .getComponent(joint, CableJointComponent)
-      .attachmentPointA_world
-      .clone();
-
     // Feed out a bit of "negative" rope
     pathComp.stored[0] = -0.2;
 
@@ -82,8 +70,6 @@ describe('_updateHybridLinkStates', () => {
     // restLength shortened by exactly 0.2
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
-    // Attachment should stay fixed when switching to hybrid-attachment
-    expect(j.attachmentPointA_world).toEqual(attachmentBefore);
   });
 
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
@@ -111,11 +97,6 @@ describe('_updateHybridLinkStates', () => {
       [false, false],
     );
     world.addComponent(path, pathComp);
-    const attachmentBefore = world
-      .getComponent(joint, CableJointComponent)
-      .attachmentPointB_world
-      .clone();
-
     pathComp.stored[1] = -0.15;
 
     _updateHybridLinkStates(world);
@@ -124,7 +105,6 @@ describe('_updateHybridLinkStates', () => {
     expect(pathComp.stored[1]).toBeCloseTo(0);
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.15, 8);
-    expect(j.attachmentPointB_world).toEqual(attachmentBefore);
   });
 
   test('first link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {
@@ -208,52 +188,6 @@ describe('_updateHybridLinkStates', () => {
     expect(j.restLength).toBeCloseTo(initialRest - arc, 8);
   });
 
-  test('hybrid-attachment endpoint does not switch while endpoint joint is pinched', () => {
-    const world  = new World();
-    const wheel  = addWheel(world, new Vector2(0, 0), 1);
-    const anchor = addAnchor(world, new Vector2(0, 3));
-
-    const joint = world.createEntity();
-    const initialRest = 3.2;
-    world.addComponent(
-      joint,
-      new CableJointComponent(
-        wheel, anchor, initialRest,
-        new Vector2(1, 0),
-        new Vector2(0, 3),
-      ),
-    );
-
-    const path = world.createEntity();
-    const pathComp = new CablePathComponent(
-      world,
-      [joint],
-      ['hybrid-attachment', 'attachment'],
-      [false, false],
-    );
-    world.addComponent(path, pathComp);
-
-    world.setResource('cablePinchJointConfigs', new Map([
-      [joint, {
-        pathId: path,
-        jointId: joint,
-        entityA: wheel,
-        entityB: anchor,
-        minDistance: 0.02,
-        normal: new Vector2(1, 0),
-        segmentDir: new Vector2(0, 1)
-      }]
-    ]));
-
-    _updateHybridLinkStates(world);
-
-    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
-    expect(pathComp.cw[0]).toBe(false);
-    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
-    const j = world.getComponent(joint, CableJointComponent);
-    expect(j.restLength).toBeCloseTo(initialRest, 12);
-  });
-
   test('hybrid-attachment endpoint keeps cw stable for near-degenerate endpoint geometry', () => {
     const world  = new World();
     const wheel  = addWheel(world, new Vector2(0, 0), 1);
@@ -291,62 +225,4 @@ describe('_updateHybridLinkStates', () => {
     expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
 
-  test('hybrid-attachment near-pinch defer keeps stored/rest-length unchanged', () => {
-    const world = new World();
-    const wheel = addWheel(world, new Vector2(0, 0), 1);
-    const neighbor = addWheel(world, new Vector2(0, 1.95), 1);
-
-    const joint = world.createEntity();
-    const initialRest = 3.2;
-    world.addComponent(
-      joint,
-      new CableJointComponent(
-        wheel,
-        neighbor,
-        initialRest,
-        new Vector2(1.0, 0.0),
-        new Vector2(0.0, 3.0),
-      ),
-    );
-
-    const path = world.createEntity();
-    const pathComp = new CablePathComponent(
-      world,
-      [joint],
-      ['hybrid-attachment', 'attachment'],
-      [false, false],
-      1e6,
-      null,
-      0.05
-    );
-    world.addComponent(path, pathComp);
-
-    const wheelPos = world.getComponent(wheel, PositionComponent).pos;
-    const neighborPos = world.getComponent(neighbor, PositionComponent).pos;
-    const surfaceDistance = wheelPos.distanceTo(neighborPos) - 2.0;
-    expect(surfaceDistance).toBeLessThanOrEqual(0.1 + 1e-6);
-
-    const jBefore = world.getComponent(joint, CableJointComponent);
-    const R = world.getComponent(wheel, RadiusComponent).radius + pathComp.cableHalfWidth;
-    const tanCW = tangentFromCircleToPoint(jBefore.attachmentPointB_world, wheelPos, R, true).a_circle;
-    const tanCCW = tangentFromCircleToPoint(jBefore.attachmentPointB_world, wheelPos, R, false).a_circle;
-    const crossedCW = signedArcLengthOnWheel(jBefore.attachmentPointA_world, tanCW, wheelPos, R, true);
-    const crossedCCW = signedArcLengthOnWheel(jBefore.attachmentPointA_world, tanCCW, wheelPos, R, false);
-    const distSqCW = jBefore.attachmentPointA_world.distanceToSq(tanCW);
-    const distSqCCW = jBefore.attachmentPointA_world.distanceToSq(tanCCW);
-    const hasSwitchCandidate =
-      (crossedCCW > 0.0 && distSqCCW < distSqCW) ||
-      (crossedCW > 0.0 && distSqCW < distSqCCW);
-    expect(hasSwitchCandidate).toBe(true);
-
-    const totalBefore = jBefore.restLength + pathComp.stored[0] + pathComp.stored[1];
-    _updateHybridLinkStates(world);
-
-    const jAfter = world.getComponent(joint, CableJointComponent);
-    const totalAfter = jAfter.restLength + pathComp.stored[0] + pathComp.stored[1];
-    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
-    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
-    expect(jAfter.restLength).toBeCloseTo(initialRest, 12);
-    expect(totalAfter).toBeCloseTo(totalBefore, 12);
-  });
 });

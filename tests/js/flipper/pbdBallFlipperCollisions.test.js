@@ -58,12 +58,12 @@ describe('PBDBallFlipperCollisions with overlay geometry', () => {
     worldA.world.getComponent(worldA.flipperId, FlipperStateComponent).restAngle = Math.PI / 2.0;
     worldA.world.addComponent(
       worldA.ballId,
-      new CircleSectorComponent([{
-        radius: 2.3,
-        startAngle: -0.2,
-        endAngle: 0.2,
-        cw: false
-      }])
+      new CircleSectorComponent(
+        2.3,
+        -0.2,
+        0.2,
+        false
+      )
     );
 
     const worldB = makeWorld();
@@ -73,12 +73,12 @@ describe('PBDBallFlipperCollisions with overlay geometry', () => {
     worldB.world.getComponent(worldB.flipperId, FlipperStateComponent).restAngle = Math.PI / 2.0;
     worldB.world.addComponent(
       worldB.ballId,
-      new CircleSectorComponent([{
-        radius: 2.3,
-        startAngle: Math.PI - 0.2,
-        endAngle: Math.PI + 0.2,
-        cw: false
-      }])
+      new CircleSectorComponent(
+        2.3,
+        Math.PI - 0.2,
+        Math.PI + 0.2,
+        false
+      )
     );
 
     const system = new PBDBallFlipperCollisions();

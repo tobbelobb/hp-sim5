@@ -301,21 +301,21 @@ describe('PBDBallBallCollisions', () => {
     const withSectorsPair = createPair(world);
     world.addComponent(
       withSectorsPair.left,
-      new CircleSectorComponent([{
-        radius: 1.2,
-        startAngle: -0.3,
-        endAngle: 0.3,
-        cw: false
-      }])
+      new CircleSectorComponent(
+        1.2,
+        -0.3,
+        0.3,
+        false
+      )
     );
     world.addComponent(
       withSectorsPair.right,
-      new CircleSectorComponent([{
-        radius: 1.2,
-        startAngle: Math.PI - 0.3,
-        endAngle: Math.PI + 0.3,
-        cw: false
-      }])
+      new CircleSectorComponent(
+        1.2,
+        Math.PI - 0.3,
+        Math.PI + 0.3,
+        false
+      )
     );
 
     const baseNoSectors = new PBDBallBallCollisions();

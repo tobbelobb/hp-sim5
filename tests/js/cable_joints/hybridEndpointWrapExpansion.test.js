@@ -80,16 +80,16 @@ describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
     system.update(world, 0.016);
 
     const overlay = world.getComponent(endpointId, OverlayRadiusComponent);
-    const sectors = world.getComponent(endpointId, CircleSectorComponent);
+    const sector = world.getComponent(endpointId, CircleSectorComponent);
     expect(overlay).toBeTruthy();
-    expect(overlay.radius).toBeCloseTo(1.1, 6);
-    expect(sectors).toBeTruthy();
-    expect(sectors.sectors.length).toBeGreaterThan(0);
+    expect(overlay.radius).toBeCloseTo(1.2, 6);
+    expect(sector).toBeTruthy();
+    expect(sector.radius).toBeGreaterThan(1.1);
 
     const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
     const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
     expect(supportEast.projection).toBeGreaterThan(1.1);
-    expect(supportNorth.projection).toBeCloseTo(1.1, 6);
+    expect(supportNorth.projection).toBeCloseTo(1.2, 6);
   });
 
   test('removes overlay/sector components when no stored wrap exists', () => {

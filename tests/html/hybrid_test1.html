@@ -113,6 +113,9 @@ canvas {
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+            <label for="layeringToggle" style="margin-left: 8px;">
+              <input id="layeringToggle" type="checkbox" checked /> enableLayering
+            </label>
         </div>
         <canvas id="myCanvas"></canvas>
     </div>
@@ -301,6 +304,7 @@ canvas {
     const pauseBtn = document.getElementById("pauseBtn");
     const resetBtn = document.getElementById("resetBtn");
     const stepBtn = document.getElementById("stepBtn");
+    const layeringToggle = document.getElementById('layeringToggle');
 
     let world = new World();
 
@@ -320,6 +324,7 @@ canvas {
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight); // Store the reference simHeight
         world.setResource('pauseState', new PauseStateComponent(true));
+        world.setResource('enableLayering', layeringToggle ? layeringToggle.checked : true);
         world.setResource('debugRenderPoints', {}); // Initialize debug points resource
         world.setResource('errorState', new SimulationErrorStateComponent(false)); // Initialize error state
         // reset any grab
@@ -536,6 +541,16 @@ canvas {
         e.preventDefault();
         console.log(dumpWorldState(world));
     });
+
+    if (layeringToggle) {
+      layeringToggle.addEventListener('change', () => {
+        setupScene();
+        const pauseState = world.getResource('pauseState');
+        if (pauseState) pauseState.paused = true;
+        pauseBtn.textContent = 'Resume';
+        doStep = true;
+      });
+    }
 
     // --- Start ---
     setupScene();

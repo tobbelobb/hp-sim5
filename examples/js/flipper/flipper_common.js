@@ -4,6 +4,8 @@ import {
   VelocityComponent,
   RadiusComponent,
   MassComponent,
+  OrientationComponent,
+  MomentOfInertiaComponent,
   RestitutionComponent,
   PrevFinalPosComponent,
   RenderableComponent,
@@ -826,7 +828,7 @@ export class PBDBallBorderCollisions {
             }
 
             const dist = Math.sqrt(minDistSq);
-            const r1 = getMaxCollisionRadius(world, ballId);
+            const r1 = _getBaseCollisionRadius(world, ballId);
             if (dist > r1) {
               continue;
             }
@@ -879,8 +881,12 @@ export class PBDBallBallCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
-        const r1 = getMaxCollisionRadius(world, e1);
-        const r2 = getMaxCollisionRadius(world, e2);
+        const broadR1 = getMaxCollisionRadius(world, e1);
+        const broadR2 = getMaxCollisionRadius(world, e2);
+        if (d > broadR1 + broadR2) continue;
+
+        const r1 = _getBaseCollisionRadius(world, e1);
+        const r2 = _getBaseCollisionRadius(world, e2);
         const rSum = r1 + r2;
         if (d > rSum) continue;
 
@@ -933,8 +939,8 @@ export class PBDBallObstacleCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d); // Normalize
-        const r1 = getMaxCollisionRadius(world, ballId);
-        const r2 = getMaxCollisionRadius(world, obsId);
+        const r1 = _getBaseCollisionRadius(world, ballId);
+        const r2 = _getBaseCollisionRadius(world, obsId);
         const rSum = r1 + r2;
         if (d > rSum) continue;
         const rawHit = d <= (rawBallRadius + rawObsRadius + 1e-9);
@@ -1004,8 +1010,12 @@ export class PBDBallFlipperCollisions {
 
         const d = Math.sqrt(dSq);
         dir.scale(1.0 / d);
-        const r1 = getMaxCollisionRadius(world, ballId);
-        const fr = getMaxCollisionRadius(world, flipId);
+        const broadR1 = getMaxCollisionRadius(world, ballId);
+        const broadFr = getMaxCollisionRadius(world, flipId);
+        if (d > broadR1 + broadFr) continue;
+
+        const r1 = _getBaseCollisionRadius(world, ballId);
+        const fr = _getBaseCollisionRadius(world, flipId);
         const rSum = r1 + fr;
         if (d > rSum) continue;
 
@@ -1171,6 +1181,9 @@ export class PBDBorderCircleSectorCollisions {
   runInPause = false;
 
   update(world, _dt_unused) {
+    if (world.getResource('enableLayering') === false) {
+      return;
+    }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent, CircleSectorComponent]);
     const borderEntities = world.query([BorderComponent]);
     if (borderEntities.length === 0) return;
@@ -1239,6 +1252,9 @@ export class PBDBallCircleSectorCollisions {
   runInPause = false;
 
   update(world, _dt_unused) {
+    if (world.getResource('enableLayering') === false) {
+      return;
+    }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     for (let i = 0; i < ballEntities.length; i++) {
       for (let j = i + 1; j < ballEntities.length; j++) {
@@ -1286,6 +1302,9 @@ export class PBDObstacleCircleSectorCollisions {
   runInPause = false;
 
   update(world, _dt_unused) {
+    if (world.getResource('enableLayering') === false) {
+      return;
+    }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
 
@@ -1349,6 +1368,9 @@ export class FlipperCircleSectorCollisions {
   }
 
   update(world, _dt_unused) {
+    if (world.getResource('enableLayering') === false) {
+      return;
+    }
     const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
     const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
 

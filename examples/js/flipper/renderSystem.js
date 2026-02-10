@@ -698,10 +698,50 @@ export class RenderSystem {
       }
     }
 
+    const layeringEnabled = world.getResource('enableLayering') !== false;
+
     const drawEndpointStoredWrap = (path, linkIndex, center, bodyRadius, attachmentPoint, renderComp) => {
       if (!center || !Number.isFinite(bodyRadius) || bodyRadius <= 1e-9 || !attachmentPoint) {
         return;
       }
+
+      if (!layeringEnabled) {
+        const radius = bodyRadius;
+        if (!(radius > 1e-9)) {
+          return;
+        }
+        const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+        if (!(stored > 1e-9)) {
+          return;
+        }
+        const startAngle = Math.atan2(attachmentPoint.y - center.y, attachmentPoint.x - center.x);
+        const cw = Boolean(path.cw[linkIndex]);
+        const anticlockwise = !cw;
+        const maxRenderableAngle = 2.0 * Math.PI - 0.0001;
+        let deltaTheta = stored / radius;
+        if (deltaTheta >= maxRenderableAngle) {
+          deltaTheta = maxRenderableAngle;
+        }
+        const endAngle = cw ? startAngle - deltaTheta : startAngle + deltaTheta;
+
+        this.c.beginPath();
+        if (renderComp) {
+          this.c.strokeStyle = renderComp.color;
+        } else {
+          this.c.strokeStyle = 'yellow';
+        }
+        this.c.arc(
+          this.cX(center.x),
+          this.cY(center.y),
+          radius * this.effectiveCScale,
+          -startAngle,
+          -endAngle,
+          anticlockwise
+        );
+        this.c.stroke();
+        return;
+      }
+
       const halfWidth = path.cableHalfWidth ?? 0.0;
       const baseRadius = bodyRadius + halfWidth;
       if (!(baseRadius > 1e-9)) {
@@ -779,7 +819,7 @@ export class RenderSystem {
       const path   = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
-      const halfWidth = path.cableHalfWidth ?? 0.0;
+      const halfWidth = layeringEnabled ? (path.cableHalfWidth ?? 0.0) : 0.0;
       // rolling or hybrid link types mean the cable can wrap on that entity
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
         // Only draw wrap-around arc for rolling and hybrid links (when in rolling mode)
@@ -1156,7 +1196,7 @@ export class RenderSystem {
                 if (tangentPoint) {
                   // Calculate and draw GREEN dot at the end of the stored arc
                   const center = posComp.pos;
-                  const halfWidth = path.cableHalfWidth ?? 0.0;
+                  const halfWidth = layeringEnabled ? (path.cableHalfWidth ?? 0.0) : 0.0;
                   const baseRadius = radiusComp.radius + halfWidth;
                   const storedLength = Math.max(0.0, path.stored[i] ?? 0.0);
                   const cw = path.cw[i];
@@ -1164,27 +1204,33 @@ export class RenderSystem {
                   if (baseRadius > 1e-9) {
                     const toTangent = tangentPoint.clone().subtract(center);
                     const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
-                    let layerRadius = baseRadius;
-                    let partialLength = storedLength;
-                    const fullWidth = 2.0 * halfWidth;
-                    const MAX_LAYERS = 128;
-                    let layerCount = 0;
-                    while (
-                      fullWidth > 1e-12 &&
-                      layerCount < MAX_LAYERS
-                    ) {
-                      const layerCircumference = 2.0 * Math.PI * layerRadius;
-                      if (!(partialLength > layerCircumference + 1e-9)) {
-                        break;
+                    let attachmentAngle = tangentAngle;
+                    if (layeringEnabled) {
+                      let layerRadius = baseRadius;
+                      let partialLength = storedLength;
+                      const fullWidth = 2.0 * halfWidth;
+                      const MAX_LAYERS = 128;
+                      let layerCount = 0;
+                      while (
+                        fullWidth > 1e-12 &&
+                        layerCount < MAX_LAYERS
+                      ) {
+                        const layerCircumference = 2.0 * Math.PI * layerRadius;
+                        if (!(partialLength > layerCircumference + 1e-9)) {
+                          break;
+                        }
+                        partialLength -= layerCircumference;
+                        layerCount += 1;
+                        layerRadius = baseRadius + fullWidth * layerCount;
                       }
-                      partialLength -= layerCircumference;
-                      layerCount += 1;
-                      layerRadius = baseRadius + fullWidth * layerCount;
+                      const deltaAngle = (partialLength > 1e-9 && layerRadius > 1e-9)
+                        ? (partialLength / layerRadius)
+                        : 0.0;
+                      attachmentAngle = cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
+                    } else {
+                      const deltaAngle = storedLength / baseRadius;
+                      attachmentAngle = cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
                     }
-                    const deltaAngle = (partialLength > 1e-9 && layerRadius > 1e-9)
-                      ? (partialLength / layerRadius)
-                      : 0.0;
-                    const attachmentAngle = cw ? tangentAngle - deltaAngle : tangentAngle + deltaAngle;
 
                     const endOfArcPoint = new Vector2(
                       center.x + baseRadius * Math.cos(attachmentAngle),

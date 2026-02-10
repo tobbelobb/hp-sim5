@@ -27,8 +27,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
         friction_other,
         delta_lambda,
         dt,
-        contactRadiusOverride = null,
-        contactOffsetOverride = null
+        contactOffset = null
     ) {
         // Get all required components for the ball
         const posComp = world.getComponent(ballId, PositionComponent);
@@ -52,7 +51,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
             return;
         }
 
-        const radius = Number.isFinite(contactRadiusOverride) ? contactRadiusOverride : radiusComp.radius;
+        const radius = radiusComp.radius;
         const restitutionBall = restitutionComp.restitution;
         const muBall = frictionComp ? frictionComp.mu : 0.0;
         const angVel = angVelComp.angularVelocity;
@@ -61,11 +60,11 @@ export class BallBorderOrFlipperVelocityContactSystem {
         const mu = (muBall + friction_other) / 2.0;
 
         const useOffset =
-            contactOffsetOverride &&
-            Number.isFinite(contactOffsetOverride.x) &&
-            Number.isFinite(contactOffsetOverride.y);
+            contactOffset &&
+            Number.isFinite(contactOffset.x) &&
+            Number.isFinite(contactOffset.y);
         const r_ball = useOffset
-            ? new Vector2(contactOffsetOverride.x, contactOffsetOverride.y)
+            ? new Vector2(contactOffset.x, contactOffset.y)
             : normal.clone().scale(-radius);
 
         const v_angular_at_contact = new Vector2(-angVel * r_ball.y, angVel * r_ball.x);
@@ -134,7 +133,6 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     frictionBorder,
                     contact.delta_lambda,
                     dt,
-                    contact.ball_contact_radius,
                     contact.ball_contact_offset
                 );
             }
@@ -182,7 +180,6 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     frictionFlipper,
                     delta_lambda,
                     dt,
-                    contact.ball_contact_radius,
                     contact.ball_contact_offset
                 );
             }
