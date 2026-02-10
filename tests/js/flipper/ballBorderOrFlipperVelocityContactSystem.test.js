@@ -45,7 +45,7 @@ function makeWorldWithFlipperContact() {
     normal: new Vector2(1.0, 0.0),
     contact_point_on_flipper: new Vector2(0.0, 1.0),
     delta_lambda: 0.5,
-    ball_contact_radius: 1.0
+    ball_contact_offset: new Vector2(-1.0, 0.0)
   }]);
 
   return { world, ballId, flipperId };
@@ -76,22 +76,22 @@ describe('BallBorderOrFlipperVelocityContactSystem', () => {
     expect(vel.y).toBeCloseTo(0.0, 9);
   });
 
-  test('uses ball_contact_radius for friction torque leverage', () => {
-    const runWithContactRadius = (radius) => {
+  test('uses ball_contact_offset for friction torque leverage', () => {
+    const runWithContactOffset = (offsetX) => {
       const { world, ballId, flipperId } = makeWorldWithFlipperContact();
       world.getComponent(flipperId, FlipperStateComponent).currentAngularVelocity = -10.0;
       const contact = world.getResource('ball_flipper_contacts')[0];
       contact.normal = new Vector2(1.0, 0.0);
       contact.contact_point_on_flipper = new Vector2(1.0, 0.0);
       contact.delta_lambda = 1.0;
-      contact.ball_contact_radius = radius;
+      contact.ball_contact_offset = new Vector2(offsetX, 0.0);
       const system = new BallBorderOrFlipperVelocityContactSystem();
       system.update(world, 0.016);
       return world.getComponent(ballId, AngularVelocityComponent).angularVelocity;
     };
 
-    const angSmall = Math.abs(runWithContactRadius(1.0));
-    const angLarge = Math.abs(runWithContactRadius(2.0));
+    const angSmall = Math.abs(runWithContactOffset(-1.0));
+    const angLarge = Math.abs(runWithContactOffset(-2.0));
     expect(Math.abs(angLarge - angSmall)).toBeGreaterThan(1e-6);
   });
 });

@@ -267,7 +267,8 @@ describe('_mergeJoints', () => {
     const rawWheelRadius = 0.5;
     const halfWidth = 0.1;
     const baseHybridRadius = rawHybridRadius;
-    const layeredHybridRadius = baseHybridRadius + 2.0 * halfWidth;
+    const firstLayerRadius = baseHybridRadius + halfWidth;
+    const layeredHybridRadius = firstLayerRadius + 2.0 * halfWidth;
 
     world.addComponent(hybrid, new PositionComponent(hybridPos.x, hybridPos.y));
     world.addComponent(hybrid, new RadiusComponent(rawHybridRadius));
@@ -313,7 +314,7 @@ describe('_mergeJoints', () => {
       )
     );
 
-    const oneFullWrap = 2.0 * Math.PI * baseHybridRadius;
+    const oneFullWrap = 2.0 * Math.PI * firstLayerRadius;
     const pathId = world.createEntity();
     const pathComp = new CablePathComponent(
       world,

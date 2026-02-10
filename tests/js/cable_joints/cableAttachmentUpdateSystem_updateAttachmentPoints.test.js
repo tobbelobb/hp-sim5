@@ -417,6 +417,7 @@ describe('_updateAttachmentPoints', () => {
     const spoolRadius = 1.0;
     const halfWidth = 0.05;
     const baseRadius = spoolRadius;
+    const firstLayerRadius = baseRadius + halfWidth;
     const fullWidth = 2.0 * halfWidth;
 
     world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y));
@@ -447,7 +448,7 @@ describe('_updateAttachmentPoints', () => {
       null,
       halfWidth
     );
-    const oneFullWrap = 2.0 * Math.PI * baseRadius;
+    const oneFullWrap = 2.0 * Math.PI * firstLayerRadius;
     pathComp.stored[0] = oneFullWrap + 0.2;
     pathComp.totalRestLength += oneFullWrap + 0.2;
     world.addComponent(pathId, pathComp);
@@ -455,7 +456,7 @@ describe('_updateAttachmentPoints', () => {
     _updateAttachmentPoints(world);
 
     const joint = world.getComponent(jointId, CableJointComponent);
-    const expectedTopRadius = baseRadius + fullWidth;
+    const expectedTopRadius = firstLayerRadius + fullWidth;
     expect(joint.attachmentPointA_world.distanceTo(spoolPos)).toBeCloseTo(expectedTopRadius, 6);
   });
 });
