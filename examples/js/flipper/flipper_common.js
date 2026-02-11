@@ -268,8 +268,13 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
 
 const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 100.0;
 
-function _smoothedSectorRadius(rawRadius, decomposition, layerStep, span) {
-  const targetRadius = decomposition?.partialRadius;
+function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, layerStep, span) {
+  if (!(halfWidth > 1e-9)) {
+    return 0.0;
+  }
+  // The sector should represent the same outer support envelope as overlay-radius
+  // once the arc closes a full layer.
+  const targetRadius = (decomposition?.partialRadius ?? 0.0) + halfWidth;
   if (!Number.isFinite(targetRadius) || !(targetRadius > 1e-9)) {
     return 0.0;
   }
@@ -282,15 +287,11 @@ function _smoothedSectorRadius(rawRadius, decomposition, layerStep, span) {
   const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
   const rampAlpha = Math.min(1.0, spanValue / LAYER_RADIUS_RAMP_ANGLE);
 
-  // Ramp each new winding layer from the previous layer radius to the new one.
-  // This removes step changes when a full wrap closes and a new partial starts.
-  let rampStartRadius;
-  if ((decomposition?.fullLayers ?? 0) > 0) {
-    rampStartRadius = targetRadius - layerStep;
-  } else {
-    rampStartRadius = rawRadius;
-  }
-  rampStartRadius = Math.max(rawRadius, rampStartRadius);
+  // Ramp each new layer from the support radius of completed layers to the support
+  // radius of the current partial layer. This keeps sector->overlay transitions
+  // continuous when a partial layer closes into a full one.
+  const fullLayers = Math.max(0, decomposition?.fullLayers ?? 0);
+  const rampStartRadius = rawRadius + layerStep * fullLayers;
 
   return rampStartRadius + (targetRadius - rampStartRadius) * rampAlpha;
 }
@@ -376,6 +377,7 @@ export class OverlayRadiusAndCircleSectorSystem {
           const smoothedRadius = _smoothedSectorRadius(
             rawRadius,
             decomposition,
+            halfWidth,
             layerStep,
             span
           );

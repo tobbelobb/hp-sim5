@@ -64,6 +64,7 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
   test('keeps sector radius continuous when crossing a full-wrap boundary', () => {
     const rawRadius = 1.0;
     const halfWidth = 0.1;
+    const fullLayerSupportRadius = rawRadius + 2.0 * halfWidth;
     const firstLayerRadius = rawRadius + halfWidth;
     const firstLayerCircumference = 2.0 * Math.PI * firstLayerRadius;
     const epsilon = 1e-4;
@@ -87,16 +88,17 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const afterSector = after.world.getComponent(after.wrappedId, CircleSectorComponent);
     expect(beforeSector).toBeTruthy();
     expect(afterSector).toBeTruthy();
+    expect(beforeSector.radius).toBeCloseTo(fullLayerSupportRadius, 6);
 
-    // Crossing into the next layer should not cause a full +2*halfWidth radius jump.
+    // Crossing into the next layer should remain continuous.
     const radiusDelta = Math.abs(afterSector.radius - beforeSector.radius);
     expect(radiusDelta).toBeLessThan(0.01);
-    expect(afterSector.radius).toBeLessThan(rawRadius + 0.15);
+    expect(afterSector.radius).toBeGreaterThanOrEqual(fullLayerSupportRadius);
 
     // Overlay still steps when a complete layer is finished.
     const overlay = after.world.getComponent(after.wrappedId, OverlayRadiusComponent);
     expect(overlay).toBeTruthy();
-    expect(overlay.radius).toBeCloseTo(rawRadius + 2.0 * halfWidth, 9);
+    expect(overlay.radius).toBeCloseTo(fullLayerSupportRadius, 9);
   });
 
   test('reaches full new-layer sector radius after the ramp span', () => {
@@ -105,6 +107,7 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const step = 2.0 * halfWidth;
     const firstLayerRadius = rawRadius + halfWidth;
     const secondLayerRadius = firstLayerRadius + step;
+    const secondLayerSupportRadius = secondLayerRadius + halfWidth;
     const firstLayerCircumference = 2.0 * Math.PI * firstLayerRadius;
     const rampSpan = (2.0 * Math.PI) / 100.0;
     const partialLengthPastRamp = secondLayerRadius * rampSpan * 2.0;
@@ -120,6 +123,6 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
 
     const sector = worldState.world.getComponent(worldState.wrappedId, CircleSectorComponent);
     expect(sector).toBeTruthy();
-    expect(sector.radius).toBeCloseTo(secondLayerRadius, 9);
+    expect(sector.radius).toBeCloseTo(secondLayerSupportRadius, 9);
   });
 });

@@ -69,7 +69,7 @@ describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
 
     const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
     const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
-    expect(supportEast.projection).toBeCloseTo(1.1, 6);
+    expect(supportEast.projection).toBeCloseTo(1.2, 6);
     expect(supportNorth.projection).toBeCloseTo(1.0, 6);
   });
 
@@ -84,11 +84,11 @@ describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
     expect(overlay).toBeTruthy();
     expect(overlay.radius).toBeCloseTo(1.2, 6);
     expect(sector).toBeTruthy();
-    expect(sector.radius).toBeGreaterThan(1.1);
+    expect(sector.radius).toBeGreaterThan(1.2);
 
     const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
     const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
-    expect(supportEast.projection).toBeGreaterThan(1.1);
+    expect(supportEast.projection).toBeGreaterThan(1.2);
     expect(supportNorth.projection).toBeCloseTo(1.2, 6);
   });
 
