@@ -18,6 +18,22 @@ import {
 export class BallBorderOrFlipperVelocityContactSystem {
     runInPause = false;
 
+    _finiteNumber(value, fallback = 0.0) {
+        return Number.isFinite(value) ? value : fallback;
+    }
+
+    _nonNegativeNumber(value, fallback = 0.0) {
+        const finite = this._finiteNumber(value, fallback);
+        return finite > 0.0 ? finite : 0.0;
+    }
+
+    _clampedRestitution(value, fallback = 0.0) {
+        const finite = this._finiteNumber(value, fallback);
+        if (finite <= 0.0) return 0.0;
+        if (finite >= 1.0) return 1.0;
+        return finite;
+    }
+
     _handleBallContact(
         world,
         ballId,
@@ -52,12 +68,14 @@ export class BallBorderOrFlipperVelocityContactSystem {
         }
 
         const radius = radiusComp.radius;
-        const restitutionBall = restitutionComp.restitution;
-        const muBall = frictionComp ? frictionComp.mu : 0.0;
+        const restitutionBall = this._clampedRestitution(restitutionComp.restitution, 0.0);
+        const muBall = this._nonNegativeNumber(frictionComp ? frictionComp.mu : 0.0, 0.0);
         const angVel = angVelComp.angularVelocity;
 
-        const restitution = (restitutionBall + restitution_other) / 2.0;
-        const mu = (muBall + friction_other) / 2.0;
+        const restitutionOther = this._clampedRestitution(restitution_other, 0.0);
+        const frictionOther = this._nonNegativeNumber(friction_other, 0.0);
+        const restitution = 0.5 * (restitutionBall + restitutionOther);
+        const mu = 0.5 * (muBall + frictionOther);
         const useContactOffset =
             world.getResource('enableLayering') !== false &&
             world.getResource('layeringVelocityContactOffset') !== false;
@@ -94,7 +112,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
         // --- 2. Friction (Tangential Impulse) ---
         let j_n_force = 0;
         if (dt > 1e-9) {
-            j_n_force = delta_lambda / dt;
+            const finiteDeltaLambda = this._finiteNumber(delta_lambda, 0.0);
+            j_n_force = finiteDeltaLambda / dt;
         }
         const j_n_for_friction = j_n_restitution + j_n_force;
 

@@ -287,11 +287,14 @@ export function setupScene(world, stage, canvas) {
         const clockwise = getAttribute(cablePathPrim, "cablePath:clockwise");
         const stored = getAttribute(cablePathPrim, "cablePath:stored");
         const cableHalfWidth = getAttribute(cablePathPrim, "cablePath:halfWidth");
+        const clockwiseFlags = Array.isArray(clockwise)
+          ? clockwise.map((value) => value === true || value === 1 || value === '1' || value === 'true')
+          : null;
         const pathComp = new CablePathComponent(
           world,
           jointEntities,
           linkTypes ? [...linkTypes] : null,
-          clockwise ? [...clockwise] : null,
+          clockwiseFlags,
           getAttribute(cablePathPrim, "stiffness") || Infinity,
           stored ? [...stored] : null,
           cableHalfWidth ?? 0.0

@@ -424,7 +424,7 @@ export class OverlayRadiusAndCircleSectorSystem {
           if (!(smoothedRadius > 1e-9)) {
             continue;
           }
-          const cw = path.cw[linkIndex] === true;
+          const cw = Boolean(path.cw[linkIndex]);
           const endAngle = cw ? (startAngle - span) : (startAngle + span);
           const sector = {
             radius: smoothedRadius,

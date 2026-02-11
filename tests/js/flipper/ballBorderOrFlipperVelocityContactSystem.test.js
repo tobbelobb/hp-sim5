@@ -94,4 +94,36 @@ describe('BallBorderOrFlipperVelocityContactSystem', () => {
     const angLarge = Math.abs(runWithContactOffset(-2.0));
     expect(Math.abs(angLarge - angSmall)).toBeGreaterThan(1e-6);
   });
+
+  test('keeps border-contact velocity finite when restitution/friction are missing', () => {
+    const world = new World();
+
+    const ballId = world.createEntity();
+    world.addComponent(ballId, new PositionComponent(0.0, 0.0));
+    world.addComponent(ballId, new VelocityComponent(0.0, -1.0));
+    world.addComponent(ballId, new RadiusComponent(1.0));
+    world.addComponent(ballId, new MassComponent(1.0));
+    world.addComponent(ballId, new MomentOfInertiaComponent(1.0));
+    world.addComponent(ballId, new AngularVelocityComponent(0.0));
+    world.addComponent(ballId, new RestitutionComponent(0.6));
+    world.addComponent(ballId, new CoefficientOfFrictionComponent(0.2));
+
+    world.setResource('ball_border_contacts', [{
+      ball_id: ballId,
+      normal: new Vector2(0.0, 1.0),
+      delta_lambda: 0.25,
+      ball_contact_offset: new Vector2(0.0, -1.0),
+      restitution: undefined,
+      friction: undefined
+    }]);
+
+    const system = new BallBorderOrFlipperVelocityContactSystem();
+    system.update(world, 0.016);
+
+    const vel = world.getComponent(ballId, VelocityComponent).vel;
+    const angVel = world.getComponent(ballId, AngularVelocityComponent).angularVelocity;
+    expect(Number.isFinite(vel.x)).toBe(true);
+    expect(Number.isFinite(vel.y)).toBe(true);
+    expect(Number.isFinite(angVel)).toBe(true);
+  });
 });

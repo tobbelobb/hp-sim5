@@ -62,6 +62,22 @@ function makeEndpointWrapWorld({
 }
 
 describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
+  test('treats numeric clockwise flags as clockwise sectors', () => {
+    const worldState = makeEndpointWrapWorld({
+      storedLength: 0.4,
+      rawRadius: 1.0,
+      halfWidth: 0.1,
+      cw: 1
+    });
+
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(worldState.world, 0.016);
+
+    const sector = worldState.world.getComponent(worldState.wrappedId, CircleSectorComponent);
+    expect(sector).toBeTruthy();
+    expect(sector.cw).toBe(true);
+  });
+
   test('keeps sector radius continuous when crossing a full-wrap boundary', () => {
     const rawRadius = 1.0;
     const halfWidth = 0.1;
