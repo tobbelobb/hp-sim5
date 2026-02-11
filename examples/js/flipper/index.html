@@ -205,6 +205,7 @@ canvas {
     let scoreAudioMasterGain = null;
     let lastScoreForSound = null;
     let scoreAudioUnlockBound = false;
+    let scoreExplosionNoiseBuffer = null;
 
     const _ensureScoreAudioContext = () => {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -223,6 +224,31 @@ canvas {
       return scoreAudioContext;
     };
 
+    const _ensureScoreExplosionNoiseBuffer = (ctx) => {
+      if (!ctx) {
+        return null;
+      }
+      if (
+        scoreExplosionNoiseBuffer &&
+        scoreExplosionNoiseBuffer.sampleRate === ctx.sampleRate
+      ) {
+        return scoreExplosionNoiseBuffer;
+      }
+      const durationSec = 0.42;
+      const length = Math.max(1, Math.floor(ctx.sampleRate * durationSec));
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const channel = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        const t = i / length;
+        const decay = Math.pow(1.0 - t, 2.8);
+        const white = (Math.random() * 2.0 - 1.0);
+        const crackle = (Math.random() < 0.02) ? (Math.random() * 2.0 - 1.0) * 2.0 : 0.0;
+        channel[i] = (0.9 * white + crackle) * decay;
+      }
+      scoreExplosionNoiseBuffer = buffer;
+      return scoreExplosionNoiseBuffer;
+    };
+
     const _playScoreBounceSound = (count = 1) => {
       if (world.getResource('scoreBounceSoundEnabled') !== true) {
         return;
@@ -231,39 +257,77 @@ canvas {
       if (!ctx || !scoreAudioMasterGain) {
         return;
       }
+      const noiseBuffer = _ensureScoreExplosionNoiseBuffer(ctx);
+      if (!noiseBuffer) {
+        return;
+      }
       const hitCount = Math.max(1, Math.min(2, Number.isFinite(count) ? Math.floor(count) : 1));
       const tStart = ctx.currentTime + 0.004;
       for (let i = 0; i < hitCount; i++) {
-        const t0 = tStart + i * 0.022;
-        const env = ctx.createGain();
-        const filter = ctx.createBiquadFilter();
-        const oscMain = ctx.createOscillator();
-        const oscOver = ctx.createOscillator();
+        const t0 = tStart + i * 0.028;
+        const hitBus = ctx.createGain();
+        hitBus.gain.setValueAtTime(1.0, t0);
+        hitBus.connect(scoreAudioMasterGain);
 
-        oscMain.type = 'triangle';
-        oscOver.type = 'sine';
-        oscMain.frequency.setValueAtTime(760, t0);
-        oscMain.frequency.exponentialRampToValueAtTime(470, t0 + 0.11);
-        oscOver.frequency.setValueAtTime(1120, t0);
-        oscOver.frequency.exponentialRampToValueAtTime(680, t0 + 0.095);
+        // Low thump body.
+        const thumpOsc = ctx.createOscillator();
+        thumpOsc.type = 'triangle';
+        thumpOsc.frequency.setValueAtTime(180, t0);
+        thumpOsc.frequency.exponentialRampToValueAtTime(52, t0 + 0.17);
+        const thumpFilter = ctx.createBiquadFilter();
+        thumpFilter.type = 'lowpass';
+        thumpFilter.frequency.setValueAtTime(620, t0);
+        thumpFilter.frequency.exponentialRampToValueAtTime(180, t0 + 0.18);
+        const thumpGain = ctx.createGain();
+        thumpGain.gain.setValueAtTime(0.0001, t0);
+        thumpGain.gain.exponentialRampToValueAtTime(0.24, t0 + 0.01);
+        thumpGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+        thumpOsc.connect(thumpFilter);
+        thumpFilter.connect(thumpGain);
+        thumpGain.connect(hitBus);
+        thumpOsc.start(t0);
+        thumpOsc.stop(t0 + 0.22);
 
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(2200, t0);
-        filter.frequency.exponentialRampToValueAtTime(1300, t0 + 0.12);
+        // Filtered noise burst.
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.playbackRate.setValueAtTime(0.72 + Math.random() * 0.16, t0);
+        const noiseBand = ctx.createBiquadFilter();
+        noiseBand.type = 'bandpass';
+        noiseBand.frequency.setValueAtTime(880 + Math.random() * 240, t0);
+        noiseBand.Q.setValueAtTime(0.85, t0);
+        const noiseLow = ctx.createBiquadFilter();
+        noiseLow.type = 'lowpass';
+        noiseLow.frequency.setValueAtTime(3200, t0);
+        noiseLow.frequency.exponentialRampToValueAtTime(1200, t0 + 0.2);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.0001, t0);
+        noiseGain.gain.exponentialRampToValueAtTime(0.26, t0 + 0.012);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.24);
+        noiseSource.connect(noiseBand);
+        noiseBand.connect(noiseLow);
+        noiseLow.connect(noiseGain);
+        noiseGain.connect(hitBus);
+        noiseSource.start(t0);
+        noiseSource.stop(t0 + 0.25);
 
-        env.gain.setValueAtTime(0.0001, t0);
-        env.gain.exponentialRampToValueAtTime(0.16, t0 + 0.009);
-        env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
-
-        oscMain.connect(filter);
-        oscOver.connect(filter);
-        filter.connect(env);
-        env.connect(scoreAudioMasterGain);
-
-        oscMain.start(t0);
-        oscOver.start(t0);
-        oscMain.stop(t0 + 0.16);
-        oscOver.stop(t0 + 0.16);
+        // Tiny bright crack at onset.
+        const crackOsc = ctx.createOscillator();
+        crackOsc.type = 'square';
+        crackOsc.frequency.setValueAtTime(1750, t0);
+        crackOsc.frequency.exponentialRampToValueAtTime(780, t0 + 0.045);
+        const crackHigh = ctx.createBiquadFilter();
+        crackHigh.type = 'highpass';
+        crackHigh.frequency.setValueAtTime(1000, t0);
+        const crackGain = ctx.createGain();
+        crackGain.gain.setValueAtTime(0.0001, t0);
+        crackGain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.0035);
+        crackGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+        crackOsc.connect(crackHigh);
+        crackHigh.connect(crackGain);
+        crackGain.connect(hitBus);
+        crackOsc.start(t0);
+        crackOsc.stop(t0 + 0.055);
       }
     };
 
