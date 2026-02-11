@@ -1028,17 +1028,37 @@ function _segmentsProperlyIntersect(a0, a1, b0, b1, eps = 1e-9) {
   ) {
     return false;
   }
-  const o1 = _orientation2D(a0, a1, b0);
-  const o2 = _orientation2D(a0, a1, b1);
-  const o3 = _orientation2D(b0, b1, a0);
-  const o4 = _orientation2D(b0, b1, a1);
-
-  const strictA = ((o1 > eps && o2 < -eps) || (o1 < -eps && o2 > eps));
-  if (!strictA) {
+  const rX = a1.x - a0.x;
+  const rY = a1.y - a0.y;
+  const sX = b1.x - b0.x;
+  const sY = b1.y - b0.y;
+  const rCrossS = (rX * sY) - (rY * sX);
+  if (Math.abs(rCrossS) <= eps) {
     return false;
   }
-  const strictB = ((o3 > eps && o4 < -eps) || (o3 < -eps && o4 > eps));
-  return strictB;
+
+  const qpX = b0.x - a0.x;
+  const qpY = b0.y - a0.y;
+  const t = ((qpX * sY) - (qpY * sX)) / rCrossS;
+  const u = ((qpX * rY) - (qpY * rX)) / rCrossS;
+  if (!Number.isFinite(t) || !Number.isFinite(u)) {
+    return false;
+  }
+
+  // Treat near-endpoint hits as non-crossing to avoid flicker from tiny
+  // numerical drift when a cable segment merely touches one endpoint.
+  const rLen = Math.hypot(rX, rY);
+  const sLen = Math.hypot(sX, sY);
+  const endpointLinearMargin = 1e-4;
+  const tMargin = Math.min(0.49, endpointLinearMargin / Math.max(rLen, 1e-9));
+  const uMargin = Math.min(0.49, endpointLinearMargin / Math.max(sLen, 1e-9));
+
+  return (
+    t > tMargin &&
+    t < (1.0 - tMargin) &&
+    u > uMargin &&
+    u < (1.0 - uMargin)
+  );
 }
 
 function _segmentEndpointAtCurrentPose(world, entityId, attachmentPointWorld) {
@@ -1130,6 +1150,14 @@ function _crossingCableHalfWidth(cableSegments, centerA, centerB, pairEntityA, p
   let maxHalfWidth = 0.0;
   for (const segment of cableSegments) {
     if (!(segment?.halfWidth > 1e-9)) {
+      continue;
+    }
+    if (
+      segment.entityA === pairEntityA ||
+      segment.entityB === pairEntityA ||
+      segment.entityA === pairEntityB ||
+      segment.entityB === pairEntityB
+    ) {
       continue;
     }
     if (_segmentsProperlyIntersect(centerA, centerB, segment.a, segment.b, 1e-9)) {

@@ -254,6 +254,58 @@ function _makeCachedPoseShiftCrossingWorld({
   return { world, left, right };
 }
 
+function _makeSharedEndpointCrossingWorld({
+  centerDistance,
+  rawRadius = 0.02,
+  cableHalfWidth = 0.0025,
+  pinchShareEnabled = true,
+} = {}) {
+  const world = _baseWorld();
+  world.setResource('layeringCollisionPinchShare', pinchShareEnabled);
+  world.setResource('layeringCollisionSectorSolvers', false);
+  world.setResource('layeringCollisionCircleSectors', false);
+  world.setResource('layeringCollisionOverlayRadius', false);
+
+  const left = _addBall(world, 0.0, 0.0, rawRadius, 1.0);
+  const right = _addBall(world, centerDistance, 0.0, rawRadius, 1.0);
+  world.addComponent(left, new CableLinkComponent(0.0, 0.0, 0.0));
+  world.addComponent(right, new CableLinkComponent(centerDistance, 0.0, 0.0));
+
+  const helper = world.createEntity();
+  world.addComponent(helper, new PositionComponent(centerDistance * 0.45, -0.05));
+  world.addComponent(helper, new CableLinkComponent(centerDistance * 0.45, -0.05, 0.0));
+
+  // This segment can cross the left-right center segment, but it is attached
+  // to one of the queried bodies (left), so it should not count as "between".
+  const sharedEndpointJoint = world.createEntity();
+  world.addComponent(
+    sharedEndpointJoint,
+    CableJointComponent.fromWorld(
+      left,
+      helper,
+      0.08,
+      new Vector2(rawRadius * 0.8, 0.01),
+      new Vector2(centerDistance * 0.45, -0.05)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [sharedEndpointJoint],
+      ['hybrid', 'hybrid'],
+      [true, false],
+      1e6,
+      [0.0, 0.0],
+      cableHalfWidth
+    )
+  );
+
+  return { world, left, right };
+}
+
 describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
   test('no correction when there is no overlap', () => {
     const world = _baseWorld();
@@ -461,5 +513,24 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     const contacts = withShare.world.getResource('ball_ball_contacts') || [];
     expect(contacts.length).toBeGreaterThanOrEqual(1);
     expect(contacts[0].pinch_shared).toBe(true);
+  });
+
+  test('joint segments attached to either queried body do not count as line-between', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const distanceBelowPinchThreshold = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.0005;
+
+    const withShare = _makeSharedEndpointCrossingWorld({
+      centerDistance: distanceBelowPinchThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: true
+    });
+
+    _runManifold(withShare.world);
+
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeCloseTo(distanceBelowPinchThreshold, 9);
+    expect((withShare.world.getResource('ball_ball_contacts') || []).length).toBe(0);
   });
 });
