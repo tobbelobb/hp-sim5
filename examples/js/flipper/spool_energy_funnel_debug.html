@@ -178,14 +178,7 @@ canvas {
     FlipperMotionSystem,
     FlipperTipLinkSystem,
     OverlayRadiusAndCircleSectorSystem,
-    PBDBallBorderCollisions,
-    PBDBorderCircleSectorCollisions,
-    PBDBallBallCollisions,
-    PBDBallCircleSectorCollisions,
-    PBDBallObstacleCollisions,
-    PBDObstacleCircleSectorCollisions,
-    PBDBallFlipperCollisions,
-    FlipperCircleSectorCollisions,
+    PBDUnifiedContactManifoldSystem,
     getMaxCollisionRadius
   } from './flipper_common.js';
   import { BallObstacleBumpSystem } from './ball_obstacle_bump_system.js';
@@ -490,6 +483,8 @@ canvas {
     world.setResource('debugRenderPoints', {});
     world.setResource('ball_border_contacts', []);
     world.setResource('ball_flipper_contacts', []);
+    world.setResource('ball_obstacle_contacts', []);
+    world.setResource('ball_ball_contacts', []);
     world.setResource('energyTrace', []);
     world.setResource('energyTraceStep', 0);
     world.setResource('energyLastSample', null);
@@ -658,14 +653,7 @@ canvas {
       world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());
       world.registerSystem(new PBDResolveCableOverCorrections());
-      world.registerSystem(new PBDBallBorderCollisions());
-      world.registerSystem(new PBDBorderCircleSectorCollisions());
-      world.registerSystem(new PBDBallBallCollisions());
-      world.registerSystem(new PBDBallCircleSectorCollisions());
-      world.registerSystem(new PBDBallObstacleCollisions());
-      world.registerSystem(new PBDObstacleCircleSectorCollisions());
-      world.registerSystem(new PBDBallFlipperCollisions());
-      world.registerSystem(new FlipperCircleSectorCollisions());
+      world.registerSystem(new PBDUnifiedContactManifoldSystem());
       world.registerSystem(new CableFrictionSystem());
       world.registerSystem(new PBDVelocityUpdateSystem());
       world.registerSystem(new PBDAngularVelocityUpdateSystem());

@@ -44,14 +44,7 @@ import {
   FlipperMotionSystem,
   FlipperTipLinkSystem,
   OverlayRadiusAndCircleSectorSystem,
-  PBDBallBorderCollisions,
-  PBDBorderCircleSectorCollisions,
-  PBDBallBallCollisions,
-  PBDBallCircleSectorCollisions,
-  PBDBallObstacleCollisions,
-  PBDObstacleCircleSectorCollisions,
-  PBDBallFlipperCollisions,
-  FlipperCircleSectorCollisions
+  PBDUnifiedContactManifoldSystem
 } from '../../../examples/js/flipper/flipper_common.js';
 import { BallObstacleBumpSystem } from '../../../examples/js/flipper/ball_obstacle_bump_system.js';
 import { BallBorderOrFlipperVelocityContactSystem } from '../../../examples/js/flipper/ball_border_or_flipper_velocity_contact_system.js';
@@ -405,14 +398,22 @@ function setupFunnelWorld({
   _registerSystem(world, new CableSlackSystem(), disabled, 'slack');
   _registerSystem(world, new PBDCableConstraintSolver(), disabled, 'cableConstraint');
   _registerSystem(world, new PBDResolveCableOverCorrections(), disabled, 'resolveOverCorrections');
-  _registerSystem(world, new PBDBallBorderCollisions(), disabled, 'ballBorder');
-  _registerSystem(world, new PBDBorderCircleSectorCollisions(), disabled, 'borderSector');
-  _registerSystem(world, new PBDBallBallCollisions(), disabled, 'ballBall');
-  _registerSystem(world, new PBDBallCircleSectorCollisions(), disabled, 'ballBallSector');
-  _registerSystem(world, new PBDBallObstacleCollisions(), disabled, 'ballObstacle');
-  _registerSystem(world, new PBDObstacleCircleSectorCollisions(), disabled, 'obstacleSector');
-  _registerSystem(world, new PBDBallFlipperCollisions(), disabled, 'ballFlipper');
-  _registerSystem(world, new FlipperCircleSectorCollisions(), disabled, 'flipperSector');
+  _registerSystem(
+    world,
+    new PBDUnifiedContactManifoldSystem(),
+    disabled,
+    'contactManifold',
+    [
+      'ballBorder',
+      'borderSector',
+      'ballBall',
+      'ballBallSector',
+      'ballObstacle',
+      'obstacleSector',
+      'ballFlipper',
+      'flipperSector'
+    ]
+  );
   _registerSystem(world, new CableFrictionSystem(), disabled, 'cableFriction');
   _registerSystem(world, new PBDVelocityUpdateSystem(), disabled, 'velocityUpdate');
   _registerSystem(world, new PBDAngularVelocityUpdateSystem(), disabled, 'angularVelocityUpdate');

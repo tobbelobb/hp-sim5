@@ -204,6 +204,24 @@ export function getCompositeSupportToward(world, entityId, directionTowardOther)
   };
 }
 
+function _collisionSupportToward(world, entityId, directionTowardOther, useSectorSupports) {
+  if (useSectorSupports) {
+    return _compositeSupportToward(world, entityId, directionTowardOther);
+  }
+  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!center) {
+    return null;
+  }
+  const dir = _normalizedDirection(directionTowardOther);
+  const baseRadius = _getBaseCollisionRadius(world, entityId);
+  return {
+    center,
+    baseRadius,
+    projection: baseRadius,
+    offset: dir.clone().scale(baseRadius)
+  };
+}
+
 function _pathLinkEntity(world, path, linkIndex) {
   if (!Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
     return null;
@@ -1263,6 +1281,347 @@ function _resolveRigidContactPair(world, entityA, offsetA, entityB, offsetB, nor
     orientBComp.angle += invInertiaB * rnB * lambda;
   }
   return lambda;
+}
+
+function _flipperTipFromState(flipperPos, flipperState) {
+  const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+  const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+  return flipperPos.clone().add(dir, flipperState.length);
+}
+
+export class PBDUnifiedContactManifoldSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
+    const borderEntities = world.query([BorderComponent]);
+
+    let borderContacts = world.getResource('ball_border_contacts');
+    if (!Array.isArray(borderContacts)) {
+      borderContacts = [];
+      world.setResource('ball_border_contacts', borderContacts);
+    }
+    borderContacts.length = 0;
+
+    let obstacleContacts = world.getResource('ball_obstacle_contacts');
+    if (!Array.isArray(obstacleContacts)) {
+      obstacleContacts = [];
+      world.setResource('ball_obstacle_contacts', obstacleContacts);
+    }
+    obstacleContacts.length = 0;
+
+    let flipperContacts = world.getResource('ball_flipper_contacts');
+    if (!Array.isArray(flipperContacts)) {
+      flipperContacts = [];
+      world.setResource('ball_flipper_contacts', flipperContacts);
+    }
+    flipperContacts.length = 0;
+
+    let ballBallContacts = world.getResource('ball_ball_contacts');
+    if (!Array.isArray(ballBallContacts)) {
+      ballBallContacts = [];
+      world.setResource('ball_ball_contacts', ballBallContacts);
+    }
+    ballBallContacts.length = 0;
+
+    let obstacleActivePairs = world.getResource('ball_obstacle_active_pairs');
+    if (!(obstacleActivePairs instanceof Set)) {
+      obstacleActivePairs = new Set();
+      world.setResource('ball_obstacle_active_pairs', obstacleActivePairs);
+    }
+    const nextObstacleActivePairs = new Set();
+    const grabbed = world.getResource('grabbedBall');
+
+    const useSectorSupports = _layeringFlag(world, 'layeringCollisionSectorSolvers', true);
+
+    const borderId = borderEntities.length > 0 ? borderEntities[0] : null;
+    const borderPoints = borderId !== null
+      ? (world.getComponent(borderId, BorderComponent)?.points ?? [])
+      : [];
+    const borderRestitution = borderId !== null
+      ? world.getComponent(borderId, RestitutionComponent)?.restitution
+      : null;
+    const borderFriction = borderId !== null
+      ? world.getComponent(borderId, CoefficientOfFrictionComponent)?.mu
+      : null;
+
+    const candidates = [];
+    for (let i = 0; i < ballEntities.length; i++) {
+      const ballId = ballEntities[i];
+      if (borderPoints.length >= 2) {
+        for (let segmentIndex = 0; segmentIndex < borderPoints.length; segmentIndex++) {
+          candidates.push({ type: 'border', ballId, segmentIndex });
+        }
+      }
+      for (const obsId of obstacleEntities) {
+        candidates.push({ type: 'obstacle', ballId, obsId });
+      }
+      for (const flipId of flipperEntities) {
+        candidates.push({ type: 'flipper', ballId, flipId });
+      }
+      for (let j = i + 1; j < ballEntities.length; j++) {
+        candidates.push({ type: 'ball-ball', ballA: ballId, ballB: ballEntities[j] });
+      }
+    }
+
+    for (const candidate of candidates) {
+      if (candidate.type === 'border') {
+        const pBall = world.getComponent(candidate.ballId, PositionComponent)?.pos;
+        if (!pBall || borderPoints.length < 2) {
+          continue;
+        }
+        const a = borderPoints[candidate.segmentIndex];
+        const b = borderPoints[(candidate.segmentIndex + 1) % borderPoints.length];
+        const closest = closestPointOnSegment(pBall, a, b);
+        const distSq = pBall.distanceToSq(closest);
+        const broadRadius = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.ballId)
+          : _getBaseCollisionRadius(world, candidate.ballId);
+        if (distSq > (broadRadius + 1e-9) * (broadRadius + 1e-9)) {
+          continue;
+        }
+
+        const normal = _borderCollisionNormal(pBall, closest, a, b);
+        const support = _collisionSupportToward(
+          world,
+          candidate.ballId,
+          normal.clone().scale(-1.0),
+          useSectorSupports
+        );
+        if (!support) {
+          continue;
+        }
+        const dist = Math.sqrt(distSq);
+        const penetration = support.projection - dist;
+        if (penetration <= 0.0) {
+          continue;
+        }
+
+        const deltaLambda = _resolveRigidContactSingle(
+          world,
+          candidate.ballId,
+          support.offset,
+          normal,
+          penetration
+        );
+        borderContacts.push({
+          ball_id: candidate.ballId,
+          normal: normal.clone(),
+          delta_lambda: deltaLambda,
+          ball_contact_radius: support.projection,
+          ball_contact_offset: support.offset.clone(),
+          restitution: borderRestitution,
+          friction: borderFriction,
+          border_segment_index: candidate.segmentIndex
+        });
+        continue;
+      }
+
+      if (candidate.type === 'ball-ball') {
+        const pA = world.getComponent(candidate.ballA, PositionComponent)?.pos;
+        const pB = world.getComponent(candidate.ballB, PositionComponent)?.pos;
+        if (!pA || !pB) {
+          continue;
+        }
+        const normalAB = new Vector2().subtractVectors(pB, pA);
+        const dSq = normalAB.lengthSq();
+        if (dSq <= 1e-12) {
+          continue;
+        }
+        const d = Math.sqrt(dSq);
+        normalAB.scale(1.0 / d);
+
+        const broadA = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.ballA)
+          : _getBaseCollisionRadius(world, candidate.ballA);
+        const broadB = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.ballB)
+          : _getBaseCollisionRadius(world, candidate.ballB);
+        if (d > broadA + broadB + 1e-9) {
+          continue;
+        }
+
+        const supportA = _collisionSupportToward(world, candidate.ballA, normalAB, useSectorSupports);
+        const supportB = _collisionSupportToward(world, candidate.ballB, normalAB.clone().scale(-1.0), useSectorSupports);
+        if (!supportA || !supportB) {
+          continue;
+        }
+        const rSum = supportA.projection + supportB.projection;
+        if (d > rSum + 1e-9) {
+          continue;
+        }
+        const penetration = rSum - d;
+        if (penetration <= 0.0) {
+          continue;
+        }
+        const deltaLambda = _resolveRigidContactPair(
+          world,
+          candidate.ballA,
+          supportA.offset,
+          candidate.ballB,
+          supportB.offset,
+          normalAB,
+          penetration
+        );
+        ballBallContacts.push({
+          ball_a: candidate.ballA,
+          ball_b: candidate.ballB,
+          normal: normalAB.clone(),
+          delta_lambda: deltaLambda,
+          penetration,
+          radius_a: supportA.projection,
+          radius_b: supportB.projection
+        });
+        continue;
+      }
+
+      if (candidate.type === 'obstacle') {
+        const pBall = world.getComponent(candidate.ballId, PositionComponent)?.pos;
+        const pObs = world.getComponent(candidate.obsId, PositionComponent)?.pos;
+        if (!pBall || !pObs) {
+          continue;
+        }
+        const normal = new Vector2().subtractVectors(pBall, pObs);
+        const dSq = normal.lengthSq();
+        if (dSq <= 1e-12) {
+          continue;
+        }
+        const d = Math.sqrt(dSq);
+        normal.scale(1.0 / d); // obstacle -> ball
+
+        const broadBall = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.ballId)
+          : _getBaseCollisionRadius(world, candidate.ballId);
+        const broadObs = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.obsId)
+          : _getBaseCollisionRadius(world, candidate.obsId);
+        if (d > broadBall + broadObs + 1e-9) {
+          continue;
+        }
+
+        const supportBall = _collisionSupportToward(
+          world,
+          candidate.ballId,
+          normal.clone().scale(-1.0),
+          useSectorSupports
+        );
+        const supportObs = _collisionSupportToward(world, candidate.obsId, normal, useSectorSupports);
+        if (!supportBall || !supportObs) {
+          continue;
+        }
+        const rSum = supportBall.projection + supportObs.projection;
+        if (d > rSum + 1e-9) {
+          continue;
+        }
+        const penetration = rSum - d;
+        if (penetration <= 0.0) {
+          continue;
+        }
+        const deltaLambda = _resolveRigidContactSingle(
+          world,
+          candidate.ballId,
+          supportBall.offset,
+          normal,
+          penetration
+        );
+
+        const rawBallRadius = getRawCollisionRadius(world, candidate.ballId);
+        const rawObsRadius = getRawCollisionRadius(world, candidate.obsId);
+        const rawHit = d <= (rawBallRadius + rawObsRadius + 1e-9);
+
+        obstacleContacts.push({
+          ball_id: candidate.ballId,
+          obs_id: candidate.obsId,
+          direction: normal.clone(),
+          raw_hit: rawHit,
+          delta_lambda: deltaLambda,
+          ball_contact_radius: supportBall.projection,
+          ball_contact_offset: supportBall.offset.clone()
+        });
+
+        const pairKey = `${candidate.ballId}:${candidate.obsId}`;
+        nextObstacleActivePairs.add(pairKey);
+        if (rawHit && !obstacleActivePairs.has(pairKey) && candidate.ballId !== grabbed) {
+          world.addComponent(candidate.ballId, new ScoredTagComponent());
+        }
+        continue;
+      }
+
+      if (candidate.type === 'flipper') {
+        const pBall = world.getComponent(candidate.ballId, PositionComponent)?.pos;
+        const pFlip = world.getComponent(candidate.flipId, PositionComponent)?.pos;
+        const flipperState = world.getComponent(candidate.flipId, FlipperStateComponent);
+        if (!pBall || !pFlip || !flipperState) {
+          continue;
+        }
+        const tip = _flipperTipFromState(pFlip, flipperState);
+        const closest = closestPointOnSegment(pBall, pFlip, tip);
+        const normal = new Vector2().subtractVectors(pBall, closest); // flipper -> ball
+        const dSq = normal.lengthSq();
+        if (dSq <= 1e-12) {
+          continue;
+        }
+        const d = Math.sqrt(dSq);
+        normal.scale(1.0 / d);
+
+        const broadBall = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.ballId)
+          : _getBaseCollisionRadius(world, candidate.ballId);
+        const broadFlipper = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.flipId)
+          : _getBaseCollisionRadius(world, candidate.flipId);
+        if (d > broadBall + broadFlipper + 1e-9) {
+          continue;
+        }
+
+        const supportBall = _collisionSupportToward(
+          world,
+          candidate.ballId,
+          normal.clone().scale(-1.0),
+          useSectorSupports
+        );
+        if (!supportBall) {
+          continue;
+        }
+        const flipperRadius = useSectorSupports
+          ? getMaxCollisionRadius(world, candidate.flipId)
+          : _getBaseCollisionRadius(world, candidate.flipId);
+        const rSum = supportBall.projection + flipperRadius;
+        if (d > rSum + 1e-9) {
+          continue;
+        }
+        const penetration = rSum - d;
+        if (penetration <= 0.0) {
+          continue;
+        }
+
+        const deltaLambda = _resolveRigidContactSingle(
+          world,
+          candidate.ballId,
+          supportBall.offset,
+          normal,
+          penetration
+        );
+
+        flipperContacts.push({
+          ball_id: candidate.ballId,
+          flip_id: candidate.flipId,
+          normal: normal.clone(),
+          contact_point_on_flipper: closest.clone(),
+          ball_contact_radius: supportBall.projection,
+          ball_contact_offset: supportBall.offset.clone(),
+          delta_lambda: deltaLambda
+        });
+      }
+    }
+
+    obstacleActivePairs.clear();
+    for (const pairKey of nextObstacleActivePairs) {
+      obstacleActivePairs.add(pairKey);
+    }
+  }
 }
 
 export class PBDBorderCircleSectorCollisions {
