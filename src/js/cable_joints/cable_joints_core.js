@@ -33,11 +33,182 @@ export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
+const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
 function _debugCable(world, message) {
   if (world?.getResource('cableDebugLogs') === true) {
     console.debug(`${CABLE_DEBUG_PREFIX} ${message}`);
   }
+}
+
+function _readFiniteResource(world, key, fallback) {
+  const value = world?.getResource?.(key);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function _vecSnapshot(v) {
+  if (!v) {
+    return null;
+  }
+  return { x: v.x, y: v.y };
+}
+
+function _hybridTransitionTraceEnabled(world, step) {
+  if (world?.getResource?.('cableHybridTransitionTrace') !== true) {
+    return false;
+  }
+  const minStep = _readFiniteResource(world, 'cableHybridTransitionTraceStepMin', -Infinity);
+  const maxStep = _readFiniteResource(world, 'cableHybridTransitionTraceStepMax', Infinity);
+  const resolvedStep = Number.isFinite(step)
+    ? Math.floor(step)
+    : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+  return resolvedStep >= minStep && resolvedStep <= maxStep;
+}
+
+function _recordHybridTransitionTrace(world, step, event) {
+  if (!_hybridTransitionTraceEnabled(world, step)) {
+    return;
+  }
+
+  let traceBuffer = world.getResource('cableHybridTransitionTraceBuffer');
+  if (!Array.isArray(traceBuffer)) {
+    traceBuffer = [];
+    world.setResource('cableHybridTransitionTraceBuffer', traceBuffer);
+  }
+
+  const maxTraceEvents = Math.max(
+    1,
+    Math.floor(_readFiniteResource(world, 'cableHybridTransitionTraceLimit', 256))
+  );
+  if (traceBuffer.length >= maxTraceEvents) {
+    world.setResource('cableHybridTransitionTraceTruncated', true);
+    return;
+  }
+
+  const entry = {
+    step: Number.isFinite(step) ? Math.floor(step) : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0)),
+    ...event
+  };
+  traceBuffer.push(entry);
+
+  if (world.getResource('cableHybridTransitionTraceConsole') === true) {
+    console.debug(`${CABLE_HYBRID_TRACE_PREFIX} ${JSON.stringify(entry)}`);
+  }
+}
+
+function _cableEventTraceEnabled(world, step) {
+  if (world?.getResource?.('cableEventTrace') !== true) {
+    return false;
+  }
+  const minStep = _readFiniteResource(world, 'cableEventTraceStepMin', -Infinity);
+  const maxStep = _readFiniteResource(world, 'cableEventTraceStepMax', Infinity);
+  const resolvedStep = Number.isFinite(step)
+    ? Math.floor(step)
+    : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+  return resolvedStep >= minStep && resolvedStep <= maxStep;
+}
+
+function _recordCableEventTrace(world, step, event) {
+  if (!_cableEventTraceEnabled(world, step)) {
+    return;
+  }
+
+  let traceBuffer = world.getResource('cableEventTraceBuffer');
+  if (!Array.isArray(traceBuffer)) {
+    traceBuffer = [];
+    world.setResource('cableEventTraceBuffer', traceBuffer);
+  }
+
+  const maxTraceEvents = Math.max(
+    1,
+    Math.floor(_readFiniteResource(world, 'cableEventTraceLimit', 4096))
+  );
+  if (traceBuffer.length >= maxTraceEvents) {
+    world.setResource('cableEventTraceTruncated', true);
+    return;
+  }
+
+  const entry = {
+    step: Number.isFinite(step) ? Math.floor(step) : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0)),
+    ...event
+  };
+  traceBuffer.push(entry);
+
+  if (world.getResource('cableEventTraceConsole') === true) {
+    console.debug(`[CableEventTrace] ${JSON.stringify(entry)}`);
+  }
+}
+
+function _recordCableStepSummary(world, step, phase) {
+  if (!_cableEventTraceEnabled(world, step)) {
+    return;
+  }
+  const jointEntities = world.query([CableJointComponent]);
+  const pathEntities = world.query([CablePathComponent]);
+
+  let minRestLength = Infinity;
+  let maxRestLength = -Infinity;
+  let tinyRestCount = 0;
+  let negativeRestCount = 0;
+  let nonFiniteRestCount = 0;
+  for (const jointId of jointEntities) {
+    const joint = world.getComponent(jointId, CableJointComponent);
+    const rest = joint?.restLength;
+    if (!Number.isFinite(rest)) {
+      nonFiniteRestCount++;
+      continue;
+    }
+    if (rest < minRestLength) minRestLength = rest;
+    if (rest > maxRestLength) maxRestLength = rest;
+    if (rest < MIN_JOINT_REST_LENGTH) tinyRestCount++;
+    if (rest < 0.0) negativeRestCount++;
+  }
+  if (jointEntities.length < 1) {
+    minRestLength = 0.0;
+    maxRestLength = 0.0;
+  }
+
+  let minStored = Infinity;
+  let maxStored = -Infinity;
+  let negativeStoredCount = 0;
+  let nonFiniteStoredCount = 0;
+  let maxPathJoints = 0;
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    maxPathJoints = Math.max(maxPathJoints, path?.jointEntities?.length ?? 0);
+    for (const stored of path?.stored ?? []) {
+      if (!Number.isFinite(stored)) {
+        nonFiniteStoredCount++;
+        continue;
+      }
+      if (stored < minStored) minStored = stored;
+      if (stored > maxStored) maxStored = stored;
+      if (stored < 0.0) negativeStoredCount++;
+    }
+  }
+  if (pathEntities.length < 1) {
+    minStored = 0.0;
+    maxStored = 0.0;
+  }
+  if (!Number.isFinite(minStored)) minStored = 0.0;
+  if (!Number.isFinite(maxStored)) maxStored = 0.0;
+
+  _recordCableEventTrace(world, step, {
+    type: 'summary',
+    phase,
+    pathCount: pathEntities.length,
+    jointCount: jointEntities.length,
+    maxPathJoints,
+    minRestLength,
+    maxRestLength,
+    tinyRestCount,
+    negativeRestCount,
+    nonFiniteRestCount,
+    minStored,
+    maxStored,
+    negativeStoredCount,
+    nonFiniteStoredCount
+  });
 }
 
 function _resourceBool(world, key, fallback = true) {
@@ -443,6 +614,7 @@ export function calculateAttachmentPoints(world, joint, path, i) {
 }
 
 export function _updateAttachmentPoints(world) {
+  const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const pathEntities = world.query([CablePathComponent]);
 
   for (const pathId of pathEntities) {
@@ -498,6 +670,9 @@ export function _updateAttachmentPoints(world) {
 
       let sA = 0;
       let sB = 0;
+      const restBefore = joint.restLength;
+      const storedA_before = path.stored[A] ?? 0.0;
+      const storedB_before = path.stored[B] ?? 0.0;
 
       if (rollingLinkA && attachmentA_previous && attachmentA_current && prevPosA && posA && radiusA !== undefined) {
           sA = signedArcLengthOnWheel(
@@ -524,11 +699,105 @@ export function _updateAttachmentPoints(world) {
             sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
           }
       }
+      const sA_raw = sA;
+      const sB_raw = sB;
 
-      path.stored[A] += sA;
-      joint.restLength -= sA;
-      path.stored[B] -= sB;
-      joint.restLength += sB;
+      let sA_effective = sA;
+      let sB_effective = sB;
+      let clampApplied = false;
+      const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);
+      if (clampEnabled && Number.isFinite(restBefore)) {
+        const unclampedRest = restBefore - sA_effective + sB_effective;
+        if (unclampedRest < MIN_JOINT_REST_LENGTH) {
+          const requiredLift = MIN_JOINT_REST_LENGTH - unclampedRest;
+          const decreaseFromA = Math.max(0.0, sA_effective);
+          const decreaseFromB = Math.max(0.0, -sB_effective);
+          const totalDecrease = decreaseFromA + decreaseFromB;
+          if (totalDecrease > EPSILON) {
+            const shiftA = requiredLift * (decreaseFromA / totalDecrease);
+            const shiftB = requiredLift - shiftA;
+            sA_effective -= shiftA;
+            sB_effective += shiftB;
+          } else {
+            sB_effective += requiredLift;
+          }
+
+          const stillLowRest = restBefore - sA_effective + sB_effective;
+          if (stillLowRest < MIN_JOINT_REST_LENGTH) {
+            sB_effective += (MIN_JOINT_REST_LENGTH - stillLowRest);
+          }
+          clampApplied = true;
+
+          _recordCableEventTrace(world, step, {
+            type: 'rest-length-clamp',
+            stage: 'updateAttachmentPoints',
+            pathId,
+            jointId,
+            jointIndex: i,
+            entityA,
+            entityB,
+            linkTypeA: path.linkTypes[A],
+            linkTypeB: path.linkTypes[B],
+            restBefore,
+            unclampedRest,
+            clampedRest: restBefore - sA_effective + sB_effective,
+            sA_raw,
+            sB_raw,
+            sA_effective,
+            sB_effective
+          });
+        }
+      }
+
+      path.stored[A] += sA_effective;
+      joint.restLength -= sA_effective;
+      path.stored[B] -= sB_effective;
+      joint.restLength += sB_effective;
+      const restAfter = joint.restLength;
+      if (
+        !Number.isFinite(restAfter) ||
+        restAfter < MIN_JOINT_REST_LENGTH
+      ) {
+        const centerDistance = (posA && posB) ? posA.distanceTo(posB) : null;
+        const overlap = (
+          Number.isFinite(radiusA) &&
+          Number.isFinite(radiusB) &&
+          Number.isFinite(centerDistance)
+        )
+          ? (radiusA + radiusB - centerDistance)
+          : null;
+        const bothEndsHybrid = _isHybrid(path.linkTypes[A]) && _isHybrid(path.linkTypes[B]);
+        _recordCableEventTrace(world, step, {
+          type: 'rest-length-anomaly',
+          stage: 'updateAttachmentPoints',
+          pathId,
+          jointId,
+          jointIndex: i,
+          entityA,
+          entityB,
+          linkTypeA: path.linkTypes[A],
+          linkTypeB: path.linkTypes[B],
+          sameJointPath: path.jointEntities.length === 1,
+          bothEndsHybrid,
+          centerDistance,
+          overlap,
+          attachmentDistance: (attachmentA_current && attachmentB_current)
+            ? attachmentA_current.distanceTo(attachmentB_current)
+            : null,
+          restBefore,
+          restAfter,
+          restDelta: restAfter - restBefore,
+          clampApplied,
+          sA_raw,
+          sB_raw,
+          sA_effective,
+          sB_effective,
+          storedA_before,
+          storedB_before,
+          storedA_after: path.stored[A] ?? 0.0,
+          storedB_after: path.stored[B] ?? 0.0
+        });
+      }
 
       if (attachmentA_current) {
         joint.attachmentPointA_world.set(attachmentA_current);
@@ -541,6 +810,7 @@ export function _updateAttachmentPoints(world) {
 }
 
 export function _mergeJoints(world) {
+  const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -585,6 +855,13 @@ export function _mergeJoints(world) {
           const radiusB = _effectivePathRadiusForEntity(world, path, joint_i_plus_1.entityB, i + 2);
           const cwB = path.cw[i+2];
 
+          const storedLeftBefore = path.stored[i] ?? 0.0;
+          const storedMiddleBefore = path.stored[i + 1] ?? 0.0;
+          const storedRightBefore = path.stored[i + 2] ?? 0.0;
+          const restLeftBefore = joint_i.restLength;
+          const restRightBefore = joint_i_plus_1.restLength;
+          const pathJointCountBefore = path.jointEntities.length;
+
           joint_i.restLength += joint_i_plus_1.restLength + path.stored[i + 1];
           joint_i.entityB = joint_i_plus_1.entityB;
           const isAttachmentA = _isAttachment(path.linkTypes[i]);
@@ -621,6 +898,30 @@ export function _mergeJoints(world) {
           joint_i.restLength += sB;
           reRunMerge = path.stored[i] < 0.0 || path.stored[i+2] < 0.0;
 
+          _recordCableEventTrace(world, step, {
+            type: 'merge',
+            pathId,
+            mergeIndex: i,
+            jointKeptId: jointId_i,
+            jointRemovedId: jointId_i_plus_1,
+            pathJointCountBefore,
+            pathJointCountAfter: pathJointCountBefore - 1,
+            storedLeftBefore,
+            storedMiddleBefore,
+            storedRightBefore,
+            storedLeftAfter: path.stored[i] ?? 0.0,
+            storedRightAfter: path.stored[i + 2] ?? 0.0,
+            restLeftBefore,
+            restRightBefore,
+            restAfter: joint_i.restLength,
+            sA,
+            sB,
+            resultingEntityA: joint_i.entityA,
+            resultingEntityB: joint_i.entityB,
+            resultingTinyRest: Number.isFinite(joint_i.restLength) && joint_i.restLength < MIN_JOINT_REST_LENGTH,
+            rerunMergeTriggered: reRunMerge
+          });
+
           joint_i.attachmentPointA_world.set(attachmentA_current);
           joint_i.attachmentPointB_world.set(attachmentB_current);
 
@@ -636,6 +937,7 @@ export function _mergeJoints(world) {
 }
 
 export function _splitJoints(world) {
+  const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -735,10 +1037,29 @@ export function _splitJoints(world) {
               cw
           );
           if (s <= 0.0) {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'nonpositive-wrap',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                s
+              });
               console.warn(`Nothing wraps around splitter. Aborting split.`);
               continue;
           }
           if ((s + 1e-9) >= 2.0*Math.PI * radiusSplitter) {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'full-wrap',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                s,
+                radiusSplitter
+              });
               console.warn(`Split resulted a full wrap around splitter. Aborting split.`);
               continue;
           }
@@ -755,18 +1076,46 @@ export function _splitJoints(world) {
           const dSB = attachmentPointAForNewJoint.clone().subtract(attachmentPointBForNewJoint).length();
           const originalRestLength = joint.restLength + sB - sA; // Store before modifying
           const totalDist = dAS + dSB;
+          const availableRestLength = originalRestLength - s;
+          const storedA_before = path.stored[i] ?? 0.0;
+          const storedB_before = path.stored[i + 1] ?? 0.0;
+          const restBefore = joint.restLength;
+          const pathJointCountBefore = path.jointEntities.length;
 
           let newRestLengthAS = 0; // For original joint (entityA -> splitter)
           let newRestLengthSB = 0; // For new joint (splitter -> entityB)
           if (totalDist > 1e-9) {
-              const availableRestLength = originalRestLength - s;
               if (availableRestLength < 1e-9) {
+                  _recordCableEventTrace(world, step, {
+                    type: 'split-abort',
+                    reason: 'insufficient-rest',
+                    pathId,
+                    jointId,
+                    splitterId,
+                    splitIndex: i,
+                    availableRestLength,
+                    originalRestLength,
+                    s,
+                    sA,
+                    sB
+                  });
                   console.warn(`Split resulted in < 1e-9 available rest length (${availableRestLength.toFixed(4)}). Aborting split.`);
                   continue;
               }
               newRestLengthAS = availableRestLength * dAS / totalDist;
               newRestLengthSB = availableRestLength * dSB / totalDist;
           } else {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'degenerate-distances',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                totalDist,
+                dAS,
+                dSB
+              });
               console.warn("Split occurred with near-zero distance between new segments:", totalDist);
           }
           path.stored[i + 1] -= sB;
@@ -789,6 +1138,40 @@ export function _splitJoints(world) {
               splitterId, entityB, newRestLengthSB, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
           world.addComponent(newJointId, new RenderableComponent('line', linecolor1));
 
+          _recordCableEventTrace(world, step, {
+            type: 'split',
+            pathId,
+            splitIndex: i,
+            originalJointId: jointId,
+            newJointId,
+            splitterId,
+            pathJointCountBefore,
+            pathJointCountAfter: pathJointCountBefore + 1,
+            originalRestLength,
+            availableRestLength,
+            restBefore,
+            newRestLengthAS,
+            newRestLengthSB,
+            minNewRestLength: Math.min(newRestLengthAS, newRestLengthSB),
+            storedA_before,
+            storedB_before,
+            storedA_after: path.stored[i] ?? 0.0,
+            storedSplitter_after: path.stored[i + 1] ?? 0.0,
+            storedB_after: path.stored[i + 2] ?? 0.0,
+            sA,
+            sB,
+            s,
+            dAS,
+            dSB,
+            totalDist,
+            cw,
+            cwA,
+            cwB,
+            tinyRestProduced:
+              (Number.isFinite(newRestLengthAS) && newRestLengthAS < MIN_JOINT_REST_LENGTH) ||
+              (Number.isFinite(newRestLengthSB) && newRestLengthSB < MIN_JOINT_REST_LENGTH)
+          });
+
           // Some final debug logging
           const discrepancy = originalRestLength - s - newRestLengthAS - newRestLengthSB;
           const tensionAS = dAS/newRestLengthAS;
@@ -810,8 +1193,11 @@ export function _splitJoints(world) {
   }
 }
 
-export function _updateHybridLinkStates(world) {
+export function _updateHybridLinkStates(world, traceStep = null) {
   const pathEntities = world.query([CablePathComponent]);
+  const step = Number.isFinite(traceStep)
+    ? Math.floor(traceStep)
+    : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -819,6 +1205,10 @@ export function _updateHybridLinkStates(world) {
       if (path.linkTypes[i] === 'hybrid') {
         if (path.stored[i] < 0.0) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
+          const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
+          const oldLinkType = path.linkTypes[i];
+          const oldCw = path.cw[i];
+          const oldStored = path.stored[i] ?? 0.0;
           path.linkTypes[i] = 'hybrid-attachment';
           const joint = (
             i === 0
@@ -833,9 +1223,16 @@ export function _updateHybridLinkStates(world) {
             i,
             world.getComponent(linkEntity, RadiusComponent)?.radius
           );
-          const oldStored = path.stored[i] ?? 0.0;
+          const oldRestLength = joint.restLength;
+          const attachmentBefore = i === 0
+            ? joint.attachmentPointA_world.clone()
+            : joint.attachmentPointB_world.clone();
+          const neighborAttachmentPoint = i === 0
+            ? joint.attachmentPointB_world
+            : joint.attachmentPointA_world;
           // We have "fed out negative line", undo that
           joint.restLength += oldStored;
+          const rotationApplied = Boolean(pos && Number.isFinite(radius) && radius > EPSILON);
           if (pos && Number.isFinite(radius) && radius > EPSILON) {
             const rotAng = -oldStored / radius;
             if (i === 0) {
@@ -845,6 +1242,49 @@ export function _updateHybridLinkStates(world) {
             }
           }
           path.stored[i] = 0;
+
+          const attachmentAfter = i === 0
+            ? joint.attachmentPointA_world.clone()
+            : joint.attachmentPointB_world.clone();
+          _recordHybridTransitionTrace(world, step, {
+            transition: 'hybrid->hybrid-attachment',
+            pathId,
+            endpointIndex: i,
+            jointId: endpointJointId,
+            linkEntityId: linkEntity,
+            neighborEntityId: i === 0 ? joint.entityB : joint.entityA,
+            oldLinkType,
+            newLinkType: path.linkTypes[i],
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            effectiveRadius: radius,
+            rotationApplied,
+            attachmentBefore: _vecSnapshot(attachmentBefore),
+            attachmentAfter: _vecSnapshot(attachmentAfter),
+            neighborAttachment: _vecSnapshot(neighborAttachmentPoint)
+          });
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-transition',
+            direction: 'hybrid->hybrid-attachment',
+            pathId,
+            endpointIndex: i,
+            jointId: endpointJointId,
+            linkEntityId: linkEntity,
+            neighborEntityId: i === 0 ? joint.entityB : joint.entityA,
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            effectiveRadius: radius
+          });
         }
       }
       else if (path.linkTypes[i] === 'hybrid-attachment') {
@@ -873,19 +1313,91 @@ export function _updateHybridLinkStates(world) {
           i,
           world.getComponent(entityId, RadiusComponent)?.radius
         );
+        const lastEndpointIndex = path.linkTypes.length - 1;
+        const neighborLinkIndex = i === 0 ? 1 : Math.max(0, lastEndpointIndex - 1);
+        const neighborPos = world.getComponent(neighborId, PositionComponent)?.pos;
+        const neighborRadius = _effectiveRollingRadius(
+          world,
+          path,
+          neighborLinkIndex,
+          world.getComponent(neighborId, RadiusComponent)?.radius
+        );
+        const attachmentDistance = attachmentPoint?.distanceTo?.(neighborAttachmentPoint) ?? Infinity;
+        const centerDistance = (
+          C &&
+          neighborPos &&
+          Number.isFinite(C.x) &&
+          Number.isFinite(C.y) &&
+          Number.isFinite(neighborPos.x) &&
+          Number.isFinite(neighborPos.y)
+        )
+          ? C.distanceTo(neighborPos)
+          : Infinity;
+        const centerOverlap = (
+          Number.isFinite(centerDistance) &&
+          Number.isFinite(R) &&
+          Number.isFinite(neighborRadius)
+        )
+          ? (R + neighborRadius - centerDistance)
+          : null;
+        const sameJointPath = path.jointEntities.length === 1;
+        const bothEndpointsHybridLike = (
+          _isHybrid(path.linkTypes[0]) &&
+          _isHybrid(path.linkTypes[lastEndpointIndex])
+        );
+
         if (!C || !Number.isFinite(R) || R <= EPSILON) {
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            reason: 'invalid-center-or-radius'
+          });
           continue;
         }
 
         // When the endpoint and neighbor attachment collapse to (near) the same
         // point, both CW/CCW tangent solutions become ill-conditioned.
         const degenerateThreshold = Math.max(1e-6, 2.0 * (path.cableHalfWidth ?? 0.0) + 1e-6);
-        if (attachmentPoint.distanceTo(neighborAttachmentPoint) <= degenerateThreshold) {
+        if (attachmentDistance <= degenerateThreshold) {
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            degenerateThreshold,
+            reason: 'attachment-degenerate-skip'
+          });
           continue;
         }
 
+        const neighborAttachmentDistSq = neighborAttachmentPoint.distanceToSq(C);
+        const neighborAttachmentInsideCircle = neighborAttachmentDistSq <= (R * R + 1e-9);
         const tanCW  = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, true).a_circle;
         const tanCCW = tangentFromCircleToPoint(neighborAttachmentPoint, C, R, false).a_circle;
+        const tangentFinite = (
+          tanCW &&
+          tanCCW &&
+          Number.isFinite(tanCW.x) &&
+          Number.isFinite(tanCW.y) &&
+          Number.isFinite(tanCCW.x) &&
+          Number.isFinite(tanCCW.y)
+        );
 
         const crossedCW  = signedArcLengthOnWheel(attachmentPoint, tanCW,  C, R, true);
         const crossedCCW  = signedArcLengthOnWheel(attachmentPoint, tanCCW,  C, R, false);
@@ -907,13 +1419,106 @@ export function _updateHybridLinkStates(world) {
 
         if (newCW !== null) {
           const oldStored = path.stored[i] ?? 0.0;
+          const oldLinkType = path.linkTypes[i];
+          const oldCw = path.cw[i];
           const newStored = candidateStored ?? oldStored;
+          const oldRestLength = joint.restLength;
+          const attachmentBefore = attachmentPoint.clone();
           // console.log(`Switching joint ${jointId} to hybrid`);
           path.linkTypes[i] = 'hybrid';
           path.cw[i]        = newCW;
           path.stored[i] = newStored;
           joint.restLength -= (newStored - oldStored);
           attachmentPoint.set(crossingTangent);
+          _recordHybridTransitionTrace(world, step, {
+            transition: 'hybrid-attachment->hybrid',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            oldLinkType,
+            newLinkType: path.linkTypes[i],
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            effectiveRadius: R,
+            crossedCW,
+            crossedCCW,
+            distSqCW,
+            distSqCCW,
+            candidateStored,
+            selectedTangent: _vecSnapshot(crossingTangent),
+            attachmentBefore: _vecSnapshot(attachmentBefore),
+            attachmentAfter: _vecSnapshot(attachmentPoint),
+            neighborAttachment: _vecSnapshot(neighborAttachmentPoint)
+          });
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-transition',
+            direction: 'hybrid-attachment->hybrid',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            effectiveRadius: R,
+            crossedCW,
+            crossedCCW
+          });
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            degenerateThreshold,
+            neighborAttachmentInsideCircle,
+            tangentFinite,
+            crossedCW,
+            crossedCCW,
+            distSqCW,
+            distSqCCW,
+            reason: 'transition'
+          });
+        } else {
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            degenerateThreshold,
+            neighborAttachmentInsideCircle,
+            tangentFinite,
+            crossedCW,
+            crossedCCW,
+            distSqCW,
+            distSqCCW,
+            reason: 'no-transition'
+          });
         }
       }
     }
@@ -1019,19 +1624,28 @@ export class CableAttachmentUpdateSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
+    const prevHybridStep = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+    const nextHybridStep = prevHybridStep + 1;
+    world.setResource('cableHybridTransitionStep', nextHybridStep);
+    _recordCableStepSummary(world, nextHybridStep, 'begin');
+
     _clearDebugPoints(world);
     if (_featureFlag(world, 'layeringAttachmentUpdatePoints', true)) {
       _updateAttachmentPoints(world);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterAttachment');
     if (_featureFlag(world, 'layeringMergeJoints', true)) {
       _mergeJoints(world);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterMerge');
     if (_featureFlag(world, 'layeringSplitJoints', true)) {
       _splitJoints(world);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterSplit');
     if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
-      _updateHybridLinkStates(world);
+      _updateHybridLinkStates(world, nextHybridStep);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterHybrid');
   }
 }
 

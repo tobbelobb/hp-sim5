@@ -111,6 +111,49 @@ function _movementScore(metrics) {
   return metrics.tailAvgMovement;
 }
 
+function _configureHybridTransitionTrace(world, traceConfig = {}) {
+  if (!traceConfig || traceConfig.enabled === false) {
+    world.setResource('cableHybridTransitionTrace', false);
+    world.setResource('cableHybridTransitionTraceBuffer', []);
+    return;
+  }
+
+  const stepMin = Math.floor(_readFinite(traceConfig.stepMin, 235));
+  const stepMax = Math.floor(_readFinite(traceConfig.stepMax, 255));
+  const limit = Math.max(8, Math.floor(_readFinite(traceConfig.limit, 2048)));
+  const toConsole = traceConfig.console === true;
+
+  world.setResource('cableHybridTransitionStep', 0);
+  world.setResource('cableHybridTransitionTrace', true);
+  world.setResource('cableHybridTransitionTraceStepMin', Math.min(stepMin, stepMax));
+  world.setResource('cableHybridTransitionTraceStepMax', Math.max(stepMin, stepMax));
+  world.setResource('cableHybridTransitionTraceLimit', limit);
+  world.setResource('cableHybridTransitionTraceConsole', toConsole);
+  world.setResource('cableHybridTransitionTraceTruncated', false);
+  world.setResource('cableHybridTransitionTraceBuffer', []);
+}
+
+function _configureCableEventTrace(world, traceConfig = {}) {
+  if (!traceConfig || traceConfig.enabled === false) {
+    world.setResource('cableEventTrace', false);
+    world.setResource('cableEventTraceBuffer', []);
+    return;
+  }
+
+  const stepMin = Math.floor(_readFinite(traceConfig.stepMin, 220));
+  const stepMax = Math.floor(_readFinite(traceConfig.stepMax, 260));
+  const limit = Math.max(32, Math.floor(_readFinite(traceConfig.limit, 20000)));
+  const toConsole = traceConfig.console === true;
+
+  world.setResource('cableEventTrace', true);
+  world.setResource('cableEventTraceStepMin', Math.min(stepMin, stepMax));
+  world.setResource('cableEventTraceStepMax', Math.max(stepMin, stepMax));
+  world.setResource('cableEventTraceLimit', limit);
+  world.setResource('cableEventTraceConsole', toConsole);
+  world.setResource('cableEventTraceTruncated', false);
+  world.setResource('cableEventTraceBuffer', []);
+}
+
 function _registerSystem(world, system, disabledSystems, key) {
   if (disabledSystems.has(key)) {
     return;
@@ -315,10 +358,14 @@ function setupFunnelWorld({
 function runScenario({
   flagPatch = {},
   disabledSystems = [],
-  steps = 420
+  steps = 420,
+  hybridTrace = null,
+  eventTrace = null
 } = {}) {
   const { world, ballIds } = setupFunnelWorld({ flagPatch, disabledSystems });
   const dt = world.getResource('dt');
+  _configureHybridTransitionTrace(world, hybridTrace);
+  _configureCableEventTrace(world, eventTrace);
 
   const prevPos = new Map();
   for (const ballId of ballIds) {
@@ -436,7 +483,15 @@ function runScenario({
       spikeRatio,
       tailAvgMovement
     }),
-    perStep
+    perStep,
+    hybridTransitions: Array.isArray(world.getResource('cableHybridTransitionTraceBuffer'))
+      ? world.getResource('cableHybridTransitionTraceBuffer')
+      : [],
+    hybridTraceTruncated: world.getResource('cableHybridTransitionTraceTruncated') === true,
+    cableEvents: Array.isArray(world.getResource('cableEventTraceBuffer'))
+      ? world.getResource('cableEventTraceBuffer')
+      : [],
+    cableEventTraceTruncated: world.getResource('cableEventTraceTruncated') === true
   };
 }
 
@@ -476,17 +531,258 @@ describe('Spool Funnel Stability Sweep', () => {
     console.error = jest.fn();
 
     const legacyAllOffPatch = buildPatch(oldUiLayeringFlags, false);
+    const reproPatch = {
+      ...legacyAllOffPatch,
+      layeringClampJointRestLength: false
+    };
+    const fixedPatch = {
+      ...legacyAllOffPatch,
+      layeringClampJointRestLength: true
+    };
 
     try {
       const baseline = runScenario({
-        flagPatch: legacyAllOffPatch,
-        steps: 320
+        flagPatch: reproPatch,
+        steps: 320,
+        hybridTrace: {
+          stepMin: 205,
+          stepMax: 255,
+          limit: 2048
+        },
+        eventTrace: {
+          stepMin: 200,
+          stepMax: 260,
+          limit: 48000
+        }
       });
       expect(
         baseline.growthAbortStep !== null ||
         baseline.nanStep !== null ||
         baseline.spikeStep !== null
       ).toBe(true);
+
+      const fixed = runScenario({
+        flagPatch: fixedPatch,
+        steps: 320,
+        eventTrace: {
+          stepMin: 200,
+          stepMax: 260,
+          limit: 24000
+        }
+      });
+      expect(fixed.isStable).toBe(true);
+
+      let traceResult = baseline;
+      let traceWindow = { stepMin: 205, stepMax: 255 };
+      let eventTraceWindow = { stepMin: 200, stepMax: 260 };
+      if (traceResult.hybridTransitions.length === 0) {
+        const spikeCenter = baseline.spikeStep ?? baseline.growthAbortStep ?? 245;
+        const fallbackMin = Math.max(1, spikeCenter - 120);
+        const fallbackMax = Math.min(320, spikeCenter + 24);
+        traceWindow = { stepMin: fallbackMin, stepMax: fallbackMax };
+        eventTraceWindow = { stepMin: Math.max(1, spikeCenter - 40), stepMax: Math.min(320, spikeCenter + 8) };
+        traceResult = runScenario({
+          flagPatch: reproPatch,
+          steps: 320,
+          hybridTrace: {
+            stepMin: fallbackMin,
+            stepMax: fallbackMax,
+            limit: 4096
+          },
+          eventTrace: {
+            stepMin: eventTraceWindow.stepMin,
+            stepMax: eventTraceWindow.stepMax,
+            limit: 48000
+          }
+        });
+      }
+
+      const transitionCandidates = traceResult.hybridTransitions
+        .filter((event) => event.transition === 'hybrid-attachment->hybrid')
+        .sort((a, b) => Math.abs(b.restLengthDelta ?? 0.0) - Math.abs(a.restLengthDelta ?? 0.0));
+      const worstTransition = transitionCandidates[0] ?? null;
+      const spikeReferenceStep = baseline.spikeStep ?? baseline.growthAbortStep ?? null;
+      let nearestTransition = null;
+      if (Number.isFinite(spikeReferenceStep) && traceResult.hybridTransitions.length > 0) {
+        nearestTransition = [...traceResult.hybridTransitions].sort((a, b) => {
+          const da = Math.abs((a.step ?? 0) - spikeReferenceStep);
+          const db = Math.abs((b.step ?? 0) - spikeReferenceStep);
+          if (da !== db) {
+            return da - db;
+          }
+          return Math.abs(b.restLengthDelta ?? 0.0) - Math.abs(a.restLengthDelta ?? 0.0);
+        })[0];
+      }
+
+      let eventTraceResult = traceResult;
+      if (eventTraceResult.cableEvents.length === 0) {
+        const spikeCenter = baseline.spikeStep ?? baseline.growthAbortStep ?? 245;
+        const fallbackEventMin = Math.max(1, spikeCenter - 80);
+        const fallbackEventMax = Math.min(320, spikeCenter + 12);
+        eventTraceWindow = { stepMin: fallbackEventMin, stepMax: fallbackEventMax };
+        eventTraceResult = runScenario({
+          flagPatch: reproPatch,
+          steps: 320,
+          eventTrace: {
+            stepMin: fallbackEventMin,
+            stepMax: fallbackEventMax,
+            limit: 64000
+          }
+        });
+      }
+
+      const cableEvents = eventTraceResult.cableEvents;
+      const summaryEvents = cableEvents.filter((event) => event.type === 'summary');
+      const splitEvents = cableEvents.filter((event) => event.type === 'split');
+      const mergeEvents = cableEvents.filter((event) => event.type === 'merge');
+      const hybridEvents = cableEvents.filter((event) => event.type === 'hybrid-transition');
+      const restAnomalyEvents = cableEvents.filter((event) => event.type === 'rest-length-anomaly');
+      const restClampEvents = cableEvents.filter((event) => event.type === 'rest-length-clamp');
+      const hybridRubEvents = cableEvents.filter((event) => event.type === 'hybrid-rub-check');
+
+      let firstTinyOrNegativeSummary = null;
+      for (const event of summaryEvents) {
+        if (
+          (event.tinyRestCount ?? 0) > 0 ||
+          (event.negativeRestCount ?? 0) > 0 ||
+          (event.nonFiniteRestCount ?? 0) > 0
+        ) {
+          firstTinyOrNegativeSummary = event;
+          break;
+        }
+      }
+
+      const perStepCounts = new Map();
+      for (const event of cableEvents) {
+        if (event.type === 'summary') {
+          continue;
+        }
+        const step = Math.floor(_readFinite(event.step, 0));
+        if (!perStepCounts.has(step)) {
+          perStepCounts.set(step, { split: 0, merge: 0, hybrid: 0, abort: 0 });
+        }
+        const counts = perStepCounts.get(step);
+        if (event.type === 'split') counts.split++;
+        else if (event.type === 'merge') counts.merge++;
+        else if (event.type === 'split-abort') counts.abort++;
+        else if (event.type === 'hybrid-transition') counts.hybrid++;
+      }
+
+      const busiestSteps = [...perStepCounts.entries()]
+        .map(([step, counts]) => ({
+          step,
+          ...counts,
+          total: counts.split + counts.merge + counts.hybrid + counts.abort
+        }))
+        .sort((a, b) => b.total - a.total || a.step - b.step)
+        .slice(0, 6);
+
+      const smallestSplit = splitEvents.length > 0
+        ? [...splitEvents].sort((a, b) => (a.minNewRestLength ?? Infinity) - (b.minNewRestLength ?? Infinity))[0]
+        : null;
+      const nearSpikeSplit = (Number.isFinite(spikeReferenceStep) && splitEvents.length > 0)
+        ? [...splitEvents].sort((a, b) => {
+          const da = Math.abs((a.step ?? 0) - spikeReferenceStep);
+          const db = Math.abs((b.step ?? 0) - spikeReferenceStep);
+          if (da !== db) return da - db;
+          return (a.minNewRestLength ?? Infinity) - (b.minNewRestLength ?? Infinity);
+        })[0]
+        : null;
+      const firstRestAnomaly = restAnomalyEvents.length > 0 ? restAnomalyEvents[0] : null;
+      const worstRestAnomaly = restAnomalyEvents.length > 0
+        ? [...restAnomalyEvents].sort((a, b) => (a.restAfter ?? Infinity) - (b.restAfter ?? Infinity))[0]
+        : null;
+      const nearSpikeRestAnomaly = (Number.isFinite(spikeReferenceStep) && restAnomalyEvents.length > 0)
+        ? [...restAnomalyEvents].sort((a, b) => {
+          const da = Math.abs((a.step ?? 0) - spikeReferenceStep);
+          const db = Math.abs((b.step ?? 0) - spikeReferenceStep);
+          if (da !== db) return da - db;
+          return (a.restAfter ?? Infinity) - (b.restAfter ?? Infinity);
+        })[0]
+        : null;
+      const pinchRubEvents = hybridRubEvents.filter(
+        (event) => event.sameJointPath === true && event.bothEndpointsHybridLike === true
+      );
+      const overlappingPinchRubEvents = pinchRubEvents.filter(
+        (event) => Number.isFinite(event.centerOverlap) && event.centerOverlap > 0.0
+      );
+      const insideCirclePinchEvents = pinchRubEvents.filter(
+        (event) => event.neighborAttachmentInsideCircle === true
+      );
+      const pinchTransitionEvents = pinchRubEvents.filter(
+        (event) => event.reason === 'transition'
+      );
+      const pinchDegenerateSkips = pinchRubEvents.filter(
+        (event) => event.reason === 'attachment-degenerate-skip'
+      );
+      const nearestPinchRubEvent = (Number.isFinite(spikeReferenceStep) && pinchRubEvents.length > 0)
+        ? [...pinchRubEvents].sort((a, b) => {
+          const da = Math.abs((a.step ?? 0) - spikeReferenceStep);
+          const db = Math.abs((b.step ?? 0) - spikeReferenceStep);
+          if (da !== db) return da - db;
+          const aa = Number.isFinite(a.centerOverlap) ? a.centerOverlap : -Infinity;
+          const bb = Number.isFinite(b.centerOverlap) ? b.centerOverlap : -Infinity;
+          return bb - aa;
+        })[0]
+        : null;
+      const firstAnomalyStep = firstRestAnomaly?.step ?? null;
+      const pinchBeforeFirstAnomaly = (Number.isFinite(firstAnomalyStep) && pinchRubEvents.length > 0)
+        ? pinchRubEvents.find((event) => (event.step ?? Infinity) <= firstAnomalyStep) ?? null
+        : null;
+      const fixedRestAnomalies = fixed.cableEvents.filter((event) => event.type === 'rest-length-anomaly');
+
+      const rootCauseCandidate = {
+        spikeReferenceStep,
+        eventTraceWindow,
+        eventCount: cableEvents.length,
+        eventTraceTruncated: eventTraceResult.cableEventTraceTruncated,
+        summaryCount: summaryEvents.length,
+        splitCount: splitEvents.length,
+        mergeCount: mergeEvents.length,
+        hybridCount: hybridEvents.length,
+        restAnomalyCount: restAnomalyEvents.length,
+        restClampCount: restClampEvents.length,
+        hybridRubCount: hybridRubEvents.length,
+        pinchRubCount: pinchRubEvents.length,
+        overlappingPinchRubCount: overlappingPinchRubEvents.length,
+        insideCirclePinchCount: insideCirclePinchEvents.length,
+        pinchTransitionCount: pinchTransitionEvents.length,
+        pinchDegenerateSkipCount: pinchDegenerateSkips.length,
+        firstTinyOrNegativeSummary,
+        firstRestAnomaly,
+        worstRestAnomaly,
+        nearSpikeRestAnomaly,
+        firstRestClamp: restClampEvents[0] ?? null,
+        nearestPinchRubEvent,
+        pinchBeforeFirstAnomaly,
+        busiestSteps,
+        smallestSplit,
+        nearSpikeSplit,
+        fixControl: {
+          isStable: fixed.isStable,
+          spikeStep: fixed.spikeStep,
+          growthAbortStep: fixed.growthAbortStep,
+          restAnomalyCount: fixedRestAnomalies.length,
+          firstRestAnomaly: fixedRestAnomalies[0] ?? null
+        }
+      };
+
+      // eslint-disable-next-line no-console
+      console.log('SPOOL_FUNNEL_EVENT_TRACE', JSON.stringify(rootCauseCandidate));
+
+      // eslint-disable-next-line no-console
+      console.log(
+        'SPOOL_FUNNEL_HYBRID_TRACE',
+        JSON.stringify({
+          spikeReferenceStep,
+          traceWindow,
+          totalTransitions: traceResult.hybridTransitions.length,
+          truncated: traceResult.hybridTraceTruncated,
+          firstTransitions: traceResult.hybridTransitions.slice(0, 6),
+          nearestTransition,
+          worstTransition
+        })
+      );
 
       const disabledCoreFlags = [];
       const sweepLog = [{
@@ -503,7 +799,7 @@ describe('Spool Funnel Stability Sweep', () => {
           }
           const candidateDisabled = [...disabledCoreFlags, flag];
           const candidatePatch = {
-            ...legacyAllOffPatch,
+            ...reproPatch,
             ...buildPatch(candidateDisabled, false)
           };
           const candidateResult = runScenario({

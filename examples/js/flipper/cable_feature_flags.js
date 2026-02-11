@@ -12,6 +12,7 @@ export const CABLE_FEATURE_FLAG_DEFS = Object.freeze([
   { key: 'layeringMergeJoints', label: 'cable/mergeJoints', defaultValue: true },
   { key: 'layeringSplitJoints', label: 'cable/splitJoints', defaultValue: true },
   { key: 'layeringHybridLinkStates', label: 'cable/hybridLinkStates', defaultValue: true },
+  { key: 'layeringClampJointRestLength', label: 'cable/clampRestLength', defaultValue: true },
   { key: 'layeringRenderWraps', label: 'render/layeredWraps', defaultValue: true }
 ]);
 
