@@ -445,7 +445,7 @@ canvas {
     const ballMass = _readFinite(spoolEnergyConfig.ballMass, 0.008);
     const ballX = slopeStartX + 0.09 * (slopeEndX - slopeStartX);
     const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
-    const ballY = slopeYAt(ballX) + rawRadius + (2.0 * configuredCableHalfWidth);
+    const ballY = slopeYAt(ballX) + rawRadius + (4.0 * configuredCableHalfWidth);
     const v0 = _readFinite(spoolEnergyConfig.initialLinearSpeed, 0.0);
     const vx0 = slopeTanX * v0;
     const vy0 = slopeTanY * v0;
