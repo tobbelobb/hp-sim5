@@ -1762,6 +1762,10 @@ export class CableAttachmentUpdateSystem {
     _recordCableStepSummary(world, nextHybridStep, 'begin');
 
     _clearDebugPoints(world);
+    if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
+      _updateHybridLinkStates(world, nextHybridStep);
+    }
+    _recordCableStepSummary(world, nextHybridStep, 'afterHybrid');
     if (_featureFlag(world, 'layeringAttachmentUpdatePoints', true)) {
       _updateAttachmentPoints(world);
     }
