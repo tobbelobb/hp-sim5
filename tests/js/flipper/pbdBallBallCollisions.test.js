@@ -179,7 +179,7 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     expect((worldB.getResource('ball_ball_contacts') || []).length).toBe(0);
   });
 
-  test('pinch-share ON resolves at 2r+2w while OFF resolves at 2r+4w for the same pinched pair', () => {
+  test('direct pinched pair at exactly 2r+2w has no penetration for either mode', () => {
     const rawRadius = 0.02;
     const halfWidth = 0.0025;
     const distanceAtPhysicalCableThickness = (2.0 * rawRadius) + (2.0 * halfWidth); // 2r + 2w
@@ -205,49 +205,49 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     const leftShareX = withShare.world.getComponent(withShare.left, PositionComponent).pos.x;
     const rightShareX = withShare.world.getComponent(withShare.right, PositionComponent).pos.x;
 
-    expect(leftNoShareX).toBeLessThan(0.0);
-    expect(rightNoShareX).toBeGreaterThan(distanceAtPhysicalCableThickness);
+    expect(leftNoShareX).toBeCloseTo(0.0, 9);
+    expect(rightNoShareX).toBeCloseTo(distanceAtPhysicalCableThickness, 9);
     expect(leftShareX).toBeCloseTo(0.0, 9);
     expect(rightShareX).toBeCloseTo(distanceAtPhysicalCableThickness, 9);
 
     const contactsNoShare = withoutShare.world.getResource('ball_ball_contacts') || [];
     const contactsShare = withShare.world.getResource('ball_ball_contacts') || [];
-    expect(contactsNoShare.length).toBeGreaterThanOrEqual(1);
+    expect(contactsNoShare.length).toBe(0);
     expect(contactsShare.length).toBe(0);
   });
 
-  test('without pinch-share, the legacy threshold is 2r+4w', () => {
+  test('below 2r+2w, pinch-share ON resolves while OFF does not for direct pinched pair', () => {
     const rawRadius = 0.02;
     const halfWidth = 0.0025;
-    const atLegacyThreshold = (2.0 * rawRadius) + (4.0 * halfWidth); // 2r + 4w
-    const belowLegacyThreshold = atLegacyThreshold - 0.001;
+    const belowThresholdDistance = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.001;
 
-    const worldAtThreshold = _makePinchPairWorld({
-      centerDistance: atLegacyThreshold,
+    const withoutShare = _makePinchPairWorld({
+      centerDistance: belowThresholdDistance,
       rawRadius,
       cableHalfWidth: halfWidth,
       pinchShareEnabled: false
     });
-    const worldBelowThreshold = _makePinchPairWorld({
-      centerDistance: belowLegacyThreshold,
+    const withShare = _makePinchPairWorld({
+      centerDistance: belowThresholdDistance,
       rawRadius,
       cableHalfWidth: halfWidth,
-      pinchShareEnabled: false
+      pinchShareEnabled: true
     });
 
-    _runManifold(worldAtThreshold.world);
-    _runManifold(worldBelowThreshold.world);
+    _runManifold(withoutShare.world);
+    _runManifold(withShare.world);
 
-    const atContacts = worldAtThreshold.world.getResource('ball_ball_contacts') || [];
-    const belowContacts = worldBelowThreshold.world.getResource('ball_ball_contacts') || [];
+    const withoutShareContacts = withoutShare.world.getResource('ball_ball_contacts') || [];
+    const withShareContacts = withShare.world.getResource('ball_ball_contacts') || [];
 
-    expect(worldAtThreshold.world.getComponent(worldAtThreshold.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
-    expect(worldAtThreshold.world.getComponent(worldAtThreshold.right, PositionComponent).pos.x).toBeCloseTo(atLegacyThreshold, 9);
-    expect(atContacts.length).toBe(0);
+    expect(withoutShare.world.getComponent(withoutShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withoutShare.world.getComponent(withoutShare.right, PositionComponent).pos.x).toBeCloseTo(belowThresholdDistance, 9);
+    expect(withoutShareContacts.length).toBe(0);
 
-    expect(worldBelowThreshold.world.getComponent(worldBelowThreshold.left, PositionComponent).pos.x).toBeLessThan(0.0);
-    expect(worldBelowThreshold.world.getComponent(worldBelowThreshold.right, PositionComponent).pos.x).toBeGreaterThan(belowLegacyThreshold);
-    expect(belowContacts.length).toBeGreaterThanOrEqual(1);
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeLessThan(0.0);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeGreaterThan(belowThresholdDistance);
+    expect(withShareContacts.length).toBeGreaterThanOrEqual(1);
+    expect(withShareContacts[0].pinch_shared).toBe(true);
   });
 
   test('pinch-share ON still enforces contact below 2r+2w threshold', () => {

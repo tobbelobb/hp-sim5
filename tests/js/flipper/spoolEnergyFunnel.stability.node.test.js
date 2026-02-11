@@ -874,6 +874,7 @@ describe('Spool Funnel Stability Sweep', () => {
     'layeringCableStoredLayerRadius',
     'layeringFrictionEffectiveRadius',
     'layeringCollisionOverlayRadius',
+    'layeringCollisionOverlayRamp',
     'layeringCollisionCircleSectors',
     'layeringCollisionSectorSolvers',
     'layeringCollisionPinchShare',

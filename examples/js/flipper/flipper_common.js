@@ -344,6 +344,7 @@ export class OverlayRadiusAndCircleSectorSystem {
     }
 
     const overlayEnabled = _layeringFlag(world, 'layeringCollisionOverlayRadius', true);
+    const overlayRampEnabled = _layeringFlag(world, 'layeringCollisionOverlayRamp', true);
     const sectorEnabled = _layeringFlag(world, 'layeringCollisionCircleSectors', true);
 
     const overlayByEntity = new Map();
@@ -387,19 +388,24 @@ export class OverlayRadiusAndCircleSectorSystem {
           continue;
         }
 
-        if (overlayEnabled) {
-          const baseOverlayRadius = rawRadius + layerStep * decomposition.fullLayers;
-          let overlayRadius = baseOverlayRadius;
-          if (decomposition.partialLength > 1e-9 && decomposition.partialRadius > 1e-9) {
-            const span = decomposition.partialLength / decomposition.partialRadius;
-            const closingBlend = _closingOverlayBlend(span);
-            if (closingBlend > 1e-9) {
-              overlayRadius = baseOverlayRadius + layerStep * closingBlend;
-            }
+        const baseOverlayRadius = rawRadius + layerStep * decomposition.fullLayers;
+        let overlayEnvelopeRadius = baseOverlayRadius;
+        if (
+          overlayRampEnabled &&
+          decomposition.partialLength > 1e-9 &&
+          decomposition.partialRadius > 1e-9
+        ) {
+          const span = decomposition.partialLength / decomposition.partialRadius;
+          const closingBlend = _closingOverlayBlend(span);
+          if (closingBlend > 1e-9) {
+            overlayEnvelopeRadius = baseOverlayRadius + layerStep * closingBlend;
           }
-          if (overlayRadius > rawRadius + 1e-9) {
+        }
+
+        if (overlayEnabled) {
+          if (overlayEnvelopeRadius > rawRadius + 1e-9) {
             const prev = overlayByEntity.get(entityId) ?? 0.0;
-            overlayByEntity.set(entityId, Math.max(prev, overlayRadius));
+            overlayByEntity.set(entityId, Math.max(prev, overlayEnvelopeRadius));
           }
         }
 
@@ -421,13 +427,14 @@ export class OverlayRadiusAndCircleSectorSystem {
             layerStep,
             span
           );
-          if (!(smoothedRadius > 1e-9)) {
+          const clampedSectorRadius = Math.min(smoothedRadius, overlayEnvelopeRadius);
+          if (!(clampedSectorRadius > rawRadius + 1e-9)) {
             continue;
           }
           const cw = Boolean(path.cw[linkIndex]);
           const endAngle = cw ? (startAngle - span) : (startAngle + span);
           const sector = {
-            radius: smoothedRadius,
+            radius: clampedSectorRadius,
             startAngle,
             endAngle,
             cw
@@ -1023,7 +1030,7 @@ function _pointOnSegmentInclusive(a, b, p, eps = 1e-9) {
   return p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY;
 }
 
-function _segmentsCrossStrictly(a0, a1, b0, b1, eps = 1e-9) {
+function _segmentsIntersectInclusive(a0, a1, b0, b1, eps = 1e-9) {
   if (
     !_isFiniteVec2(a0) ||
     !_isFiniteVec2(a1) ||
@@ -1052,26 +1059,11 @@ function _segmentsCrossStrictly(a0, a1, b0, b1, eps = 1e-9) {
   ) {
     return true;
   }
+  if (Math.abs(o1) <= eps && _pointOnSegmentInclusive(a0, a1, b0, eps)) return true;
+  if (Math.abs(o2) <= eps && _pointOnSegmentInclusive(a0, a1, b1, eps)) return true;
+  if (Math.abs(o3) <= eps && _pointOnSegmentInclusive(b0, b1, a0, eps)) return true;
+  if (Math.abs(o4) <= eps && _pointOnSegmentInclusive(b0, b1, a1, eps)) return true;
 
-  // Collinear overlap with non-zero overlap length also counts as "between".
-  if (
-    Math.abs(o1) <= eps &&
-    Math.abs(o2) <= eps &&
-    Math.abs(o3) <= eps &&
-    Math.abs(o4) <= eps
-  ) {
-    const abx = a1.x - a0.x;
-    const aby = a1.y - a0.y;
-    const useX = Math.abs(abx) >= Math.abs(aby);
-    const aMin = useX ? Math.min(a0.x, a1.x) : Math.min(a0.y, a1.y);
-    const aMax = useX ? Math.max(a0.x, a1.x) : Math.max(a0.y, a1.y);
-    const bMin = useX ? Math.min(b0.x, b1.x) : Math.min(b0.y, b1.y);
-    const bMax = useX ? Math.max(b0.x, b1.x) : Math.max(b0.y, b1.y);
-    const overlap = Math.min(aMax, bMax) - Math.max(aMin, bMin);
-    return overlap > eps;
-  }
-
-  // Endpoint-only touching is not considered "between".
   return false;
 }
 
@@ -1091,22 +1083,18 @@ function _collectCableJointSegments(world) {
       if (!joint) {
         continue;
       }
-      const posA = world.getComponent(joint.entityA, PositionComponent)?.pos;
-      const posB = world.getComponent(joint.entityB, PositionComponent)?.pos;
-      const segmentA = _isFiniteVec2(posA)
-        ? posA
-        : (_isFiniteVec2(joint.attachmentPointA_world) ? joint.attachmentPointA_world : null);
-      const segmentB = _isFiniteVec2(posB)
-        ? posB
-        : (_isFiniteVec2(joint.attachmentPointB_world) ? joint.attachmentPointB_world : null);
+      const segmentA = _isFiniteVec2(joint.attachmentPointA_world)
+        ? joint.attachmentPointA_world
+        : null;
+      const segmentB = _isFiniteVec2(joint.attachmentPointB_world)
+        ? joint.attachmentPointB_world
+        : null;
       if (!_isFiniteVec2(segmentA) || !_isFiniteVec2(segmentB)) {
         continue;
       }
       const prev = segmentByJointId.get(jointId);
       if (!prev || halfWidth > prev.halfWidth) {
         segmentByJointId.set(jointId, {
-          entityA: joint.entityA,
-          entityB: joint.entityB,
           halfWidth,
           a: segmentA.clone(),
           b: segmentB.clone()
@@ -1117,17 +1105,7 @@ function _collectCableJointSegments(world) {
   return Array.from(segmentByJointId.values());
 }
 
-function _isDirectJointPair(segment, entityA, entityB) {
-  if (!segment) {
-    return false;
-  }
-  return (
-    (segment.entityA === entityA && segment.entityB === entityB) ||
-    (segment.entityA === entityB && segment.entityB === entityA)
-  );
-}
-
-function _crossingCableHalfWidth(cableSegments, centerA, centerB, entityA, entityB) {
+function _crossingCableHalfWidth(cableSegments, centerA, centerB) {
   if (!Array.isArray(cableSegments) || cableSegments.length === 0) {
     return 0.0;
   }
@@ -1136,11 +1114,7 @@ function _crossingCableHalfWidth(cableSegments, centerA, centerB, entityA, entit
     if (!(segment?.halfWidth > 1e-9)) {
       continue;
     }
-    if (_isDirectJointPair(segment, entityA, entityB)) {
-      maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
-      continue;
-    }
-    if (_segmentsCrossStrictly(centerA, centerB, segment.a, segment.b, 1e-9)) {
+    if (_segmentsIntersectInclusive(centerA, centerB, segment.a, segment.b, 1e-9)) {
       maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
     }
   }
@@ -1304,9 +1278,7 @@ export class PBDUnifiedContactManifoldSystem {
           ? _crossingCableHalfWidth(
             cableJointSegments,
             pA,
-            pB,
-            candidate.ballA,
-            candidate.ballB
+            pB
           )
           : 0.0;
         const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
@@ -1402,9 +1374,7 @@ export class PBDUnifiedContactManifoldSystem {
           ? _crossingCableHalfWidth(
             cableJointSegments,
             pBall,
-            pObs,
-            candidate.ballId,
-            candidate.obsId
+            pObs
           )
           : 0.0;
         const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
