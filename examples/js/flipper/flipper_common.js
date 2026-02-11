@@ -1000,15 +1000,83 @@ function _flipperTipFromState(flipperPos, flipperState) {
   return flipperPos.clone().add(dir, flipperState.length);
 }
 
-function _entityPairKey(a, b) {
-  if (a < b) {
-    return `${a}:${b}`;
-  }
-  return `${b}:${a}`;
+function _isFiniteVec2(point) {
+  return (
+    point &&
+    Number.isFinite(point.x) &&
+    Number.isFinite(point.y)
+  );
 }
 
-function _collectBallBallCableHalfWidths(world) {
-  const halfWidthByBallPair = new Map();
+function _orientation2D(a, b, c) {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+function _pointOnSegmentInclusive(a, b, p, eps = 1e-9) {
+  if (Math.abs(_orientation2D(a, b, p)) > eps) {
+    return false;
+  }
+  const minX = Math.min(a.x, b.x) - eps;
+  const maxX = Math.max(a.x, b.x) + eps;
+  const minY = Math.min(a.y, b.y) - eps;
+  const maxY = Math.max(a.y, b.y) + eps;
+  return p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY;
+}
+
+function _segmentsCrossStrictly(a0, a1, b0, b1, eps = 1e-9) {
+  if (
+    !_isFiniteVec2(a0) ||
+    !_isFiniteVec2(a1) ||
+    !_isFiniteVec2(b0) ||
+    !_isFiniteVec2(b1)
+  ) {
+    return false;
+  }
+  const o1 = _orientation2D(a0, a1, b0);
+  const o2 = _orientation2D(a0, a1, b1);
+  const o3 = _orientation2D(b0, b1, a0);
+  const o4 = _orientation2D(b0, b1, a1);
+
+  const o1Pos = o1 > eps;
+  const o1Neg = o1 < -eps;
+  const o2Pos = o2 > eps;
+  const o2Neg = o2 < -eps;
+  const o3Pos = o3 > eps;
+  const o3Neg = o3 < -eps;
+  const o4Pos = o4 > eps;
+  const o4Neg = o4 < -eps;
+
+  if (
+    ((o1Pos && o2Neg) || (o1Neg && o2Pos)) &&
+    ((o3Pos && o4Neg) || (o3Neg && o4Pos))
+  ) {
+    return true;
+  }
+
+  // Collinear overlap with non-zero overlap length also counts as "between".
+  if (
+    Math.abs(o1) <= eps &&
+    Math.abs(o2) <= eps &&
+    Math.abs(o3) <= eps &&
+    Math.abs(o4) <= eps
+  ) {
+    const abx = a1.x - a0.x;
+    const aby = a1.y - a0.y;
+    const useX = Math.abs(abx) >= Math.abs(aby);
+    const aMin = useX ? Math.min(a0.x, a1.x) : Math.min(a0.y, a1.y);
+    const aMax = useX ? Math.max(a0.x, a1.x) : Math.max(a0.y, a1.y);
+    const bMin = useX ? Math.min(b0.x, b1.x) : Math.min(b0.y, b1.y);
+    const bMax = useX ? Math.max(b0.x, b1.x) : Math.max(b0.y, b1.y);
+    const overlap = Math.min(aMax, bMax) - Math.max(aMin, bMin);
+    return overlap > eps;
+  }
+
+  // Endpoint-only touching is not considered "between".
+  return false;
+}
+
+function _collectCableJointSegments(world) {
+  const segmentByJointId = new Map();
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -1023,14 +1091,60 @@ function _collectBallBallCableHalfWidths(world) {
       if (!joint) {
         continue;
       }
-      const key = _entityPairKey(joint.entityA, joint.entityB);
-      const prev = halfWidthByBallPair.get(key) ?? 0.0;
-      if (halfWidth > prev) {
-        halfWidthByBallPair.set(key, halfWidth);
+      const posA = world.getComponent(joint.entityA, PositionComponent)?.pos;
+      const posB = world.getComponent(joint.entityB, PositionComponent)?.pos;
+      const segmentA = _isFiniteVec2(posA)
+        ? posA
+        : (_isFiniteVec2(joint.attachmentPointA_world) ? joint.attachmentPointA_world : null);
+      const segmentB = _isFiniteVec2(posB)
+        ? posB
+        : (_isFiniteVec2(joint.attachmentPointB_world) ? joint.attachmentPointB_world : null);
+      if (!_isFiniteVec2(segmentA) || !_isFiniteVec2(segmentB)) {
+        continue;
+      }
+      const prev = segmentByJointId.get(jointId);
+      if (!prev || halfWidth > prev.halfWidth) {
+        segmentByJointId.set(jointId, {
+          entityA: joint.entityA,
+          entityB: joint.entityB,
+          halfWidth,
+          a: segmentA.clone(),
+          b: segmentB.clone()
+        });
       }
     }
   }
-  return halfWidthByBallPair;
+  return Array.from(segmentByJointId.values());
+}
+
+function _isDirectJointPair(segment, entityA, entityB) {
+  if (!segment) {
+    return false;
+  }
+  return (
+    (segment.entityA === entityA && segment.entityB === entityB) ||
+    (segment.entityA === entityB && segment.entityB === entityA)
+  );
+}
+
+function _crossingCableHalfWidth(cableSegments, centerA, centerB, entityA, entityB) {
+  if (!Array.isArray(cableSegments) || cableSegments.length === 0) {
+    return 0.0;
+  }
+  let maxHalfWidth = 0.0;
+  for (const segment of cableSegments) {
+    if (!(segment?.halfWidth > 1e-9)) {
+      continue;
+    }
+    if (_isDirectJointPair(segment, entityA, entityB)) {
+      maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
+      continue;
+    }
+    if (_segmentsCrossStrictly(centerA, centerB, segment.a, segment.b, 1e-9)) {
+      maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
+    }
+  }
+  return maxHalfWidth;
 }
 
 export class PBDUnifiedContactManifoldSystem {
@@ -1080,8 +1194,8 @@ export class PBDUnifiedContactManifoldSystem {
 
     const useSectorSupports = _layeringFlag(world, 'layeringCollisionSectorSolvers', true);
     const pinchShareEnabled = _layeringFlag(world, 'layeringCollisionPinchShare', true);
-    const pinchHalfWidthByBallPair = pinchShareEnabled
-      ? _collectBallBallCableHalfWidths(world)
+    const cableJointSegments = pinchShareEnabled
+      ? _collectCableJointSegments(world)
       : null;
 
     const borderId = borderEntities.length > 0 ? borderEntities[0] : null;
@@ -1181,13 +1295,29 @@ export class PBDUnifiedContactManifoldSystem {
         const d = Math.sqrt(dSq);
         normalAB.scale(1.0 / d);
 
+        const betweenHalfWidth = (
+          pinchShareEnabled &&
+          cableJointSegments &&
+          world.hasComponent(candidate.ballA, CableLinkComponent) &&
+          world.hasComponent(candidate.ballB, CableLinkComponent)
+        )
+          ? _crossingCableHalfWidth(
+            cableJointSegments,
+            pA,
+            pB,
+            candidate.ballA,
+            candidate.ballB
+          )
+          : 0.0;
+        const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
+
         const broadA = useSectorSupports
           ? getMaxCollisionRadius(world, candidate.ballA)
           : _getBaseCollisionRadius(world, candidate.ballA);
         const broadB = useSectorSupports
           ? getMaxCollisionRadius(world, candidate.ballB)
           : _getBaseCollisionRadius(world, candidate.ballB);
-        if (d > broadA + broadB + 1e-9) {
+        if (d > broadA + broadB + betweenGapAllowance + 1e-9) {
           continue;
         }
 
@@ -1201,41 +1331,22 @@ export class PBDUnifiedContactManifoldSystem {
         let resolvedSupportB = supportB;
         let pinchShared = false;
 
-        if (pinchHalfWidthByBallPair instanceof Map) {
-          const pairKey = _entityPairKey(candidate.ballA, candidate.ballB);
-          const cableHalfWidth = pinchHalfWidthByBallPair.get(pairKey) ?? 0.0;
-          if (cableHalfWidth > 1e-9) {
-            const rawA = getRawCollisionRadius(world, candidate.ballA);
-            const rawB = getRawCollisionRadius(world, candidate.ballB);
-            const surfaceGap = d - (rawA + rawB);
-            const maxPinchGap = 2.0 * cableHalfWidth; // full cable width
-            const inflationA = supportA.projection - rawA;
-            const inflationB = supportB.projection - rawB;
-            if (
-              surfaceGap <= maxPinchGap + 1e-9 &&
-              inflationA > 1e-9 &&
-              inflationB > 1e-9
-            ) {
-              const sharedProjectionA = rawA + Math.min(Math.max(0.0, inflationA), cableHalfWidth);
-              const sharedProjectionB = rawB + Math.min(Math.max(0.0, inflationB), cableHalfWidth);
-              if (
-                sharedProjectionA < supportA.projection - 1e-12 ||
-                sharedProjectionB < supportB.projection - 1e-12
-              ) {
-                pinchShared = true;
-                resolvedSupportA = {
-                  ...supportA,
-                  projection: sharedProjectionA,
-                  offset: normalAB.clone().scale(sharedProjectionA)
-                };
-                resolvedSupportB = {
-                  ...supportB,
-                  projection: sharedProjectionB,
-                  offset: normalAB.clone().scale(-sharedProjectionB)
-                };
-              }
-            }
-          }
+        if (betweenHalfWidth > 1e-9) {
+          pinchShared = true;
+          const baseA = _getBaseCollisionRadius(world, candidate.ballA);
+          const baseB = _getBaseCollisionRadius(world, candidate.ballB);
+          const sharedProjectionA = baseA + betweenHalfWidth;
+          const sharedProjectionB = baseB + betweenHalfWidth;
+          resolvedSupportA = {
+            ...supportA,
+            projection: sharedProjectionA,
+            offset: normalAB.clone().scale(sharedProjectionA)
+          };
+          resolvedSupportB = {
+            ...supportB,
+            projection: sharedProjectionB,
+            offset: normalAB.clone().scale(-sharedProjectionB)
+          };
         }
 
         const rSum = resolvedSupportA.projection + resolvedSupportB.projection;
@@ -1282,13 +1393,29 @@ export class PBDUnifiedContactManifoldSystem {
         const d = Math.sqrt(dSq);
         normal.scale(1.0 / d); // obstacle -> ball
 
+        const betweenHalfWidth = (
+          pinchShareEnabled &&
+          cableJointSegments &&
+          world.hasComponent(candidate.ballId, CableLinkComponent) &&
+          world.hasComponent(candidate.obsId, CableLinkComponent)
+        )
+          ? _crossingCableHalfWidth(
+            cableJointSegments,
+            pBall,
+            pObs,
+            candidate.ballId,
+            candidate.obsId
+          )
+          : 0.0;
+        const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
+
         const broadBall = useSectorSupports
           ? getMaxCollisionRadius(world, candidate.ballId)
           : _getBaseCollisionRadius(world, candidate.ballId);
         const broadObs = useSectorSupports
           ? getMaxCollisionRadius(world, candidate.obsId)
           : _getBaseCollisionRadius(world, candidate.obsId);
-        if (d > broadBall + broadObs + 1e-9) {
+        if (d > broadBall + broadObs + betweenGapAllowance + 1e-9) {
           continue;
         }
 
@@ -1302,7 +1429,29 @@ export class PBDUnifiedContactManifoldSystem {
         if (!supportBall || !supportObs) {
           continue;
         }
-        const rSum = supportBall.projection + supportObs.projection;
+
+        let resolvedSupportBall = supportBall;
+        let resolvedSupportObs = supportObs;
+        let pinchShared = false;
+        if (betweenHalfWidth > 1e-9) {
+          pinchShared = true;
+          const baseBall = _getBaseCollisionRadius(world, candidate.ballId);
+          const baseObs = _getBaseCollisionRadius(world, candidate.obsId);
+          const sharedProjectionBall = baseBall + betweenHalfWidth;
+          const sharedProjectionObs = baseObs + betweenHalfWidth;
+          resolvedSupportBall = {
+            ...supportBall,
+            projection: sharedProjectionBall,
+            offset: normal.clone().scale(-sharedProjectionBall)
+          };
+          resolvedSupportObs = {
+            ...supportObs,
+            projection: sharedProjectionObs,
+            offset: normal.clone().scale(sharedProjectionObs)
+          };
+        }
+
+        const rSum = resolvedSupportBall.projection + resolvedSupportObs.projection;
         if (d > rSum + 1e-9) {
           continue;
         }
@@ -1313,7 +1462,7 @@ export class PBDUnifiedContactManifoldSystem {
         const deltaLambda = _resolveRigidContactSingle(
           world,
           candidate.ballId,
-          supportBall.offset,
+          resolvedSupportBall.offset,
           normal,
           penetration
         );
@@ -1328,8 +1477,10 @@ export class PBDUnifiedContactManifoldSystem {
           direction: normal.clone(),
           raw_hit: rawHit,
           delta_lambda: deltaLambda,
-          ball_contact_radius: supportBall.projection,
-          ball_contact_offset: supportBall.offset.clone()
+          ball_contact_radius: resolvedSupportBall.projection,
+          ball_contact_offset: resolvedSupportBall.offset.clone(),
+          obstacle_contact_radius: resolvedSupportObs.projection,
+          pinch_shared: pinchShared
         });
 
         const pairKey = `${candidate.ballId}:${candidate.obsId}`;

@@ -12,6 +12,7 @@ import {
   PBDUnifiedContactManifoldSystem,
 } from '../../../examples/js/flipper/flipper_common.js';
 import {
+  CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
 } from '../../../src/js/cable_joints/cable_joints_core.js';
@@ -52,6 +53,8 @@ function _makePinchPairWorld({
 
   const left = _addBall(world, 0.0, 0.0, rawRadius, 1.0);
   const right = _addBall(world, centerDistance, 0.0, rawRadius, 1.0);
+  world.addComponent(left, new CableLinkComponent(0.0, 0.0, 0.0));
+  world.addComponent(right, new CableLinkComponent(centerDistance, 0.0, 0.0));
 
   const jointId = world.createEntity();
   world.addComponent(
@@ -82,6 +85,60 @@ function _makePinchPairWorld({
   new OverlayRadiusAndCircleSectorSystem().update(world, 0.016);
 
   return { world, left, right, rawRadius, cableHalfWidth };
+}
+
+function _makeCrossingSegmentPinchWorld({
+  centerDistance,
+  rawRadius = 0.02,
+  cableHalfWidth = 0.0025,
+  pinchShareEnabled = true,
+} = {}) {
+  const world = _baseWorld();
+  world.setResource('layeringCollisionPinchShare', pinchShareEnabled);
+  world.setResource('layeringCollisionSectorSolvers', false);
+  world.setResource('layeringCollisionCircleSectors', false);
+  world.setResource('layeringCollisionOverlayRadius', false);
+
+  const left = _addBall(world, 0.0, 0.0, rawRadius, 1.0);
+  const right = _addBall(world, centerDistance, 0.0, rawRadius, 1.0);
+  world.addComponent(left, new CableLinkComponent(0.0, 0.0, 0.0));
+  world.addComponent(right, new CableLinkComponent(centerDistance, 0.0, 0.0));
+
+  const midX = centerDistance * 0.5;
+  const top = world.createEntity();
+  world.addComponent(top, new PositionComponent(midX, 0.05));
+  world.addComponent(top, new CableLinkComponent(midX, 0.05, 0.0));
+  const bottom = world.createEntity();
+  world.addComponent(bottom, new PositionComponent(midX, -0.05));
+  world.addComponent(bottom, new CableLinkComponent(midX, -0.05, 0.0));
+
+  const crossingJoint = world.createEntity();
+  world.addComponent(
+    crossingJoint,
+    CableJointComponent.fromWorld(
+      top,
+      bottom,
+      0.1,
+      new Vector2(midX, -0.05),
+      new Vector2(midX, 0.05)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [crossingJoint],
+      ['hybrid', 'hybrid'],
+      [true, false],
+      1e6,
+      [0.0, 0.0],
+      cableHalfWidth
+    )
+  );
+
+  return { world, left, right };
 }
 
 describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
@@ -212,6 +269,38 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     expect(rightX).toBeGreaterThan(belowThresholdDistance);
 
     const contacts = worldState.world.getResource('ball_ball_contacts') || [];
+    expect(contacts.length).toBeGreaterThanOrEqual(1);
+    expect(contacts[0].pinch_shared).toBe(true);
+  });
+
+  test('crossing CableJoint between centers enforces one cable-width gap even without sector inflation', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const distanceBelowCrossingThreshold = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.0005; // (2r + 2w) - eps
+
+    const withoutShare = _makeCrossingSegmentPinchWorld({
+      centerDistance: distanceBelowCrossingThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: false
+    });
+    const withShare = _makeCrossingSegmentPinchWorld({
+      centerDistance: distanceBelowCrossingThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: true
+    });
+
+    _runManifold(withoutShare.world);
+    _runManifold(withShare.world);
+
+    expect(withoutShare.world.getComponent(withoutShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withoutShare.world.getComponent(withoutShare.right, PositionComponent).pos.x).toBeCloseTo(distanceBelowCrossingThreshold, 9);
+    expect((withoutShare.world.getResource('ball_ball_contacts') || []).length).toBe(0);
+
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeLessThan(0.0);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeGreaterThan(distanceBelowCrossingThreshold);
+    const contacts = withShare.world.getResource('ball_ball_contacts') || [];
     expect(contacts.length).toBeGreaterThanOrEqual(1);
     expect(contacts[0].pinch_shared).toBe(true);
   });
