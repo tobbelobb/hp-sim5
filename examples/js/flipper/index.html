@@ -95,6 +95,34 @@ canvas {
   padding: 10px 16px;
   font-size: 0.85rem;
 }
+
+#buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  container-type: inline-size;
+}
+
+#buttonRow > button {
+  margin: 0;
+}
+
+@container (max-width: 330px) {
+  #stepBtn,
+  #dumpBtn {
+    display: none;
+  }
+}
+
+@supports not (container-type: inline-size) {
+  @media (max-width: 370px) {
+    #stepBtn,
+    #dumpBtn {
+      display: none;
+    }
+  }
+}
     </style>
 </head>
 <body>
