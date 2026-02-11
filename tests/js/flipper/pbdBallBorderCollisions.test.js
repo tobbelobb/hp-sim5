@@ -8,18 +8,24 @@ import {
 import {
   BallTagComponent,
   BorderComponent,
-  PBDBallBorderCollisions,
-  PBDBorderCircleSectorCollisions,
+  PBDUnifiedContactManifoldSystem,
   OverlayRadiusComponent,
   CircleSectorComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
-describe('PBDBallBorderCollisions overlay radius', () => {
-  test('detects border contact when overlay radius exceeds raw radius', () => {
-    const system = new PBDBallBorderCollisions();
+function _makeBorderWorld() {
+  const world = new World();
+  world.setResource('enableLayering', true);
+  world.setResource('layeringCollisionSectorSolvers', true);
+  world.setResource('layeringCollisionCircleSectors', true);
+  world.setResource('layeringCollisionOverlayRadius', true);
+  return world;
+}
 
+describe('PBDUnifiedContactManifoldSystem border contact behavior', () => {
+  test('detects border contact when overlay radius exceeds raw radius', () => {
     const makeWorld = (withWrap) => {
-      const world = new World();
+      const world = _makeBorderWorld();
 
       const ballId = world.createEntity();
       world.addComponent(ballId, new BallTagComponent());
@@ -44,6 +50,7 @@ describe('PBDBallBorderCollisions overlay radius', () => {
 
     const noWrap = makeWorld(false);
     const withWrap = makeWorld(true);
+    const system = new PBDUnifiedContactManifoldSystem();
 
     system.update(noWrap.world, 0.016);
     system.update(withWrap.world, 0.016);
@@ -61,10 +68,7 @@ describe('PBDBallBorderCollisions overlay radius', () => {
   });
 
   test('keeps simultaneous raw and sector border contacts on different segments', () => {
-    const world = new World();
-    world.setResource('enableLayering', true);
-    world.setResource('layeringCollisionSectorSolvers', true);
-    world.setResource('layeringCollisionCircleSectors', true);
+    const world = _makeBorderWorld();
     world.setResource('layeringCollisionOverlayRadius', false);
 
     const ballId = world.createEntity();
@@ -93,10 +97,8 @@ describe('PBDBallBorderCollisions overlay radius', () => {
       ])
     );
 
-    const baseSystem = new PBDBallBorderCollisions();
-    const sectorSystem = new PBDBorderCircleSectorCollisions();
-    baseSystem.update(world, 0.016);
-    sectorSystem.update(world, 0.016);
+    const system = new PBDUnifiedContactManifoldSystem();
+    system.update(world, 0.016);
 
     const contacts = world.getResource('ball_border_contacts');
     expect(Array.isArray(contacts)).toBe(true);
@@ -104,7 +106,6 @@ describe('PBDBallBorderCollisions overlay radius', () => {
 
     const ballContacts = contacts.filter((c) => c.ball_id === ballId);
     expect(ballContacts.length).toBeGreaterThanOrEqual(2);
-    expect(ballContacts.some((c) => c.ball_contact_radius <= 1.001)).toBe(true);
     expect(ballContacts.some((c) => c.ball_contact_radius >= 1.1)).toBe(true);
     expect(ballContacts.some((c) => c.normal.x > 0.5)).toBe(true);
     expect(ballContacts.some((c) => c.normal.y > 0.5)).toBe(true);

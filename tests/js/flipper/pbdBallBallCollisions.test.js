@@ -1,340 +1,218 @@
+import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
   World,
   PositionComponent,
-  VelocityComponent,
   RadiusComponent,
   MassComponent,
-  RestitutionComponent,
 } from '../../../src/js/cable_joints/ecs.js';
-
 import {
   BallTagComponent,
-  PBDBallBallCollisions,
-  PBDBallCircleSectorCollisions,
-  OverlayRadiusComponent,
-  CircleSectorComponent
+  CircleSectorComponent,
+  OverlayRadiusAndCircleSectorSystem,
+  PBDUnifiedContactManifoldSystem,
 } from '../../../examples/js/flipper/flipper_common.js';
+import {
+  CableJointComponent,
+  CablePathComponent,
+} from '../../../src/js/cable_joints/cable_joints_core.js';
 
-describe('PBDBallBallCollisions', () => {
-  test('velocities remain unchanged on perfectly elastic head-on collision', () => {
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
+function _addBall(world, x, y, radius = 1.0, mass = 1.0) {
+  const id = world.createEntity();
+  world.addComponent(id, new BallTagComponent());
+  world.addComponent(id, new PositionComponent(x, y));
+  world.addComponent(id, new RadiusComponent(radius));
+  world.addComponent(id, new MassComponent(mass));
+  return id;
+}
 
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(1));
-    world.addComponent(ball1, new RestitutionComponent(1));
+function _baseWorld() {
+  const world = new World();
+  world.setResource('enableLayering', true);
+  world.setResource('layeringCollisionSectorSolvers', true);
+  world.setResource('layeringCollisionCircleSectors', true);
+  world.setResource('layeringCollisionOverlayRadius', true);
+  world.setResource('layeringCollisionPinchShare', true);
+  return world;
+}
 
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(2, 0)); // touching: radius sum = 2
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(1));
+function _runManifold(world) {
+  const system = new PBDUnifiedContactManifoldSystem();
+  system.update(world, 0.016);
+}
 
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
+function _makePinchPairWorld({
+  centerDistance,
+  rawRadius = 0.02,
+  cableHalfWidth = 0.0025,
+  storedLength = 0.06,
+  pinchShareEnabled = true,
+} = {}) {
+  const world = _baseWorld();
+  world.setResource('layeringCollisionPinchShare', pinchShareEnabled);
 
-    const v1 = world.getComponent(ball1, VelocityComponent).vel;
-    const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Position-only resolution should not change velocities
-    expect(v1.x).toBeCloseTo(1);
-    expect(v2.x).toBeCloseTo(-1);
+  const left = _addBall(world, 0.0, 0.0, rawRadius, 1.0);
+  const right = _addBall(world, centerDistance, 0.0, rawRadius, 1.0);
+
+  const jointId = world.createEntity();
+  world.addComponent(
+    jointId,
+    CableJointComponent.fromWorld(
+      left,
+      right,
+      0.03,
+      new Vector2(rawRadius, 0.0),
+      new Vector2(centerDistance - rawRadius, 0.0)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'hybrid'],
+      [true, false],
+      1e6,
+      [storedLength, storedLength],
+      cableHalfWidth
+    )
+  );
+
+  new OverlayRadiusAndCircleSectorSystem().update(world, 0.016);
+
+  return { world, left, right, rawRadius, cableHalfWidth };
+}
+
+describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
+  test('no correction when there is no overlap', () => {
+    const world = _baseWorld();
+    const left = _addBall(world, 0.0, 0.0, 1.0, 1.0);
+    const right = _addBall(world, 2.2, 0.0, 1.0, 1.0);
+
+    _runManifold(world);
+
+    expect(world.getComponent(left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(world.getComponent(right, PositionComponent).pos.x).toBeCloseTo(2.2, 9);
+    expect((world.getResource('ball_ball_contacts') || []).length).toBe(0);
   });
 
-  test('velocities unchanged with restitution 0.5 on head-on collision', () => {
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
+  test('directional circle sectors can trigger contact only when sector faces the pair direction', () => {
+    const worldA = _baseWorld();
+    const leftA = _addBall(worldA, 0.0, 0.0, 1.0, 1.0);
+    const rightA = _addBall(worldA, 2.15, 0.0, 1.0, 1.0);
+    worldA.addComponent(leftA, new CircleSectorComponent(1.2, -0.3, 0.3, false));
+    worldA.addComponent(rightA, new CircleSectorComponent(1.2, Math.PI - 0.3, Math.PI + 0.3, false));
 
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(1));
-    world.addComponent(ball1, new RestitutionComponent(0.5));
+    const worldB = _baseWorld();
+    const leftB = _addBall(worldB, 0.0, 0.0, 1.0, 1.0);
+    const rightB = _addBall(worldB, 2.15, 0.0, 1.0, 1.0);
+    worldB.addComponent(leftB, new CircleSectorComponent(1.2, Math.PI - 0.3, Math.PI + 0.3, false));
+    worldB.addComponent(rightB, new CircleSectorComponent(1.2, -0.3, 0.3, false));
 
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(2, 0)); // touching: radius sum = 2
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(0.5));
+    _runManifold(worldA);
+    _runManifold(worldB);
 
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
+    expect(worldA.getComponent(leftA, PositionComponent).pos.x).toBeLessThan(0.0);
+    expect(worldA.getComponent(rightA, PositionComponent).pos.x).toBeGreaterThan(2.15);
+    expect((worldA.getResource('ball_ball_contacts') || []).length).toBeGreaterThanOrEqual(1);
 
-    const v1 = world.getComponent(ball1, VelocityComponent).vel;
-    const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Position correction only
-    expect(v1.x).toBeCloseTo(1);
-    expect(v2.x).toBeCloseTo(-1);
+    expect(worldB.getComponent(leftB, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(worldB.getComponent(rightB, PositionComponent).pos.x).toBeCloseTo(2.15, 9);
+    expect((worldB.getResource('ball_ball_contacts') || []).length).toBe(0);
   });
 
-  test('uses the smallest restitution but leaves velocities unchanged', () => {
-    // This is a simple heuristics we use. Might want to change to more realistic restitution/collision handling later
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
+  test('pinch-share ON resolves at 2r+2w while OFF resolves at 2r+4w for the same pinched pair', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const distanceAtPhysicalCableThickness = (2.0 * rawRadius) + (2.0 * halfWidth); // 2r + 2w
 
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(1));
-    world.addComponent(ball1, new RestitutionComponent(1.0));
+    const withoutShare = _makePinchPairWorld({
+      centerDistance: distanceAtPhysicalCableThickness,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: false
+    });
+    const withShare = _makePinchPairWorld({
+      centerDistance: distanceAtPhysicalCableThickness,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: true
+    });
 
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(2, 0)); // touching: radius sum = 2
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(0.5));
+    _runManifold(withoutShare.world);
+    _runManifold(withShare.world);
 
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
+    const leftNoShareX = withoutShare.world.getComponent(withoutShare.left, PositionComponent).pos.x;
+    const rightNoShareX = withoutShare.world.getComponent(withoutShare.right, PositionComponent).pos.x;
+    const leftShareX = withShare.world.getComponent(withShare.left, PositionComponent).pos.x;
+    const rightShareX = withShare.world.getComponent(withShare.right, PositionComponent).pos.x;
 
-    const v1 = world.getComponent(ball1, VelocityComponent).vel;
-    const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Even with different restitution, velocities are unaffected
-    expect(v1.x).toBeCloseTo(1);
-    expect(v2.x).toBeCloseTo(-1);
+    expect(leftNoShareX).toBeLessThan(0.0);
+    expect(rightNoShareX).toBeGreaterThan(distanceAtPhysicalCableThickness);
+    expect(leftShareX).toBeCloseTo(0.0, 9);
+    expect(rightShareX).toBeCloseTo(distanceAtPhysicalCableThickness, 9);
+
+    const contactsNoShare = withoutShare.world.getResource('ball_ball_contacts') || [];
+    const contactsShare = withShare.world.getResource('ball_ball_contacts') || [];
+    expect(contactsNoShare.length).toBeGreaterThanOrEqual(1);
+    expect(contactsShare.length).toBe(0);
   });
 
-  test('no change when balls do not intersect', () => {
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
+  test('without pinch-share, the legacy threshold is 2r+4w', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const atLegacyThreshold = (2.0 * rawRadius) + (4.0 * halfWidth); // 2r + 4w
+    const belowLegacyThreshold = atLegacyThreshold - 0.001;
 
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(1));
-    world.addComponent(ball1, new RestitutionComponent(1));
+    const worldAtThreshold = _makePinchPairWorld({
+      centerDistance: atLegacyThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: false
+    });
+    const worldBelowThreshold = _makePinchPairWorld({
+      centerDistance: belowLegacyThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: false
+    });
 
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(5, 0)); // far apart
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(1));
+    _runManifold(worldAtThreshold.world);
+    _runManifold(worldBelowThreshold.world);
 
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
+    const atContacts = worldAtThreshold.world.getResource('ball_ball_contacts') || [];
+    const belowContacts = worldBelowThreshold.world.getResource('ball_ball_contacts') || [];
 
-    const v1 = world.getComponent(ball1, VelocityComponent).vel;
-    const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Velocities should remain unchanged
-    expect(v1.x).toBeCloseTo(1);
-    expect(v2.x).toBeCloseTo(-1);
+    expect(worldAtThreshold.world.getComponent(worldAtThreshold.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(worldAtThreshold.world.getComponent(worldAtThreshold.right, PositionComponent).pos.x).toBeCloseTo(atLegacyThreshold, 9);
+    expect(atContacts.length).toBe(0);
+
+    expect(worldBelowThreshold.world.getComponent(worldBelowThreshold.left, PositionComponent).pos.x).toBeLessThan(0.0);
+    expect(worldBelowThreshold.world.getComponent(worldBelowThreshold.right, PositionComponent).pos.x).toBeGreaterThan(belowLegacyThreshold);
+    expect(belowContacts.length).toBeGreaterThanOrEqual(1);
   });
 
-  test('handles overlaps gracefully without altering velocity', () => {
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
+  test('pinch-share ON still enforces contact below 2r+2w threshold', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const belowThresholdDistance = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.001;
+    const worldState = _makePinchPairWorld({
+      centerDistance: belowThresholdDistance,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: true
+    });
 
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(1));
-    world.addComponent(ball1, new RestitutionComponent(1));
+    _runManifold(worldState.world);
 
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(1.9, 0)); // overlapping: radius sum = 2
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(1));
-
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
-
-    const v1 = world.getComponent(ball1, VelocityComponent).vel;
-    const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Only penetration is resolved
-    expect(v1.x).toBeCloseTo(1);
-    expect(v2.x).toBeCloseTo(-1);
-  });
-
-  test('distributes impact based on inverse mass without changing velocity', () => {
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
-
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(2)); // twice the mass
-    world.addComponent(ball1, new RestitutionComponent(1));
-
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(2, 0)); // overlapping: radius sum = 2
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(1));
-
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
-
-    const v1 = world.getComponent(ball1, VelocityComponent).vel;
-    const v2 = world.getComponent(ball2, VelocityComponent).vel;
-    // Velocities remain the same since the position solver only resolves overlap
-    expect(v1.x).toBeCloseTo(1);
-    expect(v2.x).toBeCloseTo(-1);
-  });
-
-  test('velocities unchanged with restitution 0.9 and different masses', () => {
-    // invMass sum = 1/2 + 1 = 1.5
-    // restitution = 0.9
-    // Computed velocities: entity1 ≈ -0.26667, entity2 ≈ 1.53333
-    const world = new World();
-    const dt = 0.016;
-    const ball1 = world.createEntity();
-    const ball2 = world.createEntity();
-
-    world.addComponent(ball1, new BallTagComponent());
-    world.addComponent(ball1, new PositionComponent(0, 0));
-    world.addComponent(ball1, new VelocityComponent(1, 0));
-    world.addComponent(ball1, new RadiusComponent(1));
-    world.addComponent(ball1, new MassComponent(2));
-    world.addComponent(ball1, new RestitutionComponent(0.9));
-
-    world.addComponent(ball2, new BallTagComponent());
-    world.addComponent(ball2, new PositionComponent(2, 0)); // touching: radius sum = 2
-    world.addComponent(ball2, new VelocityComponent(-1, 0));
-    world.addComponent(ball2, new RadiusComponent(1));
-    world.addComponent(ball2, new MassComponent(1));
-    world.addComponent(ball2, new RestitutionComponent(0.9));
-
-    const system = new PBDBallBallCollisions();
-    system.update(world, dt);
-
-    const v1_r = world.getComponent(ball1, VelocityComponent).vel;
-    const v2_r = world.getComponent(ball2, VelocityComponent).vel;
-    expect(v1_r.x).toBeCloseTo(1);
-    expect(v2_r.x).toBeCloseTo(-1);
-    expect(v1_r.y).toBeCloseTo(0.0);
-    expect(v2_r.y).toBeCloseTo(0.0);
-  });
-
-  test('uses overlay radius for collision detection', () => {
-    const withoutWrapWorld = new World();
-    const withWrapWorld = new World();
-
-    const createPair = (world) => {
-      const ball1 = world.createEntity();
-      world.addComponent(ball1, new BallTagComponent());
-      world.addComponent(ball1, new PositionComponent(0, 0));
-      world.addComponent(ball1, new VelocityComponent(0, 0));
-      world.addComponent(ball1, new RadiusComponent(1));
-      world.addComponent(ball1, new MassComponent(1));
-      world.addComponent(ball1, new RestitutionComponent(1));
-
-      const ball2 = world.createEntity();
-      world.addComponent(ball2, new BallTagComponent());
-      world.addComponent(ball2, new PositionComponent(2.15, 0)); // no base collision (2.0), but collides with +0.2 wrap
-      world.addComponent(ball2, new VelocityComponent(0, 0));
-      world.addComponent(ball2, new RadiusComponent(1));
-      world.addComponent(ball2, new MassComponent(1));
-      world.addComponent(ball2, new RestitutionComponent(1));
-      return { ball1, ball2 };
-    };
-
-    const noWrap = createPair(withoutWrapWorld);
-    const withWrap = createPair(withWrapWorld);
-    withWrapWorld.addComponent(withWrap.ball1, new OverlayRadiusComponent(1.2));
-
-    const system = new PBDBallBallCollisions();
-    system.update(withoutWrapWorld, 0.016);
-    system.update(withWrapWorld, 0.016);
-
-    const noWrapBall1X = withoutWrapWorld.getComponent(noWrap.ball1, PositionComponent).pos.x;
-    const noWrapBall2X = withoutWrapWorld.getComponent(noWrap.ball2, PositionComponent).pos.x;
-    expect(noWrapBall1X).toBeCloseTo(0.0, 9);
-    expect(noWrapBall2X).toBeCloseTo(2.15, 9);
-
-    const withWrapBall1X = withWrapWorld.getComponent(withWrap.ball1, PositionComponent).pos.x;
-    const withWrapBall2X = withWrapWorld.getComponent(withWrap.ball2, PositionComponent).pos.x;
-    expect(withWrapBall1X).toBeLessThan(0.0);
-    expect(withWrapBall2X).toBeGreaterThan(2.15);
-  });
-
-  test('collision radius applies directional circle sectors', () => {
-    const withoutSectors = new World();
-    const world = new World();
-    const dt = 0.016;
-
-    const createPair = (targetWorld) => {
-      const left = targetWorld.createEntity();
-      targetWorld.addComponent(left, new BallTagComponent());
-      targetWorld.addComponent(left, new PositionComponent(0.0, 0.0));
-      targetWorld.addComponent(left, new VelocityComponent(0, 0));
-      targetWorld.addComponent(left, new RadiusComponent(1));
-      targetWorld.addComponent(left, new MassComponent(1));
-      targetWorld.addComponent(left, new RestitutionComponent(1));
-
-      const right = targetWorld.createEntity();
-      targetWorld.addComponent(right, new BallTagComponent());
-      targetWorld.addComponent(right, new PositionComponent(2.15, 0.0));
-      targetWorld.addComponent(right, new VelocityComponent(0, 0));
-      targetWorld.addComponent(right, new RadiusComponent(1));
-      targetWorld.addComponent(right, new MassComponent(1));
-      targetWorld.addComponent(right, new RestitutionComponent(1));
-      return { left, right };
-    };
-
-    const noSectorsPair = createPair(withoutSectors);
-    const withSectorsPair = createPair(world);
-    world.addComponent(
-      withSectorsPair.left,
-      new CircleSectorComponent(
-        1.2,
-        -0.3,
-        0.3,
-        false
-      )
-    );
-    world.addComponent(
-      withSectorsPair.right,
-      new CircleSectorComponent(
-        1.2,
-        Math.PI - 0.3,
-        Math.PI + 0.3,
-        false
-      )
-    );
-
-    const baseNoSectors = new PBDBallBallCollisions();
-    const sectorNoSectors = new PBDBallCircleSectorCollisions();
-    baseNoSectors.update(withoutSectors, dt);
-    sectorNoSectors.update(withoutSectors, dt);
-    const base = new PBDBallBallCollisions();
-    const sector = new PBDBallCircleSectorCollisions();
-    base.update(world, dt);
-    sector.update(world, dt);
-
-    const noLeftX = withoutSectors.getComponent(noSectorsPair.left, PositionComponent).pos.x;
-    const noRightX = withoutSectors.getComponent(noSectorsPair.right, PositionComponent).pos.x;
-    expect(noLeftX).toBeCloseTo(0.0, 9);
-    expect(noRightX).toBeCloseTo(2.15, 9);
-
-    const leftX = world.getComponent(withSectorsPair.left, PositionComponent).pos.x;
-    const rightX = world.getComponent(withSectorsPair.right, PositionComponent).pos.x;
+    const leftX = worldState.world.getComponent(worldState.left, PositionComponent).pos.x;
+    const rightX = worldState.world.getComponent(worldState.right, PositionComponent).pos.x;
     expect(leftX).toBeLessThan(0.0);
-    expect(rightX).toBeGreaterThan(2.15);
+    expect(rightX).toBeGreaterThan(belowThresholdDistance);
+
+    const contacts = worldState.world.getResource('ball_ball_contacts') || [];
+    expect(contacts.length).toBeGreaterThanOrEqual(1);
+    expect(contacts[0].pinch_shared).toBe(true);
   });
 });

@@ -75,8 +75,7 @@
     ObstacleTagComponent,
     ObstaclePushComponent,
     PauseStateComponent,
-    PBDBallBallCollisions,
-    PBDBallObstacleCollisions
+    PBDUnifiedContactManifoldSystem
   } from '../../examples/js/flipper/flipper_common.js';
 
   import {
@@ -234,8 +233,7 @@
       world.registerSystem(new PBDCableConstraintSolver());
       //world.registerSystem(new PBDResolveCableOverCorrections());
 
-      world.registerSystem(new PBDBallBallCollisions());
-      world.registerSystem(new PBDBallObstacleCollisions());
+      world.registerSystem(new PBDUnifiedContactManifoldSystem());
       world.registerSystem(new CableFrictionSystem());
 
       world.registerSystem(new PBDVelocityUpdateSystem());

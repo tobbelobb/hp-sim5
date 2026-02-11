@@ -8,14 +8,15 @@ import {
   BallTagComponent,
   FlipperTagComponent,
   FlipperStateComponent,
-  PBDBallFlipperCollisions,
-  FlipperCircleSectorCollisions,
+  PBDUnifiedContactManifoldSystem,
   OverlayRadiusComponent,
   CircleSectorComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
 function makeWorld() {
   const world = new World();
+  world.setResource('enableLayering', true);
+  world.setResource('layeringCollisionSectorSolvers', true);
 
   const ballId = world.createEntity();
   world.addComponent(ballId, new BallTagComponent());
@@ -32,13 +33,13 @@ function makeWorld() {
   return { world, ballId, flipperId };
 }
 
-describe('PBDBallFlipperCollisions with overlay geometry', () => {
+describe('PBDUnifiedContactManifoldSystem flipper contact behavior', () => {
   test('overlay radius can create a flipper collision when raw radius does not', () => {
     const withoutOverlay = makeWorld();
     const withOverlay = makeWorld();
     withOverlay.world.addComponent(withOverlay.ballId, new OverlayRadiusComponent(1.2));
 
-    const system = new PBDBallFlipperCollisions();
+    const system = new PBDUnifiedContactManifoldSystem();
     system.update(withoutOverlay.world, 0.016);
     system.update(withOverlay.world, 0.016);
 
@@ -81,12 +82,9 @@ describe('PBDBallFlipperCollisions with overlay geometry', () => {
       )
     );
 
-    const system = new PBDBallFlipperCollisions();
-    const sectorSystem = new FlipperCircleSectorCollisions();
+    const system = new PBDUnifiedContactManifoldSystem();
     system.update(worldA.world, 0.016);
-    sectorSystem.update(worldA.world, 0.016);
     system.update(worldB.world, 0.016);
-    sectorSystem.update(worldB.world, 0.016);
 
     const contactsA = worldA.world.getResource('ball_flipper_contacts') || [];
     const contactsB = worldB.world.getResource('ball_flipper_contacts') || [];

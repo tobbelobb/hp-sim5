@@ -11,13 +11,20 @@ import {
   ScoreComponent,
   ScoreSystem,
   ScoredTagComponent,
-  PBDBallObstacleCollisions,
+  PBDUnifiedContactManifoldSystem,
   OverlayRadiusComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
-describe('PBDBallObstacleCollisions scoring behavior', () => {
+function _makeWorld() {
+  const world = new World();
+  world.setResource('enableLayering', true);
+  world.setResource('layeringCollisionSectorSolvers', true);
+  return world;
+}
+
+describe('PBDUnifiedContactManifoldSystem obstacle scoring behavior', () => {
   test('scores only on obstacle contact entry, not every frame of persistent overlap', () => {
-    const world = new World();
+    const world = _makeWorld();
 
     const scoreId = world.createEntity();
     world.addComponent(scoreId, new ScoreComponent(0));
@@ -34,7 +41,7 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
     world.addComponent(obstacleId, new RadiusComponent(1.0));
     world.addComponent(obstacleId, new ObstaclePushComponent(2.0));
 
-    const collisionSystem = new PBDBallObstacleCollisions();
+    const collisionSystem = new PBDUnifiedContactManifoldSystem();
     const scoreSystem = new ScoreSystem();
 
     collisionSystem.update(world, 0.016);
@@ -60,10 +67,8 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
   });
 
   test('uses overlay radius for obstacle side in circle-circle collision', () => {
-    const collisionSystem = new PBDBallObstacleCollisions();
-
-    const makeWorld = (withWrap) => {
-      const world = new World();
+    const makeCollisionWorld = (withWrap) => {
+      const world = _makeWorld();
 
       const ballId = world.createEntity();
       world.addComponent(ballId, new BallTagComponent());
@@ -83,8 +88,9 @@ describe('PBDBallObstacleCollisions scoring behavior', () => {
       return { world, ballId };
     };
 
-    const noWrap = makeWorld(false);
-    const withWrap = makeWorld(true);
+    const noWrap = makeCollisionWorld(false);
+    const withWrap = makeCollisionWorld(true);
+    const collisionSystem = new PBDUnifiedContactManifoldSystem();
 
     collisionSystem.update(noWrap.world, 0.016);
     collisionSystem.update(withWrap.world, 0.016);
