@@ -81,6 +81,7 @@ export class RenderSystem {
     this.bumperHitFxBursts = [];
     this.bumperHitFxActivePairs = new Set();
     this.bumperHitFxLastTimeSec = null;
+    this.bumperWobbleByEntity = new Map();
   }
 
   // Coordinate transformation helpers using instance properties
@@ -635,6 +636,68 @@ export class RenderSystem {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+  _spawnBumperWobble(world, obstacleId, outwardDir, intensity = 1.0) {
+    if (!Number.isInteger(obstacleId)) {
+      return;
+    }
+    let dir = null;
+    if (
+      outwardDir &&
+      Number.isFinite(outwardDir.x) &&
+      Number.isFinite(outwardDir.y)
+    ) {
+      dir = outwardDir.clone();
+    } else {
+      dir = new Vector2(1.0, 0.0);
+    }
+    if (dir.lengthSq() <= 1e-12) {
+      dir.x = 1.0;
+      dir.y = 0.0;
+    } else {
+      dir.normalize();
+    }
+
+    const radiusValue = world.getComponent(obstacleId, RadiusComponent)?.radius;
+    const radius = (Number.isFinite(radiusValue) && radiusValue > 1e-6) ? radiusValue : 0.02;
+    const ampBase = Math.max(0.00045, Math.min(0.0022, radius * 0.08));
+    const ampScale = Math.max(0.65, Math.min(1.4, 0.72 + 0.22 * intensity));
+
+    this.bumperWobbleByEntity.set(obstacleId, {
+      startSec: this._nowSeconds(),
+      lifeSec: 0.1,
+      amplitude: ampBase * ampScale,
+      dirX: dir.x,
+      dirY: dir.y,
+      freqHz: 16.0 + Math.random() * 8.0,
+      phase: Math.random() * Math.PI * 2.0
+    });
+  }
+
+  _getBumperWobbleOffset(entityId, nowSec = null) {
+    const wobble = this.bumperWobbleByEntity.get(entityId);
+    if (!wobble) {
+      return null;
+    }
+    const timeNow = Number.isFinite(nowSec) ? nowSec : this._nowSeconds();
+    const elapsed = timeNow - wobble.startSec;
+    if (!Number.isFinite(elapsed) || elapsed < 0.0) {
+      return null;
+    }
+    if (elapsed >= wobble.lifeSec) {
+      this.bumperWobbleByEntity.delete(entityId);
+      return null;
+    }
+    const progress = wobble.lifeSec > 1e-9 ? Math.min(1.0, elapsed / wobble.lifeSec) : 1.0;
+    const envelope = (1.0 - progress) * (1.0 - progress);
+    const oscillation = Math.sin((2.0 * Math.PI * wobble.freqHz * elapsed) + wobble.phase);
+    const kick = wobble.amplitude * 0.24 * Math.exp(-48.0 * elapsed);
+    const offset = wobble.amplitude * envelope * oscillation + kick;
+    return {
+      x: wobble.dirX * offset,
+      y: wobble.dirY * offset
+    };
+  }
+
   _spawnBumperHitBurst(world, contact, pushVel = 0.0) {
     const obsPos = world.getComponent(contact.obs_id, PositionComponent)?.pos;
     if (!obsPos) {
@@ -679,17 +742,21 @@ export class RenderSystem {
     const baseAngle = Math.atan2(outwardDir.y, outwardDir.x);
     const obstacleColor = world.getComponent(contact.obs_id, RenderableComponent)?.color;
     const palette = this._fxPaletteForObstacleColor(obstacleColor);
+    this._spawnBumperWobble(world, contact.obs_id, outwardDir, intensity);
 
     const rayCount = Math.max(8, Math.min(16, Math.round(8 + intensity * 2 + (Math.random() * 2))));
     const rays = [];
     for (let i = 0; i < rayCount; i++) {
       const offset = (Math.random() * 2.0 - 1.0) * spread;
+      const inward = Math.random() < 0.18;
       rays.push({
         offset,
-        lengthScale: 0.78 + Math.random() * 0.62,
+        lengthScale: inward ? (0.24 + Math.random() * 0.28) : (0.78 + Math.random() * 0.62),
         widthScale: 0.7 + Math.random() * 0.75,
         alphaScale: 0.52 + Math.random() * 0.36,
-        startScale: 0.46 + Math.random() * 0.34,
+        surfaceOffsetScale: -0.08 + Math.random() * 0.42,
+        inward,
+        inwardScale: 0.5 + Math.random() * 0.4,
         flicker: Math.random() * Math.PI * 2.0,
         hot: Math.random() < 0.52
       });
@@ -714,11 +781,34 @@ export class RenderSystem {
       });
     }
 
+    const ballSparks = [];
+    const ballPos = world.getComponent(contact.ball_id, PositionComponent)?.pos;
+    const ballRadiusValue = world.getComponent(contact.ball_id, RadiusComponent)?.radius;
+    if (ballPos && Number.isFinite(ballRadiusValue) && ballRadiusValue > 1e-6) {
+      const ballRadius = ballRadiusValue;
+      const startX = ballPos.x - outwardDir.x * ballRadius;
+      const startY = ballPos.y - outwardDir.y * ballRadius;
+      const tangent = new Vector2(-outwardDir.y, outwardDir.x);
+      const tangentSign = Math.random() < 0.5 ? -1.0 : 1.0;
+      const sparkDir = outwardDir.clone().scale(-0.68).add(tangent, 0.35 * tangentSign).normalize();
+      const speed = (0.25 + Math.random() * 0.33) * (0.8 + 0.22 * intensity);
+      ballSparks.push({
+        x: startX,
+        y: startY,
+        vx: sparkDir.x * speed,
+        vy: sparkDir.y * speed,
+        age: 0.0,
+        life: 0.07 + Math.random() * 0.07,
+        width: 1.1 + Math.random() * 0.9
+      });
+    }
+
     this.bumperHitFxBursts.push({
       x: obsPos.x,
       y: obsPos.y,
       dirX: outwardDir.x,
       dirY: outwardDir.y,
+      bumperRadius: obstacleRadius,
       effectRadius,
       age: 0.0,
       life: 0.22 + Math.random() * 0.2,
@@ -726,7 +816,8 @@ export class RenderSystem {
       maxRayLength: (0.035 + 0.05 * intensity),
       palette,
       rays,
-      sparks
+      sparks,
+      ballSparks
     });
 
     const MAX_BURSTS = 80;
@@ -752,6 +843,7 @@ export class RenderSystem {
     if (!enabled) {
       this.bumperHitFxBursts.length = 0;
       this.bumperHitFxActivePairs.clear();
+      this.bumperWobbleByEntity.clear();
       return;
     }
 
@@ -799,10 +891,28 @@ export class RenderSystem {
         nextSparks.push(spark);
       }
       burst.sparks = nextSparks;
+
+      if (Array.isArray(burst.ballSparks) && burst.ballSparks.length > 0) {
+        const nextBallSparks = [];
+        for (const spark of burst.ballSparks) {
+          spark.age += dtFx;
+          if (spark.age >= spark.life) {
+            continue;
+          }
+          spark.x += spark.vx * dtFx;
+          spark.y += spark.vy * dtFx;
+          spark.vx *= drag;
+          spark.vy *= drag;
+          nextBallSparks.push(spark);
+        }
+        burst.ballSparks = nextBallSparks;
+      }
     }
 
     this.bumperHitFxBursts = this.bumperHitFxBursts.filter((burst) => (
-      (burst.age < burst.life) || (Array.isArray(burst.sparks) && burst.sparks.length > 0)
+      (burst.age < burst.life) ||
+      (Array.isArray(burst.sparks) && burst.sparks.length > 0) ||
+      (Array.isArray(burst.ballSparks) && burst.ballSparks.length > 0)
     ));
 
     if (this.bumperHitFxBursts.length === 0) {
@@ -820,8 +930,9 @@ export class RenderSystem {
       const fade = Math.max(0.0, 1.0 - progress);
       const baseAngle = Math.atan2(burst.dirY, burst.dirX);
       const coneReach = burst.maxRayLength * (0.28 + 0.95 * progress);
-      const originX = burst.x + burst.dirX * burst.effectRadius * (0.55 + 0.35 * progress);
-      const originY = burst.y + burst.dirY * burst.effectRadius * (0.55 + 0.35 * progress);
+      const originDistance = burst.bumperRadius + burst.effectRadius * (0.05 + 0.1 * progress);
+      const originX = burst.x + burst.dirX * originDistance;
+      const originY = burst.y + burst.dirY * originDistance;
       const palette = burst.palette || this._fxPaletteForObstacleColor(null);
 
       if (fade > 0.0) {
@@ -860,12 +971,20 @@ export class RenderSystem {
         for (const ray of burst.rays) {
           const flutter = 1.0 + 0.24 * Math.sin(ray.flicker + progress * 13.0);
           const angle = baseAngle + ray.offset * flutter;
-          const startDistance = burst.effectRadius * ray.startScale;
+          const startDistance = burst.bumperRadius + (burst.effectRadius * ray.surfaceOffsetScale);
           const startX = burst.x + Math.cos(angle) * startDistance;
           const startY = burst.y + Math.sin(angle) * startDistance;
           const length = coneReach * ray.lengthScale;
-          const endX = startX + Math.cos(angle) * length;
-          const endY = startY + Math.sin(angle) * length;
+          let endX = startX + Math.cos(angle) * length;
+          let endY = startY + Math.sin(angle) * length;
+          if (ray.inward === true) {
+            const endDistance = Math.max(
+              burst.bumperRadius * 0.15,
+              startDistance - (length * ray.inwardScale)
+            );
+            endX = burst.x + Math.cos(angle) * endDistance;
+            endY = burst.y + Math.sin(angle) * endDistance;
+          }
           const rayColor = ray.hot ? palette.hot : palette.core;
           this.c.strokeStyle = this._rgba(rayColor, ray.alphaScale * fade);
           this.c.lineWidth = Math.max(0.65, (1.1 * ray.widthScale * unitPx * (0.6 + fade)));
@@ -884,6 +1003,28 @@ export class RenderSystem {
           const sparkColor = spark.hot ? palette.hot : palette.core;
           this.c.strokeStyle = this._rgba(sparkColor, (spark.hot ? 0.65 : 0.5) * sparkFade);
           this.c.lineWidth = Math.max(0.55, spark.width * unitPx * (0.4 + sparkFade));
+          this.c.beginPath();
+          this.c.moveTo(this.cX(tailX), this.cY(tailY));
+          this.c.lineTo(this.cX(spark.x), this.cY(spark.y));
+          this.c.stroke();
+        }
+      }
+
+      if (Array.isArray(burst.ballSparks) && burst.ballSparks.length > 0) {
+        for (const spark of burst.ballSparks) {
+          const sparkFade = Math.max(0.0, 1.0 - (spark.age / spark.life));
+          const tailX = spark.x - spark.vx * (0.035 + 0.02 * sparkFade);
+          const tailY = spark.y - spark.vy * (0.035 + 0.02 * sparkFade);
+
+          this.c.strokeStyle = `rgba(150, 160, 172, ${0.52 * sparkFade})`;
+          this.c.lineWidth = Math.max(0.75, spark.width * unitPx * (0.75 + sparkFade));
+          this.c.beginPath();
+          this.c.moveTo(this.cX(tailX), this.cY(tailY));
+          this.c.lineTo(this.cX(spark.x), this.cY(spark.y));
+          this.c.stroke();
+
+          this.c.strokeStyle = `rgba(230, 236, 244, ${0.8 * sparkFade})`;
+          this.c.lineWidth = Math.max(0.5, spark.width * unitPx * (0.38 + sparkFade * 0.52));
           this.c.beginPath();
           this.c.moveTo(this.cX(tailX), this.cY(tailY));
           this.c.lineTo(this.cX(spark.x), this.cY(spark.y));
@@ -1437,6 +1578,7 @@ export class RenderSystem {
 
     // Render All Renderable Entities (Circles/Obstacles/Etc.) considering rotation
     const renderableEntities = world.query([PositionComponent, RenderableComponent]);
+    const wobbleNowSec = this._nowSeconds();
     for (const entityId of renderableEntities) {
         const posComp = world.getComponent(entityId, PositionComponent);
         const renderComp = world.getComponent(entityId, RenderableComponent);
@@ -1445,8 +1587,15 @@ export class RenderSystem {
         if (renderComp.shape === 'circle') {
             const radiusComp = world.getComponent(entityId, RadiusComponent);
             if (posComp && radiusComp) {
-                const simX = posComp.pos.x;
-                const simY = posComp.pos.y;
+                let simX = posComp.pos.x;
+                let simY = posComp.pos.y;
+                if (world.hasComponent(entityId, ObstacleTagComponent)) {
+                  const wobbleOffset = this._getBumperWobbleOffset(entityId, wobbleNowSec);
+                  if (wobbleOffset) {
+                    simX += wobbleOffset.x;
+                    simY += wobbleOffset.y;
+                  }
+                }
                 const simRadius = radiusComp.radius;
                 const angle = orientationComp ? orientationComp.angle : 0.0; // Use 0 if no orientation
 
