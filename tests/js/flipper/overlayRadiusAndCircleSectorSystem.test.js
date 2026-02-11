@@ -8,6 +8,7 @@ import {
   OverlayRadiusAndCircleSectorSystem,
   CircleSectorComponent,
   OverlayRadiusComponent,
+  getCompositeSupportToward,
 } from '../../../examples/js/flipper/flipper_common.js';
 import {
   CableJointComponent,
@@ -124,5 +125,49 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const sector = worldState.world.getComponent(worldState.wrappedId, CircleSectorComponent);
     expect(sector).toBeTruthy();
     expect(sector.radius).toBeCloseTo(secondLayerSupportRadius, 9);
+  });
+
+  test('avoids large ball-ball support jumps around near-complete second-layer coverage', () => {
+    const rawRadius = 1.0;
+    const halfWidth = 0.1;
+    const firstLayerRadius = rawRadius + halfWidth;
+    const secondLayerRadius = firstLayerRadius + (2.0 * halfWidth);
+    const firstLayerCircumference = 2.0 * Math.PI * firstLayerRadius;
+    const secondLayerCircumference = 2.0 * Math.PI * secondLayerRadius;
+    const coverageBefore = 0.899;
+    const coverageAfter = 0.901;
+
+    const before = makeEndpointWrapWorld({
+      storedLength: firstLayerCircumference + (coverageBefore * secondLayerCircumference),
+      rawRadius,
+      halfWidth
+    });
+    const after = makeEndpointWrapWorld({
+      storedLength: firstLayerCircumference + (coverageAfter * secondLayerCircumference),
+      rawRadius,
+      halfWidth
+    });
+
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(before.world, 0.016);
+    system.update(after.world, 0.016);
+
+    const beforeOverlay = before.world.getComponent(before.wrappedId, OverlayRadiusComponent);
+    const afterOverlay = after.world.getComponent(after.wrappedId, OverlayRadiusComponent);
+    expect(beforeOverlay).toBeTruthy();
+    expect(afterOverlay).toBeTruthy();
+    expect(beforeOverlay.radius).toBeCloseTo(1.2, 9);
+    expect(afterOverlay.radius).toBeCloseTo(1.2, 9);
+
+    // Probe a direction in the uncovered gap where a discrete overlay jump used
+    // to cause sudden ball-ball contacts.
+    const gapBefore = 2.0 * Math.PI * (1.0 - coverageBefore);
+    const probeAngle = -0.5 * gapBefore;
+    const probeDir = new Vector2(Math.cos(probeAngle), Math.sin(probeAngle));
+    const supportBefore = getCompositeSupportToward(before.world, before.wrappedId, probeDir);
+    const supportAfter = getCompositeSupportToward(after.world, after.wrappedId, probeDir);
+    expect(supportBefore).toBeTruthy();
+    expect(supportAfter).toBeTruthy();
+    expect(Math.abs(supportAfter.projection - supportBefore.projection)).toBeLessThan(0.02);
   });
 });

@@ -200,7 +200,7 @@ canvas {
   const gFallback = new Vector2(0.0, -9.81);
 
   let spoolEnergyConfig = {
-    initialStoredTurns: 1.0,
+    initialStoredTurns: 2.0,
     cableHalfWidth: 0.0025,
     cableStiffness: 1200.0,
     initialLinearSpeed: 0.24,
@@ -401,9 +401,9 @@ canvas {
 
     const rawRadius = _readFinite(spoolEnergyConfig.ballRadius, 0.04);
     const ballMass = _readFinite(spoolEnergyConfig.ballMass, 0.008);
-    const ballX = left + 0.16;
+    const ballX = left + 0.13;
     const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
-    const ballY = bottom + rawRadius + 2*configuredCableHalfWidth;
+    const ballY = bottom + rawRadius + 4*configuredCableHalfWidth;
     const v0 = _readFinite(spoolEnergyConfig.initialLinearSpeed, 0.24);
     const w0 = -v0 / Math.max(rawRadius, 1e-9);
     const ballI = 0.5 * ballMass * rawRadius * rawRadius;

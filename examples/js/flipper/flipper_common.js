@@ -268,6 +268,18 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
 
 const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 100.0;
 
+function _closingOverlayBlend(span) {
+  if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
+    return 0.0;
+  }
+  const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
+  const remaining = Math.max(0.0, (2.0 * Math.PI) - spanValue);
+  if (remaining >= LAYER_RADIUS_RAMP_ANGLE) {
+    return 0.0;
+  }
+  return 1.0 - (remaining / LAYER_RADIUS_RAMP_ANGLE);
+}
+
 function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, layerStep, span) {
   if (!(halfWidth > 1e-9)) {
     return 0.0;
@@ -357,10 +369,20 @@ export class OverlayRadiusAndCircleSectorSystem {
           continue;
         }
 
-        if (overlayEnabled && decomposition.fullLayers > 0) {
-          const overlayRadius = rawRadius + layerStep * decomposition.fullLayers;
-          const prev = overlayByEntity.get(entityId) ?? 0.0;
-          overlayByEntity.set(entityId, Math.max(prev, overlayRadius));
+        if (overlayEnabled) {
+          const baseOverlayRadius = rawRadius + layerStep * decomposition.fullLayers;
+          let overlayRadius = baseOverlayRadius;
+          if (decomposition.partialLength > 1e-9 && decomposition.partialRadius > 1e-9) {
+            const span = decomposition.partialLength / decomposition.partialRadius;
+            const closingBlend = _closingOverlayBlend(span);
+            if (closingBlend > 1e-9) {
+              overlayRadius = baseOverlayRadius + layerStep * closingBlend;
+            }
+          }
+          if (overlayRadius > rawRadius + 1e-9) {
+            const prev = overlayByEntity.get(entityId) ?? 0.0;
+            overlayByEntity.set(entityId, Math.max(prev, overlayRadius));
+          }
         }
 
         if (sectorEnabled && decomposition.partialLength > 1e-9) {
