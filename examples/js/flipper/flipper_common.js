@@ -1041,10 +1041,6 @@ function _segmentsProperlyIntersect(a0, a1, b0, b1, eps = 1e-9) {
   return strictB;
 }
 
-function _sameEntityPair(a0, a1, b0, b1) {
-  return (a0 === b0 && a1 === b1) || (a0 === b1 && a1 === b0);
-}
-
 function _segmentEndpointAtCurrentPose(world, entityId, attachmentPointWorld) {
   if (!_isFiniteVec2(attachmentPointWorld)) {
     return null;
@@ -1128,21 +1124,15 @@ function _crossingCableHalfWidth(cableSegments, centerA, centerB, pairEntityA, p
   if (!Array.isArray(cableSegments) || cableSegments.length === 0) {
     return 0.0;
   }
+  if (pairEntityA === pairEntityB) {
+    return 0.0;
+  }
   let maxHalfWidth = 0.0;
   for (const segment of cableSegments) {
     if (!(segment?.halfWidth > 1e-9)) {
       continue;
     }
-    const directPair = _sameEntityPair(
-      pairEntityA,
-      pairEntityB,
-      segment.entityA,
-      segment.entityB
-    );
-    if (
-      directPair ||
-      _segmentsProperlyIntersect(centerA, centerB, segment.a, segment.b, 1e-9)
-    ) {
+    if (_segmentsProperlyIntersect(centerA, centerB, segment.a, segment.b, 1e-9)) {
       maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
     }
   }

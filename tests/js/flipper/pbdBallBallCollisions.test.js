@@ -329,7 +329,7 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     expect(contactsShare.length).toBe(0);
   });
 
-  test('below 2r+2w, pinch-share ON resolves while OFF does not for direct pinched pair', () => {
+  test('direct non-crossing pair below 2r+2w does not trigger pinch-share', () => {
     const rawRadius = 0.02;
     const halfWidth = 0.0025;
     const belowThresholdDistance = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.001;
@@ -356,34 +356,39 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     expect(withoutShare.world.getComponent(withoutShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
     expect(withoutShare.world.getComponent(withoutShare.right, PositionComponent).pos.x).toBeCloseTo(belowThresholdDistance, 9);
     expect(withoutShareContacts.length).toBe(0);
-
-    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeLessThan(0.0);
-    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeGreaterThan(belowThresholdDistance);
-    expect(withShareContacts.length).toBeGreaterThanOrEqual(1);
-    expect(withShareContacts[0].pinch_shared).toBe(true);
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeCloseTo(belowThresholdDistance, 9);
+    expect(withShareContacts.length).toBe(0);
   });
 
-  test('pinch-share ON still enforces contact below 2r+2w threshold', () => {
+  test('crossing pair at exactly 2r+2w has no penetration for either mode', () => {
     const rawRadius = 0.02;
     const halfWidth = 0.0025;
-    const belowThresholdDistance = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.001;
-    const worldState = _makePinchPairWorld({
-      centerDistance: belowThresholdDistance,
+    const distanceAtPhysicalCableThickness = (2.0 * rawRadius) + (2.0 * halfWidth);
+
+    const withoutShare = _makeCrossingSegmentPinchWorld({
+      centerDistance: distanceAtPhysicalCableThickness,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: false
+    });
+    const withShare = _makeCrossingSegmentPinchWorld({
+      centerDistance: distanceAtPhysicalCableThickness,
       rawRadius,
       cableHalfWidth: halfWidth,
       pinchShareEnabled: true
     });
 
-    _runManifold(worldState.world);
+    _runManifold(withoutShare.world);
+    _runManifold(withShare.world);
 
-    const leftX = worldState.world.getComponent(worldState.left, PositionComponent).pos.x;
-    const rightX = worldState.world.getComponent(worldState.right, PositionComponent).pos.x;
-    expect(leftX).toBeLessThan(0.0);
-    expect(rightX).toBeGreaterThan(belowThresholdDistance);
+    expect(withoutShare.world.getComponent(withoutShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withoutShare.world.getComponent(withoutShare.right, PositionComponent).pos.x).toBeCloseTo(distanceAtPhysicalCableThickness, 9);
+    expect((withoutShare.world.getResource('ball_ball_contacts') || []).length).toBe(0);
 
-    const contacts = worldState.world.getResource('ball_ball_contacts') || [];
-    expect(contacts.length).toBeGreaterThanOrEqual(1);
-    expect(contacts[0].pinch_shared).toBe(true);
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeCloseTo(distanceAtPhysicalCableThickness, 9);
+    expect((withShare.world.getResource('ball_ball_contacts') || []).length).toBe(0);
   });
 
   test('crossing CableJoint between centers enforces one cable-width gap even without sector inflation', () => {

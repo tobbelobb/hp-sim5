@@ -1383,6 +1383,171 @@ export class RenderSystem {
         }
         this.c.restore();
     }
+
+    // Re-draw collision envelopes last so they stay visible above all other layers.
+    {
+      const overlayEntities = world.query([PositionComponent, OverlayRadiusComponent]);
+      const sectorEntities = world.query([PositionComponent, CircleSectorComponent]);
+      const ballBallContacts = Array.isArray(world.getResource('ball_ball_contacts'))
+        ? world.getResource('ball_ball_contacts')
+        : [];
+      const obstacleContacts = Array.isArray(world.getResource('ball_obstacle_contacts'))
+        ? world.getResource('ball_obstacle_contacts')
+        : [];
+
+      if (
+        overlayEntities.length > 0 ||
+        sectorEntities.length > 0 ||
+        ballBallContacts.length > 0 ||
+        obstacleContacts.length > 0
+      ) {
+        this.c.save();
+        const canSetLineDash = typeof this.c.setLineDash === 'function';
+
+        if (canSetLineDash) {
+          this.c.setLineDash([4, 3]);
+        }
+        this.c.lineWidth = Math.max(1.0, 2.0 * this.effectiveCScale / 250);
+        this.c.strokeStyle = 'rgba(0, 220, 255, 0.98)';
+        for (const entityId of overlayEntities) {
+          const pos = world.getComponent(entityId, PositionComponent)?.pos;
+          const overlayRadius = world.getComponent(entityId, OverlayRadiusComponent)?.radius;
+          if (!pos || !Number.isFinite(overlayRadius) || !(overlayRadius > 1e-9)) {
+            continue;
+          }
+          this.c.beginPath();
+          this.c.arc(
+            this.cX(pos.x),
+            this.cY(pos.y),
+            overlayRadius * this.effectiveCScale,
+            0.0,
+            2.0 * Math.PI
+          );
+          this.c.stroke();
+        }
+
+        if (canSetLineDash) {
+          this.c.setLineDash([]);
+        }
+        for (const entityId of sectorEntities) {
+          const pos = world.getComponent(entityId, PositionComponent)?.pos;
+          const sector = world.getComponent(entityId, CircleSectorComponent);
+          if (!pos || !sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
+            continue;
+          }
+          const startAngle = Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0;
+          const endAngle = Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0;
+          const anticlockwise = sector.cw !== true;
+
+          this.c.fillStyle = 'rgba(255, 136, 0, 0.18)';
+          this.c.beginPath();
+          this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
+          this.c.arc(
+            this.cX(pos.x),
+            this.cY(pos.y),
+            sector.radius * this.effectiveCScale,
+            -startAngle,
+            -endAngle,
+            anticlockwise
+          );
+          this.c.closePath();
+          this.c.fill();
+
+          this.c.strokeStyle = 'rgba(255, 136, 0, 0.95)';
+          this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
+          this.c.beginPath();
+          this.c.arc(
+            this.cX(pos.x),
+            this.cY(pos.y),
+            sector.radius * this.effectiveCScale,
+            -startAngle,
+            -endAngle,
+            anticlockwise
+          );
+          this.c.stroke();
+        }
+
+        // Show pairwise manifold envelopes used by pinch-share contacts.
+        if (canSetLineDash) {
+          this.c.setLineDash([3, 2]);
+        }
+        this.c.lineWidth = Math.max(1.0, 1.75 * this.effectiveCScale / 250);
+        this.c.strokeStyle = 'rgba(255, 40, 180, 0.95)';
+
+        for (const contact of ballBallContacts) {
+          if (!contact || contact.pinch_shared !== true) {
+            continue;
+          }
+          const aPos = world.getComponent(contact.ball_a, PositionComponent)?.pos;
+          const bPos = world.getComponent(contact.ball_b, PositionComponent)?.pos;
+          if (aPos && Number.isFinite(contact.radius_a) && contact.radius_a > 1e-9) {
+            this.c.beginPath();
+            this.c.arc(
+              this.cX(aPos.x),
+              this.cY(aPos.y),
+              contact.radius_a * this.effectiveCScale,
+              0.0,
+              2.0 * Math.PI
+            );
+            this.c.stroke();
+          }
+          if (bPos && Number.isFinite(contact.radius_b) && contact.radius_b > 1e-9) {
+            this.c.beginPath();
+            this.c.arc(
+              this.cX(bPos.x),
+              this.cY(bPos.y),
+              contact.radius_b * this.effectiveCScale,
+              0.0,
+              2.0 * Math.PI
+            );
+            this.c.stroke();
+          }
+        }
+
+        for (const contact of obstacleContacts) {
+          if (!contact || contact.pinch_shared !== true) {
+            continue;
+          }
+          const ballPos = world.getComponent(contact.ball_id, PositionComponent)?.pos;
+          const obsPos = world.getComponent(contact.obs_id, PositionComponent)?.pos;
+          if (
+            ballPos &&
+            Number.isFinite(contact.ball_contact_radius) &&
+            contact.ball_contact_radius > 1e-9
+          ) {
+            this.c.beginPath();
+            this.c.arc(
+              this.cX(ballPos.x),
+              this.cY(ballPos.y),
+              contact.ball_contact_radius * this.effectiveCScale,
+              0.0,
+              2.0 * Math.PI
+            );
+            this.c.stroke();
+          }
+          if (
+            obsPos &&
+            Number.isFinite(contact.obstacle_contact_radius) &&
+            contact.obstacle_contact_radius > 1e-9
+          ) {
+            this.c.beginPath();
+            this.c.arc(
+              this.cX(obsPos.x),
+              this.cY(obsPos.y),
+              contact.obstacle_contact_radius * this.effectiveCScale,
+              0.0,
+              2.0 * Math.PI
+            );
+            this.c.stroke();
+          }
+        }
+
+        if (canSetLineDash) {
+          this.c.setLineDash([]);
+        }
+        this.c.restore();
+      }
+    }
   }
 
   _getExtrusionColor(extrusion) {
