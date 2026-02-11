@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Spool Energy Debug</title>
+    <title>Spool Energy Slope Debug</title>
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
     <meta name="viewport"
@@ -110,6 +110,7 @@ canvas {
         border dl_max: <span id="eBorderDelta">0</span>
       </div>
       <div id="note">
+        Slope profile: the ball starts near the high end and rolls down toward a fixed attachment.<br />
         Console helpers: <code>dumpSpoolEnergyTrace()</code>,
         <code>getSpoolEnergyTrace()</code>,
         <code>clearSpoolEnergyTrace()</code>,
@@ -223,10 +224,10 @@ canvas {
   const gFallback = new Vector2(0.0, -9.81);
 
   let spoolEnergyConfig = {
-    initialStoredTurns: 2.0,
+    initialStoredTurns: 1.0,
     cableHalfWidth: 0.0025,
     cableStiffness: 1200.0,
-    initialLinearSpeed: 0.24,
+    initialLinearSpeed: 0.0,
     restLengthScale: 1.0,
     ballRadius: 0.04,
     ballMass: 0.008,
@@ -412,11 +413,27 @@ canvas {
     const right = simWidth - 0.03;
     const bottom = 0.04;
     const top = simHeight - 0.03;
+    const slopeStartX = left + 0.08;
+    const slopeEndX = right - 0.06;
+    const slopeStartY = top - 0.11;
+    const slopeEndY = bottom + 0.06;
+    const slopeDx = slopeEndX - slopeStartX;
+    const slopeDy = slopeEndY - slopeStartY;
+    const slopeLength = Math.hypot(slopeDx, slopeDy);
+    const slopeTanX = slopeLength > 1e-9 ? slopeDx / slopeLength : 1.0;
+    const slopeTanY = slopeLength > 1e-9 ? slopeDy / slopeLength : 0.0;
+    const slopeYAt = (x) => {
+      const t = Math.max(0.0, Math.min(1.0, (x - slopeStartX) / Math.max(Math.abs(slopeDx), 1e-9)));
+      return slopeStartY + t * slopeDy;
+    };
     const borderPoints = [
       new Vector2(right, bottom),
       new Vector2(right, top),
       new Vector2(left, top),
-      new Vector2(left, bottom)
+      new Vector2(left, slopeStartY),
+      new Vector2(slopeStartX, slopeStartY),
+      new Vector2(slopeEndX, slopeEndY),
+      new Vector2(right, slopeEndY)
     ];
     const borderId = world.createEntity();
     world.addComponent(borderId, new BorderComponent(borderPoints));
@@ -426,10 +443,12 @@ canvas {
 
     const rawRadius = _readFinite(spoolEnergyConfig.ballRadius, 0.04);
     const ballMass = _readFinite(spoolEnergyConfig.ballMass, 0.008);
-    const ballX = left + 0.13;
+    const ballX = slopeStartX + 0.09 * (slopeEndX - slopeStartX);
     const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
-    const ballY = bottom + rawRadius + 4*configuredCableHalfWidth;
-    const v0 = _readFinite(spoolEnergyConfig.initialLinearSpeed, 0.24);
+    const ballY = slopeYAt(ballX) + rawRadius + (2.0 * configuredCableHalfWidth);
+    const v0 = _readFinite(spoolEnergyConfig.initialLinearSpeed, 0.0);
+    const vx0 = slopeTanX * v0;
+    const vy0 = slopeTanY * v0;
     const w0 = -v0 / Math.max(rawRadius, 1e-9);
     const ballI = 0.5 * ballMass * rawRadius * rawRadius;
 
@@ -437,7 +456,7 @@ canvas {
     world.addComponent(ballId, new BallTagComponent());
     world.addComponent(ballId, new PositionComponent(ballX, ballY));
     world.addComponent(ballId, new PrevFinalPosComponent(ballX, ballY));
-    world.addComponent(ballId, new VelocityComponent(v0, 0.0));
+    world.addComponent(ballId, new VelocityComponent(vx0, vy0));
     world.addComponent(ballId, new RadiusComponent(rawRadius));
     world.addComponent(ballId, new MassComponent(ballMass));
     world.addComponent(ballId, new RestitutionComponent(0.0));
@@ -450,8 +469,8 @@ canvas {
     world.addComponent(ballId, new RenderableComponent('circle', '#a9adb6'));
     world.addComponent(ballId, new CableLinkComponent(ballX, ballY, 0.0));
 
-    const anchorX = right - 0.10;
-    const anchorY = top - 0.06;
+    const anchorX = slopeEndX - 0.015;
+    const anchorY = slopeYAt(anchorX) + rawRadius + 0.045;
     const anchorId = world.createEntity();
     world.addComponent(anchorId, new PositionComponent(anchorX, anchorY));
     world.addComponent(anchorId, new MassComponent(-1.0));

@@ -198,11 +198,35 @@ canvas {
   const world = new World();
   window.world = world;
   const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
+  if (canvas && !canvas.hasAttribute('tabindex')) {
+    canvas.setAttribute('tabindex', '0');
+  }
+  const _focusCanvas = () => {
+    if (!canvas || typeof canvas.focus !== 'function') {
+      return;
+    }
+    try {
+      canvas.focus({ preventScroll: true });
+    } catch (_err) {
+      canvas.focus();
+    }
+  };
+  const _queueCanvasFocus = () => {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => _focusCanvas());
+      return;
+    }
+    setTimeout(() => _focusCanvas(), 0);
+  };
   if (cableFeatureFlags && resetBtnEl) {
     cableFeatureFlags.addEventListener('change', (event) => {
       const target = event.target;
       if (target && target.tagName === 'INPUT' && target.type === 'checkbox') {
         resetBtnEl.click();
+        if (typeof target.blur === 'function') {
+          target.blur();
+        }
+        _queueCanvasFocus();
       }
     });
   }
