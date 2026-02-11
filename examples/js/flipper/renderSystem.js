@@ -678,6 +678,59 @@ export class RenderSystem {
 
     // Render Cable Joints (Lines)
     const pathEntities = world.query([CablePathComponent]);
+    const cableHalfWidthByLinkEntity = new Map();
+    const recordLinkHalfWidth = (entityId, halfWidth) => {
+      if (!Number.isInteger(entityId) || !(halfWidth > 1e-9)) {
+        return;
+      }
+      const prev = cableHalfWidthByLinkEntity.get(entityId) ?? 0.0;
+      if (halfWidth > prev) {
+        cableHalfWidthByLinkEntity.set(entityId, halfWidth);
+      }
+    };
+    const pathLinkEntityAt = (path, linkIndex) => {
+      if (!path || !Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
+        return null;
+      }
+      const jointCount = path.jointEntities.length;
+      const linkCount = jointCount + 1;
+      if (!Number.isInteger(linkIndex) || linkIndex < 0 || linkIndex >= linkCount) {
+        return null;
+      }
+      if (linkIndex === 0) {
+        const firstJoint = world.getComponent(path.jointEntities[0], CableJointComponent);
+        return firstJoint ? firstJoint.entityA : null;
+      }
+      if (linkIndex === linkCount - 1) {
+        const lastJoint = world.getComponent(path.jointEntities[jointCount - 1], CableJointComponent);
+        return lastJoint ? lastJoint.entityB : null;
+      }
+      const prevJoint = world.getComponent(path.jointEntities[linkIndex - 1], CableJointComponent);
+      return prevJoint ? prevJoint.entityB : null;
+    };
+    const pathHalfWidthAt = (path) => {
+      if (!path) {
+        return 0.0;
+      }
+      return Number.isFinite(path.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+    };
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || !Array.isArray(path.linkTypes) || path.linkTypes.length < 1) {
+        continue;
+      }
+      const halfWidth = pathHalfWidthAt(path);
+      if (!(halfWidth > 1e-9)) {
+        continue;
+      }
+      for (let linkIndex = 0; linkIndex < path.linkTypes.length; linkIndex += 1) {
+        const linkEntityId = pathLinkEntityAt(path, linkIndex);
+        recordLinkHalfWidth(linkEntityId, halfWidth);
+      }
+    }
+    const entityCableLineWidthPx = (entityId) => (
+      physicalCableLineWidthPx(cableHalfWidthByLinkEntity.get(entityId) ?? 0.0)
+    );
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
@@ -1108,108 +1161,6 @@ export class RenderSystem {
         // Add rendering for other shapes if needed
     }
 
-    // Draw layered collision geometry (overlay circles + circle sectors) for debugging.
-    {
-      const overlayEntities = world.query([PositionComponent, OverlayRadiusComponent]);
-      const sectorEntityIds = new Set([
-        ...world.query([PositionComponent, CircleSectorComponent]),
-        ...world.query([PositionComponent, CircleSectorsComponent]),
-      ]);
-
-      if (overlayEntities.length > 0 || sectorEntityIds.size > 0) {
-        this.c.save();
-        const canSetLineDash = typeof this.c.setLineDash === 'function';
-        if (canSetLineDash) {
-          this.c.setLineDash([4, 3]);
-        }
-        this.c.lineWidth = Math.max(1.0, 2.0 * this.effectiveCScale / 250);
-        this.c.strokeStyle = 'rgba(0, 220, 255, 0.95)';
-
-        for (const entityId of overlayEntities) {
-          const pos = world.getComponent(entityId, PositionComponent)?.pos;
-          const overlayRadius = world.getComponent(entityId, OverlayRadiusComponent)?.radius;
-          if (!pos || !Number.isFinite(overlayRadius) || !(overlayRadius > 1e-9)) {
-            continue;
-          }
-          this.c.beginPath();
-          this.c.arc(
-            this.cX(pos.x),
-            this.cY(pos.y),
-            overlayRadius * this.effectiveCScale,
-            0.0,
-            2.0 * Math.PI
-          );
-          this.c.stroke();
-        }
-
-        if (canSetLineDash) {
-          this.c.setLineDash([]);
-        }
-        for (const entityId of sectorEntityIds) {
-          const pos = world.getComponent(entityId, PositionComponent)?.pos;
-          if (!pos) {
-            continue;
-          }
-          const multi = world.getComponent(entityId, CircleSectorsComponent);
-          const single = world.getComponent(entityId, CircleSectorComponent);
-          const sectors = (
-            multi && Array.isArray(multi.sectors) && multi.sectors.length > 0
-              ? multi.sectors
-              : (single ? [single] : [])
-          );
-          for (const sector of sectors) {
-            if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
-              continue;
-            }
-            const startAngle = Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0;
-            const endAngle = Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0;
-            const anticlockwise = sector.cw !== true;
-
-            this.c.fillStyle = 'rgba(255, 136, 0, 0.14)';
-            this.c.beginPath();
-            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-            this.c.arc(
-              this.cX(pos.x),
-              this.cY(pos.y),
-              sector.radius * this.effectiveCScale,
-              -startAngle,
-              -endAngle,
-              anticlockwise
-            );
-            this.c.closePath();
-            this.c.fill();
-
-            this.c.strokeStyle = 'rgba(255, 136, 0, 0.9)';
-            this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
-            this.c.beginPath();
-            this.c.arc(
-              this.cX(pos.x),
-              this.cY(pos.y),
-              sector.radius * this.effectiveCScale,
-              -startAngle,
-              -endAngle,
-              anticlockwise
-            );
-            this.c.stroke();
-
-            const sx = pos.x + sector.radius * Math.cos(startAngle);
-            const sy = pos.y + sector.radius * Math.sin(startAngle);
-            const ex = pos.x + sector.radius * Math.cos(endAngle);
-            const ey = pos.y + sector.radius * Math.sin(endAngle);
-            this.c.strokeStyle = 'rgba(255, 136, 0, 0.6)';
-            this.c.lineWidth = Math.max(1.0, 1.5 * this.effectiveCScale / 250);
-            this.c.beginPath();
-            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-            this.c.lineTo(this.cX(sx), this.cY(sy));
-            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-            this.c.lineTo(this.cX(ex), this.cY(ey));
-            this.c.stroke();
-          }
-        }
-        this.c.restore();
-      }
-    }
-
     //// Render Angular Velocity for Obstacles
     //const obstacleEntitiesWithAngularVelocity = world.query([ObstacleTagComponent, AngularVelocityComponent, PositionComponent]);
     //if (obstacleEntitiesWithAngularVelocity.length > 0) {
@@ -1436,7 +1387,6 @@ export class RenderSystem {
         if (canSetLineDash) {
           this.c.setLineDash([4, 3]);
         }
-        this.c.lineWidth = Math.max(1.0, 2.0 * this.effectiveCScale / 250);
         this.c.strokeStyle = 'rgba(0, 220, 255, 0.98)';
         for (const entityId of overlayEntities) {
           const pos = world.getComponent(entityId, PositionComponent)?.pos;
@@ -1444,6 +1394,7 @@ export class RenderSystem {
           if (!pos || !Number.isFinite(overlayRadius) || !(overlayRadius > 1e-9)) {
             continue;
           }
+          this.c.lineWidth = entityCableLineWidthPx(entityId);
           this.c.beginPath();
           this.c.arc(
             this.cX(pos.x),
@@ -1470,6 +1421,7 @@ export class RenderSystem {
               ? multi.sectors
               : (single ? [single] : [])
           );
+          const sectorLineWidthPx = entityCableLineWidthPx(entityId);
           for (const sector of sectors) {
             if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
               continue;
@@ -1493,7 +1445,7 @@ export class RenderSystem {
             this.c.fill();
 
             this.c.strokeStyle = 'rgba(255, 136, 0, 0.95)';
-            this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
+            this.c.lineWidth = sectorLineWidthPx;
             this.c.beginPath();
             this.c.arc(
               this.cX(pos.x),
