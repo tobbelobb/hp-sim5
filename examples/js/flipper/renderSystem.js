@@ -1309,6 +1309,8 @@ export class RenderSystem {
     }
 
     // Re-draw collision envelopes last so they stay visible above all other layers.
+    const collisionOverlayRenderingEnabled =
+      world.getResource('layeringRenderCollisionOverlays') !== false;
     {
       const overlayEntities = world.query([PositionComponent, OverlayRadiusComponent]);
       const sectorEntityIds = new Set([
@@ -1323,10 +1325,12 @@ export class RenderSystem {
         : [];
 
       if (
-        overlayEntities.length > 0 ||
-        sectorEntityIds.size > 0 ||
-        ballBallContacts.length > 0 ||
-        obstacleContacts.length > 0
+        collisionOverlayRenderingEnabled && (
+          overlayEntities.length > 0 ||
+          sectorEntityIds.size > 0 ||
+          ballBallContacts.length > 0 ||
+          obstacleContacts.length > 0
+        )
       ) {
         this.c.save();
         const canSetLineDash = typeof this.c.setLineDash === 'function';

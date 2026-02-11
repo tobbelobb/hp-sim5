@@ -16,7 +16,8 @@ export const CABLE_FEATURE_FLAG_DEFS = Object.freeze([
   { key: 'layeringSplitQualityGuard', label: 'cable/splitQualityGuard', defaultValue: false },
   { key: 'layeringHybridLinkStates', label: 'cable/hybridLinkStates', defaultValue: true },
   { key: 'layeringClampJointRestLength', label: 'cable/clampRestLength', defaultValue: true },
-  { key: 'layeringRenderWraps', label: 'render/layeredWraps', defaultValue: true }
+  { key: 'layeringRenderWraps', label: 'render/layeredWraps', defaultValue: true },
+  { key: 'layeringRenderCollisionOverlays', label: 'render/collisionOverlays', defaultValue: true }
 ]);
 
 export const CABLE_FEATURE_DEFAULTS = Object.freeze(
