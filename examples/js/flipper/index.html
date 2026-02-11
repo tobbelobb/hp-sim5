@@ -100,12 +100,14 @@ canvas {
 <body>
     <div id="gameContainer">
         <div id="controls">
+          <div id="buttonRow">
             <button id="pauseBtn" tabindex="-1">Pause</button>
             <button id="resetBtn" tabindex="-1">Reset</button>
             <button id="stepBtn">Step</button>
-            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+            <button id="dumpBtn" tabindex="-1">Dump State</button>
+          </div>
           <div id="cableFeatureFlags"></div>
-          Score: <span id="score">0</span>
+          <div id="scoreRow">Score: <span id="score">0</span></div>
           <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
             dt: <span id="dt">N/A</span> |
             Speed: <span id="speed">N/A</span>
@@ -149,8 +151,14 @@ canvas {
 
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
+    const gameContainer = document.getElementById("gameContainer");
+    const controlsElement = document.getElementById("controls");
     const cableFeatureFlags = document.getElementById("cableFeatureFlags");
     const scoreElement = document.getElementById("score");
+    const scoreRow = document.getElementById("scoreRow");
+    const statsElement = document.getElementById("stats");
+    const stepBtn = document.getElementById("stepBtn");
+    const dumpBtn = document.getElementById("dumpBtn");
 
     // --- Global World ---
     let world = new World();
@@ -180,6 +188,7 @@ canvas {
     window.getGameStateForTest = getGameStateForTest;
 
     const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
+    const SCORE_BOUNCE_FLAG_ID = 'cableFlag_scoreBounceSoundEnabled';
     if (canvas && !canvas.hasAttribute('tabindex')) {
       canvas.setAttribute('tabindex', '0');
     }
@@ -200,6 +209,144 @@ canvas {
       }
       setTimeout(() => _focusCanvas(), 0);
     };
+
+    const _setHidden = (element, hidden) => {
+      if (element) {
+        element.hidden = !!hidden;
+      }
+    };
+
+    const _readPx = (value) => {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const _setCableCheckboxVisibility = ({ hideNonAudio, hideAudio }) => {
+      if (!cableFeatureFlags) {
+        return;
+      }
+      const labels = cableFeatureFlags.querySelectorAll('label');
+      let anyVisible = false;
+      for (const label of labels) {
+        const input = label.querySelector('input[type="checkbox"]');
+        const isAudioCheckbox = input && input.id === SCORE_BOUNCE_FLAG_ID;
+        const shouldHide = isAudioCheckbox ? hideAudio : hideNonAudio;
+        label.hidden = !!shouldHide;
+        if (!label.hidden) {
+          anyVisible = true;
+        }
+      }
+      cableFeatureFlags.hidden = !anyVisible;
+    };
+
+    const _restoreAllMobileControls = () => {
+      _setHidden(statsElement, false);
+      _setHidden(dumpBtn, false);
+      _setHidden(stepBtn, false);
+      _setHidden(scoreRow, false);
+      _setCableCheckboxVisibility({ hideNonAudio: false, hideAudio: false });
+    };
+
+    const _viewportHeight = () => {
+      if (window.visualViewport && Number.isFinite(window.visualViewport.height)) {
+        return window.visualViewport.height;
+      }
+      return window.innerHeight || document.documentElement.clientHeight || 0;
+    };
+
+    const _viewportWidth = () => {
+      if (window.visualViewport && Number.isFinite(window.visualViewport.width)) {
+        return window.visualViewport.width;
+      }
+      return window.innerWidth || document.documentElement.clientWidth || 0;
+    };
+
+    const _controlsOuterHeight = () => {
+      if (!controlsElement || controlsElement.hidden) {
+        return 0;
+      }
+      const rect = controlsElement.getBoundingClientRect();
+      const style = window.getComputedStyle ? window.getComputedStyle(controlsElement) : null;
+      const marginTop = style ? _readPx(style.marginTop) : 0;
+      const marginBottom = style ? _readPx(style.marginBottom) : 0;
+      return rect.height + marginTop + marginBottom;
+    };
+
+    const _targetCanvasHeight = () => {
+      if (!canvas || canvas.hidden) {
+        return 0;
+      }
+      const canvasRect = canvas.getBoundingClientRect();
+      const fallbackWidth = Math.min(_viewportWidth() * 0.9, 460);
+      const canvasWidth =
+        canvasRect.width ||
+        (gameContainer ? gameContainer.getBoundingClientRect().width : 0) ||
+        fallbackWidth;
+      if (canvasWidth > 0) {
+        return canvasWidth * 1.7;
+      }
+      return canvasRect.height;
+    };
+
+    const _gameFitsViewportHeight = () => {
+      const viewportHeight = _viewportHeight();
+      const topOffset = gameContainer ? Math.max(0, gameContainer.getBoundingClientRect().top) : 0;
+      const requiredHeight = topOffset + _controlsOuterHeight() + _targetCanvasHeight();
+      return requiredHeight <= viewportHeight + 0.5;
+    };
+
+    const _pruneControlsToFitViewportHeight = () => {
+      _restoreAllMobileControls();
+      if (_gameFitsViewportHeight()) {
+        return;
+      }
+
+      const pruneSteps = [
+        () => _setCableCheckboxVisibility({ hideNonAudio: true, hideAudio: false }),
+        () => _setHidden(statsElement, true),
+        () => _setHidden(dumpBtn, true),
+        () => _setHidden(stepBtn, true),
+        () => _setCableCheckboxVisibility({ hideNonAudio: true, hideAudio: true }),
+        () => _setHidden(scoreRow, true)
+      ];
+
+      for (const prune of pruneSteps) {
+        prune();
+        if (_gameFitsViewportHeight()) {
+          break;
+        }
+      }
+    };
+
+    let _queuedViewportPrune = false;
+    const _queueViewportPrune = () => {
+      if (_queuedViewportPrune) {
+        return;
+      }
+      _queuedViewportPrune = true;
+      const run = () => {
+        _queuedViewportPrune = false;
+        _pruneControlsToFitViewportHeight();
+      };
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(run);
+      } else {
+        setTimeout(run, 0);
+      }
+    };
+
+    _queueViewportPrune();
+    window.addEventListener('resize', _queueViewportPrune);
+    window.addEventListener('orientationchange', _queueViewportPrune);
+    window.addEventListener('load', _queueViewportPrune);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', _queueViewportPrune);
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => _queueViewportPrune()).catch(() => {});
+    }
+    setTimeout(_queueViewportPrune, 120);
+    setTimeout(_queueViewportPrune, 450);
 
     let scoreAudioContext = null;
     let scoreAudioMasterGain = null;
@@ -373,7 +520,7 @@ canvas {
       cableFeatureFlags.addEventListener('change', (event) => {
         const target = event.target;
         if (target && target.tagName === 'INPUT' && target.type === 'checkbox') {
-          if (target.id === 'cableFlag_scoreBounceSoundEnabled' && target.checked) {
+          if (target.id === SCORE_BOUNCE_FLAG_ID && target.checked) {
             _ensureScoreAudioContext();
             _playScoreBounceSound(1);
           }
