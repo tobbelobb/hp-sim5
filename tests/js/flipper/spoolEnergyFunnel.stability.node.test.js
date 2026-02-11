@@ -390,6 +390,7 @@ function setupFunnelWorld({
   _registerSystem(world, new MovementSystem(), disabled, 'movement');
   _registerSystem(world, new AngularMovementSystem(), disabled, 'angularMovement');
   _registerSystem(world, new FlipperTipLinkSystem(), disabled, 'flipperTipLink');
+  _registerSystem(world, new OverlayRadiusAndCircleSectorSystem(), disabled, 'overlay');
   _registerSystem(world, new CableAttachmentUpdateSystem(), disabled, 'attachmentUpdate');
   _registerSystem(world, new OverlayRadiusAndCircleSectorSystem(), disabled, 'overlay');
   _registerSystem(world, new CableAttachmentCacheSystem(), disabled, 'attachmentCache');

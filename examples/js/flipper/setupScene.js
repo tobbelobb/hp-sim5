@@ -324,6 +324,7 @@ export function setupScene(world, stage, canvas) {
 
         // 4. Update derived geometry and cable state
         world.registerSystem(new FlipperTipLinkSystem());
+        world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
         world.registerSystem(new CableAttachmentUpdateSystem());
         world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
         world.registerSystem(new CableAttachmentCacheSystem());
