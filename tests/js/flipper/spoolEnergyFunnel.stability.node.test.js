@@ -293,6 +293,7 @@ function setupFunnelWorld({
 
   const startY = top - rawRadius * 2.5;
   const ballIds = [];
+  const pairDescriptors = [];
 
   const funnelHalfWidthAtY = (y) => {
     const yClamped = Math.max(bottom, Math.min(top, y));
@@ -349,6 +350,7 @@ function setupFunnelWorld({
     const ballA = createBall(ax, ay, vx, vy, spinSign * spin0);
     const ballB = createBall(bx, by, -vx, vy, -spinSign * spin0);
     ballIds.push(ballA, ballB);
+    pairDescriptors.push({ pairIndex: i, ballA, ballB });
 
     const posA = world.getComponent(ballA, PositionComponent).pos;
     const posB = world.getComponent(ballB, PositionComponent).pos;
@@ -408,7 +410,117 @@ function setupFunnelWorld({
   _registerSystem(world, new BallObstacleBumpSystem(), disabled, 'obstacleBump');
   _registerSystem(world, new BallBorderOrFlipperVelocityContactSystem(), disabled, 'borderFlipperVelocityContact');
 
-  return { world, ballIds };
+  return { world, ballIds, pairDescriptors };
+}
+
+function _pathEndpoints(world, pathComp) {
+  if (!pathComp || !Array.isArray(pathComp.jointEntities) || pathComp.jointEntities.length < 1) {
+    return null;
+  }
+  const firstJoint = world.getComponent(pathComp.jointEntities[0], CableJointComponent);
+  const lastJoint = world.getComponent(
+    pathComp.jointEntities[pathComp.jointEntities.length - 1],
+    CableJointComponent
+  );
+  if (!firstJoint || !lastJoint) {
+    return null;
+  }
+  return {
+    startEntity: firstJoint.entityA,
+    endEntity: lastJoint.entityB
+  };
+}
+
+function _findPathByEndpoints(world, entityA, entityB) {
+  const pathEntities = world.query([CablePathComponent]);
+  for (const pathId of pathEntities) {
+    const pathComp = world.getComponent(pathId, CablePathComponent);
+    const endpoints = _pathEndpoints(world, pathComp);
+    if (!endpoints) {
+      continue;
+    }
+    const direct = endpoints.startEntity === entityA && endpoints.endEntity === entityB;
+    const reverse = endpoints.startEntity === entityB && endpoints.endEntity === entityA;
+    if (direct || reverse) {
+      return { pathId, pathComp, reversed: reverse };
+    }
+  }
+  return null;
+}
+
+function _collectPathStats(world, pathComp) {
+  if (!pathComp || !Array.isArray(pathComp.jointEntities) || pathComp.jointEntities.length < 1) {
+    return {
+      jointCount: 0,
+      minJointRest: null,
+      minStored: null,
+      maxStored: null,
+      tinyRestCount: 0,
+      negativeRestCount: 0,
+      maxJointStretch: 0.0,
+      chainEntities: [],
+      middleEntities: [],
+      linkTypes: []
+    };
+  }
+
+  let minJointRest = Infinity;
+  let tinyRestCount = 0;
+  let negativeRestCount = 0;
+  let maxJointStretch = 0.0;
+  const middleEntities = [];
+  const chainEntities = [];
+
+  for (let i = 0; i < pathComp.jointEntities.length; i++) {
+    const jointId = pathComp.jointEntities[i];
+    const joint = world.getComponent(jointId, CableJointComponent);
+    if (!joint) {
+      continue;
+    }
+    if (i === 0) {
+      chainEntities.push(joint.entityA);
+    }
+    chainEntities.push(joint.entityB);
+    if (Number.isFinite(joint.restLength)) {
+      if (joint.restLength < minJointRest) {
+        minJointRest = joint.restLength;
+      }
+      if (joint.restLength < 1e-6) {
+        tinyRestCount++;
+      }
+      if (joint.restLength < 0.0) {
+        negativeRestCount++;
+      }
+    }
+    const segLen = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+    const stretch = Math.max(0.0, segLen - _readFinite(joint.restLength, 0.0));
+    if (stretch > maxJointStretch) {
+      maxJointStretch = stretch;
+    }
+
+    if (i < pathComp.jointEntities.length - 1) {
+      middleEntities.push(joint.entityB);
+    }
+  }
+
+  const stored = Array.isArray(pathComp.stored)
+    ? pathComp.stored.filter((value) => Number.isFinite(value))
+    : [];
+  const minStored = stored.length > 0 ? Math.min(...stored) : null;
+  const maxStored = stored.length > 0 ? Math.max(...stored) : null;
+
+  return {
+    jointCount: pathComp.jointEntities.length,
+    minJointRest: Number.isFinite(minJointRest) ? minJointRest : null,
+    minStored,
+    maxStored,
+    tinyRestCount,
+    negativeRestCount,
+    maxJointStretch,
+    chainEntities,
+    middleEntities,
+    linkTypes: Array.isArray(pathComp.linkTypes) ? [...pathComp.linkTypes] : []
+  };
 }
 
 function runScenario({
@@ -416,9 +528,10 @@ function runScenario({
   disabledSystems = [],
   steps = 420,
   hybridTrace = null,
-  eventTrace = null
+  eventTrace = null,
+  trackedPairIndex = null
 } = {}) {
-  const { world, ballIds } = setupFunnelWorld({ flagPatch, disabledSystems });
+  const { world, ballIds, pairDescriptors } = setupFunnelWorld({ flagPatch, disabledSystems });
   const dt = world.getResource('dt');
   _configureHybridTransitionTrace(world, hybridTrace);
   _configureCableEventTrace(world, eventTrace);
@@ -429,6 +542,13 @@ function runScenario({
   }
 
   const perStep = [];
+  const trackedPair = Number.isInteger(trackedPairIndex) && trackedPairIndex >= 0
+    ? (pairDescriptors.find((pair) => pair.pairIndex === trackedPairIndex) ?? null)
+    : null;
+  const trackedPairPerStep = [];
+  let trackedPairTopologyChanges = 0;
+  let previousTrackedPathSignature = null;
+  let previousTrackedPairAbs = null;
   let prevPairAngular = new Map();
   let nanStep = null;
   let growthAbortStep = null;
@@ -556,6 +676,84 @@ function runScenario({
       maxPairAngularJumpKey
     });
 
+    if (trackedPair) {
+      const omegaA = world.getComponent(trackedPair.ballA, AngularVelocityComponent)?.angularVelocity;
+      const omegaB = world.getComponent(trackedPair.ballB, AngularVelocityComponent)?.angularVelocity;
+      const pairAbsAngular = (Number.isFinite(omegaA) && Number.isFinite(omegaB))
+        ? (Math.abs(omegaA) + Math.abs(omegaB))
+        : null;
+      const pairSignedAngular = (Number.isFinite(omegaA) && Number.isFinite(omegaB))
+        ? (omegaA + omegaB)
+        : null;
+      const pairAngularJump = (
+        Number.isFinite(pairAbsAngular) &&
+        Number.isFinite(previousTrackedPairAbs)
+      )
+        ? (pairAbsAngular - previousTrackedPairAbs)
+        : 0.0;
+      if (Number.isFinite(pairAbsAngular)) {
+        previousTrackedPairAbs = pairAbsAngular;
+      }
+
+      const matchedPath = _findPathByEndpoints(world, trackedPair.ballA, trackedPair.ballB);
+      const pathStats = matchedPath
+        ? _collectPathStats(world, matchedPath.pathComp)
+        : _collectPathStats(world, null);
+      let pathAngularAbsTotal = null;
+      let pathAngularSignedTotal = null;
+      if (matchedPath && Array.isArray(pathStats.chainEntities) && pathStats.chainEntities.length > 0) {
+        let absTotal = 0.0;
+        let signedTotal = 0.0;
+        let finiteCount = 0;
+        for (const entityId of pathStats.chainEntities) {
+          const omega = world.getComponent(entityId, AngularVelocityComponent)?.angularVelocity;
+          if (!Number.isFinite(omega)) {
+            continue;
+          }
+          absTotal += Math.abs(omega);
+          signedTotal += omega;
+          finiteCount++;
+        }
+        if (finiteCount > 0) {
+          pathAngularAbsTotal = absTotal;
+          pathAngularSignedTotal = signedTotal;
+        }
+      }
+      const pathSignature = matchedPath
+        ? `${matchedPath.pathId}:${pathStats.jointCount}:${pathStats.middleEntities.join(',')}:${pathStats.linkTypes.join('|')}`
+        : 'none';
+      if (previousTrackedPathSignature !== null && pathSignature !== previousTrackedPathSignature) {
+        trackedPairTopologyChanges++;
+      }
+      previousTrackedPathSignature = pathSignature;
+
+      trackedPairPerStep.push({
+        step,
+        ballA: trackedPair.ballA,
+        ballB: trackedPair.ballB,
+        omegaA: Number.isFinite(omegaA) ? omegaA : null,
+        omegaB: Number.isFinite(omegaB) ? omegaB : null,
+        pairAbsAngular,
+        pairSignedAngular,
+        pairAngularJump,
+        pathId: matchedPath?.pathId ?? null,
+        pathReversed: matchedPath?.reversed ?? false,
+        pathSignature,
+        pathJointCount: pathStats.jointCount,
+        pathMiddleEntities: pathStats.middleEntities,
+        pathLinkTypes: pathStats.linkTypes,
+        pathMinJointRest: pathStats.minJointRest,
+        pathTinyRestCount: pathStats.tinyRestCount,
+        pathNegativeRestCount: pathStats.negativeRestCount,
+        pathMinStored: pathStats.minStored,
+        pathMaxStored: pathStats.maxStored,
+        pathMaxJointStretch: pathStats.maxJointStretch,
+        pathAngularAbsTotal,
+        pathAngularSignedTotal,
+        pathEntities: pathStats.chainEntities
+      });
+    }
+
     if (nanStep !== null) {
       break;
     }
@@ -646,7 +844,16 @@ function runScenario({
     cableEvents: Array.isArray(world.getResource('cableEventTraceBuffer'))
       ? world.getResource('cableEventTraceBuffer')
       : [],
-    cableEventTraceTruncated: world.getResource('cableEventTraceTruncated') === true
+    cableEventTraceTruncated: world.getResource('cableEventTraceTruncated') === true,
+    trackedPair: trackedPair
+      ? {
+          pairIndex: trackedPair.pairIndex,
+          ballA: trackedPair.ballA,
+          ballB: trackedPair.ballB,
+          topologyChanges: trackedPairTopologyChanges,
+          perStep: trackedPairPerStep
+        }
+      : null
   };
 }
 
@@ -1079,6 +1286,237 @@ describe('Spool Funnel Stability Sweep', () => {
       expect(currentBest.score).toBeLessThan(baseline.score);
       expect(currentBest.isStable).toBe(true);
       expect(fixedMaxLocalAttachmentDrift).toBeLessThan(1e-6);
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+  });
+
+  const longHorizonTest = process.env.SPOOL_LONG === '1' ? test : test.skip;
+  longHorizonTest('long-horizon green-pair routed-path diagnostic', () => {
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = jest.fn();
+    console.error = jest.fn();
+
+    const windowMin = 17450;
+    const windowMax = 17850;
+    const longSteps = 18200;
+    const greenPairIndex = 3;
+
+    const summarizeTracked = (tracked) => {
+      const perStep = tracked?.perStep ?? [];
+      const window = perStep.filter((entry) => entry.step >= windowMin && entry.step <= windowMax);
+      const firstMultiJoint = perStep.find((entry) => entry.pathJointCount > 1) ?? null;
+      const maxJointCount = perStep.length > 0
+        ? Math.max(...perStep.map((entry) => entry.pathJointCount))
+        : 0;
+      let peakPathAbsJump = null;
+      let previousPathAbs = null;
+      for (const entry of window) {
+        if (!Number.isFinite(entry.pathAngularAbsTotal)) {
+          continue;
+        }
+        const jump = Number.isFinite(previousPathAbs)
+          ? (entry.pathAngularAbsTotal - previousPathAbs)
+          : 0.0;
+        if (
+          peakPathAbsJump === null ||
+          jump > _readFinite(peakPathAbsJump.pathAngularAbsJump, -Infinity)
+        ) {
+          peakPathAbsJump = {
+            step: entry.step,
+            pathAngularAbsJump: jump,
+            pathAngularAbsTotal: entry.pathAngularAbsTotal,
+            pathAngularSignedTotal: entry.pathAngularSignedTotal,
+            pathJointCount: entry.pathJointCount,
+            pathSignature: entry.pathSignature,
+            pathEntities: entry.pathEntities
+          };
+        }
+        previousPathAbs = entry.pathAngularAbsTotal;
+      }
+      const peakJump = window.length > 0
+        ? [...window].sort((a, b) => (_readFinite(b.pairAngularJump, -Infinity) - _readFinite(a.pairAngularJump, -Infinity)))[0]
+        : null;
+      const routedWindow = window.filter((entry) => entry.pathJointCount > 1);
+      const peakJumpWhenRouted = routedWindow.length > 0
+        ? [...routedWindow].sort((a, b) => (_readFinite(b.pairAngularJump, -Infinity) - _readFinite(a.pairAngularJump, -Infinity)))[0]
+        : null;
+      const peakAbs = window.length > 0
+        ? [...window].sort((a, b) => (_readFinite(b.pairAbsAngular, -Infinity) - _readFinite(a.pairAbsAngular, -Infinity)))[0]
+        : null;
+      return {
+        pairIndex: tracked?.pairIndex ?? null,
+        ballA: tracked?.ballA ?? null,
+        ballB: tracked?.ballB ?? null,
+        totalTrackedSteps: perStep.length,
+        topologyChanges: tracked?.topologyChanges ?? 0,
+        maxJointCount,
+        firstMultiJointStep: firstMultiJoint?.step ?? null,
+        firstMultiJointSignature: firstMultiJoint?.pathSignature ?? null,
+        multiJointWindowCount: routedWindow.length,
+        peakPathAbsJump,
+        peakJump,
+        peakJumpWhenRouted,
+        peakAbs
+      };
+    };
+
+    try {
+      const baseline = runScenario({
+        steps: longSteps,
+        trackedPairIndex: greenPairIndex,
+        eventTrace: {
+          stepMin: windowMin,
+          stepMax: windowMax,
+          limit: 160000
+        },
+        hybridTrace: {
+          stepMin: windowMin,
+          stepMax: windowMax,
+          limit: 16000
+        }
+      });
+      const splitOff = runScenario({
+        steps: longSteps,
+        trackedPairIndex: greenPairIndex,
+        flagPatch: {
+          layeringSplitJoints: false
+        },
+        eventTrace: {
+          stepMin: windowMin,
+          stepMax: windowMax,
+          limit: 160000
+        }
+      });
+
+      const baselineTrackedSummary = summarizeTracked(baseline.trackedPair);
+      const splitOffTrackedSummary = summarizeTracked(splitOff.trackedPair);
+      const baselinePeakStep = baselineTrackedSummary.peakJumpWhenRouted?.step
+        ?? baselineTrackedSummary.peakJump?.step
+        ?? null;
+      const baselinePeakPathAbsStep = baselineTrackedSummary.peakPathAbsJump?.step ?? null;
+      const baselinePeakPathId = baselineTrackedSummary.peakJumpWhenRouted?.pathId
+        ?? baselineTrackedSummary.peakJump?.pathId
+        ?? null;
+      const baselineEventsNearPeak = Number.isFinite(baselinePeakStep)
+        ? baseline.cableEvents.filter((event) => {
+            const step = Math.floor(_readFinite(event.step, 0));
+            const inWindow = step >= baselinePeakStep - 2 && step <= baselinePeakStep + 2;
+            if (!inWindow) {
+              return false;
+            }
+            if (!Number.isFinite(baselinePeakPathId)) {
+              return true;
+            }
+            return event.pathId === baselinePeakPathId || event.jointId === baselinePeakPathId;
+          })
+        : [];
+      const baselineEventsNearPathAbsPeak = (
+        Number.isFinite(baselinePeakPathAbsStep) && Number.isFinite(baselinePeakPathId)
+      )
+        ? baseline.cableEvents.filter((event) => {
+            const step = Math.floor(_readFinite(event.step, 0));
+            const inWindow = step >= baselinePeakPathAbsStep - 2 && step <= baselinePeakPathAbsStep + 2;
+            return inWindow && event.pathId === baselinePeakPathId;
+          })
+        : [];
+      const baselinePathEventsInWindow = (
+        Number.isFinite(baselinePeakPathId)
+          ? baseline.cableEvents.filter((event) => {
+              const step = Math.floor(_readFinite(event.step, 0));
+              return (
+                step >= windowMin &&
+                step <= windowMax &&
+                event.pathId === baselinePeakPathId
+              );
+            })
+          : []
+      );
+      const baselinePathSplitEvents = baselinePathEventsInWindow.filter((event) => event.type === 'split');
+      const baselinePathMergeEvents = baselinePathEventsInWindow.filter((event) => event.type === 'merge');
+      const baselinePathClampEvents = baselinePathEventsInWindow.filter((event) => event.type === 'rest-length-clamp');
+      const baselinePathRestAnomalyEvents = baselinePathEventsInWindow.filter((event) => event.type === 'rest-length-anomaly');
+      const baselineLastSplitBeforePeak = (
+        Number.isFinite(baselinePeakStep)
+          ? [...baselinePathSplitEvents]
+              .filter((event) => Math.floor(_readFinite(event.step, 0)) <= baselinePeakStep)
+              .sort((a, b) => Math.floor(_readFinite(b.step, 0)) - Math.floor(_readFinite(a.step, 0)))[0] ?? null
+          : null
+      );
+      const baselineLastMergeBeforePeak = (
+        Number.isFinite(baselinePeakStep)
+          ? [...baselinePathMergeEvents]
+              .filter((event) => Math.floor(_readFinite(event.step, 0)) <= baselinePeakStep)
+              .sort((a, b) => Math.floor(_readFinite(b.step, 0)) - Math.floor(_readFinite(a.step, 0)))[0] ?? null
+          : null
+      );
+      const baselineLastClampBeforePeak = (
+        Number.isFinite(baselinePeakStep)
+          ? [...baselinePathClampEvents]
+              .filter((event) => Math.floor(_readFinite(event.step, 0)) <= baselinePeakStep)
+              .sort((a, b) => Math.floor(_readFinite(b.step, 0)) - Math.floor(_readFinite(a.step, 0)))[0] ?? null
+          : null
+      );
+      const baselineLastRestAnomalyBeforePeak = (
+        Number.isFinite(baselinePeakStep)
+          ? [...baselinePathRestAnomalyEvents]
+              .filter((event) => Math.floor(_readFinite(event.step, 0)) <= baselinePeakStep)
+              .sort((a, b) => Math.floor(_readFinite(b.step, 0)) - Math.floor(_readFinite(a.step, 0)))[0] ?? null
+          : null
+      );
+      const baselinePathSplitsNearPeak = baselineEventsNearPeak.filter((event) => event.type === 'split');
+      const baselinePathMergesNearPeak = baselineEventsNearPeak.filter((event) => event.type === 'merge');
+      const baselinePathRestAnomaliesNearPeak = baselineEventsNearPeak.filter((event) => event.type === 'rest-length-anomaly');
+
+      // eslint-disable-next-line no-console
+      console.log(
+        'SPOOL_FUNNEL_LONG_HORIZON_TRACE',
+        JSON.stringify({
+          windowMin,
+          windowMax,
+          longSteps,
+          baseline: {
+            isStable: baseline.isStable,
+            growthAbortStep: baseline.growthAbortStep,
+            nanStep: baseline.nanStep,
+            tracked: baselineTrackedSummary,
+            peakStep: baselinePeakStep,
+            peakPathAbsStep: baselinePeakPathAbsStep,
+            peakPathId: baselinePeakPathId,
+            peakEventsNearStep: baselineEventsNearPeak.slice(0, 40),
+            peakPathAbsEventsNearStep: baselineEventsNearPathAbsPeak.slice(0, 40),
+            pathEventCountInWindow: baselinePathEventsInWindow.length,
+            splitEventCountInWindow: baselinePathSplitEvents.length,
+            mergeEventCountInWindow: baselinePathMergeEvents.length,
+            clampEventCountInWindow: baselinePathClampEvents.length,
+            restAnomalyEventCountInWindow: baselinePathRestAnomalyEvents.length,
+            lastSplitBeforePeak: baselineLastSplitBeforePeak,
+            lastMergeBeforePeak: baselineLastMergeBeforePeak,
+            lastClampBeforePeak: baselineLastClampBeforePeak,
+            lastRestAnomalyBeforePeak: baselineLastRestAnomalyBeforePeak,
+            splitEventsNearPeakCount: baselinePathSplitsNearPeak.length,
+            mergeEventsNearPeakCount: baselinePathMergesNearPeak.length,
+            restAnomalyNearPeakCount: baselinePathRestAnomaliesNearPeak.length
+          },
+          splitOff: {
+            isStable: splitOff.isStable,
+            growthAbortStep: splitOff.growthAbortStep,
+            nanStep: splitOff.nanStep,
+            tracked: splitOffTrackedSummary
+          },
+          comparison: {
+            baselinePeakJumpWhenRouted: baselineTrackedSummary.peakJumpWhenRouted?.pairAngularJump ?? null,
+            baselinePeakJump: baselineTrackedSummary.peakJump?.pairAngularJump ?? null,
+            splitOffPeakJump: splitOffTrackedSummary.peakJump?.pairAngularJump ?? null
+          }
+        })
+      );
+
+      expect(baseline.trackedPair).not.toBeNull();
+      expect(splitOff.trackedPair).not.toBeNull();
+      expect(splitOffTrackedSummary.maxJointCount).toBeLessThanOrEqual(1);
     } finally {
       console.warn = originalWarn;
       console.error = originalError;

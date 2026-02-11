@@ -247,6 +247,22 @@ function ensureMachineTag(world, entityId, machineId) {
   world.addComponent(entityId, new MachineTagComponent(machineId));
 }
 
+function _collectPathEntityIds(world, path) {
+  const entityIds = new Set();
+  if (!path || !Array.isArray(path.jointEntities)) {
+    return entityIds;
+  }
+  for (const jointId of path.jointEntities) {
+    const joint = world.getComponent(jointId, CableJointComponent);
+    if (!joint) {
+      continue;
+    }
+    entityIds.add(joint.entityA);
+    entityIds.add(joint.entityB);
+  }
+  return entityIds;
+}
+
 function _computeWorldAttachment(world, entityId, localPoint) {
   if (!localPoint) {
     return null;
@@ -770,20 +786,23 @@ export function _updateAttachmentPoints(world) {
       let localAttachmentAfterA = null;
       let localAttachmentAfterB = null;
       if (clampApplied) {
-        if (
+        const shouldProjectOrientationA = (
           rollingLinkA &&
-          isHybridA &&
           orientationAComp &&
           Number.isFinite(radiusA) &&
           radiusA > EPSILON &&
-          Math.abs(blockedSA) > EPSILON
+          Math.abs(blockedSA) > EPSILON &&
+          (isHybridA || Boolean(hasFrictionA))
+        );
+        if (
+          shouldProjectOrientationA
         ) {
           const angleBeforeProjection = orientationAComp.angle;
           const attachmentBeforeProjection = attachmentA_current ? attachmentA_current.clone() : null;
           orientationCorrectionA = (cwA ? -blockedSA : blockedSA) / radiusA;
           orientationAComp.angle += orientationCorrectionA;
-          if (attachmentA_current && posA) {
-            // Keep attachment-point world geometry coherent with the angle projection.
+          if (isHybridA && attachmentA_current && posA) {
+            // Keep hybrid attachment-point world geometry coherent with the angle projection.
             attachmentA_current.rotate(orientationCorrectionA, posA, true);
             const localBefore = _computeLocalAttachment(attachmentBeforeProjection, posA, angleBeforeProjection);
             const localAfter = _computeLocalAttachment(attachmentA_current, posA, orientationAComp.angle);
@@ -794,20 +813,23 @@ export function _updateAttachmentPoints(world) {
             }
           }
         }
-        if (
+        const shouldProjectOrientationB = (
           rollingLinkB &&
-          isHybridB &&
           orientationBComp &&
           Number.isFinite(radiusB) &&
           radiusB > EPSILON &&
-          Math.abs(blockedSB) > EPSILON
+          Math.abs(blockedSB) > EPSILON &&
+          (isHybridB || Boolean(hasFrictionB))
+        );
+        if (
+          shouldProjectOrientationB
         ) {
           const angleBeforeProjection = orientationBComp.angle;
           const attachmentBeforeProjection = attachmentB_current ? attachmentB_current.clone() : null;
           orientationCorrectionB = (cwB ? blockedSB : -blockedSB) / radiusB;
           orientationBComp.angle += orientationCorrectionB;
-          if (attachmentB_current && posB) {
-            // Keep attachment-point world geometry coherent with the angle projection.
+          if (isHybridB && attachmentB_current && posB) {
+            // Keep hybrid attachment-point world geometry coherent with the angle projection.
             attachmentB_current.rotate(orientationCorrectionB, posB, true);
             const localBefore = _computeLocalAttachment(attachmentBeforeProjection, posB, angleBeforeProjection);
             const localAfter = _computeLocalAttachment(attachmentB_current, posB, orientationBComp.angle);
@@ -1034,6 +1056,7 @@ export function _mergeJoints(world) {
 
 export function _splitJoints(world) {
   const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+  const disallowExistingPathLink = _featureFlag(world, 'layeringSplitDisallowExistingPathLink', false);
   const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -1046,11 +1069,25 @@ export function _splitJoints(world) {
 
       const pA = joint.attachmentPointA_world;
       const pB = joint.attachmentPointB_world;
+      const pathEntityIds = disallowExistingPathLink
+        ? _collectPathEntityIds(world, path)
+        : null;
       for (const splitterId of potentialSplitters) {
         if (splitterId === joint.entityA || splitterId === joint.entityB) {
           continue;
         }
         if (getMachineId(world, splitterId) !== pathMachine) {
+          continue;
+        }
+        if (pathEntityIds && pathEntityIds.has(splitterId)) {
+          _recordCableEventTrace(world, step, {
+            type: 'split-abort',
+            reason: 'splitter-already-in-path',
+            pathId,
+            jointId,
+            splitterId,
+            splitIndex: i
+          });
           continue;
         }
         const posSplitter = world.getComponent(splitterId, PositionComponent).pos;

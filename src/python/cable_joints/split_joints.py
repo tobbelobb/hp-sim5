@@ -23,6 +23,18 @@ from .util import (
     effective_cw
 )
 
+def _collect_path_entity_ids(world, path):
+    entity_ids = set()
+    if not path or not path.joint_entities:
+        return entity_ids
+    for joint_id in path.joint_entities:
+        joint = world.get_component(joint_id, CableJointComponent)
+        if not joint:
+            continue
+        entity_ids.add(joint.entity_a)
+        entity_ids.add(joint.entity_b)
+    return entity_ids
+
 def split_joints(world):
     """
     Splits cable joints that intersect with 'splitter' entities (e.g., wheels).
@@ -37,6 +49,8 @@ def split_joints(world):
     """
     potential_splitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent])
     path_entities = world.query([CablePathComponent])
+    split_disallow_existing = world.get_resource('layeringSplitDisallowExistingPathLink')
+    split_disallow_existing = False if split_disallow_existing is None else bool(split_disallow_existing)
 
     for path_id in path_entities:
         path = world.get_component(path_id, CablePathComponent)
@@ -53,9 +67,12 @@ def split_joints(world):
 
             pA = joint.attachment_point_a_world
             pB = joint.attachment_point_b_world
+            path_entity_ids = _collect_path_entity_ids(world, path) if split_disallow_existing else None
 
             for splitter_id in potential_splitters:
                 if splitter_id == joint.entity_a or splitter_id == joint.entity_b:
+                    continue
+                if path_entity_ids is not None and splitter_id in path_entity_ids:
                     continue
 
                 pos_splitter_comp = world.get_component(splitter_id, PositionComponent)

@@ -238,31 +238,37 @@ def update_attachment_points(world):
             blocked_s_a = s_a - s_a_effective
             blocked_s_b = s_b_effective - s_b
             if clamp_enabled:
-                if (
+                should_project_orientation_a = (
                     rolling_link_a and
-                    is_hybrid_a and
                     orientation_a_comp is not None and
                     radius_a is not None and
                     np.isfinite(radius_a) and
                     radius_a > 1e-9 and
-                    abs(blocked_s_a) > 1e-9
+                    abs(blocked_s_a) > 1e-9 and
+                    (is_hybrid_a or has_friction_a)
+                )
+                if (
+                    should_project_orientation_a
                 ):
                     orientation_correction_a = ((-blocked_s_a if cw_a else blocked_s_a) / radius_a)
                     orientation_a_comp.angle += orientation_correction_a
-                    if attachment_a_current is not None and pos_a is not None:
+                    if is_hybrid_a and attachment_a_current is not None and pos_a is not None:
                         rotate_inplace(attachment_a_current, orientation_correction_a, pos_a, True)
-                if (
+                should_project_orientation_b = (
                     rolling_link_b and
-                    is_hybrid_b and
                     orientation_b_comp is not None and
                     radius_b is not None and
                     np.isfinite(radius_b) and
                     radius_b > 1e-9 and
-                    abs(blocked_s_b) > 1e-9
+                    abs(blocked_s_b) > 1e-9 and
+                    (is_hybrid_b or has_friction_b)
+                )
+                if (
+                    should_project_orientation_b
                 ):
                     orientation_correction_b = ((blocked_s_b if cw_b else -blocked_s_b) / radius_b)
                     orientation_b_comp.angle += orientation_correction_b
-                    if attachment_b_current is not None and pos_b is not None:
+                    if is_hybrid_b and attachment_b_current is not None and pos_b is not None:
                         rotate_inplace(attachment_b_current, orientation_correction_b, pos_b, True)
 
             path.stored[A] += s_a_effective
