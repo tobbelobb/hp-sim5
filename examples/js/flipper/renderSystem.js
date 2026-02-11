@@ -659,8 +659,8 @@ export class RenderSystem {
 
     const radiusValue = world.getComponent(obstacleId, RadiusComponent)?.radius;
     const radius = (Number.isFinite(radiusValue) && radiusValue > 1e-6) ? radiusValue : 0.02;
-    const ampBase = Math.max(0.00045, Math.min(0.0022, radius * 0.08));
-    const ampScale = Math.max(0.65, Math.min(1.4, 0.72 + 0.22 * intensity));
+    const ampBase = Math.max(0.0038, Math.min(0.0088, radius * 0.34));
+    const ampScale = Math.max(0.7, Math.min(1.45, 0.76 + 0.25 * intensity));
 
     this.bumperWobbleByEntity.set(obstacleId, {
       startSec: this._nowSeconds(),
@@ -692,9 +692,12 @@ export class RenderSystem {
     const oscillation = Math.sin((2.0 * Math.PI * wobble.freqHz * elapsed) + wobble.phase);
     const kick = wobble.amplitude * 0.24 * Math.exp(-48.0 * elapsed);
     const offset = wobble.amplitude * envelope * oscillation + kick;
+    const stretchRaw = 0.14 * envelope * Math.sin((2.0 * Math.PI * wobble.freqHz * elapsed) + wobble.phase + 0.9);
+    const stretch = Math.max(-0.22, Math.min(0.22, stretchRaw));
     return {
       x: wobble.dirX * offset,
-      y: wobble.dirY * offset
+      y: wobble.dirY * offset,
+      stretch
     };
   }
 
@@ -754,7 +757,7 @@ export class RenderSystem {
         lengthScale: inward ? (0.24 + Math.random() * 0.28) : (0.78 + Math.random() * 0.62),
         widthScale: 0.7 + Math.random() * 0.75,
         alphaScale: 0.52 + Math.random() * 0.36,
-        surfaceOffsetScale: -0.08 + Math.random() * 0.42,
+        surfaceOffsetScale: 0.01 + Math.random() * 0.15,
         inward,
         inwardScale: 0.5 + Math.random() * 0.4,
         flicker: Math.random() * Math.PI * 2.0,
@@ -764,8 +767,9 @@ export class RenderSystem {
 
     const sparkCount = Math.max(6, Math.min(14, Math.round(6 + intensity * 3 + (Math.random() * 2))));
     const sparks = [];
-    const originX = obsPos.x + outwardDir.x * effectRadius;
-    const originY = obsPos.y + outwardDir.y * effectRadius;
+    const originDistance = obstacleRadius + effectRadius * 0.03;
+    const originX = obsPos.x + outwardDir.x * originDistance;
+    const originY = obsPos.y + outwardDir.y * originDistance;
     for (let i = 0; i < sparkCount; i++) {
       const sparkAngle = baseAngle + ((Math.random() * 2.0 - 1.0) * spread * 1.2);
       const sparkSpeed = (0.2 + Math.random() * 0.5) * (0.45 + 0.5 * intensity);
@@ -789,18 +793,23 @@ export class RenderSystem {
       const startX = ballPos.x - outwardDir.x * ballRadius;
       const startY = ballPos.y - outwardDir.y * ballRadius;
       const tangent = new Vector2(-outwardDir.y, outwardDir.x);
-      const tangentSign = Math.random() < 0.5 ? -1.0 : 1.0;
-      const sparkDir = outwardDir.clone().scale(-0.68).add(tangent, 0.35 * tangentSign).normalize();
-      const speed = (0.25 + Math.random() * 0.33) * (0.8 + 0.22 * intensity);
-      ballSparks.push({
-        x: startX,
-        y: startY,
-        vx: sparkDir.x * speed,
-        vy: sparkDir.y * speed,
-        age: 0.0,
-        life: 0.07 + Math.random() * 0.07,
-        width: 1.1 + Math.random() * 0.9
-      });
+      const ballSparkCount = 3 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < ballSparkCount; i++) {
+        const tangentSign = Math.random() < 0.5 ? -1.0 : 1.0;
+        const tangentWeight = 0.85 + Math.random() * 0.55;
+        const normalWeight = -0.18 + Math.random() * 0.26;
+        const sparkDir = outwardDir.clone().scale(normalWeight).add(tangent, tangentWeight * tangentSign).normalize();
+        const speed = (0.42 + Math.random() * 0.52) * (0.8 + 0.22 * intensity);
+        ballSparks.push({
+          x: startX,
+          y: startY,
+          vx: sparkDir.x * speed,
+          vy: sparkDir.y * speed,
+          age: 0.0,
+          life: 0.16 + Math.random() * 0.1,
+          width: 1.8 + Math.random() * 1.2
+        });
+      }
     }
 
     this.bumperHitFxBursts.push({
@@ -874,23 +883,22 @@ export class RenderSystem {
     const drag = Math.exp(-6.5 * dtFx);
     for (const burst of this.bumperHitFxBursts) {
       burst.age += dtFx;
-      if (!Array.isArray(burst.sparks) || burst.sparks.length === 0) {
-        continue;
-      }
-      const nextSparks = [];
-      for (const spark of burst.sparks) {
-        spark.age += dtFx;
-        if (spark.age >= spark.life) {
-          continue;
+      if (Array.isArray(burst.sparks) && burst.sparks.length > 0) {
+        const nextSparks = [];
+        for (const spark of burst.sparks) {
+          spark.age += dtFx;
+          if (spark.age >= spark.life) {
+            continue;
+          }
+          spark.x += spark.vx * dtFx;
+          spark.y += spark.vy * dtFx;
+          spark.vx *= drag;
+          spark.vy *= drag;
+          spark.vy -= 0.45 * dtFx;
+          nextSparks.push(spark);
         }
-        spark.x += spark.vx * dtFx;
-        spark.y += spark.vy * dtFx;
-        spark.vx *= drag;
-        spark.vy *= drag;
-        spark.vy -= 0.45 * dtFx;
-        nextSparks.push(spark);
+        burst.sparks = nextSparks;
       }
-      burst.sparks = nextSparks;
 
       if (Array.isArray(burst.ballSparks) && burst.ballSparks.length > 0) {
         const nextBallSparks = [];
@@ -930,7 +938,7 @@ export class RenderSystem {
       const fade = Math.max(0.0, 1.0 - progress);
       const baseAngle = Math.atan2(burst.dirY, burst.dirX);
       const coneReach = burst.maxRayLength * (0.28 + 0.95 * progress);
-      const originDistance = burst.bumperRadius + burst.effectRadius * (0.05 + 0.1 * progress);
+      const originDistance = burst.bumperRadius + burst.effectRadius * 0.02;
       const originX = burst.x + burst.dirX * originDistance;
       const originY = burst.y + burst.dirY * originDistance;
       const palette = burst.palette || this._fxPaletteForObstacleColor(null);
@@ -1016,19 +1024,24 @@ export class RenderSystem {
           const tailX = spark.x - spark.vx * (0.035 + 0.02 * sparkFade);
           const tailY = spark.y - spark.vy * (0.035 + 0.02 * sparkFade);
 
-          this.c.strokeStyle = `rgba(150, 160, 172, ${0.52 * sparkFade})`;
-          this.c.lineWidth = Math.max(0.75, spark.width * unitPx * (0.75 + sparkFade));
+          this.c.strokeStyle = `rgba(165, 173, 184, ${0.86 * sparkFade})`;
+          this.c.lineWidth = Math.max(1.0, spark.width * unitPx * (0.95 + sparkFade));
           this.c.beginPath();
           this.c.moveTo(this.cX(tailX), this.cY(tailY));
           this.c.lineTo(this.cX(spark.x), this.cY(spark.y));
           this.c.stroke();
 
-          this.c.strokeStyle = `rgba(230, 236, 244, ${0.8 * sparkFade})`;
-          this.c.lineWidth = Math.max(0.5, spark.width * unitPx * (0.38 + sparkFade * 0.52));
+          this.c.strokeStyle = `rgba(242, 246, 255, ${0.98 * sparkFade})`;
+          this.c.lineWidth = Math.max(0.8, spark.width * unitPx * (0.52 + sparkFade * 0.58));
           this.c.beginPath();
           this.c.moveTo(this.cX(tailX), this.cY(tailY));
           this.c.lineTo(this.cX(spark.x), this.cY(spark.y));
           this.c.stroke();
+
+          this.c.fillStyle = `rgba(250, 252, 255, ${0.92 * sparkFade})`;
+          this.c.beginPath();
+          this.c.arc(this.cX(spark.x), this.cY(spark.y), Math.max(0.9, 0.6 * spark.width * unitPx), 0.0, 2.0 * Math.PI);
+          this.c.fill();
         }
       }
     }
@@ -1589,11 +1602,13 @@ export class RenderSystem {
             if (posComp && radiusComp) {
                 let simX = posComp.pos.x;
                 let simY = posComp.pos.y;
+                let wobbleStretch = 0.0;
                 if (world.hasComponent(entityId, ObstacleTagComponent)) {
                   const wobbleOffset = this._getBumperWobbleOffset(entityId, wobbleNowSec);
                   if (wobbleOffset) {
                     simX += wobbleOffset.x;
                     simY += wobbleOffset.y;
+                    wobbleStretch = Number.isFinite(wobbleOffset.stretch) ? wobbleOffset.stretch : 0.0;
                   }
                 }
                 const simRadius = radiusComp.radius;
@@ -1606,6 +1621,11 @@ export class RenderSystem {
                 this.c.save(); // Save context state
                 this.c.translate(cx, cy); // Move origin to circle center
                 this.c.rotate(-angle); // Rotate (negative for canvas Y-down)
+                if (Math.abs(wobbleStretch) > 1e-6 && world.hasComponent(entityId, ObstacleTagComponent)) {
+                  const sx = Math.max(0.72, 1.0 + wobbleStretch);
+                  const sy = Math.max(0.72, 1.0 - wobbleStretch);
+                  this.c.scale(sx, sy);
+                }
 
                 // Draw the circle centered at the new (0,0)
                 this.c.fillStyle = renderComp.color;
