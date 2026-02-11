@@ -8,6 +8,10 @@ export const CABLE_FEATURE_FLAG_DEFS = Object.freeze([
   { key: 'layeringCollisionSectorSolvers', label: 'collision/sectorSolvers', defaultValue: true },
   { key: 'layeringVelocityContactOffset', label: 'contact/velocityOffset', defaultValue: true },
   { key: 'layeringObstacleRawHitFilter', label: 'obstacle/rawHitFilter', defaultValue: true },
+  { key: 'layeringAttachmentUpdatePoints', label: 'cable/updateAttachment', defaultValue: true },
+  { key: 'layeringMergeJoints', label: 'cable/mergeJoints', defaultValue: true },
+  { key: 'layeringSplitJoints', label: 'cable/splitJoints', defaultValue: true },
+  { key: 'layeringHybridLinkStates', label: 'cable/hybridLinkStates', defaultValue: true },
   { key: 'layeringRenderWraps', label: 'render/layeredWraps', defaultValue: true }
 ]);
 

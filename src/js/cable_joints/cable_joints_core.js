@@ -53,6 +53,10 @@ function _layeringFlag(world, key, fallback = true) {
   return _layeringEnabled(world) && _resourceBool(world, key, fallback);
 }
 
+function _featureFlag(world, key, fallback = true) {
+  return _resourceBool(world, key, fallback);
+}
+
 function getMachineId(world, entityId) {
   if (entityId == null) {
     return '';
@@ -1016,10 +1020,18 @@ export class CableAttachmentUpdateSystem {
 
   update(world, _dt_unused) {
     _clearDebugPoints(world);
-    _updateAttachmentPoints(world);
-    _mergeJoints(world);
-    _splitJoints(world);
-    _updateHybridLinkStates(world);
+    if (_featureFlag(world, 'layeringAttachmentUpdatePoints', true)) {
+      _updateAttachmentPoints(world);
+    }
+    if (_featureFlag(world, 'layeringMergeJoints', true)) {
+      _mergeJoints(world);
+    }
+    if (_featureFlag(world, 'layeringSplitJoints', true)) {
+      _splitJoints(world);
+    }
+    if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
+      _updateHybridLinkStates(world);
+    }
   }
 }
 
