@@ -141,10 +141,10 @@ def Xform "World"
         def CableJoint "Joint3"
         {
             custom point3d localPos0 = (0.091430194749516, 0.077720778998062, 0.000000000000000)
-            custom point3d localPos1 = (-0.019430194749516, 0.022857548687379, 0.000000000000000)
+            custom point3d localPos1 = (-0.025906926332688, 0.030476731583172, 0.000000000000000)
             custom rel physics:body0 = </World/FlipperScene/Obs3>
             custom rel physics:body1 = </World/FlipperScene/Ball1>
-            custom double restLength = 0.1376305461424022
+            custom double restLength = 0.1276305461424022
         }
 
         def PhysicsRevoluteJoint "FixedObs3"
