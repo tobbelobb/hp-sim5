@@ -191,4 +191,143 @@ describe('PBDUnifiedContactManifoldSystem obstacle scoring behavior', () => {
     expect(withShareContacts.length).toBeGreaterThanOrEqual(1);
     expect(withShareContacts[0].pinch_shared).toBe(true);
   });
+
+  test('non-direct CableJoint touching at center-segment endpoint does not trigger pinch-share for ball-obstacle', () => {
+    const rawRadius = 0.02;
+    const cableHalfWidth = 0.0025;
+    const distanceBelowPinchThreshold = (2.0 * rawRadius) + (2.0 * cableHalfWidth) - 0.0005;
+
+    const world = _makeWorld();
+    world.setResource('layeringCollisionPinchShare', true);
+    world.setResource('layeringCollisionSectorSolvers', false);
+    world.setResource('layeringCollisionCircleSectors', false);
+    world.setResource('layeringCollisionOverlayRadius', false);
+
+    const ballId = world.createEntity();
+    world.addComponent(ballId, new BallTagComponent());
+    world.addComponent(ballId, new PositionComponent(0.0, 0.0));
+    world.addComponent(ballId, new RadiusComponent(rawRadius));
+    world.addComponent(ballId, new MassComponent(1.0));
+    world.addComponent(ballId, new CableLinkComponent(0.0, 0.0, 0.0));
+
+    const obsId = world.createEntity();
+    world.addComponent(obsId, new ObstacleTagComponent());
+    world.addComponent(obsId, new PositionComponent(distanceBelowPinchThreshold, 0.0));
+    world.addComponent(obsId, new RadiusComponent(rawRadius));
+    world.addComponent(obsId, new ObstaclePushComponent(2.0));
+    world.addComponent(obsId, new CableLinkComponent(distanceBelowPinchThreshold, 0.0, 0.0));
+
+    const top = world.createEntity();
+    world.addComponent(top, new PositionComponent(0.0, 0.05));
+    world.addComponent(top, new CableLinkComponent(0.0, 0.05, 0.0));
+    const bottom = world.createEntity();
+    world.addComponent(bottom, new PositionComponent(0.0, 0.0));
+    world.addComponent(bottom, new CableLinkComponent(0.0, 0.0, 0.0));
+
+    const touchingJoint = world.createEntity();
+    world.addComponent(
+      touchingJoint,
+      CableJointComponent.fromWorld(
+        top,
+        bottom,
+        0.05,
+        new Vector2(0.0, 0.05),
+        new Vector2(0.0, 0.0)
+      )
+    );
+
+    const pathId = world.createEntity();
+    world.addComponent(
+      pathId,
+      new CablePathComponent(
+        world,
+        [touchingJoint],
+        ['hybrid', 'hybrid'],
+        [true, false],
+        1e6,
+        [0.0, 0.0],
+        cableHalfWidth
+      )
+    );
+
+    const collisionSystem = new PBDUnifiedContactManifoldSystem();
+    collisionSystem.update(world, 0.016);
+
+    expect(world.getComponent(ballId, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect((world.getResource('ball_obstacle_contacts') || []).length).toBe(0);
+  });
+
+  test('ball-obstacle pinch-share uses attachment-time cache transform for moved CableJoint segments', () => {
+    const rawRadius = 0.02;
+    const cableHalfWidth = 0.0025;
+    const distanceBelowPinchThreshold = (2.0 * rawRadius) + (2.0 * cableHalfWidth) - 0.0005;
+
+    const world = _makeWorld();
+    world.setResource('layeringCollisionPinchShare', true);
+    world.setResource('layeringCollisionSectorSolvers', false);
+    world.setResource('layeringCollisionCircleSectors', false);
+    world.setResource('layeringCollisionOverlayRadius', false);
+
+    const ballId = world.createEntity();
+    world.addComponent(ballId, new BallTagComponent());
+    world.addComponent(ballId, new PositionComponent(0.0, 0.0));
+    world.addComponent(ballId, new RadiusComponent(rawRadius));
+    world.addComponent(ballId, new MassComponent(1.0));
+    world.addComponent(ballId, new CableLinkComponent(0.0, 0.0, 0.0));
+
+    const obsId = world.createEntity();
+    world.addComponent(obsId, new ObstacleTagComponent());
+    world.addComponent(obsId, new PositionComponent(distanceBelowPinchThreshold, 0.0));
+    world.addComponent(obsId, new RadiusComponent(rawRadius));
+    world.addComponent(obsId, new ObstaclePushComponent(2.0));
+    world.addComponent(obsId, new CableLinkComponent(distanceBelowPinchThreshold, 0.0, 0.0));
+
+    const top = world.createEntity();
+    world.addComponent(top, new PositionComponent(distanceBelowPinchThreshold * 0.5, 0.05));
+    world.addComponent(top, new CableLinkComponent(0.10, 0.05, 0.0));
+    const bottom = world.createEntity();
+    world.addComponent(bottom, new PositionComponent(distanceBelowPinchThreshold * 0.5, -0.05));
+    world.addComponent(bottom, new CableLinkComponent(0.10, -0.05, 0.0));
+
+    const topLink = world.getComponent(top, CableLinkComponent);
+    const bottomLink = world.getComponent(bottom, CableLinkComponent);
+    topLink.prevCableAttachmentTimePos.set({ x: 0.10, y: 0.05 });
+    bottomLink.prevCableAttachmentTimePos.set({ x: 0.10, y: -0.05 });
+    topLink.prevCableAttachmentTimeAngle = 0.0;
+    bottomLink.prevCableAttachmentTimeAngle = 0.0;
+
+    const crossingJoint = world.createEntity();
+    world.addComponent(
+      crossingJoint,
+      CableJointComponent.fromWorld(
+        top,
+        bottom,
+        0.1,
+        new Vector2(0.10, 0.05),
+        new Vector2(0.10, -0.05)
+      )
+    );
+
+    const pathId = world.createEntity();
+    world.addComponent(
+      pathId,
+      new CablePathComponent(
+        world,
+        [crossingJoint],
+        ['hybrid', 'hybrid'],
+        [true, false],
+        1e6,
+        [0.0, 0.0],
+        cableHalfWidth
+      )
+    );
+
+    const collisionSystem = new PBDUnifiedContactManifoldSystem();
+    collisionSystem.update(world, 0.016);
+
+    expect(world.getComponent(ballId, PositionComponent).pos.x).toBeLessThan(0.0);
+    const contacts = world.getResource('ball_obstacle_contacts') || [];
+    expect(contacts.length).toBeGreaterThanOrEqual(1);
+    expect(contacts[0].pinch_shared).toBe(true);
+  });
 });

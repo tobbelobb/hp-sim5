@@ -141,6 +141,119 @@ function _makeCrossingSegmentPinchWorld({
   return { world, left, right };
 }
 
+function _makeEndpointTouchPinchWorld({
+  centerDistance,
+  rawRadius = 0.02,
+  cableHalfWidth = 0.0025,
+  pinchShareEnabled = true,
+} = {}) {
+  const world = _baseWorld();
+  world.setResource('layeringCollisionPinchShare', pinchShareEnabled);
+  world.setResource('layeringCollisionSectorSolvers', false);
+  world.setResource('layeringCollisionCircleSectors', false);
+  world.setResource('layeringCollisionOverlayRadius', false);
+
+  const left = _addBall(world, 0.0, 0.0, rawRadius, 1.0);
+  const right = _addBall(world, centerDistance, 0.0, rawRadius, 1.0);
+  world.addComponent(left, new CableLinkComponent(0.0, 0.0, 0.0));
+  world.addComponent(right, new CableLinkComponent(centerDistance, 0.0, 0.0));
+
+  const top = world.createEntity();
+  world.addComponent(top, new PositionComponent(0.0, 0.05));
+  world.addComponent(top, new CableLinkComponent(0.0, 0.05, 0.0));
+  const bottom = world.createEntity();
+  world.addComponent(bottom, new PositionComponent(0.0, 0.0));
+  world.addComponent(bottom, new CableLinkComponent(0.0, 0.0, 0.0));
+
+  const touchingJoint = world.createEntity();
+  world.addComponent(
+    touchingJoint,
+    CableJointComponent.fromWorld(
+      top,
+      bottom,
+      0.05,
+      new Vector2(0.0, 0.05),
+      new Vector2(0.0, 0.0)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [touchingJoint],
+      ['hybrid', 'hybrid'],
+      [true, false],
+      1e6,
+      [0.0, 0.0],
+      cableHalfWidth
+    )
+  );
+
+  return { world, left, right };
+}
+
+function _makeCachedPoseShiftCrossingWorld({
+  centerDistance,
+  rawRadius = 0.02,
+  cableHalfWidth = 0.0025,
+  pinchShareEnabled = true,
+} = {}) {
+  const world = _baseWorld();
+  world.setResource('layeringCollisionPinchShare', pinchShareEnabled);
+  world.setResource('layeringCollisionSectorSolvers', false);
+  world.setResource('layeringCollisionCircleSectors', false);
+  world.setResource('layeringCollisionOverlayRadius', false);
+
+  const left = _addBall(world, 0.0, 0.0, rawRadius, 1.0);
+  const right = _addBall(world, centerDistance, 0.0, rawRadius, 1.0);
+  world.addComponent(left, new CableLinkComponent(0.0, 0.0, 0.0));
+  world.addComponent(right, new CableLinkComponent(centerDistance, 0.0, 0.0));
+
+  const top = world.createEntity();
+  world.addComponent(top, new PositionComponent(centerDistance * 0.5, 0.05));
+  world.addComponent(top, new CableLinkComponent(0.10, 0.05, 0.0));
+  const bottom = world.createEntity();
+  world.addComponent(bottom, new PositionComponent(centerDistance * 0.5, -0.05));
+  world.addComponent(bottom, new CableLinkComponent(0.10, -0.05, 0.0));
+
+  const topLink = world.getComponent(top, CableLinkComponent);
+  const bottomLink = world.getComponent(bottom, CableLinkComponent);
+  topLink.prevCableAttachmentTimePos.set({ x: 0.10, y: 0.05 });
+  bottomLink.prevCableAttachmentTimePos.set({ x: 0.10, y: -0.05 });
+  topLink.prevCableAttachmentTimeAngle = 0.0;
+  bottomLink.prevCableAttachmentTimeAngle = 0.0;
+
+  const crossingJoint = world.createEntity();
+  world.addComponent(
+    crossingJoint,
+    CableJointComponent.fromWorld(
+      top,
+      bottom,
+      0.1,
+      new Vector2(0.10, 0.05),
+      new Vector2(0.10, -0.05)
+    )
+  );
+
+  const pathId = world.createEntity();
+  world.addComponent(
+    pathId,
+    new CablePathComponent(
+      world,
+      [crossingJoint],
+      ['hybrid', 'hybrid'],
+      [true, false],
+      1e6,
+      [0.0, 0.0],
+      cableHalfWidth
+    )
+  );
+
+  return { world, left, right };
+}
+
 describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
   test('no correction when there is no overlap', () => {
     const world = _baseWorld();
@@ -300,6 +413,46 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
 
     expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeLessThan(0.0);
     expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeGreaterThan(distanceBelowCrossingThreshold);
+    const contacts = withShare.world.getResource('ball_ball_contacts') || [];
+    expect(contacts.length).toBeGreaterThanOrEqual(1);
+    expect(contacts[0].pinch_shared).toBe(true);
+  });
+
+  test('non-direct CableJoint touching at center-segment endpoint does not qualify as line-between', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const distanceBelowPinchThreshold = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.0005;
+
+    const withShare = _makeEndpointTouchPinchWorld({
+      centerDistance: distanceBelowPinchThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: true
+    });
+
+    _runManifold(withShare.world);
+
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeCloseTo(distanceBelowPinchThreshold, 9);
+    expect((withShare.world.getResource('ball_ball_contacts') || []).length).toBe(0);
+  });
+
+  test('line-between test uses attachment-time cache transform so post-solve pose shifts still pinch-share', () => {
+    const rawRadius = 0.02;
+    const halfWidth = 0.0025;
+    const distanceBelowPinchThreshold = (2.0 * rawRadius) + (2.0 * halfWidth) - 0.0005;
+
+    const withShare = _makeCachedPoseShiftCrossingWorld({
+      centerDistance: distanceBelowPinchThreshold,
+      rawRadius,
+      cableHalfWidth: halfWidth,
+      pinchShareEnabled: true
+    });
+
+    _runManifold(withShare.world);
+
+    expect(withShare.world.getComponent(withShare.left, PositionComponent).pos.x).toBeLessThan(0.0);
+    expect(withShare.world.getComponent(withShare.right, PositionComponent).pos.x).toBeGreaterThan(distanceBelowPinchThreshold);
     const contacts = withShare.world.getResource('ball_ball_contacts') || [];
     expect(contacts.length).toBeGreaterThanOrEqual(1);
     expect(contacts[0].pinch_shared).toBe(true);

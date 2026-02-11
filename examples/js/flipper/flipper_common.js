@@ -1019,18 +1019,7 @@ function _orientation2D(a, b, c) {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-function _pointOnSegmentInclusive(a, b, p, eps = 1e-9) {
-  if (Math.abs(_orientation2D(a, b, p)) > eps) {
-    return false;
-  }
-  const minX = Math.min(a.x, b.x) - eps;
-  const maxX = Math.max(a.x, b.x) + eps;
-  const minY = Math.min(a.y, b.y) - eps;
-  const maxY = Math.max(a.y, b.y) + eps;
-  return p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY;
-}
-
-function _segmentsIntersectInclusive(a0, a1, b0, b1, eps = 1e-9) {
+function _segmentsProperlyIntersect(a0, a1, b0, b1, eps = 1e-9) {
   if (
     !_isFiniteVec2(a0) ||
     !_isFiniteVec2(a1) ||
@@ -1044,27 +1033,51 @@ function _segmentsIntersectInclusive(a0, a1, b0, b1, eps = 1e-9) {
   const o3 = _orientation2D(b0, b1, a0);
   const o4 = _orientation2D(b0, b1, a1);
 
-  const o1Pos = o1 > eps;
-  const o1Neg = o1 < -eps;
-  const o2Pos = o2 > eps;
-  const o2Neg = o2 < -eps;
-  const o3Pos = o3 > eps;
-  const o3Neg = o3 < -eps;
-  const o4Pos = o4 > eps;
-  const o4Neg = o4 < -eps;
-
-  if (
-    ((o1Pos && o2Neg) || (o1Neg && o2Pos)) &&
-    ((o3Pos && o4Neg) || (o3Neg && o4Pos))
-  ) {
-    return true;
+  const strictA = ((o1 > eps && o2 < -eps) || (o1 < -eps && o2 > eps));
+  if (!strictA) {
+    return false;
   }
-  if (Math.abs(o1) <= eps && _pointOnSegmentInclusive(a0, a1, b0, eps)) return true;
-  if (Math.abs(o2) <= eps && _pointOnSegmentInclusive(a0, a1, b1, eps)) return true;
-  if (Math.abs(o3) <= eps && _pointOnSegmentInclusive(b0, b1, a0, eps)) return true;
-  if (Math.abs(o4) <= eps && _pointOnSegmentInclusive(b0, b1, a1, eps)) return true;
+  const strictB = ((o3 > eps && o4 < -eps) || (o3 < -eps && o4 > eps));
+  return strictB;
+}
 
-  return false;
+function _sameEntityPair(a0, a1, b0, b1) {
+  return (a0 === b0 && a1 === b1) || (a0 === b1 && a1 === b0);
+}
+
+function _segmentEndpointAtCurrentPose(world, entityId, attachmentPointWorld) {
+  if (!_isFiniteVec2(attachmentPointWorld)) {
+    return null;
+  }
+
+  const currentPos = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!_isFiniteVec2(currentPos)) {
+    return attachmentPointWorld.clone();
+  }
+
+  const currentAngleComp = world.getComponent(entityId, OrientationComponent);
+  const currentAngle = Number.isFinite(currentAngleComp?.angle) ? currentAngleComp.angle : 0.0;
+
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  const cachedPos = _isFiniteVec2(linkComp?.prevCableAttachmentTimePos)
+    ? linkComp.prevCableAttachmentTimePos
+    : currentPos;
+  const cachedAngle = Number.isFinite(linkComp?.prevCableAttachmentTimeAngle)
+    ? linkComp.prevCableAttachmentTimeAngle
+    : currentAngle;
+
+  const dx = attachmentPointWorld.x - cachedPos.x;
+  const dy = attachmentPointWorld.y - cachedPos.y;
+  const cosCached = Math.cos(-cachedAngle);
+  const sinCached = Math.sin(-cachedAngle);
+  const localX = dx * cosCached - dy * sinCached;
+  const localY = dx * sinCached + dy * cosCached;
+
+  const cosCurrent = Math.cos(currentAngle);
+  const sinCurrent = Math.sin(currentAngle);
+  const worldX = currentPos.x + localX * cosCurrent - localY * sinCurrent;
+  const worldY = currentPos.y + localX * sinCurrent + localY * cosCurrent;
+  return new Vector2(worldX, worldY);
 }
 
 function _collectCableJointSegments(world) {
@@ -1083,12 +1096,16 @@ function _collectCableJointSegments(world) {
       if (!joint) {
         continue;
       }
-      const segmentA = _isFiniteVec2(joint.attachmentPointA_world)
-        ? joint.attachmentPointA_world
-        : null;
-      const segmentB = _isFiniteVec2(joint.attachmentPointB_world)
-        ? joint.attachmentPointB_world
-        : null;
+      const segmentA = _segmentEndpointAtCurrentPose(
+        world,
+        joint.entityA,
+        joint.attachmentPointA_world
+      );
+      const segmentB = _segmentEndpointAtCurrentPose(
+        world,
+        joint.entityB,
+        joint.attachmentPointB_world
+      );
       if (!_isFiniteVec2(segmentA) || !_isFiniteVec2(segmentB)) {
         continue;
       }
@@ -1097,7 +1114,9 @@ function _collectCableJointSegments(world) {
         segmentByJointId.set(jointId, {
           halfWidth,
           a: segmentA.clone(),
-          b: segmentB.clone()
+          b: segmentB.clone(),
+          entityA: joint.entityA,
+          entityB: joint.entityB
         });
       }
     }
@@ -1105,7 +1124,7 @@ function _collectCableJointSegments(world) {
   return Array.from(segmentByJointId.values());
 }
 
-function _crossingCableHalfWidth(cableSegments, centerA, centerB) {
+function _crossingCableHalfWidth(cableSegments, centerA, centerB, pairEntityA, pairEntityB) {
   if (!Array.isArray(cableSegments) || cableSegments.length === 0) {
     return 0.0;
   }
@@ -1114,7 +1133,16 @@ function _crossingCableHalfWidth(cableSegments, centerA, centerB) {
     if (!(segment?.halfWidth > 1e-9)) {
       continue;
     }
-    if (_segmentsIntersectInclusive(centerA, centerB, segment.a, segment.b, 1e-9)) {
+    const directPair = _sameEntityPair(
+      pairEntityA,
+      pairEntityB,
+      segment.entityA,
+      segment.entityB
+    );
+    if (
+      directPair ||
+      _segmentsProperlyIntersect(centerA, centerB, segment.a, segment.b, 1e-9)
+    ) {
       maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
     }
   }
@@ -1278,7 +1306,9 @@ export class PBDUnifiedContactManifoldSystem {
           ? _crossingCableHalfWidth(
             cableJointSegments,
             pA,
-            pB
+            pB,
+            candidate.ballA,
+            candidate.ballB
           )
           : 0.0;
         const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
@@ -1374,7 +1404,9 @@ export class PBDUnifiedContactManifoldSystem {
           ? _crossingCableHalfWidth(
             cableJointSegments,
             pBall,
-            pObs
+            pObs,
+            candidate.ballId,
+            candidate.obsId
           )
           : 0.0;
         const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
