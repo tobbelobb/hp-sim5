@@ -247,22 +247,6 @@ function ensureMachineTag(world, entityId, machineId) {
   world.addComponent(entityId, new MachineTagComponent(machineId));
 }
 
-function _collectPathEntityIds(world, path) {
-  const entityIds = new Set();
-  if (!path || !Array.isArray(path.jointEntities)) {
-    return entityIds;
-  }
-  for (const jointId of path.jointEntities) {
-    const joint = world.getComponent(jointId, CableJointComponent);
-    if (!joint) {
-      continue;
-    }
-    entityIds.add(joint.entityA);
-    entityIds.add(joint.entityB);
-  }
-  return entityIds;
-}
-
 function _computeWorldAttachment(world, entityId, localPoint) {
   if (!localPoint) {
     return null;
@@ -1056,7 +1040,7 @@ export function _mergeJoints(world) {
 
 export function _splitJoints(world) {
   const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
-  const disallowExistingPathLink = _featureFlag(world, 'layeringSplitDisallowExistingPathLink', false);
+  const qualityGuardEnabled = _featureFlag(world, 'layeringSplitQualityGuard', false);
   const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -1069,25 +1053,11 @@ export function _splitJoints(world) {
 
       const pA = joint.attachmentPointA_world;
       const pB = joint.attachmentPointB_world;
-      const pathEntityIds = disallowExistingPathLink
-        ? _collectPathEntityIds(world, path)
-        : null;
       for (const splitterId of potentialSplitters) {
         if (splitterId === joint.entityA || splitterId === joint.entityB) {
           continue;
         }
         if (getMachineId(world, splitterId) !== pathMachine) {
-          continue;
-        }
-        if (pathEntityIds && pathEntityIds.has(splitterId)) {
-          _recordCableEventTrace(world, step, {
-            type: 'split-abort',
-            reason: 'splitter-already-in-path',
-            pathId,
-            jointId,
-            splitterId,
-            splitIndex: i
-          });
           continue;
         }
         const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
@@ -1250,6 +1220,35 @@ export function _splitJoints(world) {
                 dSB
               });
               console.warn("Split occurred with near-zero distance between new segments:", totalDist);
+          }
+          if (qualityGuardEnabled) {
+            const halfWidth = Number.isFinite(path.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+            const qualityThreshold = Math.max(1e-3, 3.0 * halfWidth);
+            const minNewRestLength = Math.min(newRestLengthAS, newRestLengthSB);
+            const minNewSegmentLength = Math.min(dAS, dSB);
+            if (
+              !Number.isFinite(minNewRestLength) ||
+              !Number.isFinite(minNewSegmentLength) ||
+              minNewRestLength < qualityThreshold ||
+              minNewSegmentLength < qualityThreshold
+            ) {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'quality-guard',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                qualityThreshold,
+                minNewRestLength,
+                minNewSegmentLength,
+                newRestLengthAS,
+                newRestLengthSB,
+                dAS,
+                dSB
+              });
+              continue;
+            }
           }
           path.stored[i + 1] -= sB;
           joint.restLength += sB;

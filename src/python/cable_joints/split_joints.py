@@ -23,18 +23,6 @@ from .util import (
     effective_cw
 )
 
-def _collect_path_entity_ids(world, path):
-    entity_ids = set()
-    if not path or not path.joint_entities:
-        return entity_ids
-    for joint_id in path.joint_entities:
-        joint = world.get_component(joint_id, CableJointComponent)
-        if not joint:
-            continue
-        entity_ids.add(joint.entity_a)
-        entity_ids.add(joint.entity_b)
-    return entity_ids
-
 def split_joints(world):
     """
     Splits cable joints that intersect with 'splitter' entities (e.g., wheels).
@@ -49,8 +37,8 @@ def split_joints(world):
     """
     potential_splitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent])
     path_entities = world.query([CablePathComponent])
-    split_disallow_existing = world.get_resource('layeringSplitDisallowExistingPathLink')
-    split_disallow_existing = False if split_disallow_existing is None else bool(split_disallow_existing)
+    split_quality_guard = world.get_resource('layeringSplitQualityGuard')
+    split_quality_guard = False if split_quality_guard is None else bool(split_quality_guard)
 
     for path_id in path_entities:
         path = world.get_component(path_id, CablePathComponent)
@@ -67,12 +55,9 @@ def split_joints(world):
 
             pA = joint.attachment_point_a_world
             pB = joint.attachment_point_b_world
-            path_entity_ids = _collect_path_entity_ids(world, path) if split_disallow_existing else None
 
             for splitter_id in potential_splitters:
                 if splitter_id == joint.entity_a or splitter_id == joint.entity_b:
-                    continue
-                if path_entity_ids is not None and splitter_id in path_entity_ids:
                     continue
 
                 pos_splitter_comp = world.get_component(splitter_id, PositionComponent)
@@ -163,6 +148,20 @@ def split_joints(world):
                             continue # Not enough length to split
                         new_rest_length_as = available_rest_length_for_segments * dAS / total_dist
                         new_rest_length_sb = available_rest_length_for_segments * dSB / total_dist
+
+                    if split_quality_guard:
+                        half_width = getattr(path, 'cable_half_width', getattr(path, 'cableHalfWidth', 0.0))
+                        half_width = max(0.0, float(half_width)) if np.isfinite(half_width) else 0.0
+                        quality_threshold = max(1e-3, 3.0 * half_width)
+                        min_new_rest_length = min(new_rest_length_as, new_rest_length_sb)
+                        min_new_segment_length = min(dAS, dSB)
+                        if (
+                            (not np.isfinite(min_new_rest_length)) or
+                            (not np.isfinite(min_new_segment_length)) or
+                            min_new_rest_length < quality_threshold or
+                            min_new_segment_length < quality_threshold
+                        ):
+                            continue
 
                     # --- Mutate world state ---
                     new_joint_id = world.create_entity()
