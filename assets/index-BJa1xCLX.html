@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mindfulness Pinball</title>
+
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Nice free Google font – optional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
+    <style>
+/* =========  BASIC COLOUR THEME  ========= */
+:root {
+  --bg-1: #2d2d2d;        /* page background */
+  --accent-1: #ff452a;    /* flipper + button gradient start */
+  --accent-2: #ffb347;    /* flipper + button gradient end   */
+  --text-main: #fafafa;
+  --text-dim:  #c0c0c0;
+  --radius: 4px;
+}
+
+/* =========  PAGE LAYOUT  ========= */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
+  overflow: hidden;               /* **kills the vertical / horizontal scroll**   */
+  background: var(--bg-1);
+  color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
+  touch-action: none;     /* **stops double‑tap zoom in most browsers**   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* =========  CONTAINER  ========= */
+#gameContainer {
+  width: min(90vw, 460px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* =========  CONTROL BAR  ========= */
+#controls {
+  width: 100%;
+  text-align: center;
+  margin-block: 12px 8px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+#controls button {
+  all: unset;                      /* wipe default button styles */
+  cursor: pointer;
+  display: inline-block;
+  margin: 6px auto;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+#controls button:hover,
+#controls button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active {
+  transform: scale(.97);
+}
+
+/* =========  CANVAS  ========= */
+canvas {
+  width: 100%;
+  aspect-ratio: 1 / 1.7;          /* keeps exact sim ratio */
+  border-radius: var(--radius);
+  touch-action: manipulation;    /* ← turn off browser panning/zoom so pointermove/up always fire */
+}
+
+/* =========  SMALL‑SCREEN TWEAKS  ========= */
+#controls button {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="controls">
+            <button id="pauseBtn" tabindex="-1">Pause</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button><br />
+          <div id="cableFeatureFlags"></div>
+          Score: <span id="score">0</span>
+          <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
+            dt: <span id="dt">N/A</span> |
+            Speed: <span id="speed">N/A</span>
+          </div>
+        </div>
+        <canvas id="myCanvas"></canvas>
+    </div>
+<script type="module">
+    import Vector2 from '../../../src/js/cable_joints/vector2.js';
+    import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
+    import {
+      Open as UsdOpen,
+    } from "../../../src/js/usd/stage.js";
+    import {
+      World,
+      PositionComponent,
+    } from '../../../src/js/cable_joints/ecs.js';
+
+    import {
+      tangentFromPointToCircle,
+      tangentFromCircleToPoint,
+      tangentFromCircleToCircle
+    } from '../../../src/js/cable_joints/geometry.js';
+
+    import {
+      BallTagComponent,
+      ScoredTagComponent,
+      ScoreComponent
+    } from './flipper_common.js';
+
+
+    import { runGame } from './runner.js';
+
+    import { setupScene } from './setupScene.js';
+    import {
+      bindCableFeatureFlagCheckboxes,
+      ensureCableFeatureFlags,
+      getCableFeatureFlags,
+      setCableFeatureFlags
+    } from './cable_feature_flags.js';
+
+    // --- Global Setup ---
+    const canvas = document.getElementById("myCanvas");
+    const cableFeatureFlags = document.getElementById("cableFeatureFlags");
+    const scoreElement = document.getElementById("score");
+
+    // --- Global World ---
+    let world = new World();
+    window.world = world; // Make available to jest test
+
+    let getGameStateForTest = () => {
+        if (!world || !world.query) { // Check if world and its methods are available
+            console.error("World object not available for getGameStateForTest");
+            return null;
+        }
+
+        const ballEntities = world.query([BallTagComponent, PositionComponent]);
+        const balls = ballEntities.map(id => {
+            const posComp = world.getComponent(id, PositionComponent);
+            return { id, y: posComp ? posComp.pos.y : -Infinity }; // Handle missing component
+        });
+
+        const scoreEntity = world.query([ScoreComponent])[0];
+        const scoreComp = scoreEntity !== undefined ? world.getComponent(scoreEntity, ScoreComponent) : null;
+        const score = scoreComp ? scoreComp.value : -1; // Default to -1 if score component not found
+
+        return {
+            balls,
+            score
+        };
+    };
+    window.getGameStateForTest = getGameStateForTest;
+
+    const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
+    if (canvas && !canvas.hasAttribute('tabindex')) {
+      canvas.setAttribute('tabindex', '0');
+    }
+    const _focusCanvas = () => {
+      if (!canvas || typeof canvas.focus !== 'function') {
+        return;
+      }
+      try {
+        canvas.focus({ preventScroll: true });
+      } catch (_err) {
+        canvas.focus();
+      }
+    };
+    const _queueCanvasFocus = () => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => _focusCanvas());
+        return;
+      }
+      setTimeout(() => _focusCanvas(), 0);
+    };
+
+    let scoreAudioContext = null;
+    let scoreAudioMasterGain = null;
+    let lastScoreForSound = null;
+    let scoreAudioUnlockBound = false;
+
+    const _ensureScoreAudioContext = () => {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        return null;
+      }
+      if (!scoreAudioContext) {
+        scoreAudioContext = new AudioCtx();
+        scoreAudioMasterGain = scoreAudioContext.createGain();
+        scoreAudioMasterGain.gain.value = 0.28;
+        scoreAudioMasterGain.connect(scoreAudioContext.destination);
+      }
+      if (scoreAudioContext.state === 'suspended') {
+        scoreAudioContext.resume().catch(() => {});
+      }
+      return scoreAudioContext;
+    };
+
+    const _playScoreBounceSound = (count = 1) => {
+      if (world.getResource('scoreBounceSoundEnabled') !== true) {
+        return;
+      }
+      const ctx = _ensureScoreAudioContext();
+      if (!ctx || !scoreAudioMasterGain) {
+        return;
+      }
+      const hitCount = Math.max(1, Math.min(2, Number.isFinite(count) ? Math.floor(count) : 1));
+      const tStart = ctx.currentTime + 0.004;
+      for (let i = 0; i < hitCount; i++) {
+        const t0 = tStart + i * 0.022;
+        const env = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        const oscMain = ctx.createOscillator();
+        const oscOver = ctx.createOscillator();
+
+        oscMain.type = 'triangle';
+        oscOver.type = 'sine';
+        oscMain.frequency.setValueAtTime(760, t0);
+        oscMain.frequency.exponentialRampToValueAtTime(470, t0 + 0.11);
+        oscOver.frequency.setValueAtTime(1120, t0);
+        oscOver.frequency.exponentialRampToValueAtTime(680, t0 + 0.095);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2200, t0);
+        filter.frequency.exponentialRampToValueAtTime(1300, t0 + 0.12);
+
+        env.gain.setValueAtTime(0.0001, t0);
+        env.gain.exponentialRampToValueAtTime(0.16, t0 + 0.009);
+        env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+
+        oscMain.connect(filter);
+        oscOver.connect(filter);
+        filter.connect(env);
+        env.connect(scoreAudioMasterGain);
+
+        oscMain.start(t0);
+        oscOver.start(t0);
+        oscMain.stop(t0 + 0.16);
+        oscOver.stop(t0 + 0.16);
+      }
+    };
+
+    const _readScoreValue = () => {
+      const scoreEntity = world.query([ScoreComponent])[0];
+      if (scoreEntity !== undefined) {
+        const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
+        if (scoreComp && Number.isFinite(scoreComp.value)) {
+          return scoreComp.value;
+        }
+      }
+      if (scoreElement) {
+        const parsed = Number.parseInt(scoreElement.textContent ?? '', 10);
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      return null;
+    };
+
+    const _monitorScoreForSound = () => {
+      const scoreValue = _readScoreValue();
+      if (Number.isFinite(scoreValue)) {
+        if (!Number.isFinite(lastScoreForSound)) {
+          lastScoreForSound = scoreValue;
+        } else {
+          const delta = scoreValue - lastScoreForSound;
+          if (delta > 0) {
+            _playScoreBounceSound(delta);
+          }
+          lastScoreForSound = scoreValue;
+        }
+      }
+
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(_monitorScoreForSound);
+      } else {
+        setTimeout(_monitorScoreForSound, 16);
+      }
+    };
+
+    if (cableFeatureFlags) {
+      cableFeatureFlags.addEventListener('change', (event) => {
+        const target = event.target;
+        if (target && target.tagName === 'INPUT' && target.type === 'checkbox') {
+          if (target.id === 'cableFlag_scoreBounceSoundEnabled' && target.checked) {
+            _ensureScoreAudioContext();
+            _playScoreBounceSound(1);
+          }
+          if (typeof target.blur === 'function') {
+            target.blur();
+          }
+          _queueCanvasFocus();
+        }
+      });
+    }
+    const _unlockScoreAudio = () => {
+      if (world.getResource('scoreBounceSoundEnabled') === true) {
+        _ensureScoreAudioContext();
+      }
+    };
+    if (!scoreAudioUnlockBound) {
+      scoreAudioUnlockBound = true;
+      if (canvas) {
+        canvas.addEventListener('pointerdown', _unlockScoreAudio, { passive: true });
+      }
+      document.addEventListener('pointerdown', _unlockScoreAudio, { passive: true });
+      document.addEventListener('mousedown', _unlockScoreAudio, { passive: true });
+      document.addEventListener('touchstart', _unlockScoreAudio, { passive: true });
+      document.addEventListener('keydown', _unlockScoreAudio, { passive: true });
+    }
+    _monitorScoreForSound();
+
+    window.getCableFeatureFlags = () => {
+      return getCableFeatureFlags(world);
+    };
+    window.setCableFeatureFlags = (partial = {}) => {
+        const next = setCableFeatureFlags(world, partial);
+        cableFlagUi.syncFromWorld();
+        console.log('Cable feature flags:', next);
+        return next;
+    };
+
+
+    const base = import.meta.env.BASE_URL || '/';
+    const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;
+
+    UsdOpen(usdaPath).then(stage => {
+      runGame(world, () => {
+        ensureCableFeatureFlags(world);
+        cableFlagUi.syncFromWorld();
+        setupScene(world, stage, canvas);
+      });
+    });
+</script>
+
+</body>
+</html>
