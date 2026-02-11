@@ -323,7 +323,7 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
   };
 }
 
-const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 25.0;
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
 
 function _closingOverlayBlend(span) {
   if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
