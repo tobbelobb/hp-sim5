@@ -105,6 +105,12 @@ canvas {
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button><br />
           <div id="cableFeatureFlags"></div>
+          <div id="renderFxFlags" style="margin-top: 4px; font-size: 0.78rem;">
+            <label for="bumperFxToggle" style="white-space: nowrap;">
+              <input id="bumperFxToggle" type="checkbox" style="margin-right: 4px;" />
+              render/bumperHitFx
+            </label>
+          </div>
           Score: <span id="score">0</span>
           <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
             dt: <span id="dt">N/A</span> |
@@ -150,6 +156,7 @@ canvas {
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
     const cableFeatureFlags = document.getElementById("cableFeatureFlags");
+    const bumperFxToggle = document.getElementById("bumperFxToggle");
 
     // --- Global World ---
     let world = new World();
@@ -199,6 +206,11 @@ canvas {
       }
       setTimeout(() => _focusCanvas(), 0);
     };
+    const _applyBumperFxToggle = () => {
+      const enabled = Boolean(bumperFxToggle?.checked);
+      world.setResource('renderBumperHitFx', enabled);
+      return enabled;
+    };
     if (cableFeatureFlags) {
       cableFeatureFlags.addEventListener('change', (event) => {
         const target = event.target;
@@ -208,6 +220,17 @@ canvas {
           }
           _queueCanvasFocus();
         }
+      });
+    }
+    if (bumperFxToggle) {
+      bumperFxToggle.checked = world.getResource('renderBumperHitFx') === true;
+      _applyBumperFxToggle();
+      bumperFxToggle.addEventListener('change', () => {
+        _applyBumperFxToggle();
+        if (typeof bumperFxToggle.blur === 'function') {
+          bumperFxToggle.blur();
+        }
+        _queueCanvasFocus();
       });
     }
 
@@ -230,6 +253,7 @@ canvas {
         ensureCableFeatureFlags(world);
         cableFlagUi.syncFromWorld();
         setupScene(world, stage, canvas);
+        _applyBumperFxToggle();
       });
     });
 </script>

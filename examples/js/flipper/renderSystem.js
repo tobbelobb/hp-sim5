@@ -22,6 +22,7 @@ import {
   FlipperTagComponent,
   FlipperStateComponent,
   ObstacleTagComponent,
+  ObstaclePushComponent,
   OverlayRadiusComponent,
   CircleSectorComponent,
   CircleSectorsComponent,
@@ -76,6 +77,10 @@ export class RenderSystem {
     this.referenceVisible = false;
     this.referenceDirty = false;
     this.drawingSuspended = false;
+
+    this.bumperHitFxBursts = [];
+    this.bumperHitFxActivePairs = new Set();
+    this.bumperHitFxLastTimeSec = null;
   }
 
   // Coordinate transformation helpers using instance properties
@@ -520,6 +525,259 @@ export class RenderSystem {
         this.positionTraceCtx.restore();
       }
     }
+  }
+
+
+  _nowSeconds() {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return performance.now() * 0.001;
+    }
+    return Date.now() * 0.001;
+  }
+
+  _spawnBumperHitBurst(world, contact, pushVel = 0.0) {
+    const obsPos = world.getComponent(contact.obs_id, PositionComponent)?.pos;
+    if (!obsPos) {
+      return;
+    }
+
+    let outwardDir = null;
+    if (
+      contact.direction &&
+      Number.isFinite(contact.direction.x) &&
+      Number.isFinite(contact.direction.y)
+    ) {
+      outwardDir = contact.direction.clone();
+    } else {
+      const ballPos = world.getComponent(contact.ball_id, PositionComponent)?.pos;
+      if (ballPos) {
+        outwardDir = ballPos.clone().subtract(obsPos);
+      }
+    }
+    if (!outwardDir || outwardDir.lengthSq() <= 1e-12) {
+      outwardDir = new Vector2(1.0, 0.0);
+    } else {
+      outwardDir.normalize();
+    }
+
+    const obstacleRadiusValue = world.getComponent(contact.obs_id, RadiusComponent)?.radius;
+    const obstacleRadius = (
+      Number.isFinite(obstacleRadiusValue) && obstacleRadiusValue > 1e-6
+        ? obstacleRadiusValue
+        : 0.03
+    );
+
+    const deltaLambda = Number.isFinite(contact.delta_lambda)
+      ? Math.max(0.0, contact.delta_lambda)
+      : 0.0;
+    const intensity = Math.max(
+      0.7,
+      Math.min(2.8, 0.85 + (0.2 * pushVel) + (0.32 * Math.sqrt(deltaLambda + 1e-9)))
+    );
+    const spread = (Math.PI / 6.0) + (Math.random() * 0.2);
+    const baseAngle = Math.atan2(outwardDir.y, outwardDir.x);
+
+    const rayCount = Math.max(8, Math.min(18, Math.round(8 + intensity * 3 + (Math.random() * 3))));
+    const rays = [];
+    for (let i = 0; i < rayCount; i++) {
+      const offset = (Math.random() * 2.0 - 1.0) * spread;
+      rays.push({
+        offset,
+        lengthScale: 0.72 + Math.random() * 0.58,
+        widthScale: 0.8 + Math.random() * 0.95,
+        alphaScale: 0.56 + Math.random() * 0.42,
+        flicker: Math.random() * Math.PI * 2.0
+      });
+    }
+
+    const sparkCount = Math.max(8, Math.min(20, Math.round(7 + intensity * 4 + (Math.random() * 3))));
+    const sparks = [];
+    const originX = obsPos.x + outwardDir.x * obstacleRadius;
+    const originY = obsPos.y + outwardDir.y * obstacleRadius;
+    for (let i = 0; i < sparkCount; i++) {
+      const sparkAngle = baseAngle + ((Math.random() * 2.0 - 1.0) * spread * 1.2);
+      const sparkSpeed = (0.3 + Math.random() * 0.8) * (0.45 + 0.55 * intensity);
+      sparks.push({
+        x: originX,
+        y: originY,
+        vx: Math.cos(sparkAngle) * sparkSpeed,
+        vy: Math.sin(sparkAngle) * sparkSpeed,
+        age: 0.0,
+        life: 0.12 + Math.random() * 0.28,
+        size: 0.8 + Math.random() * 1.8,
+        hot: Math.random() < 0.5
+      });
+    }
+
+    this.bumperHitFxBursts.push({
+      x: obsPos.x,
+      y: obsPos.y,
+      dirX: outwardDir.x,
+      dirY: outwardDir.y,
+      obstacleRadius,
+      age: 0.0,
+      life: 0.22 + Math.random() * 0.2,
+      spread,
+      maxRingRadius: obstacleRadius + (0.08 + 0.09 * intensity),
+      maxRayLength: (0.07 + 0.1 * intensity),
+      rays,
+      sparks
+    });
+
+    const MAX_BURSTS = 80;
+    if (this.bumperHitFxBursts.length > MAX_BURSTS) {
+      this.bumperHitFxBursts.splice(0, this.bumperHitFxBursts.length - MAX_BURSTS);
+    }
+  }
+
+  _updateAndRenderBumperHitFx(world) {
+    const nowSec = this._nowSeconds();
+    if (!Number.isFinite(this.bumperHitFxLastTimeSec)) {
+      this.bumperHitFxLastTimeSec = nowSec;
+    }
+    let dtSec = nowSec - this.bumperHitFxLastTimeSec;
+    this.bumperHitFxLastTimeSec = nowSec;
+    if (!Number.isFinite(dtSec) || dtSec < 0.0) {
+      dtSec = 0.0;
+    }
+    dtSec = Math.min(dtSec, 0.05);
+
+    const enabled = world.getResource('renderBumperHitFx') === true;
+    if (!enabled) {
+      this.bumperHitFxBursts.length = 0;
+      this.bumperHitFxActivePairs.clear();
+      return;
+    }
+
+    const contacts = Array.isArray(world.getResource('ball_obstacle_contacts'))
+      ? world.getResource('ball_obstacle_contacts')
+      : [];
+    const nextActivePairs = new Set();
+    for (const contact of contacts) {
+      if (!contact || contact.raw_hit === false) {
+        continue;
+      }
+      const pushComp = world.getComponent(contact.obs_id, ObstaclePushComponent);
+      if (!pushComp || !(pushComp.pushVel > 1e-9)) {
+        continue;
+      }
+      const pairKey = `${contact.ball_id}:${contact.obs_id}`;
+      nextActivePairs.add(pairKey);
+      if (!this.bumperHitFxActivePairs.has(pairKey)) {
+        this._spawnBumperHitBurst(world, contact, pushComp.pushVel);
+      }
+    }
+    this.bumperHitFxActivePairs = nextActivePairs;
+
+    if (this.bumperHitFxBursts.length === 0) {
+      return;
+    }
+
+    const drag = Math.exp(-5.5 * dtSec);
+    for (const burst of this.bumperHitFxBursts) {
+      burst.age += dtSec;
+      if (!Array.isArray(burst.sparks) || burst.sparks.length === 0) {
+        continue;
+      }
+      const nextSparks = [];
+      for (const spark of burst.sparks) {
+        spark.age += dtSec;
+        if (spark.age >= spark.life) {
+          continue;
+        }
+        spark.x += spark.vx * dtSec;
+        spark.y += spark.vy * dtSec;
+        spark.vx *= drag;
+        spark.vy *= drag;
+        spark.vy -= 0.6 * dtSec;
+        nextSparks.push(spark);
+      }
+      burst.sparks = nextSparks;
+    }
+
+    this.bumperHitFxBursts = this.bumperHitFxBursts.filter((burst) => (
+      (burst.age < burst.life) || (Array.isArray(burst.sparks) && burst.sparks.length > 0)
+    ));
+
+    if (this.bumperHitFxBursts.length === 0) {
+      return;
+    }
+
+    this.c.save();
+    this.c.globalCompositeOperation = 'lighter';
+    const unitPx = Math.max(0.8, this.effectiveCScale / 250);
+
+    for (const burst of this.bumperHitFxBursts) {
+      const progress = burst.life > 1e-9 ? Math.min(1.0, burst.age / burst.life) : 1.0;
+      const fade = Math.max(0.0, 1.0 - progress);
+      const baseAngle = Math.atan2(burst.dirY, burst.dirX);
+      const coneReach = burst.maxRayLength * (0.35 + 0.85 * progress);
+      const originX = burst.x + burst.dirX * burst.obstacleRadius * (0.6 + 0.4 * progress);
+      const originY = burst.y + burst.dirY * burst.obstacleRadius * (0.6 + 0.4 * progress);
+
+      if (fade > 0.0) {
+        const leftAngle = baseAngle - burst.spread;
+        const rightAngle = baseAngle + burst.spread;
+        this.c.fillStyle = `rgba(255, 125, 35, ${0.18 * fade})`;
+        this.c.beginPath();
+        this.c.moveTo(this.cX(originX), this.cY(originY));
+        this.c.lineTo(
+          this.cX(originX + Math.cos(leftAngle) * coneReach),
+          this.cY(originY + Math.sin(leftAngle) * coneReach)
+        );
+        this.c.lineTo(
+          this.cX(originX + Math.cos(rightAngle) * coneReach),
+          this.cY(originY + Math.sin(rightAngle) * coneReach)
+        );
+        this.c.closePath();
+        this.c.fill();
+
+        const ringRadius = burst.obstacleRadius + (burst.maxRingRadius * progress);
+        this.c.strokeStyle = `rgba(255, ${Math.round(175 + 70 * fade)}, 30, ${0.72 * fade})`;
+        this.c.lineWidth = Math.max(1.0, (1.2 + 1.8 * fade) * unitPx);
+        this.c.beginPath();
+        this.c.arc(
+          this.cX(burst.x),
+          this.cY(burst.y),
+          ringRadius * this.effectiveCScale,
+          0.0,
+          2.0 * Math.PI
+        );
+        this.c.stroke();
+
+        for (const ray of burst.rays) {
+          const flutter = 1.0 + 0.18 * Math.sin(ray.flicker + progress * 12.0);
+          const angle = baseAngle + ray.offset * flutter;
+          const startDistance = burst.obstacleRadius * 0.6;
+          const startX = burst.x + Math.cos(angle) * startDistance;
+          const startY = burst.y + Math.sin(angle) * startDistance;
+          const length = coneReach * ray.lengthScale;
+          const endX = startX + Math.cos(angle) * length;
+          const endY = startY + Math.sin(angle) * length;
+          this.c.strokeStyle = `rgba(255, ${Math.round(165 + 70 * fade)}, 35, ${ray.alphaScale * fade})`;
+          this.c.lineWidth = Math.max(0.75, (1.3 * ray.widthScale * unitPx * (0.55 + fade)));
+          this.c.beginPath();
+          this.c.moveTo(this.cX(startX), this.cY(startY));
+          this.c.lineTo(this.cX(endX), this.cY(endY));
+          this.c.stroke();
+        }
+      }
+
+      if (Array.isArray(burst.sparks) && burst.sparks.length > 0) {
+        for (const spark of burst.sparks) {
+          const sparkFade = Math.max(0.0, 1.0 - (spark.age / spark.life));
+          const sparkRadius = Math.max(0.8, spark.size * unitPx * (0.25 + sparkFade));
+          this.c.fillStyle = spark.hot
+            ? `rgba(255, ${Math.round(145 + 80 * sparkFade)}, 35, ${0.7 * sparkFade})`
+            : `rgba(255, ${Math.round(85 + 70 * sparkFade)}, 20, ${0.55 * sparkFade})`;
+          this.c.beginPath();
+          this.c.arc(this.cX(spark.x), this.cY(spark.y), sparkRadius, 0.0, 2.0 * Math.PI);
+          this.c.fill();
+        }
+      }
+    }
+
+    this.c.restore();
   }
 
 
@@ -1492,6 +1750,8 @@ export class RenderSystem {
         this.c.restore();
       }
     }
+
+    this._updateAndRenderBumperHitFx(world);
   }
 
   _getExtrusionColor(extrusion) {
