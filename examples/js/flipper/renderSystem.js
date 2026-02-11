@@ -811,7 +811,7 @@ export class RenderSystem {
       bumperRadius: obstacleRadius,
       effectRadius,
       age: 0.0,
-      life: 0.22 + Math.random() * 0.2,
+      life: 0.52 + Math.random() * 0.2,
       spread,
       maxRayLength: (0.035 + 0.05 * intensity),
       palette,
