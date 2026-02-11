@@ -427,7 +427,16 @@ export class OverlayRadiusAndCircleSectorSystem {
             layerStep,
             span
           );
-          const clampedSectorRadius = Math.min(smoothedRadius, overlayEnvelopeRadius);
+          // Only clamp sectors to overlay envelope when overlay is already active.
+          // If overlay is still at raw radius (ramp has not started), clamping here
+          // would erase valid partial-wrap support and allow bodies to sink into wrap.
+          const hasActiveOverlayEnvelope = (
+            overlayEnabled &&
+            overlayEnvelopeRadius > rawRadius + 1e-9
+          );
+          const clampedSectorRadius = hasActiveOverlayEnvelope
+            ? Math.min(smoothedRadius, overlayEnvelopeRadius)
+            : smoothedRadius;
           if (!(clampedSectorRadius > rawRadius + 1e-9)) {
             continue;
           }

@@ -353,12 +353,14 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
       centerDistance: distanceAtPhysicalCableThickness,
       rawRadius,
       cableHalfWidth: halfWidth,
+      storedLength: 0.0,
       pinchShareEnabled: false
     });
     const withShare = _makePinchPairWorld({
       centerDistance: distanceAtPhysicalCableThickness,
       rawRadius,
       cableHalfWidth: halfWidth,
+      storedLength: 0.0,
       pinchShareEnabled: true
     });
 
@@ -390,12 +392,14 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
       centerDistance: belowThresholdDistance,
       rawRadius,
       cableHalfWidth: halfWidth,
+      storedLength: 0.0,
       pinchShareEnabled: false
     });
     const withShare = _makePinchPairWorld({
       centerDistance: belowThresholdDistance,
       rawRadius,
       cableHalfWidth: halfWidth,
+      storedLength: 0.0,
       pinchShareEnabled: true
     });
 

@@ -152,6 +152,31 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     expect(sector.radius).toBeCloseTo(rawRadius + step, 9);
   });
 
+  test('keeps first-layer partial sector support even before overlay ramp starts', () => {
+    const rawRadius = 1.0;
+    const halfWidth = 0.1;
+    const firstLayerRadius = rawRadius + halfWidth;
+    const rampSpan = (2.0 * Math.PI) / 25.0;
+    const spanJustBeforeOverlayRamp = (2.0 * Math.PI) - rampSpan - 1e-4;
+    const storedLength = firstLayerRadius * spanJustBeforeOverlayRamp;
+
+    const worldState = makeEndpointWrapWorld({
+      storedLength,
+      rawRadius,
+      halfWidth,
+      overlayRampEnabled: true
+    });
+
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(worldState.world, 0.016);
+
+    const overlay = worldState.world.getComponent(worldState.wrappedId, OverlayRadiusComponent);
+    const sector = worldState.world.getComponent(worldState.wrappedId, CircleSectorComponent);
+    expect(overlay).toBeFalsy();
+    expect(sector).toBeTruthy();
+    expect(sector.radius).toBeCloseTo(rawRadius + (2.0 * halfWidth), 9);
+  });
+
   test('overlay ramp can be toggled via layeringCollisionOverlayRamp', () => {
     const rawRadius = 1.0;
     const halfWidth = 0.1;
