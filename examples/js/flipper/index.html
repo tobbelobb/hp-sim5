@@ -105,16 +105,6 @@ canvas {
             <button id="stepBtn">Step</button>
             <button id="dumpBtn" tabindex="-1">Dump State</button><br />
           <div id="cableFeatureFlags"></div>
-          <div id="renderFxFlags" style="margin-top: 4px; font-size: 0.78rem;">
-            <label for="bumperFxToggle" style="white-space: nowrap;">
-              <input id="bumperFxToggle" type="checkbox" style="margin-right: 4px;" />
-              render/bumperHitFx
-            </label>
-            <label for="scoreSoundToggle" style="white-space: nowrap; margin-left: 10px;">
-              <input id="scoreSoundToggle" type="checkbox" style="margin-right: 4px;" />
-              audio/scoreBounce
-            </label>
-          </div>
           Score: <span id="score">0</span>
           <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
             dt: <span id="dt">N/A</span> |
@@ -160,8 +150,6 @@ canvas {
     // --- Global Setup ---
     const canvas = document.getElementById("myCanvas");
     const cableFeatureFlags = document.getElementById("cableFeatureFlags");
-    const bumperFxToggle = document.getElementById("bumperFxToggle");
-    const scoreSoundToggle = document.getElementById("scoreSoundToggle");
     const scoreElement = document.getElementById("score");
 
     // --- Global World ---
@@ -317,53 +305,19 @@ canvas {
       }
     };
 
-    const _applyBumperFxToggle = () => {
-      const enabled = Boolean(bumperFxToggle?.checked);
-      world.setResource('renderBumperHitFx', enabled);
-      return enabled;
-    };
-    const _applyScoreSoundToggle = () => {
-      const enabled = Boolean(scoreSoundToggle?.checked);
-      world.setResource('scoreBounceSoundEnabled', enabled);
-      if (enabled) {
-        _ensureScoreAudioContext();
-      }
-      return enabled;
-    };
     if (cableFeatureFlags) {
       cableFeatureFlags.addEventListener('change', (event) => {
         const target = event.target;
         if (target && target.tagName === 'INPUT' && target.type === 'checkbox') {
+          if (target.id === 'cableFlag_scoreBounceSoundEnabled' && target.checked) {
+            _ensureScoreAudioContext();
+            _playScoreBounceSound(1);
+          }
           if (typeof target.blur === 'function') {
             target.blur();
           }
           _queueCanvasFocus();
         }
-      });
-    }
-    if (bumperFxToggle) {
-      bumperFxToggle.checked = world.getResource('renderBumperHitFx') === true;
-      _applyBumperFxToggle();
-      bumperFxToggle.addEventListener('change', () => {
-        _applyBumperFxToggle();
-        if (typeof bumperFxToggle.blur === 'function') {
-          bumperFxToggle.blur();
-        }
-        _queueCanvasFocus();
-      });
-    }
-    if (scoreSoundToggle) {
-      scoreSoundToggle.checked = world.getResource('scoreBounceSoundEnabled') === true;
-      _applyScoreSoundToggle();
-      scoreSoundToggle.addEventListener('change', () => {
-        const enabled = _applyScoreSoundToggle();
-        if (enabled) {
-          _playScoreBounceSound(1);
-        }
-        if (typeof scoreSoundToggle.blur === 'function') {
-          scoreSoundToggle.blur();
-        }
-        _queueCanvasFocus();
       });
     }
     const _unlockScoreAudio = () => {
@@ -402,8 +356,6 @@ canvas {
         ensureCableFeatureFlags(world);
         cableFlagUi.syncFromWorld();
         setupScene(world, stage, canvas);
-        _applyBumperFxToggle();
-        _applyScoreSoundToggle();
       });
     });
 </script>
