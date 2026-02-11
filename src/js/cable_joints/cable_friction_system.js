@@ -27,6 +27,15 @@ function _layeringFlag(world, key, fallback = true) {
   return _resourceBool(world, 'enableLayering', true) && _resourceBool(world, key, fallback);
 }
 
+function _hybridTransitionArcThreshold(path) {
+  const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+  if (!(halfWidth > 1e-9)) {
+    return 1e-6;
+  }
+  // Keep warning threshold aligned with the hybrid transition hysteresis.
+  return Math.max(1e-6, 0.25 * halfWidth);
+}
+
 
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
@@ -140,6 +149,7 @@ function _evenOutTensionFriction(world) {
 
 function _sanityCheck(world) {
   const pathEntities = world.query([CablePathComponent]);
+  const negativeStoredEpsilon = 1e-9;
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     if (!path || path.jointEntities.length < 1) continue;
@@ -154,7 +164,14 @@ function _sanityCheck(world) {
     if (Math.abs(error) > 1e-9) {
       console.warn(`Non-zero error for path ${pathId}: ${error}`);
     }
-    if (path.stored.some(s => s < -1e-9)) {
+    const hybridEndpointThreshold = _hybridTransitionArcThreshold(path);
+    const hasStoredBelowThreshold = path.stored.some((stored, index) => {
+      const isEndpoint = index === 0 || index === path.stored.length - 1;
+      const usesHybridHysteresis = isEndpoint && path.linkTypes[index] === 'hybrid';
+      const threshold = usesHybridHysteresis ? hybridEndpointThreshold : negativeStoredEpsilon;
+      return stored < -threshold;
+    });
+    if (hasStoredBelowThreshold) {
       console.warn(`Negative stored lengths for path ${pathId}: ${path.stored}`);
     }
   }
