@@ -337,32 +337,23 @@ function _closingOverlayBlend(span) {
   return 1.0 - (remaining / LAYER_RADIUS_RAMP_ANGLE);
 }
 
-function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, layerStep, span) {
+function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, span) {
   if (!(halfWidth > 1e-9)) {
     return 0.0;
   }
-  // The sector should represent the same outer support envelope as overlay-radius
-  // once the arc closes a full layer.
-  const targetRadius = (decomposition?.partialRadius ?? 0.0) + halfWidth;
-  if (!Number.isFinite(targetRadius) || !(targetRadius > 1e-9)) {
+  const fullLayers = Math.max(0, decomposition?.fullLayers ?? 0);
+  const layerWidth = 2.0 * halfWidth;
+  const rampStartRadius = rawRadius + layerWidth * fullLayers;
+  const rampTargetRadius = rawRadius + layerWidth * (fullLayers + 1);
+  if (!(rampTargetRadius > 1e-9)) {
     return 0.0;
   }
-  if (!(layerStep > 1e-9)) {
-    return targetRadius;
-  }
   if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
-    return targetRadius;
+    return rampTargetRadius;
   }
   const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
-  const rampAlpha = Math.min(1.0, spanValue / LAYER_RADIUS_RAMP_ANGLE);
-
-  // Ramp each new layer from the support radius of completed layers to the support
-  // radius of the current partial layer. This keeps sector->overlay transitions
-  // continuous when a partial layer closes into a full one.
-  const fullLayers = Math.max(0, decomposition?.fullLayers ?? 0);
-  const rampStartRadius = rawRadius + layerStep * fullLayers;
-
-  return rampStartRadius + (targetRadius - rampStartRadius) * rampAlpha;
+  const rampAlpha = Math.max(0.0, Math.min(1.0, spanValue / LAYER_RADIUS_RAMP_ANGLE));
+  return rampStartRadius + (rampTargetRadius - rampStartRadius) * rampAlpha;
 }
 
 export class OverlayRadiusAndCircleSectorSystem {
@@ -462,30 +453,19 @@ export class OverlayRadiusAndCircleSectorSystem {
           }
           const startAngle = Math.atan2(rel.y, rel.x);
           const span = decomposition.partialLength / decomposition.partialRadius;
-          const smoothedRadius = _smoothedSectorRadius(
+          const sectorRadius = _smoothedSectorRadius(
             rawRadius,
             decomposition,
             halfWidth,
-            layerStep,
             span
           );
-          // Only clamp sectors to overlay envelope when overlay is already active.
-          // If overlay is still at raw radius (ramp has not started), clamping here
-          // would erase valid partial-wrap support and allow bodies to sink into wrap.
-          const hasActiveOverlayEnvelope = (
-            overlayEnabled &&
-            overlayEnvelopeRadius > rawRadius + 1e-9
-          );
-          const clampedSectorRadius = hasActiveOverlayEnvelope
-            ? Math.min(smoothedRadius, overlayEnvelopeRadius)
-            : smoothedRadius;
-          if (!(clampedSectorRadius > rawRadius + 1e-9)) {
+          if (!(sectorRadius > rawRadius + 1e-9)) {
             continue;
           }
           const cw = Boolean(path.cw[linkIndex]);
           const endAngle = cw ? (startAngle - span) : (startAngle + span);
           const sector = {
-            radius: clampedSectorRadius,
+            radius: sectorRadius,
             startAngle,
             endAngle,
             cw

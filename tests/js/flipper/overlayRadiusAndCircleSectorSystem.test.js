@@ -126,7 +126,7 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     expect(overlay.radius).toBeCloseTo(fullLayerSupportRadius, 9);
   });
 
-  test('clamps sector radius to the current overlay envelope on higher partial layers', () => {
+  test('higher partial layers are not clamped to previous overlay envelope', () => {
     const rawRadius = 1.0;
     const halfWidth = 0.1;
     const step = 2.0 * halfWidth;
@@ -149,8 +149,9 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const overlay = worldState.world.getComponent(worldState.wrappedId, OverlayRadiusComponent);
     expect(sector).toBeTruthy();
     expect(overlay).toBeTruthy();
-    expect(sector.radius).toBeCloseTo(overlay.radius, 9);
-    expect(sector.radius).toBeCloseTo(rawRadius + step, 9);
+    expect(overlay.radius).toBeCloseTo(rawRadius + step, 9);
+    expect(sector.radius).toBeGreaterThan(overlay.radius + 1e-6);
+    expect(sector.radius).toBeCloseTo(rawRadius + (2.0 * step), 9);
   });
 
   test('keeps first-layer partial sector support even before overlay ramp starts', () => {
@@ -302,8 +303,43 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const withoutRampSector = withoutRamp.world.getComponent(withoutRamp.wrappedId, CircleSectorComponent);
     expect(withRampSector).toBeTruthy();
     expect(withoutRampSector).toBeTruthy();
-    expect(withRampSector.radius).toBeCloseTo(withRampOverlay.radius, 9);
-    expect(withoutRampSector.radius).toBeCloseTo(withoutRampOverlay.radius, 9);
+    expect(withRampSector.radius).toBeCloseTo(rawRadius + (2.0 * step), 9);
+    expect(withoutRampSector.radius).toBeCloseTo(rawRadius + (2.0 * step), 9);
+  });
+
+  test('second-revolution partial sector radius exceeds first-revolution radius', () => {
+    const rawRadius = 1.0;
+    const halfWidth = 0.1;
+    const step = 2.0 * halfWidth;
+    const firstLayerRadius = rawRadius + halfWidth;
+    const secondLayerRadius = firstLayerRadius + step;
+    const rampSpan = (2.0 * Math.PI) / 25.0;
+    const probeSpan = rampSpan * 2.0;
+    const firstLayerStored = firstLayerRadius * probeSpan;
+    const secondLayerStored = (2.0 * Math.PI * firstLayerRadius) + (secondLayerRadius * probeSpan);
+
+    const first = makeEndpointWrapWorld({
+      storedLength: firstLayerStored,
+      rawRadius,
+      halfWidth
+    });
+    const second = makeEndpointWrapWorld({
+      storedLength: secondLayerStored,
+      rawRadius,
+      halfWidth
+    });
+
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(first.world, 0.016);
+    system.update(second.world, 0.016);
+
+    const firstSector = first.world.getComponent(first.wrappedId, CircleSectorComponent);
+    const secondSector = second.world.getComponent(second.wrappedId, CircleSectorComponent);
+    expect(firstSector).toBeTruthy();
+    expect(secondSector).toBeTruthy();
+    expect(firstSector.radius).toBeCloseTo(rawRadius + step, 9);
+    expect(secondSector.radius).toBeCloseTo(rawRadius + (2.0 * step), 9);
+    expect(secondSector.radius).toBeGreaterThan(firstSector.radius + 1e-6);
   });
 
   test('avoids large ball-ball support jumps around near-complete second-layer coverage', () => {
