@@ -7,6 +7,7 @@ import {
 import {
   OverlayRadiusAndCircleSectorSystem,
   CircleSectorComponent,
+  CircleSectorsComponent,
   OverlayRadiusComponent,
   getCompositeSupportToward,
 } from '../../../examples/js/flipper/flipper_common.js';
@@ -175,6 +176,91 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     expect(overlay).toBeFalsy();
     expect(sector).toBeTruthy();
     expect(sector.radius).toBeCloseTo(rawRadius + (2.0 * halfWidth), 9);
+  });
+
+  test('retains multiple simultaneous sectors on one entity when multiple paths wrap it', () => {
+    const world = new World();
+    world.setResource('enableLayering', true);
+    world.setResource('layeringCollisionOverlayRadius', true);
+    world.setResource('layeringCollisionOverlayRamp', true);
+    world.setResource('layeringCollisionCircleSectors', true);
+
+    const rawRadius = 1.0;
+    const halfWidth = 0.1;
+    const wrappedId = world.createEntity();
+    world.addComponent(wrappedId, new PositionComponent(0.0, 0.0));
+    world.addComponent(wrappedId, new RadiusComponent(rawRadius));
+
+    const rightAnchorId = world.createEntity();
+    world.addComponent(rightAnchorId, new PositionComponent(3.0, 0.0));
+    world.addComponent(rightAnchorId, new RadiusComponent(rawRadius));
+    const topAnchorId = world.createEntity();
+    world.addComponent(topAnchorId, new PositionComponent(0.0, 3.0));
+    world.addComponent(topAnchorId, new RadiusComponent(rawRadius));
+
+    const jointRight = world.createEntity();
+    world.addComponent(
+      jointRight,
+      CableJointComponent.fromWorld(
+        wrappedId,
+        rightAnchorId,
+        1.0,
+        new Vector2(rawRadius, 0.0),
+        new Vector2(2.0, 0.0)
+      )
+    );
+    const jointTop = world.createEntity();
+    world.addComponent(
+      jointTop,
+      CableJointComponent.fromWorld(
+        wrappedId,
+        topAnchorId,
+        1.0,
+        new Vector2(0.0, rawRadius),
+        new Vector2(0.0, 2.0)
+      )
+    );
+
+    const quarterTurnStored = (rawRadius + halfWidth) * (Math.PI / 2.0);
+    const pathA = world.createEntity();
+    world.addComponent(
+      pathA,
+      new CablePathComponent(
+        world,
+        [jointRight],
+        ['hybrid', 'attachment'],
+        [false, false],
+        1e6,
+        [quarterTurnStored, 0.0],
+        halfWidth
+      )
+    );
+    const pathB = world.createEntity();
+    world.addComponent(
+      pathB,
+      new CablePathComponent(
+        world,
+        [jointTop],
+        ['hybrid', 'attachment'],
+        [true, false],
+        1e6,
+        [quarterTurnStored, 0.0],
+        halfWidth
+      )
+    );
+
+    const system = new OverlayRadiusAndCircleSectorSystem();
+    system.update(world, 0.016);
+
+    const sectors = world.getComponent(wrappedId, CircleSectorsComponent);
+    expect(sectors).toBeTruthy();
+    expect(Array.isArray(sectors.sectors)).toBe(true);
+    expect(sectors.sectors.length).toBeGreaterThanOrEqual(2);
+
+    const single = world.getComponent(wrappedId, CircleSectorComponent);
+    expect(single).toBeTruthy();
+    const maxMulti = Math.max(...sectors.sectors.map((sector) => sector.radius));
+    expect(single.radius).toBeCloseTo(maxMulti, 9);
   });
 
   test('overlay ramp can be toggled via layeringCollisionOverlayRamp', () => {

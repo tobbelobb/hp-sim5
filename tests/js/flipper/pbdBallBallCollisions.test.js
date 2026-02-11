@@ -7,6 +7,7 @@ import {
 } from '../../../src/js/cable_joints/ecs.js';
 import {
   BallTagComponent,
+  CircleSectorsComponent,
   CircleSectorComponent,
   OverlayRadiusAndCircleSectorSystem,
   PBDUnifiedContactManifoldSystem,
@@ -342,6 +343,28 @@ describe('PBDUnifiedContactManifoldSystem ball-ball behavior', () => {
     expect(worldB.getComponent(leftB, PositionComponent).pos.x).toBeCloseTo(0.0, 9);
     expect(worldB.getComponent(rightB, PositionComponent).pos.x).toBeCloseTo(2.15, 9);
     expect((worldB.getResource('ball_ball_contacts') || []).length).toBe(0);
+  });
+
+  test('supports simultaneous directional sectors from multiple paths on one ball', () => {
+    const world = _baseWorld();
+    const center = _addBall(world, 0.0, 0.0, 1.0, 1.0);
+    const left = _addBall(world, -2.15, 0.0, 1.0, 1.0);
+    const right = _addBall(world, 2.15, 0.0, 1.0, 1.0);
+
+    world.addComponent(center, new CircleSectorComponent(1.2, -0.3, 0.3, false));
+    world.addComponent(center, new CircleSectorsComponent([
+      { radius: 1.2, startAngle: -0.3, endAngle: 0.3, cw: false }, // right-facing
+      { radius: 1.2, startAngle: Math.PI - 0.3, endAngle: Math.PI + 0.3, cw: false }, // left-facing
+    ]));
+
+    _runManifold(world);
+
+    const contacts = world.getResource('ball_ball_contacts') || [];
+    const centerPairs = contacts.filter((c) => (
+      (c.ball_a === center && (c.ball_b === left || c.ball_b === right)) ||
+      (c.ball_b === center && (c.ball_a === left || c.ball_a === right))
+    ));
+    expect(centerPairs.length).toBe(2);
   });
 
   test('direct pinched pair at exactly 2r+2w has no penetration for either mode', () => {

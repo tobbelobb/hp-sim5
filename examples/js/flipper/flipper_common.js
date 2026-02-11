@@ -71,6 +71,21 @@ export class CircleSectorComponent {
   }
 }
 
+export class CircleSectorsComponent {
+  constructor(sectors = []) {
+    this.sectors = Array.isArray(sectors)
+      ? sectors
+        .filter((sector) => sector && Number.isFinite(sector.radius) && sector.radius > 1e-9)
+        .map((sector) => ({
+          radius: Math.max(0.0, Number(sector.radius)),
+          startAngle: Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0,
+          endAngle: Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0,
+          cw: sector.cw === true
+        }))
+      : [];
+  }
+}
+
 function _normalizeAngle(angle) {
   if (!Number.isFinite(angle)) {
     return 0.0;
@@ -133,9 +148,18 @@ function _getBaseCollisionRadius(world, entityId) {
 
 export function getMaxCollisionRadius(world, entityId) {
   let radius = _getBaseCollisionRadius(world, entityId);
-  const sectorComp = world.getComponent(entityId, CircleSectorComponent);
-  if (sectorComp && Number.isFinite(sectorComp.radius)) {
-    radius = Math.max(radius, sectorComp.radius);
+  const sectorsComp = world.getComponent(entityId, CircleSectorsComponent);
+  if (sectorsComp && Array.isArray(sectorsComp.sectors)) {
+    for (const sector of sectorsComp.sectors) {
+      if (Number.isFinite(sector?.radius)) {
+        radius = Math.max(radius, sector.radius);
+      }
+    }
+  } else {
+    const sectorComp = world.getComponent(entityId, CircleSectorComponent);
+    if (sectorComp && Number.isFinite(sectorComp.radius)) {
+      radius = Math.max(radius, sectorComp.radius);
+    }
   }
   return radius;
 }
@@ -147,6 +171,18 @@ function _normalizedDirection(vec, fallback = new Vector2(1.0, 0.0)) {
   return vec.clone().normalize();
 }
 
+function _entitySectorList(world, entityId) {
+  const sectorsComp = world.getComponent(entityId, CircleSectorsComponent);
+  if (sectorsComp && Array.isArray(sectorsComp.sectors) && sectorsComp.sectors.length > 0) {
+    return sectorsComp.sectors;
+  }
+  const single = world.getComponent(entityId, CircleSectorComponent);
+  if (single && Number.isFinite(single.radius) && single.radius > 1e-9) {
+    return [single];
+  }
+  return [];
+}
+
 function _compositeSupportToward(world, entityId, directionTowardOther) {
   const center = world.getComponent(entityId, PositionComponent)?.pos;
   if (!center) {
@@ -156,13 +192,16 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
   const baseRadius = _getBaseCollisionRadius(world, entityId);
   let projection = baseRadius;
   let offset = dir.clone().scale(baseRadius);
-  const sectorComp = world.getComponent(entityId, CircleSectorComponent);
-  if (
-    sectorComp &&
-    Number.isFinite(sectorComp.radius) &&
-    sectorComp.radius > baseRadius + 1e-9
-  ) {
-    const angle = Math.atan2(dir.y, dir.x);
+  const sectorList = _entitySectorList(world, entityId);
+  const angle = Math.atan2(dir.y, dir.x);
+  for (const sectorComp of sectorList) {
+    if (
+      !sectorComp ||
+      !Number.isFinite(sectorComp.radius) ||
+      !(sectorComp.radius > baseRadius + 1e-9)
+    ) {
+      continue;
+    }
     if (_isAngleInSector(angle, sectorComp.startAngle, sectorComp.endAngle, sectorComp.cw === true)) {
       if (sectorComp.radius > projection + 1e-9) {
         projection = sectorComp.radius;
@@ -337,6 +376,9 @@ export class OverlayRadiusAndCircleSectorSystem {
       for (const entityId of world.query([CircleSectorComponent])) {
         world.removeComponent(entityId, CircleSectorComponent);
       }
+      for (const entityId of world.query([CircleSectorsComponent])) {
+        world.removeComponent(entityId, CircleSectorsComponent);
+      }
       for (const entityId of world.query([CircleCamTag])) {
         world.removeComponent(entityId, CircleCamTag);
       }
@@ -348,7 +390,7 @@ export class OverlayRadiusAndCircleSectorSystem {
     const sectorEnabled = _layeringFlag(world, 'layeringCollisionCircleSectors', true);
 
     const overlayByEntity = new Map();
-    const sectorByEntity = new Map();
+    const sectorListByEntity = new Map();
     const pathEntities = world.query([CablePathComponent]);
 
     for (const pathId of pathEntities) {
@@ -448,10 +490,9 @@ export class OverlayRadiusAndCircleSectorSystem {
             endAngle,
             cw
           };
-          const prev = sectorByEntity.get(entityId);
-          if (!prev || sector.radius > prev.radius) {
-            sectorByEntity.set(entityId, sector);
-          }
+          const list = sectorListByEntity.get(entityId) ?? [];
+          list.push(sector);
+          sectorListByEntity.set(entityId, list);
         }
       }
     }
@@ -469,7 +510,19 @@ export class OverlayRadiusAndCircleSectorSystem {
       }
     }
 
-    for (const [entityId, sector] of sectorByEntity.entries()) {
+    for (const [entityId, sectors] of sectorListByEntity.entries()) {
+      const validSectors = Array.isArray(sectors)
+        ? sectors.filter((sector) => sector && Number.isFinite(sector.radius) && sector.radius > 1e-9)
+        : [];
+      if (validSectors.length < 1) {
+        continue;
+      }
+      const sector = validSectors.reduce((best, candidate) => (
+        !best || candidate.radius > best.radius ? candidate : best
+      ), null);
+      if (!sector) {
+        continue;
+      }
       if (world.hasComponent(entityId, CircleSectorComponent)) {
         const comp = world.getComponent(entityId, CircleSectorComponent);
         comp.radius = sector.radius;
@@ -482,14 +535,30 @@ export class OverlayRadiusAndCircleSectorSystem {
           new CircleSectorComponent(sector.radius, sector.startAngle, sector.endAngle, sector.cw)
         );
       }
+      if (world.hasComponent(entityId, CircleSectorsComponent)) {
+        const comp = world.getComponent(entityId, CircleSectorsComponent);
+        comp.sectors = validSectors.map((entry) => ({
+          radius: entry.radius,
+          startAngle: entry.startAngle,
+          endAngle: entry.endAngle,
+          cw: entry.cw === true
+        }));
+      } else {
+        world.addComponent(entityId, new CircleSectorsComponent(validSectors));
+      }
     }
     for (const entityId of world.query([CircleSectorComponent])) {
-      if (!sectorByEntity.has(entityId)) {
+      if (!sectorListByEntity.has(entityId)) {
         world.removeComponent(entityId, CircleSectorComponent);
       }
     }
+    for (const entityId of world.query([CircleSectorsComponent])) {
+      if (!sectorListByEntity.has(entityId)) {
+        world.removeComponent(entityId, CircleSectorsComponent);
+      }
+    }
 
-    const camEntities = new Set([...overlayByEntity.keys(), ...sectorByEntity.keys()]);
+    const camEntities = new Set([...overlayByEntity.keys(), ...sectorListByEntity.keys()]);
     for (const entityId of camEntities) {
       if (!world.hasComponent(entityId, CircleCamTag)) {
         world.addComponent(entityId, new CircleCamTag());

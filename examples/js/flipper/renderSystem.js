@@ -24,6 +24,7 @@ import {
   ObstacleTagComponent,
   OverlayRadiusComponent,
   CircleSectorComponent,
+  CircleSectorsComponent,
 } from './flipper_common.js';
 import { ExtruderComponent } from '../slideprinter/slideprinter_common.js';
 
@@ -1098,9 +1099,12 @@ export class RenderSystem {
     // Draw layered collision geometry (overlay circles + circle sectors) for debugging.
     {
       const overlayEntities = world.query([PositionComponent, OverlayRadiusComponent]);
-      const sectorEntities = world.query([PositionComponent, CircleSectorComponent]);
+      const sectorEntityIds = new Set([
+        ...world.query([PositionComponent, CircleSectorComponent]),
+        ...world.query([PositionComponent, CircleSectorsComponent]),
+      ]);
 
-      if (overlayEntities.length > 0 || sectorEntities.length > 0) {
+      if (overlayEntities.length > 0 || sectorEntityIds.size > 0) {
         this.c.save();
         const canSetLineDash = typeof this.c.setLineDash === 'function';
         if (canSetLineDash) {
@@ -1129,56 +1133,66 @@ export class RenderSystem {
         if (canSetLineDash) {
           this.c.setLineDash([]);
         }
-        for (const entityId of sectorEntities) {
+        for (const entityId of sectorEntityIds) {
           const pos = world.getComponent(entityId, PositionComponent)?.pos;
-          const sector = world.getComponent(entityId, CircleSectorComponent);
-          if (!pos || !sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
+          if (!pos) {
             continue;
           }
-
-          const startAngle = Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0;
-          const endAngle = Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0;
-          const anticlockwise = sector.cw !== true;
-
-          this.c.fillStyle = 'rgba(255, 136, 0, 0.14)';
-          this.c.beginPath();
-          this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-          this.c.arc(
-            this.cX(pos.x),
-            this.cY(pos.y),
-            sector.radius * this.effectiveCScale,
-            -startAngle,
-            -endAngle,
-            anticlockwise
+          const multi = world.getComponent(entityId, CircleSectorsComponent);
+          const single = world.getComponent(entityId, CircleSectorComponent);
+          const sectors = (
+            multi && Array.isArray(multi.sectors) && multi.sectors.length > 0
+              ? multi.sectors
+              : (single ? [single] : [])
           );
-          this.c.closePath();
-          this.c.fill();
+          for (const sector of sectors) {
+            if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
+              continue;
+            }
+            const startAngle = Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0;
+            const endAngle = Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0;
+            const anticlockwise = sector.cw !== true;
 
-          this.c.strokeStyle = 'rgba(255, 136, 0, 0.9)';
-          this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
-          this.c.beginPath();
-          this.c.arc(
-            this.cX(pos.x),
-            this.cY(pos.y),
-            sector.radius * this.effectiveCScale,
-            -startAngle,
-            -endAngle,
-            anticlockwise
-          );
-          this.c.stroke();
+            this.c.fillStyle = 'rgba(255, 136, 0, 0.14)';
+            this.c.beginPath();
+            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
+            this.c.arc(
+              this.cX(pos.x),
+              this.cY(pos.y),
+              sector.radius * this.effectiveCScale,
+              -startAngle,
+              -endAngle,
+              anticlockwise
+            );
+            this.c.closePath();
+            this.c.fill();
 
-          const sx = pos.x + sector.radius * Math.cos(startAngle);
-          const sy = pos.y + sector.radius * Math.sin(startAngle);
-          const ex = pos.x + sector.radius * Math.cos(endAngle);
-          const ey = pos.y + sector.radius * Math.sin(endAngle);
-          this.c.strokeStyle = 'rgba(255, 136, 0, 0.6)';
-          this.c.lineWidth = Math.max(1.0, 1.5 * this.effectiveCScale / 250);
-          this.c.beginPath();
-          this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-          this.c.lineTo(this.cX(sx), this.cY(sy));
-          this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-          this.c.lineTo(this.cX(ex), this.cY(ey));
-          this.c.stroke();
+            this.c.strokeStyle = 'rgba(255, 136, 0, 0.9)';
+            this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
+            this.c.beginPath();
+            this.c.arc(
+              this.cX(pos.x),
+              this.cY(pos.y),
+              sector.radius * this.effectiveCScale,
+              -startAngle,
+              -endAngle,
+              anticlockwise
+            );
+            this.c.stroke();
+
+            const sx = pos.x + sector.radius * Math.cos(startAngle);
+            const sy = pos.y + sector.radius * Math.sin(startAngle);
+            const ex = pos.x + sector.radius * Math.cos(endAngle);
+            const ey = pos.y + sector.radius * Math.sin(endAngle);
+            this.c.strokeStyle = 'rgba(255, 136, 0, 0.6)';
+            this.c.lineWidth = Math.max(1.0, 1.5 * this.effectiveCScale / 250);
+            this.c.beginPath();
+            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
+            this.c.lineTo(this.cX(sx), this.cY(sy));
+            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
+            this.c.lineTo(this.cX(ex), this.cY(ey));
+            this.c.stroke();
+          }
         }
         this.c.restore();
       }
@@ -1387,7 +1401,10 @@ export class RenderSystem {
     // Re-draw collision envelopes last so they stay visible above all other layers.
     {
       const overlayEntities = world.query([PositionComponent, OverlayRadiusComponent]);
-      const sectorEntities = world.query([PositionComponent, CircleSectorComponent]);
+      const sectorEntityIds = new Set([
+        ...world.query([PositionComponent, CircleSectorComponent]),
+        ...world.query([PositionComponent, CircleSectorsComponent]),
+      ]);
       const ballBallContacts = Array.isArray(world.getResource('ball_ball_contacts'))
         ? world.getResource('ball_ball_contacts')
         : [];
@@ -1397,7 +1414,7 @@ export class RenderSystem {
 
       if (
         overlayEntities.length > 0 ||
-        sectorEntities.length > 0 ||
+        sectorEntityIds.size > 0 ||
         ballBallContacts.length > 0 ||
         obstacleContacts.length > 0
       ) {
@@ -1429,42 +1446,53 @@ export class RenderSystem {
         if (canSetLineDash) {
           this.c.setLineDash([]);
         }
-        for (const entityId of sectorEntities) {
+        for (const entityId of sectorEntityIds) {
           const pos = world.getComponent(entityId, PositionComponent)?.pos;
-          const sector = world.getComponent(entityId, CircleSectorComponent);
-          if (!pos || !sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
+          if (!pos) {
             continue;
           }
-          const startAngle = Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0;
-          const endAngle = Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0;
-          const anticlockwise = sector.cw !== true;
-
-          this.c.fillStyle = 'rgba(255, 136, 0, 0.18)';
-          this.c.beginPath();
-          this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
-          this.c.arc(
-            this.cX(pos.x),
-            this.cY(pos.y),
-            sector.radius * this.effectiveCScale,
-            -startAngle,
-            -endAngle,
-            anticlockwise
+          const multi = world.getComponent(entityId, CircleSectorsComponent);
+          const single = world.getComponent(entityId, CircleSectorComponent);
+          const sectors = (
+            multi && Array.isArray(multi.sectors) && multi.sectors.length > 0
+              ? multi.sectors
+              : (single ? [single] : [])
           );
-          this.c.closePath();
-          this.c.fill();
+          for (const sector of sectors) {
+            if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
+              continue;
+            }
+            const startAngle = Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0;
+            const endAngle = Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0;
+            const anticlockwise = sector.cw !== true;
 
-          this.c.strokeStyle = 'rgba(255, 136, 0, 0.95)';
-          this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
-          this.c.beginPath();
-          this.c.arc(
-            this.cX(pos.x),
-            this.cY(pos.y),
-            sector.radius * this.effectiveCScale,
-            -startAngle,
-            -endAngle,
-            anticlockwise
-          );
-          this.c.stroke();
+            this.c.fillStyle = 'rgba(255, 136, 0, 0.18)';
+            this.c.beginPath();
+            this.c.moveTo(this.cX(pos.x), this.cY(pos.y));
+            this.c.arc(
+              this.cX(pos.x),
+              this.cY(pos.y),
+              sector.radius * this.effectiveCScale,
+              -startAngle,
+              -endAngle,
+              anticlockwise
+            );
+            this.c.closePath();
+            this.c.fill();
+
+            this.c.strokeStyle = 'rgba(255, 136, 0, 0.95)';
+            this.c.lineWidth = Math.max(1.0, 2.5 * this.effectiveCScale / 250);
+            this.c.beginPath();
+            this.c.arc(
+              this.cX(pos.x),
+              this.cY(pos.y),
+              sector.radius * this.effectiveCScale,
+              -startAngle,
+              -endAngle,
+              anticlockwise
+            );
+            this.c.stroke();
+          }
         }
 
         // Show pairwise manifold envelopes used by pinch-share contacts.
