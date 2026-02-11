@@ -897,68 +897,47 @@ export class PBDBallBorderCollisions {
 
     if (borderPoints.length >= 2) {
         for (const ballId of ballEntities) {
-            const p1Comp = world.getComponent(ballId, PositionComponent);
-            const p1 = p1Comp.pos;
-            const massComp = world.getComponent(ballId, MassComponent);
-            const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
-
-            let minDistSq = Infinity;
-            let closestSegPoint = new Vector2();
-            let edgeStart = null;
-            let edgeEnd = null;
-
             for (let i = 0; i < borderPoints.length; i++) {
+                const posComp = world.getComponent(ballId, PositionComponent);
+                const p1 = posComp?.pos;
+                if (!p1) {
+                  break;
+                }
                 const a = borderPoints[i];
                 const b = borderPoints[(i + 1) % borderPoints.length];
                 const closestPtOnSeg = closestPointOnSegment(p1, a, b);
                 const distSq = p1.distanceToSq(closestPtOnSeg);
-
-                if (distSq < minDistSq) {
-                    minDistSq = distSq;
-                    closestSegPoint.set(closestPtOnSeg);
-                    edgeStart = a;
-                    edgeEnd = b;
+                const r1 = _getBaseCollisionRadius(world, ballId);
+                if (distSq > (r1 + 1e-9) * (r1 + 1e-9)) {
+                  continue;
                 }
-            }
 
-            const ballToClosest = new Vector2().subtractVectors(p1, closestSegPoint);
-            const edgeVec = new Vector2().subtractVectors(edgeEnd, edgeStart);
-            const normal = new Vector2(-edgeVec.y, edgeVec.x).normalize();
-
-            let collisionNormal;
-            if (ballToClosest.lengthSq() < 1e-9) {
-                collisionNormal = normal.clone();
-            } else {
-                collisionNormal = ballToClosest.clone().normalize();
-            }
-
-            if (ballToClosest.dot(normal) < 0) {
-                collisionNormal = normal.clone();
-            }
-
-            const dist = Math.sqrt(minDistSq);
-            const r1 = _getBaseCollisionRadius(world, ballId);
-            if (dist > r1) {
-              continue;
-            }
-            const penetration = r1 - dist;
-            let delta_lambda = 0;
-            if (penetration > 0) {
-                if (invMass > 0) {
-                    p1.add(collisionNormal, penetration);
-                    const w_inv = invMass;
-                    delta_lambda = penetration / w_inv;
+                const collisionNormal = _borderCollisionNormal(p1, closestPtOnSeg, a, b);
+                const dist = Math.sqrt(distSq);
+                const penetration = r1 - dist;
+                if (penetration <= 0.0) {
+                  continue;
                 }
-            }
+                const contactOffset = collisionNormal.clone().scale(-r1);
+                const delta_lambda = _resolveRigidContactSingle(
+                  world,
+                  ballId,
+                  contactOffset,
+                  collisionNormal,
+                  penetration
+                );
 
-            contacts.push({
-                'ball_id': ballId,
-                'normal': collisionNormal.clone(),
-                'delta_lambda': delta_lambda,
-                'ball_contact_radius': r1,
-                'restitution': restitution,
-                'friction': friction
-            });
+                contacts.push({
+                    ball_id: ballId,
+                    normal: collisionNormal.clone(),
+                    delta_lambda,
+                    ball_contact_radius: r1,
+                    ball_contact_offset: contactOffset,
+                    restitution,
+                    friction,
+                    border_segment_index: i
+                });
+            }
         }
     }
   }
@@ -1312,37 +1291,32 @@ export class PBDBorderCircleSectorCollisions {
     }
 
     for (const ballId of ballEntities) {
-      const posComp = world.getComponent(ballId, PositionComponent);
-      const p1 = posComp?.pos;
-      if (!p1) continue;
+      for (let i = 0; i < borderPoints.length; i++) {
+        const posComp = world.getComponent(ballId, PositionComponent);
+        const p1 = posComp?.pos;
+        if (!p1) break;
 
-      const closestData = _findClosestBorderSegment(borderPoints, p1);
-      if (!closestData) continue;
-      const { minDistSq, closestPoint, edgeStart, edgeEnd } = closestData;
-      const dist = Math.sqrt(minDistSq);
-      const normal = _borderCollisionNormal(p1, closestPoint, edgeStart, edgeEnd);
-      const towardBorder = normal.clone().scale(-1.0);
-      const support = _compositeSupportToward(world, ballId, towardBorder);
-      if (!support) continue;
-      if (support.projection <= support.baseRadius + 1e-9) continue;
-      const penetration = support.projection - dist;
-      if (penetration <= 0.0) continue;
+        const a = borderPoints[i];
+        const b = borderPoints[(i + 1) % borderPoints.length];
+        const closestPoint = closestPointOnSegment(p1, a, b);
+        const minDistSq = p1.distanceToSq(closestPoint);
+        const dist = Math.sqrt(minDistSq);
+        const normal = _borderCollisionNormal(p1, closestPoint, a, b);
+        const towardBorder = normal.clone().scale(-1.0);
+        const support = _compositeSupportToward(world, ballId, towardBorder);
+        if (!support) continue;
+        if (support.projection <= support.baseRadius + 1e-9) continue;
+        const penetration = support.projection - dist;
+        if (penetration <= 0.0) continue;
 
-      const deltaLambda = _resolveRigidContactSingle(
-        world,
-        ballId,
-        support.offset,
-        normal,
-        penetration
-      );
+        const deltaLambda = _resolveRigidContactSingle(
+          world,
+          ballId,
+          support.offset,
+          normal,
+          penetration
+        );
 
-      const existing = contacts.find((c) => c.ball_id === ballId);
-      if (existing) {
-        existing.normal = normal.clone();
-        existing.delta_lambda = (Number.isFinite(existing.delta_lambda) ? existing.delta_lambda : 0.0) + deltaLambda;
-        existing.ball_contact_radius = support.projection;
-        existing.ball_contact_offset = support.offset.clone();
-      } else {
         contacts.push({
           ball_id: ballId,
           normal: normal.clone(),
@@ -1350,7 +1324,8 @@ export class PBDBorderCircleSectorCollisions {
           ball_contact_radius: support.projection,
           ball_contact_offset: support.offset.clone(),
           restitution,
-          friction
+          friction,
+          border_segment_index: i
         });
       }
     }

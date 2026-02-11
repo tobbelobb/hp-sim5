@@ -9,7 +9,9 @@ import {
   BallTagComponent,
   BorderComponent,
   PBDBallBorderCollisions,
+  PBDBorderCircleSectorCollisions,
   OverlayRadiusComponent,
+  CircleSectorComponent,
 } from '../../../examples/js/flipper/flipper_common.js';
 
 describe('PBDBallBorderCollisions overlay radius', () => {
@@ -56,5 +58,55 @@ describe('PBDBallBorderCollisions overlay radius', () => {
     expect(yNoWrap).toBeCloseTo(1.15, 9);
     expect(yWithWrap).toBeGreaterThan(1.15);
     expect(yWithWrap).toBeCloseTo(1.2, 6);
+  });
+
+  test('keeps simultaneous raw and sector border contacts on different segments', () => {
+    const world = new World();
+    world.setResource('enableLayering', true);
+    world.setResource('layeringCollisionSectorSolvers', true);
+    world.setResource('layeringCollisionCircleSectors', true);
+    world.setResource('layeringCollisionOverlayRadius', false);
+
+    const ballId = world.createEntity();
+    world.addComponent(ballId, new BallTagComponent());
+    world.addComponent(ballId, new PositionComponent(-1.05, -0.95));
+    world.addComponent(ballId, new RadiusComponent(1.0));
+    world.addComponent(ballId, new MassComponent(1.0));
+    world.addComponent(
+      ballId,
+      new CircleSectorComponent(
+        1.2,
+        -0.85 * Math.PI,
+        -0.15 * Math.PI,
+        false
+      )
+    );
+
+    const borderId = world.createEntity();
+    world.addComponent(
+      borderId,
+      new BorderComponent([
+        new Vector2(-2.0, -2.0),
+        new Vector2(2.0, -2.0),
+        new Vector2(2.0, 2.0),
+        new Vector2(-2.0, 2.0),
+      ])
+    );
+
+    const baseSystem = new PBDBallBorderCollisions();
+    const sectorSystem = new PBDBorderCircleSectorCollisions();
+    baseSystem.update(world, 0.016);
+    sectorSystem.update(world, 0.016);
+
+    const contacts = world.getResource('ball_border_contacts');
+    expect(Array.isArray(contacts)).toBe(true);
+    expect(contacts.length).toBeGreaterThanOrEqual(2);
+
+    const ballContacts = contacts.filter((c) => c.ball_id === ballId);
+    expect(ballContacts.length).toBeGreaterThanOrEqual(2);
+    expect(ballContacts.some((c) => c.ball_contact_radius <= 1.001)).toBe(true);
+    expect(ballContacts.some((c) => c.ball_contact_radius >= 1.1)).toBe(true);
+    expect(ballContacts.some((c) => c.normal.x > 0.5)).toBe(true);
+    expect(ballContacts.some((c) => c.normal.y > 0.5)).toBe(true);
   });
 });
