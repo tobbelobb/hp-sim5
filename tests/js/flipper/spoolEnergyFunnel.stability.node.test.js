@@ -94,6 +94,62 @@ function _average(values) {
   return values.reduce((sum, value) => sum + value, 0.0) / values.length;
 }
 
+function _stddev(values) {
+  if (!Array.isArray(values) || values.length < 2) {
+    return 0.0;
+  }
+  const mean = _average(values);
+  const variance = _average(values.map((value) => {
+    const d = value - mean;
+    return d * d;
+  }));
+  return Math.sqrt(Math.max(0.0, variance));
+}
+
+function _linearRegression(points) {
+  if (!Array.isArray(points) || points.length < 2) {
+    return null;
+  }
+  const n = points.length;
+  let sumX = 0.0;
+  let sumY = 0.0;
+  let sumXY = 0.0;
+  let sumXX = 0.0;
+  for (const point of points) {
+    const x = _readFinite(point.x, 0.0);
+    const y = _readFinite(point.y, 0.0);
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumXX += x * x;
+  }
+  const denom = n * sumXX - sumX * sumX;
+  if (Math.abs(denom) < 1e-12) {
+    return {
+      n,
+      slope: 0.0,
+      intercept: sumY / n,
+      r2: 0.0
+    };
+  }
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  const yMean = sumY / n;
+  let ssRes = 0.0;
+  let ssTot = 0.0;
+  for (const point of points) {
+    const x = _readFinite(point.x, 0.0);
+    const y = _readFinite(point.y, 0.0);
+    const fitted = slope * x + intercept;
+    const res = y - fitted;
+    ssRes += res * res;
+    const dev = y - yMean;
+    ssTot += dev * dev;
+  }
+  const r2 = ssTot > 1e-12 ? Math.max(0.0, 1.0 - ssRes / ssTot) : 0.0;
+  return { n, slope, intercept, r2 };
+}
+
 function _sliceByStep(series, stepMin, stepMax) {
   return series.filter((entry) => entry.step >= stepMin && entry.step <= stepMax);
 }
@@ -373,6 +429,7 @@ function runScenario({
   }
 
   const perStep = [];
+  let prevPairAngular = new Map();
   let nanStep = null;
   let growthAbortStep = null;
   for (let step = 1; step <= steps; step++) {
@@ -393,13 +450,18 @@ function runScenario({
     let maxVy = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
+    let totalBallAngularAbs = 0.0;
+    let maxBallAngularAbs = 0.0;
+    const pairAngular = new Map();
 
     for (const ballId of ballIds) {
       const pos = world.getComponent(ballId, PositionComponent)?.pos;
       const vel = world.getComponent(ballId, VelocityComponent)?.vel;
+      const angularVel = world.getComponent(ballId, AngularVelocityComponent)?.angularVelocity;
       if (
         !pos ||
         !vel ||
+        !Number.isFinite(angularVel) ||
         !Number.isFinite(pos.x) ||
         !Number.isFinite(pos.y) ||
         !Number.isFinite(vel.x) ||
@@ -418,8 +480,65 @@ function runScenario({
       if (vel.y > maxVy) maxVy = vel.y;
       if (pos.y < minY) minY = pos.y;
       if (pos.y > maxY) maxY = pos.y;
+      const absOmega = Math.abs(angularVel);
+      totalBallAngularAbs += absOmega;
+      if (absOmega > maxBallAngularAbs) {
+        maxBallAngularAbs = absOmega;
+      }
       prevPos.set(ballId, pos.clone());
     }
+
+    const jointEntities = world.query([CableJointComponent]);
+    for (const jointId of jointEntities) {
+      const joint = world.getComponent(jointId, CableJointComponent);
+      if (!joint) {
+        continue;
+      }
+      const ballA = world.getComponent(joint.entityA, BallTagComponent);
+      const ballB = world.getComponent(joint.entityB, BallTagComponent);
+      if (!ballA || !ballB) {
+        continue;
+      }
+      const omegaA = world.getComponent(joint.entityA, AngularVelocityComponent)?.angularVelocity;
+      const omegaB = world.getComponent(joint.entityB, AngularVelocityComponent)?.angularVelocity;
+      if (!Number.isFinite(omegaA) || !Number.isFinite(omegaB)) {
+        continue;
+      }
+      const idA = Math.min(joint.entityA, joint.entityB);
+      const idB = Math.max(joint.entityA, joint.entityB);
+      const key = `${idA}:${idB}`;
+      const pairAbs = Math.abs(omegaA) + Math.abs(omegaB);
+      const pairSigned = omegaA + omegaB;
+      const existing = pairAngular.get(key);
+      if (!existing || pairAbs > existing.pairAbs) {
+        pairAngular.set(key, {
+          key,
+          idA,
+          idB,
+          jointId,
+          pairAbs,
+          pairSigned
+        });
+      }
+    }
+
+    let totalPairAngularAbs = 0.0;
+    let maxPairAngularAbs = 0.0;
+    let maxPairAngularJump = 0.0;
+    let maxPairAngularJumpKey = null;
+    for (const [key, pair] of pairAngular.entries()) {
+      totalPairAngularAbs += pair.pairAbs;
+      if (pair.pairAbs > maxPairAngularAbs) {
+        maxPairAngularAbs = pair.pairAbs;
+      }
+      const prevPair = prevPairAngular.get(key);
+      const jump = pair.pairAbs - (prevPair ? prevPair.pairAbs : pair.pairAbs);
+      if (jump > maxPairAngularJump) {
+        maxPairAngularJump = jump;
+        maxPairAngularJumpKey = key;
+      }
+    }
+    prevPairAngular = pairAngular;
 
     perStep.push({
       step,
@@ -428,7 +547,13 @@ function runScenario({
       maxSpeed,
       maxVy,
       minY,
-      maxY
+      maxY,
+      totalBallAngularAbs,
+      maxBallAngularAbs,
+      totalPairAngularAbs,
+      maxPairAngularAbs,
+      maxPairAngularJump,
+      maxPairAngularJumpKey
     });
 
     if (nanStep !== null) {
@@ -444,9 +569,17 @@ function runScenario({
   const quietWindow = _sliceByStep(perStep, 180, 230);
   const quietAvg = _average(quietWindow.map((entry) => entry.totalMovement));
   const quietMaxSpeed = Math.max(1e-9, ...quietWindow.map((entry) => entry.maxSpeed));
+  const quietAngularAvg = _average(quietWindow.map((entry) => entry.totalBallAngularAbs));
+  const quietAngularStd = _stddev(quietWindow.map((entry) => entry.totalBallAngularAbs));
+  const quietPairJumpPositive = quietWindow
+    .map((entry) => Math.max(0.0, entry.maxPairAngularJump))
+    .filter((value) => value > 0.0);
+  const quietPairJumpAvg = _average(quietPairJumpPositive);
   const spikeWindow = _sliceByStep(perStep, 230, 320);
   const tailWindow = perStep.slice(Math.max(0, perStep.length - 80));
   const tailAvgMovement = _average(tailWindow.map((entry) => entry.totalMovement));
+  const peakAngularAbs = Math.max(0.0, ...spikeWindow.map((entry) => entry.totalBallAngularAbs));
+  const peakPairAngularJump = Math.max(0.0, ...spikeWindow.map((entry) => entry.maxPairAngularJump));
 
   let spikeStep = null;
   for (const entry of spikeWindow) {
@@ -455,6 +588,22 @@ function runScenario({
     const upwardKick = entry.maxVy > 1.0;
     if ((movementSpike || speedSpike) && upwardKick) {
       spikeStep = entry.step;
+      break;
+    }
+  }
+
+  let angularSpikeStep = null;
+  for (const entry of spikeWindow) {
+    const angularLevelSpike = entry.totalBallAngularAbs > Math.max(
+      quietAngularAvg * 1.2,
+      quietAngularAvg + 2.5 * quietAngularStd
+    );
+    const pairJumpSpike = entry.maxPairAngularJump > Math.max(
+      0.02,
+      quietPairJumpAvg * 8.0
+    );
+    if (angularLevelSpike && pairJumpSpike) {
+      angularSpikeStep = entry.step;
       break;
     }
   }
@@ -473,9 +622,15 @@ function runScenario({
     growthAbortStep,
     nanStep,
     spikeStep,
+    angularSpikeStep,
     spikeRatio,
     quietAvg,
     tailAvgMovement,
+    quietAngularAvg,
+    quietAngularStd,
+    peakAngularAbs,
+    peakPairAngularJump,
+    quietPairJumpAvg,
     score: _movementScore({
       growthAbortStep,
       nanStep,
@@ -730,6 +885,46 @@ describe('Spool Funnel Stability Sweep', () => {
         ? pinchRubEvents.find((event) => (event.step ?? Infinity) <= firstAnomalyStep) ?? null
         : null;
       const fixedRestAnomalies = fixed.cableEvents.filter((event) => event.type === 'rest-length-anomaly');
+      const summaryAfterAttachmentByStep = new Map(
+        summaryEvents
+          .filter((event) => event.phase === 'afterAttachment')
+          .map((event) => [Math.floor(_readFinite(event.step, 0)), event])
+      );
+      const angularSpikeEntry = baseline.perStep.find((entry) => entry.step === baseline.angularSpikeStep) ?? null;
+      const angularSpikeSummary = Number.isFinite(baseline.angularSpikeStep)
+        ? summaryAfterAttachmentByStep.get(baseline.angularSpikeStep) ?? null
+        : null;
+      const angularSpikeRestAnomalies = Number.isFinite(baseline.angularSpikeStep)
+        ? restAnomalyEvents.filter((event) => event.step === baseline.angularSpikeStep)
+        : [];
+      const worstPairJumpEntry = baseline.perStep.length > 0
+        ? [...baseline.perStep].sort((a, b) => b.maxPairAngularJump - a.maxPairAngularJump)[0]
+        : null;
+      const worstPairJumpSummary = worstPairJumpEntry
+        ? summaryAfterAttachmentByStep.get(worstPairJumpEntry.step) ?? null
+        : null;
+      const negRestVsAngularRegression = _linearRegression(
+        baseline.perStep
+          .map((entry) => {
+            const summary = summaryAfterAttachmentByStep.get(entry.step);
+            if (!summary) {
+              return null;
+            }
+            return {
+              x: Math.max(0.0, -(summary.minRestLength ?? 0.0)),
+              y: entry.totalBallAngularAbs
+            };
+          })
+          .filter((sample) => sample !== null)
+      );
+      const timeVsAngularOffRegression = _linearRegression(
+        _sliceByStep(baseline.perStep, 180, 245)
+          .map((entry) => ({ x: entry.step, y: entry.totalBallAngularAbs }))
+      );
+      const timeVsAngularOnRegression = _linearRegression(
+        _sliceByStep(fixed.perStep, 180, 245)
+          .map((entry) => ({ x: entry.step, y: entry.totalBallAngularAbs }))
+      );
 
       const rootCauseCandidate = {
         spikeReferenceStep,
@@ -758,10 +953,31 @@ describe('Spool Funnel Stability Sweep', () => {
         busiestSteps,
         smallestSplit,
         nearSpikeSplit,
+        angularDiagnostics: {
+          angularSpikeStep: baseline.angularSpikeStep,
+          angularSpikeEntry,
+          angularSpikeSummary,
+          angularSpikeRestAnomalyCount: angularSpikeRestAnomalies.length,
+          angularSpikeRestAnomaly: angularSpikeRestAnomalies[0] ?? null,
+          worstPairJumpEntry,
+          worstPairJumpSummary,
+          quietAngularAvg: baseline.quietAngularAvg,
+          quietAngularStd: baseline.quietAngularStd,
+          peakAngularAbs: baseline.peakAngularAbs,
+          peakPairAngularJump: baseline.peakPairAngularJump,
+          quietPairJumpAvg: baseline.quietPairJumpAvg,
+          negRestVsAngularRegression,
+          timeVsAngularOffRegression,
+          timeVsAngularOnRegression
+        },
         fixControl: {
           isStable: fixed.isStable,
           spikeStep: fixed.spikeStep,
+          angularSpikeStep: fixed.angularSpikeStep,
           growthAbortStep: fixed.growthAbortStep,
+          quietAngularAvg: fixed.quietAngularAvg,
+          peakAngularAbs: fixed.peakAngularAbs,
+          peakPairAngularJump: fixed.peakPairAngularJump,
           restAnomalyCount: fixedRestAnomalies.length,
           firstRestAnomaly: fixedRestAnomalies[0] ?? null
         }
