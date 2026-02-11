@@ -13,11 +13,6 @@ import {
   _updateHybridLinkStates
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 
-import {
-  tangentFromPointToCircle
-} from '../../../src/js/cable_joints/geometry.js';
-
-
 describe('_updateHybridLinkStates', () => {
   const addWheel = (world, pos, r = 1) => {
     const id = world.createEntity();
@@ -70,6 +65,43 @@ describe('_updateHybridLinkStates', () => {
     // restLength shortened by exactly 0.2
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
+  });
+
+  test('first link: tiny negative stored stays hybrid (hysteresis)', () => {
+    const world  = new World();
+    const wheel  = addWheel(world, new Vector2(0, 0), 1);
+    const anchor = addAnchor(world, new Vector2(0, 3));
+
+    const joint = world.createEntity();
+    const initialRest = 3;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        new Vector2(1, 0),
+        new Vector2(0, 3),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.01
+    );
+    world.addComponent(path, pathComp);
+    pathComp.stored[0] = -0.001;
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid');
+    expect(pathComp.stored[0]).toBeCloseTo(-0.001, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
 
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
@@ -186,6 +218,68 @@ describe('_updateHybridLinkStates', () => {
     const arc = pathComp.stored[1];
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - arc, 8);
+  });
+
+  test('first link: tiny re-wrap arc stays hybrid-attachment (hysteresis)', () => {
+    const baselineWorld = new World();
+    const baselineWheel = addWheel(baselineWorld, new Vector2(0, 0), 1);
+    const baselineAnchor = addAnchor(baselineWorld, new Vector2(0, 2));
+    const baselineJoint = baselineWorld.createEntity();
+    const initialRest = 3.0;
+    const tinyArcAttach = new Vector2(0.8771471956617061, 0.4802216125319691);
+    baselineWorld.addComponent(
+      baselineJoint,
+      new CableJointComponent(
+        baselineWheel, baselineAnchor, initialRest,
+        tinyArcAttach.clone(),
+        new Vector2(0, 2),
+      ),
+    );
+    const baselinePath = baselineWorld.createEntity();
+    const baselinePathComp = new CablePathComponent(
+      baselineWorld,
+      [baselineJoint],
+      ['hybrid-attachment', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.0
+    );
+    baselineWorld.addComponent(baselinePath, baselinePathComp);
+    _updateHybridLinkStates(baselineWorld);
+    expect(baselinePathComp.linkTypes[0]).toBe('hybrid');
+    expect(baselinePathComp.stored[0]).toBeGreaterThan(1e-4);
+
+    const world = new World();
+    const wheel = addWheel(world, new Vector2(0, 0), 1);
+    const anchor = addAnchor(world, new Vector2(0, 2));
+    const joint = world.createEntity();
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        tinyArcAttach.clone(),
+        new Vector2(0, 2),
+      ),
+    );
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid-attachment', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.1
+    );
+    world.addComponent(path, pathComp);
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
 
   test('hybrid-attachment endpoint keeps cw stable for near-degenerate endpoint geometry', () => {

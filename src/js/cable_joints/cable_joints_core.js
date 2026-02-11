@@ -228,6 +228,15 @@ function _featureFlag(world, key, fallback = true) {
   return _resourceBool(world, key, fallback);
 }
 
+function _hybridTransitionArcThreshold(path) {
+  const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+  if (!(halfWidth > 1e-9)) {
+    return 1e-6;
+  }
+  // Hysteresis: avoid flipping hybrid endpoint state on tiny numerical chatter.
+  return Math.max(1e-6, 0.25 * halfWidth);
+}
+
 function getMachineId(world, entityId) {
   if (entityId == null) {
     return '';
@@ -1335,7 +1344,8 @@ export function _updateHybridLinkStates(world, traceStep = null) {
     const path = world.getComponent(pathId, CablePathComponent);
     for (const i of [0, path.linkTypes.length - 1]) {
       if (path.linkTypes[i] === 'hybrid') {
-        if (path.stored[i] < 0.0) {
+        const transitionArcThreshold = _hybridTransitionArcThreshold(path);
+        if (path.stored[i] < -transitionArcThreshold) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
           const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
           const oldLinkType = path.linkTypes[i];
@@ -1415,7 +1425,24 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             restLengthDelta: joint.restLength - oldRestLength,
             oldCW: oldCw,
             newCW: path.cw[i],
-            effectiveRadius: radius
+            effectiveRadius: radius,
+            transitionArcThreshold
+          });
+        }
+        else if (path.stored[i] < 0.0) {
+          const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
+          const joint = world.getComponent(endpointJointId, CableJointComponent);
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-transition-suppressed',
+            direction: 'hybrid->hybrid-attachment',
+            pathId,
+            endpointIndex: i,
+            jointId: endpointJointId,
+            linkEntityId: i === 0 ? joint?.entityA : joint?.entityB,
+            neighborEntityId: i === 0 ? joint?.entityB : joint?.entityA,
+            stored: path.stored[i],
+            threshold: transitionArcThreshold,
+            reason: 'negative-stored-within-hysteresis'
           });
         }
       }
@@ -1536,9 +1563,11 @@ export function _updateHybridLinkStates(world, traceStep = null) {
         const distSqCW = attachmentPoint.distanceToSq(tanCW);
         const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
+        const transitionArcThreshold = _hybridTransitionArcThreshold(path);
         let newCW = null;
         let crossingTangent = null;
         let candidateStored = null;
+        let noTransitionReason = 'no-transition';
         if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
             newCW = true;
             crossingTangent = tanCCW;
@@ -1547,6 +1576,12 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             newCW = false;
             crossingTangent = tanCW;
             candidateStored = crossedCW;
+        }
+        if (newCW !== null && !(candidateStored > transitionArcThreshold)) {
+          noTransitionReason = 'candidate-below-hysteresis';
+          newCW = null;
+          crossingTangent = null;
+          candidateStored = null;
         }
 
         if (newCW !== null) {
@@ -1606,7 +1641,8 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             newCW: path.cw[i],
             effectiveRadius: R,
             crossedCW,
-            crossedCCW
+            crossedCCW,
+            transitionArcThreshold
           });
           _recordCableEventTrace(world, step, {
             type: 'hybrid-rub-check',
@@ -1649,7 +1685,8 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             crossedCCW,
             distSqCW,
             distSqCCW,
-            reason: 'no-transition'
+            transitionArcThreshold,
+            reason: noTransitionReason
           });
         }
       }

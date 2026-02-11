@@ -607,6 +607,14 @@ export class RenderSystem {
     // Base line width and debug radius (adjust as needed)
     const baseLineWidth = 2.0;
     const baseDebugRadius = 3;
+    const fallbackLineWidthPx = Math.max(1.0, baseLineWidth * this.effectiveCScale / 250);
+    const physicalCableLineWidthPx = (halfWidthSim) => {
+      const halfWidth = Number.isFinite(halfWidthSim) ? Math.max(0.0, halfWidthSim) : 0.0;
+      if (!(halfWidth > 1e-9)) {
+        return fallbackLineWidthPx;
+      }
+      return Math.max(0.75, (2.0 * halfWidth) * this.effectiveCScale);
+    };
 
     // Render Border
     const borderEntities = world.query([BorderComponent, RenderableComponent]);
@@ -675,8 +683,8 @@ export class RenderSystem {
       if (path.jointEntities.length < 1) continue;
       const pathMachineId = world.getComponent(pathId, MachineTagComponent)?.id || '';
       const jointEntities = path.jointEntities;
-      // Scale line width by zoom using instance property
-      this.c.lineWidth = baseLineWidth * this.effectiveCScale/250;
+      const pathLineWidthPx = physicalCableLineWidthPx(path.cableHalfWidth);
+      this.c.lineWidth = pathLineWidthPx;
       for (const entityId of jointEntities) {
         const jointComp = world.getComponent(entityId, CableJointComponent);
         const renderComp = world.getComponent(entityId, RenderableComponent);
@@ -711,6 +719,7 @@ export class RenderSystem {
       }
 
       if (!layeringEnabled) {
+        this.c.lineWidth = physicalCableLineWidthPx(path.cableHalfWidth);
         const radius = bodyRadius;
         if (!(radius > 1e-9)) {
           return;
@@ -748,6 +757,7 @@ export class RenderSystem {
       }
 
       const halfWidth = path.cableHalfWidth ?? 0.0;
+      this.c.lineWidth = physicalCableLineWidthPx(halfWidth);
       const baseRadius = bodyRadius + halfWidth;
       if (!(baseRadius > 1e-9)) {
         return;
@@ -825,6 +835,7 @@ export class RenderSystem {
       if (path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
       const halfWidth = layeringEnabled ? (path.cableHalfWidth ?? 0.0) : 0.0;
+      const pathLineWidthPx = physicalCableLineWidthPx(path.cableHalfWidth);
       // rolling or hybrid link types mean the cable can wrap on that entity
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
         // Only draw wrap-around arc for rolling and hybrid links (when in rolling mode)
@@ -848,6 +859,7 @@ export class RenderSystem {
         const a2 = Math.atan2(P2.y - C.y, P2.x - C.x);
         // cw‐flag stored in path.cw[i]
         const anticlockwise = !path.cw[i];
+        this.c.lineWidth = pathLineWidthPx;
         this.c.beginPath();
 
         // Determine tension for color
