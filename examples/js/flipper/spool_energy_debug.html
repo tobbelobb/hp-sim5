@@ -402,7 +402,8 @@ canvas {
     const rawRadius = _readFinite(spoolEnergyConfig.ballRadius, 0.04);
     const ballMass = _readFinite(spoolEnergyConfig.ballMass, 0.008);
     const ballX = left + 0.16;
-    const ballY = bottom + rawRadius;
+    const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
+    const ballY = bottom + rawRadius + 2*configuredCableHalfWidth;
     const v0 = _readFinite(spoolEnergyConfig.initialLinearSpeed, 0.24);
     const w0 = -v0 / Math.max(rawRadius, 1e-9);
     const ballI = 0.5 * ballMass * rawRadius * rawRadius;
@@ -450,7 +451,6 @@ canvas {
     );
     world.addComponent(jointId, new RenderableComponent('line', linecolor1));
 
-    const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
     const flags = getCableFeatureFlags(world);
     const useLayeredBaseRadius = flags.enableLayering === true && flags.layeringCableBaseRadius === true;
     const cableHalfWidth = useLayeredBaseRadius ? configuredCableHalfWidth : 0.0;
@@ -477,8 +477,8 @@ canvas {
       world.registerSystem(new GravitySystem());
       world.registerSystem(new MovementSystem());
       world.registerSystem(new AngularMovementSystem());
-      world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
       world.registerSystem(new CableAttachmentUpdateSystem());
+      world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
       world.registerSystem(new CableAttachmentCacheSystem());
       world.registerSystem(new CableSlackSystem());
       world.registerSystem(new PBDCableConstraintSolver());

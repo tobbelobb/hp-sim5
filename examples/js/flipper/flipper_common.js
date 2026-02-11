@@ -266,6 +266,35 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
   };
 }
 
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 100.0;
+
+function _smoothedSectorRadius(rawRadius, decomposition, layerStep, span) {
+  const targetRadius = decomposition?.partialRadius;
+  if (!Number.isFinite(targetRadius) || !(targetRadius > 1e-9)) {
+    return 0.0;
+  }
+  if (!(layerStep > 1e-9)) {
+    return targetRadius;
+  }
+  if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
+    return targetRadius;
+  }
+  const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
+  const rampAlpha = Math.min(1.0, spanValue / LAYER_RADIUS_RAMP_ANGLE);
+
+  // Ramp each new winding layer from the previous layer radius to the new one.
+  // This removes step changes when a full wrap closes and a new partial starts.
+  let rampStartRadius;
+  if ((decomposition?.fullLayers ?? 0) > 0) {
+    rampStartRadius = targetRadius - layerStep;
+  } else {
+    rampStartRadius = rawRadius;
+  }
+  rampStartRadius = Math.max(rawRadius, rampStartRadius);
+
+  return rampStartRadius + (targetRadius - rampStartRadius) * rampAlpha;
+}
+
 export class OverlayRadiusAndCircleSectorSystem {
   runInPause = false;
 
@@ -344,10 +373,19 @@ export class OverlayRadiusAndCircleSectorSystem {
           }
           const startAngle = Math.atan2(rel.y, rel.x);
           const span = decomposition.partialLength / decomposition.partialRadius;
+          const smoothedRadius = _smoothedSectorRadius(
+            rawRadius,
+            decomposition,
+            layerStep,
+            span
+          );
+          if (!(smoothedRadius > 1e-9)) {
+            continue;
+          }
           const cw = path.cw[linkIndex] === true;
           const endAngle = cw ? (startAngle - span) : (startAngle + span);
           const sector = {
-            radius: decomposition.partialRadius,
+            radius: smoothedRadius,
             startAngle,
             endAngle,
             cw
