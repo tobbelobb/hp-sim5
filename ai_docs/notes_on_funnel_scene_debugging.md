@@ -21,6 +21,11 @@ This is a quick handoff for debugging instability in:
 
 All checkboxes are defined in `examples/js/flipper/cable_feature_flags.js`.
 
+Current ordering detail (important for trace interpretation):
+- `CableAttachmentUpdateSystem` now runs hybrid endpoint updates both before and after the split/merge passes.
+- `OverlayRadiusAndCircleSectorSystem` is registered both before and after `CableAttachmentUpdateSystem` in the funnel/debug setups and stability harness.
+- In the node harness (`tests/js/flipper/spoolEnergyFunnel.stability.node.test.js`) these two overlay passes are keyed as `overlayPre` and `overlayPost` (legacy `overlay` disables both).
+
 Most important for layering instability:
 - `cable/updateAttachment` (`layeringAttachmentUpdatePoints`)
 - `cable/mergeJoints` (`layeringMergeJoints`)

@@ -210,8 +210,16 @@ function _configureCableEventTrace(world, traceConfig = {}) {
   world.setResource('cableEventTraceBuffer', []);
 }
 
-function _registerSystem(world, system, disabledSystems, key) {
+function _registerSystem(world, system, disabledSystems, key, aliases = []) {
   if (disabledSystems.has(key)) {
+    return;
+  }
+  for (const alias of aliases) {
+    if (disabledSystems.has(alias)) {
+      return;
+    }
+  }
+  if (disabledSystems.has('*')) {
     return;
   }
   world.registerSystem(system);
@@ -390,9 +398,9 @@ function setupFunnelWorld({
   _registerSystem(world, new MovementSystem(), disabled, 'movement');
   _registerSystem(world, new AngularMovementSystem(), disabled, 'angularMovement');
   _registerSystem(world, new FlipperTipLinkSystem(), disabled, 'flipperTipLink');
-  _registerSystem(world, new OverlayRadiusAndCircleSectorSystem(), disabled, 'overlay');
+  _registerSystem(world, new OverlayRadiusAndCircleSectorSystem(), disabled, 'overlayPre', ['overlay']);
   _registerSystem(world, new CableAttachmentUpdateSystem(), disabled, 'attachmentUpdate');
-  _registerSystem(world, new OverlayRadiusAndCircleSectorSystem(), disabled, 'overlay');
+  _registerSystem(world, new OverlayRadiusAndCircleSectorSystem(), disabled, 'overlayPost', ['overlay']);
   _registerSystem(world, new CableAttachmentCacheSystem(), disabled, 'attachmentCache');
   _registerSystem(world, new CableSlackSystem(), disabled, 'slack');
   _registerSystem(world, new PBDCableConstraintSolver(), disabled, 'cableConstraint');
