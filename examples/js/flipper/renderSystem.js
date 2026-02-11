@@ -535,6 +535,106 @@ export class RenderSystem {
     return Date.now() * 0.001;
   }
 
+  _clampByte(value) {
+    if (!Number.isFinite(value)) {
+      return 0;
+    }
+    return Math.max(0, Math.min(255, Math.round(value)));
+  }
+
+  _parseColorToRgb(color) {
+    if (typeof color !== 'string') {
+      return null;
+    }
+    const trimmed = color.trim();
+    if (trimmed.length === 0) {
+      return null;
+    }
+    if (trimmed.startsWith('#')) {
+      let hex = trimmed.slice(1);
+      if (hex.length === 3) {
+        hex = hex.split('').map((ch) => ch + ch).join('');
+      }
+      if (hex.length === 6) {
+        const r = Number.parseInt(hex.slice(0, 2), 16);
+        const g = Number.parseInt(hex.slice(2, 4), 16);
+        const b = Number.parseInt(hex.slice(4, 6), 16);
+        if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) {
+          return [r, g, b];
+        }
+      }
+      return null;
+    }
+    if (trimmed.startsWith('rgb')) {
+      const parts = trimmed.match(/\d+(?:\.\d+)?/g);
+      if (parts && parts.length >= 3) {
+        const r = Number(parts[0]);
+        const g = Number(parts[1]);
+        const b = Number(parts[2]);
+        if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) {
+          return [this._clampByte(r), this._clampByte(g), this._clampByte(b)];
+        }
+      }
+    }
+    return null;
+  }
+
+  _rgbHue(rgb) {
+    if (!Array.isArray(rgb) || rgb.length < 3) {
+      return null;
+    }
+    const r = rgb[0] / 255;
+    const g = rgb[1] / 255;
+    const b = rgb[2] / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    if (delta <= 1e-9) {
+      return null;
+    }
+    let hue = 0.0;
+    if (max === r) {
+      hue = ((g - b) / delta) % 6;
+    } else if (max === g) {
+      hue = ((b - r) / delta) + 2;
+    } else {
+      hue = ((r - g) / delta) + 4;
+    }
+    hue *= 60.0;
+    if (hue < 0) {
+      hue += 360.0;
+    }
+    return hue;
+  }
+
+  _fxPaletteForObstacleColor(color) {
+    const rgb = this._parseColorToRgb(color);
+    const hue = this._rgbHue(rgb);
+    const isBlue = Number.isFinite(hue) && hue >= 170.0 && hue <= 260.0;
+    if (isBlue) {
+      return {
+        core: [80, 190, 255],
+        hot: [195, 240, 255],
+        deep: [60, 115, 245]
+      };
+    }
+    return {
+      core: [255, 152, 44],
+      hot: [255, 222, 128],
+      deep: [255, 92, 22]
+    };
+  }
+
+  _rgba(rgb, alpha) {
+    if (!Array.isArray(rgb) || rgb.length < 3) {
+      return `rgba(255, 160, 40, ${alpha})`;
+    }
+    const r = this._clampByte(rgb[0]);
+    const g = this._clampByte(rgb[1]);
+    const b = this._clampByte(rgb[2]);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   _spawnBumperHitBurst(world, contact, pushVel = 0.0) {
     const obsPos = world.getComponent(contact.obs_id, PositionComponent)?.pos;
     if (!obsPos) {
@@ -566,6 +666,7 @@ export class RenderSystem {
         ? obstacleRadiusValue
         : 0.03
     );
+    const effectRadius = Math.max(0.008, obstacleRadius * 0.5);
 
     const deltaLambda = Number.isFinite(contact.delta_lambda)
       ? Math.max(0.0, contact.delta_lambda)
@@ -574,37 +675,41 @@ export class RenderSystem {
       0.7,
       Math.min(2.8, 0.85 + (0.2 * pushVel) + (0.32 * Math.sqrt(deltaLambda + 1e-9)))
     );
-    const spread = (Math.PI / 6.0) + (Math.random() * 0.2);
+    const spread = (Math.PI / 7.0) + (Math.random() * 0.16);
     const baseAngle = Math.atan2(outwardDir.y, outwardDir.x);
+    const obstacleColor = world.getComponent(contact.obs_id, RenderableComponent)?.color;
+    const palette = this._fxPaletteForObstacleColor(obstacleColor);
 
-    const rayCount = Math.max(8, Math.min(18, Math.round(8 + intensity * 3 + (Math.random() * 3))));
+    const rayCount = Math.max(8, Math.min(16, Math.round(8 + intensity * 2 + (Math.random() * 2))));
     const rays = [];
     for (let i = 0; i < rayCount; i++) {
       const offset = (Math.random() * 2.0 - 1.0) * spread;
       rays.push({
         offset,
-        lengthScale: 0.72 + Math.random() * 0.58,
-        widthScale: 0.8 + Math.random() * 0.95,
-        alphaScale: 0.56 + Math.random() * 0.42,
-        flicker: Math.random() * Math.PI * 2.0
+        lengthScale: 0.78 + Math.random() * 0.62,
+        widthScale: 0.7 + Math.random() * 0.75,
+        alphaScale: 0.52 + Math.random() * 0.36,
+        startScale: 0.46 + Math.random() * 0.34,
+        flicker: Math.random() * Math.PI * 2.0,
+        hot: Math.random() < 0.52
       });
     }
 
-    const sparkCount = Math.max(8, Math.min(20, Math.round(7 + intensity * 4 + (Math.random() * 3))));
+    const sparkCount = Math.max(6, Math.min(14, Math.round(6 + intensity * 3 + (Math.random() * 2))));
     const sparks = [];
-    const originX = obsPos.x + outwardDir.x * obstacleRadius;
-    const originY = obsPos.y + outwardDir.y * obstacleRadius;
+    const originX = obsPos.x + outwardDir.x * effectRadius;
+    const originY = obsPos.y + outwardDir.y * effectRadius;
     for (let i = 0; i < sparkCount; i++) {
       const sparkAngle = baseAngle + ((Math.random() * 2.0 - 1.0) * spread * 1.2);
-      const sparkSpeed = (0.3 + Math.random() * 0.8) * (0.45 + 0.55 * intensity);
+      const sparkSpeed = (0.2 + Math.random() * 0.5) * (0.45 + 0.5 * intensity);
       sparks.push({
         x: originX,
         y: originY,
         vx: Math.cos(sparkAngle) * sparkSpeed,
         vy: Math.sin(sparkAngle) * sparkSpeed,
         age: 0.0,
-        life: 0.12 + Math.random() * 0.28,
-        size: 0.8 + Math.random() * 1.8,
+        life: 0.1 + Math.random() * 0.24,
+        width: 0.7 + Math.random() * 1.3,
         hot: Math.random() < 0.5
       });
     }
@@ -614,12 +719,12 @@ export class RenderSystem {
       y: obsPos.y,
       dirX: outwardDir.x,
       dirY: outwardDir.y,
-      obstacleRadius,
+      effectRadius,
       age: 0.0,
       life: 0.22 + Math.random() * 0.2,
       spread,
-      maxRingRadius: obstacleRadius + (0.08 + 0.09 * intensity),
-      maxRayLength: (0.07 + 0.1 * intensity),
+      maxRayLength: (0.035 + 0.05 * intensity),
+      palette,
       rays,
       sparks
     });
@@ -641,6 +746,7 @@ export class RenderSystem {
       dtSec = 0.0;
     }
     dtSec = Math.min(dtSec, 0.05);
+    const dtFx = dtSec * 2.0;
 
     const enabled = world.getResource('renderBumperHitFx') === true;
     if (!enabled) {
@@ -673,23 +779,23 @@ export class RenderSystem {
       return;
     }
 
-    const drag = Math.exp(-5.5 * dtSec);
+    const drag = Math.exp(-6.5 * dtFx);
     for (const burst of this.bumperHitFxBursts) {
-      burst.age += dtSec;
+      burst.age += dtFx;
       if (!Array.isArray(burst.sparks) || burst.sparks.length === 0) {
         continue;
       }
       const nextSparks = [];
       for (const spark of burst.sparks) {
-        spark.age += dtSec;
+        spark.age += dtFx;
         if (spark.age >= spark.life) {
           continue;
         }
-        spark.x += spark.vx * dtSec;
-        spark.y += spark.vy * dtSec;
+        spark.x += spark.vx * dtFx;
+        spark.y += spark.vy * dtFx;
         spark.vx *= drag;
         spark.vy *= drag;
-        spark.vy -= 0.6 * dtSec;
+        spark.vy -= 0.45 * dtFx;
         nextSparks.push(spark);
       }
       burst.sparks = nextSparks;
@@ -705,20 +811,25 @@ export class RenderSystem {
 
     this.c.save();
     this.c.globalCompositeOperation = 'lighter';
+    this.c.lineCap = 'round';
+    this.c.lineJoin = 'round';
     const unitPx = Math.max(0.8, this.effectiveCScale / 250);
 
     for (const burst of this.bumperHitFxBursts) {
       const progress = burst.life > 1e-9 ? Math.min(1.0, burst.age / burst.life) : 1.0;
       const fade = Math.max(0.0, 1.0 - progress);
       const baseAngle = Math.atan2(burst.dirY, burst.dirX);
-      const coneReach = burst.maxRayLength * (0.35 + 0.85 * progress);
-      const originX = burst.x + burst.dirX * burst.obstacleRadius * (0.6 + 0.4 * progress);
-      const originY = burst.y + burst.dirY * burst.obstacleRadius * (0.6 + 0.4 * progress);
+      const coneReach = burst.maxRayLength * (0.28 + 0.95 * progress);
+      const originX = burst.x + burst.dirX * burst.effectRadius * (0.55 + 0.35 * progress);
+      const originY = burst.y + burst.dirY * burst.effectRadius * (0.55 + 0.35 * progress);
+      const palette = burst.palette || this._fxPaletteForObstacleColor(null);
 
       if (fade > 0.0) {
         const leftAngle = baseAngle - burst.spread;
         const rightAngle = baseAngle + burst.spread;
-        this.c.fillStyle = `rgba(255, 125, 35, ${0.18 * fade})`;
+        const innerReach = coneReach * 0.58;
+
+        this.c.fillStyle = this._rgba(palette.deep, 0.16 * fade);
         this.c.beginPath();
         this.c.moveTo(this.cX(originX), this.cY(originY));
         this.c.lineTo(
@@ -732,30 +843,32 @@ export class RenderSystem {
         this.c.closePath();
         this.c.fill();
 
-        const ringRadius = burst.obstacleRadius + (burst.maxRingRadius * progress);
-        this.c.strokeStyle = `rgba(255, ${Math.round(175 + 70 * fade)}, 30, ${0.72 * fade})`;
-        this.c.lineWidth = Math.max(1.0, (1.2 + 1.8 * fade) * unitPx);
+        this.c.fillStyle = this._rgba(palette.core, 0.24 * fade);
         this.c.beginPath();
-        this.c.arc(
-          this.cX(burst.x),
-          this.cY(burst.y),
-          ringRadius * this.effectiveCScale,
-          0.0,
-          2.0 * Math.PI
+        this.c.moveTo(this.cX(originX), this.cY(originY));
+        this.c.lineTo(
+          this.cX(originX + Math.cos(baseAngle - burst.spread * 0.52) * innerReach),
+          this.cY(originY + Math.sin(baseAngle - burst.spread * 0.52) * innerReach)
         );
-        this.c.stroke();
+        this.c.lineTo(
+          this.cX(originX + Math.cos(baseAngle + burst.spread * 0.52) * innerReach),
+          this.cY(originY + Math.sin(baseAngle + burst.spread * 0.52) * innerReach)
+        );
+        this.c.closePath();
+        this.c.fill();
 
         for (const ray of burst.rays) {
-          const flutter = 1.0 + 0.18 * Math.sin(ray.flicker + progress * 12.0);
+          const flutter = 1.0 + 0.24 * Math.sin(ray.flicker + progress * 13.0);
           const angle = baseAngle + ray.offset * flutter;
-          const startDistance = burst.obstacleRadius * 0.6;
+          const startDistance = burst.effectRadius * ray.startScale;
           const startX = burst.x + Math.cos(angle) * startDistance;
           const startY = burst.y + Math.sin(angle) * startDistance;
           const length = coneReach * ray.lengthScale;
           const endX = startX + Math.cos(angle) * length;
           const endY = startY + Math.sin(angle) * length;
-          this.c.strokeStyle = `rgba(255, ${Math.round(165 + 70 * fade)}, 35, ${ray.alphaScale * fade})`;
-          this.c.lineWidth = Math.max(0.75, (1.3 * ray.widthScale * unitPx * (0.55 + fade)));
+          const rayColor = ray.hot ? palette.hot : palette.core;
+          this.c.strokeStyle = this._rgba(rayColor, ray.alphaScale * fade);
+          this.c.lineWidth = Math.max(0.65, (1.1 * ray.widthScale * unitPx * (0.6 + fade)));
           this.c.beginPath();
           this.c.moveTo(this.cX(startX), this.cY(startY));
           this.c.lineTo(this.cX(endX), this.cY(endY));
@@ -766,13 +879,15 @@ export class RenderSystem {
       if (Array.isArray(burst.sparks) && burst.sparks.length > 0) {
         for (const spark of burst.sparks) {
           const sparkFade = Math.max(0.0, 1.0 - (spark.age / spark.life));
-          const sparkRadius = Math.max(0.8, spark.size * unitPx * (0.25 + sparkFade));
-          this.c.fillStyle = spark.hot
-            ? `rgba(255, ${Math.round(145 + 80 * sparkFade)}, 35, ${0.7 * sparkFade})`
-            : `rgba(255, ${Math.round(85 + 70 * sparkFade)}, 20, ${0.55 * sparkFade})`;
+          const tailX = spark.x - spark.vx * (0.03 + 0.02 * sparkFade);
+          const tailY = spark.y - spark.vy * (0.03 + 0.02 * sparkFade);
+          const sparkColor = spark.hot ? palette.hot : palette.core;
+          this.c.strokeStyle = this._rgba(sparkColor, (spark.hot ? 0.65 : 0.5) * sparkFade);
+          this.c.lineWidth = Math.max(0.55, spark.width * unitPx * (0.4 + sparkFade));
           this.c.beginPath();
-          this.c.arc(this.cX(spark.x), this.cY(spark.y), sparkRadius, 0.0, 2.0 * Math.PI);
-          this.c.fill();
+          this.c.moveTo(this.cX(tailX), this.cY(tailY));
+          this.c.lineTo(this.cX(spark.x), this.cY(spark.y));
+          this.c.stroke();
         }
       }
     }

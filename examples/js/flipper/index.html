@@ -110,6 +110,10 @@ canvas {
               <input id="bumperFxToggle" type="checkbox" style="margin-right: 4px;" />
               render/bumperHitFx
             </label>
+            <label for="scoreSoundToggle" style="white-space: nowrap; margin-left: 10px;">
+              <input id="scoreSoundToggle" type="checkbox" style="margin-right: 4px;" />
+              audio/scoreBounce
+            </label>
           </div>
           Score: <span id="score">0</span>
           <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
@@ -157,6 +161,8 @@ canvas {
     const canvas = document.getElementById("myCanvas");
     const cableFeatureFlags = document.getElementById("cableFeatureFlags");
     const bumperFxToggle = document.getElementById("bumperFxToggle");
+    const scoreSoundToggle = document.getElementById("scoreSoundToggle");
+    const scoreElement = document.getElementById("score");
 
     // --- Global World ---
     let world = new World();
@@ -206,9 +212,106 @@ canvas {
       }
       setTimeout(() => _focusCanvas(), 0);
     };
+
+    let scoreAudioContext = null;
+    let scoreAudioMasterGain = null;
+    let lastScoreForSound = null;
+
+    const _ensureScoreAudioContext = () => {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        return null;
+      }
+      if (!scoreAudioContext) {
+        scoreAudioContext = new AudioCtx();
+        scoreAudioMasterGain = scoreAudioContext.createGain();
+        scoreAudioMasterGain.gain.value = 0.14;
+        scoreAudioMasterGain.connect(scoreAudioContext.destination);
+      }
+      if (scoreAudioContext.state === 'suspended') {
+        scoreAudioContext.resume().catch(() => {});
+      }
+      return scoreAudioContext;
+    };
+
+    const _playScoreBounceSound = (count = 1) => {
+      if (world.getResource('scoreBounceSoundEnabled') !== true) {
+        return;
+      }
+      const ctx = _ensureScoreAudioContext();
+      if (!ctx || !scoreAudioMasterGain) {
+        return;
+      }
+      const hitCount = Math.max(1, Math.min(2, Number.isFinite(count) ? Math.floor(count) : 1));
+      const tStart = ctx.currentTime + 0.004;
+      for (let i = 0; i < hitCount; i++) {
+        const t0 = tStart + i * 0.022;
+        const env = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        const oscMain = ctx.createOscillator();
+        const oscOver = ctx.createOscillator();
+
+        oscMain.type = 'triangle';
+        oscOver.type = 'sine';
+        oscMain.frequency.setValueAtTime(760, t0);
+        oscMain.frequency.exponentialRampToValueAtTime(470, t0 + 0.11);
+        oscOver.frequency.setValueAtTime(1120, t0);
+        oscOver.frequency.exponentialRampToValueAtTime(680, t0 + 0.095);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2200, t0);
+        filter.frequency.exponentialRampToValueAtTime(1300, t0 + 0.12);
+
+        env.gain.setValueAtTime(0.0001, t0);
+        env.gain.exponentialRampToValueAtTime(0.05, t0 + 0.009);
+        env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+
+        oscMain.connect(filter);
+        oscOver.connect(filter);
+        filter.connect(env);
+        env.connect(scoreAudioMasterGain);
+
+        oscMain.start(t0);
+        oscOver.start(t0);
+        oscMain.stop(t0 + 0.16);
+        oscOver.stop(t0 + 0.16);
+      }
+    };
+
+    const _monitorScoreForSound = () => {
+      if (scoreElement) {
+        const parsed = Number.parseInt(scoreElement.textContent ?? '', 10);
+        if (Number.isFinite(parsed)) {
+          if (!Number.isFinite(lastScoreForSound)) {
+            lastScoreForSound = parsed;
+          } else {
+            const delta = parsed - lastScoreForSound;
+            if (delta > 0) {
+              _playScoreBounceSound(delta);
+            }
+            lastScoreForSound = parsed;
+          }
+        }
+      }
+
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(_monitorScoreForSound);
+      } else {
+        setTimeout(_monitorScoreForSound, 16);
+      }
+    };
+
     const _applyBumperFxToggle = () => {
       const enabled = Boolean(bumperFxToggle?.checked);
       world.setResource('renderBumperHitFx', enabled);
+      return enabled;
+    };
+    const _applyScoreSoundToggle = () => {
+      const enabled = Boolean(scoreSoundToggle?.checked);
+      world.setResource('scoreBounceSoundEnabled', enabled);
+      if (enabled) {
+        _ensureScoreAudioContext();
+      }
       return enabled;
     };
     if (cableFeatureFlags) {
@@ -233,6 +336,27 @@ canvas {
         _queueCanvasFocus();
       });
     }
+    if (scoreSoundToggle) {
+      scoreSoundToggle.checked = world.getResource('scoreBounceSoundEnabled') === true;
+      _applyScoreSoundToggle();
+      scoreSoundToggle.addEventListener('change', () => {
+        _applyScoreSoundToggle();
+        if (typeof scoreSoundToggle.blur === 'function') {
+          scoreSoundToggle.blur();
+        }
+        _queueCanvasFocus();
+      });
+    }
+    const _unlockScoreAudio = () => {
+      if (world.getResource('scoreBounceSoundEnabled') === true) {
+        _ensureScoreAudioContext();
+      }
+    };
+    if (canvas) {
+      canvas.addEventListener('pointerdown', _unlockScoreAudio, { passive: true });
+    }
+    document.addEventListener('keydown', _unlockScoreAudio, { passive: true });
+    _monitorScoreForSound();
 
     window.getCableFeatureFlags = () => {
       return getCableFeatureFlags(world);
@@ -254,6 +378,7 @@ canvas {
         cableFlagUi.syncFromWorld();
         setupScene(world, stage, canvas);
         _applyBumperFxToggle();
+        _applyScoreSoundToggle();
       });
     });
 </script>
