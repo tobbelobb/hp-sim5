@@ -216,6 +216,7 @@ canvas {
     let scoreAudioContext = null;
     let scoreAudioMasterGain = null;
     let lastScoreForSound = null;
+    let scoreAudioUnlockBound = false;
 
     const _ensureScoreAudioContext = () => {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -225,7 +226,7 @@ canvas {
       if (!scoreAudioContext) {
         scoreAudioContext = new AudioCtx();
         scoreAudioMasterGain = scoreAudioContext.createGain();
-        scoreAudioMasterGain.gain.value = 0.14;
+        scoreAudioMasterGain.gain.value = 0.28;
         scoreAudioMasterGain.connect(scoreAudioContext.destination);
       }
       if (scoreAudioContext.state === 'suspended') {
@@ -263,7 +264,7 @@ canvas {
         filter.frequency.exponentialRampToValueAtTime(1300, t0 + 0.12);
 
         env.gain.setValueAtTime(0.0001, t0);
-        env.gain.exponentialRampToValueAtTime(0.05, t0 + 0.009);
+        env.gain.exponentialRampToValueAtTime(0.16, t0 + 0.009);
         env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
 
         oscMain.connect(filter);
@@ -278,19 +279,34 @@ canvas {
       }
     };
 
-    const _monitorScoreForSound = () => {
+    const _readScoreValue = () => {
+      const scoreEntity = world.query([ScoreComponent])[0];
+      if (scoreEntity !== undefined) {
+        const scoreComp = world.getComponent(scoreEntity, ScoreComponent);
+        if (scoreComp && Number.isFinite(scoreComp.value)) {
+          return scoreComp.value;
+        }
+      }
       if (scoreElement) {
         const parsed = Number.parseInt(scoreElement.textContent ?? '', 10);
         if (Number.isFinite(parsed)) {
-          if (!Number.isFinite(lastScoreForSound)) {
-            lastScoreForSound = parsed;
-          } else {
-            const delta = parsed - lastScoreForSound;
-            if (delta > 0) {
-              _playScoreBounceSound(delta);
-            }
-            lastScoreForSound = parsed;
+          return parsed;
+        }
+      }
+      return null;
+    };
+
+    const _monitorScoreForSound = () => {
+      const scoreValue = _readScoreValue();
+      if (Number.isFinite(scoreValue)) {
+        if (!Number.isFinite(lastScoreForSound)) {
+          lastScoreForSound = scoreValue;
+        } else {
+          const delta = scoreValue - lastScoreForSound;
+          if (delta > 0) {
+            _playScoreBounceSound(delta);
           }
+          lastScoreForSound = scoreValue;
         }
       }
 
@@ -340,7 +356,10 @@ canvas {
       scoreSoundToggle.checked = world.getResource('scoreBounceSoundEnabled') === true;
       _applyScoreSoundToggle();
       scoreSoundToggle.addEventListener('change', () => {
-        _applyScoreSoundToggle();
+        const enabled = _applyScoreSoundToggle();
+        if (enabled) {
+          _playScoreBounceSound(1);
+        }
         if (typeof scoreSoundToggle.blur === 'function') {
           scoreSoundToggle.blur();
         }
@@ -352,10 +371,16 @@ canvas {
         _ensureScoreAudioContext();
       }
     };
-    if (canvas) {
-      canvas.addEventListener('pointerdown', _unlockScoreAudio, { passive: true });
+    if (!scoreAudioUnlockBound) {
+      scoreAudioUnlockBound = true;
+      if (canvas) {
+        canvas.addEventListener('pointerdown', _unlockScoreAudio, { passive: true });
+      }
+      document.addEventListener('pointerdown', _unlockScoreAudio, { passive: true });
+      document.addEventListener('mousedown', _unlockScoreAudio, { passive: true });
+      document.addEventListener('touchstart', _unlockScoreAudio, { passive: true });
+      document.addEventListener('keydown', _unlockScoreAudio, { passive: true });
     }
-    document.addEventListener('keydown', _unlockScoreAudio, { passive: true });
     _monitorScoreForSound();
 
     window.getCableFeatureFlags = () => {
