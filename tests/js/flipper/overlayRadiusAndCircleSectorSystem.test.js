@@ -126,7 +126,7 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const secondLayerRadius = firstLayerRadius + step;
     const secondLayerSupportRadius = secondLayerRadius + halfWidth;
     const firstLayerCircumference = 2.0 * Math.PI * firstLayerRadius;
-    const rampSpan = (2.0 * Math.PI) / 100.0;
+    const rampSpan = (2.0 * Math.PI) / 25.0;
     const partialLengthPastRamp = secondLayerRadius * rampSpan * 2.0;
 
     const worldState = makeEndpointWrapWorld({

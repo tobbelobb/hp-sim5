@@ -469,8 +469,23 @@ canvas {
     world.addComponent(ballId, new RenderableComponent('circle', '#a9adb6'));
     world.addComponent(ballId, new CableLinkComponent(ballX, ballY, 0.0));
 
+    const obstacleRadius = rawRadius * 0.68;
+    const obstacleX = slopeStartX + 0.54 * (slopeEndX - slopeStartX);
+    const obstacleCenter = new Vector2(obstacleX, slopeYAt(obstacleX))
+      .add(new Vector2(-slopeTanY, slopeTanX), obstacleRadius + configuredCableHalfWidth)
+      .add(new Vector2(0,-2*obstacleRadius-0.004));
+    const obstacleId = world.createEntity();
+    world.addComponent(obstacleId, new BallTagComponent());
+    world.addComponent(obstacleId, new PositionComponent(obstacleCenter.x, obstacleCenter.y));
+    world.addComponent(obstacleId, new RadiusComponent(obstacleRadius));
+    world.addComponent(obstacleId, new MassComponent(-1.0));
+    world.addComponent(obstacleId, new RestitutionComponent(0.0));
+    world.addComponent(obstacleId, new CoefficientOfFrictionComponent(0.6));
+    world.addComponent(obstacleId, new RenderableComponent('circle', '#4bb9ff'));
+    world.addComponent(obstacleId, new CableLinkComponent(obstacleCenter.x, obstacleCenter.y, 0.0));
+
     const anchorX = slopeEndX - 0.015;
-    const anchorY = slopeYAt(anchorX) + rawRadius + 0.045;
+    const anchorY = slopeYAt(anchorX);;
     const anchorId = world.createEntity();
     world.addComponent(anchorId, new PositionComponent(anchorX, anchorY));
     world.addComponent(anchorId, new MassComponent(-1.0));
@@ -513,7 +528,7 @@ canvas {
     );
     world.addComponent(pathId, pathComp);
 
-    world.setResource('spoolEnergyRefs', { ballId, anchorId, pathId, jointId });
+    world.setResource('spoolEnergyRefs', { ballId, obstacleId, anchorId, pathId, jointId });
 
     if (world.systems.length === 0) {
       world.registerSystem(new PrevFinalPosSystem());
