@@ -678,59 +678,6 @@ export class RenderSystem {
 
     // Render Cable Joints (Lines)
     const pathEntities = world.query([CablePathComponent]);
-    const cableHalfWidthByLinkEntity = new Map();
-    const recordLinkHalfWidth = (entityId, halfWidth) => {
-      if (!Number.isInteger(entityId) || !(halfWidth > 1e-9)) {
-        return;
-      }
-      const prev = cableHalfWidthByLinkEntity.get(entityId) ?? 0.0;
-      if (halfWidth > prev) {
-        cableHalfWidthByLinkEntity.set(entityId, halfWidth);
-      }
-    };
-    const pathLinkEntityAt = (path, linkIndex) => {
-      if (!path || !Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
-        return null;
-      }
-      const jointCount = path.jointEntities.length;
-      const linkCount = jointCount + 1;
-      if (!Number.isInteger(linkIndex) || linkIndex < 0 || linkIndex >= linkCount) {
-        return null;
-      }
-      if (linkIndex === 0) {
-        const firstJoint = world.getComponent(path.jointEntities[0], CableJointComponent);
-        return firstJoint ? firstJoint.entityA : null;
-      }
-      if (linkIndex === linkCount - 1) {
-        const lastJoint = world.getComponent(path.jointEntities[jointCount - 1], CableJointComponent);
-        return lastJoint ? lastJoint.entityB : null;
-      }
-      const prevJoint = world.getComponent(path.jointEntities[linkIndex - 1], CableJointComponent);
-      return prevJoint ? prevJoint.entityB : null;
-    };
-    const pathHalfWidthAt = (path) => {
-      if (!path) {
-        return 0.0;
-      }
-      return Number.isFinite(path.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
-    };
-    for (const pathId of pathEntities) {
-      const path = world.getComponent(pathId, CablePathComponent);
-      if (!path || !Array.isArray(path.linkTypes) || path.linkTypes.length < 1) {
-        continue;
-      }
-      const halfWidth = pathHalfWidthAt(path);
-      if (!(halfWidth > 1e-9)) {
-        continue;
-      }
-      for (let linkIndex = 0; linkIndex < path.linkTypes.length; linkIndex += 1) {
-        const linkEntityId = pathLinkEntityAt(path, linkIndex);
-        recordLinkHalfWidth(linkEntityId, halfWidth);
-      }
-    }
-    const entityCableLineWidthPx = (entityId) => (
-      physicalCableLineWidthPx(cableHalfWidthByLinkEntity.get(entityId) ?? 0.0)
-    );
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
@@ -1387,6 +1334,8 @@ export class RenderSystem {
         if (canSetLineDash) {
           this.c.setLineDash([4, 3]);
         }
+        const overlayStrokeWidthPx = Math.max(1.0, 1.25 * this.effectiveCScale / 250);
+        const sectorStrokeWidthPx = Math.max(1.0, 1.25 * this.effectiveCScale / 250);
         this.c.strokeStyle = 'rgba(0, 220, 255, 0.98)';
         for (const entityId of overlayEntities) {
           const pos = world.getComponent(entityId, PositionComponent)?.pos;
@@ -1394,7 +1343,7 @@ export class RenderSystem {
           if (!pos || !Number.isFinite(overlayRadius) || !(overlayRadius > 1e-9)) {
             continue;
           }
-          this.c.lineWidth = entityCableLineWidthPx(entityId);
+          this.c.lineWidth = overlayStrokeWidthPx;
           this.c.beginPath();
           this.c.arc(
             this.cX(pos.x),
@@ -1421,7 +1370,6 @@ export class RenderSystem {
               ? multi.sectors
               : (single ? [single] : [])
           );
-          const sectorLineWidthPx = entityCableLineWidthPx(entityId);
           for (const sector of sectors) {
             if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > 1e-9)) {
               continue;
@@ -1445,7 +1393,7 @@ export class RenderSystem {
             this.c.fill();
 
             this.c.strokeStyle = 'rgba(255, 136, 0, 0.95)';
-            this.c.lineWidth = sectorLineWidthPx;
+            this.c.lineWidth = sectorStrokeWidthPx;
             this.c.beginPath();
             this.c.arc(
               this.cX(pos.x),
