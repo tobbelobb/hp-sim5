@@ -272,6 +272,17 @@ function _computeWorldAttachment(world, entityId, localPoint) {
   return new Vector2(posComp.pos.x + rotatedX, posComp.pos.y + rotatedY);
 }
 
+function _computeLocalAttachment(worldPoint, centerPoint, angle) {
+  if (!worldPoint || !centerPoint || !Number.isFinite(angle)) {
+    return null;
+  }
+  const dx = worldPoint.x - centerPoint.x;
+  const dy = worldPoint.y - centerPoint.y;
+  const cos = Math.cos(-angle);
+  const sin = Math.sin(-angle);
+  return new Vector2(dx * cos - dy * sin, dx * sin + dy * cos);
+}
+
 export class CableLinkComponent {
   constructor(x = 0, y = 0, angle = 0.0) {
     this.prevCableAttachmentTimePos = new Vector2(x, y);
@@ -705,6 +716,8 @@ export function _updateAttachmentPoints(world) {
       let sA_effective = sA;
       let sB_effective = sB;
       let clampApplied = false;
+      let orientationCorrectionA = 0.0;
+      let orientationCorrectionB = 0.0;
       const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);
       if (clampEnabled && Number.isFinite(restBefore)) {
         const unclampedRest = restBefore - sA_effective + sB_effective;
@@ -745,6 +758,89 @@ export function _updateAttachmentPoints(world) {
             sB_raw,
             sA_effective,
             sB_effective
+          });
+        }
+      }
+      const blockedSA = sA_raw - sA_effective;
+      const blockedSB = sB_effective - sB_raw;
+      let localAttachmentDriftA = null;
+      let localAttachmentDriftB = null;
+      let localAttachmentBeforeA = null;
+      let localAttachmentBeforeB = null;
+      let localAttachmentAfterA = null;
+      let localAttachmentAfterB = null;
+      if (clampApplied) {
+        if (
+          rollingLinkA &&
+          isHybridA &&
+          orientationAComp &&
+          Number.isFinite(radiusA) &&
+          radiusA > EPSILON &&
+          Math.abs(blockedSA) > EPSILON
+        ) {
+          const angleBeforeProjection = orientationAComp.angle;
+          const attachmentBeforeProjection = attachmentA_current ? attachmentA_current.clone() : null;
+          orientationCorrectionA = (cwA ? -blockedSA : blockedSA) / radiusA;
+          orientationAComp.angle += orientationCorrectionA;
+          if (attachmentA_current && posA) {
+            // Keep attachment-point world geometry coherent with the angle projection.
+            attachmentA_current.rotate(orientationCorrectionA, posA, true);
+            const localBefore = _computeLocalAttachment(attachmentBeforeProjection, posA, angleBeforeProjection);
+            const localAfter = _computeLocalAttachment(attachmentA_current, posA, orientationAComp.angle);
+            if (localBefore && localAfter) {
+              localAttachmentBeforeA = _vecSnapshot(localBefore);
+              localAttachmentAfterA = _vecSnapshot(localAfter);
+              localAttachmentDriftA = localBefore.distanceTo(localAfter);
+            }
+          }
+        }
+        if (
+          rollingLinkB &&
+          isHybridB &&
+          orientationBComp &&
+          Number.isFinite(radiusB) &&
+          radiusB > EPSILON &&
+          Math.abs(blockedSB) > EPSILON
+        ) {
+          const angleBeforeProjection = orientationBComp.angle;
+          const attachmentBeforeProjection = attachmentB_current ? attachmentB_current.clone() : null;
+          orientationCorrectionB = (cwB ? blockedSB : -blockedSB) / radiusB;
+          orientationBComp.angle += orientationCorrectionB;
+          if (attachmentB_current && posB) {
+            // Keep attachment-point world geometry coherent with the angle projection.
+            attachmentB_current.rotate(orientationCorrectionB, posB, true);
+            const localBefore = _computeLocalAttachment(attachmentBeforeProjection, posB, angleBeforeProjection);
+            const localAfter = _computeLocalAttachment(attachmentB_current, posB, orientationBComp.angle);
+            if (localBefore && localAfter) {
+              localAttachmentBeforeB = _vecSnapshot(localBefore);
+              localAttachmentAfterB = _vecSnapshot(localAfter);
+              localAttachmentDriftB = localBefore.distanceTo(localAfter);
+            }
+          }
+        }
+        if (Math.abs(orientationCorrectionA) > EPSILON || Math.abs(orientationCorrectionB) > EPSILON) {
+          _recordCableEventTrace(world, step, {
+            type: 'rest-length-orientation-projection',
+            stage: 'updateAttachmentPoints',
+            pathId,
+            jointId,
+            jointIndex: i,
+            entityA,
+            entityB,
+            blockedSA,
+            blockedSB,
+            radiusA,
+            radiusB,
+            cwA,
+            cwB,
+            orientationCorrectionA,
+            orientationCorrectionB,
+            localAttachmentDriftA,
+            localAttachmentDriftB,
+            localAttachmentBeforeA,
+            localAttachmentAfterA,
+            localAttachmentBeforeB,
+            localAttachmentAfterB
           });
         }
       }

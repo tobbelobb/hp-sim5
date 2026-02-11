@@ -212,6 +212,8 @@ def update_attachment_points(world):
             rest_before = joint.rest_length
             s_a_effective = s_a
             s_b_effective = s_b
+            orientation_correction_a = 0.0
+            orientation_correction_b = 0.0
             clamp_resource = world.get_resource('layeringClampJointRestLength')
             clamp_enabled = True if clamp_resource is None else bool(clamp_resource)
             if clamp_enabled and np.isfinite(rest_before):
@@ -232,6 +234,36 @@ def update_attachment_points(world):
                     still_low_rest = rest_before - s_a_effective + s_b_effective
                     if still_low_rest < MIN_JOINT_REST_LENGTH:
                         s_b_effective += (MIN_JOINT_REST_LENGTH - still_low_rest)
+
+            blocked_s_a = s_a - s_a_effective
+            blocked_s_b = s_b_effective - s_b
+            if clamp_enabled:
+                if (
+                    rolling_link_a and
+                    is_hybrid_a and
+                    orientation_a_comp is not None and
+                    radius_a is not None and
+                    np.isfinite(radius_a) and
+                    radius_a > 1e-9 and
+                    abs(blocked_s_a) > 1e-9
+                ):
+                    orientation_correction_a = ((-blocked_s_a if cw_a else blocked_s_a) / radius_a)
+                    orientation_a_comp.angle += orientation_correction_a
+                    if attachment_a_current is not None and pos_a is not None:
+                        rotate_inplace(attachment_a_current, orientation_correction_a, pos_a, True)
+                if (
+                    rolling_link_b and
+                    is_hybrid_b and
+                    orientation_b_comp is not None and
+                    radius_b is not None and
+                    np.isfinite(radius_b) and
+                    radius_b > 1e-9 and
+                    abs(blocked_s_b) > 1e-9
+                ):
+                    orientation_correction_b = ((blocked_s_b if cw_b else -blocked_s_b) / radius_b)
+                    orientation_b_comp.angle += orientation_correction_b
+                    if attachment_b_current is not None and pos_b is not None:
+                        rotate_inplace(attachment_b_current, orientation_correction_b, pos_b, True)
 
             path.stored[A] += s_a_effective
             joint.rest_length -= s_a_effective

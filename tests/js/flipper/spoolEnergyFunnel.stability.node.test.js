@@ -885,6 +885,18 @@ describe('Spool Funnel Stability Sweep', () => {
         ? pinchRubEvents.find((event) => (event.step ?? Infinity) <= firstAnomalyStep) ?? null
         : null;
       const fixedRestAnomalies = fixed.cableEvents.filter((event) => event.type === 'rest-length-anomaly');
+      const fixedOrientationProjectionEvents = fixed.cableEvents.filter(
+        (event) => event.type === 'rest-length-orientation-projection'
+      );
+      const fixedOrientationProjectionDrifts = fixedOrientationProjectionEvents
+        .flatMap((event) => [event.localAttachmentDriftA, event.localAttachmentDriftB])
+        .filter((value) => Number.isFinite(value));
+      const fixedMaxLocalAttachmentDrift = fixedOrientationProjectionDrifts.length > 0
+        ? Math.max(...fixedOrientationProjectionDrifts)
+        : 0.0;
+      const fixedAvgLocalAttachmentDrift = fixedOrientationProjectionDrifts.length > 0
+        ? _average(fixedOrientationProjectionDrifts)
+        : 0.0;
       const summaryAfterAttachmentByStep = new Map(
         summaryEvents
           .filter((event) => event.phase === 'afterAttachment')
@@ -978,6 +990,9 @@ describe('Spool Funnel Stability Sweep', () => {
           quietAngularAvg: fixed.quietAngularAvg,
           peakAngularAbs: fixed.peakAngularAbs,
           peakPairAngularJump: fixed.peakPairAngularJump,
+          orientationProjectionCount: fixedOrientationProjectionEvents.length,
+          maxLocalAttachmentDrift: fixedMaxLocalAttachmentDrift,
+          avgLocalAttachmentDrift: fixedAvgLocalAttachmentDrift,
           restAnomalyCount: fixedRestAnomalies.length,
           firstRestAnomaly: fixedRestAnomalies[0] ?? null
         }
@@ -1063,6 +1078,7 @@ describe('Spool Funnel Stability Sweep', () => {
 
       expect(currentBest.score).toBeLessThan(baseline.score);
       expect(currentBest.isStable).toBe(true);
+      expect(fixedMaxLocalAttachmentDrift).toBeLessThan(1e-6);
     } finally {
       console.warn = originalWarn;
       console.error = originalError;
