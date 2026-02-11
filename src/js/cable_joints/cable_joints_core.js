@@ -32,6 +32,7 @@ import {
 export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
@@ -448,11 +449,47 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
     return effectiveRadius;
   }
   if (decomposition.hasPartial) {
-    return Math.max(effectiveRadius, decomposition.partialRadius);
+    return Math.max(
+      effectiveRadius,
+      _smoothedStoredLayerRadius(baseRadius, halfWidth, decomposition)
+    );
   }
 
   const topLayerRadius = baseRadius + halfWidth + fullWidth * Math.max(0, decomposition.fullLayers - 1);
   return Math.max(effectiveRadius, topLayerRadius);
+}
+
+function _smoothedStoredLayerRadius(baseRadius, halfWidth, decomposition) {
+  if (
+    !(baseRadius > EPSILON) ||
+    !(halfWidth > EPSILON) ||
+    !decomposition
+  ) {
+    return baseRadius;
+  }
+
+  const fullWidth = 2.0 * halfWidth;
+  const firstLayerRadius = baseRadius + halfWidth;
+  const fullLayers = Math.max(0, decomposition.fullLayers ?? 0);
+  const partialRadius = decomposition.partialRadius;
+  const partialLength = Math.max(0.0, decomposition.partialLength ?? 0.0);
+  if (!(partialRadius > EPSILON)) {
+    return firstLayerRadius;
+  }
+
+  // For the first partial wrap there is no layer transition to smooth.
+  if (fullLayers < 1) {
+    return partialRadius;
+  }
+
+  const prevLayerRadius = firstLayerRadius + fullWidth * Math.max(0, fullLayers - 1);
+  if (!(LAYER_RADIUS_RAMP_ANGLE > EPSILON)) {
+    return partialRadius;
+  }
+
+  const span = partialLength / partialRadius;
+  const rampAlpha = Math.max(0.0, Math.min(1.0, span / LAYER_RADIUS_RAMP_ANGLE));
+  return prevLayerRadius + (partialRadius - prevLayerRadius) * rampAlpha;
 }
 
 function _pathLinkIndicesForEntity(world, path, entityId) {
