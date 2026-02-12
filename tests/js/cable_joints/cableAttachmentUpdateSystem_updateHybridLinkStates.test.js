@@ -104,6 +104,44 @@ describe('_updateHybridLinkStates', () => {
     expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
 
+  test('first link: tiny negative stored detaches immediately when toggle is enabled', () => {
+    const world  = new World();
+    const wheel  = addWheel(world, new Vector2(0, 0), 1);
+    const anchor = addAnchor(world, new Vector2(0, 3));
+
+    const joint = world.createEntity();
+    const initialRest = 3;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        new Vector2(1, 0),
+        new Vector2(0, 3),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.01
+    );
+    world.addComponent(path, pathComp);
+    pathComp.stored[0] = -0.001;
+    world.setResource('layeringHybridImmediateDetach', true);
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest - 0.001, 12);
+  });
+
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
     const world  = new World();
 

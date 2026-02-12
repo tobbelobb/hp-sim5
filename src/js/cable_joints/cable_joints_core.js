@@ -1191,6 +1191,7 @@ export function _splitJoints(world) {
 
 export function _updateHybridLinkStates(world, traceStep = null) {
   const pathEntities = world.query([CablePathComponent]);
+  const immediateHybridDetach = _featureFlag(world, 'layeringHybridImmediateDetach', false);
   const step = Number.isFinite(traceStep)
     ? Math.floor(traceStep)
     : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
@@ -1200,7 +1201,8 @@ export function _updateHybridLinkStates(world, traceStep = null) {
     for (const i of [0, path.linkTypes.length - 1]) {
       if (path.linkTypes[i] === 'hybrid') {
         const transitionArcThreshold = _hybridTransitionArcThreshold(path);
-        if (path.stored[i] < -transitionArcThreshold) {
+        const detachThreshold = immediateHybridDetach ? 0.0 : transitionArcThreshold;
+        if (path.stored[i] < -detachThreshold) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
           const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
           const oldLinkType = path.linkTypes[i];
@@ -1281,10 +1283,12 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             oldCW: oldCw,
             newCW: path.cw[i],
             effectiveRadius: radius,
-            transitionArcThreshold
+            transitionArcThreshold,
+            immediateHybridDetach,
+            detachThreshold
           });
         }
-        else if (path.stored[i] < 0.0) {
+        else if (!immediateHybridDetach && path.stored[i] < 0.0) {
           const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
           const joint = world.getComponent(endpointJointId, CableJointComponent);
           _recordCableEventTrace(world, step, {
