@@ -407,6 +407,67 @@ describe('_updateAttachmentPoints', () => {
     expect(firstJoint.attachmentPointA_world).toEqual(t0.a_circle);
   });
 
+  test('clampRestLength keeps hybrid attachment geometry aligned with unclamped update', () => {
+    const buildWorld = (clampEnabled) => {
+      const world = new World();
+      const spool = world.createEntity();
+      const anchor = world.createEntity();
+      const spoolPos = new Vector2(0.0, 0.0);
+      const anchorPos = new Vector2(0.0, 3.0);
+      const spoolRadius = 1.0;
+      const cwRaw = false; // _effectiveCW inverts index 0 to true
+      const cwEffective = true;
+      const deltaAngle = 0.2;
+
+      world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y));
+      world.addComponent(spool, new OrientationComponent(deltaAngle));
+      world.addComponent(spool, new RadiusComponent(spoolRadius));
+      world.addComponent(spool, new CableLinkComponent(spoolPos.x, spoolPos.y, 0.0));
+
+      world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
+      world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y, 0.0));
+
+      const initialA = tangentFromCircleToPoint(anchorPos, spoolPos, spoolRadius, cwEffective).a_circle;
+      const initialB = anchorPos.clone();
+      const tinyRest = 1e-4;
+      const jointId = world.createEntity();
+      world.addComponent(
+        jointId,
+        new CableJointComponent(spool, anchor, tinyRest, initialA.clone(), initialB.clone())
+      );
+
+      const pathId = world.createEntity();
+      const pathComp = new CablePathComponent(
+        world,
+        [jointId],
+        ['hybrid', 'attachment'],
+        [cwRaw, false]
+      );
+      world.addComponent(pathId, pathComp);
+      world.setResource('layeringClampJointRestLength', clampEnabled);
+
+      return { world, spool, jointId };
+    };
+
+    const clamped = buildWorld(true);
+    const unclamped = buildWorld(false);
+    _updateAttachmentPoints(clamped.world);
+    _updateAttachmentPoints(unclamped.world);
+
+    const clampedJoint = clamped.world.getComponent(clamped.jointId, CableJointComponent);
+    const unclampedJoint = unclamped.world.getComponent(unclamped.jointId, CableJointComponent);
+
+    expect(clampedJoint.attachmentPointA_world.x).toBeCloseTo(unclampedJoint.attachmentPointA_world.x, 12);
+    expect(clampedJoint.attachmentPointA_world.y).toBeCloseTo(unclampedJoint.attachmentPointA_world.y, 12);
+    expect(clampedJoint.attachmentPointB_world.x).toBeCloseTo(unclampedJoint.attachmentPointB_world.x, 12);
+    expect(clampedJoint.attachmentPointB_world.y).toBeCloseTo(unclampedJoint.attachmentPointB_world.y, 12);
+
+    const clampedRest = clampedJoint.restLength;
+    const unclampedRest = unclampedJoint.restLength;
+    expect(clampedRest).toBeGreaterThan(0.0);
+    expect(unclampedRest).toBeLessThan(0.0);
+  });
+
   test('hybrid endpoint tangent uses layered rolling radius when stored exceeds one full wrap', () => {
     const world = new World();
 

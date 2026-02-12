@@ -905,11 +905,12 @@ describe('Spool Funnel Stability Sweep', () => {
 
     const legacyAllOffPatch = buildPatch(oldUiLayeringFlags, false);
     const reproPatch = {
-      ...legacyAllOffPatch
+      ...legacyAllOffPatch,
+      layeringClampJointRestLength: false
     };
     const fixedPatch = {
       ...legacyAllOffPatch,
-      layeringHybridLinkStates: false
+      layeringClampJointRestLength: true
     };
 
     try {

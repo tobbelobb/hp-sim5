@@ -745,10 +745,59 @@ export function _updateAttachmentPoints(world) {
             sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
           }
       }
-      path.stored[A] += sA;
-      joint.restLength -= sA;
-      path.stored[B] -= sB;
-      joint.restLength += sB;
+      const sA_raw = sA;
+      const sB_raw = sB;
+      let sA_effective = sA;
+      let sB_effective = sB;
+      let clampApplied = false;
+      const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);
+      if (clampEnabled && Number.isFinite(restBefore)) {
+        const unclampedRest = restBefore - sA_effective + sB_effective;
+        if (unclampedRest < MIN_JOINT_REST_LENGTH) {
+          const requiredLift = MIN_JOINT_REST_LENGTH - unclampedRest;
+          const decreaseFromA = Math.max(0.0, sA_effective);
+          const decreaseFromB = Math.max(0.0, -sB_effective);
+          const totalDecrease = decreaseFromA + decreaseFromB;
+          if (totalDecrease > EPSILON) {
+            const shiftA = requiredLift * (decreaseFromA / totalDecrease);
+            const shiftB = requiredLift - shiftA;
+            sA_effective -= shiftA;
+            sB_effective += shiftB;
+          } else {
+            sB_effective += requiredLift;
+          }
+
+          const stillLowRest = restBefore - sA_effective + sB_effective;
+          if (stillLowRest < MIN_JOINT_REST_LENGTH) {
+            sB_effective += (MIN_JOINT_REST_LENGTH - stillLowRest);
+          }
+          clampApplied = true;
+
+          _recordCableEventTrace(world, step, {
+            type: 'rest-length-clamp',
+            stage: 'updateAttachmentPoints',
+            pathId,
+            jointId,
+            jointIndex: i,
+            entityA,
+            entityB,
+            linkTypeA: path.linkTypes[A],
+            linkTypeB: path.linkTypes[B],
+            restBefore,
+            unclampedRest,
+            clampedRest: restBefore - sA_effective + sB_effective,
+            sA_raw,
+            sB_raw,
+            sA_effective,
+            sB_effective
+          });
+        }
+      }
+
+      path.stored[A] += sA_effective;
+      joint.restLength -= sA_effective;
+      path.stored[B] -= sB_effective;
+      joint.restLength += sB_effective;
       const restAfter = joint.restLength;
       if (
         !Number.isFinite(restAfter) ||
@@ -783,11 +832,11 @@ export function _updateAttachmentPoints(world) {
           restBefore,
           restAfter,
           restDelta: restAfter - restBefore,
-          clampApplied: false,
-          sA_raw: sA,
-          sB_raw: sB,
-          sA_effective: sA,
-          sB_effective: sB,
+          clampApplied,
+          sA_raw,
+          sB_raw,
+          sA_effective,
+          sB_effective,
           storedA_before,
           storedB_before,
           storedA_after: path.stored[A] ?? 0.0,
@@ -1191,7 +1240,6 @@ export function _splitJoints(world) {
 
 export function _updateHybridLinkStates(world, traceStep = null) {
   const pathEntities = world.query([CablePathComponent]);
-  const immediateHybridDetach = _featureFlag(world, 'layeringHybridImmediateDetach', false);
   const step = Number.isFinite(traceStep)
     ? Math.floor(traceStep)
     : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
@@ -1201,8 +1249,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
     for (const i of [0, path.linkTypes.length - 1]) {
       if (path.linkTypes[i] === 'hybrid') {
         const transitionArcThreshold = _hybridTransitionArcThreshold(path);
-        const detachThreshold = immediateHybridDetach ? 0.0 : transitionArcThreshold;
-        if (path.stored[i] < -detachThreshold) {
+        if (path.stored[i] < -transitionArcThreshold) {
           // console.log(`Switching joint ${path.jointEntities[i == 0 ? 0 : path.jointEntities.length - 1]} to hybrid-attachment`);
           const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
           const oldLinkType = path.linkTypes[i];
@@ -1283,12 +1330,10 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             oldCW: oldCw,
             newCW: path.cw[i],
             effectiveRadius: radius,
-            transitionArcThreshold,
-            immediateHybridDetach,
-            detachThreshold
+            transitionArcThreshold
           });
         }
-        else if (!immediateHybridDetach && path.stored[i] < 0.0) {
+        else if (path.stored[i] < 0.0) {
           const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
           const joint = world.getComponent(endpointJointId, CableJointComponent);
           _recordCableEventTrace(world, step, {
