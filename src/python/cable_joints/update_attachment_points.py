@@ -25,6 +25,7 @@ from .util import (
     effective_cw
 )
 
+
 def calculate_attachment_points(world, joint, path, i):
     """
     Calculates the world-space attachment points for a cable joint based on the

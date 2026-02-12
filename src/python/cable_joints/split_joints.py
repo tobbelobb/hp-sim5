@@ -37,6 +37,7 @@ def split_joints(world):
     """
     potential_splitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent])
     path_entities = world.query([CablePathComponent])
+
     for path_id in path_entities:
         path = world.get_component(path_id, CablePathComponent)
         if not path.joint_entities:

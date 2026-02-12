@@ -37,7 +37,7 @@ export function runGame(world, setupScene, sceneData) {
         if (lastTime === 0) {
             lastTime = currentTime;
         }
-        const speedScale = window._flipperSpeedScale ?? 1.0;
+        const speedScale = window._flipperSpeedScale ?? 5.0;
         let frameSec = speedScale * (currentTime - lastTime) / 1000;
         let simTimeProcessed = 0;
 
