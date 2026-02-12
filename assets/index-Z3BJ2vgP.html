@@ -95,6 +95,34 @@ canvas {
   padding: 10px 16px;
   font-size: 0.85rem;
 }
+
+#buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  container-type: inline-size;
+}
+
+#buttonRow > button {
+  margin: 0;
+}
+
+@container (max-width: 330px) {
+  #stepBtn,
+  #dumpBtn {
+    display: none;
+  }
+}
+
+@supports not (container-type: inline-size) {
+  @media (max-width: 370px) {
+    #stepBtn,
+    #dumpBtn {
+      display: none;
+    }
+  }
+}
     </style>
 </head>
 <body>
@@ -261,6 +289,18 @@ canvas {
       return window.innerWidth || document.documentElement.clientWidth || 0;
     };
 
+    const _baseGameWidth = () => {
+      return Math.min(_viewportWidth() * 0.9, 460);
+    };
+
+    const _resetGameContainerWidth = () => {
+      if (!gameContainer) {
+        return;
+      }
+      const baseWidth = _baseGameWidth();
+      gameContainer.style.width = baseWidth > 0 ? `${baseWidth}px` : '';
+    };
+
     const _controlsOuterHeight = () => {
       if (!controlsElement || controlsElement.hidden) {
         return 0;
@@ -277,7 +317,7 @@ canvas {
         return 0;
       }
       const canvasRect = canvas.getBoundingClientRect();
-      const fallbackWidth = Math.min(_viewportWidth() * 0.9, 460);
+      const fallbackWidth = _baseGameWidth();
       const canvasWidth =
         canvasRect.width ||
         (gameContainer ? gameContainer.getBoundingClientRect().width : 0) ||
@@ -295,7 +335,37 @@ canvas {
       return requiredHeight <= viewportHeight + 0.5;
     };
 
+    const _scaleGameToViewportHeight = () => {
+      if (!gameContainer) {
+        return;
+      }
+      const baseWidth = _baseGameWidth();
+      if (!(baseWidth > 0)) {
+        return;
+      }
+
+      let targetWidth = baseWidth;
+      for (let i = 0; i < 4; i++) {
+        gameContainer.style.width = `${Math.max(1, targetWidth)}px`;
+        const topOffset = Math.max(0, gameContainer.getBoundingClientRect().top);
+        const availableForCanvas = _viewportHeight() - topOffset - _controlsOuterHeight();
+        const nextWidth = Math.min(baseWidth, availableForCanvas / 1.7);
+        if (!(nextWidth > 0)) {
+          break;
+        }
+        if (Math.abs(nextWidth - targetWidth) < 0.5) {
+          targetWidth = nextWidth;
+          break;
+        }
+        targetWidth = nextWidth;
+      }
+
+      const finalWidth = Math.max(64, Math.min(baseWidth, targetWidth));
+      gameContainer.style.width = `${finalWidth}px`;
+    };
+
     const _pruneControlsToFitViewportHeight = () => {
+      _resetGameContainerWidth();
       _restoreAllMobileControls();
       if (_gameFitsViewportHeight()) {
         return;
@@ -315,6 +385,10 @@ canvas {
         if (_gameFitsViewportHeight()) {
           break;
         }
+      }
+
+      if (!_gameFitsViewportHeight()) {
+        _scaleGameToViewportHeight();
       }
     };
 
