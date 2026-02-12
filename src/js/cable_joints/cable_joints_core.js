@@ -1834,24 +1834,23 @@ export class CableAttachmentUpdateSystem {
     const nextHybridStep = prevHybridStep + 1;
     world.setResource('cableHybridTransitionStep', nextHybridStep);
     _recordCableStepSummary(world, nextHybridStep, 'begin');
-
     _clearDebugPoints(world);
-    if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
-      _updateHybridLinkStates(world, nextHybridStep);
-    }
-    _recordCableStepSummary(world, nextHybridStep, 'afterHybrid');
+
     if (_featureFlag(world, 'layeringAttachmentUpdatePoints', true)) {
       _updateAttachmentPoints(world);
     }
     _recordCableStepSummary(world, nextHybridStep, 'afterAttachment');
+
     if (_featureFlag(world, 'layeringMergeJoints', true)) {
       _mergeJoints(world);
     }
     _recordCableStepSummary(world, nextHybridStep, 'afterMerge');
+
     if (_featureFlag(world, 'layeringSplitJoints', true)) {
       _splitJoints(world);
     }
     _recordCableStepSummary(world, nextHybridStep, 'afterSplit');
+
     if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
       _updateHybridLinkStates(world, nextHybridStep);
     }
