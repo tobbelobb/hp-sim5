@@ -32,7 +32,7 @@ import {
 export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
-const LAYER_RADIUS_RAMP_ANGLE = Math.PI;
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
@@ -749,18 +749,6 @@ export function _updateAttachmentPoints(world) {
       const sB_raw = sB;
       let sA_effective = sA;
       let sB_effective = sB;
-
-      // Stability: Clamp extreme stored length changes per step to prevent "shooting" feedback loops.
-      const MAX_STORED_CHANGE_FACTOR = 0.5;
-      if (radiusA > EPSILON) {
-        const limitA = radiusA * MAX_STORED_CHANGE_FACTOR;
-        sA_effective = Math.max(-limitA, Math.min(limitA, sA_effective));
-      }
-      if (radiusB > EPSILON) {
-        const limitB = radiusB * MAX_STORED_CHANGE_FACTOR;
-        sB_effective = Math.max(-limitB, Math.min(limitB, sB_effective));
-      }
-
       let clampApplied = false;
       const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);
       if (clampEnabled && Number.isFinite(restBefore)) {
