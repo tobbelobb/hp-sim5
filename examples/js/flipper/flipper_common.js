@@ -1562,7 +1562,9 @@ export class PBDUnifiedContactManifoldSystem {
         });
 
         const pairKey = `${candidate.ballId}:${candidate.obsId}`;
-        nextObstacleActivePairs.add(pairKey);
+        if (rawHit) {
+          nextObstacleActivePairs.add(pairKey);
+        }
         if (rawHit && !obstacleActivePairs.has(pairKey) && candidate.ballId !== grabbed) {
           world.addComponent(candidate.ballId, new ScoredTagComponent());
         }
