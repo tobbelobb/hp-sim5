@@ -194,6 +194,7 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
   let offset = dir.clone().scale(baseRadius);
   const sectorList = _entitySectorList(world, entityId);
   const angle = Math.atan2(dir.y, dir.x);
+
   for (const sectorComp of sectorList) {
     if (
       !sectorComp ||
@@ -202,23 +203,13 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
     ) {
       continue;
     }
-    if (_isAngleInSector(angle, sectorComp.startAngle, sectorComp.endAngle, sectorComp.cw === true)) {
-      if (sectorComp.radius > projection + 1e-9) {
-        projection = sectorComp.radius;
-        offset = dir.clone().scale(projection);
-      }
-    }
 
-    const cornerAngles = [sectorComp.startAngle, sectorComp.endAngle];
-    for (const cornerAngle of cornerAngles) {
-      const cornerOffset = new Vector2(
-        Math.cos(cornerAngle) * sectorComp.radius,
-        Math.sin(cornerAngle) * sectorComp.radius
-      );
-      const cornerProjection = cornerOffset.dot(dir);
-      if (cornerProjection > projection + 1e-9) {
-        projection = cornerProjection;
-        offset = cornerOffset;
+    const weight = _sectorWeight(angle, sectorComp.startAngle, sectorComp.endAngle, sectorComp.cw === true);
+    if (weight > 1e-9) {
+      const taperedRadius = baseRadius + (sectorComp.radius - baseRadius) * weight;
+      if (taperedRadius > projection + 1e-9) {
+        projection = taperedRadius;
+        offset = dir.clone().scale(projection);
       }
     }
   }
@@ -323,7 +314,8 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
   };
 }
 
-const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
+const LAYER_RADIUS_RAMP_ANGLE = Math.PI;
+const SECTOR_TAPER_ANGLE = Math.PI / 18.0; // 10 degree taper at each end
 
 function _closingOverlayBlend(span) {
   if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
@@ -354,6 +346,26 @@ function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, span) {
   const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
   const rampAlpha = Math.max(0.0, Math.min(1.0, spanValue / LAYER_RADIUS_RAMP_ANGLE));
   return rampStartRadius + (rampTargetRadius - rampStartRadius) * rampAlpha;
+}
+
+function _sectorWeight(angle, startAngle, endAngle, cw) {
+  const a = _normalizeAngle(angle);
+  const s = _normalizeAngle(startAngle);
+  const e = _normalizeAngle(endAngle);
+  if (cw) {
+    return _sectorWeight(-a, -s, -e, false);
+  }
+  const span = _ccwDiff(s, e);
+  const rel = _ccwDiff(s, a);
+
+  if (rel > span + 1e-9) return 0.0;
+
+  const taper = Math.min(span * 0.5, SECTOR_TAPER_ANGLE);
+  if (taper < 1e-9) return 1.0;
+
+  if (rel < taper) return rel / taper;
+  if (rel > span - taper) return (span - rel) / taper;
+  return 1.0;
 }
 
 export class OverlayRadiusAndCircleSectorSystem {
