@@ -26,7 +26,10 @@
       "Bash(do echo \"Run $i:\")",
       "Bash(./RRF/build/rrf_simulator:*)",
       "Bash(timeout 60 ./RRF/build/rrf_simulator:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx jest:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   },
