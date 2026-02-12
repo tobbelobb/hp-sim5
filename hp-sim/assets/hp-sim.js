@@ -5,6 +5,7 @@ import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 import { QualityMonitor } from './quality-monitor.js';
+import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
 const MCU_PRESETS = {
   hangprinterLogo: {
@@ -144,6 +145,7 @@ function initHpSim() {
   const qualityHistoryList = document.getElementById('qualityHistoryList');
   const secondaryToggleBtn = document.getElementById('secondaryToggleBtn');
   const qualityToggle = document.getElementById('qualityToggle');
+  const lineLayeringToggle = document.getElementById('lineLayeringToggle');
   const qualityToggleWrapper = document.getElementById('qualityToggleWrapper');
   const qualityToggleLabel = qualityToggleWrapper ? qualityToggleWrapper.querySelector('span') : null;
   const supportsMatchMedia = typeof window.matchMedia === 'function';
@@ -176,6 +178,9 @@ function initHpSim() {
 
   if (qualityToggle) {
     qualityToggle.checked = false;
+  }
+  if (lineLayeringToggle) {
+    lineLayeringToggle.checked = true;
   }
 
   const usdaCatalog = new Map(
@@ -222,6 +227,7 @@ function initHpSim() {
   let speedStatusArmed = false;
   const machineQualityMonitors = new Map();
   let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+  let lineLayeringEnabled = lineLayeringToggle ? Boolean(lineLayeringToggle.checked) : true;
   let secondaryControlsUserPreference = null;
   let secondaryControlsAutoActive = false;
   let jobSequenceCounter = 0;
@@ -472,6 +478,22 @@ function initHpSim() {
     updateQualityHudVisibility();
   }
 
+  function setLineLayeringEnabledState(enabled, { fromToggle = false } = {}) {
+    const next = Boolean(enabled);
+    if (lineLayeringEnabled === next) {
+      if (!fromToggle && lineLayeringToggle) {
+        lineLayeringToggle.checked = next;
+      }
+      setLineLayeringFeatureFlags(world, next);
+      return;
+    }
+    lineLayeringEnabled = next;
+    setLineLayeringFeatureFlags(world, next);
+    if (!fromToggle && lineLayeringToggle) {
+      lineLayeringToggle.checked = next;
+    }
+  }
+
   function attachQualityMonitorsToRemoteSystem() {
     if (machineQualityMonitors.size === 0) {
       return;
@@ -512,6 +534,16 @@ function initHpSim() {
     }
   } else {
     qualityEnabled = false;
+  }
+
+  if (lineLayeringToggle) {
+    lineLayeringToggle.addEventListener('change', () => {
+      setLineLayeringEnabledState(lineLayeringToggle.checked, { fromToggle: true });
+    });
+    setLineLayeringEnabledState(lineLayeringToggle.checked, { fromToggle: true });
+  } else {
+    lineLayeringEnabled = true;
+    setLineLayeringFeatureFlags(world, true);
   }
 
   const referenceOverlayState = {
