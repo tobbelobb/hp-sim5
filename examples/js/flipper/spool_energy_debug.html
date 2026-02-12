@@ -452,7 +452,7 @@ canvas {
 
     const obstacleRadius = rawRadius * 0.72;
     const obstacleX = ballX + 0.09;
-    const obstacleY = bottom - obstacleRadius - 0.0043;
+    const obstacleY = bottom - obstacleRadius - 0.0000;
     const obstacleId = world.createEntity();
     world.addComponent(obstacleId, new BallTagComponent());
     world.addComponent(obstacleId, new PositionComponent(obstacleX, obstacleY));
