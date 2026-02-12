@@ -466,19 +466,18 @@ function _smoothedStoredLayerRadius(baseRadius, halfWidth, decomposition) {
     return firstLayerRadius;
   }
 
+  // For the first partial wrap there is no layer transition to smooth.
+  if (fullLayers < 1) {
+    return partialRadius;
+  }
+
+  const prevLayerRadius = firstLayerRadius + fullWidth * Math.max(0, fullLayers - 1);
   if (!(LAYER_RADIUS_RAMP_ANGLE > EPSILON)) {
     return partialRadius;
   }
 
   const span = partialLength / partialRadius;
   const rampAlpha = Math.max(0.0, Math.min(1.0, span / LAYER_RADIUS_RAMP_ANGLE));
-
-  // For the first partial wrap, smooth from baseRadius to firstLayerRadius.
-  if (fullLayers < 1) {
-    return baseRadius + (firstLayerRadius - baseRadius) * rampAlpha;
-  }
-
-  const prevLayerRadius = firstLayerRadius + fullWidth * Math.max(0, fullLayers - 1);
   return prevLayerRadius + (partialRadius - prevLayerRadius) * rampAlpha;
 }
 
@@ -750,6 +749,17 @@ export function _updateAttachmentPoints(world) {
       const sB_raw = sB;
       let sA_effective = sA;
       let sB_effective = sB;
+
+      // Stability: Clamp extreme stored length changes per step to prevent "shooting" feedback loops.
+      const MAX_STORED_CHANGE_FACTOR = 0.5;
+      if (radiusA > EPSILON) {
+        const limitA = radiusA * MAX_STORED_CHANGE_FACTOR;
+        sA_effective = Math.max(-limitA, Math.min(limitA, sA_effective));
+      }
+      if (radiusB > EPSILON) {
+        const limitB = radiusB * MAX_STORED_CHANGE_FACTOR;
+        sB_effective = Math.max(-limitB, Math.min(limitB, sB_effective));
+      }
 
       let clampApplied = false;
       const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);

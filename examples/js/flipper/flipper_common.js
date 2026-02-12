@@ -212,24 +212,6 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
         offset = dir.clone().scale(projection);
       }
     }
-
-    // Corner supports are essential for stability at cable ends, but we taper their
-    // projection to match the smoothed sector profile.
-    const cornerAngles = [sectorComp.startAngle, sectorComp.endAngle];
-    for (const cornerAngle of cornerAngles) {
-      const cornerWeight = _sectorWeight(cornerAngle, sectorComp.startAngle, sectorComp.endAngle, sectorComp.cw === true);
-      const effectiveCornerRadius = baseRadius + (sectorComp.radius - baseRadius) * cornerWeight;
-
-      const cornerOffset = new Vector2(
-        Math.cos(cornerAngle) * effectiveCornerRadius,
-        Math.sin(cornerAngle) * effectiveCornerRadius
-      );
-      const cornerProjection = cornerOffset.dot(dir);
-      if (cornerProjection > projection + 1e-9) {
-        projection = cornerProjection;
-        offset = cornerOffset;
-      }
-    }
   }
 
   return {
@@ -332,8 +314,8 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
   };
 }
 
-const LAYER_RADIUS_RAMP_ANGLE = Math.PI / 2.0; // 90 degree ramp for smoother growth
-const SECTOR_TAPER_ANGLE = Math.PI / 36.0; // Sharper 5 degree taper to prevent sinking
+const LAYER_RADIUS_RAMP_ANGLE = Math.PI;
+const SECTOR_TAPER_ANGLE = Math.PI / 18.0; // 10 degree taper at each end
 
 function _closingOverlayBlend(span) {
   if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
@@ -378,7 +360,7 @@ function _sectorWeight(angle, startAngle, endAngle, cw) {
 
   if (rel > span + 1e-9) return 0.0;
 
-  const taper = Math.min(span * 0.4, SECTOR_TAPER_ANGLE);
+  const taper = Math.min(span * 0.5, SECTOR_TAPER_ANGLE);
   if (taper < 1e-9) return 1.0;
 
   if (rel < taper) return rel / taper;
