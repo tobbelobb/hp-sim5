@@ -32,9 +32,7 @@ Most important for layering instability:
 - `cable/updateAttachment` (`layeringAttachmentUpdatePoints`)
 - `cable/mergeJoints` (`layeringMergeJoints`)
 - `cable/splitJoints` (`layeringSplitJoints`)
-- `cable/splitQualityGuard` (`layeringSplitQualityGuard`)  ← new
 - `cable/hybridLinkStates` (`layeringHybridLinkStates`)
-- `cable/clampRestLength` (`layeringClampJointRestLength`)
 
 Notes:
 - `spool_energy_debug.html` and `spool_energy_funnel_debug.html` auto-reset on checkbox changes.
@@ -70,11 +68,9 @@ High-value event types:
 - `hybrid-rub-check`
 - `hybrid-transition`
 - `split`
-- `split-abort` (watch `reason: "quality-guard"`)
+- `split-abort`
 - `merge`
 - `rest-length-anomaly`
-- `rest-length-clamp`
-- `rest-length-orientation-projection`
 
 ## 4) Automated Node Diagnostics
 
@@ -98,7 +94,6 @@ Useful log blocks to parse from test output:
 
 ## 5) What To Look For First
 
-1. `rest-length-anomaly` or `rest-length-clamp` events right before angular jumps.
+1. `rest-length-anomaly` events right before angular jumps.
 2. `hybrid-rub-check` with `sameJointPath: true` and `bothEndpointsHybridLike: true` (pinch/rubbing cases).
 3. `split` events producing very small `minNewRestLength` / `dAS` / `dSB`.
-4. Whether enabling `cable/splitQualityGuard` removes those tiny split segments and lowers later angular spikes.

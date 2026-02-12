@@ -282,17 +282,6 @@ function _computeWorldAttachment(world, entityId, localPoint) {
   return new Vector2(posComp.pos.x + rotatedX, posComp.pos.y + rotatedY);
 }
 
-function _computeLocalAttachment(worldPoint, centerPoint, angle) {
-  if (!worldPoint || !centerPoint || !Number.isFinite(angle)) {
-    return null;
-  }
-  const dx = worldPoint.x - centerPoint.x;
-  const dy = worldPoint.y - centerPoint.y;
-  const cos = Math.cos(-angle);
-  const sin = Math.sin(-angle);
-  return new Vector2(dx * cos - dy * sin, dx * sin + dy * cos);
-}
-
 export class CableLinkComponent {
   constructor(x = 0, y = 0, angle = 0.0) {
     this.prevCableAttachmentTimePos = new Vector2(x, y);
@@ -756,151 +745,10 @@ export function _updateAttachmentPoints(world) {
             sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
           }
       }
-      const sA_raw = sA;
-      const sB_raw = sB;
-
-      let sA_effective = sA;
-      let sB_effective = sB;
-      let clampApplied = false;
-      let orientationCorrectionA = 0.0;
-      let orientationCorrectionB = 0.0;
-      const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);
-      if (clampEnabled && Number.isFinite(restBefore)) {
-        const unclampedRest = restBefore - sA_effective + sB_effective;
-        if (unclampedRest < MIN_JOINT_REST_LENGTH) {
-          const requiredLift = MIN_JOINT_REST_LENGTH - unclampedRest;
-          const decreaseFromA = Math.max(0.0, sA_effective);
-          const decreaseFromB = Math.max(0.0, -sB_effective);
-          const totalDecrease = decreaseFromA + decreaseFromB;
-          if (totalDecrease > EPSILON) {
-            const shiftA = requiredLift * (decreaseFromA / totalDecrease);
-            const shiftB = requiredLift - shiftA;
-            sA_effective -= shiftA;
-            sB_effective += shiftB;
-          } else {
-            sB_effective += requiredLift;
-          }
-
-          const stillLowRest = restBefore - sA_effective + sB_effective;
-          if (stillLowRest < MIN_JOINT_REST_LENGTH) {
-            sB_effective += (MIN_JOINT_REST_LENGTH - stillLowRest);
-          }
-          clampApplied = true;
-
-          _recordCableEventTrace(world, step, {
-            type: 'rest-length-clamp',
-            stage: 'updateAttachmentPoints',
-            pathId,
-            jointId,
-            jointIndex: i,
-            entityA,
-            entityB,
-            linkTypeA: path.linkTypes[A],
-            linkTypeB: path.linkTypes[B],
-            restBefore,
-            unclampedRest,
-            clampedRest: restBefore - sA_effective + sB_effective,
-            sA_raw,
-            sB_raw,
-            sA_effective,
-            sB_effective
-          });
-        }
-      }
-      const blockedSA = sA_raw - sA_effective;
-      const blockedSB = sB_effective - sB_raw;
-      let localAttachmentDriftA = null;
-      let localAttachmentDriftB = null;
-      let localAttachmentBeforeA = null;
-      let localAttachmentBeforeB = null;
-      let localAttachmentAfterA = null;
-      let localAttachmentAfterB = null;
-      if (clampApplied) {
-        const shouldProjectOrientationA = (
-          rollingLinkA &&
-          orientationAComp &&
-          Number.isFinite(radiusA) &&
-          radiusA > EPSILON &&
-          Math.abs(blockedSA) > EPSILON &&
-          (isHybridA || Boolean(hasFrictionA))
-        );
-        if (
-          shouldProjectOrientationA
-        ) {
-          const angleBeforeProjection = orientationAComp.angle;
-          const attachmentBeforeProjection = attachmentA_current ? attachmentA_current.clone() : null;
-          orientationCorrectionA = (cwA ? -blockedSA : blockedSA) / radiusA;
-          orientationAComp.angle += orientationCorrectionA;
-          if (isHybridA && attachmentA_current && posA) {
-            // Keep hybrid attachment-point world geometry coherent with the angle projection.
-            attachmentA_current.rotate(orientationCorrectionA, posA, true);
-            const localBefore = _computeLocalAttachment(attachmentBeforeProjection, posA, angleBeforeProjection);
-            const localAfter = _computeLocalAttachment(attachmentA_current, posA, orientationAComp.angle);
-            if (localBefore && localAfter) {
-              localAttachmentBeforeA = _vecSnapshot(localBefore);
-              localAttachmentAfterA = _vecSnapshot(localAfter);
-              localAttachmentDriftA = localBefore.distanceTo(localAfter);
-            }
-          }
-        }
-        const shouldProjectOrientationB = (
-          rollingLinkB &&
-          orientationBComp &&
-          Number.isFinite(radiusB) &&
-          radiusB > EPSILON &&
-          Math.abs(blockedSB) > EPSILON &&
-          (isHybridB || Boolean(hasFrictionB))
-        );
-        if (
-          shouldProjectOrientationB
-        ) {
-          const angleBeforeProjection = orientationBComp.angle;
-          const attachmentBeforeProjection = attachmentB_current ? attachmentB_current.clone() : null;
-          orientationCorrectionB = (cwB ? blockedSB : -blockedSB) / radiusB;
-          orientationBComp.angle += orientationCorrectionB;
-          if (isHybridB && attachmentB_current && posB) {
-            // Keep hybrid attachment-point world geometry coherent with the angle projection.
-            attachmentB_current.rotate(orientationCorrectionB, posB, true);
-            const localBefore = _computeLocalAttachment(attachmentBeforeProjection, posB, angleBeforeProjection);
-            const localAfter = _computeLocalAttachment(attachmentB_current, posB, orientationBComp.angle);
-            if (localBefore && localAfter) {
-              localAttachmentBeforeB = _vecSnapshot(localBefore);
-              localAttachmentAfterB = _vecSnapshot(localAfter);
-              localAttachmentDriftB = localBefore.distanceTo(localAfter);
-            }
-          }
-        }
-        if (Math.abs(orientationCorrectionA) > EPSILON || Math.abs(orientationCorrectionB) > EPSILON) {
-          _recordCableEventTrace(world, step, {
-            type: 'rest-length-orientation-projection',
-            stage: 'updateAttachmentPoints',
-            pathId,
-            jointId,
-            jointIndex: i,
-            entityA,
-            entityB,
-            blockedSA,
-            blockedSB,
-            radiusA,
-            radiusB,
-            cwA,
-            cwB,
-            orientationCorrectionA,
-            orientationCorrectionB,
-            localAttachmentDriftA,
-            localAttachmentDriftB,
-            localAttachmentBeforeA,
-            localAttachmentAfterA,
-            localAttachmentBeforeB,
-            localAttachmentAfterB
-          });
-        }
-      }
-
-      path.stored[A] += sA_effective;
-      joint.restLength -= sA_effective;
-      path.stored[B] -= sB_effective;
-      joint.restLength += sB_effective;
+      path.stored[A] += sA;
+      joint.restLength -= sA;
+      path.stored[B] -= sB;
+      joint.restLength += sB;
       const restAfter = joint.restLength;
       if (
         !Number.isFinite(restAfter) ||
@@ -935,11 +783,11 @@ export function _updateAttachmentPoints(world) {
           restBefore,
           restAfter,
           restDelta: restAfter - restBefore,
-          clampApplied,
-          sA_raw,
-          sB_raw,
-          sA_effective,
-          sB_effective,
+          clampApplied: false,
+          sA_raw: sA,
+          sB_raw: sB,
+          sA_effective: sA,
+          sB_effective: sB,
           storedA_before,
           storedB_before,
           storedA_after: path.stored[A] ?? 0.0,
@@ -1086,7 +934,6 @@ export function _mergeJoints(world) {
 
 export function _splitJoints(world) {
   const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
-  const qualityGuardEnabled = _featureFlag(world, 'layeringSplitQualityGuard', false);
   const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -1266,35 +1113,6 @@ export function _splitJoints(world) {
                 dSB
               });
               console.warn("Split occurred with near-zero distance between new segments:", totalDist);
-          }
-          if (qualityGuardEnabled) {
-            const halfWidth = Number.isFinite(path.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
-            const qualityThreshold = Math.max(1e-3, 3.0 * halfWidth);
-            const minNewRestLength = Math.min(newRestLengthAS, newRestLengthSB);
-            const minNewSegmentLength = Math.min(dAS, dSB);
-            if (
-              !Number.isFinite(minNewRestLength) ||
-              !Number.isFinite(minNewSegmentLength) ||
-              minNewRestLength < qualityThreshold ||
-              minNewSegmentLength < qualityThreshold
-            ) {
-              _recordCableEventTrace(world, step, {
-                type: 'split-abort',
-                reason: 'quality-guard',
-                pathId,
-                jointId,
-                splitterId,
-                splitIndex: i,
-                qualityThreshold,
-                minNewRestLength,
-                minNewSegmentLength,
-                newRestLengthAS,
-                newRestLengthSB,
-                dAS,
-                dSB
-              });
-              continue;
-            }
           }
           path.stored[i + 1] -= sB;
           joint.restLength += sB;

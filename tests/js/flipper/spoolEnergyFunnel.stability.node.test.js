@@ -905,12 +905,11 @@ describe('Spool Funnel Stability Sweep', () => {
 
     const legacyAllOffPatch = buildPatch(oldUiLayeringFlags, false);
     const reproPatch = {
-      ...legacyAllOffPatch,
-      layeringClampJointRestLength: false
+      ...legacyAllOffPatch
     };
     const fixedPatch = {
       ...legacyAllOffPatch,
-      layeringClampJointRestLength: true
+      layeringHybridLinkStates: false
     };
 
     try {
@@ -1010,7 +1009,6 @@ describe('Spool Funnel Stability Sweep', () => {
       const mergeEvents = cableEvents.filter((event) => event.type === 'merge');
       const hybridEvents = cableEvents.filter((event) => event.type === 'hybrid-transition');
       const restAnomalyEvents = cableEvents.filter((event) => event.type === 'rest-length-anomaly');
-      const restClampEvents = cableEvents.filter((event) => event.type === 'rest-length-clamp');
       const hybridRubEvents = cableEvents.filter((event) => event.type === 'hybrid-rub-check');
 
       let firstTinyOrNegativeSummary = null;
@@ -1103,18 +1101,6 @@ describe('Spool Funnel Stability Sweep', () => {
         ? pinchRubEvents.find((event) => (event.step ?? Infinity) <= firstAnomalyStep) ?? null
         : null;
       const fixedRestAnomalies = fixed.cableEvents.filter((event) => event.type === 'rest-length-anomaly');
-      const fixedOrientationProjectionEvents = fixed.cableEvents.filter(
-        (event) => event.type === 'rest-length-orientation-projection'
-      );
-      const fixedOrientationProjectionDrifts = fixedOrientationProjectionEvents
-        .flatMap((event) => [event.localAttachmentDriftA, event.localAttachmentDriftB])
-        .filter((value) => Number.isFinite(value));
-      const fixedMaxLocalAttachmentDrift = fixedOrientationProjectionDrifts.length > 0
-        ? Math.max(...fixedOrientationProjectionDrifts)
-        : 0.0;
-      const fixedAvgLocalAttachmentDrift = fixedOrientationProjectionDrifts.length > 0
-        ? _average(fixedOrientationProjectionDrifts)
-        : 0.0;
       const summaryAfterAttachmentByStep = new Map(
         summaryEvents
           .filter((event) => event.phase === 'afterAttachment')
@@ -1166,7 +1152,6 @@ describe('Spool Funnel Stability Sweep', () => {
         mergeCount: mergeEvents.length,
         hybridCount: hybridEvents.length,
         restAnomalyCount: restAnomalyEvents.length,
-        restClampCount: restClampEvents.length,
         hybridRubCount: hybridRubEvents.length,
         pinchRubCount: pinchRubEvents.length,
         overlappingPinchRubCount: overlappingPinchRubEvents.length,
@@ -1177,7 +1162,6 @@ describe('Spool Funnel Stability Sweep', () => {
         firstRestAnomaly,
         worstRestAnomaly,
         nearSpikeRestAnomaly,
-        firstRestClamp: restClampEvents[0] ?? null,
         nearestPinchRubEvent,
         pinchBeforeFirstAnomaly,
         busiestSteps,
@@ -1208,9 +1192,6 @@ describe('Spool Funnel Stability Sweep', () => {
           quietAngularAvg: fixed.quietAngularAvg,
           peakAngularAbs: fixed.peakAngularAbs,
           peakPairAngularJump: fixed.peakPairAngularJump,
-          orientationProjectionCount: fixedOrientationProjectionEvents.length,
-          maxLocalAttachmentDrift: fixedMaxLocalAttachmentDrift,
-          avgLocalAttachmentDrift: fixedAvgLocalAttachmentDrift,
           restAnomalyCount: fixedRestAnomalies.length,
           firstRestAnomaly: fixedRestAnomalies[0] ?? null
         }
@@ -1296,7 +1277,6 @@ describe('Spool Funnel Stability Sweep', () => {
 
       expect(currentBest.score).toBeLessThan(baseline.score);
       expect(currentBest.isStable).toBe(true);
-      expect(fixedMaxLocalAttachmentDrift).toBeLessThan(1e-6);
     } finally {
       console.warn = originalWarn;
       console.error = originalError;
@@ -1447,7 +1427,6 @@ describe('Spool Funnel Stability Sweep', () => {
       );
       const baselinePathSplitEvents = baselinePathEventsInWindow.filter((event) => event.type === 'split');
       const baselinePathMergeEvents = baselinePathEventsInWindow.filter((event) => event.type === 'merge');
-      const baselinePathClampEvents = baselinePathEventsInWindow.filter((event) => event.type === 'rest-length-clamp');
       const baselinePathRestAnomalyEvents = baselinePathEventsInWindow.filter((event) => event.type === 'rest-length-anomaly');
       const baselineLastSplitBeforePeak = (
         Number.isFinite(baselinePeakStep)
@@ -1459,13 +1438,6 @@ describe('Spool Funnel Stability Sweep', () => {
       const baselineLastMergeBeforePeak = (
         Number.isFinite(baselinePeakStep)
           ? [...baselinePathMergeEvents]
-              .filter((event) => Math.floor(_readFinite(event.step, 0)) <= baselinePeakStep)
-              .sort((a, b) => Math.floor(_readFinite(b.step, 0)) - Math.floor(_readFinite(a.step, 0)))[0] ?? null
-          : null
-      );
-      const baselineLastClampBeforePeak = (
-        Number.isFinite(baselinePeakStep)
-          ? [...baselinePathClampEvents]
               .filter((event) => Math.floor(_readFinite(event.step, 0)) <= baselinePeakStep)
               .sort((a, b) => Math.floor(_readFinite(b.step, 0)) - Math.floor(_readFinite(a.step, 0)))[0] ?? null
           : null
@@ -1501,11 +1473,9 @@ describe('Spool Funnel Stability Sweep', () => {
             pathEventCountInWindow: baselinePathEventsInWindow.length,
             splitEventCountInWindow: baselinePathSplitEvents.length,
             mergeEventCountInWindow: baselinePathMergeEvents.length,
-            clampEventCountInWindow: baselinePathClampEvents.length,
             restAnomalyEventCountInWindow: baselinePathRestAnomalyEvents.length,
             lastSplitBeforePeak: baselineLastSplitBeforePeak,
             lastMergeBeforePeak: baselineLastMergeBeforePeak,
-            lastClampBeforePeak: baselineLastClampBeforePeak,
             lastRestAnomalyBeforePeak: baselineLastRestAnomalyBeforePeak,
             splitEventsNearPeakCount: baselinePathSplitsNearPeak.length,
             mergeEventsNearPeakCount: baselinePathMergesNearPeak.length,

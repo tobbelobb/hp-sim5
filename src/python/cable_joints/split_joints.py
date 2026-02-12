@@ -37,9 +37,6 @@ def split_joints(world):
     """
     potential_splitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent])
     path_entities = world.query([CablePathComponent])
-    split_quality_guard = world.get_resource('layeringSplitQualityGuard')
-    split_quality_guard = False if split_quality_guard is None else bool(split_quality_guard)
-
     for path_id in path_entities:
         path = world.get_component(path_id, CablePathComponent)
         if not path.joint_entities:
@@ -148,20 +145,6 @@ def split_joints(world):
                             continue # Not enough length to split
                         new_rest_length_as = available_rest_length_for_segments * dAS / total_dist
                         new_rest_length_sb = available_rest_length_for_segments * dSB / total_dist
-
-                    if split_quality_guard:
-                        half_width = getattr(path, 'cable_half_width', getattr(path, 'cableHalfWidth', 0.0))
-                        half_width = max(0.0, float(half_width)) if np.isfinite(half_width) else 0.0
-                        quality_threshold = max(1e-3, 3.0 * half_width)
-                        min_new_rest_length = min(new_rest_length_as, new_rest_length_sb)
-                        min_new_segment_length = min(dAS, dSB)
-                        if (
-                            (not np.isfinite(min_new_rest_length)) or
-                            (not np.isfinite(min_new_segment_length)) or
-                            min_new_rest_length < quality_threshold or
-                            min_new_segment_length < quality_threshold
-                        ):
-                            continue
 
                     # --- Mutate world state ---
                     new_joint_id = world.create_entity()
