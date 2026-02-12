@@ -104,6 +104,54 @@ describe('_updateHybridLinkStates', () => {
     expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
 
+  test('first link: hybrid -> hybrid-attachment uses layered radius for unwind rotation', () => {
+    const world  = new World();
+    const wheel  = addWheel(world, new Vector2(0, 0), 1.0);
+    const anchor = addAnchor(world, new Vector2(0, 3));
+
+    const joint = world.createEntity();
+    const initialRest = 3.0;
+    const attachmentBefore = new Vector2(1.0, 0.0);
+    const anchorAttachment = new Vector2(0.0, 3.0);
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        attachmentBefore.clone(),
+        anchorAttachment.clone(),
+      ),
+    );
+
+    const path = world.createEntity();
+    const cableHalfWidth = 0.2;
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      cableHalfWidth
+    );
+    world.addComponent(path, pathComp);
+
+    const oldStored = -0.3;
+    pathComp.stored[0] = oldStored;
+
+    const expected = attachmentBefore.clone();
+    const expectedRadius = 1.0 + cableHalfWidth;
+    const expectedRotation = -oldStored / expectedRadius;
+    expected.rotate(expectedRotation, new Vector2(0.0, 0.0), pathComp.cw[0]);
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest + oldStored, 12);
+    expect(j.attachmentPointA_world.x).toBeCloseTo(expected.x, 12);
+    expect(j.attachmentPointA_world.y).toBeCloseTo(expected.y, 12);
+  });
+
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
     const world  = new World();
 

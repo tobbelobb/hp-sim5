@@ -1255,7 +1255,6 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           const oldLinkType = path.linkTypes[i];
           const oldCw = path.cw[i];
           const oldStored = path.stored[i] ?? 0.0;
-          path.linkTypes[i] = 'hybrid-attachment';
           const joint = (
             i === 0
               ? world.getComponent(path.jointEntities[i], CableJointComponent)
@@ -1269,6 +1268,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             i,
             world.getComponent(linkEntity, RadiusComponent)?.radius
           );
+          path.linkTypes[i] = 'hybrid-attachment';
           const oldRestLength = joint.restLength;
           const attachmentBefore = i === 0
             ? joint.attachmentPointA_world.clone()
