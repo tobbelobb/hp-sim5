@@ -407,65 +407,68 @@ describe('_updateAttachmentPoints', () => {
     expect(firstJoint.attachmentPointA_world).toEqual(t0.a_circle);
   });
 
-  test('clampRestLength keeps hybrid attachment geometry aligned with unclamped update', () => {
-    const buildWorld = (clampEnabled) => {
-      const world = new World();
-      const spool = world.createEntity();
-      const anchor = world.createEntity();
-      const spoolPos = new Vector2(0.0, 0.0);
-      const anchorPos = new Vector2(0.0, 3.0);
-      const spoolRadius = 1.0;
-      const cwRaw = false; // _effectiveCW inverts index 0 to true
-      const cwEffective = true;
-      const deltaAngle = 0.2;
+  test('clampRestLength recomputes hybrid-attachment endpoint after clamp-induced angle change', () => {
+    const world = new World();
+    const rollingWheel = world.createEntity();
+    const hybridAttachWheel = world.createEntity();
+    const rollingPos = new Vector2(0.0, 0.0);
+    const hybridAttachPos = new Vector2(2.0, 0.0);
+    const radius = 1.0;
+    const cwA = true;
+    const cwA_raw = false; // _effectiveCW inverts index 0
+    const cwB = true;
 
-      world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y));
-      world.addComponent(spool, new OrientationComponent(deltaAngle));
-      world.addComponent(spool, new RadiusComponent(spoolRadius));
-      world.addComponent(spool, new CableLinkComponent(spoolPos.x, spoolPos.y, 0.0));
+    world.addComponent(rollingWheel, new PositionComponent(rollingPos.x, rollingPos.y));
+    world.addComponent(rollingWheel, new RadiusComponent(radius));
+    world.addComponent(rollingWheel, new CableLinkComponent(rollingPos.x, rollingPos.y, 0.0));
 
-      world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
-      world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y, 0.0));
+    world.addComponent(hybridAttachWheel, new PositionComponent(hybridAttachPos.x, hybridAttachPos.y));
+    world.addComponent(hybridAttachWheel, new OrientationComponent(0.0));
+    world.addComponent(hybridAttachWheel, new RadiusComponent(radius));
+    world.addComponent(hybridAttachWheel, new CableLinkComponent(hybridAttachPos.x, hybridAttachPos.y, 0.0));
 
-      const initialA = tangentFromCircleToPoint(anchorPos, spoolPos, spoolRadius, cwEffective).a_circle;
-      const initialB = anchorPos.clone();
-      const tinyRest = 1e-4;
-      const jointId = world.createEntity();
-      world.addComponent(
-        jointId,
-        new CableJointComponent(spool, anchor, tinyRest, initialA.clone(), initialB.clone())
-      );
+    const initialAttachmentB = new Vector2(hybridAttachPos.x, hybridAttachPos.y + radius);
+    const initialAttachmentA = tangentFromCircleToPoint(
+      initialAttachmentB,
+      rollingPos,
+      radius,
+      cwA
+    ).a_circle;
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(
+        rollingWheel,
+        hybridAttachWheel,
+        0.0,
+        initialAttachmentA.clone(),
+        initialAttachmentB.clone()
+      )
+    );
 
-      const pathId = world.createEntity();
-      const pathComp = new CablePathComponent(
+    const pathId = world.createEntity();
+    world.addComponent(
+      pathId,
+      new CablePathComponent(
         world,
         [jointId],
-        ['hybrid', 'attachment'],
-        [cwRaw, false]
-      );
-      world.addComponent(pathId, pathComp);
-      world.setResource('layeringClampJointRestLength', clampEnabled);
+        ['rolling', 'hybrid-attachment'],
+        [cwA_raw, cwB]
+      )
+    );
+    world.setResource('layeringClampJointRestLength', true);
 
-      return { world, spool, jointId };
-    };
+    _updateAttachmentPoints(world);
 
-    const clamped = buildWorld(true);
-    const unclamped = buildWorld(false);
-    _updateAttachmentPoints(clamped.world);
-    _updateAttachmentPoints(unclamped.world);
+    const joint = world.getComponent(jointId, CableJointComponent);
+    const orientationB = world.getComponent(hybridAttachWheel, OrientationComponent).angle;
+    expect(orientationB).not.toBeCloseTo(0.0, 14);
 
-    const clampedJoint = clamped.world.getComponent(clamped.jointId, CableJointComponent);
-    const unclampedJoint = unclamped.world.getComponent(unclamped.jointId, CableJointComponent);
-
-    expect(clampedJoint.attachmentPointA_world.x).toBeCloseTo(unclampedJoint.attachmentPointA_world.x, 12);
-    expect(clampedJoint.attachmentPointA_world.y).toBeCloseTo(unclampedJoint.attachmentPointA_world.y, 12);
-    expect(clampedJoint.attachmentPointB_world.x).toBeCloseTo(unclampedJoint.attachmentPointB_world.x, 12);
-    expect(clampedJoint.attachmentPointB_world.y).toBeCloseTo(unclampedJoint.attachmentPointB_world.y, 12);
-
-    const clampedRest = clampedJoint.restLength;
-    const unclampedRest = unclampedJoint.restLength;
-    expect(clampedRest).toBeGreaterThan(0.0);
-    expect(unclampedRest).toBeLessThan(0.0);
+    const expectedAttachmentB = initialAttachmentB.clone();
+    expectedAttachmentB.rotate(orientationB, hybridAttachPos, true);
+    expect(joint.attachmentPointB_world.x).toBeCloseTo(expectedAttachmentB.x, 10);
+    expect(joint.attachmentPointB_world.y).toBeCloseTo(expectedAttachmentB.y, 10);
+    expect(joint.restLength).toBeGreaterThan(0.0);
   });
 
   test('hybrid endpoint tangent uses layered rolling radius when stored exceeds one full wrap', () => {

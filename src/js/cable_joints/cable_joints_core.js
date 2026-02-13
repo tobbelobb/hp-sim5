@@ -716,6 +716,8 @@ export function _updateAttachmentPoints(world) {
 
       let sA = 0;
       let sB = 0;
+      let clampDeltaAngleA = 0.0;
+      let clampDeltaAngleB = 0.0;
       const restBefore = joint.restLength;
       const storedA_before = path.stored[A] ?? 0.0;
       const storedB_before = path.stored[B] ?? 0.0;
@@ -764,15 +766,21 @@ export function _updateAttachmentPoints(world) {
             sA_effective -= shiftA;
             sB_effective += shiftB;
             if ((isHybridB || hasFrictionB) && orientationBComp) {
-              orientationBComp.angle += shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+              const deltaClampAngleB = shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+              orientationBComp.angle += deltaClampAngleB;
+              clampDeltaAngleB += deltaClampAngleB;
             }
             if ((isHybridA || hasFrictionA) && orientationAComp) {
-              orientationAComp.angle -= shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+              const deltaClampAngleA = -shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+              orientationAComp.angle += deltaClampAngleA;
+              clampDeltaAngleA += deltaClampAngleA;
             }
           } else {
             sB_effective += requiredLift;
             if ((isHybridB || hasFrictionB) && orientationBComp) {
-              orientationBComp.angle += requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+              const deltaClampAngleB = requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+              orientationBComp.angle += deltaClampAngleB;
+              clampDeltaAngleB += deltaClampAngleB;
             }
           }
 
@@ -851,6 +859,15 @@ export function _updateAttachmentPoints(world) {
           storedA_after: path.stored[A] ?? 0.0,
           storedB_after: path.stored[B] ?? 0.0
         });
+      }
+
+      if (
+        Math.abs(clampDeltaAngleA) > EPSILON ||
+        Math.abs(clampDeltaAngleB) > EPSILON
+      ) {
+        const updatedAttachments = calculateAttachmentPoints(world, joint, path, i);
+        attachmentA_current = updatedAttachments.attachmentA_current;
+        attachmentB_current = updatedAttachments.attachmentB_current;
       }
 
       if (attachmentA_current) {
@@ -1289,14 +1306,14 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           joint.restLength += oldStored;
           path.stored[i] = 0;
           const rotationApplied = Boolean(pos && Number.isFinite(radius) && radius > EPSILON);
-          //if (pos && Number.isFinite(radius) && radius > EPSILON) {
-          //  const rotAng = -oldStored / radius;
-          //  if (i === 0) {
-          //    joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
-          //  } else if (i === path.linkTypes.length - 1) {
-          //    joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
-          //  }
-          //}
+          if (rotationApplied) {
+            const rotAng = -oldStored / radius;
+            if (i === 0) {
+              joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
+            } else if (i === path.linkTypes.length - 1) {
+              joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
+            }
+          }
 
           const attachmentAfter = i === 0
             ? joint.attachmentPointA_world.clone()
