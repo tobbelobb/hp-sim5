@@ -61,6 +61,7 @@ import { BallObstacleBumpSystem } from './ball_obstacle_bump_system.js';
 import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
 import { LineLayersBumperVelocityContactSystem } from './line_layers_bumper_velocity_contact_system.js';
 import { BallBallVelocityContactSystem } from './ball_ball_velocity_contact_system.js';
+import { LayerContactStaticFrictionSystem } from './layer_contact_static_friction_system.js';
 import { RenderSystem } from './renderSystem.js';
 import {
   PrevFinalPosSystem,
@@ -332,6 +333,7 @@ export function setupScene(world, stage, canvas) {
         world.registerSystem(new PBDCableConstraintSolver());
         world.registerSystem(new PBDResolveCableOverCorrections());
         world.registerSystem(new PBDUnifiedContactManifoldSystem());
+        world.registerSystem(new LayerContactStaticFrictionSystem());
 
         // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
         world.registerSystem(new CableFrictionSystem());
