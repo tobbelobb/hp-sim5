@@ -316,6 +316,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [0.942477796076938, 0 ,0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathAR" (
@@ -327,6 +328,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [0.942477796076938, 0, 0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathBL" (
@@ -339,6 +341,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [0.942477796076938, 0, 0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathBR" (
@@ -351,6 +354,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [0.942477796076938, 0, 0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathCL" (
@@ -363,6 +367,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [0.942477796076938, 0, 0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathCR" (
@@ -375,6 +380,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [0.942477796076938, 0, 0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
         rel machine:extrusionCenters = [
             </World/SlideprinterScene/AttachAL>,
