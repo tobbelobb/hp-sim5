@@ -32,7 +32,7 @@ import {
 export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
-const LAYER_RADIUS_RAMP_ANGLE = Math.PI/20.0;
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI)/5.0;
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 

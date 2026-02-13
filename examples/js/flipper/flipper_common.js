@@ -284,8 +284,15 @@ function _pathLinkStartAttachment(world, path, linkIndex) {
 
 function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
   const stored = Math.max(0.0, storedLength ?? 0.0);
-  if (!(stored > 1e-9) || !(firstLayerRadius > 1e-9) || !(layerStep > 1e-9)) {
+  if (!(firstLayerRadius > 1e-9) || !(layerStep > 1e-9)) {
     return null;
+  }
+  if (!(stored > 1e-9)) {
+    return {
+      fullLayers: 0,
+      partialLength: 0,
+      partialRadius: firstLayerRadius
+    }
   }
   let remaining = stored;
   let fullLayers = 0;
@@ -312,7 +319,7 @@ function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
   };
 }
 
-const LAYER_RADIUS_RAMP_ANGLE = Math.PI/20.0;
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI)/5.0;
 
 function _closingOverlayBlend(span) {
   if (!(LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
@@ -332,6 +339,7 @@ function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, span) {
   }
   const fullLayers = Math.max(0, decomposition?.fullLayers ?? 0);
   const layerWidth = 2.0 * halfWidth;
+
   const rampStartRadius = rawRadius + layerWidth * fullLayers;
   const rampTargetRadius = rawRadius + layerWidth * (fullLayers + 1);
   if (!(rampTargetRadius > 1e-9)) {
@@ -384,18 +392,16 @@ export class OverlayRadiusAndCircleSectorSystem {
       }
       const layerStep = 2.0 * halfWidth;
 
+      let sectors = 0;
       for (let linkIndex = 0; linkIndex < path.linkTypes.length; linkIndex++) {
         const linkType = path.linkTypes[linkIndex];
         if (!(linkType === 'rolling' || linkType === 'hybrid' || linkType === 'hybrid-attachment')) {
           continue;
         }
         const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
-        if (!(stored > 1e-9)) {
-          continue;
-        }
 
         const entityId = _pathLinkEntity(world, path, linkIndex);
-        if (entityId === null || entityId === undefined) {
+        if ((stored <= 1e-9 && linkType !== 'hybrid-attachment') || entityId === null || entityId === undefined) {
           continue;
         }
         const center = world.getComponent(entityId, PositionComponent)?.pos;
@@ -406,7 +412,9 @@ export class OverlayRadiusAndCircleSectorSystem {
 
         const firstLayerRadius = rawRadius + halfWidth;
         const decomposition = _decomposeStoredWrap(stored, firstLayerRadius, layerStep);
-        if (!decomposition) {
+        if (!decomposition || (decomposition.fullLayers === 0 &&
+                               decomposition.partialLength < 1e-9 &&
+                               linkType !== 'hybrid-attachment')) {
           continue;
         }
 
@@ -431,7 +439,7 @@ export class OverlayRadiusAndCircleSectorSystem {
           }
         }
 
-        if (sectorEnabled && decomposition.partialLength > 1e-9) {
+        if (sectorEnabled) {
           const startPoint = _pathLinkStartAttachment(world, path, linkIndex);
           if (!startPoint) {
             continue;
@@ -441,13 +449,23 @@ export class OverlayRadiusAndCircleSectorSystem {
             continue;
           }
           const startAngle = Math.atan2(rel.y, rel.x);
-          const span = decomposition.partialLength / decomposition.partialRadius;
-          const sectorRadius = _smoothedSectorRadius(
-            rawRadius,
-            decomposition,
-            halfWidth,
-            span
-          );
+          // On the first layer, enforce a span, representing the knot sticking out of the spool
+          const KNOT_SPAN = Math.PI / 30.0;
+          const span_ = decomposition.partialLength / decomposition.partialRadius;
+          const span = (decomposition.fullLayers === 0 && linkType === 'hybrid-attachment') ?
+                       Math.max(span_, KNOT_SPAN) :
+                       span_;
+
+          // Don't smoothen the first layer of a hybrid-attachment
+          const sectorRadius = (decomposition.fullLayers === 0 && linkType === 'hybrid-attachment') ?
+            rawRadius + 2.0*halfWidth :
+            _smoothedSectorRadius(
+              rawRadius,
+              decomposition,
+              halfWidth,
+              span
+            );
+
           if (!(sectorRadius > rawRadius + 1e-9)) {
             continue;
           }
@@ -462,7 +480,15 @@ export class OverlayRadiusAndCircleSectorSystem {
           const list = sectorListByEntity.get(entityId) ?? [];
           list.push(sector);
           sectorListByEntity.set(entityId, list);
+          sectors++;
         }
+      }
+      if (sectors === 3) {
+        console.log("Pushed 3 sectors");
+      } else if (sectors == 3) {
+        console.log("Pushed 4 sectors");
+      } else if (sectors > 3) {
+        console.log("Pushed many sectors");
       }
     }
 
