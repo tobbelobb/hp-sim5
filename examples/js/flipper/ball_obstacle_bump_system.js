@@ -54,7 +54,11 @@ export class BallObstacleBumpSystem {
 
             const omega_ball = ballAngVelComp ? ballAngVelComp.angularVelocity : 0.0;
             const omega_obs = obsAngVelComp ? obsAngVelComp.angularVelocity : 0.0;
-            const mu = obsFrictionComp ? obsFrictionComp.mu : 0.0;
+            const muObs = Number.isFinite(contact.obstacle_friction)
+                ? Math.max(0.0, contact.obstacle_friction)
+                : (obsFrictionComp ? obsFrictionComp.mu : 0.0);
+            const muBall = Number.isFinite(contact.ball_friction) ? Math.max(0.0, contact.ball_friction) : 0.0;
+            const mu = Math.max(0.0, 0.5 * (muObs + muBall));
 
             const tangent = new Vector2(-direction.y, direction.x);
 

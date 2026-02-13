@@ -41,6 +41,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
         v_surface,
         restitution_other,
         friction_other,
+        friction_self,
         delta_lambda,
         dt,
         contactOffset = null
@@ -69,7 +70,8 @@ export class BallBorderOrFlipperVelocityContactSystem {
 
         const radius = radiusComp.radius;
         const restitutionBall = this._clampedRestitution(restitutionComp.restitution, 0.0);
-        const muBall = this._nonNegativeNumber(frictionComp ? frictionComp.mu : 0.0, 0.0);
+        const muBallBase = this._nonNegativeNumber(frictionComp ? frictionComp.mu : 0.0, 0.0);
+        const muBall = this._nonNegativeNumber(friction_self, muBallBase);
         const angVel = angVelComp.angularVelocity;
 
         const restitutionOther = this._clampedRestitution(restitution_other, 0.0);
@@ -154,6 +156,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     new Vector2(0, 0),
                     restitutionBorder,
                     frictionBorder,
+                    contact.ball_friction,
                     contact.delta_lambda,
                     dt,
                     contact.ball_contact_offset
@@ -201,6 +204,7 @@ export class BallBorderOrFlipperVelocityContactSystem {
                     v_flipper,
                     restitutionFlipper,
                     frictionFlipper,
+                    contact.ball_friction,
                     delta_lambda,
                     dt,
                     contact.ball_contact_offset

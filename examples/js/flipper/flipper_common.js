@@ -57,17 +57,19 @@ export class PauseStateComponent { constructor(paused = true) { this.paused = pa
 export class CircleCamTag { }
 
 export class OverlayRadiusComponent {
-  constructor(radius = 0.0) {
+  constructor(radius = 0.0, mu = null) {
     this.radius = Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
+    this.mu = Number.isFinite(mu) ? Math.max(0.0, mu) : null;
   }
 }
 
 export class CircleSectorComponent {
-  constructor(radius = 0.0, startAngle = 0.0, endAngle = 0.0, cw = false) {
+  constructor(radius = 0.0, startAngle = 0.0, endAngle = 0.0, cw = false, mu = null) {
     this.radius = Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
     this.startAngle = Number.isFinite(startAngle) ? startAngle : 0.0;
     this.endAngle = Number.isFinite(endAngle) ? endAngle : 0.0;
     this.cw = cw === true;
+    this.mu = Number.isFinite(mu) ? Math.max(0.0, mu) : null;
   }
 }
 
@@ -80,7 +82,8 @@ export class CircleSectorsComponent {
           radius: Math.max(0.0, Number(sector.radius)),
           startAngle: Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0,
           endAngle: Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0,
-          cw: sector.cw === true
+          cw: sector.cw === true,
+          mu: Number.isFinite(sector.mu) ? Math.max(0.0, Number(sector.mu)) : null
         }))
       : [];
   }
@@ -146,6 +149,26 @@ function _getBaseCollisionRadius(world, entityId) {
   return radius;
 }
 
+function _frictionMu(world, entityId) {
+  const mu = world.getComponent(entityId, CoefficientOfFrictionComponent)?.mu;
+  return Number.isFinite(mu) ? Math.max(0.0, mu) : 0.0;
+}
+
+function _getBaseCollisionSupport(world, entityId) {
+  const rawRadius = getRawCollisionRadius(world, entityId);
+  const baseMu = _frictionMu(world, entityId);
+  const overlayComp = world.getComponent(entityId, OverlayRadiusComponent);
+  if (
+    overlayComp &&
+    Number.isFinite(overlayComp.radius) &&
+    overlayComp.radius > rawRadius + 1e-9
+  ) {
+    const overlayMu = Number.isFinite(overlayComp.mu) ? Math.max(0.0, overlayComp.mu) : baseMu;
+    return { radius: overlayComp.radius, mu: overlayMu };
+  }
+  return { radius: rawRadius, mu: baseMu };
+}
+
 export function getMaxCollisionRadius(world, entityId) {
   let radius = _getBaseCollisionRadius(world, entityId);
   const sectorsComp = world.getComponent(entityId, CircleSectorsComponent);
@@ -189,9 +212,11 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
     return null;
   }
   const dir = _normalizedDirection(directionTowardOther);
-  const baseRadius = _getBaseCollisionRadius(world, entityId);
+  const baseSupport = _getBaseCollisionSupport(world, entityId);
+  const baseRadius = baseSupport.radius;
   let projection = baseRadius;
   let offset = dir.clone().scale(baseRadius);
+  let frictionMu = baseSupport.mu;
   const sectorList = _entitySectorList(world, entityId);
   const angle = Math.atan2(dir.y, dir.x);
   for (const sectorComp of sectorList) {
@@ -206,6 +231,7 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
       if (sectorComp.radius > projection + 1e-9) {
         projection = sectorComp.radius;
         offset = dir.clone().scale(projection);
+        frictionMu = Number.isFinite(sectorComp.mu) ? Math.max(0.0, sectorComp.mu) : baseSupport.mu;
       }
     }
 
@@ -219,6 +245,7 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
       if (cornerProjection > projection + 1e-9) {
         projection = cornerProjection;
         offset = cornerOffset;
+        frictionMu = Number.isFinite(sectorComp.mu) ? Math.max(0.0, sectorComp.mu) : baseSupport.mu;
       }
     }
   }
@@ -227,7 +254,8 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
     center,
     baseRadius,
     projection,
-    offset
+    offset,
+    friction: frictionMu
   };
 }
 
@@ -241,12 +269,13 @@ function _collisionSupportToward(world, entityId, directionTowardOther, useSecto
     return null;
   }
   const dir = _normalizedDirection(directionTowardOther);
-  const baseRadius = _getBaseCollisionRadius(world, entityId);
+  const baseSupport = _getBaseCollisionSupport(world, entityId);
   return {
     center,
-    baseRadius,
-    projection: baseRadius,
-    offset: dir.clone().scale(baseRadius)
+    baseRadius: baseSupport.radius,
+    projection: baseSupport.radius,
+    offset: dir.clone().scale(baseSupport.radius),
+    friction: baseSupport.mu
   };
 }
 
@@ -434,8 +463,11 @@ export class OverlayRadiusAndCircleSectorSystem {
 
         if (overlayEnabled) {
           if (overlayEnvelopeRadius > rawRadius + 1e-9) {
-            const prev = overlayByEntity.get(entityId) ?? 0.0;
-            overlayByEntity.set(entityId, Math.max(prev, overlayEnvelopeRadius));
+            const prev = overlayByEntity.get(entityId);
+            const mu = _frictionMu(world, entityId);
+            if (prev === undefined || overlayEnvelopeRadius > prev.radius + 1e-9) {
+              overlayByEntity.set(entityId, { radius: overlayEnvelopeRadius, mu });
+            }
           }
         }
 
@@ -475,7 +507,8 @@ export class OverlayRadiusAndCircleSectorSystem {
             radius: sectorRadius,
             startAngle,
             endAngle,
-            cw
+            cw,
+            mu: _frictionMu(world, entityId)
           };
           const list = sectorListByEntity.get(entityId) ?? [];
           list.push(sector);
@@ -492,11 +525,15 @@ export class OverlayRadiusAndCircleSectorSystem {
       //}
     }
 
-    for (const [entityId, radius] of overlayByEntity.entries()) {
+    for (const [entityId, overlay] of overlayByEntity.entries()) {
+      const radius = overlay.radius;
+      const mu = overlay.mu;
       if (world.hasComponent(entityId, OverlayRadiusComponent)) {
-        world.getComponent(entityId, OverlayRadiusComponent).radius = radius;
+        const comp = world.getComponent(entityId, OverlayRadiusComponent);
+        comp.radius = radius;
+        comp.mu = Number.isFinite(mu) ? Math.max(0.0, mu) : null;
       } else {
-        world.addComponent(entityId, new OverlayRadiusComponent(radius));
+        world.addComponent(entityId, new OverlayRadiusComponent(radius, mu));
       }
     }
     for (const entityId of world.query([OverlayRadiusComponent])) {
@@ -524,10 +561,11 @@ export class OverlayRadiusAndCircleSectorSystem {
         comp.startAngle = sector.startAngle;
         comp.endAngle = sector.endAngle;
         comp.cw = sector.cw;
+        comp.mu = Number.isFinite(sector.mu) ? Math.max(0.0, sector.mu) : null;
       } else {
         world.addComponent(
           entityId,
-          new CircleSectorComponent(sector.radius, sector.startAngle, sector.endAngle, sector.cw)
+          new CircleSectorComponent(sector.radius, sector.startAngle, sector.endAngle, sector.cw, sector.mu)
         );
       }
       if (world.hasComponent(entityId, CircleSectorsComponent)) {
@@ -536,7 +574,8 @@ export class OverlayRadiusAndCircleSectorSystem {
           radius: entry.radius,
           startAngle: entry.startAngle,
           endAngle: entry.endAngle,
-          cw: entry.cw === true
+          cw: entry.cw === true,
+          mu: Number.isFinite(entry.mu) ? Math.max(0.0, entry.mu) : null
         }));
       } else {
         world.addComponent(entityId, new CircleSectorsComponent(validSectors));
@@ -1367,6 +1406,7 @@ export class PBDUnifiedContactManifoldSystem {
           delta_lambda: deltaLambda,
           ball_contact_radius: support.projection,
           ball_contact_offset: support.offset.clone(),
+          ball_friction: support.friction,
           restitution: borderRestitution,
           friction: borderFriction,
           border_segment_index: candidate.segmentIndex
@@ -1467,6 +1507,8 @@ export class PBDUnifiedContactManifoldSystem {
           penetration,
           radius_a: resolvedSupportA.projection,
           radius_b: resolvedSupportB.projection,
+          friction_a: resolvedSupportA.friction,
+          friction_b: resolvedSupportB.friction,
           pinch_shared: pinchShared
         });
         continue;
@@ -1572,7 +1614,9 @@ export class PBDUnifiedContactManifoldSystem {
           delta_lambda: deltaLambda,
           ball_contact_radius: resolvedSupportBall.projection,
           ball_contact_offset: resolvedSupportBall.offset.clone(),
+          ball_friction: resolvedSupportBall.friction,
           obstacle_contact_radius: resolvedSupportObs.projection,
+          obstacle_friction: resolvedSupportObs.friction,
           pinch_shared: pinchShared
         });
 
@@ -1649,6 +1693,7 @@ export class PBDUnifiedContactManifoldSystem {
           contact_point_on_flipper: closest.clone(),
           ball_contact_radius: supportBall.projection,
           ball_contact_offset: supportBall.offset.clone(),
+          ball_friction: supportBall.friction,
           delta_lambda: deltaLambda
         });
       }

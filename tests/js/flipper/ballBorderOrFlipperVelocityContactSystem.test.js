@@ -100,7 +100,7 @@ describe('BallBorderOrFlipperVelocityContactSystem', () => {
 
     const ballId = world.createEntity();
     world.addComponent(ballId, new PositionComponent(0.0, 0.0));
-    world.addComponent(ballId, new VelocityComponent(0.0, -1.0));
+    world.addComponent(ballId, new VelocityComponent(1.0, 0.0));
     world.addComponent(ballId, new RadiusComponent(1.0));
     world.addComponent(ballId, new MassComponent(1.0));
     world.addComponent(ballId, new MomentOfInertiaComponent(1.0));
@@ -125,5 +125,40 @@ describe('BallBorderOrFlipperVelocityContactSystem', () => {
     expect(Number.isFinite(vel.x)).toBe(true);
     expect(Number.isFinite(vel.y)).toBe(true);
     expect(Number.isFinite(angVel)).toBe(true);
+  });
+
+  test('uses layered ball_friction from contact when present', () => {
+    const world = new World();
+
+    const ballId = world.createEntity();
+    world.addComponent(ballId, new PositionComponent(0.0, 0.0));
+    world.addComponent(ballId, new VelocityComponent(0.0, -1.0));
+    world.addComponent(ballId, new RadiusComponent(1.0));
+    world.addComponent(ballId, new MassComponent(1.0));
+    world.addComponent(ballId, new MomentOfInertiaComponent(1.0));
+    world.addComponent(ballId, new AngularVelocityComponent(0.0));
+    world.addComponent(ballId, new RestitutionComponent(0.0));
+    world.addComponent(ballId, new CoefficientOfFrictionComponent(0.0));
+
+    const runWithLayeredMu = (layeredMu) => {
+      world.getComponent(ballId, VelocityComponent).vel.set(new Vector2(1.0, 0.0));
+      world.getComponent(ballId, AngularVelocityComponent).angularVelocity = 0.0;
+      world.setResource('ball_border_contacts', [{
+        ball_id: ballId,
+        normal: new Vector2(0.0, 1.0),
+        delta_lambda: 0.4,
+        ball_contact_offset: new Vector2(0.0, -1.0),
+        restitution: 0.0,
+        friction: 0.0,
+        ball_friction: layeredMu
+      }]);
+      const system = new BallBorderOrFlipperVelocityContactSystem();
+      system.update(world, 0.016);
+      return Math.abs(world.getComponent(ballId, AngularVelocityComponent).angularVelocity);
+    };
+
+    const noLayerFriction = runWithLayeredMu(0.0);
+    const withLayerFriction = runWithLayeredMu(1.0);
+    expect(withLayerFriction).toBeGreaterThan(noLayerFriction + 1e-6);
   });
 });
