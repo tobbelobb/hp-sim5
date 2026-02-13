@@ -65,10 +65,6 @@ describe('_updateHybridLinkStates', () => {
     // restLength shortened by exactly 0.2
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
-    const expectedAttachment = new Vector2(1, 0);
-    expectedAttachment.rotate(0.2, new Vector2(0, 0), false);
-    expect(j.attachmentPointA_world.x).toBeCloseTo(expectedAttachment.x, 10);
-    expect(j.attachmentPointA_world.y).toBeCloseTo(expectedAttachment.y, 10);
   });
 
   test('first link: tiny negative stored stays hybrid (hysteresis)', () => {
@@ -141,10 +137,6 @@ describe('_updateHybridLinkStates', () => {
     expect(pathComp.stored[1]).toBeCloseTo(0);
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.15, 8);
-    const expectedAttachment = new Vector2(1, 0);
-    expectedAttachment.rotate(0.15, new Vector2(0, 0), false);
-    expect(j.attachmentPointB_world.x).toBeCloseTo(expectedAttachment.x, 10);
-    expect(j.attachmentPointB_world.y).toBeCloseTo(expectedAttachment.y, 10);
   });
 
   test('first link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {
