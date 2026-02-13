@@ -1287,16 +1287,16 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             : joint.attachmentPointA_world;
           // We have "fed out negative line", undo that
           joint.restLength += oldStored;
-          const rotationApplied = Boolean(pos && Number.isFinite(radius) && radius > EPSILON);
-          if (pos && Number.isFinite(radius) && radius > EPSILON) {
-            const rotAng = -oldStored / radius;
-            if (i === 0) {
-              joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
-            } else if (i === path.linkTypes.length - 1) {
-              joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
-            }
-          }
           path.stored[i] = 0;
+          const rotationApplied = Boolean(pos && Number.isFinite(radius) && radius > EPSILON);
+          //if (pos && Number.isFinite(radius) && radius > EPSILON) {
+          //  const rotAng = -oldStored / radius;
+          //  if (i === 0) {
+          //    joint.attachmentPointA_world.rotate(rotAng, pos, path.cw[i]);
+          //  } else if (i === path.linkTypes.length - 1) {
+          //    joint.attachmentPointB_world.rotate(rotAng, pos, path.cw[i]);
+          //  }
+          //}
 
           const attachmentAfter = i === 0
             ? joint.attachmentPointA_world.clone()
