@@ -1507,6 +1507,8 @@ export class PBDUnifiedContactManifoldSystem {
           penetration,
           radius_a: resolvedSupportA.projection,
           radius_b: resolvedSupportB.projection,
+          contact_offset_a: resolvedSupportA.offset.clone(),
+          contact_offset_b: resolvedSupportB.offset.clone(),
           friction_a: resolvedSupportA.friction,
           friction_b: resolvedSupportB.friction,
           pinch_shared: pinchShared
