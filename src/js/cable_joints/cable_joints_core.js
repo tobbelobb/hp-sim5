@@ -764,15 +764,21 @@ export function _updateAttachmentPoints(world) {
             sA_effective -= shiftA;
             sB_effective += shiftB;
             if ((isHybridB || hasFrictionB) && orientationBComp) {
-              orientationBComp.angle += shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+              const rotAngB = shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+              orientationBComp.angle += rotAngB;
+              attachmentB_current.rotate(rotAngB, posB, cwB);
             }
             if ((isHybridA || hasFrictionA) && orientationAComp) {
-              orientationAComp.angle -= shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+              const rotAngA = shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+              orientationAComp.angle -= rotAngA;
+              attachmentA_current.rotate(-rotAngA, posA, cwA);
             }
           } else {
             sB_effective += requiredLift;
             if ((isHybridB || hasFrictionB) && orientationBComp) {
-              orientationBComp.angle += requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+              const rotAngB = requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+              orientationBComp.angle += rotAngB;
+              attachmentB_current.rotate(rotAngB, posB, cwB);
             }
           }
 
