@@ -183,8 +183,6 @@ function _entitySectorList(world, entityId) {
   return [];
 }
 
-// This function is only used by getCompositeSupportToward and _collisionSupportToward,
-// who in turn are used by nobody.
 function _compositeSupportToward(world, entityId, directionTowardOther) {
   const center = world.getComponent(entityId, PositionComponent)?.pos;
   if (!center) {
@@ -233,20 +231,7 @@ function _compositeSupportToward(world, entityId, directionTowardOther) {
   };
 }
 
-// Not actually in use
-export function getCompositeSupportToward(world, entityId, directionTowardOther) {
-  const support = _compositeSupportToward(world, entityId, directionTowardOther);
-  if (!support) {
-    return null;
-  }
-  return {
-    baseRadius: support.baseRadius,
-    projection: support.projection,
-    offset: support.offset.clone()
-  };
-}
-
-// Not actually in use
+// In use by PBDUnifiedContactManifoldSystem
 function _collisionSupportToward(world, entityId, directionTowardOther, useSectorSupports) {
   if (useSectorSupports) {
     return _compositeSupportToward(world, entityId, directionTowardOther);
