@@ -483,7 +483,9 @@ export class OverlayRadiusAndCircleSectorSystem {
           const cw = Boolean(path.cw[linkIndex]);
           // On the first layer, enforce a span, representing the knot sticking out of the spool
           const KNOT_SPAN = Math.PI / 30.0;
-          const startAngle = Math.atan2(rel.y, rel.x) + (cw ? 1.0 : -1.0) * KNOT_SPAN;
+          const startAngle = linkType === 'hybrid' ?
+                             Math.atan2(rel.y, rel.x) + (cw ? 1.0 : -1.0) * KNOT_SPAN * (rawRadius / decomposition.partialRadius) :
+                             Math.atan2(rel.y, rel.x) ;
           const span_ = decomposition.partialLength / decomposition.partialRadius;
           const span = (decomposition.fullLayers === 0 && linkType === 'hybrid-attachment') ?
                        Math.max(span_, KNOT_SPAN) :
