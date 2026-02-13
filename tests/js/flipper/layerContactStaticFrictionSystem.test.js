@@ -11,6 +11,10 @@ import {
   CoefficientOfFrictionComponent,
 } from '../../../src/js/cable_joints/ecs.js';
 import { LayerContactStaticFrictionSystem } from '../../../examples/js/flipper/layer_contact_static_friction_system.js';
+import {
+  FlipperStateComponent,
+  FlipperTipComponent,
+} from '../../../examples/js/flipper/flipper_common.js';
 
 function makeWorld() {
   const world = new World();
@@ -105,5 +109,56 @@ describe('LayerContactStaticFrictionSystem', () => {
     const pos = world.getComponent(ballId, PositionComponent).pos;
     expect(pos.x).toBeCloseTo(0.0, 9);
     expect(pos.y).toBeCloseTo(0.0, 9);
+  });
+
+  test('reduces tangential displacement for border contacts with layered ball friction', () => {
+    const { world, ballId } = makeWorld();
+    world.setResource('ball_border_contacts', [{
+      ball_id: ballId,
+      normal: new Vector2(0.0, 1.0),
+      delta_lambda: 0.4,
+      ball_contact_offset: new Vector2(0.0, -1.0),
+      ball_friction: 1.0,
+      friction: 1.0
+    }]);
+
+    const beforeX = world.getComponent(ballId, PositionComponent).pos.x;
+    const system = new LayerContactStaticFrictionSystem();
+    system.update(world, 0.016);
+    const afterX = world.getComponent(ballId, PositionComponent).pos.x;
+    expect(afterX).toBeLessThan(beforeX);
+  });
+
+  test('uses moving flipper surface displacement for static friction correction', () => {
+    const { world, ballId } = makeWorld();
+
+    const flipperId = world.createEntity();
+    world.addComponent(flipperId, new PositionComponent(0.0, -1.0));
+    world.addComponent(flipperId, new PrevFinalPosComponent(0.0, -1.0));
+    world.addComponent(flipperId, new FlipperStateComponent(1.0, 0.0, 1.0, 0.0));
+    const state = world.getComponent(flipperId, FlipperStateComponent);
+    state.currentAngularVelocity = 20.0;
+    state.rotation = 0.0;
+
+    const tipId = world.createEntity();
+    world.addComponent(tipId, new FlipperTipComponent(flipperId));
+    world.addComponent(tipId, new CoefficientOfFrictionComponent(1.0));
+
+    world.setResource('dt', 0.016);
+    world.setResource('ball_flipper_contacts', [{
+      ball_id: ballId,
+      flip_id: flipperId,
+      normal: new Vector2(0.0, 1.0),
+      delta_lambda: 0.4,
+      contact_point_on_flipper: new Vector2(0.0, 0.0),
+      ball_contact_offset: new Vector2(0.0, -1.0),
+      ball_friction: 1.0
+    }]);
+
+    const beforeX = world.getComponent(ballId, PositionComponent).pos.x;
+    const system = new LayerContactStaticFrictionSystem();
+    system.update(world, 0.016);
+    const afterX = world.getComponent(ballId, PositionComponent).pos.x;
+    expect(Math.abs(afterX - beforeX)).toBeGreaterThan(1e-6);
   });
 });
