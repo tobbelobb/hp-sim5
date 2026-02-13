@@ -59,6 +59,7 @@ import {
 
 import { BallObstacleBumpSystem } from './ball_obstacle_bump_system.js';
 import { BallBorderOrFlipperVelocityContactSystem } from './ball_border_or_flipper_velocity_contact_system.js';
+import { LineLayersBumperVelocityContactSystem } from './line_layers_bumper_velocity_contact_system.js';
 import { RenderSystem } from './renderSystem.js';
 import {
   PrevFinalPosSystem,
@@ -340,6 +341,7 @@ export function setupScene(world, stage, canvas) {
 
         // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
         world.registerSystem(new BallObstacleBumpSystem());
+        world.registerSystem(new LineLayersBumperVelocityContactSystem());
         world.registerSystem(new BallBorderOrFlipperVelocityContactSystem());
 
         // 9. Game Logic
