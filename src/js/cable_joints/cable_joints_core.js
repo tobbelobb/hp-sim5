@@ -763,13 +763,22 @@ export function _updateAttachmentPoints(world) {
             const shiftB = requiredLift - shiftA;
             sA_effective -= shiftA;
             sB_effective += shiftB;
+            if ((isHybridB || hasFrictionB) && orientationBComp) {
+              orientationBComp.angle += shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+            }
+            if ((isHybridA || hasFrictionA) && orientationAComp) {
+              orientationAComp.angle -= shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+            }
           } else {
             sB_effective += requiredLift;
+            if ((isHybridB || hasFrictionB) && orientationBComp) {
+              orientationBComp.angle += requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+            }
           }
 
           const stillLowRest = restBefore - sA_effective + sB_effective;
-          if (stillLowRest < MIN_JOINT_REST_LENGTH) {
-            sB_effective += (MIN_JOINT_REST_LENGTH - stillLowRest);
+          if (stillLowRest + EPSILON < MIN_JOINT_REST_LENGTH) {
+            console.warn("Still low rest");
           }
           clampApplied = true;
 

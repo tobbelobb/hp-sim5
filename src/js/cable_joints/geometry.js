@@ -17,7 +17,7 @@ export function _tangentPointCircle(p_attach, p_circle, r_circle, cw, pointIsFir
   const dSq = dVec.lengthSq();
 
   if (dSq <= r_circle * r_circle + 1e-9) {
-    console.warn("Cable tangent calculation: Attachment point inside or on rolling circle.");
+    //console.warn("Cable tangent calculation: Attachment point inside or on rolling circle.");
     const dir = dVec.lengthSq() > 1e-9 ? dVec.clone().normalize() : new Vector2(1, 0);
     return {
       a_attach: p_attach.clone(),
