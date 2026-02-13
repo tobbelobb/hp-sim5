@@ -448,9 +448,10 @@ export class OverlayRadiusAndCircleSectorSystem {
           if (rel.lengthSq() <= 1e-12) {
             continue;
           }
-          const startAngle = Math.atan2(rel.y, rel.x);
+          const cw = Boolean(path.cw[linkIndex]);
           // On the first layer, enforce a span, representing the knot sticking out of the spool
           const KNOT_SPAN = Math.PI / 30.0;
+          const startAngle = Math.atan2(rel.y, rel.x) + (cw ? 1.0 : -1.0) * KNOT_SPAN;
           const span_ = decomposition.partialLength / decomposition.partialRadius;
           const span = (decomposition.fullLayers === 0 && linkType === 'hybrid-attachment') ?
                        Math.max(span_, KNOT_SPAN) :
@@ -469,7 +470,6 @@ export class OverlayRadiusAndCircleSectorSystem {
           if (!(sectorRadius > rawRadius + 1e-9)) {
             continue;
           }
-          const cw = Boolean(path.cw[linkIndex]);
           const endAngle = cw ? (startAngle - span) : (startAngle + span);
           const sector = {
             radius: sectorRadius,
@@ -483,13 +483,13 @@ export class OverlayRadiusAndCircleSectorSystem {
           sectors++;
         }
       }
-      if (sectors === 3) {
-        console.log("Pushed 3 sectors");
-      } else if (sectors == 3) {
-        console.log("Pushed 4 sectors");
-      } else if (sectors > 3) {
-        console.log("Pushed many sectors");
-      }
+      //if (sectors === 3) {
+      //  console.log("Pushed 3 sectors");
+      //} else if (sectors == 3) {
+      //  console.log("Pushed 4 sectors");
+      //} else if (sectors > 3) {
+      //  console.log("Pushed many sectors");
+      //}
     }
 
     for (const [entityId, radius] of overlayByEntity.entries()) {
