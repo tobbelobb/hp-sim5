@@ -421,6 +421,149 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   return { radius: Math.max(effectiveRadius, radius), theta };
 }
 
+function _layerWrapParams(r0, dr, rampLength, layerIndex) {
+  const twoPi = 2.0 * Math.PI;
+  const rn = r0 + dr * layerIndex;
+
+  let dPhiRamp = 0.0;
+  if (rampLength > EPSILON) {
+    dPhiRamp = rampLength / (rn + 0.5 * dr);
+    if (dPhiRamp > twoPi) dPhiRamp = twoPi;
+    if (dPhiRamp < 0.0) dPhiRamp = 0.0;
+  }
+
+  const phiConst = twoPi - dPhiRamp;
+  const Lconst = rn * phiConst;
+  const Lwrap = Lconst + dPhiRamp * (rn + 0.5 * dr);
+  return { rn, dPhiRamp, phiConst, Lconst, Lwrap };
+}
+
+function _storedInWrapAtPhi(phi, dr, wrap) {
+  const twoPi = 2.0 * Math.PI;
+  const phiClamped = Math.max(0.0, Math.min(twoPi, phi));
+  if (!(wrap.dPhiRamp > EPSILON) || phiClamped <= wrap.phiConst + EPSILON) {
+    return wrap.rn * Math.min(wrap.phiConst, phiClamped);
+  }
+
+  const x = phiClamped - wrap.phiConst;
+  const a = dr / (2.0 * wrap.dPhiRamp);
+  return wrap.Lconst + wrap.rn * x + a * x * x;
+}
+
+function _thetaToStoredLength(theta, baseRadius, halfWidth, rampLength) {
+  if (!Number.isFinite(theta) || Math.abs(theta) <= EPSILON) {
+    return 0.0;
+  }
+  if (theta < 0.0) {
+    return -_thetaToStoredLength(-theta, baseRadius, halfWidth, rampLength);
+  }
+
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  if (!(r0 > EPSILON) || !(dr > EPSILON)) {
+    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
+    return linearRadius * theta;
+  }
+
+  const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
+  const twoPi = 2.0 * Math.PI;
+  const MAX_LAYERS = 2048;
+
+  let remainingTheta = theta;
+  let stored = 0.0;
+  let n = 0;
+  while (remainingTheta > twoPi + EPSILON && n < MAX_LAYERS) {
+    const wrap = _layerWrapParams(r0, dr, LrampTarget, n);
+    stored += wrap.Lwrap;
+    remainingTheta -= twoPi;
+    n++;
+  }
+
+  if (n >= MAX_LAYERS) {
+    const rn = r0 + dr * MAX_LAYERS;
+    return stored + rn * remainingTheta;
+  }
+
+  const wrap = _layerWrapParams(r0, dr, LrampTarget, n);
+  stored += _storedInWrapAtPhi(remainingTheta, dr, wrap);
+  return stored;
+}
+
+function _storedToThetaSigned(storedLength, baseRadius, halfWidth, rampLength) {
+  if (!Number.isFinite(storedLength) || Math.abs(storedLength) <= EPSILON) {
+    return 0.0;
+  }
+  if (storedLength < 0.0) {
+    return -_storedToRadiusAndTheta(-storedLength, baseRadius, halfWidth, rampLength).theta;
+  }
+  return _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength).theta;
+}
+
+function _hybridStoredDeltaFromRotation(thetaBefore, deltaAngle, cw, baseRadius, halfWidth, radiusFallback) {
+  const signedDeltaTheta = (cw ? 1.0 : -1.0) * deltaAngle;
+  if (!Number.isFinite(signedDeltaTheta) || Math.abs(signedDeltaTheta) <= EPSILON) {
+    return 0.0;
+  }
+
+  if (Number.isFinite(baseRadius) && Number.isFinite(halfWidth) && halfWidth > EPSILON) {
+    const rampLength = Math.max(0.0, baseRadius) * KNOT_SPAN;
+    const thetaStart = Number.isFinite(thetaBefore) ? thetaBefore : 0.0;
+    const thetaEnd = thetaStart + signedDeltaTheta;
+    const storedStart = _thetaToStoredLength(thetaStart, baseRadius, halfWidth, rampLength);
+    const storedEnd = _thetaToStoredLength(thetaEnd, baseRadius, halfWidth, rampLength);
+    return storedEnd - storedStart;
+  }
+
+  const fallbackRadius = Number.isFinite(radiusFallback)
+    ? radiusFallback
+    : (Number.isFinite(baseRadius) ? baseRadius : 0.0);
+  return signedDeltaTheta * fallbackRadius;
+}
+
+function _hybridAngleCorrectionFromStoredShift(
+  thetaBefore,
+  deltaAngle,
+  cw,
+  baseRadius,
+  halfWidth,
+  storedShift,
+  radiusFallback
+) {
+  if (!Number.isFinite(storedShift) || Math.abs(storedShift) <= EPSILON) {
+    return 0.0;
+  }
+
+  const signedDirection = cw ? 1.0 : -1.0;
+  const signedDeltaTheta = signedDirection * deltaAngle;
+  if (!Number.isFinite(signedDeltaTheta)) {
+    return 0.0;
+  }
+
+  if (Number.isFinite(baseRadius) && Number.isFinite(halfWidth) && halfWidth > EPSILON) {
+    const rampLength = Math.max(0.0, baseRadius) * KNOT_SPAN;
+    const thetaStart = Number.isFinite(thetaBefore) ? thetaBefore : 0.0;
+    const storedAfterCurrent = _thetaToStoredLength(thetaStart + signedDeltaTheta, baseRadius, halfWidth, rampLength);
+    const storedAfterTarget = storedAfterCurrent + storedShift;
+    const thetaAfterTarget = _storedToThetaSigned(storedAfterTarget, baseRadius, halfWidth, rampLength);
+    if (!Number.isFinite(thetaAfterTarget)) {
+      return 0.0;
+    }
+    const deltaAngleTarget = (thetaAfterTarget - thetaStart) / signedDirection;
+    if (!Number.isFinite(deltaAngleTarget)) {
+      return 0.0;
+    }
+    return deltaAngleTarget - deltaAngle;
+  }
+
+  const fallbackRadius = Number.isFinite(radiusFallback)
+    ? radiusFallback
+    : (Number.isFinite(baseRadius) ? baseRadius : 0.0);
+  if (!(Math.abs(fallbackRadius) > EPSILON)) {
+    return 0.0;
+  }
+  return storedShift / (signedDirection * fallbackRadius);
+}
+
 
 function _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength) {
   const EPS = 1e-9;
@@ -441,52 +584,35 @@ function _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength
 
   const MAX_LAYERS = 2048;
   while (n < MAX_LAYERS) {
-    const rn = r0 + dr * n;
+    const wrap = _layerWrapParams(r0, dr, LrampTarget, n);
 
-    // Convert ramp *length* to ramp *angle span* for this layer.
-    // Average radius during ramp is rn + dr/2.
-    let dPhiRamp = 0.0;
-    if (LrampTarget > EPS) {
-      dPhiRamp = LrampTarget / (rn + 0.5 * dr);
-      if (dPhiRamp > twoPi) dPhiRamp = twoPi;
-      if (dPhiRamp < 0.0) dPhiRamp = 0.0;
-    }
-
-    const phiConst = twoPi - dPhiRamp;
-    const Lconst = rn * phiConst;
-
-    // Actual ramp length after clamping dPhiRamp
-    const LrampActual = dPhiRamp * (rn + 0.5 * dr);
-
-    const Lwrap = Lconst + LrampActual;
-
-    if (s > Lwrap + EPS) {
-      s -= Lwrap;
+    if (s > wrap.Lwrap + EPS) {
+      s -= wrap.Lwrap;
       thetaBase += twoPi; // global theta advances exactly one wrap
       n++;
       continue;
     }
 
     // We are inside wrap/layer n.
-    if (s <= Lconst + EPS || !(dPhiRamp > EPS)) {
+    if (s <= wrap.Lconst + EPS || !(wrap.dPhiRamp > EPS)) {
       // Constant-radius region
-      const phi = (rn > EPS) ? (Math.min(phiConst, s / rn)) : 0.0;
-      return { radius: rn, theta: thetaBase + phi, layer: n, phi, inRamp: false };
+      const phi = (wrap.rn > EPS) ? (Math.min(wrap.phiConst, s / wrap.rn)) : 0.0;
+      return { radius: wrap.rn, theta: thetaBase + phi, layer: n, phi, inRamp: false };
     }
 
     // Ramp region at end of wrap: sRamp in [0, LrampActual]
-    const sRamp = Math.max(0.0, s - Lconst);
+    const sRamp = Math.max(0.0, s - wrap.Lconst);
 
     // Solve sRamp = rn*x + (dr/(2*dPhiRamp))*x^2 for x in [0, dPhiRamp]
-    const a = dr / (2.0 * dPhiRamp); // > 0
-    const b = rn;
+    const a = dr / (2.0 * wrap.dPhiRamp); // > 0
+    const b = wrap.rn;
     const disc = b * b + 4.0 * a * sRamp; // since c=-sRamp
     const x = (-b + Math.sqrt(Math.max(0.0, disc))) / (2.0 * a);
 
-    const xClamped = Math.max(0.0, Math.min(dPhiRamp, x));
-    const alpha = xClamped / dPhiRamp;          // 0..1 across ramp
-    const radius = rn + dr * alpha;             // linearly ramps to next layer
-    const phi = phiConst + xClamped;            // near end of wrap
+    const xClamped = Math.max(0.0, Math.min(wrap.dPhiRamp, x));
+    const alpha = xClamped / wrap.dPhiRamp;     // 0..1 across ramp
+    const radius = wrap.rn + dr * alpha;        // linearly ramps to next layer
+    const phi = wrap.phiConst + xClamped;       // near end of wrap
 
     return { radius, theta: thetaBase + phi, layer: n, phi, inRamp: true };
   }
@@ -676,6 +802,7 @@ export function _updateAttachmentPoints(world) {
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
+    const pathHalfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
 
     for (let i = 0; i < path.jointEntities.length; i++) {
       const jointId = path.jointEntities[i];
@@ -789,7 +916,16 @@ export function _updateAttachmentPoints(world) {
             radiusA,
             cwA
           );
-          if (isHybridA || hasFrictionA) {
+          if (isHybridA) {
+            sA += _hybridStoredDeltaFromRotation(
+              thetaA,
+              deltaAngleA,
+              cwA,
+              baseRadiusA,
+              pathHalfWidth,
+              radiusA
+            );
+          } else if (hasFrictionA) {
             sA += (cwA ? deltaAngleA * radiusA : -deltaAngleA * radiusA);
           }
       }
@@ -802,7 +938,16 @@ export function _updateAttachmentPoints(world) {
             radiusB,
             cwB
           );
-          if (isHybridB || hasFrictionB) {
+          if (isHybridB) {
+            sB += _hybridStoredDeltaFromRotation(
+              thetaB,
+              deltaAngleB,
+              cwB,
+              baseRadiusB,
+              pathHalfWidth,
+              radiusB
+            );
+          } else if (hasFrictionB) {
             sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
           }
       }
@@ -825,15 +970,51 @@ export function _updateAttachmentPoints(world) {
             sA_effective -= shiftA;
             sB_effective += shiftB;
             if ((isHybridB || hasFrictionB) && orientationBComp) {
-              orientationBComp.angle += shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+              if (isHybridB) {
+                orientationBComp.angle += _hybridAngleCorrectionFromStoredShift(
+                  thetaB,
+                  deltaAngleB,
+                  cwB,
+                  baseRadiusB,
+                  pathHalfWidth,
+                  shiftB,
+                  radiusB
+                );
+              } else if (Math.abs((cwB ? 1.0 : -1.0) * radiusB) > EPSILON) {
+                orientationBComp.angle += shiftB / ((cwB ? 1.0 : -1.0) * radiusB);
+              }
             }
             if ((isHybridA || hasFrictionA) && orientationAComp) {
-              orientationAComp.angle -= shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+              if (isHybridA) {
+                orientationAComp.angle += _hybridAngleCorrectionFromStoredShift(
+                  thetaA,
+                  deltaAngleA,
+                  cwA,
+                  baseRadiusA,
+                  pathHalfWidth,
+                  -shiftA,
+                  radiusA
+                );
+              } else if (Math.abs((cwA ? 1.0 : -1.0) * radiusA) > EPSILON) {
+                orientationAComp.angle -= shiftA / ((cwA ? 1.0 : -1.0) * radiusA);
+              }
             }
           } else {
             sB_effective += requiredLift;
             if ((isHybridB || hasFrictionB) && orientationBComp) {
-              orientationBComp.angle += requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+              if (isHybridB) {
+                orientationBComp.angle += _hybridAngleCorrectionFromStoredShift(
+                  thetaB,
+                  deltaAngleB,
+                  cwB,
+                  baseRadiusB,
+                  pathHalfWidth,
+                  requiredLift,
+                  radiusB
+                );
+              } else if (Math.abs((cwB ? 1.0 : -1.0) * radiusB) > EPSILON) {
+                orientationBComp.angle += requiredLift / ((cwB ? 1.0 : -1.0) * radiusB);
+              }
             }
           }
 

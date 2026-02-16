@@ -21,6 +21,70 @@ import {
   signedArcLengthOnWheel
 } from '../../../src/js/cable_joints/geometry.js';
 
+const TEST_KNOT_SPAN = Math.PI / 30.0;
+const TEST_EPSILON = 1e-9;
+
+function _testLayerWrapParams(r0, dr, rampLength, layerIndex) {
+  const twoPi = 2.0 * Math.PI;
+  const rn = r0 + dr * layerIndex;
+  let dPhiRamp = 0.0;
+  if (rampLength > TEST_EPSILON) {
+    dPhiRamp = rampLength / (rn + 0.5 * dr);
+    if (dPhiRamp > twoPi) dPhiRamp = twoPi;
+    if (dPhiRamp < 0.0) dPhiRamp = 0.0;
+  }
+  const phiConst = twoPi - dPhiRamp;
+  const lConst = rn * phiConst;
+  return { rn, dPhiRamp, phiConst, lConst, lWrap: lConst + dPhiRamp * (rn + 0.5 * dr) };
+}
+
+function _testStoredInWrapAtPhi(phi, dr, wrap) {
+  const twoPi = 2.0 * Math.PI;
+  const phiClamped = Math.max(0.0, Math.min(twoPi, phi));
+  if (!(wrap.dPhiRamp > TEST_EPSILON) || phiClamped <= wrap.phiConst + TEST_EPSILON) {
+    return wrap.rn * Math.min(wrap.phiConst, phiClamped);
+  }
+  const x = phiClamped - wrap.phiConst;
+  const a = dr / (2.0 * wrap.dPhiRamp);
+  return wrap.lConst + wrap.rn * x + a * x * x;
+}
+
+function _testThetaToStored(theta, baseRadius, halfWidth, rampLength) {
+  if (!Number.isFinite(theta) || Math.abs(theta) <= TEST_EPSILON) {
+    return 0.0;
+  }
+  if (theta < 0.0) {
+    return -_testThetaToStored(-theta, baseRadius, halfWidth, rampLength);
+  }
+
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  if (!(r0 > TEST_EPSILON) || !(dr > TEST_EPSILON)) {
+    return Math.max(baseRadius, 0.0) * theta;
+  }
+
+  const twoPi = 2.0 * Math.PI;
+  const maxLayers = 2048;
+  let remainingTheta = theta;
+  let stored = 0.0;
+  let layer = 0;
+
+  while (remainingTheta > twoPi + TEST_EPSILON && layer < maxLayers) {
+    const wrap = _testLayerWrapParams(r0, dr, rampLength, layer);
+    stored += wrap.lWrap;
+    remainingTheta -= twoPi;
+    layer++;
+  }
+
+  if (layer >= maxLayers) {
+    const rn = r0 + dr * maxLayers;
+    return stored + rn * remainingTheta;
+  }
+
+  const wrap = _testLayerWrapParams(r0, dr, rampLength, layer);
+  return stored + _testStoredInWrapAtPhi(remainingTheta, dr, wrap);
+}
+
 describe('_updateAttachmentPoints', () => {
   test('Attachment to Rolling - Translation', () => {
     const world = new World();
@@ -466,6 +530,68 @@ describe('_updateAttachmentPoints', () => {
     const unclampedRest = unclampedJoint.restLength;
     expect(clampedRest).toBeGreaterThan(0.0);
     expect(unclampedRest).toBeLessThan(0.0);
+  });
+
+  test('hybrid layered rotation updates stored via theta->stored across wrap boundary', () => {
+    const world = new World();
+
+    const spool = world.createEntity();
+    const anchor = world.createEntity();
+    const spoolPos = new Vector2(0.0, 0.0);
+    const anchorPos = new Vector2(0.0, 3.0);
+    const baseRadius = 1.0;
+    const halfWidth = 0.05;
+    const firstLayerRadius = baseRadius + halfWidth;
+    const cwRaw = false; // _effectiveCW at index 0 inverts this to true
+    const cwEffective = true;
+    const thetaBefore = (2.0 * Math.PI) - 0.12;
+    const deltaAngle = 0.5;
+    const rampLength = baseRadius * TEST_KNOT_SPAN;
+
+    world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y));
+    world.addComponent(spool, new OrientationComponent(deltaAngle));
+    world.addComponent(spool, new RadiusComponent(baseRadius));
+    world.addComponent(spool, new CableLinkComponent(spoolPos.x, spoolPos.y, 0.0));
+
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
+    world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y, 0.0));
+
+    const initialA = tangentFromCircleToPoint(anchorPos, spoolPos, firstLayerRadius, cwEffective).a_circle;
+    const initialB = anchorPos.clone();
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(spool, anchor, 10.0, initialA.clone(), initialB.clone())
+    );
+
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'attachment'],
+      [cwRaw, false],
+      1e6,
+      null,
+      halfWidth
+    );
+
+    const oldStored = pathComp.stored[0] ?? 0.0;
+    const initialStored = _testThetaToStored(thetaBefore, baseRadius, halfWidth, rampLength);
+    pathComp.stored[0] = initialStored;
+    pathComp.totalRestLength += (initialStored - oldStored);
+
+    world.addComponent(pathId, pathComp);
+    world.setResource('layeringClampJointRestLength', false);
+
+    _updateAttachmentPoints(world);
+
+    const expectedDelta = _testThetaToStored(thetaBefore + deltaAngle, baseRadius, halfWidth, rampLength)
+      - _testThetaToStored(thetaBefore, baseRadius, halfWidth, rampLength);
+    expect(pathComp.stored[0]).toBeCloseTo(initialStored + expectedDelta, 8);
+
+    // Ensure this is not just a constant-radius update.
+    const linearDelta = deltaAngle * firstLayerRadius;
+    expect(Math.abs(expectedDelta - linearDelta)).toBeGreaterThan(1e-4);
   });
 
   test('hybrid endpoint tangent uses layered rolling radius when stored exceeds one full wrap', () => {
