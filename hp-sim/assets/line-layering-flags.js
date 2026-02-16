@@ -1,6 +1,5 @@
 export const LINE_LAYERING_FEATURE_KEYS = Object.freeze([
   'enableLayering',
-  'layeringCableBaseRadius',
   'layeringCableStoredLayerRadius',
   'layeringFrictionEffectiveRadius',
   'layeringAttachmentUpdatePoints',

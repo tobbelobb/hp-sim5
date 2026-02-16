@@ -542,8 +542,8 @@ canvas {
 
     const configuredCableHalfWidth = Math.max(0.0, _readFinite(spoolEnergyConfig.cableHalfWidth, 0.0025));
     const flags = getCableFeatureFlags(world);
-    const useLayeredBaseRadius = flags.enableLayering === true && flags.layeringCableBaseRadius === true;
-    const cableHalfWidth = useLayeredBaseRadius ? configuredCableHalfWidth : 0.0;
+    const useLayering = flags.enableLayering === true;
+    const cableHalfWidth = useLayering ? configuredCableHalfWidth : 0.0;
     const storedTurns = Math.max(0.0, _readFinite(spoolEnergyConfig.initialStoredTurns, 1.0));
     const storedLength = storedTurns * 2.0 * Math.PI * (rawRadius + cableHalfWidth);
     const cableStiffness = Math.max(1.0, _readFinite(spoolEnergyConfig.cableStiffness, 1600.0));

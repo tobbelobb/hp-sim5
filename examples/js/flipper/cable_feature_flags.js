@@ -1,6 +1,5 @@
 export const CABLE_FEATURE_FLAG_DEFS = Object.freeze([
   { key: 'enableLayering', label: 'enableLayering', defaultValue: true },
-  { key: 'layeringCableBaseRadius', label: 'cable/baseRadius', defaultValue: true },
   { key: 'layeringCableStoredLayerRadius', label: 'cable/storedLayerRadius', defaultValue: true },
   { key: 'layeringFrictionEffectiveRadius', label: 'cable/frictionRadius', defaultValue: true },
   { key: 'layeringCollisionOverlayRadius', label: 'collision/overlayRadius', defaultValue: true },

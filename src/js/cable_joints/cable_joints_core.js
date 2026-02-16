@@ -411,10 +411,6 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
     return baseRadius;
   }
 
-  if (!_layeringFlag(world, 'layeringCableBaseRadius', true)) {
-    return baseRadius;
-  }
-
   const fullWidth = 2.0 * halfWidth;
   let effectiveRadius = baseRadius + halfWidth;
 

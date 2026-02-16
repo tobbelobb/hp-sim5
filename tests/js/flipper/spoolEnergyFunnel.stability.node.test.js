@@ -275,8 +275,8 @@ function setupFunnelWorld({
 
   const activeFlags = { ...CABLE_FEATURE_DEFAULTS, ...flagPatch };
   const configuredCableHalfWidth = Math.max(0.0, _readFinite(config.cableHalfWidth, 0.0025));
-  const useLayeredBaseRadius = activeFlags.enableLayering === true && activeFlags.layeringCableBaseRadius === true;
-  const cableHalfWidth = useLayeredBaseRadius ? configuredCableHalfWidth : 0.0;
+  const useLayering = activeFlags.enableLayering === true;
+  const cableHalfWidth = useLayering ? configuredCableHalfWidth : 0.0;
 
   const storedTurns = Math.max(0.0, _readFinite(config.initialStoredTurns, 1.0));
   const storedLength = storedTurns * 2.0 * Math.PI * (rawRadius + cableHalfWidth);
@@ -869,7 +869,6 @@ function runScenario({
 describe('Spool Funnel Stability Sweep', () => {
   const oldUiLayeringFlags = [
     'enableLayering',
-    'layeringCableBaseRadius',
     'layeringCableStoredLayerRadius',
     'layeringFrictionEffectiveRadius',
     'layeringCollisionOverlayRadius',

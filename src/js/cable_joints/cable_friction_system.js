@@ -69,8 +69,7 @@ function _evenOutTensionFriction(world) {
 
         const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
         const radius = radiusComp ? radiusComp.radius : 0.0;
-        const useLayeredFrictionRadius = _layeringFlag(world, 'layeringFrictionEffectiveRadius', true)
-          && _layeringFlag(world, 'layeringCableBaseRadius', true);
+        const useLayeredFrictionRadius = _layeringFlag(world, 'layeringFrictionEffectiveRadius', true);
         const effectiveRadius = radius + (useLayeredFrictionRadius ? (path.cableHalfWidth ?? 0.0) : 0.0);
 
         if (mu > epsilon) {
