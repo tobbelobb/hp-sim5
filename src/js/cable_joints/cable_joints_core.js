@@ -386,12 +386,12 @@ function _effectiveCW(path, linkIndex, travellingFromCircle) {
 
 function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   if (!layeringEnabled(world) || !Number.isFinite(baseRadius) || !path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
-    return baseRadius;
+    return { radius : baseRadius, theta: 0.0 };
   }
 
   const halfWidth = path.cableHalfWidth ?? 0.0;
   if (!(halfWidth > EPSILON)) {
-    return baseRadius;
+    return { radius : baseRadius, theta: 0.0 };
   }
 
   const fullWidth = 2.0 * halfWidth;
@@ -400,20 +400,20 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   // Layered winding is only modeled for hybrid endpoints.
   const isEndpoint = linkIndex === 0 || linkIndex === path.linkTypes.length - 1;
   if (!isEndpoint || !_isHybrid(path.linkTypes[linkIndex])) {
-    return effectiveRadius;
+    return { radius : effectiveRadius, theta: 0.0 };
   }
 
   const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
   if (!(stored > EPSILON)) {
-    return effectiveRadius;
+    return { radius : effectiveRadius, theta: 0.0 };
   }
 
-  const { theta, radius } = _storedToThetaAndRadius(stored, baseRadius, halfWidth, baseRadius*KNOT_SPAN);
-  return Math.max(effectiveRadius, radius);
+  const { radius, theta } = _storedToRadiusAndTheta(stored, baseRadius, halfWidth, baseRadius*KNOT_SPAN);
+  return { radius: Math.max(effectiveRadius, radius), theta };
 }
 
 
-function _storedToThetaAndRadius(storedLength, baseRadius, halfWidth, rampLength) {
+function _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength) {
   const EPS = 1e-9;
   const stored = Math.max(0.0, storedLength ?? 0.0);
   const twoPi = 2.0 * Math.PI;
@@ -423,7 +423,7 @@ function _storedToThetaAndRadius(storedLength, baseRadius, halfWidth, rampLength
   const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
 
   if (!(r0 > EPS) || !(dr > EPS)) {
-    return { theta: 0.0, radius: Math.max(baseRadius, 0.0), layer: 0, phi: 0.0, inRamp: false };
+    return { radius: Math.max(baseRadius, 0.0), theta: 0.0, layer: 0, phi: 0.0, inRamp: false };
   }
 
   let s = stored;
@@ -462,7 +462,7 @@ function _storedToThetaAndRadius(storedLength, baseRadius, halfWidth, rampLength
     if (s <= Lconst + EPS || !(dPhiRamp > EPS)) {
       // Constant-radius region
       const phi = (rn > EPS) ? (Math.min(phiConst, s / rn)) : 0.0;
-      return { theta: thetaBase + phi, radius: rn, layer: n, phi, inRamp: false };
+      return { radius: rn, theta: thetaBase + phi, layer: n, phi, inRamp: false };
     }
 
     // Ramp region at end of wrap: sRamp in [0, LrampActual]
@@ -479,12 +479,12 @@ function _storedToThetaAndRadius(storedLength, baseRadius, halfWidth, rampLength
     const radius = rn + dr * alpha;             // linearly ramps to next layer
     const phi = phiConst + xClamped;            // near end of wrap
 
-    return { theta: thetaBase + phi, radius, layer: n, phi, inRamp: true };
+    return { radius, theta: thetaBase + phi, layer: n, phi, inRamp: true };
   }
 
   // Fallback if MAX_LAYERS exceeded
   const rn = r0 + dr * MAX_LAYERS;
-  return { theta: thetaBase, radius: rn, layer: MAX_LAYERS, phi: 0.0, inRamp: false };
+  return { radius: rn, theta: thetaBase, layer: MAX_LAYERS, phi: 0.0, inRamp: false };
 }
 
 function _pathLinkIndicesForEntity(world, path, entityId) {
@@ -536,7 +536,7 @@ function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex
   if (Number.isInteger(preferredLinkIndex) && preferredLinkIndex >= 0 && preferredLinkIndex < path.linkTypes.length) {
     effectiveRadius = Math.max(
       effectiveRadius,
-      _effectiveRollingRadius(world, path, preferredLinkIndex, baseRadius)
+      _effectiveRollingRadius(world, path, preferredLinkIndex, baseRadius).radius
     );
   }
 
@@ -544,7 +544,7 @@ function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex
   for (const linkIndex of candidateIndices) {
     effectiveRadius = Math.max(
       effectiveRadius,
-      _effectiveRollingRadius(world, path, linkIndex, baseRadius)
+      _effectiveRollingRadius(world, path, linkIndex, baseRadius).radius
     );
   }
   return effectiveRadius;
@@ -571,7 +571,7 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
-export function calculateAttachmentPoints(world, joint, path, i) {
+export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
   const A = i;
   const B = i + 1;
 
@@ -580,15 +580,12 @@ export function calculateAttachmentPoints(world, joint, path, i) {
 
   // Get components for Entity A
   const posAComp = world.getComponent(entityA, PositionComponent);
-  const radiusAComp = world.getComponent(entityA, RadiusComponent);
   const linkAComp = world.getComponent(entityA, CableLinkComponent);
   const orientationAComp = world.getComponent(entityA, OrientationComponent);
 
   const posA = posAComp?.pos;
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-  const baseRadiusA = radiusAComp?.radius;
-  const radiusA = _effectiveRollingRadius(world, path, A, baseRadiusA); // stored -> r_eff and theta
   const angleA = orientationAComp?.angle ?? 0.0;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleA = angleA - prevAngleA;
@@ -607,15 +604,12 @@ export function calculateAttachmentPoints(world, joint, path, i) {
 
   // Get components for Entity B
   const posBComp = world.getComponent(entityB, PositionComponent);
-  const radiusBComp = world.getComponent(entityB, RadiusComponent);
   const linkBComp = world.getComponent(entityB, CableLinkComponent);
   const orientationBComp = world.getComponent(entityB, OrientationComponent);
 
   const posB = posBComp?.pos;
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-  const baseRadiusB = radiusBComp?.radius;
-  const radiusB = _effectiveRollingRadius(world, path, B, baseRadiusB); // stored -> r_eff and theta
   const angleB = orientationBComp?.angle ?? 0.0;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleB = angleB - prevAngleB;
@@ -681,22 +675,27 @@ export function _updateAttachmentPoints(world) {
       const attachmentA_previous = joint.attachmentPointA_world.clone();
       const attachmentB_previous = joint.attachmentPointB_world.clone();
 
-      let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i);
-
       const A = i;
       const B = i + 1;
       const entityA = joint.entityA;
       const entityB = joint.entityB;
 
+      // Get radii from previous iterations end state
+      const radiusAComp = world.getComponent(entityA, RadiusComponent);
+      const baseRadiusA = radiusAComp?.radius;
+      const { radius: radiusA, theta: thetaA } = _effectiveRollingRadius(world, path, A, baseRadiusA);
+      const radiusBComp = world.getComponent(entityB, RadiusComponent);
+      const baseRadiusB = radiusBComp?.radius;
+      const { radius: radiusB, theta: thetaB } = _effectiveRollingRadius(world, path, B, baseRadiusB);
+
+      let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB);
+
       // Get components for Entity A
       const posAComp = world.getComponent(entityA, PositionComponent);
-      const radiusAComp = world.getComponent(entityA, RadiusComponent);
       const linkAComp = world.getComponent(entityA, CableLinkComponent);
       const orientationAComp = world.getComponent(entityA, OrientationComponent);
       const posA = posAComp?.pos;
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-      const baseRadiusA = radiusAComp?.radius;
-      const radiusA = _effectiveRollingRadius(world, path, A, baseRadiusA);
       const angleA = orientationAComp?.angle ?? 0.0;
       const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleA = angleA - prevAngleA;
@@ -707,13 +706,10 @@ export function _updateAttachmentPoints(world) {
 
       // Get components for Entity B
       const posBComp = world.getComponent(entityB, PositionComponent);
-      const radiusBComp = world.getComponent(entityB, RadiusComponent);
       const linkBComp = world.getComponent(entityB, CableLinkComponent);
       const orientationBComp = world.getComponent(entityB, OrientationComponent);
       const posB = posBComp?.pos;
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-      const baseRadiusB = radiusBComp?.radius;
-      const radiusB = _effectiveRollingRadius(world, path, B, baseRadiusB);
       const angleB = orientationBComp?.angle ?? 0.0;
       const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
       const deltaAngleB = angleB - prevAngleB;
@@ -1285,7 +1281,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
             path,
             i,
             world.getComponent(linkEntity, RadiusComponent)?.radius
-          );
+          ).radius;
           const oldRestLength = joint.restLength;
           const attachmentBefore = i === 0
             ? joint.attachmentPointA_world.clone()
@@ -1392,7 +1388,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           path,
           i,
           world.getComponent(entityId, RadiusComponent)?.radius
-        );
+        ).radius;
         const lastEndpointIndex = path.linkTypes.length - 1;
         const neighborLinkIndex = i === 0 ? 1 : Math.max(0, lastEndpointIndex - 1);
         const neighborPos = world.getComponent(neighborId, PositionComponent)?.pos;
@@ -1401,7 +1397,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           path,
           neighborLinkIndex,
           world.getComponent(neighborId, RadiusComponent)?.radius
-        );
+        ).radius;
         const attachmentDistance = attachmentPoint?.distanceTo?.(neighborAttachmentPoint) ?? Infinity;
         const centerDistance = (
           C &&
@@ -1631,7 +1627,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
         path,
         linkIndex,
         world.getComponent(bodyId, RadiusComponent)?.radius
-      );
+      ).radius;
       if (!center || !Number.isFinite(radius) || radius <= EPSILON) {
         continue;
       }
