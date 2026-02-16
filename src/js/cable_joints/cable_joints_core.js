@@ -33,7 +33,7 @@ import {
 export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
-const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI)/5.0;
+const KNOT_SPAN = Math.PI/30.0;
 const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
@@ -385,16 +385,7 @@ function _effectiveCW(path, linkIndex, travellingFromCircle) {
 }
 
 function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
-  if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
-    return baseRadius;
-  }
-  if (!layeringEnabled(world)) {
-    return baseRadius;
-  }
-  if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
-    return baseRadius;
-  }
-  if (!_isRolling(path.linkTypes[linkIndex])) {
+  if (!layeringEnabled(world) || !Number.isFinite(baseRadius) || !path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
     return baseRadius;
   }
 
@@ -417,52 +408,83 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
     return effectiveRadius;
   }
 
-  const decomposition = _decomposeStoredWrapLayers(stored, baseRadius, halfWidth);
-  if (!decomposition) {
-    return effectiveRadius;
-  }
-  if (decomposition.hasPartial) {
-    return Math.max(
-      effectiveRadius,
-      _smoothedStoredLayerRadius(baseRadius, halfWidth, decomposition)
-    );
-  }
-
-  const topLayerRadius = baseRadius + halfWidth + fullWidth * Math.max(0, decomposition.fullLayers - 1);
-  return Math.max(effectiveRadius, topLayerRadius);
+  const { theta, radius } = _storedToThetaAndRadius(stored, baseRadius, halfWidth, baseRadius*KNOT_SPAN);
+  return Math.max(effectiveRadius, radius);
 }
 
-function _smoothedStoredLayerRadius(baseRadius, halfWidth, decomposition) {
-  if (
-    !(baseRadius > EPSILON) ||
-    !(halfWidth > EPSILON) ||
-    !decomposition
-  ) {
-    return baseRadius;
+
+function _storedToThetaAndRadius(storedLength, baseRadius, halfWidth, rampLength) {
+  const EPS = 1e-9;
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  const twoPi = 2.0 * Math.PI;
+
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
+
+  if (!(r0 > EPS) || !(dr > EPS)) {
+    return { theta: 0.0, radius: Math.max(baseRadius, 0.0), layer: 0, phi: 0.0, inRamp: false };
   }
 
-  const fullWidth = 2.0 * halfWidth;
-  const firstLayerRadius = baseRadius + halfWidth;
-  const fullLayers = Math.max(0, decomposition.fullLayers ?? 0);
-  const partialRadius = decomposition.partialRadius;
-  const partialLength = Math.max(0.0, decomposition.partialLength ?? 0.0);
-  if (!(partialRadius > EPSILON)) {
-    return firstLayerRadius;
+  let s = stored;
+  let thetaBase = 0.0;
+  let n = 0;
+
+  const MAX_LAYERS = 2048;
+  while (n < MAX_LAYERS) {
+    const rn = r0 + dr * n;
+
+    // Convert ramp *length* to ramp *angle span* for this layer.
+    // Average radius during ramp is rn + dr/2.
+    let dPhiRamp = 0.0;
+    if (LrampTarget > EPS) {
+      dPhiRamp = LrampTarget / (rn + 0.5 * dr);
+      if (dPhiRamp > twoPi) dPhiRamp = twoPi;
+      if (dPhiRamp < 0.0) dPhiRamp = 0.0;
+    }
+
+    const phiConst = twoPi - dPhiRamp;
+    const Lconst = rn * phiConst;
+
+    // Actual ramp length after clamping dPhiRamp
+    const LrampActual = dPhiRamp * (rn + 0.5 * dr);
+
+    const Lwrap = Lconst + LrampActual;
+
+    if (s > Lwrap + EPS) {
+      s -= Lwrap;
+      thetaBase += twoPi; // global theta advances exactly one wrap
+      n++;
+      continue;
+    }
+
+    // We are inside wrap/layer n.
+    if (s <= Lconst + EPS || !(dPhiRamp > EPS)) {
+      // Constant-radius region
+      const phi = (rn > EPS) ? (Math.min(phiConst, s / rn)) : 0.0;
+      return { theta: thetaBase + phi, radius: rn, layer: n, phi, inRamp: false };
+    }
+
+    // Ramp region at end of wrap: sRamp in [0, LrampActual]
+    const sRamp = Math.max(0.0, s - Lconst);
+
+    // Solve sRamp = rn*x + (dr/(2*dPhiRamp))*x^2 for x in [0, dPhiRamp]
+    const a = dr / (2.0 * dPhiRamp); // > 0
+    const b = rn;
+    const disc = b * b + 4.0 * a * sRamp; // since c=-sRamp
+    const x = (-b + Math.sqrt(Math.max(0.0, disc))) / (2.0 * a);
+
+    const xClamped = Math.max(0.0, Math.min(dPhiRamp, x));
+    const alpha = xClamped / dPhiRamp;          // 0..1 across ramp
+    const radius = rn + dr * alpha;             // linearly ramps to next layer
+    const phi = phiConst + xClamped;            // near end of wrap
+
+    return { theta: thetaBase + phi, radius, layer: n, phi, inRamp: true };
   }
 
-  // For the first partial wrap there is no layer transition to smooth.
-  if (fullLayers < 1) {
-    return partialRadius;
-  }
-
-  const prevLayerRadius = firstLayerRadius + fullWidth * Math.max(0, fullLayers - 1);
-  if (!(LAYER_RADIUS_RAMP_ANGLE > EPSILON)) {
-    return partialRadius;
-  }
-
-  const span = partialLength / partialRadius;
-  const rampAlpha = Math.max(0.0, Math.min(1.0, span / LAYER_RADIUS_RAMP_ANGLE));
-  return prevLayerRadius + (partialRadius - prevLayerRadius) * rampAlpha;
+  // Fallback if MAX_LAYERS exceeded
+  const rn = r0 + dr * MAX_LAYERS;
+  return { theta: thetaBase, radius: rn, layer: MAX_LAYERS, phi: 0.0, inRamp: false };
 }
 
 function _pathLinkIndicesForEntity(world, path, entityId) {
@@ -502,6 +524,8 @@ function _pathLinkIndicesForEntity(world, path, entityId) {
   return indices;
 }
 
+// The max radius for this entity along this path.
+// It could be connected multiple times...
 function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex = null) {
   const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
   if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
@@ -564,7 +588,7 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
   const baseRadiusA = radiusAComp?.radius;
-  const radiusA = _effectiveRollingRadius(world, path, A, baseRadiusA);
+  const radiusA = _effectiveRollingRadius(world, path, A, baseRadiusA); // stored -> r_eff and theta
   const angleA = orientationAComp?.angle ?? 0.0;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleA = angleA - prevAngleA;
@@ -591,7 +615,7 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
   const baseRadiusB = radiusBComp?.radius;
-  const radiusB = _effectiveRollingRadius(world, path, B, baseRadiusB);
+  const radiusB = _effectiveRollingRadius(world, path, B, baseRadiusB); // stored -> r_eff and theta
   const angleB = orientationBComp?.angle ?? 0.0;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeAngle ?? 0.0;
   const deltaAngleB = angleB - prevAngleB;
@@ -1640,50 +1664,6 @@ export function _updateHybridLinkStates(world, traceStep = null) {
       }
     }
   }
-}
-
-function _decomposeStoredWrapLayers(storedLength, baseRadius, halfWidth) {
-  const stored = Math.max(0.0, storedLength ?? 0.0);
-  if (!(stored > EPSILON) || !(baseRadius > EPSILON) || !(halfWidth > EPSILON)) {
-    return null;
-  }
-
-  const fullWidth = 2.0 * halfWidth;
-  const firstLayerRadius = baseRadius + halfWidth;
-  let remaining = stored;
-  let fullLayers = 0;
-  const MAX_LAYERS = 2048;
-  while (fullLayers < MAX_LAYERS) {
-    const layerRadius = firstLayerRadius + fullWidth * fullLayers;
-    if (!(layerRadius > EPSILON)) {
-      break;
-    }
-    const layerCircumference = 2.0 * Math.PI * layerRadius;
-    if (remaining + EPSILON >= layerCircumference) {
-      remaining -= layerCircumference;
-      if (remaining < 0.0) {
-        remaining = 0.0;
-      }
-      fullLayers++;
-      continue;
-    }
-
-    const partialLength = remaining;
-    return {
-      fullLayers,
-      partialLength,
-      partialRadius: layerRadius,
-      hasPartial: partialLength > EPSILON
-    };
-  }
-
-  const fallbackRadius = firstLayerRadius + fullWidth * fullLayers;
-  return {
-    fullLayers,
-    partialLength: 0.0,
-    partialRadius: fallbackRadius,
-    hasPartial: false
-  };
 }
 
 export class CableAttachmentUpdateSystem {
