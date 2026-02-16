@@ -21,7 +21,8 @@ import {
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
   RenderableComponent,
-  MachineTagComponent
+  MachineTagComponent,
+  layeringEnabled
 } from './ecs.js';
 
 import {
@@ -217,14 +218,6 @@ function _resourceBool(world, key, fallback = true) {
   return typeof value === 'boolean' ? value : fallback;
 }
 
-function _layeringEnabled(world) {
-  return _resourceBool(world, 'enableLayering', true);
-}
-
-function _layeringFlag(world, key, fallback = true) {
-  return _layeringEnabled(world) && _resourceBool(world, key, fallback);
-}
-
 function _featureFlag(world, key, fallback = true) {
   return _resourceBool(world, key, fallback);
 }
@@ -354,8 +347,7 @@ export class CablePathComponent {
       if (isRolling) {
         const center = world.getComponent(linkId, PositionComponent).pos;
         const baseRadius = world.getComponent(linkId, RadiusComponent).radius;
-        const useLayeredBaseRadius = _layeringFlag(world, 'layeringCableBaseRadius', true);
-        const radius = baseRadius + (useLayeredBaseRadius ? this.cableHalfWidth : 0.0);
+        const radius = baseRadius + (layeringEnabled(world) ? this.cableHalfWidth : 0.0);
         const isCw = cw[i + 1];
 
         const initialStoredLength = signedArcLengthOnWheel(
@@ -396,7 +388,7 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
     return baseRadius;
   }
-  if (!_layeringEnabled(world)) {
+  if (!layeringEnabled(world)) {
     return baseRadius;
   }
   if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
@@ -883,7 +875,7 @@ export function _mergeJoints(world) {
           console.warn("Merge loop saw disconnected cable path");
           continue;
         }
-        if (!_layeringEnabled(world) && joint_i.entityA === joint_i_plus_1.entityB) {
+        if (!layeringEnabled(world) && joint_i.entityA === joint_i_plus_1.entityB) {
           // Legacy behavior: if cable wraps around a link and back to the same body,
           // do not merge this pair.
           continue;

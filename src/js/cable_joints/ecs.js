@@ -214,3 +214,12 @@ export class RigidGroupComponent {
     this.renderSegments = Array.isArray(renderSegments) ? renderSegments : null;
   }
 }
+
+function _resourceBool(world, key, fallback = true) {
+  const value = world?.getResource?.(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+export function layeringEnabled(world) {
+  return _resourceBool(world, 'enableLayering', true);
+}

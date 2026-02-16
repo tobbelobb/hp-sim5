@@ -9,7 +9,8 @@ import {
   RestitutionComponent,
   PrevFinalPosComponent,
   RenderableComponent,
-  CoefficientOfFrictionComponent
+  CoefficientOfFrictionComponent,
+  layeringEnabled
 } from '../../../src/js/cable_joints/ecs.js';
 import {
   CableLinkComponent,
@@ -120,19 +121,6 @@ function _isAngleInSector(angle, startAngle, endAngle, cw) {
   const span = _ccwDiff(s, e);
   const rel = _ccwDiff(s, a);
   return rel <= span + 1e-9;
-}
-
-function _resourceBool(world, key, fallback = true) {
-  const value = world?.getResource?.(key);
-  return typeof value === 'boolean' ? value : fallback;
-}
-
-function _layeringEnabled(world) {
-  return _resourceBool(world, 'enableLayering', true);
-}
-
-function _layeringFlag(world, key, fallback = true) {
-  return _layeringEnabled(world) && _resourceBool(world, key, fallback);
 }
 
 export function getRawCollisionRadius(world, entityId) {
@@ -386,7 +374,7 @@ export class OverlayRadiusAndCircleSectorSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
-    if (!_layeringEnabled(world)) {
+    if (!layeringEnabled(world)) {
       for (const entityId of world.query([OverlayRadiusComponent])) {
         world.removeComponent(entityId, OverlayRadiusComponent);
       }
@@ -402,9 +390,9 @@ export class OverlayRadiusAndCircleSectorSystem {
       return;
     }
 
-    const overlayEnabled = _layeringFlag(world, 'layeringCollisionOverlayRadius', true);
-    const overlayRampEnabled = _layeringFlag(world, 'layeringCollisionOverlayRamp', true);
-    const sectorEnabled = _layeringFlag(world, 'layeringCollisionCircleSectors', true);
+    const overlayEnabled = world.getResource('layeringCollisionOverlayRadius') !== false;
+    const overlayRampEnabled = world.getResource('layeringCollisionOverlayRamp') !== false;
+    const sectorEnabled = world.getResource('layeringCollisionCircleSectors') !== false;
 
     const overlayByEntity = new Map();
     const sectorListByEntity = new Map();
@@ -1326,8 +1314,8 @@ export class PBDUnifiedContactManifoldSystem {
     const nextObstacleActivePairs = new Set();
     const grabbed = world.getResource('grabbedBall');
 
-    const useSectorSupports = _layeringFlag(world, 'layeringCollisionSectorSolvers', true);
-    const pinchShareEnabled = _layeringFlag(world, 'layeringCollisionPinchShare', true);
+    const useSectorSupports = layeringEnabled(world) && world.getResource('layeringCollisionSectorSolvers') !== false;
+    const pinchShareEnabled = layeringEnabled(world) && world.getResource('layeringCollisionPinchShare') !== false;
     const cableJointSegments = pinchShareEnabled
       ? _collectCableJointSegments(world)
       : null;

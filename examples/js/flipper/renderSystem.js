@@ -7,7 +7,8 @@ import {
   OrientationComponent,
   DistanceConstraintComponent,
   AngularVelocityComponent,
-  MachineTagComponent
+  MachineTagComponent,
+  layeringEnabled
 } from '../../../src/js/cable_joints/ecs.js';
 import { RigidGroupComponent } from '../../../src/js/cable_joints/ecs.js';
 
@@ -1236,8 +1237,8 @@ export class RenderSystem {
       }
     }
 
-    const layeringEnabled =
-      world.getResource('enableLayering') !== false &&
+    const layering =
+      layeringEnabled(world) !== false &&
       world.getResource('layeringRenderWraps') !== false;
 
     const drawEndpointStoredWrap = (path, linkIndex, center, bodyRadius, attachmentPoint, renderComp) => {
@@ -1245,7 +1246,7 @@ export class RenderSystem {
         return;
       }
 
-      if (!layeringEnabled) {
+      if (!layering) {
         this.c.lineWidth = physicalCableLineWidthPx(path.cableHalfWidth);
         const radius = bodyRadius;
         if (!(radius > 1e-9)) {
@@ -1361,7 +1362,7 @@ export class RenderSystem {
       const path   = world.getComponent(pathId, CablePathComponent);
       if (path.jointEntities.length < 1) continue;
       const joints = path.jointEntities;
-      const halfWidth = layeringEnabled ? (path.cableHalfWidth ?? 0.0) : 0.0;
+      const halfWidth = layering ? (path.cableHalfWidth ?? 0.0) : 0.0;
       const pathLineWidthPx = physicalCableLineWidthPx(path.cableHalfWidth);
       // rolling or hybrid link types mean the cable can wrap on that entity
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
@@ -1755,7 +1756,7 @@ export class RenderSystem {
                 if (tangentPoint) {
                   // Calculate and draw GREEN dot at the end of the stored arc
                   const center = posComp.pos;
-                  const halfWidth = layeringEnabled ? (path.cableHalfWidth ?? 0.0) : 0.0;
+                  const halfWidth = layering ? (path.cableHalfWidth ?? 0.0) : 0.0;
                   const baseRadius = radiusComp.radius + halfWidth;
                   const storedLength = Math.max(0.0, path.stored[i] ?? 0.0);
                   const cw = path.cw[i];
@@ -1764,7 +1765,7 @@ export class RenderSystem {
                     const toTangent = tangentPoint.clone().subtract(center);
                     const tangentAngle = Math.atan2(toTangent.y, toTangent.x);
                     let attachmentAngle = tangentAngle;
-                    if (layeringEnabled) {
+                    if (layering) {
                       let layerRadius = baseRadius;
                       let partialLength = storedLength;
                       const fullWidth = 2.0 * halfWidth;
