@@ -17,6 +17,7 @@ import {
   RadiusComponent,
   MassComponent,
   OrientationComponent,
+  HybridKnotAngleComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
@@ -687,7 +688,6 @@ export function _updateAttachmentPoints(world) {
       const radiusBComp = world.getComponent(entityB, RadiusComponent);
       const baseRadiusB = radiusBComp?.radius;
       const { radius: radiusB, theta: thetaB } = _effectiveRollingRadius(world, path, B, baseRadiusB);
-
       let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB);
 
       // Get components for Entity A
@@ -1275,6 +1275,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
               : world.getComponent(path.jointEntities[i - 1], CableJointComponent)
           );
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
+          world.removeComponent(linkEntity, HybridKnotAngleComponent);
           const pos = world.getComponent(linkEntity, PositionComponent)?.pos;
           const radius = _effectiveRollingRadius(
             world,
@@ -1512,6 +1513,9 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           path.linkTypes[i] = 'hybrid';
           path.cw[i]        = newCW;
           path.stored[i] = newStored;
+          const orientation = world.getComponent(entityId, OrientationComponent);
+          const knotAngle = orientation?.angle ?? 0.0;
+          world.addComponent(entityId, new HybridKnotAngleComponent(knotAngle));
           joint.restLength -= (newStored - oldStored);
           attachmentPoint.set(crossingTangent);
           _recordHybridTransitionTrace(world, step, {

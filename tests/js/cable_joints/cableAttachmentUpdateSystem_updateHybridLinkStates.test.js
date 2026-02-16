@@ -3,7 +3,9 @@ import Vector2 from '../../../src/js/cable_joints/vector2.js';
 import {
   World,
   PositionComponent,
-  RadiusComponent
+  RadiusComponent,
+  OrientationComponent,
+  HybridKnotAngleComponent
 } from '../../../src/js/cable_joints/ecs.js';
 
 import {
@@ -55,6 +57,7 @@ describe('_updateHybridLinkStates', () => {
     world.addComponent(path, pathComp);
     // Feed out a bit of "negative" rope
     pathComp.stored[0] = -0.2;
+    world.addComponent(wheel, new HybridKnotAngleComponent(1.23));
 
     _updateHybridLinkStates(world);
 
@@ -65,6 +68,7 @@ describe('_updateHybridLinkStates', () => {
     // restLength shortened by exactly 0.2
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
+    expect(world.hasComponent(wheel, HybridKnotAngleComponent)).toBe(false);
   });
 
   test('first link: tiny negative stored stays hybrid (hysteresis)', () => {
@@ -165,6 +169,7 @@ describe('_updateHybridLinkStates', () => {
       [false, false], // initial cw flag for hybrid-attachment is arbitrary
     );
     world.addComponent(path, pathComp);
+    world.addComponent(wheel, new OrientationComponent(0.37));
 
     // Nothing in stored; hybrid-attachment means "ready to re-wrap"
     _updateHybridLinkStates(world);
@@ -179,6 +184,8 @@ describe('_updateHybridLinkStates', () => {
     const arc = pathComp.stored[0];
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - arc, 8);
+    expect(world.hasComponent(wheel, HybridKnotAngleComponent)).toBe(true);
+    expect(world.getComponent(wheel, HybridKnotAngleComponent).angle).toBeCloseTo(0.37, 12);
   });
 
   test('last link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {

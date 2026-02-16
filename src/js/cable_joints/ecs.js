@@ -147,6 +147,11 @@ export class PrevFinalOrientationComponent {
     this.angle = angle; // Radians
   }
 }
+export class HybridKnotAngleComponent {
+  constructor(angle = 0.0) {
+    this.angle = angle; // Radians
+  }
+}
 export class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }
 export class RadiusComponent { constructor(radius = 0.1) { this.radius = radius; } }
 export class MassComponent { constructor(mass = 1.0) { this.mass = mass; } }
