@@ -869,7 +869,6 @@ function runScenario({
 describe('Spool Funnel Stability Sweep', () => {
   const oldUiLayeringFlags = [
     'enableLayering',
-    'layeringCableStoredLayerRadius',
     'layeringFrictionEffectiveRadius',
     'layeringCollisionOverlayRadius',
     'layeringCollisionOverlayRamp',

@@ -414,10 +414,6 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
   const fullWidth = 2.0 * halfWidth;
   let effectiveRadius = baseRadius + halfWidth;
 
-  if (!_layeringFlag(world, 'layeringCableStoredLayerRadius', true)) {
-    return effectiveRadius;
-  }
-
   // Layered winding is only modeled for hybrid endpoints.
   const isEndpoint = linkIndex === 0 || linkIndex === path.linkTypes.length - 1;
   if (!isEndpoint || !_isHybrid(path.linkTypes[linkIndex])) {
