@@ -742,14 +742,13 @@ export function _updateAttachmentPoints(world) {
           attachmentA_current.x - posA.x
         );
         const attachmentRelOrientationA = _normalizeAngleSigned(attachmentAngleWorldA - angleA);
-        const thetaSignedA = (cwA ? 1.0 : -1.0) * thetaA;
+        const thetaSignedA = (cwA ? -1.0 : 1.0) * thetaA;
 
         // "Count backwards from the current attachment point" along the wrapped arc.
-        const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentAngleWorldA - thetaSignedA);
-        const knotAngleFromAttachmentAltA = _normalizeAngleSigned(attachmentAngleWorldA + thetaSignedA);
+        const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentRelOrientationA - thetaSignedA);
+        const knotAngleFromAttachmentAltA = _normalizeAngleSigned(attachmentRelOrientationA + thetaSignedA);
         const diffA = _normalizeAngleSigned(knotAngleFromAttachmentA - knotAngleCompA.angle);
         const diffAltA = _normalizeAngleSigned(knotAngleFromAttachmentAltA - knotAngleCompA.angle);
-        const attachWPTA = attachmentAngleWorldA + thetaA;
 
         //console.log(`knotA           : ${knotAngleCompA.angle}`);
         //console.log(`attachWorldA    : ${attachmentAngleWorldA}`);
@@ -759,8 +758,7 @@ export function _updateAttachmentPoints(world) {
         //console.log(`knotFromAttA    : ${knotAngleFromAttachmentA}`);
         //console.log(`knotFromAttAltA : ${knotAngleFromAttachmentAltA}`);
         console.log(`diffA           : ${diffA}`);
-        //console.log(`diffAltA        : ${diffAltA}`);
-        //console.log(`attachWPTA      : ${attachWPTA}`);
+        console.log(`diffAltA        : ${diffAltA}`);
       }
 
       //if (
