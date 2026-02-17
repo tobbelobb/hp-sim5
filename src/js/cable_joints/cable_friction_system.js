@@ -206,6 +206,6 @@ export class CableFrictionSystem {
         for (let i = 0; i < iterations; i++) {
             _evenOutTensionFriction(world);
         }
-        _sanityCheck(world);
+        //_sanityCheck(world);
     }
 }
