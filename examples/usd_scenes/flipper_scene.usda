@@ -3,7 +3,7 @@
     doc = "A better USD scene for Flipper cable demo"
     metersPerUnit = 1
     startTimeCode = 0
-    timeCodesPerSecond = 500
+    timeCodesPerSecond = 1500
     upAxis = "Y"
 )
 def Xform "World"
@@ -261,7 +261,7 @@ def Xform "World"
     def PhysicsScene "PhysicsScene"
     {
         vector3f physics:gravityDirection = (0, -1, 0)
-        float physics:gravityMagnitude = 2.00
+        float physics:gravityMagnitude = 4.00
         def Material "BallMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )
