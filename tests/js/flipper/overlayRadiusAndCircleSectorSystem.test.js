@@ -63,6 +63,40 @@ function makeEndpointWrapWorld({
   return { world, wrappedId };
 }
 
+const TEST_LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
+
+function _rampAlpha(span) {
+  const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
+  if (!(TEST_LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
+    return 1.0;
+  }
+  return Math.max(0.0, Math.min(1.0, spanValue / TEST_LAYER_RADIUS_RAMP_ANGLE));
+}
+
+function _closingBlend(span) {
+  const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
+  if (!(TEST_LAYER_RADIUS_RAMP_ANGLE > 1e-9)) {
+    return 0.0;
+  }
+  const remaining = Math.max(0.0, (2.0 * Math.PI) - spanValue);
+  if (remaining >= TEST_LAYER_RADIUS_RAMP_ANGLE) {
+    return 0.0;
+  }
+  return 1.0 - (remaining / TEST_LAYER_RADIUS_RAMP_ANGLE);
+}
+
+function _expectedSectorRadius(rawRadius, halfWidth, fullLayers, span) {
+  const step = 2.0 * halfWidth;
+  const start = rawRadius + (step * fullLayers);
+  return start + (step * _rampAlpha(span));
+}
+
+function _expectedOverlayRadius(rawRadius, halfWidth, fullLayers, span) {
+  const step = 2.0 * halfWidth;
+  const start = rawRadius + (step * fullLayers);
+  return start + (step * _closingBlend(span));
+}
+
 describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
   test('treats numeric clockwise flags as clockwise sectors', () => {
     const rawRadius = 1.0;
@@ -134,6 +168,7 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const firstLayerCircumference = 2.0 * Math.PI * firstLayerRadius;
     const rampSpan = (2.0 * Math.PI) / 25.0;
     const partialLengthPastRamp = secondLayerRadius * rampSpan * 2.0;
+    const span = partialLengthPastRamp / secondLayerRadius;
 
     const worldState = makeEndpointWrapWorld({
       storedLength: firstLayerCircumference + partialLengthPastRamp,
@@ -148,17 +183,16 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const overlay = worldState.world.getComponent(worldState.wrappedId, OverlayRadiusComponent);
     expect(sector).toBeTruthy();
     expect(overlay).toBeTruthy();
-    expect(overlay.radius).toBeCloseTo(rawRadius + step, 9);
+    expect(overlay.radius).toBeCloseTo(_expectedOverlayRadius(rawRadius, halfWidth, 1, span), 9);
     expect(sector.radius).toBeGreaterThan(overlay.radius + 1e-6);
-    expect(sector.radius).toBeCloseTo(rawRadius + (2.0 * step), 9);
+    expect(sector.radius).toBeCloseTo(_expectedSectorRadius(rawRadius, halfWidth, 1, span), 9);
   });
 
   test('keeps first-layer partial sector support even before overlay ramp starts', () => {
     const rawRadius = 1.0;
     const halfWidth = 0.1;
     const firstLayerRadius = rawRadius + halfWidth;
-    const rampSpan = (2.0 * Math.PI) / 25.0;
-    const spanJustBeforeOverlayRamp = (2.0 * Math.PI) - rampSpan - 1e-4;
+    const spanJustBeforeOverlayRamp = (2.0 * Math.PI) - TEST_LAYER_RADIUS_RAMP_ANGLE - 1e-4;
     const storedLength = firstLayerRadius * spanJustBeforeOverlayRamp;
 
     const worldState = makeEndpointWrapWorld({
@@ -175,7 +209,7 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const sector = worldState.world.getComponent(worldState.wrappedId, CircleSectorComponent);
     expect(overlay).toBeFalsy();
     expect(sector).toBeTruthy();
-    expect(sector.radius).toBeCloseTo(rawRadius + (2.0 * halfWidth), 9);
+    expect(sector.radius).toBeCloseTo(_expectedSectorRadius(rawRadius, halfWidth, 0, spanJustBeforeOverlayRamp), 9);
   });
 
   test('retains multiple simultaneous sectors on one entity when multiple paths wrap it', () => {
@@ -336,8 +370,8 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const secondSector = second.world.getComponent(second.wrappedId, CircleSectorComponent);
     expect(firstSector).toBeTruthy();
     expect(secondSector).toBeTruthy();
-    expect(firstSector.radius).toBeCloseTo(rawRadius + step, 9);
-    expect(secondSector.radius).toBeCloseTo(rawRadius + (2.0 * step), 9);
+    expect(firstSector.radius).toBeCloseTo(_expectedSectorRadius(rawRadius, halfWidth, 0, probeSpan), 9);
+    expect(secondSector.radius).toBeCloseTo(_expectedSectorRadius(rawRadius, halfWidth, 1, probeSpan), 9);
     expect(secondSector.radius).toBeGreaterThan(firstSector.radius + 1e-6);
   });
 
@@ -370,7 +404,10 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     const afterOverlay = after.world.getComponent(after.wrappedId, OverlayRadiusComponent);
     expect(beforeOverlay).toBeTruthy();
     expect(afterOverlay).toBeTruthy();
-    expect(beforeOverlay.radius).toBeCloseTo(1.2, 9);
-    expect(afterOverlay.radius).toBeCloseTo(1.2, 9);
+    const spanBefore = coverageBefore * (2.0 * Math.PI);
+    const spanAfter = coverageAfter * (2.0 * Math.PI);
+    expect(beforeOverlay.radius).toBeCloseTo(_expectedOverlayRadius(rawRadius, halfWidth, 1, spanBefore), 9);
+    expect(afterOverlay.radius).toBeCloseTo(_expectedOverlayRadius(rawRadius, halfWidth, 1, spanAfter), 9);
+    expect(Math.abs(afterOverlay.radius - beforeOverlay.radius)).toBeLessThan(0.01);
   });
 });
