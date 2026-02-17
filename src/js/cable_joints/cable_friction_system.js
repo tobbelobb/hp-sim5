@@ -32,32 +32,6 @@ function _hybridTransitionArcThreshold(path) {
   return Math.max(1e-6, 0.25 * halfWidth);
 }
 
-function _storeCableLinkPoses(world) {
-  const linkEntities = world.query([CableLinkComponent, PositionComponent]);
-  for (const linkId of linkEntities) {
-    const posComp = world.getComponent(linkId, PositionComponent);
-    const orientationComp = world.getComponent(linkId, OrientationComponent);
-    const linkComp = world.getComponent(linkId, CableLinkComponent);
-    linkComp.prevCableAttachmentTimePos.set(posComp.pos);
-    if (orientationComp) {
-      linkComp.prevCableAttachmentTimeAngle = orientationComp.angle;
-    }
-  }
-}
-
-function _postSolveAttachmentSync(world) {
-  if (world.getResource('layeringPostSolveCableSync') === false) {
-    return;
-  }
-  if (world.getResource('layeringAttachmentUpdatePoints') === false) {
-    _storeCableLinkPoses(world);
-    return;
-  }
-  _updateAttachmentPoints(world);
-  _storeCableLinkPoses(world);
-}
-
-
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
   const epsilon = 1e-9;
@@ -199,7 +173,6 @@ function _sanityCheck(world) {
 export class CableFrictionSystem {
     runInPause = false;
     update(world, dt) {
-        _postSolveAttachmentSync(world);
         // Keep the total number of friction iterations per real-time second
         // constant as described in Smallsteps.md.
         const iterations = Math.max(1, Math.floor(BASE_ITERATIONS * dt / TARGET_DT));
