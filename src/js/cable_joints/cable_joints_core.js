@@ -801,6 +801,38 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
     }
   }
 
+  // Keep hybrid-attachment endpoints on the same rolling-centerline radius
+  // convention as hybrid links. This avoids +/-halfWidth radial hops when
+  // transitioning between the two endpoint states.
+  //if (
+  //  isHybridA &&
+  //  !rollingLinkA &&
+  //  attachmentA_current !== null &&
+  //  posA !== null &&
+  //  Number.isFinite(radiusA) &&
+  //  radiusA > EPSILON
+  //) {
+  //  const relA = attachmentA_current.clone().subtract(posA);
+  //  const relALength = relA.length();
+  //  if (relALength > EPSILON) {
+  //    attachmentA_current = posA.clone().add(relA, radiusA / relALength);
+  //  }
+  //}
+  //if (
+  //  isHybridB &&
+  //  !rollingLinkB &&
+  //  attachmentB_current !== null &&
+  //  posB !== null &&
+  //  Number.isFinite(radiusB) &&
+  //  radiusB > EPSILON
+  //) {
+  //  const relB = attachmentB_current.clone().subtract(posB);
+  //  const relBLength = relB.length();
+  //  if (relBLength > EPSILON) {
+  //    attachmentB_current = posB.clone().add(relB, radiusB / relBLength);
+  //  }
+  //}
+
   return { attachmentA_current, attachmentB_current };
 }
 
