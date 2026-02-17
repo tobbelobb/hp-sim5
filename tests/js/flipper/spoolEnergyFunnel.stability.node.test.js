@@ -1277,7 +1277,7 @@ describe('Spool Funnel Stability Sweep', () => {
         tailAvgMovement: Number(entry.result.tailAvgMovement.toFixed(6))
       }));
       // eslint-disable-next-line no-console
-      console.log('SPOOL_FUNNEL_STABILITY_SWEEP', JSON.stringify(report));
+      //console.log('SPOOL_FUNNEL_STABILITY_SWEEP', JSON.stringify(report));
 
       expect(currentBest.score).toBeLessThan(baseline.score);
       expect(currentBest.isStable).toBe(true);
