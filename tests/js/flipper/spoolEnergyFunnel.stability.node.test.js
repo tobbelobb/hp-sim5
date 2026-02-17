@@ -1202,21 +1202,21 @@ describe('Spool Funnel Stability Sweep', () => {
       };
 
       // eslint-disable-next-line no-console
-      console.log('SPOOL_FUNNEL_EVENT_TRACE', JSON.stringify(rootCauseCandidate));
+      //console.log('SPOOL_FUNNEL_EVENT_TRACE', JSON.stringify(rootCauseCandidate));
 
       // eslint-disable-next-line no-console
-      console.log(
-        'SPOOL_FUNNEL_HYBRID_TRACE',
-        JSON.stringify({
-          spikeReferenceStep,
-          traceWindow,
-          totalTransitions: traceResult.hybridTransitions.length,
-          truncated: traceResult.hybridTraceTruncated,
-          firstTransitions: traceResult.hybridTransitions.slice(0, 6),
-          nearestTransition,
-          worstTransition
-        })
-      );
+      //console.log(
+      //  'SPOOL_FUNNEL_HYBRID_TRACE',
+      //  JSON.stringify({
+      //    spikeReferenceStep,
+      //    traceWindow,
+      //    totalTransitions: traceResult.hybridTransitions.length,
+      //    truncated: traceResult.hybridTraceTruncated,
+      //    firstTransitions: traceResult.hybridTransitions.slice(0, 6),
+      //    nearestTransition,
+      //    worstTransition
+      //  })
+      //);
 
       const disabledCoreFlags = [];
       const sweepLog = [{
