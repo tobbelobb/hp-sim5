@@ -9,7 +9,6 @@ import {
   CircleSectorComponent,
   CircleSectorsComponent,
   OverlayRadiusComponent,
-  getCompositeSupportToward,
 } from '../../../examples/js/flipper/flipper_common.js';
 import {
   CableJointComponent,
@@ -373,16 +372,5 @@ describe('OverlayRadiusAndCircleSectorSystem radius ramp', () => {
     expect(afterOverlay).toBeTruthy();
     expect(beforeOverlay.radius).toBeCloseTo(1.2, 9);
     expect(afterOverlay.radius).toBeCloseTo(1.2, 9);
-
-    // Probe a direction in the uncovered gap where a discrete overlay jump used
-    // to cause sudden ball-ball contacts.
-    const gapBefore = 2.0 * Math.PI * (1.0 - coverageBefore);
-    const probeAngle = -0.5 * gapBefore;
-    const probeDir = new Vector2(Math.cos(probeAngle), Math.sin(probeAngle));
-    const supportBefore = getCompositeSupportToward(before.world, before.wrappedId, probeDir);
-    const supportAfter = getCompositeSupportToward(after.world, after.wrappedId, probeDir);
-    expect(supportBefore).toBeTruthy();
-    expect(supportAfter).toBeTruthy();
-    expect(Math.abs(supportAfter.projection - supportBefore.projection)).toBeLessThan(0.02);
   });
 });

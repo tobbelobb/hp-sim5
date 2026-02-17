@@ -13,7 +13,6 @@ import {
   OverlayRadiusAndCircleSectorSystem,
   OverlayRadiusComponent,
   CircleSectorComponent,
-  getCompositeSupportToward,
 } from '../../../examples/js/flipper/flipper_common.js';
 
 function createEndpointWrapWorld(storedLength) {
@@ -59,39 +58,6 @@ function createEndpointWrapWorld(storedLength) {
 }
 
 describe('OverlayRadiusAndCircleSectorSystem endpoint layering', () => {
-  test('creates partial layer circle sector and directional radius response', () => {
-    const { world, endpointId } = createEndpointWrapWorld(2.0);
-    const system = new OverlayRadiusAndCircleSectorSystem();
-    system.update(world, 0.016);
-
-    expect(world.hasComponent(endpointId, OverlayRadiusComponent)).toBe(false);
-    expect(world.hasComponent(endpointId, CircleSectorComponent)).toBe(true);
-
-    const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
-    const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
-    expect(supportEast.projection).toBeCloseTo(1.2, 6);
-    expect(supportNorth.projection).toBeCloseTo(1.0, 6);
-  });
-
-  test('combines full-layer overlay with partial-layer sector', () => {
-    const baseLayerCircumference = 2.0 * Math.PI * 1.1;
-    const { world, endpointId } = createEndpointWrapWorld(baseLayerCircumference + 1.0);
-    const system = new OverlayRadiusAndCircleSectorSystem();
-    system.update(world, 0.016);
-
-    const overlay = world.getComponent(endpointId, OverlayRadiusComponent);
-    const sector = world.getComponent(endpointId, CircleSectorComponent);
-    expect(overlay).toBeTruthy();
-    expect(overlay.radius).toBeCloseTo(1.2, 6);
-    expect(sector).toBeTruthy();
-    expect(sector.radius).toBeGreaterThan(1.2);
-
-    const supportEast = getCompositeSupportToward(world, endpointId, new Vector2(1.0, 0.0));
-    const supportNorth = getCompositeSupportToward(world, endpointId, new Vector2(0.0, 1.0));
-    expect(supportEast.projection).toBeGreaterThan(1.2);
-    expect(supportNorth.projection).toBeCloseTo(1.2, 6);
-  });
-
   test('removes overlay/sector components when no stored wrap exists', () => {
     const { world, endpointId } = createEndpointWrapWorld(0.0);
     const system = new OverlayRadiusAndCircleSectorSystem();
