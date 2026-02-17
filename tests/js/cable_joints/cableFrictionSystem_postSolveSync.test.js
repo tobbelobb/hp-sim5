@@ -15,7 +15,6 @@ import { CableFrictionSystem } from '../../../src/js/cable_joints/cable_friction
 function createHybridEndpointWorld() {
   const world = new World();
   world.setResource('enableLayering', true);
-  world.setResource('layeringAttachmentUpdatePoints', true);
 
   const wheel = world.createEntity();
   world.addComponent(wheel, new PositionComponent(0.10, 0.12));
@@ -60,22 +59,7 @@ function createHybridEndpointWorld() {
 }
 
 describe('CableFrictionSystem post-solve attachment sync', () => {
-  test('synchronizes hybrid stored and cache when orientation changes after cache', () => {
-    const { world, wheel, pathComp } = createHybridEndpointWorld();
-    const system = new CableFrictionSystem();
-    const wheelOrientation = world.getComponent(wheel, OrientationComponent);
-    const wheelLink = world.getComponent(wheel, CableLinkComponent);
-    const storedBefore = pathComp.stored[0];
-
-    // Simulate post-solver correction after the pre-solver cache was written.
-    wheelOrientation.angle += 0.05;
-    system.update(world, 1.0 / 500.0);
-
-    expect(Math.abs(pathComp.stored[0] - storedBefore)).toBeGreaterThan(1e-8);
-    expect(wheelLink.prevCableAttachmentTimeAngle).toBeCloseTo(wheelOrientation.angle, 12);
-  });
-
-  test('supports disabling post-solve sync via resource flag', () => {
+  test('does not sync hybrid stored/cache when orientation changes after cache', () => {
     const { world, wheel, pathComp } = createHybridEndpointWorld();
     const system = new CableFrictionSystem();
     const wheelOrientation = world.getComponent(wheel, OrientationComponent);
@@ -83,7 +67,8 @@ describe('CableFrictionSystem post-solve attachment sync', () => {
     const storedBefore = pathComp.stored[0];
     const cachedBefore = wheelLink.prevCableAttachmentTimeAngle;
 
-    world.setResource('layeringPostSolveCableSync', false);
+    // Simulate post-solver correction after the pre-solver cache was written.
+    // CableFrictionSystem no longer performs post-solve attachment sync.
     wheelOrientation.angle += 0.05;
     system.update(world, 1.0 / 500.0);
 

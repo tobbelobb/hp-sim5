@@ -1,16 +1,12 @@
 import Vector2 from './vector2.js';
 import {
-    PositionComponent,
-    OrientationComponent,
     RadiusComponent,
     CoefficientOfFrictionComponent,
     layeringEnabled
 } from './ecs.js';
 import {
-    CableLinkComponent,
     CablePathComponent,
-    CableJointComponent,
-    _updateAttachmentPoints
+    CableJointComponent
 } from './cable_joints_core.js';
 
 // Base iteration count tuned for a 60 Hz frame time. When the simulation uses
