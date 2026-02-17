@@ -53,11 +53,7 @@ function _postSolveAttachmentSync(world) {
     _storeCableLinkPoses(world);
     return;
   }
-  _updateAttachmentPoints(world, {
-    countTimestep: false,
-    logDiffA: false,
-    allowRestLengthClamp: false
-  });
+  _updateAttachmentPoints(world);
   _storeCableLinkPoses(world);
 }
 
