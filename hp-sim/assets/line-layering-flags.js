@@ -1,10 +1,6 @@
-export const LINE_LAYERING_FEATURE_KEYS = Object.freeze([
+export const LINE_LAYERING_TOGGLE_KEYS = Object.freeze([
   'enableLayering',
   'layeringFrictionEffectiveRadius',
-  'layeringAttachmentUpdatePoints',
-  'layeringMergeJoints',
-  'layeringSplitJoints',
-  'layeringHybridLinkStates',
   'layeringRenderWraps',
 ]);
 
@@ -13,7 +9,7 @@ export function setLineLayeringFeatureFlags(world, enabled) {
     return;
   }
   const next = enabled === true;
-  for (const key of LINE_LAYERING_FEATURE_KEYS) {
+  for (const key of LINE_LAYERING_TOGGLE_KEYS) {
     world.setResource(key, next);
   }
 }
