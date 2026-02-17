@@ -4,6 +4,7 @@ import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
+import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
@@ -485,10 +486,12 @@ function initHpSim() {
         lineLayeringToggle.checked = next;
       }
       setLineLayeringFeatureFlags(world, next);
+      _updateAttachmentPoints(world);
       return;
     }
     lineLayeringEnabled = next;
     setLineLayeringFeatureFlags(world, next);
+    _updateAttachmentPoints(world);
     if (!fromToggle && lineLayeringToggle) {
       lineLayeringToggle.checked = next;
     }
@@ -1729,6 +1732,7 @@ function initHpSim() {
       setupScene(world, machine.stage, canvas, sceneOptions);
       isFirst = false;
     }
+    setLineLayeringEnabledState(lineLayeringEnabled, { fromToggle: true });
     attachQualityMonitorsToRemoteSystem();
     flushExternalCommandQueue();
   }
