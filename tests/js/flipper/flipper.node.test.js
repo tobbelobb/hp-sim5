@@ -38,6 +38,7 @@ function createMockCanvas() {
       restore() {},
       translate() {},
       rotate() {},
+      scale() {},
       clearRect() {},
       drawImage() {}
     }),
