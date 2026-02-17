@@ -796,7 +796,9 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   return { attachmentA_current, attachmentB_current };
 }
 
+let timestep = 0;
 export function _updateAttachmentPoints(world) {
+  timestep++;
   const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const pathEntities = world.query([CablePathComponent]);
 
@@ -875,7 +877,7 @@ export function _updateAttachmentPoints(world) {
         // "Count backwards from the current attachment point" along the wrapped arc.
         const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentRelOrientationA - thetaSignedA);
         const diffA = _normalizeAngleSigned(knotAngleFromAttachmentA - knotAngleCompA.angle);
-        console.log(`diffA: ${diffA}`);
+        console.log(`timestep: ${timestep}, diffA: ${diffA}`);
       }
 
       //if (
