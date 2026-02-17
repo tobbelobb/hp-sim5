@@ -797,8 +797,13 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
 }
 
 let timestep = 0;
-export function _updateAttachmentPoints(world) {
-  timestep++;
+export function _updateAttachmentPoints(world, options = {}) {
+  const countTimestep = options.countTimestep !== false;
+  const logDiffA = options.logDiffA !== false;
+  const allowRestLengthClamp = options.allowRestLengthClamp !== false;
+  if (countTimestep) {
+    timestep++;
+  }
   const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const pathEntities = world.query([CablePathComponent]);
 
@@ -857,6 +862,7 @@ export function _updateAttachmentPoints(world) {
 
       // Checking if the attachment we found is really as far (angularly) from the knot point as it should be
       if (
+        logDiffA &&
         i === 0 &&
         isHybridA &&
         world.hasComponent(entityA, HybridKnotAngleComponent) &&
@@ -958,7 +964,7 @@ export function _updateAttachmentPoints(world) {
       let sA_effective = sA;
       let sB_effective = sB;
       let clampApplied = false;
-      const clampEnabled = _featureFlag(world, 'layeringClampJointRestLength', true);
+      const clampEnabled = allowRestLengthClamp && _featureFlag(world, 'layeringClampJointRestLength', true);
       if (clampEnabled && Number.isFinite(restBefore)) {
         const unclampedRest = restBefore - sA_effective + sB_effective;
         if (unclampedRest < MIN_JOINT_REST_LENGTH) {

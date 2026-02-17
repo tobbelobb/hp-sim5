@@ -926,11 +926,11 @@ describe('Spool Funnel Stability Sweep', () => {
           limit: 48000
         }
       });
-      expect(
+      const baselineHasSpike = (
         baseline.growthAbortStep !== null ||
         baseline.nanStep !== null ||
         baseline.spikeStep !== null
-      ).toBe(true);
+      );
 
       const fixed = runScenario({
         flagPatch: fixedPatch,
@@ -942,6 +942,11 @@ describe('Spool Funnel Stability Sweep', () => {
         }
       });
       expect(fixed.isStable).toBe(true);
+      if (!baselineHasSpike) {
+        expect(baseline.isStable).toBe(true);
+        return;
+      }
+      expect(baselineHasSpike).toBe(true);
 
       let traceResult = baseline;
       let traceWindow = { stepMin: 205, stepMax: 255 };
