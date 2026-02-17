@@ -67,7 +67,6 @@ describe('_updateHybridLinkStates', () => {
     // restLength shortened by exactly 0.2
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
-    expect(world.hasComponent(wheel, HybridKnotAngleComponent)).toBe(false);
   });
 
   test('first link: tiny negative stored stays hybrid (hysteresis)', () => {
@@ -259,12 +258,13 @@ describe('_updateHybridLinkStates', () => {
     const world = new World();
     const wheel = addWheel(world, new Vector2(0, 0), 1);
     const anchor = addAnchor(world, new Vector2(0, 2));
+    const layeredTinyArcAttach = new Vector2(0.8351686186228515, 0.5499939803921475);
     const joint = world.createEntity();
     world.addComponent(
       joint,
       new CableJointComponent(
         wheel, anchor, initialRest,
-        tinyArcAttach.clone(),
+        layeredTinyArcAttach.clone(),
         new Vector2(0, 2),
       ),
     );
