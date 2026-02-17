@@ -583,7 +583,9 @@ function _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength
   const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
 
   if (!(r0 > EPS) || !(dr > EPS)) {
-    return { radius: Math.max(baseRadius, 0.0), theta: 0.0, layer: 0, phi: 0.0, inRamp: false };
+    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
+    const theta = linearRadius > EPS ? (stored / linearRadius) : 0.0;
+    return { radius: linearRadius, theta, layer: 0, phi: theta, inRamp: false };
   }
 
   let s = stored;
@@ -1099,7 +1101,13 @@ export function _updateAttachmentPoints(world) {
       if (enforceKnotPhase && isHybridA && i === 0 && Number.isFinite(baseRadiusA)) {
         const knotCompA = world.getComponent(entityA, HybridKnotAngleComponent);
         if (knotCompA && posA && attachmentA_current) {
-          const { theta: thetaCurrentA } = _effectiveRollingRadius(world, path, A, baseRadiusA);
+          const rampLengthA = Math.max(0.0, baseRadiusA) * KNOT_SPAN;
+          let thetaCurrentA = Math.abs(
+            _storedToThetaSigned(path.stored[A] ?? 0.0, baseRadiusA, pathHalfWidth, rampLengthA)
+          );
+          if (!Number.isFinite(thetaCurrentA)) {
+            thetaCurrentA = _effectiveRollingRadius(world, path, A, baseRadiusA).theta;
+          }
           const thetaSignA = cwA ? -1.0 : 1.0;
           const attachmentAngleWorldA = Math.atan2(
             attachmentA_current.y - posA.y,
@@ -1110,7 +1118,6 @@ export function _updateAttachmentPoints(world) {
           const thetaSignedCurrentA = thetaSignA * thetaCurrentA;
           const thetaSignedTargetA = _unwrapAngleNear(thetaSignedCurrentA, thetaSignedWrappedA);
           const thetaTargetA = thetaSignA * thetaSignedTargetA;
-          const rampLengthA = Math.max(0.0, baseRadiusA) * KNOT_SPAN;
           const storedTargetA = _thetaToStoredLength(thetaTargetA, baseRadiusA, pathHalfWidth, rampLengthA);
           if (Number.isFinite(storedTargetA)) {
             const storedBeforeProjectionA = path.stored[A] ?? 0.0;
@@ -1132,7 +1139,13 @@ export function _updateAttachmentPoints(world) {
       ) {
         const knotCompB = world.getComponent(entityB, HybridKnotAngleComponent);
         if (knotCompB && posB && attachmentB_current) {
-          const { theta: thetaCurrentB } = _effectiveRollingRadius(world, path, B, baseRadiusB);
+          const rampLengthB = Math.max(0.0, baseRadiusB) * KNOT_SPAN;
+          let thetaCurrentB = Math.abs(
+            _storedToThetaSigned(path.stored[B] ?? 0.0, baseRadiusB, pathHalfWidth, rampLengthB)
+          );
+          if (!Number.isFinite(thetaCurrentB)) {
+            thetaCurrentB = _effectiveRollingRadius(world, path, B, baseRadiusB).theta;
+          }
           const thetaSignB = cwB ? 1.0 : -1.0;
           const attachmentAngleWorldB = Math.atan2(
             attachmentB_current.y - posB.y,
@@ -1143,7 +1156,6 @@ export function _updateAttachmentPoints(world) {
           const thetaSignedCurrentB = thetaSignB * thetaCurrentB;
           const thetaSignedTargetB = _unwrapAngleNear(thetaSignedCurrentB, thetaSignedWrappedB);
           const thetaTargetB = thetaSignB * thetaSignedTargetB;
-          const rampLengthB = Math.max(0.0, baseRadiusB) * KNOT_SPAN;
           const storedTargetB = _thetaToStoredLength(thetaTargetB, baseRadiusB, pathHalfWidth, rampLengthB);
           if (Number.isFinite(storedTargetB)) {
             const storedBeforeProjectionB = path.stored[B] ?? 0.0;
@@ -1862,13 +1874,21 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           attachmentPoint.set(crossingTangent);
           if (!world.getComponent(entityId, HybridKnotAngleComponent)) {
             const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
-            const { theta: thetaAtTransition } = _effectiveRollingRadius(world, path, i, baseRadius);
+            const pathHalfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
+            const rampLength = Math.max(0.0, baseRadius ?? 0.0) * KNOT_SPAN;
+            const thetaAtTransition = Math.abs(
+              _storedToThetaSigned(path.stored[i] ?? 0.0, baseRadius, pathHalfWidth, rampLength)
+            );
             const cwAtTransition = _effectiveCW(path, i, i === 0);
-            const thetaSignedAtTransition = (cwAtTransition ? -1.0 : 1.0) * thetaAtTransition;
+            const thetaSignAtTransition = (i === 0)
+              ? (cwAtTransition ? -1.0 : 1.0)
+              : (cwAtTransition ? 1.0 : -1.0);
+            const thetaSignedAtTransition = thetaSignAtTransition * thetaAtTransition;
+            const orientationAtTransition = world.getComponent(entityId, OrientationComponent)?.angle ?? 0.0;
             const relAttachmentAngleAtTransition = Math.atan2(
               attachmentPoint.y - C.y,
               attachmentPoint.x - C.x
-            ) - world.getComponent(entityId, OrientationComponent).angle;
+            ) - orientationAtTransition;
             const knotAngle = _normalizeAngleSigned(relAttachmentAngleAtTransition - thetaSignedAtTransition);
             world.addComponent(entityId, new HybridKnotAngleComponent(knotAngle));
           }
