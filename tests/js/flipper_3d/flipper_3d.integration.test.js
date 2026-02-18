@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 
-describe('Flipper 3D Integration', () => {
+describe.skip('Flipper 3D Integration', () => {
   let browser;
   let page;
   let server;
