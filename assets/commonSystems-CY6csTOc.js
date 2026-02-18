@@ -1,4 +1,4 @@
-var D=Object.defineProperty;var W=(r,e,m)=>e in r?D(r,e,{enumerable:!0,configurable:!0,writable:!0,value:m}):r[e]=m;var I=(r,e,m)=>W(r,typeof e!="symbol"?e+"":e,m);import{P as b,a as B,O as A,f as O,b as k,G as N,A as _,M as V,V as M,q as T,D as L,e as x}from"./cable_joints_core-y2J6H9Uu.js";function J(r){const e=r.systems.find(i=>i.constructor.name==="RenderSystem"),m=e?e.viewScaleMultiplier:1,l=e?e.viewOffsetX_sim:0,c=e?e.viewOffsetY_sim:0;let s=`
+var D=Object.defineProperty;var W=(r,e,m)=>e in r?D(r,e,{enumerable:!0,configurable:!0,writable:!0,value:m}):r[e]=m;var I=(r,e,m)=>W(r,typeof e!="symbol"?e+"":e,m);import{P as b,a as B,O as A,f as O,b as k,G as N,A as _,M as V,V as M,q as T,D as L,e as x}from"./cable_joints_core-Bj9-T_sd.js";function J(r){const e=r.systems.find(i=>i.constructor.name==="RenderSystem"),m=e?e.viewScaleMultiplier:1,l=e?e.viewOffsetX_sim:0,c=e?e.viewOffsetY_sim:0;let s=`
 // --- Generated Error Test Case ---
 testGeneratedError: {
   // Viewport settings from the time of the error
