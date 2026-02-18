@@ -44,14 +44,14 @@ IS_CI = os.environ.get('CI') == 'true'
 if IS_CI:
     # Expectations for the GitHub CI environment
     EXPECTATIONS = {
-        "warp": 30,
-        "no_warp": 14,
+        "warp": 14,
+        "no_warp": 25,
     }
 else:
     # Expectations for the local environment
     EXPECTATIONS = {
-        "warp": 30,
-        "no_warp": 14,
+        "warp": 14,
+        "no_warp": 25,
     }
 
 @pytest.mark.parametrize("use_warp,expected_score", [

@@ -25,8 +25,6 @@ from .util import (
     effective_cw
 )
 
-MIN_JOINT_REST_LENGTH = 1e-6
-
 
 def calculate_attachment_points(world, joint, path, i):
     """
@@ -209,34 +207,10 @@ def update_attachment_points(world):
                 if is_hybrid_b or has_friction_b:
                     s_b += (delta_angle_b * radius_b if cw_b else -delta_angle_b * radius_b)
 
-            rest_before = joint.rest_length
-            s_a_effective = s_a
-            s_b_effective = s_b
-            clamp_resource = world.get_resource('layeringClampJointRestLength')
-            clamp_enabled = True if clamp_resource is None else bool(clamp_resource)
-            if clamp_enabled and np.isfinite(rest_before):
-                unclamped_rest = rest_before - s_a_effective + s_b_effective
-                if unclamped_rest < MIN_JOINT_REST_LENGTH:
-                    required_lift = MIN_JOINT_REST_LENGTH - unclamped_rest
-                    decrease_from_a = max(0.0, s_a_effective)
-                    decrease_from_b = max(0.0, -s_b_effective)
-                    total_decrease = decrease_from_a + decrease_from_b
-                    if total_decrease > 1e-9:
-                        shift_a = required_lift * (decrease_from_a / total_decrease)
-                        shift_b = required_lift - shift_a
-                        s_a_effective -= shift_a
-                        s_b_effective += shift_b
-                    else:
-                        s_b_effective += required_lift
-
-                    still_low_rest = rest_before - s_a_effective + s_b_effective
-                    if still_low_rest < MIN_JOINT_REST_LENGTH:
-                        s_b_effective += (MIN_JOINT_REST_LENGTH - still_low_rest)
-
-            path.stored[A] += s_a_effective
-            joint.rest_length -= s_a_effective
-            path.stored[B] -= s_b_effective
-            joint.rest_length += s_b_effective
+            path.stored[A] += s_a
+            joint.rest_length -= s_a
+            path.stored[B] -= s_b
+            joint.rest_length += s_b
 
             if attachment_a_current is not None:
                 joint.attachment_point_a_world = attachment_a_current
