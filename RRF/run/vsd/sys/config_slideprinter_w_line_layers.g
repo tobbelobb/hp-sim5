@@ -12,14 +12,17 @@ M669 S130 T0.5                  ; Segments per second and min segment length
 
 ; Anchor Location
 M669 A0.0:-1900.0:0.0 B1645.44826719:950.0:0.0 C-1645.44826719:950.0:0.0
-; This one makes the most theoretical sense
+
+; Buildup compensation
+; This one makes the most theoretical sense if line halfWidth = 0.001 m (that is 1 mm).
 M666 Q0.6366197723675814 R38.715:38.715:38.715
+
+; This one has no dynamic buildup compensation, just the adjusted radii
 ; M666 Q0.0 R38.715:38.715:38.715
-; These ones one gives the best draw_squares.gcode quality score of 25.
-; M666 Q0.0006366197723675814 R39.6:39.6:39.6
-; M666 Q0.0006366197723675814 R40.0:40.0:40.0
-; Here's an even smaller one
-; M666 Q0.0006366197723675814 R38.5:38.5:38.5
+
+; With super thin lines (halfWidth 0.000059396 m) that simulate 1.1 mm lines on a 8 mm high spool.
+; M666 Q0.037813 R30.534564:30.534564:30.534564
+
 ; Explanation:
 ; ; M669 defines the positions of the anchors, expressed as X:Y:Z distances between a line's pivot points, when the machine is homed.
 ; ; M666 sets Q=spool buildup, R=spool radii (incl buildup, when homed)
