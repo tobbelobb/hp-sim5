@@ -4,7 +4,8 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  HybridKnotAngleComponent
 } from '../../../src/js/cable_joints/ecs.js';
 
 import {
@@ -508,6 +509,7 @@ describe('_updateAttachmentPoints', () => {
         [cwRaw, false]
       );
       world.addComponent(pathId, pathComp);
+      world.removeComponent(spool, HybridKnotAngleComponent);
       world.setResource('layeringClampJointRestLength', clampEnabled);
 
       return { world, spool, jointId };
@@ -581,6 +583,7 @@ describe('_updateAttachmentPoints', () => {
     pathComp.totalRestLength += (initialStored - oldStored);
 
     world.addComponent(pathId, pathComp);
+    world.removeComponent(spool, HybridKnotAngleComponent);
     world.setResource('layeringClampJointRestLength', false);
 
     _updateAttachmentPoints(world);

@@ -3,7 +3,8 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  HybridKnotAngleComponent
 } from '../../../src/js/cable_joints/ecs.js';
 import {
   CableLinkComponent,
@@ -12,6 +13,7 @@ import {
   _updateAttachmentPoints,
   _updateHybridLinkStates
 } from '../../../src/js/cable_joints/cable_joints_core.js';
+import { tangentFromCircleToPoint } from '../../../src/js/cable_joints/geometry.js';
 
 describe('hybrid knot phase projection', () => {
   test('non-layered hybrid transition does not collapse stored on the next attachment update', () => {
@@ -63,5 +65,62 @@ describe('hybrid knot phase projection', () => {
     _updateAttachmentPoints(world);
 
     expect(pathComp.stored[0]).toBeCloseTo(storedAfterTransition, 8);
+  });
+
+  test('hybrid endpoint initialized at path creation gets knot projection updates', () => {
+    const world = new World();
+    world.setResource('enableLayering', true);
+
+    const wheel = world.createEntity();
+    world.addComponent(wheel, new PositionComponent(0.0, 0.0));
+    world.addComponent(wheel, new RadiusComponent(1.0));
+    world.addComponent(wheel, new CableLinkComponent(0.0, 0.0));
+    world.addComponent(wheel, new OrientationComponent(0.0));
+
+    const anchor = world.createEntity();
+    const anchorPos = new Vector2(0.0, 3.0);
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y));
+    world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y));
+    world.addComponent(anchor, new OrientationComponent(0.0));
+
+    const tangent = tangentFromCircleToPoint(anchorPos, new Vector2(0.0, 0.0), 1.0, false).a_circle;
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(
+        wheel,
+        anchor,
+        tangent.distanceTo(anchorPos),
+        tangent.clone(),
+        anchorPos.clone()
+      )
+    );
+
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [jointId],
+      ['hybrid', 'attachment'],
+      [true, false],
+      1e6,
+      [0.4, 0.0],
+      0.0
+    );
+    world.addComponent(pathId, pathComp);
+
+    expect(world.hasComponent(wheel, HybridKnotAngleComponent)).toBe(true);
+    const initialStored = pathComp.stored[0];
+    const joint = world.getComponent(jointId, CableJointComponent);
+    const initialRestLength = joint.restLength;
+
+    const wheelOrientation = world.getComponent(wheel, OrientationComponent);
+    wheelOrientation.angle = 0.1;
+    const wheelLink = world.getComponent(wheel, CableLinkComponent);
+    wheelLink.prevCableAttachmentTimeAngle = 0.1;
+
+    _updateAttachmentPoints(world);
+
+    expect(pathComp.stored[0]).toBeCloseTo(initialStored - 0.1, 8);
+    expect(joint.restLength).toBeCloseTo(initialRestLength + 0.1, 8);
   });
 });
