@@ -30,10 +30,16 @@ const PRESET_GCODE_MAP = Object.freeze({
     label: 'Draw Squares (G-code)',
     color: '#00b2ff',
   },
+  straightMovesBigger: {
+    url: new URL('../../public/examples/gcode/draw_squares_bigger.gcode', import.meta.url).href,
+    label: 'Draw Bigger Squares (G-code)',
+    color: '#00b2ff',
+  },
 });
 
 const DEFAULT_UPLOAD_PRESET_MATCHES = Object.freeze([
   { substring: 'Hangprinter_logo6', presetKey: 'hangprinterLogo' },
+  { substring: 'draw_squares_bigger', presetKey: 'straightMovesBigger' },
   { substring: 'draw_squares', presetKey: 'straightMoves' },
 ]);
 const DEFAULT_UPLOAD_PRESET_EXTENSIONS = Object.freeze(['.txt', '.serial', '.csv', '.can']);
