@@ -24,6 +24,18 @@ const MOTOR_AXIS_MAP = new Map([
     [49, 'O'],
 ]);
 
+const UINT32_MULTIPLIER = 0x1_0000_0000;
+
+function readUint64LEAsNumber(view, offset) {
+    const lower = view.getUint32(offset, true);
+    const upper = view.getUint32(offset + 4, true);
+    const value = upper * UINT32_MULTIPLIER + lower;
+    if (!Number.isSafeInteger(value)) {
+        throw new Error('CAN timestamp exceeds supported precision');
+    }
+    return value;
+}
+
 async function* makeLineIterator(stream) {
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
     let buffer = '';
@@ -615,7 +627,7 @@ export class RrfCommander {
             }
         };
 
-        let ctxTime = 0n;
+        let ctxTime = 0;
         let ctxCol3 = 0;
         let ctxCol4 = 0;
         let ctxCol5 = 0;
@@ -630,7 +642,7 @@ export class RrfCommander {
 
             if (mask & 1) {
                 ensureAvailable(8);
-                ctxTime = view.getBigUint64(offset, true);
+                ctxTime = readUint64LEAsNumber(view, offset);
                 offset += 8;
             }
             if (mask & 2) {
@@ -689,10 +701,7 @@ export class RrfCommander {
                     default:
                         throw new Error(`Unsupported CAN type code: ${typeCode}`);
                 }
-                const whenToExecute = Number(ctxTime);
-                if (!Number.isFinite(whenToExecute)) {
-                    throw new Error('CAN timestamp exceeds supported precision');
-                }
+                const whenToExecute = ctxTime;
                 if (lastWhen !== null && whenToExecute !== lastWhen) {
                     await this._flushReadyBuckets();
                 }
