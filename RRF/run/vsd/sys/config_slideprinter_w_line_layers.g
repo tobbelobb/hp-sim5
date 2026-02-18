@@ -13,7 +13,8 @@ M669 S130 T0.5                  ; Segments per second and min segment length
 ; Anchor Location
 M669 A0.0:-1900.0:0.0 B1645.44826719:950.0:0.0 C-1645.44826719:950.0:0.0
 ; This one makes the most theoretical sense
-M666 Q0.0006366197723675814 R38.715:38.715:38.715
+M666 Q0.6366197723675814 R38.715:38.715:38.715
+; M666 Q0.0 R38.715:38.715:38.715
 ; These ones one gives the best draw_squares.gcode quality score of 25.
 ; M666 Q0.0006366197723675814 R39.6:39.6:39.6
 ; M666 Q0.0006366197723675814 R40.0:40.0:40.0
