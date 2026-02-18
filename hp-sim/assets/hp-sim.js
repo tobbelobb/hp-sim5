@@ -8,16 +8,49 @@ import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_
 import { QualityMonitor } from './quality-monitor.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
-const MCU_PRESETS = {
-  hangprinterLogo: {
-    url: new URL('../../public/examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
-    format: FileFormat.MCU_SERIAL,
-  },
-  straightMoves: {
-    url: new URL('../../public/examples/mcu_commands/draw_squares.serial', import.meta.url).href,
-    format: FileFormat.MCU_SERIAL,
-  },
-};
+const COMMAND_PRESET_VARIANTS = Object.freeze({
+  hangprinterLogo: Object.freeze({
+    default: Object.freeze({
+      url: new URL('../../public/examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
+      format: FileFormat.MCU_SERIAL,
+      referencePresetKey: 'hangprinterLogo',
+    }),
+    lineLayered: Object.freeze({
+      url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_w_line_layers.can', import.meta.url).href,
+      format: FileFormat.RRF_CAN_BINARY,
+      referencePresetKey: 'hangprinterLogo',
+    }),
+  }),
+  straightMoves: Object.freeze({
+    default: Object.freeze({
+      url: new URL('../../public/examples/mcu_commands/draw_squares.serial', import.meta.url).href,
+      format: FileFormat.MCU_SERIAL,
+      referencePresetKey: 'straightMoves',
+    }),
+    lineLayered: Object.freeze({
+      url: new URL('../../public/examples/RRF_CAN_commands/draw_squares_bigger_w_line_layers.can', import.meta.url).href,
+      format: FileFormat.RRF_CAN_BINARY,
+      referencePresetKey: 'straightMovesBigger',
+    }),
+  }),
+});
+
+function resolvePresetCommand(presetKey, lineLayeringEnabled) {
+  const variants = COMMAND_PRESET_VARIANTS[presetKey];
+  if (variants === null || variants === undefined) {
+    return null;
+  }
+  if (lineLayeringEnabled === true && variants.lineLayered?.url) {
+    return variants.lineLayered;
+  }
+  if (variants.default?.url) {
+    return variants.default;
+  }
+  if (variants.lineLayered?.url) {
+    return variants.lineLayered;
+  }
+  return null;
+}
 
 const PRESET_GCODE_MAP = Object.freeze({
   hangprinterLogo: {
@@ -3808,13 +3841,14 @@ function initHpSim() {
     if (!stageReady) {
       return;
     }
-    const preset = MCU_PRESETS[presetKey];
+    const preset = resolvePresetCommand(presetKey, lineLayeringEnabled);
     if (!preset || !preset.url) {
       console.warn('Slideprinter demo: unknown preset', presetKey);
       return;
     }
-    loadReferencePathForPreset(presetKey, { setActive: true }).catch((error) => {
-      console.warn('hp-sim: failed to prepare reference path for preset', presetKey, error);
+    const referencePresetKey = preset.referencePresetKey || presetKey;
+    loadReferencePathForPreset(referencePresetKey, { setActive: true }).catch((error) => {
+      console.warn('hp-sim: failed to prepare reference path for preset', referencePresetKey, error);
     });
     const format = preset.format || detectFileFormat(preset.url);
     let worker = null;
@@ -3828,11 +3862,11 @@ function initHpSim() {
       console.warn('Slideprinter demo: unsupported preset format', format);
       return;
     }
-    currentPresetKey = presetKey;
+    currentPresetKey = referencePresetKey;
     const jobDescriptor = {
       type: 'preset',
       key: presetKey,
-      label: PRESET_GCODE_MAP[presetKey]?.label || presetKey,
+      label: PRESET_GCODE_MAP[referencePresetKey]?.label || presetKey,
     };
     if (!startSimulationWithWorker(worker, jobDescriptor)) {
       return;
