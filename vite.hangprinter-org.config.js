@@ -36,7 +36,7 @@ export default defineConfig(async () => {
       const slideprinterSrc = resolve(__dirname, 'examples/js/slideprinter');
       const slideprinterDist = resolve(distRoot, 'assets');
       await fs.mkdir(slideprinterDist, { recursive: true });
-      for (const file of ['kinematics.js', 'guessedData.js', 'fileFormatUtils.js', 'klipperSerialParser.js']) {
+      for (const file of ['kinematics.js', 'guessedData.js', 'fileFormatUtils.js', 'rrfMotionUtils.js', 'klipperSerialParser.js']) {
         await fs.copyFile(join(slideprinterSrc, file), join(slideprinterDist, file));
       }
     },

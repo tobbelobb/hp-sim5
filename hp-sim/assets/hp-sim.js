@@ -3655,6 +3655,17 @@ function initHpSim() {
       return klipperCommanderWorker;
     }
     klipperCommanderWorker = new Worker(klipperCommanderModuleUrl, { type: 'module' });
+    klipperCommanderWorker.onerror = (event) => {
+      console.error('Slideprinter demo: Klipper worker failed.', event);
+      const remoteSystem = getRemoteSystem();
+      if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+        remoteSystem.worker = null;
+        setPrintActive(false);
+      }
+    };
+    klipperCommanderWorker.onmessageerror = (event) => {
+      console.error('Slideprinter demo: Klipper worker message decode failed.', event);
+    };
     klipperCommanderWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
@@ -3675,6 +3686,11 @@ function initHpSim() {
       }
       if (event.data.type === 'error') {
         console.error('Slideprinter demo: Worker reported an error:', event.data.message);
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+          remoteSystem.worker = null;
+          setPrintActive(false);
+        }
         return;
       }
       if (event.data.action === 'gcode') {
@@ -3696,6 +3712,17 @@ function initHpSim() {
       return rrfCommanderWorker;
     }
     rrfCommanderWorker = new Worker(rrfCommanderModuleUrl, { type: 'module' });
+    rrfCommanderWorker.onerror = (event) => {
+      console.error('Slideprinter demo: RRF worker failed.', event);
+      const remoteSystem = getRemoteSystem();
+      if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+        remoteSystem.worker = null;
+        setPrintActive(false);
+      }
+    };
+    rrfCommanderWorker.onmessageerror = (event) => {
+      console.error('Slideprinter demo: RRF worker message decode failed.', event);
+    };
     rrfCommanderWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
@@ -3716,6 +3743,11 @@ function initHpSim() {
       }
       if (event.data.type === 'error') {
         console.error('Slideprinter demo: Worker reported an error:', event.data.message);
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+          remoteSystem.worker = null;
+          setPrintActive(false);
+        }
         return;
       }
       if (event.data.action === 'gcode') {
@@ -3737,6 +3769,17 @@ function initHpSim() {
       return moveCommanderWorker;
     }
     moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
+    moveCommanderWorker.onerror = (event) => {
+      console.error('Slideprinter demo: G-code worker failed.', event);
+      const remoteSystem = getRemoteSystem();
+      if (remoteSystem && remoteSystem.worker === moveCommanderWorker) {
+        remoteSystem.worker = null;
+        setPrintActive(false);
+      }
+    };
+    moveCommanderWorker.onmessageerror = (event) => {
+      console.error('Slideprinter demo: G-code worker message decode failed.', event);
+    };
     moveCommanderWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
@@ -3757,6 +3800,11 @@ function initHpSim() {
       }
       if (event.data.type === 'error') {
         console.error('Slideprinter demo: Worker reported an error:', event.data.message);
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === moveCommanderWorker) {
+          remoteSystem.worker = null;
+          setPrintActive(false);
+        }
         return;
       }
       if (event.data.action === 'gcode') {
