@@ -150,6 +150,7 @@ export class PrevFinalOrientationComponent {
 export class HybridKnotAngleComponent {
   constructor(angle = 0.0) {
     this.angle = angle; // Radians
+    this.pathAngles = {};
   }
 }
 export class VelocityComponent { constructor(x = 0, y = 0) { this.vel = new Vector2(x, y); } }

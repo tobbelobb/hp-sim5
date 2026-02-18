@@ -123,4 +123,92 @@ describe('hybrid knot phase projection', () => {
     expect(pathComp.stored[0]).toBeCloseTo(initialStored - 0.1, 8);
     expect(joint.restLength).toBeCloseTo(initialRestLength + 0.1, 8);
   });
+
+  test('shared hybrid endpoint keeps independent knot phases per cable path', () => {
+    const world = new World();
+    world.setResource('enableLayering', true);
+
+    const wheel = world.createEntity();
+    const wheelPos = new Vector2(0.0, 0.0);
+    const wheelRadius = 1.0;
+    world.addComponent(wheel, new PositionComponent(wheelPos.x, wheelPos.y));
+    world.addComponent(wheel, new RadiusComponent(wheelRadius));
+    world.addComponent(wheel, new CableLinkComponent(wheelPos.x, wheelPos.y));
+    world.addComponent(wheel, new OrientationComponent(0.0));
+
+    const anchorTop = world.createEntity();
+    const anchorTopPos = new Vector2(0.0, 3.0);
+    world.addComponent(anchorTop, new PositionComponent(anchorTopPos.x, anchorTopPos.y));
+    world.addComponent(anchorTop, new CableLinkComponent(anchorTopPos.x, anchorTopPos.y));
+    world.addComponent(anchorTop, new OrientationComponent(0.0));
+
+    const anchorBottom = world.createEntity();
+    const anchorBottomPos = new Vector2(0.0, -3.0);
+    world.addComponent(anchorBottom, new PositionComponent(anchorBottomPos.x, anchorBottomPos.y));
+    world.addComponent(anchorBottom, new CableLinkComponent(anchorBottomPos.x, anchorBottomPos.y));
+    world.addComponent(anchorBottom, new OrientationComponent(0.0));
+
+    const topJointId = world.createEntity();
+    const topEffectiveCw = true;
+    const topAttachment = tangentFromCircleToPoint(anchorTopPos, wheelPos, wheelRadius, topEffectiveCw).a_circle;
+    world.addComponent(
+      topJointId,
+      new CableJointComponent(
+        wheel,
+        anchorTop,
+        topAttachment.distanceTo(anchorTopPos),
+        topAttachment.clone(),
+        anchorTopPos.clone()
+      )
+    );
+
+    const bottomJointId = world.createEntity();
+    const bottomEffectiveCw = false;
+    const bottomAttachment = tangentFromCircleToPoint(anchorBottomPos, wheelPos, wheelRadius, bottomEffectiveCw).a_circle;
+    world.addComponent(
+      bottomJointId,
+      new CableJointComponent(
+        wheel,
+        anchorBottom,
+        bottomAttachment.distanceTo(anchorBottomPos),
+        bottomAttachment.clone(),
+        anchorBottomPos.clone()
+      )
+    );
+
+    const topPathId = world.createEntity();
+    const topPath = new CablePathComponent(
+      world,
+      [topJointId],
+      ['hybrid', 'attachment'],
+      [false, false],
+      1e6,
+      [0.25, 0.0],
+      0.0
+    );
+    world.addComponent(topPathId, topPath);
+
+    const bottomPathId = world.createEntity();
+    const bottomPath = new CablePathComponent(
+      world,
+      [bottomJointId],
+      ['hybrid', 'attachment'],
+      [true, false],
+      1e6,
+      [0.35, 0.0],
+      0.0
+    );
+    world.addComponent(bottomPathId, bottomPath);
+
+    _updateAttachmentPoints(world);
+
+    const knotComp = world.getComponent(wheel, HybridKnotAngleComponent);
+    expect(knotComp).toBeDefined();
+    expect(Number.isFinite(knotComp.pathAngles[String(topPathId)])).toBe(true);
+    expect(Number.isFinite(knotComp.pathAngles[String(bottomPathId)])).toBe(true);
+    expect(knotComp.pathAngles[String(topPathId)]).not.toBeCloseTo(knotComp.pathAngles[String(bottomPathId)], 6);
+
+    expect(topPath.stored[0]).toBeCloseTo(0.25, 8);
+    expect(bottomPath.stored[0]).toBeCloseTo(0.35, 8);
+  });
 });

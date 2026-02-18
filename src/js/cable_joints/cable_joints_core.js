@@ -724,7 +724,81 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
-function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex) {
+function _knotPathKey(pathId) {
+  if (pathId === null || pathId === undefined) {
+    return '__default__';
+  }
+  return String(pathId);
+}
+
+function _hybridKnotAngleForPath(knotComp, pathId) {
+  if (knotComp === null || knotComp === undefined) {
+    return null;
+  }
+  if (pathId !== null && pathId !== undefined) {
+    const key = _knotPathKey(pathId);
+    const pathAngles = knotComp.pathAngles;
+    if (pathAngles !== null && pathAngles !== undefined && typeof pathAngles === 'object' && !Array.isArray(pathAngles)) {
+      const value = pathAngles[key];
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+    return null;
+  }
+  if (Number.isFinite(knotComp.angle)) {
+    return knotComp.angle;
+  }
+  return null;
+}
+
+function _setHybridKnotAngleForPath(knotComp, pathId, angle) {
+  if (knotComp === null || knotComp === undefined || !Number.isFinite(angle)) {
+    return;
+  }
+  if (
+    knotComp.pathAngles === null ||
+    knotComp.pathAngles === undefined ||
+    typeof knotComp.pathAngles !== 'object' ||
+    Array.isArray(knotComp.pathAngles)
+  ) {
+    knotComp.pathAngles = {};
+  }
+  knotComp.pathAngles[_knotPathKey(pathId)] = angle;
+  knotComp.angle = angle;
+}
+
+function _copyDefaultKnotAngleToPathIfUnambiguous(knotComp, pathId) {
+  if (knotComp === null || knotComp === undefined || pathId === null || pathId === undefined) {
+    return false;
+  }
+  const pathAngles = knotComp.pathAngles;
+  if (pathAngles === null || pathAngles === undefined || typeof pathAngles !== 'object' || Array.isArray(pathAngles)) {
+    return false;
+  }
+  const defaultAngle = pathAngles[_knotPathKey(null)];
+  if (!Number.isFinite(defaultAngle)) {
+    return false;
+  }
+
+  let nonDefaultPathCount = 0;
+  for (const key in pathAngles) {
+    if (key === _knotPathKey(null)) {
+      continue;
+    }
+    if (Number.isFinite(pathAngles[key])) {
+      nonDefaultPathCount += 1;
+    }
+  }
+  if (nonDefaultPathCount > 0) {
+    return false;
+  }
+
+  _setHybridKnotAngleForPath(knotComp, pathId, defaultAngle);
+  return true;
+}
+
+function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, pathId = null, options = null) {
   if (world === null || world === undefined || path === null || path === undefined) {
     return;
   }
@@ -760,14 +834,63 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex) 
       attachmentPoint = joint.attachmentPointB_world;
     }
   }
-  if (entityId === null || entityId === undefined || attachmentPoint === null || attachmentPoint === undefined) {
-    return;
-  }
-  if (world.getComponent(entityId, HybridKnotAngleComponent)) {
+  const createIfMissing = (
+    options !== null &&
+    options !== undefined &&
+    typeof options === 'object' &&
+    typeof options.createIfMissing === 'boolean'
+  )
+    ? options.createIfMissing
+    : true;
+  const attachmentPointOverride = (
+    options !== null &&
+    options !== undefined &&
+    typeof options === 'object' &&
+    options.attachmentPoint !== undefined
+  )
+    ? options.attachmentPoint
+    : null;
+  const centerOverride = (
+    options !== null &&
+    options !== undefined &&
+    typeof options === 'object' &&
+    options.center !== undefined
+  )
+    ? options.center
+    : null;
+  const orientationOverride = (
+    options !== null &&
+    options !== undefined &&
+    typeof options === 'object' &&
+    options.orientation !== undefined
+  )
+    ? options.orientation
+    : null;
+  const resolvedAttachmentPoint = (
+    attachmentPointOverride !== null && attachmentPointOverride !== undefined
+      ? attachmentPointOverride
+      : attachmentPoint
+  );
+  if (entityId === null || entityId === undefined || resolvedAttachmentPoint === null || resolvedAttachmentPoint === undefined) {
     return;
   }
 
-  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  let knotComp = world.getComponent(entityId, HybridKnotAngleComponent);
+  if (_hybridKnotAngleForPath(knotComp, pathId) !== null) {
+    return;
+  }
+  if (_copyDefaultKnotAngleToPathIfUnambiguous(knotComp, pathId)) {
+    return;
+  }
+  if ((knotComp === null || knotComp === undefined) && createIfMissing === false) {
+    return;
+  }
+
+  const center = (
+    centerOverride !== null && centerOverride !== undefined
+      ? centerOverride
+      : world.getComponent(entityId, PositionComponent)?.pos
+  );
   if (center === null || center === undefined) {
     return;
   }
@@ -783,16 +906,22 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex) 
     ? (cwAtState ? -1.0 : 1.0)
     : (cwAtState ? 1.0 : -1.0);
   const thetaSignedAtState = thetaSignAtState * thetaAtState;
-  const orientation = world.getComponent(entityId, OrientationComponent)?.angle ?? 0.0;
+  const orientation = Number.isFinite(orientationOverride)
+    ? orientationOverride
+    : (world.getComponent(entityId, OrientationComponent)?.angle ?? 0.0);
   const relAttachmentAngle = Math.atan2(
-    attachmentPoint.y - center.y,
-    attachmentPoint.x - center.x
+    resolvedAttachmentPoint.y - center.y,
+    resolvedAttachmentPoint.x - center.x
   ) - orientation;
   const knotAngle = _normalizeAngleSigned(relAttachmentAngle - thetaSignedAtState);
   if (!Number.isFinite(knotAngle)) {
     return;
   }
-  world.addComponent(entityId, new HybridKnotAngleComponent(knotAngle));
+  if (knotComp === null || knotComp === undefined) {
+    knotComp = new HybridKnotAngleComponent(knotAngle);
+    world.addComponent(entityId, knotComp);
+  }
+  _setHybridKnotAngleForPath(knotComp, pathId, knotAngle);
 }
 
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
@@ -978,19 +1107,40 @@ export function _updateAttachmentPoints(world) {
       const isHybridB = _isHybrid(path.linkTypes[B]);
       const hasFrictionB = world.getComponent(entityB, CoefficientOfFrictionComponent);
 
+      if (isHybridA && i === 0) {
+        _ensureHybridKnotAngleComponentForEndpoint(world, path, A, pathId, {
+          attachmentPoint: attachmentA_previous,
+          center: prevPosA,
+          orientation: prevAngleA,
+          createIfMissing: false
+        });
+      }
+      if (isHybridB && i === path.jointEntities.length - 1) {
+        _ensureHybridKnotAngleComponentForEndpoint(world, path, B, pathId, {
+          attachmentPoint: attachmentB_previous,
+          center: prevPosB,
+          orientation: prevAngleB,
+          createIfMissing: false
+        });
+      }
+
+      const knotCompA = world.getComponent(entityA, HybridKnotAngleComponent);
+      const knotAngleA = _hybridKnotAngleForPath(knotCompA, pathId);
+      const knotCompB = world.getComponent(entityB, HybridKnotAngleComponent);
+      const knotAngleB = _hybridKnotAngleForPath(knotCompB, pathId);
+
       // Checking if the attachment we found is really as far (angularly) from the knot point as it should be
       if (
         logDiffA &&
         i === 0 &&
         isHybridA &&
-        world.hasComponent(entityA, HybridKnotAngleComponent) &&
+        knotAngleA !== null &&
         posA !== undefined &&
         posA !== null &&
         attachmentA_current !== undefined &&
         attachmentA_current !== null &&
         Number.isFinite(thetaA)
       ) {
-        const knotAngleCompA = world.getComponent(entityA, HybridKnotAngleComponent);
         const attachmentAngleWorldA = Math.atan2(
           attachmentA_current.y - posA.y,
           attachmentA_current.x - posA.x
@@ -1000,7 +1150,7 @@ export function _updateAttachmentPoints(world) {
 
         // "Count backwards from the current attachment point" along the wrapped arc.
         const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentRelOrientationA - thetaSignedA);
-        const diffA = _normalizeAngleSigned(knotAngleFromAttachmentA - knotAngleCompA.angle);
+        const diffA = _normalizeAngleSigned(knotAngleFromAttachmentA - knotAngleA);
         console.log(`diffA: ${diffA}`);
       }
 
@@ -1008,14 +1158,13 @@ export function _updateAttachmentPoints(world) {
         logDiffB &&
         i === path.jointEntities.length - 1 &&
         isHybridB &&
-        world.hasComponent(entityB, HybridKnotAngleComponent) &&
+        knotAngleB !== null &&
         posB !== undefined &&
         posB !== null &&
         attachmentB_current !== undefined &&
         attachmentB_current !== null &&
         Number.isFinite(thetaB)
       ) {
-        const knotAngleCompB = world.getComponent(entityB, HybridKnotAngleComponent);
         const attachmentAngleWorldB = Math.atan2(
           attachmentB_current.y - posB.y,
           attachmentB_current.x - posB.x
@@ -1025,7 +1174,7 @@ export function _updateAttachmentPoints(world) {
 
         // "Count backwards from the current attachment point" along the wrapped arc.
         const knotAngleFromAttachmentB = _normalizeAngleSigned(attachmentRelOrientationB - thetaSignedB);
-        const diffB = _normalizeAngleSigned(knotAngleFromAttachmentB - knotAngleCompB.angle);
+        const diffB = _normalizeAngleSigned(knotAngleFromAttachmentB - knotAngleB);
         console.log(`diffB: ${diffB}`);
       }
 
@@ -1178,8 +1327,7 @@ export function _updateAttachmentPoints(world) {
       joint.restLength += sB_effective;
 
       if (enforceKnotPhase && isHybridA && i === 0 && Number.isFinite(baseRadiusA)) {
-        const knotCompA = world.getComponent(entityA, HybridKnotAngleComponent);
-        if (knotCompA && posA && attachmentA_current) {
+        if (knotAngleA !== null && posA && attachmentA_current) {
           const rampLengthA = Math.max(0.0, baseRadiusA) * KNOT_SPAN;
           let thetaCurrentA = Math.abs(
             _storedToThetaSigned(path.stored[A] ?? 0.0, baseRadiusA, pathHalfWidth, rampLengthA)
@@ -1193,7 +1341,7 @@ export function _updateAttachmentPoints(world) {
             attachmentA_current.x - posA.x
           );
           const attachmentRelOrientationA = _normalizeAngleSigned(attachmentAngleWorldA - angleA);
-          const thetaSignedWrappedA = _normalizeAngleSigned(attachmentRelOrientationA - knotCompA.angle);
+          const thetaSignedWrappedA = _normalizeAngleSigned(attachmentRelOrientationA - knotAngleA);
           const thetaSignedCurrentA = thetaSignA * thetaCurrentA;
           const thetaSignedTargetA = _unwrapAngleNear(thetaSignedCurrentA, thetaSignedWrappedA);
           const thetaTargetA = thetaSignA * thetaSignedTargetA;
@@ -1216,8 +1364,7 @@ export function _updateAttachmentPoints(world) {
         i === path.jointEntities.length - 1 &&
         Number.isFinite(baseRadiusB)
       ) {
-        const knotCompB = world.getComponent(entityB, HybridKnotAngleComponent);
-        if (knotCompB && posB && attachmentB_current) {
+        if (knotAngleB !== null && posB && attachmentB_current) {
           const rampLengthB = Math.max(0.0, baseRadiusB) * KNOT_SPAN;
           let thetaCurrentB = Math.abs(
             _storedToThetaSigned(path.stored[B] ?? 0.0, baseRadiusB, pathHalfWidth, rampLengthB)
@@ -1231,7 +1378,7 @@ export function _updateAttachmentPoints(world) {
             attachmentB_current.x - posB.x
           );
           const attachmentRelOrientationB = _normalizeAngleSigned(attachmentAngleWorldB - angleB);
-          const thetaSignedWrappedB = _normalizeAngleSigned(attachmentRelOrientationB - knotCompB.angle);
+          const thetaSignedWrappedB = _normalizeAngleSigned(attachmentRelOrientationB - knotAngleB);
           const thetaSignedCurrentB = thetaSignB * thetaCurrentB;
           const thetaSignedTargetB = _unwrapAngleNear(thetaSignedCurrentB, thetaSignedWrappedB);
           const thetaTargetB = thetaSignB * thetaSignedTargetB;
@@ -1951,7 +2098,10 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           path.stored[i] = newStored;
           joint.restLength -= (newStored - oldStored);
           attachmentPoint.set(crossingTangent);
-          _ensureHybridKnotAngleComponentForEndpoint(world, path, i);
+          _ensureHybridKnotAngleComponentForEndpoint(world, path, i, pathId, {
+            attachmentPoint,
+            createIfMissing: true
+          });
           _recordHybridTransitionTrace(world, step, {
             transition: 'hybrid-attachment->hybrid',
             pathId,
