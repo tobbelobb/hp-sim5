@@ -320,3 +320,61 @@ def test_plan_hits_underconstrained_penalty_ignores_non_sentinel_cost():
         },
     }
     assert ac._plan_hits_underconstrained_penalty(plan) is False
+
+
+def test_normalize_dataset_point_roles_swaps_unswapped_reversed_points():
+    dataset = {
+        "sweeps": [
+            {
+                "drive_anchor": 1,
+                "sensor_anchor": 2,
+                "data_points": [
+                    {
+                        "l_drive": 10.0,
+                        "l_sensor": -100.0,
+                        "l_drive_mu": 11.0,
+                        "l_sensor_mu": -101.0,
+                        "assumed_tension_drive_n": 4.0,
+                        "assumed_tension_sensor_n": 2.0,
+                        "drive_setpoint_mm": 9.95,
+                        "source_drive_anchor": 2,
+                        "source_sensor_anchor": 1,
+                    }
+                ],
+            }
+        ]
+    }
+    changed = ac._normalize_dataset_point_roles(dataset)
+    point = dataset["sweeps"][0]["data_points"][0]
+    assert changed == 1
+    assert point["l_drive"] == -100.0
+    assert point["l_sensor"] == 10.0
+    assert point["l_drive_mu"] == -101.0
+    assert point["l_sensor_mu"] == 11.0
+    assert point["assumed_tension_drive_n"] == 2.0
+    assert point["assumed_tension_sensor_n"] == 4.0
+
+
+def test_normalize_dataset_point_roles_keeps_already_canonical_points():
+    dataset = {
+        "sweeps": [
+            {
+                "drive_anchor": 1,
+                "sensor_anchor": 2,
+                "data_points": [
+                    {
+                        "l_drive": -100.0,
+                        "l_sensor": 10.0,
+                        "drive_setpoint_mm": 9.95,
+                        "source_drive_anchor": 2,
+                        "source_sensor_anchor": 1,
+                    }
+                ],
+            }
+        ]
+    }
+    changed = ac._normalize_dataset_point_roles(dataset)
+    point = dataset["sweeps"][0]["data_points"][0]
+    assert changed == 0
+    assert point["l_drive"] == -100.0
+    assert point["l_sensor"] == 10.0

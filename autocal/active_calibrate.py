@@ -97,6 +97,85 @@ def _write_json(path: Path, payload: dict) -> None:
     write_json_file(path, payload, schema="sweep_dataset")
 
 
+def _normalize_dataset_point_roles(dataset: dict) -> int:
+    """
+    Normalize per-point drive/sensor role fields to sweep-level orientation.
+
+    Some datasets can include points tagged with source_drive_anchor/source_sensor_anchor
+    from reversed sub-sweeps. If those points were not remapped to the sweep's canonical
+    drive/sensor orientation, l_drive/l_sensor (and paired *_mu/tension fields) can be
+    transposed. This pass fixes only clearly identifiable cases.
+    """
+    sweeps = dataset.get("sweeps")
+    if not isinstance(sweeps, list):
+        return 0
+
+    swapped_points = 0
+    for sweep in sweeps:
+        if not isinstance(sweep, dict):
+            continue
+        try:
+            drive_idx = int(sweep.get("drive_anchor"))
+            sensor_idx = int(sweep.get("sensor_anchor"))
+        except (TypeError, ValueError):
+            continue
+        points = sweep.get("data_points")
+        if not isinstance(points, list):
+            continue
+
+        for point in points:
+            if not isinstance(point, dict):
+                continue
+
+            src_drive = point.get("source_drive_anchor")
+            src_sensor = point.get("source_sensor_anchor")
+            try:
+                src_drive_idx = int(src_drive)
+                src_sensor_idx = int(src_sensor)
+            except (TypeError, ValueError):
+                continue
+
+            if src_drive_idx == drive_idx and src_sensor_idx == sensor_idx:
+                continue
+            if src_drive_idx != sensor_idx or src_sensor_idx != drive_idx:
+                continue
+
+            try:
+                l_drive = float(point.get("l_drive"))
+                l_sensor = float(point.get("l_sensor"))
+            except (TypeError, ValueError):
+                continue
+            if not np.isfinite(l_drive) or not np.isfinite(l_sensor):
+                continue
+
+            should_swap = False
+            raw_setpoint = point.get("drive_setpoint_mm")
+            try:
+                drive_setpoint = float(raw_setpoint)
+            except (TypeError, ValueError):
+                drive_setpoint = float("nan")
+            if np.isfinite(drive_setpoint):
+                err_drive = abs(l_drive - drive_setpoint)
+                err_sensor = abs(l_sensor - drive_setpoint)
+                # If setpoint matches l_drive better than l_sensor, point is still in source orientation.
+                should_swap = bool(err_drive + 1e-6 < err_sensor)
+
+            if not should_swap:
+                continue
+
+            point["l_drive"], point["l_sensor"] = point.get("l_sensor"), point.get("l_drive")
+            if "l_drive_mu" in point or "l_sensor_mu" in point:
+                point["l_drive_mu"], point["l_sensor_mu"] = point.get("l_sensor_mu"), point.get("l_drive_mu")
+            if "assumed_tension_drive_n" in point or "assumed_tension_sensor_n" in point:
+                point["assumed_tension_drive_n"], point["assumed_tension_sensor_n"] = (
+                    point.get("assumed_tension_sensor_n"),
+                    point.get("assumed_tension_drive_n"),
+                )
+            swapped_points += 1
+
+    return int(swapped_points)
+
+
 def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float]:
     if value is None:
         return [float(default)] * num_axes
@@ -2199,10 +2278,13 @@ def _plan_next_ellipse_sweep(
     collector_args: Sequence[str],
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
+    remapped_points = _normalize_dataset_point_roles(dataset)
     machine_type = _require_machine_type(dataset, context=str(dataset_path))
     num_anchors = int(dataset.get("num_anchors", 4))
     dimensions = int(dataset.get("dimensions", 3))
     warnings: List[str] = []
+    if remapped_points > 0:
+        warnings.append(f"point_role_remap_applied:{int(remapped_points)}")
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
     search_radii = _spool_mode_enabled(find_radii_mode)
@@ -2252,7 +2334,7 @@ def _plan_next_ellipse_sweep(
         seed_restarts = max(1, min(2, int(solve_restarts)))
         seed_iterations = max(60, min(200, int(solve_iterations)))
         seed_cal = calibrate_elliptical(
-            dataset_path,
+            dataset,
             output_path=None,
             residual_threshold=float(residual_threshold),
             num_restarts=int(seed_restarts),
@@ -2387,7 +2469,7 @@ def _plan_next_ellipse_sweep(
         }
     else:
         cal = calibrate_elliptical(
-            dataset_path,
+            dataset,
             output_path=None,
             residual_threshold=float(residual_threshold),
             num_restarts=int(solve_restarts),
