@@ -27,7 +27,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from autocal.ellipse_fitting import fit_all_sweeps
 from autocal.ellipse_solver import format_anchors_gcode, solve_anchors
 from autocal.ellipse_visualization import create_calibration_report
 from autocal.json_schema import load_json_file, write_json_file
@@ -40,37 +39,6 @@ def _load_json(path: Path) -> dict:
 
 def _write_json(path: Path, payload: dict) -> None:
     write_json_file(path, payload, schema="calibration_result")
-
-
-def _rebuild_absolute_sweeps(dataset: dict, anchors: np.ndarray) -> List[Dict[str, Any]]:
-    """Deep-copy sweeps and inflate delta lengths using anchor baselines."""
-    import copy
-
-    dataset_copy = copy.deepcopy(dataset)
-    baselines = np.linalg.norm(anchors, axis=1)
-    sweeps_abs = []
-
-    for sweep in dataset_copy.get("sweeps", []):
-        fixed_abs = [
-            float(baselines[idx] + delta)
-            for idx, delta in zip(sweep.get("fixed_anchors", []), sweep.get("fixed_lengths", []))
-        ]
-        drive_idx = int(sweep["drive_anchor"])
-        sensor_idx = int(sweep["sensor_anchor"])
-        drive_base = float(baselines[drive_idx])
-        sensor_base = float(baselines[sensor_idx])
-        points_abs = []
-        for p in sweep.get("data_points", []):
-            points_abs.append(
-                {
-                    **p,
-                    "l_drive": float(p["l_drive"] + drive_base),
-                    "l_sensor": float(p["l_sensor"] + sensor_base),
-                }
-            )
-        sweeps_abs.append({**sweep, "fixed_lengths": fixed_abs, "data_points": points_abs})
-
-    return sweeps_abs
 
 
 def _validate_sweep_roles(dataset: dict) -> None:
@@ -497,7 +465,6 @@ def calibrate_elliptical(
     use_parallel: bool = True,
     regularize_supersweep: bool = False,
     generate_report: bool = True,
-    include_debug_fits: bool = True,
     pointwise_residual_mode: str = "sampson",
     residuals_csv: Optional[Path] = None,
 ) -> Dict[str, Any]:
@@ -565,15 +532,6 @@ def calibrate_elliptical(
         )
     gcode = format_anchors_gcode(anchors_arr, dataset.get("machine_type", ""))
 
-    debug_fits = None
-    if include_debug_fits:
-        abs_sweeps = _rebuild_absolute_sweeps(dataset, anchors_arr)
-        debug_fits = fit_all_sweeps(
-            abs_sweeps,
-            residual_threshold=residual_threshold,
-            square_inputs=True,
-        )
-
     result_payload: Dict[str, Any] = {
         "input_file": str(input_path),
         "timestamp": datetime.now().isoformat(),
@@ -597,9 +555,6 @@ def calibrate_elliptical(
         elif isinstance(details, dict):
             result_payload["details"] = details
 
-    if debug_fits is not None:
-        result_payload["ellipse_fits_debug"] = debug_fits
-
     if output_path is not None:
         _write_json(output_path, result_payload)
 
@@ -609,7 +564,7 @@ def calibrate_elliptical(
             if output_path is not None
             else input_path.with_name(input_path.stem + "_report.png")
         )
-        create_calibration_report(dataset, result_payload, ellipse_fits=debug_fits, output_path=str(report_path))
+        create_calibration_report(dataset, result_payload, ellipse_fits=None, output_path=str(report_path))
 
     return result_payload
 
@@ -989,11 +944,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.set_defaults(parallel=True)
     ellipse_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
     ellipse_parser.add_argument(
-        "--no-debug-fits",
-        action="store_true",
-        help="Skip generating fitted-ellipse debug sidecar in output JSON",
-    )
-    ellipse_parser.add_argument(
         "--spring-k-multiplier",
         type=float,
         default=1.0,
@@ -1170,7 +1120,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             ),
             pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=not args.no_report,
-            include_debug_fits=not args.no_debug_fits,
             residuals_csv=args.residuals_csv,
         )
         print(result["gcode"])

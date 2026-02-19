@@ -833,7 +833,6 @@ def _plan_next_ellipse_sweep(
         use_noise_mean=bool(use_noise_mean),
         sigma_source=str(sigma_source),
         generate_report=bool(generate_report),
-        include_debug_fits=False,
         residuals_csv=residuals_csv,
     )
     anchors = np.asarray(cal["anchors"], dtype=float)

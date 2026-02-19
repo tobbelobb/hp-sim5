@@ -4,7 +4,7 @@ from __future__ import annotations
 
 These plots are intended for debugging and monitoring sweep quality, ellipse
 fits, and optimization progress. They operate on the sweep JSON/dict format
-and on sidecar fitted-ellipse dicts produced by `autocal.fit_ellipses`.
+and optionally in-memory fitted-ellipse dicts.
 """
 
 from dataclasses import asdict
@@ -786,30 +786,18 @@ def main(argv: Optional[List[str]] = None) -> int:  # pragma: no cover
     parser.add_argument("input", help="Input sweep dataset JSON")
     parser.add_argument("-o", "--output", help="Output image file")
     parser.add_argument("--sweep", help="Specific sweep ID to plot")
-    parser.add_argument("--fits", help="Optional JSON sidecar with fitted ellipses")
 
     args = parser.parse_args(argv)
 
     dataset = _load_json(args.input, schema="sweep_dataset")
 
-    ellipse_fits: List[dict] = []
-    if args.fits:
-        sidecar = _load_json(args.fits, schema="fit_sidecar")
-        ellipse_fits = sidecar.get("fitted_ellipses", sidecar.get("ellipses", []))
-
-    fitted_by_id = {e.get("sweep_id", ""): e for e in ellipse_fits}
-
     if args.sweep:
         sweep = next((s for s in dataset.get("sweeps", []) if s.get("id") == args.sweep), None)
         if sweep is None:
             raise ValueError(f"Sweep {args.sweep} not found")
-        fitted = fitted_by_id.get(args.sweep)
-        if fitted:
-            plot_ellipse_fit(sweep, fitted)
-        else:
-            plot_sweep_data(sweep)
+        plot_sweep_data(sweep)
     else:
-        plot_all_sweeps(dataset, ellipse_fits=ellipse_fits)
+        plot_all_sweeps(dataset)
 
     if args.output:
         plt.savefig(args.output, dpi=150, bbox_inches="tight")

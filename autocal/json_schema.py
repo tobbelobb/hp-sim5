@@ -12,7 +12,6 @@ SchemaName = str
 SCHEMA_FILES = {
     "sweep_dataset": "sweep_dataset.schema.json",
     "calibration_result": "calibration_result.schema.json",
-    "fit_sidecar": "fit_sidecar.schema.json",
     "full_auto_log_entry": "full_auto_log_entry.schema.json",
     "synthetic_dataset_entry": "synthetic_dataset_entry.schema.json",
 }
@@ -61,9 +60,6 @@ def validate_payload(payload: Any, *, schema: Optional[SchemaName], source: str 
         return
     if schema == "calibration_result":
         _validate_calibration_result(payload, source=source)
-        return
-    if schema == "fit_sidecar":
-        _validate_fit_sidecar(payload, source=source)
         return
     if schema == "full_auto_log_entry":
         _validate_full_auto_log_entry(payload, source=source)
@@ -175,24 +171,6 @@ def _validate_calibration_result(payload: Any, *, source: str) -> None:
         _require(len(anchor) in (2, 3), label, "anchor must have 2 or 3 components")
         for value in anchor:
             _require(_is_number(value), label, "anchor values must be finite numbers")
-
-
-def _validate_fit_sidecar(payload: Any, *, source: str) -> None:
-    _require(isinstance(payload, dict), source, "fit_sidecar must be an object")
-    _require_keys(payload, ("source", "residual_threshold", "min_points", "fitted_ellipses"), source)
-    _require(isinstance(payload["source"], str), source, "source must be a string")
-    _require(_is_number(payload["residual_threshold"]), source, "residual_threshold must be a finite number")
-    _require(isinstance(payload["min_points"], int) and payload["min_points"] > 0, source, "min_points must be a positive integer")
-    _require(isinstance(payload["fitted_ellipses"], list), source, "fitted_ellipses must be a list")
-    for idx, fit in enumerate(payload["fitted_ellipses"]):
-        label = f"{source}: fitted_ellipses[{idx}]"
-        _require(isinstance(fit, dict), label, "must be an object")
-        _require("valid" in fit and isinstance(fit["valid"], bool), label, "valid must be a boolean")
-        if "coefficients" in fit:
-            coeffs = fit["coefficients"]
-            _require(isinstance(coeffs, dict), label, "coefficients must be an object")
-            for key in ("A", "B", "C", "D", "E", "F"):
-                _require(key in coeffs and _is_number(coeffs[key]), label, f"coefficients.{key} must be a finite number")
 
 
 def _validate_full_auto_log_entry(payload: Any, *, source: str) -> None:

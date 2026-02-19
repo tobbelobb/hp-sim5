@@ -46,7 +46,6 @@ def test_calibrate_elliptical_runs(tmp_path):
         method="SLSQP",
         verbose=False,
         generate_report=False,
-        include_debug_fits=False,
     )
     anchors = np.asarray(result["anchors"], dtype=float)
     assert anchors.shape == (3, 2)
@@ -60,7 +59,6 @@ def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):
             "ellipse",
             str(input_path),
             "--no-report",
-            "--no-debug-fits",
             "--optimizer",
             "SLSQP",
             "--iterations",
