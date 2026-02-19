@@ -43,6 +43,14 @@ describe('hp-sim line layering toggle attachment updates', () => {
     expect(handlerSource).not.toMatch(/if\s*\(next\)\s*\{\s*_updateAttachmentPoints\(world\);\s*\}/);
   });
 
+  test('runs a full reset after an actual toggle state change', () => {
+    const source = readHpSimSource();
+    const handlerSource = extractSetLineLayeringEnabledState(source);
+
+    expect(handlerSource).not.toBeNull();
+    expect(handlerSource).toMatch(/if\s*\(fromToggle\)\s*\{\s*handleUserReset\(\);\s*\}/);
+  });
+
   test('reapplies layering attachment update after rebuilding the scene', () => {
     const source = readHpSimSource();
     const rebuildSource = extractRebuildScene(source);

@@ -534,6 +534,9 @@ function initHpSim() {
     if (!fromToggle && lineLayeringToggle) {
       lineLayeringToggle.checked = next;
     }
+    if (fromToggle) {
+      handleUserReset();
+    }
   }
 
   function attachQualityMonitorsToRemoteSystem() {
