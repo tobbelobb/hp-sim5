@@ -157,7 +157,8 @@ def _normalize_dataset_point_roles(dataset: dict) -> int:
             if np.isfinite(drive_setpoint):
                 err_drive = abs(l_drive - drive_setpoint)
                 err_sensor = abs(l_sensor - drive_setpoint)
-                # If setpoint matches l_drive better than l_sensor, point is still in source orientation.
+                # For reversed sub-sweeps, drive_setpoint_mm refers to source drive.
+                # If it still matches l_drive better than l_sensor, this point was not remapped.
                 should_swap = bool(err_drive + 1e-6 < err_sensor)
 
             if not should_swap:
@@ -285,8 +286,9 @@ def _mm_per_degree_for_axis(
         return float("nan")
     gear = float(spool_to_motor_gearing_factor[int(axis_idx)])
     ma = float(mechanical_advantage[int(axis_idx)])
-    lines = float(lines_per_spool[int(axis_idx)])
-    denom = gear * ma * lines * 360.0
+    _ = float(lines_per_spool[int(axis_idx)])
+    # Match firmware: lines_per_spool only affects the buildup slope (k2), not base mm/deg.
+    denom = gear * ma * 360.0
     if not np.isfinite(denom) or abs(denom) <= 1e-12:
         return float("nan")
     return float((2.0 * np.pi * r) / denom)
@@ -762,9 +764,17 @@ def _estimate_effective_radii_with_spool_model(
     def _prior_cost(radii_mm: np.ndarray, buildup_factor: np.ndarray) -> float:
         prior = 0.0
         if search_r and sigma_r is not None:
-            prior += float(np.sum(((np.asarray(radii_mm, dtype=float) - base) / sigma_r) ** 2.0))
+            radii_arr = np.asarray(radii_mm, dtype=float).reshape(-1)
+            if mode_r == "global":
+                prior += float(((float(np.median(radii_arr)) - float(np.median(base))) / sigma_r) ** 2.0)
+            else:
+                prior += float(np.sum(((radii_arr - base) / sigma_r) ** 2.0))
         if search_b and sigma_b is not None:
-            prior += float(np.sum(((np.asarray(buildup_factor, dtype=float) - modeled_b) / sigma_b) ** 2.0))
+            b_arr = np.asarray(buildup_factor, dtype=float).reshape(-1)
+            if mode_b == "global":
+                prior += float(((float(np.median(b_arr)) - float(np.median(modeled_b))) / sigma_b) ** 2.0)
+            else:
+                prior += float(np.sum(((b_arr - modeled_b) / sigma_b) ** 2.0))
         if sigma_rpair is not None:
             radii_arr = np.asarray(radii_mm, dtype=float).reshape(-1)
             r_mean = float(np.mean(radii_arr))
@@ -876,6 +886,18 @@ def _estimate_effective_radii_with_spool_model(
         )
         if x_seed.size > 0:
             x_seed = np.clip(x_seed, lo, hi)
+            seed_candidates = _spool_seed_candidates(x_seed, lo, hi)
+            seed_choice = "current"
+            seed_cost = float(_objective(x_seed))
+            if len(seed_candidates) > 1:
+                for idx, seed_try in enumerate(seed_candidates[1:], start=1):
+                    score_try = float(_objective(seed_try))
+                    if np.isfinite(score_try) and (
+                        not np.isfinite(seed_cost) or score_try + 1e-12 < seed_cost
+                    ):
+                        x_seed = np.asarray(seed_try, dtype=float).reshape(-1)
+                        seed_cost = float(score_try)
+                        seed_choice = f"seed_{idx}"
             x_opt, opt_info = _coordinate_descent_spool(
                 x_seed,
                 lo=lo,
@@ -884,6 +906,8 @@ def _estimate_effective_radii_with_spool_model(
                 max_iters=int(inner_iters),
                 objective=_objective,
             )
+            opt_info["seed_choice"] = seed_choice
+            opt_info["seed_cost"] = float(seed_cost) if np.isfinite(seed_cost) else None
             if lo.size > 0:
                 x_opt = np.clip(np.asarray(x_opt, dtype=float).reshape(-1), lo, hi)
         else:
@@ -897,6 +921,8 @@ def _estimate_effective_radii_with_spool_model(
                 "start_cost": float(fitted_cost),
                 "fitted_cost": float(fitted_cost),
                 "step_final": [],
+                "seed_choice": "none",
+                "seed_cost": float(fitted_cost) if np.isfinite(fitted_cost) else None,
             }
 
         radii_opt, buildup_opt = _unpack_spool_opt_vector(
@@ -936,6 +962,8 @@ def _estimate_effective_radii_with_spool_model(
                 "cal_step_success": bool(anchor_step_success),
                 "cal_cost": float(model_cost) if np.isfinite(model_cost) else None,
                 "step_final": opt_info.get("step_final"),
+                "seed_choice": str(opt_info.get("seed_choice", "")),
+                "seed_cost": opt_info.get("seed_cost"),
                 "radii_mm": [float(v) for v in np.asarray(radii_opt, dtype=float).tolist()],
                 "buildup_factor": [float(v) for v in np.asarray(buildup_opt, dtype=float).tolist()],
             }
@@ -1930,6 +1958,33 @@ def _initial_spool_steps(x: np.ndarray, lo: np.ndarray, hi: np.ndarray, kinds: S
 
 def _spool_step_tolerances(kinds: Sequence[str]) -> np.ndarray:
     return np.asarray([1e-3 if kind == "r" else 1e-5 for kind in kinds], dtype=float)
+
+
+def _spool_seed_candidates(x_seed: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> List[np.ndarray]:
+    seed = np.asarray(x_seed, dtype=float).reshape(-1)
+    if seed.size == 0:
+        return [seed]
+    if lo.size != seed.size or hi.size != seed.size:
+        return [seed]
+
+    span = np.asarray(hi - lo, dtype=float)
+    if np.any(~np.isfinite(span)) or np.any(span <= 0.0):
+        return [np.clip(seed, lo, hi)]
+
+    candidates: List[np.ndarray] = []
+
+    def _add(vec: np.ndarray) -> None:
+        v = np.clip(np.asarray(vec, dtype=float).reshape(-1), lo, hi)
+        for existing in candidates:
+            if existing.shape == v.shape and np.allclose(existing, v, atol=1e-12, rtol=0.0):
+                return
+        candidates.append(v)
+
+    _add(seed)
+    _add(lo + 0.50 * span)  # midpoint seed
+    _add(lo + 0.75 * span)  # high-side seed
+    _add(lo + 0.25 * span)  # low-side seed
+    return candidates
 
 
 def _coordinate_descent_spool(

@@ -58,7 +58,8 @@ class WinchSpoolModel:
         if not np.isfinite(lines) or abs(lines) <= _EPS:
             raise ValueError("lines_per_spool must be finite and non-zero")
 
-        degrees_per_unit_times_r = (gear * ma * lines * 360.0) / (2.0 * np.pi)
+        # Match firmware: lines_per_spool affects k2 (buildup slope), not the base mm/deg factor.
+        degrees_per_unit_times_r = (gear * ma * 360.0) / (2.0 * np.pi)
         if not np.isfinite(degrees_per_unit_times_r) or abs(degrees_per_unit_times_r) <= _EPS:
             raise ValueError("invalid degrees_per_unit_times_r")
 
@@ -377,4 +378,3 @@ def sweep_configs_with_modeled_lengths(
             )
         )
     return out
-

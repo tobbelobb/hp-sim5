@@ -124,3 +124,51 @@ def test_sweep_configs_with_modeled_lengths_scales_from_base_coordinate():
     assert len(transformed) == 1
     assert np.isclose(float(transformed[0].fixed_deltas_mm[0]), 20.0, atol=1e-9)
     assert np.isclose(float(transformed[0].fixed_deltas_mm[1]), 5.0, atol=1e-9)
+
+
+def _reference_theta_to_line(theta_deg, *, r0, q, gear, ma, lines):
+    theta = float(theta_deg)
+    if abs(float(q)) <= 1e-12:
+        deg_per_unit_times_r = (float(gear) * float(ma) * 360.0) / (2.0 * np.pi)
+        return (theta * float(r0)) / deg_per_unit_times_r
+    k2 = -(float(ma) * float(lines)) * float(q)
+    deg_per_unit_times_r = (float(gear) * float(ma) * 360.0) / (2.0 * np.pi)
+    k0 = 2.0 * deg_per_unit_times_r / k2
+    term = theta / k0 + float(r0)
+    return (term * term - float(r0) * float(r0)) / k2
+
+
+def test_winch_spool_model_matches_firmware_formula_with_multiple_lines():
+    r0 = 40.184
+    q = 0.31
+    gear = 1.25
+    ma = 1.7
+    lines = 3.0
+    model = WinchSpoolModel.from_firmware(
+        base_radius=r0,
+        buildup_factor=q,
+        spool_to_motor_gearing_factor=gear,
+        mechanical_advantage=ma,
+        lines_per_spool=lines,
+    )
+    for theta in (-2000.0, -750.0, 0.0, 750.0, 2000.0):
+        expected = _reference_theta_to_line(theta, r0=r0, q=q, gear=gear, ma=ma, lines=lines)
+        got = model.theta_deg_to_linepos_mm(theta)
+        assert np.isclose(float(got), float(expected), atol=1e-9)
+
+
+def test_constant_spool_model_mm_per_degree_is_independent_of_lines_per_spool():
+    kwargs = {
+        "base_radius": 35.0,
+        "buildup_factor": 0.0,
+        "spool_to_motor_gearing_factor": 1.0,
+        "mechanical_advantage": 2.0,
+    }
+    model_l1 = WinchSpoolModel.from_firmware(lines_per_spool=1.0, **kwargs)
+    model_l3 = WinchSpoolModel.from_firmware(lines_per_spool=3.0, **kwargs)
+    for theta in (-1000.0, -250.0, 0.0, 250.0, 1000.0):
+        assert np.isclose(
+            float(model_l1.theta_deg_to_linepos_mm(theta)),
+            float(model_l3.theta_deg_to_linepos_mm(theta)),
+            atol=1e-9,
+        )
