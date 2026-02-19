@@ -29,6 +29,9 @@ DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
+_DEFAULT_B_BOUNDS = (-0.5, 0.5)
+_DEFAULT_B_PRIOR_SIGMA = 0.05
+_DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 
 from autocal.active_learning import (
@@ -519,13 +522,16 @@ def _estimate_effective_radii_with_spool_model(
     anchors: np.ndarray,
     *,
     find_radii_mode: str,
+    find_buildup_mode: str,
     base_radii_mm: np.ndarray,
     modeled_buildup_factor: np.ndarray,
     spool_to_motor_gearing_factor: np.ndarray,
     mechanical_advantage: np.ndarray,
     lines_per_spool: np.ndarray,
     r0_bounds: Optional[Tuple[float, float]],
+    b_bounds: Optional[Tuple[float, float]],
     r0_prior_sigma_mm: Optional[float],
+    b_prior_sigma: Optional[float],
     spool_outer_iters: int,
     spool_inner_iters: int,
     solve_restarts: int,
@@ -547,9 +553,12 @@ def _estimate_effective_radii_with_spool_model(
     num_anchors = int(base.size)
     if num_anchors <= 0 or not np.all(np.isfinite(base)) or np.any(base <= 0.0):
         raise ValueError("Cannot estimate radii without finite positive base radii.")
-    mode = _normalize_spool_find_mode(find_radii_mode)
-    if mode not in ("global", "per-anchor"):
-        raise ValueError("radius estimation requires find_radii mode global or per-anchor")
+    mode_r = _normalize_spool_find_mode(find_radii_mode)
+    mode_b = _normalize_spool_find_mode(find_buildup_mode)
+    search_r = _spool_mode_enabled(mode_r)
+    search_b = _spool_mode_enabled(mode_b)
+    if not (search_r or search_b):
+        raise ValueError("spool estimation requires find_radii and/or find_buildup_factor")
 
     modeled_b = np.asarray(modeled_buildup_factor, dtype=float).reshape(-1)
     spool_to_motor = np.asarray(spool_to_motor_gearing_factor, dtype=float).reshape(-1)
@@ -558,17 +567,56 @@ def _estimate_effective_radii_with_spool_model(
     if any(arr.size != num_anchors for arr in (modeled_b, spool_to_motor, mech_adv, lines)):
         raise ValueError("spool parameter length mismatch for radii estimation")
 
-    lo, hi = _resolve_r0_bounds(base, find_radii_mode=mode, r0_bounds=r0_bounds)
-    x0 = np.clip(_pack_radii_opt_vector(base, find_radii_mode=mode), lo, hi)
+    lo_parts: List[np.ndarray] = []
+    hi_parts: List[np.ndarray] = []
+    lo_r = np.zeros(0, dtype=float)
+    hi_r = np.zeros(0, dtype=float)
+    if search_r:
+        lo_r, hi_r = _resolve_r0_bounds(base, find_radii_mode=mode_r, r0_bounds=r0_bounds)
+        lo_parts.append(lo_r)
+        hi_parts.append(hi_r)
+    lo_b = np.zeros(0, dtype=float)
+    hi_b = np.zeros(0, dtype=float)
+    if search_b:
+        lo_b, hi_b = _resolve_b_bounds(modeled_b, find_buildup_mode=mode_b, b_bounds=b_bounds)
+        lo_parts.append(lo_b)
+        hi_parts.append(hi_b)
 
-    sigma = None
+    if lo_parts:
+        lo = np.concatenate(lo_parts).astype(float)
+        hi = np.concatenate(hi_parts).astype(float)
+    else:
+        lo = np.zeros(0, dtype=float)
+        hi = np.zeros(0, dtype=float)
+
+    sigma_r = None
     if r0_prior_sigma_mm is not None:
         try:
             sigma_raw = float(r0_prior_sigma_mm)
         except (TypeError, ValueError):
             sigma_raw = float("nan")
         if np.isfinite(sigma_raw) and sigma_raw > 0.0:
-            sigma = sigma_raw
+            sigma_r = sigma_raw
+
+    sigma_b = None
+    if b_prior_sigma is not None:
+        try:
+            sigma_raw = float(b_prior_sigma)
+        except (TypeError, ValueError):
+            sigma_raw = float("nan")
+        if np.isfinite(sigma_raw) and sigma_raw > 0.0:
+            sigma_b = sigma_raw
+    elif search_b:
+        sigma_b = float(_DEFAULT_B_PRIOR_SIGMA)
+
+    sigma_rpair = None
+    if search_r and mode_r == "per-anchor" and num_anchors > 1:
+        if sigma_r is not None:
+            sigma_rpair = float(max(sigma_r, 1e-6))
+        else:
+            sigma_rpair = float(_DEFAULT_RADIUS_PAIR_SIGMA_MM)
+        if not np.isfinite(sigma_rpair) or sigma_rpair <= 0.0:
+            sigma_rpair = float(_DEFAULT_RADIUS_PAIR_SIGMA_MM)
 
     anchors_current = np.asarray(anchors, dtype=float)
     if anchors_current.ndim != 2 or anchors_current.shape[0] != num_anchors:
@@ -576,24 +624,52 @@ def _estimate_effective_radii_with_spool_model(
     if not np.all(np.isfinite(anchors_current)):
         raise ValueError("anchor estimate contains non-finite values")
 
+    radii_current = np.asarray(base, dtype=float).copy()
+    buildup_current = np.asarray(modeled_b, dtype=float).copy()
+    x_current = _pack_spool_opt_vector(
+        radii_mm=radii_current,
+        buildup_factor=buildup_current,
+        find_radii_mode=mode_r,
+        find_buildup_mode=mode_b,
+    )
+    if x_current.size > 0:
+        x_current = np.clip(x_current, lo, hi)
+        radii_current, buildup_current = _unpack_spool_opt_vector(
+            x_current,
+            num_anchors=num_anchors,
+            find_radii_mode=mode_r,
+            find_buildup_mode=mode_b,
+            fixed_radii_mm=base,
+            fixed_buildup_factor=modeled_b,
+        )
+
+    kinds = _spool_opt_kinds(
+        num_anchors=num_anchors,
+        find_radii_mode=mode_r,
+        find_buildup_mode=mode_b,
+    )
     outer_iters = max(1, int(spool_outer_iters))
     inner_iters = max(1, int(spool_inner_iters))
     history: List[Dict[str, object]] = []
 
     best = {
         "cost": float("inf"),
-        "radii_mm": np.asarray(base, dtype=float),
+        "radii_mm": np.asarray(radii_current, dtype=float),
+        "buildup_factor": np.asarray(buildup_current, dtype=float),
         "anchors": np.asarray(anchors_current, dtype=float),
         "spool_params": None,
         "dataset": None,
     }
 
-    def _build_dataset_and_params(radii_mm: np.ndarray) -> Tuple[SpoolModelParams, dict]:
+    def _build_dataset_and_params(
+        radii_mm: np.ndarray,
+        buildup_factor: np.ndarray,
+    ) -> Tuple[SpoolModelParams, dict]:
         spool_params = build_spool_model_params(
             dataset,
             base_radii_mm=base,
             modeled_radii_mm=radii_mm,
-            modeled_buildup_factor=modeled_b,
+            modeled_buildup_factor=buildup_factor,
             spool_to_motor_gearing_factor=spool_to_motor,
             mechanical_advantage=mech_adv,
             lines_per_spool=lines,
@@ -602,78 +678,27 @@ def _estimate_effective_radii_with_spool_model(
         transformed = dataset_with_modeled_lengths(dataset, spool_params)
         return spool_params, transformed
 
+    def _prior_cost(radii_mm: np.ndarray, buildup_factor: np.ndarray) -> float:
+        prior = 0.0
+        if search_r and sigma_r is not None:
+            prior += float(np.sum(((np.asarray(radii_mm, dtype=float) - base) / sigma_r) ** 2.0))
+        if search_b and sigma_b is not None:
+            prior += float(np.sum(((np.asarray(buildup_factor, dtype=float) - modeled_b) / sigma_b) ** 2.0))
+        if sigma_rpair is not None:
+            radii_arr = np.asarray(radii_mm, dtype=float).reshape(-1)
+            r_mean = float(np.mean(radii_arr))
+            prior += float(np.sum(((radii_arr - r_mean) / sigma_rpair) ** 2.0))
+        return float(prior)
+
     for outer_idx in range(outer_iters):
-        eval_counter = {"count": 0}
-        clipped_seed = np.clip(x0, lo, hi)
+        spool_params_seed, transformed_seed = _build_dataset_and_params(radii_current, buildup_current)
 
-        def _objective(opt_vec: np.ndarray) -> float:
-            eval_counter["count"] += 1
-            try:
-                clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
-                radii_try = _unpack_radii_opt_vector(
-                    clipped_vec,
-                    num_anchors=num_anchors,
-                    find_radii_mode=mode,
-                )
-                spool_params_try, transformed_try = _build_dataset_and_params(radii_try)
-                _ = spool_params_try
-                cost_val = _evaluate_cost_at_anchors(
-                    transformed_try,
-                    anchors_current,
-                    residual_threshold=float(residual_threshold),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    noise_normalized=True,
-                    sigma_source=str(sigma_source),
-                )
-                if not np.isfinite(cost_val):
-                    return 1e12
-                prior = 0.0
-                if sigma is not None:
-                    prior = float(np.sum(((radii_try - base) / sigma) ** 2.0))
-                score = float(cost_val + prior)
-                if not np.isfinite(score):
-                    return 1e12
-                return score
-            except Exception:
-                return 1e12
-
-        start_cost = float(_objective(clipped_seed))
-        result = None
-        try:
-            result = minimize(
-                _objective,
-                clipped_seed,
-                method="L-BFGS-B",
-                bounds=list(zip(lo.tolist(), hi.tolist())),
-                options={"maxiter": int(inner_iters), "ftol": 1e-6},
-            )
-        except Exception:
-            result = None
-
-        used_seed = clipped_seed
-        if result is not None and np.isfinite(float(getattr(result, "fun", float("nan")))):
-            used_seed = np.clip(np.asarray(result.x, dtype=float).reshape(-1), lo, hi)
-
-        radii_opt = _unpack_radii_opt_vector(
-            used_seed,
-            num_anchors=num_anchors,
-            find_radii_mode=mode,
-        )
-        spool_params_opt, transformed_opt = _build_dataset_and_params(radii_opt)
-
-        anchors_next = anchors_current
-        cal_model_cost = float("nan")
-        cal_step_success = False
+        anchors_next = np.asarray(anchors_current, dtype=float)
+        anchor_cost = float("nan")
+        anchor_step_success = False
         try:
             cal_step = calibrate_elliptical(
-                transformed_opt,
+                transformed_seed,
                 output_path=None,
                 residual_threshold=float(residual_threshold),
                 num_restarts=int(solve_restarts),
@@ -695,16 +720,12 @@ def _estimate_effective_radii_with_spool_model(
                 residuals_csv=None,
             )
             cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
-            if (
-                cand_anchors.ndim == 2
-                and cand_anchors.shape == anchors_current.shape
-                and np.all(np.isfinite(cand_anchors))
-            ):
+            if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(np.isfinite(cand_anchors)):
                 anchors_next = cand_anchors
-                cal_step_success = True
-            cal_model_cost = float(
+                anchor_step_success = True
+            anchor_cost = float(
                 _evaluate_cost_at_anchors(
-                    transformed_opt,
+                    transformed_seed,
                     anchors_next,
                     residual_threshold=float(residual_threshold),
                     spring_k_multiplier=float(spring_k_multiplier),
@@ -720,56 +741,251 @@ def _estimate_effective_radii_with_spool_model(
                 )
             )
         except Exception:
-            cal_step_success = False
+            anchor_step_success = False
 
-        if np.isfinite(cal_model_cost) and cal_model_cost < float(best["cost"]):
+        eval_counter = {"count": 0}
+
+        def _objective(opt_vec: np.ndarray) -> float:
+            eval_counter["count"] += 1
+            try:
+                if lo.size > 0:
+                    clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
+                else:
+                    clipped_vec = np.asarray(opt_vec, dtype=float).reshape(-1)
+                radii_try, buildup_try = _unpack_spool_opt_vector(
+                    clipped_vec,
+                    num_anchors=num_anchors,
+                    find_radii_mode=mode_r,
+                    find_buildup_mode=mode_b,
+                    fixed_radii_mm=base,
+                    fixed_buildup_factor=modeled_b,
+                )
+                _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
+                data_cost = _evaluate_cost_at_anchors(
+                    transformed_try,
+                    anchors_next,
+                    residual_threshold=float(residual_threshold),
+                    spring_k_multiplier=float(spring_k_multiplier),
+                    use_flex=bool(use_flex),
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    noise_normalized=True,
+                    sigma_source=str(sigma_source),
+                )
+                if not np.isfinite(data_cost):
+                    return 1e12
+                prior = _prior_cost(radii_try, buildup_try)
+                score = float(data_cost + prior)
+                if not np.isfinite(score):
+                    return 1e12
+                return score
+            except Exception:
+                return 1e12
+
+        x_seed = _pack_spool_opt_vector(
+            radii_mm=radii_current,
+            buildup_factor=buildup_current,
+            find_radii_mode=mode_r,
+            find_buildup_mode=mode_b,
+        )
+        if x_seed.size > 0:
+            x_seed = np.clip(x_seed, lo, hi)
+            x_opt, opt_info = _coordinate_descent_spool(
+                x_seed,
+                lo=lo,
+                hi=hi,
+                kinds=kinds,
+                max_iters=int(inner_iters),
+                objective=_objective,
+            )
+            if lo.size > 0:
+                x_opt = np.clip(np.asarray(x_opt, dtype=float).reshape(-1), lo, hi)
+        else:
+            x_opt = x_seed
+            fitted_cost = float(_objective(x_opt))
+            opt_info = {
+                "success": True,
+                "message": "no spool parameters selected for fitting",
+                "nfev": int(eval_counter["count"]),
+                "nit": 0,
+                "start_cost": float(fitted_cost),
+                "fitted_cost": float(fitted_cost),
+                "step_final": [],
+            }
+
+        radii_opt, buildup_opt = _unpack_spool_opt_vector(
+            x_opt,
+            num_anchors=num_anchors,
+            find_radii_mode=mode_r,
+            find_buildup_mode=mode_b,
+            fixed_radii_mm=base,
+            fixed_buildup_factor=modeled_b,
+        )
+        spool_params_opt, transformed_opt = _build_dataset_and_params(radii_opt, buildup_opt)
+        model_cost = float(
+            _evaluate_cost_at_anchors(
+                transformed_opt,
+                anchors_next,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=True,
+                sigma_source=str(sigma_source),
+            )
+        )
+
+        if np.isfinite(model_cost) and model_cost < float(best["cost"]):
             best = {
-                "cost": float(cal_model_cost),
+                "cost": float(model_cost),
                 "radii_mm": np.asarray(radii_opt, dtype=float),
+                "buildup_factor": np.asarray(buildup_opt, dtype=float),
                 "anchors": np.asarray(anchors_next, dtype=float),
                 "spool_params": spool_params_opt,
                 "dataset": transformed_opt,
             }
 
+        start_cost = float(opt_info.get("start_cost", float("nan")))
+        fitted_cost = float(opt_info.get("fitted_cost", float("nan")))
         history.append(
             {
                 "outer_iter": int(outer_idx + 1),
-                "success": bool(getattr(result, "success", False)) if result is not None else False,
-                "message": str(getattr(result, "message", "")) if result is not None else "optimization failed",
-                "nfev": int(getattr(result, "nfev", eval_counter["count"])) if result is not None else int(
-                    eval_counter["count"]
-                ),
-                "nit": int(getattr(result, "nit", 0)) if result is not None else 0,
+                "success": bool(opt_info.get("success", False)),
+                "message": str(opt_info.get("message", "")),
+                "nfev": int(opt_info.get("nfev", eval_counter["count"])),
+                "nit": int(opt_info.get("nit", 0)),
                 "start_cost": float(start_cost),
-                "fitted_cost": float(getattr(result, "fun", start_cost)) if result is not None else float(start_cost),
-                "cal_step_success": bool(cal_step_success),
-                "cal_cost": float(cal_model_cost) if np.isfinite(cal_model_cost) else None,
+                "fitted_cost": float(fitted_cost),
+                "anchor_step_success": bool(anchor_step_success),
+                "anchor_cost": float(anchor_cost) if np.isfinite(anchor_cost) else None,
+                "cal_step_success": bool(anchor_step_success),
+                "cal_cost": float(model_cost) if np.isfinite(model_cost) else None,
+                "step_final": opt_info.get("step_final"),
                 "radii_mm": [float(v) for v in np.asarray(radii_opt, dtype=float).tolist()],
+                "buildup_factor": [float(v) for v in np.asarray(buildup_opt, dtype=float).tolist()],
             }
         )
 
-        x0 = _pack_radii_opt_vector(radii_opt, find_radii_mode=mode)
+        x_current = _pack_spool_opt_vector(
+            radii_mm=radii_opt,
+            buildup_factor=buildup_opt,
+            find_radii_mode=mode_r,
+            find_buildup_mode=mode_b,
+        )
+        if x_current.size > 0:
+            x_current = np.clip(x_current, lo, hi)
+        radii_current = np.asarray(radii_opt, dtype=float)
+        buildup_current = np.asarray(buildup_opt, dtype=float)
         anchors_current = np.asarray(anchors_next, dtype=float)
 
     if best["dataset"] is None or best["spool_params"] is None:
-        radii_fallback = _unpack_radii_opt_vector(
-            np.clip(x0, lo, hi),
+        if x_current.size > 0:
+            x_use = np.clip(x_current, lo, hi)
+        else:
+            x_use = x_current
+        radii_fallback, buildup_fallback = _unpack_spool_opt_vector(
+            x_use,
             num_anchors=num_anchors,
-            find_radii_mode=mode,
+            find_radii_mode=mode_r,
+            find_buildup_mode=mode_b,
+            fixed_radii_mm=base,
+            fixed_buildup_factor=modeled_b,
         )
-        spool_params_fallback, transformed_fallback = _build_dataset_and_params(radii_fallback)
+        spool_params_fallback, transformed_fallback = _build_dataset_and_params(radii_fallback, buildup_fallback)
         best = {
             "cost": float("nan"),
             "radii_mm": np.asarray(radii_fallback, dtype=float),
+            "buildup_factor": np.asarray(buildup_fallback, dtype=float),
             "anchors": np.asarray(anchors_current, dtype=float),
             "spool_params": spool_params_fallback,
             "dataset": transformed_fallback,
         }
 
+    r0_bounds_info = (
+        [float(np.min(lo_r)), float(np.max(hi_r))]
+        if lo_r.size > 0 and hi_r.size > 0
+        else None
+    )
+    b_bounds_info = (
+        [float(np.min(lo_b)), float(np.max(hi_b))]
+        if lo_b.size > 0 and hi_b.size > 0
+        else None
+    )
+    spool_info_hessian = None
+    spool_info_rank = None
+    if lo.size > 0 and hi.size > 0:
+        x_best = _pack_spool_opt_vector(
+            radii_mm=np.asarray(best["radii_mm"], dtype=float),
+            buildup_factor=np.asarray(best["buildup_factor"], dtype=float),
+            find_radii_mode=mode_r,
+            find_buildup_mode=mode_b,
+        )
+        x_best = np.clip(np.asarray(x_best, dtype=float).reshape(-1), lo, hi)
+        anchors_best = np.asarray(best["anchors"], dtype=float)
+
+        def _objective_for_hessian(opt_vec: np.ndarray) -> float:
+            if lo.size > 0:
+                clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
+            else:
+                clipped_vec = np.asarray(opt_vec, dtype=float).reshape(-1)
+            radii_try, buildup_try = _unpack_spool_opt_vector(
+                clipped_vec,
+                num_anchors=num_anchors,
+                find_radii_mode=mode_r,
+                find_buildup_mode=mode_b,
+                fixed_radii_mm=base,
+                fixed_buildup_factor=modeled_b,
+            )
+            _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
+            data_cost = _evaluate_cost_at_anchors(
+                transformed_try,
+                anchors_best,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=True,
+                sigma_source=str(sigma_source),
+            )
+            if not np.isfinite(data_cost):
+                return float("inf")
+            return float(data_cost + _prior_cost(radii_try, buildup_try))
+
+        hess = _numerical_hessian_symmetric(
+            x_best,
+            lo=lo,
+            hi=hi,
+            kinds=kinds,
+            objective=_objective_for_hessian,
+        )
+        if isinstance(hess, np.ndarray) and hess.size:
+            spool_info_hessian = hess
+            spool_info_rank = int(np.linalg.matrix_rank(hess))
+
     fit_info: Dict[str, object] = {
-        "mode": mode,
-        "bounds_mm": [float(np.min(lo)), float(np.max(hi))],
-        "r0_prior_sigma_mm": (None if sigma is None else float(sigma)),
+        "mode": f"radii={mode_r},buildup={mode_b}",
+        "radii_mode": mode_r,
+        "buildup_mode": mode_b,
+        "bounds_mm": r0_bounds_info,
+        "r0_bounds_mm": r0_bounds_info,
+        "b_bounds": b_bounds_info,
+        "r0_prior_sigma_mm": (None if sigma_r is None else float(sigma_r)),
+        "b_prior_sigma": (None if sigma_b is None else float(sigma_b)),
+        "radii_pair_sigma_mm": (None if sigma_rpair is None else float(sigma_rpair)),
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "history": history,
@@ -777,6 +993,16 @@ def _estimate_effective_radii_with_spool_model(
             float(best["cost"])
             if isinstance(best.get("cost"), (int, float)) and np.isfinite(float(best["cost"]))
             else None
+        ),
+        "best_radii_mm": [float(v) for v in np.asarray(best["radii_mm"], dtype=float).tolist()],
+        "best_modeled_buildup_factor": [
+            float(v) for v in np.asarray(best["buildup_factor"], dtype=float).tolist()
+        ],
+        "spool_info_rank": spool_info_rank,
+        "spool_info_matrix": (
+            None
+            if spool_info_hessian is None
+            else np.asarray(spool_info_hessian, dtype=float).tolist()
         ),
     }
 
@@ -1449,6 +1675,298 @@ def _default_modeled_buildup_values(
     return np.full(int(num_anchors), float(k), dtype=float)
 
 
+def _mode_opt_dim(mode: str, *, num_anchors: int) -> int:
+    norm = _normalize_spool_find_mode(mode)
+    if norm == "off":
+        return 0
+    if norm == "global":
+        return 1
+    return int(num_anchors)
+
+
+def _resolve_b_bounds(
+    modeled_buildup_factor: np.ndarray,
+    *,
+    find_buildup_mode: str,
+    b_bounds: Optional[Tuple[float, float]],
+) -> Tuple[np.ndarray, np.ndarray]:
+    mode = _normalize_spool_find_mode(find_buildup_mode)
+    base = np.asarray(modeled_buildup_factor, dtype=float).reshape(-1)
+    if mode == "off":
+        return np.zeros(0, dtype=float), np.zeros(0, dtype=float)
+    if base.size <= 0:
+        raise ValueError("missing modeled_buildup_factor")
+
+    if b_bounds is not None:
+        lo_raw = float(b_bounds[0])
+        hi_raw = float(b_bounds[1])
+    else:
+        lo_raw = float(_DEFAULT_B_BOUNDS[0])
+        hi_raw = float(_DEFAULT_B_BOUNDS[1])
+    if not np.isfinite(lo_raw) or not np.isfinite(hi_raw) or hi_raw <= lo_raw:
+        raise ValueError("invalid buildup-factor bounds")
+
+    if mode == "global":
+        return np.asarray([lo_raw], dtype=float), np.asarray([hi_raw], dtype=float)
+
+    lo = np.full(base.shape, lo_raw, dtype=float)
+    hi = np.full(base.shape, hi_raw, dtype=float)
+    if np.any(~np.isfinite(lo)) or np.any(~np.isfinite(hi)) or np.any(hi <= lo):
+        raise ValueError("invalid per-anchor buildup-factor bounds")
+    return lo, hi
+
+
+def _pack_buildup_opt_vector(buildup_factor: np.ndarray, *, find_buildup_mode: str) -> np.ndarray:
+    mode = _normalize_spool_find_mode(find_buildup_mode)
+    vals = np.asarray(buildup_factor, dtype=float).reshape(-1)
+    if mode == "off":
+        return np.zeros(0, dtype=float)
+    if mode == "global":
+        return np.asarray([float(np.median(vals))], dtype=float)
+    return np.asarray(vals, dtype=float)
+
+
+def _unpack_buildup_opt_vector(opt_vec: np.ndarray, *, num_anchors: int, find_buildup_mode: str) -> np.ndarray:
+    mode = _normalize_spool_find_mode(find_buildup_mode)
+    vals = np.asarray(opt_vec, dtype=float).reshape(-1)
+    if mode == "off":
+        return np.zeros(int(num_anchors), dtype=float)
+    if mode == "global":
+        if vals.size != 1:
+            raise ValueError("global buildup-factor mode expects one optimization variable")
+        return np.full(int(num_anchors), float(vals[0]), dtype=float)
+    if vals.size != int(num_anchors):
+        raise ValueError("per-anchor buildup-factor mode expects one variable per anchor")
+    return np.asarray(vals, dtype=float)
+
+
+def _pack_spool_opt_vector(
+    *,
+    radii_mm: np.ndarray,
+    buildup_factor: np.ndarray,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+) -> np.ndarray:
+    parts: List[np.ndarray] = []
+    if _spool_mode_enabled(find_radii_mode):
+        parts.append(_pack_radii_opt_vector(radii_mm, find_radii_mode=find_radii_mode))
+    if _spool_mode_enabled(find_buildup_mode):
+        parts.append(_pack_buildup_opt_vector(buildup_factor, find_buildup_mode=find_buildup_mode))
+    if not parts:
+        return np.zeros(0, dtype=float)
+    return np.concatenate(parts).astype(float)
+
+
+def _unpack_spool_opt_vector(
+    opt_vec: np.ndarray,
+    *,
+    num_anchors: int,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+    fixed_radii_mm: np.ndarray,
+    fixed_buildup_factor: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    mode_r = _normalize_spool_find_mode(find_radii_mode)
+    mode_b = _normalize_spool_find_mode(find_buildup_mode)
+    vals = np.asarray(opt_vec, dtype=float).reshape(-1)
+    offset = 0
+
+    if _spool_mode_enabled(mode_r):
+        dim_r = _mode_opt_dim(mode_r, num_anchors=num_anchors)
+        radii = _unpack_radii_opt_vector(vals[offset : offset + dim_r], num_anchors=num_anchors, find_radii_mode=mode_r)
+        offset += dim_r
+    else:
+        radii = np.asarray(fixed_radii_mm, dtype=float).reshape(-1)
+
+    if _spool_mode_enabled(mode_b):
+        dim_b = _mode_opt_dim(mode_b, num_anchors=num_anchors)
+        buildup = _unpack_buildup_opt_vector(
+            vals[offset : offset + dim_b], num_anchors=num_anchors, find_buildup_mode=mode_b
+        )
+        offset += dim_b
+    else:
+        buildup = np.asarray(fixed_buildup_factor, dtype=float).reshape(-1)
+
+    if offset != vals.size:
+        raise ValueError("spool optimization vector length mismatch")
+    return np.asarray(radii, dtype=float), np.asarray(buildup, dtype=float)
+
+
+def _spool_opt_kinds(
+    *,
+    num_anchors: int,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+) -> List[str]:
+    kinds: List[str] = []
+    mode_r = _normalize_spool_find_mode(find_radii_mode)
+    mode_b = _normalize_spool_find_mode(find_buildup_mode)
+    kinds.extend(["r"] * _mode_opt_dim(mode_r, num_anchors=num_anchors))
+    kinds.extend(["k"] * _mode_opt_dim(mode_b, num_anchors=num_anchors))
+    return kinds
+
+
+def _initial_spool_steps(x: np.ndarray, lo: np.ndarray, hi: np.ndarray, kinds: Sequence[str]) -> np.ndarray:
+    out = np.zeros_like(x, dtype=float)
+    for idx, kind in enumerate(kinds):
+        xi = float(x[idx])
+        span = float(hi[idx] - lo[idx]) if idx < hi.size else float("nan")
+        if kind == "r":
+            span_term = 0.02 * span if np.isfinite(span) and span > 0.0 else 0.0
+            step = max(0.015 * max(abs(xi), 1.0), span_term, 0.25)
+        else:
+            span_term = 0.02 * span if np.isfinite(span) and span > 0.0 else 0.0
+            step = max(0.08 * max(abs(xi), 1e-3), span_term, 1e-3)
+        if np.isfinite(span) and span > 0.0:
+            step = min(step, 0.5 * span)
+        out[idx] = max(step, 1e-8)
+    return out
+
+
+def _spool_step_tolerances(kinds: Sequence[str]) -> np.ndarray:
+    return np.asarray([1e-3 if kind == "r" else 1e-5 for kind in kinds], dtype=float)
+
+
+def _coordinate_descent_spool(
+    x0: np.ndarray,
+    *,
+    lo: np.ndarray,
+    hi: np.ndarray,
+    kinds: Sequence[str],
+    max_iters: int,
+    objective: Any,
+) -> Tuple[np.ndarray, Dict[str, object]]:
+    x = np.clip(np.asarray(x0, dtype=float).reshape(-1), lo, hi)
+    if x.size == 0:
+        cost0 = float(objective(x))
+        return x, {
+            "success": True,
+            "message": "no spool parameters selected for fitting",
+            "nfev": 1,
+            "nit": 0,
+            "start_cost": cost0,
+            "fitted_cost": cost0,
+            "step_final": [],
+        }
+
+    steps = _initial_spool_steps(x, lo, hi, kinds)
+    tol = _spool_step_tolerances(kinds)
+    start_cost = float(objective(x))
+    best = float(start_cost)
+    nfev = 1
+    improved_any = False
+    nit = 0
+
+    for outer in range(max(1, int(max_iters))):
+        nit = outer + 1
+        improved_this_round = False
+        for idx in range(x.size):
+            if steps[idx] <= tol[idx]:
+                continue
+            for direction in (1.0, -1.0):
+                x_try = x.copy()
+                cand = float(np.clip(x[idx] + direction * steps[idx], lo[idx], hi[idx]))
+                if abs(cand - x[idx]) <= 1e-12:
+                    continue
+                x_try[idx] = cand
+                score = float(objective(x_try))
+                nfev += 1
+                if np.isfinite(score) and score + 1e-12 < best:
+                    best = score
+                    x = x_try
+                    improved_this_round = True
+                    improved_any = True
+        if improved_this_round:
+            continue
+        steps *= 0.5
+        if np.all(steps <= tol):
+            break
+
+    return x, {
+        "success": bool(improved_any),
+        "message": (
+            "coordinate descent converged"
+            if np.all(steps <= tol)
+            else "coordinate descent reached iteration limit"
+        ),
+        "nfev": int(nfev),
+        "nit": int(nit),
+        "start_cost": float(start_cost),
+        "fitted_cost": float(best),
+        "step_final": [float(v) for v in np.asarray(steps, dtype=float).tolist()],
+    }
+
+
+def _numerical_hessian_symmetric(
+    x0: np.ndarray,
+    *,
+    lo: np.ndarray,
+    hi: np.ndarray,
+    kinds: Sequence[str],
+    objective: Any,
+) -> Optional[np.ndarray]:
+    x = np.asarray(x0, dtype=float).reshape(-1)
+    if x.size == 0:
+        return np.zeros((0, 0), dtype=float)
+    if lo.size != x.size or hi.size != x.size:
+        return None
+
+    x = np.clip(x, lo, hi)
+    n = int(x.size)
+    h = np.asarray([1e-3 if kind == "r" else 1e-4 for kind in kinds], dtype=float)
+    h = np.where(np.isfinite(h) & (h > 0.0), h, 1e-4)
+    hess = np.zeros((n, n), dtype=float)
+
+    f0 = float(objective(x))
+    if not np.isfinite(f0):
+        return None
+
+    for i in range(n):
+        hi_i = float(h[i])
+        if hi_i <= 0.0:
+            return None
+
+        x_plus = x.copy()
+        x_minus = x.copy()
+        x_plus[i] = float(np.clip(x[i] + hi_i, lo[i], hi[i]))
+        x_minus[i] = float(np.clip(x[i] - hi_i, lo[i], hi[i]))
+        f_plus = float(objective(x_plus))
+        f_minus = float(objective(x_minus))
+        if not np.isfinite(f_plus) or not np.isfinite(f_minus):
+            return None
+        hess[i, i] = float((f_plus - (2.0 * f0) + f_minus) / (hi_i * hi_i))
+
+        for j in range(i + 1, n):
+            hi_j = float(h[j])
+            if hi_j <= 0.0:
+                return None
+            x_pp = x.copy()
+            x_pm = x.copy()
+            x_mp = x.copy()
+            x_mm = x.copy()
+            x_pp[i] = float(np.clip(x[i] + hi_i, lo[i], hi[i]))
+            x_pp[j] = float(np.clip(x[j] + hi_j, lo[j], hi[j]))
+            x_pm[i] = float(np.clip(x[i] + hi_i, lo[i], hi[i]))
+            x_pm[j] = float(np.clip(x[j] - hi_j, lo[j], hi[j]))
+            x_mp[i] = float(np.clip(x[i] - hi_i, lo[i], hi[i]))
+            x_mp[j] = float(np.clip(x[j] + hi_j, lo[j], hi[j]))
+            x_mm[i] = float(np.clip(x[i] - hi_i, lo[i], hi[i]))
+            x_mm[j] = float(np.clip(x[j] - hi_j, lo[j], hi[j]))
+            f_pp = float(objective(x_pp))
+            f_pm = float(objective(x_pm))
+            f_mp = float(objective(x_mp))
+            f_mm = float(objective(x_mm))
+            if not (np.isfinite(f_pp) and np.isfinite(f_pm) and np.isfinite(f_mp) and np.isfinite(f_mm)):
+                return None
+            mixed = float((f_pp - f_pm - f_mp + f_mm) / (4.0 * hi_i * hi_j))
+            hess[i, j] = mixed
+            hess[j, i] = mixed
+
+    if not np.all(np.isfinite(hess)):
+        return None
+    return hess
+
+
 def _default_delta_range(
     *,
     max_travel_mm: Optional[float],
@@ -1643,16 +2161,16 @@ def _plan_next_ellipse_sweep(
     warnings: List[str] = []
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
-    if _spool_mode_enabled(find_buildup_mode):
-        warnings.append("find_buildup_factor_not_implemented")
-    if b_bounds is not None:
-        warnings.append("b_bounds_ignored_until_find_buildup_factor_is_implemented")
-    if b_prior_sigma is not None:
-        warnings.append("b_prior_sigma_ignored_until_find_buildup_factor_is_implemented")
+    search_radii = _spool_mode_enabled(find_radii_mode)
+    search_buildup = _spool_mode_enabled(find_buildup_mode)
     if r0_bounds is not None and not _spool_mode_enabled(find_radii_mode):
         warnings.append("r0_bounds_ignored_without_find_radii")
     if r0_prior_sigma_mm is not None and not _spool_mode_enabled(find_radii_mode):
         warnings.append("r0_prior_sigma_mm_ignored_without_find_radii")
+    if b_bounds is not None and not _spool_mode_enabled(find_buildup_mode):
+        warnings.append("b_bounds_ignored_without_find_buildup_factor")
+    if b_prior_sigma is not None and not _spool_mode_enabled(find_buildup_mode):
+        warnings.append("b_prior_sigma_ignored_without_find_buildup_factor")
 
     est_buildup = 0.0
     if buildup_factor is not None:
@@ -1668,7 +2186,7 @@ def _plan_next_ellipse_sweep(
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
 
-    if _spool_mode_enabled(find_radii_mode):
+    if search_radii or search_buildup:
         validate_dataset_has_raw_angles(dataset)
         lm_params = _resolve_length_model_base_params(
             dataset,
@@ -1715,13 +2233,16 @@ def _plan_next_ellipse_sweep(
                 dataset,
                 seed_anchors,
                 find_radii_mode=find_radii_mode,
+                find_buildup_mode=find_buildup_mode,
                 base_radii_mm=base_radii_mm,
                 modeled_buildup_factor=modeled_buildup,
                 spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
                 mechanical_advantage=mechanical_advantage,
                 lines_per_spool=lines_per_spool,
                 r0_bounds=r0_bounds,
+                b_bounds=b_bounds,
                 r0_prior_sigma_mm=r0_prior_sigma_mm,
+                b_prior_sigma=b_prior_sigma,
                 spool_outer_iters=int(spool_outer_iters),
                 spool_inner_iters=int(spool_inner_iters),
                 solve_restarts=int(solve_restarts),
@@ -1741,6 +2262,13 @@ def _plan_next_ellipse_sweep(
             )
         )
         _ = _fit_anchors
+        fitted_buildup = np.asarray(
+            radii_fit.get("best_modeled_buildup_factor", modeled_buildup.tolist()),
+            dtype=float,
+        ).reshape(-1)
+        if fitted_buildup.size != int(num_anchors):
+            fitted_buildup = np.asarray(modeled_buildup, dtype=float).reshape(-1)
+        k_summary = float(np.median(fitted_buildup)) if fitted_buildup.size else float(est_buildup)
         sweep_configs_for_info = sweep_configs_with_modeled_lengths(
             sweep_configs_for_info,
             spool_params,
@@ -1776,11 +2304,11 @@ def _plan_next_ellipse_sweep(
             "find_buildup_factor_mode": str(find_buildup_mode),
             "find_radii": _spool_mode_enabled(find_radii_mode),
             "find_buildup_factor": _spool_mode_enabled(find_buildup_mode),
-            "buildup_factor_k": float(est_buildup),
+            "buildup_factor_k": float(k_summary),
             "base_radii_mm": [float(v) for v in base_radii_mm.tolist()],
             "effective_radii_mm": [float(v) for v in np.asarray(effective_radii_mm, dtype=float).tolist()],
             "modeled_radii_mm": [float(v) for v in np.asarray(effective_radii_mm, dtype=float).tolist()],
-            "modeled_buildup_factor": [float(v) for v in np.asarray(modeled_buildup, dtype=float).tolist()],
+            "modeled_buildup_factor": [float(v) for v in np.asarray(fitted_buildup, dtype=float).tolist()],
             "spool_to_motor_gearing_factor": [
                 float(v) for v in np.asarray(spool_to_motor_gearing_factor, dtype=float).tolist()
             ],
@@ -1809,10 +2337,9 @@ def _plan_next_ellipse_sweep(
             "spool_outer_iters": int(spool_outer_iters),
             "spool_inner_iters": int(spool_inner_iters),
             "radii_fit": radii_fit,
+            "spool_fit": radii_fit,
         }
     else:
-        if _spool_mode_enabled(find_buildup_mode):
-            warnings.append("find_buildup_factor_requires_find_radii_currently")
         cal = calibrate_elliptical(
             dataset_path,
             output_path=None,
@@ -2079,11 +2606,18 @@ def _print_ellipse_plan(
         base = np.asarray(length_model.get("base_radii_mm", []), dtype=float)
         eff = np.asarray(length_model.get("effective_radii_mm", []), dtype=float)
         k_val = length_model.get("buildup_factor_k", 0.0)
+        k_arr = np.asarray(length_model.get("modeled_buildup_factor", []), dtype=float)
         find_radii_mode = str(length_model.get("find_radii_mode", "off"))
         find_buildup_mode = str(length_model.get("find_buildup_factor_mode", "off"))
         base_str = ",".join(f"{float(v):.4g}" for v in base.tolist()) if base.size else "n/a"
         eff_str = ",".join(f"{float(v):.4g}" for v in eff.tolist()) if eff.size else "n/a"
-        k_str = _fmt_float(k_val)
+        if k_arr.size and np.all(np.isfinite(k_arr)):
+            if k_arr.size > 1 and np.max(np.abs(k_arr - float(k_arr[0]))) > 1e-9:
+                k_str = "[" + ",".join(f"{float(v):.4g}" for v in k_arr.tolist()) + "]"
+            else:
+                k_str = _fmt_float(float(k_arr[0]))
+        else:
+            k_str = _fmt_float(k_val)
         print(
             f"; line_model: planning=L_base_mm estimation=L_model_mm "
             f"find_radii={find_radii_mode} "
@@ -3520,7 +4054,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         nargs="?",
         const="per-anchor",
         default="off",
-        help="Buildup-factor fit mode: off | global | per-anchor (estimation not implemented yet).",
+        help="Buildup-factor fit mode: off | global | per-anchor (default: off).",
     )
     parser.add_argument(
         "--base-radii",
@@ -3544,7 +4078,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--b-bounds",
         type=str,
         default=None,
-        help="Bounds for fitted buildup factor as 'min,max' (placeholder until buildup fitting lands).",
+        help="Bounds for fitted buildup factor as 'min,max'.",
     )
     parser.add_argument(
         "--r0-prior-sigma-mm",
@@ -3556,7 +4090,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--b-prior-sigma",
         type=float,
         default=None,
-        help="Gaussian prior sigma for buildup-factor fitting (placeholder).",
+        help="Gaussian prior sigma for buildup-factor fitting.",
     )
     parser.add_argument(
         "--spool-outer-iters",
