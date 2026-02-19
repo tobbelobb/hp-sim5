@@ -30,7 +30,7 @@ DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
 _DEFAULT_B_BOUNDS = (-0.5, 0.5)
-_DEFAULT_B_PRIOR_SIGMA = 0.05
+_DEFAULT_B_PRIOR_SIGMA = 0.01
 _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
@@ -691,6 +691,28 @@ def _estimate_effective_radii_with_spool_model(
             prior += float(np.sum(((radii_arr - r_mean) / sigma_rpair) ** 2.0))
         return float(prior)
 
+    # Keep spool-step data term aligned with the main optimization metric.
+    spool_noise_normalized = True
+
+    def _data_cost(transformed_dataset: dict, anchors_eval: np.ndarray) -> float:
+        return float(
+            _evaluate_cost_at_anchors(
+                transformed_dataset,
+                anchors_eval,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=bool(spool_noise_normalized),
+                sigma_source=str(sigma_source),
+            )
+        )
+
     for outer_idx in range(outer_iters):
         spool_params_seed, transformed_seed = _build_dataset_and_params(radii_current, buildup_current)
 
@@ -713,9 +735,9 @@ def _estimate_effective_radii_with_spool_model(
                 use_parallel=False,
                 pointwise_residual_mode=str(pointwise_residual_mode),
                 robust_debug=False,
-                pointwise_filtering=False,
+                pointwise_filtering=bool(pointwise_filtering),
                 pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=False,
+                sweep_wise_filtering=bool(sweep_wise_filtering),
                 sweep_metric=str(sweep_metric),
                 use_noise_mean=bool(use_noise_mean),
                 sigma_source=str(sigma_source),
@@ -726,23 +748,7 @@ def _estimate_effective_radii_with_spool_model(
             if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(np.isfinite(cand_anchors)):
                 anchors_next = cand_anchors
                 anchor_step_success = True
-            anchor_cost = float(
-                _evaluate_cost_at_anchors(
-                    transformed_seed,
-                    anchors_next,
-                    residual_threshold=float(residual_threshold),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    noise_normalized=True,
-                    sigma_source=str(sigma_source),
-                )
-            )
+            anchor_cost = float(_data_cost(transformed_seed, anchors_next))
         except Exception:
             anchor_step_success = False
 
@@ -769,21 +775,7 @@ def _estimate_effective_radii_with_spool_model(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-                data_cost = _evaluate_cost_at_anchors(
-                    transformed_try,
-                    anchors_next,
-                    residual_threshold=float(residual_threshold),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    noise_normalized=True,
-                    sigma_source=str(sigma_source),
-                )
+                data_cost = _data_cost(transformed_try, anchors_next)
                 if not np.isfinite(data_cost):
                     return 1e12
                 prior = _prior_cost(radii_try, buildup_try)
@@ -836,23 +828,7 @@ def _estimate_effective_radii_with_spool_model(
             fixed_buildup_factor=modeled_b,
         )
         spool_params_opt, transformed_opt = _build_dataset_and_params(radii_opt, buildup_opt)
-        model_cost = float(
-            _evaluate_cost_at_anchors(
-                transformed_opt,
-                anchors_next,
-                residual_threshold=float(residual_threshold),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                noise_normalized=True,
-                sigma_source=str(sigma_source),
-            )
-        )
+        model_cost = float(_data_cost(transformed_opt, anchors_next))
 
         if np.isfinite(model_cost) and model_cost < float(best["cost"]):
             best = {
@@ -956,21 +932,7 @@ def _estimate_effective_radii_with_spool_model(
                 fixed_buildup_factor=modeled_b,
             )
             _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-            data_cost = _evaluate_cost_at_anchors(
-                transformed_try,
-                anchors_best,
-                residual_threshold=float(residual_threshold),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                noise_normalized=True,
-                sigma_source=str(sigma_source),
-            )
+            data_cost = _data_cost(transformed_try, anchors_best)
             if not np.isfinite(data_cost):
                 return float("inf")
             return float(data_cost + _prior_cost(radii_try, buildup_try))
@@ -998,6 +960,7 @@ def _estimate_effective_radii_with_spool_model(
         "radii_pair_sigma_mm": (None if sigma_rpair is None else float(sigma_rpair)),
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
+        "noise_normalized_data_term": bool(spool_noise_normalized),
         "history": history,
         "best_cost": (
             float(best["cost"])
@@ -1249,6 +1212,56 @@ def _m669_from_plan(plan: Dict[str, object]) -> Optional[str]:
         return None
     machine_type = str(plan.get("machine_type", ""))
     return _format_m669_command(np.asarray(anchors, dtype=float), machine_type)
+
+
+def _format_m666_vector(values: np.ndarray, *, fmt: str = ".4g") -> Optional[str]:
+    arr = np.asarray(values, dtype=float).reshape(-1)
+    if arr.size == 0 or not np.all(np.isfinite(arr)):
+        return None
+    return ":".join(f"{float(v):{fmt}}" for v in arr.tolist())
+
+
+def _format_m666_from_length_model(length_model: object) -> Optional[str]:
+    if not isinstance(length_model, dict):
+        return None
+
+    radii = np.asarray(
+        length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm", [])),
+        dtype=float,
+    ).reshape(-1)
+    radii_spec = _format_m666_vector(radii, fmt=".4g")
+
+    buildup_vals = np.asarray(length_model.get("modeled_buildup_factor", []), dtype=float).reshape(-1)
+    if buildup_vals.size == 0 or not np.all(np.isfinite(buildup_vals)):
+        try:
+            k_scalar = float(length_model.get("buildup_factor_k"))
+        except (TypeError, ValueError):
+            k_scalar = float("nan")
+        if np.isfinite(k_scalar):
+            buildup_vals = np.asarray([k_scalar], dtype=float)
+        else:
+            buildup_vals = np.zeros(0, dtype=float)
+
+    q_spec = None
+    if buildup_vals.size > 0 and np.all(np.isfinite(buildup_vals)):
+        if buildup_vals.size > 1 and np.max(np.abs(buildup_vals - float(buildup_vals[0]))) > 1e-9:
+            q_spec = _format_m666_vector(buildup_vals, fmt=".6g")
+        else:
+            q_spec = f"{float(buildup_vals[0]):.6g}"
+
+    if radii_spec is None and q_spec is None:
+        return None
+
+    parts = ["M666"]
+    if radii_spec is not None:
+        parts.append(f"R{radii_spec}")
+    if q_spec is not None:
+        parts.append(f"Q{q_spec}")
+    return " ".join(parts)
+
+
+def _m666_from_plan(plan: Dict[str, object]) -> Optional[str]:
+    return _format_m666_from_length_model(plan.get("length_model"))
 
 def _anchor_norms(anchors: np.ndarray) -> List[float]:
     anchors = np.asarray(anchors, dtype=float)
@@ -1876,6 +1889,8 @@ def _coordinate_descent_spool(
         for idx in range(x.size):
             if steps[idx] <= tol[idx]:
                 continue
+            best_local = float(best)
+            improved_this_axis = False
             for direction in (1.0, -1.0):
                 x_try = x.copy()
                 cand = float(np.clip(x[idx] + direction * steps[idx], lo[idx], hi[idx]))
@@ -1884,25 +1899,28 @@ def _coordinate_descent_spool(
                 x_try[idx] = cand
                 score = float(objective(x_try))
                 nfev += 1
-                if np.isfinite(score) and score + 1e-12 < best:
+                if np.isfinite(score) and score + 1e-12 < best_local:
+                    best_local = float(score)
                     best = score
                     x = x_try
                     improved_this_round = True
+                    improved_this_axis = True
                     improved_any = True
+            if not improved_this_axis:
+                steps[idx] *= 0.5
         if improved_this_round:
             gain = float(best_before_round - best)
-            tol_gain = max(1e-6, 1e-6 * max(1.0, abs(best_before_round)))
+            tol_gain = max(1e-6, 1e-4 * max(1.0, abs(best_before_round)))
             if gain <= tol_gain:
                 stall_rounds += 1
             else:
                 stall_rounds = 0
-            if stall_rounds >= 2:
+            if stall_rounds >= 3:
                 converged_by_stall = True
                 break
-            continue
-        steps *= 0.5
-        if np.all(steps <= tol):
-            break
+        else:
+            if np.all(steps <= tol):
+                break
 
     return x, {
         "success": bool(improved_any),
@@ -2246,9 +2264,9 @@ def _plan_next_ellipse_sweep(
             use_parallel=False,
             pointwise_residual_mode=str(pointwise_residual_mode),
             robust_debug=False,
-            pointwise_filtering=False,
+            pointwise_filtering=bool(pointwise_filtering),
             pointwise_global_mad=bool(pointwise_global_mad),
-            sweep_wise_filtering=False,
+            sweep_wise_filtering=bool(sweep_wise_filtering),
             sweep_metric=str(sweep_metric),
             use_noise_mean=bool(use_noise_mean),
             sigma_source=str(sigma_source),
@@ -2652,6 +2670,9 @@ def _print_ellipse_plan(
             f"find_buildup_factor={find_buildup_mode} "
             f"k={k_str} base=[{base_str}] effective=[{eff_str}]"
         )
+        m666_line_model = _format_m666_from_length_model(length_model)
+        if isinstance(m666_line_model, str) and m666_line_model:
+            print(f"; line_model_params (M666): {m666_line_model}")
         radii_fit = length_model.get("radii_fit")
         if isinstance(radii_fit, dict):
             history = radii_fit.get("history")
@@ -3077,6 +3098,7 @@ def full_auto_loop(
                 if isinstance(sweep, dict) and sweep.get("id"):
                     sweep_ids.append(str(sweep["id"]))
         m669 = _m669_from_plan(best_plan)
+        m666 = _m666_from_plan(best_plan)
         anchors = best_plan.get("anchors")
         anchor_str = ""
         if isinstance(anchors, np.ndarray):
@@ -3092,6 +3114,8 @@ def full_auto_loop(
             _log_console(f"Parameters (M669): {m669}")
         elif anchor_str:
             _log_console(f"Anchors: {anchor_str}")
+        if m666:
+            _log_console(f"Line model (M666): {m666}")
         if has_variants:
             best_flags = str(best_meta.get("flags", "")).strip()
             best_run = str(best_meta.get("run_id", "")).strip()
@@ -3462,6 +3486,9 @@ def full_auto_loop(
                 max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
                 warnings = _plan_data_quality_warnings(plan)
                 noise_metrics = _plan_noise_metrics(plan)
+                underconstrained_penalty = _plan_hits_underconstrained_penalty(plan, primary_cost)
+                if underconstrained_penalty:
+                    warnings.append("underconstrained_penalty")
                 valid = bool(np.isfinite(primary_cost) and cov_ok)
                 cost_raw = plan.get("cost_raw")
                 cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
@@ -3492,6 +3519,7 @@ def full_auto_loop(
                             "max_std_mm": max_std_mm,
                             "rel_std": rel_std,
                             "covariance_ok": cov_ok,
+                            "underconstrained_penalty": underconstrained_penalty,
                             "warnings": warnings,
                             "valid": valid,
                         },
@@ -3523,8 +3551,9 @@ def full_auto_loop(
                 _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
                 return _finalize(2)
 
-            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
+            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, float, str]:
                 metrics = entry["metrics"]
+                underconstrained = bool(metrics.get("underconstrained_penalty", False))
                 cost = float(metrics.get("primary_cost", float("inf")))
                 rel = metrics.get("rel_std")
                 rel_val = (
@@ -3532,7 +3561,7 @@ def full_auto_loop(
                     if isinstance(rel, (int, float)) and np.isfinite(rel)
                     else float("inf")
                 )
-                return cost, rel_val, str(entry.get("id", ""))
+                return (1.0 if underconstrained else 0.0), cost, rel_val, str(entry.get("id", ""))
 
             selected = sorted(valid_runs, key=_sort_key)[0]
             plan = selected["plan"]
@@ -3540,6 +3569,7 @@ def full_auto_loop(
             selected_id = str(selected.get("id", "run"))
             selected_flags = str(selected.get("flags", "")).strip()
             selected_cost = float(metrics.get("primary_cost", float("nan")))
+            selected_underconstrained = bool(metrics.get("underconstrained_penalty", False))
             selected_max_std = metrics.get("max_std_mm")
             selected_rel_std = metrics.get("rel_std")
             selected_warnings = list(metrics.get("warnings") or [])
@@ -3562,7 +3592,7 @@ def full_auto_loop(
             if np.isfinite(selected_cost):
                 improvement = float(best_cost) - float(selected_cost) if np.isfinite(best_cost) else None
             improved = False
-            if np.isfinite(selected_cost) and (
+            if (not selected_underconstrained) and np.isfinite(selected_cost) and (
                 best_plan is None or selected_cost <= best_cost - min_delta
             ):
                 best_cost = float(selected_cost)
@@ -3577,7 +3607,7 @@ def full_auto_loop(
                 }
                 no_improve = 0
                 improved = True
-            else:
+            elif not selected_underconstrained:
                 no_improve += 1
 
             stop_cost_hit = False
@@ -3603,13 +3633,17 @@ def full_auto_loop(
             if has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
             _log_console(f"cost: {summary_cost}")
+            if selected_underconstrained:
+                _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
             threshold_accept = False
             if stop_cost is not None and stop_cost_hit:
                 threshold_accept = True
             if stop_std_mm is not None and stop_std_hit:
                 threshold_accept = True
-            if threshold_accept or no_improve >= patience_limit:
+            if selected_underconstrained:
+                decision = "collect"
+            elif threshold_accept or no_improve >= patience_limit:
                 decision = "accept"
             else:
                 decision = "collect"
@@ -4708,6 +4742,26 @@ def _plan_data_quality_warnings(plan: Dict[str, object]) -> List[str]:
             out.append(w)
             seen.add(w)
     return out
+
+
+def _plan_hits_underconstrained_penalty(plan: Dict[str, object], primary_cost: Optional[float] = None) -> bool:
+    try:
+        cost = float(_plan_primary_cost(plan) if primary_cost is None else primary_cost)
+    except (TypeError, ValueError):
+        return False
+    if not np.isfinite(cost):
+        return False
+    if abs(cost - 100.0) > 1e-9:
+        return False
+    noise_metrics = _plan_noise_metrics(plan)
+    if isinstance(noise_metrics, dict):
+        try:
+            chi2_red = float(noise_metrics.get("chi2_red"))
+        except (TypeError, ValueError):
+            chi2_red = float("nan")
+        if np.isfinite(chi2_red) and chi2_red > 1e3:
+            return True
+    return True
 
 
 def _full_auto_cfg_path(dataset_path: Path, run_id: str) -> Path:
