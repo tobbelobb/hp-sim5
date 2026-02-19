@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autocal/sweep_dataset.schema.json",
+  "title": "Autocal Sweep Dataset",
+  "type": "object",
+  "required": [
+    "version",
+    "machine_type",
+    "sweeps"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "machine_type": {
+      "type": "string",
+      "enum": [
+        "slideprinter",
+        "hangprinter_4",
+        "hangprinter_5",
+        "cubecorners",
+        "skycam"
+      ]
+    },
+    "num_anchors": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dimensions": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "config": {
+      "type": "object"
+    },
+    "sweeps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fixed_anchors",
+          "fixed_lengths",
+          "drive_anchor",
+          "sensor_anchor",
+          "data_points"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fixed_anchors": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "fixed_lengths": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "drive_anchor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sensor_anchor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "data_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "l_drive",
+                "l_sensor"
+              ],
+              "properties": {
+                "l_drive": {
+                  "type": "number"
+                },
+                "l_sensor": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,7 +1,7 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
-import json
-from pathlib import Path
 
 from autocal.ellipse_fitting import (
     EllipseFitResult,
@@ -12,6 +12,7 @@ from autocal.ellipse_fitting import (
     fit_ellipse_from_sweep,
     fit_ellipse_maini_stefano,
 )
+from autocal.json_schema import load_json_file
 
 
 def generate_ellipse_points(
@@ -251,8 +252,7 @@ class TestRealDataFitting:
             / "sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json"
         )
 
-        with data_path.open() as f:
-            raw = json.load(f)
+        raw = load_json_file(data_path, schema="sweep_dataset")
 
         sweeps_abs: list[dict] = []
         for sweep in raw["sweeps"]:

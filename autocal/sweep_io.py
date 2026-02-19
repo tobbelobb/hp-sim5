@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
+from autocal.json_schema import load_json_file, validate_payload, write_json_file
 from autocal.sweep_types import (
     DataPoint,
     MachineConfig,
@@ -71,16 +71,13 @@ def save_sweep_dataset(dataset: SweepDataset, path: Union[str, Path]) -> None:
         ],
     }
 
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    validate_payload(data, schema="sweep_dataset")
+    write_json_file(Path(path), data, schema="sweep_dataset")
 
 
 def load_sweep_dataset(path: Union[str, Path]) -> SweepDataset:
     """Load dataset from JSON file."""
-    with Path(path).open("r", encoding="utf-8") as f:
-        data = json.load(f)
+    data = load_json_file(Path(path), schema="sweep_dataset")
 
     machine_type = MachineType(data["machine_type"])
     config = MachineConfig.from_type(machine_type)

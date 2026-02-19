@@ -4,11 +4,11 @@ from __future__ import annotations
 """CLI tool to fit ellipses to sweep calibration data."""
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
 from autocal.ellipse_fitting import fit_all_sweeps
+from autocal.json_schema import write_json_file
 from autocal.sweep_io import load_sweep_dataset
 
 
@@ -68,9 +68,7 @@ def main() -> int:
         "fitted_ellipses": fitted_ellipses,
     }
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(output_payload, f, indent=2)
+    write_json_file(output_path, output_payload, schema="fit_sidecar")
 
     print(f"Saved to {output_path}")
 

@@ -30,18 +30,16 @@ if str(REPO_ROOT) not in sys.path:
 from autocal.ellipse_fitting import fit_all_sweeps
 from autocal.ellipse_solver import format_anchors_gcode, solve_anchors
 from autocal.ellipse_visualization import create_calibration_report
+from autocal.json_schema import load_json_file, write_json_file
 from autocal.sweep_types import MachineConfig, MachineType
 
 
 def _load_json(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_file(path, schema="sweep_dataset")
 
 
 def _write_json(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2)
+    write_json_file(path, payload, schema="calibration_result")
 
 
 def _rebuild_absolute_sweeps(dataset: dict, anchors: np.ndarray) -> List[Dict[str, Any]]:

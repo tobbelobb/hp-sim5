@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import shlex
 import subprocess
@@ -39,6 +38,7 @@ from autocal.active_learning import (
 )
 from autocal.calibrate import calibrate_elliptical
 from autocal.ellipse_cost import EllipseCostFunction
+from autocal.json_schema import append_jsonl_line, load_json_file, write_json_file
 from autocal.sweep_types import MachineType
 
 GeometryWeights = Tuple[float, float, float]
@@ -76,14 +76,11 @@ def _require_machine_type(
 
 
 def _load_json(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_file(path, schema="sweep_dataset")
 
 
 def _write_json(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2)
+    write_json_file(path, payload, schema="sweep_dataset")
 
 
 def _arg_has_flag(args: Sequence[str], *flags: str) -> bool:
@@ -2831,9 +2828,7 @@ def _full_auto_stop_path(dataset_path: Path) -> Path:
 
 
 def _append_jsonl(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(payload) + "\n")
+    append_jsonl_line(path, payload, schema="full_auto_log_entry")
 
 
 def _solution_quality_message(best_cost: Optional[float]) -> str:

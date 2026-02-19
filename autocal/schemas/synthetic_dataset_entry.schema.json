@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autocal/synthetic_dataset_entry.schema.json",
+  "title": "Autocal Synthetic Dataset JSONL Entry",
+  "type": "object",
+  "required": [
+    "dataset",
+    "geometry",
+    "anchors",
+    "real_xyz",
+    "motor_samples"
+  ],
+  "properties": {
+    "dataset": {
+      "type": "string"
+    },
+    "geometry": {
+      "type": "string"
+    },
+    "anchor_set": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "real_xyz": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "config": {
+      "type": "object"
+    },
+    "config_used": {
+      "type": "object"
+    },
+    "motor_samples": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

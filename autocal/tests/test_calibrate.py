@@ -1,6 +1,7 @@
 import numpy as np
 
 from autocal.calibrate import _extract_motor_samples_from_sweep_dataset, calibrate_elliptical, main
+from autocal.json_schema import write_json_file
 
 
 def _tiny_slideprinter_delta_dataset(tmp_path):
@@ -30,7 +31,7 @@ def _tiny_slideprinter_delta_dataset(tmp_path):
     }
 
     path = tmp_path / "tiny.json"
-    path.write_text(__import__("json").dumps(dataset), encoding="utf-8")
+    write_json_file(path, dataset, schema="sweep_dataset")
     return path
 
 

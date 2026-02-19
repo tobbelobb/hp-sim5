@@ -8,6 +8,7 @@ and on sidecar fitted-ellipse dicts produced by `autocal.fit_ellipses`.
 """
 
 from dataclasses import asdict
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
@@ -18,6 +19,7 @@ except Exception as exc:  # pragma: no cover
     raise RuntimeError("matplotlib is required for ellipse visualization") from exc
 
 from autocal.ellipse_fitting import ellipse_geometric_params
+from autocal.json_schema import load_json_file
 from autocal.sweep_types import Sweep
 
 
@@ -773,11 +775,8 @@ def create_calibration_report(
     return fig
 
 
-def _load_json(path: str) -> dict:
-    import json
-
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+def _load_json(path: str, *, schema: str) -> dict:
+    return load_json_file(Path(path), schema=schema)
 
 
 def main(argv: Optional[List[str]] = None) -> int:  # pragma: no cover
@@ -791,11 +790,11 @@ def main(argv: Optional[List[str]] = None) -> int:  # pragma: no cover
 
     args = parser.parse_args(argv)
 
-    dataset = _load_json(args.input)
+    dataset = _load_json(args.input, schema="sweep_dataset")
 
     ellipse_fits: List[dict] = []
     if args.fits:
-        sidecar = _load_json(args.fits)
+        sidecar = _load_json(args.fits, schema="fit_sidecar")
         ellipse_fits = sidecar.get("fitted_ellipses", sidecar.get("ellipses", []))
 
     fitted_by_id = {e.get("sweep_id", ""): e for e in ellipse_fits}
