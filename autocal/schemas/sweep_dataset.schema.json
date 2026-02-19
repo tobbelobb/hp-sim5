@@ -87,6 +87,13 @@
                 },
                 "l_sensor": {
                   "type": "number"
+                },
+                "raw_angles_deg": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 1
                 }
               },
               "additionalProperties": true
