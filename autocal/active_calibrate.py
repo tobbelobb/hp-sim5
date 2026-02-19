@@ -32,6 +32,7 @@ _MAX_RADIUS_SCALE = 5.0
 _DEFAULT_B_BOUNDS = (-0.5, 0.5)
 _DEFAULT_B_PRIOR_SIGMA = 0.05
 _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
+_COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 
 from autocal.active_learning import (
@@ -696,23 +697,25 @@ def _estimate_effective_radii_with_spool_model(
         anchors_next = np.asarray(anchors_current, dtype=float)
         anchor_cost = float("nan")
         anchor_step_success = False
+        anchor_step_restarts = max(1, min(2, int(solve_restarts)))
+        anchor_step_iterations = max(40, min(160, int(solve_iterations)))
         try:
             cal_step = calibrate_elliptical(
                 transformed_seed,
                 output_path=None,
                 residual_threshold=float(residual_threshold),
-                num_restarts=int(solve_restarts),
-                max_iterations=int(solve_iterations),
+                num_restarts=int(anchor_step_restarts),
+                max_iterations=int(anchor_step_iterations),
                 method=str(solve_optimizer),
                 spring_k_multiplier=float(spring_k_multiplier),
                 use_flex=bool(use_flex),
                 verbose=False,
                 use_parallel=False,
                 pointwise_residual_mode=str(pointwise_residual_mode),
-                robust_debug=bool(robust_debug),
-                pointwise_filtering=bool(pointwise_filtering),
+                robust_debug=False,
+                pointwise_filtering=False,
                 pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_wise_filtering=False,
                 sweep_metric=str(sweep_metric),
                 use_noise_mean=bool(use_noise_mean),
                 sigma_source=str(sigma_source),
@@ -744,14 +747,19 @@ def _estimate_effective_radii_with_spool_model(
             anchor_step_success = False
 
         eval_counter = {"count": 0}
+        objective_cache: Dict[Tuple[float, ...], float] = {}
 
         def _objective(opt_vec: np.ndarray) -> float:
-            eval_counter["count"] += 1
             try:
                 if lo.size > 0:
                     clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
                 else:
                     clipped_vec = np.asarray(opt_vec, dtype=float).reshape(-1)
+                key = tuple(float(v) for v in np.round(clipped_vec, decimals=9).tolist())
+                cached = objective_cache.get(key)
+                if cached is not None and np.isfinite(cached):
+                    return float(cached)
+                eval_counter["count"] += 1
                 radii_try, buildup_try = _unpack_spool_opt_vector(
                     clipped_vec,
                     num_anchors=num_anchors,
@@ -781,7 +789,9 @@ def _estimate_effective_radii_with_spool_model(
                 prior = _prior_cost(radii_try, buildup_try)
                 score = float(data_cost + prior)
                 if not np.isfinite(score):
+                    objective_cache[key] = 1e12
                     return 1e12
+                objective_cache[key] = float(score)
                 return score
             except Exception:
                 return 1e12
@@ -922,7 +932,7 @@ def _estimate_effective_radii_with_spool_model(
     )
     spool_info_hessian = None
     spool_info_rank = None
-    if lo.size > 0 and hi.size > 0:
+    if bool(_COMPUTE_SPOOL_INFO_MATRIX) and lo.size > 0 and hi.size > 0:
         x_best = _pack_spool_opt_vector(
             radii_mm=np.asarray(best["radii_mm"], dtype=float),
             buildup_factor=np.asarray(best["buildup_factor"], dtype=float),
@@ -1856,9 +1866,12 @@ def _coordinate_descent_spool(
     nfev = 1
     improved_any = False
     nit = 0
+    stall_rounds = 0
+    converged_by_stall = False
 
     for outer in range(max(1, int(max_iters))):
         nit = outer + 1
+        best_before_round = float(best)
         improved_this_round = False
         for idx in range(x.size):
             if steps[idx] <= tol[idx]:
@@ -1877,6 +1890,15 @@ def _coordinate_descent_spool(
                     improved_this_round = True
                     improved_any = True
         if improved_this_round:
+            gain = float(best_before_round - best)
+            tol_gain = max(1e-6, 1e-6 * max(1.0, abs(best_before_round)))
+            if gain <= tol_gain:
+                stall_rounds += 1
+            else:
+                stall_rounds = 0
+            if stall_rounds >= 2:
+                converged_by_stall = True
+                break
             continue
         steps *= 0.5
         if np.all(steps <= tol):
@@ -1887,7 +1909,11 @@ def _coordinate_descent_spool(
         "message": (
             "coordinate descent converged"
             if np.all(steps <= tol)
-            else "coordinate descent reached iteration limit"
+            else (
+                "coordinate descent plateaued"
+                if converged_by_stall
+                else "coordinate descent reached iteration limit"
+            )
         ),
         "nfev": int(nfev),
         "nit": int(nit),
@@ -2205,22 +2231,24 @@ def _plan_next_ellipse_sweep(
             buildup_factor=est_buildup,
         )
 
+        seed_restarts = max(1, min(2, int(solve_restarts)))
+        seed_iterations = max(60, min(200, int(solve_iterations)))
         seed_cal = calibrate_elliptical(
             dataset_path,
             output_path=None,
             residual_threshold=float(residual_threshold),
-            num_restarts=int(solve_restarts),
-            max_iterations=int(solve_iterations),
+            num_restarts=int(seed_restarts),
+            max_iterations=int(seed_iterations),
             method=str(solve_optimizer),
             spring_k_multiplier=float(spring_k_multiplier),
             use_flex=bool(use_flex),
             verbose=False,
             use_parallel=False,
             pointwise_residual_mode=str(pointwise_residual_mode),
-            robust_debug=bool(robust_debug),
-            pointwise_filtering=bool(pointwise_filtering),
+            robust_debug=False,
+            pointwise_filtering=False,
             pointwise_global_mad=bool(pointwise_global_mad),
-            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_wise_filtering=False,
             sweep_metric=str(sweep_metric),
             use_noise_mean=bool(use_noise_mean),
             sigma_source=str(sigma_source),
