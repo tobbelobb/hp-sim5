@@ -29,8 +29,8 @@ DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
-_DEFAULT_B_BOUNDS = (-0.5, 0.5)
-_DEFAULT_B_PRIOR_SIGMA = 0.01
+_DEFAULT_B_BOUNDS = (0.0, 1.0)
+_DEFAULT_B_PRIOR_SIGMA = 0.1
 _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
@@ -171,6 +171,7 @@ def _normalize_dataset_point_roles(dataset: dict) -> int:
                     point.get("assumed_tension_sensor_n"),
                     point.get("assumed_tension_drive_n"),
                 )
+            # raw_angles_deg is indexed by physical anchor and must not be remapped here.
             swapped_points += 1
 
     return int(swapped_points)
@@ -4224,7 +4225,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--b-bounds",
         type=str,
         default=None,
-        help="Bounds for fitted buildup factor as 'min,max'.",
+        help="Bounds for fitted buildup factor as 'min,max' (default: 0,1).",
     )
     parser.add_argument(
         "--r0-prior-sigma-mm",
@@ -4236,7 +4237,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--b-prior-sigma",
         type=float,
         default=None,
-        help="Gaussian prior sigma for buildup-factor fitting.",
+        help="Gaussian prior sigma for buildup-factor fitting (auto default: 0.1 when fitting k).",
     )
     parser.add_argument(
         "--spool-outer-iters",

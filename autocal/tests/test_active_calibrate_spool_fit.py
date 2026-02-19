@@ -329,19 +329,20 @@ def test_normalize_dataset_point_roles_swaps_unswapped_reversed_points():
                 "drive_anchor": 1,
                 "sensor_anchor": 2,
                 "data_points": [
-                    {
-                        "l_drive": 10.0,
-                        "l_sensor": -100.0,
-                        "l_drive_mu": 11.0,
-                        "l_sensor_mu": -101.0,
-                        "assumed_tension_drive_n": 4.0,
-                        "assumed_tension_sensor_n": 2.0,
-                        "drive_setpoint_mm": 9.95,
-                        "source_drive_anchor": 2,
-                        "source_sensor_anchor": 1,
-                    }
-                ],
-            }
+                {
+                    "l_drive": 10.0,
+                    "l_sensor": -100.0,
+                    "l_drive_mu": 11.0,
+                    "l_sensor_mu": -101.0,
+                    "assumed_tension_drive_n": 4.0,
+                    "assumed_tension_sensor_n": 2.0,
+                    "drive_setpoint_mm": 9.95,
+                    "source_drive_anchor": 2,
+                    "source_sensor_anchor": 1,
+                    "raw_angles_deg": [0.0, 1.0, 2.0],
+                }
+            ],
+        }
         ]
     }
     changed = ac._normalize_dataset_point_roles(dataset)
@@ -353,6 +354,8 @@ def test_normalize_dataset_point_roles_swaps_unswapped_reversed_points():
     assert point["l_sensor_mu"] == 11.0
     assert point["assumed_tension_drive_n"] == 2.0
     assert point["assumed_tension_sensor_n"] == 4.0
+    assert point["raw_angles_deg"][1] == 1.0
+    assert point["raw_angles_deg"][2] == 2.0
 
 
 def test_normalize_dataset_point_roles_keeps_already_canonical_points():
@@ -394,3 +397,23 @@ def test_default_r0_bounds_global_start_at_largest_base():
     assert hi.shape == (1,)
     assert np.isclose(float(lo[0]), 50.0)
     assert np.isclose(float(hi[0]), 75.0)
+
+
+def test_default_b_bounds_global_are_zero_to_one():
+    modeled_b = np.array([0.0, 0.0, 0.0], dtype=float)
+    lo, hi = ac._resolve_b_bounds(modeled_b, find_buildup_mode="global", b_bounds=None)
+    assert lo.shape == (1,)
+    assert hi.shape == (1,)
+    assert np.isclose(float(lo[0]), 0.0)
+    assert np.isclose(float(hi[0]), 1.0)
+
+
+def test_default_b_bounds_per_anchor_are_zero_to_one():
+    modeled_b = np.array([0.0, 0.0, 0.0], dtype=float)
+    lo, hi = ac._resolve_b_bounds(modeled_b, find_buildup_mode="per-anchor", b_bounds=None)
+    assert np.allclose(lo, np.zeros(3, dtype=float))
+    assert np.allclose(hi, np.ones(3, dtype=float))
+
+
+def test_default_b_prior_sigma_is_relaxed_for_global_k_fits():
+    assert np.isclose(float(ac._DEFAULT_B_PRIOR_SIGMA), 0.1)
