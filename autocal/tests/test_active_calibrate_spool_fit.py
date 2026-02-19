@@ -378,3 +378,19 @@ def test_normalize_dataset_point_roles_keeps_already_canonical_points():
     assert changed == 0
     assert point["l_drive"] == -100.0
     assert point["l_sensor"] == 10.0
+
+
+def test_default_r0_bounds_per_anchor_are_base_to_1p5x_base():
+    base = np.array([30.0, 40.0, 50.0], dtype=float)
+    lo, hi = ac._resolve_r0_bounds(base, find_radii_mode="per-anchor", r0_bounds=None)
+    assert np.allclose(lo, base)
+    assert np.allclose(hi, base * 1.5)
+
+
+def test_default_r0_bounds_global_start_at_largest_base():
+    base = np.array([30.0, 40.0, 50.0], dtype=float)
+    lo, hi = ac._resolve_r0_bounds(base, find_radii_mode="global", r0_bounds=None)
+    assert lo.shape == (1,)
+    assert hi.shape == (1,)
+    assert np.isclose(float(lo[0]), 50.0)
+    assert np.isclose(float(hi[0]), 75.0)

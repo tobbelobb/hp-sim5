@@ -1717,8 +1717,9 @@ def _resolve_r0_bounds(
         if r0_bounds is not None:
             lo, hi = float(r0_bounds[0]), float(r0_bounds[1])
         else:
-            lo = float(np.min(base)) * float(_MIN_RADIUS_SCALE)
-            hi = float(np.max(base)) * float(_MAX_RADIUS_SCALE)
+            # Default spool-fit regime: effective radius at/above base, capped near 1.5x base.
+            lo = float(np.max(base))
+            hi = float(np.max(base)) * 1.5
         lo = max(lo, 1e-6)
         if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
             raise ValueError("invalid global r0 bounds")
@@ -1728,8 +1729,9 @@ def _resolve_r0_bounds(
         lo = np.full(base.shape, max(float(r0_bounds[0]), 1e-6), dtype=float)
         hi = np.full(base.shape, float(r0_bounds[1]), dtype=float)
     else:
-        lo = np.maximum(base * float(_MIN_RADIUS_SCALE), 1e-6)
-        hi = np.maximum(base * float(_MAX_RADIUS_SCALE), lo + 1e-6)
+        # Default spool-fit regime: effective radius at/above base, capped near 1.5x base.
+        lo = np.maximum(base, 1e-6)
+        hi = np.maximum(base * 1.5, lo + 1e-6)
     if np.any(~np.isfinite(lo)) or np.any(~np.isfinite(hi)) or np.any(hi <= lo):
         raise ValueError("invalid per-anchor r0 bounds")
     return lo, hi

@@ -860,7 +860,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const stepCount = steps - 1;
   const totalDelta = driveStartPointMm - driveEndPointMm;
   const stepDirection = Math.sign(totalDelta) || 1;
-  const initialStepMm = 10 * stepDirection;
+  const initialStepMm = 20 * stepDirection;
   const remainingSteps = Math.max(1, stepCount - 1);
   const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
   let currentDrive = driveEndPointMm;
