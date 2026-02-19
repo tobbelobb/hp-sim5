@@ -19,7 +19,7 @@ import sys
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -442,7 +442,7 @@ def _debug_print_legacy_config_comparison(sim: Any, dataset: dict, num_axes: int
 
 
 def calibrate_elliptical(
-    input_path: Path,
+    input_path: Union[Path, Dict[str, Any]],
     output_path: Optional[Path] = None,
     residual_threshold: float = 0.01,
     num_restarts: int = 8,
@@ -467,8 +467,16 @@ def calibrate_elliptical(
     generate_report: bool = True,
     pointwise_residual_mode: str = "sampson",
     residuals_csv: Optional[Path] = None,
+    report_base_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    dataset = _load_json(input_path)
+    input_ref: Optional[Path] = None
+    if isinstance(input_path, dict):
+        dataset = input_path
+        if report_base_path is not None:
+            input_ref = Path(report_base_path)
+    else:
+        input_ref = Path(input_path)
+        dataset = _load_json(input_ref)
     # `regularize_supersweep` is primarily relevant for the legacy point solver (raw motor samples);
     # ellipse mode consumes fixed_lengths setpoints, which are typically already regular.
     _ = bool(regularize_supersweep)
@@ -533,7 +541,7 @@ def calibrate_elliptical(
     gcode = format_anchors_gcode(anchors_arr, dataset.get("machine_type", ""))
 
     result_payload: Dict[str, Any] = {
-        "input_file": str(input_path),
+        "input_file": (str(input_ref) if input_ref is not None else "<in-memory>"),
         "timestamp": datetime.now().isoformat(),
         "machine_type": dataset.get("machine_type", "unknown"),
         "anchors": anchors_arr.tolist(),
@@ -559,12 +567,13 @@ def calibrate_elliptical(
         _write_json(output_path, result_payload)
 
     if generate_report:
-        report_path = (
-            output_path.with_name(output_path.stem + "_report.png")
-            if output_path is not None
-            else input_path.with_name(input_path.stem + "_report.png")
-        )
-        create_calibration_report(dataset, result_payload, ellipse_fits=None, output_path=str(report_path))
+        report_path = None
+        if output_path is not None:
+            report_path = output_path.with_name(output_path.stem + "_report.png")
+        elif input_ref is not None:
+            report_path = input_ref.with_name(input_ref.stem + "_report.png")
+        if report_path is not None:
+            create_calibration_report(dataset, result_payload, ellipse_fits=None, output_path=str(report_path))
 
     return result_payload
 

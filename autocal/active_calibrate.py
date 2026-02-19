@@ -10,12 +10,12 @@ import time
 import urllib.request
 import contextlib
 from contextlib import redirect_stderr, redirect_stdout
-from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+from scipy.optimize import minimize
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -27,6 +27,8 @@ RRF_SIM_ARGS = ["--vsd", "RRF/run/vsd", "-c", "sys/config_slideprinter.g", "--se
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
+_MIN_RADIUS_SCALE = 0.2
+_MAX_RADIUS_SCALE = 5.0
 
 from autocal.active_learning import (
     SweepConfig,
@@ -81,6 +83,427 @@ def _load_json(path: Path) -> dict:
 
 def _write_json(path: Path, payload: dict) -> None:
     write_json_file(path, payload, schema="sweep_dataset")
+
+
+def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float]:
+    if value is None:
+        return [float(default)] * num_axes
+    if isinstance(value, (int, float)):
+        try:
+            v = float(value)
+        except Exception:
+            v = float(default)
+        return [v] * num_axes
+    if isinstance(value, (list, tuple)):
+        out: List[float] = []
+        for item in value[:num_axes]:
+            try:
+                out.append(float(item))
+            except Exception:
+                out.append(float(default))
+        if len(out) < num_axes:
+            pad = out[0] if out else float(default)
+            out.extend([float(pad)] * (num_axes - len(out)))
+        return out
+    return [float(default)] * num_axes
+
+
+def _extract_m666(config: Optional[dict]) -> Optional[dict]:
+    if not isinstance(config, dict):
+        return None
+    for key in ("m666", "m666_after", "m666_before"):
+        val = config.get(key)
+        if isinstance(val, dict):
+            return val
+    return None
+
+
+def _resolve_length_model_base_params(
+    dataset: dict,
+    *,
+    num_anchors: int,
+    base_radii_override: Optional[Sequence[float]],
+) -> Dict[str, np.ndarray]:
+    config = dataset.get("config")
+    if not isinstance(config, dict):
+        config = {}
+    m666 = _extract_m666(config)
+
+    if base_radii_override is not None and len(base_radii_override) > 0:
+        base_radii_list = _expand_to_num_axes(list(base_radii_override), int(num_anchors), float("nan"))
+    elif isinstance(m666, dict):
+        base_radii_list = _expand_to_num_axes(m666.get("R"), int(num_anchors), float("nan"))
+    else:
+        base_radii_list = [float("nan")] * int(num_anchors)
+
+    base_radii = np.asarray(base_radii_list, dtype=float)
+    if (
+        base_radii.size != int(num_anchors)
+        or not np.all(np.isfinite(base_radii))
+        or np.any(base_radii <= 0.0)
+    ):
+        raise ValueError(
+            "--find-radii requires positive base radii for all axes "
+            "(use --base-radii or provide m666 R in dataset config)."
+        )
+
+    mech_adv = np.asarray(
+        _expand_to_num_axes(m666.get("U") if isinstance(m666, dict) else None, int(num_anchors), 1.0),
+        dtype=float,
+    )
+    lines_per_spool = np.asarray(
+        _expand_to_num_axes(m666.get("O") if isinstance(m666, dict) else None, int(num_anchors), 1.0),
+        dtype=float,
+    )
+    motor_gear = np.asarray(
+        _expand_to_num_axes(m666.get("L") if isinstance(m666, dict) else None, int(num_anchors), 1.0),
+        dtype=float,
+    )
+    spool_gear = np.asarray(
+        _expand_to_num_axes(m666.get("H") if isinstance(m666, dict) else None, int(num_anchors), 1.0),
+        dtype=float,
+    )
+
+    mech_adv = np.where(np.isfinite(mech_adv) & (np.abs(mech_adv) > 1e-12), mech_adv, 1.0)
+    lines_per_spool = np.where(
+        np.isfinite(lines_per_spool) & (np.abs(lines_per_spool) > 1e-12), lines_per_spool, 1.0
+    )
+    motor_gear = np.where(np.isfinite(motor_gear) & (np.abs(motor_gear) > 1e-12), motor_gear, 1.0)
+    spool_gear = np.where(np.isfinite(spool_gear) & (np.abs(spool_gear) > 1e-12), spool_gear, 1.0)
+    spool_to_motor = spool_gear / motor_gear
+
+    return {
+        "base_radii_mm": base_radii,
+        "mechanical_advantage": mech_adv,
+        "lines_per_spool": lines_per_spool,
+        "spool_to_motor_gearing_factor": spool_to_motor,
+    }
+
+
+def _mm_per_degree_for_axis(
+    radius_mm: float,
+    axis_idx: int,
+    *,
+    spool_to_motor_gearing_factor: np.ndarray,
+    mechanical_advantage: np.ndarray,
+    lines_per_spool: np.ndarray,
+) -> float:
+    r = float(radius_mm)
+    if not np.isfinite(r) or r <= 0.0:
+        return float("nan")
+    gear = float(spool_to_motor_gearing_factor[int(axis_idx)])
+    ma = float(mechanical_advantage[int(axis_idx)])
+    lines = float(lines_per_spool[int(axis_idx)])
+    denom = gear * ma * lines * 360.0
+    if not np.isfinite(denom) or abs(denom) <= 1e-12:
+        return float("nan")
+    return float((2.0 * np.pi * r) / denom)
+
+
+def _delta_base_to_model(
+    delta_base: object,
+    axis_idx: int,
+    *,
+    base_radii_mm: np.ndarray,
+    effective_radii_mm: np.ndarray,
+    buildup_factor: float,
+    spool_to_motor_gearing_factor: np.ndarray,
+    mechanical_advantage: np.ndarray,
+    lines_per_spool: np.ndarray,
+) -> object:
+    vals = np.asarray(delta_base, dtype=float)
+    is_scalar = vals.ndim == 0
+    vals_flat = vals.reshape(-1)
+    out_flat = vals_flat.copy()
+    finite = np.isfinite(vals_flat)
+    if not np.any(finite):
+        if is_scalar:
+            return float(out_flat[0])
+        return out_flat.reshape(vals.shape)
+
+    axis = int(axis_idx)
+    base_r = float(base_radii_mm[axis])
+    eff_r = float(effective_radii_mm[axis])
+    mm_per_deg_base = _mm_per_degree_for_axis(
+        base_r,
+        axis,
+        spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+        mechanical_advantage=mechanical_advantage,
+        lines_per_spool=lines_per_spool,
+    )
+    mm_per_deg_eff = _mm_per_degree_for_axis(
+        eff_r,
+        axis,
+        spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+        mechanical_advantage=mechanical_advantage,
+        lines_per_spool=lines_per_spool,
+    )
+    if (
+        not np.isfinite(mm_per_deg_base)
+        or abs(mm_per_deg_base) <= 1e-12
+        or not np.isfinite(mm_per_deg_eff)
+    ):
+        if is_scalar:
+            return float(out_flat[0])
+        return out_flat.reshape(vals.shape)
+
+    theta_deg = vals_flat[finite] / mm_per_deg_base
+    k = float(buildup_factor)
+    if not np.isfinite(k) or abs(k) <= 1e-12:
+        out_flat[finite] = theta_deg * mm_per_deg_eff
+    else:
+        gear = float(spool_to_motor_gearing_factor[axis])
+        ma = float(mechanical_advantage[axis])
+        lines = float(lines_per_spool[axis])
+        c1 = -ma * lines * k
+        deg_per_unit_times_r = (gear * ma * 360.0) / (2.0 * np.pi)
+        if (
+            not np.isfinite(c1)
+            or abs(c1) <= 1e-12
+            or not np.isfinite(deg_per_unit_times_r)
+            or abs(deg_per_unit_times_r) <= 1e-12
+        ):
+            out_flat[finite] = theta_deg * mm_per_deg_eff
+        else:
+            k0 = 2.0 * deg_per_unit_times_r / c1
+            out_flat[finite] = (((theta_deg / k0) + eff_r) ** 2.0 - eff_r * eff_r) / c1
+
+    if is_scalar:
+        return float(out_flat[0])
+    return out_flat.reshape(vals.shape)
+
+
+def _transform_dataset_lengths_to_model(
+    dataset: dict,
+    *,
+    base_radii_mm: np.ndarray,
+    effective_radii_mm: np.ndarray,
+    buildup_factor: float,
+    spool_to_motor_gearing_factor: np.ndarray,
+    mechanical_advantage: np.ndarray,
+    lines_per_spool: np.ndarray,
+) -> dict:
+    out = dict(dataset)
+    cfg_in = dataset.get("config")
+    cfg_out = dict(cfg_in) if isinstance(cfg_in, dict) else {}
+    out["config"] = cfg_out
+    mm_per_degree_model = [
+        _mm_per_degree_for_axis(
+            float(effective_radii_mm[idx]),
+            idx,
+            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+            mechanical_advantage=mechanical_advantage,
+            lines_per_spool=lines_per_spool,
+        )
+        for idx in range(int(base_radii_mm.size))
+    ]
+    cfg_out["mm_per_degree"] = [float(v) if np.isfinite(v) else float("nan") for v in mm_per_degree_model]
+    notes = cfg_out.get("notes")
+    notes_out = dict(notes) if isinstance(notes, dict) else {}
+    notes_out["length_model"] = {
+        "coord_planning": "L_base_mm",
+        "coord_estimation": "L_model_mm",
+        "buildup_factor_k": float(buildup_factor),
+    }
+    cfg_out["notes"] = notes_out
+
+    sweeps_in = dataset.get("sweeps")
+    sweeps_out: List[dict] = []
+    if isinstance(sweeps_in, list):
+        for sweep in sweeps_in:
+            if not isinstance(sweep, dict):
+                continue
+            sw = dict(sweep)
+            fixed_anchors = [int(v) for v in (sweep.get("fixed_anchors", []) or [])]
+            fixed_lengths = list(sweep.get("fixed_lengths", []) or [])
+            transformed_fixed: List[float] = []
+            for axis, delta in zip(fixed_anchors, fixed_lengths):
+                transformed_fixed.append(
+                    float(
+                        _delta_base_to_model(
+                            delta,
+                            int(axis),
+                            base_radii_mm=base_radii_mm,
+                            effective_radii_mm=effective_radii_mm,
+                            buildup_factor=float(buildup_factor),
+                            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+                            mechanical_advantage=mechanical_advantage,
+                            lines_per_spool=lines_per_spool,
+                        )
+                    )
+                )
+            sw["fixed_lengths"] = transformed_fixed
+
+            drive_idx = int(sweep.get("drive_anchor", 0))
+            sensor_idx = int(sweep.get("sensor_anchor", 0))
+            points_in = sweep.get("data_points")
+            if isinstance(points_in, list):
+                points_out: List[dict] = []
+                for point in points_in:
+                    if not isinstance(point, dict):
+                        continue
+                    p = dict(point)
+                    for key, axis in (
+                        ("l_drive", drive_idx),
+                        ("l_sensor", sensor_idx),
+                        ("l_drive_mu", drive_idx),
+                        ("l_sensor_mu", sensor_idx),
+                    ):
+                        if key in p:
+                            p[key] = float(
+                                _delta_base_to_model(
+                                    p.get(key),
+                                    int(axis),
+                                    base_radii_mm=base_radii_mm,
+                                    effective_radii_mm=effective_radii_mm,
+                                    buildup_factor=float(buildup_factor),
+                                    spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+                                    mechanical_advantage=mechanical_advantage,
+                                    lines_per_spool=lines_per_spool,
+                                )
+                            )
+                    points_out.append(p)
+                sw["data_points"] = points_out
+            sweeps_out.append(sw)
+    out["sweeps"] = sweeps_out
+    return out
+
+
+def _transform_sweep_configs_to_model(
+    sweeps: Sequence[SweepConfig],
+    *,
+    base_radii_mm: np.ndarray,
+    effective_radii_mm: np.ndarray,
+    buildup_factor: float,
+    spool_to_motor_gearing_factor: np.ndarray,
+    mechanical_advantage: np.ndarray,
+    lines_per_spool: np.ndarray,
+) -> List[SweepConfig]:
+    out: List[SweepConfig] = []
+    for cfg in sweeps:
+        transformed = []
+        for axis, delta in zip(cfg.fixed_anchors, cfg.fixed_deltas_mm):
+            transformed.append(
+                float(
+                    _delta_base_to_model(
+                        float(delta),
+                        int(axis),
+                        base_radii_mm=base_radii_mm,
+                        effective_radii_mm=effective_radii_mm,
+                        buildup_factor=float(buildup_factor),
+                        spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+                        mechanical_advantage=mechanical_advantage,
+                        lines_per_spool=lines_per_spool,
+                    )
+                )
+            )
+        out.append(
+            SweepConfig(
+                fixed_anchors=tuple(int(v) for v in cfg.fixed_anchors),
+                fixed_deltas_mm=tuple(transformed),
+                drive_anchor=int(cfg.drive_anchor),
+                sensor_anchor=int(cfg.sensor_anchor),
+            )
+        )
+    return out
+
+
+def _estimate_effective_radii(
+    dataset: dict,
+    anchors: np.ndarray,
+    *,
+    base_radii_mm: np.ndarray,
+    buildup_factor: float,
+    spool_to_motor_gearing_factor: np.ndarray,
+    mechanical_advantage: np.ndarray,
+    lines_per_spool: np.ndarray,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    use_noise_mean: bool,
+    sigma_source: str,
+) -> Tuple[np.ndarray, Dict[str, object]]:
+    base = np.asarray(base_radii_mm, dtype=float).reshape(-1)
+    if base.size == 0 or not np.all(np.isfinite(base)) or np.any(base <= 0.0):
+        raise ValueError("Cannot estimate radii without finite positive base radii.")
+
+    lo = np.maximum(base * float(_MIN_RADIUS_SCALE), 1e-6)
+    hi = np.maximum(base * float(_MAX_RADIUS_SCALE), lo + 1e-6)
+    x0 = np.clip(base, lo, hi)
+
+    def _objective(radii_vec: np.ndarray) -> float:
+        radii = np.clip(np.asarray(radii_vec, dtype=float).reshape(-1), lo, hi)
+        transformed = _transform_dataset_lengths_to_model(
+            dataset,
+            base_radii_mm=base,
+            effective_radii_mm=radii,
+            buildup_factor=float(buildup_factor),
+            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+            mechanical_advantage=mechanical_advantage,
+            lines_per_spool=lines_per_spool,
+        )
+        cost_val = _evaluate_cost_at_anchors(
+            transformed,
+            anchors,
+            residual_threshold=float(residual_threshold),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            noise_normalized=True,
+            sigma_source=str(sigma_source),
+        )
+        if not np.isfinite(cost_val):
+            return 1e12
+        return float(cost_val)
+
+    start_cost = float(_objective(x0))
+    try:
+        result = minimize(
+            _objective,
+            x0,
+            method="L-BFGS-B",
+            bounds=list(zip(lo.tolist(), hi.tolist())),
+            options={"maxiter": 60, "ftol": 1e-6},
+        )
+        if result is not None and np.isfinite(float(result.fun)):
+            fitted = np.clip(np.asarray(result.x, dtype=float).reshape(-1), lo, hi)
+            fitted_cost = float(result.fun)
+            return fitted, {
+                "success": bool(getattr(result, "success", False)),
+                "message": str(getattr(result, "message", "")),
+                "nfev": int(getattr(result, "nfev", 0) or 0),
+                "nit": int(getattr(result, "nit", 0) or 0),
+                "start_cost": float(start_cost),
+                "fitted_cost": float(fitted_cost),
+            }
+    except Exception as exc:
+        return x0, {
+            "success": False,
+            "message": f"radius optimization failed: {exc}",
+            "nfev": 0,
+            "nit": 0,
+            "start_cost": float(start_cost),
+            "fitted_cost": float(start_cost),
+        }
+
+    return x0, {
+        "success": False,
+        "message": "radius optimization did not produce a finite result",
+        "nfev": 0,
+        "nit": 0,
+        "start_cost": float(start_cost),
+        "fitted_cost": float(start_cost),
+    }
 
 
 def _arg_has_flag(args: Sequence[str], *flags: str) -> bool:
@@ -794,6 +1217,10 @@ def _plan_next_ellipse_sweep(
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
+    find_radii: bool,
+    find_buildup_factor: bool,
+    base_radii: Optional[List[float]],
+    buildup_factor: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -812,34 +1239,163 @@ def _plan_next_ellipse_sweep(
     machine_type = _require_machine_type(dataset, context=str(dataset_path))
     num_anchors = int(dataset.get("num_anchors", 4))
     dimensions = int(dataset.get("dimensions", 3))
+    warnings: List[str] = []
+    if bool(find_buildup_factor):
+        warnings.append("find_buildup_factor_not_implemented")
 
-    cal = calibrate_elliptical(
-        dataset_path,
-        output_path=None,
-        residual_threshold=float(residual_threshold),
-        num_restarts=int(solve_restarts),
-        max_iterations=int(solve_iterations),
-        method=str(solve_optimizer),
-        spring_k_multiplier=float(spring_k_multiplier),
-        use_flex=bool(use_flex),
-        verbose=False,
-        use_parallel=False,
-        pointwise_residual_mode=str(pointwise_residual_mode),
-        robust_debug=bool(robust_debug),
-        pointwise_filtering=bool(pointwise_filtering),
-        pointwise_global_mad=bool(pointwise_global_mad),
-        sweep_wise_filtering=bool(sweep_wise_filtering),
-        sweep_metric=str(sweep_metric),
-        use_noise_mean=bool(use_noise_mean),
-        sigma_source=str(sigma_source),
-        generate_report=bool(generate_report),
-        residuals_csv=residuals_csv,
-    )
+    est_buildup = 0.0
+    if buildup_factor is not None:
+        try:
+            est_buildup = float(buildup_factor)
+        except (TypeError, ValueError):
+            est_buildup = 0.0
+    if not np.isfinite(est_buildup):
+        est_buildup = 0.0
+
+    length_model: Optional[Dict[str, object]] = None
+    dataset_for_estimation = dataset
+    sweep_configs_for_info = dataset_sweep_configs(dataset)
+
+    if bool(find_radii):
+        lm_params = _resolve_length_model_base_params(
+            dataset,
+            num_anchors=int(num_anchors),
+            base_radii_override=base_radii,
+        )
+        base_radii_mm = np.asarray(lm_params["base_radii_mm"], dtype=float)
+        spool_to_motor_gearing_factor = np.asarray(
+            lm_params["spool_to_motor_gearing_factor"], dtype=float
+        )
+        mechanical_advantage = np.asarray(lm_params["mechanical_advantage"], dtype=float)
+        lines_per_spool = np.asarray(lm_params["lines_per_spool"], dtype=float)
+
+        seed_cal = calibrate_elliptical(
+            dataset_path,
+            output_path=None,
+            residual_threshold=float(residual_threshold),
+            num_restarts=int(solve_restarts),
+            max_iterations=int(solve_iterations),
+            method=str(solve_optimizer),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            verbose=False,
+            use_parallel=False,
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            robust_debug=bool(robust_debug),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            sigma_source=str(sigma_source),
+            generate_report=False,
+            residuals_csv=None,
+        )
+        seed_anchors = np.asarray(seed_cal["anchors"], dtype=float)
+        effective_radii_mm, radii_fit = _estimate_effective_radii(
+            dataset,
+            seed_anchors,
+            base_radii_mm=base_radii_mm,
+            buildup_factor=float(est_buildup),
+            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+            mechanical_advantage=mechanical_advantage,
+            lines_per_spool=lines_per_spool,
+            residual_threshold=float(residual_threshold),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            sigma_source=str(sigma_source),
+        )
+
+        dataset_for_estimation = _transform_dataset_lengths_to_model(
+            dataset,
+            base_radii_mm=base_radii_mm,
+            effective_radii_mm=effective_radii_mm,
+            buildup_factor=float(est_buildup),
+            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+            mechanical_advantage=mechanical_advantage,
+            lines_per_spool=lines_per_spool,
+        )
+        sweep_configs_for_info = _transform_sweep_configs_to_model(
+            sweep_configs_for_info,
+            base_radii_mm=base_radii_mm,
+            effective_radii_mm=effective_radii_mm,
+            buildup_factor=float(est_buildup),
+            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+            mechanical_advantage=mechanical_advantage,
+            lines_per_spool=lines_per_spool,
+        )
+        cal = calibrate_elliptical(
+            dataset_for_estimation,
+            output_path=None,
+            residual_threshold=float(residual_threshold),
+            num_restarts=int(solve_restarts),
+            max_iterations=int(solve_iterations),
+            method=str(solve_optimizer),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            verbose=False,
+            use_parallel=False,
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            robust_debug=bool(robust_debug),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            sigma_source=str(sigma_source),
+            generate_report=bool(generate_report),
+            residuals_csv=residuals_csv,
+            report_base_path=dataset_path,
+        )
+
+        length_model = {
+            "find_radii": True,
+            "find_buildup_factor": bool(find_buildup_factor),
+            "buildup_factor_k": float(est_buildup),
+            "base_radii_mm": [float(v) for v in base_radii_mm.tolist()],
+            "effective_radii_mm": [float(v) for v in np.asarray(effective_radii_mm, dtype=float).tolist()],
+            "spool_to_motor_gearing_factor": [
+                float(v) for v in np.asarray(spool_to_motor_gearing_factor, dtype=float).tolist()
+            ],
+            "mechanical_advantage": [float(v) for v in np.asarray(mechanical_advantage, dtype=float).tolist()],
+            "lines_per_spool": [float(v) for v in np.asarray(lines_per_spool, dtype=float).tolist()],
+            "radii_fit": radii_fit,
+        }
+    else:
+        cal = calibrate_elliptical(
+            dataset_path,
+            output_path=None,
+            residual_threshold=float(residual_threshold),
+            num_restarts=int(solve_restarts),
+            max_iterations=int(solve_iterations),
+            method=str(solve_optimizer),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            verbose=False,
+            use_parallel=False,
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            robust_debug=bool(robust_debug),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            sigma_source=str(sigma_source),
+            generate_report=bool(generate_report),
+            residuals_csv=residuals_csv,
+        )
+
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
     cost_raw = float(
         _evaluate_cost_at_anchors(
-            dataset,
+            dataset_for_estimation,
             anchors,
             residual_threshold=float(residual_threshold),
             spring_k_multiplier=float(spring_k_multiplier),
@@ -859,7 +1415,7 @@ def _plan_next_ellipse_sweep(
     l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
     info_obs = total_information_matrix(
         anchors,
-        sweeps_obs,
+        sweep_configs_for_info,
         machine_type=machine_type,
         num_anchors=num_anchors,
         dimensions=dimensions,
@@ -888,7 +1444,6 @@ def _plan_next_ellipse_sweep(
     if info_obs.ndim == 2 and info_obs.shape[0] == info_obs.shape[1]:
         rank = int(np.linalg.matrix_rank(info_obs))
         rank_deficient = rank < info_obs.shape[0]
-    warnings: List[str] = []
     cov_scaled_std = _covariance_diag_std(cov_scaled)
     if cov_scaled_std is None or not np.all(np.isfinite(cov_scaled_std)):
         warnings.append("covariance_nonfinite")
@@ -946,21 +1501,66 @@ def _plan_next_ellipse_sweep(
         sweeps_obs,
         min_spacing_mm=float(min_fixed_delta_spacing_mm),
     )
+    if bool(exclude_existing):
+        existing_keys = {
+            cfg.normalized_key(tol_mm=float(existing_tol_mm))
+            for cfg in sweeps_obs
+        }
+        candidates = [
+            cfg
+            for cfg in candidates
+            if cfg.normalized_key(tol_mm=float(existing_tol_mm)) not in existing_keys
+        ]
 
-    ranked = rank_candidates_d_optimal(
-        anchors,
-        machine_type=machine_type,
-        num_anchors=num_anchors,
-        dimensions=dimensions,
-        l2_scale=l2_scale,
-        observed=sweeps_obs,
-        candidates=candidates,
-        fd_eps_mm=float(fd_eps_mm),
-        regularization=float(regularization),
-        exclude_existing=bool(exclude_existing),
-        existing_tol_mm=float(existing_tol_mm),
-        top_k=int(top_k),
-    )
+    if isinstance(length_model, dict):
+        base_radii_mm = np.asarray(length_model.get("base_radii_mm", []), dtype=float)
+        effective_radii_mm = np.asarray(length_model.get("effective_radii_mm", []), dtype=float)
+        spool_to_motor_gearing_factor = np.asarray(
+            length_model.get("spool_to_motor_gearing_factor", []),
+            dtype=float,
+        )
+        mechanical_advantage = np.asarray(length_model.get("mechanical_advantage", []), dtype=float)
+        lines_per_spool = np.asarray(length_model.get("lines_per_spool", []), dtype=float)
+        candidates_model = _transform_sweep_configs_to_model(
+            candidates,
+            base_radii_mm=base_radii_mm,
+            effective_radii_mm=effective_radii_mm,
+            buildup_factor=float(length_model.get("buildup_factor_k", 0.0)),
+            spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+            mechanical_advantage=mechanical_advantage,
+            lines_per_spool=lines_per_spool,
+        )
+        id_map = {id(cfg_model): cfg_base for cfg_base, cfg_model in zip(candidates, candidates_model)}
+        ranked_model = rank_candidates_d_optimal(
+            anchors,
+            machine_type=machine_type,
+            num_anchors=num_anchors,
+            dimensions=dimensions,
+            l2_scale=l2_scale,
+            observed=sweep_configs_for_info,
+            candidates=candidates_model,
+            fd_eps_mm=float(fd_eps_mm),
+            regularization=float(regularization),
+            exclude_existing=False,
+            existing_tol_mm=float(existing_tol_mm),
+            top_k=int(top_k),
+        )
+        ranked = [(float(score), id_map.get(id(cfg_model), cfg_model)) for score, cfg_model in ranked_model]
+    else:
+        ranked = rank_candidates_d_optimal(
+            anchors,
+            machine_type=machine_type,
+            num_anchors=num_anchors,
+            dimensions=dimensions,
+            l2_scale=l2_scale,
+            observed=sweeps_obs,
+            candidates=candidates,
+            fd_eps_mm=float(fd_eps_mm),
+            regularization=float(regularization),
+            exclude_existing=False,
+            existing_tol_mm=float(existing_tol_mm),
+            top_k=int(top_k),
+        )
 
     best_cfg = ranked[0][1] if ranked else None
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
@@ -1007,6 +1607,8 @@ def _plan_next_ellipse_sweep(
         "collect_command": cmd,
         "force_tuning": force_tuning,
         "force_args_applied": force_args_applied,
+        "length_model": length_model,
+        "dataset_for_estimation": dataset_for_estimation,
     }
 
 
@@ -1033,6 +1635,7 @@ def _print_ellipse_plan(
     warnings = plan.get("warnings") or []
     ranked = plan.get("ranked") or []
     cmd = plan.get("collect_command")
+    length_model = plan.get("length_model")
     noise_summary = _summarize_encoder_noise(plan.get("dataset") if isinstance(plan, dict) else None)
 
     print("; Active ellipse calibration")
@@ -1043,6 +1646,28 @@ def _print_ellipse_plan(
     print(
         f"; cost={cost_raw_str} cost_noise_normalized={cost_norm_str} {_format_anchor_stats(anchors)}"
     )
+    if isinstance(length_model, dict):
+        base = np.asarray(length_model.get("base_radii_mm", []), dtype=float)
+        eff = np.asarray(length_model.get("effective_radii_mm", []), dtype=float)
+        k_val = length_model.get("buildup_factor_k", 0.0)
+        base_str = ",".join(f"{float(v):.4g}" for v in base.tolist()) if base.size else "n/a"
+        eff_str = ",".join(f"{float(v):.4g}" for v in eff.tolist()) if eff.size else "n/a"
+        k_str = _fmt_float(k_val)
+        print(
+            f"; line_model: planning=L_base_mm estimation=L_model_mm "
+            f"find_radii={bool(length_model.get('find_radii', False))} "
+            f"find_buildup_factor={bool(length_model.get('find_buildup_factor', False))} "
+            f"k={k_str} base=[{base_str}] effective=[{eff_str}]"
+        )
+        radii_fit = length_model.get("radii_fit")
+        if isinstance(radii_fit, dict):
+            print(
+                f"; line_model_fit: success={bool(radii_fit.get('success', False))} "
+                f"start_cost={_fmt_float(radii_fit.get('start_cost'))} "
+                f"fitted_cost={_fmt_float(radii_fit.get('fitted_cost'))} "
+                f"nfev={_fmt_float(radii_fit.get('nfev'), fmt='.0f')} "
+                f"nit={_fmt_float(radii_fit.get('nit'), fmt='.0f')}"
+            )
     if isinstance(cal, dict):
         details = cal.get("details")
         if isinstance(details, dict):
@@ -1204,6 +1829,10 @@ def ellipse_active(
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
+    find_radii: bool,
+    find_buildup_factor: bool,
+    base_radii: Optional[List[float]],
+    buildup_factor: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -1262,6 +1891,10 @@ def ellipse_active(
         robust_debug=robust_debug,
         residuals_csv=residuals_csv,
         generate_report=generate_report,
+        find_radii=bool(find_radii),
+        find_buildup_factor=bool(find_buildup_factor),
+        base_radii=base_radii,
+        buildup_factor=buildup_factor,
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
         delta_min=delta_min,
@@ -1359,6 +1992,10 @@ def full_auto_loop(
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
+    find_radii: bool,
+    find_buildup_factor: bool,
+    base_radii: Optional[List[float]],
+    buildup_factor: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -1628,6 +2265,10 @@ def full_auto_loop(
         "sigma_source": str(sigma_source),
         "robust_debug": bool(robust_debug),
         "generate_report": bool(generate_report),
+        "find_radii": bool(find_radii),
+        "find_buildup_factor": bool(find_buildup_factor),
+        "base_radii": (None if base_radii is None else [float(v) for v in base_radii]),
+        "buildup_factor": (None if buildup_factor is None else float(buildup_factor)),
     }
 
     best_cost = float("inf")
@@ -1673,6 +2314,8 @@ def full_auto_loop(
                     overrides = {}
                 settings = dict(base_solver)
                 settings.update(overrides)
+                if isinstance(settings.get("base_radii"), str):
+                    settings["base_radii"] = _parse_csv_floats(str(settings["base_radii"]))
                 if run_flags:
                     _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
                 else:
@@ -1708,6 +2351,18 @@ def full_auto_loop(
                         robust_debug=bool(settings["robust_debug"]),
                         residuals_csv=residuals_csv_run,
                         generate_report=bool(settings["generate_report"]),
+                        find_radii=bool(settings.get("find_radii", False)),
+                        find_buildup_factor=bool(settings.get("find_buildup_factor", False)),
+                        base_radii=(
+                            [float(v) for v in settings["base_radii"]]
+                            if isinstance(settings.get("base_radii"), list)
+                            else None
+                        ),
+                        buildup_factor=(
+                            float(settings["buildup_factor"])
+                            if settings.get("buildup_factor") is not None
+                            else None
+                        ),
                         candidate_deltas=candidate_deltas,
                         candidate_count=int(candidate_count),
                         delta_min=delta_min,
@@ -2022,6 +2677,10 @@ def ellipse_loop(
     robust_debug: bool,
     residuals_csv: Optional[Path],
     generate_report: bool,
+    find_radii: bool,
+    find_buildup_factor: bool,
+    base_radii: Optional[List[float]],
+    buildup_factor: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -2180,15 +2839,19 @@ def ellipse_loop(
             spring_k_multiplier=spring_k_multiplier,
             use_flex=use_flex,
             pointwise_residual_mode=pointwise_residual_mode,
-        pointwise_filtering=pointwise_filtering,
-        pointwise_global_mad=pointwise_global_mad,
-        sweep_wise_filtering=sweep_wise_filtering,
-        sweep_metric=sweep_metric,
-        use_noise_mean=use_noise_mean,
-        sigma_source=sigma_source,
-        robust_debug=robust_debug,
-        residuals_csv=step_residuals_csv,
+            pointwise_filtering=pointwise_filtering,
+            pointwise_global_mad=pointwise_global_mad,
+            sweep_wise_filtering=sweep_wise_filtering,
+            sweep_metric=sweep_metric,
+            use_noise_mean=use_noise_mean,
+            sigma_source=sigma_source,
+            robust_debug=robust_debug,
+            residuals_csv=step_residuals_csv,
             generate_report=generate_report,
+            find_radii=bool(find_radii),
+            find_buildup_factor=bool(find_buildup_factor),
+            base_radii=base_radii,
+            buildup_factor=buildup_factor,
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
             delta_min=delta_min,
@@ -2311,6 +2974,28 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--threshold", type=float, default=250.0)
     parser.add_argument("--spring-k-multiplier", type=float, default=1.0)
     parser.add_argument("--flex", action="store_true")
+    parser.add_argument(
+        "--find-radii",
+        action="store_true",
+        help="Estimate per-axis effective radii (r_Oeff) for model-length calibration.",
+    )
+    parser.add_argument(
+        "--find-buildup-factor",
+        action="store_true",
+        help="Estimate global buildup factor k (placeholder: currently falls back to --buildup-factor or 0).",
+    )
+    parser.add_argument(
+        "--base-radii",
+        type=str,
+        default=None,
+        help="Comma-separated base radii in mm (defaults to config m666 R).",
+    )
+    parser.add_argument(
+        "--buildup-factor",
+        type=float,
+        default=None,
+        help="Use this buildup factor k in the model transform (with --find-radii, default is 0).",
+    )
     parser.add_argument(
         "--pointwise-residual",
         choices=["sampson", "euclidean"],
@@ -2679,6 +3364,15 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=None,
     )
+    parser.add_argument("--find-radii", dest="find_radii", action="store_true", default=None)
+    parser.add_argument(
+        "--find-buildup-factor",
+        dest="find_buildup_factor",
+        action="store_true",
+        default=None,
+    )
+    parser.add_argument("--base-radii", default=None)
+    parser.add_argument("--buildup-factor", type=float, default=None)
     parser.add_argument("--spring-k-multiplier", type=float, default=None)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
@@ -2897,6 +3591,10 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         robust_debug=bool(args.robust_debug),
         residuals_csv=args.residuals_csv,
         generate_report=bool(args.report),
+        find_radii=bool(args.find_radii),
+        find_buildup_factor=bool(args.find_buildup_factor),
+        base_radii=_parse_csv_floats(args.base_radii),
+        buildup_factor=args.buildup_factor,
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
@@ -2965,6 +3663,10 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             robust_debug=bool(args.robust_debug),
             residuals_csv=args.residuals_csv,
             generate_report=bool(args.report),
+            find_radii=bool(args.find_radii),
+            find_buildup_factor=bool(args.find_buildup_factor),
+            base_radii=_parse_csv_floats(args.base_radii),
+            buildup_factor=args.buildup_factor,
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
             delta_min=args.delta_min,
@@ -3009,6 +3711,10 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         robust_debug=bool(args.robust_debug),
         residuals_csv=args.residuals_csv,
         generate_report=bool(args.report),
+        find_radii=bool(args.find_radii),
+        find_buildup_factor=bool(args.find_buildup_factor),
+        base_radii=_parse_csv_floats(args.base_radii),
+        buildup_factor=args.buildup_factor,
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,

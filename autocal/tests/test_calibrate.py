@@ -1,4 +1,5 @@
 import numpy as np
+import json
 
 from autocal.calibrate import _extract_motor_samples_from_sweep_dataset, calibrate_elliptical, main
 from autocal.json_schema import write_json_file
@@ -50,6 +51,24 @@ def test_calibrate_elliptical_runs(tmp_path):
     anchors = np.asarray(result["anchors"], dtype=float)
     assert anchors.shape == (3, 2)
     assert "gcode" in result
+
+
+def test_calibrate_elliptical_accepts_in_memory_dataset(tmp_path):
+    input_path = _tiny_slideprinter_delta_dataset(tmp_path)
+    dataset = json.loads(input_path.read_text(encoding="utf-8"))
+    result = calibrate_elliptical(
+        dataset,
+        output_path=None,
+        residual_threshold=1e9,
+        num_restarts=1,
+        max_iterations=2,
+        method="SLSQP",
+        verbose=False,
+        generate_report=False,
+    )
+    anchors = np.asarray(result["anchors"], dtype=float)
+    assert anchors.shape == (3, 2)
+    assert result.get("input_file") == "<in-memory>"
 
 
 def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):
