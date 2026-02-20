@@ -22,6 +22,10 @@ def test_spool_cli_options_parse_modes_and_bounds():
             "17",
             "--line-width",
             "1.25",
+            "--sigma-floor-mm",
+            "0.05",
+            "--sigma-used-mm",
+            "0.8",
         ]
     )
     opts = _resolve_spool_cli_options(parser, args)
@@ -32,6 +36,8 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["spool_outer_iters"] == 5
     assert opts["spool_inner_iters"] == 17
     assert opts["line_width"] == 1.25
+    assert opts["sigma_floor_mm"] == 0.05
+    assert opts["sigma_used_mm"] == 0.8
 
 
 def test_spool_cli_flags_without_value_default_to_per_anchor():
@@ -75,6 +81,36 @@ def test_spool_cli_rejects_negative_line_width():
             "slideprinter",
             "--line-width",
             "-0.1",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)
+
+
+def test_spool_cli_rejects_nonpositive_sigma_floor_mm():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--sigma-floor-mm",
+            "0",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)
+
+
+def test_spool_cli_rejects_nonpositive_sigma_used_mm():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--sigma-used-mm",
+            "0",
         ]
     )
     with pytest.raises(SystemExit):

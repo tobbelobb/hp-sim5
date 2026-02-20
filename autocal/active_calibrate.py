@@ -2246,6 +2246,8 @@ def _annotate_dataset_noise_model(
     dataset: Optional[dict],
     *,
     line_width_mm: float,
+    sigma_floor_mm: Optional[float],
+    sigma_used_mm: Optional[float],
     find_radii_mode: str,
     find_buildup_mode: str,
     project_zero_tension: bool,
@@ -2274,6 +2276,20 @@ def _annotate_dataset_noise_model(
     noise_model["solver_mode"] = f"{mode_r}/{mode_b}"
     noise_model["layered"] = bool(_spool_mode_enabled(mode_r) or _spool_mode_enabled(mode_b))
     noise_model["project_zero_tension"] = bool(project_zero_tension)
+    if sigma_floor_mm is not None:
+        try:
+            sigma_floor = float(sigma_floor_mm)
+        except (TypeError, ValueError):
+            sigma_floor = float("nan")
+        if np.isfinite(sigma_floor) and sigma_floor > 0.0:
+            noise_model["sigma_floor_mm"] = float(sigma_floor)
+    if sigma_used_mm is not None:
+        try:
+            sigma_used = float(sigma_used_mm)
+        except (TypeError, ValueError):
+            sigma_used = float("nan")
+        if np.isfinite(sigma_used) and sigma_used > 0.0:
+            noise_model["sigma_used_mm"] = float(sigma_used)
     config[_NOISE_MODEL_CONFIG_KEY] = noise_model
 
 
@@ -2389,6 +2405,8 @@ def _plan_next_ellipse_sweep(
     spool_inner_iters: int,
     theta0_mode: str,
     line_width: float,
+    sigma_floor_mm: Optional[float],
+    sigma_used_mm: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -2446,6 +2464,8 @@ def _plan_next_ellipse_sweep(
     _annotate_dataset_noise_model(
         dataset,
         line_width_mm=float(line_width),
+        sigma_floor_mm=sigma_floor_mm,
+        sigma_used_mm=sigma_used_mm,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
         project_zero_tension=bool(prefer_zero_tension_angles),
@@ -2843,6 +2863,8 @@ def _plan_next_ellipse_sweep(
         "force_args_applied": force_args_applied,
         "length_model": length_model,
         "line_width_mm": float(line_width),
+        "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
+        "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
         "dataset_for_estimation": dataset_for_estimation,
     }
 
@@ -2965,14 +2987,25 @@ def _print_ellipse_plan(
                     f"J_trim={j_trim_str} chi2_red_trim={chi2_trim_str} N_trim={n_trim_str}"
                 )
                 sigma_min_mm = noise_metrics.get("sigma_min_mm")
+                sigma_model_mm = noise_metrics.get("sigma_model_mm")
+                sigma_used_mm = noise_metrics.get("sigma_used_mm")
                 sigma_floor_deg = noise_metrics.get("sigma_floor_deg")
                 sigma_source = noise_metrics.get("sigma_source")
-                if sigma_min_mm is not None or sigma_floor_deg is not None or sigma_source is not None:
+                if (
+                    sigma_min_mm is not None
+                    or sigma_model_mm is not None
+                    or sigma_used_mm is not None
+                    or sigma_floor_deg is not None
+                    or sigma_source is not None
+                ):
                     min_str = _fmt_float(sigma_min_mm, suffix="mm")
+                    model_str = _fmt_float(sigma_model_mm, suffix="mm")
+                    used_str = _fmt_float(sigma_used_mm, suffix="mm")
                     floor_str = _fmt_float(sigma_floor_deg, suffix="deg")
                     source_str = str(sigma_source) if sigma_source is not None else "n/a"
                     print(
-                        f"; noise_norm_floor: min_sigma={min_str} floor_deg={floor_str} source={source_str}"
+                        f"; noise_norm_floor: min_sigma={min_str} model_sigma={model_str} "
+                        f"used_sigma={used_str} floor_deg={floor_str} source={source_str}"
                     )
                 sigma_encoder = noise_metrics.get("sigma_encoder_mm")
                 sigma_friction = noise_metrics.get("sigma_friction_cogging_mm")
@@ -2982,11 +3015,14 @@ def _print_ellipse_plan(
                 sigma_layer_changes = noise_metrics.get("sigma_layer_changes_mm")
                 sigma_mode_add = noise_metrics.get("sigma_mode_addition_mm")
                 sigma_total = noise_metrics.get("sigma_total_mm")
+                sigma_model = noise_metrics.get("sigma_model_mm")
+                sigma_used = noise_metrics.get("sigma_used_mm")
                 sigma_mode = noise_metrics.get("sigma_solver_mode")
                 sigma_mode_factor = noise_metrics.get("sigma_solver_mode_factor")
                 sigma_line_width = noise_metrics.get("sigma_line_width_mm")
                 sigma_base_radius = noise_metrics.get("sigma_base_radius_mm")
                 sigma_layered = noise_metrics.get("sigma_layered_enabled")
+                sigma_used_override = noise_metrics.get("sigma_used_override_mm")
                 if any(
                     val is not None
                     for val in (
@@ -2998,11 +3034,14 @@ def _print_ellipse_plan(
                         sigma_layer_changes,
                         sigma_mode_add,
                         sigma_total,
+                        sigma_model,
+                        sigma_used,
                         sigma_mode,
                         sigma_mode_factor,
                         sigma_line_width,
                         sigma_base_radius,
                         sigma_layered,
+                        sigma_used_override,
                     )
                 ):
                     layered_str = "n/a"
@@ -3018,11 +3057,14 @@ def _print_ellipse_plan(
                         f"layer_changes={_fmt_float(sigma_layer_changes, suffix='mm')} "
                         f"mode_add={_fmt_float(sigma_mode_add, suffix='mm')} "
                         f"total={_fmt_float(sigma_total, suffix='mm')} "
+                        f"model={_fmt_float(sigma_model, suffix='mm')} "
+                        f"used={_fmt_float(sigma_used, suffix='mm')} "
                         f"layered={layered_str} "
                         f"mode={str(sigma_mode) if sigma_mode is not None else 'n/a'} "
                         f"mode_factor={_fmt_float(sigma_mode_factor)} "
                         f"line_width={_fmt_float(sigma_line_width, suffix='mm')} "
-                        f"base_radius={_fmt_float(sigma_base_radius, suffix='mm')}"
+                        f"base_radius={_fmt_float(sigma_base_radius, suffix='mm')} "
+                        f"used_override={_fmt_float(sigma_used_override, suffix='mm')}"
                     )
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
         rank_val = int(info_rank) if isinstance(info_rank, int) else int(np.linalg.matrix_rank(info))
@@ -3153,6 +3195,8 @@ def ellipse_active(
     spool_inner_iters: int,
     theta0_mode: str,
     line_width: float,
+    sigma_floor_mm: Optional[float],
+    sigma_used_mm: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -3243,6 +3287,8 @@ def ellipse_active(
         spool_inner_iters=int(spool_inner_iters),
         theta0_mode=str(theta0_mode),
         line_width=float(line_width),
+        sigma_floor_mm=(None if sigma_floor_mm is None else float(sigma_floor_mm)),
+        sigma_used_mm=(None if sigma_used_mm is None else float(sigma_used_mm)),
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
         delta_min=delta_min,
@@ -3352,6 +3398,8 @@ def full_auto_loop(
     spool_inner_iters: int,
     theta0_mode: str,
     line_width: float,
+    sigma_floor_mm: Optional[float],
+    sigma_used_mm: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -3661,6 +3709,8 @@ def full_auto_loop(
         "spool_inner_iters": int(spool_inner_iters),
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
         "line_width": float(line_width),
+        "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
+        "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
     }
 
     best_cost = float("inf")
@@ -3739,6 +3789,14 @@ def full_auto_loop(
                 settings["line_width"] = float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM))
                 if not np.isfinite(settings["line_width"]) or settings["line_width"] < 0.0:
                     settings["line_width"] = float(DEFAULT_LAYER_LINE_WIDTH_MM)
+                if settings.get("sigma_floor_mm") is not None:
+                    settings["sigma_floor_mm"] = float(settings["sigma_floor_mm"])
+                    if not np.isfinite(settings["sigma_floor_mm"]) or settings["sigma_floor_mm"] <= 0.0:
+                        settings["sigma_floor_mm"] = None
+                if settings.get("sigma_used_mm") is not None:
+                    settings["sigma_used_mm"] = float(settings["sigma_used_mm"])
+                    if not np.isfinite(settings["sigma_used_mm"]) or settings["sigma_used_mm"] <= 0.0:
+                        settings["sigma_used_mm"] = None
                 if run_flags:
                     _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
                 else:
@@ -3802,6 +3860,16 @@ def full_auto_loop(
                         spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
                         theta0_mode=str(settings.get("theta0_mode", "zero")),
                         line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
+                        sigma_floor_mm=(
+                            None
+                            if settings.get("sigma_floor_mm") is None
+                            else float(settings.get("sigma_floor_mm"))
+                        ),
+                        sigma_used_mm=(
+                            None
+                            if settings.get("sigma_used_mm") is None
+                            else float(settings.get("sigma_used_mm"))
+                        ),
                         candidate_deltas=candidate_deltas,
                         candidate_count=int(candidate_count),
                         delta_min=delta_min,
@@ -4138,6 +4206,8 @@ def ellipse_loop(
     spool_inner_iters: int,
     theta0_mode: str,
     line_width: float,
+    sigma_floor_mm: Optional[float],
+    sigma_used_mm: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -4339,6 +4409,8 @@ def ellipse_loop(
             spool_inner_iters=int(spool_inner_iters),
             theta0_mode=str(theta0_mode),
             line_width=float(line_width),
+            sigma_floor_mm=(None if sigma_floor_mm is None else float(sigma_floor_mm)),
+            sigma_used_mm=(None if sigma_used_mm is None else float(sigma_used_mm)),
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
             delta_min=delta_min,
@@ -4494,6 +4566,18 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=DEFAULT_LAYER_LINE_WIDTH_MM,
         help="Estimated line width in mm used by the layered noise model (default: 1.0).",
+    )
+    parser.add_argument(
+        "--sigma-floor-mm",
+        type=float,
+        default=None,
+        help="Override the base sigma floor (mm) used in the composite noise model.",
+    )
+    parser.add_argument(
+        "--sigma-used-mm",
+        type=float,
+        default=None,
+        help="Override the final sigma used for pointwise normalization (mm).",
     )
     parser.add_argument(
         "--r0-bounds",
@@ -4884,6 +4968,24 @@ def _resolve_spool_cli_options(
     if not np.isfinite(line_width) or line_width < 0.0:
         parser.error("--line-width must be finite and >= 0")
 
+    sigma_floor_mm = args.sigma_floor_mm
+    if sigma_floor_mm is not None:
+        try:
+            sigma_floor_mm = float(sigma_floor_mm)
+        except (TypeError, ValueError):
+            parser.error("--sigma-floor-mm must be numeric")
+        if not np.isfinite(sigma_floor_mm) or sigma_floor_mm <= 0.0:
+            parser.error("--sigma-floor-mm must be finite and > 0")
+
+    sigma_used_mm = args.sigma_used_mm
+    if sigma_used_mm is not None:
+        try:
+            sigma_used_mm = float(sigma_used_mm)
+        except (TypeError, ValueError):
+            parser.error("--sigma-used-mm must be numeric")
+        if not np.isfinite(sigma_used_mm) or sigma_used_mm <= 0.0:
+            parser.error("--sigma-used-mm must be finite and > 0")
+
     return {
         "find_radii": str(find_radii_mode),
         "find_buildup_factor": str(find_buildup_mode),
@@ -4895,6 +4997,8 @@ def _resolve_spool_cli_options(
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
         "line_width": float(line_width),
+        "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
+        "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
     }
 
 
@@ -4989,6 +5093,8 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spool-inner-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
     parser.add_argument("--line-width", type=float, default=None)
+    parser.add_argument("--sigma-floor-mm", type=float, default=None)
+    parser.add_argument("--sigma-used-mm", type=float, default=None)
     parser.add_argument("--spring-k-multiplier", type=float, default=None)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
@@ -5240,6 +5346,16 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         spool_inner_iters=int(spool_opts["spool_inner_iters"]),
         theta0_mode=str(spool_opts["theta0_mode"]),
         line_width=float(spool_opts["line_width"]),
+        sigma_floor_mm=(
+            None
+            if spool_opts.get("sigma_floor_mm") is None
+            else float(spool_opts["sigma_floor_mm"])
+        ),
+        sigma_used_mm=(
+            None
+            if spool_opts.get("sigma_used_mm") is None
+            else float(spool_opts["sigma_used_mm"])
+        ),
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
@@ -5321,6 +5437,16 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             spool_inner_iters=int(spool_opts["spool_inner_iters"]),
             theta0_mode=str(spool_opts["theta0_mode"]),
             line_width=float(spool_opts["line_width"]),
+            sigma_floor_mm=(
+                None
+                if spool_opts.get("sigma_floor_mm") is None
+                else float(spool_opts["sigma_floor_mm"])
+            ),
+            sigma_used_mm=(
+                None
+                if spool_opts.get("sigma_used_mm") is None
+                else float(spool_opts["sigma_used_mm"])
+            ),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
             delta_min=args.delta_min,
@@ -5377,6 +5503,16 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         spool_inner_iters=int(spool_opts["spool_inner_iters"]),
         theta0_mode=str(spool_opts["theta0_mode"]),
         line_width=float(spool_opts["line_width"]),
+        sigma_floor_mm=(
+            None
+            if spool_opts.get("sigma_floor_mm") is None
+            else float(spool_opts["sigma_floor_mm"])
+        ),
+        sigma_used_mm=(
+            None
+            if spool_opts.get("sigma_used_mm") is None
+            else float(spool_opts["sigma_used_mm"])
+        ),
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,

@@ -275,23 +275,35 @@ class EllipseCostFunction:
             encoder_noise_mm=raw_noise_mm,
             default_floor_mm=float(_POINTWISE_MIN_SIGMA_MM),
         )
-        sigma_min_floor = self._sigma_components.get("sigma_total_mm")
+        sigma_min_floor = self._sigma_components.get("sigma_floor_term_mm")
         if not isinstance(sigma_min_floor, (int, float)) or not np.isfinite(float(sigma_min_floor)):
             sigma_min_floor = float(_POINTWISE_MIN_SIGMA_MM)
         self._pointwise_sigma_min_mm = float(max(float(sigma_min_floor), 1e-9))
+        sigma_model_floor = self._sigma_components.get("sigma_total_mm")
+        if not isinstance(sigma_model_floor, (int, float)) or not np.isfinite(float(sigma_model_floor)):
+            sigma_model_floor = float(self._pointwise_sigma_min_mm)
+        self._pointwise_sigma_model_mm = float(max(float(sigma_model_floor), self._pointwise_sigma_min_mm))
         sigma_scaled_mm = None
         if raw_noise_mm is not None:
             sigma_scaled_mm = float(self._pointwise_sigma_mult * raw_noise_mm)
         self._pointwise_sigma_scaled_mm = sigma_scaled_mm
-        if sigma_scaled_mm is None:
-            sigma_floor_mm = float(self._pointwise_sigma_min_mm)
-            sigma_source = "min"
-        elif sigma_scaled_mm >= self._pointwise_sigma_min_mm:
+        sigma_used_override_mm = self._sigma_components.get("sigma_used_override_mm")
+        if (
+            isinstance(sigma_used_override_mm, (int, float))
+            and np.isfinite(float(sigma_used_override_mm))
+            and float(sigma_used_override_mm) > 0.0
+        ):
+            sigma_floor_mm = float(sigma_used_override_mm)
+            sigma_source = "override"
+        elif sigma_scaled_mm is not None and sigma_scaled_mm >= self._pointwise_sigma_model_mm:
             sigma_floor_mm = float(sigma_scaled_mm)
             sigma_source = "noise"
         else:
-            sigma_floor_mm = float(self._pointwise_sigma_min_mm)
-            sigma_source = "min"
+            sigma_floor_mm = float(self._pointwise_sigma_model_mm)
+            if sigma_floor_mm > self._pointwise_sigma_min_mm + 1e-12:
+                sigma_source = "model"
+            else:
+                sigma_source = "min"
         denom = float(max(2.0 * self._length_scale, 1.0))
         self._pointwise_sigma_floor_mm = float(sigma_floor_mm)
         self._pointwise_sigma_floor_source = sigma_source
@@ -776,7 +788,13 @@ class EllipseCostFunction:
             sigma_flex = float(max(float(force_span_n), 0.0) * float(flex_gain))
             sigma_flex_source = "force_span"
 
-        sigma_floor_term = self._coerce_nonnegative(default_floor_mm, default=float(_POINTWISE_MIN_SIGMA_MM))
+        sigma_floor_override = noise_model.get("sigma_floor_mm")
+        sigma_floor_term = self._coerce_nonnegative(
+            sigma_floor_override,
+            default=self._coerce_nonnegative(default_floor_mm, default=float(_POINTWISE_MIN_SIGMA_MM)),
+        )
+        if isinstance(sigma_floor_override, (int, float)) and (not np.isfinite(sigma_floor_override) or sigma_floor_override <= 0.0):
+            sigma_floor_term = self._coerce_nonnegative(default_floor_mm, default=float(_POINTWISE_MIN_SIGMA_MM))
         sigma_non_layered = float(
             np.sqrt(
                 sigma_encoder**2
@@ -785,6 +803,12 @@ class EllipseCostFunction:
                 + sigma_floor_term**2
             )
         )
+        sigma_used_override_mm: Optional[float] = None
+        sigma_used_override = noise_model.get("sigma_used_mm")
+        if isinstance(sigma_used_override, (int, float)):
+            sigma_used_val = float(sigma_used_override)
+            if np.isfinite(sigma_used_val) and sigma_used_val > 0.0:
+                sigma_used_override_mm = float(sigma_used_val)
 
         if isinstance(dataset, dict):
             config = dataset.get("config", {}) or {}
@@ -834,6 +858,7 @@ class EllipseCostFunction:
             "sigma_flex_mm": float(sigma_flex),
             "sigma_flex_source": str(sigma_flex_source),
             "sigma_floor_term_mm": float(sigma_floor_term),
+            "sigma_used_override_mm": sigma_used_override_mm,
             "sigma_non_layered_mm": float(sigma_non_layered),
             "sigma_layer_changes_mm": float(sigma_layer_changes),
             "sigma_mode_addition_mm": float(sigma_mode_addition),
@@ -1751,6 +1776,8 @@ class EllipseCostFunction:
             if self._pointwise_sigma_scaled_mm is not None
             else None,
             "sigma_min_mm": float(self._pointwise_sigma_min_mm),
+            "sigma_model_mm": float(self._pointwise_sigma_model_mm),
+            "sigma_used_mm": float(self._pointwise_sigma_floor_mm),
             "sigma_floor_mm": float(self._pointwise_sigma_floor_mm),
             "sigma_floor_source": str(self._pointwise_sigma_floor_source),
             **dict(self._sigma_components),
@@ -1944,6 +1971,8 @@ class EllipseCostFunction:
                     "noise_normalized": bool(norm_mode == "sigma"),
                     "lengths_mode": "mu" if bool(self.use_noise_mean) else "raw",
                     "sigma_min_mm": float(self._pointwise_sigma_min_mm),
+                    "sigma_model_mm": float(self._pointwise_sigma_model_mm),
+                    "sigma_used_mm": float(self._pointwise_sigma_floor_mm),
                     "sigma_floor_deg": float(self._sigma_floor_deg)
                     if self._sigma_floor_deg is not None and np.isfinite(self._sigma_floor_deg)
                     else None,

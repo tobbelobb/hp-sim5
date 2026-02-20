@@ -370,6 +370,8 @@ def solve_anchors(
             sigma_mult = pw.get("sigma_mult")
             sigma_scaled = pw.get("sigma_scaled_mm")
             sigma_min = pw.get("sigma_min_mm")
+            sigma_model = pw.get("sigma_model_mm")
+            sigma_used = pw.get("sigma_used_mm")
             sigma_floor = pw.get("sigma_floor_mm")
             sigma_source = pw.get("sigma_floor_source")
             sigma_floor_deg = pw.get("sigma_floor_deg")
@@ -377,6 +379,8 @@ def solve_anchors(
                 sigma_noise is not None
                 or sigma_scaled is not None
                 or sigma_min is not None
+                or sigma_model is not None
+                or sigma_used is not None
                 or sigma_floor is not None
                 or sigma_floor_deg is not None
             ):
@@ -400,6 +404,16 @@ def solve_anchors(
                     if sigma_min is not None and np.isfinite(sigma_min)
                     else "n/a"
                 )
+                model_str = (
+                    f"{float(sigma_model):.6g}"
+                    if sigma_model is not None and np.isfinite(sigma_model)
+                    else "n/a"
+                )
+                used_sigma_str = (
+                    f"{float(sigma_used):.6g}"
+                    if sigma_used is not None and np.isfinite(sigma_used)
+                    else "n/a"
+                )
                 used_str = (
                     f"{float(sigma_floor):.6g}"
                     if sigma_floor is not None and np.isfinite(sigma_floor)
@@ -417,7 +431,9 @@ def solve_anchors(
                     f" mult={mult_str}"
                     f" scaled={scaled_str}"
                     f" min={min_str}"
-                    f" used={used_str}"
+                    f" model={model_str}"
+                    f" used={used_sigma_str}"
+                    f" floor={used_str}"
                     f" floor_deg={floor_deg_str}"
                     f" source={source_str}"
                 )
@@ -429,11 +445,14 @@ def solve_anchors(
             sigma_layer_changes = pw.get("sigma_layer_changes_mm")
             sigma_mode_add = pw.get("sigma_mode_addition_mm")
             sigma_total = pw.get("sigma_total_mm")
+            sigma_model2 = pw.get("sigma_model_mm")
+            sigma_used2 = pw.get("sigma_used_mm")
             sigma_mode = pw.get("sigma_solver_mode")
             sigma_mode_factor = pw.get("sigma_solver_mode_factor")
             sigma_line_width = pw.get("sigma_line_width_mm")
             sigma_base_radius = pw.get("sigma_base_radius_mm")
             sigma_layered = pw.get("sigma_layered_enabled")
+            sigma_used_override = pw.get("sigma_used_override_mm")
             if any(
                 val is not None
                 for val in (
@@ -445,11 +464,14 @@ def solve_anchors(
                     sigma_layer_changes,
                     sigma_mode_add,
                     sigma_total,
+                    sigma_model2,
+                    sigma_used2,
                     sigma_mode,
                     sigma_mode_factor,
                     sigma_line_width,
                     sigma_base_radius,
                     sigma_layered,
+                    sigma_used_override,
                 )
             ):
                 layered_str = "n/a"
@@ -466,11 +488,14 @@ def solve_anchors(
                     f" layer_changes={_fmt_float(sigma_layer_changes)}"
                     f" mode_add={_fmt_float(sigma_mode_add)}"
                     f" total={_fmt_float(sigma_total)}"
+                    f" model={_fmt_float(sigma_model2)}"
+                    f" used={_fmt_float(sigma_used2)}"
                     f" layered={layered_str}"
                     f" mode={mode_str}"
                     f" mode_factor={_fmt_float(sigma_mode_factor)}"
                     f" line_width={_fmt_float(sigma_line_width)}"
                     f" base_radius={_fmt_float(sigma_base_radius)}"
+                    f" used_override={_fmt_float(sigma_used_override)}"
                 )
             stats = pw.get("inlier_ratio_stats")
             if isinstance(stats, dict):

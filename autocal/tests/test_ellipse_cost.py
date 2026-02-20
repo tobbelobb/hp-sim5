@@ -1,4 +1,5 @@
 import copy
+from typing import Optional
 
 import numpy as np
 from autocal.ellipse_cost import (
@@ -64,8 +65,25 @@ def _synthetic_dataset(num_sweeps: int = 3):
     return dataset, anchors
 
 
-def _with_noise_model(dataset: dict, *, find_radii_mode: str, find_buildup_mode: str, line_width_mm: float) -> dict:
+def _with_noise_model(
+    dataset: dict,
+    *,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+    line_width_mm: float,
+    sigma_floor_mm: float = 0.05,
+    sigma_used_mm: Optional[float] = None,
+) -> dict:
     out = copy.deepcopy(dataset)
+    noise_model = {
+        "line_width_mm": float(line_width_mm),
+        "find_radii_mode": str(find_radii_mode),
+        "find_buildup_mode": str(find_buildup_mode),
+        "layered": bool(str(find_radii_mode) != "off" or str(find_buildup_mode) != "off"),
+        "sigma_floor_mm": float(sigma_floor_mm),
+    }
+    if sigma_used_mm is not None:
+        noise_model["sigma_used_mm"] = float(sigma_used_mm)
     out["config"] = {
         "m666": {
             "R": [40.0, 40.0, 40.0],
@@ -79,12 +97,7 @@ def _with_noise_model(dataset: dict, *, find_radii_mode: str, find_buildup_mode:
             "force_mid_n": 0.23,
             "force_max_n": 1.03,
         },
-        "noise_model": {
-            "line_width_mm": float(line_width_mm),
-            "find_radii_mode": str(find_radii_mode),
-            "find_buildup_mode": str(find_buildup_mode),
-            "layered": bool(str(find_radii_mode) != "off" or str(find_buildup_mode) != "off"),
-        },
+        "noise_model": noise_model,
     }
     return out
 
@@ -165,10 +178,15 @@ def test_sigma_components_non_layered_quadrature():
     assert pw["sigma_layered_enabled"] is False
     assert np.isclose(float(pw["sigma_layer_changes_mm"]), 0.0, atol=1e-12)
     assert np.isclose(float(pw["sigma_mode_addition_mm"]), 0.0, atol=1e-12)
+    sigma_min = float(pw["sigma_min_mm"])
+    assert sigma_min > 0.0
 
-    expected = np.sqrt(0.02**2 + 0.3**2 + 0.1**2 + 0.5**2)
+    expected = np.sqrt(0.02**2 + 0.3**2 + 0.1**2 + sigma_min**2)
     assert np.isclose(float(pw["sigma_non_layered_mm"]), expected, atol=1e-6)
     assert np.isclose(float(pw["sigma_total_mm"]), expected, atol=1e-6)
+    assert np.isclose(float(pw["sigma_model_mm"]), expected, atol=1e-6)
+    assert np.isclose(float(pw["sigma_used_mm"]), expected, atol=1e-6)
+    assert pw["sigma_floor_source"] == "model"
 
 
 def test_sigma_components_layered_include_mode_and_linewidth_terms():
@@ -195,4 +213,27 @@ def test_sigma_components_layered_include_mode_and_linewidth_terms():
 
     expected = np.sqrt(sigma_non_layered**2 + sigma_layer_changes**2 + sigma_mode_add**2)
     assert np.isclose(sigma_total, expected, atol=1e-6)
+    assert np.isclose(float(pw["sigma_model_mm"]), expected, atol=1e-6)
+    assert np.isclose(float(pw["sigma_used_mm"]), expected, atol=1e-6)
     assert sigma_total > sigma_non_layered
+
+
+def test_sigma_used_override_sets_final_normalization_sigma():
+    dataset, anchors = _synthetic_dataset()
+    dataset = _with_noise_model(
+        dataset,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        line_width_mm=1.0,
+        sigma_floor_mm=0.05,
+        sigma_used_mm=0.9,
+    )
+    cost_fn = EllipseCostFunction(dataset)
+    diag = cost_fn.robustness_diagnostics(anchors.ravel())
+    pw = diag["pointwise_filtering"]
+    assert np.isclose(float(pw["sigma_min_mm"]), 0.05, atol=1e-12)
+    assert float(pw["sigma_model_mm"]) > 0.05
+    assert np.isclose(float(pw["sigma_used_mm"]), 0.9, atol=1e-12)
+    assert np.isclose(float(pw["sigma_floor_mm"]), 0.9, atol=1e-12)
+    assert np.isclose(float(pw["sigma_used_override_mm"]), 0.9, atol=1e-12)
+    assert pw["sigma_floor_source"] == "override"
