@@ -36,6 +36,7 @@ _DEFAULT_B_PRIOR_SIGMA = 0.1
 _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
+_THETA0_MODE_CHOICES = ("infer", "zero")
 
 from autocal.active_learning import (
     SweepConfig,
@@ -540,6 +541,7 @@ def _estimate_effective_radii_with_spool_model(
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
     spool_inner_iters: int,
+    theta0_mode: str,
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
@@ -561,6 +563,7 @@ def _estimate_effective_radii_with_spool_model(
         raise ValueError("Cannot estimate radii without finite positive base radii.")
     mode_r = _normalize_spool_find_mode(find_radii_mode)
     mode_b = _normalize_spool_find_mode(find_buildup_mode)
+    theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_r = _spool_mode_enabled(mode_r)
     search_b = _spool_mode_enabled(mode_b)
     if not (search_r or search_b):
@@ -680,6 +683,7 @@ def _estimate_effective_radii_with_spool_model(
             mechanical_advantage=mech_adv,
             lines_per_spool=lines,
             base_buildup_factor=np.zeros(num_anchors, dtype=float),
+            theta0_mode=theta0_mode_norm,
         )
         transformed = dataset_with_modeled_lengths(dataset, spool_params)
         return spool_params, transformed
@@ -983,6 +987,7 @@ def _estimate_effective_radii_with_spool_model(
         "mode": f"radii={mode_r},buildup={mode_b}",
         "radii_mode": mode_r,
         "buildup_mode": mode_b,
+        "theta0_mode": theta0_mode_norm,
         "bounds_mm": r0_bounds_info,
         "r0_bounds_mm": r0_bounds_info,
         "b_bounds": b_bounds_info,
@@ -1741,6 +1746,15 @@ def _spool_mode_enabled(mode: str) -> bool:
     return _normalize_spool_find_mode(mode) != "off"
 
 
+def _normalize_theta0_mode(mode: Optional[str]) -> str:
+    text = str(mode or "zero").strip().lower()
+    if text not in _THETA0_MODE_CHOICES:
+        raise ValueError(
+            f"invalid theta0 mode '{mode}', expected one of: {', '.join(_THETA0_MODE_CHOICES)}"
+        )
+    return text
+
+
 def _resolve_r0_bounds(
     base_radii_mm: np.ndarray,
     *,
@@ -2330,6 +2344,7 @@ def _plan_next_ellipse_sweep(
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
     spool_inner_iters: int,
+    theta0_mode: str,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -2354,6 +2369,7 @@ def _plan_next_ellipse_sweep(
         warnings.append(f"point_role_remap_applied:{int(remapped_points)}")
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
+    theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
     if r0_bounds is not None and not _spool_mode_enabled(find_radii_mode):
@@ -2440,6 +2456,7 @@ def _plan_next_ellipse_sweep(
                 b_prior_sigma=b_prior_sigma,
                 spool_outer_iters=int(spool_outer_iters),
                 spool_inner_iters=int(spool_inner_iters),
+                theta0_mode=theta0_mode_norm,
                 solve_restarts=int(solve_restarts),
                 solve_iterations=int(solve_iterations),
                 solve_optimizer=str(solve_optimizer),
@@ -2531,6 +2548,7 @@ def _plan_next_ellipse_sweep(
             ),
             "spool_outer_iters": int(spool_outer_iters),
             "spool_inner_iters": int(spool_inner_iters),
+            "theta0_mode": theta0_mode_norm,
             "radii_fit": radii_fit,
             "spool_fit": radii_fit,
         }
@@ -3022,6 +3040,7 @@ def ellipse_active(
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
     spool_inner_iters: int,
+    theta0_mode: str,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -3110,6 +3129,7 @@ def ellipse_active(
         b_prior_sigma=b_prior_sigma,
         spool_outer_iters=int(spool_outer_iters),
         spool_inner_iters=int(spool_inner_iters),
+        theta0_mode=str(theta0_mode),
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
         delta_min=delta_min,
@@ -3217,6 +3237,7 @@ def full_auto_loop(
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
     spool_inner_iters: int,
+    theta0_mode: str,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -3524,6 +3545,7 @@ def full_auto_loop(
         "b_prior_sigma": (None if b_prior_sigma is None else float(b_prior_sigma)),
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
+        "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
     }
 
     best_cost = float("inf")
@@ -3575,6 +3597,7 @@ def full_auto_loop(
                 settings["find_buildup_factor"] = _normalize_spool_find_mode(
                     settings.get("find_buildup_factor")
                 )
+                settings["theta0_mode"] = _normalize_theta0_mode(settings.get("theta0_mode"))
 
                 raw_r0_bounds = settings.get("r0_bounds")
                 if isinstance(raw_r0_bounds, str):
@@ -3659,6 +3682,7 @@ def full_auto_loop(
                         ),
                         spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
                         spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
+                        theta0_mode=str(settings.get("theta0_mode", "zero")),
                         candidate_deltas=candidate_deltas,
                         candidate_count=int(candidate_count),
                         delta_min=delta_min,
@@ -3993,6 +4017,7 @@ def ellipse_loop(
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
     spool_inner_iters: int,
+    theta0_mode: str,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -4192,6 +4217,7 @@ def ellipse_loop(
             b_prior_sigma=b_prior_sigma,
             spool_outer_iters=int(spool_outer_iters),
             spool_inner_iters=int(spool_inner_iters),
+            theta0_mode=str(theta0_mode),
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
             delta_min=delta_min,
@@ -4377,6 +4403,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=30,
         help="Inner optimizer iterations per spool refinement step.",
+    )
+    parser.add_argument(
+        "--theta0-mode",
+        choices=_THETA0_MODE_CHOICES,
+        default="zero",
+        help="Theta offset mode for spool model: infer | zero (default: zero).",
     )
     parser.add_argument(
         "--pointwise-residual",
@@ -4686,6 +4718,7 @@ def _resolve_spool_cli_options(
     try:
         find_radii_mode = _normalize_spool_find_mode(args.find_radii)
         find_buildup_mode = _normalize_spool_find_mode(args.find_buildup_factor)
+        theta0_mode = _normalize_theta0_mode(args.theta0_mode)
         r0_bounds = _parse_min_max_bounds(args.r0_bounds, label="--r0-bounds")
         b_bounds = _parse_min_max_bounds(args.b_bounds, label="--b-bounds")
     except ValueError as exc:
@@ -4719,6 +4752,7 @@ def _resolve_spool_cli_options(
     return {
         "find_radii": str(find_radii_mode),
         "find_buildup_factor": str(find_buildup_mode),
+        "theta0_mode": str(theta0_mode),
         "r0_bounds": r0_bounds,
         "b_bounds": b_bounds,
         "r0_prior_sigma_mm": r0_prior_sigma_mm,
@@ -4817,6 +4851,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--b-prior-sigma", type=float, default=None)
     parser.add_argument("--spool-outer-iters", type=int, default=None)
     parser.add_argument("--spool-inner-iters", type=int, default=None)
+    parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
     parser.add_argument("--spring-k-multiplier", type=float, default=None)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
@@ -5066,6 +5101,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         b_prior_sigma=spool_opts["b_prior_sigma"],
         spool_outer_iters=int(spool_opts["spool_outer_iters"]),
         spool_inner_iters=int(spool_opts["spool_inner_iters"]),
+        theta0_mode=str(spool_opts["theta0_mode"]),
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
@@ -5145,6 +5181,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             b_prior_sigma=spool_opts["b_prior_sigma"],
             spool_outer_iters=int(spool_opts["spool_outer_iters"]),
             spool_inner_iters=int(spool_opts["spool_inner_iters"]),
+            theta0_mode=str(spool_opts["theta0_mode"]),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
             delta_min=args.delta_min,
@@ -5199,6 +5236,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         b_prior_sigma=spool_opts["b_prior_sigma"],
         spool_outer_iters=int(spool_opts["spool_outer_iters"]),
         spool_inner_iters=int(spool_opts["spool_inner_iters"]),
+        theta0_mode=str(spool_opts["theta0_mode"]),
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,

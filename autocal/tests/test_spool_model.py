@@ -71,6 +71,35 @@ def test_nonlinear_delta_uses_absolute_thetas():
     )
 
 
+def test_build_spool_model_params_defaults_theta0_to_zero():
+    dataset = _sample_dataset()
+    params = build_spool_model_params(
+        dataset,
+        base_radii_mm=[10.0, 10.0, 10.0],
+        modeled_radii_mm=[10.0, 10.0, 10.0],
+        modeled_buildup_factor=[0.0, 0.0, 0.0],
+        spool_to_motor_gearing_factor=[1.0, 1.0, 1.0],
+        mechanical_advantage=[1.0, 1.0, 1.0],
+        lines_per_spool=[1.0, 1.0, 1.0],
+    )
+    assert tuple(float(v) for v in params.theta0_deg) == (0.0, 0.0, 0.0)
+
+
+def test_build_spool_model_params_can_infer_theta0():
+    dataset = _sample_dataset()
+    params = build_spool_model_params(
+        dataset,
+        base_radii_mm=[10.0, 10.0, 10.0],
+        modeled_radii_mm=[10.0, 10.0, 10.0],
+        modeled_buildup_factor=[0.0, 0.0, 0.0],
+        spool_to_motor_gearing_factor=[1.0, 1.0, 1.0],
+        mechanical_advantage=[1.0, 1.0, 1.0],
+        lines_per_spool=[1.0, 1.0, 1.0],
+        theta0_mode="infer",
+    )
+    assert np.allclose(np.asarray(params.theta0_deg, dtype=float), np.asarray([100.0, 200.0, 300.0]))
+
+
 def test_dataset_with_modeled_lengths_rewrites_lengths_and_preserves_base_fields():
     dataset = _sample_dataset()
     params = build_spool_model_params(
@@ -81,6 +110,7 @@ def test_dataset_with_modeled_lengths_rewrites_lengths_and_preserves_base_fields
         spool_to_motor_gearing_factor=[1.0, 1.0, 1.0],
         mechanical_advantage=[1.0, 1.0, 1.0],
         lines_per_spool=[1.0, 1.0, 1.0],
+        theta0_mode="infer",
     )
     rewritten = dataset_with_modeled_lengths(dataset, params)
 
@@ -111,6 +141,7 @@ def test_sweep_configs_with_modeled_lengths_scales_from_base_coordinate():
         spool_to_motor_gearing_factor=[1.0, 1.0, 1.0],
         mechanical_advantage=[1.0, 1.0, 1.0],
         lines_per_spool=[1.0, 1.0, 1.0],
+        theta0_mode="infer",
     )
     configs = [
         SweepConfig(

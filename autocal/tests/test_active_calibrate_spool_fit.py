@@ -18,6 +18,7 @@ def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildu
         mechanical_advantage,
         lines_per_spool,
         base_buildup_factor=None,
+        theta0_mode="zero",
     ):
         _ = (
             dataset,
@@ -26,6 +27,7 @@ def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildu
             mechanical_advantage,
             lines_per_spool,
             base_buildup_factor,
+            theta0_mode,
         )
         return {
             "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
@@ -84,6 +86,7 @@ def test_spool_fit_buildup_only_keeps_radii_fixed(monkeypatch):
         b_prior_sigma=1e9,
         spool_outer_iters=1,
         spool_inner_iters=40,
+        theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
         solve_optimizer="L-BFGS-B",
@@ -134,6 +137,7 @@ def test_spool_fit_radius_similarity_prior_reduces_spread(monkeypatch):
         b_prior_sigma=None,
         spool_outer_iters=1,
         spool_inner_iters=60,
+        theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
         solve_optimizer="L-BFGS-B",
@@ -177,6 +181,7 @@ def test_spool_fit_uses_default_b_prior_when_not_provided(monkeypatch):
         b_prior_sigma=None,
         spool_outer_iters=1,
         spool_inner_iters=4,
+        theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
         solve_optimizer="L-BFGS-B",
@@ -228,6 +233,7 @@ def test_spool_fit_anchor_step_uses_fast_solver_settings(monkeypatch):
         b_prior_sigma=0.1,
         spool_outer_iters=2,
         spool_inner_iters=4,
+        theta0_mode="zero",
         solve_restarts=7,
         solve_iterations=999,
         solve_optimizer="L-BFGS-B",
@@ -598,6 +604,7 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
         mechanical_advantage,
         lines_per_spool,
         base_buildup_factor=None,
+        theta0_mode="zero",
     ):
         _ = (
             dataset,
@@ -606,6 +613,7 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
             mechanical_advantage,
             lines_per_spool,
             base_buildup_factor,
+            theta0_mode,
         )
         return {
             "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
@@ -653,6 +661,7 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
         b_prior_sigma=0.1,
         spool_outer_iters=1,
         spool_inner_iters=1,
+        theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
         solve_optimizer="L-BFGS-B",
@@ -715,6 +724,7 @@ def test_spool_fit_seed_selection_can_move_off_current(monkeypatch):
         b_prior_sigma=None,
         spool_outer_iters=1,
         spool_inner_iters=1,
+        theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
         solve_optimizer="L-BFGS-B",

@@ -9,6 +9,7 @@ import numpy as np
 from autocal.active_learning import SweepConfig
 
 _EPS = 1e-12
+_THETA0_MODE_CHOICES = ("infer", "zero")
 
 
 @dataclass(frozen=True)
@@ -237,6 +238,25 @@ def _infer_theta0_deg(dataset: dict, base_models: Sequence[WinchSpoolModel]) -> 
     return tuple(out)
 
 
+def _resolve_theta0_deg(
+    dataset: dict,
+    *,
+    mode: str,
+    base_models: Sequence[WinchSpoolModel],
+) -> Tuple[float, ...]:
+    num_anchors = int(dataset.get("num_anchors", 0))
+    if num_anchors <= 0:
+        raise ValueError("Dataset missing num_anchors")
+    text = str(mode).strip().lower()
+    if text not in _THETA0_MODE_CHOICES:
+        raise ValueError(
+            f"invalid theta0_mode '{mode}', expected one of: {', '.join(_THETA0_MODE_CHOICES)}"
+        )
+    if text == "zero":
+        return tuple(0.0 for _ in range(num_anchors))
+    return _infer_theta0_deg(dataset, base_models)
+
+
 def build_spool_model_params(
     dataset: dict,
     *,
@@ -247,6 +267,7 @@ def build_spool_model_params(
     mechanical_advantage: Sequence[float],
     lines_per_spool: Sequence[float],
     base_buildup_factor: Optional[Sequence[float]] = None,
+    theta0_mode: str = "zero",
 ) -> SpoolModelParams:
     num_anchors = int(dataset.get("num_anchors", 0))
     if num_anchors <= 0:
@@ -291,7 +312,11 @@ def build_spool_model_params(
     )
 
     validate_dataset_has_raw_angles(dataset)
-    theta0 = _infer_theta0_deg(dataset, base_models)
+    theta0 = _resolve_theta0_deg(
+        dataset,
+        mode=theta0_mode,
+        base_models=base_models,
+    )
     return SpoolModelParams(
         base_models=base_models,
         modeled_models=modeled_models,

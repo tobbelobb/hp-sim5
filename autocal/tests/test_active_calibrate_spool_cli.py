@@ -12,6 +12,8 @@ def test_spool_cli_options_parse_modes_and_bounds():
             "slideprinter",
             "--find-radii",
             "global",
+            "--theta0-mode",
+            "infer",
             "--r0-bounds",
             "12,34",
             "--spool-outer-iters",
@@ -23,6 +25,7 @@ def test_spool_cli_options_parse_modes_and_bounds():
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["find_radii"] == "global"
     assert opts["find_buildup_factor"] == "off"
+    assert opts["theta0_mode"] == "infer"
     assert opts["r0_bounds"] == (12.0, 34.0)
     assert opts["spool_outer_iters"] == 5
     assert opts["spool_inner_iters"] == 17
@@ -42,6 +45,7 @@ def test_spool_cli_flags_without_value_default_to_per_anchor():
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["find_radii"] == "per-anchor"
     assert opts["find_buildup_factor"] == "per-anchor"
+    assert opts["theta0_mode"] == "zero"
 
 
 def test_spool_cli_rejects_invalid_bounds():
