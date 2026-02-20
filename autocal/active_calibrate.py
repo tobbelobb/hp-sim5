@@ -28,6 +28,7 @@ RRF_SIM_DEFAULT_CONFIG = "sys/config_slideprinter.g"
 RRF_SIM_LINE_LAYER_CONFIG = "sys/config_slideprinter_w_line_layers.g"
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
+DEFAULT_LAYER_LINE_WIDTH_MM = 1.0
 DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
@@ -37,6 +38,7 @@ _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _THETA0_MODE_CHOICES = ("infer", "zero")
+_NOISE_MODEL_CONFIG_KEY = "noise_model"
 
 from autocal.active_learning import (
     SweepConfig,
@@ -2240,6 +2242,41 @@ def _filter_candidates_by_spacing(
     return filtered
 
 
+def _annotate_dataset_noise_model(
+    dataset: Optional[dict],
+    *,
+    line_width_mm: float,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+    project_zero_tension: bool,
+) -> None:
+    if not isinstance(dataset, dict):
+        return
+    config = dataset.get("config")
+    if not isinstance(config, dict):
+        config = {}
+        dataset["config"] = config
+
+    mode_r = _normalize_spool_find_mode(find_radii_mode)
+    mode_b = _normalize_spool_find_mode(find_buildup_mode)
+    try:
+        line_width = float(line_width_mm)
+    except (TypeError, ValueError):
+        line_width = float(DEFAULT_LAYER_LINE_WIDTH_MM)
+    if not np.isfinite(line_width) or line_width < 0.0:
+        line_width = float(DEFAULT_LAYER_LINE_WIDTH_MM)
+
+    noise_model_raw = config.get(_NOISE_MODEL_CONFIG_KEY)
+    noise_model = dict(noise_model_raw) if isinstance(noise_model_raw, dict) else {}
+    noise_model["line_width_mm"] = float(line_width)
+    noise_model["find_radii_mode"] = str(mode_r)
+    noise_model["find_buildup_mode"] = str(mode_b)
+    noise_model["solver_mode"] = f"{mode_r}/{mode_b}"
+    noise_model["layered"] = bool(_spool_mode_enabled(mode_r) or _spool_mode_enabled(mode_b))
+    noise_model["project_zero_tension"] = bool(project_zero_tension)
+    config[_NOISE_MODEL_CONFIG_KEY] = noise_model
+
+
 def _dataset_force_tuning(dataset: Optional[dict]) -> Optional[dict]:
     if not isinstance(dataset, dict):
         return None
@@ -2351,6 +2388,7 @@ def _plan_next_ellipse_sweep(
     spool_outer_iters: int,
     spool_inner_iters: int,
     theta0_mode: str,
+    line_width: float,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -2404,6 +2442,13 @@ def _plan_next_ellipse_sweep(
         collector_args,
         "--project-zero-tension",
         "--projectZeroTension",
+    )
+    _annotate_dataset_noise_model(
+        dataset,
+        line_width_mm=float(line_width),
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+        project_zero_tension=bool(prefer_zero_tension_angles),
     )
 
     if search_radii or search_buildup:
@@ -2797,6 +2842,7 @@ def _plan_next_ellipse_sweep(
         "force_tuning": force_tuning,
         "force_args_applied": force_args_applied,
         "length_model": length_model,
+        "line_width_mm": float(line_width),
         "dataset_for_estimation": dataset_for_estimation,
     }
 
@@ -2928,6 +2974,56 @@ def _print_ellipse_plan(
                     print(
                         f"; noise_norm_floor: min_sigma={min_str} floor_deg={floor_str} source={source_str}"
                     )
+                sigma_encoder = noise_metrics.get("sigma_encoder_mm")
+                sigma_friction = noise_metrics.get("sigma_friction_cogging_mm")
+                sigma_flex = noise_metrics.get("sigma_flex_mm")
+                sigma_floor_term = noise_metrics.get("sigma_floor_term_mm")
+                sigma_non_layered = noise_metrics.get("sigma_non_layered_mm")
+                sigma_layer_changes = noise_metrics.get("sigma_layer_changes_mm")
+                sigma_mode_add = noise_metrics.get("sigma_mode_addition_mm")
+                sigma_total = noise_metrics.get("sigma_total_mm")
+                sigma_mode = noise_metrics.get("sigma_solver_mode")
+                sigma_mode_factor = noise_metrics.get("sigma_solver_mode_factor")
+                sigma_line_width = noise_metrics.get("sigma_line_width_mm")
+                sigma_base_radius = noise_metrics.get("sigma_base_radius_mm")
+                sigma_layered = noise_metrics.get("sigma_layered_enabled")
+                if any(
+                    val is not None
+                    for val in (
+                        sigma_encoder,
+                        sigma_friction,
+                        sigma_flex,
+                        sigma_floor_term,
+                        sigma_non_layered,
+                        sigma_layer_changes,
+                        sigma_mode_add,
+                        sigma_total,
+                        sigma_mode,
+                        sigma_mode_factor,
+                        sigma_line_width,
+                        sigma_base_radius,
+                        sigma_layered,
+                    )
+                ):
+                    layered_str = "n/a"
+                    if isinstance(sigma_layered, bool):
+                        layered_str = "true" if sigma_layered else "false"
+                    print(
+                        "; noise_sigma_mm: "
+                        f"encoder={_fmt_float(sigma_encoder, suffix='mm')} "
+                        f"friction_cogging={_fmt_float(sigma_friction, suffix='mm')} "
+                        f"flex={_fmt_float(sigma_flex, suffix='mm')} "
+                        f"floor={_fmt_float(sigma_floor_term, suffix='mm')} "
+                        f"non_layered={_fmt_float(sigma_non_layered, suffix='mm')} "
+                        f"layer_changes={_fmt_float(sigma_layer_changes, suffix='mm')} "
+                        f"mode_add={_fmt_float(sigma_mode_add, suffix='mm')} "
+                        f"total={_fmt_float(sigma_total, suffix='mm')} "
+                        f"layered={layered_str} "
+                        f"mode={str(sigma_mode) if sigma_mode is not None else 'n/a'} "
+                        f"mode_factor={_fmt_float(sigma_mode_factor)} "
+                        f"line_width={_fmt_float(sigma_line_width, suffix='mm')} "
+                        f"base_radius={_fmt_float(sigma_base_radius, suffix='mm')}"
+                    )
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
         rank_val = int(info_rank) if isinstance(info_rank, int) else int(np.linalg.matrix_rank(info))
         print(f"; info rank: {rank_val}/{info.shape[0]} {_covariance_report(cov)}")
@@ -3056,6 +3152,7 @@ def ellipse_active(
     spool_outer_iters: int,
     spool_inner_iters: int,
     theta0_mode: str,
+    line_width: float,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -3145,6 +3242,7 @@ def ellipse_active(
         spool_outer_iters=int(spool_outer_iters),
         spool_inner_iters=int(spool_inner_iters),
         theta0_mode=str(theta0_mode),
+        line_width=float(line_width),
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
         delta_min=delta_min,
@@ -3253,6 +3351,7 @@ def full_auto_loop(
     spool_outer_iters: int,
     spool_inner_iters: int,
     theta0_mode: str,
+    line_width: float,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -3561,6 +3660,7 @@ def full_auto_loop(
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
+        "line_width": float(line_width),
     }
 
     best_cost = float("inf")
@@ -3636,6 +3736,9 @@ def full_auto_loop(
                     settings["b_prior_sigma"] = float(settings["b_prior_sigma"])
                 settings["spool_outer_iters"] = int(settings.get("spool_outer_iters", 3))
                 settings["spool_inner_iters"] = int(settings.get("spool_inner_iters", 30))
+                settings["line_width"] = float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM))
+                if not np.isfinite(settings["line_width"]) or settings["line_width"] < 0.0:
+                    settings["line_width"] = float(DEFAULT_LAYER_LINE_WIDTH_MM)
                 if run_flags:
                     _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
                 else:
@@ -3698,6 +3801,7 @@ def full_auto_loop(
                         spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
                         spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
                         theta0_mode=str(settings.get("theta0_mode", "zero")),
+                        line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
                         candidate_deltas=candidate_deltas,
                         candidate_count=int(candidate_count),
                         delta_min=delta_min,
@@ -4033,6 +4137,7 @@ def ellipse_loop(
     spool_outer_iters: int,
     spool_inner_iters: int,
     theta0_mode: str,
+    line_width: float,
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -4233,6 +4338,7 @@ def ellipse_loop(
             spool_outer_iters=int(spool_outer_iters),
             spool_inner_iters=int(spool_inner_iters),
             theta0_mode=str(theta0_mode),
+            line_width=float(line_width),
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
             delta_min=delta_min,
@@ -4382,6 +4488,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=None,
         help="Use this buildup factor k in the model transform (with --find-radii, default is 0).",
+    )
+    parser.add_argument(
+        "--line-width",
+        type=float,
+        default=DEFAULT_LAYER_LINE_WIDTH_MM,
+        help="Estimated line width in mm used by the layered noise model (default: 1.0).",
     )
     parser.add_argument(
         "--r0-bounds",
@@ -4764,6 +4876,14 @@ def _resolve_spool_cli_options(
     if spool_inner_iters < 1:
         parser.error("--spool-inner-iters must be >= 1")
 
+    line_width = args.line_width
+    try:
+        line_width = float(line_width)
+    except (TypeError, ValueError):
+        parser.error("--line-width must be numeric")
+    if not np.isfinite(line_width) or line_width < 0.0:
+        parser.error("--line-width must be finite and >= 0")
+
     return {
         "find_radii": str(find_radii_mode),
         "find_buildup_factor": str(find_buildup_mode),
@@ -4774,6 +4894,7 @@ def _resolve_spool_cli_options(
         "b_prior_sigma": b_prior_sigma,
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
+        "line_width": float(line_width),
     }
 
 
@@ -4867,6 +4988,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spool-outer-iters", type=int, default=None)
     parser.add_argument("--spool-inner-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
+    parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--spring-k-multiplier", type=float, default=None)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
@@ -5117,6 +5239,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         spool_outer_iters=int(spool_opts["spool_outer_iters"]),
         spool_inner_iters=int(spool_opts["spool_inner_iters"]),
         theta0_mode=str(spool_opts["theta0_mode"]),
+        line_width=float(spool_opts["line_width"]),
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
@@ -5197,6 +5320,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             spool_outer_iters=int(spool_opts["spool_outer_iters"]),
             spool_inner_iters=int(spool_opts["spool_inner_iters"]),
             theta0_mode=str(spool_opts["theta0_mode"]),
+            line_width=float(spool_opts["line_width"]),
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
             delta_min=args.delta_min,
@@ -5252,6 +5376,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         spool_outer_iters=int(spool_opts["spool_outer_iters"]),
         spool_inner_iters=int(spool_opts["spool_inner_iters"]),
         theta0_mode=str(spool_opts["theta0_mode"]),
+        line_width=float(spool_opts["line_width"]),
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,

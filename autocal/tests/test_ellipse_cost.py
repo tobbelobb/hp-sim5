@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 from autocal.ellipse_cost import (
     EllipseCostFunction,
@@ -62,6 +64,31 @@ def _synthetic_dataset(num_sweeps: int = 3):
     return dataset, anchors
 
 
+def _with_noise_model(dataset: dict, *, find_radii_mode: str, find_buildup_mode: str, line_width_mm: float) -> dict:
+    out = copy.deepcopy(dataset)
+    out["config"] = {
+        "m666": {
+            "R": [40.0, 40.0, 40.0],
+            "Q": 0.0,
+            "W": 0.01,
+        },
+        "mm_per_degree": [1.0, 1.0, 1.0],
+        "encoder_noise_origin_mm": [0.02, 0.02, 0.02],
+        "force_tuning": {
+            "force_low_n": 0.03,
+            "force_mid_n": 0.23,
+            "force_max_n": 1.03,
+        },
+        "noise_model": {
+            "line_width_mm": float(line_width_mm),
+            "find_radii_mode": str(find_radii_mode),
+            "find_buildup_mode": str(find_buildup_mode),
+            "layered": bool(str(find_radii_mode) != "off" or str(find_buildup_mode) != "off"),
+        },
+    }
+    return out
+
+
 def test_canonicalize_geometry_enforces_order_and_wrap():
     center_can, axes_can, theta_can = canonicalize_geometry((10.0, -5.0), (5.0, 10.0), 0.9 * np.pi)
 
@@ -122,3 +149,50 @@ def test_noise_mean_lengths_reduce_cost():
     cost_mu = EllipseCostFunction(dataset, use_noise_mean=True).evaluate(anchors.ravel())
 
     assert cost_mu < cost_raw
+
+
+def test_sigma_components_non_layered_quadrature():
+    dataset, anchors = _synthetic_dataset()
+    dataset = _with_noise_model(
+        dataset,
+        find_radii_mode="off",
+        find_buildup_mode="off",
+        line_width_mm=1.0,
+    )
+    cost_fn = EllipseCostFunction(dataset)
+    diag = cost_fn.robustness_diagnostics(anchors.ravel())
+    pw = diag["pointwise_filtering"]
+    assert pw["sigma_layered_enabled"] is False
+    assert np.isclose(float(pw["sigma_layer_changes_mm"]), 0.0, atol=1e-12)
+    assert np.isclose(float(pw["sigma_mode_addition_mm"]), 0.0, atol=1e-12)
+
+    expected = np.sqrt(0.02**2 + 0.3**2 + 0.1**2 + 0.5**2)
+    assert np.isclose(float(pw["sigma_non_layered_mm"]), expected, atol=1e-6)
+    assert np.isclose(float(pw["sigma_total_mm"]), expected, atol=1e-6)
+
+
+def test_sigma_components_layered_include_mode_and_linewidth_terms():
+    dataset, anchors = _synthetic_dataset()
+    dataset = _with_noise_model(
+        dataset,
+        find_radii_mode="global",
+        find_buildup_mode="global",
+        line_width_mm=1.0,
+    )
+    cost_fn = EllipseCostFunction(dataset)
+    diag = cost_fn.robustness_diagnostics(anchors.ravel())
+    pw = diag["pointwise_filtering"]
+    assert pw["sigma_layered_enabled"] is True
+    assert pw["sigma_solver_mode"] == "global/global"
+    assert np.isclose(float(pw["sigma_solver_mode_factor"]), 5.0, atol=1e-12)
+
+    sigma_non_layered = float(pw["sigma_non_layered_mm"])
+    sigma_layer_changes = float(pw["sigma_layer_changes_mm"])
+    sigma_mode_add = float(pw["sigma_mode_addition_mm"])
+    sigma_total = float(pw["sigma_total_mm"])
+    assert sigma_layer_changes > 0.0
+    assert np.isclose(sigma_mode_add, 5.0 * sigma_layer_changes, atol=1e-6)
+
+    expected = np.sqrt(sigma_non_layered**2 + sigma_layer_changes**2 + sigma_mode_add**2)
+    assert np.isclose(sigma_total, expected, atol=1e-6)
+    assert sigma_total > sigma_non_layered

@@ -25,7 +25,7 @@ _POINTWISE_HUBER_MULTIPLIERS = (10.0, 3.0)
 _POINTWISE_TRIM_K = 3.0
 _POINTWISE_MIN_INLIERS = 3
 _POINTWISE_SIGMA_MULT = 3
-_POINTWISE_MIN_SIGMA_MM = 0.5
+_POINTWISE_MIN_SIGMA_MM = 0.05
 _SWEEP_WISE_K = 3.0
 _SWEEP_WISE_MIN_SAMPLES = 5
 _SWEEP_WISE_MIN_KEEP = 2
@@ -38,6 +38,15 @@ _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE = {
     "hangprinter_5": 3,
     "cubecorners": 3,
     "skycam": 3,
+}
+_NOISE_MODEL_CONFIG_KEY = "noise_model"
+_DEFAULT_LAYER_LINE_WIDTH_MM = 1.0
+_DEFAULT_FORCE_MIN_TO_SIGMA_MM_PER_N = 10.0
+_DEFAULT_FORCE_SPAN_TO_SIGMA_MM_PER_N = 0.1
+_MODE_SIGMA_FACTORS = {
+    ("global", "off"): 2.0,
+    ("global", "global"): 5.0,
+    ("per-anchor", "global"): 10.0,
 }
 
 
@@ -261,7 +270,15 @@ class EllipseCostFunction:
         if self._noise_norm_available:
             self.pointwise_cost_weight = 1.0
         self._pointwise_sigma_mult = float(_POINTWISE_SIGMA_MULT)
-        self._pointwise_sigma_min_mm = float(_POINTWISE_MIN_SIGMA_MM)
+        self._sigma_components = self._build_sigma_components(
+            dataset,
+            encoder_noise_mm=raw_noise_mm,
+            default_floor_mm=float(_POINTWISE_MIN_SIGMA_MM),
+        )
+        sigma_min_floor = self._sigma_components.get("sigma_total_mm")
+        if not isinstance(sigma_min_floor, (int, float)) or not np.isfinite(float(sigma_min_floor)):
+            sigma_min_floor = float(_POINTWISE_MIN_SIGMA_MM)
+        self._pointwise_sigma_min_mm = float(max(float(sigma_min_floor), 1e-9))
         sigma_scaled_mm = None
         if raw_noise_mm is not None:
             sigma_scaled_mm = float(self._pointwise_sigma_mult * raw_noise_mm)
@@ -557,6 +574,287 @@ class EllipseCostFunction:
         if isinstance(floor_raw, (int, float)) and np.isfinite(floor_raw):
             return float(floor_raw)
         return None
+
+    @staticmethod
+    def _normalize_find_mode(mode: object) -> str:
+        out = str(mode or "off").strip().lower()
+        if out in ("off", "global", "per-anchor"):
+            return out
+        return "off"
+
+    @classmethod
+    def _noise_model_config(cls, dataset: Union[dict, "SweepDataset"]) -> Dict[str, object]:
+        if not isinstance(dataset, dict):
+            return {}
+        config = dataset.get("config", {}) or {}
+        if not isinstance(config, dict):
+            return {}
+        raw = config.get(_NOISE_MODEL_CONFIG_KEY)
+        if not isinstance(raw, dict):
+            return {}
+        return dict(raw)
+
+    @classmethod
+    def _infer_base_radius_mm(cls, dataset: Union[dict, "SweepDataset"]) -> Optional[float]:
+        if not isinstance(dataset, dict):
+            return None
+        config = dataset.get("config", {}) or {}
+        if not isinstance(config, dict):
+            return None
+        m666_before = config.get("m666_before")
+        m666 = config.get("m666")
+        for src in (m666_before, m666):
+            if isinstance(src, dict):
+                vals = cls._flatten_config_values(src.get("R"))
+                mean = cls._mean_finite(vals)
+                if mean is not None and np.isfinite(mean) and mean > 0.0:
+                    return float(mean)
+        return None
+
+    @classmethod
+    def _infer_layered_enabled(
+        cls,
+        dataset: Union[dict, "SweepDataset"],
+        noise_model: Dict[str, object],
+        *,
+        mode_r: str,
+        mode_b: str,
+    ) -> bool:
+        explicit = noise_model.get("layered")
+        if isinstance(explicit, bool):
+            return bool(explicit)
+        if mode_r != "off" or mode_b != "off":
+            return True
+        if not isinstance(dataset, dict):
+            return False
+        config = dataset.get("config", {}) or {}
+        if not isinstance(config, dict):
+            return False
+
+        def _q_abs(src_key: str) -> Optional[float]:
+            src = config.get(src_key)
+            if not isinstance(src, dict):
+                return None
+            vals = cls._flatten_config_values(src.get("Q"))
+            mean = cls._mean_finite(vals)
+            if mean is None:
+                return None
+            return abs(float(mean))
+
+        for key in ("m666_before", "m666"):
+            q_abs = _q_abs(key)
+            if q_abs is not None and np.isfinite(q_abs) and q_abs > 1e-9:
+                return True
+        return False
+
+    @classmethod
+    def _infer_force_levels_n(
+        cls, dataset: Union[dict, "SweepDataset"]
+    ) -> Tuple[Optional[float], Optional[float]]:
+        if not isinstance(dataset, dict):
+            return None, None
+        config = dataset.get("config", {}) or {}
+        if not isinstance(config, dict):
+            return None, None
+        tuning = config.get("force_tuning")
+        if not isinstance(tuning, dict):
+            tuning = config.get("torque_tuning")
+        if not isinstance(tuning, dict):
+            return None, None
+
+        def pick(*keys: str) -> Optional[float]:
+            for key in keys:
+                vals = cls._flatten_config_values(tuning.get(key))
+                mean = cls._mean_finite(vals)
+                if mean is not None and np.isfinite(mean):
+                    return float(mean)
+            return None
+
+        force_low = pick("force_low_n", "torque_low_n")
+        force_start = pick("force_start", "min_force_n")
+        force_min = force_low if force_low is not None else force_start
+        force_max = pick("force_max_n", "torque_max_n")
+        force_mid = pick("force_mid_n", "torque_mid_n")
+        force_span = None
+        if force_max is not None and force_low is not None:
+            force_span = max(float(force_max) - float(force_low), 0.0)
+        elif force_min is not None and force_max is not None:
+            force_span = max(float(force_max) - float(force_min), 0.0)
+        elif force_min is not None and force_mid is not None:
+            force_span = max(float(force_mid) - float(force_min), 0.0)
+        return force_min, force_span
+
+    def _infer_zero_tension_flex_sigma_mm(self, dataset: Union[dict, "SweepDataset"]) -> Optional[float]:
+        if not isinstance(dataset, dict):
+            return None
+        if self._mm_per_degree_by_axis is None or not self._mm_per_degree_by_axis:
+            return None
+        sweeps = dataset.get("sweeps")
+        if not isinstance(sweeps, list):
+            return None
+        diffs_mm: List[float] = []
+        for sweep in sweeps:
+            if not isinstance(sweep, dict):
+                continue
+            points = sweep.get("data_points")
+            if not isinstance(points, list):
+                continue
+            for point in points:
+                if not isinstance(point, dict):
+                    continue
+                raw = point.get("raw_angles_deg")
+                zero = point.get("raw_angles_zero_tension_deg")
+                if not isinstance(raw, list) or not isinstance(zero, list):
+                    continue
+                count = min(len(raw), len(zero), len(self._mm_per_degree_by_axis))
+                for axis in range(count):
+                    mm_per = self._mm_per_degree_by_axis[axis]
+                    if not np.isfinite(mm_per):
+                        continue
+                    try:
+                        delta_deg = float(zero[axis]) - float(raw[axis])
+                    except (TypeError, ValueError):
+                        continue
+                    if not np.isfinite(delta_deg):
+                        continue
+                    diffs_mm.append(abs(float(delta_deg) * float(mm_per)))
+        if not diffs_mm:
+            return None
+        arr = np.asarray(diffs_mm, dtype=float)
+        arr = arr[np.isfinite(arr)]
+        if arr.size == 0:
+            return None
+        return float(np.median(arr))
+
+    @staticmethod
+    def _coerce_nonnegative(value: object, *, default: float) -> float:
+        try:
+            out = float(value)
+        except (TypeError, ValueError):
+            out = float(default)
+        if not np.isfinite(out) or out < 0.0:
+            out = float(default)
+        return float(out)
+
+    def _build_sigma_components(
+        self,
+        dataset: Union[dict, "SweepDataset"],
+        *,
+        encoder_noise_mm: Optional[float],
+        default_floor_mm: float,
+    ) -> Dict[str, object]:
+        noise_model = self._noise_model_config(dataset)
+        mode_r = self._normalize_find_mode(noise_model.get("find_radii_mode"))
+        mode_b = self._normalize_find_mode(noise_model.get("find_buildup_mode"))
+        solver_mode = f"{mode_r}/{mode_b}"
+        mode_factor = float(_MODE_SIGMA_FACTORS.get((mode_r, mode_b), 0.0))
+
+        sigma_encoder = 0.0
+        if encoder_noise_mm is not None and np.isfinite(encoder_noise_mm) and encoder_noise_mm > 0.0:
+            sigma_encoder = float(encoder_noise_mm)
+
+        force_min_n, force_span_n = self._infer_force_levels_n(dataset)
+        friction_gain = self._coerce_nonnegative(
+            noise_model.get("friction_sigma_mm_per_n"),
+            default=_DEFAULT_FORCE_MIN_TO_SIGMA_MM_PER_N,
+        )
+        flex_gain = self._coerce_nonnegative(
+            noise_model.get("flex_sigma_mm_per_n"),
+            default=_DEFAULT_FORCE_SPAN_TO_SIGMA_MM_PER_N,
+        )
+        sigma_friction = 0.0
+        if force_min_n is not None and np.isfinite(force_min_n):
+            sigma_friction = float(max(float(force_min_n), 0.0) * float(friction_gain))
+
+        sigma_flex = 0.0
+        sigma_flex_source = "none"
+        sigma_zero_tension = self._infer_zero_tension_flex_sigma_mm(dataset)
+        if sigma_zero_tension is not None and np.isfinite(sigma_zero_tension) and sigma_zero_tension > 0.0:
+            sigma_flex = float(sigma_zero_tension)
+            sigma_flex_source = "zero_tension"
+        elif force_span_n is not None and np.isfinite(force_span_n):
+            sigma_flex = float(max(float(force_span_n), 0.0) * float(flex_gain))
+            sigma_flex_source = "force_span"
+
+        sigma_floor_term = self._coerce_nonnegative(default_floor_mm, default=float(_POINTWISE_MIN_SIGMA_MM))
+        sigma_non_layered = float(
+            np.sqrt(
+                sigma_encoder**2
+                + sigma_friction**2
+                + sigma_flex**2
+                + sigma_floor_term**2
+            )
+        )
+
+        if isinstance(dataset, dict):
+            config = dataset.get("config", {}) or {}
+        else:
+            config = {}
+        line_width_default = _DEFAULT_LAYER_LINE_WIDTH_MM
+        if isinstance(config, dict):
+            m666 = config.get("m666")
+            if isinstance(m666, dict):
+                raw_w = m666.get("W")
+                if isinstance(raw_w, (int, float)) and np.isfinite(raw_w) and raw_w >= 0.0:
+                    line_width_default = float(raw_w)
+        line_width_mm = self._coerce_nonnegative(
+            noise_model.get("line_width_mm"),
+            default=float(line_width_default),
+        )
+        if not np.isfinite(line_width_mm):
+            line_width_mm = float(_DEFAULT_LAYER_LINE_WIDTH_MM)
+
+        base_radius_mm = self._infer_base_radius_mm(dataset)
+        if base_radius_mm is None or not np.isfinite(base_radius_mm) or base_radius_mm <= 0.0:
+            base_radius_mm = 1.0
+        layered = self._infer_layered_enabled(
+            dataset,
+            noise_model,
+            mode_r=mode_r,
+            mode_b=mode_b,
+        )
+
+        sigma_layer_changes = 0.0
+        if bool(layered) and line_width_mm > 0.0:
+            ratio = float(line_width_mm / max(float(base_radius_mm), 1e-9))
+            sigma_layer_changes = float(line_width_mm * (1.0 + ratio) / np.sqrt(12.0))
+
+        sigma_mode_addition = float(mode_factor * sigma_layer_changes) if bool(layered) else 0.0
+        sigma_layered = float(
+            np.sqrt(
+                sigma_non_layered**2
+                + sigma_layer_changes**2
+                + sigma_mode_addition**2
+            )
+        )
+        sigma_total = float(sigma_layered if bool(layered) else sigma_non_layered)
+        return {
+            "sigma_encoder_mm": float(sigma_encoder),
+            "sigma_friction_cogging_mm": float(sigma_friction),
+            "sigma_flex_mm": float(sigma_flex),
+            "sigma_flex_source": str(sigma_flex_source),
+            "sigma_floor_term_mm": float(sigma_floor_term),
+            "sigma_non_layered_mm": float(sigma_non_layered),
+            "sigma_layer_changes_mm": float(sigma_layer_changes),
+            "sigma_mode_addition_mm": float(sigma_mode_addition),
+            "sigma_layered_mm": float(sigma_layered),
+            "sigma_total_mm": float(sigma_total),
+            "sigma_layered_enabled": bool(layered),
+            "sigma_solver_mode": str(solver_mode),
+            "sigma_solver_mode_factor": float(mode_factor),
+            "sigma_line_width_mm": float(line_width_mm),
+            "sigma_base_radius_mm": float(base_radius_mm),
+            "sigma_force_min_n": (
+                None
+                if force_min_n is None or not np.isfinite(force_min_n)
+                else float(force_min_n)
+            ),
+            "sigma_force_span_n": (
+                None
+                if force_span_n is None or not np.isfinite(force_span_n)
+                else float(force_span_n)
+            ),
+        }
 
     @staticmethod
     def _dataset_has_sigma(dataset: Union[dict, "SweepDataset"]) -> bool:
@@ -1455,6 +1753,7 @@ class EllipseCostFunction:
             "sigma_min_mm": float(self._pointwise_sigma_min_mm),
             "sigma_floor_mm": float(self._pointwise_sigma_floor_mm),
             "sigma_floor_source": str(self._pointwise_sigma_floor_source),
+            **dict(self._sigma_components),
         }
         diagnostics["sweep_wise_filtering"] = {
             "enabled": bool(self.sweep_wise_filtering),
@@ -1649,6 +1948,7 @@ class EllipseCostFunction:
                     if self._sigma_floor_deg is not None and np.isfinite(self._sigma_floor_deg)
                     else None,
                     "sigma_source": str(self.sigma_source),
+                    **dict(self._sigma_components),
                 }
 
         return CostResult(

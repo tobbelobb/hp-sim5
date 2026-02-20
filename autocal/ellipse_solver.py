@@ -421,6 +421,57 @@ def solve_anchors(
                     f" floor_deg={floor_deg_str}"
                     f" source={source_str}"
                 )
+            sigma_encoder = pw.get("sigma_encoder_mm")
+            sigma_friction = pw.get("sigma_friction_cogging_mm")
+            sigma_flex = pw.get("sigma_flex_mm")
+            sigma_floor_term = pw.get("sigma_floor_term_mm")
+            sigma_non_layered = pw.get("sigma_non_layered_mm")
+            sigma_layer_changes = pw.get("sigma_layer_changes_mm")
+            sigma_mode_add = pw.get("sigma_mode_addition_mm")
+            sigma_total = pw.get("sigma_total_mm")
+            sigma_mode = pw.get("sigma_solver_mode")
+            sigma_mode_factor = pw.get("sigma_solver_mode_factor")
+            sigma_line_width = pw.get("sigma_line_width_mm")
+            sigma_base_radius = pw.get("sigma_base_radius_mm")
+            sigma_layered = pw.get("sigma_layered_enabled")
+            if any(
+                val is not None
+                for val in (
+                    sigma_encoder,
+                    sigma_friction,
+                    sigma_flex,
+                    sigma_floor_term,
+                    sigma_non_layered,
+                    sigma_layer_changes,
+                    sigma_mode_add,
+                    sigma_total,
+                    sigma_mode,
+                    sigma_mode_factor,
+                    sigma_line_width,
+                    sigma_base_radius,
+                    sigma_layered,
+                )
+            ):
+                layered_str = "n/a"
+                if isinstance(sigma_layered, bool):
+                    layered_str = "true" if sigma_layered else "false"
+                mode_str = str(sigma_mode) if sigma_mode is not None else "n/a"
+                print(
+                    "[robust] pointwise sigma_components_mm:"
+                    f" encoder={_fmt_float(sigma_encoder)}"
+                    f" friction_cogging={_fmt_float(sigma_friction)}"
+                    f" flex={_fmt_float(sigma_flex)}"
+                    f" floor={_fmt_float(sigma_floor_term)}"
+                    f" non_layered={_fmt_float(sigma_non_layered)}"
+                    f" layer_changes={_fmt_float(sigma_layer_changes)}"
+                    f" mode_add={_fmt_float(sigma_mode_add)}"
+                    f" total={_fmt_float(sigma_total)}"
+                    f" layered={layered_str}"
+                    f" mode={mode_str}"
+                    f" mode_factor={_fmt_float(sigma_mode_factor)}"
+                    f" line_width={_fmt_float(sigma_line_width)}"
+                    f" base_radius={_fmt_float(sigma_base_radius)}"
+                )
             stats = pw.get("inlier_ratio_stats")
             if isinstance(stats, dict):
                 stat_str = (
