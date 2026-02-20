@@ -19,6 +19,7 @@ def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildu
         lines_per_spool,
         base_buildup_factor=None,
         theta0_mode="zero",
+        prefer_zero_tension_angles=False,
     ):
         _ = (
             dataset,
@@ -28,13 +29,20 @@ def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildu
             lines_per_spool,
             base_buildup_factor,
             theta0_mode,
+            prefer_zero_tension_angles,
         )
         return {
             "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
             "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
         }
 
-    def fake_dataset_with_modeled_lengths(dataset, spool_params):
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
         out = dict(dataset)
         out["_spool_radii_mm"] = np.asarray(spool_params["radii_mm"], dtype=float).reshape(-1).tolist()
         out["_spool_buildup_factor"] = np.asarray(spool_params["buildup_factor"], dtype=float).reshape(-1).tolist()
@@ -605,6 +613,7 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
         lines_per_spool,
         base_buildup_factor=None,
         theta0_mode="zero",
+        prefer_zero_tension_angles=False,
     ):
         _ = (
             dataset,
@@ -614,13 +623,20 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
             lines_per_spool,
             base_buildup_factor,
             theta0_mode,
+            prefer_zero_tension_angles,
         )
         return {
             "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
             "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
         }
 
-    def fake_dataset_with_modeled_lengths(dataset, spool_params):
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
         out = dict(dataset)
         out["_spool_radii_mm"] = np.asarray(spool_params["radii_mm"], dtype=float).reshape(-1).tolist()
         out["_spool_buildup_factor"] = np.asarray(spool_params["buildup_factor"], dtype=float).reshape(-1).tolist()

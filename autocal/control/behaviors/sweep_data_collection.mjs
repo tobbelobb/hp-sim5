@@ -860,9 +860,9 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
 
   const dataPoints = [];
-  const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount) => {
+  const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
     const lengths = angles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
-    dataPoints.push({
+    const point = {
       l_drive: lengths[driveAnchor],
       l_sensor: lengths[sensorAnchor],
       timestamp_ms: Date.now() - datasetStartMs,
@@ -870,7 +870,11 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       drive_setpoint_mm: driveSetpointMm,
       step_index: stepIndex,
       step_count: stepCount,
-    });
+    };
+    if (extraFields && typeof extraFields === 'object') {
+      Object.assign(point, extraFields);
+    }
+    dataPoints.push(point);
     return lengths;
   };
 

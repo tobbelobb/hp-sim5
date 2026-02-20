@@ -556,6 +556,7 @@ def _estimate_effective_radii_with_spool_model(
     use_noise_mean: bool,
     sigma_source: str,
     robust_debug: bool,
+    prefer_zero_tension_angles: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]:
     base = np.asarray(base_radii_mm, dtype=float).reshape(-1)
     num_anchors = int(base.size)
@@ -684,8 +685,13 @@ def _estimate_effective_radii_with_spool_model(
             lines_per_spool=lines,
             base_buildup_factor=np.zeros(num_anchors, dtype=float),
             theta0_mode=theta0_mode_norm,
+            prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
         )
-        transformed = dataset_with_modeled_lengths(dataset, spool_params)
+        transformed = dataset_with_modeled_lengths(
+            dataset,
+            spool_params,
+            prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+        )
         return spool_params, transformed
 
     def _prior_cost(radii_mm: np.ndarray, buildup_factor: np.ndarray) -> float:
@@ -2394,9 +2400,17 @@ def _plan_next_ellipse_sweep(
     spool_params: Optional[SpoolModelParams] = None
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
+    prefer_zero_tension_angles = _arg_has_flag(
+        collector_args,
+        "--project-zero-tension",
+        "--projectZeroTension",
+    )
 
     if search_radii or search_buildup:
-        validate_dataset_has_raw_angles(dataset)
+        validate_dataset_has_raw_angles(
+            dataset,
+            prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+        )
         lm_params = _resolve_length_model_base_params(
             dataset,
             num_anchors=int(num_anchors),
@@ -2471,6 +2485,7 @@ def _plan_next_ellipse_sweep(
                 use_noise_mean=bool(use_noise_mean),
                 sigma_source=str(sigma_source),
                 robust_debug=bool(robust_debug),
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
             )
         )
         _ = _fit_anchors

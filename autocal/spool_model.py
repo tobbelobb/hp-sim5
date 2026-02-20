@@ -140,24 +140,43 @@ class SpoolModelParams:
         return self.modeled_models[axis].delta_linepos_mm(theta_abs, self._theta0(axis))
 
 
-def _extract_raw_angles(point: dict, num_anchors: int) -> List[float]:
-    raw = point.get("raw_angles_deg")
-    if not isinstance(raw, list) or len(raw) < int(num_anchors):
-        raise ValueError("raw_angles_deg missing or wrong length")
-    out: List[float] = []
-    for idx in range(int(num_anchors)):
-        try:
-            val = float(raw[idx])
-        except (TypeError, ValueError):
-            raise ValueError("raw_angles_deg contains non-numeric values") from None
-        if not np.isfinite(val):
-            raise ValueError("raw_angles_deg contains non-finite values")
-        out.append(val)
-    return out
+def _extract_raw_angles(
+    point: dict, num_anchors: int, *, prefer_zero_tension_angles: bool = False
+) -> List[float]:
+    keys = ("raw_angles_zero_tension_deg", "raw_angles_deg") if bool(prefer_zero_tension_angles) else ("raw_angles_deg",)
+    for key in keys:
+        if key not in point:
+            continue
+        raw = point.get(key)
+        if not isinstance(raw, list) or len(raw) < int(num_anchors):
+            raise ValueError(f"{key} missing or wrong length")
+        out: List[float] = []
+        for idx in range(int(num_anchors)):
+            try:
+                val = float(raw[idx])
+            except (TypeError, ValueError):
+                raise ValueError(f"{key} contains non-numeric values") from None
+            if not np.isfinite(val):
+                raise ValueError(f"{key} contains non-finite values")
+            out.append(val)
+        return out
+    raise ValueError("raw_angles_deg missing or wrong length")
 
 
-def _point_len_base(point: dict, primary_key: str, mu_key: str) -> Optional[float]:
-    val = point.get(mu_key, point.get(primary_key))
+def _point_len_base(
+    point: dict,
+    primary_key: str,
+    mu_key: str,
+    *,
+    prefer_zero_tension_angles: bool = False,
+) -> Optional[float]:
+    # For zero-tension projected points, keep theta/length paired in the same
+    # observation by preferring l_* over l_*_mu (noise mean can come from a
+    # different force state).
+    if bool(prefer_zero_tension_angles):
+        val = point.get(primary_key, point.get(mu_key))
+    else:
+        val = point.get(mu_key, point.get(primary_key))
     try:
         f = float(val)
     except (TypeError, ValueError):
@@ -167,7 +186,7 @@ def _point_len_base(point: dict, primary_key: str, mu_key: str) -> Optional[floa
     return float(f)
 
 
-def validate_dataset_has_raw_angles(dataset: dict) -> None:
+def validate_dataset_has_raw_angles(dataset: dict, *, prefer_zero_tension_angles: bool = False) -> None:
     num_anchors = int(dataset.get("num_anchors", 0))
     sweeps = dataset.get("sweeps")
     if num_anchors <= 0 or not isinstance(sweeps, list):
@@ -181,10 +200,19 @@ def validate_dataset_has_raw_angles(dataset: dict) -> None:
         for point_idx, point in enumerate(points):
             if not isinstance(point, dict):
                 raise ValueError(f"sweep[{sweep_idx}] point[{point_idx}] is not an object")
-            _extract_raw_angles(point, num_anchors)
+            _extract_raw_angles(
+                point,
+                num_anchors,
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            )
 
 
-def _infer_theta0_deg(dataset: dict, base_models: Sequence[WinchSpoolModel]) -> Tuple[float, ...]:
+def _infer_theta0_deg(
+    dataset: dict,
+    base_models: Sequence[WinchSpoolModel],
+    *,
+    prefer_zero_tension_angles: bool = False,
+) -> Tuple[float, ...]:
     num_anchors = int(dataset.get("num_anchors", 0))
     sweeps = dataset.get("sweeps")
     if num_anchors <= 0 or not isinstance(sweeps, list):
@@ -207,15 +235,29 @@ def _infer_theta0_deg(dataset: dict, base_models: Sequence[WinchSpoolModel]) -> 
         for point in points:
             if not isinstance(point, dict):
                 continue
-            raw = _extract_raw_angles(point, num_anchors)
+            raw = _extract_raw_angles(
+                point,
+                num_anchors,
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            )
 
-            drive_base = _point_len_base(point, "l_drive", "l_drive_mu")
+            drive_base = _point_len_base(
+                point,
+                "l_drive",
+                "l_drive_mu",
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            )
             if drive_base is not None:
                 theta_delta = base_models[drive_idx].linepos_mm_to_theta_deg(drive_base)
                 if np.isfinite(theta_delta):
                     theta0_samples[drive_idx].append(float(raw[drive_idx] - theta_delta))
 
-            sensor_base = _point_len_base(point, "l_sensor", "l_sensor_mu")
+            sensor_base = _point_len_base(
+                point,
+                "l_sensor",
+                "l_sensor_mu",
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            )
             if sensor_base is not None:
                 theta_delta = base_models[sensor_idx].linepos_mm_to_theta_deg(sensor_base)
                 if np.isfinite(theta_delta):
@@ -243,6 +285,7 @@ def _resolve_theta0_deg(
     *,
     mode: str,
     base_models: Sequence[WinchSpoolModel],
+    prefer_zero_tension_angles: bool = False,
 ) -> Tuple[float, ...]:
     num_anchors = int(dataset.get("num_anchors", 0))
     if num_anchors <= 0:
@@ -254,7 +297,11 @@ def _resolve_theta0_deg(
         )
     if text == "zero":
         return tuple(0.0 for _ in range(num_anchors))
-    return _infer_theta0_deg(dataset, base_models)
+    return _infer_theta0_deg(
+        dataset,
+        base_models,
+        prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+    )
 
 
 def build_spool_model_params(
@@ -268,6 +315,7 @@ def build_spool_model_params(
     lines_per_spool: Sequence[float],
     base_buildup_factor: Optional[Sequence[float]] = None,
     theta0_mode: str = "zero",
+    prefer_zero_tension_angles: bool = False,
 ) -> SpoolModelParams:
     num_anchors = int(dataset.get("num_anchors", 0))
     if num_anchors <= 0:
@@ -311,11 +359,15 @@ def build_spool_model_params(
         for i in range(num_anchors)
     )
 
-    validate_dataset_has_raw_angles(dataset)
+    validate_dataset_has_raw_angles(
+        dataset,
+        prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+    )
     theta0 = _resolve_theta0_deg(
         dataset,
         mode=theta0_mode,
         base_models=base_models,
+        prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
     )
     return SpoolModelParams(
         base_models=base_models,
@@ -324,7 +376,12 @@ def build_spool_model_params(
     )
 
 
-def dataset_with_modeled_lengths(dataset: dict, spool_params: SpoolModelParams) -> dict:
+def dataset_with_modeled_lengths(
+    dataset: dict,
+    spool_params: SpoolModelParams,
+    *,
+    prefer_zero_tension_angles: bool = False,
+) -> dict:
     out = copy.deepcopy(dataset)
     num_anchors = int(out.get("num_anchors", 0))
     sweeps = out.get("sweeps")
@@ -350,7 +407,11 @@ def dataset_with_modeled_lengths(dataset: dict, spool_params: SpoolModelParams) 
             for point in points:
                 if not isinstance(point, dict):
                     continue
-                raw = _extract_raw_angles(point, num_anchors)
+                raw = _extract_raw_angles(
+                    point,
+                    num_anchors,
+                    prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+                )
                 vals.append(spool_params.modeled_delta_from_theta(axis, raw[axis]))
             arr = np.asarray(vals, dtype=float)
             arr = arr[np.isfinite(arr)]
@@ -362,7 +423,11 @@ def dataset_with_modeled_lengths(dataset: dict, spool_params: SpoolModelParams) 
         for point in points:
             if not isinstance(point, dict):
                 continue
-            raw = _extract_raw_angles(point, num_anchors)
+            raw = _extract_raw_angles(
+                point,
+                num_anchors,
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            )
 
             if "l_drive" in point:
                 point["l_drive_base"] = point.get("l_drive")

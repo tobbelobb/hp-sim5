@@ -360,7 +360,10 @@ export async function collectDataPoint(sendFn, options = {}) {
   if (Array.isArray(anglesDeg)) {
     lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     if (typeof recordPoint === 'function') {
-      recordPoint(anglesDeg, driveSetpointMm, stepIndex, stepCount);
+      const extraFields = projectZeroTension
+        ? { raw_angles_zero_tension_deg: [...anglesDeg] }
+        : null;
+      recordPoint(anglesDeg, driveSetpointMm, stepIndex, stepCount, extraFields);
     }
   }
 

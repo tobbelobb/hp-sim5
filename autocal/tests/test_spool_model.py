@@ -100,6 +100,36 @@ def test_build_spool_model_params_can_infer_theta0():
     assert np.allclose(np.asarray(params.theta0_deg, dtype=float), np.asarray([100.0, 200.0, 300.0]))
 
 
+def test_build_spool_model_params_prefers_zero_tension_angles_for_theta0_inference():
+    dataset = _sample_dataset()
+    point0 = dataset["sweeps"][0]["data_points"][0]
+    point1 = dataset["sweeps"][0]["data_points"][1]
+
+    # Inject a mismatched raw angle stream and a mismatched noise-mean length.
+    # Theta0 inference should use raw_angles_zero_tension_deg + l_drive/l_sensor.
+    point0["raw_angles_zero_tension_deg"] = list(point0["raw_angles_deg"])
+    point1["raw_angles_zero_tension_deg"] = list(point1["raw_angles_deg"])
+    point0["raw_angles_deg"] = [v + 50.0 for v in point0["raw_angles_deg"]]
+    point1["raw_angles_deg"] = [v + 50.0 for v in point1["raw_angles_deg"]]
+    point0["l_drive_mu"] = 123.0
+    point1["l_drive_mu"] = 456.0
+    point0["l_sensor_mu"] = 789.0
+    point1["l_sensor_mu"] = 987.0
+
+    params = build_spool_model_params(
+        dataset,
+        base_radii_mm=[10.0, 10.0, 10.0],
+        modeled_radii_mm=[10.0, 10.0, 10.0],
+        modeled_buildup_factor=[0.0, 0.0, 0.0],
+        spool_to_motor_gearing_factor=[1.0, 1.0, 1.0],
+        mechanical_advantage=[1.0, 1.0, 1.0],
+        lines_per_spool=[1.0, 1.0, 1.0],
+        theta0_mode="infer",
+        prefer_zero_tension_angles=True,
+    )
+    assert np.allclose(np.asarray(params.theta0_deg, dtype=float), np.asarray([100.0, 200.0, 300.0]))
+
+
 def test_dataset_with_modeled_lengths_rewrites_lengths_and_preserves_base_fields():
     dataset = _sample_dataset()
     params = build_spool_model_params(

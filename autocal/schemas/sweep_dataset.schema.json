@@ -94,6 +94,13 @@
                     "type": "number"
                   },
                   "minItems": 1
+                },
+                "raw_angles_zero_tension_deg": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 1
                 }
               },
               "additionalProperties": true
