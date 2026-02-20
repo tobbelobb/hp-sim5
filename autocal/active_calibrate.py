@@ -23,7 +23,9 @@ if str(REPO_ROOT) not in sys.path:
 
 DEFAULT_RRF_PORT = 8081
 RRF_SIM_BINARY = REPO_ROOT / "RRF" / "build" / "rrf_simulator"
-RRF_SIM_ARGS = ["--vsd", "RRF/run/vsd", "-c", "sys/config_slideprinter.g", "--server", "-p"]
+RRF_SIM_VSD_PATH = "RRF/run/vsd"
+RRF_SIM_DEFAULT_CONFIG = "sys/config_slideprinter.g"
+RRF_SIM_LINE_LAYER_CONFIG = "sys/config_slideprinter_w_line_layers.g"
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
@@ -44,6 +46,7 @@ from autocal.active_learning import (
     total_information_matrix,
 )
 from autocal.calibrate import calibrate_elliptical
+from autocal.dataset_roles import normalize_dataset_point_roles as _normalize_dataset_point_roles
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.json_schema import append_jsonl_line, load_json_file, write_json_file
 from autocal.spool_model import (
@@ -96,86 +99,6 @@ def _load_json(path: Path) -> dict:
 def _write_json(path: Path, payload: dict) -> None:
     write_json_file(path, payload, schema="sweep_dataset")
 
-
-def _normalize_dataset_point_roles(dataset: dict) -> int:
-    """
-    Normalize per-point drive/sensor role fields to sweep-level orientation.
-
-    Some datasets can include points tagged with source_drive_anchor/source_sensor_anchor
-    from reversed sub-sweeps. If those points were not remapped to the sweep's canonical
-    drive/sensor orientation, l_drive/l_sensor (and paired *_mu/tension fields) can be
-    transposed. This pass fixes only clearly identifiable cases.
-    """
-    sweeps = dataset.get("sweeps")
-    if not isinstance(sweeps, list):
-        return 0
-
-    swapped_points = 0
-    for sweep in sweeps:
-        if not isinstance(sweep, dict):
-            continue
-        try:
-            drive_idx = int(sweep.get("drive_anchor"))
-            sensor_idx = int(sweep.get("sensor_anchor"))
-        except (TypeError, ValueError):
-            continue
-        points = sweep.get("data_points")
-        if not isinstance(points, list):
-            continue
-
-        for point in points:
-            if not isinstance(point, dict):
-                continue
-
-            src_drive = point.get("source_drive_anchor")
-            src_sensor = point.get("source_sensor_anchor")
-            try:
-                src_drive_idx = int(src_drive)
-                src_sensor_idx = int(src_sensor)
-            except (TypeError, ValueError):
-                continue
-
-            if src_drive_idx == drive_idx and src_sensor_idx == sensor_idx:
-                continue
-            if src_drive_idx != sensor_idx or src_sensor_idx != drive_idx:
-                continue
-
-            try:
-                l_drive = float(point.get("l_drive"))
-                l_sensor = float(point.get("l_sensor"))
-            except (TypeError, ValueError):
-                continue
-            if not np.isfinite(l_drive) or not np.isfinite(l_sensor):
-                continue
-
-            should_swap = False
-            raw_setpoint = point.get("drive_setpoint_mm")
-            try:
-                drive_setpoint = float(raw_setpoint)
-            except (TypeError, ValueError):
-                drive_setpoint = float("nan")
-            if np.isfinite(drive_setpoint):
-                err_drive = abs(l_drive - drive_setpoint)
-                err_sensor = abs(l_sensor - drive_setpoint)
-                # For reversed sub-sweeps, drive_setpoint_mm refers to source drive.
-                # If it still matches l_drive better than l_sensor, this point was not remapped.
-                should_swap = bool(err_drive + 1e-6 < err_sensor)
-
-            if not should_swap:
-                continue
-
-            point["l_drive"], point["l_sensor"] = point.get("l_sensor"), point.get("l_drive")
-            if "l_drive_mu" in point or "l_sensor_mu" in point:
-                point["l_drive_mu"], point["l_sensor_mu"] = point.get("l_sensor_mu"), point.get("l_drive_mu")
-            if "assumed_tension_drive_n" in point or "assumed_tension_sensor_n" in point:
-                point["assumed_tension_drive_n"], point["assumed_tension_sensor_n"] = (
-                    point.get("assumed_tension_sensor_n"),
-                    point.get("assumed_tension_drive_n"),
-                )
-            # raw_angles_deg is indexed by physical anchor and must not be remapped here.
-            swapped_points += 1
-
-    return int(swapped_points)
 
 
 def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float]:
@@ -1246,6 +1169,82 @@ def _apply_simulation_defaults(collector_args: Sequence[str], *, sim: bool) -> L
     return args
 
 
+def _collector_has_buildup_override(args: Sequence[str]) -> bool:
+    override_flags = {
+        "--preserve-buildup-factor",
+        "--preserveBuildupFactor",
+        "--force-buildup-factor",
+        "--forceBuildupFactor",
+    }
+    for arg in args:
+        if not isinstance(arg, str):
+            continue
+        if arg in override_flags:
+            return True
+        if arg.startswith("--force-buildup-factor=") or arg.startswith("--forceBuildupFactor="):
+            return True
+    return False
+
+
+def _inject_spool_collection_args(
+    collector_args: Sequence[str],
+    *,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+) -> Tuple[List[str], bool]:
+    args = list(collector_args)
+    search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+    if search_spool and not _collector_has_buildup_override(args):
+        args.append("--preserve-buildup-factor")
+        return args, True
+    return args, False
+
+
+def _resolve_sim_config(
+    *,
+    machine_type: str,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+) -> str:
+    env_cfg = os.environ.get("AUTOCAL_RRF_SIM_CONFIG")
+    if isinstance(env_cfg, str) and env_cfg.strip():
+        return env_cfg.strip()
+
+    search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+    if str(machine_type) == "slideprinter" and search_spool:
+        candidate = REPO_ROOT / RRF_SIM_VSD_PATH / RRF_SIM_LINE_LAYER_CONFIG
+        if candidate.exists():
+            return RRF_SIM_LINE_LAYER_CONFIG
+
+    return RRF_SIM_DEFAULT_CONFIG
+
+
+def _effective_hp_sim_reset(
+    *,
+    sim: bool,
+    hp_sim_reset: bool,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+) -> bool:
+    """
+    Decide whether hp-sim should be reset before collection starts.
+
+    Why this exists:
+    - In simulation, accepted M669/M666 updates persist in the running simulator and can
+      silently change the "physical truth" between runs.
+    - Spool-search workflows are especially sensitive to stale simulator state.
+
+    So for `--sim` + spool search we reset by default unless not in simulation.
+    """
+    if not bool(sim):
+        return False
+    if bool(hp_sim_reset):
+        return True
+    if _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode):
+        return True
+    return False
+
+
 def _send_rrf_gcode(server: str, gcode: str, *, timeout_s: float = 5.0) -> str:
     base = server.rstrip("/")
     url = f"{base}/machine/code"
@@ -1267,10 +1266,20 @@ def _wait_for_rrf_server(server: str, *, timeout_s: float = 7.0) -> None:
     raise RuntimeError(f"rrf_simulator at {server} did not become ready in time")
 
 
-def _start_rrf_simulator(port: int) -> subprocess.Popen:
+def _start_rrf_simulator(port: int, *, sim_config: Optional[str] = None) -> subprocess.Popen:
     if not RRF_SIM_BINARY.exists():
         raise FileNotFoundError(f"rrf_simulator not found at {RRF_SIM_BINARY}")
-    args = [str(RRF_SIM_BINARY), *RRF_SIM_ARGS, str(int(port))]
+    cfg = str(sim_config or RRF_SIM_DEFAULT_CONFIG)
+    args = [
+        str(RRF_SIM_BINARY),
+        "--vsd",
+        RRF_SIM_VSD_PATH,
+        "-c",
+        cfg,
+        "--server",
+        "-p",
+        str(int(port)),
+    ]
     return subprocess.Popen(
         args,
         cwd=str(REPO_ROOT),
@@ -2710,6 +2719,11 @@ def _plan_next_ellipse_sweep(
         _write_sweep_config_file(cfg_path, best_cfg)
 
     collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
+    collector_args_eff, _ = _inject_spool_collection_args(
+        collector_args_eff,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
         collector_args_eff.append("--return-to-origin")
 
@@ -3035,17 +3049,37 @@ def ellipse_active(
         context=str(dataset_path),
         mismatch="warn",
     )
+    find_radii_mode = _normalize_spool_find_mode(find_radii)
+    find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
+    hp_sim_reset_eff = _effective_hp_sim_reset(
+        sim=bool(sim),
+        hp_sim_reset=bool(hp_sim_reset),
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
+    if bool(sim) and hp_sim_reset_eff and not bool(hp_sim_reset):
+        print("; auto-enabling --hp-sim-reset for spool search in simulation")
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
-    if sim and hp_sim_reset and collect_once and not _arg_has_flag(collector_args_eff, "--hp-sim-reset"):
+    collector_args_eff, _ = _inject_spool_collection_args(
+        collector_args_eff,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
+    if sim and hp_sim_reset_eff and collect_once and not _arg_has_flag(collector_args_eff, "--hp-sim-reset"):
         collector_args_eff.append("--hp-sim-reset")
     _, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
+    sim_config = _resolve_sim_config(
+        machine_type=machine_type,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
 
     if sim and collect_once and not server_explicit and not user_no_spawn:
         target_port = port or DEFAULT_RRF_PORT
-        print(f"; starting rrf_simulator at http://localhost:{target_port}")
-        sim_process = _start_rrf_simulator(target_port)
+        print(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
+        sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
         _wait_for_rrf_server(f"http://localhost:{target_port}")
 
     plan = _plan_next_ellipse_sweep(
@@ -3292,6 +3326,19 @@ def full_auto_loop(
 
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    collector_args_eff, _ = _inject_spool_collection_args(
+        collector_args_eff,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
+    hp_sim_reset_eff = _effective_hp_sim_reset(
+        sim=bool(sim),
+        hp_sim_reset=bool(hp_sim_reset),
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
+    if bool(sim) and hp_sim_reset_eff and not bool(hp_sim_reset):
+        _log_line("; auto-enabling --hp-sim-reset for spool search in simulation")
     sweep_points_value = None
     raw_sweep_points = _arg_value(collector_args_eff, "--sweepPoints", "--sweep-points")
     if raw_sweep_points is not None:
@@ -3310,14 +3357,19 @@ def full_auto_loop(
             sweep_points_value = parsed
             if raw_sweep_points is None:
                 collector_args_eff.extend(["--sweepPoints", str(parsed)])
-    reset_pending = bool(sim and hp_sim_reset)
+    reset_pending = bool(sim and hp_sim_reset_eff)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
+    sim_config = _resolve_sim_config(
+        machine_type=machine_type,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
 
     if sim and not server_explicit and not user_no_spawn:
         target_port = port or DEFAULT_RRF_PORT
-        _log_line(f"; starting rrf_simulator at http://localhost:{target_port}")
-        sim_process = _start_rrf_simulator(target_port)
+        _log_line(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
+        sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
         _wait_for_rrf_server(f"http://localhost:{target_port}")
 
     def _finalize(code: int) -> int:
@@ -3972,8 +4024,23 @@ def ellipse_loop(
             mismatch="warn",
         )
 
+    find_radii_mode = _normalize_spool_find_mode(find_radii)
+    find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
     collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    collector_args_eff, _ = _inject_spool_collection_args(
+        collector_args_eff,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
+    hp_sim_reset_eff = _effective_hp_sim_reset(
+        sim=bool(sim),
+        hp_sim_reset=bool(hp_sim_reset),
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
+    if bool(sim) and hp_sim_reset_eff and not bool(hp_sim_reset):
+        print("; auto-enabling --hp-sim-reset for spool search in simulation")
     sweep_points_value = None
     raw_sweep_points = _arg_value(collector_args_eff, "--sweepPoints", "--sweep-points")
     if raw_sweep_points is not None:
@@ -3992,14 +4059,19 @@ def ellipse_loop(
             sweep_points_value = parsed
             if raw_sweep_points is None:
                 collector_args_eff.extend(["--sweepPoints", str(parsed)])
-    reset_pending = bool(sim and hp_sim_reset)
+    reset_pending = bool(sim and hp_sim_reset_eff)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
+    sim_config = _resolve_sim_config(
+        machine_type=machine_type,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+    )
 
     if sim and not server_explicit and not user_no_spawn:
         target_port = port or DEFAULT_RRF_PORT
-        print(f"; starting rrf_simulator at http://localhost:{target_port}")
-        sim_process = _start_rrf_simulator(target_port)
+        print(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
+        sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
         _wait_for_rrf_server(f"http://localhost:{target_port}")
 
     def _finalize(code: int) -> int:

@@ -27,6 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from autocal.dataset_roles import normalize_dataset_point_roles
 from autocal.ellipse_solver import format_anchors_gcode, solve_anchors
 from autocal.ellipse_visualization import create_calibration_report
 from autocal.json_schema import load_json_file, write_json_file
@@ -486,6 +487,9 @@ def calibrate_elliptical(
             "Input appears to contain stored ellipse fits; provide the raw sweep dataset (deltas only)."
         )
 
+    remapped_points = normalize_dataset_point_roles(dataset)
+    if remapped_points and verbose:
+        print(f"[ellipse] normalized {remapped_points} reversed points", file=sys.stderr)
     _validate_sweep_roles(dataset)
     if verbose:
         sweeps = dataset.get("sweeps", [])

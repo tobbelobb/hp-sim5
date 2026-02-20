@@ -5,6 +5,7 @@ import {
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
+  resolveForcedBuildupFactor,
   selectRepresentativeConfigs,
   validateSweepConfig,
 } from '../../behaviors/sweep_data_collection.mjs';
@@ -45,5 +46,17 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(angleToLength(10, 0, mmPerDeg)).toBe(5);
     expect(angleToLength(10, 1, mmPerDeg)).toBe(10);
     expect(angleToLength(10, 2, mmPerDeg)).toBe(0);
+  });
+
+  test('resolveForcedBuildupFactor defaults to forcing Q0', () => {
+    expect(resolveForcedBuildupFactor({})).toBe(0);
+  });
+
+  test('resolveForcedBuildupFactor preserves current Q when requested', () => {
+    expect(resolveForcedBuildupFactor({ preserveBuildupFactor: true })).toBeNull();
+  });
+
+  test('resolveForcedBuildupFactor uses explicit Q override', () => {
+    expect(resolveForcedBuildupFactor({ forceBuildupFactor: 0.63661977 })).toBeCloseTo(0.63661977);
   });
 });

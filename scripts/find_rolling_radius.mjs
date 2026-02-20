@@ -77,7 +77,7 @@ function _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength
   return { radius: rn, theta: thetaBase, layer: MAX_LAYERS, phi: 0.0, inRamp: false };
 }
 
-const stored = 0.942477796076938;
+const stored = 1.0;
 const baseRadius = 0.03;
 const halfWidth = 0.001;
 const rampLength = baseRadius*KNOT_SPAN;

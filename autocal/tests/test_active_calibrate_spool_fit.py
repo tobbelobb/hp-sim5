@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from autocal import active_calibrate as ac
 
@@ -383,6 +384,44 @@ def test_normalize_dataset_point_roles_keeps_already_canonical_points():
     assert point["l_sensor"] == 10.0
 
 
+def test_normalize_dataset_point_roles_does_not_double_swap_canonical_reversed_metadata():
+    # Reversed source_* is valid when collection has already remapped l_* fields to
+    # sweep-level canonical orientation.
+    dataset = {
+        "sweeps": [
+            {
+                "drive_anchor": 1,
+                "sensor_anchor": 2,
+                "data_points": [
+                    {
+                        "l_drive": -100.0,
+                        "l_sensor": 10.0,
+                        "l_drive_mu": -101.0,
+                        "l_sensor_mu": 11.0,
+                        "assumed_tension_drive_n": 2.0,
+                        "assumed_tension_sensor_n": 4.0,
+                        "drive_setpoint_mm": 9.95,
+                        "source_drive_anchor": 2,
+                        "source_sensor_anchor": 1,
+                        "raw_angles_deg": [0.0, 1.0, 2.0],
+                    }
+                ],
+            }
+        ]
+    }
+    changed = ac._normalize_dataset_point_roles(dataset)
+    point = dataset["sweeps"][0]["data_points"][0]
+    assert changed == 0
+    assert point["l_drive"] == -100.0
+    assert point["l_sensor"] == 10.0
+    assert point["l_drive_mu"] == -101.0
+    assert point["l_sensor_mu"] == 11.0
+    assert point["assumed_tension_drive_n"] == 2.0
+    assert point["assumed_tension_sensor_n"] == 4.0
+    assert point["raw_angles_deg"][1] == 1.0
+    assert point["raw_angles_deg"][2] == 2.0
+
+
 def test_normalize_dataset_point_roles_keeps_reversed_points_without_setpoint():
     dataset = {
         "sweeps": [
@@ -441,6 +480,90 @@ def test_default_b_bounds_per_anchor_are_zero_to_one():
 
 def test_default_b_prior_sigma_is_relaxed_for_global_k_fits():
     assert np.isclose(float(ac._DEFAULT_B_PRIOR_SIGMA), 0.1)
+
+
+def test_inject_spool_collection_args_adds_preserve_when_search_enabled():
+    args, applied = ac._inject_spool_collection_args(
+        ["--speedup", "25"],
+        find_radii_mode="per-anchor",
+        find_buildup_mode="off",
+    )
+    assert applied is True
+    assert "--preserve-buildup-factor" in args
+
+
+def test_inject_spool_collection_args_respects_explicit_buildup_override():
+    args, applied = ac._inject_spool_collection_args(
+        ["--force-buildup-factor", "0.2"],
+        find_radii_mode="per-anchor",
+        find_buildup_mode="global",
+    )
+    assert applied is False
+    assert args == ["--force-buildup-factor", "0.2"]
+
+
+def test_effective_hp_sim_reset_enables_for_sim_spool_search():
+    enabled = ac._effective_hp_sim_reset(
+        sim=True,
+        hp_sim_reset=False,
+        find_radii_mode="per-anchor",
+        find_buildup_mode="off",
+    )
+    assert enabled is True
+
+
+def test_effective_hp_sim_reset_stays_off_without_sim_or_spool_search():
+    assert (
+        ac._effective_hp_sim_reset(
+            sim=False,
+            hp_sim_reset=False,
+            find_radii_mode="per-anchor",
+            find_buildup_mode="global",
+        )
+        is False
+    )
+    assert (
+        ac._effective_hp_sim_reset(
+            sim=True,
+            hp_sim_reset=False,
+            find_radii_mode="off",
+            find_buildup_mode="off",
+        )
+        is False
+    )
+
+
+def test_effective_hp_sim_reset_respects_explicit_flag():
+    enabled = ac._effective_hp_sim_reset(
+        sim=True,
+        hp_sim_reset=True,
+        find_radii_mode="off",
+        find_buildup_mode="off",
+    )
+    assert enabled is True
+
+
+def test_resolve_sim_config_prefers_line_layer_config_for_spool_search(monkeypatch):
+    monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
+    candidate = ac.REPO_ROOT / ac.RRF_SIM_VSD_PATH / ac.RRF_SIM_LINE_LAYER_CONFIG
+    if not candidate.exists():
+        pytest.skip(f"missing simulator config: {candidate}")
+    cfg = ac._resolve_sim_config(
+        machine_type="slideprinter",
+        find_radii_mode="per-anchor",
+        find_buildup_mode="global",
+    )
+    assert cfg == ac.RRF_SIM_LINE_LAYER_CONFIG
+
+
+def test_resolve_sim_config_uses_env_override(monkeypatch):
+    monkeypatch.setenv("AUTOCAL_RRF_SIM_CONFIG", "sys/custom_config.g")
+    cfg = ac._resolve_sim_config(
+        machine_type="slideprinter",
+        find_radii_mode="off",
+        find_buildup_mode="off",
+    )
+    assert cfg == "sys/custom_config.g"
 
 
 def test_mm_per_degree_for_axis_ignores_lines_per_spool():

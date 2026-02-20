@@ -225,6 +225,16 @@ function parseMaxTravelValue(spec) {
   return value;
 }
 
+export function resolveForcedBuildupFactor({ forceBuildupFactor = null, preserveBuildupFactor = false } = {}) {
+  if (Number.isFinite(forceBuildupFactor)) {
+    return Number(forceBuildupFactor);
+  }
+  if (preserveBuildupFactor) {
+    return null;
+  }
+  return 0;
+}
+
 function resolveFixedTargets(fixedCount, explicitTargets, maxTravelMm) {
   if (fixedCount <= 0) {
     return [];
@@ -262,6 +272,8 @@ function validateSweepCollectionInput(context) {
   const forceLow = parseOptionalNumber(args.forceLow, 'force-low');
   const forceMid = parseOptionalNumber(args.forceMid, 'force-mid');
   const forceMax = parseOptionalNumber(args.forceMax, 'force-max');
+  const forceBuildupFactor = parseOptionalNumber(args.forceBuildupFactor, 'force-buildup-factor');
+  const preserveBuildupFactor = !!args.preserveBuildupFactor;
   const noiseSampleCount = parseOptionalNumber(args.noiseSamples ?? args.noiseSampleCount, 'noise-samples', { integer: true });
   const noiseSampleRateHz = parseOptionalNumber(
     args.noiseSampleRateHz ?? args.noiseSampleRate ?? args.noiseSampleHz,
@@ -281,6 +293,9 @@ function validateSweepCollectionInput(context) {
   if (fixedTargets && maxTravelMm !== null) {
     throw new Error('Use either --fixed-targets or --max-travel-mm, not both.');
   }
+  if (preserveBuildupFactor && forceBuildupFactor !== null) {
+    throw new Error('Use either --preserve-buildup-factor or --force-buildup-factor, not both.');
+  }
 
   return {
     machineType,
@@ -294,6 +309,8 @@ function validateSweepCollectionInput(context) {
     forceLow,
     forceMid,
     forceMax,
+    forceBuildupFactor,
+    preserveBuildupFactor,
     noiseSampleCount,
     noiseSampleRateHz,
     noiseSampleIntervalMs,
@@ -354,6 +371,8 @@ function applySweepDefaults(input) {
     forceLow,
     forceMid,
     forceMax,
+    forceBuildupFactor: Number.isFinite(input.forceBuildupFactor) ? input.forceBuildupFactor : null,
+    preserveBuildupFactor: !!input.preserveBuildupFactor,
     noiseSampleCount,
     noiseSampleRateHz,
     noiseSampleIntervalMs,
@@ -514,6 +533,9 @@ function remapDataPointsToCanonical(dataPoints, canonicalConfig, actualConfig) {
         p.assumed_tension_drive_n = point.assumed_tension_sensor_n;
         p.assumed_tension_sensor_n = point.assumed_tension_drive_n;
       }
+      // Keep `source_*` as physical sub-sweep metadata even after remapping
+      // l_* into canonical sweep orientation. This means downstream code can
+      // observe reversed source_* with already-canonical l_drive/l_sensor.
       p.source_drive_anchor = actualConfig.driveAnchor;
       p.source_sensor_anchor = actualConfig.sensorAnchor;
     }
@@ -989,6 +1011,8 @@ export async function collectSweepData(send, context) {
     returnToOrigin,
     outputFile: outputFileOverride,
     forceMaxProvided,
+    forceBuildupFactor,
+    preserveBuildupFactor,
   } = options;
   let { forceLow, forceMid, forceMax } = options;
 
@@ -1022,7 +1046,17 @@ export async function collectSweepData(send, context) {
   const m92Reply = await send('M92');
   const m92Values = parseM666(m92Reply?.reply);
 
-  await send('M666 Q0');
+  const forcedBuildupFactor = resolveForcedBuildupFactor({
+    forceBuildupFactor,
+    preserveBuildupFactor,
+  });
+  if (Number.isFinite(forcedBuildupFactor)) {
+    if (forcedBuildupFactor === 0) {
+      await send('M666 Q0');
+    } else {
+      await send(`M666 Q${forcedBuildupFactor}`);
+    }
+  }
   const m666AfterReply = await send('M666');
   const m666After = parseM666(m666AfterReply?.reply);
 
@@ -1281,7 +1315,7 @@ export async function collectSweepData(send, context) {
       m92: m92Values,
       mm_per_degree: mmPerDeg,
       notes: {
-        buildup_factor_forced: 0,
+        buildup_factor_forced: forcedBuildupFactor,
       },
       force_tuning: forceTuning,
       max_travel_mm: Number.isFinite(maxTravelMeta) ? maxTravelMeta : undefined,

@@ -71,6 +71,69 @@ def test_calibrate_elliptical_accepts_in_memory_dataset(tmp_path):
     assert result.get("input_file") == "<in-memory>"
 
 
+def test_calibrate_elliptical_corrects_reversed_point_roles(tmp_path):
+    input_path = _tiny_slideprinter_delta_dataset(tmp_path)
+    dataset = json.loads(input_path.read_text(encoding="utf-8"))
+    sweep = dataset["sweeps"][0]
+    point = sweep["data_points"][0]
+    drive_anchor = int(sweep["drive_anchor"])
+    sensor_anchor = int(sweep["sensor_anchor"])
+    original_drive = float(point["l_drive"])
+    original_sensor = float(point["l_sensor"])
+
+    point["source_drive_anchor"] = sensor_anchor
+    point["source_sensor_anchor"] = drive_anchor
+    point["drive_setpoint_mm"] = original_sensor
+    point["l_drive"], point["l_sensor"] = original_sensor, original_drive
+
+    result = calibrate_elliptical(
+        dataset,
+        output_path=None,
+        residual_threshold=1e9,
+        num_restarts=1,
+        max_iterations=2,
+        method="SLSQP",
+        verbose=False,
+        generate_report=False,
+    )
+
+    assert point["l_drive"] == original_drive
+    assert point["l_sensor"] == original_sensor
+    assert result["success"] is True
+
+
+def test_calibrate_elliptical_keeps_canonical_points_with_reversed_source_metadata(tmp_path):
+    input_path = _tiny_slideprinter_delta_dataset(tmp_path)
+    dataset = json.loads(input_path.read_text(encoding="utf-8"))
+    sweep = dataset["sweeps"][0]
+    point = sweep["data_points"][0]
+    drive_anchor = int(sweep["drive_anchor"])
+    sensor_anchor = int(sweep["sensor_anchor"])
+    original_drive = float(point["l_drive"])
+    original_sensor = float(point["l_sensor"])
+
+    point["source_drive_anchor"] = sensor_anchor
+    point["source_sensor_anchor"] = drive_anchor
+    # drive_setpoint_mm still refers to physical source drive, so for an already
+    # canonical point it is expected to match l_sensor better than l_drive.
+    point["drive_setpoint_mm"] = original_sensor
+
+    result = calibrate_elliptical(
+        dataset,
+        output_path=None,
+        residual_threshold=1e9,
+        num_restarts=1,
+        max_iterations=2,
+        method="SLSQP",
+        verbose=False,
+        generate_report=False,
+    )
+
+    assert point["l_drive"] == original_drive
+    assert point["l_sensor"] == original_sensor
+    assert result["success"] is True
+
+
 def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):
     input_path = _tiny_slideprinter_delta_dataset(tmp_path)
     rc = main(
