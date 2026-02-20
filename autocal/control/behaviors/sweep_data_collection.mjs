@@ -36,7 +36,7 @@ export const MOTOR_IDS_BY_MACHINE = {
   skycam: ['40.0', '41.0', '42.0', '43.0'],
 };
 
-const DEFAULT_SWEEP_POINTS = 21;
+const DEFAULT_SWEEP_POINTS = 10;
 const DEFAULT_MAX_SWEEPS = 6;
 const DEFAULT_FEED = 1400;
 const DEFAULT_FORCE_MID_N = 0.05;
@@ -882,7 +882,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const stepCount = steps - 1;
   const totalDelta = driveStartPointMm - driveEndPointMm;
   const stepDirection = Math.sign(totalDelta) || 1;
-  const initialStepMm = 20 * stepDirection;
+  const initialStepMm = 100 * stepDirection;
   const remainingSteps = Math.max(1, stepCount - 1);
   const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
   let currentDrive = driveEndPointMm;
