@@ -51,6 +51,7 @@ from autocal.active_learning import (
 from autocal.calibrate import calibrate_elliptical
 from autocal.dataset_roles import normalize_dataset_point_roles as _normalize_dataset_point_roles
 from autocal.ellipse_cost import EllipseCostFunction
+from autocal.ellipse_fitting import fit_ellipse_from_sweep
 from autocal.json_schema import append_jsonl_line, load_json_file, write_json_file
 from autocal.spool_model import (
     SpoolModelParams,
@@ -738,44 +739,204 @@ def _estimate_effective_radii_with_spool_model(
             )
         )
 
-    for outer_idx in range(outer_iters):
-        spool_params_seed, transformed_seed = _build_dataset_and_params(radii_current, buildup_current)
+    def _ellipse_prefit_score(transformed_dataset: dict) -> Tuple[float, int, int]:
+        sweeps = transformed_dataset.get("sweeps")
+        if not isinstance(sweeps, list) or len(sweeps) == 0:
+            return float("inf"), 0, 0
 
-        anchors_next = np.asarray(anchors_current, dtype=float)
-        anchor_cost = float("nan")
-        anchor_step_success = False
-        anchor_step_restarts = max(1, min(2, int(solve_restarts)))
-        anchor_step_iterations = max(40, min(160, int(solve_iterations)))
-        try:
-            cal_step = calibrate_elliptical(
-                transformed_seed,
-                output_path=None,
-                residual_threshold=float(residual_threshold),
-                num_restarts=int(anchor_step_restarts),
-                max_iterations=int(anchor_step_iterations),
-                method=str(solve_optimizer),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                verbose=False,
-                use_parallel=False,
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                robust_debug=False,
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                sigma_source=str(sigma_source),
-                generate_report=False,
-                residuals_csv=None,
+        rms_values: List[float] = []
+        invalid_sweeps = 0
+        for sweep in sweeps:
+            if not isinstance(sweep, dict):
+                continue
+            points = sweep.get("data_points")
+            if not isinstance(points, list) or len(points) < 5:
+                invalid_sweeps += 1
+                continue
+
+            drive_vals: List[float] = []
+            sensor_vals: List[float] = []
+            for point in points:
+                if not isinstance(point, dict):
+                    continue
+                drive_raw = point.get("l_drive", point.get("l_drive_mu"))
+                sensor_raw = point.get("l_sensor", point.get("l_sensor_mu"))
+                try:
+                    drive = float(drive_raw)
+                    sensor = float(sensor_raw)
+                except (TypeError, ValueError):
+                    continue
+                if np.isfinite(drive) and np.isfinite(sensor):
+                    drive_vals.append(drive)
+                    sensor_vals.append(sensor)
+            if len(drive_vals) < 5 or len(sensor_vals) < 5:
+                invalid_sweeps += 1
+                continue
+
+            fit = fit_ellipse_from_sweep(
+                np.asarray(drive_vals, dtype=float),
+                np.asarray(sensor_vals, dtype=float),
+                residual_threshold=float("inf"),
+                min_points=5,
+                square_inputs=True,
             )
-            cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
-            if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(np.isfinite(cand_anchors)):
-                anchors_next = cand_anchors
-                anchor_step_success = True
-            anchor_cost = float(_data_cost(transformed_seed, anchors_next))
-        except Exception:
-            anchor_step_success = False
+            rms = float(fit.residual_rms)
+            if not np.isfinite(rms):
+                invalid_sweeps += 1
+                continue
+            rms_values.append(rms)
+
+        valid_sweeps = int(len(rms_values))
+        if valid_sweeps <= 0:
+            return float("inf"), 0, int(invalid_sweeps)
+
+        arr = np.asarray(rms_values, dtype=float)
+        # Fixed robust scale keeps the objective informative even with one sweep.
+        scaled = arr / 1.0
+        robust_sum = float(np.sum(2.0 * (np.sqrt(1.0 + np.square(scaled)) - 1.0)))
+        invalid_penalty = float(invalid_sweeps) * 4.0
+        return float(robust_sum + invalid_penalty), valid_sweeps, int(invalid_sweeps)
+
+    prefit_info: Dict[str, object] = {
+        "enabled": False,
+        "success": False,
+        "message": "prefit_not_run",
+        "nfev": 0,
+        "nit": 0,
+        "start_cost": None,
+        "fitted_cost": None,
+        "seed_choice": "none",
+        "seed_cost": None,
+        "valid_sweeps": 0,
+        "invalid_sweeps": 0,
+    }
+
+    if x_current.size > 0:
+        prefit_eval_counter = {"count": 0}
+        prefit_cache: Dict[Tuple[float, ...], float] = {}
+
+        def _prefit_objective(opt_vec: np.ndarray) -> float:
+            try:
+                clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
+                key = tuple(float(v) for v in np.round(clipped_vec, decimals=9).tolist())
+                cached = prefit_cache.get(key)
+                if cached is not None and np.isfinite(cached):
+                    return float(cached)
+                prefit_eval_counter["count"] += 1
+                radii_try, buildup_try = _unpack_spool_opt_vector(
+                    clipped_vec,
+                    num_anchors=num_anchors,
+                    find_radii_mode=mode_r,
+                    find_buildup_mode=mode_b,
+                    fixed_radii_mm=base,
+                    fixed_buildup_factor=modeled_b,
+                )
+                _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
+                ellipse_cost, valid_sweeps, _ = _ellipse_prefit_score(transformed_try)
+                if valid_sweeps <= 0 or not np.isfinite(ellipse_cost):
+                    prefit_cache[key] = 1e12
+                    return 1e12
+                score = float(ellipse_cost + _prior_cost(radii_try, buildup_try))
+                if not np.isfinite(score):
+                    prefit_cache[key] = 1e12
+                    return 1e12
+                prefit_cache[key] = float(score)
+                return float(score)
+            except Exception:
+                return 1e12
+
+        x_prefit_seed = np.clip(np.asarray(x_current, dtype=float).reshape(-1), lo, hi)
+        prefit_start_cost = float(_prefit_objective(x_prefit_seed))
+        if np.isfinite(prefit_start_cost) and prefit_start_cost < 1e11:
+            prefit_info["enabled"] = True
+            seed_candidates = _spool_seed_candidates(x_prefit_seed, lo, hi)
+            seed_choice = "current"
+            seed_cost = float(prefit_start_cost)
+            for idx, seed_try in enumerate(seed_candidates[1:], start=1):
+                score_try = float(_prefit_objective(seed_try))
+                if np.isfinite(score_try) and (
+                    not np.isfinite(seed_cost) or score_try + 1e-12 < seed_cost
+                ):
+                    x_prefit_seed = np.asarray(seed_try, dtype=float).reshape(-1)
+                    seed_cost = float(score_try)
+                    seed_choice = f"seed_{idx}"
+
+            prefit_iters = max(2, min(12, int(inner_iters)))
+            x_prefit_opt, prefit_opt = _coordinate_descent_spool(
+                x_prefit_seed,
+                lo=lo,
+                hi=hi,
+                kinds=kinds,
+                max_iters=int(prefit_iters),
+                objective=_prefit_objective,
+            )
+            x_prefit_opt = np.clip(np.asarray(x_prefit_opt, dtype=float).reshape(-1), lo, hi)
+            prefit_fitted_cost = float(_prefit_objective(x_prefit_opt))
+            use_prefit = (
+                np.isfinite(prefit_fitted_cost)
+                and prefit_fitted_cost + 1e-12 < float(prefit_start_cost)
+            )
+            x_current = x_prefit_opt if use_prefit else x_prefit_seed
+            radii_current, buildup_current = _unpack_spool_opt_vector(
+                x_current,
+                num_anchors=num_anchors,
+                find_radii_mode=mode_r,
+                find_buildup_mode=mode_b,
+                fixed_radii_mm=base,
+                fixed_buildup_factor=modeled_b,
+            )
+            _spool_params_prefit, transformed_prefit = _build_dataset_and_params(
+                radii_current,
+                buildup_current,
+            )
+            prefit_score, valid_sweeps, invalid_sweeps = _ellipse_prefit_score(transformed_prefit)
+            prefit_info.update(
+                {
+                    "success": bool(use_prefit),
+                    "message": (
+                        "ellipse prefit improved spool seed"
+                        if use_prefit
+                        else str(prefit_opt.get("message", "ellipse prefit did not improve"))
+                    ),
+                    "nfev": int(prefit_opt.get("nfev", prefit_eval_counter["count"])),
+                    "nit": int(prefit_opt.get("nit", 0)),
+                    "start_cost": float(prefit_start_cost),
+                    "fitted_cost": (
+                        float(prefit_fitted_cost)
+                        if np.isfinite(prefit_fitted_cost)
+                        else float(prefit_start_cost)
+                    ),
+                    "seed_choice": str(seed_choice),
+                    "seed_cost": float(seed_cost) if np.isfinite(seed_cost) else None,
+                    "valid_sweeps": int(valid_sweeps),
+                    "invalid_sweeps": int(invalid_sweeps),
+                    "ellipse_cost": (
+                        float(prefit_score) if np.isfinite(prefit_score) else None
+                    ),
+                }
+            )
+        else:
+            prefit_info.update(
+                {
+                    "enabled": False,
+                    "message": "ellipse prefit skipped (no valid sweep residual objective)",
+                    "start_cost": (
+                        float(prefit_start_cost)
+                        if np.isfinite(prefit_start_cost)
+                        else None
+                    ),
+                }
+            )
+
+    for outer_idx in range(outer_iters):
+        spool_params_current, transformed_current = _build_dataset_and_params(radii_current, buildup_current)
+        current_cost = float(_data_cost(transformed_current, anchors_current))
+        current_prior = float(_prior_cost(radii_current, buildup_current))
+        current_total_cost = (
+            float(current_cost + current_prior)
+            if np.isfinite(current_cost) and np.isfinite(current_prior)
+            else float("inf")
+        )
 
         eval_counter = {"count": 0}
         objective_cache: Dict[Tuple[float, ...], float] = {}
@@ -800,7 +961,7 @@ def _estimate_effective_radii_with_spool_model(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-                data_cost = _data_cost(transformed_try, anchors_next)
+                data_cost = _data_cost(transformed_try, anchors_current)
                 if not np.isfinite(data_cost):
                     return 1e12
                 prior = _prior_cost(radii_try, buildup_try)
@@ -869,16 +1030,126 @@ def _estimate_effective_radii_with_spool_model(
             fixed_buildup_factor=modeled_b,
         )
         spool_params_opt, transformed_opt = _build_dataset_and_params(radii_opt, buildup_opt)
-        model_cost = float(_data_cost(transformed_opt, anchors_next))
+        spool_cost_fixed = float(_data_cost(transformed_opt, anchors_current))
+        spool_prior = float(_prior_cost(radii_opt, buildup_opt))
+
+        anchors_candidate = np.asarray(anchors_current, dtype=float)
+        anchor_cost = float("nan")
+        anchor_step_success = False
+        anchor_step_restarts = max(1, min(2, int(solve_restarts)))
+        anchor_step_iterations = max(40, min(160, int(solve_iterations)))
+        try:
+            cal_step = calibrate_elliptical(
+                transformed_opt,
+                output_path=None,
+                residual_threshold=float(residual_threshold),
+                num_restarts=int(anchor_step_restarts),
+                max_iterations=int(anchor_step_iterations),
+                method=str(solve_optimizer),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                verbose=False,
+                use_parallel=False,
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                robust_debug=False,
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                sigma_source=str(sigma_source),
+                generate_report=False,
+                residuals_csv=None,
+            )
+            cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
+            if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
+                np.isfinite(cand_anchors)
+            ):
+                anchors_candidate = cand_anchors
+                anchor_step_success = True
+                anchor_cost = float(_data_cost(transformed_opt, anchors_candidate))
+        except Exception:
+            anchor_step_success = False
+
+        accepted_anchors = np.asarray(anchors_current, dtype=float)
+        accepted_cost = float(spool_cost_fixed)
+        accepted_total_cost = (
+            float(spool_cost_fixed + spool_prior)
+            if np.isfinite(spool_cost_fixed) and np.isfinite(spool_prior)
+            else float("inf")
+        )
+        accepted_alpha = 0.0
+        if anchor_step_success:
+            for alpha in (1.0, 0.5, 0.25):
+                if alpha >= 1.0 - 1e-12:
+                    anchors_try = np.asarray(anchors_candidate, dtype=float)
+                else:
+                    anchors_try = np.asarray(
+                        anchors_current + (anchors_candidate - anchors_current) * float(alpha),
+                        dtype=float,
+                    )
+                cost_try = float(_data_cost(transformed_opt, anchors_try))
+                if not np.isfinite(cost_try):
+                    continue
+                total_try = (
+                    float(cost_try + spool_prior)
+                    if np.isfinite(cost_try) and np.isfinite(spool_prior)
+                    else float("inf")
+                )
+                if not np.isfinite(total_try):
+                    continue
+                if not np.isfinite(accepted_total_cost) or total_try + 1e-12 < accepted_total_cost:
+                    accepted_cost = float(cost_try)
+                    accepted_total_cost = float(total_try)
+                    accepted_anchors = np.asarray(anchors_try, dtype=float)
+                    accepted_alpha = float(alpha)
+
+        improve_tol = (
+            max(1e-9, 1e-4 * max(1.0, abs(current_total_cost)))
+            if np.isfinite(current_total_cost)
+            else 1e-9
+        )
+        rollback = False
+        if np.isfinite(current_total_cost):
+            if (
+                not np.isfinite(accepted_total_cost)
+                or accepted_total_cost > current_total_cost - improve_tol
+            ):
+                rollback = True
+        elif not np.isfinite(accepted_total_cost):
+            rollback = True
+
+        if rollback:
+            radii_next = np.asarray(radii_current, dtype=float)
+            buildup_next = np.asarray(buildup_current, dtype=float)
+            anchors_next = np.asarray(anchors_current, dtype=float)
+            spool_params_next = spool_params_current
+            transformed_next = transformed_current
+            model_cost = float(current_cost)
+            accepted_update = "rollback"
+            accepted_alpha = 0.0
+        else:
+            radii_next = np.asarray(radii_opt, dtype=float)
+            buildup_next = np.asarray(buildup_opt, dtype=float)
+            anchors_next = np.asarray(accepted_anchors, dtype=float)
+            spool_params_next = spool_params_opt
+            transformed_next = transformed_opt
+            model_cost = float(accepted_cost)
+            if accepted_alpha >= 1.0 - 1e-12:
+                accepted_update = "anchor_full"
+            elif accepted_alpha > 0.0:
+                accepted_update = "anchor_damped"
+            else:
+                accepted_update = "spool_only"
 
         if np.isfinite(model_cost) and model_cost < float(best["cost"]):
             best = {
                 "cost": float(model_cost),
-                "radii_mm": np.asarray(radii_opt, dtype=float),
-                "buildup_factor": np.asarray(buildup_opt, dtype=float),
+                "radii_mm": np.asarray(radii_next, dtype=float),
+                "buildup_factor": np.asarray(buildup_next, dtype=float),
                 "anchors": np.asarray(anchors_next, dtype=float),
-                "spool_params": spool_params_opt,
-                "dataset": transformed_opt,
+                "spool_params": spool_params_next,
+                "dataset": transformed_next,
             }
 
         start_cost = float(opt_info.get("start_cost", float("nan")))
@@ -892,28 +1163,47 @@ def _estimate_effective_radii_with_spool_model(
                 "nit": int(opt_info.get("nit", 0)),
                 "start_cost": float(start_cost),
                 "fitted_cost": float(fitted_cost),
+                "current_cost": float(current_cost) if np.isfinite(current_cost) else None,
+                "current_total_cost": (
+                    float(current_total_cost) if np.isfinite(current_total_cost) else None
+                ),
+                "spool_cost_fixed_anchors": (
+                    float(spool_cost_fixed) if np.isfinite(spool_cost_fixed) else None
+                ),
+                "spool_total_cost_fixed_anchors": (
+                    float(spool_cost_fixed + spool_prior)
+                    if np.isfinite(spool_cost_fixed) and np.isfinite(spool_prior)
+                    else None
+                ),
                 "anchor_step_success": bool(anchor_step_success),
                 "anchor_cost": float(anchor_cost) if np.isfinite(anchor_cost) else None,
                 "cal_step_success": bool(anchor_step_success),
                 "cal_cost": float(model_cost) if np.isfinite(model_cost) else None,
+                "cal_total_cost": (
+                    float(model_cost + _prior_cost(radii_next, buildup_next))
+                    if np.isfinite(model_cost)
+                    else None
+                ),
+                "accepted_update": str(accepted_update),
+                "anchor_blend_alpha": float(accepted_alpha),
                 "step_final": opt_info.get("step_final"),
                 "seed_choice": str(opt_info.get("seed_choice", "")),
                 "seed_cost": opt_info.get("seed_cost"),
-                "radii_mm": [float(v) for v in np.asarray(radii_opt, dtype=float).tolist()],
-                "buildup_factor": [float(v) for v in np.asarray(buildup_opt, dtype=float).tolist()],
+                "radii_mm": [float(v) for v in np.asarray(radii_next, dtype=float).tolist()],
+                "buildup_factor": [float(v) for v in np.asarray(buildup_next, dtype=float).tolist()],
             }
         )
 
         x_current = _pack_spool_opt_vector(
-            radii_mm=radii_opt,
-            buildup_factor=buildup_opt,
+            radii_mm=radii_next,
+            buildup_factor=buildup_next,
             find_radii_mode=mode_r,
             find_buildup_mode=mode_b,
         )
         if x_current.size > 0:
             x_current = np.clip(x_current, lo, hi)
-        radii_current = np.asarray(radii_opt, dtype=float)
-        buildup_current = np.asarray(buildup_opt, dtype=float)
+        radii_current = np.asarray(radii_next, dtype=float)
+        buildup_current = np.asarray(buildup_next, dtype=float)
         anchors_current = np.asarray(anchors_next, dtype=float)
 
     if best["dataset"] is None or best["spool_params"] is None:
@@ -1005,6 +1295,7 @@ def _estimate_effective_radii_with_spool_model(
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
+        "prefit": dict(prefit_info),
         "history": history,
         "best_cost": (
             float(best["cost"])
