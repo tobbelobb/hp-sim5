@@ -3421,6 +3421,7 @@ def full_auto_loop(
     full_auto_log: Optional[Path],
     patience: int,
     full_auto_verbose: bool,
+    no_collect: bool = False,
 ) -> int:
     if work_dataset is not None:
         dataset_path = Path(work_dataset)
@@ -4120,6 +4121,13 @@ def full_auto_loop(
                     _log_console(f"Collected sweep nr {count}")
                     continue
 
+            if no_collect:
+                _log_line("; --no-collect set; stopping before live collection.")
+                _log_console("; --no-collect set; stopping before live collection.")
+                if best_plan is None:
+                    best_plan = plan
+                return _emit_summary_and_send(best_plan)
+
             cmd = plan.get("collect_command")
             if not isinstance(cmd, list) or not cmd:
                 _log_line("; No valid candidate to collect; stopping.")
@@ -4226,6 +4234,7 @@ def ellipse_loop(
     plot_residual_histogram: bool,
     sweep_points: Optional[int],
     output_with_explanations: bool,
+    no_collect: bool = False,
 ) -> int:
     if work_dataset is not None:
         work_path = Path(work_dataset)
@@ -4469,6 +4478,24 @@ def ellipse_loop(
         if not isinstance(cmd, list) or not cmd:
             print("; No valid candidate to collect; stopping.")
             return _finalize(2)
+
+        if no_collect:
+            print("; --no-collect set; stopping before live collection.")
+            m669 = _m669_from_plan(plan)
+            if m669:
+                print(f"; sending {m669} to {rrf_server}")
+                try:
+                    reply = _send_rrf_gcode(rrf_server, m669)
+                except Exception as exc:
+                    print(f"; failed to send M669: {exc}")
+                    return _finalize(1)
+                reply = reply.strip()
+                if reply:
+                    print(f"; M669 reply: {reply}")
+            else:
+                print("; accepted anchors; no M669 command available")
+            print(f"; accepted anchors; dataset={work_path}")
+            return _finalize(0)
 
         try:
             while True:
@@ -4853,6 +4880,11 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         "--full-auto",
         action="store_true",
         help="Run the non-interactive full-auto loop.",
+    )
+    parser.add_argument(
+        "--no-collect",
+        action="store_true",
+        help="Do not collect new sweeps; stop when replayed data is exhausted.",
     )
     parser.add_argument(
         "--dataset",
@@ -5468,6 +5500,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             full_auto_log=args.full_auto_log,
             patience=int(args.patience),
             full_auto_verbose=bool(args.full_auto_verbose),
+            no_collect=bool(args.no_collect),
         )
     return ellipse_loop(
         work_dataset=args.dataset,
@@ -5531,6 +5564,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         plot_residual_histogram=bool(args.plot_residual_histogram),
         sweep_points=args.sweep_points,
         output_with_explanations=bool(args.output_with_explanations),
+        no_collect=bool(args.no_collect),
     )
 
 
