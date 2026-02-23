@@ -3221,6 +3221,17 @@ def _print_ellipse_plan(
             print(f"; line_model_params (M666): {m666_line_model}")
         radii_fit = length_model.get("radii_fit")
         if isinstance(radii_fit, dict):
+            prefit = radii_fit.get("prefit")
+            if isinstance(prefit, dict):
+                print(
+                    f"; line_model_prefit: enabled={bool(prefit.get('enabled', False))} "
+                    f"success={bool(prefit.get('success', False))} "
+                    f"seed={str(prefit.get('seed_choice', ''))} "
+                    f"start={_fmt_float(prefit.get('start_cost'))} "
+                    f"fit={_fmt_float(prefit.get('fitted_cost'))} "
+                    f"valid_sweeps={_fmt_float(prefit.get('valid_sweeps'), fmt='.0f')} "
+                    f"invalid_sweeps={_fmt_float(prefit.get('invalid_sweeps'), fmt='.0f')}"
+                )
             history = radii_fit.get("history")
             if isinstance(history, list) and history:
                 last = history[-1] if isinstance(history[-1], dict) else {}
@@ -4217,6 +4228,11 @@ def full_auto_loop(
                             "underconstrained_penalty": underconstrained_penalty,
                             "warnings": warnings,
                             "valid": valid,
+                            "line_model_prefit": (
+                                (((plan.get("length_model") or {}).get("radii_fit") or {}).get("prefit"))
+                                if isinstance(plan, dict)
+                                else None
+                            ),
                         },
                     }
                 )
