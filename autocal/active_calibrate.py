@@ -49,7 +49,7 @@ from autocal.active_learning import (
     rank_candidates_d_optimal,
     total_information_matrix,
 )
-from autocal.calibrate import calibrate_elliptical
+from autocal.calibrate import build_anchor_initial_guess, calibrate_elliptical
 from autocal.dataset_roles import normalize_dataset_point_roles as _normalize_dataset_point_roles
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
@@ -1066,6 +1066,7 @@ def _estimate_effective_radii_with_spool_model(
                 sigma_source=str(sigma_source),
                 generate_report=False,
                 residuals_csv=None,
+                initial_guess=anchors_current,
             )
             cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
             if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
@@ -2829,6 +2830,11 @@ def _plan_next_ellipse_sweep(
             find_buildup_factor_mode=find_buildup_mode,
             buildup_factor=est_buildup,
         )
+        anchor_initial_guess = build_anchor_initial_guess(
+            dataset,
+            machine_type=str(machine_type),
+            base_radii_mm=base_radii_mm.tolist(),
+        )
 
         seed_restarts = max(1, min(2, int(solve_restarts)))
         seed_iterations = max(60, min(200, int(solve_iterations)))
@@ -2853,6 +2859,7 @@ def _plan_next_ellipse_sweep(
             sigma_source=str(sigma_source),
             generate_report=False,
             residuals_csv=None,
+            initial_guess=anchor_initial_guess,
         )
         seed_anchors = np.asarray(seed_cal["anchors"], dtype=float)
         effective_radii_mm, _fit_anchors, spool_params, dataset_for_estimation, radii_fit = (
@@ -2924,6 +2931,7 @@ def _plan_next_ellipse_sweep(
             generate_report=bool(generate_report),
             residuals_csv=residuals_csv,
             report_base_path=dataset_path,
+            initial_guess=seed_anchors,
         )
 
         length_model = {
@@ -2970,6 +2978,11 @@ def _plan_next_ellipse_sweep(
             "spool_fit": radii_fit,
         }
     else:
+        anchor_initial_guess = build_anchor_initial_guess(
+            dataset,
+            machine_type=str(machine_type),
+            base_radii_mm=None,
+        )
         cal = calibrate_elliptical(
             dataset,
             output_path=None,
@@ -2991,6 +3004,7 @@ def _plan_next_ellipse_sweep(
             sigma_source=str(sigma_source),
             generate_report=bool(generate_report),
             residuals_csv=residuals_csv,
+            initial_guess=anchor_initial_guess,
         )
 
     anchors = np.asarray(cal["anchors"], dtype=float)
