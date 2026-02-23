@@ -909,6 +909,144 @@ def test_spool_prefit_grid_avoids_false_basin_for_low_base_radius(monkeypatch):
     assert prefit_low.get("seed_choice") != "current"
 
 
+def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypatch):
+    target_r = 39.2
+    prefit_square_inputs = []
+
+    def data_landscape(r_val: float) -> float:
+        r = float(r_val)
+        return float((r - target_r) ** 2.0)
+
+    def fake_build_spool_model_params(
+        dataset,
+        *,
+        base_radii_mm,
+        modeled_radii_mm,
+        modeled_buildup_factor,
+        spool_to_motor_gearing_factor,
+        mechanical_advantage,
+        lines_per_spool,
+        base_buildup_factor=None,
+        theta0_mode="zero",
+        prefer_zero_tension_angles=False,
+    ):
+        _ = (
+            dataset,
+            base_radii_mm,
+            spool_to_motor_gearing_factor,
+            mechanical_advantage,
+            lines_per_spool,
+            base_buildup_factor,
+            theta0_mode,
+            prefer_zero_tension_angles,
+        )
+        return {
+            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
+            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
+        }
+
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
+        out = {
+            "num_anchors": int(dataset.get("num_anchors", 3)),
+            "sweeps": [],
+        }
+        r = float(np.median(np.asarray(spool_params["radii_mm"], dtype=float)))
+        out["_spool_r"] = r
+        # Monotonic-in-radius proxy landscape for prefit scoring.
+        prefit_val = float(r)
+        out["sweeps"].append(
+            {
+                "drive_anchor": 0,
+                "sensor_anchor": 1,
+                "data_points": [{"l_drive": prefit_val, "l_sensor": 0.0} for _ in range(6)],
+            }
+        )
+        return out
+
+    def fake_fit_ellipse_from_sweep(l_drive, l_sensor, **kwargs):
+        prefit_square_inputs.append(bool(kwargs.get("square_inputs", True)))
+        drive = np.asarray(l_drive, dtype=float).reshape(-1)
+        sensor = np.asarray(l_sensor, dtype=float).reshape(-1)
+        rms = abs(float(np.mean(drive))) + abs(float(np.mean(sensor)))
+        return SimpleNamespace(residual_rms=rms)
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = (dataset_or_path, kwargs)
+        return {"anchors": np.zeros((3, 2), dtype=float), "cost": 0.0}
+
+    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
+        _ = (anchors, kwargs)
+        r = float(dataset.get("_spool_r", 30.0))
+        return float(data_landscape(r))
+
+    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
+    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    monkeypatch.setattr(ac, "fit_ellipse_from_sweep", fake_fit_ellipse_from_sweep)
+    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+
+    dataset = {"num_anchors": 3, "sweeps": [{}]}
+    seed_anchors = np.zeros((3, 2), dtype=float)
+
+    def _run(base_radius: float):
+        eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+            dataset,
+            seed_anchors,
+            find_radii_mode="global",
+            find_buildup_mode="off",
+            base_radii_mm=np.full(3, float(base_radius), dtype=float),
+            modeled_buildup_factor=np.zeros(3, dtype=float),
+            spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+            mechanical_advantage=np.ones(3, dtype=float),
+            lines_per_spool=np.ones(3, dtype=float),
+            r0_bounds=None,
+            b_bounds=None,
+            r0_prior_sigma_mm=None,
+            b_prior_sigma=None,
+            spool_outer_iters=1,
+            spool_inner_iters=12,
+            theta0_mode="zero",
+            solve_restarts=1,
+            solve_iterations=10,
+            solve_optimizer="L-BFGS-B",
+            residual_threshold=1.0,
+            spring_k_multiplier=1.0,
+            use_flex=False,
+            pointwise_residual_mode="sampson",
+            pointwise_filtering=False,
+            pointwise_global_mad=False,
+            sweep_wise_filtering=False,
+            sweep_metric="mad",
+            use_noise_mean=False,
+            sigma_source="auto",
+            robust_debug=False,
+        )
+        return float(np.median(np.asarray(eff_r, dtype=float))), fit_info
+
+    r_low, fit_low = _run(30.0)
+    r_high, fit_high = _run(38.7)
+
+    prefit_low = fit_low.get("prefit", {})
+    prefit_high = fit_high.get("prefit", {})
+    assert prefit_low.get("enabled") is True
+    assert prefit_high.get("enabled") is True
+    assert prefit_low.get("guarded") is True
+    assert prefit_high.get("guarded") is True
+    assert "uninformative" in str(prefit_low.get("message", "")).lower()
+    assert "uninformative" in str(prefit_high.get("message", "")).lower()
+
+    assert prefit_square_inputs and all(flag is False for flag in prefit_square_inputs)
+
+    assert abs(r_low - target_r) < 0.5
+    assert abs(r_high - target_r) < 0.5
+
+
 def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
     target_r = 15.0
 

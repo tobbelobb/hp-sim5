@@ -779,7 +779,9 @@ def _estimate_effective_radii_with_spool_model(
                 np.asarray(sensor_vals, dtype=float),
                 residual_threshold=float("inf"),
                 min_points=5,
-                square_inputs=True,
+                # Prefit should stay scale-aware in length space; squaring can bias
+                # the proxy objective toward lower-radius solutions.
+                square_inputs=False,
             )
             rms = float(fit.residual_rms)
             if not np.isfinite(rms):
@@ -810,11 +812,13 @@ def _estimate_effective_radii_with_spool_model(
         "seed_cost": None,
         "valid_sweeps": 0,
         "invalid_sweeps": 0,
+        "guarded": False,
     }
 
     if x_current.size > 0:
         prefit_eval_counter = {"count": 0}
         prefit_cache: Dict[Tuple[float, ...], float] = {}
+        prefit_seed_scores: List[Tuple[float, float]] = []
 
         def _prefit_objective(opt_vec: np.ndarray) -> float:
             try:
@@ -846,8 +850,50 @@ def _estimate_effective_radii_with_spool_model(
             except Exception:
                 return 1e12
 
-        x_prefit_seed = np.clip(np.asarray(x_current, dtype=float).reshape(-1), lo, hi)
+        def _prefit_seed_landscape_is_monotonic_boundary(
+            seed_scores: Sequence[Tuple[float, float]],
+        ) -> bool:
+            if len(kinds) != 1 or str(kinds[0]) != "r":
+                return False
+            if lo.size != 1 or hi.size != 1:
+                return False
+
+            by_radius: Dict[float, Tuple[float, float]] = {}
+            for radius, score in seed_scores:
+                if not np.isfinite(radius) or not np.isfinite(score):
+                    continue
+                key = float(np.round(float(radius), decimals=9))
+                existing = by_radius.get(key)
+                if existing is None or float(score) < float(existing[1]):
+                    by_radius[key] = (float(radius), float(score))
+            if len(by_radius) < 3:
+                return False
+
+            rows = [by_radius[key] for key in sorted(by_radius.keys())]
+            radii = np.asarray([row[0] for row in rows], dtype=float)
+            costs = np.asarray([row[1] for row in rows], dtype=float)
+            if radii.size < 3 or np.any(~np.isfinite(costs)):
+                return False
+
+            diffs = np.diff(costs)
+            mono_tol = max(1e-9, 1e-8 * max(1.0, float(np.max(np.abs(costs)))))
+            monotonic = bool(np.all(diffs >= -mono_tol) or np.all(diffs <= mono_tol))
+            if not monotonic:
+                return False
+
+            best_idx = int(np.argmin(costs))
+            best_r = float(radii[best_idx])
+            lo_r = float(lo[0])
+            hi_r = float(hi[0])
+            bound_tol = 1e-9 * max(1.0, abs(lo_r), abs(hi_r), abs(hi_r - lo_r))
+            at_bound = abs(best_r - lo_r) <= bound_tol or abs(best_r - hi_r) <= bound_tol
+            return bool(at_bound)
+
+        x_prefit_start = np.clip(np.asarray(x_current, dtype=float).reshape(-1), lo, hi)
+        x_prefit_seed = np.asarray(x_prefit_start, dtype=float).copy()
         prefit_start_cost = float(_prefit_objective(x_prefit_seed))
+        if x_prefit_seed.size > 0:
+            prefit_seed_scores.append((float(x_prefit_seed[0]), float(prefit_start_cost)))
         if np.isfinite(prefit_start_cost) and prefit_start_cost < 1e11:
             prefit_info["enabled"] = True
             seed_candidates = _spool_prefit_seed_candidates(
@@ -860,29 +906,44 @@ def _estimate_effective_radii_with_spool_model(
             seed_cost = float(prefit_start_cost)
             for idx, seed_try in enumerate(seed_candidates[1:], start=1):
                 score_try = float(_prefit_objective(seed_try))
+                seed_arr = np.asarray(seed_try, dtype=float).reshape(-1)
+                if seed_arr.size > 0:
+                    prefit_seed_scores.append((float(seed_arr[0]), float(score_try)))
                 if np.isfinite(score_try) and (
                     not np.isfinite(seed_cost) or score_try + 1e-12 < seed_cost
                 ):
-                    x_prefit_seed = np.asarray(seed_try, dtype=float).reshape(-1)
+                    x_prefit_seed = seed_arr
                     seed_cost = float(score_try)
                     seed_choice = f"seed_{idx}"
 
-            prefit_iters = max(2, min(12, int(inner_iters)))
-            x_prefit_opt, prefit_opt = _coordinate_descent_spool(
-                x_prefit_seed,
-                lo=lo,
-                hi=hi,
-                kinds=kinds,
-                max_iters=int(prefit_iters),
-                objective=_prefit_objective,
-            )
-            x_prefit_opt = np.clip(np.asarray(x_prefit_opt, dtype=float).reshape(-1), lo, hi)
-            prefit_fitted_cost = float(_prefit_objective(x_prefit_opt))
-            use_prefit = (
-                np.isfinite(prefit_fitted_cost)
-                and prefit_fitted_cost + 1e-12 < float(prefit_start_cost)
-            )
-            x_current = x_prefit_opt if use_prefit else x_prefit_seed
+            prefit_guarded = _prefit_seed_landscape_is_monotonic_boundary(prefit_seed_scores)
+            if prefit_guarded:
+                prefit_opt = {
+                    "success": False,
+                    "message": "ellipse prefit uninformative (monotonic boundary seed landscape); skipped",
+                    "nfev": int(prefit_eval_counter["count"]),
+                    "nit": 0,
+                }
+                prefit_fitted_cost = float(prefit_start_cost)
+                use_prefit = False
+                x_current = np.asarray(x_prefit_start, dtype=float)
+            else:
+                prefit_iters = max(2, min(12, int(inner_iters)))
+                x_prefit_opt, prefit_opt = _coordinate_descent_spool(
+                    x_prefit_seed,
+                    lo=lo,
+                    hi=hi,
+                    kinds=kinds,
+                    max_iters=int(prefit_iters),
+                    objective=_prefit_objective,
+                )
+                x_prefit_opt = np.clip(np.asarray(x_prefit_opt, dtype=float).reshape(-1), lo, hi)
+                prefit_fitted_cost = float(_prefit_objective(x_prefit_opt))
+                use_prefit = (
+                    np.isfinite(prefit_fitted_cost)
+                    and prefit_fitted_cost + 1e-12 < float(prefit_start_cost)
+                )
+                x_current = x_prefit_opt if use_prefit else x_prefit_seed
             radii_current, buildup_current = _unpack_spool_opt_vector(
                 x_current,
                 num_anchors=num_anchors,
@@ -916,6 +977,7 @@ def _estimate_effective_radii_with_spool_model(
                     "seed_cost": float(seed_cost) if np.isfinite(seed_cost) else None,
                     "valid_sweeps": int(valid_sweeps),
                     "invalid_sweeps": int(invalid_sweeps),
+                    "guarded": bool(prefit_guarded),
                     "ellipse_cost": (
                         float(prefit_score) if np.isfinite(prefit_score) else None
                     ),
@@ -3286,6 +3348,7 @@ def _print_ellipse_plan(
                 print(
                     f"; line_model_prefit: enabled={bool(prefit.get('enabled', False))} "
                     f"success={bool(prefit.get('success', False))} "
+                    f"guarded={bool(prefit.get('guarded', False))} "
                     f"seed={str(prefit.get('seed_choice', ''))} "
                     f"start={_fmt_float(prefit.get('start_cost'))} "
                     f"fit={_fmt_float(prefit.get('fitted_cost'))} "
