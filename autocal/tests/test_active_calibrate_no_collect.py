@@ -66,9 +66,17 @@ def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatc
     def fail_run(*_args, **_kwargs):
         raise AssertionError("subprocess.run should not be called with --no-collect")
 
+    def fail_start(*_args, **_kwargs):
+        raise AssertionError("rrf_simulator should not be started with --sim --no-collect")
+
+    def fail_wait(*_args, **_kwargs):
+        raise AssertionError("rrf_simulator wait should not run with --sim --no-collect")
+
     monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_send_rrf_gcode", fake_send)
+    monkeypatch.setattr(ac, "_start_rrf_simulator", fail_start)
+    monkeypatch.setattr(ac, "_wait_for_rrf_server", fail_wait)
     monkeypatch.setattr(ac.subprocess, "run", fail_run)
 
     rc = ac.ellipse_loop(
@@ -119,7 +127,7 @@ def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatc
         top_k=5,
         write_cfg=None,
         collector_args=[],
-        sim=False,
+        sim=True,
         keep_sim_alive=False,
         hp_sim_reset=False,
         plot_residual_histogram=False,
@@ -129,8 +137,7 @@ def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatc
     )
 
     assert rc == 0
-    assert len(sent) == 1
-    assert sent[0].startswith("M669 ")
+    assert len(sent) == 0
 
 
 def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypatch):
@@ -146,10 +153,18 @@ def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypa
     def fail_run(*_args, **_kwargs):
         raise AssertionError("subprocess.run should not be called with --no-collect")
 
+    def fail_start(*_args, **_kwargs):
+        raise AssertionError("rrf_simulator should not be started with --sim --no-collect")
+
+    def fail_wait(*_args, **_kwargs):
+        raise AssertionError("rrf_simulator wait should not run with --sim --no-collect")
+
     monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_send_rrf_gcode", fake_send)
     monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_start_rrf_simulator", fail_start)
+    monkeypatch.setattr(ac, "_wait_for_rrf_server", fail_wait)
     monkeypatch.setattr(ac.subprocess, "run", fail_run)
 
     rc = ac.full_auto_loop(
@@ -200,7 +215,7 @@ def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypa
         top_k=5,
         write_cfg=None,
         collector_args=[],
-        sim=False,
+        sim=True,
         keep_sim_alive=False,
         hp_sim_reset=False,
         sweep_points=None,
@@ -213,5 +228,4 @@ def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypa
     )
 
     assert rc == 0
-    assert len(sent) == 1
-    assert sent[0].startswith("M669 ")
+    assert len(sent) == 0

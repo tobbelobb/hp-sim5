@@ -3843,16 +3843,20 @@ def full_auto_loop(
             _log_console(f"Variant/flag setup giving best cost: {label}")
         _log_console(_solution_quality_message(best_cost))
 
+        skip_sim_send = bool(sim and no_collect and not server_explicit)
         if m669:
-            _log_console(f"Sending {m669} to {rrf_server}")
-            try:
-                reply = _send_rrf_gcode(rrf_server, m669)
-            except Exception as exc:
-                _log_console(f"; failed to send M669: {exc}")
-                return _finalize(1)
-            reply = reply.strip()
-            if reply:
-                _log_line(f"; M669 reply: {reply}")
+            if skip_sim_send:
+                _log_console("; --sim + --no-collect set; skipping M669 send.")
+            else:
+                _log_console(f"Sending {m669} to {rrf_server}")
+                try:
+                    reply = _send_rrf_gcode(rrf_server, m669)
+                except Exception as exc:
+                    _log_console(f"; failed to send M669: {exc}")
+                    return _finalize(1)
+                reply = reply.strip()
+                if reply:
+                    _log_line(f"; M669 reply: {reply}")
         else:
             _log_console("Sending M669 skipped (no command available)")
         return _finalize(0)
@@ -3912,7 +3916,7 @@ def full_auto_loop(
         find_buildup_mode=find_buildup_mode,
     )
 
-    if sim and not server_explicit and not user_no_spawn:
+    if sim and not no_collect and not server_explicit and not user_no_spawn:
         target_port = port or DEFAULT_RRF_PORT
         _log_line(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
         sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
@@ -4659,7 +4663,7 @@ def ellipse_loop(
         find_buildup_mode=find_buildup_mode,
     )
 
-    if sim and not server_explicit and not user_no_spawn:
+    if sim and not no_collect and not server_explicit and not user_no_spawn:
         target_port = port or DEFAULT_RRF_PORT
         print(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
         sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
@@ -4849,16 +4853,20 @@ def ellipse_loop(
         if no_collect:
             print("; --no-collect set; stopping before live collection.")
             m669 = _m669_from_plan(plan)
+            skip_sim_send = bool(sim and not server_explicit)
             if m669:
-                print(f"; sending {m669} to {rrf_server}")
-                try:
-                    reply = _send_rrf_gcode(rrf_server, m669)
-                except Exception as exc:
-                    print(f"; failed to send M669: {exc}")
-                    return _finalize(1)
-                reply = reply.strip()
-                if reply:
-                    print(f"; M669 reply: {reply}")
+                if skip_sim_send:
+                    print("; --sim + --no-collect set; skipping M669 send.")
+                else:
+                    print(f"; sending {m669} to {rrf_server}")
+                    try:
+                        reply = _send_rrf_gcode(rrf_server, m669)
+                    except Exception as exc:
+                        print(f"; failed to send M669: {exc}")
+                        return _finalize(1)
+                    reply = reply.strip()
+                    if reply:
+                        print(f"; M669 reply: {reply}")
             else:
                 print("; accepted anchors; no M669 command available")
             print(f"; accepted anchors; dataset={work_path}")
