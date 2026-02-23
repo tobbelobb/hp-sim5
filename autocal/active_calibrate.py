@@ -818,12 +818,17 @@ def _estimate_effective_radii_with_spool_model(
     if x_current.size > 0:
         prefit_eval_counter = {"count": 0}
         prefit_cache: Dict[Tuple[float, ...], float] = {}
+        prefit_parts_cache: Dict[Tuple[float, ...], Tuple[float, float, int, int]] = {}
         prefit_seed_scores: List[Tuple[float, float]] = []
+
+        def _prefit_clip_and_key(opt_vec: np.ndarray) -> Tuple[np.ndarray, Tuple[float, ...]]:
+            clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
+            key = tuple(float(v) for v in np.round(clipped_vec, decimals=9).tolist())
+            return clipped_vec, key
 
         def _prefit_objective(opt_vec: np.ndarray) -> float:
             try:
-                clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
-                key = tuple(float(v) for v in np.round(clipped_vec, decimals=9).tolist())
+                clipped_vec, key = _prefit_clip_and_key(opt_vec)
                 cached = prefit_cache.get(key)
                 if cached is not None and np.isfinite(cached):
                     return float(cached)
@@ -840,15 +845,37 @@ def _estimate_effective_radii_with_spool_model(
                 ellipse_cost, valid_sweeps, _ = _ellipse_prefit_score(transformed_try)
                 if valid_sweeps <= 0 or not np.isfinite(ellipse_cost):
                     prefit_cache[key] = 1e12
+                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
-                score = float(ellipse_cost + _prior_cost(radii_try, buildup_try))
+                data_cost = float(_data_cost(transformed_try, anchors_current))
+                if not np.isfinite(data_cost):
+                    prefit_cache[key] = 1e12
+                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
+                    return 1e12
+                prior_cost = float(_prior_cost(radii_try, buildup_try))
+                score = float(data_cost + prior_cost)
                 if not np.isfinite(score):
                     prefit_cache[key] = 1e12
+                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
                 prefit_cache[key] = float(score)
+                prefit_parts_cache[key] = (
+                    float(data_cost),
+                    float(prior_cost),
+                    int(valid_sweeps),
+                    0,
+                )
                 return float(score)
             except Exception:
                 return 1e12
+
+        def _prefit_cost_parts(opt_vec: np.ndarray) -> Tuple[float, float, float]:
+            clipped_vec, key = _prefit_clip_and_key(opt_vec)
+            total_cost = float(_prefit_objective(clipped_vec))
+            parts = prefit_parts_cache.get(key)
+            if parts is None:
+                return float("nan"), float("nan"), total_cost
+            return float(parts[0]), float(parts[1]), total_cost
 
         def _prefit_seed_landscape_is_monotonic_boundary(
             seed_scores: Sequence[Tuple[float, float]],
@@ -892,9 +919,10 @@ def _estimate_effective_radii_with_spool_model(
         x_prefit_start = np.clip(np.asarray(x_current, dtype=float).reshape(-1), lo, hi)
         x_prefit_seed = np.asarray(x_prefit_start, dtype=float).copy()
         prefit_start_cost = float(_prefit_objective(x_prefit_seed))
+        prefit_start_data, prefit_start_prior, prefit_start_total = _prefit_cost_parts(x_prefit_start)
         if x_prefit_seed.size > 0:
             prefit_seed_scores.append((float(x_prefit_seed[0]), float(prefit_start_cost)))
-        if np.isfinite(prefit_start_cost) and prefit_start_cost < 1e11:
+        if np.isfinite(prefit_start_total) and prefit_start_total < 1e11:
             prefit_info["enabled"] = True
             seed_candidates = _spool_prefit_seed_candidates(
                 x_prefit_seed,
@@ -924,7 +952,7 @@ def _estimate_effective_radii_with_spool_model(
                     "nfev": int(prefit_eval_counter["count"]),
                     "nit": 0,
                 }
-                prefit_fitted_cost = float(prefit_start_cost)
+                prefit_fitted_cost = float(prefit_start_total)
                 use_prefit = False
                 x_current = np.asarray(x_prefit_start, dtype=float)
             else:
@@ -941,9 +969,10 @@ def _estimate_effective_radii_with_spool_model(
                 prefit_fitted_cost = float(_prefit_objective(x_prefit_opt))
                 use_prefit = (
                     np.isfinite(prefit_fitted_cost)
-                    and prefit_fitted_cost + 1e-12 < float(prefit_start_cost)
+                    and prefit_fitted_cost + 1e-12 < float(prefit_start_total)
                 )
                 x_current = x_prefit_opt if use_prefit else x_prefit_seed
+            prefit_fitted_data, prefit_fitted_prior, prefit_fitted_total = _prefit_cost_parts(x_current)
             radii_current, buildup_current = _unpack_spool_opt_vector(
                 x_current,
                 num_anchors=num_anchors,
@@ -967,11 +996,29 @@ def _estimate_effective_radii_with_spool_model(
                     ),
                     "nfev": int(prefit_opt.get("nfev", prefit_eval_counter["count"])),
                     "nit": int(prefit_opt.get("nit", 0)),
-                    "start_cost": float(prefit_start_cost),
+                    "start_cost": float(prefit_start_total),
                     "fitted_cost": (
-                        float(prefit_fitted_cost)
-                        if np.isfinite(prefit_fitted_cost)
-                        else float(prefit_start_cost)
+                        float(prefit_fitted_total)
+                        if np.isfinite(prefit_fitted_total)
+                        else float(prefit_start_total)
+                    ),
+                    "start_data_cost": (
+                        float(prefit_start_data) if np.isfinite(prefit_start_data) else None
+                    ),
+                    "start_prior_cost": (
+                        float(prefit_start_prior) if np.isfinite(prefit_start_prior) else None
+                    ),
+                    "start_total_cost": (
+                        float(prefit_start_total) if np.isfinite(prefit_start_total) else None
+                    ),
+                    "fitted_data_cost": (
+                        float(prefit_fitted_data) if np.isfinite(prefit_fitted_data) else None
+                    ),
+                    "fitted_prior_cost": (
+                        float(prefit_fitted_prior) if np.isfinite(prefit_fitted_prior) else None
+                    ),
+                    "fitted_total_cost": (
+                        float(prefit_fitted_total) if np.isfinite(prefit_fitted_total) else None
                     ),
                     "seed_choice": str(seed_choice),
                     "seed_cost": float(seed_cost) if np.isfinite(seed_cost) else None,
@@ -989,9 +1036,18 @@ def _estimate_effective_radii_with_spool_model(
                     "enabled": False,
                     "message": "ellipse prefit skipped (no valid sweep residual objective)",
                     "start_cost": (
-                        float(prefit_start_cost)
-                        if np.isfinite(prefit_start_cost)
+                        float(prefit_start_total)
+                        if np.isfinite(prefit_start_total)
                         else None
+                    ),
+                    "start_data_cost": (
+                        float(prefit_start_data) if np.isfinite(prefit_start_data) else None
+                    ),
+                    "start_prior_cost": (
+                        float(prefit_start_prior) if np.isfinite(prefit_start_prior) else None
+                    ),
+                    "start_total_cost": (
+                        float(prefit_start_total) if np.isfinite(prefit_start_total) else None
                     ),
                 }
             )
@@ -1008,14 +1064,19 @@ def _estimate_effective_radii_with_spool_model(
 
         eval_counter = {"count": 0}
         objective_cache: Dict[Tuple[float, ...], float] = {}
+        objective_parts_cache: Dict[Tuple[float, ...], Tuple[float, float]] = {}
+
+        def _objective_clip_and_key(opt_vec: np.ndarray) -> Tuple[np.ndarray, Tuple[float, ...]]:
+            if lo.size > 0:
+                clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
+            else:
+                clipped_vec = np.asarray(opt_vec, dtype=float).reshape(-1)
+            key = tuple(float(v) for v in np.round(clipped_vec, decimals=9).tolist())
+            return clipped_vec, key
 
         def _objective(opt_vec: np.ndarray) -> float:
             try:
-                if lo.size > 0:
-                    clipped_vec = np.clip(np.asarray(opt_vec, dtype=float).reshape(-1), lo, hi)
-                else:
-                    clipped_vec = np.asarray(opt_vec, dtype=float).reshape(-1)
-                key = tuple(float(v) for v in np.round(clipped_vec, decimals=9).tolist())
+                clipped_vec, key = _objective_clip_and_key(opt_vec)
                 cached = objective_cache.get(key)
                 if cached is not None and np.isfinite(cached):
                     return float(cached)
@@ -1031,16 +1092,27 @@ def _estimate_effective_radii_with_spool_model(
                 _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
                 data_cost = _data_cost(transformed_try, anchors_current)
                 if not np.isfinite(data_cost):
+                    objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
                 prior = _prior_cost(radii_try, buildup_try)
                 score = float(data_cost + prior)
                 if not np.isfinite(score):
                     objective_cache[key] = 1e12
+                    objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
                 objective_cache[key] = float(score)
+                objective_parts_cache[key] = (float(data_cost), float(prior))
                 return score
             except Exception:
                 return 1e12
+
+        def _objective_cost_parts(opt_vec: np.ndarray) -> Tuple[float, float, float]:
+            clipped_vec, key = _objective_clip_and_key(opt_vec)
+            total_cost = float(_objective(clipped_vec))
+            parts = objective_parts_cache.get(key)
+            if parts is None:
+                return float("nan"), float("nan"), total_cost
+            return float(parts[0]), float(parts[1]), total_cost
 
         x_seed = _pack_spool_opt_vector(
             radii_mm=radii_current,
@@ -1088,6 +1160,10 @@ def _estimate_effective_radii_with_spool_model(
                 "seed_choice": "none",
                 "seed_cost": float(fitted_cost) if np.isfinite(fitted_cost) else None,
             }
+        start_data_cost, start_prior_cost, start_total_cost = _objective_cost_parts(x_seed)
+        fitted_data_cost, fitted_prior_cost, fitted_total_cost = _objective_cost_parts(x_opt)
+        opt_info["start_cost"] = float(start_total_cost)
+        opt_info["fitted_cost"] = float(fitted_total_cost)
 
         radii_opt, buildup_opt = _unpack_spool_opt_vector(
             x_opt,
@@ -1195,6 +1271,7 @@ def _estimate_effective_radii_with_spool_model(
             spool_params_next = spool_params_current
             transformed_next = transformed_current
             model_cost = float(current_cost)
+            model_prior_cost = float(current_prior)
             accepted_update = "rollback"
             accepted_alpha = 0.0
         else:
@@ -1204,6 +1281,7 @@ def _estimate_effective_radii_with_spool_model(
             spool_params_next = spool_params_opt
             transformed_next = transformed_opt
             model_cost = float(accepted_cost)
+            model_prior_cost = float(spool_prior)
             if accepted_alpha >= 1.0 - 1e-12:
                 accepted_update = "anchor_full"
             elif accepted_alpha > 0.0:
@@ -1223,6 +1301,11 @@ def _estimate_effective_radii_with_spool_model(
 
         start_cost = float(opt_info.get("start_cost", float("nan")))
         fitted_cost = float(opt_info.get("fitted_cost", float("nan")))
+        model_total_cost = (
+            float(model_cost + model_prior_cost)
+            if np.isfinite(model_cost) and np.isfinite(model_prior_cost)
+            else float("nan")
+        )
         history.append(
             {
                 "outer_iter": int(outer_idx + 1),
@@ -1232,10 +1315,30 @@ def _estimate_effective_radii_with_spool_model(
                 "nit": int(opt_info.get("nit", 0)),
                 "start_cost": float(start_cost),
                 "fitted_cost": float(fitted_cost),
+                "start_data_cost": (
+                    float(start_data_cost) if np.isfinite(start_data_cost) else None
+                ),
+                "start_prior_cost": (
+                    float(start_prior_cost) if np.isfinite(start_prior_cost) else None
+                ),
+                "start_total_cost": float(start_cost) if np.isfinite(start_cost) else None,
+                "fitted_data_cost": (
+                    float(fitted_data_cost) if np.isfinite(fitted_data_cost) else None
+                ),
+                "fitted_prior_cost": (
+                    float(fitted_prior_cost) if np.isfinite(fitted_prior_cost) else None
+                ),
+                "fitted_total_cost": float(fitted_cost) if np.isfinite(fitted_cost) else None,
+                "current_data_cost": float(current_cost) if np.isfinite(current_cost) else None,
+                "current_prior_cost": float(current_prior) if np.isfinite(current_prior) else None,
                 "current_cost": float(current_cost) if np.isfinite(current_cost) else None,
                 "current_total_cost": (
                     float(current_total_cost) if np.isfinite(current_total_cost) else None
                 ),
+                "spool_data_cost_fixed_anchors": (
+                    float(spool_cost_fixed) if np.isfinite(spool_cost_fixed) else None
+                ),
+                "spool_prior_cost": float(spool_prior) if np.isfinite(spool_prior) else None,
                 "spool_cost_fixed_anchors": (
                     float(spool_cost_fixed) if np.isfinite(spool_cost_fixed) else None
                 ),
@@ -1248,9 +1351,13 @@ def _estimate_effective_radii_with_spool_model(
                 "anchor_cost": float(anchor_cost) if np.isfinite(anchor_cost) else None,
                 "cal_step_success": bool(anchor_step_success),
                 "cal_cost": float(model_cost) if np.isfinite(model_cost) else None,
+                "cal_data_cost": float(model_cost) if np.isfinite(model_cost) else None,
+                "cal_prior_cost": (
+                    float(model_prior_cost) if np.isfinite(model_prior_cost) else None
+                ),
                 "cal_total_cost": (
-                    float(model_cost + _prior_cost(radii_next, buildup_next))
-                    if np.isfinite(model_cost)
+                    float(model_total_cost)
+                    if np.isfinite(model_total_cost)
                     else None
                 ),
                 "accepted_update": str(accepted_update),
@@ -3352,6 +3459,12 @@ def _print_ellipse_plan(
                     f"seed={str(prefit.get('seed_choice', ''))} "
                     f"start={_fmt_float(prefit.get('start_cost'))} "
                     f"fit={_fmt_float(prefit.get('fitted_cost'))} "
+                    f"start_data={_fmt_float(prefit.get('start_data_cost'))} "
+                    f"start_prior={_fmt_float(prefit.get('start_prior_cost'))} "
+                    f"start_total={_fmt_float(prefit.get('start_total_cost', prefit.get('start_cost')))} "
+                    f"fit_data={_fmt_float(prefit.get('fitted_data_cost'))} "
+                    f"fit_prior={_fmt_float(prefit.get('fitted_prior_cost'))} "
+                    f"fit_total={_fmt_float(prefit.get('fitted_total_cost', prefit.get('fitted_cost')))} "
                     f"valid_sweeps={_fmt_float(prefit.get('valid_sweeps'), fmt='.0f')} "
                     f"invalid_sweeps={_fmt_float(prefit.get('invalid_sweeps'), fmt='.0f')}"
                 )
@@ -3366,6 +3479,9 @@ def _print_ellipse_plan(
                     f"last_start={_fmt_float(last.get('start_cost'))} "
                     f"last_fit={_fmt_float(last.get('fitted_cost'))} "
                     f"last_cal={_fmt_float(last.get('cal_cost'))} "
+                    f"last_data={_fmt_float(last.get('cal_data_cost', last.get('cal_cost')))} "
+                    f"last_prior={_fmt_float(last.get('cal_prior_cost'))} "
+                    f"last_total={_fmt_float(last.get('cal_total_cost'))} "
                     f"nfev={_fmt_float(last.get('nfev'), fmt='.0f')} "
                     f"nit={_fmt_float(last.get('nit'), fmt='.0f')}"
                 )

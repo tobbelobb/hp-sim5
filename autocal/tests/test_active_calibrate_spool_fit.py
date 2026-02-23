@@ -910,12 +910,11 @@ def test_spool_prefit_grid_avoids_false_basin_for_low_base_radius(monkeypatch):
 
 
 def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypatch):
-    target_r = 39.2
     prefit_square_inputs = []
+    noise_norm_flags = []
 
     def data_landscape(r_val: float) -> float:
-        r = float(r_val)
-        return float((r - target_r) ** 2.0)
+        return float(r_val)
 
     def fake_build_spool_model_params(
         dataset,
@@ -981,7 +980,8 @@ def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypat
         return {"anchors": np.zeros((3, 2), dtype=float), "cost": 0.0}
 
     def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
-        _ = (anchors, kwargs)
+        _ = anchors
+        noise_norm_flags.append(bool(kwargs.get("noise_normalized", False)))
         r = float(dataset.get("_spool_r", 30.0))
         return float(data_landscape(r))
 
@@ -1042,9 +1042,31 @@ def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypat
     assert "uninformative" in str(prefit_high.get("message", "")).lower()
 
     assert prefit_square_inputs and all(flag is False for flag in prefit_square_inputs)
+    assert noise_norm_flags and all(flag is True for flag in noise_norm_flags)
+    assert float(prefit_low.get("start_total_cost")) == pytest.approx(
+        float(prefit_low.get("start_data_cost")) + float(prefit_low.get("start_prior_cost"))
+    )
+    assert float(prefit_high.get("start_total_cost")) == pytest.approx(
+        float(prefit_high.get("start_data_cost")) + float(prefit_high.get("start_prior_cost"))
+    )
+    assert float(prefit_low.get("fitted_total_cost")) == pytest.approx(
+        float(prefit_low.get("fitted_data_cost")) + float(prefit_low.get("fitted_prior_cost"))
+    )
+    assert float(prefit_high.get("fitted_total_cost")) == pytest.approx(
+        float(prefit_high.get("fitted_data_cost")) + float(prefit_high.get("fitted_prior_cost"))
+    )
 
-    assert abs(r_low - target_r) < 0.5
-    assert abs(r_high - target_r) < 0.5
+    history_low = fit_low.get("history", [])
+    history_high = fit_high.get("history", [])
+    assert isinstance(history_low, list) and history_low
+    assert isinstance(history_high, list) and history_high
+    for hist in (history_low[-1], history_high[-1]):
+        assert float(hist.get("cal_total_cost")) == pytest.approx(
+            float(hist.get("cal_data_cost")) + float(hist.get("cal_prior_cost"))
+        )
+
+    assert r_low == pytest.approx(30.0, abs=1e-6)
+    assert r_high == pytest.approx(38.7, abs=1e-6)
 
 
 def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
@@ -1090,6 +1112,7 @@ def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
             "sweeps": [],
         }
         r = float(np.median(np.asarray(spool_params["radii_mm"], dtype=float)))
+        out["_spool_r"] = r
         residual_drive = r - target_r
         sweep = {
             "drive_anchor": 0,
@@ -1117,8 +1140,9 @@ def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
         return {"anchors": np.zeros((3, 2), dtype=float), "cost": 0.0}
 
     def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
-        _ = (dataset, anchors, kwargs)
-        return 0.0
+        _ = (anchors, kwargs)
+        r = float(dataset.get("_spool_r", 0.0))
+        return float((r - target_r) ** 2.0)
 
     monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
     monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
