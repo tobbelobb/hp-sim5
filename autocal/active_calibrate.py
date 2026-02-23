@@ -3799,6 +3799,8 @@ def full_auto_loop(
         log_handle.write(str(msg) + "\n")
         log_handle.flush()
 
+    _log_line(f"; command: {shlex.join(sys.argv)}")
+
     def _log_console(msg: str) -> None:
         print(msg)
         _log_line(f"Wrote to console: {msg}")
