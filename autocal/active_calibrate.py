@@ -36,6 +36,7 @@ _DEFAULT_B_BOUNDS = (0.0, 1.0)
 _DEFAULT_B_PRIOR_SIGMA = 0.1
 _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
+_SPOOL_PREFIT_GLOBAL_R_GRID_POINTS = 9
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
@@ -849,7 +850,12 @@ def _estimate_effective_radii_with_spool_model(
         prefit_start_cost = float(_prefit_objective(x_prefit_seed))
         if np.isfinite(prefit_start_cost) and prefit_start_cost < 1e11:
             prefit_info["enabled"] = True
-            seed_candidates = _spool_seed_candidates(x_prefit_seed, lo, hi)
+            seed_candidates = _spool_prefit_seed_candidates(
+                x_prefit_seed,
+                lo,
+                hi,
+                kinds=kinds,
+            )
             seed_choice = "current"
             seed_cost = float(prefit_start_cost)
             for idx, seed_try in enumerate(seed_candidates[1:], start=1):
@@ -2306,6 +2312,46 @@ def _spool_seed_candidates(x_seed: np.ndarray, lo: np.ndarray, hi: np.ndarray) -
     _add(lo + 0.50 * span)  # midpoint seed
     _add(lo + 0.75 * span)  # high-side seed
     _add(lo + 0.25 * span)  # low-side seed
+    return candidates
+
+
+def _spool_prefit_seed_candidates(
+    x_seed: np.ndarray,
+    lo: np.ndarray,
+    hi: np.ndarray,
+    *,
+    kinds: Sequence[str],
+) -> List[np.ndarray]:
+    candidates = list(_spool_seed_candidates(x_seed, lo, hi))
+    seed = np.asarray(x_seed, dtype=float).reshape(-1)
+    if seed.size == 0 or lo.size != seed.size or hi.size != seed.size:
+        return candidates
+    if len(kinds) != seed.size:
+        return candidates
+
+    r_indices = [idx for idx, kind in enumerate(kinds) if str(kind) == "r"]
+    if len(r_indices) != 1:
+        return candidates
+    r_idx = int(r_indices[0])
+    lo_r = float(lo[r_idx])
+    hi_r = float(hi[r_idx])
+    span = float(hi_r - lo_r)
+    if not np.isfinite(lo_r) or not np.isfinite(hi_r) or span <= 0.0:
+        return candidates
+
+    def _add(vec: np.ndarray) -> None:
+        v = np.clip(np.asarray(vec, dtype=float).reshape(-1), lo, hi)
+        for existing in candidates:
+            if existing.shape == v.shape and np.allclose(existing, v, atol=1e-12, rtol=0.0):
+                return
+        candidates.append(v)
+
+    grid_points = max(5, int(_SPOOL_PREFIT_GLOBAL_R_GRID_POINTS))
+    for frac in np.linspace(0.0, 1.0, grid_points):
+        vec = seed.copy()
+        vec[r_idx] = lo_r + frac * span
+        _add(vec)
+
     return candidates
 
 

@@ -718,6 +718,15 @@ def test_spool_seed_candidates_include_mid_and_quartiles():
         assert np.allclose(got, exp)
 
 
+def test_spool_prefit_seed_candidates_add_global_radius_grid():
+    x = np.array([30.0], dtype=float)
+    lo = np.array([30.0], dtype=float)
+    hi = np.array([45.0], dtype=float)
+    seeds = ac._spool_prefit_seed_candidates(x, lo, hi, kinds=["r"])
+    assert len(seeds) > 4
+    assert any(np.allclose(seed, np.array([39.375], dtype=float)) for seed in seeds)
+
+
 def test_spool_fit_seed_selection_can_move_off_current(monkeypatch):
     base = np.array([10.0, 10.0, 10.0], dtype=float)
     target_r = np.array([19.0, 19.0, 19.0], dtype=float)
@@ -762,6 +771,142 @@ def test_spool_fit_seed_selection_can_move_off_current(monkeypatch):
     history = fit_info.get("history")
     assert isinstance(history, list) and history
     assert history[0].get("seed_choice") != "current"
+
+
+def test_spool_prefit_grid_avoids_false_basin_for_low_base_radius(monkeypatch):
+    target_r = 39.2
+
+    def landscape_cost(r_val: float) -> float:
+        r = float(r_val)
+        if abs(r - target_r) <= 0.35:
+            return float((r - target_r) ** 2.0)
+        if abs(r - 30.0) <= 0.35:
+            return float(4.0 + (r - 30.0) ** 2.0)
+        return float(25.0 + 0.1 * (r - 37.0) ** 2.0)
+
+    def fake_build_spool_model_params(
+        dataset,
+        *,
+        base_radii_mm,
+        modeled_radii_mm,
+        modeled_buildup_factor,
+        spool_to_motor_gearing_factor,
+        mechanical_advantage,
+        lines_per_spool,
+        base_buildup_factor=None,
+        theta0_mode="zero",
+        prefer_zero_tension_angles=False,
+    ):
+        _ = (
+            dataset,
+            base_radii_mm,
+            spool_to_motor_gearing_factor,
+            mechanical_advantage,
+            lines_per_spool,
+            base_buildup_factor,
+            theta0_mode,
+            prefer_zero_tension_angles,
+        )
+        return {
+            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
+            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
+        }
+
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
+        out = {
+            "num_anchors": int(dataset.get("num_anchors", 3)),
+            "sweeps": [],
+        }
+        r = float(np.median(np.asarray(spool_params["radii_mm"], dtype=float)))
+        residual = float(landscape_cost(r))
+        out["_spool_r"] = r
+        out["sweeps"].append(
+            {
+                "drive_anchor": 0,
+                "sensor_anchor": 1,
+                "data_points": [{"l_drive": residual, "l_sensor": 0.0} for _ in range(6)],
+            }
+        )
+        return out
+
+    def fake_fit_ellipse_from_sweep(l_drive, l_sensor, **kwargs):
+        _ = kwargs
+        drive = np.asarray(l_drive, dtype=float).reshape(-1)
+        sensor = np.asarray(l_sensor, dtype=float).reshape(-1)
+        rms = abs(float(np.mean(drive))) + abs(float(np.mean(sensor)))
+        return SimpleNamespace(residual_rms=rms)
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = (dataset_or_path, kwargs)
+        return {"anchors": np.zeros((3, 2), dtype=float), "cost": 0.0}
+
+    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
+        _ = (anchors, kwargs)
+        r = float(dataset.get("_spool_r", 30.0))
+        return float(landscape_cost(r))
+
+    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
+    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    monkeypatch.setattr(ac, "fit_ellipse_from_sweep", fake_fit_ellipse_from_sweep)
+    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+
+    dataset = {"num_anchors": 3, "sweeps": [{}]}
+    seed_anchors = np.zeros((3, 2), dtype=float)
+
+    def _run(base_radius: float):
+        eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+            dataset,
+            seed_anchors,
+            find_radii_mode="global",
+            find_buildup_mode="off",
+            base_radii_mm=np.full(3, float(base_radius), dtype=float),
+            modeled_buildup_factor=np.zeros(3, dtype=float),
+            spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+            mechanical_advantage=np.ones(3, dtype=float),
+            lines_per_spool=np.ones(3, dtype=float),
+            r0_bounds=None,
+            b_bounds=None,
+            r0_prior_sigma_mm=None,
+            b_prior_sigma=None,
+            spool_outer_iters=1,
+            spool_inner_iters=2,
+            theta0_mode="zero",
+            solve_restarts=1,
+            solve_iterations=10,
+            solve_optimizer="L-BFGS-B",
+            residual_threshold=1.0,
+            spring_k_multiplier=1.0,
+            use_flex=False,
+            pointwise_residual_mode="sampson",
+            pointwise_filtering=False,
+            pointwise_global_mad=False,
+            sweep_wise_filtering=False,
+            sweep_metric="mad",
+            use_noise_mean=False,
+            sigma_source="auto",
+            robust_debug=False,
+        )
+        return float(np.median(np.asarray(eff_r, dtype=float))), fit_info
+
+    r_low, fit_low = _run(30.0)
+    r_high, fit_high = _run(38.7)
+
+    assert abs(r_low - target_r) < 0.35
+    assert abs(r_high - target_r) < 0.35
+    assert abs(r_low - r_high) < 0.25
+
+    prefit_low = fit_low.get("prefit", {})
+    prefit_high = fit_high.get("prefit", {})
+    assert prefit_low.get("enabled") is True
+    assert prefit_high.get("enabled") is True
+    assert prefit_low.get("seed_choice") != "current"
 
 
 def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
