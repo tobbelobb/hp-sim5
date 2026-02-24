@@ -2692,20 +2692,22 @@ def _default_delta_range(
     observed_deltas: Sequence[float],
 ) -> Optional[Tuple[float, float]]:
     max_travel = None if max_travel_mm is None else float(max_travel_mm)
-    if max_travel is None or not np.isfinite(max_travel) or max_travel <= 0.0:
+    span = float("nan")
+    if max_travel is not None and np.isfinite(max_travel) and max_travel > 0.0:
+        span = float(max_travel)
+    else:
+        finite_obs = [float(v) for v in observed_deltas if np.isfinite(float(v))]
+        if finite_obs:
+            span = float(np.max(np.abs(np.asarray(finite_obs, dtype=float))))
+
+    if not np.isfinite(span) or span <= 0.0:
         return None
 
-    has_neg = any(float(v) < -1e-6 for v in observed_deltas)
-    has_pos = any(float(v) > 1e-6 for v in observed_deltas)
+    # Keep candidate generation bidirectional by default so the planner can
+    # still propose valid negative targets after one sign saturates.
     min_floor = 10.0
-
-    if has_neg and has_pos:
-        return -max_travel, max_travel
-    if has_neg and not has_pos:
-        hi = -min_floor if max_travel > min_floor else 0.0
-        return -max_travel, hi
-    lo = min_floor if max_travel > min_floor else 0.0
-    return lo, max_travel
+    span = max(float(span), float(min_floor))
+    return -span, span
 
 
 def _filter_candidates_by_spacing(

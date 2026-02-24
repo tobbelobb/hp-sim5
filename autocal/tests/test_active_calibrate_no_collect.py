@@ -55,6 +55,24 @@ def test_build_semi_auto_parser_accepts_no_collect():
     assert args.no_collect is True
 
 
+def test_default_delta_range_with_max_travel_is_bidirectional_even_if_observed_positive_only():
+    lo, hi = ac._default_delta_range(
+        max_travel_mm=600.0,
+        observed_deltas=[120.0, 240.0, 360.0],
+    )
+    assert np.isclose(float(lo), -600.0, atol=1e-9)
+    assert np.isclose(float(hi), 600.0, atol=1e-9)
+
+
+def test_default_delta_range_without_max_travel_uses_observed_span_bidirectionally():
+    lo, hi = ac._default_delta_range(
+        max_travel_mm=None,
+        observed_deltas=[80.0, 140.0, 220.0],
+    )
+    assert np.isclose(float(lo), -220.0, atol=1e-9)
+    assert np.isclose(float(hi), 220.0, atol=1e-9)
+
+
 def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatch):
     dataset = tmp_path / "semi_dataset.json"
     _write_dataset(dataset, sweeps=3)
