@@ -853,14 +853,15 @@ def _estimate_effective_radii_with_spool_model(
                     prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
                 prior_cost = float(_prior_cost(radii_try, buildup_try))
-                score = float(data_cost + prior_cost)
+                lambda_prior = 0
+                score = float(ellipse_cost + lambda_prior*prior_cost)
                 if not np.isfinite(score):
                     prefit_cache[key] = 1e12
                     prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
                 prefit_cache[key] = float(score)
                 prefit_parts_cache[key] = (
-                    float(data_cost),
+                    float(ellipse_cost),
                     float(prior_cost),
                     int(valid_sweeps),
                     0,
