@@ -343,24 +343,40 @@ def test_plan_hits_underconstrained_penalty_ignores_non_sentinel_cost():
 def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
     rows = [
         {
+            "sweep_id": "sweep_a",
             "residual_mm": 1.0,
             "residual_mm_signed": -1.0,
+            "residual_z_signed": -0.5,
             "cutoff_mm": 2.0,
             "l_drive_mm": 100.0,
             "l_sensor_mm": 100.0,
         },
         {
+            "sweep_id": "sweep_a",
             "residual_mm": 2.0,
             "residual_mm_signed": 2.0,
+            "residual_z_signed": 1.0,
             "cutoff_mm": 2.0,
             "l_drive_mm": 200.0,
             "l_sensor_mm": 200.0,
         },
         {
-            "residual_mm": 10.0,
-            "cutoff_mm": 2.0,
+            "sweep_id": "sweep_b",
+            "residual_mm": 3.0,
+            "residual_mm_signed": 3.0,
+            "residual_z_signed": 1.5,
+            "cutoff_mm": 4.0,
             "l_drive_mm": 300.0,
             "l_sensor_mm": 300.0,
+        },
+        {
+            "sweep_id": "sweep_b",
+            "residual_mm": 10.0,
+            "residual_mm_signed": 10.0,
+            "residual_z_signed": 5.0,
+            "cutoff_mm": 2.0,
+            "l_drive_mm": 400.0,
+            "l_sensor_mm": 400.0,
         },
     ]
     out = ac._compute_tau_mad_rescore_from_rows(
@@ -368,19 +384,30 @@ def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
         cost_noise_normalized_old=74.0,
         chi2_red_old=50.0,
         sigma_model_mm=2.0,
+        params_count=2.0,
     )
 
-    signed_inliers = np.asarray([-1.0, 2.0], dtype=float)
+    signed_inliers = np.asarray([-1.0, 2.0, 3.0], dtype=float)
     expected_tau = 1.4826 * np.median(np.abs(signed_inliers - np.median(signed_inliers)))
     expected_scale = (2.0 * 2.0) / ((2.0 * 2.0) + (expected_tau * expected_tau))
     assert np.isclose(float(out["tau_mad_mm"]), expected_tau, atol=1e-9)
-    assert int(out["tau_mad_inlier_points"]) == 2
-    assert int(out["tau_mad_total_points"]) == 3
+    assert int(out["tau_mad_inlier_points"]) == 3
+    assert int(out["tau_mad_total_points"]) == 4
     assert np.isclose(float(out["cost_noise_normalized_old"]), 74.0, atol=1e-9)
     assert np.isclose(float(out["cost_noise_normalized_rescored"]), 74.0 * expected_scale, atol=1e-9)
     assert np.isclose(float(out["chi2_red_old"]), 50.0, atol=1e-9)
     assert np.isclose(float(out["chi2_red_rescored"]), 50.0 * expected_scale, atol=1e-9)
     assert np.isclose(float(out["residual_vs_distance_slope"]), 0.01, atol=1e-9)
+    per_sweep = out["per_sweep_residual_summary"]
+    assert isinstance(per_sweep, dict)
+    assert set(per_sweep.keys()) == {"sweep_a", "sweep_b"}
+    assert np.isclose(float(per_sweep["sweep_a"]["median_residual_mm"]), 0.5, atol=1e-9)
+    assert int(per_sweep["sweep_b"]["clipped_points"]) == 1
+    demean = out["per_sweep_demean"]
+    assert isinstance(demean, dict)
+    assert np.isclose(float(demean["cost_noise_normalized_demeaned"]), 0.375, atol=1e-9)
+    assert np.isclose(float(demean["chi2_red_demeaned"]), 1.125, atol=1e-9)
+    assert np.isclose(float(demean["sweep_bias_span_mm"]), 2.5, atol=1e-9)
 
 
 def test_normalize_dataset_point_roles_swaps_unswapped_reversed_points():

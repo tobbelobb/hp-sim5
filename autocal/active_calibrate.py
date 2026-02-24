@@ -2445,24 +2445,53 @@ def _compute_tau_mad_rescore_from_rows(
     cost_noise_normalized_old: Optional[float],
     chi2_red_old: Optional[float],
     sigma_model_mm: Optional[float],
+    params_count: Optional[float] = None,
 ) -> Dict[str, object]:
     inlier_residuals_tau_mm: List[float] = []
     slope_x_mm: List[float] = []
     slope_y_mm: List[float] = []
+    inlier_z_by_sweep: Dict[str, List[float]] = {}
+    inlier_mm_by_sweep: Dict[str, List[float]] = {}
+    inlier_abs_z_by_sweep: Dict[str, List[float]] = {}
+    clipped_by_sweep: Dict[str, int] = {}
+    total_by_sweep: Dict[str, int] = {}
     total_rows = 0
     for row in rows:
         if not isinstance(row, dict):
             continue
         total_rows += 1
+        sweep_id = str(row.get("sweep_id", ""))
+        total_by_sweep[sweep_id] = int(total_by_sweep.get(sweep_id, 0)) + 1
         residual_mm = _float_or_none(row.get("residual_mm"))
         if residual_mm is None:
             continue
         cutoff_mm = _float_or_none(row.get("cutoff_mm"))
-        if cutoff_mm is not None and residual_mm > (cutoff_mm + 1e-12):
+        clipped = cutoff_mm is not None and residual_mm > (cutoff_mm + 1e-12)
+        if clipped:
+            clipped_by_sweep[sweep_id] = int(clipped_by_sweep.get(sweep_id, 0)) + 1
             continue
+        clipped_by_sweep.setdefault(sweep_id, 0)
+        residual_z_signed = _float_or_none(row.get("residual_z_signed"))
+        if residual_z_signed is None:
+            residual_z_signed = _float_or_none(row.get("residual_z"))
+            if residual_z_signed is not None:
+                residual_z_signed = float(abs(residual_z_signed))
+        if residual_z_signed is not None and np.isfinite(residual_z_signed):
+            inlier_z_by_sweep.setdefault(sweep_id, []).append(float(residual_z_signed))
+            inlier_abs_z_by_sweep.setdefault(sweep_id, []).append(float(abs(residual_z_signed)))
         residual_mm_signed = _float_or_none(row.get("residual_mm_signed"))
         if residual_mm_signed is None:
             residual_mm_signed = float(residual_mm)
+        inlier_mm_by_sweep.setdefault(sweep_id, []).append(float(residual_mm_signed))
+        if residual_z_signed is None:
+            sigma_model_local = _float_or_none(sigma_model_mm)
+            if sigma_model_local is not None and sigma_model_local > 0.0:
+                inlier_z_by_sweep.setdefault(sweep_id, []).append(float(residual_mm_signed / sigma_model_local))
+                inlier_abs_z_by_sweep.setdefault(sweep_id, []).append(
+                    float(abs(residual_mm_signed / sigma_model_local))
+                )
+        if residual_mm_signed is None:
+            continue
         inlier_residuals_tau_mm.append(float(residual_mm_signed))
         l_drive_mm = _float_or_none(row.get("l_drive_mm"))
         l_sensor_mm = _float_or_none(row.get("l_sensor_mm"))
@@ -2497,6 +2526,79 @@ def _compute_tau_mad_rescore_from_rows(
                 if np.isfinite(slope):
                     residual_vs_distance_slope = float(slope)
 
+    per_sweep_summary: Dict[str, Dict[str, object]] = {}
+    per_sweep_bias_medians: Dict[str, float] = {}
+    demeaned_mm: List[float] = []
+    demeaned_z: List[float] = []
+    sweep_ids = sorted(set(total_by_sweep.keys()) | set(inlier_mm_by_sweep.keys()) | set(inlier_z_by_sweep.keys()))
+    for sweep_id in sweep_ids:
+        resid_mm = np.asarray(inlier_mm_by_sweep.get(sweep_id, []), dtype=float)
+        resid_z = np.asarray(inlier_z_by_sweep.get(sweep_id, []), dtype=float)
+        resid_abs_z = np.asarray(inlier_abs_z_by_sweep.get(sweep_id, []), dtype=float)
+        median_mm = None
+        mad_mm = None
+        p95_abs_mm = None
+        mean_abs_z = None
+        if resid_mm.size:
+            median_val = float(np.median(resid_mm))
+            median_mm = median_val
+            per_sweep_bias_medians[sweep_id] = float(median_val)
+            mad_val = float(np.median(np.abs(resid_mm - median_val)))
+            if np.isfinite(mad_val):
+                mad_mm = mad_val
+            p95_val = float(np.percentile(np.abs(resid_mm), 95))
+            if np.isfinite(p95_val):
+                p95_abs_mm = p95_val
+            demeaned_mm.extend((resid_mm - median_val).tolist())
+        if resid_z.size:
+            median_z = float(np.median(resid_z))
+            demeaned_z.extend((resid_z - median_z).tolist())
+        if resid_abs_z.size:
+            mean_abs_z_val = float(np.mean(resid_abs_z))
+            if np.isfinite(mean_abs_z_val):
+                mean_abs_z = mean_abs_z_val
+        per_sweep_summary[sweep_id] = {
+            "median_residual_mm": median_mm,
+            "mad_residual_mm": mad_mm,
+            "p95_abs_residual_mm": p95_abs_mm,
+            "mean_abs_z": mean_abs_z,
+            "clipped_points": int(clipped_by_sweep.get(sweep_id, 0)),
+            "inlier_points": int(resid_mm.size),
+            "total_points": int(total_by_sweep.get(sweep_id, 0)),
+        }
+
+    per_sweep_demean: Dict[str, object] = {}
+    if demeaned_mm:
+        demeaned_mm_arr = np.asarray(demeaned_mm, dtype=float)
+        med_demeaned = float(np.median(demeaned_mm_arr))
+        mad_abs_raw = float(np.median(np.abs(demeaned_mm_arr - med_demeaned)))
+        robust_scale_mm = float(_TAU_MAD_SCALE * mad_abs_raw)
+        p95_abs_demeaned = float(np.percentile(np.abs(demeaned_mm_arr), 95))
+        eps = float(np.finfo(float).eps)
+        denom = robust_scale_mm + eps
+        if np.isfinite(denom) and denom > 0.0:
+            per_sweep_demean["tail_ratio"] = float(p95_abs_demeaned / denom)
+        per_sweep_demean["p95_abs_residual_mm"] = p95_abs_demeaned
+        per_sweep_demean["mad_abs_residual_mm"] = mad_abs_raw
+        per_sweep_demean["madn_residual_mm"] = robust_scale_mm
+    if len(per_sweep_bias_medians) >= 2:
+        medians = np.asarray(list(per_sweep_bias_medians.values()), dtype=float)
+        if medians.size:
+            per_sweep_demean["sweep_bias_span_mm"] = float(np.max(medians) - np.min(medians))
+    if demeaned_z:
+        demeaned_z_arr = np.asarray(demeaned_z, dtype=float)
+        finite = demeaned_z_arr[np.isfinite(demeaned_z_arr)]
+        if finite.size:
+            cost_demeaned = float(np.mean(finite**2))
+            per_sweep_demean["cost_noise_normalized_demeaned"] = cost_demeaned
+            p_count = _float_or_none(params_count)
+            if p_count is None:
+                p_count = 0.0
+            dof = int(finite.size - int(p_count))
+            if dof > 0:
+                per_sweep_demean["chi2_red_demeaned"] = float(np.sum(finite**2) / float(dof))
+            per_sweep_demean["n_obs_demeaned"] = int(finite.size)
+
     cost_old = _float_or_none(cost_noise_normalized_old)
     chi2_old = _float_or_none(chi2_red_old)
     sigma_model = _float_or_none(sigma_model_mm)
@@ -2528,6 +2630,9 @@ def _compute_tau_mad_rescore_from_rows(
         "sigma_eff_mm": sigma_eff_mm,
         "noise_rescore_scale": rescore_scale,
         "residual_vs_distance_slope": residual_vs_distance_slope,
+        "per_sweep_residual_summary": per_sweep_summary,
+        "per_sweep_bias_medians_mm": per_sweep_bias_medians,
+        "per_sweep_demean": per_sweep_demean,
     }
 
 
@@ -3770,6 +3875,7 @@ def _plan_next_ellipse_sweep(
             cost_noise_normalized_old=cost,
             chi2_red_old=noise_metrics.get("chi2_red"),
             sigma_model_mm=sigma_model_mm,
+            params_count=noise_metrics.get("params"),
         )
         noise_metrics = {**noise_metrics, **rescored}
         if isinstance(cal, dict):
@@ -4107,6 +4213,56 @@ def _print_ellipse_plan(
                         f"chi2_red_old={_fmt_float(chi2_old)} "
                         f"chi2_red_new={_fmt_float(chi2_new)} "
                         f"residual_vs_distance_slope={_fmt_float(residual_slope)}"
+                    )
+                per_sweep_summary = noise_metrics.get("per_sweep_residual_summary")
+                if isinstance(per_sweep_summary, dict) and per_sweep_summary:
+                    ranked_sweeps: List[Tuple[float, str, dict]] = []
+                    for sweep_id, sweep_stats in per_sweep_summary.items():
+                        if not isinstance(sweep_stats, dict):
+                            continue
+                        med = _float_or_none(sweep_stats.get("median_residual_mm"))
+                        p95 = _float_or_none(sweep_stats.get("p95_abs_residual_mm"))
+                        score = abs(med) if med is not None else (p95 if p95 is not None else 0.0)
+                        ranked_sweeps.append((float(score), str(sweep_id), sweep_stats))
+                    ranked_sweeps.sort(key=lambda item: item[0], reverse=True)
+                    sweep_limit = max(1, int(top_n))
+                    for _score, sweep_id, sweep_stats in ranked_sweeps[:sweep_limit]:
+                        clipped = sweep_stats.get("clipped_points")
+                        total = sweep_stats.get("total_points")
+                        clipped_str = (
+                            f"{int(clipped)}/{int(total)}"
+                            if isinstance(clipped, (int, float))
+                            and np.isfinite(clipped)
+                            and isinstance(total, (int, float))
+                            and np.isfinite(total)
+                            else "n/a"
+                        )
+                        print(
+                            f"; sweep_residual: id={sweep_id} "
+                            f"median={_fmt_float(sweep_stats.get('median_residual_mm'), suffix='mm')} "
+                            f"MAD={_fmt_float(sweep_stats.get('mad_residual_mm'), suffix='mm')} "
+                            f"p95_abs={_fmt_float(sweep_stats.get('p95_abs_residual_mm'), suffix='mm')} "
+                            f"mean|z|={_fmt_float(sweep_stats.get('mean_abs_z'))} "
+                            f"clipped={clipped_str}"
+                        )
+                    extra = int(max(0, len(ranked_sweeps) - sweep_limit))
+                    if extra > 0:
+                        print(f"; sweep_residual: +{extra} more sweeps")
+                per_sweep_demean = noise_metrics.get("per_sweep_demean")
+                if isinstance(per_sweep_demean, dict) and per_sweep_demean:
+                    n_obs_demeaned = per_sweep_demean.get("n_obs_demeaned")
+                    n_obs_str = (
+                        f"{int(n_obs_demeaned)}"
+                        if isinstance(n_obs_demeaned, (int, float)) and np.isfinite(n_obs_demeaned)
+                        else "n/a"
+                    )
+                    print(
+                        f"; noise_demean_by_sweep: "
+                        f"cost_noise_normalized_demeaned={_fmt_float(per_sweep_demean.get('cost_noise_normalized_demeaned'))} "
+                        f"chi2_red_demeaned={_fmt_float(per_sweep_demean.get('chi2_red_demeaned'))} "
+                        f"tail_ratio={_fmt_float(per_sweep_demean.get('tail_ratio'))} "
+                        f"sweep_bias_span={_fmt_float(per_sweep_demean.get('sweep_bias_span_mm'), suffix='mm')} "
+                        f"n_obs={n_obs_str}"
                     )
                 sigma_min_mm = noise_metrics.get("sigma_min_mm")
                 sigma_model_mm = noise_metrics.get("sigma_model_mm")

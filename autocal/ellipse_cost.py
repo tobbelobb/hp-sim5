@@ -1420,6 +1420,8 @@ class EllipseCostFunction:
                         "l_sensor_mm": float(ls),
                         "residual_l2_signed": float(residuals[idx]),
                         "residual_l2": float(res_l2),
+                        "residual_z_signed": float(r_norm[idx]),
+                        "residual_z": float(abs(r_norm[idx])),
                         "residual_mm_signed": float(residuals_mm_signed[idx]),
                         "residual_mm": float(res_mm),
                         "cutoff_mm": float(cut_mm) if np.isfinite(cut_mm) else None,

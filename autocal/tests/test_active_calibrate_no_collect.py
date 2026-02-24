@@ -86,6 +86,23 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
                 "chi2_red_old": 91.2,
                 "chi2_red_rescored": 12.8,
                 "residual_vs_distance_slope": 0.01,
+                "per_sweep_residual_summary": {
+                    "sweep_001": {
+                        "median_residual_mm": 1.0,
+                        "mad_residual_mm": 0.5,
+                        "p95_abs_residual_mm": 2.0,
+                        "mean_abs_z": 1.2,
+                        "clipped_points": 1,
+                        "total_points": 5,
+                    }
+                },
+                "per_sweep_demean": {
+                    "cost_noise_normalized_demeaned": 5.5,
+                    "chi2_red_demeaned": 6.0,
+                    "tail_ratio": 3.4,
+                    "sweep_bias_span_mm": 2.1,
+                    "n_obs_demeaned": 12,
+                },
             }
         }
     }
@@ -99,6 +116,17 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
     assert "chi2_red_old=91.2" in out
     assert "chi2_red_new=12.8" in out
     assert "residual_vs_distance_slope=0.01" in out
+    assert "sweep_residual: id=sweep_001" in out
+    assert "median=1mm" in out
+    assert "MAD=0.5mm" in out
+    assert "p95_abs=2mm" in out
+    assert "mean|z|=1.2" in out
+    assert "clipped=1/5" in out
+    assert "noise_demean_by_sweep:" in out
+    assert "cost_noise_normalized_demeaned=5.5" in out
+    assert "chi2_red_demeaned=6" in out
+    assert "tail_ratio=3.4" in out
+    assert "sweep_bias_span=2.1mm" in out
 
 
 def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatch):
