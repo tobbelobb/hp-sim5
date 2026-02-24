@@ -42,6 +42,16 @@ _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 _TAU_MAD_SCALE = 1.4826
+_SCORE_UI_LAYERED_COST_RAW_REF = 0.8
+_SCORE_UI_LAYERED_COST_RAW_WEIGHT = 0.20
+_SCORE_UI_LAYERED_TAU_MAD_REF_MM = 1.0
+_SCORE_UI_LAYERED_TAU_MAD_WEIGHT = 0.15
+_SCORE_UI_LAYERED_N_TRIM_REF = 40.0
+_SCORE_UI_LAYERED_N_TRIM_WEIGHT = 0.10
+_SCORE_UI_LAYERED_MAP_SCALE = 95.0
+_SCORE_UI_LAYERED_MAP_EXP = 5.0
+_SCORE_UI_LAYERED_MAP_MULT = 1.0
+_SCORE_UI_HARD_FAIL = 50.0
 
 from autocal.active_learning import (
     SweepConfig,
@@ -5145,11 +5155,15 @@ def full_auto_loop(
             anchor_str = np.array2string(anchors, precision=2, separator=", ")
         elif anchors is not None:
             anchor_str = str(np.asarray(anchors))
-        quality_label = _solution_quality_label(best_cost)
+        summary_score_ui, _, summary_score_basis = _plan_score_ui(best_plan)
+        summary_score_for_quality = (
+            float(summary_score_ui) if np.isfinite(summary_score_ui) else None
+        )
+        quality_label = _solution_quality_label(summary_score_for_quality)
         _log_console("")
         _log_console("== Calibration summary ==")
         _log_console(f"Found parameters of {quality_label} quality")
-        _log_console(f"Best cost: {_fmt_float(best_cost)}")
+        _log_console(f"Fit quality score (lower is better): {_fmt_float(summary_score_for_quality)}")
         if m669:
             _log_console(f"Parameters (M669): {m669}")
         elif anchor_str:
@@ -5160,8 +5174,8 @@ def full_auto_loop(
             best_flags = str(best_meta.get("flags", "")).strip()
             best_run = str(best_meta.get("run_id", "")).strip()
             label = best_flags or best_run or "default"
-            _log_console(f"Variant/flag setup giving best cost: {label}")
-        _log_console(_solution_quality_message(best_cost))
+            _log_console(f"Variant/flag setup giving best score_ui: {label}")
+        _log_console(_solution_quality_message(summary_score_for_quality))
 
         skip_sim_send = bool(sim and no_collect and not server_explicit)
         if m669:
@@ -5402,13 +5416,15 @@ def full_auto_loop(
     }
 
     best_cost = float("inf")
+    best_score_ui = float("inf")
+    best_rank_score = float("inf")
     best_plan: Optional[Dict[str, object]] = None
     best_meta: Dict[str, object] = {}
     no_improve = 0
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     patience_limit = max(1, int(patience))
     has_variants = bool(full_auto_runs)
-    selected_costs: List[float] = []
+    selected_scores: List[float] = []
 
     def _accept_best(reason: str) -> int:
         if best_plan is None:
@@ -5576,13 +5592,14 @@ def full_auto_loop(
                     )
 
                 primary_cost = _plan_primary_cost(plan)
+                score_ui, rank_score, score_basis = _plan_score_ui(plan)
                 max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
                 warnings = _plan_data_quality_warnings(plan)
                 noise_metrics = _plan_noise_metrics(plan)
                 underconstrained_penalty = _plan_hits_underconstrained_penalty(plan, primary_cost)
                 if underconstrained_penalty:
                     warnings.append("underconstrained_penalty")
-                valid = bool(np.isfinite(primary_cost) and cov_ok)
+                valid = bool(np.isfinite(primary_cost) and np.isfinite(rank_score) and cov_ok)
                 cost_raw = plan.get("cost_raw")
                 cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
                 j_val = noise_metrics.get("J") if isinstance(noise_metrics, dict) else None
@@ -5590,7 +5607,8 @@ def full_auto_loop(
                 _log_line(
                     f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
                     f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
-                    f"chi2_red={_fmt_float(chi2_val)}"
+                    f"chi2_red={_fmt_float(chi2_val)} score_ui={_fmt_float(score_ui)} "
+                    f"score_basis={score_basis}"
                 )
 
                 run_results.append(
@@ -5602,6 +5620,9 @@ def full_auto_loop(
                         "plan": plan,
                         "metrics": {
                             "primary_cost": primary_cost,
+                            "score_ui": score_ui,
+                            "rank_score": rank_score,
+                            "score_basis": score_basis,
                             "cost_noise_normalized": plan.get("cost_noise_normalized"),
                             "chi2_red": noise_metrics.get("chi2_red")
                             if isinstance(noise_metrics, dict)
@@ -5646,12 +5667,13 @@ def full_auto_loop(
                 )
                 _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
                 _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
-                _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+                _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
                 return _finalize(2)
 
-            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, float, str]:
+            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, float, float, str]:
                 metrics = entry["metrics"]
                 underconstrained = bool(metrics.get("underconstrained_penalty", False))
+                score = float(metrics.get("rank_score", float("inf")))
                 cost = float(metrics.get("primary_cost", float("inf")))
                 rel = metrics.get("rel_std")
                 rel_val = (
@@ -5659,7 +5681,7 @@ def full_auto_loop(
                     if isinstance(rel, (int, float)) and np.isfinite(rel)
                     else float("inf")
                 )
-                return (1.0 if underconstrained else 0.0), cost, rel_val, str(entry.get("id", ""))
+                return (1.0 if underconstrained else 0.0), score, rel_val, cost, str(entry.get("id", ""))
 
             selected = sorted(valid_runs, key=_sort_key)[0]
             plan = selected["plan"]
@@ -5667,6 +5689,9 @@ def full_auto_loop(
             selected_id = str(selected.get("id", "run"))
             selected_flags = str(selected.get("flags", "")).strip()
             selected_cost = float(metrics.get("primary_cost", float("nan")))
+            selected_score_ui = float(metrics.get("score_ui", float("nan")))
+            selected_rank_score = float(metrics.get("rank_score", float("inf")))
+            selected_score_basis = str(metrics.get("score_basis", "standard-noise"))
             selected_underconstrained = bool(metrics.get("underconstrained_penalty", False))
             selected_max_std = metrics.get("max_std_mm")
             selected_rel_std = metrics.get("rel_std")
@@ -5689,16 +5714,27 @@ def full_auto_loop(
             improvement = None
             if np.isfinite(selected_cost):
                 improvement = float(best_cost) - float(selected_cost) if np.isfinite(best_cost) else None
+            score_improvement = None
+            if np.isfinite(selected_rank_score):
+                score_improvement = (
+                    float(best_rank_score) - float(selected_rank_score)
+                    if np.isfinite(best_rank_score)
+                    else None
+                )
             improved = False
-            if (not selected_underconstrained) and np.isfinite(selected_cost) and (
-                best_plan is None or selected_cost <= best_cost - min_delta
+            if (not selected_underconstrained) and np.isfinite(selected_rank_score) and (
+                best_plan is None or selected_rank_score <= best_rank_score - min_delta
             ):
+                best_score_ui = float(selected_score_ui)
+                best_rank_score = float(selected_rank_score)
                 best_cost = float(selected_cost)
                 best_plan = plan
                 best_meta = {
                     "iteration": step,
                     "run_id": selected_id,
                     "flags": selected_flags,
+                    "score_ui": selected_score_ui,
+                    "score_basis": selected_score_basis,
                     "cost": selected_cost,
                     "rel_std": selected_rel_std,
                     "max_std_mm": selected_max_std,
@@ -5719,18 +5755,20 @@ def full_auto_loop(
                         and float(best_meta["max_std_mm"]) <= float(stop_std_mm)
                     )
 
-            selected_costs.append(selected_cost)
+            selected_scores.append(selected_score_ui)
             summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
             summary_rel = _fmt_float(selected_rel_std)
             summary_std = _fmt_float(selected_max_std, suffix="mm")
             summary_cost = _fmt_float(selected_cost)
+            summary_score_ui = _fmt_float(selected_score_ui)
             _log_line(
-                f"; selected run={selected_id}{summary_flags} cost={summary_cost} "
+                f"; selected run={selected_id}{summary_flags} score_ui={summary_score_ui} "
+                f"score_basis={selected_score_basis} cost={summary_cost} "
                 f"rel_std={summary_rel} max_std={summary_std}"
             )
             if has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
-            _log_console(f"cost: {summary_cost}")
+            _log_console(f"Score: {summary_score_ui} (lower is better)")
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
@@ -5765,8 +5803,12 @@ def full_auto_loop(
                     "decision": decision,
                     "cost": selected_cost,
                     "cost_improvement": improvement,
+                    "score_ui": selected_score_ui,
+                    "score_ui_improvement": score_improvement,
                     "improved_best": improved,
                     "best_cost": best_cost,
+                    "best_score_ui": best_score_ui,
+                    "best_score_basis": best_meta.get("score_basis"),
                     "best_run": best_meta.get("run_id"),
                     "best_iteration": best_meta.get("iteration"),
                     "no_improve_count": no_improve,
@@ -5826,15 +5868,15 @@ def full_auto_loop(
             if not isinstance(cmd, list) or not cmd:
                 _log_line("; No valid candidate to collect; stopping.")
                 _log_console("; No valid candidate to collect; stopping.")
-                _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+                _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
                 return _finalize(2)
 
-            finite_costs = [c for c in selected_costs if np.isfinite(c)]
-            if not np.isfinite(selected_cost) or not finite_costs:
-                cost_rank = 1
+            finite_scores = [s for s in selected_scores if np.isfinite(s)]
+            if not np.isfinite(selected_score_ui) or not finite_scores:
+                score_rank = 1
             else:
-                cost_rank = sorted(finite_costs).index(selected_cost) + 1
-            rank_label = "best" if cost_rank == 1 else _ordinal(cost_rank) + " best"
+                score_rank = sorted(finite_scores).index(selected_score_ui) + 1
+            rank_label = "best" if score_rank == 1 else _ordinal(score_rank) + " best"
             remaining = max(0, patience_limit - no_improve)
             _log_console(f"The {rank_label} try so far.")
             _log_console("Collecting new sweep to try and beat it.")
@@ -5869,7 +5911,7 @@ def full_auto_loop(
 
     _log_line(f"; reached max steps; dataset={work_path}")
     _log_console(f"; reached max steps; dataset={work_path}")
-    _log_console(_solution_quality_message(best_cost if np.isfinite(best_cost) else None))
+    _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
     return _finalize(0)
 
 
@@ -6919,6 +6961,83 @@ def _plan_primary_cost(plan: Dict[str, object]) -> float:
         return float("nan")
 
 
+def _plan_uses_layered_score(plan: Dict[str, object]) -> bool:
+    length_model = plan.get("length_model")
+    if isinstance(length_model, dict):
+        for key in ("find_radii_mode", "find_buildup_factor_mode"):
+            mode = str(length_model.get(key, "")).strip().lower()
+            if mode and mode != "off":
+                return True
+        for key in ("find_radii", "find_buildup_factor"):
+            if bool(length_model.get(key)):
+                return True
+    noise_metrics = _plan_noise_metrics(plan)
+    if isinstance(noise_metrics, dict):
+        if _float_or_none(noise_metrics.get("chi2_red_rescored_tau_3bin_debiased")) is not None:
+            return True
+    return False
+
+
+def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
+    noise_metrics = _plan_noise_metrics(plan)
+    nm = noise_metrics if isinstance(noise_metrics, dict) else {}
+
+    m_layered = _float_or_none(nm.get("chi2_red_rescored_tau_3bin_debiased"))
+    if m_layered is None:
+        m_layered = _float_or_none(nm.get("chi2_red_rescored"))
+    if m_layered is None:
+        m_layered = _float_or_none(nm.get("chi2_red_trimmed"))
+
+    cost_raw = _float_or_none(plan.get("cost_raw"))
+    tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
+    n_trim = _float_or_none(nm.get("n_obs_trimmed"))
+    critical_nonfinite = (
+        m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
+    )
+
+    m = float(m_layered) if m_layered is not None else float("nan")
+    if np.isfinite(m):
+        if cost_raw is not None:
+            m *= (
+                1.0
+                + _SCORE_UI_LAYERED_COST_RAW_WEIGHT
+                * max(0.0, float(cost_raw) / _SCORE_UI_LAYERED_COST_RAW_REF - 1.0)
+            )
+        if tau_mad_mm is not None:
+            m *= (
+                1.0
+                + _SCORE_UI_LAYERED_TAU_MAD_WEIGHT
+                * max(0.0, float(tau_mad_mm) / _SCORE_UI_LAYERED_TAU_MAD_REF_MM - 1.0)
+            )
+        if n_trim is not None:
+            m *= (
+                1.0
+                + _SCORE_UI_LAYERED_N_TRIM_WEIGHT
+                * max(0.0, (_SCORE_UI_LAYERED_N_TRIM_REF - float(n_trim)) / 10.0)
+            )
+
+    score_ui = float("nan")
+    if np.isfinite(m) and m >= 0.0:
+        score_ui = _SCORE_UI_LAYERED_MAP_MULT * (m / _SCORE_UI_LAYERED_MAP_SCALE) ** _SCORE_UI_LAYERED_MAP_EXP
+
+    if critical_nonfinite or not np.isfinite(score_ui) or (cost_raw is not None and cost_raw > 5.0):
+        score_ui = max(score_ui if np.isfinite(score_ui) else _SCORE_UI_HARD_FAIL, _SCORE_UI_HARD_FAIL)
+
+    return float(score_ui), float(m)
+
+
+def _plan_score_ui(plan: Dict[str, object]) -> Tuple[float, float, str]:
+    # score_ui is a calibrated fit-quality score, not a literal chi-square.
+    if _plan_uses_layered_score(plan):
+        score_ui, _ = _compute_score_ui_layered(plan)
+        rank_score = score_ui if np.isfinite(score_ui) else float("inf")
+        return float(score_ui), float(rank_score), "layered-calibrated"
+
+    score_ui = _plan_primary_cost(plan)
+    rank_score = score_ui if np.isfinite(score_ui) else float("inf")
+    return float(score_ui), float(rank_score), "standard-noise"
+
+
 def _plan_covariance_summary(
     plan: Dict[str, object],
 ) -> Tuple[Optional[float], Optional[float], bool]:
@@ -7007,33 +7126,28 @@ def _append_jsonl(path: Path, payload: dict) -> None:
     append_jsonl_line(path, payload, schema="full_auto_log_entry")
 
 
-def _solution_quality_message(best_cost: Optional[float]) -> str:
-    if best_cost is None or not np.isfinite(best_cost):
-        return "Interpretation: Cost unavailable."
-    cost = float(best_cost)
-    if cost < 2.0:
-        return (
-            "Interpretation: Cost below 2 is considered ideal; residuals are roughly at the noise level."
-        )
-    if cost < 5.0:
-        return (
-            "Interpretation: Cost between 2 and 5 is good/acceptable; "
-            "the noise model may be slightly optimistic or the model isn't perfect."
-        )
-    if cost < 10.0:
-        return "Interpretation: Cost between 5 and 10 is still usable; this is a reasonable fit."
-    return "Interpretation: Cost above 10 is concerning; this usually means a bad fit."
+def _solution_quality_message(score_ui: Optional[float]) -> str:
+    if score_ui is None or not np.isfinite(score_ui):
+        return "Interpretation: Quality score is unavailable."
+    score = float(score_ui)
+    if score < 2.0:
+        return "Interpretation: A Quality score below 2 indicates a near-perfect fit."
+    if score < 5.0:
+        return "Interpretation: A Quality score between 2 and 5 is a useful fit."
+    if score < 10.0:
+        return "Interpretation: A Quality score between 5 and 10 is borderline but often usable."
+    return "Interpretation: A Quality score above 10 is concerning; this fit is probably bad."
 
 
-def _solution_quality_label(best_cost: Optional[float]) -> str:
-    if best_cost is None or not np.isfinite(best_cost):
+def _solution_quality_label(score_ui: Optional[float]) -> str:
+    if score_ui is None or not np.isfinite(score_ui):
         return "unknown"
-    cost = float(best_cost)
-    if cost < 2.0:
+    score = float(score_ui)
+    if score < 2.0:
         return "ideal"
-    if cost < 5.0:
+    if score < 5.0:
         return "good"
-    if cost < 10.0:
+    if score < 10.0:
         return "usable"
     return "concerning"
 
