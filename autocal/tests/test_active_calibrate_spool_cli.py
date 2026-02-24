@@ -145,3 +145,31 @@ def test_spool_cli_rejects_invalid_scale_fix_level():
     )
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
+
+
+def test_spool_cli_default_enables_scale_fix_2():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+        ]
+    )
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["scale_fix"] == [2]
+
+
+def test_spool_cli_allows_disabling_scale_fixes():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--scale-fix",
+            "off",
+        ]
+    )
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["scale_fix"] == []

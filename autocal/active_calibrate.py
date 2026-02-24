@@ -2602,6 +2602,8 @@ def _parse_scale_fix_levels(spec: Optional[Any], *, label: str = "--scale-fix") 
         text = str(spec).strip()
         if not text:
             return tuple()
+        if text.lower() in ("off", "none", "false", "0"):
+            return tuple()
         parts = [p.strip() for p in text.split(",")]
     out: List[int] = []
     for part in parts:
@@ -5610,8 +5612,8 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--scale-fix",
         type=str,
-        default=None,
-        help="Enable scale-coupling fixes by id (comma-separated): 1,2,3.",
+        default="2",
+        help="Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 2). Use 'off' to disable.",
     )
     parser.add_argument(
         "--pointwise-residual",
