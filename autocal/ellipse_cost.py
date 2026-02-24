@@ -1386,6 +1386,7 @@ class EllipseCostFunction:
 
             l_mean = 0.5 * (l_drive_abs + l_sensor_abs)
             denom = np.maximum(2.0 * l_mean, 1e-9)
+            residuals_mm_signed = residuals / denom
             residuals_abs = np.abs(residuals)
             residuals_mm = residuals_abs / denom
 
@@ -1417,7 +1418,9 @@ class EllipseCostFunction:
                         "sensor_anchor": int(sensor_idx2),
                         "l_drive_mm": float(ld),
                         "l_sensor_mm": float(ls),
+                        "residual_l2_signed": float(residuals[idx]),
                         "residual_l2": float(res_l2),
+                        "residual_mm_signed": float(residuals_mm_signed[idx]),
                         "residual_mm": float(res_mm),
                         "cutoff_mm": float(cut_mm) if np.isfinite(cut_mm) else None,
                         "sigma_noise_mm": float(sigma_noise_mm) if sigma_noise_mm is not None else None,

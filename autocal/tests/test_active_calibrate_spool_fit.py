@@ -340,6 +340,49 @@ def test_plan_hits_underconstrained_penalty_ignores_non_sentinel_cost():
     assert ac._plan_hits_underconstrained_penalty(plan) is False
 
 
+def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
+    rows = [
+        {
+            "residual_mm": 1.0,
+            "residual_mm_signed": -1.0,
+            "cutoff_mm": 2.0,
+            "l_drive_mm": 100.0,
+            "l_sensor_mm": 100.0,
+        },
+        {
+            "residual_mm": 2.0,
+            "residual_mm_signed": 2.0,
+            "cutoff_mm": 2.0,
+            "l_drive_mm": 200.0,
+            "l_sensor_mm": 200.0,
+        },
+        {
+            "residual_mm": 10.0,
+            "cutoff_mm": 2.0,
+            "l_drive_mm": 300.0,
+            "l_sensor_mm": 300.0,
+        },
+    ]
+    out = ac._compute_tau_mad_rescore_from_rows(
+        rows,
+        cost_noise_normalized_old=74.0,
+        chi2_red_old=50.0,
+        sigma_model_mm=2.0,
+    )
+
+    signed_inliers = np.asarray([-1.0, 2.0], dtype=float)
+    expected_tau = 1.4826 * np.median(np.abs(signed_inliers - np.median(signed_inliers)))
+    expected_scale = (2.0 * 2.0) / ((2.0 * 2.0) + (expected_tau * expected_tau))
+    assert np.isclose(float(out["tau_mad_mm"]), expected_tau, atol=1e-9)
+    assert int(out["tau_mad_inlier_points"]) == 2
+    assert int(out["tau_mad_total_points"]) == 3
+    assert np.isclose(float(out["cost_noise_normalized_old"]), 74.0, atol=1e-9)
+    assert np.isclose(float(out["cost_noise_normalized_rescored"]), 74.0 * expected_scale, atol=1e-9)
+    assert np.isclose(float(out["chi2_red_old"]), 50.0, atol=1e-9)
+    assert np.isclose(float(out["chi2_red_rescored"]), 50.0 * expected_scale, atol=1e-9)
+    assert np.isclose(float(out["residual_vs_distance_slope"]), 0.01, atol=1e-9)
+
+
 def test_normalize_dataset_point_roles_swaps_unswapped_reversed_points():
     dataset = {
         "sweeps": [

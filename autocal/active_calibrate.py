@@ -41,6 +41,7 @@ _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
+_TAU_MAD_SCALE = 1.4826
 
 from autocal.active_learning import (
     SweepConfig,
@@ -2395,6 +2396,141 @@ def _workspace_diag_mm(
     return None
 
 
+def _float_or_none(value: object) -> Optional[float]:
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(out):
+        return None
+    return float(out)
+
+
+def _build_ellipse_cost_function(
+    dataset: dict,
+    *,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    use_noise_mean: bool,
+    noise_normalized: bool,
+    sigma_source: str,
+) -> EllipseCostFunction:
+    stage = 2 if bool(pointwise_filtering) else 0
+    return EllipseCostFunction(
+        dataset,
+        residual_threshold=float(residual_threshold),
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=int(stage),
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+
+
+def _compute_tau_mad_rescore_from_rows(
+    rows: Sequence[dict],
+    *,
+    cost_noise_normalized_old: Optional[float],
+    chi2_red_old: Optional[float],
+    sigma_model_mm: Optional[float],
+) -> Dict[str, object]:
+    inlier_residuals_tau_mm: List[float] = []
+    slope_x_mm: List[float] = []
+    slope_y_mm: List[float] = []
+    total_rows = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        total_rows += 1
+        residual_mm = _float_or_none(row.get("residual_mm"))
+        if residual_mm is None:
+            continue
+        cutoff_mm = _float_or_none(row.get("cutoff_mm"))
+        if cutoff_mm is not None and residual_mm > (cutoff_mm + 1e-12):
+            continue
+        residual_mm_signed = _float_or_none(row.get("residual_mm_signed"))
+        if residual_mm_signed is None:
+            residual_mm_signed = float(residual_mm)
+        inlier_residuals_tau_mm.append(float(residual_mm_signed))
+        l_drive_mm = _float_or_none(row.get("l_drive_mm"))
+        l_sensor_mm = _float_or_none(row.get("l_sensor_mm"))
+        if l_drive_mm is None or l_sensor_mm is None:
+            continue
+        distance_mm = 0.5 * (float(l_drive_mm) + float(l_sensor_mm))
+        if np.isfinite(distance_mm):
+            slope_x_mm.append(float(distance_mm))
+            slope_y_mm.append(float(abs(residual_mm)))
+
+    tau_mad_mm = None
+    if inlier_residuals_tau_mm:
+        residual_arr = np.asarray(inlier_residuals_tau_mm, dtype=float)
+        center = float(np.median(residual_arr))
+        tau_val = float(_TAU_MAD_SCALE * np.median(np.abs(residual_arr - center)))
+        if np.isfinite(tau_val) and tau_val >= 0.0:
+            tau_mad_mm = float(tau_val)
+
+    residual_vs_distance_slope = None
+    if len(slope_x_mm) >= 2 and len(slope_x_mm) == len(slope_y_mm):
+        x = np.asarray(slope_x_mm, dtype=float)
+        y = np.asarray(slope_y_mm, dtype=float)
+        finite = np.isfinite(x) & np.isfinite(y)
+        if int(np.sum(finite)) >= 2:
+            x = x[finite]
+            y = y[finite]
+            x_centered = x - float(np.mean(x))
+            denom = float(np.dot(x_centered, x_centered))
+            if np.isfinite(denom) and denom > 0.0:
+                y_centered = y - float(np.mean(y))
+                slope = float(np.dot(x_centered, y_centered) / denom)
+                if np.isfinite(slope):
+                    residual_vs_distance_slope = float(slope)
+
+    cost_old = _float_or_none(cost_noise_normalized_old)
+    chi2_old = _float_or_none(chi2_red_old)
+    sigma_model = _float_or_none(sigma_model_mm)
+    sigma_eff_mm = None
+    rescore_scale = None
+    cost_rescored = None
+    chi2_rescored = None
+    if sigma_model is not None and sigma_model > 0.0 and tau_mad_mm is not None:
+        sigma_eff_val = float(np.sqrt((sigma_model * sigma_model) + (tau_mad_mm * tau_mad_mm)))
+        if np.isfinite(sigma_eff_val) and sigma_eff_val > 0.0:
+            sigma_eff_mm = float(sigma_eff_val)
+            scale = float((sigma_model * sigma_model) / (sigma_eff_val * sigma_eff_val))
+            if np.isfinite(scale) and scale > 0.0:
+                rescore_scale = float(scale)
+                if cost_old is not None:
+                    cost_rescored = float(cost_old * scale)
+                if chi2_old is not None:
+                    chi2_rescored = float(chi2_old * scale)
+
+    return {
+        "tau_mad_mm": tau_mad_mm,
+        "tau_mad_inlier_points": int(len(inlier_residuals_tau_mm)),
+        "tau_mad_total_points": int(total_rows),
+        "cost_noise_normalized_old": cost_old,
+        "cost_noise_normalized_rescored": cost_rescored,
+        "chi2_red_old": chi2_old,
+        "chi2_red_rescored": chi2_rescored,
+        "sigma_model_rescore_mm": sigma_model,
+        "sigma_eff_mm": sigma_eff_mm,
+        "noise_rescore_scale": rescore_scale,
+        "residual_vs_distance_slope": residual_vs_distance_slope,
+    }
+
+
 def _evaluate_cost_at_anchors(
     dataset: dict,
     anchors: np.ndarray,
@@ -2411,18 +2547,16 @@ def _evaluate_cost_at_anchors(
     noise_normalized: bool,
     sigma_source: str,
 ) -> float:
-    stage = 2 if bool(pointwise_filtering) else 0
-    cost_fn = EllipseCostFunction(
+    cost_fn = _build_ellipse_cost_function(
         dataset,
         residual_threshold=float(residual_threshold),
-        pointwise_residual_mode=str(pointwise_residual_mode),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
+        pointwise_residual_mode=str(pointwise_residual_mode),
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
         sweep_metric=str(sweep_metric),
-        pointwise_filter_stage=int(stage),
         use_noise_mean=bool(use_noise_mean),
         noise_normalized=bool(noise_normalized),
         sigma_source=str(sigma_source),
@@ -3612,6 +3746,38 @@ def _plan_next_ellipse_sweep(
             nm = details.get("noise_metrics")
             if isinstance(nm, dict):
                 noise_metrics = nm
+    if isinstance(noise_metrics, dict) and bool(search_radii or search_buildup):
+        cost_fn = _build_ellipse_cost_function(
+            dataset_for_estimation,
+            residual_threshold=float(residual_threshold),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            noise_normalized=True,
+            sigma_source=str(sigma_source),
+        )
+        rows = cost_fn.pointwise_residual_rows(np.asarray(anchors, dtype=float).ravel())
+        sigma_model_mm = noise_metrics.get("sigma_model_mm")
+        if _float_or_none(sigma_model_mm) is None:
+            sigma_model_mm = noise_metrics.get("sigma_used_mm")
+        rescored = _compute_tau_mad_rescore_from_rows(
+            rows,
+            cost_noise_normalized_old=cost,
+            chi2_red_old=noise_metrics.get("chi2_red"),
+            sigma_model_mm=sigma_model_mm,
+        )
+        noise_metrics = {**noise_metrics, **rescored}
+        if isinstance(cal, dict):
+            details = cal.get("details")
+            if not isinstance(details, dict):
+                details = {}
+                cal["details"] = details
+            details["noise_metrics"] = noise_metrics
     cov_scaled, cov_scale, cov_scale_label = _scale_covariance(cov, noise_metrics)
     ci = _confidence_intervals(cov_scaled)
     workspace_diag = _workspace_diag_mm(
@@ -3924,6 +4090,24 @@ def _print_ellipse_plan(
                     f"outlier_ratio={outlier_str} N={n_str} mode={mode_str} lengths={lengths_str} "
                     f"J_trim={j_trim_str} chi2_red_trim={chi2_trim_str} N_trim={n_trim_str}"
                 )
+                tau_mad_mm = noise_metrics.get("tau_mad_mm")
+                cost_old = noise_metrics.get("cost_noise_normalized_old", cost)
+                cost_new = noise_metrics.get("cost_noise_normalized_rescored")
+                chi2_old = noise_metrics.get("chi2_red_old", chi2_red)
+                chi2_new = noise_metrics.get("chi2_red_rescored")
+                residual_slope = noise_metrics.get("residual_vs_distance_slope")
+                if any(
+                    value is not None
+                    for value in (tau_mad_mm, cost_new, chi2_new, residual_slope)
+                ):
+                    print(
+                        f"; noise_rescore: tau_MAD={_fmt_float(tau_mad_mm, suffix='mm')} "
+                        f"cost_noise_normalized_old={_fmt_float(cost_old)} "
+                        f"cost_noise_normalized_new={_fmt_float(cost_new)} "
+                        f"chi2_red_old={_fmt_float(chi2_old)} "
+                        f"chi2_red_new={_fmt_float(chi2_new)} "
+                        f"residual_vs_distance_slope={_fmt_float(residual_slope)}"
+                    )
                 sigma_min_mm = noise_metrics.get("sigma_min_mm")
                 sigma_model_mm = noise_metrics.get("sigma_model_mm")
                 sigma_used_mm = noise_metrics.get("sigma_used_mm")

@@ -73,6 +73,34 @@ def test_default_delta_range_without_max_travel_uses_observed_span_bidirectional
     assert np.isclose(float(hi), 220.0, atol=1e-9)
 
 
+def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
+    plan = _fake_plan()
+    plan["calibration"] = {
+        "details": {
+            "noise_metrics": {
+                "J": 74.11,
+                "chi2_red": 91.2,
+                "tau_mad_mm": 2.5,
+                "cost_noise_normalized_old": 74.11,
+                "cost_noise_normalized_rescored": 10.4,
+                "chi2_red_old": 91.2,
+                "chi2_red_rescored": 12.8,
+                "residual_vs_distance_slope": 0.01,
+            }
+        }
+    }
+
+    ac._print_ellipse_plan(plan, print_command=False)
+    out = capsys.readouterr().out
+    assert "noise_rescore:" in out
+    assert "tau_MAD=2.5mm" in out
+    assert "cost_noise_normalized_old=74.11" in out
+    assert "cost_noise_normalized_new=10.4" in out
+    assert "chi2_red_old=91.2" in out
+    assert "chi2_red_new=12.8" in out
+    assert "residual_vs_distance_slope=0.01" in out
+
+
 def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatch):
     dataset = tmp_path / "semi_dataset.json"
     _write_dataset(dataset, sweeps=3)
