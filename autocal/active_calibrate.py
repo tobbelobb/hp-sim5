@@ -1053,6 +1053,88 @@ def _estimate_effective_radii_with_spool_model(
                 }
             )
 
+    bootstrap_anchor_refresh: Dict[str, object] = {
+        "attempted": False,
+        "success": False,
+        "accepted": False,
+        "start_cost": None,
+        "candidate_cost": None,
+        "accepted_cost": None,
+        "accepted_alpha": 0.0,
+    }
+    try:
+        _spool_params_bootstrap, transformed_bootstrap = _build_dataset_and_params(
+            radii_current,
+            buildup_current,
+        )
+        anchor_refresh_start_cost = float(_data_cost(transformed_bootstrap, anchors_current))
+        bootstrap_anchor_refresh["attempted"] = True
+        if np.isfinite(anchor_refresh_start_cost):
+            bootstrap_anchor_refresh["start_cost"] = float(anchor_refresh_start_cost)
+            anchor_step_restarts = max(1, min(2, int(solve_restarts)))
+            anchor_step_iterations = max(40, min(160, int(solve_iterations)))
+            cal_bootstrap = calibrate_elliptical(
+                transformed_bootstrap,
+                output_path=None,
+                residual_threshold=float(residual_threshold),
+                num_restarts=int(anchor_step_restarts),
+                max_iterations=int(anchor_step_iterations),
+                method=str(solve_optimizer),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                verbose=False,
+                use_parallel=False,
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                robust_debug=False,
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                sigma_source=str(sigma_source),
+                generate_report=False,
+                residuals_csv=None,
+                initial_guess=anchors_current,
+            )
+            anchors_bootstrap_candidate = np.asarray(cal_bootstrap.get("anchors"), dtype=float)
+            if (
+                anchors_bootstrap_candidate.ndim == 2
+                and anchors_bootstrap_candidate.shape == anchors_current.shape
+                and np.all(np.isfinite(anchors_bootstrap_candidate))
+            ):
+                bootstrap_anchor_refresh["success"] = True
+                accepted_bootstrap_anchors = np.asarray(anchors_current, dtype=float)
+                accepted_bootstrap_cost = float(anchor_refresh_start_cost)
+                accepted_bootstrap_alpha = 0.0
+                candidate_bootstrap_cost = float("nan")
+                for alpha in (1.0, 0.5, 0.25):
+                    if alpha >= 1.0 - 1e-12:
+                        anchors_try = np.asarray(anchors_bootstrap_candidate, dtype=float)
+                    else:
+                        anchors_try = np.asarray(
+                            anchors_current + (anchors_bootstrap_candidate - anchors_current) * float(alpha),
+                            dtype=float,
+                        )
+                    cost_try = float(_data_cost(transformed_bootstrap, anchors_try))
+                    if not np.isfinite(cost_try):
+                        continue
+                    if alpha >= 1.0 - 1e-12:
+                        candidate_bootstrap_cost = float(cost_try)
+                    improve_tol = max(1e-9, 1e-4 * max(1.0, abs(float(anchor_refresh_start_cost))))
+                    if cost_try + improve_tol < accepted_bootstrap_cost:
+                        accepted_bootstrap_anchors = np.asarray(anchors_try, dtype=float)
+                        accepted_bootstrap_cost = float(cost_try)
+                        accepted_bootstrap_alpha = float(alpha)
+                if np.isfinite(candidate_bootstrap_cost):
+                    bootstrap_anchor_refresh["candidate_cost"] = float(candidate_bootstrap_cost)
+                if accepted_bootstrap_alpha > 0.0:
+                    anchors_current = np.asarray(accepted_bootstrap_anchors, dtype=float)
+                    bootstrap_anchor_refresh["accepted"] = True
+                    bootstrap_anchor_refresh["accepted_cost"] = float(accepted_bootstrap_cost)
+                    bootstrap_anchor_refresh["accepted_alpha"] = float(accepted_bootstrap_alpha)
+    except Exception:
+        pass
+
     for outer_idx in range(outer_iters):
         spool_params_current, transformed_current = _build_dataset_and_params(radii_current, buildup_current)
         current_cost = float(_data_cost(transformed_current, anchors_current))
@@ -1473,6 +1555,7 @@ def _estimate_effective_radii_with_spool_model(
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
         "prefit": dict(prefit_info),
+        "bootstrap_anchor_refresh": dict(bootstrap_anchor_refresh),
         "history": history,
         "best_cost": (
             float(best["cost"])
