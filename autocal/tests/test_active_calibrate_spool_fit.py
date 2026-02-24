@@ -410,6 +410,30 @@ def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
     assert int(counts["near"]) == 1
     assert int(counts["mid"]) == 1
     assert int(counts["far"]) == 1
+    assert np.isclose(float(out["bias_vs_distance_intercept_mm"]), -2.6666666666666665, atol=1e-9)
+    assert np.isclose(float(out["bias_vs_distance_slope_mm_per_mm"]), 0.02, atol=1e-9)
+    assert np.isclose(float(out["cost_after_bias_diagnostic"]), 1.0 / 18.0, atol=1e-9)
+    assert np.isclose(float(out["chi2_red_after_bias_diagnostic"]), 1.0 / 6.0, atol=1e-9)
+    bins_debiased = out["distance_bin_mad_debiased_mm"]
+    assert isinstance(bins_debiased, dict)
+    assert np.isclose(float(bins_debiased["near"]), 0.0, atol=1e-12)
+    assert np.isclose(float(bins_debiased["mid"]), 0.0, atol=1e-12)
+    assert np.isclose(float(bins_debiased["far"]), 0.0, atol=1e-12)
+    tau_3bin = out["tau_3bin_debiased_mm"]
+    assert isinstance(tau_3bin, dict)
+    assert np.isclose(float(tau_3bin["near"]), 0.0, atol=1e-12)
+    assert np.isclose(float(tau_3bin["mid"]), 0.0, atol=1e-12)
+    assert np.isclose(float(tau_3bin["far"]), 0.0, atol=1e-12)
+    assert np.isclose(
+        float(out["cost_noise_normalized_rescored_tau_3bin_debiased"]),
+        1.0 / 18.0,
+        atol=1e-9,
+    )
+    assert np.isclose(
+        float(out["chi2_red_rescored_tau_3bin_debiased"]),
+        1.0 / 6.0,
+        atol=1e-9,
+    )
     assert np.isclose(float(out["tau_d_tau0_mm"]), float(out["tau_mad_mm"]), atol=1e-12)
     assert np.isclose(float(out["tau_d_tau1_per_mm"]), 0.0, atol=1e-12)
     assert np.isclose(

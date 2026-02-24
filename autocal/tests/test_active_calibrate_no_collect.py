@@ -92,16 +92,32 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
                 "tau_d_tau1_per_mm": 0.001,
                 "cost_noise_normalized_rescored_tau_d": 8.0,
                 "chi2_red_rescored_tau_d": 9.0,
+                "bias_vs_distance_intercept_mm": -0.3,
+                "bias_vs_distance_slope_mm_per_mm": 0.002,
+                "cost_after_bias_diagnostic": 6.5,
+                "chi2_red_after_bias_diagnostic": 7.5,
                 "distance_bin_mad_mm": {
                     "near": 0.4,
                     "mid": 0.8,
                     "far": 1.6,
+                },
+                "distance_bin_mad_debiased_mm": {
+                    "near": 0.2,
+                    "mid": 0.3,
+                    "far": 0.4,
                 },
                 "distance_bin_counts": {
                     "near": 4,
                     "mid": 5,
                     "far": 3,
                 },
+                "tau_3bin_debiased_mm": {
+                    "near": 0.5,
+                    "mid": 0.7,
+                    "far": 1.1,
+                },
+                "cost_noise_normalized_rescored_tau_3bin_debiased": 5.8,
+                "chi2_red_rescored_tau_3bin_debiased": 6.8,
                 "per_sweep_residual_summary": {
                     "sweep_001": {
                         "median_residual_mm": 1.0,
@@ -138,11 +154,26 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
     assert "tau_d_tau1=0.001" in out
     assert "cost_noise_normalized_tau_d=8" in out
     assert "chi2_red_tau_d=9" in out
+    assert "noise_bias_diagnostic:" in out
+    assert "bias_vs_distance_intercept=-0.3mm" in out
+    assert "bias_vs_distance_slope=0.002" in out
+    assert "cost_after_bias_diagnostic=6.5" in out
+    assert "chi2_red_after_bias_diagnostic=7.5" in out
     assert "noise_rescore_bins:" in out
     assert "near_MAD=0.4mm" in out
     assert "mid_MAD=0.8mm" in out
     assert "far_MAD=1.6mm" in out
     assert "N=[4,5,3]" in out
+    assert "noise_rescore_bins_debiased:" in out
+    assert "near_MAD=0.2mm" in out
+    assert "mid_MAD=0.3mm" in out
+    assert "far_MAD=0.4mm" in out
+    assert "noise_rescore_tau_3bin_debiased:" in out
+    assert "tau_near=0.5mm" in out
+    assert "tau_mid=0.7mm" in out
+    assert "tau_far=1.1mm" in out
+    assert "cost_noise_normalized_tau_3bin_debiased=5.8" in out
+    assert "chi2_red_tau_3bin_debiased=6.8" in out
     assert "sweep_residual: id=sweep_001" in out
     assert "median=1mm" in out
     assert "MAD=0.5mm" in out
