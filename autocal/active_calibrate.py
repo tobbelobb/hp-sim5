@@ -2449,7 +2449,12 @@ def _compute_tau_mad_rescore_from_rows(
 ) -> Dict[str, object]:
     inlier_residuals_tau_mm: List[float] = []
     slope_x_mm: List[float] = []
-    slope_y_mm: List[float] = []
+    slope_signed_y_mm: List[float] = []
+    slope_abs_y_mm: List[float] = []
+    slope_sq_y_mm2: List[float] = []
+    spread_distance_mm: List[float] = []
+    spread_residual_mm_signed: List[float] = []
+    spread_residual_z2: List[float] = []
     inlier_z_by_sweep: Dict[str, List[float]] = {}
     inlier_mm_by_sweep: Dict[str, List[float]] = {}
     inlier_abs_z_by_sweep: Dict[str, List[float]] = {}
@@ -2500,7 +2505,36 @@ def _compute_tau_mad_rescore_from_rows(
         distance_mm = 0.5 * (float(l_drive_mm) + float(l_sensor_mm))
         if np.isfinite(distance_mm):
             slope_x_mm.append(float(distance_mm))
-            slope_y_mm.append(float(abs(residual_mm)))
+            slope_signed_y_mm.append(float(residual_mm_signed))
+            slope_abs_y_mm.append(float(abs(residual_mm)))
+            slope_sq_y_mm2.append(float(residual_mm_signed * residual_mm_signed))
+            spread_distance_mm.append(float(distance_mm))
+            spread_residual_mm_signed.append(float(residual_mm_signed))
+            z_for_tau = residual_z_signed
+            if z_for_tau is None:
+                sigma_model_local = _float_or_none(sigma_model_mm)
+                if sigma_model_local is not None and sigma_model_local > 0.0:
+                    z_for_tau = float(residual_mm_signed / sigma_model_local)
+            if z_for_tau is not None and np.isfinite(z_for_tau):
+                spread_residual_z2.append(float(z_for_tau * z_for_tau))
+
+    def _linear_slope(x_vals: Sequence[float], y_vals: Sequence[float]) -> Optional[float]:
+        if len(x_vals) < 2 or len(x_vals) != len(y_vals):
+            return None
+        x = np.asarray(x_vals, dtype=float)
+        y = np.asarray(y_vals, dtype=float)
+        finite = np.isfinite(x) & np.isfinite(y)
+        if int(np.sum(finite)) < 2:
+            return None
+        x = x[finite]
+        y = y[finite]
+        x_centered = x - float(np.mean(x))
+        denom = float(np.dot(x_centered, x_centered))
+        if not np.isfinite(denom) or denom <= 0.0:
+            return None
+        y_centered = y - float(np.mean(y))
+        slope = float(np.dot(x_centered, y_centered) / denom)
+        return float(slope) if np.isfinite(slope) else None
 
     tau_mad_mm = None
     if inlier_residuals_tau_mm:
@@ -2510,21 +2544,47 @@ def _compute_tau_mad_rescore_from_rows(
         if np.isfinite(tau_val) and tau_val >= 0.0:
             tau_mad_mm = float(tau_val)
 
-    residual_vs_distance_slope = None
-    if len(slope_x_mm) >= 2 and len(slope_x_mm) == len(slope_y_mm):
-        x = np.asarray(slope_x_mm, dtype=float)
-        y = np.asarray(slope_y_mm, dtype=float)
-        finite = np.isfinite(x) & np.isfinite(y)
-        if int(np.sum(finite)) >= 2:
-            x = x[finite]
-            y = y[finite]
-            x_centered = x - float(np.mean(x))
-            denom = float(np.dot(x_centered, x_centered))
-            if np.isfinite(denom) and denom > 0.0:
-                y_centered = y - float(np.mean(y))
-                slope = float(np.dot(x_centered, y_centered) / denom)
-                if np.isfinite(slope):
-                    residual_vs_distance_slope = float(slope)
+    residual_vs_distance_slope = _linear_slope(slope_x_mm, slope_signed_y_mm)
+    residual_abs_vs_distance_slope = _linear_slope(slope_x_mm, slope_abs_y_mm)
+    residual_sq_vs_distance_slope = _linear_slope(slope_x_mm, slope_sq_y_mm2)
+
+    distance_bin_mad_mm: Dict[str, Optional[float]] = {"near": None, "mid": None, "far": None}
+    distance_bin_madn_mm: Dict[str, Optional[float]] = {"near": None, "mid": None, "far": None}
+    distance_bin_counts: Dict[str, int] = {"near": 0, "mid": 0, "far": 0}
+    tau_d_fit_centers: List[float] = []
+    tau_d_fit_spreads: List[float] = []
+    if spread_distance_mm and spread_residual_mm_signed:
+        d_arr = np.asarray(spread_distance_mm, dtype=float)
+        r_arr = np.asarray(spread_residual_mm_signed, dtype=float)
+        finite = np.isfinite(d_arr) & np.isfinite(r_arr)
+        if int(np.sum(finite)) >= 1:
+            d_arr = d_arr[finite]
+            r_arr = r_arr[finite]
+            q1, q2 = np.quantile(d_arr, [1.0 / 3.0, 2.0 / 3.0])
+            bin_masks = {
+                "near": d_arr <= q1,
+                "mid": (d_arr > q1) & (d_arr <= q2),
+                "far": d_arr > q2,
+            }
+            for key in ("near", "mid", "far"):
+                mask = np.asarray(bin_masks[key], dtype=bool)
+                count = int(np.sum(mask))
+                distance_bin_counts[key] = count
+                if count <= 0:
+                    continue
+                r_bin = r_arr[mask]
+                med_bin = float(np.median(r_bin))
+                mad_bin = float(np.median(np.abs(r_bin - med_bin)))
+                madn_bin = float(_TAU_MAD_SCALE * mad_bin)
+                if np.isfinite(mad_bin):
+                    distance_bin_mad_mm[key] = mad_bin
+                if np.isfinite(madn_bin):
+                    distance_bin_madn_mm[key] = madn_bin
+                if count >= 2 and np.isfinite(madn_bin):
+                    d_center = float(np.median(d_arr[mask]))
+                    if np.isfinite(d_center):
+                        tau_d_fit_centers.append(d_center)
+                        tau_d_fit_spreads.append(madn_bin)
 
     per_sweep_summary: Dict[str, Dict[str, object]] = {}
     per_sweep_bias_medians: Dict[str, float] = {}
@@ -2606,6 +2666,11 @@ def _compute_tau_mad_rescore_from_rows(
     rescore_scale = None
     cost_rescored = None
     chi2_rescored = None
+    tau_d_tau0_mm = None
+    tau_d_tau1_per_mm = None
+    tau_d_rescore_scale = None
+    cost_rescored_tau_d = None
+    chi2_rescored_tau_d = None
     if sigma_model is not None and sigma_model > 0.0 and tau_mad_mm is not None:
         sigma_eff_val = float(np.sqrt((sigma_model * sigma_model) + (tau_mad_mm * tau_mad_mm)))
         if np.isfinite(sigma_eff_val) and sigma_eff_val > 0.0:
@@ -2617,6 +2682,61 @@ def _compute_tau_mad_rescore_from_rows(
                     cost_rescored = float(cost_old * scale)
                 if chi2_old is not None:
                     chi2_rescored = float(chi2_old * scale)
+
+    if sigma_model is not None and sigma_model > 0.0:
+        tau0_sq = None
+        tau1_sq = None
+        if len(tau_d_fit_centers) >= 2 and len(tau_d_fit_centers) == len(tau_d_fit_spreads):
+            x = np.asarray(tau_d_fit_centers, dtype=float) ** 2.0
+            y = np.asarray(tau_d_fit_spreads, dtype=float) ** 2.0
+            finite = np.isfinite(x) & np.isfinite(y)
+            if int(np.sum(finite)) >= 2:
+                x = x[finite]
+                y = y[finite]
+                design = np.column_stack([np.ones_like(x), x])
+                coeffs, *_ = np.linalg.lstsq(design, y, rcond=None)
+                tau0_sq = float(max(float(coeffs[0]), 0.0))
+                tau1_sq = float(max(float(coeffs[1]), 0.0))
+        if tau0_sq is None or tau1_sq is None:
+            if tau_mad_mm is not None and np.isfinite(tau_mad_mm):
+                tau0_sq = float(max(tau_mad_mm * tau_mad_mm, 0.0))
+                tau1_sq = 0.0
+        if tau0_sq is not None and tau1_sq is not None:
+            tau0 = float(np.sqrt(max(tau0_sq, 0.0)))
+            tau1 = float(np.sqrt(max(tau1_sq, 0.0)))
+            if np.isfinite(tau0) and np.isfinite(tau1):
+                tau_d_tau0_mm = tau0
+                tau_d_tau1_per_mm = tau1
+                if spread_distance_mm:
+                    d_arr = np.asarray(spread_distance_mm, dtype=float)
+                    finite_d = np.isfinite(d_arr)
+                    if int(np.sum(finite_d)) > 0:
+                        d_arr = d_arr[finite_d]
+                        tau_d_sq = (tau0 * tau0) + ((tau1 * d_arr) ** 2.0)
+                        sigma_eff_d_sq = (sigma_model * sigma_model) + tau_d_sq
+                        valid_sigma = np.isfinite(sigma_eff_d_sq) & (sigma_eff_d_sq > 0.0)
+                        if int(np.sum(valid_sigma)) > 0:
+                            scale_arr = np.zeros_like(sigma_eff_d_sq)
+                            scale_arr[valid_sigma] = (sigma_model * sigma_model) / sigma_eff_d_sq[valid_sigma]
+                            scale_arr = scale_arr[valid_sigma]
+                            if scale_arr.size:
+                                ratio = float(np.mean(scale_arr))
+                                z2_arr = np.asarray(spread_residual_z2, dtype=float)
+                                if z2_arr.size == d_arr.size:
+                                    z2 = z2_arr[valid_sigma]
+                                    finite_z = np.isfinite(z2)
+                                    if int(np.sum(finite_z)) > 0:
+                                        z2 = z2[finite_z]
+                                        scale_use = scale_arr[finite_z]
+                                        base = float(np.mean(z2))
+                                        if np.isfinite(base) and base > 0.0:
+                                            ratio = float(np.mean(z2 * scale_use) / base)
+                                if np.isfinite(ratio) and ratio > 0.0:
+                                    tau_d_rescore_scale = ratio
+                                    if cost_old is not None:
+                                        cost_rescored_tau_d = float(cost_old * ratio)
+                                    if chi2_old is not None:
+                                        chi2_rescored_tau_d = float(chi2_old * ratio)
 
     return {
         "tau_mad_mm": tau_mad_mm,
@@ -2630,6 +2750,16 @@ def _compute_tau_mad_rescore_from_rows(
         "sigma_eff_mm": sigma_eff_mm,
         "noise_rescore_scale": rescore_scale,
         "residual_vs_distance_slope": residual_vs_distance_slope,
+        "residual_abs_vs_distance_slope": residual_abs_vs_distance_slope,
+        "residual_sq_vs_distance_slope": residual_sq_vs_distance_slope,
+        "distance_bin_mad_mm": distance_bin_mad_mm,
+        "distance_bin_madn_mm": distance_bin_madn_mm,
+        "distance_bin_counts": distance_bin_counts,
+        "tau_d_tau0_mm": tau_d_tau0_mm,
+        "tau_d_tau1_per_mm": tau_d_tau1_per_mm,
+        "tau_d_rescore_scale": tau_d_rescore_scale,
+        "cost_noise_normalized_rescored_tau_d": cost_rescored_tau_d,
+        "chi2_red_rescored_tau_d": chi2_rescored_tau_d,
         "per_sweep_residual_summary": per_sweep_summary,
         "per_sweep_bias_medians_mm": per_sweep_bias_medians,
         "per_sweep_demean": per_sweep_demean,
@@ -4202,9 +4332,26 @@ def _print_ellipse_plan(
                 chi2_old = noise_metrics.get("chi2_red_old", chi2_red)
                 chi2_new = noise_metrics.get("chi2_red_rescored")
                 residual_slope = noise_metrics.get("residual_vs_distance_slope")
+                residual_abs_slope = noise_metrics.get("residual_abs_vs_distance_slope")
+                residual_sq_slope = noise_metrics.get("residual_sq_vs_distance_slope")
+                tau_d_tau0 = noise_metrics.get("tau_d_tau0_mm")
+                tau_d_tau1 = noise_metrics.get("tau_d_tau1_per_mm")
+                tau_d_cost = noise_metrics.get("cost_noise_normalized_rescored_tau_d")
+                tau_d_chi2 = noise_metrics.get("chi2_red_rescored_tau_d")
                 if any(
                     value is not None
-                    for value in (tau_mad_mm, cost_new, chi2_new, residual_slope)
+                    for value in (
+                        tau_mad_mm,
+                        cost_new,
+                        chi2_new,
+                        residual_slope,
+                        residual_abs_slope,
+                        residual_sq_slope,
+                        tau_d_tau0,
+                        tau_d_tau1,
+                        tau_d_cost,
+                        tau_d_chi2,
+                    )
                 ):
                     print(
                         f"; noise_rescore: tau_MAD={_fmt_float(tau_mad_mm, suffix='mm')} "
@@ -4212,7 +4359,45 @@ def _print_ellipse_plan(
                         f"cost_noise_normalized_new={_fmt_float(cost_new)} "
                         f"chi2_red_old={_fmt_float(chi2_old)} "
                         f"chi2_red_new={_fmt_float(chi2_new)} "
-                        f"residual_vs_distance_slope={_fmt_float(residual_slope)}"
+                        f"residual_vs_distance_slope={_fmt_float(residual_slope)} "
+                        f"slope(|r|,d)={_fmt_float(residual_abs_slope)} "
+                        f"slope(r^2,d)={_fmt_float(residual_sq_slope)} "
+                        f"tau_d_tau0={_fmt_float(tau_d_tau0, suffix='mm')} "
+                        f"tau_d_tau1={_fmt_float(tau_d_tau1)} "
+                        f"cost_noise_normalized_tau_d={_fmt_float(tau_d_cost)} "
+                        f"chi2_red_tau_d={_fmt_float(tau_d_chi2)}"
+                    )
+                distance_bin_mad = noise_metrics.get("distance_bin_mad_mm")
+                distance_bin_counts = noise_metrics.get("distance_bin_counts")
+                if isinstance(distance_bin_mad, dict):
+                    near_count = None
+                    mid_count = None
+                    far_count = None
+                    if isinstance(distance_bin_counts, dict):
+                        near_count = distance_bin_counts.get("near")
+                        mid_count = distance_bin_counts.get("mid")
+                        far_count = distance_bin_counts.get("far")
+                    near_str = _fmt_float(distance_bin_mad.get("near"), suffix="mm")
+                    mid_str = _fmt_float(distance_bin_mad.get("mid"), suffix="mm")
+                    far_str = _fmt_float(distance_bin_mad.get("far"), suffix="mm")
+                    near_count_str = (
+                        f"{int(near_count)}"
+                        if isinstance(near_count, (int, float)) and np.isfinite(near_count)
+                        else "n/a"
+                    )
+                    mid_count_str = (
+                        f"{int(mid_count)}"
+                        if isinstance(mid_count, (int, float)) and np.isfinite(mid_count)
+                        else "n/a"
+                    )
+                    far_count_str = (
+                        f"{int(far_count)}"
+                        if isinstance(far_count, (int, float)) and np.isfinite(far_count)
+                        else "n/a"
+                    )
+                    print(
+                        f"; noise_rescore_bins: near_MAD={near_str} mid_MAD={mid_str} far_MAD={far_str} "
+                        f"N=[{near_count_str},{mid_count_str},{far_count_str}]"
                     )
                 per_sweep_summary = noise_metrics.get("per_sweep_residual_summary")
                 if isinstance(per_sweep_summary, dict) and per_sweep_summary:

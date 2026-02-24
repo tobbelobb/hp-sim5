@@ -397,7 +397,27 @@ def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
     assert np.isclose(float(out["cost_noise_normalized_rescored"]), 74.0 * expected_scale, atol=1e-9)
     assert np.isclose(float(out["chi2_red_old"]), 50.0, atol=1e-9)
     assert np.isclose(float(out["chi2_red_rescored"]), 50.0 * expected_scale, atol=1e-9)
-    assert np.isclose(float(out["residual_vs_distance_slope"]), 0.01, atol=1e-9)
+    assert np.isclose(float(out["residual_vs_distance_slope"]), 0.02, atol=1e-9)
+    assert np.isclose(float(out["residual_abs_vs_distance_slope"]), 0.01, atol=1e-9)
+    assert np.isclose(float(out["residual_sq_vs_distance_slope"]), 0.04, atol=1e-9)
+    bins = out["distance_bin_mad_mm"]
+    assert isinstance(bins, dict)
+    assert np.isclose(float(bins["near"]), 0.0, atol=1e-12)
+    assert np.isclose(float(bins["mid"]), 0.0, atol=1e-12)
+    assert np.isclose(float(bins["far"]), 0.0, atol=1e-12)
+    counts = out["distance_bin_counts"]
+    assert isinstance(counts, dict)
+    assert int(counts["near"]) == 1
+    assert int(counts["mid"]) == 1
+    assert int(counts["far"]) == 1
+    assert np.isclose(float(out["tau_d_tau0_mm"]), float(out["tau_mad_mm"]), atol=1e-12)
+    assert np.isclose(float(out["tau_d_tau1_per_mm"]), 0.0, atol=1e-12)
+    assert np.isclose(
+        float(out["cost_noise_normalized_rescored_tau_d"]),
+        float(out["cost_noise_normalized_rescored"]),
+        atol=1e-12,
+    )
+    assert np.isclose(float(out["chi2_red_rescored_tau_d"]), float(out["chi2_red_rescored"]), atol=1e-12)
     per_sweep = out["per_sweep_residual_summary"]
     assert isinstance(per_sweep, dict)
     assert set(per_sweep.keys()) == {"sweep_a", "sweep_b"}

@@ -85,7 +85,23 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
                 "cost_noise_normalized_rescored": 10.4,
                 "chi2_red_old": 91.2,
                 "chi2_red_rescored": 12.8,
-                "residual_vs_distance_slope": 0.01,
+                "residual_vs_distance_slope": 0.02,
+                "residual_abs_vs_distance_slope": 0.01,
+                "residual_sq_vs_distance_slope": 0.04,
+                "tau_d_tau0_mm": 2.0,
+                "tau_d_tau1_per_mm": 0.001,
+                "cost_noise_normalized_rescored_tau_d": 8.0,
+                "chi2_red_rescored_tau_d": 9.0,
+                "distance_bin_mad_mm": {
+                    "near": 0.4,
+                    "mid": 0.8,
+                    "far": 1.6,
+                },
+                "distance_bin_counts": {
+                    "near": 4,
+                    "mid": 5,
+                    "far": 3,
+                },
                 "per_sweep_residual_summary": {
                     "sweep_001": {
                         "median_residual_mm": 1.0,
@@ -115,7 +131,18 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
     assert "cost_noise_normalized_new=10.4" in out
     assert "chi2_red_old=91.2" in out
     assert "chi2_red_new=12.8" in out
-    assert "residual_vs_distance_slope=0.01" in out
+    assert "residual_vs_distance_slope=0.02" in out
+    assert "slope(|r|,d)=0.01" in out
+    assert "slope(r^2,d)=0.04" in out
+    assert "tau_d_tau0=2mm" in out
+    assert "tau_d_tau1=0.001" in out
+    assert "cost_noise_normalized_tau_d=8" in out
+    assert "chi2_red_tau_d=9" in out
+    assert "noise_rescore_bins:" in out
+    assert "near_MAD=0.4mm" in out
+    assert "mid_MAD=0.8mm" in out
+    assert "far_MAD=1.6mm" in out
+    assert "N=[4,5,3]" in out
     assert "sweep_residual: id=sweep_001" in out
     assert "median=1mm" in out
     assert "MAD=0.5mm" in out
