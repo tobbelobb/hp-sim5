@@ -115,3 +115,33 @@ def test_spool_cli_rejects_nonpositive_sigma_used_mm():
     )
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
+
+
+def test_spool_cli_parses_scale_fix_levels():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--scale-fix",
+            "1,3",
+        ]
+    )
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["scale_fix"] == [1, 3]
+
+
+def test_spool_cli_rejects_invalid_scale_fix_level():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--scale-fix",
+            "1,4",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)

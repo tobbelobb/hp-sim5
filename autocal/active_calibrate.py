@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import minimize, minimize_scalar
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -39,6 +39,7 @@ _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_PREFIT_GLOBAL_R_GRID_POINTS = 9
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _THETA0_MODE_CHOICES = ("infer", "zero")
+_SCALE_FIX_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 
 from autocal.active_learning import (
@@ -561,6 +562,7 @@ def _estimate_effective_radii_with_spool_model(
     sigma_source: str,
     robust_debug: bool,
     prefer_zero_tension_angles: bool = False,
+    scale_fix_levels: Optional[Sequence[int]] = None,
 ) -> Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]:
     base = np.asarray(base_radii_mm, dtype=float).reshape(-1)
     num_anchors = int(base.size)
@@ -571,6 +573,10 @@ def _estimate_effective_radii_with_spool_model(
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_r = _spool_mode_enabled(mode_r)
     search_b = _spool_mode_enabled(mode_b)
+    scale_fix_set = set(_parse_scale_fix_levels(scale_fix_levels))
+    use_scale_fix_1 = 1 in scale_fix_set
+    use_scale_fix_2 = 2 in scale_fix_set
+    use_scale_fix_3 = 3 in scale_fix_set
     if not (search_r or search_b):
         raise ValueError("spool estimation requires find_radii and/or find_buildup_factor")
 
@@ -739,6 +745,153 @@ def _estimate_effective_radii_with_spool_model(
                 sigma_source=str(sigma_source),
             )
         )
+
+    def _uniform_radius_scale(new_radii_mm: np.ndarray, old_radii_mm: np.ndarray) -> Optional[float]:
+        if not search_r:
+            return None
+        r_new = np.asarray(new_radii_mm, dtype=float).reshape(-1)
+        r_old = np.asarray(old_radii_mm, dtype=float).reshape(-1)
+        if r_new.size == 0 or r_old.size == 0:
+            return None
+        num = float(np.median(r_new))
+        den = float(np.median(r_old))
+        if not np.isfinite(num) or not np.isfinite(den) or num <= 0.0 or den <= 0.0:
+            return None
+        scale = float(num / den)
+        if not np.isfinite(scale) or scale <= 0.0:
+            return None
+        return float(scale)
+
+    def _radii_respect_bounds(radii_mm: np.ndarray) -> bool:
+        if not search_r:
+            return True
+        try:
+            packed = _pack_radii_opt_vector(np.asarray(radii_mm, dtype=float), find_radii_mode=mode_r)
+        except Exception:
+            return False
+        if packed.size != lo_r.size or packed.size != hi_r.size:
+            return False
+        tol = 1e-9 * max(1.0, float(np.max(np.abs(packed))) if packed.size else 1.0)
+        return bool(np.all(packed >= (lo_r - tol)) and np.all(packed <= (hi_r + tol)))
+
+    def _run_uniform_scale_polish(
+        radii_mm: np.ndarray,
+        buildup_factor: np.ndarray,
+        anchors_eval: np.ndarray,
+        *,
+        s_lo: float = 0.9,
+        s_hi: float = 1.1,
+        coarse_points: int = 21,
+    ) -> Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, float, Dict[str, object]]:
+        radii_arr = np.asarray(radii_mm, dtype=float).reshape(-1)
+        buildup_arr = np.asarray(buildup_factor, dtype=float).reshape(-1)
+        anchors_arr = np.asarray(anchors_eval, dtype=float)
+        spool_start, transformed_start = _build_dataset_and_params(radii_arr, buildup_arr)
+        start_cost = float(_data_cost(transformed_start, anchors_arr))
+        info: Dict[str, object] = {
+            "attempted": True,
+            "success": False,
+            "accepted": False,
+            "start_scale": 1.0,
+            "start_data_cost": (float(start_cost) if np.isfinite(start_cost) else None),
+            "best_scale": 1.0,
+            "best_data_cost": (float(start_cost) if np.isfinite(start_cost) else None),
+            "coarse_points": int(max(3, int(coarse_points))),
+            "refined": False,
+            "message": "scale_polish_not_run",
+        }
+        if not search_r:
+            info["message"] = "scale polish skipped (find_radii=off)"
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+        if not np.isfinite(s_lo) or not np.isfinite(s_hi) or s_hi <= s_lo:
+            info["message"] = "scale polish skipped (invalid bounds)"
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+        if not np.all(np.isfinite(radii_arr)) or np.any(radii_arr <= 0.0):
+            info["message"] = "scale polish skipped (invalid radii)"
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+        if anchors_arr.ndim != 2 or anchors_arr.shape[0] != num_anchors or not np.all(np.isfinite(anchors_arr)):
+            info["message"] = "scale polish skipped (invalid anchors)"
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+
+        eval_cache: Dict[float, Tuple[float, np.ndarray, np.ndarray, SpoolModelParams, dict]] = {}
+
+        def _eval_scale(scale: float) -> Tuple[float, np.ndarray, np.ndarray, SpoolModelParams, dict]:
+            key = float(np.round(float(scale), decimals=9))
+            cached = eval_cache.get(key)
+            if cached is not None:
+                return cached
+            if not np.isfinite(scale) or scale <= 0.0:
+                out = (float("inf"), radii_arr, anchors_arr, spool_start, transformed_start)
+                eval_cache[key] = out
+                return out
+            radii_try = np.asarray(radii_arr * float(scale), dtype=float)
+            if not _radii_respect_bounds(radii_try):
+                out = (float("inf"), radii_arr, anchors_arr, spool_start, transformed_start)
+                eval_cache[key] = out
+                return out
+            anchors_try = np.asarray(anchors_arr * float(scale), dtype=float)
+            spool_try, transformed_try = _build_dataset_and_params(radii_try, buildup_arr)
+            cost_try = float(_data_cost(transformed_try, anchors_try))
+            if not np.isfinite(cost_try):
+                out = (float("inf"), radii_try, anchors_try, spool_try, transformed_try)
+                eval_cache[key] = out
+                return out
+            out = (float(cost_try), radii_try, anchors_try, spool_try, transformed_try)
+            eval_cache[key] = out
+            return out
+
+        grid_count = max(3, int(coarse_points))
+        grid = np.linspace(float(s_lo), float(s_hi), grid_count)
+        best_idx = -1
+        best_eval = (float("inf"), radii_arr, anchors_arr, spool_start, transformed_start)
+        for idx, s in enumerate(grid):
+            eval_row = _eval_scale(float(s))
+            if np.isfinite(eval_row[0]) and (not np.isfinite(best_eval[0]) or eval_row[0] + 1e-12 < best_eval[0]):
+                best_eval = eval_row
+                best_idx = int(idx)
+
+        if best_idx >= 0:
+            lo_ref = float(grid[max(0, best_idx - 1)])
+            hi_ref = float(grid[min(grid_count - 1, best_idx + 1)])
+            if np.isfinite(lo_ref) and np.isfinite(hi_ref) and hi_ref - lo_ref > 1e-6:
+                try:
+                    ref = minimize_scalar(
+                        lambda s: float(_eval_scale(float(s))[0]),
+                        bounds=(lo_ref, hi_ref),
+                        method="bounded",
+                        options={"xatol": 1e-4, "maxiter": 40},
+                    )
+                    if bool(getattr(ref, "success", False)):
+                        info["refined"] = True
+                        eval_ref = _eval_scale(float(ref.x))
+                        if np.isfinite(eval_ref[0]) and eval_ref[0] + 1e-12 < best_eval[0]:
+                            best_eval = eval_ref
+                except Exception:
+                    pass
+
+        best_cost = float(best_eval[0])
+        improve_tol = max(1e-9, 1e-4 * max(1.0, abs(float(start_cost)))) if np.isfinite(start_cost) else 1e-9
+        if np.isfinite(best_cost):
+            best_scale = _uniform_radius_scale(best_eval[1], radii_arr)
+            if best_scale is not None and np.isfinite(best_scale):
+                info["best_scale"] = float(best_scale)
+            info["best_data_cost"] = float(best_cost)
+        if np.isfinite(best_cost) and np.isfinite(start_cost) and best_cost + improve_tol < float(start_cost):
+            info["success"] = True
+            info["accepted"] = True
+            info["message"] = "scale polish improved data cost"
+            return (
+                np.asarray(best_eval[1], dtype=float),
+                np.asarray(best_eval[2], dtype=float),
+                best_eval[3],
+                best_eval[4],
+                float(best_cost),
+                info,
+            )
+        info["success"] = bool(np.isfinite(best_cost))
+        info["accepted"] = False
+        info["message"] = "scale polish did not improve"
+        return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
 
     def _ellipse_prefit_score(transformed_dataset: dict) -> Tuple[float, int, int]:
         sweeps = transformed_dataset.get("sweeps")
@@ -1260,7 +1413,24 @@ def _estimate_effective_radii_with_spool_model(
         spool_cost_fixed = float(_data_cost(transformed_opt, anchors_current))
         spool_prior = float(_prior_cost(radii_opt, buildup_opt))
 
-        anchors_candidate = np.asarray(anchors_current, dtype=float)
+        scale_fix1_ratio = None
+        scale_fix1_applied = False
+        anchors_step_seed = np.asarray(anchors_current, dtype=float)
+        anchors_step_seed_cost = float(spool_cost_fixed)
+        if use_scale_fix_1 and search_r and np.isfinite(spool_cost_fixed):
+            scale_try = _uniform_radius_scale(radii_opt, radii_current)
+            if scale_try is not None and abs(float(scale_try) - 1.0) > 1e-12:
+                anchors_scaled = np.asarray(anchors_current * float(scale_try), dtype=float)
+                scaled_cost = float(_data_cost(transformed_opt, anchors_scaled))
+                if np.isfinite(scaled_cost):
+                    improve_tol_fix1 = max(1e-9, 1e-4 * max(1.0, abs(float(spool_cost_fixed))))
+                    if scaled_cost + improve_tol_fix1 < float(spool_cost_fixed):
+                        anchors_step_seed = np.asarray(anchors_scaled, dtype=float)
+                        anchors_step_seed_cost = float(scaled_cost)
+                        scale_fix1_applied = True
+                        scale_fix1_ratio = float(scale_try)
+
+        anchors_candidate = np.asarray(anchors_step_seed, dtype=float)
         anchor_cost = float("nan")
         anchor_step_success = False
         anchor_step_restarts = max(1, min(2, int(solve_restarts)))
@@ -1287,7 +1457,7 @@ def _estimate_effective_radii_with_spool_model(
                 sigma_source=str(sigma_source),
                 generate_report=False,
                 residuals_csv=None,
-                initial_guess=anchors_current,
+                initial_guess=anchors_step_seed,
             )
             cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
             if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
@@ -1299,11 +1469,11 @@ def _estimate_effective_radii_with_spool_model(
         except Exception:
             anchor_step_success = False
 
-        accepted_anchors = np.asarray(anchors_current, dtype=float)
-        accepted_cost = float(spool_cost_fixed)
+        accepted_anchors = np.asarray(anchors_step_seed, dtype=float)
+        accepted_cost = float(anchors_step_seed_cost)
         accepted_total_cost = (
-            float(spool_cost_fixed + spool_prior)
-            if np.isfinite(spool_cost_fixed) and np.isfinite(spool_prior)
+            float(accepted_cost + spool_prior)
+            if np.isfinite(accepted_cost) and np.isfinite(spool_prior)
             else float("inf")
         )
         accepted_alpha = 0.0
@@ -1313,7 +1483,7 @@ def _estimate_effective_radii_with_spool_model(
                     anchors_try = np.asarray(anchors_candidate, dtype=float)
                 else:
                     anchors_try = np.asarray(
-                        anchors_current + (anchors_candidate - anchors_current) * float(alpha),
+                        anchors_step_seed + (anchors_candidate - anchors_step_seed) * float(alpha),
                         dtype=float,
                     )
                 cost_try = float(_data_cost(transformed_opt, anchors_try))
@@ -1331,6 +1501,48 @@ def _estimate_effective_radii_with_spool_model(
                     accepted_total_cost = float(total_try)
                     accepted_anchors = np.asarray(anchors_try, dtype=float)
                     accepted_alpha = float(alpha)
+
+        radii_candidate = np.asarray(radii_opt, dtype=float)
+        buildup_candidate = np.asarray(buildup_opt, dtype=float)
+        anchors_candidate_final = np.asarray(accepted_anchors, dtype=float)
+        spool_params_candidate = spool_params_opt
+        transformed_candidate = transformed_opt
+        candidate_data_cost = float(accepted_cost)
+        candidate_prior_cost = float(spool_prior)
+        scale_fix3_info: Dict[str, object] = {
+            "attempted": False,
+            "success": False,
+            "accepted": False,
+            "message": "scale polish disabled",
+        }
+        if use_scale_fix_3:
+            (
+                radii_polished,
+                anchors_polished,
+                spool_params_polished,
+                transformed_polished,
+                polished_cost,
+                polish_info,
+            ) = _run_uniform_scale_polish(
+                radii_candidate,
+                buildup_candidate,
+                anchors_candidate_final,
+            )
+            scale_fix3_info = dict(polish_info)
+            if bool(polish_info.get("accepted", False)):
+                radii_candidate = np.asarray(radii_polished, dtype=float)
+                anchors_candidate_final = np.asarray(anchors_polished, dtype=float)
+                spool_params_candidate = spool_params_polished
+                transformed_candidate = transformed_polished
+                candidate_data_cost = float(polished_cost)
+                candidate_prior_cost = float(_prior_cost(radii_candidate, buildup_candidate))
+            else:
+                candidate_prior_cost = float(spool_prior)
+        accepted_total_cost = (
+            float(candidate_data_cost + candidate_prior_cost)
+            if np.isfinite(candidate_data_cost) and np.isfinite(candidate_prior_cost)
+            else float("inf")
+        )
 
         improve_tol = (
             max(1e-9, 1e-4 * max(1.0, abs(current_total_cost)))
@@ -1358,14 +1570,16 @@ def _estimate_effective_radii_with_spool_model(
             accepted_update = "rollback"
             accepted_alpha = 0.0
         else:
-            radii_next = np.asarray(radii_opt, dtype=float)
-            buildup_next = np.asarray(buildup_opt, dtype=float)
-            anchors_next = np.asarray(accepted_anchors, dtype=float)
-            spool_params_next = spool_params_opt
-            transformed_next = transformed_opt
-            model_cost = float(accepted_cost)
-            model_prior_cost = float(spool_prior)
-            if accepted_alpha >= 1.0 - 1e-12:
+            radii_next = np.asarray(radii_candidate, dtype=float)
+            buildup_next = np.asarray(buildup_candidate, dtype=float)
+            anchors_next = np.asarray(anchors_candidate_final, dtype=float)
+            spool_params_next = spool_params_candidate
+            transformed_next = transformed_candidate
+            model_cost = float(candidate_data_cost)
+            model_prior_cost = float(candidate_prior_cost)
+            if bool(scale_fix3_info.get("accepted", False)):
+                accepted_update = "anchor_scale_polish"
+            elif accepted_alpha >= 1.0 - 1e-12:
                 accepted_update = "anchor_full"
             elif accepted_alpha > 0.0:
                 accepted_update = "anchor_damped"
@@ -1430,6 +1644,13 @@ def _estimate_effective_radii_with_spool_model(
                     if np.isfinite(spool_cost_fixed) and np.isfinite(spool_prior)
                     else None
                 ),
+                "scale_fix_1_applied": bool(scale_fix1_applied),
+                "scale_fix_1_ratio": (
+                    float(scale_fix1_ratio) if isinstance(scale_fix1_ratio, (int, float)) else None
+                ),
+                "spool_data_cost_scale_seed": (
+                    float(anchors_step_seed_cost) if np.isfinite(anchors_step_seed_cost) else None
+                ),
                 "anchor_step_success": bool(anchor_step_success),
                 "anchor_cost": float(anchor_cost) if np.isfinite(anchor_cost) else None,
                 "cal_step_success": bool(anchor_step_success),
@@ -1445,6 +1666,7 @@ def _estimate_effective_radii_with_spool_model(
                 ),
                 "accepted_update": str(accepted_update),
                 "anchor_blend_alpha": float(accepted_alpha),
+                "scale_fix_3": dict(scale_fix3_info),
                 "step_final": opt_info.get("step_final"),
                 "seed_choice": str(opt_info.get("seed_choice", "")),
                 "seed_cost": opt_info.get("seed_cost"),
@@ -1487,6 +1709,58 @@ def _estimate_effective_radii_with_spool_model(
             "spool_params": spool_params_fallback,
             "dataset": transformed_fallback,
         }
+
+    final_scale_polish_info: Dict[str, object] = {
+        "attempted": False,
+        "success": False,
+        "accepted": False,
+        "message": "final scale polish disabled",
+    }
+    if use_scale_fix_2 and best["dataset"] is not None and best["spool_params"] is not None:
+        prior_before = float(
+            _prior_cost(
+                np.asarray(best["radii_mm"], dtype=float),
+                np.asarray(best["buildup_factor"], dtype=float),
+            )
+        )
+        (
+            radii_polished,
+            anchors_polished,
+            spool_params_polished,
+            transformed_polished,
+            polished_cost,
+            polish_info,
+        ) = _run_uniform_scale_polish(
+            np.asarray(best["radii_mm"], dtype=float),
+            np.asarray(best["buildup_factor"], dtype=float),
+            np.asarray(best["anchors"], dtype=float),
+        )
+        final_scale_polish_info = dict(polish_info)
+        prior_after = float(
+            _prior_cost(
+                np.asarray(radii_polished, dtype=float),
+                np.asarray(best["buildup_factor"], dtype=float),
+            )
+        )
+        if np.isfinite(prior_before):
+            final_scale_polish_info["start_prior_cost"] = float(prior_before)
+        if np.isfinite(prior_after):
+            final_scale_polish_info["best_prior_cost"] = float(prior_after)
+        start_data = final_scale_polish_info.get("start_data_cost")
+        best_data = final_scale_polish_info.get("best_data_cost")
+        if isinstance(start_data, (int, float)) and np.isfinite(float(start_data)) and np.isfinite(prior_before):
+            final_scale_polish_info["start_total_cost"] = float(float(start_data) + prior_before)
+        if isinstance(best_data, (int, float)) and np.isfinite(float(best_data)) and np.isfinite(prior_after):
+            final_scale_polish_info["best_total_cost"] = float(float(best_data) + prior_after)
+        if bool(polish_info.get("accepted", False)) and np.isfinite(polished_cost):
+            best = {
+                "cost": float(polished_cost),
+                "radii_mm": np.asarray(radii_polished, dtype=float),
+                "buildup_factor": np.asarray(best["buildup_factor"], dtype=float),
+                "anchors": np.asarray(anchors_polished, dtype=float),
+                "spool_params": spool_params_polished,
+                "dataset": transformed_polished,
+            }
 
     r0_bounds_info = (
         [float(np.min(lo_r)), float(np.max(hi_r))]
@@ -1554,8 +1828,13 @@ def _estimate_effective_radii_with_spool_model(
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
+        "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
+        "scale_fix_1_enabled": bool(use_scale_fix_1),
+        "scale_fix_2_enabled": bool(use_scale_fix_2),
+        "scale_fix_3_enabled": bool(use_scale_fix_3),
         "prefit": dict(prefit_info),
         "bootstrap_anchor_refresh": dict(bootstrap_anchor_refresh),
+        "final_scale_polish": dict(final_scale_polish_info),
         "history": history,
         "best_cost": (
             float(best["cost"])
@@ -2314,6 +2593,32 @@ def _normalize_theta0_mode(mode: Optional[str]) -> str:
     return text
 
 
+def _parse_scale_fix_levels(spec: Optional[Any], *, label: str = "--scale-fix") -> Tuple[int, ...]:
+    if spec is None:
+        return tuple()
+    if isinstance(spec, (list, tuple, set)):
+        parts = [str(v).strip() for v in spec]
+    else:
+        text = str(spec).strip()
+        if not text:
+            return tuple()
+        parts = [p.strip() for p in text.split(",")]
+    out: List[int] = []
+    for part in parts:
+        if not part:
+            continue
+        try:
+            val = int(part)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{label} must be a comma-separated list of integers: 1,2,3") from exc
+        if val not in _SCALE_FIX_LEVELS:
+            allowed = ",".join(str(v) for v in _SCALE_FIX_LEVELS)
+            raise ValueError(f"{label} allows only: {allowed}")
+        if val not in out:
+            out.append(int(val))
+    return tuple(out)
+
+
 def _resolve_r0_bounds(
     base_radii_mm: np.ndarray,
     *,
@@ -3013,6 +3318,7 @@ def _plan_next_ellipse_sweep(
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
     collector_args: Sequence[str],
+    scale_fix: Optional[Sequence[int]] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
     remapped_points = _normalize_dataset_point_roles(dataset)
@@ -3024,6 +3330,7 @@ def _plan_next_ellipse_sweep(
         warnings.append(f"point_role_remap_applied:{int(remapped_points)}")
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
+    scale_fix_levels = _parse_scale_fix_levels(scale_fix)
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
@@ -3150,6 +3457,7 @@ def _plan_next_ellipse_sweep(
                 sigma_source=str(sigma_source),
                 robust_debug=bool(robust_debug),
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+                scale_fix_levels=scale_fix_levels,
             )
         )
         _ = _fit_anchors
@@ -3229,6 +3537,7 @@ def _plan_next_ellipse_sweep(
             "spool_outer_iters": int(spool_outer_iters),
             "spool_inner_iters": int(spool_inner_iters),
             "theta0_mode": theta0_mode_norm,
+            "scale_fix_levels": [int(v) for v in scale_fix_levels],
             "radii_fit": radii_fit,
             "spool_fit": radii_fit,
         }
@@ -3844,6 +4153,7 @@ def ellipse_active(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     output_with_explanations: bool,
+    scale_fix: Optional[Sequence[int]] = None,
 ) -> int:
     machine_type = _require_machine_type(
         _load_json(dataset_path),
@@ -3929,6 +4239,7 @@ def ellipse_active(
         write_cfg=write_cfg,
         collector_output=collector_output,
         collector_args=collector_args_eff,
+        scale_fix=scale_fix,
     )
 
     _print_ellipse_plan(
@@ -4048,6 +4359,7 @@ def full_auto_loop(
     full_auto_log: Optional[Path],
     patience: int,
     full_auto_verbose: bool,
+    scale_fix: Optional[Sequence[int]] = None,
     no_collect: bool = False,
 ) -> int:
     if work_dataset is not None:
@@ -4342,6 +4654,7 @@ def full_auto_loop(
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
+        "scale_fix": [int(v) for v in _parse_scale_fix_levels(scale_fix)],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -4397,6 +4710,7 @@ def full_auto_loop(
                     settings.get("find_buildup_factor")
                 )
                 settings["theta0_mode"] = _normalize_theta0_mode(settings.get("theta0_mode"))
+                settings["scale_fix"] = [int(v) for v in _parse_scale_fix_levels(settings.get("scale_fix"))]
 
                 raw_r0_bounds = settings.get("r0_bounds")
                 if isinstance(raw_r0_bounds, str):
@@ -4517,6 +4831,7 @@ def full_auto_loop(
                         write_cfg=cfg_path,
                         collector_output=collector_output,
                         collector_args=collector_args_eff,
+                        scale_fix=settings.get("scale_fix"),
                     )
 
                 primary_cost = _plan_primary_cost(plan)
@@ -4872,6 +5187,7 @@ def ellipse_loop(
     plot_residual_histogram: bool,
     sweep_points: Optional[int],
     output_with_explanations: bool,
+    scale_fix: Optional[Sequence[int]] = None,
     no_collect: bool = False,
 ) -> int:
     if work_dataset is not None:
@@ -5071,6 +5387,7 @@ def ellipse_loop(
             write_cfg=write_cfg,
             collector_output=collector_output,
             collector_args=plan_args,
+            scale_fix=scale_fix,
         )
         _print_ellipse_plan(
             plan,
@@ -5289,6 +5606,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         choices=_THETA0_MODE_CHOICES,
         default="zero",
         help="Theta offset mode for spool model: infer | zero (default: zero).",
+    )
+    parser.add_argument(
+        "--scale-fix",
+        type=str,
+        default=None,
+        help="Enable scale-coupling fixes by id (comma-separated): 1,2,3.",
     )
     parser.add_argument(
         "--pointwise-residual",
@@ -5606,6 +5929,7 @@ def _resolve_spool_cli_options(
         theta0_mode = _normalize_theta0_mode(args.theta0_mode)
         r0_bounds = _parse_min_max_bounds(args.r0_bounds, label="--r0-bounds")
         b_bounds = _parse_min_max_bounds(args.b_bounds, label="--b-bounds")
+        scale_fix_levels = _parse_scale_fix_levels(args.scale_fix, label="--scale-fix")
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -5673,6 +5997,7 @@ def _resolve_spool_cli_options(
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
+        "scale_fix": [int(v) for v in scale_fix_levels],
     }
 
 
@@ -5766,6 +6091,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spool-outer-iters", type=int, default=None)
     parser.add_argument("--spool-inner-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
+    parser.add_argument("--scale-fix", default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--sigma-used-mm", type=float, default=None)
@@ -6050,6 +6376,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         keep_sim_alive=bool(args.keep_sim_alive),
         hp_sim_reset=bool(args.hp_sim_reset),
         output_with_explanations=bool(args.output_with_explanations),
+        scale_fix=spool_opts.get("scale_fix"),
     )
 
 
@@ -6142,6 +6469,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             full_auto_log=args.full_auto_log,
             patience=int(args.patience),
             full_auto_verbose=bool(args.full_auto_verbose),
+            scale_fix=spool_opts.get("scale_fix"),
             no_collect=bool(args.no_collect),
         )
     return ellipse_loop(
@@ -6206,6 +6534,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         plot_residual_histogram=bool(args.plot_residual_histogram),
         sweep_points=args.sweep_points,
         output_with_explanations=bool(args.output_with_explanations),
+        scale_fix=spool_opts.get("scale_fix"),
         no_collect=bool(args.no_collect),
     )
 
