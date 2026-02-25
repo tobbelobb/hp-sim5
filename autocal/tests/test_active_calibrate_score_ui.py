@@ -37,8 +37,23 @@ def _layered_plan(
     chi2_layered: float,
     tau_mad_mm: float,
     n_trim: float,
+    chi2_trimmed_direct=None,
+    max_std_mm=None,
+    workspace_diag_mm=None,
 ) -> dict:
-    return {
+    noise_metrics = {
+        "chi2_red_rescored_tau_3bin_debiased": float(chi2_layered),
+        "chi2_red_rescored": float(chi2_layered),
+        "chi2_red_trimmed": float(chi2_layered),
+        "tau_mad_mm": float(tau_mad_mm),
+        "n_obs_trimmed": float(n_trim),
+        "chi2_red": float(primary_cost),
+        "J": float(primary_cost),
+    }
+    if chi2_trimmed_direct is not None:
+        noise_metrics["chi2_red_tau_d_trimmed_direct"] = float(chi2_trimmed_direct)
+
+    plan = {
         "anchors": np.asarray([[0.0, 0.0], [1645.0, 950.0], [-1645.0, 950.0]], dtype=float),
         "machine_type": "slideprinter",
         "cost": float(primary_cost),
@@ -55,18 +70,15 @@ def _layered_plan(
         },
         "calibration": {
             "details": {
-                "noise_metrics": {
-                    "chi2_red_rescored_tau_3bin_debiased": float(chi2_layered),
-                    "chi2_red_rescored": float(chi2_layered),
-                    "chi2_red_trimmed": float(chi2_layered),
-                    "tau_mad_mm": float(tau_mad_mm),
-                    "n_obs_trimmed": float(n_trim),
-                    "chi2_red": float(primary_cost),
-                    "J": float(primary_cost),
-                }
+                "noise_metrics": noise_metrics
             }
         },
     }
+    if max_std_mm is not None:
+        plan["confidence_intervals"] = {"max_std_mm": float(max_std_mm)}
+    if workspace_diag_mm is not None:
+        plan["workspace_diag_mm"] = float(workspace_diag_mm)
+    return plan
 
 
 def test_plan_score_ui_layered_keeps_good_fit_below_two_even_with_high_primary_cost():
@@ -90,6 +102,82 @@ def test_plan_score_ui_layered_keeps_good_fit_below_two_even_with_high_primary_c
     assert np.isclose(rank_score, expected_rank, atol=1e-12)
     assert ac._solution_quality_label(score_ui) == "ideal"
     assert "near-perfect fit" in ac._solution_quality_message(score_ui)
+
+
+def test_plan_score_ui_layered_prefers_trimmed_direct_risk_metric():
+    plan = _layered_plan(
+        primary_cost=74.11,
+        cost_raw=0.3,
+        chi2_layered=140.0,
+        tau_mad_mm=1.2,
+        n_trim=35.0,
+        chi2_trimmed_direct=40.0,
+        max_std_mm=2.0,
+        workspace_diag_mm=100.0,
+    )
+
+    expected_m = 40.0 * (2.0 / 100.0)
+    expected_m *= (
+        1.0
+        + ac._SCORE_UI_LAYERED_N_TRIM_WEIGHT
+        * max(0.0, (ac._SCORE_UI_LAYERED_N_TRIM_REF - 35.0) / 10.0)
+    )
+    expected_m *= (
+        1.0
+        + ac._SCORE_UI_LAYERED_TAU_MAD_WEIGHT
+        * max(0.0, 1.2 / ac._SCORE_UI_LAYERED_TAU_MAD_REF_MM - 1.0)
+    )
+    expected_rank = ac._layered_rank_score_from_internal_metric(
+        expected_m,
+        cost_raw=float(plan["cost_raw"]),
+    )
+
+    noise_metrics = plan["calibration"]["details"]["noise_metrics"]
+    fallback_m = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=float(plan["cost_raw"]),
+    )
+
+    score_ui, rank_score, basis = ac._plan_score_ui(plan)
+    score_ui_recomputed, m_layered = ac._compute_score_ui_layered(plan)
+    assert basis == "layered-calibrated"
+    assert fallback_m is not None
+    assert np.isclose(ac._plan_trimmed_risk_metric(plan), expected_m, atol=1e-12)
+    assert np.isclose(m_layered, expected_m, atol=1e-12)
+    assert not np.isclose(m_layered, fallback_m, atol=1e-12)
+    assert np.isclose(score_ui, score_ui_recomputed, atol=1e-12)
+    assert np.isclose(rank_score, expected_rank, atol=1e-12)
+
+
+def test_plan_score_ui_layered_falls_back_when_trimmed_direct_risk_missing_rel_std():
+    plan = _layered_plan(
+        primary_cost=74.11,
+        cost_raw=0.2557,
+        chi2_layered=64.0,
+        tau_mad_mm=0.8,
+        n_trim=41.0,
+        chi2_trimmed_direct=40.0,
+    )
+
+    noise_metrics = plan["calibration"]["details"]["noise_metrics"]
+    expected_m = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=float(plan["cost_raw"]),
+    )
+    assert expected_m is not None
+    assert ac._plan_trimmed_risk_metric(plan) is None
+
+    score_ui, rank_score, basis = ac._plan_score_ui(plan)
+    score_ui_recomputed, m_layered = ac._compute_score_ui_layered(plan)
+    expected_rank = ac._layered_rank_score_from_internal_metric(
+        expected_m,
+        cost_raw=float(plan["cost_raw"]),
+    )
+
+    assert basis == "layered-calibrated"
+    assert np.isclose(m_layered, expected_m, atol=1e-12)
+    assert np.isclose(score_ui, score_ui_recomputed, atol=1e-12)
+    assert np.isclose(rank_score, expected_rank, atol=1e-12)
 
 
 def test_plan_score_ui_layered_uses_hard_fail_for_bad_raw_geometry():

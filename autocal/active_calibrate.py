@@ -7334,6 +7334,42 @@ def _layered_rank_score_from_internal_metric(
     return float(rank_score)
 
 
+def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
+    noise_metrics = _plan_noise_metrics(plan)
+    if not isinstance(noise_metrics, dict):
+        return None
+
+    chi2_trimmed_direct = _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct"))
+    if chi2_trimmed_direct is None or chi2_trimmed_direct < 0.0:
+        return None
+
+    _max_std_mm, rel_std, _cov_ok = _plan_covariance_summary(plan)
+    if rel_std is None or rel_std <= 0.0:
+        return None
+
+    risk = float(chi2_trimmed_direct) * float(rel_std)
+
+    n_trim = _float_or_none(noise_metrics.get("n_obs_trimmed"))
+    if n_trim is not None:
+        risk *= (
+            1.0
+            + _SCORE_UI_LAYERED_N_TRIM_WEIGHT
+            * max(0.0, (_SCORE_UI_LAYERED_N_TRIM_REF - n_trim) / 10.0)
+        )
+
+    tau_mad_mm = _float_or_none(noise_metrics.get("tau_mad_mm"))
+    if tau_mad_mm is not None:
+        risk *= (
+            1.0
+            + _SCORE_UI_LAYERED_TAU_MAD_WEIGHT
+            * max(0.0, tau_mad_mm / _SCORE_UI_LAYERED_TAU_MAD_REF_MM - 1.0)
+        )
+
+    if not np.isfinite(risk):
+        return None
+    return float(risk)
+
+
 def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     noise_metrics = _plan_noise_metrics(plan)
     nm = noise_metrics if isinstance(noise_metrics, dict) else {}
@@ -7341,7 +7377,9 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     cost_raw = _float_or_none(plan.get("cost_raw"))
     tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
     n_trim = _float_or_none(nm.get("n_obs_trimmed"))
-    m_layered = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
+    m_layered = _plan_trimmed_risk_metric(plan)
+    if m_layered is None:
+        m_layered = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
     critical_nonfinite = (
         m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
     )
