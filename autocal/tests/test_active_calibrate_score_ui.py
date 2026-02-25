@@ -37,8 +37,13 @@ def _layered_plan(
     chi2_layered: float,
     tau_mad_mm: float,
     n_trim: float,
+    n_obs: float | None = None,
+    chi2_red: float | None = None,
+    chi2_red_trimmed: float | None = None,
+    rel_std: float | None = None,
+    workspace_diag_mm: float = 1000.0,
 ) -> dict:
-    return {
+    plan = {
         "anchors": np.asarray([[0.0, 0.0], [1645.0, 950.0], [-1645.0, 950.0]], dtype=float),
         "machine_type": "slideprinter",
         "cost": float(primary_cost),
@@ -58,15 +63,24 @@ def _layered_plan(
                 "noise_metrics": {
                     "chi2_red_rescored_tau_3bin_debiased": float(chi2_layered),
                     "chi2_red_rescored": float(chi2_layered),
-                    "chi2_red_trimmed": float(chi2_layered),
+                    "chi2_red_trimmed": float(
+                        chi2_red_trimmed if chi2_red_trimmed is not None else chi2_layered
+                    ),
                     "tau_mad_mm": float(tau_mad_mm),
                     "n_obs_trimmed": float(n_trim),
-                    "chi2_red": float(primary_cost),
+                    "n_obs": float(n_obs if n_obs is not None else n_trim),
+                    "chi2_red": float(chi2_red if chi2_red is not None else chi2_layered),
                     "J": float(primary_cost),
                 }
             }
         },
     }
+    if rel_std is not None:
+        plan["workspace_diag_mm"] = float(workspace_diag_mm)
+        plan["confidence_intervals"] = {
+            "max_std_mm": float(rel_std) * float(workspace_diag_mm),
+        }
+    return plan
 
 
 def test_plan_score_ui_layered_keeps_good_fit_below_two_even_with_high_primary_cost():
@@ -104,6 +118,45 @@ def test_plan_score_ui_layered_uses_hard_fail_for_bad_raw_geometry():
     score_ui, _, _ = ac._plan_score_ui(plan)
     assert score_ui >= 50.0
     assert ac._solution_quality_label(score_ui) == "concerning"
+
+
+def test_plan_score_ui_layered_penalizes_trim_gap_and_rel_std():
+    reliable_candidate = _layered_plan(
+        primary_cost=12.34,
+        cost_raw=0.7044,
+        chi2_layered=154.9,
+        tau_mad_mm=0.9,
+        n_trim=80.0,
+        n_obs=80.0,
+        chi2_red=653.7,
+        chi2_red_trimmed=653.7,
+        rel_std=8.286,
+    )
+    unreliable_candidate = _layered_plan(
+        primary_cost=5.28,
+        cost_raw=0.6125,
+        chi2_layered=132.5,
+        tau_mad_mm=0.9,
+        n_trim=84.0,
+        n_obs=100.0,
+        chi2_red=12760.0,
+        chi2_red_trimmed=191.0,
+        rel_std=36.23,
+    )
+
+    # The unreliable candidate has lower core chi2 but should still rank worse.
+    core_reliable = (
+        reliable_candidate["calibration"]["details"]["noise_metrics"]["chi2_red_rescored_tau_3bin_debiased"]
+    )
+    core_unreliable = (
+        unreliable_candidate["calibration"]["details"]["noise_metrics"]["chi2_red_rescored_tau_3bin_debiased"]
+    )
+    assert float(core_unreliable) < float(core_reliable)
+
+    score_reliable, rank_reliable, _ = ac._plan_score_ui(reliable_candidate)
+    score_unreliable, rank_unreliable, _ = ac._plan_score_ui(unreliable_candidate)
+    assert rank_reliable < rank_unreliable
+    assert score_reliable < score_unreliable
 
 
 def test_plan_score_ui_non_layered_matches_primary_cost():
