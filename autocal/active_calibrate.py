@@ -51,6 +51,7 @@ _SCORE_UI_LAYERED_N_TRIM_WEIGHT = 0.10
 _SCORE_UI_LAYERED_MAP_SCALE = 95.0
 _SCORE_UI_LAYERED_MAP_EXP = 5.0
 _SCORE_UI_LAYERED_MAP_MULT = 1.0
+_SCORE_UI_LAYERED_RISK_BLEND_WEIGHT = 0.5
 _SCORE_UI_HARD_FAIL = 50.0
 
 from autocal.active_learning import (
@@ -740,9 +741,144 @@ def _estimate_effective_radii_with_spool_model(
 
     # Keep spool-step data term aligned with the main optimization metric.
     spool_noise_normalized = True
+    raw_machine_type = dataset.get("machine_type")
+    machine_type_for_risk = (
+        str(raw_machine_type)
+        if isinstance(raw_machine_type, str) and str(raw_machine_type) in MACHINE_TYPE_CHOICES
+        else None
+    )
+    dimensions_for_risk = None
+    try:
+        dims_raw = int(dataset.get("dimensions"))
+    except Exception:
+        dims_raw = 0
+    if dims_raw > 0:
+        dimensions_for_risk = int(dims_raw)
+    elif anchors_current.ndim == 2 and anchors_current.shape[1] > 0:
+        dimensions_for_risk = int(anchors_current.shape[1])
 
-    def _data_cost(transformed_dataset: dict, anchors_eval: np.ndarray) -> float:
-        return float(
+    def _spool_rel_std(
+        transformed_dataset: dict,
+        anchors_eval: np.ndarray,
+        noise_metrics: Optional[dict],
+    ) -> Optional[float]:
+        if not isinstance(noise_metrics, dict):
+            return None
+        if machine_type_for_risk is None or dimensions_for_risk is None:
+            return None
+        anchors_arr = np.asarray(anchors_eval, dtype=float)
+        if (
+            anchors_arr.ndim != 2
+            or anchors_arr.shape[0] != num_anchors
+            or not np.all(np.isfinite(anchors_arr))
+        ):
+            return None
+        try:
+            sweep_configs = dataset_sweep_configs(transformed_dataset)
+            l2_scale = l2_scale_for_machine(
+                str(machine_type_for_risk),
+                int(num_anchors),
+                int(dimensions_for_risk),
+            )
+            info_obs = total_information_matrix(
+                anchors_arr,
+                sweep_configs,
+                machine_type=str(machine_type_for_risk),
+                num_anchors=int(num_anchors),
+                dimensions=int(dimensions_for_risk),
+                l2_scale=l2_scale,
+                fd_eps_mm=1.0,
+            )
+            cov = _estimate_anchor_covariance(info_obs, regularization=0.0)
+            cov_scaled, _cov_scale, _cov_label = _scale_covariance(cov, noise_metrics)
+            ci = _confidence_intervals(cov_scaled)
+            max_std = _float_or_none(ci.get("max_std_mm")) if isinstance(ci, dict) else None
+            if max_std is None:
+                cov_std = _covariance_diag_std(cov_scaled)
+                if cov_std is not None:
+                    finite = cov_std[np.isfinite(cov_std)]
+                    if finite.size:
+                        max_std = float(np.max(finite))
+            workspace_diag = _workspace_diag_mm(
+                transformed_dataset,
+                anchors_arr,
+                machine_type=str(machine_type_for_risk),
+                num_anchors=int(num_anchors),
+                dimensions=int(dimensions_for_risk),
+            )
+            workspace = _float_or_none(workspace_diag)
+            if max_std is None or workspace is None or workspace <= 0.0:
+                return None
+            return float(max_std) / float(workspace)
+        except Exception:
+            return None
+
+    def _spool_trimmed_risk_metric(
+        transformed_dataset: dict,
+        anchors_eval: np.ndarray,
+        *,
+        noise_metrics_hint: Optional[dict] = None,
+    ) -> Optional[float]:
+        try:
+            noise_metrics = dict(noise_metrics_hint) if isinstance(noise_metrics_hint, dict) else None
+            anchor_vec = np.asarray(anchors_eval, dtype=float).ravel()
+            cost_fn = None
+            detailed = None
+            if noise_metrics is None:
+                cost_fn = _build_ellipse_cost_function(
+                    transformed_dataset,
+                    residual_threshold=float(residual_threshold),
+                    spring_k_multiplier=float(spring_k_multiplier),
+                    use_flex=bool(use_flex),
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    noise_normalized=True,
+                    sigma_source=str(sigma_source),
+                )
+                detailed = cost_fn.evaluate_detailed(anchor_vec)
+                noise_metrics = (
+                    dict(detailed.noise_metrics)
+                    if isinstance(detailed.noise_metrics, dict)
+                    else {}
+                )
+            if not isinstance(noise_metrics, dict):
+                return None
+
+            if (
+                _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct")) is None
+                and cost_fn is not None
+            ):
+                try:
+                    rows = cost_fn.pointwise_residual_rows(anchor_vec)
+                    sigma_model_mm = noise_metrics.get("sigma_model_mm")
+                    if _float_or_none(sigma_model_mm) is None:
+                        sigma_model_mm = noise_metrics.get("sigma_used_mm")
+                    rescored = _compute_tau_mad_rescore_from_rows(
+                        rows,
+                        cost_noise_normalized_old=(
+                            detailed.total_cost
+                            if detailed is not None
+                            else noise_metrics.get("cost_noise_normalized_old")
+                        ),
+                        chi2_red_old=noise_metrics.get("chi2_red"),
+                        sigma_model_mm=sigma_model_mm,
+                        params_count=noise_metrics.get("params"),
+                    )
+                    noise_metrics = {**noise_metrics, **rescored}
+                except Exception:
+                    pass
+
+            rel_std = _spool_rel_std(transformed_dataset, anchors_eval, noise_metrics)
+            return _trimmed_risk_metric_from_components(noise_metrics, rel_std=rel_std)
+        except Exception:
+            return None
+
+    def _data_cost(transformed_dataset: dict, anchors_eval: np.ndarray, blend_weight: float = _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT) -> float:
+        legacy_cost = float(
             _evaluate_cost_at_anchors(
                 transformed_dataset,
                 anchors_eval,
@@ -759,6 +895,13 @@ def _estimate_effective_radii_with_spool_model(
                 sigma_source=str(sigma_source),
             )
         )
+        risk_metric = _spool_trimmed_risk_metric(transformed_dataset, anchors_eval)
+        if np.isfinite(legacy_cost) and risk_metric is not None and np.isfinite(risk_metric):
+            return float(
+                legacy_cost
+                + blend_weight * max(float(risk_metric), 0.0)
+            )
+        return float(legacy_cost)
 
     def _extract_noise_metrics(cal_result: object) -> Optional[dict]:
         if not isinstance(cal_result, dict):
@@ -816,10 +959,15 @@ def _estimate_effective_radii_with_spool_model(
                     noise_metrics.update(rescored)
                 except Exception:
                     pass
-
             m_layered = _layered_internal_metric_from_noise_metrics(noise_metrics)
-            rank_score = _layered_rank_score_from_internal_metric(m_layered)
-            return float(rank_score), (None if m_layered is None else float(m_layered))
+            risk_metric = _spool_trimmed_risk_metric(
+                transformed_dataset,
+                anchors_eval,
+                noise_metrics_hint=noise_metrics,
+            )
+            m_internal = _blend_internal_metric_with_risk(m_layered, risk_metric)
+            rank_score = _layered_rank_score_from_internal_metric(m_internal)
+            return float(rank_score), (None if m_internal is None else float(m_internal))
         except Exception:
             return float("inf"), None
 
@@ -2044,7 +2192,7 @@ def _estimate_effective_radii_with_spool_model(
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
-        "optimization_objective": "log1p(m_layered)",
+        "optimization_objective": "legacy_data_cost + w*risk_trimmed_direct",
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
         "scale_fix_1_enabled": bool(use_scale_fix_1),
         "scale_fix_2_enabled": bool(use_scale_fix_2),
@@ -7334,25 +7482,50 @@ def _layered_rank_score_from_internal_metric(
     return float(rank_score)
 
 
-def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
-    noise_metrics = _plan_noise_metrics(plan)
+def _trimmed_risk_metric_from_components(
+    noise_metrics: Optional[dict],
+    *,
+    rel_std: Optional[float],
+) -> Optional[float]:
     if not isinstance(noise_metrics, dict):
+        return None
+    if rel_std is None or not np.isfinite(rel_std) or rel_std <= 0.0:
         return None
 
     chi2_trimmed_direct = _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct"))
     if chi2_trimmed_direct is None or chi2_trimmed_direct < 0.0:
         return None
 
-    _max_std_mm, rel_std, _cov_ok = _plan_covariance_summary(plan)
-    if rel_std is None or rel_std <= 0.0:
-        return None
-
-    risk = np.sqrt(float(chi2_trimmed_direct)) * float(rel_std)
-    #risk = float(rel_std)
+    risk = float(chi2_trimmed_direct)# * float(rel_std)
 
     if not np.isfinite(risk):
         return None
     return float(risk)
+
+
+def _blend_internal_metric_with_risk(
+    base_metric: Optional[float],
+    risk_metric: Optional[float],
+    *,
+    weight: float = _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT,
+) -> Optional[float]:
+    base = _float_or_none(base_metric)
+    risk = _float_or_none(risk_metric)
+    if base is None:
+        return float(risk) if risk is not None else None
+    if risk is None:
+        return float(base)
+    w = max(0.0, float(weight))
+    return float(base + w * max(float(risk), 0.0))
+
+
+def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
+    noise_metrics = _plan_noise_metrics(plan)
+    if not isinstance(noise_metrics, dict):
+        return None
+
+    _max_std_mm, rel_std, _cov_ok = _plan_covariance_summary(plan)
+    return _trimmed_risk_metric_from_components(noise_metrics, rel_std=rel_std)
 
 
 def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
@@ -7362,8 +7535,9 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     cost_raw = _float_or_none(plan.get("cost_raw"))
     tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
     n_trim = _float_or_none(nm.get("n_obs_trimmed"))
-    m_layered = 0.70*_layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw) + 0.30*_plan_trimmed_risk_metric(plan)
-    #m_layered = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
+    m_base = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
+    m_risk = _plan_trimmed_risk_metric(plan)
+    m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
     critical_nonfinite = (
         m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
     )

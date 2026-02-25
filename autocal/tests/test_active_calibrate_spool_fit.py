@@ -1977,3 +1977,141 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
     assert isinstance(history, list) and history
     assert history[0].get("accepted_update") == "anchor_full"
     assert isinstance(fit_info.get("best_rank_score"), (int, float))
+
+
+def test_spool_block_update_data_cost_blends_trimmed_risk(monkeypatch):
+    base = np.array([10.0, 10.0, 10.0], dtype=float)
+
+    def fake_build_spool_model_params(
+        dataset,
+        *,
+        base_radii_mm,
+        modeled_radii_mm,
+        modeled_buildup_factor,
+        spool_to_motor_gearing_factor,
+        mechanical_advantage,
+        lines_per_spool,
+        base_buildup_factor=None,
+        theta0_mode="zero",
+        prefer_zero_tension_angles=False,
+    ):
+        _ = (
+            dataset,
+            base_radii_mm,
+            spool_to_motor_gearing_factor,
+            mechanical_advantage,
+            lines_per_spool,
+            base_buildup_factor,
+            theta0_mode,
+            prefer_zero_tension_angles,
+        )
+        return {
+            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
+            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
+        }
+
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
+        k_vals = np.asarray(spool_params["buildup_factor"], dtype=float).reshape(-1)
+        return {
+            "machine_type": str(dataset.get("machine_type", "slideprinter")),
+            "num_anchors": int(dataset.get("num_anchors", 3)),
+            "dimensions": int(dataset.get("dimensions", 2)),
+            "sweeps": [],
+            "_spool_buildup_factor": [float(v) for v in k_vals.tolist()],
+        }
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = (dataset_or_path, kwargs)
+        anchors = np.ones((3, 2), dtype=float)
+        return {"anchors": anchors, "cost": 1.0}
+
+    # Keep legacy term fixed so the risk blend is directly measurable.
+    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
+        _ = (dataset, anchors, kwargs)
+        return 10.0
+
+    class FakeCostFn:
+        def __init__(self, transformed_dataset):
+            _ = transformed_dataset
+
+        def evaluate_detailed(self, anchor_vec):
+            _ = anchor_vec
+            noise_metrics = {
+                "chi2_red_tau_d_trimmed_direct": 20.0,
+                "chi2_red": 1.0,
+                "n_obs_trimmed": 60.0,
+                "tau_mad_mm": 0.6,
+                "params": 6,
+                "sigma_model_mm": 1.0,
+            }
+            return SimpleNamespace(total_cost=1.0, noise_metrics=noise_metrics)
+
+        def pointwise_residual_rows(self, anchor_vec):
+            _ = anchor_vec
+            return []
+
+    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
+    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
+    monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(ac, "total_information_matrix", lambda *_args, **_kwargs: np.eye(6, dtype=float))
+    monkeypatch.setattr(
+        ac,
+        "_estimate_anchor_covariance",
+        lambda info, **_kwargs: np.asarray(info, dtype=float),
+    )
+    monkeypatch.setattr(ac, "_workspace_diag_mm", lambda *_args, **_kwargs: 2.0)
+
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    seed_anchors = np.zeros((3, 2), dtype=float)
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="off",
+        find_buildup_mode="global",
+        base_radii_mm=base,
+        modeled_buildup_factor=np.full(3, 0.9, dtype=float),
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=None,
+        b_bounds=(0.0, 1.0),
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=1e9,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+    )
+
+    history = fit_info.get("history")
+    assert isinstance(history, list) and history
+    expected_risk = 20.0 * 0.5
+    expected_data_cost = 10.0 + ac._SCORE_UI_LAYERED_RISK_BLEND_WEIGHT * expected_risk
+    assert np.isclose(float(history[0].get("current_data_cost")), expected_data_cost, atol=1e-9)
