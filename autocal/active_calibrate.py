@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import math
 import os
 import shlex
 import subprocess
@@ -43,11 +42,12 @@ _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 _TAU_MAD_SCALE = 1.4826
-_SCORE_UI_TRIM_FRAC_WEIGHT = 0.8
-_SCORE_UI_TRIM_GAP_LOG10_WEIGHT = 0.5
-_SCORE_UI_TRIM_GAP_LOG10_CAP = 2.0
-_SCORE_UI_CONF_REF_REL_STD = 10.0
-_SCORE_UI_CONF_LOG10_WEIGHT = 0.3
+_SCORE_UI_LAYERED_COST_RAW_REF = 0.8
+_SCORE_UI_LAYERED_COST_RAW_WEIGHT = 0.20
+_SCORE_UI_LAYERED_TAU_MAD_REF_MM = 1.0
+_SCORE_UI_LAYERED_TAU_MAD_WEIGHT = 0.15
+_SCORE_UI_LAYERED_N_TRIM_REF = 40.0
+_SCORE_UI_LAYERED_N_TRIM_WEIGHT = 0.10
 _SCORE_UI_LAYERED_MAP_SCALE = 95.0
 _SCORE_UI_LAYERED_MAP_EXP = 5.0
 _SCORE_UI_LAYERED_MAP_MULT = 1.0
@@ -2044,7 +2044,7 @@ def _estimate_effective_radii_with_spool_model(
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
-        "optimization_objective": "log1p(m_rank)",
+        "optimization_objective": "log1p(m_layered)",
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
         "scale_fix_1_enabled": bool(use_scale_fix_1),
         "scale_fix_2_enabled": bool(use_scale_fix_2),
@@ -7275,11 +7275,11 @@ def _plan_uses_layered_score(plan: Dict[str, object]) -> bool:
 def _layered_internal_metric_from_noise_metrics(
     noise_metrics: Optional[dict],
     *,
-    rel_std: Optional[float] = None,
+    cost_raw: Optional[float] = None,
 ) -> Optional[float]:
     if not isinstance(noise_metrics, dict):
         return None
-    m_core = None
+    m_layered = None
     for key in (
         "chi2_red_rescored_tau_3bin_debiased",
         "chi2_red_rescored",
@@ -7288,55 +7288,36 @@ def _layered_internal_metric_from_noise_metrics(
     ):
         m_try = _float_or_none(noise_metrics.get(key))
         if m_try is not None:
-            m_core = float(m_try)
+            m_layered = float(m_try)
             break
-    if m_core is None:
+    if m_layered is None:
         return None
 
-    n_obs = _float_or_none(noise_metrics.get("n_obs"))
-    n_trim = _float_or_none(noise_metrics.get("n_obs_trimmed"))
-    if n_obs is None and n_trim is not None:
-        n_obs = float(n_trim)
-    n_denom = max(float(n_obs) if n_obs is not None else 1.0, 1.0)
-    n_trim_val = float(n_trim) if n_trim is not None else n_denom
-    trim_frac = max(0.0, 1.0 - (n_trim_val / n_denom))
-
-    chi2_red = _float_or_none(noise_metrics.get("chi2_red"))
-    chi2_red_trim = None
-    for key in (
-        "chi2_red_trimmed",
-        "chi2_red_tau_3bin_debiased_trimmed_direct",
-        "chi2_red_rescored_tau_3bin_debiased",
-        "chi2_red",
-    ):
-        val = _float_or_none(noise_metrics.get(key))
-        if val is not None:
-            chi2_red_trim = float(val)
-            break
-    if chi2_red is None:
-        chi2_red = float(m_core)
-    if chi2_red_trim is None:
-        chi2_red_trim = float(chi2_red)
-    trim_gap = max(1.0, float(chi2_red) / max(float(chi2_red_trim), 1e-9))
-    trim_gap_log10 = min(_SCORE_UI_TRIM_GAP_LOG10_CAP, math.log10(trim_gap))
-    p_trim = (
-        1.0
-        + _SCORE_UI_TRIM_FRAC_WEIGHT * trim_frac
-        + _SCORE_UI_TRIM_GAP_LOG10_WEIGHT * trim_gap_log10
-    )
-
-    rel_std_val = _float_or_none(rel_std)
-    if rel_std_val is None:
-        rel_std_val = _float_or_none(noise_metrics.get("rel_std"))
-    p_conf = 1.0
-    if rel_std_val is not None and rel_std_val > 0.0:
-        p_conf += _SCORE_UI_CONF_LOG10_WEIGHT * max(
-            0.0,
-            math.log10(float(rel_std_val) / _SCORE_UI_CONF_REF_REL_STD),
+    cost_raw_val = _float_or_none(cost_raw)
+    if cost_raw_val is not None:
+        m_layered *= (
+            1.0
+            + _SCORE_UI_LAYERED_COST_RAW_WEIGHT
+            * max(0.0, cost_raw_val / _SCORE_UI_LAYERED_COST_RAW_REF - 1.0)
         )
 
-    m_rank = max(float(m_core), 0.0) * float(p_trim) * float(p_conf)
-    return float(m_rank)
+    tau_mad_mm = _float_or_none(noise_metrics.get("tau_mad_mm"))
+    if tau_mad_mm is not None:
+        m_layered *= (
+            1.0
+            + _SCORE_UI_LAYERED_TAU_MAD_WEIGHT
+            * max(0.0, tau_mad_mm / _SCORE_UI_LAYERED_TAU_MAD_REF_MM - 1.0)
+        )
+
+    n_trim = _float_or_none(noise_metrics.get("n_obs_trimmed"))
+    if n_trim is not None:
+        m_layered *= (
+            1.0
+            + _SCORE_UI_LAYERED_N_TRIM_WEIGHT
+            * max(0.0, (_SCORE_UI_LAYERED_N_TRIM_REF - n_trim) / 10.0)
+        )
+
+    return float(m_layered)
 
 
 def _layered_rank_score_from_internal_metric(
@@ -7358,10 +7339,13 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     nm = noise_metrics if isinstance(noise_metrics, dict) else {}
 
     cost_raw = _float_or_none(plan.get("cost_raw"))
-    _, rel_std, _ = _plan_covariance_summary(plan)
-    m_rank = _layered_internal_metric_from_noise_metrics(nm, rel_std=rel_std)
-    critical_nonfinite = m_rank is None
-    m = float(m_rank) if m_rank is not None else float("nan")
+    tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
+    n_trim = _float_or_none(nm.get("n_obs_trimmed"))
+    m_layered = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
+    critical_nonfinite = (
+        m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
+    )
+    m = float(m_layered) if m_layered is not None else float("nan")
 
     score_ui = float("nan")
     if np.isfinite(m) and m >= 0.0:
