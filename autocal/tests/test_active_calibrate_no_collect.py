@@ -85,15 +85,19 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
                 "cost_noise_normalized_rescored": 10.4,
                 "chi2_red_old": 91.2,
                 "chi2_red_rescored": 12.8,
-                "residual_vs_distance_slope": 0.02,
+                "residual_vs_distance_slope_inliers": 0.02,
                 "residual_abs_vs_distance_slope": 0.01,
                 "residual_sq_vs_distance_slope": 0.04,
+                "inlier_cutoff_mm": 2.4,
+                "n_inlier_rows_used_for_tau": 17,
                 "tau_d_tau0_mm": 2.0,
                 "tau_d_tau1_per_mm": 0.001,
-                "cost_noise_normalized_rescored_tau_d": 8.0,
-                "chi2_red_rescored_tau_d": 9.0,
+                "cost_noise_normalized_tau_d": 8.0,
+                "chi2_red_tau_d": 9.0,
+                "cost_noise_normalized_tau_d_trimmed_direct": 6.2,
+                "chi2_red_tau_d_trimmed_direct": 7.3,
                 "bias_vs_distance_intercept_mm": -0.3,
-                "bias_vs_distance_slope_mm_per_mm": 0.002,
+                "bias_vs_distance_slope_inliers": 0.002,
                 "cost_after_bias_diagnostic": 6.5,
                 "chi2_red_after_bias_diagnostic": 7.5,
                 "distance_bin_mad_mm": {
@@ -118,6 +122,8 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
                 },
                 "cost_noise_normalized_rescored_tau_3bin_debiased": 5.8,
                 "chi2_red_rescored_tau_3bin_debiased": 6.8,
+                "chi2_red_tau_3bin_debiased_trimmed_direct": 6.8,
+                "trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased": 7.3 / 6.8,
                 "per_sweep_residual_summary": {
                     "sweep_001": {
                         "median_residual_mm": 1.0,
@@ -147,16 +153,22 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
     assert "cost_noise_normalized_new=10.4" in out
     assert "chi2_red_old=91.2" in out
     assert "chi2_red_new=12.8" in out
-    assert "residual_vs_distance_slope=0.02" in out
+    assert "residual_vs_distance_slope_inliers=0.02" in out
     assert "slope(|r|,d)=0.01" in out
     assert "slope(r^2,d)=0.04" in out
+    assert "inlier_cutoff_mm=2.4mm" in out
+    assert "n_inlier_rows_used_for_tau=17" in out
     assert "tau_d_tau0=2mm" in out
     assert "tau_d_tau1=0.001" in out
     assert "cost_noise_normalized_tau_d=8" in out
     assert "chi2_red_tau_d=9" in out
+    assert "cost_noise_normalized_tau_d_trimmed_direct=6.2" in out
+    assert "chi2_red_tau_d_trimmed_direct=7.3" in out
+    assert "chi2_red_tau_3bin_debiased_trimmed_direct=6.8" in out
+    assert "trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=1.074" in out
     assert "noise_bias_diagnostic:" in out
     assert "bias_vs_distance_intercept=-0.3mm" in out
-    assert "bias_vs_distance_slope=0.002" in out
+    assert "bias_vs_distance_slope_inliers=0.002" in out
     assert "cost_after_bias_diagnostic=6.5" in out
     assert "chi2_red_after_bias_diagnostic=7.5" in out
     assert "noise_rescore_bins:" in out
@@ -174,6 +186,7 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
     assert "tau_far=1.1mm" in out
     assert "cost_noise_normalized_tau_3bin_debiased=5.8" in out
     assert "chi2_red_tau_3bin_debiased=6.8" in out
+    assert "chi2_red_tau_3bin_debiased_trimmed_direct=6.8" in out
     assert "sweep_residual: id=sweep_001" in out
     assert "median=1mm" in out
     assert "MAD=0.5mm" in out

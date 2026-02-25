@@ -397,6 +397,9 @@ def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
     assert np.isclose(float(out["cost_noise_normalized_rescored"]), 74.0 * expected_scale, atol=1e-9)
     assert np.isclose(float(out["chi2_red_old"]), 50.0, atol=1e-9)
     assert np.isclose(float(out["chi2_red_rescored"]), 50.0 * expected_scale, atol=1e-9)
+    assert np.isclose(float(out["inlier_cutoff_mm"]), 2.0, atol=1e-12)
+    assert int(out["n_inlier_rows_used_for_tau"]) == 3
+    assert np.isclose(float(out["residual_vs_distance_slope_inliers"]), 0.02, atol=1e-9)
     assert np.isclose(float(out["residual_vs_distance_slope"]), 0.02, atol=1e-9)
     assert np.isclose(float(out["residual_abs_vs_distance_slope"]), 0.01, atol=1e-9)
     assert np.isclose(float(out["residual_sq_vs_distance_slope"]), 0.04, atol=1e-9)
@@ -411,6 +414,7 @@ def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
     assert int(counts["mid"]) == 1
     assert int(counts["far"]) == 1
     assert np.isclose(float(out["bias_vs_distance_intercept_mm"]), -2.6666666666666665, atol=1e-9)
+    assert np.isclose(float(out["bias_vs_distance_slope_inliers"]), 0.02, atol=1e-9)
     assert np.isclose(float(out["bias_vs_distance_slope_mm_per_mm"]), 0.02, atol=1e-9)
     assert np.isclose(float(out["cost_after_bias_diagnostic"]), 1.0 / 18.0, atol=1e-9)
     assert np.isclose(float(out["chi2_red_after_bias_diagnostic"]), 1.0 / 6.0, atol=1e-9)
@@ -436,12 +440,36 @@ def test_compute_tau_mad_rescore_from_rows_uses_inliers_and_rescores():
     )
     assert np.isclose(float(out["tau_d_tau0_mm"]), float(out["tau_mad_mm"]), atol=1e-12)
     assert np.isclose(float(out["tau_d_tau1_per_mm"]), 0.0, atol=1e-12)
+    assert np.isclose(float(out["cost_noise_normalized_tau_d"]), float(out["cost_noise_normalized_rescored_tau_d"]), atol=1e-12)
+    assert np.isclose(float(out["chi2_red_tau_d"]), float(out["chi2_red_rescored_tau_d"]), atol=1e-12)
     assert np.isclose(
         float(out["cost_noise_normalized_rescored_tau_d"]),
         float(out["cost_noise_normalized_rescored"]),
         atol=1e-12,
     )
     assert np.isclose(float(out["chi2_red_rescored_tau_d"]), float(out["chi2_red_rescored"]), atol=1e-12)
+    expected_tau_d_trim_cost = float(np.mean((np.asarray([-0.5, 1.0, 1.5], dtype=float) ** 2.0) * expected_scale))
+    expected_tau_d_trim_chi2 = float(np.sum((np.asarray([-0.5, 1.0, 1.5], dtype=float) ** 2.0) * expected_scale))
+    assert np.isclose(
+        float(out["cost_noise_normalized_tau_d_trimmed_direct"]),
+        expected_tau_d_trim_cost,
+        atol=1e-9,
+    )
+    assert np.isclose(
+        float(out["chi2_red_tau_d_trimmed_direct"]),
+        expected_tau_d_trim_chi2,
+        atol=1e-9,
+    )
+    assert np.isclose(
+        float(out["chi2_red_tau_3bin_debiased_trimmed_direct"]),
+        float(out["chi2_red_rescored_tau_3bin_debiased"]),
+        atol=1e-12,
+    )
+    assert np.isclose(
+        float(out["trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased"]),
+        float(out["chi2_red_tau_d_trimmed_direct"]) / float(out["chi2_red_tau_3bin_debiased_trimmed_direct"]),
+        atol=1e-9,
+    )
     per_sweep = out["per_sweep_residual_summary"]
     assert isinstance(per_sweep, dict)
     assert set(per_sweep.keys()) == {"sweep_a", "sweep_b"}

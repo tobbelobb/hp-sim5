@@ -2680,6 +2680,7 @@ def _compute_tau_mad_rescore_from_rows(
     params_count: Optional[float] = None,
 ) -> Dict[str, object]:
     inlier_residuals_tau_mm: List[float] = []
+    inlier_cutoff_mm_values: List[float] = []
     slope_x_mm: List[float] = []
     slope_signed_y_mm: List[float] = []
     slope_abs_y_mm: List[float] = []
@@ -2709,6 +2710,8 @@ def _compute_tau_mad_rescore_from_rows(
             clipped_by_sweep[sweep_id] = int(clipped_by_sweep.get(sweep_id, 0)) + 1
             continue
         clipped_by_sweep.setdefault(sweep_id, 0)
+        if cutoff_mm is not None and np.isfinite(cutoff_mm):
+            inlier_cutoff_mm_values.append(float(cutoff_mm))
         residual_z_signed = _float_or_none(row.get("residual_z_signed"))
         if residual_z_signed is None:
             residual_z_signed = _float_or_none(row.get("residual_z"))
@@ -2759,6 +2762,14 @@ def _compute_tau_mad_rescore_from_rows(
                     sigma_point = float(sigma_model_local)
             spread_residual_z_signed.append(float(z_for_tau) if z_for_tau is not None and np.isfinite(z_for_tau) else float("nan"))
             spread_sigma_point_mm.append(float(sigma_point) if sigma_point is not None else float("nan"))
+
+    n_inlier_rows_used_for_tau = int(len(inlier_residuals_tau_mm))
+    inlier_cutoff_mm = None
+    if inlier_cutoff_mm_values:
+        cutoff_arr = np.asarray(inlier_cutoff_mm_values, dtype=float)
+        finite_cutoff = cutoff_arr[np.isfinite(cutoff_arr)]
+        if finite_cutoff.size:
+            inlier_cutoff_mm = float(np.median(finite_cutoff))
 
     def _linear_slope(x_vals: Sequence[float], y_vals: Sequence[float]) -> Optional[float]:
         if len(x_vals) < 2 or len(x_vals) != len(y_vals):
@@ -2830,7 +2841,7 @@ def _compute_tau_mad_rescore_from_rows(
         if np.isfinite(tau_val) and tau_val >= 0.0:
             tau_mad_mm = float(tau_val)
 
-    residual_vs_distance_slope = _linear_slope(slope_x_mm, slope_signed_y_mm)
+    residual_vs_distance_slope_inliers = _linear_slope(slope_x_mm, slope_signed_y_mm)
     residual_abs_vs_distance_slope = _linear_slope(slope_x_mm, slope_abs_y_mm)
     residual_sq_vs_distance_slope = _linear_slope(slope_x_mm, slope_sq_y_mm2)
 
@@ -2888,7 +2899,7 @@ def _compute_tau_mad_rescore_from_rows(
                         tau_d_fit_spreads.append(madn_bin)
 
     bias_vs_distance_intercept_mm = None
-    bias_vs_distance_slope_mm_per_mm = None
+    bias_vs_distance_slope_inliers = None
     cost_after_bias_diagnostic = None
     chi2_red_after_bias_diagnostic = None
     r_debiased = np.zeros(0, dtype=float)
@@ -2897,9 +2908,9 @@ def _compute_tau_mad_rescore_from_rows(
         intercept_fit, slope_fit = _robust_line_fit(d_arr, r_arr)
         if intercept_fit is not None and slope_fit is not None:
             bias_vs_distance_intercept_mm = float(intercept_fit)
-            bias_vs_distance_slope_mm_per_mm = float(slope_fit)
+            bias_vs_distance_slope_inliers = float(slope_fit)
             r_debiased = r_arr - (
-                float(bias_vs_distance_intercept_mm) + (float(bias_vs_distance_slope_mm_per_mm) * d_arr)
+                float(bias_vs_distance_intercept_mm) + (float(bias_vs_distance_slope_inliers) * d_arr)
             )
             sigma_eff = np.asarray(sigma_arr, dtype=float)
             valid_sigma = np.isfinite(sigma_eff) & (sigma_eff > 0.0)
@@ -3067,6 +3078,8 @@ def _compute_tau_mad_rescore_from_rows(
     tau_d_rescore_scale = None
     cost_rescored_tau_d = None
     chi2_rescored_tau_d = None
+    cost_rescored_tau_d_trimmed_direct = None
+    chi2_rescored_tau_d_trimmed_direct = None
     if sigma_model is not None and sigma_model > 0.0 and tau_mad_mm is not None:
         sigma_eff_val = float(np.sqrt((sigma_model * sigma_model) + (tau_mad_mm * tau_mad_mm)))
         if np.isfinite(sigma_eff_val) and sigma_eff_val > 0.0:
@@ -3119,9 +3132,18 @@ def _compute_tau_mad_rescore_from_rows(
                                 if int(np.sum(finite_z)) > 0:
                                     z2 = z2[finite_z]
                                     scale_use = scale_arr[finite_z]
+                                    weighted = z2 * scale_use
+                                    if weighted.size:
+                                        cost_rescored_tau_d_trimmed_direct = float(np.mean(weighted))
+                                        p_count = _float_or_none(params_count)
+                                        if p_count is None:
+                                            p_count = 0.0
+                                        dof = int(weighted.size - int(p_count))
+                                        if dof > 0:
+                                            chi2_rescored_tau_d_trimmed_direct = float(np.sum(weighted) / float(dof))
                                     base = float(np.mean(z2))
                                     if np.isfinite(base) and base > 0.0:
-                                        ratio = float(np.mean(z2 * scale_use) / base)
+                                        ratio = float(np.mean(weighted) / base)
                             if np.isfinite(ratio) and ratio > 0.0:
                                 tau_d_rescore_scale = ratio
                                 if cost_old is not None:
@@ -3129,10 +3151,24 @@ def _compute_tau_mad_rescore_from_rows(
                                 if chi2_old is not None:
                                     chi2_rescored_tau_d = float(chi2_old * ratio)
 
+    trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased = None
+    if (
+        chi2_rescored_tau_d_trimmed_direct is not None
+        and chi2_rescored_tau_3bin_debiased is not None
+        and np.isfinite(chi2_rescored_tau_d_trimmed_direct)
+        and np.isfinite(chi2_rescored_tau_3bin_debiased)
+        and abs(float(chi2_rescored_tau_3bin_debiased)) > 0.0
+    ):
+        trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased = float(
+            float(chi2_rescored_tau_d_trimmed_direct) / float(chi2_rescored_tau_3bin_debiased)
+        )
+
     return {
         "tau_mad_mm": tau_mad_mm,
         "tau_mad_inlier_points": int(len(inlier_residuals_tau_mm)),
         "tau_mad_total_points": int(total_rows),
+        "inlier_cutoff_mm": inlier_cutoff_mm,
+        "n_inlier_rows_used_for_tau": n_inlier_rows_used_for_tau,
         "cost_noise_normalized_old": cost_old,
         "cost_noise_normalized_rescored": cost_rescored,
         "chi2_red_old": chi2_old,
@@ -3140,7 +3176,8 @@ def _compute_tau_mad_rescore_from_rows(
         "sigma_model_rescore_mm": sigma_model,
         "sigma_eff_mm": sigma_eff_mm,
         "noise_rescore_scale": rescore_scale,
-        "residual_vs_distance_slope": residual_vs_distance_slope,
+        "residual_vs_distance_slope_inliers": residual_vs_distance_slope_inliers,
+        "residual_vs_distance_slope": residual_vs_distance_slope_inliers,
         "residual_abs_vs_distance_slope": residual_abs_vs_distance_slope,
         "residual_sq_vs_distance_slope": residual_sq_vs_distance_slope,
         "distance_bin_mad_mm": distance_bin_mad_mm,
@@ -3149,18 +3186,25 @@ def _compute_tau_mad_rescore_from_rows(
         "distance_bin_madn_debiased_mm": distance_bin_madn_debiased_mm,
         "distance_bin_counts": distance_bin_counts,
         "bias_vs_distance_intercept_mm": bias_vs_distance_intercept_mm,
-        "bias_vs_distance_slope_mm_per_mm": bias_vs_distance_slope_mm_per_mm,
+        "bias_vs_distance_slope_inliers": bias_vs_distance_slope_inliers,
+        "bias_vs_distance_slope_mm_per_mm": bias_vs_distance_slope_inliers,
         "cost_after_bias_diagnostic": cost_after_bias_diagnostic,
         "chi2_red_after_bias_diagnostic": chi2_red_after_bias_diagnostic,
         "tau_d_tau0_mm": tau_d_tau0_mm,
         "tau_d_tau1_per_mm": tau_d_tau1_per_mm,
         "tau_d_rescore_scale": tau_d_rescore_scale,
+        "cost_noise_normalized_tau_d": cost_rescored_tau_d,
+        "chi2_red_tau_d": chi2_rescored_tau_d,
         "cost_noise_normalized_rescored_tau_d": cost_rescored_tau_d,
         "chi2_red_rescored_tau_d": chi2_rescored_tau_d,
+        "cost_noise_normalized_tau_d_trimmed_direct": cost_rescored_tau_d_trimmed_direct,
+        "chi2_red_tau_d_trimmed_direct": chi2_rescored_tau_d_trimmed_direct,
         "tau_3bin_debiased_mm": tau_bin_debiased_mm,
         "tau_3bin_debiased_rescore_scale": tau_3bin_debiased_rescore_scale,
+        "chi2_red_tau_3bin_debiased_trimmed_direct": chi2_rescored_tau_3bin_debiased,
         "cost_noise_normalized_rescored_tau_3bin_debiased": cost_rescored_tau_3bin_debiased,
         "chi2_red_rescored_tau_3bin_debiased": chi2_rescored_tau_3bin_debiased,
+        "trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased": trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased,
         "per_sweep_residual_summary": per_sweep_summary,
         "per_sweep_bias_medians_mm": per_sweep_bias_medians,
         "per_sweep_demean": per_sweep_demean,
@@ -4732,20 +4776,35 @@ def _print_ellipse_plan(
                 cost_new = noise_metrics.get("cost_noise_normalized_rescored")
                 chi2_old = noise_metrics.get("chi2_red_old", chi2_red)
                 chi2_new = noise_metrics.get("chi2_red_rescored")
-                residual_slope = noise_metrics.get("residual_vs_distance_slope")
+                residual_slope = noise_metrics.get(
+                    "residual_vs_distance_slope_inliers",
+                    noise_metrics.get("residual_vs_distance_slope"),
+                )
                 residual_abs_slope = noise_metrics.get("residual_abs_vs_distance_slope")
                 residual_sq_slope = noise_metrics.get("residual_sq_vs_distance_slope")
+                inlier_cutoff_mm = noise_metrics.get("inlier_cutoff_mm")
+                n_inlier_rows = noise_metrics.get("n_inlier_rows_used_for_tau")
                 tau_d_tau0 = noise_metrics.get("tau_d_tau0_mm")
                 tau_d_tau1 = noise_metrics.get("tau_d_tau1_per_mm")
-                tau_d_cost = noise_metrics.get("cost_noise_normalized_rescored_tau_d")
-                tau_d_chi2 = noise_metrics.get("chi2_red_rescored_tau_d")
+                tau_d_cost = noise_metrics.get(
+                    "cost_noise_normalized_tau_d",
+                    noise_metrics.get("cost_noise_normalized_rescored_tau_d"),
+                )
+                tau_d_chi2 = noise_metrics.get("chi2_red_tau_d", noise_metrics.get("chi2_red_rescored_tau_d"))
+                tau_d_cost_trimmed_direct = noise_metrics.get("cost_noise_normalized_tau_d_trimmed_direct")
+                tau_d_chi2_trimmed_direct = noise_metrics.get("chi2_red_tau_d_trimmed_direct")
                 bias_intercept = noise_metrics.get("bias_vs_distance_intercept_mm")
-                bias_slope = noise_metrics.get("bias_vs_distance_slope_mm_per_mm")
+                bias_slope = noise_metrics.get(
+                    "bias_vs_distance_slope_inliers",
+                    noise_metrics.get("bias_vs_distance_slope_mm_per_mm"),
+                )
                 cost_after_bias = noise_metrics.get("cost_after_bias_diagnostic")
                 chi2_after_bias = noise_metrics.get("chi2_red_after_bias_diagnostic")
                 tau_3bin = noise_metrics.get("tau_3bin_debiased_mm")
                 tau_3bin_cost = noise_metrics.get("cost_noise_normalized_rescored_tau_3bin_debiased")
                 tau_3bin_chi2 = noise_metrics.get("chi2_red_rescored_tau_3bin_debiased")
+                tau_3bin_chi2_trimmed_direct = noise_metrics.get("chi2_red_tau_3bin_debiased_trimmed_direct")
+                trimmed_coherence_ratio = noise_metrics.get("trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased")
                 if any(
                     value is not None
                     for value in (
@@ -4755,10 +4814,16 @@ def _print_ellipse_plan(
                         residual_slope,
                         residual_abs_slope,
                         residual_sq_slope,
+                        inlier_cutoff_mm,
+                        n_inlier_rows,
                         tau_d_tau0,
                         tau_d_tau1,
                         tau_d_cost,
                         tau_d_chi2,
+                        tau_d_cost_trimmed_direct,
+                        tau_d_chi2_trimmed_direct,
+                        tau_3bin_chi2_trimmed_direct,
+                        trimmed_coherence_ratio,
                         bias_intercept,
                         bias_slope,
                         cost_after_bias,
@@ -4773,19 +4838,25 @@ def _print_ellipse_plan(
                         f"cost_noise_normalized_new={_fmt_float(cost_new)} "
                         f"chi2_red_old={_fmt_float(chi2_old)} "
                         f"chi2_red_new={_fmt_float(chi2_new)} "
-                        f"residual_vs_distance_slope={_fmt_float(residual_slope)} "
+                        f"residual_vs_distance_slope_inliers={_fmt_float(residual_slope)} "
                         f"slope(|r|,d)={_fmt_float(residual_abs_slope)} "
                         f"slope(r^2,d)={_fmt_float(residual_sq_slope)} "
+                        f"inlier_cutoff_mm={_fmt_float(inlier_cutoff_mm, suffix='mm')} "
+                        f"n_inlier_rows_used_for_tau={_fmt_float(n_inlier_rows, fmt='.0f')} "
                         f"tau_d_tau0={_fmt_float(tau_d_tau0, suffix='mm')} "
                         f"tau_d_tau1={_fmt_float(tau_d_tau1)} "
                         f"cost_noise_normalized_tau_d={_fmt_float(tau_d_cost)} "
-                        f"chi2_red_tau_d={_fmt_float(tau_d_chi2)}"
+                        f"chi2_red_tau_d={_fmt_float(tau_d_chi2)} "
+                        f"cost_noise_normalized_tau_d_trimmed_direct={_fmt_float(tau_d_cost_trimmed_direct)} "
+                        f"chi2_red_tau_d_trimmed_direct={_fmt_float(tau_d_chi2_trimmed_direct)} "
+                        f"chi2_red_tau_3bin_debiased_trimmed_direct={_fmt_float(tau_3bin_chi2_trimmed_direct)} "
+                        f"trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased={_fmt_float(trimmed_coherence_ratio)}"
                     )
                 if any(value is not None for value in (bias_intercept, bias_slope, cost_after_bias, chi2_after_bias)):
                     print(
                         f"; noise_bias_diagnostic: "
                         f"bias_vs_distance_intercept={_fmt_float(bias_intercept, suffix='mm')} "
-                        f"bias_vs_distance_slope={_fmt_float(bias_slope)} "
+                        f"bias_vs_distance_slope_inliers={_fmt_float(bias_slope)} "
                         f"cost_after_bias_diagnostic={_fmt_float(cost_after_bias)} "
                         f"chi2_red_after_bias_diagnostic={_fmt_float(chi2_after_bias)}"
                     )
@@ -4843,7 +4914,8 @@ def _print_ellipse_plan(
                         f"tau_mid={_fmt_float(mid_tau, suffix='mm')} "
                         f"tau_far={_fmt_float(far_tau, suffix='mm')} "
                         f"cost_noise_normalized_tau_3bin_debiased={_fmt_float(tau_3bin_cost)} "
-                        f"chi2_red_tau_3bin_debiased={_fmt_float(tau_3bin_chi2)}"
+                        f"chi2_red_tau_3bin_debiased={_fmt_float(tau_3bin_chi2)} "
+                        f"chi2_red_tau_3bin_debiased_trimmed_direct={_fmt_float(tau_3bin_chi2_trimmed_direct)}"
                     )
                 per_sweep_summary = noise_metrics.get("per_sweep_residual_summary")
                 if isinstance(per_sweep_summary, dict) and per_sweep_summary:
