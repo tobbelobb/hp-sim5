@@ -10,6 +10,7 @@ I compared the two relevant iterations in your log:
 * anchors are **quite close** to the expected slideprinter geometry (visually plausible, near previous truth-ish values)
 * `R = 38.69` (reasonable)
 * `chi2_red_tau_3bin_debiased = 154.9`
+* `N_trim = 80 / 80` (**no trimming**)
 * `rel_std = 8.286`
 * strong distance bias:
 
@@ -22,6 +23,7 @@ I compared the two relevant iterations in your log:
 * anchors are **geometrically wrong** (large deformation / wrong scale/shape)
 * `R = 37.6` (worse)
 * `chi2_red_tau_3bin_debiased = 132.5` (**lower than A**, so current score prefers it)
+* `N_trim = 84 / 100` (**16% trimmed away**)
 * `rel_std = 36.23` (**much worse confidence / identifiability**)
 * almost no bias trend:
 
@@ -38,12 +40,88 @@ Your current `score_ui` mainly rewards the candidate with the lowest **debiased 
 
 That worked on easier datasets, but here it gets fooled because Candidate B achieves a lower residual-based score by:
 
+* trimming away a meaningful chunk of points
 * landing in a geometrically wrong basin that still fits many points well
 * having poor identifiability (huge `rel_std`), which the score currently doesn’t punish enough
 
 ### In one sentence:
 
-**The score is underweighting reliability/identifiability.**
+**The score is underweighting reliability/identifiability and overtrusting trimmed residual fit.**
+
+---
+
+## Also: using `score_ui` directly for optimization magnifies the issue
+
+This is a second (important) factor.
+
+Because your display mapping is steep (power law), a modest core-metric difference (e.g. `154.9` vs `132.5`) becomes a **much larger score gap** (`12.34` vs `5.28`).
+
+So the optimization starts preferring the “wrong-but-cleaner-on-trimmed-residuals” basin.
+
+### This does *not* mean your idea was bad
+
+It means:
+
+* `score_ui_display` is good for UX
+* but it needs a **more reliability-aware internal core** if it will also be used for ranking/optimization
+
+---
+
+# The key signals in this run that should be added to ranking
+
+These three are the strongest discriminators between the two candidates:
+
+## 1) Trim instability (very important)
+
+Candidate B has:
+
+* `chi2_red = 12760`
+* `chi2_red_trim = 191`
+
+That’s a **huge gap** (≈ 67×).
+
+Candidate A has:
+
+* `chi2_red = 653.7`
+* `chi2_red_trim = 653.7` (no gap)
+
+This tells you Candidate B only looks good **after** heavy trimming.
+
+### Insight:
+
+A low `chi2_tau_3bin_debiased` is not enough if it is achieved by trimming away a lot of contradictory evidence.
+
+---
+
+## 2) Coverage / trimming fraction
+
+Candidate B:
+
+* `N_trim = 84/100` (16% dropped)
+
+Candidate A:
+
+* `N_trim = 80/80` (0% dropped)
+
+That’s another strong “this fit is brittle / cherry-picked” signal.
+
+---
+
+## 3) Uncertainty / identifiability penalty (`rel_std`)
+
+Candidate B:
+
+* `rel_std = 36.23`
+
+Candidate A:
+
+* `rel_std = 8.286`
+
+That is a huge difference and lines up with your intuition that A is the better basin.
+
+### Insight:
+
+The residual fit alone is ambiguous, but uncertainty says the solution is much less trustworthy.
 
 ---
 
@@ -75,15 +153,43 @@ Use your existing core (good choice overall):
 
 Then define:
 
-### Confidence penalty (must add)
+### A) Trim penalty (must add)
 
 ```python
-p_conf = 1.0 + max(0.0, math.log10(rel_std / 10.0))
+trim_frac = max(0.0, 1.0 - N_trim / max(N, 1))
+trim_gap = max(1.0, chi2_red / max(chi2_red_trim, 1e-9))
+
+p_trim = 1.0 + 0.8 * trim_frac + 0.5 * math.log10(trim_gap)
+# optionally cap log term, e.g. min(log10(trim_gap), 2.0)
+```
+
+This will strongly penalize “looks good only after trimming” cases like the 5.28 candidate.
+
+---
+
+### B) Confidence penalty (must add)
+
+```python
+p_conf = 1.0 + 0.3 * max(0.0, math.log10(rel_std / 10.0))
 ```
 
 This is mild for good runs, but meaningful when `rel_std` explodes.
 
 It should flip your two candidates in this log (in the direction you want).
+
+---
+
+### C) Optional geometry plausibility penalty (nice to have, machine-type specific)
+
+If you know the machine is a Slideprinter and have a reasonable prior shape envelope, add:
+
+* pairwise distance asymmetry penalty
+* origin norm spread penalty
+* R plausibility band penalty
+
+This would catch the 5.28 candidate very effectively.
+
+But this is optional if you want the score to stay machine-agnostic.
 
 ---
 
@@ -94,7 +200,7 @@ It should flip your two candidates in this log (in the direction you want).
 Use a smoother, reliability-aware metric:
 
 ```python
-m_rank = chi2_red_tau_3bin_debiased * p_conf
+m_rank = chi2_red_tau_3bin_debiased * p_trim * p_conf
 rank_score = math.log1p(m_rank)   # smaller is better
 ```
 
@@ -122,7 +228,7 @@ This preserves your UX while making optimization sane.
 It shows that on hard datasets, there are at least two kinds of “good-looking” minima:
 
 1. **Physically/plausibly good geometry with systematic residual structure**
-2. **Geometrically wrong but flexible-discrepancy-compatible fits**
+2. **Geometrically wrong but aggressively trimmed / flexible-discrepancy-compatible fits**
 
 Your current score mostly distinguishes by (2)-style residual fit, so it can pick the wrong one.
 
@@ -139,6 +245,8 @@ It’s to make it **two-dimensional in spirit**:
 
 Add these metrics into the score computation path (same place you compute `score_ui` now):
 
+* `N`, `N_trim`
+* `chi2_red`, `chi2_red_trim`
 * `rel_std`
 
 Then update:
@@ -146,9 +254,26 @@ Then update:
 ```python
 m_core = chi2_red_tau_3bin_debiased
 
-p_conf = 1.0 + max(0.0, math.log10(rel_std / 10.0))
+trim_frac = max(0.0, 1.0 - N_trim / max(N, 1))
+trim_gap = max(1.0, chi2_red / max(chi2_red_trim, 1e-9))
+p_trim = 1.0 + 0.8 * trim_frac + 0.5 * min(2.0, math.log10(trim_gap))
 
-m_rank = m_core * p_conf
+p_conf = 1.0 + 0.3 * max(0.0, math.log10(rel_std / 10.0))
+
+m_rank = m_core * p_trim * p_conf
 rank_score = math.log1p(m_rank)          # use for optimization/ranking
 score_ui = (m_rank / M0) ** alpha        # use for display (recalibrate M0, alpha)
 ```
+
+---
+
+## One last practical note
+
+If you want a fast safety check before fully retuning constants:
+
+* log both old and new `m_rank`
+* compare just on this hard run and the previous “good” logs
+
+You should see the 12.34 candidate move ahead of the 5.28 one **without** wrecking your earlier cases.
+
+Set M0 to 95 and alpha to 5 initially.
