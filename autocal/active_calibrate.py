@@ -6845,7 +6845,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--r0-prior-sigma-mm",
         type=float,
-        default=2.0,
+        default=None,
         help="Gaussian prior sigma (mm) around base radii during radius fitting.",
     )
     parser.add_argument(
