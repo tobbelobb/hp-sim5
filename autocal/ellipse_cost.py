@@ -1994,17 +1994,22 @@ class EllipseCostFunction:
             noise_metrics=noise_metrics,
         )
 
-    def gradient_numerical(self, anchor_vec: np.ndarray, epsilon: float = 1e-6) -> np.ndarray:
+    def gradient_numerical(
+        self,
+        anchor_vec: np.ndarray,
+        epsilon: float = 1e-6,
+        f0: Optional[float] = None,
+    ) -> np.ndarray:
         """Finite-difference gradient of the cost."""
         anchor_vec = np.asarray(anchor_vec, dtype=float)
         grad = np.zeros_like(anchor_vec)
-        f0 = self.evaluate(anchor_vec)
+        base_cost = self.evaluate(anchor_vec) if f0 is None else float(f0)
 
         for i in range(len(anchor_vec)):
             x_plus = anchor_vec.copy()
             x_plus[i] += epsilon
             f_plus = self.evaluate(x_plus)
-            grad[i] = (f_plus - f0) / epsilon
+            grad[i] = (f_plus - base_cost) / epsilon
 
         return grad
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import concurrent.futures
 import csv
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 from scipy.optimize import OptimizeResult, differential_evolution, minimize
@@ -15,6 +15,71 @@ from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import anchors_vec_to_matrix, get_anchor_bounds
 
 _BOUND_PENALTY_WEIGHT = 1e4
+
+try:
+    import jax
+    import jax.numpy as jnp
+
+    _JAX_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency
+    jax = None  # type: ignore[assignment]
+    jnp = None  # type: ignore[assignment]
+    _JAX_AVAILABLE = False
+
+
+def _build_lbfgsb_objective_with_jac(
+    cost_fn: EllipseCostFunction,
+    lb: np.ndarray,
+    ub: np.ndarray,
+) -> Callable[[np.ndarray], Tuple[float, np.ndarray]]:
+    """Return a callable that emits (objective, gradient) for SciPy L-BFGS-B."""
+    jax_value_and_grad = None
+    if _JAX_AVAILABLE:
+        try:
+            def _jax_objective(x: "jnp.ndarray") -> "jnp.ndarray":
+                x_np = np.asarray(x, dtype=float)
+                return jnp.asarray(cost_fn.evaluate(np.clip(x_np, lb, ub)))
+
+            jax_value_and_grad = jax.value_and_grad(_jax_objective)
+        except Exception:
+            jax_value_and_grad = None
+
+    def _value_and_grad(x: np.ndarray) -> Tuple[float, np.ndarray]:
+        x_clipped = np.clip(np.asarray(x, dtype=float).reshape(-1), lb, ub)
+        if jax_value_and_grad is not None and _JAX_AVAILABLE:
+            try:
+                value, grad = jax_value_and_grad(jnp.asarray(x_clipped))
+                return float(value), np.asarray(grad, dtype=float).reshape(-1)
+            except Exception:
+                pass
+
+        value = float(cost_fn.evaluate(x_clipped))
+        grad = np.asarray(cost_fn.gradient_numerical(x_clipped, f0=value), dtype=float).reshape(-1)
+        return value, grad
+
+    return _value_and_grad
+
+
+def _run_lbfgsb_minimize(
+    cost_fn: EllipseCostFunction,
+    x0: np.ndarray,
+    *,
+    lb: np.ndarray,
+    ub: np.ndarray,
+    bounds: list,
+    max_iterations: int,
+    callback: Optional[Callable[[np.ndarray], None]] = None,
+) -> OptimizeResult:
+    value_and_grad = _build_lbfgsb_objective_with_jac(cost_fn, lb, ub)
+    return minimize(
+        value_and_grad,
+        np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub),
+        method="L-BFGS-B",
+        jac=True,
+        bounds=bounds,
+        callback=callback,
+        options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
+    )
 
 
 def _optimize_restart_worker(payload: dict) -> dict:
@@ -98,12 +163,13 @@ def _optimize_restart_worker(payload: dict) -> dict:
             },
         )
         x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
-        result = minimize(
-            cost_fn.evaluate,
+        result = _run_lbfgsb_minimize(
+            cost_fn,
             x1,
-            method="L-BFGS-B",
+            lb=lb,
+            ub=ub,
             bounds=bounds,
-            options={"maxiter": max_iterations, "ftol": 1e-12, "disp": False},
+            max_iterations=max_iterations,
         )
     else:
         scipy_method = method_raw
@@ -120,13 +186,23 @@ def _optimize_restart_worker(payload: dict) -> dict:
             options["xtol"] = 1e-4
             options["ftol"] = 1e-8
 
-        result = minimize(
-            cost_fn.evaluate,
-            x0_clipped,
-            method=scipy_method,
-            bounds=bounds,
-            options=options,
-        )
+        if scipy_method == "L-BFGS-B":
+            result = _run_lbfgsb_minimize(
+                cost_fn,
+                x0_clipped,
+                lb=lb,
+                ub=ub,
+                bounds=bounds,
+                max_iterations=max_iterations,
+            )
+        else:
+            result = minimize(
+                cost_fn.evaluate,
+                x0_clipped,
+                method=scipy_method,
+                bounds=bounds,
+                options=options,
+            )
 
     best = OptimizeResult(
         x=np.asarray(result.x, dtype=float),
@@ -711,13 +787,14 @@ def solve_anchors(
                         },
                     )
                     x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
-                    result = minimize(
-                        cost_fn.evaluate,
+                    result = _run_lbfgsb_minimize(
+                        cost_fn,
                         x1,
-                        method="L-BFGS-B",
+                        lb=lb,
+                        ub=ub,
                         bounds=bounds,
+                        max_iterations=max_iterations,
                         callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
-                        options={"maxiter": max_iterations, "ftol": 1e-12, "disp": False},
                     )
                 else:
                     scipy_method = method_raw
@@ -734,14 +811,25 @@ def solve_anchors(
                         options["xtol"] = 1e-4
                         options["ftol"] = 1e-8
 
-                    result = minimize(
-                        cost_fn.evaluate,
-                        x0_clipped,
-                        method=scipy_method,
-                        bounds=bounds,
-                        callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
-                        options=options,
-                    )
+                    if scipy_method == "L-BFGS-B":
+                        result = _run_lbfgsb_minimize(
+                            cost_fn,
+                            x0_clipped,
+                            lb=lb,
+                            ub=ub,
+                            bounds=bounds,
+                            max_iterations=max_iterations,
+                            callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                        )
+                    else:
+                        result = minimize(
+                            cost_fn.evaluate,
+                            x0_clipped,
+                            method=scipy_method,
+                            bounds=bounds,
+                            callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                            options=options,
+                        )
             if verbose:
                 try:
                     print(
