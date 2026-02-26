@@ -38,6 +38,7 @@ _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_PREFIT_GLOBAL_R_GRID_POINTS = 9
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
+_OPTIMIZER_MODE_CHOICES = ("fast", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
@@ -3555,6 +3556,28 @@ def _normalize_theta0_mode(mode: Optional[str]) -> str:
     return text
 
 
+def _normalize_optimizer_mode(mode: Optional[str]) -> str:
+    text = str(mode or "fast").strip().lower()
+    if text not in _OPTIMIZER_MODE_CHOICES:
+        raise ValueError(
+            f"invalid optimizer mode '{mode}', expected one of: {', '.join(_OPTIMIZER_MODE_CHOICES)}"
+        )
+    return text
+
+
+def _apply_optimizer_mode_env(mode: Optional[str]) -> str:
+    """Map CLI optimizer mode to solver/JAX environment settings."""
+    mode_norm = _normalize_optimizer_mode(mode)
+    os.environ["AUTOCAL_OPTIMIZER_MODE"] = mode_norm
+    if mode_norm == "legacy":
+        os.environ["AUTOCAL_DISABLE_JAX_OBJECTIVE"] = "1"
+        os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "fun"
+    else:
+        os.environ.pop("AUTOCAL_DISABLE_JAX_OBJECTIVE", None)
+        os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "jac"
+    return mode_norm
+
+
 def _parse_scale_fix_levels(spec: Optional[Any], *, label: str = "--scale-fix") -> Tuple[int, ...]:
     if spec is None:
         return tuple()
@@ -5824,6 +5847,7 @@ def full_auto_loop(
         "solve_restarts": int(solve_restarts),
         "solve_iterations": int(solve_iterations),
         "solve_optimizer": str(solve_optimizer),
+        "optimizer_mode": _normalize_optimizer_mode(os.environ.get("AUTOCAL_OPTIMIZER_MODE", "fast")),
         "residual_threshold": float(residual_threshold),
         "spring_k_multiplier": float(spring_k_multiplier),
         "use_flex": bool(use_flex),
@@ -5902,6 +5926,8 @@ def full_auto_loop(
                     overrides = {}
                 settings = dict(base_solver)
                 settings.update(overrides)
+                settings["optimizer_mode"] = _normalize_optimizer_mode(settings.get("optimizer_mode"))
+                _apply_optimizer_mode_env(str(settings["optimizer_mode"]))
                 if isinstance(settings.get("base_radii"), str):
                     settings["base_radii"] = _parse_csv_floats(str(settings["base_radii"]))
                 settings["find_radii"] = _normalize_spool_find_mode(settings.get("find_radii"))
@@ -6741,6 +6767,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--solve-restarts", type=int, default=4)
     parser.add_argument("--solve-iterations", type=int, default=400)
     parser.add_argument("--solve-optimizer", default="L-BFGS-B")
+    parser.add_argument(
+        "--optimizer-mode",
+        choices=_OPTIMIZER_MODE_CHOICES,
+        default=_normalize_optimizer_mode(os.environ.get("AUTOCAL_OPTIMIZER_MODE", "fast")),
+        help="Optimization mode: 'fast' (JAX exact Jacobian) or 'legacy' (SciPy finite differences).",
+    )
     parser.add_argument("--threshold", type=float, default=250.0)
     parser.add_argument("--spring-k-multiplier", type=float, default=1.0)
     parser.add_argument("--flex", action="store_true")
@@ -7325,6 +7357,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", default=None)
+    parser.add_argument("--optimizer-mode", choices=_OPTIMIZER_MODE_CHOICES, default=None)
     return parser
 
 
@@ -7696,6 +7729,7 @@ def _ordinal(n: int) -> str:
 def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_ellipse_parser()
     args = parser.parse_args(argv)
+    _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
     collector_args = _clean_collector_args(args.collector_args)
     if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
@@ -7776,6 +7810,7 @@ def merge_cli(argv: Optional[Sequence[str]] = None) -> int:
 def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
     args = parser.parse_args(argv)
+    _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
     if bool(args.shotgun) and not bool(args.full_auto):
         parser.error("--shotgun requires --full-auto")

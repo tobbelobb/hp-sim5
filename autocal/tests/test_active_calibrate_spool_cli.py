@@ -1,6 +1,13 @@
+import os
+
 import pytest
 
-from autocal.active_calibrate import build_ellipse_parser, _resolve_spool_cli_options
+from autocal.active_calibrate import (
+    _apply_optimizer_mode_env,
+    _parse_full_auto_run_spec,
+    _resolve_spool_cli_options,
+    build_ellipse_parser,
+)
 
 
 def test_spool_cli_options_parse_modes_and_bounds():
@@ -173,3 +180,40 @@ def test_spool_cli_allows_disabling_scale_fixes():
     )
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["scale_fix"] == []
+
+
+def test_spool_cli_parses_optimizer_mode():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--optimizer-mode",
+            "legacy",
+        ]
+    )
+    assert str(args.optimizer_mode) == "legacy"
+
+
+def test_full_auto_run_spec_parses_optimizer_mode_override():
+    tokens, overrides = _parse_full_auto_run_spec("--optimizer-mode legacy --solve-iterations 2")
+    assert tokens == ["--optimizer-mode", "legacy", "--solve-iterations", "2"]
+    assert overrides["optimizer_mode"] == "legacy"
+    assert overrides["solve_iterations"] == 2
+
+
+def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
+    monkeypatch.delenv("AUTOCAL_OPTIMIZER_MODE", raising=False)
+    monkeypatch.delenv("AUTOCAL_DISABLE_JAX_OBJECTIVE", raising=False)
+    monkeypatch.delenv("AUTOCAL_JAX_LBFGSB_MODE", raising=False)
+
+    assert _apply_optimizer_mode_env("legacy") == "legacy"
+    assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "legacy"
+    assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") == "1"
+    assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "fun"
+
+    assert _apply_optimizer_mode_env("fast") == "fast"
+    assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "fast"
+    assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "jac"
+    assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
