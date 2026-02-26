@@ -12,11 +12,24 @@ import numpy as np
 from scipy.optimize import OptimizeResult, differential_evolution, minimize
 
 from autocal.ellipse_cost import CostResult, EllipseCostFunction
-from autocal.ellipse_objective_jax import build_compiled_value_and_grad
+from autocal.ellipse_objective_jax import build_compiled_objective, build_compiled_value_and_grad
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import anchors_vec_to_matrix, get_anchor_bounds
 
 _BOUND_PENALTY_WEIGHT = 1e4
+
+
+def _jax_objective_enabled() -> bool:
+    disable_jax = str(os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE", "")).strip().lower()
+    return disable_jax not in ("1", "true", "yes", "on")
+
+
+def _lbfgsb_jax_mode() -> str:
+    """Return objective mode for L-BFGS-B: 'jac' (exact) or 'fun' (SciPy finite diff)."""
+    raw = str(os.environ.get("AUTOCAL_JAX_LBFGSB_MODE", "")).strip().lower()
+    if raw in ("fun", "fd", "finite-diff", "finite_diff", "value-only", "value_only", "legacy"):
+        return "fun"
+    return "jac"
 
 
 def _build_lbfgsb_objective_with_jac(
@@ -25,8 +38,7 @@ def _build_lbfgsb_objective_with_jac(
     ub: np.ndarray,
 ) -> Callable[[np.ndarray], Tuple[float, np.ndarray]]:
     """Return a callable that emits (objective, gradient) for SciPy L-BFGS-B."""
-    disable_jax = str(os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE", "")).strip().lower()
-    use_jax = disable_jax not in ("1", "true", "yes", "on")
+    use_jax = _jax_objective_enabled()
     jax_value_and_grad = build_compiled_value_and_grad(cost_fn, lb, ub) if use_jax else None
 
     def _value_and_grad(x: np.ndarray) -> Tuple[float, np.ndarray]:
@@ -45,6 +57,27 @@ def _build_lbfgsb_objective_with_jac(
     return _value_and_grad
 
 
+def _build_lbfgsb_objective_value_only(
+    cost_fn: EllipseCostFunction,
+    lb: np.ndarray,
+    ub: np.ndarray,
+) -> Callable[[np.ndarray], float]:
+    """Return objective callable for SciPy to finite-difference itself."""
+    use_jax = _jax_objective_enabled()
+    jax_objective = build_compiled_objective(cost_fn, lb, ub) if use_jax else None
+
+    def _value_only(x: np.ndarray) -> float:
+        x_clipped = np.clip(np.asarray(x, dtype=float).reshape(-1), lb, ub)
+        if jax_objective is not None:
+            try:
+                return float(jax_objective(x_clipped))
+            except Exception:
+                pass
+        return float(cost_fn.evaluate(x_clipped))
+
+    return _value_only
+
+
 def _run_lbfgsb_minimize(
     cost_fn: EllipseCostFunction,
     x0: np.ndarray,
@@ -55,10 +88,23 @@ def _run_lbfgsb_minimize(
     max_iterations: int,
     callback: Optional[Callable[[np.ndarray], None]] = None,
 ) -> OptimizeResult:
+    x0_clipped = np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub)
+    mode = _lbfgsb_jax_mode()
+    if mode == "fun":
+        objective = _build_lbfgsb_objective_value_only(cost_fn, lb, ub)
+        return minimize(
+            objective,
+            x0_clipped,
+            method="L-BFGS-B",
+            bounds=bounds,
+            callback=callback,
+            options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
+        )
+
     value_and_grad = _build_lbfgsb_objective_with_jac(cost_fn, lb, ub)
     return minimize(
         value_and_grad,
-        np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub),
+        x0_clipped,
         method="L-BFGS-B",
         jac=True,
         bounds=bounds,

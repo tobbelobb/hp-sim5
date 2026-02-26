@@ -4,15 +4,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
+import os
 
 import numpy as np
 
 from autocal.ellipse_cost import EllipseCostFunction
 
+# Always force CPU backend for reproducible behavior and consistent user performance.
+os.environ["JAX_PLATFORMS"] = "cpu"
+os.environ["JAX_PLATFORM_NAME"] = "cpu"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 try:
     import jax
     import jax.numpy as jnp
 
+    try:
+        jax.config.update("jax_platform_name", "cpu")
+    except Exception:
+        pass
     try:
         jax.config.update("jax_enable_x64", True)
     except Exception:
@@ -567,6 +577,51 @@ else:  # pragma: no cover - optional dependency
     _COMPILED_VALUE_AND_GRAD = None
 
 
+def _build_kwargs_for_objective(cost_fn: EllipseCostFunction) -> dict:
+    metric_mode = _metric_mode_code(str(cost_fn.sweep_metric))
+    _, _stage_name, huber_mult, hard_cut = cost_fn._pointwise_stage_settings()
+    return {
+        "num_anchors": int(cost_fn.num_anchors),
+        "dimensions": int(cost_fn.dimensions),
+        "pointwise_filtering": bool(cost_fn.pointwise_filtering),
+        "pointwise_global_mad": bool(cost_fn.pointwise_global_mad),
+        "sweep_wise_filtering": bool(cost_fn.sweep_wise_filtering),
+        "noise_norm_available": bool(cost_fn._noise_norm_available),
+        "robust_loss_unfiltered": bool(cost_fn.robust_loss),
+        "hard_cut": bool(hard_cut),
+        "metric_mode": int(metric_mode),
+        "pointwise_cost_weight": float(cost_fn.pointwise_cost_weight),
+        "l2_scale": float(max(cost_fn._l2_scale, 1.0)),
+        "min_points": int(cost_fn.min_points),
+        "min_sweeps_after_trim": int(cost_fn._min_sweeps_after_trim),
+        "huber_delta_unfiltered": float(cost_fn.huber_delta),
+        "floor_norm": float(cost_fn._pointwise_sigma_floor_norm),
+        "huber_mult": float(huber_mult),
+    }
+
+
+def _build_packed_jax_args(
+    packed: _PackedSweeps,
+    lb_arr: np.ndarray,
+    ub_arr: np.ndarray,
+) -> tuple:
+    return (
+        jnp.asarray(packed.fixed_anchor),
+        jnp.asarray(packed.fixed_delta),
+        jnp.asarray(packed.drive_anchor),
+        jnp.asarray(packed.sensor_anchor),
+        jnp.asarray(packed.l_drive),
+        jnp.asarray(packed.l_sensor),
+        jnp.asarray(packed.sigma_drive),
+        jnp.asarray(packed.sigma_sensor),
+        jnp.asarray(packed.point_mask),
+        jnp.asarray(packed.has_sigma),
+        jnp.asarray(packed.num_points),
+        jnp.asarray(lb_arr),
+        jnp.asarray(ub_arr),
+    )
+
+
 def build_compiled_value_and_grad(
     cost_fn: EllipseCostFunction,
     lb: np.ndarray,
@@ -588,61 +643,72 @@ def build_compiled_value_and_grad(
 
     lb_arr = np.asarray(lb, dtype=float).reshape(-1)
     ub_arr = np.asarray(ub, dtype=float).reshape(-1)
-    metric_mode = _metric_mode_code(str(cost_fn.sweep_metric))
-    _, _stage_name, huber_mult, hard_cut = cost_fn._pointwise_stage_settings()
-
-    kwargs = {
-        "num_anchors": int(cost_fn.num_anchors),
-        "dimensions": int(cost_fn.dimensions),
-        "pointwise_filtering": bool(cost_fn.pointwise_filtering),
-        "pointwise_global_mad": bool(cost_fn.pointwise_global_mad),
-        "sweep_wise_filtering": bool(cost_fn.sweep_wise_filtering),
-        "noise_norm_available": bool(cost_fn._noise_norm_available),
-        "robust_loss_unfiltered": bool(cost_fn.robust_loss),
-        "hard_cut": bool(hard_cut),
-        "metric_mode": int(metric_mode),
-        "pointwise_cost_weight": float(cost_fn.pointwise_cost_weight),
-        "l2_scale": float(max(cost_fn._l2_scale, 1.0)),
-        "min_points": int(cost_fn.min_points),
-        "min_sweeps_after_trim": int(cost_fn._min_sweeps_after_trim),
-        "huber_delta_unfiltered": float(cost_fn.huber_delta),
-        "floor_norm": float(cost_fn._pointwise_sigma_floor_norm),
-        "huber_mult": float(huber_mult),
-    }
-
-    fixed_anchor = jnp.asarray(packed.fixed_anchor)
-    fixed_delta = jnp.asarray(packed.fixed_delta)
-    drive_anchor = jnp.asarray(packed.drive_anchor)
-    sensor_anchor = jnp.asarray(packed.sensor_anchor)
-    l_drive = jnp.asarray(packed.l_drive)
-    l_sensor = jnp.asarray(packed.l_sensor)
-    sigma_drive = jnp.asarray(packed.sigma_drive)
-    sigma_sensor = jnp.asarray(packed.sigma_sensor)
-    point_mask = jnp.asarray(packed.point_mask)
-    has_sigma = jnp.asarray(packed.has_sigma)
-    num_points = jnp.asarray(packed.num_points)
-    lb_jax = jnp.asarray(lb_arr)
-    ub_jax = jnp.asarray(ub_arr)
+    kwargs = _build_kwargs_for_objective(cost_fn)
+    packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> Tuple[float, np.ndarray]:
         x_np = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb_arr, ub_arr)
         value, grad = _COMPILED_VALUE_AND_GRAD(
             jnp.asarray(x_np),
-            fixed_anchor,
-            fixed_delta,
-            drive_anchor,
-            sensor_anchor,
-            l_drive,
-            l_sensor,
-            sigma_drive,
-            sigma_sensor,
-            point_mask,
-            has_sigma,
-            num_points,
-            lb_jax,
-            ub_jax,
+            *packed_args,
             **kwargs,
         )
         return float(value), np.asarray(grad, dtype=float).reshape(-1)
+
+    return _wrapped
+
+
+if _JAX_AVAILABLE:
+    _COMPILED_VALUE = jax.jit(
+        _objective_core,
+        static_argnames=(
+            "num_anchors",
+            "dimensions",
+            "pointwise_filtering",
+            "pointwise_global_mad",
+            "sweep_wise_filtering",
+            "noise_norm_available",
+            "robust_loss_unfiltered",
+            "hard_cut",
+            "metric_mode",
+            "pointwise_cost_weight",
+            "l2_scale",
+            "min_points",
+            "min_sweeps_after_trim",
+            "huber_delta_unfiltered",
+            "floor_norm",
+            "huber_mult",
+        ),
+    )
+else:  # pragma: no cover - optional dependency
+    _COMPILED_VALUE = None
+
+
+def build_compiled_objective(
+    cost_fn: EllipseCostFunction,
+    lb: np.ndarray,
+    ub: np.ndarray,
+) -> Optional[Callable[[np.ndarray], float]]:
+    if not _can_use_jax_objective(cost_fn):
+        return None
+    packed = _prepare_sweeps(cost_fn)
+    if packed is None:
+        return None
+    if _COMPILED_VALUE is None:
+        return None
+
+    lb_arr = np.asarray(lb, dtype=float).reshape(-1)
+    ub_arr = np.asarray(ub, dtype=float).reshape(-1)
+    kwargs = _build_kwargs_for_objective(cost_fn)
+    packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
+
+    def _wrapped(anchor_vec: np.ndarray) -> float:
+        x_np = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb_arr, ub_arr)
+        value = _COMPILED_VALUE(
+            jnp.asarray(x_np),
+            *packed_args,
+            **kwargs,
+        )
+        return float(value)
 
     return _wrapped
