@@ -82,7 +82,8 @@ def _synthetic_slideprinter_dataset():
 
 
 @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
-def test_jax_objective_matches_numpy_cost():
+def test_jax_objective_matches_numpy_cost(monkeypatch):
+    monkeypatch.setenv("AUTOCAL_ENABLE_JAX_OBJECTIVE", "1")
     dataset, anchors = _synthetic_slideprinter_dataset()
     cost_fn = EllipseCostFunction(
         dataset,
@@ -109,7 +110,26 @@ def test_jax_objective_matches_numpy_cost():
 
 
 @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
-def test_jax_underconstrained_penalty_is_finite():
+def test_jax_objective_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("AUTOCAL_ENABLE_JAX_OBJECTIVE", raising=False)
+    dataset, _anchors = _synthetic_slideprinter_dataset()
+    cost_fn = EllipseCostFunction(
+        dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        use_noise_mean=True,
+        noise_normalized=True,
+    )
+    lb, ub = get_anchor_bounds("slideprinter")
+    objective = build_compiled_value_and_grad(cost_fn, np.asarray(lb, dtype=float), np.asarray(ub, dtype=float))
+    assert objective is None
+
+
+@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+def test_jax_underconstrained_penalty_is_finite(monkeypatch):
+    monkeypatch.setenv("AUTOCAL_ENABLE_JAX_OBJECTIVE", "1")
     dataset, anchors = _synthetic_slideprinter_dataset()
     dataset["sweeps"] = list(dataset["sweeps"][:2])
 
@@ -142,7 +162,8 @@ def test_jax_underconstrained_penalty_is_finite():
 
 
 @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
-def test_jax_stage2_filtering_value_remains_finite_with_outliers():
+def test_jax_stage2_filtering_value_remains_finite_with_outliers(monkeypatch):
+    monkeypatch.setenv("AUTOCAL_ENABLE_JAX_OBJECTIVE", "1")
     dataset, anchors = _synthetic_slideprinter_dataset()
     first_sweep = dataset["sweeps"][0]
     points = first_sweep.get("data_points", [])

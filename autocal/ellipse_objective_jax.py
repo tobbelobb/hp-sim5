@@ -78,7 +78,20 @@ def _metric_mode_code(mode: str) -> int:
     return 0
 
 
+def _jax_objective_runtime_enabled() -> bool:
+    """
+    JAX-native objective is opt-in.
+
+    Default is disabled so all optimizer modes share the same Python/NumPy
+    objective semantics unless explicitly enabled for experimentation.
+    """
+    raw = str(os.environ.get("AUTOCAL_ENABLE_JAX_OBJECTIVE", "")).strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
 def _can_use_jax_objective(cost_fn: EllipseCostFunction) -> bool:
+    if not _jax_objective_runtime_enabled():
+        return False
     if not _JAX_AVAILABLE:
         return False
     if int(cost_fn.dimensions) != 2:
