@@ -38,7 +38,7 @@ _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_PREFIT_GLOBAL_R_GRID_POINTS = 9
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
-_OPTIMIZER_MODE_CHOICES = ("fast", "legacy")
+_OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
@@ -3572,6 +3572,9 @@ def _apply_optimizer_mode_env(mode: Optional[str]) -> str:
     if mode_norm == "legacy":
         os.environ["AUTOCAL_DISABLE_JAX_OBJECTIVE"] = "1"
         os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "fun"
+    elif mode_norm == "fast-fd":
+        os.environ.pop("AUTOCAL_DISABLE_JAX_OBJECTIVE", None)
+        os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "fun"
     else:
         os.environ.pop("AUTOCAL_DISABLE_JAX_OBJECTIVE", None)
         os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "jac"
@@ -6771,7 +6774,11 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--optimizer-mode",
         choices=_OPTIMIZER_MODE_CHOICES,
         default=_normalize_optimizer_mode(os.environ.get("AUTOCAL_OPTIMIZER_MODE", "fast")),
-        help="Optimization mode: 'fast' (JAX exact Jacobian) or 'legacy' (SciPy finite differences).",
+        help=(
+            "Optimization mode: 'fast' (JAX exact Jacobian), "
+            "'fast-fd' (JAX value + SciPy finite differences), "
+            "or 'legacy' (no JAX + SciPy finite differences)."
+        ),
     )
     parser.add_argument("--threshold", type=float, default=250.0)
     parser.add_argument("--spring-k-multiplier", type=float, default=1.0)

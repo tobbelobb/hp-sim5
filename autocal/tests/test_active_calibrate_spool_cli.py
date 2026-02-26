@@ -190,16 +190,16 @@ def test_spool_cli_parses_optimizer_mode():
             "--machine-type",
             "slideprinter",
             "--optimizer-mode",
-            "legacy",
+            "fast-fd",
         ]
     )
-    assert str(args.optimizer_mode) == "legacy"
+    assert str(args.optimizer_mode) == "fast-fd"
 
 
 def test_full_auto_run_spec_parses_optimizer_mode_override():
-    tokens, overrides = _parse_full_auto_run_spec("--optimizer-mode legacy --solve-iterations 2")
-    assert tokens == ["--optimizer-mode", "legacy", "--solve-iterations", "2"]
-    assert overrides["optimizer_mode"] == "legacy"
+    tokens, overrides = _parse_full_auto_run_spec("--optimizer-mode fast-fd --solve-iterations 2")
+    assert tokens == ["--optimizer-mode", "fast-fd", "--solve-iterations", "2"]
+    assert overrides["optimizer_mode"] == "fast-fd"
     assert overrides["solve_iterations"] == 2
 
 
@@ -216,4 +216,9 @@ def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
     assert _apply_optimizer_mode_env("fast") == "fast"
     assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "fast"
     assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "jac"
+    assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
+
+    assert _apply_optimizer_mode_env("fast-fd") == "fast-fd"
+    assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "fast-fd"
+    assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "fun"
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
