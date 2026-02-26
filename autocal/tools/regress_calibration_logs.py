@@ -11,7 +11,7 @@ What it does
 
 Comparison metrics
 - Anchor distance: sum_i ||anchor_i - anchor_i_ref||  (Euclidean, mm)
-- Radius distance: 60*pi * sum_i |R_i - R_i_ref|  (as requested)
+- Radius distance: 2*pi * sum_i |R_i - R_i_ref|
 - "Total parameter distance" = anchor_distance + radius_distance
 
 True values (simulation ground truth) used for "closer/further" reporting
@@ -234,8 +234,8 @@ def anchor_distance(a: List[Tuple[float, float]], b: List[Tuple[float, float]]) 
 
 
 def radius_distance(r: List[float], r2: List[float]) -> float:
-    # As requested: 60*pi*distance for the R values
-    return (60.0 * math.pi) * sum(abs(x - y) for x, y in zip(r, r2))
+    # 2*pi*distance for the R values
+    return (2.0 * math.pi) * sum(abs(x - y) for x, y in zip(r, r2))
 
 
 def total_param_distance(
@@ -354,7 +354,7 @@ def report_dataset(
             exact = (total_d == 0.0) and (score_delta == 0.0)
             small = total_d < tol_mm_total
 
-            lines.append(f"SUMMARY: param_delta_total={fmt(total_d)} (anchors={fmt(ad)}, R*60π={fmt(rd)})  tol={tol_mm_total}mm")
+            lines.append(f"SUMMARY: param_delta_total={fmt(total_d)} (anchors={fmt(ad)}, R*2π={fmt(rd)})  tol={tol_mm_total}mm")
             if score_delta is None:
                 lines.append("SUMMARY: score_delta=N/A (parse missing)")
                 ok = False
@@ -363,8 +363,8 @@ def report_dataset(
 
             if ref_true and gen_true:
                 lines.append(
-                    f"SUMMARY vs TRUE: err_ref={fmt(ref_true[0])} (anchors={fmt(ref_true[1])}, R*60π={fmt(ref_true[2])}) "
-                    f"err_gen={fmt(gen_true[0])} (anchors={fmt(gen_true[1])}, R*60π={fmt(gen_true[2])}) "
+                    f"SUMMARY vs TRUE: err_ref={fmt(ref_true[0])} (anchors={fmt(ref_true[1])}, R*2π={fmt(ref_true[2])}) "
+                    f"err_gen={fmt(gen_true[0])} (anchors={fmt(gen_true[1])}, R*2π={fmt(gen_true[2])}) "
                     f"delta(gen-ref)={fmt(gen_true[0]-ref_true[0])} => {dir_label(gen_true[0]-ref_true[0])}"
                 )
 
@@ -441,7 +441,7 @@ def report_dataset(
                 mismatches += 1
 
         row = (
-            f"  iter {i}: param_delta_total={fmt(total_d)} (anchors={fmt(ad)}, R*60π={fmt(rd)}) "
+            f"  iter {i}: param_delta_total={fmt(total_d)} (anchors={fmt(ad)}, R*2π={fmt(rd)}) "
             f"{'EXACT' if exact_iter else ('<tol' if small_iter else '>=tol')} "
         )
         if r_true and g_true:
@@ -487,7 +487,7 @@ def main() -> int:
     ap.add_argument("--repo-root", type=str, default=".", help="Path to repo root (must contain autocal/active_calibrate.py).")
     ap.add_argument("--data-dir", type=str, default="autocal/data", help="Directory containing the datasets (.json).")
     ap.add_argument("--ref-dir", type=str, default="autocal/data", help="Directory containing the reference logs (.log).")
-    ap.add_argument("--tol-mm", type=float, default=10.0, help="Tolerance on total parameter distance (anchors + 60*pi*R).")
+    ap.add_argument("--tol-mm", type=float, default=10.0, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
     ap.add_argument("--no-fail-score-mismatch", action="store_true", help="Do not fail on score/fit direction mismatch (still reported).")
     ap.add_argument("--keep-going", action="store_true", help="Run all datasets even if one fails.")
     args = ap.parse_args()
