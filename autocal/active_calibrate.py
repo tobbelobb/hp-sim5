@@ -1474,8 +1474,8 @@ def _estimate_effective_radii_with_spool_model(
         bootstrap_anchor_refresh["attempted"] = True
         if np.isfinite(anchor_refresh_start_cost):
             bootstrap_anchor_refresh["start_cost"] = float(anchor_refresh_start_cost)
-            anchor_step_restarts = max(1, min(2, int(solve_restarts)))
-            anchor_step_iterations = max(40, min(160, int(solve_iterations)))
+            anchor_step_restarts = max(1, int(solve_restarts))
+            anchor_step_iterations = max(1, int(solve_iterations))
             cal_bootstrap = calibrate_elliptical(
                 transformed_bootstrap,
                 output_path=None,
@@ -1714,8 +1714,8 @@ def _estimate_effective_radii_with_spool_model(
         anchor_cost = float("nan")
         anchor_step_success = False
         cal_step_noise_metrics: Optional[dict] = None
-        anchor_step_restarts = max(1, min(2, int(solve_restarts)))
-        anchor_step_iterations = max(40, min(160, int(solve_iterations)))
+        anchor_step_restarts = max(1, int(solve_restarts))
+        anchor_step_iterations = max(1, int(solve_iterations))
         try:
             cal_step = calibrate_elliptical(
                 transformed_opt,
