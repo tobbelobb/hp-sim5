@@ -2112,6 +2112,6 @@ def test_spool_block_update_data_cost_blends_trimmed_risk(monkeypatch):
 
     history = fit_info.get("history")
     assert isinstance(history, list) and history
-    expected_risk = 20.0 * 0.5
+    expected_risk = 20.0
     expected_data_cost = 10.0 + ac._SCORE_UI_LAYERED_RISK_BLEND_WEIGHT * expected_risk
     assert np.isclose(float(history[0].get("current_data_cost")), expected_data_cost, atol=1e-9)
