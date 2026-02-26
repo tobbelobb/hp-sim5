@@ -1,14 +1,14 @@
-; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect
-Wrote to console: Writing additional info to log: autocal/data/five_points_bigger_deltas.full_auto.log
+; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode legacy --full-auto-log /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.full_auto_log.jsonl
+Wrote to console: Writing additional info to log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.full_auto.log
 ; auto-enabling --hp-sim-reset for spool search in simulation
 ; full-auto replay: starting from 3 sweeps, replaying 5 additional sweeps
-; full-auto replay: using autocal/data/five_points_bigger_deltas.replay_tmp.json (original autocal/data/five_points_bigger_deltas.json left untouched)
-; full-auto log: autocal/data/five_points_bigger_deltas.full_auto_log.jsonl
-Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create autocal/data/five_points_bigger_deltas.full_auto.stop to request stop (cross-platform)
+; full-auto replay: using /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json (original /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.json left untouched)
+; full-auto log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.full_auto_log.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.full_auto.stop to request stop (cross-platform)
 
-; === full-auto iteration 1/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 Wrote to console: 
-Wrote to console: ; === full-auto iteration 1/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: ; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 ; full-auto run default: flags=''
 [gnc] stage 1/3: wide-huber maxiter=400
 [gnc] stage 2/3: tight-huber maxiter=240
@@ -55,17 +55,17 @@ Wrote to console: ; === full-auto iteration 1/20 dataset=autocal/data/five_point
 ;   0.383178 fixed=[2] targets=[937.9607387613828] pair=[0,1]
 ;   0.383174 fixed=[1] targets=[937.9607387613828] pair=[0,2]
 ; collect_command:
-;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_001.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.new_001.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
 ; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
 ; selected run=default score_ui=29.5 score_basis=layered-calibrated cost=100 rel_std=11.33 max_std=3.339e+04mm
 Wrote to console: Score: 29.5 (lower is better)
 Wrote to console: ; selected run hit underconstrained sentinel; continuing to collect more sweeps.
-; replayed sweep 1/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=4
+; replayed sweep 1/5 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json sweeps=4
 Wrote to console: Collected sweep nr 4
 
-; === full-auto iteration 2/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 Wrote to console: 
-Wrote to console: ; === full-auto iteration 2/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: ; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 ; full-auto run default: flags=''
 [gnc] stage 1/3: wide-huber maxiter=400
 [gnc] stage 2/3: tight-huber maxiter=240
@@ -113,16 +113,16 @@ Wrote to console: ; === full-auto iteration 2/20 dataset=autocal/data/five_point
 ;   0.36359 fixed=[0] targets=[937.9607387613828] pair=[1,2]
 ;   0.359536 fixed=[1] targets=[885.8518088301951] pair=[0,2]
 ; collect_command:
-;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_002.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.new_002.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
 ; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
 ; selected run=default score_ui=14.6 score_basis=layered-calibrated cost=207.3 rel_std=9.261 max_std=2.73e+04mm
 Wrote to console: Score: 14.6 (lower is better)
-; replayed sweep 2/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=5
+; replayed sweep 2/5 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json sweeps=5
 Wrote to console: Collected sweep nr 5
 
-; === full-auto iteration 3/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 Wrote to console: 
-Wrote to console: ; === full-auto iteration 3/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: ; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 ; full-auto run default: flags=''
 [gnc] stage 1/3: wide-huber maxiter=400
 [gnc] stage 2/3: tight-huber maxiter=240
@@ -171,16 +171,16 @@ Wrote to console: ; === full-auto iteration 3/20 dataset=autocal/data/five_point
 ;   0.341417 fixed=[0] targets=[833.7428788990071] pair=[1,2]
 ;   0.336723 fixed=[0] targets=[781.6339489678192] pair=[1,2]
 ; collect_command:
-;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_003.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.new_003.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
 ; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
 ; selected run=default score_ui=4.825 score_basis=layered-calibrated cost=181.9 rel_std=4.842 max_std=1.427e+04mm
 Wrote to console: Score: 4.825 (lower is better)
-; replayed sweep 3/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=6
+; replayed sweep 3/5 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json sweeps=6
 Wrote to console: Collected sweep nr 6
 
-; === full-auto iteration 4/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 Wrote to console: 
-Wrote to console: ; === full-auto iteration 4/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: ; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 ; full-auto run default: flags=''
 [gnc] stage 1/3: wide-huber maxiter=400
 [gnc] stage 2/3: tight-huber maxiter=240
@@ -230,16 +230,16 @@ Wrote to console: ; === full-auto iteration 4/20 dataset=autocal/data/five_point
 ;   0.292278 fixed=[1] targets=[937.9607387613828] pair=[0,2]
 ;   0.292259 fixed=[2] targets=[937.9607387613828] pair=[0,1]
 ; collect_command:
-;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_004.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.new_004.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
 ; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
 ; selected run=default score_ui=2.653 score_basis=layered-calibrated cost=197.3 rel_std=4.898 max_std=1.444e+04mm
 Wrote to console: Score: 2.653 (lower is better)
-; replayed sweep 4/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=7
+; replayed sweep 4/5 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json sweeps=7
 Wrote to console: Collected sweep nr 7
 
-; === full-auto iteration 5/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; === full-auto iteration 5/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 Wrote to console: 
-Wrote to console: ; === full-auto iteration 5/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: ; === full-auto iteration 5/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 ; full-auto run default: flags=''
 [gnc] stage 1/3: wide-huber maxiter=400
 [gnc] stage 2/3: tight-huber maxiter=240
@@ -289,16 +289,16 @@ Wrote to console: ; === full-auto iteration 5/20 dataset=autocal/data/five_point
 ;   0.280468 fixed=[0] targets=[937.9607387613828] pair=[1,2]
 ;   0.276837 fixed=[1] targets=[885.8518088301951] pair=[0,2]
 ; collect_command:
-;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_005.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.new_005.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
 ; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
 ; selected run=default score_ui=35.61 score_basis=layered-calibrated cost=234.8 rel_std=5.273 max_std=1.554e+04mm
 Wrote to console: Score: 35.61 (lower is better)
-; replayed sweep 5/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=8
+; replayed sweep 5/5 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json sweeps=8
 Wrote to console: Collected sweep nr 8
 
-; === full-auto iteration 6/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; === full-auto iteration 6/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 Wrote to console: 
-Wrote to console: ; === full-auto iteration 6/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: ; === full-auto iteration 6/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.json ===
 ; full-auto run default: flags=''
 [gnc] stage 1/3: wide-huber maxiter=400
 [gnc] stage 2/3: tight-huber maxiter=240
@@ -348,7 +348,7 @@ Wrote to console: ; === full-auto iteration 6/20 dataset=autocal/data/five_point
 ;   0.264494 fixed=[0] targets=[833.7428788990071] pair=[1,2]
 ;   0.26082 fixed=[0] targets=[781.6339489678192] pair=[1,2]
 ; collect_command:
-;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_006.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_59519e0f/five_points_bigger_deltas.replay_tmp.new_006.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
 ; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
 ; selected run=default score_ui=18.7 score_basis=layered-calibrated cost=206.1 rel_std=4.886 max_std=1.44e+04mm
 Wrote to console: Score: 18.7 (lower is better)
