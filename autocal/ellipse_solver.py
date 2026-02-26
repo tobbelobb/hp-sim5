@@ -5,26 +5,18 @@ from __future__ import annotations
 import concurrent.futures
 import csv
 from pathlib import Path
+import os
 from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 from scipy.optimize import OptimizeResult, differential_evolution, minimize
 
 from autocal.ellipse_cost import CostResult, EllipseCostFunction
+from autocal.ellipse_objective_jax import build_compiled_value_and_grad
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import anchors_vec_to_matrix, get_anchor_bounds
 
 _BOUND_PENALTY_WEIGHT = 1e4
-
-try:
-    import jax
-    import jax.numpy as jnp
-
-    _JAX_AVAILABLE = True
-except Exception:  # pragma: no cover - optional dependency
-    jax = None  # type: ignore[assignment]
-    jnp = None  # type: ignore[assignment]
-    _JAX_AVAILABLE = False
 
 
 def _build_lbfgsb_objective_with_jac(
@@ -33,22 +25,15 @@ def _build_lbfgsb_objective_with_jac(
     ub: np.ndarray,
 ) -> Callable[[np.ndarray], Tuple[float, np.ndarray]]:
     """Return a callable that emits (objective, gradient) for SciPy L-BFGS-B."""
-    jax_value_and_grad = None
-    if _JAX_AVAILABLE:
-        try:
-            def _jax_objective(x: "jnp.ndarray") -> "jnp.ndarray":
-                x_np = np.asarray(x, dtype=float)
-                return jnp.asarray(cost_fn.evaluate(np.clip(x_np, lb, ub)))
-
-            jax_value_and_grad = jax.value_and_grad(_jax_objective)
-        except Exception:
-            jax_value_and_grad = None
+    disable_jax = str(os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE", "")).strip().lower()
+    use_jax = disable_jax not in ("1", "true", "yes", "on")
+    jax_value_and_grad = build_compiled_value_and_grad(cost_fn, lb, ub) if use_jax else None
 
     def _value_and_grad(x: np.ndarray) -> Tuple[float, np.ndarray]:
         x_clipped = np.clip(np.asarray(x, dtype=float).reshape(-1), lb, ub)
-        if jax_value_and_grad is not None and _JAX_AVAILABLE:
+        if jax_value_and_grad is not None:
             try:
-                value, grad = jax_value_and_grad(jnp.asarray(x_clipped))
+                value, grad = jax_value_and_grad(x_clipped)
                 return float(value), np.asarray(grad, dtype=float).reshape(-1)
             except Exception:
                 pass

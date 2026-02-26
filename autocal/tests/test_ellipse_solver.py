@@ -42,7 +42,7 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
             nfev=1,
         )
 
-    monkeypatch.setattr(ellipse_solver, "_JAX_AVAILABLE", False)
+    monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", lambda _c, _lb, _ub: None)
     monkeypatch.setattr(ellipse_solver, "minimize", fake_minimize)
 
     cost = _QuadraticCost()
@@ -63,17 +63,13 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
 
 
 def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
-    class _DummyJax:
-        @staticmethod
-        def value_and_grad(_fn):
-            def _raise(_x):
-                raise RuntimeError("jax trace failed")
+    def _broken_jax(_cost_fn, _lb, _ub):
+        def _broken(_x):
+            raise RuntimeError("jax trace failed")
 
-            return _raise
+        return _broken
 
-    monkeypatch.setattr(ellipse_solver, "_JAX_AVAILABLE", True)
-    monkeypatch.setattr(ellipse_solver, "jax", _DummyJax())
-    monkeypatch.setattr(ellipse_solver, "jnp", np)
+    monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", _broken_jax)
 
     cost = _QuadraticCost()
     objective = ellipse_solver._build_lbfgsb_objective_with_jac(
