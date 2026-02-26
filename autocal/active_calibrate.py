@@ -79,6 +79,22 @@ from autocal.sweep_types import MachineType
 GeometryWeights = Tuple[float, float, float]
 MACHINE_TYPE_CHOICES = tuple(machine.value for machine in MachineType)
 MACHINE_TYPE_CHOICES_STR = " | ".join(MACHINE_TYPE_CHOICES)
+_EllipseCostFnCacheKey = Tuple[
+    int,
+    float,
+    float,
+    bool,
+    str,
+    bool,
+    bool,
+    bool,
+    str,
+    bool,
+    bool,
+    str,
+]
+_ELLIPSE_COST_FN_CACHE_MAX_SIZE = 512
+_ELLIPSE_COST_FN_CACHE: Dict[_EllipseCostFnCacheKey, EllipseCostFunction] = {}
 
 
 def _require_machine_type(
@@ -825,7 +841,7 @@ def _estimate_effective_radii_with_spool_model(
             cost_fn = None
             detailed = None
             if noise_metrics is None:
-                cost_fn = _build_ellipse_cost_function(
+                cost_fn = _get_cached_ellipse_cost_function(
                     transformed_dataset,
                     residual_threshold=float(residual_threshold),
                     spring_k_multiplier=float(spring_k_multiplier),
@@ -923,7 +939,7 @@ def _estimate_effective_radii_with_spool_model(
         try:
             noise_metrics = dict(noise_metrics_hint) if isinstance(noise_metrics_hint, dict) else None
             if noise_metrics is None:
-                cost_fn = _build_ellipse_cost_function(
+                cost_fn = _get_cached_ellipse_cost_function(
                     transformed_dataset,
                     residual_threshold=float(residual_threshold),
                     spring_k_multiplier=float(spring_k_multiplier),
@@ -2819,6 +2835,58 @@ def _build_ellipse_cost_function(
     )
 
 
+def _get_cached_ellipse_cost_function(
+    dataset: dict,
+    *,
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    use_noise_mean: bool,
+    noise_normalized: bool,
+    sigma_source: str,
+) -> EllipseCostFunction:
+    key: _EllipseCostFnCacheKey = (
+        id(dataset),
+        float(residual_threshold),
+        float(spring_k_multiplier),
+        bool(use_flex),
+        str(pointwise_residual_mode),
+        bool(pointwise_filtering),
+        bool(pointwise_global_mad),
+        bool(sweep_wise_filtering),
+        str(sweep_metric),
+        bool(use_noise_mean),
+        bool(noise_normalized),
+        str(sigma_source),
+    )
+    cached = _ELLIPSE_COST_FN_CACHE.get(key)
+    if cached is not None:
+        return cached
+    cost_fn = _build_ellipse_cost_function(
+        dataset,
+        residual_threshold=key[1],
+        spring_k_multiplier=key[2],
+        use_flex=key[3],
+        pointwise_residual_mode=key[4],
+        pointwise_filtering=key[5],
+        pointwise_global_mad=key[6],
+        sweep_wise_filtering=key[7],
+        sweep_metric=key[8],
+        use_noise_mean=key[9],
+        noise_normalized=key[10],
+        sigma_source=key[11],
+    )
+    _ELLIPSE_COST_FN_CACHE[key] = cost_fn
+    if len(_ELLIPSE_COST_FN_CACHE) > int(_ELLIPSE_COST_FN_CACHE_MAX_SIZE):
+        _ELLIPSE_COST_FN_CACHE.pop(next(iter(_ELLIPSE_COST_FN_CACHE)))
+    return cost_fn
+
+
 def _compute_tau_mad_rescore_from_rows(
     rows: Sequence[dict],
     *,
@@ -3375,7 +3443,7 @@ def _evaluate_cost_at_anchors(
     noise_normalized: bool,
     sigma_source: str,
 ) -> float:
-    cost_fn = _build_ellipse_cost_function(
+    cost_fn = _get_cached_ellipse_cost_function(
         dataset,
         residual_threshold=float(residual_threshold),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -4575,7 +4643,7 @@ def _plan_next_ellipse_sweep(
             if isinstance(nm, dict):
                 noise_metrics = nm
     if isinstance(noise_metrics, dict) and bool(search_radii or search_buildup):
-        cost_fn = _build_ellipse_cost_function(
+        cost_fn = _get_cached_ellipse_cost_function(
             dataset_for_estimation,
             residual_threshold=float(residual_threshold),
             spring_k_multiplier=float(spring_k_multiplier),
