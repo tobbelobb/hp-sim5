@@ -6775,10 +6775,9 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         choices=_OPTIMIZER_MODE_CHOICES,
         default=_normalize_optimizer_mode(os.environ.get("AUTOCAL_OPTIMIZER_MODE", "fast")),
         help=(
-            "Optimization mode: 'fast' (shared objective + internal finite-diff Jacobian), "
-            "'fast-fd' (shared objective + SciPy finite differences), "
-            "or 'legacy' (historical SciPy finite-diff path). "
-            "Set AUTOCAL_ENABLE_JAX_OBJECTIVE=1 to opt into the experimental JAX-native objective."
+            "Optimization mode: 'fast' (JAX exact Jacobian), "
+            "'fast-fd' (JAX value + SciPy finite differences), "
+            "or 'legacy' (no JAX + SciPy finite differences)."
         ),
     )
     parser.add_argument("--threshold", type=float, default=250.0)
