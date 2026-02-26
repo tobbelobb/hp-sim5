@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
+import logging
 import os
 
 import numpy as np
@@ -14,10 +15,18 @@ from autocal.ellipse_cost import EllipseCostFunction
 os.environ["JAX_PLATFORMS"] = "cpu"
 os.environ["JAX_PLATFORM_NAME"] = "cpu"
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+logging.getLogger("jax._src.xla_bridge").setLevel(logging.CRITICAL)
 
 try:
     import jax
     import jax.numpy as jnp
+    try:
+        # CPU-only mode: avoid probing third-party PJRT plugins (e.g. CUDA).
+        from jax._src import xla_bridge as _xla_bridge
+
+        _xla_bridge.discover_pjrt_plugins = lambda: None
+    except Exception:
+        pass
 
     try:
         jax.config.update("jax_platform_name", "cpu")
