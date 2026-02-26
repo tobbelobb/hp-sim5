@@ -106,3 +106,72 @@ def test_jax_objective_matches_numpy_cost():
     assert np.all(np.isfinite(np.asarray(grad_jax, dtype=float)))
     assert np.asarray(grad_jax, dtype=float).shape == x.shape
     assert np.isclose(value_jax, value_np, rtol=1e-6, atol=1e-8)
+
+
+@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+def test_jax_underconstrained_penalty_is_finite():
+    dataset, anchors = _synthetic_slideprinter_dataset()
+    dataset["sweeps"] = list(dataset["sweeps"][:2])
+
+    cost_fn = EllipseCostFunction(
+        dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        use_noise_mean=True,
+        noise_normalized=True,
+    )
+    lb, ub = get_anchor_bounds("slideprinter")
+    objective = build_compiled_value_and_grad(cost_fn, np.asarray(lb, dtype=float), np.asarray(ub, dtype=float))
+    assert objective is not None
+
+    x1 = np.asarray(anchors, dtype=float).reshape(-1)
+    x2 = x1.copy()
+    x2[0] += 20.0
+
+    value_1, grad_1 = objective(x1)
+    value_2, grad_2 = objective(x2)
+
+    assert np.isfinite(float(value_1))
+    assert np.isfinite(float(value_2))
+    assert np.all(np.isfinite(np.asarray(grad_1, dtype=float)))
+    assert np.all(np.isfinite(np.asarray(grad_2, dtype=float)))
+    assert float(value_1) >= 0.0
+    assert float(value_2) >= 0.0
+
+
+@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+def test_jax_stage2_filtering_value_remains_finite_with_outliers():
+    dataset, anchors = _synthetic_slideprinter_dataset()
+    first_sweep = dataset["sweeps"][0]
+    points = first_sweep.get("data_points", [])
+    assert isinstance(points, list) and points
+    points[0]["l_drive"] = float(points[0]["l_drive"]) + 80.0
+    points[0]["l_sensor"] = float(points[0]["l_sensor"]) - 60.0
+    points[0]["l_drive_mu"] = float(points[0]["l_drive_mu"]) + 80.0
+    points[0]["l_sensor_mu"] = float(points[0]["l_sensor_mu"]) - 60.0
+
+    cost_fn = EllipseCostFunction(
+        dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_filter_stage=2,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        use_noise_mean=True,
+        noise_normalized=True,
+    )
+    lb, ub = get_anchor_bounds("slideprinter")
+    objective = build_compiled_value_and_grad(cost_fn, np.asarray(lb, dtype=float), np.asarray(ub, dtype=float))
+    assert objective is not None
+
+    x = np.asarray(anchors, dtype=float).reshape(-1)
+    value_0, grad_0 = objective(x)
+    value_minus, _ = objective(x - 1e-3)
+    value_plus, _ = objective(x + 1e-3)
+
+    assert np.isfinite(float(value_0))
+    assert np.isfinite(float(value_minus))
+    assert np.isfinite(float(value_plus))
+    assert np.asarray(grad_0, dtype=float).shape == x.shape

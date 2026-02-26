@@ -46,7 +46,10 @@ def _build_lbfgsb_objective_with_jac(
         if jax_value_and_grad is not None:
             try:
                 value, grad = jax_value_and_grad(x_clipped)
-                return float(value), np.asarray(grad, dtype=float).reshape(-1)
+                value_f = float(value)
+                grad_arr = np.asarray(grad, dtype=float).reshape(-1)
+                if np.isfinite(value_f) and np.all(np.isfinite(grad_arr)):
+                    return value_f, grad_arr
             except Exception:
                 pass
 

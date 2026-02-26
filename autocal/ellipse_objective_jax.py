@@ -50,6 +50,8 @@ _SWEEP_WISE_K = 3.0
 _SWEEP_WISE_MIN_KEEP = 2
 _SWEEP_WISE_MIN_KEEP_RATIO = 0.5
 _UNDERCONSTRAINED_PENALTY = 100.0
+_SMOOTH_POINT_TRIM_BAND = 0.10
+_SMOOTH_INLIER_BLEND_BAND = 0.50
 
 
 @dataclass(frozen=True)
@@ -211,6 +213,14 @@ def _pseudo_huber_loss_jax(residuals: "jnp.ndarray", delta: "jnp.ndarray") -> "j
 def _masked_mean_axis1(values: "jnp.ndarray", mask: "jnp.ndarray") -> "jnp.ndarray":
     denom = jnp.maximum(jnp.sum(mask.astype(values.dtype), axis=1), 1.0)
     total = jnp.sum(jnp.where(mask, values, 0.0), axis=1)
+    return total / denom
+
+
+def _weighted_mean_axis1(values: "jnp.ndarray", weights: "jnp.ndarray") -> "jnp.ndarray":
+    safe_values = jnp.where(jnp.isfinite(values), values, 0.0)
+    safe_weights = jnp.where(jnp.isfinite(weights), weights, 0.0)
+    denom = jnp.maximum(jnp.sum(safe_weights, axis=1), 1e-6)
+    total = jnp.sum(safe_values * safe_weights, axis=1)
     return total / denom
 
 
@@ -468,25 +478,21 @@ def _objective_core(
         losses = _pseudo_huber_loss_jax(r_norm, huber_delta[:, None])
 
         if hard_cut:
-            inlier_mask = jnp.logical_and(valid_point_mask, abs_r <= trim_threshold[:, None])
-            inlier_count = jnp.sum(inlier_mask.astype(jnp.int32), axis=1)
-            use_inliers = inlier_count >= _POINTWISE_MIN_INLIERS
+            trim_band = jnp.maximum(_SMOOTH_POINT_TRIM_BAND * trim_threshold, 1e-6)
+            inlier_soft = jax.nn.sigmoid((trim_threshold[:, None] - abs_r) / trim_band[:, None])
+            inlier_weights = valid_point_mask.astype(x.dtype) * inlier_soft
+            inlier_count = jnp.sum(inlier_weights, axis=1)
+            min_inliers = jnp.minimum(jnp.asarray(_POINTWISE_MIN_INLIERS, dtype=x.dtype), num_points.astype(x.dtype))
+            use_inliers = jax.nn.sigmoid((inlier_count - min_inliers) / _SMOOTH_INLIER_BLEND_BAND)
             cost_all = _masked_mean_axis1(losses, valid_point_mask)
-            cost_inliers = _masked_mean_axis1(losses, inlier_mask)
-            cost_unit = jnp.where(use_inliers, cost_inliers, cost_all)
-            inlier_ratio = inlier_count.astype(x.dtype) / jnp.maximum(num_points.astype(x.dtype), 1.0)
+            cost_inliers = _weighted_mean_axis1(losses, inlier_weights)
+            cost_unit = use_inliers * cost_inliers + (1.0 - use_inliers) * cost_all
+            inlier_ratio = inlier_count / jnp.maximum(num_points.astype(x.dtype), 1.0)
 
+            inlier_mask = inlier_weights > 0.5
             abs_masked = jnp.where(inlier_mask, abs_r, jnp.nan)
-            metric_median = jnp.where(
-                use_inliers,
-                _nanmedian_axis1(abs_masked),
-                _nanmedian_axis1(jnp.where(valid_point_mask, abs_r, jnp.nan)),
-            )
-            metric_mad = jnp.where(
-                use_inliers,
-                _mad_scale_axis1(abs_masked),
-                _mad_scale_axis1(jnp.where(valid_point_mask, abs_r, jnp.nan)),
-            )
+            metric_median = _nanmedian_axis1(jnp.where(valid_point_mask, abs_r, jnp.nan))
+            metric_mad = _mad_scale_axis1(jnp.where(valid_point_mask, abs_r, jnp.nan))
         else:
             cost_unit = _masked_mean_axis1(losses, valid_point_mask)
             inlier_ratio = jnp.ones_like(cost_unit)

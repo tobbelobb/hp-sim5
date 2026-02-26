@@ -88,6 +88,28 @@ def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
     assert cost.last_f0 is not None
 
 
+def test_lbfgsb_objective_falls_back_when_jax_grad_nonfinite(monkeypatch):
+    def _bad_grad(_cost_fn, _lb, _ub):
+        def _return_nonfinite(_x):
+            return 1.0, np.asarray([np.nan, np.nan], dtype=float)
+
+        return _return_nonfinite
+
+    monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", _bad_grad)
+
+    cost = _QuadraticCost()
+    objective = ellipse_solver._build_lbfgsb_objective_with_jac(
+        cost,
+        lb=np.asarray([-10.0, -10.0], dtype=float),
+        ub=np.asarray([10.0, 10.0], dtype=float),
+    )
+    value, grad = objective(np.asarray([0.5, -0.5], dtype=float))
+
+    assert np.isfinite(float(value))
+    assert np.allclose(np.asarray(grad, dtype=float), np.asarray([1.0, -1.0], dtype=float))
+    assert cost.last_f0 is not None
+
+
 def test_run_lbfgsb_minimize_value_only_mode_uses_scipy_fd(monkeypatch):
     seen = {"jac": "<missing>", "value": None}
 
