@@ -195,3 +195,98 @@ def test_run_lbfgsb_minimize_value_only_mode_falls_back_when_jax_fun_errors(monk
     assert cost.evaluate_calls > 0
     assert cost.gradient_calls == 0
     assert bool(result.success) is True
+
+
+def test_prepare_frozen_dataset_and_flags_filters_points_and_sweeps(monkeypatch):
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [
+            {"id": "s0", "data_points": [{"i": 0}, {"i": 1}, {"i": 2}]},
+            {"id": "s1", "data_points": [{"i": 0}, {"i": 1}, {"i": 2}]},
+            {"id": "s2", "data_points": [{"i": 0}, {"i": 1}, {"i": 2}]},
+        ],
+    }
+
+    class _FakeCostFn:
+        def _pointwise_entries(self, _anchors):
+            return [
+                {"sweep_metric": 0.1, "_inlier_mask": np.asarray([True, False, True]), "num_inliers": 3},
+                {"sweep_metric": 0.2, "_inlier_mask": np.asarray([True, False, False]), "num_inliers": 2},
+                {"sweep_metric": 9.0, "_inlier_mask": np.asarray([True, True, True]), "num_inliers": 3},
+            ], None
+
+        def _sweep_wise_keep_mask(self, _metrics):
+            return np.asarray([True, True, False], dtype=bool), 1.0, "ok"
+
+    monkeypatch.setattr(ellipse_solver, "_build_cost_fn", lambda *args, **kwargs: _FakeCostFn())
+    monkeypatch.setattr(
+        ellipse_solver,
+        "get_anchor_bounds",
+        lambda _m: (np.full(6, -1000.0, dtype=float), np.full(6, 1000.0, dtype=float)),
+    )
+
+    frozen_dataset, flags = ellipse_solver._prepare_frozen_dataset_and_flags(
+        dataset,
+        np.zeros(6, dtype=float),
+        residual_threshold=0.01,
+        pointwise_residual_mode="sampson",
+        invalid_sweep_penalty=1e6,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        robust_loss=False,
+        huber_delta=1.0,
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        sweep_metric="outlier_ratio",
+        pointwise_filter_stage=2,
+        use_noise_mean=True,
+        noise_normalized=True,
+        sigma_source="auto",
+    )
+
+    assert isinstance(frozen_dataset, dict)
+    sweeps = frozen_dataset.get("sweeps", [])
+    assert isinstance(sweeps, list)
+    assert [s.get("id") for s in sweeps] == ["s0", "s1"]
+    assert len(sweeps[0].get("data_points", [])) == 2
+    assert len(sweeps[1].get("data_points", [])) == 3
+    assert flags["sweep_wise_filtering"] is False
+    assert flags["pointwise_filtering"] is False
+    assert flags["pointwise_filter_stage"] == 1
+
+
+def test_prepare_frozen_dataset_and_flags_respects_disable_env(monkeypatch):
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [{"id": "s0", "data_points": [{"i": 0}]}],
+    }
+    monkeypatch.setenv("AUTOCAL_FREEZE_FILTER_MASKS", "0")
+
+    frozen_dataset, flags = ellipse_solver._prepare_frozen_dataset_and_flags(
+        dataset,
+        np.zeros(6, dtype=float),
+        residual_threshold=0.01,
+        pointwise_residual_mode="sampson",
+        invalid_sweep_penalty=1e6,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        robust_loss=False,
+        huber_delta=1.0,
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        sweep_metric="outlier_ratio",
+        pointwise_filter_stage=2,
+        use_noise_mean=True,
+        noise_normalized=True,
+        sigma_source="auto",
+    )
+
+    assert frozen_dataset is dataset
+    assert flags["pointwise_filtering"] is True
+    assert flags["sweep_wise_filtering"] is True

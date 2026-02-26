@@ -6,7 +6,7 @@ import concurrent.futures
 import csv
 from pathlib import Path
 import os
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 from scipy.optimize import OptimizeResult, differential_evolution, minimize
@@ -134,6 +134,9 @@ def _optimize_restart_worker(payload: dict) -> dict:
     sweep_wise_filtering = bool(payload.get("sweep_wise_filtering", True))
     sweep_metric = str(payload.get("sweep_metric", "outlier_ratio"))
     pointwise_filter_stage = payload.get("pointwise_filter_stage", 0)
+    use_noise_mean = bool(payload.get("use_noise_mean", True))
+    noise_normalized = bool(payload.get("noise_normalized", True))
+    sigma_source = str(payload.get("sigma_source", "auto"))
 
     machine_type_raw = dataset.get("machine_type", "hangprinter_4")
     machine_type = machine_type_raw.value if isinstance(machine_type_raw, MachineType) else str(machine_type_raw)
@@ -142,11 +145,12 @@ def _optimize_restart_worker(payload: dict) -> dict:
     lb, ub = get_anchor_bounds(machine_type)
     bounds = list(zip(lb, ub))
 
-    cost_fn = EllipseCostFunction(
+    cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
         dataset,
-        residual_threshold=residual_threshold,
+        x0_clipped,
+        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
-        invalid_sweep_penalty=invalid_sweep_penalty,
+        invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
@@ -156,6 +160,9 @@ def _optimize_restart_worker(payload: dict) -> dict:
         sweep_wise_filtering=bool(sweep_wise_filtering),
         sweep_metric=str(sweep_metric),
         pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
     )
 
     method_norm = method_raw.strip().replace("_", "-").lower()
@@ -264,6 +271,219 @@ def _dataset_metadata(dataset: Union[dict, "SweepDataset"]) -> Tuple[str, int, i
     return machine_type, num_anchors, dimensions
 
 
+def _freeze_filter_masks_enabled() -> bool:
+    raw = str(os.environ.get("AUTOCAL_FREEZE_FILTER_MASKS", "1")).strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+def _build_cost_fn(
+    dataset: Union[dict, "SweepDataset"],
+    *,
+    residual_threshold: float,
+    pointwise_residual_mode: str,
+    invalid_sweep_penalty: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    robust_loss: bool,
+    huber_delta: float,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    pointwise_filter_stage: Optional[int],
+    use_noise_mean: bool,
+    noise_normalized: bool,
+    sigma_source: str,
+) -> EllipseCostFunction:
+    return EllipseCostFunction(
+        dataset,
+        residual_threshold=residual_threshold,
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        invalid_sweep_penalty=invalid_sweep_penalty,
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
+        pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+
+
+def _prepare_frozen_dataset_and_flags(
+    dataset: Union[dict, "SweepDataset"],
+    x0: np.ndarray,
+    *,
+    residual_threshold: float,
+    pointwise_residual_mode: str,
+    invalid_sweep_penalty: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    robust_loss: bool,
+    huber_delta: float,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    pointwise_filter_stage: Optional[int],
+    use_noise_mean: bool,
+    noise_normalized: bool,
+    sigma_source: str,
+) -> Tuple[Union[dict, "SweepDataset"], Dict[str, Any]]:
+    stage_idx = int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0
+    flags: Dict[str, Any] = {
+        "pointwise_filtering": bool(pointwise_filtering),
+        "pointwise_global_mad": bool(pointwise_global_mad),
+        "sweep_wise_filtering": bool(sweep_wise_filtering),
+        "pointwise_filter_stage": int(stage_idx),
+    }
+    if (not _freeze_filter_masks_enabled()) or (not isinstance(dataset, dict)):
+        return dataset, flags
+    if (not bool(pointwise_filtering)) and (not bool(sweep_wise_filtering)):
+        return dataset, flags
+
+    sweeps = dataset.get("sweeps")
+    if not isinstance(sweeps, list) or not sweeps:
+        return dataset, flags
+
+    try:
+        machine_type, num_anchors, dimensions = _dataset_metadata(dataset)
+        lb, ub = get_anchor_bounds(machine_type)
+        x0_clipped = np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub)
+        anchors = anchors_vec_to_matrix(x0_clipped, int(num_anchors), int(dimensions))
+    except Exception:
+        return dataset, flags
+
+    probe_cost_fn = _build_cost_fn(
+        dataset,
+        residual_threshold=float(residual_threshold),
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        invalid_sweep_penalty=float(invalid_sweep_penalty),
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
+        pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=int(stage_idx),
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+
+    try:
+        entries, _global_scale = probe_cost_fn._pointwise_entries(anchors)  # type: ignore[attr-defined]
+        sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+        keep_mask, _threshold, _reason = probe_cost_fn._sweep_wise_keep_mask(sweep_metrics)  # type: ignore[attr-defined]
+    except Exception:
+        return dataset, flags
+
+    filtered_sweeps = []
+    for idx, sweep in enumerate(sweeps):
+        if not isinstance(sweep, dict):
+            continue
+        if keep_mask is not None:
+            if idx >= len(keep_mask) or not bool(keep_mask[idx]):
+                continue
+
+        sweep_out = dict(sweep)
+        points = sweep.get("data_points")
+        if isinstance(points, list):
+            kept_points = list(points)
+            if bool(pointwise_filtering) and int(stage_idx) >= 2 and idx < len(entries):
+                entry = entries[idx]
+                inlier_mask = entry.get("_inlier_mask")
+                num_inliers_raw = entry.get("num_inliers")
+                num_inliers = int(num_inliers_raw) if isinstance(num_inliers_raw, (int, float)) else 0
+                if isinstance(inlier_mask, np.ndarray):
+                    point_mask = np.asarray(inlier_mask, dtype=bool).reshape(-1)
+                    if point_mask.size == len(points) and num_inliers >= 3:
+                        kept_points = [p for p, keep in zip(points, point_mask) if bool(keep)]
+            sweep_out["data_points"] = kept_points
+        filtered_sweeps.append(sweep_out)
+
+    if not filtered_sweeps:
+        return dataset, flags
+
+    dataset_out = dict(dataset)
+    dataset_out["sweeps"] = filtered_sweeps
+
+    frozen_flags = dict(flags)
+    if bool(sweep_wise_filtering):
+        frozen_flags["sweep_wise_filtering"] = False
+    if bool(pointwise_filtering) and int(stage_idx) >= 2:
+        frozen_flags["pointwise_filtering"] = False
+        frozen_flags["pointwise_filter_stage"] = 1
+    return dataset_out, frozen_flags
+
+
+def _build_restart_cost_fn(
+    dataset: Union[dict, "SweepDataset"],
+    x0: np.ndarray,
+    *,
+    residual_threshold: float,
+    pointwise_residual_mode: str,
+    invalid_sweep_penalty: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    robust_loss: bool,
+    huber_delta: float,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    pointwise_filter_stage: Optional[int],
+    use_noise_mean: bool,
+    noise_normalized: bool,
+    sigma_source: str,
+) -> Tuple[EllipseCostFunction, Union[dict, "SweepDataset"], Dict[str, Any]]:
+    dataset_eff, flags = _prepare_frozen_dataset_and_flags(
+        dataset,
+        x0,
+        residual_threshold=float(residual_threshold),
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        invalid_sweep_penalty=float(invalid_sweep_penalty),
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
+        pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=pointwise_filter_stage,
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+    cost_fn = _build_cost_fn(
+        dataset_eff,
+        residual_threshold=float(residual_threshold),
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        invalid_sweep_penalty=float(invalid_sweep_penalty),
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
+        pointwise_filtering=bool(flags["pointwise_filtering"]),
+        pointwise_global_mad=bool(flags["pointwise_global_mad"]),
+        sweep_wise_filtering=bool(flags["sweep_wise_filtering"]),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=int(flags["pointwise_filter_stage"]),
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+    return cost_fn, dataset_eff, flags
+
+
 def solve_anchors(
     dataset: Union[dict, "SweepDataset"],
     initial_guess: Optional[np.ndarray] = None,
@@ -361,11 +581,11 @@ def solve_anchors(
         if final_result is not None:
             return final_result
 
-    cost_fn = EllipseCostFunction(
+    cost_fn = _build_cost_fn(
         dataset,
-        residual_threshold=residual_threshold,
+        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
-        invalid_sweep_penalty=invalid_sweep_penalty,
+        invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
@@ -675,6 +895,8 @@ def solve_anchors(
 
     best_result = None
     best_cost = np.inf
+    best_restart_idx: Optional[int] = None
+    best_cost_fn: Optional[EllipseCostFunction] = None
 
     def _bounded_objective(x: np.ndarray) -> float:
         """Objective wrapper that penalizes leaving bounds (for methods without bounds support)."""
@@ -713,6 +935,9 @@ def solve_anchors(
                 "pointwise_filter_stage": (
                     int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0
                 ),
+                "use_noise_mean": bool(use_noise_mean),
+                "noise_normalized": bool(noise_normalized),
+                "sigma_source": str(sigma_source),
             }
             for x0 in initial_guesses
         ]
@@ -729,6 +954,7 @@ def solve_anchors(
                     if float(result.fun) < best_cost:
                         best_cost = float(result.fun)
                         best_result = result
+                        best_restart_idx = idx - 1
         except BaseException as exc:
             parallel_exc = exc
 
@@ -742,9 +968,29 @@ def solve_anchors(
                     if float(result.fun) < best_cost:
                         best_cost = float(result.fun)
                         best_result = result
+                        best_restart_idx = idx - 1
     else:
         for idx, x0 in enumerate(initial_guesses):
             x0_clipped = np.clip(x0, lb, ub)
+            cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
+                dataset,
+                x0_clipped,
+                residual_threshold=float(residual_threshold),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                invalid_sweep_penalty=float(invalid_sweep_penalty),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                robust_loss=bool(robust_loss),
+                huber_delta=float(huber_delta),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=bool(noise_normalized),
+                sigma_source=str(sigma_source),
+            )
             if verbose:
                 print(f"Starting optimization {idx + 1}/{len(initial_guesses)}...")
                 _summarize_cost(f"restart {idx + 1} init", x0_clipped, include_details=True)
@@ -876,6 +1122,8 @@ def solve_anchors(
             if result.fun < best_cost:
                 best_cost = float(result.fun)
                 best_result = result
+                best_restart_idx = idx
+                best_cost_fn = cost_fn
 
     if best_result is None:
         return {
@@ -886,8 +1134,34 @@ def solve_anchors(
             "raw_result": None,
         }
 
+    if best_cost_fn is None:
+        if best_restart_idx is not None and 0 <= int(best_restart_idx) < len(initial_guesses):
+            best_x0 = np.clip(np.asarray(initial_guesses[int(best_restart_idx)], dtype=float), lb, ub)
+        else:
+            best_x0 = np.clip(np.asarray(best_result.x, dtype=float), lb, ub)
+        best_cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
+            dataset,
+            best_x0,
+            residual_threshold=float(residual_threshold),
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            invalid_sweep_penalty=float(invalid_sweep_penalty),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            robust_loss=bool(robust_loss),
+            huber_delta=float(huber_delta),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
+            use_noise_mean=bool(use_noise_mean),
+            noise_normalized=bool(noise_normalized),
+            sigma_source=str(sigma_source),
+        )
+
+    cost_fn = best_cost_fn
     anchors_matrix = anchors_vec_to_matrix(best_result.x, num_anchors, dimensions)
-    detailed: CostResult = cost_fn.evaluate_detailed(best_result.x)
+    detailed: CostResult = best_cost_fn.evaluate_detailed(best_result.x)
 
     if verbose:
         print("Optimization complete.")

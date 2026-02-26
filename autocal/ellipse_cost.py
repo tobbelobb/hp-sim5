@@ -1494,6 +1494,7 @@ class EllipseCostFunction:
                 "scale": None,
                 "trim_threshold": None,
                 "sweep_metric": float("inf"),
+                "_inlier_mask": None,
             }
 
         residuals = np.asarray(residuals, dtype=float).ravel()
@@ -1512,6 +1513,7 @@ class EllipseCostFunction:
                 "scale": None,
                 "trim_threshold": None,
                 "sweep_metric": float("inf"),
+                "_inlier_mask": None,
             }
         sigma_l2 = entry.get("sigma_l2")
         norm_mode = "l2_scale"
@@ -1540,6 +1542,7 @@ class EllipseCostFunction:
                 "norm_mode": norm_mode,
                 "_r_norm": r_norm,
                 "_r_norm_used": r_norm,
+                "_inlier_mask": None,
             }
 
         cost_unit, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold = self._pointwise_cost_filtered(
@@ -1570,6 +1573,7 @@ class EllipseCostFunction:
                 "norm_mode": norm_mode,
                 "_r_norm": r_norm,
                 "_r_norm_used": r_norm_used,
+                "_inlier_mask": inlier_mask,
             }
 
         cost = float(cost_unit * self.pointwise_cost_weight)
@@ -1589,6 +1593,7 @@ class EllipseCostFunction:
             "norm_mode": norm_mode,
             "_r_norm": r_norm,
             "_r_norm_used": r_norm_used,
+            "_inlier_mask": inlier_mask,
         }
 
     def _pointwise_sweep_info(
