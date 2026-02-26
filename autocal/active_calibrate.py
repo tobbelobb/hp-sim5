@@ -874,7 +874,7 @@ def _estimate_effective_radii_with_spool_model(
                     pass
 
             rel_std = _spool_rel_std(transformed_dataset, anchors_eval, noise_metrics)
-            return _trimmed_risk_metric_from_components(noise_metrics, rel_std=rel_std)
+            return _trimmed_risk_metric_from_components(noise_metrics)
         except Exception:
             return None
 
@@ -7516,13 +7516,9 @@ def _layered_rank_score_from_internal_metric(
 
 
 def _trimmed_risk_metric_from_components(
-    noise_metrics: Optional[dict],
-    *,
-    rel_std: Optional[float],
+    noise_metrics: Optional[dict]
 ) -> Optional[float]:
     if not isinstance(noise_metrics, dict):
-        return None
-    if rel_std is None or not np.isfinite(rel_std) or rel_std <= 0.0:
         return None
 
     chi2_trimmed_direct = _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct"))
@@ -7558,7 +7554,7 @@ def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
         return None
 
     _max_std_mm, rel_std, _cov_ok = _plan_covariance_summary(plan)
-    return _trimmed_risk_metric_from_components(noise_metrics, rel_std=rel_std)
+    return _trimmed_risk_metric_from_components(noise_metrics)
 
 
 def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
