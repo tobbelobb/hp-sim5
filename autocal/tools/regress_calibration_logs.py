@@ -31,11 +31,14 @@ from __future__ import annotations
 
 import argparse
 import ast
+import concurrent.futures
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -80,6 +83,15 @@ class ParsedLog:
     summary: Optional[Params]
     iterations: List[Iteration]
     summary_block_lines: List[str]
+
+
+@dataclass
+class DatasetRunResult:
+    name: str
+    ok: bool
+    lines: List[str]
+    generated_log: Optional[Path]
+    reference_log: Optional[Path]
 
 
 # ---------- Parsing helpers ----------
@@ -328,7 +340,11 @@ def format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
 
 # ---------- Running commands ----------
 
-def run_active_calibrate(repo_root: Path, dataset_path: Path) -> Tuple[int, str]:
+def run_active_calibrate(
+    repo_root: Path,
+    dataset_path: Path,
+    full_auto_log: Optional[Path] = None,
+) -> Tuple[int, str]:
     cmd = [
         sys.executable,
         str(repo_root / "autocal" / "active_calibrate.py"),
@@ -346,6 +362,8 @@ def run_active_calibrate(repo_root: Path, dataset_path: Path) -> Tuple[int, str]
         "0.636619",
         "--no-collect",
     ]
+    if full_auto_log is not None:
+        cmd.extend(["--full-auto-log", str(full_auto_log)])
 
     # Reduce nondeterminism where possible (won't hurt even if irrelevant)
     env = os.environ.copy()
@@ -608,6 +626,96 @@ def find_file_first_existing(candidates: List[Path]) -> Optional[Path]:
     return None
 
 
+def prepare_isolated_dataset_copy(dataset_name: str, dataset_path: Path, scratch_root: Path) -> Path:
+    run_dir = scratch_root / f"{dataset_name}_{uuid.uuid4().hex[:8]}"
+    run_dir.mkdir(parents=True, exist_ok=False)
+    isolated = run_dir / dataset_path.name
+    shutil.copy2(dataset_path, isolated)
+    return isolated
+
+
+def run_one_dataset(
+    name: str,
+    repo_root: Path,
+    dataset_path: Path,
+    ref_log_path: Path,
+    tol_mm_total: float,
+    fail_on_score_mismatch: bool,
+    color: bool,
+    scratch_root: Path,
+) -> DatasetRunResult:
+    isolated_dataset = prepare_isolated_dataset_copy(name, dataset_path, scratch_root)
+    isolated_jsonl = isolated_dataset.with_name(f"{isolated_dataset.stem}.full_auto_log.jsonl")
+
+    rc, output = run_active_calibrate(
+        repo_root=repo_root,
+        dataset_path=isolated_dataset,
+        full_auto_log=isolated_jsonl,
+    )
+    if rc != 0:
+        return DatasetRunResult(
+            name=name,
+            ok=False,
+            lines=[
+                f"=== {name} ===",
+                f"ERROR: active_calibrate.py exited with {rc}",
+                "---- combined stdout/stderr ----",
+                output.rstrip(),
+            ],
+            generated_log=None,
+            reference_log=ref_log_path,
+        )
+
+    gen_log_rel = parse_generated_log_path(output)
+    if not gen_log_rel:
+        return DatasetRunResult(
+            name=name,
+            ok=False,
+            lines=[
+                f"=== {name} ===",
+                "ERROR: could not find generated log path in stdout/stderr (looked for 'Writing additional info to log:')",
+                "---- combined stdout/stderr ----",
+                output.rstrip(),
+            ],
+            generated_log=None,
+            reference_log=ref_log_path,
+        )
+
+    gen_log_path = (repo_root / gen_log_rel).resolve() if not Path(gen_log_rel).is_absolute() else Path(gen_log_rel).resolve()
+    if not gen_log_path.exists():
+        return DatasetRunResult(
+            name=name,
+            ok=False,
+            lines=[
+                f"=== {name} ===",
+                f"ERROR: generated log path does not exist: {gen_log_path}",
+                "---- combined stdout/stderr ----",
+                output.rstrip(),
+            ],
+            generated_log=gen_log_path,
+            reference_log=ref_log_path,
+        )
+
+    ref_parsed = parse_log_file(ref_log_path)
+    gen_parsed = parse_log_file(gen_log_path)
+
+    ok, lines = report_dataset(
+        name=name,
+        ref=ref_parsed,
+        gen=gen_parsed,
+        tol_mm_total=tol_mm_total,
+        fail_on_score_mismatch=fail_on_score_mismatch,
+        color=color,
+    )
+    return DatasetRunResult(
+        name=name,
+        ok=ok,
+        lines=lines,
+        generated_log=gen_log_path,
+        reference_log=ref_log_path,
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", type=str, default=".", help="Path to repo root (must contain autocal/active_calibrate.py).")
@@ -632,6 +740,7 @@ def main() -> int:
     alt_dir = Path("/mnt/data")
 
     overall_ok = True
+    jobs: List[Tuple[str, Path, Path]] = []
     for ds in DATASETS:
         dataset_path = find_file_first_existing([
             data_dir / f"{ds}.json",
@@ -646,69 +755,50 @@ def main() -> int:
             print(f"=== {ds} ===")
             print(f"ERROR: dataset not found (tried {data_dir}/{ds}.json and /mnt/data/{ds}.json)")
             overall_ok = False
-            if not args.keep_going:
-                break
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
             print(f"ERROR: reference log not found (tried {ref_dir}/{ds}.full_auto_reference_run_feb_26.log and /mnt/data/...)")
             overall_ok = False
-            if not args.keep_going:
-                break
             continue
+        jobs.append((ds, dataset_path, ref_log_path))
 
-        rc, output = run_active_calibrate(repo_root, dataset_path)
-        if rc != 0:
-            print(f"=== {ds} ===")
-            print(f"ERROR: active_calibrate.py exited with {rc}")
-            print("---- combined stdout/stderr ----")
-            print(output.rstrip())
-            overall_ok = False
-            if not args.keep_going:
-                break
-            continue
+    scratch_root = (repo_root / "autocal" / "data" / ".regress_parallel_runs").resolve()
+    scratch_root.mkdir(parents=True, exist_ok=True)
 
-        gen_log_rel = parse_generated_log_path(output)
-        if not gen_log_rel:
-            print(f"=== {ds} ===")
-            print("ERROR: could not find generated log path in stdout/stderr (looked for 'Writing additional info to log:')")
-            print("---- combined stdout/stderr ----")
-            print(output.rstrip())
-            overall_ok = False
-            if not args.keep_going:
-                break
-            continue
+    if jobs:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as pool:
+            fut_to_name = {
+                pool.submit(
+                    run_one_dataset,
+                    name=ds,
+                    repo_root=repo_root,
+                    dataset_path=dataset_path,
+                    ref_log_path=ref_log_path,
+                    tol_mm_total=float(args.tol_mm),
+                    fail_on_score_mismatch=not args.no_fail_score_mismatch,
+                    color=color,
+                    scratch_root=scratch_root,
+                ): ds
+                for ds, dataset_path, ref_log_path in jobs
+            }
+            for fut in concurrent.futures.as_completed(fut_to_name):
+                ds = fut_to_name[fut]
+                try:
+                    result = fut.result()
+                except Exception as exc:
+                    print(f"=== {ds} ===")
+                    print(f"ERROR: unexpected worker failure: {exc}")
+                    overall_ok = False
+                    continue
 
-        gen_log_path = (repo_root / gen_log_rel).resolve() if not Path(gen_log_rel).is_absolute() else Path(gen_log_rel).resolve()
-        if not gen_log_path.exists():
-            print(f"=== {ds} ===")
-            print(f"ERROR: generated log path does not exist: {gen_log_path}")
-            print("---- combined stdout/stderr ----")
-            print(output.rstrip())
-            overall_ok = False
-            if not args.keep_going:
-                break
-            continue
-
-        ref_parsed = parse_log_file(ref_log_path)
-        gen_parsed = parse_log_file(gen_log_path)
-
-        ok, lines = report_dataset(
-            name=ds,
-            ref=ref_parsed,
-            gen=gen_parsed,
-            tol_mm_total=float(args.tol_mm),
-            fail_on_score_mismatch=not args.no_fail_score_mismatch,
-            color=color,
-        )
-        print("\n".join(lines))
-        print(f"Generated log: {gen_log_path}")
-        print(f"Reference log: {ref_log_path}")
-
-        if not ok:
-            overall_ok = False
-            if not args.keep_going:
-                break
+                print("\n".join(result.lines))
+                if result.generated_log is not None:
+                    print(f"Generated log: {result.generated_log}")
+                if result.reference_log is not None:
+                    print(f"Reference log: {result.reference_log}")
+                if not result.ok:
+                    overall_ok = False
 
     if overall_ok:
         print("\nALL DATASETS: PASS")
