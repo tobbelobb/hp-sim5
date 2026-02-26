@@ -211,7 +211,7 @@ def test_spool_fit_uses_default_b_prior_when_not_provided(monkeypatch):
     assert fit_info.get("b_prior_sigma") == ac._DEFAULT_B_PRIOR_SIGMA
 
 
-def test_spool_fit_anchor_step_uses_fast_solver_settings(monkeypatch):
+def test_spool_fit_anchor_step_uses_configured_solver_settings(monkeypatch):
     base = np.array([10.0, 11.0, 12.0], dtype=float)
     target_k = np.array([0.05, 0.05, 0.05], dtype=float)
     _patch_spool_runtime(monkeypatch, target_radii=base, target_buildup=target_k)
@@ -263,8 +263,8 @@ def test_spool_fit_anchor_step_uses_fast_solver_settings(monkeypatch):
     assert len(calls) == 3
     assert np.allclose(np.asarray(calls[0].get("initial_guess"), dtype=float), np.zeros((3, 2), dtype=float))
     for kwargs in calls:
-        assert int(kwargs.get("num_restarts", 0)) <= 2
-        assert int(kwargs.get("max_iterations", 0)) <= 160
+        assert int(kwargs.get("num_restarts", 0)) == 7
+        assert int(kwargs.get("max_iterations", 0)) == 999
         assert kwargs.get("pointwise_filtering") is True
         assert kwargs.get("sweep_wise_filtering") is True
         assert kwargs.get("robust_debug") is False

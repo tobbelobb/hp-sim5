@@ -249,6 +249,7 @@ class TestRealDataFitting:
         data_path = (
             Path(__file__).resolve().parents[1]
             / "data"
+            / "references"
             / "sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json"
         )
 

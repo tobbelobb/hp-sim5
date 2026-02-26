@@ -32,3 +32,4 @@ autocal/old_data
 autocal/logo_work
 autocal/data/old_data/
 human_docs/old_debugging_conversations/
+autocal/data/.regress_parallel_runs/
