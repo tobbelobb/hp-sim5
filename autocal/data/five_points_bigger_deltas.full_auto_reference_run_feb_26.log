@@ -1,0 +1,366 @@
+; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect
+Wrote to console: Writing additional info to log: autocal/data/five_points_bigger_deltas.full_auto.log
+; auto-enabling --hp-sim-reset for spool search in simulation
+; full-auto replay: starting from 3 sweeps, replaying 5 additional sweeps
+; full-auto replay: using autocal/data/five_points_bigger_deltas.replay_tmp.json (original autocal/data/five_points_bigger_deltas.json left untouched)
+; full-auto log: autocal/data/five_points_bigger_deltas.full_auto_log.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create autocal/data/five_points_bigger_deltas.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=30 origin=0 min=0 mixed=0 total=30
+[robust] pointwise: enabled=True stage=2 (trim) hard_cut=True huber_mult=3
+[robust] pointwise scale: source=global global=20.4 floor=0.00013 floor_mm=0.738
+[robust] pointwise sigma_floor_mm: origin=0.00401201 mult=3 scaled=0.012036 min=0.05 model=0.73815 used=0.73815 floor=0.73815 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00401 friction_cogging=0.134 flex=0.282 floor=0.05 non_layered=0.316 layer_changes=0.298 mode_add=0.597 total=0.738 model=0.738 used=0.738 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise inlier_ratio: min=0.9 med=1 max=1
+[robust] pointwise worst: sweep_002 9/10 (0.9), sweep_001 10/10 (1), sweep_003 10/10 (1)
+[robust] sweep-wise: enabled=True status=few-samples (3 < 5) metric=outlier_ratio threshold=0.000391 rejected=1
+[robust] sweep-wise worst: sweep_002 m=0.1 drop, sweep_003 m=0 keep, sweep_001 m=0 keep
+; full-auto run default: cost_raw=0.7939 cost_noise_normalized=100 J=841.9 chi2_red=1203 score_ui=29.5 score_basis=layered-calibrated
+; Active ellipse calibration
+; Anchors: [[-2.5507973749244704e-13, -1880.566078895492], [1630.2885223213689, 942.2603789969207], [-1630.2449676854005, 941.5884972512871]]
+; cost=0.7939 cost_noise_normalized=100 origin_norms=[1880.566, 1883.002, 1882.628] pairwise=[d01=3259.784, d02=3259.180, d12=3260.534]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[38.67,38.67,38.67]
+; line_model_params (M666): M666 R38.67:38.67:38.67 Q0.636619
+; line_model_prefit: enabled=True success=True guarded=False seed=seed_1 start=25.79 fit=1.656 start_data=25.79 start_prior=0 start_total=25.79 fit_data=1.656 fit_prior=15.48 fit_total=1.656 valid_sweeps=3 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=151 last_start=2.064e+05 last_fit=217.8 last_cal=3.269e+04 last_data=3.269e+04 last_prior=10.49 last_total=3.27e+04 nfev=39 nit=19
+; noise_cost: J=841.9 chi2_red=1203 |z|_med=16.28 |z|_p95=56.19 outlier_ratio=0.9 N=20 mode=sigma lengths=mu J_trim=841.9 chi2_red_trim=1203 N_trim=20
+; noise_rescore: tau_MAD=0.905mm cost_noise_normalized_old=100 cost_noise_normalized_new=39.95 chi2_red_old=1203 chi2_red_new=480.5 residual_vs_distance_slope_inliers=0.08238 slope(|r|,d)=0.02728 slope(r^2,d)=0.04557 inlier_cutoff_mm=2.617mm n_inlier_rows_used_for_tau=29 tau_d_tau0=1.866mm tau_d_tau1=0 cost_noise_normalized_tau_d=13.54 chi2_red_tau_d=162.8 cost_noise_normalized_tau_d_trimmed_direct=101.2 chi2_red_tau_d_trimmed_direct=127.7 chi2_red_tau_3bin_debiased_trimmed_direct=102.6 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=1.244
+; noise_bias_diagnostic: bias_vs_distance_intercept=-130.9mm bias_vs_distance_slope_inliers=0.08002 cost_after_bias_diagnostic=139.6 chi2_red_after_bias_diagnostic=176
+; noise_rescore_bins: near_MAD=0.1052mm mid_MAD=0.6537mm far_MAD=0.415mm N=[10,9,10]
+; noise_rescore_bins_debiased: near_MAD=0.1091mm mid_MAD=0.5553mm far_MAD=0.2906mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.1618mm tau_mid=0.8232mm tau_far=0.4308mm cost_noise_normalized_tau_3bin_debiased=81.36 chi2_red_tau_3bin_debiased=102.6 chi2_red_tau_3bin_debiased_trimmed_direct=102.6
+; sweep_residual: id=sweep_002 median=-0.4485mm MAD=0.409mm p95_abs=1.161mm mean|z|=18.01 clipped=1/10
+; sweep_residual: id=sweep_003 median=-0.3046mm MAD=0.4909mm p95_abs=1.325mm mean|z|=21.15 clipped=0/10
+; sweep_residual: id=sweep_001 median=0.05621mm MAD=0.9129mm p95_abs=1.522mm mean|z|=24.04 clipped=0/10
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=822.9 chi2_red_demeaned=1038 tail_ratio=2.14 sweep_bias_span=0.5047mm n_obs=29
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.7381mm used_sigma=0.7381mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.004012mm friction_cogging=0.1343mm flex=0.2818mm floor=0.05mm non_layered=0.3162mm layer_changes=0.2983mm mode_add=0.5966mm total=0.7381mm model=0.7381mm used=0.7381mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 5/6 std(p0=963mm, p5=923mm, p3=923mm, p2=839mm, p4=839mm, p1=794mm)
+; covariance_scaled: chi2_red=1203 std_scaled(p0=3.34e+04mm, p5=3.2e+04mm, p3=3.2e+04mm, p2=2.91e+04mm, p4=2.91e+04mm, p1=2.75e+04mm)
+; CI95: max_std=3.339e+04mm max_ci=6.544e+04mm workspace=2948 rel_std=11.33 rel_ci=22.2 scale=chi2_red=1203
+; encoder_noise: points=30/30 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=30 sigma_nonfinite=0
+; next_sweep score=0.387984 fixed=[2] targets=[990.0696686925708] pair=[0,1]
+; top_candidates:
+;   0.387984 fixed=[2] targets=[990.0696686925708] pair=[0,1]
+;   0.38798 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+;   0.38786 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+;   0.383178 fixed=[2] targets=[937.9607387613828] pair=[0,1]
+;   0.383174 fixed=[1] targets=[937.9607387613828] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_001.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
+; selected run=default score_ui=29.5 score_basis=layered-calibrated cost=100 rel_std=11.33 max_std=3.339e+04mm
+Wrote to console: Score: 29.5 (lower is better)
+Wrote to console: ; selected run hit underconstrained sentinel; continuing to collect more sweeps.
+; replayed sweep 1/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=4
+Wrote to console: Collected sweep nr 4
+
+; === full-auto iteration 2/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 2/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=40 origin=0 min=0 mixed=0 total=40
+[robust] pointwise: enabled=True stage=2 (trim) hard_cut=True huber_mult=3
+[robust] pointwise scale: source=global global=14.8 floor=0.00013 floor_mm=0.738
+[robust] pointwise sigma_floor_mm: origin=0.00401201 mult=3 scaled=0.012036 min=0.05 model=0.73815 used=0.73815 floor=0.73815 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00401 friction_cogging=0.134 flex=0.282 floor=0.05 non_layered=0.316 layer_changes=0.298 mode_add=0.597 total=0.738 model=0.738 used=0.738 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise inlier_ratio: min=0.8 med=0.9 max=1
+[robust] pointwise worst: sweep_001 8/10 (0.8), sweep_002 9/10 (0.9), sweep_003 9/10 (0.9), sweep_004 10/10 (1)
+[robust] sweep-wise: enabled=True status=few-samples (4 < 5) metric=outlier_ratio threshold=0.322 rejected=0
+[robust] sweep-wise worst: sweep_001 m=0.2 keep, sweep_003 m=0.1 keep, sweep_002 m=0.1 keep, sweep_004 m=0 keep
+; full-auto run default: cost_raw=0.6344 cost_noise_normalized=207.3 J=694.1 chi2_red=816.6 score_ui=14.6 score_basis=layered-calibrated
+; Active ellipse calibration
+; Anchors: [[3.0840989900721437e-13, -1860.5076892682243], [1636.4337017660662, 939.6955086524464], [-1651.6456039313496, 953.9241541299602]]
+; cost=0.6344 cost_noise_normalized=207.3 origin_norms=[1860.508, 1887.046, 1907.329] pairwise=[d01=3243.309, d02=3263.274, d12=3288.110]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[38.78,38.78,38.78]
+; line_model_params (M666): M666 R38.78:38.78:38.78 Q0.636619
+; line_model_prefit: enabled=True success=True guarded=False seed=seed_1 start=26.35 fit=2.285 start_data=26.35 start_prior=0 start_total=26.35 fit_data=2.285 fit_prior=16.46 fit_total=2.285 valid_sweeps=4 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=114.3 last_start=341.8 last_fit=339.7 last_cal=324.6 last_data=324.6 last_prior=17.24 last_total=341.8 nfev=23 nit=11
+; noise_cost: J=694.1 chi2_red=816.6 |z|_med=8.774 |z|_p95=53.13 outlier_ratio=0.85 N=40 mode=sigma lengths=mu J_trim=219.5 chi2_red_trim=263.4 N_trim=36
+; noise_rescore: tau_MAD=0.4789mm cost_noise_normalized_old=207.3 cost_noise_normalized_new=145.9 chi2_red_old=816.6 chi2_red_new=574.7 residual_vs_distance_slope_inliers=0.006186 slope(|r|,d)=0.005119 slope(r^2,d)=0.005483 inlier_cutoff_mm=1.983mm n_inlier_rows_used_for_tau=36 tau_d_tau0=0mm tau_d_tau1=0.001969 cost_noise_normalized_tau_d=10.17 chi2_red_tau_d=40.06 cost_noise_normalized_tau_d_trimmed_direct=10.77 chi2_red_tau_d_trimmed_direct=12.92 chi2_red_tau_3bin_debiased_trimmed_direct=149.9 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.08617
+; noise_bias_diagnostic: bias_vs_distance_intercept=-11.78mm bias_vs_distance_slope_inliers=0.007203 cost_after_bias_diagnostic=207.1 chi2_red_after_bias_diagnostic=248.5
+; noise_rescore_bins: near_MAD=0.1427mm mid_MAD=0.3368mm far_MAD=0.4284mm N=[12,12,12]
+; noise_rescore_bins_debiased: near_MAD=0.1784mm mid_MAD=0.3146mm far_MAD=0.4707mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.2645mm tau_mid=0.4664mm tau_far=0.6979mm cost_noise_normalized_tau_3bin_debiased=125 chi2_red_tau_3bin_debiased=149.9 chi2_red_tau_3bin_debiased_trimmed_direct=149.9
+; sweep_residual: id=sweep_004 median=0.244mm MAD=0.5091mm p95_abs=1.331mm mean|z|=13.96 clipped=0/10
+; sweep_residual: id=sweep_002 median=-0.09916mm MAD=0.2085mm p95_abs=0.7593mm mean|z|=8.705 clipped=1/10
+; sweep_residual: id=sweep_001 median=0.0571mm MAD=0.7743mm p95_abs=1.354mm mean|z|=16.45 clipped=2/10
+; sweep_residual: id=sweep_003 median=-0.01844mm MAD=0.1616mm p95_abs=0.4456mm mean|z|=6.096 clipped=1/10
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=210.6 chi2_red_demeaned=252.7 tail_ratio=2.567 sweep_bias_span=0.3431mm n_obs=36
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.7381mm used_sigma=0.7381mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.004012mm friction_cogging=0.1343mm flex=0.2818mm floor=0.05mm non_layered=0.3162mm layer_changes=0.2983mm mode_add=0.5966mm total=0.7381mm model=0.7381mm used=0.7381mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 5/6 std(p0=955mm, p3=920mm, p5=898mm, p2=828mm, p1=788mm, p4=776mm)
+; covariance_scaled: chi2_red=816.6 std_scaled(p0=2.73e+04mm, p3=2.63e+04mm, p5=2.57e+04mm, p2=2.37e+04mm, p1=2.25e+04mm, p4=2.22e+04mm)
+; CI95: max_std=2.73e+04mm max_ci=5.351e+04mm workspace=2948 rel_std=9.261 rel_ci=18.15 scale=chi2_red=816.6
+; encoder_noise: points=40/40 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=40 sigma_nonfinite=0
+; next_sweep score=0.368832 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+; top_candidates:
+;   0.368832 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+;   0.368206 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+;   0.36421 fixed=[1] targets=[937.9607387613828] pair=[0,2]
+;   0.36359 fixed=[0] targets=[937.9607387613828] pair=[1,2]
+;   0.359536 fixed=[1] targets=[885.8518088301951] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_002.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
+; selected run=default score_ui=14.6 score_basis=layered-calibrated cost=207.3 rel_std=9.261 max_std=2.73e+04mm
+Wrote to console: Score: 14.6 (lower is better)
+; replayed sweep 2/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=5
+Wrote to console: Collected sweep nr 5
+
+; === full-auto iteration 3/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 3/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=50 origin=0 min=0 mixed=0 total=50
+[robust] pointwise: enabled=True stage=2 (trim) hard_cut=True huber_mult=3
+[robust] pointwise scale: source=global global=11.5 floor=0.00013 floor_mm=0.738
+[robust] pointwise sigma_floor_mm: origin=0.00401201 mult=3 scaled=0.012036 min=0.05 model=0.73815 used=0.73815 floor=0.73815 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00401 friction_cogging=0.134 flex=0.282 floor=0.05 non_layered=0.316 layer_changes=0.298 mode_add=0.597 total=0.738 model=0.738 used=0.738 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise inlier_ratio: min=1 med=1 max=1
+[robust] pointwise worst: sweep_001 10/10 (1), sweep_002 10/10 (1), sweep_003 10/10 (1), sweep_004 10/10 (1), sweep_005 10/10 (1)
+[robust] sweep-wise: enabled=True status=ok metric=outlier_ratio threshold=0.000391 rejected=0
+[robust] sweep-wise worst: sweep_005 m=0 keep, sweep_004 m=0 keep, sweep_003 m=0 keep, sweep_002 m=0 keep, sweep_001 m=0 keep
+; full-auto run default: cost_raw=0.2998 cost_noise_normalized=181.9 J=198.6 chi2_red=225.7 score_ui=4.825 score_basis=layered-calibrated
+; Active ellipse calibration
+; Anchors: [[2.976825159566838e-13, -1918.510019556003], [1661.1302820908686, 960.7710207767334], [-1656.0262197137772, 955.395583510084]]
+; cost=0.2998 cost_noise_normalized=181.9 origin_norms=[1918.510, 1918.967, 1911.859] pairwise=[d01=3324.096, d02=3316.890, d12=3317.161]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[39.55,39.55,39.55]
+; line_model_params (M666): M666 R39.55:39.55:39.55 Q0.636619
+; line_model_prefit: enabled=True success=True guarded=False seed=seed_1 start=26.85 fit=2.795 start_data=26.85 start_prior=0 start_total=26.85 fit_data=2.795 fit_prior=16.89 fit_total=2.795 valid_sweeps=5 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=464.3 last_start=912.8 last_fit=912.8 last_cal=894.2 last_data=894.2 last_prior=18.63 last_total=912.8 nfev=21 nit=10
+; noise_cost: J=198.6 chi2_red=225.7 |z|_med=8.366 |z|_p95=25.19 outlier_ratio=0.72 N=50 mode=sigma lengths=mu J_trim=198.6 chi2_red_trim=225.7 N_trim=50
+; noise_rescore: tau_MAD=0.5229mm cost_noise_normalized_old=181.9 cost_noise_normalized_new=121.1 chi2_red_old=225.7 chi2_red_new=150.3 residual_vs_distance_slope_inliers=-0.00682 slope(|r|,d)=0.002646 slope(r^2,d)=0.00254 inlier_cutoff_mm=1.521mm n_inlier_rows_used_for_tau=50 tau_d_tau0=0mm tau_d_tau1=0.001316 cost_noise_normalized_tau_d=17.99 chi2_red_tau_d=22.33 cost_noise_normalized_tau_d_trimmed_direct=19.65 chi2_red_tau_d_trimmed_direct=22.33 chi2_red_tau_3bin_debiased_trimmed_direct=119 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.1877
+; noise_bias_diagnostic: bias_vs_distance_intercept=11.36mm bias_vs_distance_slope_inliers=-0.006795 cost_after_bias_diagnostic=155.5 chi2_red_after_bias_diagnostic=176.7
+; noise_rescore_bins: near_MAD=0.3293mm mid_MAD=0.1877mm far_MAD=0.4727mm N=[17,16,17]
+; noise_rescore_bins_debiased: near_MAD=0.3036mm mid_MAD=0.218mm far_MAD=0.4357mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.4501mm tau_mid=0.3232mm tau_far=0.646mm cost_noise_normalized_tau_3bin_debiased=104.7 chi2_red_tau_3bin_debiased=119 chi2_red_tau_3bin_debiased_trimmed_direct=119
+; sweep_residual: id=sweep_002 median=-0.2059mm MAD=0.251mm p95_abs=0.4883mm mean|z|=8.877 clipped=0/10
+; sweep_residual: id=sweep_003 median=-0.1999mm MAD=0.2205mm p95_abs=0.4708mm mean|z|=8.902 clipped=0/10
+; sweep_residual: id=sweep_004 median=0.1204mm MAD=0.3001mm p95_abs=1.157mm mean|z|=11.94 clipped=0/10
+; sweep_residual: id=sweep_001 median=-0.05989mm MAD=0.381mm p95_abs=1.128mm mean|z|=13.65 clipped=0/10
+; sweep_residual: id=sweep_005 median=-0.0008659mm MAD=0.3589mm p95_abs=1.048mm mean|z|=11.7 clipped=0/10
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=189.2 chi2_red_demeaned=215 tail_ratio=2.834 sweep_bias_span=0.3263mm n_obs=50
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.7381mm used_sigma=0.7381mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.004012mm friction_cogging=0.1343mm flex=0.2818mm floor=0.05mm non_layered=0.3162mm layer_changes=0.2983mm mode_add=0.5966mm total=0.7381mm model=0.7381mm used=0.7381mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 5/6 std(p0=950mm, p5=893mm, p3=892mm, p1=775mm, p4=768mm, p2=768mm)
+; covariance_scaled: chi2_red=225.7 std_scaled(p0=1.43e+04mm, p5=1.34e+04mm, p3=1.34e+04mm, p1=1.16e+04mm, p4=1.15e+04mm, p2=1.15e+04mm)
+; CI95: max_std=1.427e+04mm max_ci=2.797e+04mm workspace=2948 rel_std=4.842 rel_ci=9.49 scale=chi2_red=225.7
+; encoder_noise: points=50/50 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=50 sigma_nonfinite=0
+; next_sweep score=0.355225 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+; top_candidates:
+;   0.355225 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+;   0.350671 fixed=[0] targets=[937.9607387613828] pair=[1,2]
+;   0.346067 fixed=[0] targets=[885.8518088301951] pair=[1,2]
+;   0.341417 fixed=[0] targets=[833.7428788990071] pair=[1,2]
+;   0.336723 fixed=[0] targets=[781.6339489678192] pair=[1,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_003.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
+; selected run=default score_ui=4.825 score_basis=layered-calibrated cost=181.9 rel_std=4.842 max_std=1.427e+04mm
+Wrote to console: Score: 4.825 (lower is better)
+; replayed sweep 3/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=6
+Wrote to console: Collected sweep nr 6
+
+; === full-auto iteration 4/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 4/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=True stage=2 (trim) hard_cut=True huber_mult=3
+[robust] pointwise scale: source=global global=13.4 floor=0.00013 floor_mm=0.738
+[robust] pointwise sigma_floor_mm: origin=0.00401201 mult=3 scaled=0.012036 min=0.05 model=0.73815 used=0.73815 floor=0.73815 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00401 friction_cogging=0.134 flex=0.282 floor=0.05 non_layered=0.316 layer_changes=0.298 mode_add=0.597 total=0.738 model=0.738 used=0.738 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise inlier_ratio: min=1 med=1 max=1
+[robust] pointwise worst: sweep_001 10/10 (1), sweep_002 10/10 (1), sweep_003 10/10 (1), sweep_004 10/10 (1), sweep_005 10/10 (1)
+[robust] sweep-wise: enabled=True status=ok metric=outlier_ratio threshold=0.000391 rejected=0
+[robust] sweep-wise worst: sweep_006 m=0 keep, sweep_005 m=0 keep, sweep_004 m=0 keep, sweep_003 m=0 keep, sweep_002 m=0 keep
+; full-auto run default: cost_raw=0.319 cost_noise_normalized=197.3 J=211.8 chi2_red=235.4 score_ui=2.653 score_basis=layered-calibrated
+; Active ellipse calibration
+; Anchors: [[-2.7647982815569055e-13, -1916.7921782717983], [1661.464012910656, 960.6362746594192], [-1657.6025797342304, 956.5875526921876]]
+; cost=0.319 cost_noise_normalized=197.3 origin_norms=[1916.792, 1919.189, 1913.820] pairwise=[d01=3322.658, d02=3317.221, d12=3319.069]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[39.56,39.56,39.56]
+; line_model_params (M666): M666 R39.56:39.56:39.56 Q0.636619
+; line_model_prefit: enabled=True success=True guarded=False seed=seed_1 start=27.4 fit=3.385 start_data=27.4 start_prior=0 start_total=27.4 fit_data=3.385 fit_prior=17.11 fit_total=3.385 valid_sweeps=6 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=403.9 last_start=469.9 last_fit=469.9 last_cal=450.9 last_data=450.9 last_prior=18.94 last_total=469.9 nfev=21 nit=10
+; noise_cost: J=211.8 chi2_red=235.4 |z|_med=9.096 |z|_p95=27.8 outlier_ratio=0.7167 N=60 mode=sigma lengths=mu J_trim=211.8 chi2_red_trim=235.4 N_trim=60
+; noise_rescore: tau_MAD=0.5963mm cost_noise_normalized_old=197.3 cost_noise_normalized_new=119.4 chi2_red_old=235.4 chi2_red_new=142.4 residual_vs_distance_slope_inliers=-0.008186 slope(|r|,d)=0.003074 slope(r^2,d)=0.003413 inlier_cutoff_mm=1.782mm n_inlier_rows_used_for_tau=60 tau_d_tau0=0mm tau_d_tau1=0.002343 cost_noise_normalized_tau_d=6.57 chi2_red_tau_d=7.836 cost_noise_normalized_tau_d_trimmed_direct=7.053 chi2_red_tau_d_trimmed_direct=7.836 chi2_red_tau_3bin_debiased_trimmed_direct=111.6 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.07025
+; noise_bias_diagnostic: bias_vs_distance_intercept=14.22mm bias_vs_distance_slope_inliers=-0.008476 cost_after_bias_diagnostic=156.3 chi2_red_after_bias_diagnostic=173.6
+; noise_rescore_bins: near_MAD=0.3303mm mid_MAD=0.2199mm far_MAD=0.6804mm N=[20,20,20]
+; noise_rescore_bins_debiased: near_MAD=0.3386mm mid_MAD=0.2218mm far_MAD=0.4708mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.5019mm tau_mid=0.3289mm tau_far=0.698mm cost_noise_normalized_tau_3bin_debiased=100.4 chi2_red_tau_3bin_debiased=111.6 chi2_red_tau_3bin_debiased_trimmed_direct=111.6
+; sweep_residual: id=sweep_001 median=-0.1744mm MAD=0.3143mm p95_abs=0.9986mm mean|z|=13.77 clipped=0/10
+; sweep_residual: id=sweep_003 median=-0.1368mm MAD=0.2735mm p95_abs=0.4577mm mean|z|=9.409 clipped=0/10
+; sweep_residual: id=sweep_002 median=-0.1231mm MAD=0.277mm p95_abs=0.4663mm mean|z|=9.069 clipped=0/10
+; sweep_residual: id=sweep_004 median=0.1mm MAD=0.3014mm p95_abs=1.16mm mean|z|=12.12 clipped=0/10
+; sweep_residual: id=sweep_006 median=-0.05884mm MAD=0.3312mm p95_abs=0.9714mm mean|z|=11.99 clipped=0/10
+; sweep_residual: +1 more sweeps
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=206.9 chi2_red_demeaned=229.8 tail_ratio=2.762 sweep_bias_span=0.2744mm n_obs=60
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.7381mm used_sigma=0.7381mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.004012mm friction_cogging=0.1343mm flex=0.2818mm floor=0.05mm non_layered=0.3162mm layer_changes=0.2983mm mode_add=0.5966mm total=0.7381mm model=0.7381mm used=0.7381mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 5/6 std(p0=941mm, p5=886mm, p3=886mm, p2=765mm, p4=765mm, p1=697mm)
+; covariance_scaled: chi2_red=235.4 std_scaled(p0=1.44e+04mm, p5=1.36e+04mm, p3=1.36e+04mm, p2=1.17e+04mm, p4=1.17e+04mm, p1=1.07e+04mm)
+; CI95: max_std=1.444e+04mm max_ci=2.83e+04mm workspace=2948 rel_std=4.898 rel_ci=9.599 scale=chi2_red=235.4
+; encoder_noise: points=60/60 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=60 sigma_nonfinite=0
+; next_sweep score=0.296104 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+; top_candidates:
+;   0.296104 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+;   0.296086 fixed=[2] targets=[990.0696686925708] pair=[0,1]
+;   0.296066 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+;   0.292278 fixed=[1] targets=[937.9607387613828] pair=[0,2]
+;   0.292259 fixed=[2] targets=[937.9607387613828] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_004.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
+; selected run=default score_ui=2.653 score_basis=layered-calibrated cost=197.3 rel_std=4.898 max_std=1.444e+04mm
+Wrote to console: Score: 2.653 (lower is better)
+; replayed sweep 4/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=7
+Wrote to console: Collected sweep nr 7
+
+; === full-auto iteration 5/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 5/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=70 origin=0 min=0 mixed=0 total=70
+[robust] pointwise: enabled=True stage=2 (trim) hard_cut=True huber_mult=3
+[robust] pointwise scale: source=global global=15.7 floor=0.00013 floor_mm=0.738
+[robust] pointwise sigma_floor_mm: origin=0.00401201 mult=3 scaled=0.012036 min=0.05 model=0.73815 used=0.73815 floor=0.73815 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00401 friction_cogging=0.134 flex=0.282 floor=0.05 non_layered=0.316 layer_changes=0.298 mode_add=0.597 total=0.738 model=0.738 used=0.738 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise inlier_ratio: min=1 med=1 max=1
+[robust] pointwise worst: sweep_001 10/10 (1), sweep_002 10/10 (1), sweep_003 10/10 (1), sweep_004 10/10 (1), sweep_005 10/10 (1)
+[robust] sweep-wise: enabled=True status=ok metric=outlier_ratio threshold=0.000391 rejected=0
+[robust] sweep-wise worst: sweep_007 m=0 keep, sweep_006 m=0 keep, sweep_005 m=0 keep, sweep_004 m=0 keep, sweep_003 m=0 keep
+; full-auto run default: cost_raw=0.462 cost_noise_normalized=234.8 J=251.6 chi2_red=275.2 score_ui=35.61 score_basis=layered-calibrated
+; Active ellipse calibration
+; Anchors: [[1.8339030257861768e-13, -1893.7594328953169], [1644.3403182470356, 949.1888482418851], [-1646.651079399773, 951.1469019952242]]
+; cost=0.462 cost_noise_normalized=234.8 origin_norms=[1893.759, 1898.635, 1901.615] pairwise=[d01=3284.237, d02=3287.089, d12=3290.992]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[39.05,39.05,39.05]
+; line_model_params (M666): M666 R39.05:39.05:39.05 Q0.636619
+; line_model_prefit: enabled=True success=True guarded=False seed=seed_1 start=27.41 fit=3.392 start_data=27.41 start_prior=0 start_total=27.41 fit_data=3.392 fit_prior=17.12 fit_total=3.392 valid_sweeps=7 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=322.9 last_start=1017 last_fit=1017 last_cal=999.5 last_data=999.5 last_prior=17.67 last_total=1017 nfev=21 nit=10
+; noise_cost: J=251.6 chi2_red=275.2 |z|_med=12.12 |z|_p95=31.76 outlier_ratio=0.8857 N=70 mode=sigma lengths=mu J_trim=251.6 chi2_red_trim=275.2 N_trim=70
+; noise_rescore: tau_MAD=0.6884mm cost_noise_normalized_old=234.8 cost_noise_normalized_new=125.5 chi2_red_old=275.2 chi2_red_new=147.2 residual_vs_distance_slope_inliers=0.008513 slope(|r|,d)=0.001766 slope(r^2,d)=0.003425 inlier_cutoff_mm=2.1mm n_inlier_rows_used_for_tau=70 tau_d_tau0=0.7605mm tau_d_tau1=0 cost_noise_normalized_tau_d=113.9 chi2_red_tau_d=133.5 cost_noise_normalized_tau_d_trimmed_direct=122 chi2_red_tau_d_trimmed_direct=133.5 chi2_red_tau_3bin_debiased_trimmed_direct=127.4 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=1.048
+; noise_bias_diagnostic: bias_vs_distance_intercept=-12.85mm bias_vs_distance_slope_inliers=0.007731 cost_after_bias_diagnostic=187.5 chi2_red_after_bias_diagnostic=205.1
+; noise_rescore_bins: near_MAD=0.2119mm mid_MAD=0.506mm far_MAD=0.2959mm N=[24,23,23]
+; noise_rescore_bins_debiased: near_MAD=0.1984mm mid_MAD=0.501mm far_MAD=0.3388mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.2942mm tau_mid=0.7427mm tau_far=0.5022mm cost_noise_normalized_tau_3bin_debiased=116.4 chi2_red_tau_3bin_debiased=127.4 chi2_red_tau_3bin_debiased_trimmed_direct=127.4
+; sweep_residual: id=sweep_007 median=0.734mm MAD=0.1767mm p95_abs=1.665mm mean|z|=19.84 clipped=0/10
+; sweep_residual: id=sweep_005 median=0.3465mm MAD=0.4731mm p95_abs=1.202mm mean|z|=12.11 clipped=0/10
+; sweep_residual: id=sweep_003 median=-0.321mm MAD=0.1928mm p95_abs=0.6089mm mean|z|=10.55 clipped=0/10
+; sweep_residual: id=sweep_002 median=-0.275mm MAD=0.242mm p95_abs=0.7938mm mean|z|=11.79 clipped=0/10
+; sweep_residual: id=sweep_004 median=0.1678mm MAD=0.3107mm p95_abs=1.151mm mean|z|=9.864 clipped=0/10
+; sweep_residual: +2 more sweeps
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=184.6 chi2_red_demeaned=201.9 tail_ratio=2.927 sweep_bias_span=1.055mm n_obs=70
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.7381mm used_sigma=0.7381mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.004012mm friction_cogging=0.1343mm flex=0.2818mm floor=0.05mm non_layered=0.3162mm layer_changes=0.2983mm mode_add=0.5966mm total=0.7381mm model=0.7381mm used=0.7381mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 5/6 std(p0=937mm, p3=885mm, p5=871mm, p2=762mm, p4=732mm, p1=697mm)
+; covariance_scaled: chi2_red=275.2 std_scaled(p0=1.55e+04mm, p3=1.47e+04mm, p5=1.45e+04mm, p2=1.26e+04mm, p4=1.21e+04mm, p1=1.16e+04mm)
+; CI95: max_std=1.554e+04mm max_ci=3.047e+04mm workspace=2948 rel_std=5.273 rel_ci=10.34 scale=chi2_red=275.2
+; encoder_noise: points=70/70 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=70 sigma_nonfinite=0
+; next_sweep score=0.284185 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+; top_candidates:
+;   0.284185 fixed=[1] targets=[990.0696686925708] pair=[0,2]
+;   0.284124 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+;   0.28053 fixed=[1] targets=[937.9607387613828] pair=[0,2]
+;   0.280468 fixed=[0] targets=[937.9607387613828] pair=[1,2]
+;   0.276837 fixed=[1] targets=[885.8518088301951] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_005.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
+; selected run=default score_ui=35.61 score_basis=layered-calibrated cost=234.8 rel_std=5.273 max_std=1.554e+04mm
+Wrote to console: Score: 35.61 (lower is better)
+; replayed sweep 5/5 -> autocal/data/five_points_bigger_deltas.replay_tmp.json sweeps=8
+Wrote to console: Collected sweep nr 8
+
+; === full-auto iteration 6/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 6/20 dataset=autocal/data/five_points_bigger_deltas.replay_tmp.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=True stage=2 (trim) hard_cut=True huber_mult=3
+[robust] pointwise scale: source=global global=16 floor=0.00013 floor_mm=0.738
+[robust] pointwise sigma_floor_mm: origin=0.00401201 mult=3 scaled=0.012036 min=0.05 model=0.73815 used=0.73815 floor=0.73815 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00401 friction_cogging=0.134 flex=0.282 floor=0.05 non_layered=0.316 layer_changes=0.298 mode_add=0.597 total=0.738 model=0.738 used=0.738 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise inlier_ratio: min=1 med=1 max=1
+[robust] pointwise worst: sweep_001 10/10 (1), sweep_002 10/10 (1), sweep_003 10/10 (1), sweep_004 10/10 (1), sweep_005 10/10 (1)
+[robust] sweep-wise: enabled=True status=ok metric=outlier_ratio threshold=0.000391 rejected=0
+[robust] sweep-wise worst: sweep_008 m=0 keep, sweep_007 m=0 keep, sweep_006 m=0 keep, sweep_005 m=0 keep, sweep_004 m=0 keep
+; full-auto run default: cost_raw=0.4602 cost_noise_normalized=206.1 J=220.4 chi2_red=238.3 score_ui=18.7 score_basis=layered-calibrated
+; Active ellipse calibration
+; Anchors: [[4.6459844572484905e-14, -1901.1752291884225], [1652.9806666342154, 954.9656825721697], [-1650.1597615662522, 951.9645061093946]]
+; cost=0.4602 cost_noise_normalized=206.1 origin_norms=[1901.175, 1909.006, 1905.063] pairwise=[d01=3299.983, d02=3295.972, d12=3303.142]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[39.23,39.23,39.23]
+; line_model_params (M666): M666 R39.23:39.23:39.23 Q0.636619
+; line_model_prefit: enabled=True success=True guarded=False seed=seed_1 start=27.42 fit=3.402 start_data=27.42 start_prior=0 start_total=27.42 fit_data=3.402 fit_prior=17.13 fit_total=3.402 valid_sweeps=8 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=349.3 last_start=1100 last_fit=1100 last_cal=1082 last_data=1082 last_prior=17.88 last_total=1100 nfev=21 nit=10
+; noise_cost: J=220.4 chi2_red=238.3 |z|_med=10.86 |z|_p95=30.98 outlier_ratio=0.925 N=80 mode=sigma lengths=mu J_trim=220.4 chi2_red_trim=238.3 N_trim=80
+; noise_rescore: tau_MAD=0.695mm cost_noise_normalized_old=206.1 cost_noise_normalized_new=109.3 chi2_red_old=238.3 chi2_red_new=126.3 residual_vs_distance_slope_inliers=0.007481 slope(|r|,d)=0.002922 slope(r^2,d)=0.004748 inlier_cutoff_mm=2.144mm n_inlier_rows_used_for_tau=80 tau_d_tau0=0mm tau_d_tau1=0.000421 cost_noise_normalized_tau_d=105 chi2_red_tau_d=121.3 cost_noise_normalized_tau_d_trimmed_direct=112.2 chi2_red_tau_d_trimmed_direct=121.3 chi2_red_tau_3bin_debiased_trimmed_direct=110 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=1.104
+; noise_bias_diagnostic: bias_vs_distance_intercept=-11.92mm bias_vs_distance_slope_inliers=0.00712 cost_after_bias_diagnostic=162.7 chi2_red_after_bias_diagnostic=175.8
+; noise_rescore_bins: near_MAD=0.09646mm mid_MAD=0.326mm far_MAD=0.2418mm N=[27,26,27]
+; noise_rescore_bins_debiased: near_MAD=0.1628mm mid_MAD=0.2912mm far_MAD=0.5421mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.2413mm tau_mid=0.4317mm tau_far=0.8038mm cost_noise_normalized_tau_3bin_debiased=101.7 chi2_red_tau_3bin_debiased=110 chi2_red_tau_3bin_debiased_trimmed_direct=110
+; sweep_residual: id=sweep_008 median=0.7482mm MAD=0.1862mm p95_abs=1.603mm mean|z|=19.86 clipped=0/10
+; sweep_residual: id=sweep_007 median=0.7403mm MAD=0.208mm p95_abs=1.606mm mean|z|=18.98 clipped=0/10
+; sweep_residual: id=sweep_003 median=-0.3031mm MAD=0.07239mm p95_abs=0.5878mm mean|z|=8.1 clipped=0/10
+; sweep_residual: id=sweep_002 median=-0.2632mm MAD=0.08013mm p95_abs=0.5797mm mean|z|=8.219 clipped=0/10
+; sweep_residual: id=sweep_001 median=0.08087mm MAD=0.3624mm p95_abs=0.8821mm mean|z|=10.59 clipped=0/10
+; sweep_residual: +3 more sweeps
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=122.4 chi2_red_demeaned=132.4 tail_ratio=2.269 sweep_bias_span=1.051mm n_obs=80
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.7381mm used_sigma=0.7381mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.004012mm friction_cogging=0.1343mm flex=0.2818mm floor=0.05mm non_layered=0.3162mm layer_changes=0.2983mm mode_add=0.5966mm total=0.7381mm model=0.7381mm used=0.7381mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 5/6 std(p0=933mm, p5=869mm, p3=869mm, p2=727mm, p4=727mm, p1=692mm)
+; covariance_scaled: chi2_red=238.3 std_scaled(p0=1.44e+04mm, p5=1.34e+04mm, p3=1.34e+04mm, p2=1.12e+04mm, p4=1.12e+04mm, p1=1.07e+04mm)
+; CI95: max_std=1.44e+04mm max_ci=2.823e+04mm workspace=2948 rel_std=4.886 rel_ci=9.577 scale=chi2_red=238.3
+; encoder_noise: points=80/80 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=80 sigma_nonfinite=0
+; next_sweep score=0.27532 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+; top_candidates:
+;   0.27532 fixed=[0] targets=[990.0696686925708] pair=[1,2]
+;   0.271746 fixed=[0] targets=[937.9607387613828] pair=[1,2]
+;   0.268137 fixed=[0] targets=[885.8518088301951] pair=[1,2]
+;   0.264494 fixed=[0] targets=[833.7428788990071] pair=[1,2]
+;   0.26082 fixed=[0] targets=[781.6339489678192] pair=[1,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/five_points_bigger_deltas.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 990.0696686925708 --output-file autocal/data/five_points_bigger_deltas.replay_tmp.new_006.json --no-spawn-rrf-simulator --preserve-buildup-factor --force-low 0.01342968040959999 --force-mid 0.2685936081919998 --force-max 2.831339339152179 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01343N mid=0.2686N max=2.831N
+; selected run=default score_ui=18.7 score_basis=layered-calibrated cost=206.1 rel_std=4.886 max_std=1.44e+04mm
+Wrote to console: Score: 18.7 (lower is better)
+Wrote to console: ; full-auto replay: no more sweeps to replay; switching to live collection.
+; full-auto replay: no more sweeps to replay; switching to live collection.
+; --no-collect set; stopping before live collection.
+Wrote to console: ; --no-collect set; stopping before live collection.
+Wrote to console: 
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of good quality
+Wrote to console: Fit quality score (lower is better): 2.653
+Wrote to console: Parameters (M669): M669 A-0.00:-1916.79:0.00 B1661.46:960.64:0.00 C-1657.60:956.59:0.00
+Wrote to console: Line model (M666): M666 R39.56:39.56:39.56 Q0.636619
+Wrote to console: Interpretation: A Quality score between 2 and 5 is a useful fit.
+Wrote to console: ; --sim + --no-collect set; skipping M669 send.
