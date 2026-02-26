@@ -97,6 +97,7 @@ _RE_M666_R = re.compile(
     re.IGNORECASE,
 )
 _RE_FIT_SCORE = re.compile(r"Fit quality score.*?:\s*([0-9.+-eE]+)\s*$")
+_RE_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _safe_float(x: str) -> Optional[float]:
@@ -265,6 +266,66 @@ def dir_label(delta: float, eps: float = 0.0) -> str:
     return "better" if delta < 0 else "worse"  # lower is better
 
 
+def use_color(mode: str) -> bool:
+    if mode == "always":
+        return True
+    if mode == "never":
+        return False
+    if os.environ.get("NO_COLOR") is not None:
+        return False
+    return bool(getattr(sys.stdout, "isatty", lambda: False)())
+
+
+def _ansi(code: str, text: str, enabled: bool) -> str:
+    if not enabled:
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def verdict_text(delta: Optional[float], enabled: bool) -> str:
+    if delta is None:
+        return "N/A"
+    label = dir_label(delta)
+    if label == "better":
+        return _ansi("32", label, enabled)
+    if label == "worse":
+        return _ansi("31", label, enabled)
+    return _ansi("33", label, enabled)
+
+
+def tol_status_text(exact: bool, small: bool, tol_mm_total: float, enabled: bool) -> str:
+    if exact:
+        return _ansi("36", "exact", enabled)
+    if small:
+        return _ansi("32", f"within {fmt(tol_mm_total)}mm", enabled)
+    return _ansi("31", f"exceeds {fmt(tol_mm_total)}mm", enabled)
+
+
+def _visible_len(text: str) -> int:
+    return len(_RE_ANSI.sub("", text))
+
+
+def _pad_cell(text: str, width: int) -> str:
+    extra = width - _visible_len(text)
+    if extra <= 0:
+        return text
+    return text + (" " * extra)
+
+
+def format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
+    widths = [len(h) for h in headers]
+    for row in rows:
+        for i, cell in enumerate(row):
+            widths[i] = max(widths[i], _visible_len(cell))
+
+    header_line = " | ".join(_pad_cell(h, widths[i]) for i, h in enumerate(headers))
+    sep_line = "-+-".join("-" * w for w in widths)
+    out = [header_line, sep_line]
+    for row in rows:
+        out.append(" | ".join(_pad_cell(row[i], widths[i]) for i in range(len(headers))))
+    return out
+
+
 # ---------- Running commands ----------
 
 def run_active_calibrate(repo_root: Path, dataset_path: Path) -> Tuple[int, str]:
@@ -322,6 +383,7 @@ def report_dataset(
     gen: ParsedLog,
     tol_mm_total: float,
     fail_on_score_mismatch: bool,
+    color: bool = False,
 ) -> Tuple[bool, List[str]]:
     """
     Returns (ok, lines).
@@ -354,19 +416,44 @@ def report_dataset(
             exact = (total_d == 0.0) and (score_delta == 0.0)
             small = total_d < tol_mm_total
 
-            lines.append(f"SUMMARY: param_delta_total={fmt(total_d)} (anchors={fmt(ad)}, R*2π={fmt(rd)})  tol={tol_mm_total}mm")
+            summary_rows: List[List[str]] = [
+                ["param_total", "-", "-", fmt(total_d), tol_status_text(exact, small, tol_mm_total, color)],
+                ["param_anchors", "-", "-", fmt(ad), "-"],
+                ["param_R*2π", "-", "-", fmt(rd), "-"],
+            ]
+
             if score_delta is None:
-                lines.append("SUMMARY: score_delta=N/A (parse missing)")
+                summary_rows.append(["score", "N/A", "N/A", "N/A", "N/A (parse missing)"])
                 ok = False
             else:
-                lines.append(f"SUMMARY: score_ref={fmt(ref.summary.score)} score_gen={fmt(gen.summary.score)}  score_delta={fmt(score_delta)}")
+                summary_rows.append(
+                    [
+                        "score",
+                        fmt(ref.summary.score),
+                        fmt(gen.summary.score),
+                        fmt(score_delta),
+                        verdict_text(score_delta, color),
+                    ]
+                )
 
             if ref_true and gen_true:
-                lines.append(
-                    f"SUMMARY vs TRUE: err_ref={fmt(ref_true[0])} (anchors={fmt(ref_true[1])}, R*2π={fmt(ref_true[2])}) "
-                    f"err_gen={fmt(gen_true[0])} (anchors={fmt(gen_true[1])}, R*2π={fmt(gen_true[2])}) "
-                    f"delta(gen-ref)={fmt(gen_true[0]-ref_true[0])} => {dir_label(gen_true[0]-ref_true[0])}"
+                summary_rows.append(
+                    [
+                        "true_err_total",
+                        fmt(ref_true[0]),
+                        fmt(gen_true[0]),
+                        fmt(gen_true[0] - ref_true[0]),
+                        verdict_text(gen_true[0] - ref_true[0], color),
+                    ]
                 )
+                summary_rows.append(["true_err_anchors", fmt(ref_true[1]), fmt(gen_true[1]), fmt(gen_true[1] - ref_true[1]), "-"])
+                summary_rows.append(["true_err_R*2π", fmt(ref_true[2]), fmt(gen_true[2]), fmt(gen_true[2] - ref_true[2]), "-"])
+
+            lines.append("Calibration summary:")
+            lines.extend(["  " + x for x in format_table(
+                headers=["metric", "ref", "gen", "delta(gen-ref)", "verdict"],
+                rows=summary_rows,
+            )])
 
             if exact:
                 lines.append("SUMMARY: EXACTLY EQUAL")
@@ -399,14 +486,31 @@ def report_dataset(
 
     # Print per-iter details only if something changed a lot or count mismatch,
     # but we still compute everything.
-    detailed_rows: List[str] = []
+    detailed_rows: List[List[str]] = []
     for i in range(n):
         r = ref.iterations[i]
         g = gen.iterations[i]
 
         d = total_param_distance(g.anchors, g.radii, r.anchors, r.radii)
         if d is None:
-            detailed_rows.append(f"  iter {i}: ERROR: could not compare params (parse missing)")
+            detailed_rows.append(
+                [
+                    str(i),
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    _ansi("31", "parse-error", color),
+                ]
+            )
             ok = False
             continue
 
@@ -440,20 +544,24 @@ def report_dataset(
             if mismatch:
                 mismatches += 1
 
-        row = (
-            f"  iter {i}: param_delta_total={fmt(total_d)} (anchors={fmt(ad)}, R*2π={fmt(rd)}) "
-            f"{'EXACT' if exact_iter else ('<tol' if small_iter else '>=tol')} "
+        detailed_rows.append(
+            [
+                str(i),
+                fmt(total_d),
+                fmt(ad),
+                fmt(rd),
+                "exact" if exact_iter else ("<tol" if small_iter else ">=tol"),
+                fmt(r_true[0]) if r_true else "N/A",
+                fmt(g_true[0]) if g_true else "N/A",
+                fmt(fit_delta_iter),
+                verdict_text(fit_delta_iter, color),
+                fmt(r.score),
+                fmt(g.score),
+                fmt(score_delta_iter),
+                verdict_text(score_delta_iter, color),
+                reflect if reflect != "MISMATCH" else _ansi("31", reflect, color),
+            ]
         )
-        if r_true and g_true:
-            row += f"| true_err_ref={fmt(r_true[0])} true_err_gen={fmt(g_true[0])} Δ={fmt(fit_delta_iter)}=>{dir_label(fit_delta_iter)} "
-        else:
-            row += "| true_err: N/A "
-        if score_delta_iter is not None:
-            row += f"| score_ref={fmt(r.score)} score_gen={fmt(g.score)} Δ={fmt(score_delta_iter)}=>{dir_label(score_delta_iter)} "
-        else:
-            row += "| score: N/A "
-        row += f"| score_reflects_fit={reflect}"
-        detailed_rows.append(row)
 
         # Failing rules
         if total_d >= tol_mm_total:
@@ -470,7 +578,25 @@ def report_dataset(
     # Decide if we should print detailed rows:
     if (not ok) or (worst_iter_delta > 0.0) or (n_ref != n_gen):
         lines.append("ITERATIONS detail:")
-        lines.extend(detailed_rows)
+        lines.extend(["  " + x for x in format_table(
+            headers=[
+                "iter",
+                "Δparam_total",
+                "Δanchors",
+                "ΔR*2π",
+                "tol",
+                "true_ref",
+                "true_gen",
+                "Δtrue",
+                "true_verdict",
+                "score_ref",
+                "score_gen",
+                "Δscore",
+                "score_verdict",
+                "reflect",
+            ],
+            rows=detailed_rows,
+        )])
 
     return ok, lines
 
@@ -490,7 +616,9 @@ def main() -> int:
     ap.add_argument("--tol-mm", type=float, default=10.0, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
     ap.add_argument("--no-fail-score-mismatch", action="store_true", help="Do not fail on score/fit direction mismatch (still reported).")
     ap.add_argument("--keep-going", action="store_true", help="Run all datasets even if one fails.")
+    ap.add_argument("--color", choices=["auto", "always", "never"], default="auto", help="Colorize output verdicts.")
     args = ap.parse_args()
+    color = use_color(args.color)
 
     repo_root = Path(args.repo_root).resolve()
     if not (repo_root / "autocal" / "active_calibrate.py").exists():
@@ -571,6 +699,7 @@ def main() -> int:
             gen=gen_parsed,
             tol_mm_total=float(args.tol_mm),
             fail_on_score_mismatch=not args.no_fail_score_mismatch,
+            color=color,
         )
         print("\n".join(lines))
         print(f"Generated log: {gen_log_path}")
