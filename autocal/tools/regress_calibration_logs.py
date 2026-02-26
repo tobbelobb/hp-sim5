@@ -411,7 +411,7 @@ def report_dataset(
     ok = True
 
     # ---- Summary ----
-    lines.append(f"=== {name} ===")
+    lines.append(f"\n========= {name} =========")
     if ref.summary is None:
         lines.append("REF: ERROR: could not parse calibration summary")
         ok = False
