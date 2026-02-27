@@ -50,7 +50,7 @@ def test_format_table_keeps_columns_aligned():
 
 def test_report_dataset_has_readable_summary_and_verdicts():
     ref, gen = _parsed(score_ref=10.0, score_gen=11.0)
-    ok, lines = rcl.report_dataset(
+    ok, lines, true_delta = rcl.report_dataset(
         name="demo",
         ref=ref,
         gen=gen,
@@ -64,11 +64,13 @@ def test_report_dataset_has_readable_summary_and_verdicts():
     assert "delta(gen-ref)" in text
     assert "verdict" in text
     assert "worse" in text
+    assert "RUN_TRACKER: true_err_total delta(gen-ref)=" in text
+    assert isinstance(true_delta, float)
 
 
 def test_report_dataset_can_colorize_verdicts():
     ref, gen = _parsed(score_ref=10.0, score_gen=11.0)
-    _, lines = rcl.report_dataset(
+    _, lines, _ = rcl.report_dataset(
         name="demo",
         ref=ref,
         gen=gen,

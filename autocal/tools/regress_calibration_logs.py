@@ -92,6 +92,7 @@ class DatasetRunResult:
     lines: List[str]
     generated_log: Optional[Path]
     reference_log: Optional[Path]
+    true_err_total_delta: Optional[float] = None
 
 
 # ---------- Parsing helpers ----------
@@ -406,13 +407,14 @@ def report_dataset(
     tol_mm_total: float,
     fail_on_score_mismatch: bool,
     color: bool = False,
-) -> Tuple[bool, List[str]]:
+) -> Tuple[bool, List[str], Optional[float]]:
     """
     Returns (ok, lines).
     ok=False if changes exceed tolerance or mismatch rules trigger.
     """
     lines: List[str] = []
     ok = True
+    true_err_total_delta: Optional[float] = None
 
     # ---- Summary ----
     lines.append(f"\n========= {name} =========")
@@ -459,17 +461,21 @@ def report_dataset(
                 )
 
             if ref_true and gen_true:
+                true_err_total_delta = float(gen_true[0] - ref_true[0])
                 summary_rows.append(
                     [
                         "true_err_total",
                         fmt(ref_true[0]),
                         fmt(gen_true[0]),
-                        fmt(gen_true[0] - ref_true[0]),
-                        verdict_text(gen_true[0] - ref_true[0], color),
+                        fmt(true_err_total_delta),
+                        verdict_text(true_err_total_delta, color),
                     ]
                 )
                 summary_rows.append(["true_err_anchors", fmt(ref_true[1]), fmt(gen_true[1]), fmt(gen_true[1] - ref_true[1]), "-"])
                 summary_rows.append(["true_err_R*2π", fmt(ref_true[2]), fmt(gen_true[2]), fmt(gen_true[2] - ref_true[2]), "-"])
+                lines.append(
+                    f"RUN_TRACKER: true_err_total delta(gen-ref)={fmt(true_err_total_delta)} [{dir_label(true_err_total_delta)}]"
+                )
 
             lines.append("Calibration summary:")
             lines.extend(["  " + x for x in format_table(
@@ -620,7 +626,7 @@ def report_dataset(
             rows=detailed_rows,
         )])
 
-    return ok, lines
+    return ok, lines, true_err_total_delta
 
 
 def find_file_first_existing(candidates: List[Path]) -> Optional[Path]:
@@ -703,7 +709,7 @@ def run_one_dataset(
     ref_parsed = parse_log_file(ref_log_path)
     gen_parsed = parse_log_file(gen_log_path)
 
-    ok, lines = report_dataset(
+    ok, lines, true_err_total_delta = report_dataset(
         name=name,
         ref=ref_parsed,
         gen=gen_parsed,
@@ -717,6 +723,7 @@ def run_one_dataset(
         lines=lines,
         generated_log=gen_log_path,
         reference_log=ref_log_path,
+        true_err_total_delta=true_err_total_delta,
     )
 
 
@@ -771,6 +778,7 @@ def main() -> int:
     scratch_root.mkdir(parents=True, exist_ok=True)
 
     if jobs:
+        completed_results: List[DatasetRunResult] = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as pool:
             fut_to_name = {
                 pool.submit(
@@ -801,8 +809,36 @@ def main() -> int:
                     print(f"Generated log: {result.generated_log}")
                 if result.reference_log is not None:
                     print(f"Reference log: {result.reference_log}")
+                completed_results.append(result)
                 if not result.ok:
                     overall_ok = False
+
+        if completed_results:
+            completed_sorted = sorted(completed_results, key=lambda r: r.name)
+            rows: List[List[str]] = []
+            sum_delta = 0.0
+            sum_count = 0
+            for r in completed_sorted:
+                d = r.true_err_total_delta
+                if d is not None and math.isfinite(d):
+                    rows.append([r.name, fmt(d), dir_label(d)])
+                    sum_delta += float(d)
+                    sum_count += 1
+                else:
+                    rows.append([r.name, "N/A", "N/A"])
+
+            print("\nRUN_TRACKER: true_err_total delta(gen-ref) by dataset")
+            for line in format_table(
+                headers=["dataset", "delta(gen-ref)", "verdict"],
+                rows=rows,
+            ):
+                print("  " + line)
+            if sum_count > 0:
+                print(
+                    f"RUN_TRACKER: sum_true_err_total_delta(gen-ref)={fmt(sum_delta)} over {sum_count} datasets [{dir_label(sum_delta)}]"
+                )
+            else:
+                print("RUN_TRACKER: sum_true_err_total_delta(gen-ref)=N/A (parse missing)")
 
     if overall_ok:
         print("\nALL DATASETS: PASS")
