@@ -1663,7 +1663,7 @@ def test_scale_fix_2_runs_final_uniform_scale_polish(monkeypatch):
     assert final_polish.get("accepted") is True
 
 
-def test_scale_fix_3_runs_per_iteration_scale_polish(monkeypatch):
+def test_scale_fix_3_aliases_legacy_scale_fix_2(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
 
     def fake_build_spool_model_params(
@@ -1722,48 +1722,55 @@ def test_scale_fix_3_runs_per_iteration_scale_polish(monkeypatch):
     monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
     monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
-    eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
-        {"num_anchors": 3, "sweeps": []},
-        np.ones((3, 2), dtype=float),
-        find_radii_mode="global",
-        find_buildup_mode="off",
-        base_radii_mm=base,
-        modeled_buildup_factor=np.zeros(3, dtype=float),
-        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
-        mechanical_advantage=np.ones(3, dtype=float),
-        lines_per_spool=np.ones(3, dtype=float),
-        r0_bounds=None,
-        b_bounds=None,
-        r0_prior_sigma_mm=None,
-        b_prior_sigma=None,
-        spool_outer_iters=1,
-        spool_inner_iters=1,
-        theta0_mode="zero",
-        solve_restarts=1,
-        solve_iterations=10,
-        solve_optimizer="L-BFGS-B",
-        residual_threshold=1.0,
-        spring_k_multiplier=1.0,
-        use_flex=False,
-        pointwise_residual_mode="sampson",
-        pointwise_filtering=False,
-        pointwise_global_mad=False,
-        sweep_wise_filtering=False,
-        sweep_metric="mad",
-        use_noise_mean=False,
-        sigma_source="auto",
-        robust_debug=False,
-        scale_fix_levels=(3,),
-    )
+    def _run(scale_fix_levels):
+        eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+            {"num_anchors": 3, "sweeps": []},
+            np.ones((3, 2), dtype=float),
+            find_radii_mode="global",
+            find_buildup_mode="off",
+            base_radii_mm=base,
+            modeled_buildup_factor=np.zeros(3, dtype=float),
+            spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+            mechanical_advantage=np.ones(3, dtype=float),
+            lines_per_spool=np.ones(3, dtype=float),
+            r0_bounds=None,
+            b_bounds=None,
+            r0_prior_sigma_mm=None,
+            b_prior_sigma=None,
+            spool_outer_iters=1,
+            spool_inner_iters=1,
+            theta0_mode="zero",
+            solve_restarts=1,
+            solve_iterations=10,
+            solve_optimizer="L-BFGS-B",
+            residual_threshold=1.0,
+            spring_k_multiplier=1.0,
+            use_flex=False,
+            pointwise_residual_mode="sampson",
+            pointwise_filtering=False,
+            pointwise_global_mad=False,
+            sweep_wise_filtering=False,
+            sweep_metric="mad",
+            use_noise_mean=False,
+            sigma_source="auto",
+            robust_debug=False,
+            scale_fix_levels=scale_fix_levels,
+        )
+        return float(np.median(np.asarray(eff_r, dtype=float))), fit_info
 
-    assert float(np.median(np.asarray(eff_r, dtype=float))) > 41.0
-    history = fit_info.get("history")
-    assert isinstance(history, list) and history
-    assert history[0].get("accepted_update") == "anchor_scale_polish"
-    scale_fix3 = history[0].get("scale_fix_3", {})
-    assert isinstance(scale_fix3, dict)
-    assert scale_fix3.get("attempted") is True
-    assert scale_fix3.get("accepted") is True
+    r_fix2, fit_fix2 = _run((2,))
+    r_fix3, fit_fix3 = _run((3,))
+
+    assert np.isclose(r_fix3, r_fix2, atol=1e-9)
+    final_polish2 = fit_fix2.get("final_scale_polish", {})
+    final_polish3 = fit_fix3.get("final_scale_polish", {})
+    assert final_polish2.get("attempted") is True
+    assert final_polish2.get("accepted") is True
+    assert final_polish3.get("attempted") is True
+    assert final_polish3.get("accepted") is True
+    history3 = fit_fix3.get("history")
+    assert isinstance(history3, list) and history3
+    assert history3[0].get("accepted_update") != "anchor_scale_polish"
 
 
 def test_spool_block_update_rolls_back_when_not_improving(monkeypatch):
@@ -2156,7 +2163,6 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=[2],
         refreeze_iters=3,
     )
 
@@ -2167,10 +2173,4 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
     assert bool(refreeze_history[0].get("prefit_enabled", False)) is True
     assert bool(refreeze_history[1].get("prefit_enabled", True)) is False
     assert bool(refreeze_history[2].get("prefit_enabled", True)) is False
-    assert bool(refreeze_history[0].get("scale_fix_2_active", True)) is False
-    assert bool(refreeze_history[1].get("scale_fix_2_active", True)) is False
-    assert bool(refreeze_history[2].get("scale_fix_2_active", False)) is True
-    assert bool(refreeze_history[0].get("final_scale_polish_attempted", True)) is False
-    assert bool(refreeze_history[1].get("final_scale_polish_attempted", True)) is False
-    assert bool(refreeze_history[2].get("final_scale_polish_attempted", False)) is True
     assert isinstance(fit_info.get("refreeze_final_calibration"), dict)

@@ -592,6 +592,11 @@ def _estimate_effective_radii_with_spool_model(
     search_r = _spool_mode_enabled(mode_r)
     search_b = _spool_mode_enabled(mode_b)
     scale_fix_set = set(_parse_scale_fix_levels(scale_fix_levels))
+    # Keep main aligned with legacy behavior:
+    # scale-fix 3 now aliases to the old scale-fix 2 final polish.
+    if 3 in scale_fix_set:
+        scale_fix_set.discard(3)
+        scale_fix_set.add(2)
     use_scale_fix_1 = 1 in scale_fix_set
     use_scale_fix_2 = 2 in scale_fix_set
     use_scale_fix_3 = 3 in scale_fix_set
@@ -684,15 +689,6 @@ def _estimate_effective_radii_with_spool_model(
             pass_enable_bootstrap = (
                 bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
             )
-            pass_scale_fix_set = set(scale_fix_set)
-            # Avoid repeated end-of-pass scale_fix_2 amplification during refreeze loops.
-            # Keep scale_fix_2 only on the final pass unless scale_fix_3 is enabled.
-            if (
-                (2 in pass_scale_fix_set)
-                and (3 not in pass_scale_fix_set)
-                and (refreeze_idx < requested_refreeze_iters - 1)
-            ):
-                pass_scale_fix_set.discard(2)
             (
                 eff_r_pass,
                 fit_anchors_pass,
@@ -731,7 +727,7 @@ def _estimate_effective_radii_with_spool_model(
                 sigma_source=sigma_source,
                 robust_debug=robust_debug,
                 prefer_zero_tension_angles=prefer_zero_tension_angles,
-                scale_fix_levels=sorted(int(v) for v in pass_scale_fix_set),
+                scale_fix_levels=sorted(int(v) for v in scale_fix_set),
                 refreeze_iters=1,
                 initial_radii_mm=radii_seed,
                 initial_buildup_factor=buildup_seed,
@@ -773,14 +769,6 @@ def _estimate_effective_radii_with_spool_model(
                     "refreeze_iter": int(refreeze_idx + 1),
                     "prefit_enabled": bool(pass_enable_prefit),
                     "bootstrap_enabled": bool(pass_enable_bootstrap),
-                    "scale_fix_levels": [int(v) for v in sorted(pass_scale_fix_set)],
-                    "scale_fix_2_active": bool(2 in pass_scale_fix_set),
-                    "scale_fix_3_active": bool(3 in pass_scale_fix_set),
-                    "final_scale_polish_attempted": bool(
-                        ((fit_info_pass.get("final_scale_polish") or {}).get("attempted", False))
-                        if isinstance(fit_info_pass, dict)
-                        else False
-                    ),
                     "score_ui": float(pass_score_ui) if np.isfinite(pass_score_ui) else None,
                     "rank_score": float(pass_rank_score) if np.isfinite(pass_rank_score) else None,
                     "score_basis": str(pass_score_basis),

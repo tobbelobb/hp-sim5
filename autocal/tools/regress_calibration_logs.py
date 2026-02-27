@@ -361,6 +361,10 @@ def run_active_calibrate(
         "--buildup-factor",
         "0.636619",
         "--no-collect",
+        "--optimizer-mode",
+        "fast",
+        "--scale-fix",
+        "3",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
