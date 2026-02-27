@@ -576,6 +576,11 @@ def _estimate_effective_radii_with_spool_model(
     robust_debug: bool,
     prefer_zero_tension_angles: bool = False,
     scale_fix_levels: Optional[Sequence[int]] = None,
+    refreeze_iters: int = 1,
+    initial_radii_mm: Optional[np.ndarray] = None,
+    initial_buildup_factor: Optional[np.ndarray] = None,
+    enable_prefit: bool = True,
+    enable_bootstrap_anchor_refresh: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]:
     base = np.asarray(base_radii_mm, dtype=float).reshape(-1)
     num_anchors = int(base.size)
@@ -657,15 +662,169 @@ def _estimate_effective_radii_with_spool_model(
     if not np.all(np.isfinite(anchors_current)):
         raise ValueError("anchor estimate contains non-finite values")
 
+    requested_refreeze_iters = max(1, int(refreeze_iters))
+    if requested_refreeze_iters > 1:
+        anchors_seed = np.asarray(anchors_current, dtype=float)
+        radii_seed = (
+            None
+            if initial_radii_mm is None
+            else np.asarray(initial_radii_mm, dtype=float).reshape(-1)
+        )
+        buildup_seed = (
+            None
+            if initial_buildup_factor is None
+            else np.asarray(initial_buildup_factor, dtype=float).reshape(-1)
+        )
+        refreeze_history: List[Dict[str, object]] = []
+        final_tuple: Optional[Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]] = None
+        final_calibration: Optional[Dict[str, object]] = None
+
+        for refreeze_idx in range(requested_refreeze_iters):
+            pass_enable_prefit = bool(enable_prefit) if refreeze_idx == 0 else False
+            pass_enable_bootstrap = (
+                bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
+            )
+            (
+                eff_r_pass,
+                fit_anchors_pass,
+                spool_params_pass,
+                transformed_pass,
+                fit_info_pass,
+            ) = _estimate_effective_radii_with_spool_model(
+                dataset,
+                anchors_seed,
+                find_radii_mode=find_radii_mode,
+                find_buildup_mode=find_buildup_mode,
+                base_radii_mm=base_radii_mm,
+                modeled_buildup_factor=modeled_buildup_factor,
+                spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+                mechanical_advantage=mechanical_advantage,
+                lines_per_spool=lines_per_spool,
+                r0_bounds=r0_bounds,
+                b_bounds=b_bounds,
+                r0_prior_sigma_mm=r0_prior_sigma_mm,
+                b_prior_sigma=b_prior_sigma,
+                spool_outer_iters=spool_outer_iters,
+                spool_inner_iters=spool_inner_iters,
+                theta0_mode=theta0_mode,
+                solve_restarts=solve_restarts,
+                solve_iterations=solve_iterations,
+                solve_optimizer=solve_optimizer,
+                residual_threshold=residual_threshold,
+                spring_k_multiplier=spring_k_multiplier,
+                use_flex=use_flex,
+                pointwise_residual_mode=pointwise_residual_mode,
+                pointwise_filtering=pointwise_filtering,
+                pointwise_global_mad=pointwise_global_mad,
+                sweep_wise_filtering=sweep_wise_filtering,
+                sweep_metric=sweep_metric,
+                use_noise_mean=use_noise_mean,
+                sigma_source=sigma_source,
+                robust_debug=robust_debug,
+                prefer_zero_tension_angles=prefer_zero_tension_angles,
+                scale_fix_levels=scale_fix_levels,
+                refreeze_iters=1,
+                initial_radii_mm=radii_seed,
+                initial_buildup_factor=buildup_seed,
+                enable_prefit=pass_enable_prefit,
+                enable_bootstrap_anchor_refresh=pass_enable_bootstrap,
+            )
+            cal_pass = calibrate_elliptical(
+                transformed_pass,
+                output_path=None,
+                residual_threshold=float(residual_threshold),
+                num_restarts=int(solve_restarts),
+                max_iterations=int(solve_iterations),
+                method=str(solve_optimizer),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                verbose=False,
+                use_parallel=False,
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                robust_debug=bool(robust_debug),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                sigma_source=str(sigma_source),
+                generate_report=False,
+                residuals_csv=None,
+                initial_guess=np.asarray(fit_anchors_pass, dtype=float),
+            )
+            plan_tmp = {
+                "length_model": {"find_radii": bool(search_r), "find_buildup_factor": bool(search_b)},
+                "calibration": cal_pass,
+                "cost_raw": cal_pass.get("cost"),
+                "cost_noise_normalized": cal_pass.get("cost"),
+            }
+            pass_score_ui, pass_rank_score, pass_score_basis = _plan_score_ui(plan_tmp)
+            refreeze_history.append(
+                {
+                    "refreeze_iter": int(refreeze_idx + 1),
+                    "prefit_enabled": bool(pass_enable_prefit),
+                    "bootstrap_enabled": bool(pass_enable_bootstrap),
+                    "score_ui": float(pass_score_ui) if np.isfinite(pass_score_ui) else None,
+                    "rank_score": float(pass_rank_score) if np.isfinite(pass_rank_score) else None,
+                    "score_basis": str(pass_score_basis),
+                    "cost_noise_normalized": (
+                        float(cal_pass.get("cost"))
+                        if isinstance(cal_pass.get("cost"), (int, float))
+                        and np.isfinite(float(cal_pass.get("cost")))
+                        else None
+                    ),
+                    "anchors": np.asarray(cal_pass.get("anchors"), dtype=float).tolist(),
+                    "effective_radii_mm": np.asarray(eff_r_pass, dtype=float).tolist(),
+                }
+            )
+            anchors_seed = np.asarray(cal_pass.get("anchors"), dtype=float)
+            radii_seed = np.asarray(eff_r_pass, dtype=float)
+            buildup_seed = np.asarray(
+                fit_info_pass.get("best_modeled_buildup_factor", modeled_b.tolist()),
+                dtype=float,
+            ).reshape(-1)
+            final_tuple = (
+                np.asarray(eff_r_pass, dtype=float),
+                np.asarray(fit_anchors_pass, dtype=float),
+                spool_params_pass,
+                transformed_pass,
+                fit_info_pass,
+            )
+            final_calibration = cal_pass
+
+        if final_tuple is None:
+            raise RuntimeError("refreeze loop failed to produce a spool-fit result")
+        eff_r_final, fit_anchors_final, spool_params_final, transformed_final, fit_info_final = final_tuple
+        fit_info_out = dict(fit_info_final)
+        fit_info_out["refreeze_iters_requested"] = int(requested_refreeze_iters)
+        fit_info_out["refreeze_history"] = list(refreeze_history)
+        if isinstance(final_calibration, dict):
+            fit_info_out["refreeze_final_calibration"] = final_calibration
+        return (
+            np.asarray(eff_r_final, dtype=float),
+            np.asarray(fit_anchors_final, dtype=float),
+            spool_params_final,
+            transformed_final,
+            fit_info_out,
+        )
+
     radii_current = np.asarray(base, dtype=float).copy()
+    if initial_radii_mm is not None:
+        radii_try = np.asarray(initial_radii_mm, dtype=float).reshape(-1)
+        if radii_try.size == num_anchors and np.all(np.isfinite(radii_try)) and np.all(radii_try > 0.0):
+            radii_current = np.asarray(radii_try, dtype=float)
     buildup_current = np.asarray(modeled_b, dtype=float).copy()
+    if initial_buildup_factor is not None:
+        buildup_try = np.asarray(initial_buildup_factor, dtype=float).reshape(-1)
+        if buildup_try.size == num_anchors and np.all(np.isfinite(buildup_try)):
+            buildup_current = np.asarray(buildup_try, dtype=float)
     x_current = _pack_spool_opt_vector(
         radii_mm=radii_current,
         buildup_factor=buildup_current,
         find_radii_mode=mode_r,
         find_buildup_mode=mode_b,
     )
-    if x_current.size > 0:
+    if bool(enable_prefit) and x_current.size > 0:
         x_current = np.clip(x_current, lo, hi)
         radii_current, buildup_current = _unpack_spool_opt_vector(
             x_current,
@@ -1465,78 +1624,79 @@ def _estimate_effective_radii_with_spool_model(
         "accepted_cost": None,
         "accepted_alpha": 0.0,
     }
-    try:
-        _spool_params_bootstrap, transformed_bootstrap = _build_dataset_and_params(
-            radii_current,
-            buildup_current,
-        )
-        anchor_refresh_start_cost = float(_data_cost(transformed_bootstrap, anchors_current))
-        bootstrap_anchor_refresh["attempted"] = True
-        if np.isfinite(anchor_refresh_start_cost):
-            bootstrap_anchor_refresh["start_cost"] = float(anchor_refresh_start_cost)
-            anchor_step_restarts = max(1, min(2, int(solve_restarts)))
-            anchor_step_iterations = max(40, min(160, int(solve_iterations)))
-            cal_bootstrap = calibrate_elliptical(
-                transformed_bootstrap,
-                output_path=None,
-                residual_threshold=float(residual_threshold),
-                num_restarts=int(anchor_step_restarts),
-                max_iterations=int(anchor_step_iterations),
-                method=str(solve_optimizer),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                verbose=False,
-                use_parallel=False,
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                robust_debug=False,
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                sigma_source=str(sigma_source),
-                generate_report=False,
-                residuals_csv=None,
-                initial_guess=anchors_current,
+    if bool(enable_bootstrap_anchor_refresh):
+        try:
+            _spool_params_bootstrap, transformed_bootstrap = _build_dataset_and_params(
+                radii_current,
+                buildup_current,
             )
-            anchors_bootstrap_candidate = np.asarray(cal_bootstrap.get("anchors"), dtype=float)
-            if (
-                anchors_bootstrap_candidate.ndim == 2
-                and anchors_bootstrap_candidate.shape == anchors_current.shape
-                and np.all(np.isfinite(anchors_bootstrap_candidate))
-            ):
-                bootstrap_anchor_refresh["success"] = True
-                accepted_bootstrap_anchors = np.asarray(anchors_current, dtype=float)
-                accepted_bootstrap_cost = float(anchor_refresh_start_cost)
-                accepted_bootstrap_alpha = 0.0
-                candidate_bootstrap_cost = float("nan")
-                for alpha in (1.0, 0.5, 0.25):
-                    if alpha >= 1.0 - 1e-12:
-                        anchors_try = np.asarray(anchors_bootstrap_candidate, dtype=float)
-                    else:
-                        anchors_try = np.asarray(
-                            anchors_current + (anchors_bootstrap_candidate - anchors_current) * float(alpha),
-                            dtype=float,
-                        )
-                    cost_try = float(_data_cost(transformed_bootstrap, anchors_try))
-                    if not np.isfinite(cost_try):
-                        continue
-                    if alpha >= 1.0 - 1e-12:
-                        candidate_bootstrap_cost = float(cost_try)
-                    improve_tol = max(1e-9, 1e-4 * max(1.0, abs(float(anchor_refresh_start_cost))))
-                    if cost_try + improve_tol < accepted_bootstrap_cost:
-                        accepted_bootstrap_anchors = np.asarray(anchors_try, dtype=float)
-                        accepted_bootstrap_cost = float(cost_try)
-                        accepted_bootstrap_alpha = float(alpha)
-                if np.isfinite(candidate_bootstrap_cost):
-                    bootstrap_anchor_refresh["candidate_cost"] = float(candidate_bootstrap_cost)
-                if accepted_bootstrap_alpha > 0.0:
-                    anchors_current = np.asarray(accepted_bootstrap_anchors, dtype=float)
-                    bootstrap_anchor_refresh["accepted"] = True
-                    bootstrap_anchor_refresh["accepted_cost"] = float(accepted_bootstrap_cost)
-                    bootstrap_anchor_refresh["accepted_alpha"] = float(accepted_bootstrap_alpha)
-    except Exception:
-        pass
+            anchor_refresh_start_cost = float(_data_cost(transformed_bootstrap, anchors_current))
+            bootstrap_anchor_refresh["attempted"] = True
+            if np.isfinite(anchor_refresh_start_cost):
+                bootstrap_anchor_refresh["start_cost"] = float(anchor_refresh_start_cost)
+                anchor_step_restarts = max(1, min(2, int(solve_restarts)))
+                anchor_step_iterations = max(40, min(160, int(solve_iterations)))
+                cal_bootstrap = calibrate_elliptical(
+                    transformed_bootstrap,
+                    output_path=None,
+                    residual_threshold=float(residual_threshold),
+                    num_restarts=int(anchor_step_restarts),
+                    max_iterations=int(anchor_step_iterations),
+                    method=str(solve_optimizer),
+                    spring_k_multiplier=float(spring_k_multiplier),
+                    use_flex=bool(use_flex),
+                    verbose=False,
+                    use_parallel=False,
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    robust_debug=False,
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    sigma_source=str(sigma_source),
+                    generate_report=False,
+                    residuals_csv=None,
+                    initial_guess=anchors_current,
+                )
+                anchors_bootstrap_candidate = np.asarray(cal_bootstrap.get("anchors"), dtype=float)
+                if (
+                    anchors_bootstrap_candidate.ndim == 2
+                    and anchors_bootstrap_candidate.shape == anchors_current.shape
+                    and np.all(np.isfinite(anchors_bootstrap_candidate))
+                ):
+                    bootstrap_anchor_refresh["success"] = True
+                    accepted_bootstrap_anchors = np.asarray(anchors_current, dtype=float)
+                    accepted_bootstrap_cost = float(anchor_refresh_start_cost)
+                    accepted_bootstrap_alpha = 0.0
+                    candidate_bootstrap_cost = float("nan")
+                    for alpha in (1.0, 0.5, 0.25):
+                        if alpha >= 1.0 - 1e-12:
+                            anchors_try = np.asarray(anchors_bootstrap_candidate, dtype=float)
+                        else:
+                            anchors_try = np.asarray(
+                                anchors_current + (anchors_bootstrap_candidate - anchors_current) * float(alpha),
+                                dtype=float,
+                            )
+                        cost_try = float(_data_cost(transformed_bootstrap, anchors_try))
+                        if not np.isfinite(cost_try):
+                            continue
+                        if alpha >= 1.0 - 1e-12:
+                            candidate_bootstrap_cost = float(cost_try)
+                        improve_tol = max(1e-9, 1e-4 * max(1.0, abs(float(anchor_refresh_start_cost))))
+                        if cost_try + improve_tol < accepted_bootstrap_cost:
+                            accepted_bootstrap_anchors = np.asarray(anchors_try, dtype=float)
+                            accepted_bootstrap_cost = float(cost_try)
+                            accepted_bootstrap_alpha = float(alpha)
+                    if np.isfinite(candidate_bootstrap_cost):
+                        bootstrap_anchor_refresh["candidate_cost"] = float(candidate_bootstrap_cost)
+                    if accepted_bootstrap_alpha > 0.0:
+                        anchors_current = np.asarray(accepted_bootstrap_anchors, dtype=float)
+                        bootstrap_anchor_refresh["accepted"] = True
+                        bootstrap_anchor_refresh["accepted_cost"] = float(accepted_bootstrap_cost)
+                        bootstrap_anchor_refresh["accepted_alpha"] = float(accepted_bootstrap_alpha)
+        except Exception:
+            pass
 
     for outer_idx in range(outer_iters):
         spool_params_current, transformed_current = _build_dataset_and_params(radii_current, buildup_current)
@@ -2198,6 +2358,8 @@ def _estimate_effective_radii_with_spool_model(
         "scale_fix_1_enabled": bool(use_scale_fix_1),
         "scale_fix_2_enabled": bool(use_scale_fix_2),
         "scale_fix_3_enabled": bool(use_scale_fix_3),
+        "prefit_enabled": bool(enable_prefit),
+        "bootstrap_anchor_refresh_enabled": bool(enable_bootstrap_anchor_refresh),
         "prefit": dict(prefit_info),
         "bootstrap_anchor_refresh": dict(bootstrap_anchor_refresh),
         "final_scale_polish": dict(final_scale_polish_info),
@@ -4308,6 +4470,7 @@ def _plan_next_ellipse_sweep(
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
     collector_args: Sequence[str],
+    refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
@@ -4448,6 +4611,7 @@ def _plan_next_ellipse_sweep(
                 robust_debug=bool(robust_debug),
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
                 scale_fix_levels=scale_fix_levels,
+                refreeze_iters=max(1, int(refreeze_iters)),
             )
         )
         _ = _fit_anchors
@@ -4462,30 +4626,34 @@ def _plan_next_ellipse_sweep(
             sweep_configs_for_info,
             spool_params,
         )
-        cal = calibrate_elliptical(
-            dataset_for_estimation,
-            output_path=None,
-            residual_threshold=float(residual_threshold),
-            num_restarts=int(solve_restarts),
-            max_iterations=int(solve_iterations),
-            method=str(solve_optimizer),
-            spring_k_multiplier=float(spring_k_multiplier),
-            use_flex=bool(use_flex),
-            verbose=False,
-            use_parallel=False,
-            pointwise_residual_mode=str(pointwise_residual_mode),
-            robust_debug=bool(robust_debug),
-            pointwise_filtering=bool(pointwise_filtering),
-            pointwise_global_mad=bool(pointwise_global_mad),
-            sweep_wise_filtering=bool(sweep_wise_filtering),
-            sweep_metric=str(sweep_metric),
-            use_noise_mean=bool(use_noise_mean),
-            sigma_source=str(sigma_source),
-            generate_report=bool(generate_report),
-            residuals_csv=residuals_csv,
-            report_base_path=dataset_path,
-            initial_guess=seed_anchors,
-        )
+        final_refreeze_cal = radii_fit.get("refreeze_final_calibration") if isinstance(radii_fit, dict) else None
+        if isinstance(final_refreeze_cal, dict):
+            cal = final_refreeze_cal
+        else:
+            cal = calibrate_elliptical(
+                dataset_for_estimation,
+                output_path=None,
+                residual_threshold=float(residual_threshold),
+                num_restarts=int(solve_restarts),
+                max_iterations=int(solve_iterations),
+                method=str(solve_optimizer),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                verbose=False,
+                use_parallel=False,
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                robust_debug=bool(robust_debug),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                sigma_source=str(sigma_source),
+                generate_report=bool(generate_report),
+                residuals_csv=residuals_csv,
+                report_base_path=dataset_path,
+                initial_guess=seed_anchors,
+            )
 
         length_model = {
             "coord_planning": "L_base_mm",
@@ -4910,6 +5078,16 @@ def _print_ellipse_plan(
                     f"fitted_cost={_fmt_float(radii_fit.get('fitted_cost'))} "
                     f"nfev={_fmt_float(radii_fit.get('nfev'), fmt='.0f')} "
                     f"nit={_fmt_float(radii_fit.get('nit'), fmt='.0f')}"
+                )
+            refreeze_history = radii_fit.get("refreeze_history")
+            if isinstance(refreeze_history, list) and refreeze_history:
+                last_refreeze = refreeze_history[-1] if isinstance(refreeze_history[-1], dict) else {}
+                print(
+                    f"; line_model_refreeze: iters={_fmt_float(radii_fit.get('refreeze_iters_requested'), fmt='.0f')} "
+                    f"passes={_fmt_float(len(refreeze_history), fmt='.0f')} "
+                    f"last_score_ui={_fmt_float(last_refreeze.get('score_ui'))} "
+                    f"last_rank={_fmt_float(last_refreeze.get('rank_score'))} "
+                    f"last_cost={_fmt_float(last_refreeze.get('cost_noise_normalized'))}"
                 )
     if isinstance(cal, dict):
         details = cal.get("details")
@@ -5372,6 +5550,7 @@ def ellipse_active(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     output_with_explanations: bool,
+    refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
 ) -> int:
     machine_type = _require_machine_type(
@@ -5458,6 +5637,7 @@ def ellipse_active(
         write_cfg=write_cfg,
         collector_output=collector_output,
         collector_args=collector_args_eff,
+        refreeze_iters=int(refreeze_iters),
         scale_fix=scale_fix,
     )
 
@@ -5578,6 +5758,7 @@ def full_auto_loop(
     full_auto_log: Optional[Path],
     patience: int,
     full_auto_verbose: bool,
+    refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
     no_collect: bool = False,
 ) -> int:
@@ -5878,6 +6059,7 @@ def full_auto_loop(
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
+        "refreeze_iters": int(max(1, int(refreeze_iters))),
         "scale_fix": [int(v) for v in _parse_scale_fix_levels(scale_fix)],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
@@ -5962,6 +6144,7 @@ def full_auto_loop(
                     settings["b_prior_sigma"] = float(settings["b_prior_sigma"])
                 settings["spool_outer_iters"] = int(settings.get("spool_outer_iters", 3))
                 settings["spool_inner_iters"] = int(settings.get("spool_inner_iters", 30))
+                settings["refreeze_iters"] = int(max(1, int(settings.get("refreeze_iters", 4))))
                 settings["line_width"] = float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM))
                 if not np.isfinite(settings["line_width"]) or settings["line_width"] < 0.0:
                     settings["line_width"] = float(DEFAULT_LAYER_LINE_WIDTH_MM)
@@ -6035,6 +6218,7 @@ def full_auto_loop(
                         spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
                         spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
                         theta0_mode=str(settings.get("theta0_mode", "zero")),
+                        refreeze_iters=int(settings.get("refreeze_iters", 4)),
                         line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
                         sigma_floor_mm=(
                             None
@@ -6441,6 +6625,7 @@ def ellipse_loop(
     plot_residual_histogram: bool,
     sweep_points: Optional[int],
     output_with_explanations: bool,
+    refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
     no_collect: bool = False,
 ) -> int:
@@ -6625,6 +6810,7 @@ def ellipse_loop(
             spool_outer_iters=int(spool_outer_iters),
             spool_inner_iters=int(spool_inner_iters),
             theta0_mode=str(theta0_mode),
+            refreeze_iters=int(max(1, int(refreeze_iters))),
             line_width=float(line_width),
             sigma_floor_mm=(None if sigma_floor_mm is None else float(sigma_floor_mm)),
             sigma_used_mm=(None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -6876,6 +7062,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=str,
         default="2",
         help="Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 2). Use 'off' to disable.",
+    )
+    parser.add_argument(
+        "--refreeze-iters",
+        type=int,
+        default=4,
+        help="Number of freeze->fit->score warm-start passes per sweep set (default: 4).",
     )
     parser.add_argument(
         "--pointwise-residual",
@@ -7217,10 +7409,13 @@ def _resolve_spool_cli_options(
 
     spool_outer_iters = int(args.spool_outer_iters)
     spool_inner_iters = int(args.spool_inner_iters)
+    refreeze_iters = int(args.refreeze_iters)
     if spool_outer_iters < 1:
         parser.error("--spool-outer-iters must be >= 1")
     if spool_inner_iters < 1:
         parser.error("--spool-inner-iters must be >= 1")
+    if refreeze_iters < 1:
+        parser.error("--refreeze-iters must be >= 1")
 
     line_width = args.line_width
     try:
@@ -7258,6 +7453,7 @@ def _resolve_spool_cli_options(
         "b_prior_sigma": b_prior_sigma,
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
+        "refreeze_iters": int(refreeze_iters),
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -7356,6 +7552,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spool-inner-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
     parser.add_argument("--scale-fix", default=None)
+    parser.add_argument("--refreeze-iters", type=int, default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--sigma-used-mm", type=float, default=None)
@@ -7800,6 +7997,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         keep_sim_alive=bool(args.keep_sim_alive),
         hp_sim_reset=bool(args.hp_sim_reset),
         output_with_explanations=bool(args.output_with_explanations),
+        refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
         scale_fix=spool_opts.get("scale_fix"),
     )
 
@@ -7894,6 +8092,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             full_auto_log=args.full_auto_log,
             patience=int(args.patience),
             full_auto_verbose=bool(args.full_auto_verbose),
+            refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
             scale_fix=spool_opts.get("scale_fix"),
             no_collect=bool(args.no_collect),
         )
@@ -7959,6 +8158,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         plot_residual_histogram=bool(args.plot_residual_histogram),
         sweep_points=args.sweep_points,
         output_with_explanations=bool(args.output_with_explanations),
+        refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
         scale_fix=spool_opts.get("scale_fix"),
         no_collect=bool(args.no_collect),
     )
