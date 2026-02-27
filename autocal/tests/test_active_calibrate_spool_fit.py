@@ -2156,6 +2156,7 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
+        scale_fix_levels=[2],
         refreeze_iters=3,
     )
 
@@ -2166,4 +2167,10 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
     assert bool(refreeze_history[0].get("prefit_enabled", False)) is True
     assert bool(refreeze_history[1].get("prefit_enabled", True)) is False
     assert bool(refreeze_history[2].get("prefit_enabled", True)) is False
+    assert bool(refreeze_history[0].get("scale_fix_2_active", True)) is False
+    assert bool(refreeze_history[1].get("scale_fix_2_active", True)) is False
+    assert bool(refreeze_history[2].get("scale_fix_2_active", False)) is True
+    assert bool(refreeze_history[0].get("final_scale_polish_attempted", True)) is False
+    assert bool(refreeze_history[1].get("final_scale_polish_attempted", True)) is False
+    assert bool(refreeze_history[2].get("final_scale_polish_attempted", False)) is True
     assert isinstance(fit_info.get("refreeze_final_calibration"), dict)
