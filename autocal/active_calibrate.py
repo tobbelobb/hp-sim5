@@ -1204,8 +1204,8 @@ def _estimate_effective_radii_with_spool_model(
         buildup_factor: np.ndarray,
         anchors_eval: np.ndarray,
         *,
-        s_lo: float = 0.9,
-        s_hi: float = 1.1,
+        s_lo: float = 0.8,
+        s_hi: float = 1.2,
         coarse_points: int = 21,
     ) -> Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, float, Dict[str, object]]:
         radii_arr = np.asarray(radii_mm, dtype=float).reshape(-1)
