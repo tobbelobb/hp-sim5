@@ -2281,6 +2281,8 @@ def _estimate_effective_radii_with_spool_model(
         if isinstance(best_data, (int, float)) and np.isfinite(float(best_data)) and np.isfinite(prior_after):
             final_scale_polish_info["best_total_cost"] = float(float(best_data) + prior_after)
         if bool(polish_info.get("accepted", False)) and np.isfinite(polished_cost):
+            best_rank_ref = float(best.get("rank_score", float("inf")))
+            best_total_ref = float(best.get("total_cost", float("inf")))
             polished_total_cost = (
                 float(polished_cost + prior_after)
                 if np.isfinite(polished_cost) and np.isfinite(prior_after)
@@ -2290,21 +2292,43 @@ def _estimate_effective_radii_with_spool_model(
                 transformed_polished,
                 anchors_polished,
             )
-            best = {
-                "cost": float(polished_cost),
-                "total_cost": float(polished_total_cost),
-                "rank_score": (
-                    float(polished_rank_score) if np.isfinite(polished_rank_score) else float("inf")
-                ),
-                "rank_internal": (
-                    None if polished_rank_internal is None else float(polished_rank_internal)
-                ),
-                "radii_mm": np.asarray(radii_polished, dtype=float),
-                "buildup_factor": np.asarray(best["buildup_factor"], dtype=float),
-                "anchors": np.asarray(anchors_polished, dtype=float),
-                "spool_params": spool_params_polished,
-                "dataset": transformed_polished,
-            }
+            polished_rank_score_f = (
+                float(polished_rank_score) if np.isfinite(polished_rank_score) else float("inf")
+            )
+            rank_accept = _rank_better(
+                polished_rank_score_f,
+                float(polished_total_cost),
+                best_rank_ref,
+                best_total_ref,
+            )
+            final_scale_polish_info["accepted_data_cost"] = True
+            final_scale_polish_info["candidate_rank_score"] = (
+                float(polished_rank_score_f) if np.isfinite(polished_rank_score_f) else None
+            )
+            final_scale_polish_info["candidate_rank_internal"] = (
+                None if polished_rank_internal is None else float(polished_rank_internal)
+            )
+            final_scale_polish_info["start_rank_score"] = (
+                float(best_rank_ref) if np.isfinite(best_rank_ref) else None
+            )
+            final_scale_polish_info["rank_better"] = bool(rank_accept)
+            if bool(rank_accept):
+                best = {
+                    "cost": float(polished_cost),
+                    "total_cost": float(polished_total_cost),
+                    "rank_score": float(polished_rank_score_f),
+                    "rank_internal": (
+                        None if polished_rank_internal is None else float(polished_rank_internal)
+                    ),
+                    "radii_mm": np.asarray(radii_polished, dtype=float),
+                    "buildup_factor": np.asarray(best["buildup_factor"], dtype=float),
+                    "anchors": np.asarray(anchors_polished, dtype=float),
+                    "spool_params": spool_params_polished,
+                    "dataset": transformed_polished,
+                }
+            else:
+                final_scale_polish_info["accepted"] = False
+                final_scale_polish_info["message"] = "scale polish rejected by rank objective"
 
     r0_bounds_info = (
         [float(np.min(lo_r)), float(np.max(hi_r))]
