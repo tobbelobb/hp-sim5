@@ -1170,86 +1170,6 @@ def _estimate_effective_radii_with_spool_model(
             return float(fallback_cost), None
         return float("inf"), None
 
-    def _objective5_score_ui(
-        transformed_dataset: dict,
-        anchors_eval: np.ndarray,
-        *,
-        noise_metrics_hint: Optional[dict] = None,
-    ) -> Tuple[float, Optional[float]]:
-        try:
-            noise_metrics = dict(noise_metrics_hint) if isinstance(noise_metrics_hint, dict) else None
-            cost_raw = None
-            if noise_metrics is None:
-                cost_fn = _build_ellipse_cost_function(
-                    transformed_dataset,
-                    residual_threshold=float(residual_threshold),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    noise_normalized=True,
-                    sigma_source=str(sigma_source),
-                )
-                anchor_vec = np.asarray(anchors_eval, dtype=float).ravel()
-                detailed = cost_fn.evaluate_detailed(anchor_vec)
-                cost_raw = float(detailed.total_cost) if np.isfinite(float(detailed.total_cost)) else None
-                noise_metrics = (
-                    dict(detailed.noise_metrics)
-                    if isinstance(detailed.noise_metrics, dict)
-                    else {}
-                )
-                try:
-                    rows = cost_fn.pointwise_residual_rows(anchor_vec)
-                    sigma_model_mm = noise_metrics.get("sigma_model_mm")
-                    if _float_or_none(sigma_model_mm) is None:
-                        sigma_model_mm = noise_metrics.get("sigma_used_mm")
-                    rescored = _compute_tau_mad_rescore_from_rows(
-                        rows,
-                        cost_noise_normalized_old=detailed.total_cost,
-                        chi2_red_old=noise_metrics.get("chi2_red"),
-                        sigma_model_mm=sigma_model_mm,
-                        params_count=noise_metrics.get("params"),
-                    )
-                    noise_metrics.update(rescored)
-                except Exception:
-                    pass
-            if not isinstance(noise_metrics, dict):
-                noise_metrics = {}
-            m_base = _layered_internal_metric_from_noise_metrics(
-                noise_metrics,
-                cost_raw=cost_raw,
-            )
-            m_risk = _spool_trimmed_risk_metric(
-                transformed_dataset,
-                anchors_eval,
-                noise_metrics_hint=noise_metrics,
-            )
-            m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
-            critical_nonfinite = (
-                m_layered is None
-                or cost_raw is None
-                or _float_or_none(noise_metrics.get("tau_mad_mm")) is None
-                or _float_or_none(noise_metrics.get("n_obs_trimmed")) is None
-            )
-            m = float(m_layered) if m_layered is not None else float("nan")
-            score_ui = float("nan")
-            if np.isfinite(m) and m >= 0.0:
-                score_ui = _SCORE_UI_LAYERED_MAP_MULT * (m / _SCORE_UI_LAYERED_MAP_SCALE) ** _SCORE_UI_LAYERED_MAP_EXP
-            if critical_nonfinite or not np.isfinite(score_ui) or (cost_raw is not None and cost_raw > 5.0):
-                score_ui = max(score_ui if np.isfinite(score_ui) else _SCORE_UI_HARD_FAIL, _SCORE_UI_HARD_FAIL)
-            if np.isfinite(score_ui):
-                return float(score_ui), (None if not np.isfinite(m) else float(m))
-        except Exception:
-            pass
-        fallback_cost = float(_data_cost(transformed_dataset, anchors_eval))
-        if np.isfinite(fallback_cost):
-            return float(fallback_cost), None
-        return float("inf"), None
-
     def _rank_better(
         rank_try: float,
         total_try: float,
@@ -1315,8 +1235,8 @@ def _estimate_effective_radii_with_spool_model(
         buildup_arr = np.asarray(buildup_factor, dtype=float).reshape(-1)
         anchors_arr = np.asarray(anchors_eval, dtype=float)
         spool_start, transformed_start = _build_dataset_and_params(radii_arr, buildup_arr)
-        # EXPERIMENT: objective 5 everywhere => optimize score_ui objective.
-        start_rank, _start_internal = _objective5_score_ui(transformed_start, anchors_arr)
+        # EXPERIMENT: objective 4 everywhere => optimize layered rank.
+        start_rank, _start_internal = _objective4_rank(transformed_start, anchors_arr)
         start_cost = float(start_rank)
         start_data_cost = float(_data_cost(transformed_start, anchors_arr))
         info: Dict[str, object] = {
@@ -1364,8 +1284,8 @@ def _estimate_effective_radii_with_spool_model(
                 return out
             anchors_try = np.asarray(anchors_arr * float(scale), dtype=float)
             spool_try, transformed_try = _build_dataset_and_params(radii_try, buildup_arr)
-            # EXPERIMENT: objective 5 everywhere => use score_ui objective.
-            rank_try, _rank_internal_try = _objective5_score_ui(transformed_try, anchors_try)
+            # EXPERIMENT: objective 4 everywhere => use layered rank.
+            rank_try, _rank_internal_try = _objective4_rank(transformed_try, anchors_try)
             data_cost_try = float(_data_cost(transformed_try, anchors_try))
             cost_try = float(rank_try)
             if not np.isfinite(cost_try):
@@ -1538,8 +1458,8 @@ def _estimate_effective_radii_with_spool_model(
                     prefit_parts_cache[key] = (float("nan"), float("nan"), 0, 0)
                     return 1e12
                 prior_cost = float(_prior_cost(radii_try, buildup_try))
-                rank_score, _rank_internal = _objective5_score_ui(transformed_try, anchors_current)
-                # EXPERIMENT: objective 5 everywhere => score_ui objective.
+                rank_score, _rank_internal = _objective4_rank(transformed_try, anchors_current)
+                # EXPERIMENT: objective 4 everywhere => layered rank objective.
                 score = float(rank_score)
                 if not np.isfinite(score):
                     prefit_cache[key] = 1e12
@@ -1831,8 +1751,8 @@ def _estimate_effective_radii_with_spool_model(
             if np.isfinite(current_cost) and np.isfinite(current_prior)
             else float("inf")
         )
-        # EXPERIMENT: objective 5 everywhere => score_ui + total tiebreak.
-        current_rank_score, current_rank_internal = _objective5_score_ui(
+        # EXPERIMENT: objective 4 everywhere => rank + total tiebreak.
+        current_rank_score, current_rank_internal = _objective4_rank(
             transformed_current,
             anchors_current,
         )
@@ -1870,7 +1790,7 @@ def _estimate_effective_radii_with_spool_model(
                     objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
                 prior = _prior_cost(radii_try, buildup_try)
-                rank_score, _rank_internal = _objective5_score_ui(transformed_try, anchors_current)
+                rank_score, _rank_internal = _objective4_rank(transformed_try, anchors_current)
                 score = float(rank_score)
                 if not np.isfinite(score):
                     objective_cache[key] = 1e12
@@ -1912,7 +1832,7 @@ def _estimate_effective_radii_with_spool_model(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_seed = _build_dataset_and_params(radii_seed, buildup_seed)
-                seed_rank_score, _seed_rank_internal = _objective5_score_ui(transformed_seed, anchors_current)
+                seed_rank_score, _seed_rank_internal = _objective4_rank(transformed_seed, anchors_current)
             except Exception:
                 seed_rank_score = float("inf")
             if len(seed_candidates) > 1:
@@ -1929,7 +1849,7 @@ def _estimate_effective_radii_with_spool_model(
                             fixed_buildup_factor=modeled_b,
                         )
                         _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-                        rank_try, _rank_try_internal = _objective5_score_ui(transformed_try, anchors_current)
+                        rank_try, _rank_try_internal = _objective4_rank(transformed_try, anchors_current)
                     except Exception:
                         rank_try = float("inf")
                     if _rank_better(rank_try, score_try, seed_rank_score, seed_cost):
@@ -2047,8 +1967,8 @@ def _estimate_effective_radii_with_spool_model(
             if np.isfinite(accepted_cost) and np.isfinite(spool_prior)
             else float("inf")
         )
-        # EXPERIMENT: objective 5 everywhere => score_ui + total tiebreak.
-        accepted_rank_score, accepted_rank_internal = _objective5_score_ui(
+        # EXPERIMENT: objective 4 everywhere => rank + total tiebreak.
+        accepted_rank_score, accepted_rank_internal = _objective4_rank(
             transformed_opt,
             accepted_anchors,
         )
@@ -2073,7 +1993,7 @@ def _estimate_effective_radii_with_spool_model(
                 if not np.isfinite(total_try):
                     continue
                 noise_hint = cal_step_noise_metrics if alpha >= 1.0 - 1e-12 else None
-                rank_try, rank_internal_try = _objective5_score_ui(
+                rank_try, rank_internal_try = _objective4_rank(
                     transformed_opt,
                     anchors_try,
                     noise_metrics_hint=noise_hint,
@@ -2132,8 +2052,8 @@ def _estimate_effective_radii_with_spool_model(
             if np.isfinite(candidate_data_cost) and np.isfinite(candidate_prior_cost)
             else float("inf")
         )
-        # EXPERIMENT: objective 5 everywhere => score_ui + total tiebreak.
-        candidate_rank_score, candidate_rank_internal = _objective5_score_ui(
+        # EXPERIMENT: objective 4 everywhere => rank + total tiebreak.
+        candidate_rank_score, candidate_rank_internal = _objective4_rank(
             transformed_candidate,
             anchors_candidate_final,
         )
@@ -2334,7 +2254,7 @@ def _estimate_effective_radii_with_spool_model(
             if np.isfinite(fallback_cost) and np.isfinite(fallback_prior)
             else float("inf")
         )
-        fallback_rank_score, fallback_rank_internal = _objective5_score_ui(
+        fallback_rank_score, fallback_rank_internal = _objective4_rank(
             transformed_fallback,
             anchors_current,
         )
@@ -2402,8 +2322,8 @@ def _estimate_effective_radii_with_spool_model(
                 if np.isfinite(polished_cost) and np.isfinite(prior_after)
                 else float("inf")
             )
-            # EXPERIMENT: objective 5 everywhere => score_ui + total tiebreak.
-            polished_rank_score, polished_rank_internal = _objective5_score_ui(
+            # EXPERIMENT: objective 4 everywhere => rank + total tiebreak.
+            polished_rank_score, polished_rank_internal = _objective4_rank(
                 transformed_polished,
                 np.asarray(anchors_polished, dtype=float),
             )
@@ -2479,7 +2399,7 @@ def _estimate_effective_radii_with_spool_model(
                 fixed_buildup_factor=modeled_b,
             )
             _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-            rank_cost, _rank_internal = _objective5_score_ui(transformed_try, anchors_best)
+            rank_cost, _rank_internal = _objective4_rank(transformed_try, anchors_best)
             if not np.isfinite(rank_cost):
                 return float("inf")
             return float(rank_cost)
@@ -2509,7 +2429,7 @@ def _estimate_effective_radii_with_spool_model(
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
-        "optimization_objective": "objective_5_score_ui_with_total_tiebreak",
+        "optimization_objective": "objective_4_layered_rank_with_total_tiebreak",
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
         "scale_fix_1_enabled": bool(use_scale_fix_1),
         "scale_fix_2_enabled": bool(use_scale_fix_2),
