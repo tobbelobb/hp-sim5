@@ -1203,14 +1203,14 @@ def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypat
     assert isinstance(history_high, list) and history_high
     for hist in (history_low[-1], history_high[-1]):
         assert float(hist.get("cal_total_cost")) == pytest.approx(float(hist.get("cal_data_cost")))
-    assert fit_low.get("optimization_objective") == "objective_4_layered_rank_with_total_tiebreak"
-    assert fit_high.get("optimization_objective") == "objective_4_layered_rank_with_total_tiebreak"
+    assert fit_low.get("optimization_objective") == "objective_5_score_ui_with_total_tiebreak"
+    assert fit_high.get("optimization_objective") == "objective_5_score_ui_with_total_tiebreak"
 
     assert r_low == pytest.approx(30.0, abs=1e-6)
     assert r_high == pytest.approx(38.7, abs=1e-6)
 
 
-def test_spool_fit_objective4_total_cost_keeps_prior_tiebreak(monkeypatch):
+def test_spool_fit_objective5_total_cost_keeps_prior_tiebreak(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([33.0, 33.0, 33.0], dtype=float)
     target_k = np.zeros(3, dtype=float)
@@ -1258,7 +1258,7 @@ def test_spool_fit_objective4_total_cost_keeps_prior_tiebreak(monkeypatch):
     assert float(last.get("cal_total_cost")) == pytest.approx(
         float(last.get("cal_data_cost")) + float(last.get("cal_prior_cost"))
     )
-    assert fit_info.get("optimization_objective") == "objective_4_layered_rank_with_total_tiebreak"
+    assert fit_info.get("optimization_objective") == "objective_5_score_ui_with_total_tiebreak"
     assert float(np.median(np.asarray(eff_r, dtype=float))) == pytest.approx(33.0, abs=0.2)
 
 
