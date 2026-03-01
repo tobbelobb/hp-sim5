@@ -1,0 +1,58 @@
+There are multiple objectives in play. They are related, but not identical.
+
+
+  1. Prefit (spool seed)
+
+  - Function: _ellipse_prefit_score:1321, used inside _prefit_objective:1407
+
+  2. Spool parameter step (R / buildup optimization, anchors fixed)
+
+  - Function: _objective:1768 in the outer loop.
+
+  3. Anchor step (anchors optimization, spool fixed)
+
+  - Function: calibrate_elliptical(...):1896
+  - Objective optimized: the ellipse solver’s internal cost (from EllipseCostFunction.evaluate), not _data_cost + prior.
+  - This is a separate optimization pass after spool step.
+
+  4. Anchor update acceptance (full/damped/rollback)
+
+  - Candidate anchor updates are evaluated by:
+      - rank: _spool_rank_score:1093
+      - tie-break total: data+prior
+      - comparator: _rank_better:1150
+  - So accepted anchor moves are decided by rank objective + total cost, not just raw calibrate output.
+
+  5. Scale polish
+
+  - Function: _run_uniform_scale_polish:1202
+  - It searches a uniform scale s for radii+anchors and evaluates data cost only (_data_cost), then may accept by data-cost improvement internally.
+  - Later final acceptance into “best” is gated by rank comparator in final block:
+    rank_accept = _rank_better(...):2298
+
+  ———
+
+  About _data_cost vs _spool_rank_score
+
+  They both use EllipseCostFunction, but differently:
+
+  - _data_cost:
+      - Calls _evaluate_cost_at_anchors:3568 with noise_normalized=True
+      - Then adds risk blend (+ 0.5 * trimmed_direct_risk) in _data_cost:1074
+      - Returns a scalar used for spool optimization and polish
+  - _spool_rank_score:
+      - Builds cost fn directly, uses evaluate_detailed + pointwise rows rescoring
+      - Builds layered internal metric (chi2_red_rescored_tau_3bin_debiased etc.) + risk
+      - Converts to rank via log1p / hard-fail in _layered_rank_score_from_internal_metric:7751
+
+  So: same underlying residual engine, different derived objective.
+
+  ———
+
+  Do R and anchors optimize the same metric?
+
+  - No.
+  - Spool step optimizes _data_cost + prior.
+  - Anchor step optimizes calibrate_elliptical solver objective.
+  - Final move acceptance is by rank comparator (_spool_rank_score + total cost).
+    This mismatch is why you can see non-intuitive outcomes unless acceptance logic is carefully aligned.
