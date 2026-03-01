@@ -210,6 +210,86 @@ def test_plan_score_ui_non_layered_matches_primary_cost():
     assert ac._solution_quality_label(score_ui) == "good"
 
 
+def test_layered_internal_metric_fit_structure_tail_ratio_penalty():
+    noise_metrics = {
+        "chi2_red_rescored_tau_3bin_debiased": 64.0,
+        "tau_mad_mm": 1.0,
+        "n_obs_trimmed": 40.0,
+        "tail_ratio": 2.2,
+    }
+    base = ac._layered_internal_metric_from_noise_metrics(noise_metrics, cost_raw=0.8)
+    assert base is not None
+
+    penalized = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=0.8,
+        fit_structure_levels=[1],
+    )
+    expected = float(base) * (
+        1.0
+        + ac._SCORE_UI_LAYERED_TAIL_RATIO_WEIGHT
+        * max(0.0, 2.2 / ac._SCORE_UI_LAYERED_TAIL_RATIO_REF - 1.0)
+    )
+    assert np.isclose(penalized, expected, atol=1e-12)
+
+
+def test_layered_internal_metric_fit_structure_bias_and_tail_factor_penalties():
+    noise_metrics = {
+        "chi2_red_rescored_tau_3bin_debiased": 64.0,
+        "tau_mad_mm": 1.0,
+        "n_obs_trimmed": 40.0,
+        "per_sweep_demean": {
+            "normalized_sweep_bias": 0.36,
+            "tail_factor_median": 4.0,
+        },
+    }
+    base_default = ac._layered_internal_metric_from_noise_metrics(noise_metrics, cost_raw=0.8)
+    base_off = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=0.8,
+        fit_structure_levels=[],
+    )
+    assert base_default is not None
+    assert np.isclose(base_off, base_default, atol=1e-12)
+
+    penalized = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=0.8,
+        fit_structure_levels=[2, 3],
+    )
+    expected = float(base_default)
+    expected *= (
+        1.0
+        + ac._SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT
+        * max(0.0, 0.36 / ac._SCORE_UI_LAYERED_SWEEP_BIAS_REF - 1.0)
+    )
+    expected *= (
+        1.0
+        + ac._SCORE_UI_LAYERED_TAIL_FACTOR_WEIGHT
+        * max(0.0, 4.0 / ac._SCORE_UI_LAYERED_TAIL_FACTOR_REF - 1.0)
+    )
+    assert np.isclose(penalized, expected, atol=1e-12)
+
+
+def test_compute_score_ui_layered_uses_plan_fit_structure_levels():
+    plan = _layered_plan(
+        primary_cost=74.11,
+        cost_raw=0.8,
+        chi2_layered=64.0,
+        tau_mad_mm=1.0,
+        n_trim=40.0,
+    )
+    nm = plan["calibration"]["details"]["noise_metrics"]
+    nm["tail_ratio"] = 2.2
+
+    score_base, m_base = ac._compute_score_ui_layered(plan)
+    plan["length_model"]["fit_structure_levels"] = [1]
+    score_fit, m_fit = ac._compute_score_ui_layered(plan)
+
+    assert m_fit > m_base
+    assert score_fit > score_base
+
+
 def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
     tmp_path,
     monkeypatch,

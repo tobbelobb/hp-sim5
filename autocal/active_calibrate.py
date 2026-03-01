@@ -41,6 +41,7 @@ _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
+_FIT_STRUCTURE_LEVELS = (1, 2, 3)
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 _TAU_MAD_SCALE = 1.4826
 _SCORE_UI_LAYERED_COST_RAW_REF = 0.8
@@ -49,6 +50,12 @@ _SCORE_UI_LAYERED_TAU_MAD_REF_MM = 1.0
 _SCORE_UI_LAYERED_TAU_MAD_WEIGHT = 0.15
 _SCORE_UI_LAYERED_N_TRIM_REF = 40.0
 _SCORE_UI_LAYERED_N_TRIM_WEIGHT = 0.10
+_SCORE_UI_LAYERED_TAIL_RATIO_REF = 1.8
+_SCORE_UI_LAYERED_TAIL_RATIO_WEIGHT = 0.35
+_SCORE_UI_LAYERED_SWEEP_BIAS_REF = 0.12
+_SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT = 0.50
+_SCORE_UI_LAYERED_TAIL_FACTOR_REF = 3.0
+_SCORE_UI_LAYERED_TAIL_FACTOR_WEIGHT = 0.20
 _SCORE_UI_LAYERED_MAP_SCALE = 95.0
 _SCORE_UI_LAYERED_MAP_EXP = 5.0
 _SCORE_UI_LAYERED_MAP_MULT = 1.0
@@ -576,6 +583,7 @@ def _estimate_effective_radii_with_spool_model(
     robust_debug: bool,
     prefer_zero_tension_angles: bool = False,
     scale_fix_levels: Optional[Sequence[int]] = None,
+    fit_structure_levels: Optional[Sequence[int]] = None,
     refreeze_iters: int = 1,
     initial_radii_mm: Optional[np.ndarray] = None,
     initial_buildup_factor: Optional[np.ndarray] = None,
@@ -592,6 +600,7 @@ def _estimate_effective_radii_with_spool_model(
     search_r = _spool_mode_enabled(mode_r)
     search_b = _spool_mode_enabled(mode_b)
     scale_fix_set = set(_parse_scale_fix_levels(scale_fix_levels))
+    fit_structure_set = set(_parse_fit_structure_levels(fit_structure_levels))
     use_scale_fix_1 = 1 in scale_fix_set
     use_scale_fix_2 = 2 in scale_fix_set
     use_scale_fix_3 = 3 in scale_fix_set
@@ -731,6 +740,7 @@ def _estimate_effective_radii_with_spool_model(
                 robust_debug=robust_debug,
                 prefer_zero_tension_angles=prefer_zero_tension_angles,
                 scale_fix_levels=sorted(int(v) for v in pass_scale_fix_set),
+                fit_structure_levels=sorted(int(v) for v in fit_structure_set),
                 refreeze_iters=1,
                 initial_radii_mm=radii_seed,
                 initial_buildup_factor=buildup_seed,
@@ -761,10 +771,15 @@ def _estimate_effective_radii_with_spool_model(
                 initial_guess=np.asarray(fit_anchors_pass, dtype=float),
             )
             plan_tmp = {
-                "length_model": {"find_radii": bool(search_r), "find_buildup_factor": bool(search_b)},
+                "length_model": {
+                    "find_radii": bool(search_r),
+                    "find_buildup_factor": bool(search_b),
+                    "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
+                },
                 "calibration": cal_pass,
                 "cost_raw": cal_pass.get("cost"),
                 "cost_noise_normalized": cal_pass.get("cost"),
+                "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
             }
             pass_score_ui, pass_rank_score, pass_score_basis = _plan_score_ui(plan_tmp)
             refreeze_history.append(
@@ -1135,7 +1150,10 @@ def _estimate_effective_radii_with_spool_model(
                     noise_metrics.update(rescored)
                 except Exception:
                     pass
-            m_layered = _layered_internal_metric_from_noise_metrics(noise_metrics)
+            m_layered = _layered_internal_metric_from_noise_metrics(
+                noise_metrics,
+                fit_structure_levels=fit_structure_set,
+            )
             risk_metric = _spool_trimmed_risk_metric(
                 transformed_dataset,
                 anchors_eval,
@@ -2398,6 +2416,7 @@ def _estimate_effective_radii_with_spool_model(
         "noise_normalized_data_term": bool(spool_noise_normalized),
         "optimization_objective": "legacy_data_cost + w*risk_trimmed_direct",
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
+        "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
         "scale_fix_1_enabled": bool(use_scale_fix_1),
         "scale_fix_2_enabled": bool(use_scale_fix_2),
         "scale_fix_3_enabled": bool(use_scale_fix_3),
@@ -3349,6 +3368,9 @@ def _compute_tau_mad_rescore_from_rows(
 
     per_sweep_summary: Dict[str, Dict[str, object]] = {}
     per_sweep_bias_medians: Dict[str, float] = {}
+    per_sweep_medians_mm: List[float] = []
+    per_sweep_mads_mm: List[float] = []
+    per_sweep_tail_factors: List[float] = []
     demeaned_mm: List[float] = []
     demeaned_z: List[float] = []
     sweep_ids = sorted(set(total_by_sweep.keys()) | set(inlier_mm_by_sweep.keys()) | set(inlier_z_by_sweep.keys()))
@@ -3360,16 +3382,31 @@ def _compute_tau_mad_rescore_from_rows(
         mad_mm = None
         p95_abs_mm = None
         mean_abs_z = None
+        tail_factor = None
         if resid_mm.size:
             median_val = float(np.median(resid_mm))
             median_mm = median_val
             per_sweep_bias_medians[sweep_id] = float(median_val)
+            if np.isfinite(median_val):
+                per_sweep_medians_mm.append(float(median_val))
             mad_val = float(np.median(np.abs(resid_mm - median_val)))
             if np.isfinite(mad_val):
                 mad_mm = mad_val
+                if mad_val > 0.0:
+                    per_sweep_mads_mm.append(float(mad_val))
             p95_val = float(np.percentile(np.abs(resid_mm), 95))
             if np.isfinite(p95_val):
                 p95_abs_mm = p95_val
+            if (
+                p95_abs_mm is not None
+                and mad_mm is not None
+                and np.isfinite(float(p95_abs_mm))
+                and np.isfinite(float(mad_mm))
+                and float(mad_mm) > 0.0
+            ):
+                tail_factor = float(float(p95_abs_mm) / float(mad_mm))
+                if np.isfinite(tail_factor):
+                    per_sweep_tail_factors.append(float(tail_factor))
             demeaned_mm.extend((resid_mm - median_val).tolist())
         if resid_z.size:
             median_z = float(np.median(resid_z))
@@ -3383,6 +3420,7 @@ def _compute_tau_mad_rescore_from_rows(
             "mad_residual_mm": mad_mm,
             "p95_abs_residual_mm": p95_abs_mm,
             "mean_abs_z": mean_abs_z,
+            "tail_factor": tail_factor,
             "clipped_points": int(clipped_by_sweep.get(sweep_id, 0)),
             "inlier_points": int(resid_mm.size),
             "total_points": int(total_by_sweep.get(sweep_id, 0)),
@@ -3402,6 +3440,19 @@ def _compute_tau_mad_rescore_from_rows(
         per_sweep_demean["p95_abs_residual_mm"] = p95_abs_demeaned
         per_sweep_demean["mad_abs_residual_mm"] = mad_abs_raw
         per_sweep_demean["madn_residual_mm"] = robust_scale_mm
+    eps = float(np.finfo(float).eps)
+    if per_sweep_medians_mm and per_sweep_mads_mm:
+        medians_arr = np.asarray(per_sweep_medians_mm, dtype=float)
+        mads_arr = np.asarray(per_sweep_mads_mm, dtype=float)
+        med_mad = float(np.median(mads_arr))
+        if np.isfinite(med_mad) and med_mad > 0.0:
+            normalized_sweep_bias = float(abs(float(np.mean(medians_arr))) / (med_mad + eps))
+            if np.isfinite(normalized_sweep_bias):
+                per_sweep_demean["normalized_sweep_bias"] = float(normalized_sweep_bias)
+    if per_sweep_tail_factors:
+        tail_factor_median = float(np.median(np.asarray(per_sweep_tail_factors, dtype=float)))
+        if np.isfinite(tail_factor_median):
+            per_sweep_demean["tail_factor_median"] = float(tail_factor_median)
     if len(per_sweep_bias_medians) >= 2:
         medians = np.asarray(list(per_sweep_bias_medians.values()), dtype=float)
         if medians.size:
@@ -3559,6 +3610,9 @@ def _compute_tau_mad_rescore_from_rows(
         "cost_noise_normalized_rescored_tau_3bin_debiased": cost_rescored_tau_3bin_debiased,
         "chi2_red_rescored_tau_3bin_debiased": chi2_rescored_tau_3bin_debiased,
         "trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased": trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased,
+        "tail_ratio": per_sweep_demean.get("tail_ratio"),
+        "normalized_sweep_bias": per_sweep_demean.get("normalized_sweep_bias"),
+        "tail_factor_median": per_sweep_demean.get("tail_factor_median"),
         "per_sweep_residual_summary": per_sweep_summary,
         "per_sweep_bias_medians_mm": per_sweep_bias_medians,
         "per_sweep_demean": per_sweep_demean,
@@ -3808,6 +3862,38 @@ def _parse_scale_fix_levels(spec: Optional[Any], *, label: str = "--scale-fix") 
             raise ValueError(f"{label} must be a comma-separated list of integers: 1,2,3") from exc
         if val not in _SCALE_FIX_LEVELS:
             allowed = ",".join(str(v) for v in _SCALE_FIX_LEVELS)
+            raise ValueError(f"{label} allows only: {allowed}")
+        if val not in out:
+            out.append(int(val))
+    return tuple(out)
+
+
+def _parse_fit_structure_levels(
+    spec: Optional[Any],
+    *,
+    label: str = "--fit-structure",
+) -> Tuple[int, ...]:
+    if spec is None:
+        return tuple()
+    if isinstance(spec, (list, tuple, set)):
+        parts = [str(v).strip() for v in spec]
+    else:
+        text = str(spec).strip()
+        if not text:
+            return tuple()
+        if text.lower() in ("off", "none", "false", "0"):
+            return tuple()
+        parts = [p.strip() for p in text.split(",")]
+    out: List[int] = []
+    for part in parts:
+        if not part:
+            continue
+        try:
+            val = int(part)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{label} must be a comma-separated list of integers: 1,2,3") from exc
+        if val not in _FIT_STRUCTURE_LEVELS:
+            allowed = ",".join(str(v) for v in _FIT_STRUCTURE_LEVELS)
             raise ValueError(f"{label} allows only: {allowed}")
         if val not in out:
             out.append(int(val))
@@ -4515,6 +4601,7 @@ def _plan_next_ellipse_sweep(
     collector_args: Sequence[str],
     refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
+    fit_structure: Optional[Sequence[int]] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
     remapped_points = _normalize_dataset_point_roles(dataset)
@@ -4527,6 +4614,7 @@ def _plan_next_ellipse_sweep(
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
     scale_fix_levels = _parse_scale_fix_levels(scale_fix)
+    fit_structure_levels = _parse_fit_structure_levels(fit_structure)
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
@@ -4654,6 +4742,7 @@ def _plan_next_ellipse_sweep(
                 robust_debug=bool(robust_debug),
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
                 scale_fix_levels=scale_fix_levels,
+                fit_structure_levels=fit_structure_levels,
                 refreeze_iters=max(1, int(refreeze_iters)),
             )
         )
@@ -4739,6 +4828,7 @@ def _plan_next_ellipse_sweep(
             "spool_inner_iters": int(spool_inner_iters),
             "theta0_mode": theta0_mode_norm,
             "scale_fix_levels": [int(v) for v in scale_fix_levels],
+            "fit_structure_levels": [int(v) for v in fit_structure_levels],
             "radii_fit": radii_fit,
             "spool_fit": radii_fit,
         }
@@ -5014,6 +5104,7 @@ def _plan_next_ellipse_sweep(
         "line_width_mm": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
+        "fit_structure_levels": [int(v) for v in fit_structure_levels],
         "dataset_for_estimation": dataset_for_estimation,
     }
 
@@ -5359,6 +5450,8 @@ def _print_ellipse_plan(
                         f"cost_noise_normalized_demeaned={_fmt_float(per_sweep_demean.get('cost_noise_normalized_demeaned'))} "
                         f"chi2_red_demeaned={_fmt_float(per_sweep_demean.get('chi2_red_demeaned'))} "
                         f"tail_ratio={_fmt_float(per_sweep_demean.get('tail_ratio'))} "
+                        f"normalized_sweep_bias={_fmt_float(per_sweep_demean.get('normalized_sweep_bias'))} "
+                        f"tail_factor_median={_fmt_float(per_sweep_demean.get('tail_factor_median'))} "
                         f"sweep_bias_span={_fmt_float(per_sweep_demean.get('sweep_bias_span_mm'), suffix='mm')} "
                         f"n_obs={n_obs_str}"
                     )
@@ -5595,6 +5688,7 @@ def ellipse_active(
     output_with_explanations: bool,
     refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
+    fit_structure: Optional[Sequence[int]] = None,
 ) -> int:
     machine_type = _require_machine_type(
         _load_json(dataset_path),
@@ -5682,6 +5776,7 @@ def ellipse_active(
         collector_args=collector_args_eff,
         refreeze_iters=int(refreeze_iters),
         scale_fix=scale_fix,
+        fit_structure=fit_structure,
     )
 
     _print_ellipse_plan(
@@ -5803,6 +5898,7 @@ def full_auto_loop(
     full_auto_verbose: bool,
     refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
+    fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
 ) -> int:
     if work_dataset is not None:
@@ -6104,6 +6200,7 @@ def full_auto_loop(
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
         "refreeze_iters": int(max(1, int(refreeze_iters))),
         "scale_fix": [int(v) for v in _parse_scale_fix_levels(scale_fix)],
+        "fit_structure": [int(v) for v in _parse_fit_structure_levels(fit_structure)],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -6164,6 +6261,9 @@ def full_auto_loop(
                 )
                 settings["theta0_mode"] = _normalize_theta0_mode(settings.get("theta0_mode"))
                 settings["scale_fix"] = [int(v) for v in _parse_scale_fix_levels(settings.get("scale_fix"))]
+                settings["fit_structure"] = [
+                    int(v) for v in _parse_fit_structure_levels(settings.get("fit_structure"))
+                ]
 
                 raw_r0_bounds = settings.get("r0_bounds")
                 if isinstance(raw_r0_bounds, str):
@@ -6287,6 +6387,7 @@ def full_auto_loop(
                         collector_output=collector_output,
                         collector_args=collector_args_eff,
                         scale_fix=settings.get("scale_fix"),
+                        fit_structure=settings.get("fit_structure"),
                     )
 
                 primary_cost = _plan_primary_cost(plan)
@@ -6670,6 +6771,7 @@ def ellipse_loop(
     output_with_explanations: bool,
     refreeze_iters: int = 4,
     scale_fix: Optional[Sequence[int]] = None,
+    fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
 ) -> int:
     if work_dataset is not None:
@@ -6871,6 +6973,7 @@ def ellipse_loop(
             collector_output=collector_output,
             collector_args=plan_args,
             scale_fix=scale_fix,
+            fit_structure=fit_structure,
         )
         _print_ellipse_plan(
             plan,
@@ -7105,6 +7208,15 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=str,
         default="2",
         help="Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 2). Use 'off' to disable.",
+    )
+    parser.add_argument(
+        "--fit-structure",
+        type=str,
+        default="off",
+        help=(
+            "Enable fit-structure rank penalties by id (comma-separated): "
+            "1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: off)."
+        ),
     )
     parser.add_argument(
         "--refreeze-iters",
@@ -7429,6 +7541,7 @@ def _resolve_spool_cli_options(
         r0_bounds = _parse_min_max_bounds(args.r0_bounds, label="--r0-bounds")
         b_bounds = _parse_min_max_bounds(args.b_bounds, label="--b-bounds")
         scale_fix_levels = _parse_scale_fix_levels(args.scale_fix, label="--scale-fix")
+        fit_structure_levels = _parse_fit_structure_levels(args.fit_structure, label="--fit-structure")
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -7501,6 +7614,7 @@ def _resolve_spool_cli_options(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
         "scale_fix": [int(v) for v in scale_fix_levels],
+        "fit_structure": [int(v) for v in fit_structure_levels],
     }
 
 
@@ -7595,6 +7709,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spool-inner-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
     parser.add_argument("--scale-fix", default=None)
+    parser.add_argument("--fit-structure", default=None)
     parser.add_argument("--refreeze-iters", type=int, default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
@@ -7700,13 +7815,27 @@ def _plan_uses_layered_score(plan: Dict[str, object]) -> bool:
     return False
 
 
+def _noise_metric_float(noise_metrics: dict, key: str) -> Optional[float]:
+    direct = _float_or_none(noise_metrics.get(key))
+    if direct is not None:
+        return float(direct)
+    per_sweep_demean = noise_metrics.get("per_sweep_demean")
+    if isinstance(per_sweep_demean, dict):
+        nested = _float_or_none(per_sweep_demean.get(key))
+        if nested is not None:
+            return float(nested)
+    return None
+
+
 def _layered_internal_metric_from_noise_metrics(
     noise_metrics: Optional[dict],
     *,
     cost_raw: Optional[float] = None,
+    fit_structure_levels: Optional[Sequence[int]] = None,
 ) -> Optional[float]:
     if not isinstance(noise_metrics, dict):
         return None
+    fit_structure_set = set(_parse_fit_structure_levels(fit_structure_levels, label="fit_structure"))
     m_layered = None
     for key in (
         "chi2_red_rescored_tau_3bin_debiased",
@@ -7744,6 +7873,31 @@ def _layered_internal_metric_from_noise_metrics(
             + _SCORE_UI_LAYERED_N_TRIM_WEIGHT
             * max(0.0, (_SCORE_UI_LAYERED_N_TRIM_REF - n_trim) / 10.0)
         )
+
+    if 1 in fit_structure_set:
+        tail_ratio = _noise_metric_float(noise_metrics, "tail_ratio")
+        if tail_ratio is not None:
+            m_layered *= (
+                1.0
+                + _SCORE_UI_LAYERED_TAIL_RATIO_WEIGHT
+                * max(0.0, tail_ratio / _SCORE_UI_LAYERED_TAIL_RATIO_REF - 1.0)
+            )
+    if 2 in fit_structure_set:
+        normalized_sweep_bias = _noise_metric_float(noise_metrics, "normalized_sweep_bias")
+        if normalized_sweep_bias is not None:
+            m_layered *= (
+                1.0
+                + _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT
+                * max(0.0, normalized_sweep_bias / _SCORE_UI_LAYERED_SWEEP_BIAS_REF - 1.0)
+            )
+    if 3 in fit_structure_set:
+        tail_factor_median = _noise_metric_float(noise_metrics, "tail_factor_median")
+        if tail_factor_median is not None:
+            m_layered *= (
+                1.0
+                + _SCORE_UI_LAYERED_TAIL_FACTOR_WEIGHT
+                * max(0.0, tail_factor_median / _SCORE_UI_LAYERED_TAIL_FACTOR_REF - 1.0)
+            )
 
     return float(m_layered)
 
@@ -7804,6 +7958,19 @@ def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
     return _trimmed_risk_metric_from_components(noise_metrics)
 
 
+def _plan_fit_structure_levels(plan: Dict[str, object]) -> Tuple[int, ...]:
+    length_model = plan.get("length_model")
+    raw = None
+    if isinstance(length_model, dict):
+        raw = length_model.get("fit_structure_levels")
+    if raw is None:
+        raw = plan.get("fit_structure_levels")
+    try:
+        return _parse_fit_structure_levels(raw, label="fit_structure")
+    except ValueError:
+        return tuple()
+
+
 def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     noise_metrics = _plan_noise_metrics(plan)
     nm = noise_metrics if isinstance(noise_metrics, dict) else {}
@@ -7811,7 +7978,11 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     cost_raw = _float_or_none(plan.get("cost_raw"))
     tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
     n_trim = _float_or_none(nm.get("n_obs_trimmed"))
-    m_base = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
+    m_base = _layered_internal_metric_from_noise_metrics(
+        nm,
+        cost_raw=cost_raw,
+        fit_structure_levels=_plan_fit_structure_levels(plan),
+    )
     m_risk = _plan_trimmed_risk_metric(plan)
     m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
     critical_nonfinite = (
@@ -8042,6 +8213,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         output_with_explanations=bool(args.output_with_explanations),
         refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
         scale_fix=spool_opts.get("scale_fix"),
+        fit_structure=spool_opts.get("fit_structure"),
     )
 
 
@@ -8137,6 +8309,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             full_auto_verbose=bool(args.full_auto_verbose),
             refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
             scale_fix=spool_opts.get("scale_fix"),
+            fit_structure=spool_opts.get("fit_structure"),
             no_collect=bool(args.no_collect),
         )
     return ellipse_loop(
@@ -8203,6 +8376,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         output_with_explanations=bool(args.output_with_explanations),
         refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
         scale_fix=spool_opts.get("scale_fix"),
+        fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),
     )
 

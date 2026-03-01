@@ -45,6 +45,7 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
     assert opts["sigma_used_mm"] == 0.8
+    assert opts["fit_structure"] == []
 
 
 def test_spool_cli_flags_without_value_default_to_per_anchor():
@@ -182,6 +183,36 @@ def test_spool_cli_allows_disabling_scale_fixes():
     assert opts["scale_fix"] == []
 
 
+def test_spool_cli_parses_fit_structure_levels():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--fit-structure",
+            "1,3",
+        ]
+    )
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["fit_structure"] == [1, 3]
+
+
+def test_spool_cli_rejects_invalid_fit_structure_level():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--fit-structure",
+            "4",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)
+
+
 def test_spool_cli_parses_optimizer_mode():
     parser = build_ellipse_parser()
     args = parser.parse_args(
@@ -201,6 +232,12 @@ def test_full_auto_run_spec_parses_optimizer_mode_override():
     assert tokens == ["--optimizer-mode", "fast-fd", "--solve-iterations", "2"]
     assert overrides["optimizer_mode"] == "fast-fd"
     assert overrides["solve_iterations"] == 2
+
+
+def test_full_auto_run_spec_parses_fit_structure_override():
+    tokens, overrides = _parse_full_auto_run_spec("--fit-structure 2")
+    assert tokens == ["--fit-structure", "2"]
+    assert overrides["fit_structure"] == "2"
 
 
 def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
