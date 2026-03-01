@@ -324,6 +324,27 @@ def test_compute_score_ui_layered_uses_plan_fit_structure_levels():
     assert score_fit > score_base
 
 
+def test_compute_score_ui_layered_fit_structure_changes_score_for_realistic_values():
+    plan = _layered_plan(
+        primary_cost=128.4,
+        cost_raw=0.5122,
+        chi2_layered=143.9,
+        tau_mad_mm=1.0,
+        n_trim=40.0,
+    )
+    nm = plan["calibration"]["details"]["noise_metrics"]
+    nm["tail_ratio"] = 2.162
+    nm["normalized_sweep_bias"] = 0.2963
+    nm["tail_factor_median"] = 2.739
+
+    score_off, m_off = ac._compute_score_ui_layered(plan)
+    plan["length_model"]["fit_structure_levels"] = [1, 2, 3]
+    score_on, m_on = ac._compute_score_ui_layered(plan)
+
+    assert m_on > m_off
+    assert score_on > score_off
+
+
 def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
     tmp_path,
     monkeypatch,

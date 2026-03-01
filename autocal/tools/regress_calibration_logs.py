@@ -366,6 +366,8 @@ def run_active_calibrate(
         "fast",
         "--scale-fix",
         "3",
+        "--fit-structure",
+        "1,2,3",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
