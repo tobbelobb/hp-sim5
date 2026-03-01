@@ -4844,6 +4844,74 @@ def _plan_next_ellipse_sweep(
                 details = {}
                 cal["details"] = details
             details["noise_metrics"] = noise_metrics
+
+    ranking_noise_metrics: Optional[dict] = None
+    ranking_cost_raw: Optional[float] = None
+    if bool(search_radii or search_buildup):
+        try:
+            ranking_cost_raw_eval = _evaluate_cost_at_anchors(
+                dataset_for_estimation,
+                anchors,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=False,
+                pointwise_global_mad=False,
+                sweep_wise_filtering=False,
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=False,
+                sigma_source=str(sigma_source),
+            )
+            ranking_cost_raw_f = _float_or_none(ranking_cost_raw_eval)
+            if ranking_cost_raw_f is not None:
+                ranking_cost_raw = float(ranking_cost_raw_f)
+        except Exception:
+            ranking_cost_raw = None
+
+        try:
+            ranking_cost_fn = _build_ellipse_cost_function(
+                dataset_for_estimation,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=False,
+                pointwise_global_mad=False,
+                sweep_wise_filtering=False,
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=True,
+                sigma_source=str(sigma_source),
+            )
+            anchor_vec = np.asarray(anchors, dtype=float).ravel()
+            ranking_detailed = ranking_cost_fn.evaluate_detailed(anchor_vec)
+            ranking_noise_metrics = (
+                dict(ranking_detailed.noise_metrics)
+                if isinstance(ranking_detailed.noise_metrics, dict)
+                else None
+            )
+            if isinstance(ranking_noise_metrics, dict):
+                ranking_sigma_model_mm = ranking_noise_metrics.get("sigma_model_mm")
+                if _float_or_none(ranking_sigma_model_mm) is None:
+                    ranking_sigma_model_mm = ranking_noise_metrics.get("sigma_used_mm")
+                if _float_or_none(ranking_sigma_model_mm) is None and isinstance(noise_metrics, dict):
+                    ranking_sigma_model_mm = noise_metrics.get("sigma_model_mm")
+                    if _float_or_none(ranking_sigma_model_mm) is None:
+                        ranking_sigma_model_mm = noise_metrics.get("sigma_used_mm")
+                ranking_rows = ranking_cost_fn.pointwise_residual_rows(anchor_vec)
+                ranking_rescored = _compute_tau_mad_rescore_from_rows(
+                    ranking_rows,
+                    cost_noise_normalized_old=ranking_detailed.total_cost,
+                    chi2_red_old=ranking_noise_metrics.get("chi2_red"),
+                    sigma_model_mm=ranking_sigma_model_mm,
+                    params_count=ranking_noise_metrics.get("params"),
+                )
+                ranking_noise_metrics.update(ranking_rescored)
+        except Exception:
+            ranking_noise_metrics = None
+
     cov_scaled, cov_scale, cov_scale_label = _scale_covariance(cov, noise_metrics)
     ci = _confidence_intervals(cov_scaled)
     workspace_diag = _workspace_diag_mm(
@@ -5015,6 +5083,8 @@ def _plan_next_ellipse_sweep(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
         "dataset_for_estimation": dataset_for_estimation,
+        "ranking_noise_metrics": ranking_noise_metrics,
+        "ranking_cost_raw": ranking_cost_raw,
     }
 
 
@@ -7675,6 +7745,13 @@ def _plan_noise_metrics(plan: Dict[str, object]) -> Optional[dict]:
     return None
 
 
+def _plan_ranking_noise_metrics(plan: Dict[str, object]) -> Optional[dict]:
+    nm = plan.get("ranking_noise_metrics")
+    if isinstance(nm, dict):
+        return nm
+    return _plan_noise_metrics(plan)
+
+
 def _plan_primary_cost(plan: Dict[str, object]) -> float:
     raw = plan.get("cost_noise_normalized", plan.get("cost", float("nan")))
     try:
@@ -7693,7 +7770,7 @@ def _plan_uses_layered_score(plan: Dict[str, object]) -> bool:
         for key in ("find_radii", "find_buildup_factor"):
             if bool(length_model.get(key)):
                 return True
-    noise_metrics = _plan_noise_metrics(plan)
+    noise_metrics = _plan_ranking_noise_metrics(plan)
     if isinstance(noise_metrics, dict):
         if _float_or_none(noise_metrics.get("chi2_red_rescored_tau_3bin_debiased")) is not None:
             return True
@@ -7796,7 +7873,7 @@ def _blend_internal_metric_with_risk(
 
 
 def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
-    noise_metrics = _plan_noise_metrics(plan)
+    noise_metrics = _plan_ranking_noise_metrics(plan)
     if not isinstance(noise_metrics, dict):
         return None
 
@@ -7805,10 +7882,12 @@ def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
 
 
 def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
-    noise_metrics = _plan_noise_metrics(plan)
+    noise_metrics = _plan_ranking_noise_metrics(plan)
     nm = noise_metrics if isinstance(noise_metrics, dict) else {}
 
-    cost_raw = _float_or_none(plan.get("cost_raw"))
+    cost_raw = _float_or_none(plan.get("ranking_cost_raw"))
+    if cost_raw is None:
+        cost_raw = _float_or_none(plan.get("cost_raw"))
     tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
     n_trim = _float_or_none(nm.get("n_obs_trimmed"))
     m_base = _layered_internal_metric_from_noise_metrics(nm, cost_raw=cost_raw)
@@ -7833,9 +7912,12 @@ def _plan_score_ui(plan: Dict[str, object]) -> Tuple[float, float, str]:
     # score_ui is a calibrated fit-quality score, not a literal chi-square.
     if _plan_uses_layered_score(plan):
         score_ui, m_layered = _compute_score_ui_layered(plan)
+        cost_raw = _float_or_none(plan.get("ranking_cost_raw"))
+        if cost_raw is None:
+            cost_raw = _float_or_none(plan.get("cost_raw"))
         rank_score = _layered_rank_score_from_internal_metric(
             m_layered,
-            cost_raw=_float_or_none(plan.get("cost_raw")),
+            cost_raw=cost_raw,
         )
         if not np.isfinite(rank_score):
             rank_score = score_ui if np.isfinite(score_ui) else float("inf")
