@@ -82,6 +82,59 @@ def test_report_dataset_can_colorize_verdicts():
     assert "\x1b[31mworse\x1b[0m" in text
 
 
+def test_report_dataset_shows_extra_generated_iterations():
+    ref_summary = rcl.Params(
+        anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
+        radii=[39.184, 39.184, 39.184],
+        score=2000.0,
+    )
+    gen_summary = rcl.Params(
+        anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
+        radii=[39.184, 39.184, 39.184],
+        score=100.0,
+    )
+    ref = rcl.ParsedLog(
+        summary=ref_summary,
+        iterations=[
+            rcl.Iteration(
+                anchors=[(10.0, -1890.0), (1640.0, 955.0), (-1640.0, 955.0)],
+                radii=[40.0, 40.0, 40.0],
+                score=2000.0,
+            ),
+        ],
+        summary_block_lines=["== Calibration summary ==", "Fit quality score: 2000.0"],
+    )
+    gen = rcl.ParsedLog(
+        summary=gen_summary,
+        iterations=[
+            rcl.Iteration(
+                anchors=[(12.0, -1888.0), (1638.0, 957.0), (-1638.0, 957.0)],
+                radii=[40.1, 40.1, 40.1],
+                score=2100.0,
+            ),
+            rcl.Iteration(
+                anchors=gen_summary.anchors,
+                radii=gen_summary.radii,
+                score=100.0,
+            ),
+        ],
+        summary_block_lines=["== Calibration summary ==", "Fit quality score: 100.0"],
+    )
+
+    _, lines, _ = rcl.report_dataset(
+        name="demo",
+        ref=ref,
+        gen=gen,
+        tol_mm_total=10.0,
+        fail_on_score_mismatch=True,
+        color=False,
+    )
+    text = "\n".join(lines)
+    assert "ITERATIONS: ref=1 gen=2" in text
+    assert "missing" in text
+    assert "100.000" in text
+
+
 def test_prepare_isolated_dataset_copy_creates_unique_paths(tmp_path):
     src = tmp_path / "demo.json"
     src.write_text('{"x": 1}', encoding="utf-8")

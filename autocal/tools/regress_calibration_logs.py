@@ -507,7 +507,7 @@ def report_dataset(
         lines.append("ITERATIONS: COUNT MISMATCH => FAIL")
         ok = False
 
-    n = min(n_ref, n_gen)
+    n = max(n_ref, n_gen)
     # Track worst param delta among iterations (between ref and gen)
     worst_iter_delta = 0.0
     mismatches = 0
@@ -516,8 +516,33 @@ def report_dataset(
     # but we still compute everything.
     detailed_rows: List[List[str]] = []
     for i in range(n):
-        r = ref.iterations[i]
-        g = gen.iterations[i]
+        r = ref.iterations[i] if i < n_ref else None
+        g = gen.iterations[i] if i < n_gen else None
+
+        # If one side is missing, keep row visible so users can see extra iterations.
+        if r is None or g is None:
+            r_true = error_to_true(r.anchors, r.radii) if r is not None else None
+            g_true = error_to_true(g.anchors, g.radii) if g is not None else None
+            detailed_rows.append(
+                [
+                    str(i),
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "missing",
+                    fmt(r_true[0]) if r_true else "N/A",
+                    fmt(g_true[0]) if g_true else "N/A",
+                    "N/A",
+                    "N/A",
+                    fmt(r.score) if r is not None else "N/A",
+                    fmt(g.score) if g is not None else "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                ]
+            )
+            ok = False
+            continue
 
         d = total_param_distance(g.anchors, g.radii, r.anchors, r.radii)
         if d is None:
