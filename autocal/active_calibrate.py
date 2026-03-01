@@ -1212,11 +1212,10 @@ def _estimate_effective_radii_with_spool_model(
         buildup_arr = np.asarray(buildup_factor, dtype=float).reshape(-1)
         anchors_arr = np.asarray(anchors_eval, dtype=float)
         spool_start, transformed_start = _build_dataset_and_params(radii_arr, buildup_arr)
-        # EXPERIMENT: objective 2 everywhere => use (_data_cost + _prior_cost).
-        start_cost = float(
-            _data_cost(transformed_start, anchors_arr)
-            + _prior_cost(np.asarray(radii_arr, dtype=float), np.asarray(buildup_arr, dtype=float))
-        )
+        # EXPERIMENT: unify objective (site 5) with prefit objective.
+        # start_cost = float(_data_cost(transformed_start, anchors_arr))
+        start_cost, _start_valid_sweeps, _start_invalid_sweeps = _ellipse_prefit_score(transformed_start)
+        start_cost = float(start_cost)
         info: Dict[str, object] = {
             "attempted": True,
             "success": False,
@@ -1260,11 +1259,10 @@ def _estimate_effective_radii_with_spool_model(
                 return out
             anchors_try = np.asarray(anchors_arr * float(scale), dtype=float)
             spool_try, transformed_try = _build_dataset_and_params(radii_try, buildup_arr)
-            # EXPERIMENT: objective 2 everywhere => use (_data_cost + _prior_cost).
-            cost_try = float(
-                _data_cost(transformed_try, anchors_try)
-                + _prior_cost(np.asarray(radii_try, dtype=float), np.asarray(buildup_arr, dtype=float))
-            )
+            # EXPERIMENT: unify objective (site 5) with prefit objective.
+            # cost_try = float(_data_cost(transformed_try, anchors_try))
+            cost_try, _valid_sweeps_try, _invalid_sweeps_try = _ellipse_prefit_score(transformed_try)
+            cost_try = float(cost_try)
             if not np.isfinite(cost_try):
                 out = (float("inf"), radii_try, anchors_try, spool_try, transformed_try)
                 eval_cache[key] = out
@@ -1428,23 +1426,28 @@ def _estimate_effective_radii_with_spool_model(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
+                ellipse_cost, valid_sweeps, _ = _ellipse_prefit_score(transformed_try)
+                if valid_sweeps <= 0 or not np.isfinite(ellipse_cost):
+                    prefit_cache[key] = 1e12
+                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
+                    return 1e12
                 data_cost = float(_data_cost(transformed_try, anchors_current))
                 if not np.isfinite(data_cost):
                     prefit_cache[key] = 1e12
-                    prefit_parts_cache[key] = (float("nan"), float("nan"), 0, 0)
+                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
                 prior_cost = float(_prior_cost(radii_try, buildup_try))
-                # EXPERIMENT: objective 2 everywhere => (_data_cost + _prior_cost).
-                score = float(data_cost + prior_cost)
+                lambda_prior = 0
+                score = float(ellipse_cost + lambda_prior*prior_cost)
                 if not np.isfinite(score):
                     prefit_cache[key] = 1e12
-                    prefit_parts_cache[key] = (float("nan"), float("nan"), 0, 0)
+                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
                 prefit_cache[key] = float(score)
                 prefit_parts_cache[key] = (
-                    float(data_cost),
+                    float(ellipse_cost),
                     float(prior_cost),
-                    0,
+                    int(valid_sweeps),
                     0,
                 )
                 return float(score)
@@ -1719,18 +1722,22 @@ def _estimate_effective_radii_with_spool_model(
 
     for outer_idx in range(outer_iters):
         spool_params_current, transformed_current = _build_dataset_and_params(radii_current, buildup_current)
-        current_cost = float(_data_cost(transformed_current, anchors_current))
+        # EXPERIMENT: unify objective (site 4) with prefit objective.
+        # current_cost = float(_data_cost(transformed_current, anchors_current))
+        current_cost, _current_valid_sweeps, _current_invalid_sweeps = _ellipse_prefit_score(transformed_current)
+        current_cost = float(current_cost)
         current_prior = float(_prior_cost(radii_current, buildup_current))
         current_total_cost = (
             float(current_cost + current_prior)
             if np.isfinite(current_cost) and np.isfinite(current_prior)
             else float("inf")
         )
-        # EXPERIMENT: objective 2 everywhere => rank by total objective.
-        current_rank_score = float(current_total_cost) if np.isfinite(current_total_cost) else float("inf")
+        # EXPERIMENT: unify objective (site 4) with prefit objective.
+        # current_rank_score, current_rank_internal = _spool_rank_score(transformed_current, anchors_current)
+        current_rank_score = float(current_cost) if np.isfinite(current_cost) else float("inf")
         current_rank_internal = (
-            float(current_total_cost)
-            if isinstance(current_total_cost, (int, float)) and np.isfinite(float(current_total_cost))
+            float(current_cost)
+            if isinstance(current_cost, (int, float)) and np.isfinite(float(current_cost))
             else None
         )
 
@@ -1762,12 +1769,17 @@ def _estimate_effective_radii_with_spool_model(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-                data_cost = _data_cost(transformed_try, anchors_current)
+                # EXPERIMENT: unify objective (site 2) with prefit objective.
+                # data_cost = _data_cost(transformed_try, anchors_current)
+                data_cost, _valid_sweeps_try, _invalid_sweeps_try = _ellipse_prefit_score(transformed_try)
+                data_cost = float(data_cost)
                 if not np.isfinite(data_cost):
                     objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
-                prior = _prior_cost(radii_try, buildup_try)
-                score = float(data_cost + prior)
+                # EXPERIMENT: prefit objective excludes prior term.
+                # prior = _prior_cost(radii_try, buildup_try)
+                prior = 0.0
+                score = float(data_cost)
                 if not np.isfinite(score):
                     objective_cache[key] = 1e12
                     objective_parts_cache[key] = (float("nan"), float("nan"))
@@ -1875,7 +1887,10 @@ def _estimate_effective_radii_with_spool_model(
             fixed_buildup_factor=modeled_b,
         )
         spool_params_opt, transformed_opt = _build_dataset_and_params(radii_opt, buildup_opt)
-        spool_cost_fixed = float(_data_cost(transformed_opt, anchors_current))
+        # EXPERIMENT: unify objective (site 2) with prefit objective.
+        # spool_cost_fixed = float(_data_cost(transformed_opt, anchors_current))
+        spool_cost_fixed, _spool_valid_sweeps, _spool_invalid_sweeps = _ellipse_prefit_score(transformed_opt)
+        spool_cost_fixed = float(spool_cost_fixed)
         spool_prior = float(_prior_cost(radii_opt, buildup_opt))
 
         scale_fix1_ratio = None
@@ -1886,7 +1901,10 @@ def _estimate_effective_radii_with_spool_model(
             scale_try = _uniform_radius_scale(radii_opt, radii_current)
             if scale_try is not None and abs(float(scale_try) - 1.0) > 1e-12:
                 anchors_scaled = np.asarray(anchors_current * float(scale_try), dtype=float)
-                scaled_cost = float(_data_cost(transformed_opt, anchors_scaled))
+                # EXPERIMENT: unify objective (site 2) with prefit objective.
+                # scaled_cost = float(_data_cost(transformed_opt, anchors_scaled))
+                scaled_cost, _scaled_valid_sweeps, _scaled_invalid_sweeps = _ellipse_prefit_score(transformed_opt)
+                scaled_cost = float(scaled_cost)
                 if np.isfinite(scaled_cost):
                     improve_tol_fix1 = max(1e-9, 1e-4 * max(1.0, abs(float(spool_cost_fixed))))
                     if scaled_cost + improve_tol_fix1 < float(spool_cost_fixed):
@@ -1901,40 +1919,16 @@ def _estimate_effective_radii_with_spool_model(
         cal_step_noise_metrics: Optional[dict] = None
         anchor_step_restarts = max(1, min(2, int(solve_restarts)))
         anchor_step_iterations = max(40, min(160, int(solve_iterations)))
-        try:
-            cal_step = calibrate_elliptical(
-                transformed_opt,
-                output_path=None,
-                residual_threshold=float(residual_threshold),
-                num_restarts=int(anchor_step_restarts),
-                max_iterations=int(anchor_step_iterations),
-                method=str(solve_optimizer),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                verbose=False,
-                use_parallel=False,
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                robust_debug=False,
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                sigma_source=str(sigma_source),
-                generate_report=False,
-                residuals_csv=None,
-                initial_guess=anchors_step_seed,
-            )
-            cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
-            if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
-                np.isfinite(cand_anchors)
-            ):
-                anchors_candidate = cand_anchors
-                anchor_step_success = True
-                anchor_cost = float(_data_cost(transformed_opt, anchors_candidate))
-                cal_step_noise_metrics = _extract_noise_metrics(cal_step)
-        except Exception:
-            anchor_step_success = False
+        # EXPERIMENT: unify objective (site 3) with prefit objective.
+        # Prefit objective depends on transformed sweep geometry, not anchors, so
+        # we skip anchor optimization in this quick experiment.
+        # try:
+        #     cal_step = calibrate_elliptical(...)
+        # except Exception:
+        #     anchor_step_success = False
+        _ = anchor_step_restarts
+        _ = anchor_step_iterations
+        anchor_step_success = False
 
         accepted_anchors = np.asarray(anchors_step_seed, dtype=float)
         accepted_cost = float(anchors_step_seed_cost)
@@ -1943,11 +1937,12 @@ def _estimate_effective_radii_with_spool_model(
             if np.isfinite(accepted_cost) and np.isfinite(spool_prior)
             else float("inf")
         )
-        # EXPERIMENT: objective 2 everywhere => rank by total objective.
-        accepted_rank_score = float(accepted_total_cost) if np.isfinite(accepted_total_cost) else float("inf")
+        # EXPERIMENT: unify objective (site 4) with prefit objective.
+        # accepted_rank_score, accepted_rank_internal = _spool_rank_score(...)
+        accepted_rank_score = float(accepted_cost) if np.isfinite(accepted_cost) else float("inf")
         accepted_rank_internal = (
-            float(accepted_total_cost)
-            if isinstance(accepted_total_cost, (int, float)) and np.isfinite(float(accepted_total_cost))
+            float(accepted_cost)
+            if isinstance(accepted_cost, (int, float)) and np.isfinite(float(accepted_cost))
             else None
         )
         accepted_alpha = 0.0
@@ -1960,7 +1955,10 @@ def _estimate_effective_radii_with_spool_model(
                         anchors_step_seed + (anchors_candidate - anchors_step_seed) * float(alpha),
                         dtype=float,
                     )
-                cost_try = float(_data_cost(transformed_opt, anchors_try))
+                # EXPERIMENT: unify objective (site 4) with prefit objective.
+                # cost_try = float(_data_cost(transformed_opt, anchors_try))
+                cost_try, _valid_sweeps_try, _invalid_sweeps_try = _ellipse_prefit_score(transformed_opt)
+                cost_try = float(cost_try)
                 if not np.isfinite(cost_try):
                     continue
                 total_try = (
@@ -1970,13 +1968,12 @@ def _estimate_effective_radii_with_spool_model(
                 )
                 if not np.isfinite(total_try):
                     continue
-                # EXPERIMENT: objective 2 everywhere => rank by total objective.
                 noise_hint = cal_step_noise_metrics if alpha >= 1.0 - 1e-12 else None
                 _ = noise_hint
-                rank_try = float(total_try) if np.isfinite(total_try) else float("inf")
+                rank_try = float(cost_try) if np.isfinite(cost_try) else float("inf")
                 rank_internal_try = (
-                    float(total_try)
-                    if isinstance(total_try, (int, float)) and np.isfinite(float(total_try))
+                    float(cost_try)
+                    if isinstance(cost_try, (int, float)) and np.isfinite(float(cost_try))
                     else None
                 )
                 if _rank_better(rank_try, total_try, accepted_rank_score, accepted_total_cost):
@@ -2033,13 +2030,14 @@ def _estimate_effective_radii_with_spool_model(
             if np.isfinite(candidate_data_cost) and np.isfinite(candidate_prior_cost)
             else float("inf")
         )
-        # EXPERIMENT: objective 2 everywhere => rank by total objective.
+        # EXPERIMENT: unify objective (site 4) with prefit objective.
+        # candidate_rank_score, candidate_rank_internal = _spool_rank_score(...)
         candidate_rank_score = (
-            float(accepted_total_cost) if np.isfinite(accepted_total_cost) else float("inf")
+            float(candidate_data_cost) if np.isfinite(candidate_data_cost) else float("inf")
         )
         candidate_rank_internal = (
-            float(accepted_total_cost)
-            if isinstance(accepted_total_cost, (int, float)) and np.isfinite(float(accepted_total_cost))
+            float(candidate_data_cost)
+            if isinstance(candidate_data_cost, (int, float)) and np.isfinite(float(candidate_data_cost))
             else None
         )
 
@@ -2307,8 +2305,11 @@ def _estimate_effective_radii_with_spool_model(
                 if np.isfinite(polished_cost) and np.isfinite(prior_after)
                 else float("inf")
             )
-            # EXPERIMENT: objective 2 everywhere => rank by total objective.
-            polished_rank_score = float(polished_total_cost)
+            # EXPERIMENT: unify objective (site 5 final acceptance) with prefit objective.
+            # polished_rank_score, polished_rank_internal = _spool_rank_score(...)
+            polished_rank_score, _polished_valid_sweeps, _polished_invalid_sweeps = _ellipse_prefit_score(
+                transformed_polished
+            )
             polished_rank_internal = (
                 float(polished_rank_score)
                 if isinstance(polished_rank_score, (int, float)) and np.isfinite(float(polished_rank_score))
