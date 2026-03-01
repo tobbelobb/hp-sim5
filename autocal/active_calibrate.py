@@ -1153,6 +1153,7 @@ def _estimate_effective_radii_with_spool_model(
             m_layered = _layered_internal_metric_from_noise_metrics(
                 noise_metrics,
                 fit_structure_levels=fit_structure_set,
+                use_fit_structure_penalties=False,
             )
             risk_metric = _spool_trimmed_risk_metric(
                 transformed_dataset,
@@ -7832,10 +7833,15 @@ def _layered_internal_metric_from_noise_metrics(
     *,
     cost_raw: Optional[float] = None,
     fit_structure_levels: Optional[Sequence[int]] = None,
+    use_fit_structure_penalties: bool = True,
 ) -> Optional[float]:
     if not isinstance(noise_metrics, dict):
         return None
-    fit_structure_set = set(_parse_fit_structure_levels(fit_structure_levels, label="fit_structure"))
+    fit_structure_set: set[int] = set()
+    if use_fit_structure_penalties:
+        fit_structure_set = set(
+            _parse_fit_structure_levels(fit_structure_levels, label="fit_structure")
+        )
     m_layered = None
     for key in (
         "chi2_red_rescored_tau_3bin_debiased",

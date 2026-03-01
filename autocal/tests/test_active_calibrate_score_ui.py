@@ -271,6 +271,40 @@ def test_layered_internal_metric_fit_structure_bias_and_tail_factor_penalties():
     assert np.isclose(penalized, expected, atol=1e-12)
 
 
+def test_layered_internal_metric_can_disable_fit_structure_penalties():
+    noise_metrics = {
+        "chi2_red_rescored_tau_3bin_debiased": 64.0,
+        "tau_mad_mm": 1.0,
+        "n_obs_trimmed": 40.0,
+        "tail_ratio": 3.2,
+        "normalized_sweep_bias": 0.8,
+        "tail_factor_median": 5.0,
+    }
+    base = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=0.8,
+        fit_structure_levels=[],
+    )
+    with_fit_structure = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=0.8,
+        fit_structure_levels=[1, 2, 3],
+        use_fit_structure_penalties=True,
+    )
+    without_fit_structure = ac._layered_internal_metric_from_noise_metrics(
+        noise_metrics,
+        cost_raw=0.8,
+        fit_structure_levels=[1, 2, 3],
+        use_fit_structure_penalties=False,
+    )
+
+    assert base is not None
+    assert with_fit_structure is not None
+    assert without_fit_structure is not None
+    assert with_fit_structure > base
+    assert np.isclose(without_fit_structure, base, atol=1e-12)
+
+
 def test_compute_score_ui_layered_uses_plan_fit_structure_levels():
     plan = _layered_plan(
         primary_cost=74.11,
@@ -280,7 +314,7 @@ def test_compute_score_ui_layered_uses_plan_fit_structure_levels():
         n_trim=40.0,
     )
     nm = plan["calibration"]["details"]["noise_metrics"]
-    nm["tail_ratio"] = 2.2
+    nm["tail_ratio"] = 3.2
 
     score_base, m_base = ac._compute_score_ui_layered(plan)
     plan["length_model"]["fit_structure_levels"] = [1]
