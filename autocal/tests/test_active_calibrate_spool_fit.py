@@ -1896,6 +1896,148 @@ def test_final_scale_polish_requires_rank_improvement(monkeypatch):
     assert final_polish.get("accepted") is False
 
 
+def test_final_scale_polish_requires_total_objective_improvement(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+
+    def fake_build_spool_model_params(
+        dataset,
+        *,
+        base_radii_mm,
+        modeled_radii_mm,
+        modeled_buildup_factor,
+        spool_to_motor_gearing_factor,
+        mechanical_advantage,
+        lines_per_spool,
+        base_buildup_factor=None,
+        theta0_mode="zero",
+        prefer_zero_tension_angles=False,
+    ):
+        _ = (
+            dataset,
+            base_radii_mm,
+            spool_to_motor_gearing_factor,
+            mechanical_advantage,
+            lines_per_spool,
+            base_buildup_factor,
+            theta0_mode,
+            prefer_zero_tension_angles,
+        )
+        return {
+            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
+            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
+        }
+
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
+        return {
+            "num_anchors": int(dataset.get("num_anchors", 3)),
+            "sweeps": [],
+            "_spool_r": float(np.median(np.asarray(spool_params["radii_mm"], dtype=float))),
+        }
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = dataset_or_path
+        return {"anchors": np.asarray(kwargs.get("initial_guess"), dtype=float), "cost": 0.0}
+
+    # Data term prefers a slight up-scale (anchor mean near 1.05).
+    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
+        _ = (dataset, kwargs)
+        anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
+        return float(50.0 + 100.0 * (anchor_mean - 1.05) ** 2.0)
+
+    class FakeCostFn:
+        def __init__(self, transformed_dataset):
+            self._spool_r = float(transformed_dataset.get("_spool_r", 30.0))
+
+        # Ranking favors larger radii so data-only polish would pass rank gating.
+        def evaluate_detailed(self, anchor_vec):
+            _ = anchor_vec
+            chi2_layered = max(1.0, 20.0 - 4.0 * (self._spool_r - 30.0))
+            noise_metrics = {
+                "chi2_red_rescored_tau_3bin_debiased": chi2_layered,
+                "chi2_red": chi2_layered,
+                "n_obs_trimmed": 60.0,
+                "tau_mad_mm": 0.6,
+                "params": 6,
+                "sigma_model_mm": 1.0,
+            }
+            return SimpleNamespace(total_cost=1.0, noise_metrics=noise_metrics)
+
+        def pointwise_residual_rows(self, anchor_vec):
+            _ = anchor_vec
+            return []
+
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters, objective)
+        return np.asarray(x0, dtype=float).reshape(-1), {
+            "success": True,
+            "message": "stubbed optimizer",
+            "nfev": 1,
+            "nit": 0,
+            "step_final": [],
+        }
+
+    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
+    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
+    monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
+    monkeypatch.setattr(
+        ac,
+        "_spool_seed_candidates",
+        lambda x0, lo, hi: [np.asarray(x0, dtype=float).reshape(-1)],
+    )
+
+    dataset = {"num_anchors": 3, "sweeps": []}
+    seed_anchors = np.ones((3, 2), dtype=float)
+    eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=np.zeros(3, dtype=float),
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=0.2,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        scale_fix_levels=(2,),
+    )
+
+    final_polish = fit_info.get("final_scale_polish", {})
+    assert final_polish.get("attempted") is True
+    assert final_polish.get("accepted_total_objective") is False
+    assert final_polish.get("accepted") is False
+    assert np.median(np.asarray(eff_r, dtype=float)) == pytest.approx(30.0, abs=1e-9)
+
+
 def test_spool_block_update_rolls_back_when_not_improving(monkeypatch):
     base = np.array([10.0, 10.0, 10.0], dtype=float)
 

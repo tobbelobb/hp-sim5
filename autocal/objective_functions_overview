@@ -26,7 +26,7 @@ There are multiple objectives in play. They are related, but not identical.
   5. Scale polish
 
   - Function: _run_uniform_scale_polish:1202
-  - It searches a uniform scale s for radii+anchors and evaluates data cost only (_data_cost), then may accept by data-cost improvement internally.
+  - It searches a uniform scale s for radii+anchors and evaluates total cost (_data_cost + _prior_cost), then may accept by total-objective improvement internally.
   - Later final acceptance into “best” is gated by rank comparator in final block:
     rank_accept = _rank_better(...):2298
 

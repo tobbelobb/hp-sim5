@@ -1231,63 +1231,119 @@ def _estimate_effective_radii_with_spool_model(
         buildup_arr = np.asarray(buildup_factor, dtype=float).reshape(-1)
         anchors_arr = np.asarray(anchors_eval, dtype=float)
         spool_start, transformed_start = _build_dataset_and_params(radii_arr, buildup_arr)
-        start_cost = float(_data_cost(transformed_start, anchors_arr))
+        start_data_cost = float(_data_cost(transformed_start, anchors_arr))
+        start_prior_cost = float(_prior_cost(radii_arr, buildup_arr))
+        start_total_cost = (
+            float(start_data_cost + start_prior_cost)
+            if np.isfinite(start_data_cost) and np.isfinite(start_prior_cost)
+            else float("inf")
+        )
+        data_improve_tol = (
+            max(1e-9, 1e-4 * max(1.0, abs(float(start_data_cost))))
+            if np.isfinite(start_data_cost)
+            else 1e-9
+        )
         info: Dict[str, object] = {
             "attempted": True,
             "success": False,
             "accepted": False,
+            "accepted_data_cost": False,
+            "accepted_total_objective": False,
             "start_scale": 1.0,
-            "start_data_cost": (float(start_cost) if np.isfinite(start_cost) else None),
+            "start_data_cost": (float(start_data_cost) if np.isfinite(start_data_cost) else None),
+            "start_prior_cost": (float(start_prior_cost) if np.isfinite(start_prior_cost) else None),
+            "start_total_cost": (float(start_total_cost) if np.isfinite(start_total_cost) else None),
             "best_scale": 1.0,
-            "best_data_cost": (float(start_cost) if np.isfinite(start_cost) else None),
+            "best_data_cost": (float(start_data_cost) if np.isfinite(start_data_cost) else None),
+            "best_prior_cost": (float(start_prior_cost) if np.isfinite(start_prior_cost) else None),
+            "best_total_cost": (float(start_total_cost) if np.isfinite(start_total_cost) else None),
             "coarse_points": int(max(3, int(coarse_points))),
             "refined": False,
             "message": "scale_polish_not_run",
         }
         if not search_r:
             info["message"] = "scale polish skipped (find_radii=off)"
-            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_data_cost), info
         if not np.isfinite(s_lo) or not np.isfinite(s_hi) or s_hi <= s_lo:
             info["message"] = "scale polish skipped (invalid bounds)"
-            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_data_cost), info
         if not np.all(np.isfinite(radii_arr)) or np.any(radii_arr <= 0.0):
             info["message"] = "scale polish skipped (invalid radii)"
-            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_data_cost), info
         if anchors_arr.ndim != 2 or anchors_arr.shape[0] != num_anchors or not np.all(np.isfinite(anchors_arr)):
             info["message"] = "scale polish skipped (invalid anchors)"
-            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+            return radii_arr, anchors_arr, spool_start, transformed_start, float(start_data_cost), info
 
-        eval_cache: Dict[float, Tuple[float, np.ndarray, np.ndarray, SpoolModelParams, dict]] = {}
+        eval_cache: Dict[
+            float,
+            Tuple[float, float, float, np.ndarray, np.ndarray, SpoolModelParams, dict],
+        ] = {}
 
-        def _eval_scale(scale: float) -> Tuple[float, np.ndarray, np.ndarray, SpoolModelParams, dict]:
+        def _eval_scale(
+            scale: float,
+        ) -> Tuple[float, float, float, np.ndarray, np.ndarray, SpoolModelParams, dict]:
             key = float(np.round(float(scale), decimals=9))
             cached = eval_cache.get(key)
             if cached is not None:
                 return cached
             if not np.isfinite(scale) or scale <= 0.0:
-                out = (float("inf"), radii_arr, anchors_arr, spool_start, transformed_start)
+                out = (
+                    float("inf"),
+                    float("inf"),
+                    float("inf"),
+                    radii_arr,
+                    anchors_arr,
+                    spool_start,
+                    transformed_start,
+                )
                 eval_cache[key] = out
                 return out
             radii_try = np.asarray(radii_arr * float(scale), dtype=float)
             if not _radii_respect_bounds(radii_try):
-                out = (float("inf"), radii_arr, anchors_arr, spool_start, transformed_start)
+                out = (
+                    float("inf"),
+                    float("inf"),
+                    float("inf"),
+                    radii_arr,
+                    anchors_arr,
+                    spool_start,
+                    transformed_start,
+                )
                 eval_cache[key] = out
                 return out
             anchors_try = np.asarray(anchors_arr * float(scale), dtype=float)
             spool_try, transformed_try = _build_dataset_and_params(radii_try, buildup_arr)
-            cost_try = float(_data_cost(transformed_try, anchors_try))
-            if not np.isfinite(cost_try):
-                out = (float("inf"), radii_try, anchors_try, spool_try, transformed_try)
-                eval_cache[key] = out
-                return out
-            out = (float(cost_try), radii_try, anchors_try, spool_try, transformed_try)
+            data_cost_try = float(_data_cost(transformed_try, anchors_try))
+            prior_cost_try = float(_prior_cost(radii_try, buildup_arr))
+            total_cost_try = (
+                float(data_cost_try + prior_cost_try)
+                if np.isfinite(data_cost_try) and np.isfinite(prior_cost_try)
+                else float("inf")
+            )
+            out = (
+                float(total_cost_try),
+                float(data_cost_try),
+                float(prior_cost_try),
+                radii_try,
+                anchors_try,
+                spool_try,
+                transformed_try,
+            )
             eval_cache[key] = out
             return out
 
         grid_count = max(3, int(coarse_points))
         grid = np.linspace(float(s_lo), float(s_hi), grid_count)
         best_idx = -1
-        best_eval = (float("inf"), radii_arr, anchors_arr, spool_start, transformed_start)
+        best_eval = (
+            float(start_total_cost),
+            float(start_data_cost),
+            float(start_prior_cost),
+            radii_arr,
+            anchors_arr,
+            spool_start,
+            transformed_start,
+        )
         for idx, s in enumerate(grid):
             eval_row = _eval_scale(float(s))
             if np.isfinite(eval_row[0]) and (not np.isfinite(best_eval[0]) or eval_row[0] + 1e-12 < best_eval[0]):
@@ -1313,29 +1369,54 @@ def _estimate_effective_radii_with_spool_model(
                 except Exception:
                     pass
 
-        best_cost = float(best_eval[0])
-        improve_tol = max(1e-9, 1e-4 * max(1.0, abs(float(start_cost)))) if np.isfinite(start_cost) else 1e-9
-        if np.isfinite(best_cost):
-            best_scale = _uniform_radius_scale(best_eval[1], radii_arr)
+        best_total_cost = float(best_eval[0])
+        best_data_cost = float(best_eval[1])
+        best_prior_cost = float(best_eval[2])
+        improve_tol = (
+            max(1e-9, 1e-4 * max(1.0, abs(float(start_total_cost))))
+            if np.isfinite(start_total_cost)
+            else 1e-9
+        )
+        if np.isfinite(best_total_cost):
+            best_scale = _uniform_radius_scale(best_eval[3], radii_arr)
             if best_scale is not None and np.isfinite(best_scale):
                 info["best_scale"] = float(best_scale)
-            info["best_data_cost"] = float(best_cost)
-        if np.isfinite(best_cost) and np.isfinite(start_cost) and best_cost + improve_tol < float(start_cost):
+        if np.isfinite(best_data_cost):
+            info["best_data_cost"] = float(best_data_cost)
+        if np.isfinite(best_prior_cost):
+            info["best_prior_cost"] = float(best_prior_cost)
+        if np.isfinite(best_total_cost):
+            info["best_total_cost"] = float(best_total_cost)
+        info["accepted_data_cost"] = bool(
+            np.isfinite(best_data_cost)
+            and np.isfinite(start_data_cost)
+            and best_data_cost + data_improve_tol < float(start_data_cost)
+        )
+        if (
+            np.isfinite(best_total_cost)
+            and np.isfinite(start_total_cost)
+            and best_total_cost + improve_tol < float(start_total_cost)
+        ):
             info["success"] = True
             info["accepted"] = True
-            info["message"] = "scale polish improved data cost"
+            info["accepted_total_objective"] = True
+            info["message"] = "scale polish improved total objective"
             return (
-                np.asarray(best_eval[1], dtype=float),
-                np.asarray(best_eval[2], dtype=float),
-                best_eval[3],
-                best_eval[4],
-                float(best_cost),
+                np.asarray(best_eval[3], dtype=float),
+                np.asarray(best_eval[4], dtype=float),
+                best_eval[5],
+                best_eval[6],
+                float(best_data_cost),
                 info,
             )
-        info["success"] = bool(np.isfinite(best_cost))
+        info["success"] = bool(np.isfinite(best_total_cost))
         info["accepted"] = False
-        info["message"] = "scale polish did not improve"
-        return radii_arr, anchors_arr, spool_start, transformed_start, float(start_cost), info
+        info["accepted_total_objective"] = False
+        if bool(info.get("accepted_data_cost", False)):
+            info["message"] = "scale polish rejected (total objective did not improve)"
+        else:
+            info["message"] = "scale polish did not improve total objective"
+        return radii_arr, anchors_arr, spool_start, transformed_start, float(start_data_cost), info
 
     def _ellipse_prefit_score(transformed_dataset: dict) -> Tuple[float, int, int]:
         sweeps = transformed_dataset.get("sweeps")
@@ -2320,7 +2401,7 @@ def _estimate_effective_radii_with_spool_model(
                 best_rank_ref,
                 best_total_ref,
             )
-            final_scale_polish_info["accepted_data_cost"] = True
+            final_scale_polish_info["accepted_total_objective"] = True
             final_scale_polish_info["candidate_rank_score"] = (
                 float(polished_rank_score_f) if np.isfinite(polished_rank_score_f) else None
             )
