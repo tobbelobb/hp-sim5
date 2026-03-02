@@ -93,6 +93,9 @@ class DatasetRunResult:
     generated_log: Optional[Path]
     reference_log: Optional[Path]
     true_err_total_delta: Optional[float] = None
+    true_gen_iter_mean: Optional[float] = None
+    true_gen_iter_std: Optional[float] = None
+    true_gen_iter_count: int = 0
 
 
 # ---------- Parsing helpers ----------
@@ -273,6 +276,26 @@ def error_to_true(anchors: Optional[List[Tuple[float, float]]], radii: Optional[
     return (ad + rd, ad, rd)
 
 
+def compute_true_gen_iter_stats(iterations: List[Iteration]) -> Tuple[Optional[float], Optional[float], int]:
+    values: List[float] = []
+    for it in iterations:
+        v = error_to_true(it.anchors, it.radii)
+        if v is None:
+            continue
+        total = float(v[0])
+        if math.isfinite(total):
+            values.append(total)
+
+    n = len(values)
+    if n == 0:
+        return None, None, 0
+    mean = sum(values) / n
+    if n == 1:
+        return mean, 0.0, 1
+    var = sum((x - mean) ** 2 for x in values) / n
+    return mean, math.sqrt(var), n
+
+
 def dir_label(delta: float, eps: float = 0.0) -> str:
     if abs(delta) <= eps:
         return "equal"
@@ -367,7 +390,7 @@ def run_active_calibrate(
         "--scale-fix",
         "3",
         "--fit-structure",
-        "1,2,3",
+        "3",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
@@ -417,6 +440,7 @@ def report_dataset(
     lines: List[str] = []
     ok = True
     true_err_total_delta: Optional[float] = None
+    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(gen.iterations)
 
     # ---- Summary ----
     lines.append(f"\n========= {name} =========")
@@ -476,7 +500,9 @@ def report_dataset(
                 summary_rows.append(["true_err_anchors", fmt(ref_true[1]), fmt(gen_true[1]), fmt(gen_true[1] - ref_true[1]), "-"])
                 summary_rows.append(["true_err_R*2π", fmt(ref_true[2]), fmt(gen_true[2]), fmt(gen_true[2] - ref_true[2]), "-"])
                 lines.append(
-                    f"RUN_TRACKER: true_err_total delta(gen-ref)={fmt(true_err_total_delta)} [{dir_label(true_err_total_delta)}]"
+                    f"RUN_TRACKER: true_err_total delta(gen-ref)={fmt(true_err_total_delta)} [{dir_label(true_err_total_delta)}], "
+                    f"true_gen_iter_mean={fmt(true_gen_iter_mean)}, true_gen_iter_std={fmt(true_gen_iter_std)} "
+                    f"(n={true_gen_iter_count})"
                 )
 
             lines.append("Calibration summary:")
@@ -735,6 +761,7 @@ def run_one_dataset(
 
     ref_parsed = parse_log_file(ref_log_path)
     gen_parsed = parse_log_file(gen_log_path)
+    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(gen_parsed.iterations)
 
     ok, lines, true_err_total_delta = report_dataset(
         name=name,
@@ -751,6 +778,9 @@ def run_one_dataset(
         generated_log=gen_log_path,
         reference_log=ref_log_path,
         true_err_total_delta=true_err_total_delta,
+        true_gen_iter_mean=true_gen_iter_mean,
+        true_gen_iter_std=true_gen_iter_std,
+        true_gen_iter_count=true_gen_iter_count,
     )
 
 
@@ -848,15 +878,29 @@ def main() -> int:
             for r in completed_sorted:
                 d = r.true_err_total_delta
                 if d is not None and math.isfinite(d):
-                    rows.append([r.name, fmt(d), dir_label(d)])
+                    rows.append([
+                        r.name,
+                        fmt(d),
+                        dir_label(d),
+                        fmt(r.true_gen_iter_mean),
+                        fmt(r.true_gen_iter_std),
+                        str(r.true_gen_iter_count),
+                    ])
                     sum_delta += float(d)
                     sum_count += 1
                 else:
-                    rows.append([r.name, "N/A", "N/A"])
+                    rows.append([
+                        r.name,
+                        "N/A",
+                        "N/A",
+                        fmt(r.true_gen_iter_mean),
+                        fmt(r.true_gen_iter_std),
+                        str(r.true_gen_iter_count),
+                    ])
 
-            print("\nRUN_TRACKER: true_err_total delta(gen-ref) by dataset")
+            print("\nRUN_TRACKER: true_err_total delta(gen-ref) and true_gen iter stats by dataset")
             for line in format_table(
-                headers=["dataset", "delta(gen-ref)", "verdict"],
+                headers=["dataset", "delta(gen-ref)", "verdict", "true_gen_mean", "true_gen_std", "n_true_gen"],
                 rows=rows,
             ):
                 print("  " + line)

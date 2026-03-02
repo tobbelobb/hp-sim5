@@ -1,4 +1,5 @@
 import importlib.util
+import math
 import sys
 from pathlib import Path
 
@@ -65,6 +66,9 @@ def test_report_dataset_has_readable_summary_and_verdicts():
     assert "verdict" in text
     assert "worse" in text
     assert "RUN_TRACKER: true_err_total delta(gen-ref)=" in text
+    assert "true_gen_iter_mean=" in text
+    assert "true_gen_iter_std=0.000" in text
+    assert "(n=1)" in text
     assert isinstance(true_delta, float)
 
 
@@ -148,6 +152,28 @@ def test_prepare_isolated_dataset_copy_creates_unique_paths(tmp_path):
     assert second.read_text(encoding="utf-8") == src.read_text(encoding="utf-8")
 
 
+def test_compute_true_gen_iter_stats_returns_mean_and_std():
+    iters = [
+        rcl.Iteration(
+            anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
+            radii=[39.184, 39.184, 39.184],
+            score=1.0,
+        ),
+        rcl.Iteration(
+            anchors=[(1.0, -1900.0), (1645.44826719, 951.0), (-1644.44826719, 950.0)],
+            radii=[39.184, 39.184, 39.184],
+            score=2.0,
+        ),
+    ]
+
+    mean, std, count = rcl.compute_true_gen_iter_stats(iters)
+    assert count == 2
+    assert mean is not None
+    assert std is not None
+    assert math.isclose(mean, 1.5, rel_tol=1e-9, abs_tol=1e-9)
+    assert math.isclose(std, 1.5, rel_tol=1e-9, abs_tol=1e-9)
+
+
 def test_run_active_calibrate_passes_full_auto_log(monkeypatch, tmp_path):
     captured = {}
 
@@ -171,3 +197,46 @@ def test_run_active_calibrate_passes_full_auto_log(monkeypatch, tmp_path):
     assert "--full-auto-log" in captured["cmd"]
     idx = captured["cmd"].index("--full-auto-log")
     assert captured["cmd"][idx + 1] == str(jsonl)
+
+
+def test_main_run_tracker_summary_includes_true_gen_stats(monkeypatch, tmp_path, capsys):
+    repo_root = tmp_path
+    (repo_root / "autocal").mkdir()
+    (repo_root / "autocal" / "active_calibrate.py").write_text("# stub\n", encoding="utf-8")
+    (repo_root / "data").mkdir()
+    (repo_root / "refs").mkdir()
+    (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
+    (repo_root / "refs" / "demo.full_auto_reference_run_feb_26.log").write_text("log", encoding="utf-8")
+
+    monkeypatch.setattr(rcl, "DATASETS", ["demo"])
+
+    def fake_run_one_dataset(**kwargs):
+        return rcl.DatasetRunResult(
+            name="demo",
+            ok=True,
+            lines=["demo lines"],
+            generated_log=repo_root / "generated.log",
+            reference_log=repo_root / "refs" / "demo.full_auto_reference_run_feb_26.log",
+            true_err_total_delta=1.25,
+            true_gen_iter_mean=4.5,
+            true_gen_iter_std=0.75,
+            true_gen_iter_count=3,
+        )
+
+    monkeypatch.setattr(rcl, "run_one_dataset", fake_run_one_dataset)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["prog", "--repo-root", str(repo_root), "--data-dir", "data", "--ref-dir", "refs"],
+    )
+
+    rc = rcl.main()
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert "RUN_TRACKER: true_err_total delta(gen-ref) and true_gen iter stats by dataset" in out
+    assert "true_gen_mean" in out
+    assert "true_gen_std" in out
+    assert "n_true_gen" in out
+    assert "4.500" in out
+    assert "0.750" in out
