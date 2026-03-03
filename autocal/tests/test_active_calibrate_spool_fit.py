@@ -2657,12 +2657,15 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
     assert bool(refreeze_history[0].get("prefit_enabled", False)) is True
     assert bool(refreeze_history[1].get("prefit_enabled", True)) is False
     assert bool(refreeze_history[2].get("prefit_enabled", True)) is False
+    assert str(refreeze_history[0].get("freeze_phase", "")) == "warmup_no_freeze"
+    assert str(refreeze_history[1].get("freeze_phase", "")) == "warmup_no_freeze"
+    assert str(refreeze_history[2].get("freeze_phase", "")) == "warmup_no_freeze"
     assert bool(refreeze_history[0].get("pointwise_filtering", True)) is False
     assert bool(refreeze_history[1].get("pointwise_filtering", True)) is False
-    assert bool(refreeze_history[2].get("pointwise_filtering", False)) is True
+    assert bool(refreeze_history[2].get("pointwise_filtering", True)) is False
     assert bool(refreeze_history[0].get("sweep_wise_filtering", True)) is False
     assert bool(refreeze_history[1].get("sweep_wise_filtering", True)) is False
-    assert bool(refreeze_history[2].get("sweep_wise_filtering", False)) is True
+    assert bool(refreeze_history[2].get("sweep_wise_filtering", True)) is False
     assert bool(refreeze_history[0].get("scale_fix_2_active", True)) is False
     assert bool(refreeze_history[1].get("scale_fix_2_active", True)) is False
     assert bool(refreeze_history[2].get("scale_fix_2_active", False)) is True
@@ -2724,6 +2727,69 @@ def test_scale_fix_3_applies_final_polish_on_every_refreeze_pass(monkeypatch):
     assert bool(refreeze_history[0].get("final_scale_polish_attempted", False)) is True
     assert bool(refreeze_history[1].get("final_scale_polish_attempted", False)) is True
     assert bool(refreeze_history[2].get("final_scale_polish_attempted", False)) is True
+
+
+def test_refreeze_filter_schedule_follows_3_2_3_freeze_phases(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_r = np.array([39.0, 39.0, 39.0], dtype=float)
+    target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=target_r, target_buildup=target_k)
+
+    dataset = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2, "sweeps": []}
+    seed_anchors = np.zeros((3, 2), dtype=float)
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=target_k,
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=(20.0, 45.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=5,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=True,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        scale_fix_levels=[2],
+        refreeze_iters=8,
+    )
+
+    refreeze_history = fit_info.get("refreeze_history")
+    assert isinstance(refreeze_history, list)
+    assert len(refreeze_history) == 8
+    phases = [str(item.get("freeze_phase", "")) for item in refreeze_history]
+    assert phases == [
+        "warmup_no_freeze",
+        "warmup_no_freeze",
+        "warmup_no_freeze",
+        "refreeze_dynamic",
+        "refreeze_dynamic",
+        "refreeze_constant_mask",
+        "refreeze_constant_mask",
+        "refreeze_constant_mask",
+    ]
+    pointwise_flags = [bool(item.get("pointwise_filtering", False)) for item in refreeze_history]
+    sweep_flags = [bool(item.get("sweep_wise_filtering", False)) for item in refreeze_history]
+    assert pointwise_flags == [False, False, False, True, True, True, True, True]
+    assert sweep_flags == [False, False, False, True, True, True, True, True]
 
 
 def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):

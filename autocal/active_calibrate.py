@@ -736,17 +736,30 @@ def _estimate_effective_radii_with_spool_model(
         refreeze_history: List[Dict[str, object]] = []
         final_tuple: Optional[Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]] = None
         final_calibration: Optional[Dict[str, object]] = None
+        no_freeze_count = min(3, requested_refreeze_iters)
+        refreeze_count = min(2, max(0, requested_refreeze_iters - no_freeze_count))
+        refreeze_end_idx = no_freeze_count + refreeze_count
+        refreeze_pointwise_filtering = bool(pointwise_filtering)
+        refreeze_sweep_wise_filtering = bool(sweep_wise_filtering)
 
         for refreeze_idx in range(requested_refreeze_iters):
             pass_enable_prefit = bool(enable_prefit) if refreeze_idx == 0 else False
             pass_enable_bootstrap = (
                 bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
             )
-            pass_pointwise_filtering = bool(pointwise_filtering)
-            pass_sweep_wise_filtering = bool(sweep_wise_filtering)
-            if refreeze_idx < 2:
+            pass_freeze_phase = "refreeze_constant_mask"
+            if refreeze_idx < no_freeze_count:
+                pass_freeze_phase = "warmup_no_freeze"
                 pass_pointwise_filtering = False
                 pass_sweep_wise_filtering = False
+            elif refreeze_idx < refreeze_end_idx:
+                pass_freeze_phase = "refreeze_dynamic"
+                pass_pointwise_filtering = bool(refreeze_pointwise_filtering)
+                pass_sweep_wise_filtering = bool(refreeze_sweep_wise_filtering)
+            else:
+                # Keep the same filtering mask policy as the refreeze stage.
+                pass_pointwise_filtering = bool(refreeze_pointwise_filtering)
+                pass_sweep_wise_filtering = bool(refreeze_sweep_wise_filtering)
             pass_scale_fix_set = set(scale_fix_set)
             # scale_fix 2: final polish only on the last refreeze pass.
             # scale_fix 3: final polish on every refreeze pass.
@@ -840,6 +853,7 @@ def _estimate_effective_radii_with_spool_model(
                     "refreeze_iter": int(refreeze_idx + 1),
                     "prefit_enabled": bool(pass_enable_prefit),
                     "bootstrap_enabled": bool(pass_enable_bootstrap),
+                    "freeze_phase": str(pass_freeze_phase),
                     "pointwise_filtering": bool(pass_pointwise_filtering),
                     "sweep_wise_filtering": bool(pass_sweep_wise_filtering),
                     "scale_fix_levels": [int(v) for v in sorted(pass_scale_fix_set)],
