@@ -227,7 +227,7 @@ def test_spool_fit_anchor_step_caps_solver_settings(monkeypatch):
 
     dataset = {"num_anchors": 3, "sweeps": []}
     seed_anchors = np.zeros((3, 2), dtype=float)
-    ac._estimate_effective_radii_with_spool_model(
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
         dataset,
         seed_anchors,
         find_radii_mode="per-anchor",
@@ -260,7 +260,7 @@ def test_spool_fit_anchor_step_caps_solver_settings(monkeypatch):
         robust_debug=True,
     )
 
-    assert len(calls) == 3
+    assert len(calls) in (2, 3)
     assert np.allclose(np.asarray(calls[0].get("initial_guess"), dtype=float), np.zeros((3, 2), dtype=float))
     for kwargs in calls:
         assert int(kwargs.get("num_restarts", 0)) == 2
@@ -268,6 +268,69 @@ def test_spool_fit_anchor_step_caps_solver_settings(monkeypatch):
         assert kwargs.get("pointwise_filtering") is True
         assert kwargs.get("sweep_wise_filtering") is True
         assert kwargs.get("robust_debug") is False
+    history = fit_info.get("history")
+    assert isinstance(history, list) and len(history) == 2
+    assert bool(history[0].get("anchor_step_triggered")) is True
+    assert history[1].get("anchor_step_trigger_reason") in (
+        "spool_objective_improved",
+        "spool_objective_not_improved",
+    )
+
+
+def test_anchor_step_skips_when_spool_objective_does_not_improve(monkeypatch):
+    base = np.array([10.0, 10.0, 10.0], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=base, target_buildup=np.zeros(3, dtype=float))
+
+    calls = []
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = dataset_or_path
+        calls.append(dict(kwargs))
+        return {"anchors": np.asarray(kwargs.get("initial_guess"), dtype=float), "cost": 0.0}
+
+    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+
+    dataset = {"num_anchors": 3, "sweeps": []}
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        np.zeros((3, 2), dtype=float),
+        find_radii_mode="off",
+        find_buildup_mode="global",
+        base_radii_mm=base,
+        modeled_buildup_factor=np.zeros(3, dtype=float),
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=None,
+        b_bounds=(0.0, 0.2),
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=1e9,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        enable_prefit=False,
+        enable_bootstrap_anchor_refresh=False,
+    )
+
+    assert calls == []
+    history = fit_info.get("history")
+    assert isinstance(history, list) and history
+    assert history[0].get("anchor_step_triggered") is False
+    assert history[0].get("anchor_step_trigger_reason") == "spool_objective_not_improved"
 
 
 def test_coordinate_descent_shrinks_non_improving_axes():
@@ -2320,8 +2383,13 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
         *,
         prefer_zero_tension_angles=False,
     ):
-        _ = (spool_params, prefer_zero_tension_angles)
-        return {"num_anchors": int(dataset.get("num_anchors", 3)), "sweeps": []}
+        _ = prefer_zero_tension_angles
+        k_vals = np.asarray(spool_params["buildup_factor"], dtype=float).reshape(-1)
+        return {
+            "num_anchors": int(dataset.get("num_anchors", 3)),
+            "sweeps": [],
+            "_spool_b": float(np.median(k_vals)) if k_vals.size else 0.0,
+        }
 
     def fake_calibrate_elliptical(dataset_or_path, **kwargs):
         _ = (dataset_or_path, kwargs)
@@ -2329,9 +2397,10 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
         return {"anchors": anchors, "cost": 1.0}
 
     def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
-        _ = (dataset, kwargs)
+        _ = kwargs
         arr = np.asarray(anchors, dtype=float)
-        return float(np.sum(arr**2.0))
+        b = float(dataset.get("_spool_b", 0.0))
+        return float(np.sum(arr**2.0) + 100.0 * (b - 0.25) ** 2.0)
 
     class FakeCostFn:
         def evaluate_detailed(self, anchor_vec):

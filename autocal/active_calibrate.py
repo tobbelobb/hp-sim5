@@ -61,6 +61,7 @@ _SCORE_UI_LAYERED_MAP_EXP = 5.0
 _SCORE_UI_LAYERED_MAP_MULT = 1.0
 _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT = 0.5
 _SCORE_UI_HARD_FAIL = 50.0
+_SPOOL_ANCHOR_STEP_IMPROVE_REL = 1e-4
 
 from autocal.active_learning import (
     SweepConfig,
@@ -976,6 +977,19 @@ def _estimate_effective_radii_with_spool_model(
             r_mean = float(np.mean(radii_arr))
             prior += float(np.sum(((radii_arr - r_mean) / sigma_rpair) ** 2.0))
         return float(prior)
+
+    def _spool_anchor_step_gate(
+        start_total: float,
+        fitted_total: float,
+    ) -> Tuple[bool, float, float]:
+        if not np.isfinite(start_total) or not np.isfinite(fitted_total):
+            return False, float("nan"), float("nan")
+        improvement = float(start_total) - float(fitted_total)
+        threshold = max(
+            1e-9,
+            float(_SPOOL_ANCHOR_STEP_IMPROVE_REL) * max(1.0, abs(float(start_total))),
+        )
+        return bool(improvement > threshold), float(improvement), float(threshold)
 
     # Keep spool-step data term aligned with the main optimization metric.
     spool_noise_normalized = True
@@ -2195,6 +2209,11 @@ def _estimate_effective_radii_with_spool_model(
         fitted_data_cost, fitted_prior_cost, fitted_total_cost = _objective_cost_parts(x_opt)
         opt_info["start_cost"] = float(start_total_cost)
         opt_info["fitted_cost"] = float(fitted_total_cost)
+        (
+            run_anchor_step,
+            anchor_step_trigger_improvement,
+            anchor_step_trigger_threshold,
+        ) = _spool_anchor_step_gate(current_total_cost, fitted_total_cost)
 
         radii_opt, buildup_opt = _unpack_spool_opt_vector(
             x_opt,
@@ -2231,40 +2250,41 @@ def _estimate_effective_radii_with_spool_model(
         cal_step_noise_metrics: Optional[dict] = None
         anchor_step_restarts = max(1, min(2, int(solve_restarts)))
         anchor_step_iterations = max(40, min(160, int(solve_iterations)))
-        try:
-            cal_step = calibrate_elliptical(
-                transformed_opt,
-                output_path=None,
-                residual_threshold=float(residual_threshold),
-                num_restarts=int(anchor_step_restarts),
-                max_iterations=int(anchor_step_iterations),
-                method=str(solve_optimizer),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                verbose=False,
-                use_parallel=False,
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                robust_debug=False,
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                sigma_source=str(sigma_source),
-                generate_report=False,
-                residuals_csv=None,
-                initial_guess=anchors_step_seed,
-            )
-            cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
-            if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
-                np.isfinite(cand_anchors)
-            ):
-                anchors_candidate = cand_anchors
-                anchor_step_success = True
-                anchor_cost = float(_data_cost(transformed_opt, anchors_candidate))
-                cal_step_noise_metrics = _extract_noise_metrics(cal_step)
-        except Exception:
-            anchor_step_success = False
+        if run_anchor_step:
+            try:
+                cal_step = calibrate_elliptical(
+                    transformed_opt,
+                    output_path=None,
+                    residual_threshold=float(residual_threshold),
+                    num_restarts=int(anchor_step_restarts),
+                    max_iterations=int(anchor_step_iterations),
+                    method=str(solve_optimizer),
+                    spring_k_multiplier=float(spring_k_multiplier),
+                    use_flex=bool(use_flex),
+                    verbose=False,
+                    use_parallel=False,
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    robust_debug=False,
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    sigma_source=str(sigma_source),
+                    generate_report=False,
+                    residuals_csv=None,
+                    initial_guess=anchors_step_seed,
+                )
+                cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
+                if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
+                    np.isfinite(cand_anchors)
+                ):
+                    anchors_candidate = cand_anchors
+                    anchor_step_success = True
+                    anchor_cost = float(_data_cost(transformed_opt, anchors_candidate))
+                    cal_step_noise_metrics = _extract_noise_metrics(cal_step)
+            except Exception:
+                anchor_step_success = False
 
         accepted_anchors = np.asarray(anchors_step_seed, dtype=float)
         accepted_cost = float(anchors_step_seed_cost)
@@ -2488,6 +2508,22 @@ def _estimate_effective_radii_with_spool_model(
                 ),
                 "spool_data_cost_scale_seed": (
                     float(anchors_step_seed_cost) if np.isfinite(anchors_step_seed_cost) else None
+                ),
+                "anchor_step_triggered": bool(run_anchor_step),
+                "anchor_step_trigger_reason": (
+                    "spool_objective_improved"
+                    if bool(run_anchor_step)
+                    else "spool_objective_not_improved"
+                ),
+                "anchor_step_trigger_improvement": (
+                    float(anchor_step_trigger_improvement)
+                    if np.isfinite(anchor_step_trigger_improvement)
+                    else None
+                ),
+                "anchor_step_trigger_threshold": (
+                    float(anchor_step_trigger_threshold)
+                    if np.isfinite(anchor_step_trigger_threshold)
+                    else None
                 ),
                 "anchor_step_success": bool(anchor_step_success),
                 "anchor_cost": float(anchor_cost) if np.isfinite(anchor_cost) else None,
@@ -2736,6 +2772,7 @@ def _estimate_effective_radii_with_spool_model(
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
         "optimization_objective": "legacy_data_cost + w*risk_trimmed_direct",
+        "anchor_step_improvement_rel_threshold": float(_SPOOL_ANCHOR_STEP_IMPROVE_REL),
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
         "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
         "scale_fix_1_enabled": bool(use_scale_fix_1),
