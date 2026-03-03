@@ -2639,7 +2639,7 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
         spring_k_multiplier=1.0,
         use_flex=False,
         pointwise_residual_mode="sampson",
-        pointwise_filtering=False,
+        pointwise_filtering=True,
         pointwise_global_mad=False,
         sweep_wise_filtering=True,
         sweep_metric="mad",
@@ -2657,6 +2657,9 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
     assert bool(refreeze_history[0].get("prefit_enabled", False)) is True
     assert bool(refreeze_history[1].get("prefit_enabled", True)) is False
     assert bool(refreeze_history[2].get("prefit_enabled", True)) is False
+    assert bool(refreeze_history[0].get("pointwise_filtering", True)) is False
+    assert bool(refreeze_history[1].get("pointwise_filtering", True)) is False
+    assert bool(refreeze_history[2].get("pointwise_filtering", False)) is True
     assert bool(refreeze_history[0].get("sweep_wise_filtering", True)) is False
     assert bool(refreeze_history[1].get("sweep_wise_filtering", True)) is False
     assert bool(refreeze_history[2].get("sweep_wise_filtering", False)) is True
