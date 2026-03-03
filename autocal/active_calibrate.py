@@ -995,6 +995,201 @@ def _estimate_effective_radii_with_spool_model(
     elif anchors_current.ndim == 2 and anchors_current.shape[1] > 0:
         dimensions_for_risk = int(anchors_current.shape[1])
 
+    eval_bundle_cache: List[Tuple[dict, Tuple[float, ...], Dict[str, object]]] = []
+    cost_fn_cache: List[Tuple[dict, EllipseCostFunction]] = []
+
+    def _cached_cost_fn(transformed_dataset: dict) -> Optional[EllipseCostFunction]:
+        for ds_ref, cost_fn_ref in reversed(cost_fn_cache):
+            if ds_ref is transformed_dataset:
+                return cost_fn_ref
+        try:
+            cost_fn = _build_ellipse_cost_function(
+                transformed_dataset,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=bool(spool_noise_normalized),
+                sigma_source=str(sigma_source),
+            )
+        except Exception:
+            return None
+        cost_fn_cache.append((transformed_dataset, cost_fn))
+        if len(cost_fn_cache) > 16:
+            del cost_fn_cache[: (len(cost_fn_cache) - 16)]
+        return cost_fn
+
+    def _cached_eval_state_get(
+        transformed_dataset: dict,
+        anchor_key: Tuple[float, ...],
+    ) -> Optional[Dict[str, object]]:
+        for ds_ref, key_ref, state_ref in reversed(eval_bundle_cache):
+            if ds_ref is transformed_dataset and key_ref == anchor_key:
+                return state_ref
+        return None
+
+    def _cached_eval_state_set(
+        transformed_dataset: dict,
+        anchor_key: Tuple[float, ...],
+        state: Dict[str, object],
+    ) -> None:
+        for idx in range(len(eval_bundle_cache) - 1, -1, -1):
+            ds_ref, key_ref, _state_ref = eval_bundle_cache[idx]
+            if ds_ref is transformed_dataset and key_ref == anchor_key:
+                eval_bundle_cache[idx] = (transformed_dataset, anchor_key, state)
+                return
+        eval_bundle_cache.append((transformed_dataset, anchor_key, state))
+        if len(eval_bundle_cache) > 64:
+            del eval_bundle_cache[: (len(eval_bundle_cache) - 64)]
+
+    def _get_eval_state(
+        transformed_dataset: dict,
+        anchors_eval: np.ndarray,
+    ) -> Dict[str, object]:
+        anchor_vec = np.asarray(anchors_eval, dtype=float).ravel()
+        anchor_key = tuple(float(v) for v in np.asarray(anchor_vec, dtype=float).tolist())
+        cached = _cached_eval_state_get(transformed_dataset, anchor_key)
+        if cached is not None:
+            return cached
+
+        state: Dict[str, object] = {
+            "anchor_vec": np.asarray(anchor_vec, dtype=float),
+            "legacy_cost": float("inf"),
+            "legacy_ready": False,
+            "cost_fn": None,
+            "detailed_total_cost": None,
+            "base_noise_metrics": {},
+            "base_risk_metric": None,
+            "rows": None,
+            "rescored_noise_metrics": None,
+            "rescored_risk_metric": None,
+        }
+
+        cost_fn = _cached_cost_fn(transformed_dataset)
+        state["cost_fn"] = cost_fn
+        if cost_fn is not None:
+            try:
+                detailed = cost_fn.evaluate_detailed(anchor_vec)
+                detailed_total = float(detailed.total_cost)
+                base_noise = (
+                    dict(detailed.noise_metrics)
+                    if isinstance(detailed.noise_metrics, dict)
+                    else {}
+                )
+                state["detailed_total_cost"] = detailed_total
+                state["base_noise_metrics"] = base_noise
+                state["base_risk_metric"] = _trimmed_risk_metric_from_components(base_noise)
+            except Exception:
+                pass
+
+        _cached_eval_state_set(transformed_dataset, anchor_key, state)
+        return state
+
+    def _ensure_bundle_legacy_cost(
+        state: Dict[str, object],
+        transformed_dataset: dict,
+        anchors_eval: np.ndarray,
+    ) -> float:
+        if bool(state.get("legacy_ready", False)):
+            return float(state.get("legacy_cost", float("inf")))
+
+        legacy_cost = float("inf")
+        cost_fn = state.get("cost_fn")
+        default_eval_cost_fn = globals().get("_DEFAULT_EVALUATE_COST_AT_ANCHORS", None)
+        eval_cost_overridden = (
+            callable(default_eval_cost_fn)
+            and _evaluate_cost_at_anchors is not default_eval_cost_fn
+        )
+        if (
+            not eval_cost_overridden
+            and cost_fn is not None
+            and hasattr(cost_fn, "evaluate")
+            and callable(getattr(cost_fn, "evaluate", None))
+        ):
+            try:
+                anchor_vec = np.asarray(state.get("anchor_vec"), dtype=float).ravel()
+                legacy_cost = float(cost_fn.evaluate(anchor_vec))
+            except Exception:
+                legacy_cost = float("inf")
+        if eval_cost_overridden or not np.isfinite(legacy_cost):
+            legacy_cost = float(
+                _evaluate_cost_at_anchors(
+                    transformed_dataset,
+                    anchors_eval,
+                    residual_threshold=float(residual_threshold),
+                    spring_k_multiplier=float(spring_k_multiplier),
+                    use_flex=bool(use_flex),
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    noise_normalized=bool(spool_noise_normalized),
+                    sigma_source=str(sigma_source),
+                )
+            )
+        state["legacy_cost"] = float(legacy_cost)
+        state["legacy_ready"] = True
+        return float(legacy_cost)
+
+    def _ensure_bundle_rows_rescored(
+        state: Dict[str, object],
+    ) -> Tuple[Optional[List[dict]], Optional[dict], Optional[float]]:
+        cached_noise = state.get("rescored_noise_metrics")
+        if isinstance(cached_noise, dict):
+            cached_rows = state.get("rows")
+            cached_risk = state.get("rescored_risk_metric")
+            return (
+                cached_rows if isinstance(cached_rows, list) else None,
+                dict(cached_noise),
+                (
+                    float(cached_risk)
+                    if isinstance(cached_risk, (int, float)) and np.isfinite(cached_risk)
+                    else None
+                ),
+            )
+
+        rows: Optional[List[dict]] = None
+        base_noise = state.get("base_noise_metrics")
+        noise_metrics = dict(base_noise) if isinstance(base_noise, dict) else {}
+        cost_fn = state.get("cost_fn")
+        if (
+            cost_fn is not None
+            and hasattr(cost_fn, "pointwise_residual_rows")
+            and callable(getattr(cost_fn, "pointwise_residual_rows", None))
+        ):
+            try:
+                anchor_vec = np.asarray(state.get("anchor_vec"), dtype=float).ravel()
+                rows = cost_fn.pointwise_residual_rows(anchor_vec)
+                sigma_model_mm = noise_metrics.get("sigma_model_mm")
+                if _float_or_none(sigma_model_mm) is None:
+                    sigma_model_mm = noise_metrics.get("sigma_used_mm")
+                rescored = _compute_tau_mad_rescore_from_rows(
+                    rows,
+                    cost_noise_normalized_old=(
+                        state.get("detailed_total_cost")
+                        if state.get("detailed_total_cost") is not None
+                        else noise_metrics.get("cost_noise_normalized_old")
+                    ),
+                    chi2_red_old=noise_metrics.get("chi2_red"),
+                    sigma_model_mm=sigma_model_mm,
+                    params_count=noise_metrics.get("params"),
+                )
+                noise_metrics = {**noise_metrics, **rescored}
+            except Exception:
+                pass
+        risk_metric = _trimmed_risk_metric_from_components(noise_metrics)
+        state["rows"] = rows
+        state["rescored_noise_metrics"] = dict(noise_metrics)
+        state["rescored_risk_metric"] = risk_metric
+        return rows, dict(noise_metrics), risk_metric
+
     def _spool_rel_std(
         transformed_dataset: dict,
         anchors_eval: np.ndarray,
@@ -1051,6 +1246,82 @@ def _estimate_effective_radii_with_spool_model(
         except Exception:
             return None
 
+    def _eval_bundle(
+        transformed_dataset: dict,
+        anchors_eval: np.ndarray,
+        *,
+        noise_metrics_hint: Optional[dict] = None,
+        rows_policy: str = "if_missing",
+        need_legacy_cost: bool = False,
+    ) -> Tuple[float, Optional[dict], Optional[List[dict]], Optional[float]]:
+        rows_policy_norm = str(rows_policy or "if_missing").strip().lower()
+        if rows_policy_norm not in ("never", "if-missing", "if_missing", "always"):
+            rows_policy_norm = "if_missing"
+        if rows_policy_norm == "if-missing":
+            rows_policy_norm = "if_missing"
+
+        legacy_cost = float("inf")
+        rows: Optional[List[dict]] = None
+        noise_metrics: Optional[dict]
+        risk_metric: Optional[float]
+
+        if isinstance(noise_metrics_hint, dict):
+            noise_metrics = dict(noise_metrics_hint)
+            risk_metric = _trimmed_risk_metric_from_components(noise_metrics)
+            if need_legacy_cost:
+                state = _get_eval_state(transformed_dataset, anchors_eval)
+                legacy_cost = _ensure_bundle_legacy_cost(
+                    state,
+                    transformed_dataset,
+                    anchors_eval,
+                )
+            return (
+                float(legacy_cost),
+                noise_metrics,
+                rows,
+                risk_metric,
+            )
+
+        state = _get_eval_state(transformed_dataset, anchors_eval)
+        base_noise = state.get("base_noise_metrics")
+        noise_metrics = dict(base_noise) if isinstance(base_noise, dict) else {}
+        base_risk = state.get("base_risk_metric")
+        if isinstance(base_risk, (int, float)) and np.isfinite(base_risk):
+            risk_metric = float(base_risk)
+        else:
+            risk_metric = _trimmed_risk_metric_from_components(noise_metrics)
+
+        use_rescored = False
+        if rows_policy_norm == "always":
+            use_rescored = True
+        elif (
+            rows_policy_norm == "if_missing"
+            and _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct")) is None
+        ):
+            use_rescored = True
+
+        if use_rescored:
+            rows_rescored, noise_rescored, risk_rescored = _ensure_bundle_rows_rescored(state)
+            rows = rows_rescored
+            noise_metrics = (
+                dict(noise_rescored) if isinstance(noise_rescored, dict) else noise_metrics
+            )
+            risk_metric = risk_rescored
+
+        if need_legacy_cost:
+            legacy_cost = _ensure_bundle_legacy_cost(
+                state,
+                transformed_dataset,
+                anchors_eval,
+            )
+
+        return (
+            float(legacy_cost),
+            noise_metrics if isinstance(noise_metrics, dict) else None,
+            rows,
+            risk_metric,
+        )
+
     def _spool_trimmed_risk_metric(
         transformed_dataset: dict,
         anchors_eval: np.ndarray,
@@ -1058,81 +1329,24 @@ def _estimate_effective_radii_with_spool_model(
         noise_metrics_hint: Optional[dict] = None,
     ) -> Optional[float]:
         try:
-            noise_metrics = dict(noise_metrics_hint) if isinstance(noise_metrics_hint, dict) else None
-            anchor_vec = np.asarray(anchors_eval, dtype=float).ravel()
-            cost_fn = None
-            detailed = None
-            if noise_metrics is None:
-                cost_fn = _build_ellipse_cost_function(
-                    transformed_dataset,
-                    residual_threshold=float(residual_threshold),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    noise_normalized=True,
-                    sigma_source=str(sigma_source),
-                )
-                detailed = cost_fn.evaluate_detailed(anchor_vec)
-                noise_metrics = (
-                    dict(detailed.noise_metrics)
-                    if isinstance(detailed.noise_metrics, dict)
-                    else {}
-                )
-            if not isinstance(noise_metrics, dict):
-                return None
-
-            if (
-                _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct")) is None
-                and cost_fn is not None
-            ):
-                try:
-                    rows = cost_fn.pointwise_residual_rows(anchor_vec)
-                    sigma_model_mm = noise_metrics.get("sigma_model_mm")
-                    if _float_or_none(sigma_model_mm) is None:
-                        sigma_model_mm = noise_metrics.get("sigma_used_mm")
-                    rescored = _compute_tau_mad_rescore_from_rows(
-                        rows,
-                        cost_noise_normalized_old=(
-                            detailed.total_cost
-                            if detailed is not None
-                            else noise_metrics.get("cost_noise_normalized_old")
-                        ),
-                        chi2_red_old=noise_metrics.get("chi2_red"),
-                        sigma_model_mm=sigma_model_mm,
-                        params_count=noise_metrics.get("params"),
-                    )
-                    noise_metrics = {**noise_metrics, **rescored}
-                except Exception:
-                    pass
-
-            return _trimmed_risk_metric_from_components(noise_metrics)
+            _legacy_cost, _noise_metrics, _rows, risk_metric = _eval_bundle(
+                transformed_dataset,
+                anchors_eval,
+                noise_metrics_hint=noise_metrics_hint,
+                rows_policy="if_missing",
+                need_legacy_cost=False,
+            )
+            return risk_metric
         except Exception:
             return None
 
     def _data_cost(transformed_dataset: dict, anchors_eval: np.ndarray, blend_weight: float = _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT) -> float:
-        legacy_cost = float(
-            _evaluate_cost_at_anchors(
-                transformed_dataset,
-                anchors_eval,
-                residual_threshold=float(residual_threshold),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                noise_normalized=bool(spool_noise_normalized),
-                sigma_source=str(sigma_source),
-            )
+        legacy_cost, _noise_metrics, _rows, risk_metric = _eval_bundle(
+            transformed_dataset,
+            anchors_eval,
+            rows_policy="if_missing",
+            need_legacy_cost=True,
         )
-        risk_metric = _spool_trimmed_risk_metric(transformed_dataset, anchors_eval)
         if np.isfinite(legacy_cost) and risk_metric is not None and np.isfinite(risk_metric):
             return float(
                 legacy_cost
@@ -1158,53 +1372,17 @@ def _estimate_effective_radii_with_spool_model(
         noise_metrics_hint: Optional[dict] = None,
     ) -> Tuple[float, Optional[float]]:
         try:
-            noise_metrics = dict(noise_metrics_hint) if isinstance(noise_metrics_hint, dict) else None
-            if noise_metrics is None:
-                cost_fn = _build_ellipse_cost_function(
-                    transformed_dataset,
-                    residual_threshold=float(residual_threshold),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    noise_normalized=True,
-                    sigma_source=str(sigma_source),
-                )
-                anchor_vec = np.asarray(anchors_eval, dtype=float).ravel()
-                detailed = cost_fn.evaluate_detailed(anchor_vec)
-                noise_metrics = (
-                    dict(detailed.noise_metrics)
-                    if isinstance(detailed.noise_metrics, dict)
-                    else {}
-                )
-                try:
-                    rows = cost_fn.pointwise_residual_rows(anchor_vec)
-                    sigma_model_mm = noise_metrics.get("sigma_model_mm")
-                    if _float_or_none(sigma_model_mm) is None:
-                        sigma_model_mm = noise_metrics.get("sigma_used_mm")
-                    rescored = _compute_tau_mad_rescore_from_rows(
-                        rows,
-                        cost_noise_normalized_old=detailed.total_cost,
-                        chi2_red_old=noise_metrics.get("chi2_red"),
-                        sigma_model_mm=sigma_model_mm,
-                        params_count=noise_metrics.get("params"),
-                    )
-                    noise_metrics.update(rescored)
-                except Exception:
-                    pass
+            _legacy_cost, noise_metrics, _rows, risk_metric = _eval_bundle(
+                transformed_dataset,
+                anchors_eval,
+                noise_metrics_hint=noise_metrics_hint,
+                rows_policy="always",
+                need_legacy_cost=False,
+            )
             m_layered = _layered_internal_metric_from_noise_metrics(
                 noise_metrics,
                 fit_structure_levels=fit_structure_set,
                 use_fit_structure_penalties=False,
-            )
-            risk_metric = _spool_trimmed_risk_metric(
-                transformed_dataset,
-                anchors_eval,
-                noise_metrics_hint=noise_metrics,
             )
             m_internal = _blend_internal_metric_with_risk(m_layered, risk_metric)
             rank_score = _layered_rank_score_from_internal_metric(m_internal)
@@ -1879,6 +2057,7 @@ def _estimate_effective_radii_with_spool_model(
         eval_counter = {"count": 0}
         objective_cache: Dict[Tuple[float, ...], float] = {}
         objective_parts_cache: Dict[Tuple[float, ...], Tuple[float, float]] = {}
+        objective_dataset_cache: Dict[Tuple[float, ...], dict] = {}
 
         def _objective_clip_and_key(opt_vec: np.ndarray) -> Tuple[np.ndarray, Tuple[float, ...]]:
             if lo.size > 0:
@@ -1916,6 +2095,7 @@ def _estimate_effective_radii_with_spool_model(
                     return 1e12
                 objective_cache[key] = float(score)
                 objective_parts_cache[key] = (float(data_cost), float(prior))
+                objective_dataset_cache[key] = transformed_try
                 return score
             except Exception:
                 return 1e12
@@ -1941,15 +2121,18 @@ def _estimate_effective_radii_with_spool_model(
             seed_cost = float(_objective(x_seed))
             seed_rank_score = float("inf")
             try:
-                radii_seed, buildup_seed = _unpack_spool_opt_vector(
-                    x_seed,
-                    num_anchors=num_anchors,
-                    find_radii_mode=mode_r,
-                    find_buildup_mode=mode_b,
-                    fixed_radii_mm=base,
-                    fixed_buildup_factor=modeled_b,
-                )
-                _, transformed_seed = _build_dataset_and_params(radii_seed, buildup_seed)
+                seed_arr, seed_key = _objective_clip_and_key(x_seed)
+                transformed_seed = objective_dataset_cache.get(seed_key)
+                if transformed_seed is None:
+                    radii_seed, buildup_seed = _unpack_spool_opt_vector(
+                        seed_arr,
+                        num_anchors=num_anchors,
+                        find_radii_mode=mode_r,
+                        find_buildup_mode=mode_b,
+                        fixed_radii_mm=base,
+                        fixed_buildup_factor=modeled_b,
+                    )
+                    _spool_seed, transformed_seed = _build_dataset_and_params(radii_seed, buildup_seed)
                 seed_rank_score, _ = _spool_rank_score(transformed_seed, anchors_current)
             except Exception:
                 seed_rank_score = float("inf")
@@ -1958,15 +2141,20 @@ def _estimate_effective_radii_with_spool_model(
                     score_try = float(_objective(seed_try))
                     rank_try = float("inf")
                     try:
-                        radii_try, buildup_try = _unpack_spool_opt_vector(
-                            np.asarray(seed_try, dtype=float).reshape(-1),
-                            num_anchors=num_anchors,
-                            find_radii_mode=mode_r,
-                            find_buildup_mode=mode_b,
-                            fixed_radii_mm=base,
-                            fixed_buildup_factor=modeled_b,
+                        seed_arr, seed_key = _objective_clip_and_key(
+                            np.asarray(seed_try, dtype=float).reshape(-1)
                         )
-                        _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
+                        transformed_try = objective_dataset_cache.get(seed_key)
+                        if transformed_try is None:
+                            radii_try, buildup_try = _unpack_spool_opt_vector(
+                                seed_arr,
+                                num_anchors=num_anchors,
+                                find_radii_mode=mode_r,
+                                find_buildup_mode=mode_b,
+                                fixed_radii_mm=base,
+                                fixed_buildup_factor=modeled_b,
+                            )
+                            _spool_try, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
                         rank_try, _ = _spool_rank_score(transformed_try, anchors_current)
                     except Exception:
                         rank_try = float("inf")
@@ -3832,6 +4020,9 @@ def _evaluate_cost_at_anchors(
     )
     anchor_vec = np.asarray(anchors, dtype=float).ravel()
     return float(cost_fn.evaluate(anchor_vec))
+
+
+_DEFAULT_EVALUATE_COST_AT_ANCHORS = _evaluate_cost_at_anchors
 
 
 def _unique_path(path: Path) -> Path:

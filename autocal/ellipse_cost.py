@@ -318,6 +318,11 @@ class EllipseCostFunction:
                 num_axes=self.num_anchors,
                 spring_k_multiplier=float(spring_k_multiplier),
             )
+        # Reuse per-anchor residual extraction across evaluate/evaluate_detailed/row export.
+        self._pointwise_entries_cache: Dict[
+            Tuple[float, ...],
+            Tuple[List[Dict[str, object]], Optional[float], List[Dict[str, object]]],
+        ] = {}
 
     def _extract_sweep_arrays(
         self, sweep: Union[Sweep, dict]
@@ -1286,6 +1291,10 @@ class EllipseCostFunction:
 
         return {
             "sweep_id": str(sweep_id),
+            "drive_anchor": int(drive_idx2),
+            "sensor_anchor": int(sensor_idx2),
+            "l_drive_abs": l_drive_abs,
+            "l_sensor_abs": l_sensor_abs,
             "residuals": residuals,
             "sigma_l2": sigma_l2,
             "violation_penalty": float(violation_penalty),
@@ -1308,94 +1317,25 @@ class EllipseCostFunction:
         sigma_min_mm = self._pointwise_sigma_min_mm
         sigma_floor_mm = self._pointwise_sigma_floor_mm
         sigma_floor_source = self._pointwise_sigma_floor_source
-        sweep_cache: List[Dict[str, object]] = []
-        residuals_list: List[np.ndarray] = []
+        _entries, global_scale, residual_entries = self._pointwise_entries(
+            anchors,
+            include_residual_entries=True,
+        )
 
-        for sweep in self.sweeps:
-            (
-                fixed_lengths_abs,
-                drive_idx,
-                sensor_idx,
-                l_drive_abs,
-                l_sensor_abs,
-                sweep_id,
-                _violation_penalty,
-                sigma_drive_mm,
-                sigma_sensor_mm,
-            ) = self._reconstruct_lengths(sweep, anchors)
-
-            if self.flex_model is not None:
-                t_drive, t_sensor = self._extract_tension_arrays(sweep)
-                if (
-                    t_drive is not None
-                    and t_sensor is not None
-                    and t_drive.shape == l_drive_abs.shape
-                    and t_sensor.shape == l_sensor_abs.shape
-                ):
-                    l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
-                    l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
-
-            fixed_indices, _, drive_idx2, sensor_idx2, *_rest = self._extract_sweep_arrays(sweep)
-            coeffs = predict_ellipse_coefficients(
-                anchors,
-                fixed_indices,
-                fixed_lengths_abs,
-                drive_idx2,
-                sensor_idx2,
-                dimensions=self.dimensions,
-            )
-            if coeffs is None:
+        for entry in residual_entries:
+            residuals = entry.get("residuals")
+            if not isinstance(residuals, np.ndarray):
                 continue
-
-            x = l_drive_abs**2
-            y = l_sensor_abs**2
-            residuals = self._pointwise_residuals(coeffs, x, y)
+            residuals = np.asarray(residuals, dtype=float).ravel()
             if residuals.size == 0 or not np.all(np.isfinite(residuals)):
                 continue
-            sigma_l2 = self._sigma_l2_for_points(
-                coeffs,
-                l_drive_abs,
-                l_sensor_abs,
-                sigma_drive_mm,
-                sigma_sensor_mm,
-            )
-
-            sweep_cache.append(
-                {
-                    "sweep_id": str(sweep_id),
-                    "drive_anchor": int(drive_idx2),
-                    "sensor_anchor": int(sensor_idx2),
-                    "l_drive_abs": l_drive_abs,
-                    "l_sensor_abs": l_sensor_abs,
-                    "residuals": residuals,
-                    "sigma_l2": sigma_l2,
-                }
-            )
-            residuals_list.append(residuals)
-
-        scale_override = None
-        if self.pointwise_filtering and self.pointwise_global_mad and residuals_list:
-            norm_residuals: List[np.ndarray] = []
-            for entry in sweep_cache:
-                residuals = np.asarray(entry["residuals"], dtype=float).ravel()
-                sigma_l2 = entry.get("sigma_l2")
-                if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
-                    sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
-                    if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
-                        norm_residuals.append(residuals / sigma_arr)
-                        continue
-                norm_residuals.append(residuals / float(max(self._l2_scale, 1.0)))
-            scale_override = self._pointwise_global_scale(norm_residuals)
-            if scale_override is not None and not np.isfinite(scale_override):
-                scale_override = None
-
-        for entry in sweep_cache:
-            residuals = np.asarray(entry["residuals"], dtype=float).ravel()
-            l_drive_abs = np.asarray(entry["l_drive_abs"], dtype=float).ravel()
-            l_sensor_abs = np.asarray(entry["l_sensor_abs"], dtype=float).ravel()
-            sweep_id = str(entry["sweep_id"])
-            drive_idx2 = int(entry["drive_anchor"])
-            sensor_idx2 = int(entry["sensor_anchor"])
+            l_drive_abs = np.asarray(entry.get("l_drive_abs"), dtype=float).ravel()
+            l_sensor_abs = np.asarray(entry.get("l_sensor_abs"), dtype=float).ravel()
+            if l_drive_abs.size != residuals.size or l_sensor_abs.size != residuals.size:
+                continue
+            sweep_id = str(entry.get("sweep_id", ""))
+            drive_idx2 = int(entry.get("drive_anchor", -1))
+            sensor_idx2 = int(entry.get("sensor_anchor", -1))
             sigma_l2 = entry.get("sigma_l2")
 
             l_mean = 0.5 * (l_drive_abs + l_sensor_abs)
@@ -1412,7 +1352,7 @@ class EllipseCostFunction:
                     r_norm = residuals / sigma_arr
                     use_sigma = True
 
-            scale = self._pointwise_scale(r_norm, scale_override=scale_override)
+            scale = self._pointwise_scale(r_norm, scale_override=global_scale)
             trim_threshold = float(max(_POINTWISE_TRIM_K * scale, 1e-12))
             if use_sigma:
                 cutoff_mm = (trim_threshold * sigma_arr) / denom
@@ -1632,31 +1572,48 @@ class EllipseCostFunction:
         return self._pointwise_scale(r_norm)
 
     def _pointwise_entries(
-        self, anchors: np.ndarray
-    ) -> Tuple[List[Dict[str, object]], Optional[float]]:
-        residual_entries = [self._pointwise_sweep_residuals(sweep, anchors) for sweep in self.sweeps]
-        scale_override = None
-        if self.pointwise_filtering and self.pointwise_global_mad:
-            residuals_list: List[np.ndarray] = []
-            for entry in residual_entries:
-                residuals = entry.get("residuals")
-                if not isinstance(residuals, np.ndarray):
-                    continue
-                sigma_l2 = entry.get("sigma_l2")
-                if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
-                    sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
-                    if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
-                        residuals_list.append(residuals / sigma_arr)
+        self,
+        anchors: np.ndarray,
+        *,
+        include_residual_entries: bool = False,
+    ) -> Union[
+        Tuple[List[Dict[str, object]], Optional[float]],
+        Tuple[List[Dict[str, object]], Optional[float], List[Dict[str, object]]],
+    ]:
+        key = tuple(float(v) for v in np.asarray(anchors, dtype=float).ravel().tolist())
+        cached = self._pointwise_entries_cache.get(key)
+        if cached is None:
+            residual_entries = [self._pointwise_sweep_residuals(sweep, anchors) for sweep in self.sweeps]
+            scale_override = None
+            if self.pointwise_filtering and self.pointwise_global_mad:
+                residuals_list: List[np.ndarray] = []
+                for entry in residual_entries:
+                    residuals = entry.get("residuals")
+                    if not isinstance(residuals, np.ndarray):
                         continue
-                residuals_list.append(residuals / float(max(self._l2_scale, 1.0)))
-            scale_override = self._pointwise_global_scale(residuals_list)
-            if scale_override is not None and not np.isfinite(scale_override):
-                scale_override = None
+                    sigma_l2 = entry.get("sigma_l2")
+                    if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
+                        sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
+                        if sigma_arr.size == residuals.size and np.all(np.isfinite(sigma_arr)):
+                            residuals_list.append(residuals / sigma_arr)
+                            continue
+                    residuals_list.append(residuals / float(max(self._l2_scale, 1.0)))
+                scale_override = self._pointwise_global_scale(residuals_list)
+                if scale_override is not None and not np.isfinite(scale_override):
+                    scale_override = None
 
-        entries = [
-            self._pointwise_sweep_info_from_entry(entry, scale_override=scale_override)
-            for entry in residual_entries
-        ]
+            entries = [
+                self._pointwise_sweep_info_from_entry(entry, scale_override=scale_override)
+                for entry in residual_entries
+            ]
+            cached = (entries, scale_override, residual_entries)
+            self._pointwise_entries_cache[key] = cached
+            if len(self._pointwise_entries_cache) > 8:
+                oldest_key = next(iter(self._pointwise_entries_cache.keys()))
+                self._pointwise_entries_cache.pop(oldest_key, None)
+        entries, scale_override, residual_entries = cached
+        if include_residual_entries:
+            return entries, scale_override, residual_entries
         return entries, scale_override
 
     def _sweep_wise_keep_mask(

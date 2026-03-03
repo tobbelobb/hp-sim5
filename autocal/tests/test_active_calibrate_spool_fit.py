@@ -211,7 +211,7 @@ def test_spool_fit_uses_default_b_prior_when_not_provided(monkeypatch):
     assert fit_info.get("b_prior_sigma") == ac._DEFAULT_B_PRIOR_SIGMA
 
 
-def test_spool_fit_anchor_step_uses_configured_solver_settings(monkeypatch):
+def test_spool_fit_anchor_step_caps_solver_settings(monkeypatch):
     base = np.array([10.0, 11.0, 12.0], dtype=float)
     target_k = np.array([0.05, 0.05, 0.05], dtype=float)
     _patch_spool_runtime(monkeypatch, target_radii=base, target_buildup=target_k)
@@ -263,8 +263,8 @@ def test_spool_fit_anchor_step_uses_configured_solver_settings(monkeypatch):
     assert len(calls) == 3
     assert np.allclose(np.asarray(calls[0].get("initial_guess"), dtype=float), np.zeros((3, 2), dtype=float))
     for kwargs in calls:
-        assert int(kwargs.get("num_restarts", 0)) == 7
-        assert int(kwargs.get("max_iterations", 0)) == 999
+        assert int(kwargs.get("num_restarts", 0)) == 2
+        assert int(kwargs.get("max_iterations", 0)) == 160
         assert kwargs.get("pointwise_filtering") is True
         assert kwargs.get("sweep_wise_filtering") is True
         assert kwargs.get("robust_debug") is False
@@ -2649,3 +2649,287 @@ def test_scale_fix_3_applies_final_polish_on_every_refreeze_pass(monkeypatch):
     assert bool(refreeze_history[0].get("final_scale_polish_attempted", False)) is True
     assert bool(refreeze_history[1].get("final_scale_polish_attempted", False)) is True
     assert bool(refreeze_history[2].get("final_scale_polish_attempted", False)) is True
+
+
+def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    detailed_calls = {}
+    row_calls = {}
+    transformed_counter = {"next": 0}
+
+    def fake_build_spool_model_params(
+        dataset,
+        *,
+        base_radii_mm,
+        modeled_radii_mm,
+        modeled_buildup_factor,
+        spool_to_motor_gearing_factor,
+        mechanical_advantage,
+        lines_per_spool,
+        base_buildup_factor=None,
+        theta0_mode="zero",
+        prefer_zero_tension_angles=False,
+    ):
+        _ = (
+            dataset,
+            base_radii_mm,
+            spool_to_motor_gearing_factor,
+            mechanical_advantage,
+            lines_per_spool,
+            base_buildup_factor,
+            theta0_mode,
+            prefer_zero_tension_angles,
+        )
+        return {
+            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
+            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
+        }
+
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
+        transformed_counter["next"] += 1
+        return {
+            "machine_type": str(dataset.get("machine_type", "slideprinter")),
+            "num_anchors": int(dataset.get("num_anchors", 3)),
+            "dimensions": int(dataset.get("dimensions", 2)),
+            "sweeps": [],
+            "_token": int(transformed_counter["next"]),
+            "_spool_r": float(np.median(np.asarray(spool_params["radii_mm"], dtype=float))),
+        }
+
+    class FakeCostFn:
+        def __init__(self, transformed_dataset):
+            self._token = int(transformed_dataset.get("_token", -1))
+            self._spool_r = float(transformed_dataset.get("_spool_r", 30.0))
+
+        def _key(self, anchor_vec):
+            anchor_key = tuple(float(v) for v in np.round(np.asarray(anchor_vec, dtype=float), decimals=9).tolist())
+            return int(self._token), anchor_key
+
+        def evaluate_detailed(self, anchor_vec):
+            key = self._key(anchor_vec)
+            detailed_calls[key] = int(detailed_calls.get(key, 0)) + 1
+            anchor_mean = float(np.mean(np.asarray(anchor_vec, dtype=float)))
+            total_cost = float((self._spool_r - 35.0) ** 2.0 + 0.1 * (anchor_mean - 1.0) ** 2.0 + 1.0)
+            noise_metrics = {
+                "chi2_red": total_cost,
+                "n_obs_trimmed": 60.0,
+                "tau_mad_mm": 0.6,
+                "params": 6,
+                "sigma_model_mm": 1.0,
+            }
+            return SimpleNamespace(total_cost=total_cost, noise_metrics=noise_metrics)
+
+        def evaluate(self, anchor_vec):
+            anchor_mean = float(np.mean(np.asarray(anchor_vec, dtype=float)))
+            return float((self._spool_r - 35.0) ** 2.0 + 0.1 * (anchor_mean - 1.0) ** 2.0 + 1.0)
+
+        def pointwise_residual_rows(self, anchor_vec):
+            key = self._key(anchor_vec)
+            row_calls[key] = int(row_calls.get(key, 0)) + 1
+            return [
+                {
+                    "sweep_id": "sweep_001",
+                    "residual_mm": 1.0,
+                    "residual_mm_signed": 1.0,
+                    "residual_z_signed": 1.0,
+                    "cutoff_mm": 10.0,
+                    "l_drive_mm": 1.0,
+                    "l_sensor_mm": 1.0,
+                }
+            ]
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = dataset_or_path
+        initial = np.asarray(kwargs.get("initial_guess"), dtype=float)
+        return {"anchors": np.asarray(initial + 0.1, dtype=float), "cost": 0.0}
+
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters, objective)
+        return np.asarray(x0, dtype=float).reshape(-1), {
+            "success": True,
+            "message": "stubbed optimizer",
+            "nfev": 1,
+            "nit": 0,
+            "step_final": [],
+        }
+
+    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
+    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
+    monkeypatch.setattr(
+        ac,
+        "_compute_tau_mad_rescore_from_rows",
+        lambda *_args, **_kwargs: {"chi2_red_tau_d_trimmed_direct": 8.0},
+    )
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
+    monkeypatch.setattr(
+        ac,
+        "_spool_seed_candidates",
+        lambda x0, lo, hi: [
+            np.asarray(x0, dtype=float).reshape(-1),
+            np.clip(np.asarray(x0, dtype=float).reshape(-1) * 1.02, lo, hi),
+        ],
+    )
+
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    seed_anchors = np.ones((3, 2), dtype=float)
+    _eff_r, _fit_anchors, _spool_params, _transformed, _fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=np.zeros(3, dtype=float),
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        scale_fix_levels=(),
+        enable_prefit=False,
+        enable_bootstrap_anchor_refresh=False,
+    )
+
+    assert detailed_calls
+    assert max(int(v) for v in detailed_calls.values()) == 1
+    if row_calls:
+        assert max(int(v) for v in row_calls.values()) == 1
+
+
+def test_spool_fit_rank_score_rescores_rows_even_when_direct_metric_exists(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_k = np.array([0.05, 0.05, 0.05], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=base, target_buildup=target_k)
+
+    row_calls = {"count": 0}
+
+    class FakeCostFn:
+        def evaluate(self, anchor_vec):
+            _ = anchor_vec
+            return 1.0
+
+        def evaluate_detailed(self, anchor_vec):
+            _ = anchor_vec
+            return SimpleNamespace(
+                total_cost=1.0,
+                noise_metrics={
+                    "chi2_red": 1.0,
+                    "chi2_red_tau_d_trimmed_direct": 1.0,
+                    "n_obs_trimmed": 60.0,
+                    "tau_mad_mm": 0.6,
+                    "params": 6,
+                    "sigma_model_mm": 1.0,
+                },
+            )
+
+        def pointwise_residual_rows(self, anchor_vec):
+            _ = anchor_vec
+            row_calls["count"] = int(row_calls.get("count", 0)) + 1
+            return [
+                {
+                    "sweep_id": "sweep_001",
+                    "residual_mm": 1.0,
+                    "residual_mm_signed": 1.0,
+                    "residual_z_signed": 1.0,
+                    "cutoff_mm": 10.0,
+                    "l_drive_mm": 100.0,
+                    "l_sensor_mm": 100.0,
+                }
+            ]
+
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters, objective)
+        return np.asarray(x0, dtype=float).reshape(-1), {
+            "success": True,
+            "message": "stubbed optimizer",
+            "nfev": 1,
+            "nit": 0,
+            "step_final": [],
+        }
+
+    monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda _ds, **_kwargs: FakeCostFn())
+    monkeypatch.setattr(
+        ac,
+        "_compute_tau_mad_rescore_from_rows",
+        lambda *_args, **_kwargs: {
+            "chi2_red_tau_d_trimmed_direct": 0.5,
+            "cost_noise_normalized_tau_d_trimmed_direct": 0.5,
+        },
+    )
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
+
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    seed_anchors = np.ones((3, 2), dtype=float)
+    ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=np.zeros(3, dtype=float),
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        scale_fix_levels=(),
+        enable_prefit=False,
+        enable_bootstrap_anchor_refresh=False,
+    )
+
+    assert int(row_calls.get("count", 0)) > 0
