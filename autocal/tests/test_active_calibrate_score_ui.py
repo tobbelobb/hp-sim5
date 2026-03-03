@@ -388,7 +388,7 @@ def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
         stop_std_mm=None,
         solve_restarts=1,
         solve_iterations=1,
-        solve_optimizer="SLSQP",
+        solve_optimizer="L-BFGS-B",
         residual_threshold=1.0,
         spring_k_multiplier=1.0,
         use_flex=False,

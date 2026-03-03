@@ -643,7 +643,7 @@ def build_compiled_value_and_grad(
     ub: np.ndarray,
 ) -> Optional[Callable[[np.ndarray], Tuple[float, np.ndarray]]]:
     """
-    Build a compiled objective+gradient callable for SciPy SLSQP.
+    Build a compiled objective+gradient callable for SciPy L-BFGS-B.
 
     Returns None when the current objective configuration is not supported by
     the JAX-native path.

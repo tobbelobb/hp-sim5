@@ -562,7 +562,7 @@ def _estimate_effective_radii(
         result = minimize(
             _objective,
             x0,
-            method="SLSQP",
+            method="L-BFGS-B",
             bounds=list(zip(lo.tolist(), hi.tolist())),
             options={"maxiter": 60, "ftol": 1e-6},
         )
@@ -4446,15 +4446,12 @@ def _apply_optimizer_mode_env(mode: Optional[str]) -> str:
     os.environ["AUTOCAL_OPTIMIZER_MODE"] = mode_norm
     if mode_norm == "legacy":
         os.environ["AUTOCAL_DISABLE_JAX_OBJECTIVE"] = "1"
-        os.environ["AUTOCAL_JAX_SLSQP_MODE"] = "fun"
         os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "fun"
     elif mode_norm == "fast-fd":
         os.environ.pop("AUTOCAL_DISABLE_JAX_OBJECTIVE", None)
-        os.environ["AUTOCAL_JAX_SLSQP_MODE"] = "fun"
         os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "fun"
     else:
         os.environ.pop("AUTOCAL_DISABLE_JAX_OBJECTIVE", None)
-        os.environ["AUTOCAL_JAX_SLSQP_MODE"] = "jac"
         os.environ["AUTOCAL_JAX_LBFGSB_MODE"] = "jac"
     return mode_norm
 
@@ -7724,7 +7721,7 @@ def ellipse_loop(
 def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--solve-restarts", type=int, default=4)
     parser.add_argument("--solve-iterations", type=int, default=400)
-    parser.add_argument("--solve-optimizer", default="SLSQP")
+    parser.add_argument("--solve-optimizer", default="L-BFGS-B")
     parser.add_argument(
         "--optimizer-mode",
         choices=_OPTIMIZER_MODE_CHOICES,
