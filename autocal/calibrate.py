@@ -1128,8 +1128,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     ellipse_parser.add_argument(
         "--optimizer",
-        default="L-BFGS-B",
-        help="Optimizer method (default: L-BFGS-B)",
+        default="SLSQP",
+        help="Optimizer method (default: SLSQP)",
     )
     ellipse_cost_group = ellipse_parser.add_mutually_exclusive_group()
     ellipse_cost_group.add_argument(

@@ -29,10 +29,11 @@ class _QuadraticCost:
         return 2.0 * vec
 
 
-def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
-    seen = {"jac": None, "value": None, "grad": None}
+def test_run_slsqp_minimize_supplies_explicit_jac(monkeypatch):
+    seen = {"jac": None, "value": None, "grad": None, "method": None}
 
     def fake_minimize(fun, x0, **kwargs):
+        seen["method"] = kwargs.get("method")
         seen["jac"] = kwargs.get("jac")
         value, grad = fun(np.asarray(x0, dtype=float))
         seen["value"] = float(value)
@@ -51,7 +52,7 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
 
     cost = _QuadraticCost()
     x0 = np.asarray([0.2, -0.3, 0.4], dtype=float)
-    result = ellipse_solver._run_lbfgsb_minimize(
+    result = ellipse_solver._run_slsqp_minimize(
         cost,
         x0,
         lb=np.full(x0.shape, -10.0, dtype=float),
@@ -61,12 +62,13 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
     )
 
     assert seen["jac"] is True
+    assert seen["method"] == "SLSQP"
     assert np.allclose(seen["grad"], 2.0 * x0)
     assert np.isclose(cost.last_f0, seen["value"])
     assert bool(result.success) is True
 
 
-def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
+def test_slsqp_objective_falls_back_when_jax_grad_errors(monkeypatch):
     def _broken_jax(_cost_fn, _lb, _ub):
         def _broken(_x):
             raise RuntimeError("jax trace failed")
@@ -76,7 +78,7 @@ def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
     monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", _broken_jax)
 
     cost = _QuadraticCost()
-    objective = ellipse_solver._build_lbfgsb_objective_with_jac(
+    objective = ellipse_solver._build_slsqp_objective_with_jac(
         cost,
         lb=np.asarray([-10.0, -10.0], dtype=float),
         ub=np.asarray([10.0, 10.0], dtype=float),
@@ -88,7 +90,7 @@ def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
     assert cost.last_f0 is not None
 
 
-def test_lbfgsb_objective_falls_back_when_jax_grad_nonfinite(monkeypatch):
+def test_slsqp_objective_falls_back_when_jax_grad_nonfinite(monkeypatch):
     def _bad_grad(_cost_fn, _lb, _ub):
         def _return_nonfinite(_x):
             return 1.0, np.asarray([np.nan, np.nan], dtype=float)
@@ -98,7 +100,7 @@ def test_lbfgsb_objective_falls_back_when_jax_grad_nonfinite(monkeypatch):
     monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", _bad_grad)
 
     cost = _QuadraticCost()
-    objective = ellipse_solver._build_lbfgsb_objective_with_jac(
+    objective = ellipse_solver._build_slsqp_objective_with_jac(
         cost,
         lb=np.asarray([-10.0, -10.0], dtype=float),
         ub=np.asarray([10.0, 10.0], dtype=float),
@@ -110,10 +112,11 @@ def test_lbfgsb_objective_falls_back_when_jax_grad_nonfinite(monkeypatch):
     assert cost.last_f0 is not None
 
 
-def test_run_lbfgsb_minimize_value_only_mode_uses_scipy_fd(monkeypatch):
-    seen = {"jac": "<missing>", "value": None}
+def test_run_slsqp_minimize_value_only_mode_uses_scipy_fd(monkeypatch):
+    seen = {"jac": "<missing>", "value": None, "method": None}
 
     def fake_minimize(fun, x0, **kwargs):
+        seen["method"] = kwargs.get("method")
         seen["jac"] = kwargs.get("jac", "<missing>")
         seen["value"] = float(fun(np.asarray(x0, dtype=float)))
         return OptimizeResult(
@@ -128,7 +131,7 @@ def test_run_lbfgsb_minimize_value_only_mode_uses_scipy_fd(monkeypatch):
     def _should_not_call(_cost_fn, _lb, _ub):
         raise AssertionError("jac path should not be used in fun mode")
 
-    monkeypatch.setenv("AUTOCAL_JAX_LBFGSB_MODE", "fun")
+    monkeypatch.setenv("AUTOCAL_JAX_SLSQP_MODE", "fun")
     monkeypatch.setattr(
         ellipse_solver,
         "build_compiled_objective",
@@ -139,7 +142,7 @@ def test_run_lbfgsb_minimize_value_only_mode_uses_scipy_fd(monkeypatch):
 
     cost = _QuadraticCost()
     x0 = np.asarray([0.3, -0.2], dtype=float)
-    result = ellipse_solver._run_lbfgsb_minimize(
+    result = ellipse_solver._run_slsqp_minimize(
         cost,
         x0,
         lb=np.full(x0.shape, -10.0, dtype=float),
@@ -149,12 +152,13 @@ def test_run_lbfgsb_minimize_value_only_mode_uses_scipy_fd(monkeypatch):
     )
 
     assert seen["jac"] == "<missing>"
+    assert seen["method"] == "SLSQP"
     assert np.isclose(float(seen["value"]), float(np.dot(x0, x0)))
     assert cost.gradient_calls == 0
     assert bool(result.success) is True
 
 
-def test_run_lbfgsb_minimize_value_only_mode_falls_back_when_jax_fun_errors(monkeypatch):
+def test_run_slsqp_minimize_value_only_mode_falls_back_when_jax_fun_errors(monkeypatch):
     seen = {"jac": "<missing>", "value": None}
 
     def fake_minimize(fun, x0, **kwargs):
@@ -175,13 +179,13 @@ def test_run_lbfgsb_minimize_value_only_mode_falls_back_when_jax_fun_errors(monk
 
         return _raise
 
-    monkeypatch.setenv("AUTOCAL_JAX_LBFGSB_MODE", "fun")
+    monkeypatch.setenv("AUTOCAL_JAX_SLSQP_MODE", "fun")
     monkeypatch.setattr(ellipse_solver, "build_compiled_objective", _broken_fun)
     monkeypatch.setattr(ellipse_solver, "minimize", fake_minimize)
 
     cost = _QuadraticCost()
     x0 = np.asarray([0.4, -0.1], dtype=float)
-    result = ellipse_solver._run_lbfgsb_minimize(
+    result = ellipse_solver._run_slsqp_minimize(
         cost,
         x0,
         lb=np.full(x0.shape, -10.0, dtype=float),

@@ -243,19 +243,23 @@ def test_full_auto_run_spec_parses_fit_structure_override():
 def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
     monkeypatch.delenv("AUTOCAL_OPTIMIZER_MODE", raising=False)
     monkeypatch.delenv("AUTOCAL_DISABLE_JAX_OBJECTIVE", raising=False)
+    monkeypatch.delenv("AUTOCAL_JAX_SLSQP_MODE", raising=False)
     monkeypatch.delenv("AUTOCAL_JAX_LBFGSB_MODE", raising=False)
 
     assert _apply_optimizer_mode_env("legacy") == "legacy"
     assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "legacy"
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") == "1"
+    assert os.environ.get("AUTOCAL_JAX_SLSQP_MODE") == "fun"
     assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "fun"
 
     assert _apply_optimizer_mode_env("fast") == "fast"
     assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "fast"
+    assert os.environ.get("AUTOCAL_JAX_SLSQP_MODE") == "jac"
     assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "jac"
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
 
     assert _apply_optimizer_mode_env("fast-fd") == "fast-fd"
     assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "fast-fd"
+    assert os.environ.get("AUTOCAL_JAX_SLSQP_MODE") == "fun"
     assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "fun"
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None

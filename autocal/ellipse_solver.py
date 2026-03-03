@@ -24,20 +24,22 @@ def _jax_objective_enabled() -> bool:
     return disable_jax not in ("1", "true", "yes", "on")
 
 
-def _lbfgsb_jax_mode() -> str:
-    """Return objective mode for L-BFGS-B: 'jac' (exact) or 'fun' (SciPy finite diff)."""
-    raw = str(os.environ.get("AUTOCAL_JAX_LBFGSB_MODE", "")).strip().lower()
+def _slsqp_jax_mode() -> str:
+    """Return objective mode for SLSQP: 'jac' (exact) or 'fun' (SciPy finite diff)."""
+    raw = str(os.environ.get("AUTOCAL_JAX_SLSQP_MODE", "")).strip().lower()
+    if raw == "":
+        raw = str(os.environ.get("AUTOCAL_JAX_LBFGSB_MODE", "")).strip().lower()
     if raw in ("fun", "fd", "finite-diff", "finite_diff", "value-only", "value_only", "legacy"):
         return "fun"
     return "jac"
 
 
-def _build_lbfgsb_objective_with_jac(
+def _build_slsqp_objective_with_jac(
     cost_fn: EllipseCostFunction,
     lb: np.ndarray,
     ub: np.ndarray,
 ) -> Callable[[np.ndarray], Tuple[float, np.ndarray]]:
-    """Return a callable that emits (objective, gradient) for SciPy L-BFGS-B."""
+    """Return a callable that emits (objective, gradient) for SciPy SLSQP."""
     use_jax = _jax_objective_enabled()
     jax_value_and_grad = build_compiled_value_and_grad(cost_fn, lb, ub) if use_jax else None
 
@@ -60,7 +62,7 @@ def _build_lbfgsb_objective_with_jac(
     return _value_and_grad
 
 
-def _build_lbfgsb_objective_value_only(
+def _build_slsqp_objective_value_only(
     cost_fn: EllipseCostFunction,
     lb: np.ndarray,
     ub: np.ndarray,
@@ -81,7 +83,7 @@ def _build_lbfgsb_objective_value_only(
     return _value_only
 
 
-def _run_lbfgsb_minimize(
+def _run_slsqp_minimize(
     cost_fn: EllipseCostFunction,
     x0: np.ndarray,
     *,
@@ -92,27 +94,27 @@ def _run_lbfgsb_minimize(
     callback: Optional[Callable[[np.ndarray], None]] = None,
 ) -> OptimizeResult:
     x0_clipped = np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub)
-    mode = _lbfgsb_jax_mode()
+    mode = _slsqp_jax_mode()
     if mode == "fun":
-        objective = _build_lbfgsb_objective_value_only(cost_fn, lb, ub)
+        objective = _build_slsqp_objective_value_only(cost_fn, lb, ub)
         return minimize(
             objective,
             x0_clipped,
-            method="L-BFGS-B",
+            method="SLSQP",
             bounds=bounds,
             callback=callback,
-            options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
+            options={"maxiter": int(max_iterations), "ftol": 1e-6, "disp": False},
         )
 
-    value_and_grad = _build_lbfgsb_objective_with_jac(cost_fn, lb, ub)
+    value_and_grad = _build_slsqp_objective_with_jac(cost_fn, lb, ub)
     return minimize(
         value_and_grad,
         x0_clipped,
-        method="L-BFGS-B",
+        method="SLSQP",
         jac=True,
         bounds=bounds,
         callback=callback,
-        options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
+        options={"maxiter": int(max_iterations), "ftol": 1e-6, "disp": False},
     )
 
 
@@ -166,8 +168,8 @@ def _optimize_restart_worker(payload: dict) -> dict:
     )
 
     method_norm = method_raw.strip().replace("_", "-").lower()
-    if method_norm in ("slsqp", "sqp"):
-        method_norm = "l-bfgs-b"
+    if method_norm in ("l-bfgs-b", "lbfgsb"):
+        method_norm = "slsqp"
 
     def _bounded_objective(x: np.ndarray) -> float:
         x = np.asarray(x, dtype=float).reshape(-1)
@@ -190,7 +192,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         )
         result.x = np.clip(np.asarray(result.x, dtype=float), lb, ub)
         result.fun = float(cost_fn.evaluate(result.x))
-    elif method_norm in ("hybrid", "nm+lbfgsb", "nelder-mead+lbfgsb"):
+    elif method_norm in ("hybrid", "nm+slsqp", "nelder-mead+slsqp", "nm+lbfgsb", "nelder-mead+lbfgsb"):
         nm = minimize(
             _bounded_objective,
             x0_clipped,
@@ -204,7 +206,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
             },
         )
         x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
-        result = _run_lbfgsb_minimize(
+        result = _run_slsqp_minimize(
             cost_fn,
             x1,
             lb=lb,
@@ -214,21 +216,20 @@ def _optimize_restart_worker(payload: dict) -> dict:
         )
     else:
         scipy_method = method_raw
-        if method_norm in ("l-bfgs-b", "lbfgsb"):
-            scipy_method = "L-BFGS-B"
+        if method_norm in ("slsqp", "sqp", "l-bfgs-b", "lbfgsb"):
+            scipy_method = "SLSQP"
         elif method_norm == "powell":
             scipy_method = "Powell"
 
         options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
-        if scipy_method == "L-BFGS-B":
-            options["ftol"] = 1e-12
-            options["maxls"] = 40
+        if scipy_method == "SLSQP":
+            options["ftol"] = 1e-6
         elif scipy_method == "Powell":
             options["xtol"] = 1e-4
             options["ftol"] = 1e-8
 
-        if scipy_method == "L-BFGS-B":
-            result = _run_lbfgsb_minimize(
+        if scipy_method == "SLSQP":
+            result = _run_slsqp_minimize(
                 cost_fn,
                 x0_clipped,
                 lb=lb,
@@ -487,7 +488,7 @@ def _build_restart_cost_fn(
 def solve_anchors(
     dataset: Union[dict, "SweepDataset"],
     initial_guess: Optional[np.ndarray] = None,
-    method: str = "L-BFGS-B",
+    method: str = "SLSQP",
     max_iterations: int = 1000,
     num_restarts: int = 4,
     use_parallel: bool = True,
@@ -600,14 +601,12 @@ def solve_anchors(
         sigma_source=str(sigma_source),
     )
 
-    method_raw = str(method or "L-BFGS-B")
+    method_raw = str(method or "SLSQP")
     method_norm = method_raw.strip().replace("_", "-").lower()
-    if method_norm in ("slsqp", "sqp"):
-        # SLSQP has repeatedly shown immediate termination for this objective (often status=4).
-        # Keep the CLI/API stable by treating it as an alias for a bounded quasi-Newton method.
+    if method_norm in ("l-bfgs-b", "lbfgsb"):
         if verbose:
-            print("[solver] Mapping method SLSQP -> L-BFGS-B for robustness.")
-        method_norm = "l-bfgs-b"
+            print("[solver] Mapping method L-BFGS-B -> SLSQP.")
+        method_norm = "slsqp"
 
     def _summarize_cost(tag: str, x: np.ndarray, *, include_details: bool = True) -> None:
         detailed: CostResult = cost_fn.evaluate_detailed(np.asarray(x, dtype=float))
@@ -1053,7 +1052,7 @@ def solve_anchors(
                     # Project to bounds for downstream consumption.
                     result.x = np.clip(np.asarray(result.x, dtype=float), lb, ub)
                     result.fun = float(cost_fn.evaluate(result.x))
-                elif method_norm in ("hybrid", "nm+lbfgsb", "nelder-mead+lbfgsb"):
+                elif method_norm in ("hybrid", "nm+slsqp", "nelder-mead+slsqp", "nm+lbfgsb", "nelder-mead+lbfgsb"):
                     nm = minimize(
                         _bounded_objective,
                         x0_clipped,
@@ -1067,7 +1066,7 @@ def solve_anchors(
                         },
                     )
                     x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
-                    result = _run_lbfgsb_minimize(
+                    result = _run_slsqp_minimize(
                         cost_fn,
                         x1,
                         lb=lb,
@@ -1078,21 +1077,20 @@ def solve_anchors(
                     )
                 else:
                     scipy_method = method_raw
-                    if method_norm in ("l-bfgs-b", "lbfgsb"):
-                        scipy_method = "L-BFGS-B"
+                    if method_norm in ("slsqp", "sqp", "l-bfgs-b", "lbfgsb"):
+                        scipy_method = "SLSQP"
                     elif method_norm == "powell":
                         scipy_method = "Powell"
 
                     options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
-                    if scipy_method == "L-BFGS-B":
-                        options["ftol"] = 1e-12
-                        options["maxls"] = 40
+                    if scipy_method == "SLSQP":
+                        options["ftol"] = 1e-6
                     elif scipy_method == "Powell":
                         options["xtol"] = 1e-4
                         options["ftol"] = 1e-8
 
-                    if scipy_method == "L-BFGS-B":
-                        result = _run_lbfgsb_minimize(
+                    if scipy_method == "SLSQP":
+                        result = _run_slsqp_minimize(
                             cost_fn,
                             x0_clipped,
                             lb=lb,
