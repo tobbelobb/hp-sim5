@@ -1110,7 +1110,6 @@ def _estimate_effective_radii_with_spool_model(
                 except Exception:
                     pass
 
-            rel_std = _spool_rel_std(transformed_dataset, anchors_eval, noise_metrics)
             return _trimmed_risk_metric_from_components(noise_metrics)
         except Exception:
             return None
@@ -1572,13 +1571,18 @@ def _estimate_effective_radii_with_spool_model(
                     prefit_cache[key] = 1e12
                     prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
                     return 1e12
-                data_cost = float(_data_cost(transformed_try, anchors_current))
-                if not np.isfinite(data_cost):
-                    prefit_cache[key] = 1e12
-                    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
-                    return 1e12
+                # Note. We should maby try some more to just use data_cost here, since it makes results more stable.
+                # But it also creates second-best fits who somehow get the best score, crowding out the real best score
+                # (Maybe this is some kind of "overfitting"?)
+                # so we need to fix the score function at the same time if we're going to switch from ellipse_cost
+                # to data_cost here.
+                #data_cost = float(_data_cost(transformed_try, anchors_current))
+                #if not np.isfinite(data_cost):
+                #    prefit_cache[key] = 1e12
+                #    prefit_parts_cache[key] = (float("nan"), float("nan"), int(valid_sweeps), 0)
+                #    return 1e12
                 prior_cost = float(_prior_cost(radii_try, buildup_try))
-                lambda_prior = 0
+                lambda_prior = 1
                 score = float(ellipse_cost + lambda_prior*prior_cost)
                 if not np.isfinite(score):
                     prefit_cache[key] = 1e12
@@ -8126,7 +8130,7 @@ def _trimmed_risk_metric_from_components(
     if chi2_trimmed_direct is None or chi2_trimmed_direct < 0.0:
         return None
 
-    risk = float(chi2_trimmed_direct)# * float(rel_std)
+    risk = float(chi2_trimmed_direct)
 
     if not np.isfinite(risk):
         return None
