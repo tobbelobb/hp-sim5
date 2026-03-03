@@ -2788,8 +2788,122 @@ def test_refreeze_filter_schedule_follows_3_2_3_freeze_phases(monkeypatch):
     ]
     pointwise_flags = [bool(item.get("pointwise_filtering", False)) for item in refreeze_history]
     sweep_flags = [bool(item.get("sweep_wise_filtering", False)) for item in refreeze_history]
-    assert pointwise_flags == [False, False, False, True, True, True, True, True]
-    assert sweep_flags == [False, False, False, True, True, True, True, True]
+    assert pointwise_flags == [False, False, False, True, True, False, False, False]
+    assert sweep_flags == [False, False, False, True, True, False, False, False]
+
+
+def test_refreeze_constant_mask_hard_locks_precomputed_inliers(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_r = np.array([39.0, 39.0, 39.0], dtype=float)
+    target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=target_r, target_buildup=target_k)
+
+    class FakeCostFn:
+        def __init__(self, dataset):
+            self.sweeps = list(dataset.get("sweeps", []) or [])
+
+        def evaluate(self, anchor_vec):
+            _ = anchor_vec
+            return 1.0
+
+        def evaluate_detailed(self, anchor_vec):
+            _ = anchor_vec
+            noise_metrics = {
+                "chi2_red_rescored_tau_3bin_debiased": 1.0,
+                "chi2_red": 1.0,
+                "n_obs_trimmed": 60.0,
+                "tau_mad_mm": 0.6,
+                "params": 6,
+                "sigma_model_mm": 1.0,
+            }
+            return SimpleNamespace(total_cost=1.0, noise_metrics=noise_metrics)
+
+        def pointwise_residual_rows(self, anchor_vec):
+            _ = anchor_vec
+            return []
+
+        def _pointwise_entries(self, anchors):
+            _ = anchors
+            entries = []
+            for sweep in self.sweeps:
+                points = list(sweep.get("data_points", []) or [])
+                n = len(points)
+                keep = np.zeros(n, dtype=bool)
+                keep[: max(1, n // 2)] = True
+                entries.append({"sweep_metric": 0.0, "_inlier_mask": keep, "valid": True})
+            return entries, None
+
+        def _sweep_wise_keep_mask(self, metrics):
+            keep = np.ones(len(metrics), dtype=bool)
+            return keep, 0.0, "ok"
+
+    monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
+    monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
+
+    data_points = [{"l_drive": float(i + 1), "l_sensor": float(i + 2)} for i in range(6)]
+    sweeps = [
+        {
+            "id": "sweep_0",
+            "fixed_anchors": [0],
+            "fixed_lengths": [0.0],
+            "drive_anchor": 1,
+            "sensor_anchor": 2,
+            "data_points": data_points,
+        }
+    ]
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": sweeps,
+    }
+    seed_anchors = np.zeros((3, 2), dtype=float)
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=target_k,
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=(20.0, 45.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=5,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=True,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        scale_fix_levels=[2],
+        refreeze_iters=8,
+    )
+
+    mask_info = fit_info.get("refreeze_constant_mask")
+    assert isinstance(mask_info, dict)
+    assert bool(mask_info.get("attempted", False)) is True
+    assert bool(mask_info.get("success", False)) is True
+    assert int(mask_info.get("points_in", 0)) == 6
+    assert int(mask_info.get("points_out", 0)) == 3
+
+    refreeze_history = fit_info.get("refreeze_history")
+    assert isinstance(refreeze_history, list)
+    assert len(refreeze_history) == 8
+    assert all(bool(item.get("constant_mask_applied", False)) for item in refreeze_history[5:])
 
 
 def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):

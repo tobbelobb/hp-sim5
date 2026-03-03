@@ -720,6 +720,147 @@ def _estimate_effective_radii_with_spool_model(
     if not np.all(np.isfinite(anchors_current)):
         raise ValueError("anchor estimate contains non-finite values")
 
+    def _build_locked_filter_dataset(
+        source_dataset: dict,
+        anchors_eval: np.ndarray,
+        *,
+        pointwise_enabled: bool,
+        sweep_enabled: bool,
+    ) -> Tuple[Optional[dict], Dict[str, object]]:
+        info: Dict[str, object] = {
+            "attempted": True,
+            "success": False,
+            "message": "not_run",
+            "pointwise_enabled": bool(pointwise_enabled),
+            "sweep_wise_enabled": bool(sweep_enabled),
+            "sweeps_in": 0,
+            "sweeps_out": 0,
+            "points_in": 0,
+            "points_out": 0,
+            "sweeps_dropped_by_sweep_mask": 0,
+            "sweeps_dropped_empty_after_point_mask": 0,
+            "point_mask_mismatch_sweeps": 0,
+        }
+        if not (bool(pointwise_enabled) or bool(sweep_enabled)):
+            info["message"] = "mask lock skipped (no filtering enabled)"
+            return None, info
+        sweeps_in = source_dataset.get("sweeps")
+        if not isinstance(sweeps_in, list):
+            info["message"] = "mask lock skipped (dataset has no sweeps list)"
+            return None, info
+        info["sweeps_in"] = int(len(sweeps_in))
+        anchors_arr = np.asarray(anchors_eval, dtype=float)
+        if (
+            anchors_arr.ndim != 2
+            or anchors_arr.shape[0] != num_anchors
+            or not np.all(np.isfinite(anchors_arr))
+        ):
+            info["message"] = "mask lock skipped (invalid anchors)"
+            return None, info
+
+        try:
+            cost_fn = _build_ellipse_cost_function(
+                source_dataset,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_enabled),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_enabled),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=True,
+                sigma_source=str(sigma_source),
+            )
+            if not hasattr(cost_fn, "_pointwise_entries"):
+                info["message"] = "mask lock skipped (cost function has no pointwise entries API)"
+                return None, info
+            entries_obj = cost_fn._pointwise_entries(anchors_arr)  # type: ignore[attr-defined]
+            if not isinstance(entries_obj, tuple) or len(entries_obj) < 1:
+                info["message"] = "mask lock skipped (pointwise entries unavailable)"
+                return None, info
+            entries_raw = entries_obj[0]
+            entries = list(entries_raw) if isinstance(entries_raw, (list, tuple)) else []
+
+            keep_mask_arr: Optional[np.ndarray] = None
+            if bool(sweep_enabled):
+                if not hasattr(cost_fn, "_sweep_wise_keep_mask"):
+                    info["message"] = "mask lock skipped (cost function has no sweep mask API)"
+                    return None, info
+                sweep_metrics: List[float] = []
+                for entry in entries:
+                    if isinstance(entry, dict):
+                        sweep_metrics.append(float(entry.get("sweep_metric", float("inf"))))
+                    else:
+                        sweep_metrics.append(float("inf"))
+                keep_mask_obj = cost_fn._sweep_wise_keep_mask(sweep_metrics)  # type: ignore[attr-defined]
+                if isinstance(keep_mask_obj, tuple) and len(keep_mask_obj) >= 1:
+                    keep_mask = keep_mask_obj[0]
+                else:
+                    keep_mask = None
+                if keep_mask is not None:
+                    keep_mask_arr = np.asarray(keep_mask, dtype=bool).reshape(-1)
+
+            sweeps_out: List[dict] = []
+            sweeps_dropped_sweep = 0
+            sweeps_dropped_empty = 0
+            point_mask_mismatch_sweeps = 0
+            points_in = 0
+            points_out = 0
+            for idx, sweep in enumerate(sweeps_in):
+                if not isinstance(sweep, dict):
+                    continue
+                if keep_mask_arr is not None and idx < keep_mask_arr.size and not bool(keep_mask_arr[idx]):
+                    sweeps_dropped_sweep += 1
+                    continue
+                sweep_out = dict(sweep)
+                points_raw = sweep.get("data_points")
+                if not isinstance(points_raw, list):
+                    sweeps_out.append(sweep_out)
+                    continue
+                points_in += int(len(points_raw))
+                points_keep = list(points_raw)
+                if bool(pointwise_enabled):
+                    entry = entries[idx] if idx < len(entries) and isinstance(entries[idx], dict) else None
+                    inlier_mask = None if entry is None else entry.get("_inlier_mask")
+                    if isinstance(inlier_mask, np.ndarray):
+                        inlier_arr = np.asarray(inlier_mask, dtype=bool).reshape(-1)
+                        if inlier_arr.size == len(points_raw):
+                            points_keep = [pt for pt, keep in zip(points_raw, inlier_arr.tolist()) if bool(keep)]
+                        else:
+                            point_mask_mismatch_sweeps += 1
+                if len(points_raw) > 0 and len(points_keep) <= 0:
+                    sweeps_dropped_empty += 1
+                    continue
+                points_out += int(len(points_keep))
+                sweep_out["data_points"] = points_keep
+                sweeps_out.append(sweep_out)
+
+            if len(sweeps_out) <= 0:
+                info["message"] = "mask lock skipped (all sweeps dropped)"
+                info["sweeps_dropped_by_sweep_mask"] = int(sweeps_dropped_sweep)
+                info["sweeps_dropped_empty_after_point_mask"] = int(sweeps_dropped_empty)
+                info["point_mask_mismatch_sweeps"] = int(point_mask_mismatch_sweeps)
+                info["points_in"] = int(points_in)
+                info["points_out"] = int(points_out)
+                return None, info
+
+            out_dataset = dict(source_dataset)
+            out_dataset["sweeps"] = sweeps_out
+            info["success"] = True
+            info["message"] = "mask lock dataset created"
+            info["sweeps_out"] = int(len(sweeps_out))
+            info["points_in"] = int(points_in)
+            info["points_out"] = int(points_out)
+            info["sweeps_dropped_by_sweep_mask"] = int(sweeps_dropped_sweep)
+            info["sweeps_dropped_empty_after_point_mask"] = int(sweeps_dropped_empty)
+            info["point_mask_mismatch_sweeps"] = int(point_mask_mismatch_sweeps)
+            return out_dataset, info
+        except Exception as exc:
+            info["message"] = f"mask lock failed: {exc}"
+            return None, info
+
     requested_refreeze_iters = max(1, int(refreeze_iters))
     if requested_refreeze_iters > 1:
         anchors_seed = np.asarray(anchors_current, dtype=float)
@@ -741,6 +882,12 @@ def _estimate_effective_radii_with_spool_model(
         refreeze_end_idx = no_freeze_count + refreeze_count
         refreeze_pointwise_filtering = bool(pointwise_filtering)
         refreeze_sweep_wise_filtering = bool(sweep_wise_filtering)
+        constant_mask_dataset: Optional[dict] = None
+        constant_mask_info: Dict[str, object] = {
+            "attempted": False,
+            "success": False,
+            "message": "not_attempted",
+        }
 
         for refreeze_idx in range(requested_refreeze_iters):
             pass_enable_prefit = bool(enable_prefit) if refreeze_idx == 0 else False
@@ -748,6 +895,7 @@ def _estimate_effective_radii_with_spool_model(
                 bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
             )
             pass_freeze_phase = "refreeze_constant_mask"
+            pass_dataset = dataset
             if refreeze_idx < no_freeze_count:
                 pass_freeze_phase = "warmup_no_freeze"
                 pass_pointwise_filtering = False
@@ -757,9 +905,12 @@ def _estimate_effective_radii_with_spool_model(
                 pass_pointwise_filtering = bool(refreeze_pointwise_filtering)
                 pass_sweep_wise_filtering = bool(refreeze_sweep_wise_filtering)
             else:
-                # Keep the same filtering mask policy as the refreeze stage.
-                pass_pointwise_filtering = bool(refreeze_pointwise_filtering)
-                pass_sweep_wise_filtering = bool(refreeze_sweep_wise_filtering)
+                # Constant-mask phase: run on the locked filtered dataset and
+                # keep runtime filters off so the mask remains fixed.
+                pass_pointwise_filtering = False
+                pass_sweep_wise_filtering = False
+                if isinstance(constant_mask_dataset, dict):
+                    pass_dataset = constant_mask_dataset
             pass_scale_fix_set = set(scale_fix_set)
             # scale_fix 2: final polish only on the last refreeze pass.
             # scale_fix 3: final polish on every refreeze pass.
@@ -774,7 +925,7 @@ def _estimate_effective_radii_with_spool_model(
                 transformed_pass,
                 fit_info_pass,
             ) = _estimate_effective_radii_with_spool_model(
-                dataset,
+                pass_dataset,
                 anchors_seed,
                 find_radii_mode=find_radii_mode,
                 find_buildup_mode=find_buildup_mode,
@@ -848,6 +999,21 @@ def _estimate_effective_radii_with_spool_model(
                 "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
             }
             pass_score_ui, pass_rank_score, pass_score_basis = _plan_score_ui(plan_tmp)
+            if (
+                pass_freeze_phase == "refreeze_dynamic"
+                and refreeze_idx == refreeze_end_idx - 1
+                and refreeze_end_idx < requested_refreeze_iters
+            ):
+                constant_mask_info["attempted"] = True
+                mask_dataset, mask_info = _build_locked_filter_dataset(
+                    pass_dataset,
+                    np.asarray(cal_pass.get("anchors"), dtype=float),
+                    pointwise_enabled=bool(refreeze_pointwise_filtering),
+                    sweep_enabled=bool(refreeze_sweep_wise_filtering),
+                )
+                constant_mask_info.update(mask_info)
+                if isinstance(mask_dataset, dict):
+                    constant_mask_dataset = mask_dataset
             refreeze_history.append(
                 {
                     "refreeze_iter": int(refreeze_idx + 1),
@@ -856,6 +1022,11 @@ def _estimate_effective_radii_with_spool_model(
                     "freeze_phase": str(pass_freeze_phase),
                     "pointwise_filtering": bool(pass_pointwise_filtering),
                     "sweep_wise_filtering": bool(pass_sweep_wise_filtering),
+                    "constant_mask_available": bool(isinstance(constant_mask_dataset, dict)),
+                    "constant_mask_applied": bool(
+                        pass_freeze_phase == "refreeze_constant_mask"
+                        and isinstance(constant_mask_dataset, dict)
+                    ),
                     "scale_fix_levels": [int(v) for v in sorted(pass_scale_fix_set)],
                     "scale_fix_2_active": bool(2 in pass_scale_fix_set),
                     "scale_fix_3_active": bool(3 in pass_scale_fix_set),
@@ -898,6 +1069,7 @@ def _estimate_effective_radii_with_spool_model(
         fit_info_out = dict(fit_info_final)
         fit_info_out["refreeze_iters_requested"] = int(requested_refreeze_iters)
         fit_info_out["refreeze_history"] = list(refreeze_history)
+        fit_info_out["refreeze_constant_mask"] = dict(constant_mask_info)
         if isinstance(final_calibration, dict):
             fit_info_out["refreeze_final_calibration"] = final_calibration
         return (
