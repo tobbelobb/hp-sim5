@@ -2641,7 +2641,7 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
         pointwise_residual_mode="sampson",
         pointwise_filtering=False,
         pointwise_global_mad=False,
-        sweep_wise_filtering=False,
+        sweep_wise_filtering=True,
         sweep_metric="mad",
         use_noise_mean=False,
         sigma_source="auto",
@@ -2657,6 +2657,9 @@ def test_spool_fit_refreeze_iters_runs_multiple_passes(monkeypatch):
     assert bool(refreeze_history[0].get("prefit_enabled", False)) is True
     assert bool(refreeze_history[1].get("prefit_enabled", True)) is False
     assert bool(refreeze_history[2].get("prefit_enabled", True)) is False
+    assert bool(refreeze_history[0].get("sweep_wise_filtering", True)) is False
+    assert bool(refreeze_history[1].get("sweep_wise_filtering", True)) is False
+    assert bool(refreeze_history[2].get("sweep_wise_filtering", False)) is True
     assert bool(refreeze_history[0].get("scale_fix_2_active", True)) is False
     assert bool(refreeze_history[1].get("scale_fix_2_active", True)) is False
     assert bool(refreeze_history[2].get("scale_fix_2_active", False)) is True

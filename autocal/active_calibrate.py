@@ -742,6 +742,9 @@ def _estimate_effective_radii_with_spool_model(
             pass_enable_bootstrap = (
                 bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
             )
+            pass_sweep_wise_filtering = bool(sweep_wise_filtering)
+            if refreeze_idx < 2:
+                pass_sweep_wise_filtering = False
             pass_scale_fix_set = set(scale_fix_set)
             # scale_fix 2: final polish only on the last refreeze pass.
             # scale_fix 3: final polish on every refreeze pass.
@@ -781,7 +784,7 @@ def _estimate_effective_radii_with_spool_model(
                 pointwise_residual_mode=pointwise_residual_mode,
                 pointwise_filtering=pointwise_filtering,
                 pointwise_global_mad=pointwise_global_mad,
-                sweep_wise_filtering=sweep_wise_filtering,
+                sweep_wise_filtering=pass_sweep_wise_filtering,
                 sweep_metric=sweep_metric,
                 use_noise_mean=use_noise_mean,
                 sigma_source=sigma_source,
@@ -810,7 +813,7 @@ def _estimate_effective_radii_with_spool_model(
                 robust_debug=bool(robust_debug),
                 pointwise_filtering=bool(pointwise_filtering),
                 pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_wise_filtering=bool(pass_sweep_wise_filtering),
                 sweep_metric=str(sweep_metric),
                 use_noise_mean=bool(use_noise_mean),
                 sigma_source=str(sigma_source),
@@ -835,6 +838,7 @@ def _estimate_effective_radii_with_spool_model(
                     "refreeze_iter": int(refreeze_idx + 1),
                     "prefit_enabled": bool(pass_enable_prefit),
                     "bootstrap_enabled": bool(pass_enable_bootstrap),
+                    "sweep_wise_filtering": bool(pass_sweep_wise_filtering),
                     "scale_fix_levels": [int(v) for v in sorted(pass_scale_fix_set)],
                     "scale_fix_2_active": bool(2 in pass_scale_fix_set),
                     "scale_fix_3_active": bool(3 in pass_scale_fix_set),
