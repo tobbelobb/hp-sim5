@@ -389,9 +389,9 @@ def run_active_calibrate(
         "--optimizer-mode",
         "fast",
         "--scale-fix",
-        "3",
+        "3", # 3 in ref from March 3
         "--fit-structure",
-        "1,2,3",
+        "off", # 3 in ref from March 3
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])

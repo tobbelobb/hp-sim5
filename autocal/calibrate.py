@@ -173,7 +173,13 @@ def _extract_motor_samples_with_metadata(dataset: dict) -> Tuple[np.ndarray, int
 def _extract_m666(config: Optional[dict]) -> Optional[dict]:
     if not isinstance(config, dict):
         return None
-    for key in ("m666", "m666_after", "m666_before"):
+    for key in (
+        "m666_adjusted_by_data_collector",
+        "m666_before_data_collection",
+        "m666",
+        "m666_after",
+        "m666_before",
+    ):
         val = config.get(key)
         if isinstance(val, dict):
             return val
@@ -585,7 +591,7 @@ def _extract_legacy_machine_config(dataset: dict, num_axes: int) -> Optional[Dic
     cfg = dataset.get("config")
     if not isinstance(cfg, dict):
         return None
-    m666 = cfg.get("m666") or cfg.get("m666_after") or cfg.get("m666_before")
+    m666 = _extract_m666(cfg)
     if not isinstance(m666, dict):
         return None
 
@@ -648,7 +654,7 @@ def _debug_print_legacy_config_comparison(sim: Any, dataset: dict, num_axes: int
 
     payload = {
         "dataset_config_keys": sorted(cfg.keys()),
-        "dataset_m666": cfg.get("m666"),
+        "dataset_m666": _extract_m666(cfg),
         "dataset_mm_per_degree": cfg.get("mm_per_degree"),
         "resolved_from_dataset": _jsonify(resolved_dataset),
         "resolved_from_data_py_defaults": _jsonify(resolved_defaults),

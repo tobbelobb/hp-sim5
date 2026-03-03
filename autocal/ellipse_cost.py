@@ -311,7 +311,8 @@ class EllipseCostFunction:
 
         self.flex_model: Optional[FlexModel] = None
         if bool(use_flex) and isinstance(dataset, dict):
-            m666 = (dataset.get("config") or {}).get("m666")
+            config = dataset.get("config", {}) or {}
+            m666 = self._extract_preferred_m666(config) if isinstance(config, dict) else None
             self.flex_model = FlexModel.from_m666(
                 m666,
                 num_axes=self.num_anchors,
@@ -606,6 +607,25 @@ class EllipseCostFunction:
             return {}
         return dict(raw)
 
+    @staticmethod
+    def _iter_preferred_m666_sources(config: dict) -> Iterable[dict]:
+        for key in (
+            "m666_adjusted_by_data_collector",
+            "m666_before_data_collection",
+            "m666",
+            "m666_after",
+            "m666_before",
+        ):
+            src = config.get(key)
+            if isinstance(src, dict):
+                yield src
+
+    @classmethod
+    def _extract_preferred_m666(cls, config: dict) -> Optional[dict]:
+        for src in cls._iter_preferred_m666_sources(config):
+            return src
+        return None
+
     @classmethod
     def _infer_base_radius_mm(cls, dataset: Union[dict, "SweepDataset"]) -> Optional[float]:
         if not isinstance(dataset, dict):
@@ -613,14 +633,11 @@ class EllipseCostFunction:
         config = dataset.get("config", {}) or {}
         if not isinstance(config, dict):
             return None
-        m666_before = config.get("m666_before")
-        m666 = config.get("m666")
-        for src in (m666_before, m666):
-            if isinstance(src, dict):
-                vals = cls._flatten_config_values(src.get("R"))
-                mean = cls._mean_finite(vals)
-                if mean is not None and np.isfinite(mean) and mean > 0.0:
-                    return float(mean)
+        for src in cls._iter_preferred_m666_sources(config):
+            vals = cls._flatten_config_values(src.get("R"))
+            mean = cls._mean_finite(vals)
+            if mean is not None and np.isfinite(mean) and mean > 0.0:
+                return float(mean)
         return None
 
     @classmethod
@@ -643,18 +660,15 @@ class EllipseCostFunction:
         if not isinstance(config, dict):
             return False
 
-        def _q_abs(src_key: str) -> Optional[float]:
-            src = config.get(src_key)
-            if not isinstance(src, dict):
-                return None
+        def _q_abs(src: dict) -> Optional[float]:
             vals = cls._flatten_config_values(src.get("Q"))
             mean = cls._mean_finite(vals)
             if mean is None:
                 return None
             return abs(float(mean))
 
-        for key in ("m666_before", "m666"):
-            q_abs = _q_abs(key)
+        for src in cls._iter_preferred_m666_sources(config):
+            q_abs = _q_abs(src)
             if q_abs is not None and np.isfinite(q_abs) and q_abs > 1e-9:
                 return True
         return False
@@ -816,7 +830,7 @@ class EllipseCostFunction:
             config = {}
         line_width_default = _DEFAULT_LAYER_LINE_WIDTH_MM
         if isinstance(config, dict):
-            m666 = config.get("m666")
+            m666 = self._extract_preferred_m666(config)
             if isinstance(m666, dict):
                 raw_w = m666.get("W")
                 if isinstance(raw_w, (int, float)) and np.isfinite(raw_w) and raw_w >= 0.0:

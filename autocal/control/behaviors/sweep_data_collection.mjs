@@ -232,7 +232,78 @@ export function resolveForcedBuildupFactor({ forceBuildupFactor = null, preserve
   if (preserveBuildupFactor) {
     return null;
   }
-  return 0;
+  return null;
+}
+
+function parseOptionalNumberList(value, label) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const rawItems = Array.isArray(value)
+    ? value
+    : String(value)
+      .split(/[,:]/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  if (rawItems.length === 0) {
+    return null;
+  }
+  const out = rawItems.map((entry) => Number.parseFloat(entry));
+  if (out.some((entry) => !Number.isFinite(entry))) {
+    throw new Error(`${label} must be numeric.`);
+  }
+  return out;
+}
+
+function normalizeBaseRadii(values, numAnchors) {
+  if (!Array.isArray(values) || values.length === 0 || !Number.isFinite(numAnchors) || numAnchors <= 0) {
+    return null;
+  }
+  const normalized = values
+    .slice(0, numAnchors)
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isFinite(entry));
+  if (normalized.length === 0) {
+    return null;
+  }
+  while (normalized.length < numAnchors) {
+    normalized.push(normalized[0]);
+  }
+  return normalized;
+}
+
+function formatM666Number(value) {
+  return Number(value.toFixed(9)).toString();
+}
+
+function formatM666Vector(values) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return null;
+  }
+  const parts = values.map((entry) => Number(entry)).filter((entry) => Number.isFinite(entry));
+  if (parts.length === 0) {
+    return null;
+  }
+  return parts.map((entry) => formatM666Number(entry)).join(':');
+}
+
+export function resolveForcedBaseRadii({ forceBaseRadii = null, numAnchors = 0 } = {}) {
+  return normalizeBaseRadii(forceBaseRadii, numAnchors);
+}
+
+export function buildM666AdjustmentCommand({ forcedBaseRadii = null, forcedBuildupFactor = null } = {}) {
+  const fields = [];
+  const radiiSpec = formatM666Vector(forcedBaseRadii);
+  if (radiiSpec) {
+    fields.push(`R${radiiSpec}`);
+  }
+  if (Number.isFinite(forcedBuildupFactor)) {
+    fields.push(`Q${formatM666Number(Number(forcedBuildupFactor))}`);
+  }
+  if (fields.length === 0) {
+    return null;
+  }
+  return `M666 ${fields.join(' ')}`;
 }
 
 function resolveFixedTargets(fixedCount, explicitTargets, maxTravelMm) {
@@ -274,6 +345,10 @@ function validateSweepCollectionInput(context) {
   const forceMax = parseOptionalNumber(args.forceMax, 'force-max');
   const forceBuildupFactor = parseOptionalNumber(args.forceBuildupFactor, 'force-buildup-factor');
   const preserveBuildupFactor = !!args.preserveBuildupFactor;
+  const forceBaseRadii = parseOptionalNumberList(
+    args.forceBaseRadii ?? args.baseRadii,
+    'force-base-radii',
+  );
   const noiseSampleCount = parseOptionalNumber(args.noiseSamples ?? args.noiseSampleCount, 'noise-samples', { integer: true });
   const noiseSampleRateHz = parseOptionalNumber(
     args.noiseSampleRateHz ?? args.noiseSampleRate ?? args.noiseSampleHz,
@@ -311,6 +386,7 @@ function validateSweepCollectionInput(context) {
     forceMax,
     forceBuildupFactor,
     preserveBuildupFactor,
+    forceBaseRadii,
     noiseSampleCount,
     noiseSampleRateHz,
     noiseSampleIntervalMs,
@@ -1017,6 +1093,7 @@ export async function collectSweepData(send, context) {
     forceMaxProvided,
     forceBuildupFactor,
     preserveBuildupFactor,
+    forceBaseRadii,
   } = options;
   let { forceLow, forceMid, forceMax } = options;
 
@@ -1054,17 +1131,23 @@ export async function collectSweepData(send, context) {
     forceBuildupFactor,
     preserveBuildupFactor,
   });
-  if (Number.isFinite(forcedBuildupFactor)) {
-    if (forcedBuildupFactor === 0) {
-      await send('M666 Q0');
-    } else {
-      await send(`M666 Q${forcedBuildupFactor}`);
-    }
+  const forcedBaseRadii = resolveForcedBaseRadii({
+    forceBaseRadii,
+    numAnchors: machineConfig.numAnchors,
+  });
+  const m666AdjustmentCommand = buildM666AdjustmentCommand({
+    forcedBaseRadii,
+    forcedBuildupFactor,
+  });
+  let m666Adjusted = null;
+  if (typeof m666AdjustmentCommand === 'string' && m666AdjustmentCommand.length > 0) {
+    await send(m666AdjustmentCommand);
+    const m666AfterReply = await send('M666');
+    m666Adjusted = parseM666(m666AfterReply?.reply);
   }
-  const m666AfterReply = await send('M666');
-  const m666After = parseM666(m666AfterReply?.reply);
 
-  const mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666After, idx));
+  const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;
+  const mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666ForCollection, idx));
   const missingAxes = mmPerDeg
     .map((val, idx) => (Number.isFinite(val) ? null : machineConfig.axes[idx]))
     .filter(Boolean);
@@ -1313,13 +1396,14 @@ export async function collectSweepData(send, context) {
     config: {
       angles_unit: 'deg',
       lengths_unit: 'mm',
-      m666: m666After,
-      m666_before: m666Before,
+      m666_before_data_collection: m666Before,
+      m666_adjusted_by_data_collector: m666Adjusted ?? undefined,
       m669: m669Values,
       m92: m92Values,
       mm_per_degree: mmPerDeg,
       notes: {
-        buildup_factor_forced: forcedBuildupFactor,
+        buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,
+        base_radii_forced_mm: forcedBaseRadii ?? undefined,
       },
       force_tuning: forceTuning,
       max_travel_mm: Number.isFinite(maxTravelMeta) ? maxTravelMeta : undefined,

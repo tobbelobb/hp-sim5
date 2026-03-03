@@ -88,8 +88,9 @@ Options:
   --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
   --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
   --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
-  --preserve-buildup-factor  Keep current M666 Q during collection (skip implicit Q0)
+  --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
   --force-buildup-factor <k> Force M666 Q to this value before collection
+  --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
   --no-auto-tune-force       skip auto-tuning and use provided/default forces
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)

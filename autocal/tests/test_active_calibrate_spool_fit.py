@@ -312,6 +312,154 @@ def test_format_m666_from_length_model_handles_per_anchor_q():
     assert cmd == "M666 R30:30:30 Q0.01:0.02:0.03"
 
 
+def test_resolve_length_model_base_params_prefers_base_override_for_r():
+    dataset = {
+        "config": {
+            "m666_before_data_collection": {
+                "R": [38.72, 38.72, 38.72],
+                "U": [2.0, 2.0, 2.0],
+                "O": [1.0, 1.0, 1.0],
+                "L": [4.0, 4.0, 4.0],
+                "H": [8.0, 8.0, 8.0],
+            }
+        }
+    }
+    out = ac._resolve_length_model_base_params(
+        dataset,
+        num_anchors=3,
+        base_radii_override=[30.0],
+    )
+    assert np.allclose(out["base_radii_mm"], [30.0, 30.0, 30.0])
+    assert np.allclose(out["mechanical_advantage"], [2.0, 2.0, 2.0])
+    assert np.allclose(out["lines_per_spool"], [1.0, 1.0, 1.0])
+    assert np.allclose(out["spool_to_motor_gearing_factor"], [2.0, 2.0, 2.0])
+
+
+def test_resolve_length_model_base_params_uses_m666_r_when_no_override():
+    dataset = {
+        "config": {
+            "m666_adjusted_by_data_collector": {
+                "R": [30.0, 30.0, 30.0],
+                "U": [1.0, 1.0, 1.0],
+                "O": [1.0, 1.0, 1.0],
+                "L": [1.0, 1.0, 1.0],
+                "H": [1.0, 1.0, 1.0],
+            },
+            "m666_before_data_collection": {
+                "R": [38.72, 38.72, 38.72],
+            },
+        }
+    }
+    out = ac._resolve_length_model_base_params(
+        dataset,
+        num_anchors=3,
+        base_radii_override=None,
+    )
+    assert np.allclose(out["base_radii_mm"], [30.0, 30.0, 30.0])
+
+
+def test_resolve_length_model_base_params_falls_back_to_m666_before_data_collection():
+    dataset = {
+        "config": {
+            "m666_before_data_collection": {
+                "R": [31.0, 32.0, 33.0],
+                "U": [1.0, 1.0, 1.0],
+                "O": [1.0, 1.0, 1.0],
+                "L": [1.0, 1.0, 1.0],
+                "H": [1.0, 1.0, 1.0],
+            },
+        }
+    }
+    out = ac._resolve_length_model_base_params(
+        dataset,
+        num_anchors=3,
+        base_radii_override=None,
+    )
+    assert np.allclose(out["base_radii_mm"], [31.0, 32.0, 33.0])
+
+
+def test_resolve_length_model_base_params_errors_without_override_or_m666_r():
+    dataset = {
+        "config": {
+            "angles_unit": "deg",
+        }
+    }
+    with pytest.raises(ValueError, match="provide m666_adjusted_by_data_collector"):
+        ac._resolve_length_model_base_params(
+            dataset,
+            num_anchors=3,
+            base_radii_override=None,
+        )
+
+
+def test_resolve_buildup_factor_seed_prefers_override_then_adjusted_then_before():
+    dataset = {
+        "config": {
+            "m666_adjusted_by_data_collector": {"Q": 0.111},
+            "m666_before_data_collection": {"Q": 0.222},
+        }
+    }
+    assert np.isclose(
+        ac._resolve_buildup_factor_seed(dataset, buildup_factor_override=0.333),
+        0.333,
+    )
+    assert np.isclose(
+        ac._resolve_buildup_factor_seed(dataset, buildup_factor_override=None),
+        0.111,
+    )
+
+    dataset_only_before = {"config": {"m666_before_data_collection": {"Q": 0.222}}}
+    assert np.isclose(
+        ac._resolve_buildup_factor_seed(dataset_only_before, buildup_factor_override=None),
+        0.222,
+    )
+
+
+def test_inject_spool_collection_args_only_injects_explicit_r_and_q_overrides():
+    out, changed = ac._inject_spool_collection_args(
+        [],
+        find_radii_mode="global",
+        find_buildup_mode="global",
+        base_radii=[30.0, 30.0, 30.0],
+        buildup_factor=0.636619,
+    )
+    assert changed is True
+    assert "--force-base-radii" in out
+    assert "--force-buildup-factor" in out
+    assert "--preserve-buildup-factor" not in out
+
+
+def test_merge_sweep_datasets_carries_new_m666_collection_keys():
+    base = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "timestamp": "2026-03-03T00:00:00",
+        "config": {
+            "angles_unit": "deg",
+            "m666_before_data_collection": {"R": [10.0, 10.0, 10.0]},
+        },
+        "sweeps": [],
+    }
+    new = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "timestamp": "2026-03-03T00:00:01",
+        "config": {
+            "m666_before_data_collection": {"R": [30.0, 30.0, 30.0]},
+            "m666_adjusted_by_data_collector": {"R": [31.0, 31.0, 31.0], "Q": 0.5},
+            "notes": {"base_radii_forced_mm": [30.0, 30.0, 30.0]},
+        },
+        "sweeps": [],
+    }
+    merged = ac._merge_sweep_datasets(base, new)
+    cfg = merged.get("config", {})
+    assert cfg.get("m666_before_data_collection", {}).get("R") == [30.0, 30.0, 30.0]
+    assert cfg.get("m666_adjusted_by_data_collector", {}).get("R") == [31.0, 31.0, 31.0]
+    assert cfg.get("notes", {}).get("base_radii_forced_mm") == [30.0, 30.0, 30.0]
+
+
 def test_plan_hits_underconstrained_penalty_when_cost_is_sentinel():
     plan = {
         "cost_noise_normalized": 100.0,
@@ -641,14 +789,14 @@ def test_default_b_prior_sigma_is_relaxed_for_global_k_fits():
     assert np.isclose(float(ac._DEFAULT_B_PRIOR_SIGMA), 0.1)
 
 
-def test_inject_spool_collection_args_adds_preserve_when_search_enabled():
+def test_inject_spool_collection_args_does_not_add_preserve_by_default():
     args, applied = ac._inject_spool_collection_args(
         ["--speedup", "25"],
         find_radii_mode="per-anchor",
         find_buildup_mode="off",
     )
-    assert applied is True
-    assert "--preserve-buildup-factor" in args
+    assert applied is False
+    assert "--preserve-buildup-factor" not in args
 
 
 def test_inject_spool_collection_args_respects_explicit_buildup_override():
@@ -656,6 +804,7 @@ def test_inject_spool_collection_args_respects_explicit_buildup_override():
         ["--force-buildup-factor", "0.2"],
         find_radii_mode="per-anchor",
         find_buildup_mode="global",
+        buildup_factor=0.5,
     )
     assert applied is False
     assert args == ["--force-buildup-factor", "0.2"]

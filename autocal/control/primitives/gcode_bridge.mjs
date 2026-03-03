@@ -292,6 +292,9 @@ export function parseBridgeArgs(argv) {
     forceLow: null,
     forceMid: null,
     forceMax: null,
+    preserveBuildupFactor: false,
+    forceBuildupFactor: null,
+    forceBaseRadii: null,
     forceStep: null,
     autoTuneForce: false,
     noAutoTuneForce: false,
@@ -389,6 +392,12 @@ export function parseBridgeArgs(argv) {
       args.forceMid = argv[++i] || null;
     } else if (arg === '--force-max' || arg === '--forceMax') {
       args.forceMax = argv[++i] || null;
+    } else if (arg === '--preserve-buildup-factor' || arg === '--preserveBuildupFactor') {
+      args.preserveBuildupFactor = true;
+    } else if (arg === '--force-buildup-factor' || arg === '--forceBuildupFactor') {
+      args.forceBuildupFactor = argv[++i] || null;
+    } else if (arg === '--force-base-radii' || arg === '--forceBaseRadii' || arg === '--base-radii') {
+      args.forceBaseRadii = argv[++i] || null;
     } else if (arg === '--force-step' || arg === '--forceStep') {
       args.forceStep = argv[++i] || null;
     } else if (arg === '--auto-tune-force' || arg === '--autoTuneForce') {

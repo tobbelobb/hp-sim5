@@ -153,7 +153,13 @@ def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float
 def _extract_m666(config: Optional[dict]) -> Optional[dict]:
     if not isinstance(config, dict):
         return None
-    for key in ("m666", "m666_after", "m666_before"):
+    for key in (
+        "m666_adjusted_by_data_collector",
+        "m666_before_data_collection",
+        "m666",
+        "m666_after",
+        "m666_before",
+    ):
         val = config.get(key)
         if isinstance(val, dict):
             return val
@@ -170,8 +176,9 @@ def _resolve_length_model_base_params(
     if not isinstance(config, dict):
         config = {}
     m666 = _extract_m666(config)
+    has_base_radii_override = base_radii_override is not None and len(base_radii_override) > 0
 
-    if base_radii_override is not None and len(base_radii_override) > 0:
+    if has_base_radii_override:
         base_radii_list = _expand_to_num_axes(list(base_radii_override), int(num_anchors), float("nan"))
     elif isinstance(m666, dict):
         base_radii_list = _expand_to_num_axes(m666.get("R"), int(num_anchors), float("nan"))
@@ -186,7 +193,7 @@ def _resolve_length_model_base_params(
     ):
         raise ValueError(
             "--find-radii requires positive base radii for all axes "
-            "(use --base-radii or provide m666 R in dataset config)."
+            "(use --base-radii or provide m666_adjusted_by_data_collector/m666_before_data_collection R in dataset config)."
         )
 
     mech_adv = np.asarray(
@@ -220,6 +227,46 @@ def _resolve_length_model_base_params(
         "lines_per_spool": lines_per_spool,
         "spool_to_motor_gearing_factor": spool_to_motor,
     }
+
+
+def _extract_first_finite_float(value: object) -> Optional[float]:
+    if isinstance(value, (int, float)):
+        out = float(value)
+        if np.isfinite(out):
+            return out
+        return None
+    if isinstance(value, (list, tuple)):
+        for entry in value:
+            if isinstance(entry, (int, float)):
+                out = float(entry)
+                if np.isfinite(out):
+                    return out
+    return None
+
+
+def _resolve_buildup_factor_seed(
+    dataset: dict,
+    *,
+    buildup_factor_override: Optional[float],
+) -> float:
+    if buildup_factor_override is not None:
+        try:
+            override_val = float(buildup_factor_override)
+        except (TypeError, ValueError):
+            override_val = float("nan")
+        if np.isfinite(override_val):
+            return float(override_val)
+
+    config = dataset.get("config")
+    if not isinstance(config, dict):
+        return 0.0
+    m666 = _extract_m666(config)
+    if not isinstance(m666, dict):
+        return 0.0
+    q_val = _extract_first_finite_float(m666.get("Q"))
+    if q_val is None:
+        return 0.0
+    return float(q_val)
 
 
 def _mm_per_degree_for_axis(
@@ -2717,18 +2764,66 @@ def _collector_has_buildup_override(args: Sequence[str]) -> bool:
     return False
 
 
+def _collector_has_base_radii_override(args: Sequence[str]) -> bool:
+    override_flags = {
+        "--force-base-radii",
+        "--forceBaseRadii",
+        "--base-radii",
+    }
+    for arg in args:
+        if not isinstance(arg, str):
+            continue
+        if arg in override_flags:
+            return True
+        if (
+            arg.startswith("--force-base-radii=")
+            or arg.startswith("--forceBaseRadii=")
+            or arg.startswith("--base-radii=")
+        ):
+            return True
+    return False
+
+
+def _format_csv_float_list(values: Sequence[float]) -> str:
+    return ",".join(f"{float(v):.12g}" for v in values)
+
+
 def _inject_spool_collection_args(
     collector_args: Sequence[str],
     *,
     find_radii_mode: str,
     find_buildup_mode: str,
+    base_radii: Optional[Sequence[float]] = None,
+    buildup_factor: Optional[float] = None,
 ) -> Tuple[List[str], bool]:
     args = list(collector_args)
-    search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
-    if search_spool and not _collector_has_buildup_override(args):
-        args.append("--preserve-buildup-factor")
-        return args, True
-    return args, False
+    _ = find_radii_mode
+    _ = find_buildup_mode
+    changed = False
+
+    if base_radii is not None and len(base_radii) > 0 and not _collector_has_base_radii_override(args):
+        radii_vals: List[float] = []
+        for entry in base_radii:
+            try:
+                val = float(entry)
+            except (TypeError, ValueError):
+                continue
+            if np.isfinite(val):
+                radii_vals.append(float(val))
+        if radii_vals:
+            args.extend(["--force-base-radii", _format_csv_float_list(radii_vals)])
+            changed = True
+
+    if buildup_factor is not None and not _collector_has_buildup_override(args):
+        try:
+            k_val = float(buildup_factor)
+        except (TypeError, ValueError):
+            k_val = float("nan")
+        if np.isfinite(k_val):
+            args.extend(["--force-buildup-factor", f"{k_val:.12g}"])
+            changed = True
+
+    return args, changed
 
 
 def _resolve_sim_config(
@@ -3783,9 +3878,23 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     if isinstance(new_config, dict):
         if not isinstance(base_config, dict):
             merged["config"] = dict(new_config)
-        elif "force_tuning" in new_config or "torque_tuning" in new_config:
+        else:
             updated = dict(base_config)
-            updated["force_tuning"] = new_config.get("force_tuning") or new_config.get("torque_tuning")
+            for key in (
+                "m666_adjusted_by_data_collector",
+                "m666_before_data_collection",
+                "m666",
+                "m666_after",
+                "m666_before",
+                "m669",
+                "m92",
+                "mm_per_degree",
+                "notes",
+            ):
+                if key in new_config:
+                    updated[key] = new_config.get(key)
+            if "force_tuning" in new_config or "torque_tuning" in new_config:
+                updated["force_tuning"] = new_config.get("force_tuning") or new_config.get("torque_tuning")
             merged["config"] = updated
     return merged
 
@@ -4709,14 +4818,10 @@ def _plan_next_ellipse_sweep(
     if b_prior_sigma is not None and not _spool_mode_enabled(find_buildup_mode):
         warnings.append("b_prior_sigma_ignored_without_find_buildup_factor")
 
-    est_buildup = 0.0
-    if buildup_factor is not None:
-        try:
-            est_buildup = float(buildup_factor)
-        except (TypeError, ValueError):
-            est_buildup = 0.0
-    if not np.isfinite(est_buildup):
-        est_buildup = 0.0
+    est_buildup = _resolve_buildup_factor_seed(
+        dataset,
+        buildup_factor_override=buildup_factor,
+    )
 
     length_model: Optional[Dict[str, object]] = None
     spool_params: Optional[SpoolModelParams] = None
@@ -5142,6 +5247,8 @@ def _plan_next_ellipse_sweep(
         collector_args_eff,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
+        base_radii=base_radii,
+        buildup_factor=buildup_factor,
     )
     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
         collector_args_eff.append("--return-to-origin")
@@ -5794,6 +5901,8 @@ def ellipse_active(
         collector_args_eff,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
+        base_radii=base_radii,
+        buildup_factor=buildup_factor,
     )
     if sim and hp_sim_reset_eff and collect_once and not _arg_has_flag(collector_args_eff, "--hp-sim-reset"):
         collector_args_eff.append("--hp-sim-reset")
@@ -6084,6 +6193,8 @@ def full_auto_loop(
         collector_args_eff,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
+        base_radii=base_radii,
+        buildup_factor=buildup_factor,
     )
     hp_sim_reset_eff = _effective_hp_sim_reset(
         sim=bool(sim),
@@ -6876,6 +6987,8 @@ def ellipse_loop(
         collector_args_eff,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
+        base_radii=base_radii,
+        buildup_factor=buildup_factor,
     )
     hp_sim_reset_eff = _effective_hp_sim_reset(
         sim=bool(sim),
@@ -7217,13 +7330,13 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--base-radii",
         type=str,
         default=None,
-        help="Comma-separated base radii in mm (defaults to config m666 R).",
+        help="Comma-separated base radii in mm (defaults to config m666_adjusted_by_data_collector/m666_before_data_collection R).",
     )
     parser.add_argument(
         "--buildup-factor",
         type=float,
         default=None,
-        help="Use this buildup factor k in the model transform (with --find-radii, default is 0).",
+        help="Use this buildup factor k in the model transform (if omitted, falls back to config m666_adjusted_by_data_collector/m666_before_data_collection Q, else 0).",
     )
     parser.add_argument(
         "--line-width",
