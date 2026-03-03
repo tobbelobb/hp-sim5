@@ -94,7 +94,7 @@ class DatasetRunResult:
     generated_log: Optional[Path]
     reference_log: Optional[Path]
     true_err_total_delta: Optional[float] = None
-    true_gen_iter_mean: Optional[float] = None
+    true_iter_mean_delta: Optional[float] = None
     true_gen_iter_std: Optional[float] = None
     true_gen_iter_count: int = 0
 
@@ -391,7 +391,7 @@ def run_active_calibrate(
         "--scale-fix",
         "3",
         "--fit-structure",
-        "3",
+        "1,2,3",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
@@ -426,8 +426,8 @@ def fmt(x: Optional[float], nd: int = 3) -> str:
     return f"{x:.{nd}f}"
 
 
-def compute_final_score(total_error_sum: float, mean_error_sum: float) -> float:
-    return total_error_sum + (0.5 * mean_error_sum)
+def compute_final_score(total_error_sum: float, mean_delta_sum: float) -> float:
+    return total_error_sum + mean_delta_sum
 
 
 def report_dataset(
@@ -445,7 +445,11 @@ def report_dataset(
     lines: List[str] = []
     ok = True
     true_err_total_delta: Optional[float] = None
+    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(ref.iterations)
     true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(gen.iterations)
+    true_iter_mean_delta: Optional[float] = None
+    if true_ref_iter_mean is not None and true_gen_iter_mean is not None:
+        true_iter_mean_delta = true_gen_iter_mean - true_ref_iter_mean
 
     # ---- Summary ----
     lines.append(f"\n========= {name} =========")
@@ -504,9 +508,11 @@ def report_dataset(
                 )
                 summary_rows.append(["true_err_anchors", fmt(ref_true[1]), fmt(gen_true[1]), fmt(gen_true[1] - ref_true[1]), "-"])
                 summary_rows.append(["true_err_R*2π", fmt(ref_true[2]), fmt(gen_true[2]), fmt(gen_true[2] - ref_true[2]), "-"])
+                mean_delta_label = dir_label(true_iter_mean_delta) if true_iter_mean_delta is not None else "N/A"
                 lines.append(
                     f"RUN_TRACKER: true_err_total delta(gen-ref)={fmt(true_err_total_delta)} [{dir_label(true_err_total_delta)}], "
-                    f"true_gen_iter_mean={fmt(true_gen_iter_mean)}, true_gen_iter_std={fmt(true_gen_iter_std)} "
+                    f"true_iter_mean_delta={fmt(true_iter_mean_delta)} [{mean_delta_label}], "
+                    f"true_gen_iter_std={fmt(true_gen_iter_std)} "
                     f"(n={true_gen_iter_count})"
                 )
 
@@ -766,7 +772,11 @@ def run_one_dataset(
 
     ref_parsed = parse_log_file(ref_log_path)
     gen_parsed = parse_log_file(gen_log_path)
+    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(ref_parsed.iterations)
     true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(gen_parsed.iterations)
+    true_iter_mean_delta: Optional[float] = None
+    if true_ref_iter_mean is not None and true_gen_iter_mean is not None:
+        true_iter_mean_delta = true_gen_iter_mean - true_ref_iter_mean
 
     ok, lines, true_err_total_delta = report_dataset(
         name=name,
@@ -783,7 +793,7 @@ def run_one_dataset(
         generated_log=gen_log_path,
         reference_log=ref_log_path,
         true_err_total_delta=true_err_total_delta,
-        true_gen_iter_mean=true_gen_iter_mean,
+        true_iter_mean_delta=true_iter_mean_delta,
         true_gen_iter_std=true_gen_iter_std,
         true_gen_iter_count=true_gen_iter_count,
     )
@@ -879,7 +889,7 @@ def main() -> int:
             completed_sorted = sorted(completed_results, key=lambda r: r.name)
             rows: List[List[str]] = []
             sum_delta = 0.0
-            sum_true_gen_mean = 0.0
+            sum_true_mean_delta = 0.0
             sum_count = 0
             for r in completed_sorted:
                 d = r.true_err_total_delta
@@ -888,7 +898,7 @@ def main() -> int:
                         r.name,
                         fmt(d),
                         dir_label(d),
-                        fmt(r.true_gen_iter_mean),
+                        fmt(r.true_iter_mean_delta),
                         fmt(r.true_gen_iter_std),
                         str(r.true_gen_iter_count),
                     ])
@@ -899,16 +909,16 @@ def main() -> int:
                         r.name,
                         "N/A",
                         "N/A",
-                        fmt(r.true_gen_iter_mean),
+                        fmt(r.true_iter_mean_delta),
                         fmt(r.true_gen_iter_std),
                         str(r.true_gen_iter_count),
                     ])
-                if r.true_gen_iter_mean is not None and math.isfinite(r.true_gen_iter_mean):
-                    sum_true_gen_mean += float(r.true_gen_iter_mean)
+                if r.true_iter_mean_delta is not None and math.isfinite(r.true_iter_mean_delta):
+                    sum_true_mean_delta += float(r.true_iter_mean_delta)
 
-            print("\nRUN_TRACKER: true_err_total delta(gen-ref) and true_gen iter stats by dataset")
+            print("\nRUN_TRACKER: true_err_total delta(gen-ref) and true_iter mean delta by dataset")
             for line in format_table(
-                headers=["dataset", "delta(gen-ref)", "verdict", "true_gen_mean", "true_gen_std", "n_true_gen"],
+                headers=["dataset", "delta(gen-ref)", "verdict", "true_iter_mean_delta", "true_gen_std", "n_true_gen"],
                 rows=rows,
             ):
                 print("  " + line)
@@ -916,11 +926,11 @@ def main() -> int:
                 print(
                     f"RUN_TRACKER: sum_true_err_total_delta(gen-ref)={fmt(sum_delta)} over {sum_count} datasets [{dir_label(sum_delta)}]"
                 )
-                final_score = compute_final_score(sum_delta, sum_true_gen_mean)
+                final_score = compute_final_score(sum_delta, sum_true_mean_delta)
                 print(
                     f"RUN_TRACKER: final_score={fmt(final_score)} "
-                    f"(sum_true_err_total_delta + 0.5*sum_true_gen_mean, "
-                    f"sum_true_gen_mean={fmt(sum_true_gen_mean)})"
+                    f"(sum_true_err_total_delta + sum_true_mean_delta, "
+                    f"sum_true_mean_delta={fmt(sum_true_mean_delta)})"
                 )
             else:
                 print("RUN_TRACKER: sum_true_err_total_delta(gen-ref)=N/A (parse missing)")

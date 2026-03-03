@@ -66,7 +66,8 @@ def test_report_dataset_has_readable_summary_and_verdicts():
     assert "verdict" in text
     assert "worse" in text
     assert "RUN_TRACKER: true_err_total delta(gen-ref)=" in text
-    assert "true_gen_iter_mean=" in text
+    assert "true_iter_mean_delta=" in text
+    assert "true_iter_mean_delta=0.715 [worse]" in text
     assert "true_gen_iter_std=0.000" in text
     assert "(n=1)" in text
     assert isinstance(true_delta, float)
@@ -199,14 +200,14 @@ def test_run_active_calibrate_passes_full_auto_log(monkeypatch, tmp_path):
     assert captured["cmd"][idx + 1] == str(jsonl)
 
 
-def test_main_run_tracker_summary_includes_true_gen_stats(monkeypatch, tmp_path, capsys):
+def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp_path, capsys):
     repo_root = tmp_path
     (repo_root / "autocal").mkdir()
     (repo_root / "autocal" / "active_calibrate.py").write_text("# stub\n", encoding="utf-8")
     (repo_root / "data").mkdir()
     (repo_root / "refs").mkdir()
     (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
-    (repo_root / "refs" / "demo.full_auto_reference_run_feb_26.log").write_text("log", encoding="utf-8")
+    (repo_root / "refs" / "demo.full_auto_reference_run_march_3.log").write_text("log", encoding="utf-8")
 
     monkeypatch.setattr(rcl, "DATASETS", ["demo"])
 
@@ -216,9 +217,9 @@ def test_main_run_tracker_summary_includes_true_gen_stats(monkeypatch, tmp_path,
             ok=True,
             lines=["demo lines"],
             generated_log=repo_root / "generated.log",
-            reference_log=repo_root / "refs" / "demo.full_auto_reference_run_feb_26.log",
+            reference_log=repo_root / "refs" / "demo.full_auto_reference_run_march_3.log",
             true_err_total_delta=1.25,
-            true_gen_iter_mean=4.5,
+            true_iter_mean_delta=-0.5,
             true_gen_iter_std=0.75,
             true_gen_iter_count=3,
         )
@@ -234,16 +235,17 @@ def test_main_run_tracker_summary_includes_true_gen_stats(monkeypatch, tmp_path,
     out = capsys.readouterr().out
 
     assert rc == 0
-    assert "RUN_TRACKER: true_err_total delta(gen-ref) and true_gen iter stats by dataset" in out
-    assert "true_gen_mean" in out
+    assert "RUN_TRACKER: true_err_total delta(gen-ref) and true_iter mean delta by dataset" in out
+    assert "true_iter_mean_delta" in out
     assert "true_gen_std" in out
     assert "n_true_gen" in out
-    assert "4.500" in out
+    assert "-0.500" in out
     assert "0.750" in out
     assert "RUN_TRACKER: final_score=" in out
-    assert "3.500" in out
+    assert "final_score=0.750" in out
+    assert "sum_true_mean_delta=-0.500" in out
 
 
 def test_compute_final_score_uses_requested_formula():
-    score = rcl.compute_final_score(total_error_sum=8.0, mean_error_sum=6.0)
-    assert math.isclose(score, 11.0, rel_tol=1e-9, abs_tol=1e-9)
+    score = rcl.compute_final_score(total_error_sum=8.0, mean_delta_sum=6.0)
+    assert math.isclose(score, 14.0, rel_tol=1e-9, abs_tol=1e-9)
