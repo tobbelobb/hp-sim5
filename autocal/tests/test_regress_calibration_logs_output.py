@@ -240,3 +240,10 @@ def test_main_run_tracker_summary_includes_true_gen_stats(monkeypatch, tmp_path,
     assert "n_true_gen" in out
     assert "4.500" in out
     assert "0.750" in out
+    assert "RUN_TRACKER: final_score=" in out
+    assert "3.500" in out
+
+
+def test_compute_final_score_uses_requested_formula():
+    score = rcl.compute_final_score(total_error_sum=8.0, mean_error_sum=6.0)
+    assert math.isclose(score, 11.0, rel_tol=1e-9, abs_tol=1e-9)

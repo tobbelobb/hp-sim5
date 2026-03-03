@@ -3,7 +3,7 @@
 Regression test runner for autocal/active_calibrate.py full-auto runs.
 
 What it does
-- Runs 5 fixed commands (one per dataset)
+- Runs fixed commands (one per dataset in DATASETS)
 - Locates the generated log path from stdout/stderr (looks for "Writing additional info to log:")
 - Compares generated vs reference logs by parsing:
   * Final "== Calibration summary ==" block (fit score + M669 anchors + M666 radii)
@@ -46,6 +46,7 @@ from typing import List, Optional, Tuple
 
 DATASETS = [
     "five_points_bigger_deltas",
+    "flexible_lines_2000",
     "layered_manual_some_bad_points",
     "ten_points_bigger_deltas",
     "ten_points_w_buildup",
@@ -390,7 +391,7 @@ def run_active_calibrate(
         "--scale-fix",
         "3",
         "--fit-structure",
-        "1,2,3",
+        "3",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
@@ -423,6 +424,10 @@ def fmt(x: Optional[float], nd: int = 3) -> str:
     if abs(x) >= 1e6:
         return f"{x:.3e}"
     return f"{x:.{nd}f}"
+
+
+def compute_final_score(total_error_sum: float, mean_error_sum: float) -> float:
+    return total_error_sum + (0.5 * mean_error_sum)
 
 
 def report_dataset(
@@ -815,8 +820,8 @@ def main() -> int:
             alt_dir / f"{ds}.json",
         ])
         ref_log_path = find_file_first_existing([
-            ref_dir / f"{ds}.full_auto_reference_run_feb_26.log",
-            alt_dir / f"{ds}.full_auto_reference_run_feb_26.log",
+            ref_dir / f"{ds}.full_auto_reference_run_march_3.log",
+            alt_dir / f"{ds}.full_auto_reference_run_march_3.log",
         ])
 
         if dataset_path is None:
@@ -826,7 +831,7 @@ def main() -> int:
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
-            print(f"ERROR: reference log not found (tried {ref_dir}/{ds}.full_auto_reference_run_feb_26.log and /mnt/data/...)")
+            print(f"ERROR: reference log not found (tried {ref_dir}/{ds}.full_auto_reference_run_march_3.log and /mnt/data/...)")
             overall_ok = False
             continue
         jobs.append((ds, dataset_path, ref_log_path))
@@ -874,6 +879,7 @@ def main() -> int:
             completed_sorted = sorted(completed_results, key=lambda r: r.name)
             rows: List[List[str]] = []
             sum_delta = 0.0
+            sum_true_gen_mean = 0.0
             sum_count = 0
             for r in completed_sorted:
                 d = r.true_err_total_delta
@@ -897,6 +903,8 @@ def main() -> int:
                         fmt(r.true_gen_iter_std),
                         str(r.true_gen_iter_count),
                     ])
+                if r.true_gen_iter_mean is not None and math.isfinite(r.true_gen_iter_mean):
+                    sum_true_gen_mean += float(r.true_gen_iter_mean)
 
             print("\nRUN_TRACKER: true_err_total delta(gen-ref) and true_gen iter stats by dataset")
             for line in format_table(
@@ -907,6 +915,12 @@ def main() -> int:
             if sum_count > 0:
                 print(
                     f"RUN_TRACKER: sum_true_err_total_delta(gen-ref)={fmt(sum_delta)} over {sum_count} datasets [{dir_label(sum_delta)}]"
+                )
+                final_score = compute_final_score(sum_delta, sum_true_gen_mean)
+                print(
+                    f"RUN_TRACKER: final_score={fmt(final_score)} "
+                    f"(sum_true_err_total_delta + 0.5*sum_true_gen_mean, "
+                    f"sum_true_gen_mean={fmt(sum_true_gen_mean)})"
                 )
             else:
                 print("RUN_TRACKER: sum_true_err_total_delta(gen-ref)=N/A (parse missing)")
