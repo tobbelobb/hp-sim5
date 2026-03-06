@@ -74,6 +74,7 @@ class Iteration:
     anchors: Optional[List[Tuple[float, float]]]
     radii: Optional[List[float]]
     score: Optional[float]
+    score_kind: Optional[str] = None
     anchors_line: Optional[str] = None
     radii_line: Optional[str] = None
     score_line: Optional[str] = None
@@ -104,7 +105,7 @@ class DatasetRunResult:
 _RE_LOGPATH = re.compile(r"Writing additional info to log:\s*(.+)\s*$")
 _RE_ANCHORS = re.compile(r"Anchors:\s*(\[\[.*\]\])")
 _RE_EFFECTIVE = re.compile(r"effective=\[([^\]]+)\]")
-_RE_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
+_RE_ITER_RANK = re.compile(r"\b(?:Rank score|Score):\s*([0-9.+-eE]+)\b")
 _RE_M669_PARTS = re.compile(
     r"([ABC])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,
@@ -138,8 +139,9 @@ def parse_generated_log_path(run_output: str) -> Optional[str]:
 
 def parse_iterations(text: str) -> List[Iteration]:
     """
-    Extracts per-iteration (anchors, effective radii, score) triplets in order.
-    Assumes score line terminates an iteration.
+    Extracts per-iteration (anchors, effective radii, rank/score) triplets in order.
+    Assumes the rank line terminates an iteration. Older logs use "Score:" while
+    newer logs use "Rank score:".
     """
     iters: List[Iteration] = []
     cur: dict = {}
@@ -166,15 +168,17 @@ def parse_iterations(text: str) -> List[Iteration]:
                 except Exception:
                     cur["radii"] = None
                     cur["radii_line"] = line.strip()
-        if "Score:" in line:
-            m = _RE_SCORE.search(line)
+        if "Rank score:" in line or "Score:" in line:
+            m = _RE_ITER_RANK.search(line)
             if m:
                 score = _safe_float(m.group(1))
+                score_kind = "rank" if "Rank score:" in line else "fit"
                 iters.append(
                     Iteration(
                         anchors=cur.get("anchors"),
                         radii=cur.get("radii"),
                         score=score,
+                        score_kind=score_kind,
                         anchors_line=cur.get("anchors_line"),
                         radii_line=cur.get("radii_line"),
                         score_line=line.strip(),
@@ -552,6 +556,7 @@ def report_dataset(
     # Track worst param delta among iterations (between ref and gen)
     worst_iter_delta = 0.0
     mismatches = 0
+    mixed_score_scales = 0
 
     # Print per-iter details only if something changed a lot or count mismatch,
     # but we still compute everything.
@@ -615,9 +620,17 @@ def report_dataset(
         r_true = error_to_true(r.anchors, r.radii)
         g_true = error_to_true(g.anchors, g.radii)
 
+        score_kind_mixed = (
+            r.score_kind is not None
+            and g.score_kind is not None
+            and r.score_kind != g.score_kind
+        )
+        if score_kind_mixed:
+            mixed_score_scales += 1
+
         # Score reflection check (direction)
         score_delta_iter = None
-        if r.score is not None and g.score is not None:
+        if (not score_kind_mixed) and r.score is not None and g.score is not None:
             score_delta_iter = g.score - r.score
 
         fit_delta_iter = None
@@ -630,7 +643,9 @@ def report_dataset(
         # Score reflects fit?
         reflect = "N/A"
         mismatch = False
-        if fit_delta_iter is not None and score_delta_iter is not None:
+        if score_kind_mixed:
+            reflect = "mixed-scale"
+        elif fit_delta_iter is not None and score_delta_iter is not None:
             fit_dir = dir_label(fit_delta_iter)   # better/worse/equal (lower is better)
             score_dir = dir_label(score_delta_iter)
             reflect = "OK" if (fit_dir == score_dir) or (fit_dir == "equal") or (score_dir == "equal") else "MISMATCH"
@@ -664,6 +679,11 @@ def report_dataset(
             ok = False
 
     lines.append(f"ITERATIONS: worst_param_delta_total={fmt(worst_iter_delta)} (tol={tol_mm_total}mm)")
+    if mixed_score_scales:
+        lines.append(
+            f"ITERATIONS: mixed score scales in {mixed_score_scales} rows "
+            f"(reference fit-score vs generated rank-score)"
+        )
     if mismatches:
         lines.append(f"ITERATIONS: score/fit direction mismatches: {mismatches}" + (" => FAIL" if fail_on_score_mismatch else " (warn-only)"))
     else:

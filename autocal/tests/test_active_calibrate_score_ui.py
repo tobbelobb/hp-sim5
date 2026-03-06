@@ -249,38 +249,35 @@ def test_rank_coverage_adjustment_penalizes_filtered_ratio():
     assert np.isclose(adjust, expected_penalty, atol=1e-12)
 
 
-def test_full_auto_history_progress_adjustment_prefers_three_quarters_progress():
-    early = ac._full_auto_history_progress_adjustment(0.25)
-    mid = ac._full_auto_history_progress_adjustment(0.50)
-    late = ac._full_auto_history_progress_adjustment(0.75)
-    final = ac._full_auto_history_progress_adjustment(1.00)
+def test_full_auto_history_iteration_adjustment_prefers_mid_late_iterations():
+    iter_1 = ac._full_auto_history_iteration_adjustment(1)
+    iter_2 = ac._full_auto_history_iteration_adjustment(2)
+    iter_3 = ac._full_auto_history_iteration_adjustment(3)
+    iter_6 = ac._full_auto_history_iteration_adjustment(6)
 
-    assert late < mid < early
-    assert late < final
+    assert np.isclose(iter_1, 0.0, atol=1e-12)
+    assert iter_3 < iter_2 < iter_1
+    assert iter_6 > iter_3
 
 
-def test_full_auto_history_selection_score_applies_progress_and_coverage():
+def test_full_auto_history_selection_score_applies_iteration_and_coverage():
     sel_early, info_early = ac._full_auto_history_selection_score(
         1.0,
         iteration_index=1,
-        total_iterations=4,
         coverage_adjust=0.0,
     )
     sel_mid, info_mid = ac._full_auto_history_selection_score(
         1.1,
         iteration_index=3,
-        total_iterations=4,
         coverage_adjust=0.0,
     )
     sel_mid_filtered, info_mid_filtered = ac._full_auto_history_selection_score(
         1.1,
         iteration_index=3,
-        total_iterations=4,
         coverage_adjust=0.2,
     )
 
-    assert np.isclose(info_mid["progress"], 0.75, atol=1e-12)
-    assert info_mid["progress_adjust"] < info_early["progress_adjust"]
+    assert info_mid["iteration_adjust"] < info_early["iteration_adjust"]
     assert sel_mid < sel_early
     expected_coverage_delta = ac._FULL_AUTO_HISTORY_COVERAGE_WEIGHT * 0.2
     assert np.isclose(sel_mid_filtered - sel_mid, expected_coverage_delta, atol=1e-12)

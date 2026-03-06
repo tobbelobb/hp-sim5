@@ -67,9 +67,9 @@ _SCORE_UI_RANK_OBS_BONUS_WEIGHT = 0.30
 _SCORE_UI_RANK_FILTERED_RATIO_WEIGHT = 0.50
 _SCORE_UI_HARD_FAIL = 50.0
 _SPOOL_ANCHOR_STEP_IMPROVE_REL = 1e-4
-_FULL_AUTO_HISTORY_PROGRESS_LINEAR = -1.5
-_FULL_AUTO_HISTORY_PROGRESS_QUADRATIC = 1.0
-_FULL_AUTO_HISTORY_COVERAGE_WEIGHT = 0.15
+_FULL_AUTO_HISTORY_LOG_BONUS_WEIGHT = 0.45
+_FULL_AUTO_HISTORY_LINEAR_PENALTY = 0.12
+_FULL_AUTO_HISTORY_COVERAGE_WEIGHT = 0.20
 
 from autocal.active_learning import (
     SweepConfig,
@@ -6957,7 +6957,6 @@ def full_auto_loop(
         fallback_plan: Optional[Dict[str, object]] = None,
         fallback_meta: Optional[Dict[str, object]] = None,
     ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
-        total_iterations = max(1, int(history_total_iterations))
         if history_candidates:
             scored: List[Tuple[Tuple[float, float, float, float, float], Dict[str, object], Dict[str, Optional[float]]]] = []
             for candidate in history_candidates:
@@ -6965,7 +6964,6 @@ def full_auto_loop(
                 selection_score, selection_info = _full_auto_history_selection_score(
                     candidate_rank,
                     iteration_index=int(candidate.get("iteration", 1)),
-                    total_iterations=total_iterations,
                     coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
                 )
                 rel_std = _float_or_none(candidate.get("rel_std"))
@@ -6984,7 +6982,7 @@ def full_auto_loop(
             chosen_info = scored[0][2]
             _log_line(
                 f"; history_select: reason={reason} "
-                f"candidates={len(scored)} total_iterations={total_iterations}"
+                f"candidates={len(scored)} total_iterations={history_total_iterations}"
             )
             for _sort_key, candidate, info in scored[: min(5, len(scored))]:
                 _log_line(
@@ -6992,16 +6990,14 @@ def full_auto_loop(
                     f"iter={candidate.get('iteration')} "
                     f"run={candidate.get('run_id')} "
                     f"rank={_fmt_float(_float_or_none(candidate.get('rank_score')))} "
-                    f"progress={_fmt_float(info.get('progress'))} "
-                    f"progress_adjust={_fmt_float(info.get('progress_adjust'))} "
+                    f"iteration_adjust={_fmt_float(info.get('iteration_adjust'))} "
                     f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
                     f"selection_score={_fmt_float(info.get('selection_score'))}"
                 )
             summary_meta = dict(chosen.get("summary_meta") or {})
             summary_meta.update(
                 {
-                    "history_progress": chosen_info.get("progress"),
-                    "history_progress_adjust": chosen_info.get("progress_adjust"),
+                    "history_iteration_adjust": chosen_info.get("iteration_adjust"),
                     "history_coverage_adjust": chosen_info.get("coverage_adjust"),
                     "history_selection_score": chosen_info.get("selection_score"),
                 }
@@ -7311,6 +7307,11 @@ def full_auto_loop(
             selected_max_std = metrics.get("max_std_mm")
             selected_rel_std = metrics.get("rel_std")
             selected_warnings = list(metrics.get("warnings") or [])
+            selected_selection_score, selected_selection_info = _full_auto_history_selection_score(
+                selected_rank_score,
+                iteration_index=step,
+                coverage_adjust=_float_or_none(metrics.get("rank_coverage_adjust")),
+            )
 
             with _log_context():
                 _print_ellipse_plan(
@@ -7407,11 +7408,16 @@ def full_auto_loop(
             _log_line(
                 f"; selected run={selected_id}{summary_flags} score_ui={summary_score_ui} "
                 f"score_basis={selected_score_basis} cost={summary_cost} "
-                f"rel_std={summary_rel} max_std={summary_std}"
+                f"rel_std={summary_rel} max_std={summary_std} "
+                f"rank_score={_fmt_float(selected_rank_score)} "
+                f"iteration_adjust={_fmt_float(selected_selection_info.get('iteration_adjust'))} "
+                f"coverage_adjust={_fmt_float(selected_selection_info.get('coverage_adjust'))} "
+                f"selection_rank={_fmt_float(selected_selection_score)}"
             )
             if has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
-            _log_console(f"Score: {summary_score_ui} (lower is better)")
+            _log_console(f"Rank score: {_fmt_float(selected_selection_score)} (lower is better)")
+            _log_console(f"Fit score: {summary_score_ui} (UI quality only)")
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
@@ -7447,6 +7453,9 @@ def full_auto_loop(
                     "cost": selected_cost,
                     "cost_improvement": improvement,
                     "score_ui": selected_score_ui,
+                    "selection_rank_score": selected_selection_score,
+                    "selection_iteration_adjust": selected_selection_info.get("iteration_adjust"),
+                    "selection_coverage_adjust": selected_selection_info.get("coverage_adjust"),
                     "score_ui_improvement": score_improvement,
                     "improved_best": improved,
                     "best_cost": best_cost,
@@ -8777,11 +8786,13 @@ def _rank_coverage_adjustment_from_noise_metrics(
     return float(adjustment), info
 
 
-def _full_auto_history_progress_adjustment(progress: float) -> float:
-    p = float(np.clip(float(progress), 0.0, 1.0))
+def _full_auto_history_iteration_adjustment(iteration_index: int) -> float:
+    idx = max(1, int(iteration_index))
+    if idx <= 1:
+        return 0.0
     return float(
-        _FULL_AUTO_HISTORY_PROGRESS_LINEAR * p
-        + _FULL_AUTO_HISTORY_PROGRESS_QUADRATIC * p * p
+        -_FULL_AUTO_HISTORY_LOG_BONUS_WEIGHT * np.log(float(idx))
+        + _FULL_AUTO_HISTORY_LINEAR_PENALTY * float(idx - 1)
     )
 
 
@@ -8789,13 +8800,11 @@ def _full_auto_history_selection_score(
     rank_score: Optional[float],
     *,
     iteration_index: int,
-    total_iterations: int,
     coverage_adjust: Optional[float] = None,
     coverage_weight: float = _FULL_AUTO_HISTORY_COVERAGE_WEIGHT,
 ) -> Tuple[float, Dict[str, Optional[float]]]:
     info: Dict[str, Optional[float]] = {
-        "progress": None,
-        "progress_adjust": None,
+        "iteration_adjust": None,
         "coverage_adjust": None,
         "selection_score": None,
     }
@@ -8803,18 +8812,15 @@ def _full_auto_history_selection_score(
     if rank is None or not np.isfinite(rank):
         return float("inf"), info
 
-    total = max(1, int(total_iterations))
     idx = max(1, int(iteration_index))
-    progress = min(float(idx) / float(total), 1.0)
-    progress_adjust = _full_auto_history_progress_adjustment(progress)
+    iteration_adjust = _full_auto_history_iteration_adjustment(idx)
 
     coverage = _float_or_none(coverage_adjust)
     if coverage is None or not np.isfinite(coverage):
         coverage = 0.0
 
-    selection_score = float(rank + progress_adjust + float(coverage_weight) * coverage)
-    info["progress"] = float(progress)
-    info["progress_adjust"] = float(progress_adjust)
+    selection_score = float(rank + iteration_adjust + float(coverage_weight) * coverage)
+    info["iteration_adjust"] = float(iteration_adjust)
     info["coverage_adjust"] = float(coverage)
     info["selection_score"] = float(selection_score)
     return float(selection_score), info
