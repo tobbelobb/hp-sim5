@@ -806,7 +806,7 @@ def main() -> int:
     ap.add_argument("--repo-root", type=str, default=".", help="Path to repo root (must contain autocal/active_calibrate.py).")
     ap.add_argument("--data-dir", type=str, default="autocal/data/references", help="Directory containing the datasets (.json).")
     ap.add_argument("--ref-dir", type=str, default="autocal/data/references", help="Directory containing the reference logs (.log).")
-    ap.add_argument("--tol-mm", type=float, default=10.0, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
+    ap.add_argument("--tol-mm", type=float, default=0.01, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
     ap.add_argument("--no-fail-score-mismatch", action="store_true", help="Do not fail on score/fit direction mismatch (still reported).")
     ap.add_argument("--keep-going", action="store_true", help="Run all datasets even if one fails.")
     ap.add_argument("--color", choices=["auto", "always", "never"], default="auto", help="Colorize output verdicts.")
