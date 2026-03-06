@@ -240,7 +240,8 @@ Repeat for `spool_outer_iters` rounds:
 2. Spool step:
    - keep anchors fixed
    - optimize the selected spool parameters by coordinate descent
-   - objective = `_data_cost(...) + _prior_cost(...)`
+   - objective = ellipse solver internal cost at the fixed anchors
+     + `_prior_cost(...)`
 
 3. Decide whether to even try an anchor proposal:
    - only run the anchor proposal solve if the spool total objective improved by
@@ -350,7 +351,8 @@ There are several distinct objectives in play:
    - Plus spool priors
 
 3. Spool-step objective
-   - `_data_cost(...) + _prior_cost(...)`
+   - ellipse solver internal cost at the fixed anchors
+   - plus `_prior_cost(...)`
    - Optimized with anchors fixed
 
 4. Anchor proposal objective

@@ -33,8 +33,12 @@ Recommended terminology:
 4. Spool step
 
 - Anchors are fixed.
-- Objective optimized: `_data_cost(...) + _prior_cost(...)`
-- This is the objective minimized by the coordinate-descent spool solver.
+- Objective optimized:
+  - the ellipse solver's own internal objective on the transformed dataset at
+    the fixed anchors
+  - plus `_prior_cost(...)`
+- So the coordinate-descent spool solver now uses the same ellipse data term as
+  `calibrate_elliptical(...)`, while still keeping spool-parameter priors.
 
 5. Anchor proposal solve
 
@@ -89,7 +93,7 @@ What "priors" mean here
 Do spool parameters and anchors optimize the same metric?
 
 - No.
-- Spool step optimizes `_data_cost + prior`.
+- Spool step optimizes `ellipse_internal_cost + prior`.
 - Anchor proposal solve optimizes the ellipse solver's internal objective.
 - Final acceptance is by rank comparator with total-cost tie-break.
 

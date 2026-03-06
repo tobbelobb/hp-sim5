@@ -393,7 +393,7 @@ def run_active_calibrate(
         "--fit-structure",
         "3", # 3 in ref from March 6
         "--filter-schedule",
-        "0,0,0,1,1",
+        "1,1,1,1",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
