@@ -24,7 +24,6 @@ RRF/build*
 RRF/.cache
 */compile_commands.json
 RRF/run/vsd/logs/
-sweep_data_*.json
 autocal/data/*.png
 autocal/tests/data/*.png
 autocal/old_data
