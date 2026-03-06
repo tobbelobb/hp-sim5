@@ -5288,6 +5288,9 @@ def _plan_next_ellipse_sweep(
     filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
+    initial_anchors: Optional[Sequence[Sequence[float]]] = None,
+    initial_radii_mm: Optional[Sequence[float]] = None,
+    initial_buildup_factor: Optional[Sequence[float]] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
     remapped_points = _normalize_dataset_point_roles(dataset)
@@ -5358,10 +5361,27 @@ def _plan_next_ellipse_sweep(
             find_buildup_factor_mode=find_buildup_mode,
             buildup_factor=est_buildup,
         )
-        anchor_initial_guess = build_anchor_initial_guess(
-            dataset,
-            machine_type=str(machine_type),
-            base_radii_mm=base_radii_mm.tolist(),
+        anchor_initial_guess = _coerce_anchor_seed(
+            initial_anchors,
+            num_anchors=int(num_anchors),
+            dimensions=int(dimensions),
+        )
+        if anchor_initial_guess is None:
+            anchor_initial_guess = build_anchor_initial_guess(
+                dataset,
+                machine_type=str(machine_type),
+                base_radii_mm=base_radii_mm.tolist(),
+            )
+
+        radii_seed = _coerce_axis_seed(
+            initial_radii_mm,
+            num_anchors=int(num_anchors),
+            positive=True,
+        )
+        buildup_seed = _coerce_axis_seed(
+            initial_buildup_factor,
+            num_anchors=int(num_anchors),
+            positive=False,
         )
 
         seed_restarts = max(1, min(2, int(solve_restarts)))
@@ -5426,6 +5446,8 @@ def _plan_next_ellipse_sweep(
                 scale_fix_levels=scale_fix_levels,
                 fit_structure_levels=fit_structure_levels,
                 filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
+                initial_radii_mm=radii_seed,
+                initial_buildup_factor=buildup_seed,
             )
         )
         _ = _fit_anchors
@@ -5522,11 +5544,17 @@ def _plan_next_ellipse_sweep(
             "spool_fit": radii_fit,
         }
     else:
-        anchor_initial_guess = build_anchor_initial_guess(
-            dataset,
-            machine_type=str(machine_type),
-            base_radii_mm=None,
+        anchor_initial_guess = _coerce_anchor_seed(
+            initial_anchors,
+            num_anchors=int(num_anchors),
+            dimensions=int(dimensions),
         )
+        if anchor_initial_guess is None:
+            anchor_initial_guess = build_anchor_initial_guess(
+                dataset,
+                machine_type=str(machine_type),
+                base_radii_mm=None,
+            )
         cal = calibrate_elliptical(
             dataset,
             output_path=None,
@@ -6916,6 +6944,13 @@ def full_auto_loop(
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
     }
 
+    history_rescore_enabled = _env_flag_enabled("AUTOCAL_FULL_AUTO_RESCORE_HISTORY")
+    warm_start_iters_enabled = _env_flag_enabled("AUTOCAL_FULL_AUTO_WARM_START_SELECTED")
+    if history_rescore_enabled:
+        _log_line("; experiment enabled: AUTOCAL_FULL_AUTO_RESCORE_HISTORY")
+    if warm_start_iters_enabled:
+        _log_line("; experiment enabled: AUTOCAL_FULL_AUTO_WARM_START_SELECTED")
+
     best_cost = float("inf")
     best_score_ui = float("inf")
     best_rank_score = float("inf")
@@ -6926,14 +6961,22 @@ def full_auto_loop(
     patience_limit = max(1, int(patience))
     has_variants = bool(full_auto_runs)
     selected_scores: List[float] = []
+    selected_history: List[Dict[str, object]] = []
+    history_rescore_best: Optional[Dict[str, object]] = None
+    warm_start_state: Optional[Dict[str, np.ndarray]] = None
 
     def _accept_best(reason: str) -> int:
-        if best_plan is None:
+        accept_plan = best_plan
+        accept_meta = best_meta
+        if history_rescore_enabled and isinstance(history_rescore_best, dict):
+            accept_plan = history_rescore_best.get("plan")
+            accept_meta = history_rescore_best.get("meta") or best_meta
+        if not isinstance(accept_plan, dict):
             _log_console(f"; full-auto: stop requested ({reason}) but no best plan available; stopping.")
             _log_console(_solution_quality_message(None))
             return _finalize(2)
         _log_console(f"; full-auto: stop requested ({reason}); accepting best-so-far.")
-        return _emit_summary_and_send(best_plan, summary_meta=best_meta)
+        return _emit_summary_and_send(accept_plan, summary_meta=accept_meta)
 
     def _stop_file_requested() -> bool:
         try:
@@ -7104,6 +7147,21 @@ def full_auto_loop(
                         collector_args=collector_args_eff,
                         scale_fix=settings.get("scale_fix"),
                         fit_structure=settings.get("fit_structure"),
+                        initial_anchors=(
+                            None
+                            if not warm_start_iters_enabled or not isinstance(warm_start_state, dict)
+                            else warm_start_state.get("anchors")
+                        ),
+                        initial_radii_mm=(
+                            None
+                            if not warm_start_iters_enabled or not isinstance(warm_start_state, dict)
+                            else warm_start_state.get("radii_mm")
+                        ),
+                        initial_buildup_factor=(
+                            None
+                            if not warm_start_iters_enabled or not isinstance(warm_start_state, dict)
+                            else warm_start_state.get("buildup_factor")
+                        ),
                     )
 
                 primary_cost = _plan_primary_cost(plan)
@@ -7259,6 +7317,112 @@ def full_auto_loop(
             elif not selected_underconstrained:
                 no_improve += 1
 
+            selected_history.append(
+                {
+                    "iteration": step,
+                    "run_id": selected_id,
+                    "flags": selected_flags,
+                    "settings": dict(selected.get("settings") or {}),
+                    "plan": plan,
+                }
+            )
+            if warm_start_iters_enabled:
+                warm_start_state = _extract_plan_warm_start_state(plan)
+
+            history_rescore_rows: List[Dict[str, object]] = []
+            if history_rescore_enabled:
+                current_dataset = _load_json(work_path)
+                rescored_history: List[Dict[str, object]] = []
+                for hist in selected_history:
+                    hist_settings = hist.get("settings") or {}
+                    if not isinstance(hist_settings, dict):
+                        hist_settings = {}
+                    rescored = _rescore_plan_on_dataset(
+                        hist.get("plan"),
+                        dataset=current_dataset,
+                        find_radii_mode=str(hist_settings.get("find_radii", "off")),
+                        find_buildup_mode=str(hist_settings.get("find_buildup_factor", "off")),
+                        line_width=float(hist_settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
+                        sigma_floor_mm=hist_settings.get("sigma_floor_mm"),
+                        sigma_used_mm=hist_settings.get("sigma_used_mm"),
+                        residual_threshold=float(hist_settings.get("residual_threshold", residual_threshold)),
+                        spring_k_multiplier=float(hist_settings.get("spring_k_multiplier", spring_k_multiplier)),
+                        use_flex=bool(hist_settings.get("use_flex", use_flex)),
+                        pointwise_residual_mode=str(
+                            hist_settings.get("pointwise_residual_mode", pointwise_residual_mode)
+                        ),
+                        pointwise_filtering=bool(hist_settings.get("pointwise_filtering", pointwise_filtering)),
+                        pointwise_global_mad=bool(
+                            hist_settings.get("pointwise_global_mad", pointwise_global_mad)
+                        ),
+                        sweep_wise_filtering=bool(
+                            hist_settings.get("sweep_wise_filtering", sweep_wise_filtering)
+                        ),
+                        sweep_metric=str(hist_settings.get("sweep_metric", sweep_metric)),
+                        use_noise_mean=bool(hist_settings.get("use_noise_mean", use_noise_mean)),
+                        sigma_source=str(hist_settings.get("sigma_source", sigma_source)),
+                        fd_eps_mm=float(fd_eps_mm),
+                        regularization=float(regularization),
+                        prefer_zero_tension_angles=bool(
+                            _arg_has_flag(
+                                collector_args_eff,
+                                "--project-zero-tension",
+                                "--projectZeroTension",
+                            )
+                        ),
+                    )
+                    row = {
+                        "candidate_iteration": int(hist.get("iteration", 0)),
+                        "candidate_run": str(hist.get("run_id", "")),
+                        "candidate_flags": str(hist.get("flags", "")),
+                        "score_ui": rescored.get("score_ui"),
+                        "rank_score": rescored.get("rank_score"),
+                        "score_basis": rescored.get("score_basis"),
+                        "rel_std": rescored.get("rel_std"),
+                        "max_std_mm": rescored.get("max_std_mm"),
+                        "valid": bool(rescored.get("valid", False)),
+                    }
+                    history_rescore_rows.append(row)
+                    rescored_history.append({**row, "plan": rescored.get("plan")})
+
+                valid_rescored = [r for r in rescored_history if bool(r.get("valid", False))]
+                if valid_rescored:
+                    def _history_rescore_sort_key(
+                        entry: Dict[str, object]
+                    ) -> Tuple[float, float, float, str]:
+                        rel_val = entry.get("rel_std")
+                        rel_num = (
+                            float(rel_val)
+                            if isinstance(rel_val, (int, float)) and np.isfinite(rel_val)
+                            else float("inf")
+                        )
+                        return (
+                            float(entry.get("rank_score", float("inf"))),
+                            rel_num,
+                            float(entry.get("candidate_iteration", float("inf"))),
+                            str(entry.get("candidate_run", "")),
+                        )
+
+                    chosen_history = sorted(valid_rescored, key=_history_rescore_sort_key)[0]
+                    history_rescore_best = {
+                        "plan": chosen_history.get("plan"),
+                        "meta": {
+                            "iteration": int(chosen_history.get("candidate_iteration", step)),
+                            "run_id": str(chosen_history.get("candidate_run", "")),
+                            "flags": str(chosen_history.get("candidate_flags", "")),
+                            "score_ui": chosen_history.get("score_ui"),
+                            "score_basis": chosen_history.get("score_basis"),
+                            "rel_std": chosen_history.get("rel_std"),
+                            "max_std_mm": chosen_history.get("max_std_mm"),
+                        },
+                    }
+                    _log_line(
+                        f"; history_rescore: best_iteration={history_rescore_best['meta'].get('iteration')} "
+                        f"run={history_rescore_best['meta'].get('run_id')} "
+                        f"score_ui={_fmt_float(history_rescore_best['meta'].get('score_ui'))} "
+                        f"rel_std={_fmt_float(history_rescore_best['meta'].get('rel_std'))}"
+                    )
+
             stop_cost_hit = False
             stop_std_hit = False
             if best_plan is not None:
@@ -7332,6 +7496,17 @@ def full_auto_loop(
                     "stop_cost_hit": stop_cost_hit,
                     "stop_std_hit": stop_std_hit,
                     "warnings": selected_warnings,
+                    "history_rescore": history_rescore_rows,
+                    "history_rescore_best_iteration": (
+                        None
+                        if not isinstance(history_rescore_best, dict)
+                        else (history_rescore_best.get("meta") or {}).get("iteration")
+                    ),
+                    "history_rescore_best_run": (
+                        None
+                        if not isinstance(history_rescore_best, dict)
+                        else (history_rescore_best.get("meta") or {}).get("run_id")
+                    ),
                 },
             )
 
@@ -7340,6 +7515,11 @@ def full_auto_loop(
                     _log_console("; full-auto: no best plan available; stopping.")
                     _log_console(_solution_quality_message(None))
                     return _finalize(2)
+                if history_rescore_enabled and isinstance(history_rescore_best, dict):
+                    rescored_plan = history_rescore_best.get("plan")
+                    rescored_meta = history_rescore_best.get("meta")
+                    if isinstance(rescored_plan, dict) and isinstance(rescored_meta, dict):
+                        return _emit_summary_and_send(rescored_plan, summary_meta=rescored_meta)
                 accepted_meta = (
                     {
                         "iteration": step,
@@ -7398,6 +7578,11 @@ def full_auto_loop(
                 _log_console("; --no-collect set; stopping before live collection.")
                 if best_plan is None:
                     best_plan = plan
+                if history_rescore_enabled and isinstance(history_rescore_best, dict):
+                    rescored_plan = history_rescore_best.get("plan")
+                    rescored_meta = history_rescore_best.get("meta")
+                    if isinstance(rescored_plan, dict) and isinstance(rescored_meta, dict):
+                        return _emit_summary_and_send(rescored_plan, summary_meta=rescored_meta)
                 return _emit_summary_and_send(plan, summary_meta={
                     "iteration": step,
                     "run_id": selected_id,
@@ -8849,6 +9034,373 @@ def _plan_hits_underconstrained_penalty(plan: Dict[str, object], primary_cost: O
         if np.isfinite(chi2_red) and chi2_red > 1e3:
             return True
     return True
+
+
+def _env_flag_enabled(name: str) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return False
+    return str(raw).strip().lower() not in ("", "0", "false", "no", "off")
+
+
+def _coerce_anchor_seed(
+    initial_anchors: Optional[Sequence[Sequence[float]]],
+    *,
+    num_anchors: int,
+    dimensions: int,
+) -> Optional[np.ndarray]:
+    if initial_anchors is None:
+        return None
+    try:
+        anchors = np.asarray(initial_anchors, dtype=float)
+    except Exception:
+        return None
+    if (
+        anchors.ndim != 2
+        or anchors.shape[0] != int(num_anchors)
+        or anchors.shape[1] != int(dimensions)
+        or not np.all(np.isfinite(anchors))
+    ):
+        return None
+    return np.asarray(anchors, dtype=float)
+
+
+def _coerce_axis_seed(
+    values: Optional[Sequence[float]],
+    *,
+    num_anchors: int,
+    positive: bool = False,
+) -> Optional[np.ndarray]:
+    if values is None:
+        return None
+    try:
+        arr = np.asarray(values, dtype=float).reshape(-1)
+    except Exception:
+        return None
+    if arr.size != int(num_anchors) or not np.all(np.isfinite(arr)):
+        return None
+    if positive and not np.all(arr > 0.0):
+        return None
+    return np.asarray(arr, dtype=float)
+
+
+def _extract_plan_warm_start_state(plan: Dict[str, object]) -> Optional[Dict[str, np.ndarray]]:
+    if not isinstance(plan, dict):
+        return None
+
+    try:
+        anchors_raw = np.asarray(plan.get("anchors"), dtype=float)
+    except Exception:
+        anchors_raw = np.zeros((0, 0), dtype=float)
+    anchors = _coerce_anchor_seed(
+        plan.get("anchors"),
+        num_anchors=int(anchors_raw.shape[0]) if anchors_raw.ndim == 2 else 0,
+        dimensions=int(anchors_raw.shape[1]) if anchors_raw.ndim == 2 else 0,
+    )
+    if anchors is None:
+        return None
+
+    length_model = plan.get("length_model")
+    if not isinstance(length_model, dict):
+        return {"anchors": np.asarray(anchors, dtype=float)}
+
+    num_anchors = int(anchors.shape[0])
+    radii = _coerce_axis_seed(
+        length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm")),
+        num_anchors=num_anchors,
+        positive=True,
+    )
+    buildup = _coerce_axis_seed(
+        length_model.get("modeled_buildup_factor"),
+        num_anchors=num_anchors,
+        positive=False,
+    )
+    state: Dict[str, np.ndarray] = {"anchors": np.asarray(anchors, dtype=float)}
+    if radii is not None:
+        state["radii_mm"] = np.asarray(radii, dtype=float)
+    if buildup is not None:
+        state["buildup_factor"] = np.asarray(buildup, dtype=float)
+    return state
+
+
+def _build_spool_params_from_length_model(
+    dataset: dict,
+    length_model: object,
+    *,
+    prefer_zero_tension_angles: bool,
+) -> Optional[SpoolModelParams]:
+    if not isinstance(length_model, dict):
+        return None
+
+    num_anchors = int(dataset.get("num_anchors", 0))
+    if num_anchors <= 0:
+        return None
+
+    def _req_axis_values(key: str, *, positive: bool = False) -> Optional[np.ndarray]:
+        vals = _coerce_axis_seed(length_model.get(key), num_anchors=num_anchors, positive=positive)
+        return vals
+
+    base_radii = _req_axis_values("base_radii_mm", positive=True)
+    modeled_radii = _req_axis_values("effective_radii_mm", positive=True)
+    if modeled_radii is None:
+        modeled_radii = _req_axis_values("modeled_radii_mm", positive=True)
+    modeled_buildup = _req_axis_values("modeled_buildup_factor", positive=False)
+    spool_to_motor = _req_axis_values("spool_to_motor_gearing_factor", positive=True)
+    mech_adv = _req_axis_values("mechanical_advantage", positive=True)
+    lines_per_spool = _req_axis_values("lines_per_spool", positive=True)
+    if (
+        base_radii is None
+        or modeled_radii is None
+        or modeled_buildup is None
+        or spool_to_motor is None
+        or mech_adv is None
+        or lines_per_spool is None
+    ):
+        return None
+
+    try:
+        return build_spool_model_params(
+            dataset,
+            base_radii_mm=base_radii,
+            modeled_radii_mm=modeled_radii,
+            modeled_buildup_factor=modeled_buildup,
+            spool_to_motor_gearing_factor=spool_to_motor,
+            mechanical_advantage=mech_adv,
+            lines_per_spool=lines_per_spool,
+            base_buildup_factor=np.zeros(num_anchors, dtype=float),
+            theta0_mode=_normalize_theta0_mode(length_model.get("theta0_mode")),
+            prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+        )
+    except Exception:
+        return None
+
+
+def _rescore_plan_on_dataset(
+    plan: Dict[str, object],
+    *,
+    dataset: dict,
+    find_radii_mode: str,
+    find_buildup_mode: str,
+    line_width: float,
+    sigma_floor_mm: Optional[float],
+    sigma_used_mm: Optional[float],
+    residual_threshold: float,
+    spring_k_multiplier: float,
+    use_flex: bool,
+    pointwise_residual_mode: str,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    sweep_metric: str,
+    use_noise_mean: bool,
+    sigma_source: str,
+    fd_eps_mm: float,
+    regularization: float,
+    prefer_zero_tension_angles: bool,
+) -> Dict[str, object]:
+    result: Dict[str, object] = {
+        "plan": plan,
+        "valid": False,
+        "score_ui": float("inf"),
+        "rank_score": float("inf"),
+        "score_basis": "rescored-unavailable",
+        "max_std_mm": None,
+        "rel_std": None,
+        "covariance_ok": False,
+    }
+    if not isinstance(plan, dict) or not isinstance(dataset, dict):
+        return result
+
+    try:
+        anchors = np.asarray(plan.get("anchors"), dtype=float)
+    except Exception:
+        return result
+    if anchors.ndim != 2 or anchors.shape[0] <= 0 or not np.all(np.isfinite(anchors)):
+        return result
+
+    machine_type = str(plan.get("machine_type") or dataset.get("machine_type") or "")
+    num_anchors = int(plan.get("num_anchors", dataset.get("num_anchors", anchors.shape[0] if anchors.ndim == 2 else 0)))
+    dimensions = int(plan.get("dimensions", dataset.get("dimensions", anchors.shape[1] if anchors.ndim == 2 else 0)))
+    if (
+        num_anchors <= 0
+        or dimensions <= 0
+        or anchors.shape[0] != num_anchors
+        or anchors.shape[1] != dimensions
+    ):
+        return result
+
+    dataset_scored = dict(dataset)
+    _annotate_dataset_noise_model(
+        dataset_scored,
+        line_width_mm=float(line_width),
+        sigma_floor_mm=sigma_floor_mm,
+        sigma_used_mm=sigma_used_mm,
+        find_radii_mode=str(find_radii_mode),
+        find_buildup_mode=str(find_buildup_mode),
+        project_zero_tension=bool(prefer_zero_tension_angles),
+    )
+
+    dataset_eval = dataset_scored
+    length_model = plan.get("length_model")
+    spool_params = _build_spool_params_from_length_model(
+        dataset_scored,
+        length_model,
+        prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+    )
+    if spool_params is not None:
+        try:
+            dataset_eval = dataset_with_modeled_lengths(
+                dataset_scored,
+                spool_params,
+                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            )
+        except Exception:
+            dataset_eval = dataset_scored
+
+    try:
+        cost_norm = float(
+            _evaluate_cost_at_anchors(
+                dataset_eval,
+                anchors,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=True,
+                sigma_source=str(sigma_source),
+            )
+        )
+        cost_raw = float(
+            _evaluate_cost_at_anchors(
+                dataset_eval,
+                anchors,
+                residual_threshold=float(residual_threshold),
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=False,
+                sigma_source=str(sigma_source),
+            )
+        )
+        cost_fn = _build_ellipse_cost_function(
+            dataset_eval,
+            residual_threshold=float(residual_threshold),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            noise_normalized=True,
+            sigma_source=str(sigma_source),
+        )
+        detailed = cost_fn.evaluate_detailed(np.asarray(anchors, dtype=float).ravel())
+        noise_metrics = (
+            dict(detailed.noise_metrics)
+            if hasattr(detailed, "noise_metrics") and isinstance(detailed.noise_metrics, dict)
+            else {}
+        )
+        if hasattr(cost_fn, "pointwise_residual_rows") and callable(getattr(cost_fn, "pointwise_residual_rows", None)):
+            rows = cost_fn.pointwise_residual_rows(np.asarray(anchors, dtype=float).ravel())
+            sigma_model_mm = noise_metrics.get("sigma_model_mm")
+            if _float_or_none(sigma_model_mm) is None:
+                sigma_model_mm = noise_metrics.get("sigma_used_mm")
+            rescored = _compute_tau_mad_rescore_from_rows(
+                rows,
+                cost_noise_normalized_old=float(detailed.total_cost)
+                if hasattr(detailed, "total_cost")
+                else cost_norm,
+                chi2_red_old=noise_metrics.get("chi2_red"),
+                sigma_model_mm=sigma_model_mm,
+                params_count=noise_metrics.get("params"),
+            )
+            noise_metrics = {**noise_metrics, **rescored}
+
+        l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
+        info_obs = total_information_matrix(
+            anchors,
+            dataset_sweep_configs(dataset_eval),
+            machine_type=machine_type,
+            num_anchors=num_anchors,
+            dimensions=dimensions,
+            l2_scale=l2_scale,
+            fd_eps_mm=float(fd_eps_mm),
+        )
+        cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
+        cov_scaled, cov_scale, cov_scale_label = _scale_covariance(cov, noise_metrics)
+        ci = _confidence_intervals(cov_scaled)
+        workspace_diag = _workspace_diag_mm(
+            dataset_scored,
+            anchors,
+            machine_type=machine_type,
+            num_anchors=num_anchors,
+            dimensions=dimensions,
+        )
+        rank = None
+        rank_deficient = False
+        if info_obs.ndim == 2 and info_obs.shape[0] == info_obs.shape[1]:
+            rank = int(np.linalg.matrix_rank(info_obs))
+            rank_deficient = rank < info_obs.shape[0]
+
+        cal_prev = plan.get("calibration")
+        cal_new = dict(cal_prev) if isinstance(cal_prev, dict) else {}
+        details_prev = cal_new.get("details")
+        details_new = dict(details_prev) if isinstance(details_prev, dict) else {}
+        details_new["noise_metrics"] = noise_metrics
+        cal_new["details"] = details_new
+
+        plan_eval = dict(plan)
+        plan_eval.update(
+            {
+                "dataset": dataset_scored,
+                "dataset_for_estimation": dataset_eval,
+                "calibration": cal_new,
+                "cost": cost_norm,
+                "cost_raw": cost_raw,
+                "cost_noise_normalized": cost_norm,
+                "info": info_obs,
+                "covariance": cov,
+                "covariance_scaled": cov_scaled,
+                "covariance_scale": cov_scale,
+                "covariance_scale_label": cov_scale_label,
+                "confidence_intervals": ci,
+                "workspace_diag_mm": workspace_diag,
+                "info_rank": rank,
+                "info_rank_deficient": rank_deficient,
+                "machine_type": machine_type,
+                "num_anchors": num_anchors,
+                "dimensions": dimensions,
+            }
+        )
+        score_ui, rank_score, score_basis = _plan_score_ui(plan_eval)
+        max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan_eval)
+        result.update(
+            {
+                "plan": plan_eval,
+                "valid": bool(np.isfinite(rank_score) and cov_ok),
+                "score_ui": float(score_ui),
+                "rank_score": float(rank_score),
+                "score_basis": str(score_basis),
+                "max_std_mm": max_std_mm,
+                "rel_std": rel_std,
+                "covariance_ok": bool(cov_ok),
+            }
+        )
+        return result
+    except Exception:
+        return result
 
 
 def _full_auto_cfg_path(dataset_path: Path, run_id: str) -> Path:

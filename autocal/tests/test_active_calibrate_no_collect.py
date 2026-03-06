@@ -618,3 +618,293 @@ def test_full_auto_accepts_latest_replay_plan_after_patience(tmp_path, monkeypat
     out = capsys.readouterr().out
     assert "M669 iter_3" in out
     assert "M669 iter_1" not in out
+
+
+def test_full_auto_no_collect_history_rescore_prefers_rescored_best_iteration(
+    tmp_path, monkeypatch, capsys
+):
+    dataset = tmp_path / "full_dataset.json"
+    _write_dataset(dataset, sweeps=5)
+    monkeypatch.setenv("AUTOCAL_FULL_AUTO_RESCORE_HISTORY", "1")
+
+    plan_queue = [
+        {
+            "marker": "iter_1",
+            "anchors": np.asarray([[10.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
+            "machine_type": "slideprinter",
+            "cost": 1.0,
+            "cost_raw": 1.0,
+            "cost_noise_normalized": 1.0,
+            "covariance": np.eye(6, dtype=float),
+            "covariance_scaled": np.eye(6, dtype=float),
+            "collect_command": ["node", "collect"],
+        },
+        {
+            "marker": "iter_2",
+            "anchors": np.asarray([[20.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
+            "machine_type": "slideprinter",
+            "cost": 2.0,
+            "cost_raw": 2.0,
+            "cost_noise_normalized": 2.0,
+            "covariance": np.eye(6, dtype=float),
+            "covariance_scaled": np.eye(6, dtype=float),
+            "collect_command": ["node", "collect"],
+        },
+        {
+            "marker": "iter_3",
+            "anchors": np.asarray([[30.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
+            "machine_type": "slideprinter",
+            "cost": 3.0,
+            "cost_raw": 3.0,
+            "cost_noise_normalized": 3.0,
+            "covariance": np.eye(6, dtype=float),
+            "covariance_scaled": np.eye(6, dtype=float),
+            "collect_command": ["node", "collect"],
+        },
+    ]
+
+    def fake_plan(*_args, **_kwargs):
+        assert plan_queue, "expected one replay plan per iteration"
+        return plan_queue.pop(0)
+
+    def fake_score(plan):
+        score = float(plan["cost"])
+        return score, score, "standard-noise"
+
+    def fake_cost(plan):
+        return float(plan["cost"])
+
+    def fake_cov_summary(_plan):
+        return 1.0, 1.0, True
+
+    def fake_rescore(plan, **_kwargs):
+        marker = str(plan["marker"])
+        scores = {
+            "iter_1": (3.0, 3.0),
+            "iter_2": (1.0, 1.0),
+            "iter_3": (2.0, 2.0),
+        }
+        score_ui, rank_score = scores[marker]
+        return {
+            "plan": plan,
+            "valid": True,
+            "score_ui": score_ui,
+            "rank_score": rank_score,
+            "score_basis": "rescored-test",
+            "rel_std": 1.0,
+            "max_std_mm": 1.0,
+            "covariance_ok": True,
+        }
+
+    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
+    monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
+    monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
+    monkeypatch.setattr(ac, "_plan_noise_metrics", lambda _plan: {"chi2_red": 1.0, "J": 1.0})
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(ac, "_rescore_plan_on_dataset", fake_rescore)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_m669_from_plan", lambda plan: f"M669 {plan['marker']}")
+    monkeypatch.setattr(ac, "_m666_from_plan", lambda _plan: "")
+    monkeypatch.setattr(ac, "_send_rrf_gcode", lambda *_args, **_kwargs: "ok")
+
+    rc = ac.full_auto_loop(
+        work_dataset=dataset,
+        machine_type="slideprinter",
+        max_steps=8,
+        stop_cost=None,
+        stop_std_mm=None,
+        solve_restarts=1,
+        solve_iterations=1,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        residuals_csv=None,
+        generate_report=False,
+        find_radii="off",
+        find_buildup_factor="off",
+        base_radii=None,
+        buildup_factor=None,
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        line_width=0.4,
+        sigma_floor_mm=None,
+        sigma_used_mm=None,
+        candidate_deltas=None,
+        candidate_count=16,
+        delta_min=None,
+        delta_max=None,
+        fd_eps_mm=1.0,
+        regularization=0.0,
+        exclude_existing=True,
+        existing_tol_mm=1.0,
+        min_fixed_delta_spacing_mm=0.0,
+        top_k=5,
+        write_cfg=None,
+        collector_args=[],
+        sim=True,
+        keep_sim_alive=False,
+        hp_sim_reset=False,
+        sweep_points=None,
+        output_with_explanations=False,
+        full_auto_runs=None,
+        full_auto_log=None,
+        patience=20,
+        full_auto_verbose=False,
+        no_collect=True,
+    )
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "M669 iter_2" in out
+    assert "M669 iter_3" not in out
+
+
+def test_full_auto_warm_starts_next_iteration_from_previous_selected_plan(tmp_path, monkeypatch):
+    dataset = tmp_path / "full_dataset.json"
+    _write_dataset(dataset, sweeps=4)
+    monkeypatch.setenv("AUTOCAL_FULL_AUTO_WARM_START_SELECTED", "1")
+
+    captured_calls = []
+    emitted_plans = []
+
+    def fake_plan(*_args, **kwargs):
+        captured_calls.append(
+            {
+                "initial_anchors": kwargs.get("initial_anchors"),
+                "initial_radii_mm": kwargs.get("initial_radii_mm"),
+                "initial_buildup_factor": kwargs.get("initial_buildup_factor"),
+            }
+        )
+        idx = len(captured_calls)
+        plan = {
+            "marker": f"iter_{idx}",
+            "anchors": np.asarray(
+                [[10.0 * idx, 0.0], [1.0, 0.0], [0.0, 1.0]],
+                dtype=float,
+            ),
+            "machine_type": "slideprinter",
+            "cost": float(idx),
+            "cost_raw": float(idx),
+            "cost_noise_normalized": float(idx),
+            "covariance": np.eye(6, dtype=float),
+            "covariance_scaled": np.eye(6, dtype=float),
+            "collect_command": ["node", "collect"],
+            "length_model": {
+                "effective_radii_mm": [30.0 + idx, 30.0 + idx, 30.0 + idx],
+                "modeled_buildup_factor": [0.1 * idx, 0.1 * idx, 0.1 * idx],
+            },
+        }
+        emitted_plans.append(plan)
+        return plan
+
+    def fake_score(plan):
+        score = float(plan["cost"])
+        return score, score, "standard-noise"
+
+    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "_plan_primary_cost", lambda plan: float(plan["cost"]))
+    monkeypatch.setattr(ac, "_plan_covariance_summary", lambda _plan: (1.0, 1.0, True))
+    monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
+    monkeypatch.setattr(ac, "_plan_noise_metrics", lambda _plan: {"chi2_red": 1.0, "J": 1.0})
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_m669_from_plan", lambda plan: f"M669 {plan['marker']}")
+    monkeypatch.setattr(ac, "_m666_from_plan", lambda _plan: "")
+    monkeypatch.setattr(ac, "_send_rrf_gcode", lambda *_args, **_kwargs: "ok")
+
+    rc = ac.full_auto_loop(
+        work_dataset=dataset,
+        machine_type="slideprinter",
+        max_steps=8,
+        stop_cost=None,
+        stop_std_mm=None,
+        solve_restarts=1,
+        solve_iterations=1,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        residuals_csv=None,
+        generate_report=False,
+        find_radii="global",
+        find_buildup_factor="global",
+        base_radii=[30.0, 30.0, 30.0],
+        buildup_factor=0.2,
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        line_width=0.4,
+        sigma_floor_mm=None,
+        sigma_used_mm=None,
+        candidate_deltas=None,
+        candidate_count=16,
+        delta_min=None,
+        delta_max=None,
+        fd_eps_mm=1.0,
+        regularization=0.0,
+        exclude_existing=True,
+        existing_tol_mm=1.0,
+        min_fixed_delta_spacing_mm=0.0,
+        top_k=5,
+        write_cfg=None,
+        collector_args=[],
+        sim=True,
+        keep_sim_alive=False,
+        hp_sim_reset=False,
+        sweep_points=None,
+        output_with_explanations=False,
+        full_auto_runs=None,
+        full_auto_log=None,
+        patience=20,
+        full_auto_verbose=False,
+        no_collect=True,
+    )
+
+    assert rc == 0
+    assert len(captured_calls) == 2
+    assert captured_calls[0]["initial_anchors"] is None
+    assert captured_calls[0]["initial_radii_mm"] is None
+    assert captured_calls[0]["initial_buildup_factor"] is None
+    assert np.allclose(
+        np.asarray(captured_calls[1]["initial_anchors"], dtype=float),
+        np.asarray(emitted_plans[0]["anchors"], dtype=float),
+    )
+    assert np.allclose(
+        np.asarray(captured_calls[1]["initial_radii_mm"], dtype=float),
+        np.asarray(emitted_plans[0]["length_model"]["effective_radii_mm"], dtype=float),
+    )
+    assert np.allclose(
+        np.asarray(captured_calls[1]["initial_buildup_factor"], dtype=float),
+        np.asarray(emitted_plans[0]["length_model"]["modeled_buildup_factor"], dtype=float),
+    )
