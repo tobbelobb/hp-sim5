@@ -10,6 +10,7 @@ import {
 const DEFAULT_STABILITY_POLL_MS = 500;
 const DEFAULT_STABILITY_WINDOW_MS = 2000;
 const DEFAULT_STABILITY_TOLERANCE_DEG = 1.0;
+const DEFAULT_VIBRATION_WINDOW_MS = 10000;
 const DEFAULT_LOW_FORCE_N = 0.001; // Just pull out more line
 const DEFAULT_MID_FORCE_N = 1.0; // Carefully wind in automatically
 
@@ -49,6 +50,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     pollIntervalMs = DEFAULT_STABILITY_POLL_MS,
     stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
     toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
+    vibrationWindowMs = DEFAULT_VIBRATION_WINDOW_MS,
     timeoutMs = null,
     sleepFn = baseSleep,
     nowFn = () => Date.now(),
@@ -56,6 +58,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = pollIntervalMs / timeScale;
   const windowMs = Math.max(pollMs * 2, stableWindowMs / timeScale);
+  const vibrationMs = Math.max(windowMs, vibrationWindowMs / timeScale);
   const tol = Math.max(0, Number.isFinite(toleranceDeg) ? toleranceDeg : DEFAULT_STABILITY_TOLERANCE_DEG);
   const startMs = nowFn();
   const samples = [];
@@ -88,6 +91,52 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     return true;
   };
 
+  const isVibrationOnly = () => {
+    if (samples.length < 3) {
+      return false;
+    }
+    const cutoff = samples[samples.length - 1].timestampMs - vibrationMs;
+    const vibrationSamples = samples.filter((sample) => sample.timestampMs >= cutoff);
+    if (vibrationSamples.length < 3) {
+      return false;
+    }
+    const windowSpan = vibrationSamples[vibrationSamples.length - 1].timestampMs - vibrationSamples[0].timestampMs;
+    if (windowSpan < vibrationMs) {
+      return false;
+    }
+    const midpoint = vibrationSamples[0].timestampMs + (windowSpan / 2);
+    for (let motorIdx = 0; motorIdx < motorIds.length; motorIdx += 1) {
+      let earlySum = 0;
+      let lateSum = 0;
+      let earlyCount = 0;
+      let lateCount = 0;
+      for (let i = 0; i < vibrationSamples.length; i += 1) {
+        const sample = vibrationSamples[i];
+        const value = sample.anglesDeg[motorIdx];
+        if (!Number.isFinite(value)) {
+          return false;
+        }
+        if (sample.timestampMs <= midpoint) {
+          earlySum += value;
+          earlyCount += 1;
+        }
+        if (sample.timestampMs >= midpoint) {
+          lateSum += value;
+          lateCount += 1;
+        }
+      }
+      if (earlyCount === 0 || lateCount === 0) {
+        return false;
+      }
+      const earlyMean = earlySum / earlyCount;
+      const lateMean = lateSum / lateCount;
+      if (Math.abs(lateMean - earlyMean) > tol + 1e-9) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Poll until encoders have stayed within tolerance for the full stable window.
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -98,7 +147,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
       samples.push({ timestampMs: nowMs, anglesDeg });
-      const cutoff = nowMs - windowMs - pollMs;
+      const cutoff = nowMs - Math.max(windowMs, vibrationMs) - pollMs;
       while (samples.length > 0 && samples[0].timestampMs < cutoff) {
         samples.shift();
       }
@@ -106,7 +155,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
       samples.length = 0;
     }
 
-    if (isStable()) {
+    if (isStable() || isVibrationOnly()) {
       const result = {
         anglesDeg: samples[samples.length - 1].anglesDeg.slice(),
         samples: samples.length,
