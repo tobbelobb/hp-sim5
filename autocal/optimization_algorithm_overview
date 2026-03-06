@@ -27,12 +27,6 @@ Use these names when discussing the algorithm:
 | accepted update | accepted model update | Final choice among rollback, spool-only, damped anchor move, full anchor move, or scale-polished anchor move. |
 | scale polish | final uniform scale polish | Uniform search over a shared scale factor for radii and anchors. |
 
-Internal history/log fields still use some legacy phase names:
-
-- `warmup_no_freeze` = warmup pass
-- `refreeze_dynamic` = dynamic-filter pass
-- `refreeze_constant_mask` = constant-mask pass
-
 ## High-Level Structure
 
 When spool fitting is enabled, the implemented nesting is:
@@ -51,7 +45,7 @@ spool-fit machinery and just runs `calibrate_elliptical(...)`.
 
 ## `--filter-schedule`
 
-`--filter-schedule` replaces `--refreeze-iters`.
+`--filter-schedule` is the explicit public control for filter-pass ordering.
 
 Public syntax:
 

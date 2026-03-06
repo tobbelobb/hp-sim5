@@ -298,6 +298,11 @@ def test_parse_filter_schedule_rejects_unknown_numeric_pass_alias():
         _parse_filter_schedule("0,1,3")
 
 
+def test_parse_filter_schedule_rejects_legacy_refreeze_aliases():
+    with pytest.raises(ValueError, match="warmup,dynamic,constant or 0,1,2"):
+        _parse_filter_schedule("warmup_no_freeze,refreeze_dynamic,refreeze_constant_mask")
+
+
 def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
     monkeypatch.delenv("AUTOCAL_OPTIMIZER_MODE", raising=False)
     monkeypatch.delenv("AUTOCAL_DISABLE_JAX_OBJECTIVE", raising=False)

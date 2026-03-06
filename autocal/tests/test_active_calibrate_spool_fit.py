@@ -2657,12 +2657,12 @@ def test_spool_fit_filter_schedule_runs_multiple_passes(monkeypatch):
     assert bool(filter_schedule_history[0].get("prefit_enabled", False)) is True
     assert bool(filter_schedule_history[1].get("prefit_enabled", True)) is False
     assert bool(filter_schedule_history[2].get("prefit_enabled", True)) is False
+    assert [int(item.get("filter_pass_index", 0)) for item in filter_schedule_history] == [1, 2, 3]
     assert str(filter_schedule_history[0].get("filter_pass", "")) == "warmup"
     assert str(filter_schedule_history[1].get("filter_pass", "")) == "warmup"
     assert str(filter_schedule_history[2].get("filter_pass", "")) == "warmup"
-    assert str(filter_schedule_history[0].get("freeze_phase", "")) == "warmup_no_freeze"
-    assert str(filter_schedule_history[1].get("freeze_phase", "")) == "warmup_no_freeze"
-    assert str(filter_schedule_history[2].get("freeze_phase", "")) == "warmup_no_freeze"
+    assert all("freeze_phase" not in item for item in filter_schedule_history)
+    assert all("refreeze_iter" not in item for item in filter_schedule_history)
     assert bool(filter_schedule_history[0].get("pointwise_filtering", True)) is False
     assert bool(filter_schedule_history[1].get("pointwise_filtering", True)) is False
     assert bool(filter_schedule_history[2].get("pointwise_filtering", True)) is False
@@ -2676,7 +2676,10 @@ def test_spool_fit_filter_schedule_runs_multiple_passes(monkeypatch):
     assert bool(filter_schedule_history[1].get("final_scale_polish_attempted", True)) is False
     assert bool(filter_schedule_history[2].get("final_scale_polish_attempted", False)) is True
     assert isinstance(fit_info.get("filter_schedule_final_calibration"), dict)
-    assert isinstance(fit_info.get("refreeze_final_calibration"), dict)
+    assert "refreeze_final_calibration" not in fit_info
+    assert "refreeze_history" not in fit_info
+    assert "refreeze_constant_mask" not in fit_info
+    assert "refreeze_iters_requested" not in fit_info
 
 
 def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
@@ -2733,7 +2736,7 @@ def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
     assert bool(filter_schedule_history[2].get("final_scale_polish_attempted", False)) is True
 
 
-def test_filter_schedule_follows_explicit_3_2_3_freeze_phases(monkeypatch):
+def test_filter_schedule_follows_explicit_3_2_3_pass_sequence(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)
     target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
@@ -2845,17 +2848,7 @@ def test_filter_schedule_follows_explicit_3_2_3_freeze_phases(monkeypatch):
     filter_schedule_history = fit_info.get("filter_schedule_history")
     assert isinstance(filter_schedule_history, list)
     assert len(filter_schedule_history) == 8
-    phases = [str(item.get("freeze_phase", "")) for item in filter_schedule_history]
-    assert phases == [
-        "warmup_no_freeze",
-        "warmup_no_freeze",
-        "warmup_no_freeze",
-        "refreeze_dynamic",
-        "refreeze_dynamic",
-        "refreeze_constant_mask",
-        "refreeze_constant_mask",
-        "refreeze_constant_mask",
-    ]
+    assert [int(item.get("filter_pass_index", 0)) for item in filter_schedule_history] == [1, 2, 3, 4, 5, 6, 7, 8]
     pass_kinds = [str(item.get("filter_pass", "")) for item in filter_schedule_history]
     assert pass_kinds == [
         "warmup",
@@ -2867,6 +2860,8 @@ def test_filter_schedule_follows_explicit_3_2_3_freeze_phases(monkeypatch):
         "constant",
         "constant",
     ]
+    assert all("freeze_phase" not in item for item in filter_schedule_history)
+    assert all("refreeze_iter" not in item for item in filter_schedule_history)
     pointwise_flags = [bool(item.get("pointwise_filtering", False)) for item in filter_schedule_history]
     sweep_flags = [bool(item.get("sweep_wise_filtering", False)) for item in filter_schedule_history]
     assert pointwise_flags == [False, False, False, True, True, False, False, False]
@@ -2983,7 +2978,7 @@ def test_filter_schedule_constant_mask_hard_locks_precomputed_inliers(monkeypatc
         ],
     )
 
-    mask_info = fit_info.get("filter_schedule_constant_mask", fit_info.get("refreeze_constant_mask"))
+    mask_info = fit_info.get("filter_schedule_constant_mask")
     assert isinstance(mask_info, dict)
     assert bool(mask_info.get("attempted", False)) is True
     assert bool(mask_info.get("success", False)) is True

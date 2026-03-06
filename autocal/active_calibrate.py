@@ -882,8 +882,8 @@ def _estimate_effective_radii_with_spool_model(
         schedule_history: List[Dict[str, object]] = []
         final_tuple: Optional[Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]] = None
         final_calibration: Optional[Dict[str, object]] = None
-        refreeze_pointwise_filtering = bool(pointwise_filtering)
-        refreeze_sweep_wise_filtering = bool(sweep_wise_filtering)
+        schedule_pointwise_filtering = bool(pointwise_filtering)
+        schedule_sweep_wise_filtering = bool(sweep_wise_filtering)
         constant_mask_dataset: Optional[dict] = None
         constant_mask_info: Dict[str, object] = {
             "attempted": False,
@@ -891,16 +891,15 @@ def _estimate_effective_radii_with_spool_model(
             "message": "not_attempted",
         }
 
-        for refreeze_idx, pass_kind_raw in enumerate(requested_filter_schedule):
+        for schedule_idx, pass_kind_raw in enumerate(requested_filter_schedule):
             pass_kind = _normalize_filter_schedule_pass(
                 pass_kind_raw,
                 label="filter_schedule",
             )
-            pass_enable_prefit = bool(enable_prefit) if refreeze_idx == 0 else False
+            pass_enable_prefit = bool(enable_prefit) if schedule_idx == 0 else False
             pass_enable_bootstrap = (
-                bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
+                bool(enable_bootstrap_anchor_refresh) if schedule_idx == 0 else False
             )
-            pass_freeze_phase = _filter_schedule_phase_name(pass_kind)
             pass_dataset = dataset
             if pass_kind == "warmup":
                 constant_mask_dataset = None
@@ -912,8 +911,8 @@ def _estimate_effective_radii_with_spool_model(
                 pass_pointwise_filtering = False
                 pass_sweep_wise_filtering = False
             elif pass_kind == "dynamic":
-                pass_pointwise_filtering = bool(refreeze_pointwise_filtering)
-                pass_sweep_wise_filtering = bool(refreeze_sweep_wise_filtering)
+                pass_pointwise_filtering = bool(schedule_pointwise_filtering)
+                pass_sweep_wise_filtering = bool(schedule_sweep_wise_filtering)
             else:
                 # Constant-mask phase: run on the locked filtered dataset and
                 # keep runtime filters off so the mask remains fixed.
@@ -930,7 +929,7 @@ def _estimate_effective_radii_with_spool_model(
             # scale_fix 2: final polish only on the last filter-schedule pass.
             # scale_fix 3: final polish on every filter-schedule pass.
             if (2 in pass_scale_fix_set) and (3 not in pass_scale_fix_set) and (
-                refreeze_idx < len(requested_filter_schedule) - 1
+                schedule_idx < len(requested_filter_schedule) - 1
             ):
                 pass_scale_fix_set.discard(2)
             (
@@ -1019,8 +1018,8 @@ def _estimate_effective_radii_with_spool_model(
                 mask_dataset, mask_info = _build_locked_filter_dataset(
                     pass_dataset,
                     np.asarray(cal_pass.get("anchors"), dtype=float),
-                    pointwise_enabled=bool(refreeze_pointwise_filtering),
-                    sweep_enabled=bool(refreeze_sweep_wise_filtering),
+                    pointwise_enabled=bool(schedule_pointwise_filtering),
+                    sweep_enabled=bool(schedule_sweep_wise_filtering),
                 )
                 constant_mask_info.update(mask_info)
                 if isinstance(mask_dataset, dict):
@@ -1029,18 +1028,15 @@ def _estimate_effective_radii_with_spool_model(
                     constant_mask_dataset = None
             schedule_history.append(
                 {
-                    "filter_schedule_idx": int(refreeze_idx + 1),
+                    "filter_pass_index": int(schedule_idx + 1),
                     "filter_pass": str(pass_kind),
-                    "refreeze_iter": int(refreeze_idx + 1),
                     "prefit_enabled": bool(pass_enable_prefit),
                     "bootstrap_enabled": bool(pass_enable_bootstrap),
-                    "freeze_phase": str(pass_freeze_phase),
                     "pointwise_filtering": bool(pass_pointwise_filtering),
                     "sweep_wise_filtering": bool(pass_sweep_wise_filtering),
                     "constant_mask_available": bool(isinstance(constant_mask_dataset, dict)),
                     "constant_mask_applied": bool(
-                        pass_freeze_phase == "refreeze_constant_mask"
-                        and isinstance(constant_mask_dataset, dict)
+                        pass_kind == "constant" and isinstance(constant_mask_dataset, dict)
                     ),
                     "scale_fix_levels": [int(v) for v in sorted(pass_scale_fix_set)],
                     "scale_fix_2_active": bool(2 in pass_scale_fix_set),
@@ -1085,12 +1081,8 @@ def _estimate_effective_radii_with_spool_model(
         fit_info_out["filter_schedule_requested"] = [str(v) for v in requested_filter_schedule]
         fit_info_out["filter_schedule_history"] = list(schedule_history)
         fit_info_out["filter_schedule_constant_mask"] = dict(constant_mask_info)
-        fit_info_out["refreeze_iters_requested"] = int(len(requested_filter_schedule))
-        fit_info_out["refreeze_history"] = list(schedule_history)
-        fit_info_out["refreeze_constant_mask"] = dict(constant_mask_info)
         if isinstance(final_calibration, dict):
             fit_info_out["filter_schedule_final_calibration"] = final_calibration
-            fit_info_out["refreeze_final_calibration"] = final_calibration
         return (
             np.asarray(eff_r_final, dtype=float),
             np.asarray(fit_anchors_final, dtype=float),
@@ -4541,13 +4533,10 @@ def _normalize_filter_schedule_pass(pass_name: object, *, label: str = "--filter
     mapping = {
         "0": "warmup",
         "warmup": "warmup",
-        "warmup_no_freeze": "warmup",
         "1": "dynamic",
         "dynamic": "dynamic",
-        "refreeze_dynamic": "dynamic",
         "2": "constant",
         "constant": "constant",
-        "refreeze_constant_mask": "constant",
     }
     normalized = mapping.get(text)
     if normalized is None:
@@ -4597,17 +4586,6 @@ def _parse_filter_schedule(
             f"{label} must list one or more passes. Example: warmup,warmup,warmup,dynamic"
         )
     return tuple(out)
-
-
-def _filter_schedule_phase_name(pass_name: str) -> str:
-    normalized = _normalize_filter_schedule_pass(pass_name, label="filter_schedule")
-    if normalized == "warmup":
-        return "warmup_no_freeze"
-    if normalized == "dynamic":
-        return "refreeze_dynamic"
-    return "refreeze_constant_mask"
-
-
 def _resolve_r0_bounds(
     base_radii_mm: np.ndarray,
     *,
@@ -5467,8 +5445,6 @@ def _plan_next_ellipse_sweep(
             if isinstance(radii_fit, dict)
             else None
         )
-        if not isinstance(final_filter_schedule_cal, dict) and isinstance(radii_fit, dict):
-            final_filter_schedule_cal = radii_fit.get("refreeze_final_calibration")
         if isinstance(final_filter_schedule_cal, dict):
             cal = final_filter_schedule_cal
         else:
@@ -5928,12 +5904,9 @@ def _print_ellipse_plan(
                     f"nfev={_fmt_float(radii_fit.get('nfev'), fmt='.0f')} "
                     f"nit={_fmt_float(radii_fit.get('nit'), fmt='.0f')}"
                 )
-            filter_schedule_history = radii_fit.get(
-                "filter_schedule_history",
-                radii_fit.get("refreeze_history"),
-            )
+            filter_schedule_history = radii_fit.get("filter_schedule_history")
             if isinstance(filter_schedule_history, list) and filter_schedule_history:
-                last_refreeze = (
+                last_filter_pass = (
                     filter_schedule_history[-1]
                     if isinstance(filter_schedule_history[-1], dict)
                     else {}
@@ -5945,9 +5918,9 @@ def _print_ellipse_plan(
                 print(
                     f"; line_model_filter_schedule: passes={_fmt_float(len(filter_schedule_history), fmt='.0f')} "
                     f"schedule=[{schedule_text}] "
-                    f"last_score_ui={_fmt_float(last_refreeze.get('score_ui'))} "
-                    f"last_rank={_fmt_float(last_refreeze.get('rank_score'))} "
-                    f"last_cost={_fmt_float(last_refreeze.get('cost_noise_normalized'))}"
+                    f"last_score_ui={_fmt_float(last_filter_pass.get('score_ui'))} "
+                    f"last_rank={_fmt_float(last_filter_pass.get('rank_score'))} "
+                    f"last_cost={_fmt_float(last_filter_pass.get('cost_noise_normalized'))}"
                 )
     if isinstance(cal, dict):
         details = cal.get("details")
