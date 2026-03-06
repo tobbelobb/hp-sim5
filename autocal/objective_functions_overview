@@ -58,6 +58,47 @@ Recommended terminology:
   - first the total objective must improve
   - then `_rank_better(...)` must still prefer the polished candidate
 
+8. Plan-level scoring
+
+- `_plan_score_ui(...)` returns:
+  - `raw_fit_score_ui`
+  - `rank_score`
+  - `score_basis`
+- In layered mode:
+  - `raw_fit_score_ui` is the calibrated fit/UI number from
+    `_compute_score_ui_layered(...)`
+  - `rank_score` is the monotone ranking scalar derived from the same layered
+    internal metric
+- These two numbers are related, but they are not interchangeable:
+  - `raw_fit_score_ui` is for interpretation
+  - `rank_score` is for candidate ordering
+
+9. Full-auto history selection
+
+- Full-auto does not stop at raw `rank_score`.
+- `_full_auto_history_selection_score(...)` builds:
+  - `history_rank_score = rank_score + iteration_adjust + coverage_adjust`
+- `history_rank_score` is used for:
+  - `The best try so far.`
+  - patience reset / patience countdown
+  - final best-so-far selection when full-auto stops
+
+10. Full-auto displayed fit/UI score
+
+- In layered full-auto mode, the displayed `fit_score_ui` shown in:
+  - selected-run log lines
+  - the calibration summary
+  is derived from `history_rank_score`, not from `raw_fit_score_ui`
+- That mapping is performed by:
+  - `_fit_score_ui_from_history_rank_score(...)`
+  - `_full_auto_display_fit_score_ui(...)`
+- The mapping is tuned so the user-facing interpretation bands remain useful:
+  - `< 2` near-perfect
+  - `2 to 5` useful
+  - `5 to 10` concerning
+  - `> 10` probably unusable
+- The raw plan score is still logged separately as `raw_fit_score_ui`
+
 About `_data_cost` vs `_spool_rank_score`
 
 - They both come from the same residual engine, but they are not the same
@@ -99,3 +140,13 @@ Important current detail about `fit_structure`
 - It does not currently change `_data_cost(...)`.
 - It also does not currently change `_spool_rank_score(...)` inside the
   spool-step accept / rollback logic.
+
+Practical reading guide
+
+- If you want to know what the inner solver preferred, look at `rank_score`.
+- If you want to know what full-auto history preferred across multiple
+  iterations, look at `history_rank_score`.
+- If you want to know what the user saw in the summary, look at the displayed
+  `fit_score_ui`.
+- If you want the older per-plan interpretability number for diagnostics, look
+  at `raw_fit_score_ui`.

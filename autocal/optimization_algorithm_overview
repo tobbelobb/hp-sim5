@@ -27,6 +27,15 @@ Use these names when discussing the algorithm:
 | accepted update | accepted model update | Final choice among rollback, spool-only, damped anchor move, full anchor move, or scale-polished anchor move. |
 | scale polish | final uniform scale polish | Uniform search over a shared scale factor for radii and anchors. |
 
+For scores, use these names:
+
+| Current code term | Recommended term | Meaning |
+| --- | --- | --- |
+| `raw_fit_score_ui` | raw plan fit/UI score | The per-plan calibrated quality score returned by `_plan_score_ui(...)`. |
+| `rank_score` | raw plan rank score | The per-plan ranking scalar used to compare candidates within one run or one dataset-growth iteration. |
+| `history_rank_score` | history-adjusted full-auto rank | `rank_score` plus the later-iteration and retained-data adjustments used across dataset-growth iterations. |
+| `fit_score_ui` in full-auto selected-run logs and summaries | displayed full-auto fit/UI score | A remapped, user-facing quality score derived from `history_rank_score` in layered full-auto mode. |
+
 ## High-Level Structure
 
 When spool fitting is enabled, the implemented nesting is:
@@ -105,7 +114,8 @@ When `--full-auto` is used, the outermost behavior is:
    iteration.
 3. On every dataset-growth iteration:
    - run one or more run variants on the current dataset
-   - pick the best valid result
+   - pick the best valid result for this iteration
+   - append that result to the full-auto history
    - either accept it, or add exactly one more sweep and repeat
 
 Important consequence:
@@ -127,6 +137,46 @@ For the example command in the log:
   - `dynamic`
 
 So that example does not run any constant-mask passes.
+
+## Full-Auto Scoring Stack
+
+Full-auto currently uses three related, but different, scalar scores:
+
+1. `rank_score`
+   - returned by `_plan_score_ui(...)`
+   - this is the raw per-plan ranking scalar
+   - it is used to pick the best run variant within the current
+     dataset-growth iteration
+
+2. `history_rank_score`
+   - computed by `_full_auto_history_selection_score(...)`
+   - this starts from `rank_score`
+   - it then adds:
+     - a small iteration adjustment, so slightly later successful fits are
+       preferred within reason
+     - a small retained-data / filtered-ratio adjustment
+   - this is used for:
+     - `The best try so far.`
+     - patience reset / `Still has patience for ...`
+     - final history-based acceptance when full-auto stops
+
+3. displayed `fit_score_ui`
+   - in layered full-auto mode, this is now derived from
+     `history_rank_score`, not from the raw plan score
+   - the mapping is tuned so the old interpretation bands still roughly hold:
+     - `< 2` near-perfect
+     - `2 to 5` useful
+     - `5 to 10` concerning
+     - `> 10` probably unusable
+   - the raw per-plan fit score is still logged separately as
+     `raw_fit_score_ui`
+
+Important distinction:
+
+- `rank_score` is still the base metric for within-iteration run selection and
+  lower-level optimizer decisions.
+- `history_rank_score` is only the cross-iteration full-auto selector.
+- displayed `fit_score_ui` is a user-facing interpretation layer.
 
 ## Planning Pass
 
@@ -366,9 +416,15 @@ There are several distinct objectives in play:
    - Then rank-gated before final acceptance
 
 7. Full-auto run-selection objective
-   - rank score first
-   - then relative uncertainty
-   - then primary cost
+   - within one dataset-growth iteration:
+     - raw `rank_score` first
+     - then relative uncertainty
+     - then primary cost
+   - across dataset-growth iterations:
+     - `history_rank_score` first
+     - then raw `rank_score`
+     - then relative uncertainty
+     - then primary cost
 
 ## Important Subtlety: `fit_structure`
 
@@ -378,8 +434,10 @@ alternating-round rollback comparator.
 What it currently affects:
 
 - layered plan scoring / reporting
+- raw `rank_score` generation
 - full-auto run selection
-- the `score_ui` values shown in logs
+- full-auto history ranking, because `history_rank_score` starts from `rank_score`
+- the displayed `fit_score_ui` values shown in selected-run logs and summaries
 
 What it does not currently affect:
 
@@ -408,6 +466,20 @@ For the example command:
 
 The `line_model_fit` line summarizes the final single-pass pipeline history.
 The filter-pass summary is printed separately as `line_model_filter_schedule`.
+
+When full-auto logging is enabled, the machine-readable selected-run line now
+uses these fields:
+
+- `raw_fit_score_ui`
+  - the raw per-plan fit/UI score from `_plan_score_ui(...)`
+- `rank_score`
+  - the raw per-plan rank used to choose the best run variant this iteration
+- `history_rank_score`
+  - the cross-iteration history selector actually used for patience and final
+    best-so-far choice
+- `fit_score_ui`
+  - the displayed user-facing quality score, remapped from
+    `history_rank_score` in layered full-auto mode
 
 ## Pseudocode
 

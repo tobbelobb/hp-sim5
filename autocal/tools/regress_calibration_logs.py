@@ -254,13 +254,13 @@ def parse_summary(text: str) -> Optional[Params]:
             m = _RE_FIT_SCORE.search(line)
             if m:
                 fit_score = _safe_float(m.group(1))
-        if "Parameters (M669)" in line:
+        if "Parameters (M669)" in line or "Anchors (M669)" in line:
             parts = _RE_M669_PARTS.findall(line)
             for (k, x, y, _z) in parts:
                 fx, fy = _safe_float(x), _safe_float(y)
                 if fx is not None and fy is not None:
                     anchors_map[k.upper()] = (fx, fy)
-        if "Line model (M666)" in line:
+        if "Line model (M666)" in line or "Spools (M666)" in line:
             m = _RE_M666_R.search(line)
             if m:
                 radii = [_safe_float(m.group(1)), _safe_float(m.group(2)), _safe_float(m.group(3))]

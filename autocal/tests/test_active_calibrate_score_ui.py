@@ -210,6 +210,18 @@ def test_plan_score_ui_non_layered_matches_primary_cost():
     assert ac._solution_quality_label(score_ui) == "good"
 
 
+def test_full_auto_history_rank_score_maps_to_interpretable_fit_score_ui():
+    assert ac._fit_score_ui_from_history_rank_score(4.18) < 2.0
+    assert 2.0 < ac._fit_score_ui_from_history_rank_score(4.33) < 5.0
+    assert 5.0 < ac._fit_score_ui_from_history_rank_score(4.54) < 10.0
+    assert ac._fit_score_ui_from_history_rank_score(4.86) > 10.0
+    assert np.isclose(
+        ac._fit_score_ui_from_history_rank_score(ac._SCORE_UI_HARD_FAIL),
+        ac._SCORE_UI_HARD_FAIL,
+        atol=1e-12,
+    )
+
+
 def test_rank_coverage_adjustment_rewards_more_retained_observations():
     adjust_base, info_base = ac._rank_coverage_adjustment_from_noise_metrics(
         {

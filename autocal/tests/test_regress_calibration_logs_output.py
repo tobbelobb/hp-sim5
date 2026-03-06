@@ -92,6 +92,23 @@ Wrote to console: Score: 1.13 (lower is better)
     assert iters[0].fit_score_ui == 1.13
 
 
+def test_parse_summary_accepts_new_anchors_and_spools_labels():
+    text = """
+== Calibration summary ==
+Found parameters of ideal quality
+Fit/UI quality score (lower is better): 1.23
+Anchors (M669): M669 A0.00:-1901.07:0.00 B1645.75:950.54:0.00 C-1645.55:950.06:0.00
+Spools (M666): M666 R39.09:39.09:39.09 Q0.636619
+""".strip()
+
+    parsed = rcl.parse_summary(text)
+
+    assert parsed is not None
+    assert parsed.fit_score_ui == 1.23
+    assert parsed.anchors is not None
+    assert parsed.radii == [39.09, 39.09, 39.09]
+
+
 def test_report_dataset_has_readable_summary_and_verdicts():
     ref, gen = _parsed(fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=10.0, rank_gen=11.0)
     ok, lines, true_delta = rcl.report_dataset(
