@@ -1558,18 +1558,6 @@ def _estimate_effective_radii_with_spool_model(
         except Exception:
             return None
 
-    def _ellipse_internal_cost(
-        transformed_dataset: dict,
-        anchors_eval: np.ndarray,
-    ) -> float:
-        legacy_cost, _noise_metrics, _rows, _risk_metric = _eval_bundle(
-            transformed_dataset,
-            anchors_eval,
-            rows_policy="never",
-            need_legacy_cost=True,
-        )
-        return float(legacy_cost)
-
     def _data_cost(transformed_dataset: dict, anchors_eval: np.ndarray, blend_weight: float = _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT) -> float:
         legacy_cost, _noise_metrics, _rows, risk_metric = _eval_bundle(
             transformed_dataset,
@@ -2276,16 +2264,10 @@ def _estimate_effective_radii_with_spool_model(
     for outer_idx in range(outer_iters):
         spool_params_current, transformed_current = _build_dataset_and_params(radii_current, buildup_current)
         current_cost = float(_data_cost(transformed_current, anchors_current))
-        current_search_data_cost = float(_ellipse_internal_cost(transformed_current, anchors_current))
         current_prior = float(_prior_cost(radii_current, buildup_current))
         current_total_cost = (
             float(current_cost + current_prior)
             if np.isfinite(current_cost) and np.isfinite(current_prior)
-            else float("inf")
-        )
-        current_search_total_cost = (
-            float(current_search_data_cost + current_prior)
-            if np.isfinite(current_search_data_cost) and np.isfinite(current_prior)
             else float("inf")
         )
         current_rank_score, current_rank_internal = _spool_rank_score(transformed_current, anchors_current)
@@ -2319,7 +2301,7 @@ def _estimate_effective_radii_with_spool_model(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_try = _build_dataset_and_params(radii_try, buildup_try)
-                data_cost = _ellipse_internal_cost(transformed_try, anchors_current)
+                data_cost = _data_cost(transformed_try, anchors_current)
                 if not np.isfinite(data_cost):
                     objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
@@ -2435,7 +2417,7 @@ def _estimate_effective_radii_with_spool_model(
             run_anchor_step,
             anchor_step_trigger_improvement,
             anchor_step_trigger_threshold,
-        ) = _spool_anchor_step_gate(current_search_total_cost, fitted_total_cost)
+        ) = _spool_anchor_step_gate(current_total_cost, fitted_total_cost)
 
         radii_opt, buildup_opt = _unpack_spool_opt_vector(
             x_opt,
@@ -2701,20 +2683,10 @@ def _estimate_effective_radii_with_spool_model(
                 ),
                 "fitted_total_cost": float(fitted_cost) if np.isfinite(fitted_cost) else None,
                 "current_data_cost": float(current_cost) if np.isfinite(current_cost) else None,
-                "current_search_data_cost": (
-                    float(current_search_data_cost)
-                    if np.isfinite(current_search_data_cost)
-                    else None
-                ),
                 "current_prior_cost": float(current_prior) if np.isfinite(current_prior) else None,
                 "current_cost": float(current_cost) if np.isfinite(current_cost) else None,
                 "current_total_cost": (
                     float(current_total_cost) if np.isfinite(current_total_cost) else None
-                ),
-                "current_search_total_cost": (
-                    float(current_search_total_cost)
-                    if np.isfinite(current_search_total_cost)
-                    else None
                 ),
                 "current_rank_score": (
                     float(current_rank_score) if np.isfinite(current_rank_score) else None
@@ -3003,10 +2975,7 @@ def _estimate_effective_radii_with_spool_model(
         "outer_iters": int(outer_iters),
         "inner_iters": int(inner_iters),
         "noise_normalized_data_term": bool(spool_noise_normalized),
-        "optimization_objective": "spool_step: ellipse_internal_cost + spool_prior",
-        "spool_step_data_objective": "ellipse_internal_cost",
-        "spool_step_total_objective": "ellipse_internal_cost + spool_prior",
-        "acceptance_data_objective": "legacy_data_cost + w*risk_trimmed_direct",
+        "optimization_objective": "legacy_data_cost + w*risk_trimmed_direct",
         "anchor_step_improvement_rel_threshold": float(_SPOOL_ANCHOR_STEP_IMPROVE_REL),
         "filter_schedule_requested": [str(v) for v in requested_filter_schedule],
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
