@@ -6628,7 +6628,11 @@ def full_auto_loop(
         stack.enter_context(redirect_stderr(log_handle))
         return stack
 
-    def _emit_summary_and_send(best_plan: Dict[str, object]) -> int:
+    def _emit_summary_and_send(
+        best_plan: Dict[str, object],
+        *,
+        summary_meta: Optional[Dict[str, object]] = None,
+    ) -> int:
         dataset_now = _load_json(work_path)
         sweep_ids: List[str] = []
         sweeps_now = dataset_now.get("sweeps")
@@ -6659,9 +6663,10 @@ def full_auto_loop(
             _log_console(f"Anchors: {anchor_str}")
         if m666:
             _log_console(f"Line model (M666): {m666}")
+        meta_for_summary = summary_meta if isinstance(summary_meta, dict) else best_meta
         if has_variants:
-            best_flags = str(best_meta.get("flags", "")).strip()
-            best_run = str(best_meta.get("run_id", "")).strip()
+            best_flags = str(meta_for_summary.get("flags", "")).strip()
+            best_run = str(meta_for_summary.get("run_id", "")).strip()
             label = best_flags or best_run or "default"
             _log_console(f"Variant/flag setup giving best score_ui: {label}")
         _log_console(_solution_quality_message(summary_score_for_quality))
@@ -6928,7 +6933,7 @@ def full_auto_loop(
             _log_console(_solution_quality_message(None))
             return _finalize(2)
         _log_console(f"; full-auto: stop requested ({reason}); accepting best-so-far.")
-        return _emit_summary_and_send(best_plan)
+        return _emit_summary_and_send(best_plan, summary_meta=best_meta)
 
     def _stop_file_requested() -> bool:
         try:
@@ -7335,7 +7340,28 @@ def full_auto_loop(
                     _log_console("; full-auto: no best plan available; stopping.")
                     _log_console(_solution_quality_message(None))
                     return _finalize(2)
-                return _emit_summary_and_send(best_plan)
+                accepted_meta = (
+                    {
+                        "iteration": step,
+                        "run_id": selected_id,
+                        "flags": selected_flags,
+                        "score_ui": selected_score_ui,
+                        "score_basis": selected_score_basis,
+                        "cost": selected_cost,
+                        "rel_std": selected_rel_std,
+                        "max_std_mm": selected_max_std,
+                    }
+                    if isinstance(plan, dict)
+                    else best_meta
+                )
+                # Full-auto iterations fit against progressively larger datasets.
+                # When patience is exhausted, the current plan is the one trained
+                # on the largest accepted dataset, while best-so-far may come from
+                # an easier early subset and can be materially farther from truth.
+                return _emit_summary_and_send(
+                    plan if isinstance(plan, dict) else best_plan,
+                    summary_meta=accepted_meta,
+                )
 
             if replay_mode:
                 if replay_index >= len(replay_sweeps):
@@ -7372,7 +7398,16 @@ def full_auto_loop(
                 _log_console("; --no-collect set; stopping before live collection.")
                 if best_plan is None:
                     best_plan = plan
-                return _emit_summary_and_send(best_plan)
+                return _emit_summary_and_send(plan, summary_meta={
+                    "iteration": step,
+                    "run_id": selected_id,
+                    "flags": selected_flags,
+                    "score_ui": selected_score_ui,
+                    "score_basis": selected_score_basis,
+                    "cost": selected_cost,
+                    "rel_std": selected_rel_std,
+                    "max_std_mm": selected_max_std,
+                })
 
             cmd = plan.get("collect_command")
             if not isinstance(cmd, list) or not cmd:
