@@ -20,7 +20,7 @@ Use these names when discussing the algorithm:
 | `dynamic` | dynamic-filter pass | Runtime filters are enabled and recomputed from the current pass result. |
 | `constant` | constant-mask pass | A previously locked filtered dataset is reused while runtime filters stay disabled. |
 | `spool_outer_iters` | alternating refinement rounds | Major rounds that alternate "optimize spool parameters" and "optionally update anchors". |
-| `spool_inner_iters` | spool coordinate-descent rounds | Iteration budget for the coordinate-descent solver inside one spool step. |
+| `spool_inner_iters` | spool-step optimizer budget | Iteration budget for the bounded L-BFGS-B spool solver inside one spool step. |
 | prefit | spool seed prefit | Cheap spool-only seed improvement before the main alternating rounds. |
 | bootstrap anchor refresh | bootstrap anchor refresh | One-time anchor recalibration before the main alternating rounds. |
 | anchor step | anchor proposal solve | `calibrate_elliptical(...)` run on the current transformed dataset to propose new anchors. |
@@ -37,7 +37,7 @@ dataset-growth iteration
     -> planning pass
       -> filter pass
         -> alternating refinement round
-          -> spool coordinate-descent rounds
+          -> spool-step optimizer budget
 ```
 
 If spool fitting is disabled, the planning pass skips the filter-pass and
@@ -210,7 +210,7 @@ What it does:
 - optimizes spool parameters only
 - uses an ellipse-fit proxy score over the transformed sweeps
 - adds the spool prior cost
-- uses a guarded coordinate-descent search
+- uses a guarded spool-only local search
 
 This is only a seed improvement step. It does not move anchors.
 
@@ -239,7 +239,7 @@ Repeat for `spool_outer_iters` rounds:
 
 2. Spool step:
    - keep anchors fixed
-   - optimize the selected spool parameters by coordinate descent
+   - optimize the selected spool parameters with bounded L-BFGS-B
    - objective = `_data_cost(...) + _prior_cost(...)`
 
 3. Decide whether to even try an anchor proposal:
@@ -300,23 +300,13 @@ Important current behavior:
 - `scale_fix_2` runs it only on the last filter pass.
 - There is no separate per-round scale polish inside `spool_outer_iters`.
 
-## Coordinate-Descent Inner Loop
+## Spool-Step Inner Optimizer
 
-The spool step uses a simple coordinate-descent solver:
+Inside each alternating round, the spool step uses SciPy's bounded
+`L-BFGS-B` solver on the packed spool parameter vector.
 
-1. Start from the current spool parameter vector.
-2. For each parameter:
-   - try `+step`
-   - try `-step`
-   - keep the best improving move
-   - if neither direction improves, halve that parameter's step size
-3. Repeat until:
-   - step sizes fall below tolerance, or
-   - progress stalls, or
-   - the iteration budget `spool_inner_iters` is exhausted
-
-So `spool_inner_iters` is not a separate calibration stage. It is just the
-iteration budget of the spool coordinate-descent solver inside one spool step.
+`spool_inner_iters` is not a separate calibration stage. It is the tuning knob
+for that inner spool-step optimizer budget.
 
 ## What “Priors” Mean Here
 
@@ -397,7 +387,7 @@ For the example command:
 - `line_model_fit: outer_iters=3 inner_iters=30`
   means:
   - 3 alternating refinement rounds per filter pass
-  - up to 30 coordinate-descent rounds inside each spool step
+  - a spool-step optimizer budget of 30 inside each spool step
 
 - `line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic]`
   means:
