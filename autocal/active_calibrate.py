@@ -7380,11 +7380,10 @@ def full_auto_loop(
                     "rel_std": selected_rel_std,
                     "max_std_mm": selected_max_std,
                 }
-                no_improve = 0
                 improved = True
-            elif not selected_underconstrained:
-                no_improve += 1
 
+            score_rank: Optional[int] = None
+            history_improved = False
             if (not selected_underconstrained) and np.isfinite(selected_rank_score):
                 history_candidates.append(
                     {
@@ -7412,6 +7411,12 @@ def full_auto_loop(
                         },
                     }
                 )
+                score_rank = _current_history_rank_position(iteration=step)
+                history_improved = bool(score_rank == 1)
+                if history_improved:
+                    no_improve = 0
+                else:
+                    no_improve += 1
             history_total_iterations = max(history_total_iterations, int(step))
 
             stop_cost_hit = False
@@ -7442,11 +7447,12 @@ def full_auto_loop(
             if has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
             if not selected_underconstrained:
-                score_rank = _current_history_rank_position(iteration=step)
                 if score_rank is not None:
                     rank_label = "best" if score_rank == 1 else _ordinal(score_rank) + " best"
                     _log_console(f"The {rank_label} try so far.")
                 _log_console("Ranking: fit quality first, retained data second.")
+                if history_improved:
+                    _log_console("Patience reset.")
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
@@ -7515,6 +7521,8 @@ def full_auto_loop(
                     summary_meta=summary_meta,
                 )
 
+            remaining = max(0, patience_limit - no_improve)
+
             if replay_mode:
                 if replay_index >= len(replay_sweeps):
                     _log_console(
@@ -7528,6 +7536,8 @@ def full_auto_loop(
                         work_path = dataset_path
 
                 if replay_mode:
+                    _log_console("Replaying next sweep to try and beat it.")
+                    _log_console(f"Still has patience for {remaining} more attempts.")
                     next_sweep = replay_sweeps[replay_index]
                     replay_index += 1
                     base_dataset = _load_json(work_path)
@@ -7575,7 +7585,6 @@ def full_auto_loop(
                 _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
                 return _finalize(2)
 
-            remaining = max(0, patience_limit - no_improve)
             _log_console("Collecting new sweep to try and beat it.")
             _log_console(f"Still has patience for {remaining} more attempts.")
             _log_line(f"; collecting next sweep ({selected_id})")

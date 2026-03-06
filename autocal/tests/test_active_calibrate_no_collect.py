@@ -622,6 +622,9 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
     assert "Fit score:" not in out
     assert "try so far." in out
     assert "Ranking: fit quality first, retained data second." in out
+    assert "Replaying next sweep to try and beat it." in out
+    assert "Still has patience for 2 more attempts." in out
+    assert "Patience reset." in out
 
 
 def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, monkeypatch, capsys):
@@ -670,6 +673,17 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
             "cost": 1.40,
             "cost_raw": 1.40,
             "cost_noise_normalized": 1.40,
+            "covariance": np.eye(6, dtype=float),
+            "covariance_scaled": np.eye(6, dtype=float),
+            "collect_command": ["node", "collect"],
+        },
+        {
+            "marker": "iter_5",
+            "anchors": np.asarray([[50.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
+            "machine_type": "slideprinter",
+            "cost": 1.55,
+            "cost_raw": 1.55,
+            "cost_noise_normalized": 1.55,
             "covariance": np.eye(6, dtype=float),
             "covariance_scaled": np.eye(6, dtype=float),
             "collect_command": ["node", "collect"],
@@ -777,3 +791,6 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
     assert "Fit score:" not in out
     assert "try so far." in out
     assert "Ranking: fit quality first, retained data second." in out
+    assert "Replaying next sweep to try and beat it." in out
+    assert out.count("Patience reset.") >= 2
+    assert out.count("Still has patience for 3 more attempts.") >= 2
