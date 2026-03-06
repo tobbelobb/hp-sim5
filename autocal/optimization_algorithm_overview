@@ -1,10 +1,10 @@
 # Autocal Optimization Algorithm Overview
 
-This document describes the algorithm currently implemented in
-`autocal/active_calibrate.py` for the spool-model + anchor calibration path.
-It also defines clearer names for the nested loops, because the current names
-`refreeze_iters`, `spool_outer_iters`, and `spool_inner_iters` do not make the
-actual structure obvious.
+This document describes the spool-model + anchor calibration algorithm currently
+implemented in `autocal/active_calibrate.py`.
+
+Its main purpose is to give the nested loops descriptive names and to explain
+what each stage actually optimizes.
 
 ## Recommended Nomenclature
 
@@ -14,45 +14,92 @@ Use these names when discussing the algorithm:
 | --- | --- | --- |
 | full-auto iteration | dataset-growth iteration | One pass of "fit on the current sweep set, rank the next sweep, then optionally add one more sweep". |
 | full-auto run | run variant | One solver/settings variant evaluated on the same current dataset. |
-| `_plan_next_ellipse_sweep(...)` | planning pass | One complete recalibration of anchors on the current dataset, plus next-sweep ranking. |
-| `refreeze_iters` | filter-schedule passes | Warm-started reruns of the spool/anchor fit under different filtering regimes. |
-| `warmup_no_freeze` | unfiltered warmup pass | Runtime pointwise and sweep-wise filters are disabled. |
-| `refreeze_dynamic` | dynamic-filter pass | Runtime filters are enabled and recomputed from the current anchors. |
-| `refreeze_constant_mask` | frozen-mask pass | A filtered dataset is locked once, then runtime filters are disabled so the mask stays fixed. |
+| `_plan_next_ellipse_sweep(...)` | planning pass | One complete recalibration on the current dataset, plus next-sweep ranking. |
+| `--filter-schedule` entry | filter pass | One warm-started rerun of the spool/anchor fit under a specified filtering regime. |
+| `warmup` | warmup pass | Runtime pointwise and sweep-wise filters are disabled, and any locked mask is cleared. |
+| `dynamic` | dynamic-filter pass | Runtime filters are enabled and recomputed from the current pass result. |
+| `constant` | constant-mask pass | A previously locked filtered dataset is reused while runtime filters stay disabled. |
 | `spool_outer_iters` | alternating refinement rounds | Major rounds that alternate "optimize spool parameters" and "optionally update anchors". |
-| `spool_inner_iters` | spool coordinate-descent rounds | Iteration budget for the coordinate-descent solver used inside each spool step. |
-| prefit | spool seed prefit | Cheap pre-optimization of spool parameters before the main alternating rounds. |
+| `spool_inner_iters` | spool coordinate-descent rounds | Iteration budget for the coordinate-descent solver inside one spool step. |
+| prefit | spool seed prefit | Cheap spool-only seed improvement before the main alternating rounds. |
 | bootstrap anchor refresh | bootstrap anchor refresh | One-time anchor recalibration before the main alternating rounds. |
 | anchor step | anchor proposal solve | `calibrate_elliptical(...)` run on the current transformed dataset to propose new anchors. |
 | accepted update | accepted model update | Final choice among rollback, spool-only, damped anchor move, full anchor move, or scale-polished anchor move. |
 | scale polish | final uniform scale polish | Uniform search over a shared scale factor for radii and anchors. |
 
-Recommended variable names if the code is ever cleaned up:
+Internal history/log fields still use some legacy phase names:
 
-- `refreeze_iters` -> `filter_schedule_passes`
-- `spool_outer_iters` -> `alternating_refinement_rounds`
-- `spool_inner_iters` -> `spool_coordinate_descent_rounds`
+- `warmup_no_freeze` = warmup pass
+- `refreeze_dynamic` = dynamic-filter pass
+- `refreeze_constant_mask` = constant-mask pass
 
 ## High-Level Structure
 
-There are three nested levels:
-
-1. dataset-growth iteration
-2. filter-schedule pass
-3. alternating refinement round
-
-Inside the alternating refinement round, the spool step itself uses a
-coordinate-descent inner loop.
-
-So the implemented structure is:
+When spool fitting is enabled, the implemented nesting is:
 
 ```text
 dataset-growth iteration
-  -> planning pass
-    -> filter-schedule pass
-      -> alternating refinement round
-        -> spool coordinate-descent rounds
+  -> run variant
+    -> planning pass
+      -> filter pass
+        -> alternating refinement round
+          -> spool coordinate-descent rounds
 ```
+
+If spool fitting is disabled, the planning pass skips the filter-pass and
+spool-fit machinery and just runs `calibrate_elliptical(...)`.
+
+## `--filter-schedule`
+
+`--filter-schedule` replaces `--refreeze-iters`.
+
+Public syntax:
+
+- words: `warmup,dynamic,constant`
+- numbers: `0,1,2`
+- numeric mapping:
+  - `0 = warmup`
+  - `1 = dynamic`
+  - `2 = constant`
+
+CLI default:
+
+```text
+--filter-schedule warmup,warmup,warmup,dynamic
+```
+
+Examples:
+
+- `--filter-schedule warmup,warmup,warmup,dynamic`
+- `--filter-schedule 0,0,0,1`
+- `--filter-schedule 0,0,0,1,1,2,2,2`
+
+Pass ordering rules:
+
+- Any order is allowed.
+- A `warmup` pass clears the current locked mask.
+- A `dynamic` pass enables runtime filtering and rebuilds the locked mask from
+  the current pass result.
+- A `constant` pass reuses the locked dataset from the most recent successful
+  dynamic pass and keeps runtime filters off.
+- A `constant` pass is rejected at parse time if there has not been a `dynamic`
+  pass since the most recent `warmup`.
+- A schedule that is structurally valid can still fail at runtime if the prior
+  dynamic pass could not actually build a locked mask.
+
+One practical consequence:
+
+- `warmup -> constant` is invalid and errors immediately.
+- `dynamic -> constant -> warmup -> dynamic -> constant` is valid.
+- `dynamic -> constant -> dynamic -> constant` is also valid; the later dynamic
+  pass rebuilds the mask.
+
+Implementation detail worth knowing:
+
+- The CLI and planning code default to the 4-pass schedule above.
+- The low-level helper `_estimate_effective_radii_with_spool_model(...)`
+  defaults to a single warmup pass when called directly without an explicit
+  schedule, because that bypasses the wrapper and runs one single-pass pipeline.
 
 ## Top-Level Full-Auto Loop
 
@@ -71,14 +118,21 @@ Important consequence:
 
 - If `--find-radii` or `--find-buildup-factor` is enabled, spool estimation runs
   again after every newly added sweep, because each planning pass recalibrates
-  from the current dataset from scratch.
+  from the current dataset again.
 
-For the command in the example log:
+For the example command in the log:
 
 - the dataset already existed with 6 sweeps
 - full-auto replay started from the first 3 sweeps
-- then each dataset-growth iteration replayed 1 additional sweep
-- the spool-model + anchor optimization was rerun on sweep counts 3, 4, 5, and 6
+- each dataset-growth iteration replayed 1 additional sweep
+- the spool-model + anchor optimization reran on sweep counts 3, 4, 5, and 6
+- the filter schedule was the default 4-pass schedule:
+  - `warmup`
+  - `warmup`
+  - `warmup`
+  - `dynamic`
+
+So that example does not run any constant-mask passes.
 
 ## Planning Pass
 
@@ -88,47 +142,50 @@ One planning pass (`_plan_next_ellipse_sweep(...)`) does this:
 2. Build an initial anchor guess with `build_anchor_initial_guess(...)`.
 3. If spool search is enabled:
    - run a seed anchor calibration on the base dataset
-   - run the spool-model optimization pipeline
-   - use the final refreeze-pass calibration if available
+   - run the spool-model optimization pipeline across the requested filter passes
+   - use the final pass calibration if available
    - otherwise run one more final `calibrate_elliptical(...)` on the transformed dataset
 4. If spool search is disabled:
    - just run `calibrate_elliptical(...)`
 5. Compute covariance / information diagnostics.
 6. Rank candidate next sweeps and produce the suggested collection command.
 
-## Filter-Schedule Passes
+## Filter Passes
 
-The filter-schedule wrapper is active when `refreeze_iters > 1`.
+Each filter pass does the following:
 
-Its pass counts are computed as:
-
-- unfiltered warmup passes: `min(3, refreeze_iters)`
-- dynamic-filter passes: `min(2, max(0, refreeze_iters - unfiltered_warmup_passes))`
-- frozen-mask passes: any remaining passes
-
-That means:
-
-- `refreeze_iters=4` gives `3 + 1 + 0`
-- `refreeze_iters=5` gives `3 + 2 + 0`
-- `refreeze_iters=8` gives `3 + 2 + 3`
-
-This is the main correction to the guessed outline from the log:
-
-- the current example command does **not** run `3 + 2 + 3`
-- it uses the default `--refreeze-iters 4`
-- so it runs `3` unfiltered warmup passes, `1` dynamic-filter pass, and `0`
-  frozen-mask passes
-
-Each filter-schedule pass does:
-
-1. Choose the pass dataset and filter mode.
-2. Run one single-pass spool/anchor pipeline with `refreeze_iters=1`.
+1. Choose the pass dataset and filtering mode.
+2. Run one single-pass spool/anchor pipeline.
 3. Run `calibrate_elliptical(...)` on that pass dataset.
-4. Save anchors/radii/buildup as warm-start seeds for the next pass.
-5. On the last dynamic-filter pass, build and save the locked filtered dataset
-   that later frozen-mask passes will use.
+4. Save anchors, radii, and buildup as warm-start seeds for the next pass.
+5. If this is a dynamic pass, build and save the locked filtered dataset that a
+   later constant pass may reuse.
 
-Only the first filter-schedule pass enables:
+Per pass type:
+
+### Warmup pass
+
+- Runtime pointwise filtering: off
+- Runtime sweep-wise filtering: off
+- Locked mask: cleared before the pass
+- Intended role: establish a stable warm start without live filtering
+
+### Dynamic-filter pass
+
+- Runtime pointwise filtering: on if enabled globally
+- Runtime sweep-wise filtering: on if enabled globally
+- Locked mask: rebuilt after the pass using the current pass result
+- Intended role: let the live filters adapt to the current solution
+
+### Constant-mask pass
+
+- Runtime pointwise filtering: off
+- Runtime sweep-wise filtering: off
+- Pass dataset: the locked filtered dataset from the most recent successful
+  dynamic pass
+- Intended role: continue optimization against a fixed inlier set
+
+Only the first filter pass enables:
 
 - spool seed prefit
 - bootstrap anchor refresh
@@ -138,7 +195,7 @@ warm starts.
 
 ## Single-Pass Spool/Anchor Pipeline
 
-The single-pass pipeline is what actually lives behind one filter-schedule pass.
+One filter pass runs one single-pass spool/anchor pipeline.
 
 ### Step 1: Initialize spool state
 
@@ -245,12 +302,9 @@ Acceptance is two-stage:
 
 Important current behavior:
 
-- `scale_fix_3` does not run a separate polish after every alternating
-  refinement round.
-- It runs in the pipeline's final scale-polish stage, which means:
-  - once per filter-schedule pass when `refreeze_iters > 1`
-  - once total when `refreeze_iters == 1`
-- `scale_fix_2` runs only on the last filter-schedule pass.
+- `scale_fix_3` runs this final polish once per filter pass.
+- `scale_fix_2` runs it only on the last filter pass.
+- There is no separate per-round scale polish inside `spool_outer_iters`.
 
 ## Coordinate-Descent Inner Loop
 
@@ -270,7 +324,7 @@ The spool step uses a simple coordinate-descent solver:
 So `spool_inner_iters` is not a separate calibration stage. It is just the
 iteration budget of the spool coordinate-descent solver inside one spool step.
 
-## What "Priors" Mean Here
+## What “Priors” Mean Here
 
 Priors are not a separate loop. They are regularization terms added to some of
 the spool-related objectives.
@@ -282,20 +336,19 @@ The implemented priors apply only to spool parameters:
   - in global-radius mode, this acts on the shared scalar radius
 - buildup prior:
   - keeps fitted buildup near the modeled buildup seed
-  - if buildup fitting is enabled and no sigma is supplied, the default sigma is
-    `0.1`
+  - if buildup fitting is enabled and no sigma is supplied, the default sigma is `0.1`
 - radius-pair prior:
   - only in per-anchor radius mode
   - keeps the per-anchor radii close to one another
 
-Priors do **not** directly regularize anchor positions.
+Priors do not directly regularize anchor positions.
 
 ## Objective Families
 
 There are several distinct objectives in play:
 
 1. Seed anchor calibration objective
-   - Used by the initial `seed_cal`
+   - Used by the initial seed anchor calibration
    - Optimized by `calibrate_elliptical(...)`
 
 2. Spool seed prefit objective
@@ -325,24 +378,23 @@ There are several distinct objectives in play:
 
 ## Important Subtlety: `fit_structure`
 
-`--fit-structure` does **not** change the inner spool-step objective or the
-spool-step rollback comparator.
+`--fit-structure` does not change the inner spool-step objective or the
+alternating-round rollback comparator.
 
 What it currently affects:
 
-- the layered score used for plan scoring / reporting
+- layered plan scoring / reporting
 - full-auto run selection
 - the `score_ui` values shown in logs
 
-What it does **not** currently affect:
+What it does not currently affect:
 
 - `_data_cost(...)`
 - `_prior_cost(...)`
-- `_spool_rank_score(...)` inside the spool/anchor alternating rounds
+- `_spool_rank_score(...)` inside the alternating rounds
 
 So `--fit-structure 3` changes how full-auto prefers one run over another, but
-it does not change the basic spool-step accept / rollback logic inside a
-single run.
+it does not change the basic accept / rollback logic inside one run.
 
 ## How to Read the Example Log
 
@@ -350,20 +402,18 @@ For the example command:
 
 - `line_model_fit: outer_iters=3 inner_iters=30`
   means:
-  - 3 alternating refinement rounds per single-pass pipeline
+  - 3 alternating refinement rounds per filter pass
   - up to 30 coordinate-descent rounds inside each spool step
 
-- `line_model_refreeze: iters=4 passes=4`
+- `line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic]`
   means:
-  - 4 filter-schedule passes total
-  - with the current scheduling rule, that is:
-    - 3 unfiltered warmup passes
-    - 1 dynamic-filter pass
-    - 0 frozen-mask passes
+  - 4 filter passes total
+  - 3 warmup passes
+  - 1 dynamic-filter pass
+  - 0 constant-mask passes
 
-The log line `line_model_fit` summarizes the final single-pass pipeline
-history. It does not print every filter-schedule pass separately. The refreeze
-summary is printed separately as `line_model_refreeze`.
+The `line_model_fit` line summarizes the final single-pass pipeline history.
+The filter-pass summary is printed separately as `line_model_filter_schedule`.
 
 ## Pseudocode
 
@@ -374,7 +424,7 @@ for each dataset-growth iteration:
     if spool search enabled:
       seed anchors on base dataset
 
-      for each filter-schedule pass:
+      for each filter pass in --filter-schedule:
         optionally prefit spool seed on first pass only
         optionally bootstrap-refresh anchors on first pass only
 
@@ -387,8 +437,10 @@ for each dataset-growth iteration:
             keep spool-only result or rollback
 
         optionally do final uniform scale polish for this pass
-        recalibrate anchors for pass output
-        pass fitted anchors/radii/buildup forward as warm start
+        calibrate anchors on the pass dataset
+        if pass is dynamic:
+          rebuild the locked filtered dataset
+        pass fitted anchors/radii/buildup forward as warm starts
 
       use the final pass calibration
     else:

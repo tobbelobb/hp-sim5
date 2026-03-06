@@ -42,6 +42,8 @@ _OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _FIT_STRUCTURE_LEVELS = (1, 2, 3)
+_FILTER_SCHEDULE_PASS_CHOICES = ("warmup", "dynamic", "constant")
+_DEFAULT_FILTER_SCHEDULE = ("warmup", "warmup", "warmup", "dynamic")
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 _TAU_MAD_SCALE = 1.4826
 _SCORE_UI_LAYERED_COST_RAW_REF = 0.8
@@ -632,7 +634,7 @@ def _estimate_effective_radii_with_spool_model(
     prefer_zero_tension_angles: bool = False,
     scale_fix_levels: Optional[Sequence[int]] = None,
     fit_structure_levels: Optional[Sequence[int]] = None,
-    refreeze_iters: int = 1,
+    filter_schedule: Optional[Sequence[Any]] = None,
     initial_radii_mm: Optional[np.ndarray] = None,
     initial_buildup_factor: Optional[np.ndarray] = None,
     enable_prefit: bool = True,
@@ -719,6 +721,10 @@ def _estimate_effective_radii_with_spool_model(
         raise ValueError("anchor estimate shape mismatch")
     if not np.all(np.isfinite(anchors_current)):
         raise ValueError("anchor estimate contains non-finite values")
+    requested_filter_schedule = _parse_filter_schedule(
+        filter_schedule if filter_schedule is not None else ("warmup",),
+        label="filter_schedule",
+    )
 
     def _build_locked_filter_dataset(
         source_dataset: dict,
@@ -861,8 +867,7 @@ def _estimate_effective_radii_with_spool_model(
             info["message"] = f"mask lock failed: {exc}"
             return None, info
 
-    requested_refreeze_iters = max(1, int(refreeze_iters))
-    if requested_refreeze_iters > 1:
+    if len(requested_filter_schedule) > 1:
         anchors_seed = np.asarray(anchors_current, dtype=float)
         radii_seed = (
             None
@@ -874,12 +879,9 @@ def _estimate_effective_radii_with_spool_model(
             if initial_buildup_factor is None
             else np.asarray(initial_buildup_factor, dtype=float).reshape(-1)
         )
-        refreeze_history: List[Dict[str, object]] = []
+        schedule_history: List[Dict[str, object]] = []
         final_tuple: Optional[Tuple[np.ndarray, np.ndarray, SpoolModelParams, dict, Dict[str, object]]] = None
         final_calibration: Optional[Dict[str, object]] = None
-        no_freeze_count = min(3, requested_refreeze_iters)
-        refreeze_count = min(2, max(0, requested_refreeze_iters - no_freeze_count))
-        refreeze_end_idx = no_freeze_count + refreeze_count
         refreeze_pointwise_filtering = bool(pointwise_filtering)
         refreeze_sweep_wise_filtering = bool(sweep_wise_filtering)
         constant_mask_dataset: Optional[dict] = None
@@ -889,19 +891,27 @@ def _estimate_effective_radii_with_spool_model(
             "message": "not_attempted",
         }
 
-        for refreeze_idx in range(requested_refreeze_iters):
+        for refreeze_idx, pass_kind_raw in enumerate(requested_filter_schedule):
+            pass_kind = _normalize_filter_schedule_pass(
+                pass_kind_raw,
+                label="filter_schedule",
+            )
             pass_enable_prefit = bool(enable_prefit) if refreeze_idx == 0 else False
             pass_enable_bootstrap = (
                 bool(enable_bootstrap_anchor_refresh) if refreeze_idx == 0 else False
             )
-            pass_freeze_phase = "refreeze_constant_mask"
+            pass_freeze_phase = _filter_schedule_phase_name(pass_kind)
             pass_dataset = dataset
-            if refreeze_idx < no_freeze_count:
-                pass_freeze_phase = "warmup_no_freeze"
+            if pass_kind == "warmup":
+                constant_mask_dataset = None
+                constant_mask_info = {
+                    "attempted": False,
+                    "success": False,
+                    "message": "mask cleared by warmup pass",
+                }
                 pass_pointwise_filtering = False
                 pass_sweep_wise_filtering = False
-            elif refreeze_idx < refreeze_end_idx:
-                pass_freeze_phase = "refreeze_dynamic"
+            elif pass_kind == "dynamic":
                 pass_pointwise_filtering = bool(refreeze_pointwise_filtering)
                 pass_sweep_wise_filtering = bool(refreeze_sweep_wise_filtering)
             else:
@@ -911,11 +921,16 @@ def _estimate_effective_radii_with_spool_model(
                 pass_sweep_wise_filtering = False
                 if isinstance(constant_mask_dataset, dict):
                     pass_dataset = constant_mask_dataset
+                else:
+                    raise ValueError(
+                        "filter_schedule constant pass requires a locked mask from a prior "
+                        "dynamic pass"
+                    )
             pass_scale_fix_set = set(scale_fix_set)
-            # scale_fix 2: final polish only on the last refreeze pass.
-            # scale_fix 3: final polish on every refreeze pass.
+            # scale_fix 2: final polish only on the last filter-schedule pass.
+            # scale_fix 3: final polish on every filter-schedule pass.
             if (2 in pass_scale_fix_set) and (3 not in pass_scale_fix_set) and (
-                refreeze_idx < requested_refreeze_iters - 1
+                refreeze_idx < len(requested_filter_schedule) - 1
             ):
                 pass_scale_fix_set.discard(2)
             (
@@ -958,7 +973,7 @@ def _estimate_effective_radii_with_spool_model(
                 prefer_zero_tension_angles=prefer_zero_tension_angles,
                 scale_fix_levels=sorted(int(v) for v in pass_scale_fix_set),
                 fit_structure_levels=sorted(int(v) for v in fit_structure_set),
-                refreeze_iters=1,
+                filter_schedule=None,
                 initial_radii_mm=radii_seed,
                 initial_buildup_factor=buildup_seed,
                 enable_prefit=pass_enable_prefit,
@@ -999,11 +1014,7 @@ def _estimate_effective_radii_with_spool_model(
                 "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
             }
             pass_score_ui, pass_rank_score, pass_score_basis = _plan_score_ui(plan_tmp)
-            if (
-                pass_freeze_phase == "refreeze_dynamic"
-                and refreeze_idx == refreeze_end_idx - 1
-                and refreeze_end_idx < requested_refreeze_iters
-            ):
+            if pass_kind == "dynamic":
                 constant_mask_info["attempted"] = True
                 mask_dataset, mask_info = _build_locked_filter_dataset(
                     pass_dataset,
@@ -1014,8 +1025,12 @@ def _estimate_effective_radii_with_spool_model(
                 constant_mask_info.update(mask_info)
                 if isinstance(mask_dataset, dict):
                     constant_mask_dataset = mask_dataset
-            refreeze_history.append(
+                else:
+                    constant_mask_dataset = None
+            schedule_history.append(
                 {
+                    "filter_schedule_idx": int(refreeze_idx + 1),
+                    "filter_pass": str(pass_kind),
                     "refreeze_iter": int(refreeze_idx + 1),
                     "prefit_enabled": bool(pass_enable_prefit),
                     "bootstrap_enabled": bool(pass_enable_bootstrap),
@@ -1064,13 +1079,17 @@ def _estimate_effective_radii_with_spool_model(
             final_calibration = cal_pass
 
         if final_tuple is None:
-            raise RuntimeError("refreeze loop failed to produce a spool-fit result")
+            raise RuntimeError("filter-schedule loop failed to produce a spool-fit result")
         eff_r_final, fit_anchors_final, spool_params_final, transformed_final, fit_info_final = final_tuple
         fit_info_out = dict(fit_info_final)
-        fit_info_out["refreeze_iters_requested"] = int(requested_refreeze_iters)
-        fit_info_out["refreeze_history"] = list(refreeze_history)
+        fit_info_out["filter_schedule_requested"] = [str(v) for v in requested_filter_schedule]
+        fit_info_out["filter_schedule_history"] = list(schedule_history)
+        fit_info_out["filter_schedule_constant_mask"] = dict(constant_mask_info)
+        fit_info_out["refreeze_iters_requested"] = int(len(requested_filter_schedule))
+        fit_info_out["refreeze_history"] = list(schedule_history)
         fit_info_out["refreeze_constant_mask"] = dict(constant_mask_info)
         if isinstance(final_calibration, dict):
+            fit_info_out["filter_schedule_final_calibration"] = final_calibration
             fit_info_out["refreeze_final_calibration"] = final_calibration
         return (
             np.asarray(eff_r_final, dtype=float),
@@ -2540,7 +2559,7 @@ def _estimate_effective_radii_with_spool_model(
             "message": "scale polish disabled",
         }
         # scale_fix 3 no longer runs per-outer-iteration polish; it is applied
-        # at refreeze boundaries (and on the single pass when refreeze_iters == 1)
+        # at filter-schedule boundaries (and in the single-pass pipeline)
         # through the final scale-polish stage below.
         if apply_outer_scale_fix_3 and use_scale_fix_3:
             (
@@ -2966,6 +2985,7 @@ def _estimate_effective_radii_with_spool_model(
         "noise_normalized_data_term": bool(spool_noise_normalized),
         "optimization_objective": "legacy_data_cost + w*risk_trimmed_direct",
         "anchor_step_improvement_rel_threshold": float(_SPOOL_ANCHOR_STEP_IMPROVE_REL),
+        "filter_schedule_requested": [str(v) for v in requested_filter_schedule],
         "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
         "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
         "scale_fix_1_enabled": bool(use_scale_fix_1),
@@ -4516,6 +4536,78 @@ def _parse_fit_structure_levels(
     return tuple(out)
 
 
+def _normalize_filter_schedule_pass(pass_name: object, *, label: str = "--filter-schedule") -> str:
+    text = str(pass_name or "").strip().lower()
+    mapping = {
+        "0": "warmup",
+        "warmup": "warmup",
+        "warmup_no_freeze": "warmup",
+        "1": "dynamic",
+        "dynamic": "dynamic",
+        "refreeze_dynamic": "dynamic",
+        "2": "constant",
+        "constant": "constant",
+        "refreeze_constant_mask": "constant",
+    }
+    normalized = mapping.get(text)
+    if normalized is None:
+        allowed = "warmup,dynamic,constant or 0,1,2"
+        raise ValueError(f"{label} allows only {allowed}; got '{pass_name}'")
+    return str(normalized)
+
+
+def _parse_filter_schedule(
+    spec: Optional[Any],
+    *,
+    label: str = "--filter-schedule",
+) -> Tuple[str, ...]:
+    if spec is None:
+        return tuple(str(v) for v in _DEFAULT_FILTER_SCHEDULE)
+
+    if isinstance(spec, (list, tuple, set)):
+        parts = [str(v).strip() for v in spec]
+    else:
+        text = str(spec).strip()
+        if not text:
+            raise ValueError(
+                f"{label} must list one or more passes. Example: warmup,warmup,warmup,dynamic"
+            )
+        parts = [p.strip() for p in text.split(",")]
+
+    out: List[str] = []
+    mask_ready = False
+    for idx, raw_part in enumerate(parts, start=1):
+        if not raw_part:
+            continue
+        pass_name = _normalize_filter_schedule_pass(raw_part, label=label)
+        if pass_name == "warmup":
+            mask_ready = False
+        elif pass_name == "dynamic":
+            mask_ready = True
+        elif not mask_ready:
+            raise ValueError(
+                f"{label} pass {idx} cannot be constant without a prior dynamic pass "
+                "since the most recent warmup. At least one dynamic pass is required "
+                "between a warmup pass and a constant pass."
+            )
+        out.append(str(pass_name))
+
+    if not out:
+        raise ValueError(
+            f"{label} must list one or more passes. Example: warmup,warmup,warmup,dynamic"
+        )
+    return tuple(out)
+
+
+def _filter_schedule_phase_name(pass_name: str) -> str:
+    normalized = _normalize_filter_schedule_pass(pass_name, label="filter_schedule")
+    if normalized == "warmup":
+        return "warmup_no_freeze"
+    if normalized == "dynamic":
+        return "refreeze_dynamic"
+    return "refreeze_constant_mask"
+
+
 def _resolve_r0_bounds(
     base_radii_mm: np.ndarray,
     *,
@@ -5215,7 +5307,7 @@ def _plan_next_ellipse_sweep(
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
     collector_args: Sequence[str],
-    refreeze_iters: int = 4,
+    filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
 ) -> Dict[str, object]:
@@ -5355,7 +5447,7 @@ def _plan_next_ellipse_sweep(
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
                 scale_fix_levels=scale_fix_levels,
                 fit_structure_levels=fit_structure_levels,
-                refreeze_iters=max(1, int(refreeze_iters)),
+                filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
             )
         )
         _ = _fit_anchors
@@ -5370,9 +5462,15 @@ def _plan_next_ellipse_sweep(
             sweep_configs_for_info,
             spool_params,
         )
-        final_refreeze_cal = radii_fit.get("refreeze_final_calibration") if isinstance(radii_fit, dict) else None
-        if isinstance(final_refreeze_cal, dict):
-            cal = final_refreeze_cal
+        final_filter_schedule_cal = (
+            radii_fit.get("filter_schedule_final_calibration")
+            if isinstance(radii_fit, dict)
+            else None
+        )
+        if not isinstance(final_filter_schedule_cal, dict) and isinstance(radii_fit, dict):
+            final_filter_schedule_cal = radii_fit.get("refreeze_final_calibration")
+        if isinstance(final_filter_schedule_cal, dict):
+            cal = final_filter_schedule_cal
         else:
             cal = calibrate_elliptical(
                 dataset_for_estimation,
@@ -5438,6 +5536,9 @@ def _plan_next_ellipse_sweep(
             ),
             "spool_outer_iters": int(spool_outer_iters),
             "spool_inner_iters": int(spool_inner_iters),
+            "filter_schedule": [
+                str(v) for v in _parse_filter_schedule(filter_schedule, label="filter_schedule")
+            ],
             "theta0_mode": theta0_mode_norm,
             "scale_fix_levels": [int(v) for v in scale_fix_levels],
             "fit_structure_levels": [int(v) for v in fit_structure_levels],
@@ -5827,12 +5928,23 @@ def _print_ellipse_plan(
                     f"nfev={_fmt_float(radii_fit.get('nfev'), fmt='.0f')} "
                     f"nit={_fmt_float(radii_fit.get('nit'), fmt='.0f')}"
                 )
-            refreeze_history = radii_fit.get("refreeze_history")
-            if isinstance(refreeze_history, list) and refreeze_history:
-                last_refreeze = refreeze_history[-1] if isinstance(refreeze_history[-1], dict) else {}
+            filter_schedule_history = radii_fit.get(
+                "filter_schedule_history",
+                radii_fit.get("refreeze_history"),
+            )
+            if isinstance(filter_schedule_history, list) and filter_schedule_history:
+                last_refreeze = (
+                    filter_schedule_history[-1]
+                    if isinstance(filter_schedule_history[-1], dict)
+                    else {}
+                )
+                filter_schedule_requested = radii_fit.get("filter_schedule_requested")
+                schedule_text = ""
+                if isinstance(filter_schedule_requested, list) and filter_schedule_requested:
+                    schedule_text = ",".join(str(v) for v in filter_schedule_requested)
                 print(
-                    f"; line_model_refreeze: iters={_fmt_float(radii_fit.get('refreeze_iters_requested'), fmt='.0f')} "
-                    f"passes={_fmt_float(len(refreeze_history), fmt='.0f')} "
+                    f"; line_model_filter_schedule: passes={_fmt_float(len(filter_schedule_history), fmt='.0f')} "
+                    f"schedule=[{schedule_text}] "
                     f"last_score_ui={_fmt_float(last_refreeze.get('score_ui'))} "
                     f"last_rank={_fmt_float(last_refreeze.get('rank_score'))} "
                     f"last_cost={_fmt_float(last_refreeze.get('cost_noise_normalized'))}"
@@ -6300,7 +6412,7 @@ def ellipse_active(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     output_with_explanations: bool,
-    refreeze_iters: int = 4,
+    filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
 ) -> int:
@@ -6390,7 +6502,7 @@ def ellipse_active(
         write_cfg=write_cfg,
         collector_output=collector_output,
         collector_args=collector_args_eff,
-        refreeze_iters=int(refreeze_iters),
+        filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
         scale_fix=scale_fix,
         fit_structure=fit_structure,
     )
@@ -6512,7 +6624,7 @@ def full_auto_loop(
     full_auto_log: Optional[Path],
     patience: int,
     full_auto_verbose: bool,
-    refreeze_iters: int = 4,
+    filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
@@ -6816,7 +6928,9 @@ def full_auto_loop(
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
-        "refreeze_iters": int(max(1, int(refreeze_iters))),
+        "filter_schedule": [
+            str(v) for v in _parse_filter_schedule(filter_schedule, label="filter_schedule")
+        ],
         "scale_fix": [int(v) for v in _parse_scale_fix_levels(scale_fix)],
         "fit_structure": [int(v) for v in _parse_fit_structure_levels(fit_structure)],
         "line_width": float(line_width),
@@ -6905,7 +7019,13 @@ def full_auto_loop(
                     settings["b_prior_sigma"] = float(settings["b_prior_sigma"])
                 settings["spool_outer_iters"] = int(settings.get("spool_outer_iters", 3))
                 settings["spool_inner_iters"] = int(settings.get("spool_inner_iters", 30))
-                settings["refreeze_iters"] = int(max(1, int(settings.get("refreeze_iters", 4))))
+                settings["filter_schedule"] = [
+                    str(v)
+                    for v in _parse_filter_schedule(
+                        settings.get("filter_schedule"),
+                        label="filter_schedule",
+                    )
+                ]
                 settings["line_width"] = float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM))
                 if not np.isfinite(settings["line_width"]) or settings["line_width"] < 0.0:
                     settings["line_width"] = float(DEFAULT_LAYER_LINE_WIDTH_MM)
@@ -6979,7 +7099,7 @@ def full_auto_loop(
                         spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
                         spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
                         theta0_mode=str(settings.get("theta0_mode", "zero")),
-                        refreeze_iters=int(settings.get("refreeze_iters", 4)),
+                        filter_schedule=settings.get("filter_schedule"),
                         line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
                         sigma_floor_mm=(
                             None
@@ -7387,7 +7507,7 @@ def ellipse_loop(
     plot_residual_histogram: bool,
     sweep_points: Optional[int],
     output_with_explanations: bool,
-    refreeze_iters: int = 4,
+    filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
@@ -7575,7 +7695,7 @@ def ellipse_loop(
             spool_outer_iters=int(spool_outer_iters),
             spool_inner_iters=int(spool_inner_iters),
             theta0_mode=str(theta0_mode),
-            refreeze_iters=int(max(1, int(refreeze_iters))),
+            filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
             line_width=float(line_width),
             sigma_floor_mm=(None if sigma_floor_mm is None else float(sigma_floor_mm)),
             sigma_used_mm=(None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -7839,10 +7959,14 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         ),
     )
     parser.add_argument(
-        "--refreeze-iters",
-        type=int,
-        default=4,
-        help="Number of freeze->fit->score warm-start passes per sweep set (default: 4).",
+        "--filter-schedule",
+        type=str,
+        default="warmup,warmup,warmup,dynamic",
+        help=(
+            "Explicit filter-pass schedule as comma-separated words or numbers. "
+            "Words: warmup,dynamic,constant. Numbers: 0=warmup, 1=dynamic, 2=constant. "
+            "Default: warmup,warmup,warmup,dynamic."
+        ),
     )
     parser.add_argument(
         "--pointwise-residual",
@@ -8185,13 +8309,14 @@ def _resolve_spool_cli_options(
 
     spool_outer_iters = int(args.spool_outer_iters)
     spool_inner_iters = int(args.spool_inner_iters)
-    refreeze_iters = int(args.refreeze_iters)
     if spool_outer_iters < 1:
         parser.error("--spool-outer-iters must be >= 1")
     if spool_inner_iters < 1:
         parser.error("--spool-inner-iters must be >= 1")
-    if refreeze_iters < 1:
-        parser.error("--refreeze-iters must be >= 1")
+    try:
+        filter_schedule = _parse_filter_schedule(args.filter_schedule, label="--filter-schedule")
+    except ValueError as exc:
+        parser.error(str(exc))
 
     line_width = args.line_width
     try:
@@ -8229,7 +8354,7 @@ def _resolve_spool_cli_options(
         "b_prior_sigma": b_prior_sigma,
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
-        "refreeze_iters": int(refreeze_iters),
+        "filter_schedule": [str(v) for v in filter_schedule],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -8330,7 +8455,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
     parser.add_argument("--scale-fix", default=None)
     parser.add_argument("--fit-structure", default=None)
-    parser.add_argument("--refreeze-iters", type=int, default=None)
+    parser.add_argument("--filter-schedule", default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--sigma-used-mm", type=float, default=None)
@@ -8836,7 +8961,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         keep_sim_alive=bool(args.keep_sim_alive),
         hp_sim_reset=bool(args.hp_sim_reset),
         output_with_explanations=bool(args.output_with_explanations),
-        refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
+        filter_schedule=spool_opts.get("filter_schedule"),
         scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),
     )
@@ -8932,7 +9057,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             full_auto_log=args.full_auto_log,
             patience=int(args.patience),
             full_auto_verbose=bool(args.full_auto_verbose),
-            refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
+            filter_schedule=spool_opts.get("filter_schedule"),
             scale_fix=spool_opts.get("scale_fix"),
             fit_structure=spool_opts.get("fit_structure"),
             no_collect=bool(args.no_collect),
@@ -8999,7 +9124,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         plot_residual_histogram=bool(args.plot_residual_histogram),
         sweep_points=args.sweep_points,
         output_with_explanations=bool(args.output_with_explanations),
-        refreeze_iters=int(spool_opts.get("refreeze_iters", 4)),
+        filter_schedule=spool_opts.get("filter_schedule"),
         scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),

@@ -4,6 +4,7 @@ import pytest
 
 from autocal.active_calibrate import (
     _apply_optimizer_mode_env,
+    _parse_filter_schedule,
     _parse_full_auto_run_spec,
     _resolve_spool_cli_options,
     build_ellipse_parser,
@@ -42,6 +43,7 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["r0_bounds"] == (12.0, 34.0)
     assert opts["spool_outer_iters"] == 5
     assert opts["spool_inner_iters"] == 17
+    assert opts["filter_schedule"] == ["warmup", "warmup", "warmup", "dynamic"]
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
     assert opts["sigma_used_mm"] == 0.8
@@ -168,6 +170,51 @@ def test_spool_cli_default_enables_scale_fix_2():
     assert opts["scale_fix"] == [2]
 
 
+def test_spool_cli_parses_filter_schedule_words():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--filter-schedule",
+            "warmup,warmup,dynamic,constant",
+        ]
+    )
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["filter_schedule"] == ["warmup", "warmup", "dynamic", "constant"]
+
+
+def test_spool_cli_parses_filter_schedule_numbers():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--filter-schedule",
+            "0,0,1,2",
+        ]
+    )
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["filter_schedule"] == ["warmup", "warmup", "dynamic", "constant"]
+
+
+def test_spool_cli_rejects_constant_without_dynamic_since_last_warmup():
+    parser = build_ellipse_parser()
+    args = parser.parse_args(
+        [
+            "dummy.json",
+            "--machine-type",
+            "slideprinter",
+            "--filter-schedule",
+            "warmup,constant",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)
+
+
 def test_spool_cli_allows_disabling_scale_fixes():
     parser = build_ellipse_parser()
     args = parser.parse_args(
@@ -238,6 +285,17 @@ def test_full_auto_run_spec_parses_fit_structure_override():
     tokens, overrides = _parse_full_auto_run_spec("--fit-structure 2")
     assert tokens == ["--fit-structure", "2"]
     assert overrides["fit_structure"] == "2"
+
+
+def test_full_auto_run_spec_parses_filter_schedule_override():
+    tokens, overrides = _parse_full_auto_run_spec("--filter-schedule 0,1,2")
+    assert tokens == ["--filter-schedule", "0,1,2"]
+    assert overrides["filter_schedule"] == "0,1,2"
+
+
+def test_parse_filter_schedule_rejects_unknown_numeric_pass_alias():
+    with pytest.raises(ValueError, match="0,1,2"):
+        _parse_filter_schedule("0,1,3")
 
 
 def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
