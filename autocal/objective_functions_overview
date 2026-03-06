@@ -1,58 +1,101 @@
 There are multiple objectives in play. They are related, but not identical.
 
+Recommended terminology:
 
-  1. Prefit (spool seed)
+- spool seed prefit
+- spool step
+- anchor proposal solve
+- anchor acceptance / rollback
+- final uniform scale polish
+- full-auto run selection
 
-  - Function: _ellipse_prefit_score:1321, used inside _prefit_objective:1407
+1. Seed anchor calibration
 
-  2. Spool parameter step (R / buildup optimization, anchors fixed)
+- Before spool fitting starts, `_plan_next_ellipse_sweep(...)` runs an initial
+  `calibrate_elliptical(...)` to get seed anchors on the base dataset.
+- Objective optimized: the ellipse solver's own internal objective.
 
-  - Function: _objective:1768 in the outer loop.
+2. Spool seed prefit
 
-  3. Anchor step (anchors optimization, spool fixed)
+- This is an optional spool-only seed improvement step before the main
+  alternating rounds.
+- Objective optimized:
+  - ellipse proxy score over the transformed sweeps
+  - plus `_prior_cost(...)`
+- It does not move anchors.
 
-  - Function: calibrate_elliptical(...):1896
-  - Objective optimized: the ellipse solver’s internal cost (from EllipseCostFunction.evaluate), not _data_cost + prior.
-  - This is a separate optimization pass after spool step.
+3. Bootstrap anchor refresh
 
-  4. Anchor update acceptance (full/damped/rollback)
+- This is a one-time anchor recalibration before the main alternating rounds.
+- Proposal generation uses `calibrate_elliptical(...)`.
+- Acceptance is by `_data_cost(...)` only, tested at `alpha in {1.0, 0.5, 0.25}`.
 
-  - Candidate anchor updates are evaluated by:
-      - rank: _spool_rank_score:1093
-      - tie-break total: data+prior
-      - comparator: _rank_better:1150
-  - So accepted anchor moves are decided by rank objective + total cost, not just raw calibrate output.
+4. Spool step
 
-  5. Scale polish
+- Anchors are fixed.
+- Objective optimized: `_data_cost(...) + _prior_cost(...)`
+- This is the objective minimized by the coordinate-descent spool solver.
 
-  - Function: _run_uniform_scale_polish:1202
-  - It searches a uniform scale s for radii+anchors and evaluates total cost (_data_cost + _prior_cost), then may accept by total-objective improvement internally.
-  - Later final acceptance into “best” is gated by rank comparator in final block:
-    rank_accept = _rank_better(...):2298
+5. Anchor proposal solve
 
-  ———
+- Spool parameters are fixed.
+- Proposal generation uses `calibrate_elliptical(...)`.
+- Objective optimized: the ellipse solver's own internal objective, not
+  `_data_cost + prior`.
 
-  About _data_cost vs _spool_rank_score
+6. Anchor acceptance / rollback
 
-  They both use EllipseCostFunction, but differently:
+- Candidate anchor updates are tested at `alpha in {1.0, 0.5, 0.25}`.
+- Primary comparator: `_spool_rank_score(...)`
+- Tie-breaker: total cost = `_data_cost(...) + _prior_cost(...)`
+- So accepted anchor moves are decided by rank first, total objective second.
 
-  - _data_cost:
-      - Calls _evaluate_cost_at_anchors:3568 with noise_normalized=True
-      - Then adds risk blend (+ 0.5 * trimmed_direct_risk) in _data_cost:1074
-      - Returns a scalar used for spool optimization and polish
-  - _spool_rank_score:
-      - Builds cost fn directly, uses evaluate_detailed + pointwise rows rescoring
-      - Builds layered internal metric (chi2_red_rescored_tau_3bin_debiased etc.) + risk
-      - Converts to rank via log1p / hard-fail in _layered_rank_score_from_internal_metric:7751
+7. Final uniform scale polish
 
-  So: same underlying residual engine, different derived objective.
+- It searches a single uniform scale factor for radii and anchors.
+- Internal search objective: `_data_cost(...) + _prior_cost(...)`
+- Final acceptance is still rank-gated:
+  - first the total objective must improve
+  - then `_rank_better(...)` must still prefer the polished candidate
 
-  ———
+About `_data_cost` vs `_spool_rank_score`
 
-  Do R and anchors optimize the same metric?
+- They both come from the same residual engine, but they are not the same
+  derived scalar.
 
-  - No.
-  - Spool step optimizes _data_cost + prior.
-  - Anchor step optimizes calibrate_elliptical solver objective.
-  - Final move acceptance is by rank comparator (_spool_rank_score + total cost).
-    This mismatch is why you can see non-intuitive outcomes unless acceptance logic is carefully aligned.
+- `_data_cost(...)`
+  - starts from the noise-normalized ellipse cost
+  - adds a risk blend term
+  - is used for spool optimization, bootstrap refresh acceptance, and scale
+    polish search
+
+- `_spool_rank_score(...)`
+  - builds a layered ranking metric from the noise diagnostics
+  - blends that with risk
+  - is used for anchor acceptance / rollback and final best-solution selection
+    inside the spool-fitting pipeline
+
+So: same residual source, different derived objective.
+
+What "priors" mean here
+
+- Priors regularize spool parameters only.
+- They apply to:
+  - fitted radii relative to the base radii
+  - fitted buildup relative to the modeled buildup seed
+  - pairwise radius similarity when fitting per-anchor radii
+- Priors do not directly regularize anchors.
+
+Do spool parameters and anchors optimize the same metric?
+
+- No.
+- Spool step optimizes `_data_cost + prior`.
+- Anchor proposal solve optimizes the ellipse solver's internal objective.
+- Final acceptance is by rank comparator with total-cost tie-break.
+
+Important current detail about `fit_structure`
+
+- `--fit-structure` affects the layered plan / full-auto scoring.
+- It does not currently change `_data_cost(...)`.
+- It also does not currently change `_spool_rank_score(...)` inside the
+  spool-step accept / rollback logic.

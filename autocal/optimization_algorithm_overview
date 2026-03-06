@@ -1,0 +1,401 @@
+# Autocal Optimization Algorithm Overview
+
+This document describes the algorithm currently implemented in
+`autocal/active_calibrate.py` for the spool-model + anchor calibration path.
+It also defines clearer names for the nested loops, because the current names
+`refreeze_iters`, `spool_outer_iters`, and `spool_inner_iters` do not make the
+actual structure obvious.
+
+## Recommended Nomenclature
+
+Use these names when discussing the algorithm:
+
+| Current code term | Recommended term | Meaning |
+| --- | --- | --- |
+| full-auto iteration | dataset-growth iteration | One pass of "fit on the current sweep set, rank the next sweep, then optionally add one more sweep". |
+| full-auto run | run variant | One solver/settings variant evaluated on the same current dataset. |
+| `_plan_next_ellipse_sweep(...)` | planning pass | One complete recalibration of anchors on the current dataset, plus next-sweep ranking. |
+| `refreeze_iters` | filter-schedule passes | Warm-started reruns of the spool/anchor fit under different filtering regimes. |
+| `warmup_no_freeze` | unfiltered warmup pass | Runtime pointwise and sweep-wise filters are disabled. |
+| `refreeze_dynamic` | dynamic-filter pass | Runtime filters are enabled and recomputed from the current anchors. |
+| `refreeze_constant_mask` | frozen-mask pass | A filtered dataset is locked once, then runtime filters are disabled so the mask stays fixed. |
+| `spool_outer_iters` | alternating refinement rounds | Major rounds that alternate "optimize spool parameters" and "optionally update anchors". |
+| `spool_inner_iters` | spool coordinate-descent rounds | Iteration budget for the coordinate-descent solver used inside each spool step. |
+| prefit | spool seed prefit | Cheap pre-optimization of spool parameters before the main alternating rounds. |
+| bootstrap anchor refresh | bootstrap anchor refresh | One-time anchor recalibration before the main alternating rounds. |
+| anchor step | anchor proposal solve | `calibrate_elliptical(...)` run on the current transformed dataset to propose new anchors. |
+| accepted update | accepted model update | Final choice among rollback, spool-only, damped anchor move, full anchor move, or scale-polished anchor move. |
+| scale polish | final uniform scale polish | Uniform search over a shared scale factor for radii and anchors. |
+
+Recommended variable names if the code is ever cleaned up:
+
+- `refreeze_iters` -> `filter_schedule_passes`
+- `spool_outer_iters` -> `alternating_refinement_rounds`
+- `spool_inner_iters` -> `spool_coordinate_descent_rounds`
+
+## High-Level Structure
+
+There are three nested levels:
+
+1. dataset-growth iteration
+2. filter-schedule pass
+3. alternating refinement round
+
+Inside the alternating refinement round, the spool step itself uses a
+coordinate-descent inner loop.
+
+So the implemented structure is:
+
+```text
+dataset-growth iteration
+  -> planning pass
+    -> filter-schedule pass
+      -> alternating refinement round
+        -> spool coordinate-descent rounds
+```
+
+## Top-Level Full-Auto Loop
+
+When `--full-auto` is used, the outermost behavior is:
+
+1. If the dataset file does not exist, bootstrap exactly 3 sweeps.
+2. If the dataset already contains more than 3 sweeps, replay mode starts from
+   the first 3 sweeps and then replays one stored sweep per dataset-growth
+   iteration.
+3. On every dataset-growth iteration:
+   - run one or more run variants on the current dataset
+   - pick the best valid result
+   - either accept it, or add exactly one more sweep and repeat
+
+Important consequence:
+
+- If `--find-radii` or `--find-buildup-factor` is enabled, spool estimation runs
+  again after every newly added sweep, because each planning pass recalibrates
+  from the current dataset from scratch.
+
+For the command in the example log:
+
+- the dataset already existed with 6 sweeps
+- full-auto replay started from the first 3 sweeps
+- then each dataset-growth iteration replayed 1 additional sweep
+- the spool-model + anchor optimization was rerun on sweep counts 3, 4, 5, and 6
+
+## Planning Pass
+
+One planning pass (`_plan_next_ellipse_sweep(...)`) does this:
+
+1. Load the current dataset.
+2. Build an initial anchor guess with `build_anchor_initial_guess(...)`.
+3. If spool search is enabled:
+   - run a seed anchor calibration on the base dataset
+   - run the spool-model optimization pipeline
+   - use the final refreeze-pass calibration if available
+   - otherwise run one more final `calibrate_elliptical(...)` on the transformed dataset
+4. If spool search is disabled:
+   - just run `calibrate_elliptical(...)`
+5. Compute covariance / information diagnostics.
+6. Rank candidate next sweeps and produce the suggested collection command.
+
+## Filter-Schedule Passes
+
+The filter-schedule wrapper is active when `refreeze_iters > 1`.
+
+Its pass counts are computed as:
+
+- unfiltered warmup passes: `min(3, refreeze_iters)`
+- dynamic-filter passes: `min(2, max(0, refreeze_iters - unfiltered_warmup_passes))`
+- frozen-mask passes: any remaining passes
+
+That means:
+
+- `refreeze_iters=4` gives `3 + 1 + 0`
+- `refreeze_iters=5` gives `3 + 2 + 0`
+- `refreeze_iters=8` gives `3 + 2 + 3`
+
+This is the main correction to the guessed outline from the log:
+
+- the current example command does **not** run `3 + 2 + 3`
+- it uses the default `--refreeze-iters 4`
+- so it runs `3` unfiltered warmup passes, `1` dynamic-filter pass, and `0`
+  frozen-mask passes
+
+Each filter-schedule pass does:
+
+1. Choose the pass dataset and filter mode.
+2. Run one single-pass spool/anchor pipeline with `refreeze_iters=1`.
+3. Run `calibrate_elliptical(...)` on that pass dataset.
+4. Save anchors/radii/buildup as warm-start seeds for the next pass.
+5. On the last dynamic-filter pass, build and save the locked filtered dataset
+   that later frozen-mask passes will use.
+
+Only the first filter-schedule pass enables:
+
+- spool seed prefit
+- bootstrap anchor refresh
+
+Later passes reuse the previous pass's fitted anchors and spool parameters as
+warm starts.
+
+## Single-Pass Spool/Anchor Pipeline
+
+The single-pass pipeline is what actually lives behind one filter-schedule pass.
+
+### Step 1: Initialize spool state
+
+Initialize:
+
+- current radii
+- current buildup factors
+- current anchors
+
+from the provided seeds or defaults.
+
+### Step 2: Optional spool seed prefit
+
+If enabled, run a cheap spool-only prefit before the main alternating rounds.
+
+What it does:
+
+- optimizes spool parameters only
+- uses an ellipse-fit proxy score over the transformed sweeps
+- adds the spool prior cost
+- uses a guarded coordinate-descent search
+
+This is only a seed improvement step. It does not move anchors.
+
+### Step 3: Optional bootstrap anchor refresh
+
+Before the main alternating rounds, the code can do one anchor recalibration on
+the current transformed dataset.
+
+What it does:
+
+- run `calibrate_elliptical(...)` once
+- test the full move and damped moves with `alpha in {1.0, 0.5, 0.25}`
+- accept the best anchor refresh only if `_data_cost(...)` improves
+
+This is a one-time anchor cleanup before the main alternating rounds start.
+
+### Step 4: Alternating refinement rounds
+
+Repeat for `spool_outer_iters` rounds:
+
+1. Evaluate the current model:
+   - current data cost
+   - current prior cost
+   - current total cost
+   - current rank score
+
+2. Spool step:
+   - keep anchors fixed
+   - optimize the selected spool parameters by coordinate descent
+   - objective = `_data_cost(...) + _prior_cost(...)`
+
+3. Decide whether to even try an anchor proposal:
+   - only run the anchor proposal solve if the spool total objective improved by
+     more than a small relative threshold
+
+4. Optional `scale_fix_1` anchor reseed:
+   - if the fitted radii imply a global scale change and scaling the current
+     anchors by the same factor reduces `_data_cost(...)`, use the scaled
+     anchors as the starting point for the anchor proposal solve
+
+5. Anchor proposal solve:
+   - run `calibrate_elliptical(...)` on the current transformed dataset
+   - this optimizes the ellipse solver's own internal objective, not
+     `_data_cost + prior`
+
+6. Anchor acceptance:
+   - test the full move and damped moves with `alpha in {1.0, 0.5, 0.25}`
+   - compare candidates using:
+     - primary comparator: `_spool_rank_score(...)`
+     - tie-breaker: total cost = data cost + prior
+
+7. Round acceptance / rollback:
+   - compare the accepted candidate against the round start using the same
+     rank-first comparator
+   - either keep the candidate or rollback the whole round
+
+Possible accepted-update labels recorded in history are:
+
+- `rollback`
+- `spool_only`
+- `anchor_damped`
+- `anchor_full`
+- `anchor_scale_polish`
+
+### Step 5: Final uniform scale polish
+
+After all alternating refinement rounds are done, the pipeline may run a final
+uniform scale search over radii and anchors.
+
+What it does:
+
+- search a single scale `s`
+- scale radii by `s`
+- scale anchors by `s`
+- keep buildup fixed
+- evaluate total objective = `_data_cost(...) + _prior_cost(...)`
+
+Acceptance is two-stage:
+
+1. The scale search itself only succeeds if total objective improves.
+2. Even then, the polished candidate is only kept if its rank score is also
+   better than the current best solution.
+
+Important current behavior:
+
+- `scale_fix_3` does not run a separate polish after every alternating
+  refinement round.
+- It runs in the pipeline's final scale-polish stage, which means:
+  - once per filter-schedule pass when `refreeze_iters > 1`
+  - once total when `refreeze_iters == 1`
+- `scale_fix_2` runs only on the last filter-schedule pass.
+
+## Coordinate-Descent Inner Loop
+
+The spool step uses a simple coordinate-descent solver:
+
+1. Start from the current spool parameter vector.
+2. For each parameter:
+   - try `+step`
+   - try `-step`
+   - keep the best improving move
+   - if neither direction improves, halve that parameter's step size
+3. Repeat until:
+   - step sizes fall below tolerance, or
+   - progress stalls, or
+   - the iteration budget `spool_inner_iters` is exhausted
+
+So `spool_inner_iters` is not a separate calibration stage. It is just the
+iteration budget of the spool coordinate-descent solver inside one spool step.
+
+## What "Priors" Mean Here
+
+Priors are not a separate loop. They are regularization terms added to some of
+the spool-related objectives.
+
+The implemented priors apply only to spool parameters:
+
+- radius prior:
+  - keeps fitted radii near the base radii
+  - in global-radius mode, this acts on the shared scalar radius
+- buildup prior:
+  - keeps fitted buildup near the modeled buildup seed
+  - if buildup fitting is enabled and no sigma is supplied, the default sigma is
+    `0.1`
+- radius-pair prior:
+  - only in per-anchor radius mode
+  - keeps the per-anchor radii close to one another
+
+Priors do **not** directly regularize anchor positions.
+
+## Objective Families
+
+There are several distinct objectives in play:
+
+1. Seed anchor calibration objective
+   - Used by the initial `seed_cal`
+   - Optimized by `calibrate_elliptical(...)`
+
+2. Spool seed prefit objective
+   - Ellipse proxy score over transformed sweeps
+   - Plus spool priors
+
+3. Spool-step objective
+   - `_data_cost(...) + _prior_cost(...)`
+   - Optimized with anchors fixed
+
+4. Anchor proposal objective
+   - The ellipse solver's internal objective from `calibrate_elliptical(...)`
+   - Optimized with spool parameters fixed
+
+5. Anchor / round acceptance objective
+   - Primary comparator: `_spool_rank_score(...)`
+   - Tie-breaker: total cost = data cost + prior
+
+6. Final scale-polish search objective
+   - `_data_cost(...) + _prior_cost(...)`
+   - Then rank-gated before final acceptance
+
+7. Full-auto run-selection objective
+   - rank score first
+   - then relative uncertainty
+   - then primary cost
+
+## Important Subtlety: `fit_structure`
+
+`--fit-structure` does **not** change the inner spool-step objective or the
+spool-step rollback comparator.
+
+What it currently affects:
+
+- the layered score used for plan scoring / reporting
+- full-auto run selection
+- the `score_ui` values shown in logs
+
+What it does **not** currently affect:
+
+- `_data_cost(...)`
+- `_prior_cost(...)`
+- `_spool_rank_score(...)` inside the spool/anchor alternating rounds
+
+So `--fit-structure 3` changes how full-auto prefers one run over another, but
+it does not change the basic spool-step accept / rollback logic inside a
+single run.
+
+## How to Read the Example Log
+
+For the example command:
+
+- `line_model_fit: outer_iters=3 inner_iters=30`
+  means:
+  - 3 alternating refinement rounds per single-pass pipeline
+  - up to 30 coordinate-descent rounds inside each spool step
+
+- `line_model_refreeze: iters=4 passes=4`
+  means:
+  - 4 filter-schedule passes total
+  - with the current scheduling rule, that is:
+    - 3 unfiltered warmup passes
+    - 1 dynamic-filter pass
+    - 0 frozen-mask passes
+
+The log line `line_model_fit` summarizes the final single-pass pipeline
+history. It does not print every filter-schedule pass separately. The refreeze
+summary is printed separately as `line_model_refreeze`.
+
+## Pseudocode
+
+```text
+for each dataset-growth iteration:
+  for each run variant:
+    run planning pass on current dataset
+    if spool search enabled:
+      seed anchors on base dataset
+
+      for each filter-schedule pass:
+        optionally prefit spool seed on first pass only
+        optionally bootstrap-refresh anchors on first pass only
+
+        for each alternating refinement round:
+          optimize spool parameters with anchors fixed
+          if spool objective improved enough:
+            solve for anchor proposal
+            accept full or damped anchor move by rank-first comparison
+          else:
+            keep spool-only result or rollback
+
+        optionally do final uniform scale polish for this pass
+        recalibrate anchors for pass output
+        pass fitted anchors/radii/buildup forward as warm start
+
+      use the final pass calibration
+    else:
+      calibrate anchors directly
+
+    score current plan and rank candidate next sweeps
+
+  select the best valid run variant
+  either accept or add one more sweep
+```
