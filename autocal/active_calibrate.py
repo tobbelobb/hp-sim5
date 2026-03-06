@@ -62,8 +62,14 @@ _SCORE_UI_LAYERED_MAP_SCALE = 95.0
 _SCORE_UI_LAYERED_MAP_EXP = 5.0
 _SCORE_UI_LAYERED_MAP_MULT = 1.0
 _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT = 0.5
+_SCORE_UI_RANK_OBS_REF = 60.0
+_SCORE_UI_RANK_OBS_BONUS_WEIGHT = 0.30
+_SCORE_UI_RANK_FILTERED_RATIO_WEIGHT = 0.50
 _SCORE_UI_HARD_FAIL = 50.0
 _SPOOL_ANCHOR_STEP_IMPROVE_REL = 1e-4
+_FULL_AUTO_HISTORY_PROGRESS_LINEAR = -1.5
+_FULL_AUTO_HISTORY_PROGRESS_QUADRATIC = 1.0
+_FULL_AUTO_HISTORY_COVERAGE_WEIGHT = 0.15
 
 from autocal.active_learning import (
     SweepConfig,
@@ -6154,6 +6160,22 @@ def _print_ellipse_plan(
                         f"sweep_bias_span={_fmt_float(per_sweep_demean.get('sweep_bias_span_mm'), suffix='mm')} "
                         f"n_obs={n_obs_str}"
                     )
+                rank_coverage_adjust, rank_coverage_info = _rank_coverage_adjustment_from_noise_metrics(
+                    noise_metrics
+                )
+                if any(
+                    rank_coverage_info.get(key) is not None
+                    for key in ("effective_obs", "filtered_ratio", "obs_bonus", "filtered_penalty")
+                ):
+                    print(
+                        f"; rank_coverage: "
+                        f"effective_obs={_fmt_float(rank_coverage_info.get('effective_obs'), fmt='.0f')} "
+                        f"total_obs={_fmt_float(rank_coverage_info.get('total_obs'), fmt='.0f')} "
+                        f"filtered_ratio={_fmt_float(rank_coverage_info.get('filtered_ratio'))} "
+                        f"obs_bonus={_fmt_float(rank_coverage_info.get('obs_bonus'))} "
+                        f"filtered_penalty={_fmt_float(rank_coverage_info.get('filtered_penalty'))} "
+                        f"rank_adjust={_fmt_float(rank_coverage_adjust)}"
+                    )
                 sigma_min_mm = noise_metrics.get("sigma_min_mm")
                 sigma_model_mm = noise_metrics.get("sigma_model_mm")
                 sigma_used_mm = noise_metrics.get("sigma_used_mm")
@@ -6921,19 +6943,85 @@ def full_auto_loop(
     best_rank_score = float("inf")
     best_plan: Optional[Dict[str, object]] = None
     best_meta: Dict[str, object] = {}
+    history_candidates: List[Dict[str, object]] = []
+    history_total_iterations = 0
     no_improve = 0
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     patience_limit = max(1, int(patience))
     has_variants = bool(full_auto_runs)
     selected_scores: List[float] = []
 
+    def _select_history_summary_candidate(
+        *,
+        reason: str,
+        fallback_plan: Optional[Dict[str, object]] = None,
+        fallback_meta: Optional[Dict[str, object]] = None,
+    ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
+        total_iterations = max(1, int(history_total_iterations))
+        if history_candidates:
+            scored: List[Tuple[Tuple[float, float, float, float, float], Dict[str, object], Dict[str, Optional[float]]]] = []
+            for candidate in history_candidates:
+                candidate_rank = _float_or_none(candidate.get("rank_score"))
+                selection_score, selection_info = _full_auto_history_selection_score(
+                    candidate_rank,
+                    iteration_index=int(candidate.get("iteration", 1)),
+                    total_iterations=total_iterations,
+                    coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
+                )
+                rel_std = _float_or_none(candidate.get("rel_std"))
+                cost = _float_or_none(candidate.get("cost"))
+                sort_key = (
+                    float(selection_score),
+                    float(candidate_rank) if candidate_rank is not None else float("inf"),
+                    float(rel_std) if rel_std is not None else float("inf"),
+                    float(cost) if cost is not None else float("inf"),
+                    -float(candidate.get("iteration", 0)),
+                )
+                scored.append((sort_key, candidate, selection_info))
+
+            scored.sort(key=lambda item: item[0])
+            chosen = scored[0][1]
+            chosen_info = scored[0][2]
+            _log_line(
+                f"; history_select: reason={reason} "
+                f"candidates={len(scored)} total_iterations={total_iterations}"
+            )
+            for _sort_key, candidate, info in scored[: min(5, len(scored))]:
+                _log_line(
+                    f"; history_select: "
+                    f"iter={candidate.get('iteration')} "
+                    f"run={candidate.get('run_id')} "
+                    f"rank={_fmt_float(_float_or_none(candidate.get('rank_score')))} "
+                    f"progress={_fmt_float(info.get('progress'))} "
+                    f"progress_adjust={_fmt_float(info.get('progress_adjust'))} "
+                    f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
+                    f"selection_score={_fmt_float(info.get('selection_score'))}"
+                )
+            summary_meta = dict(chosen.get("summary_meta") or {})
+            summary_meta.update(
+                {
+                    "history_progress": chosen_info.get("progress"),
+                    "history_progress_adjust": chosen_info.get("progress_adjust"),
+                    "history_coverage_adjust": chosen_info.get("coverage_adjust"),
+                    "history_selection_score": chosen_info.get("selection_score"),
+                }
+            )
+            return chosen.get("plan"), summary_meta
+
+        if best_plan is not None:
+            return best_plan, dict(best_meta)
+        if fallback_plan is not None:
+            return fallback_plan, dict(fallback_meta or {})
+        return None, None
+
     def _accept_best(reason: str) -> int:
-        if best_plan is None:
+        summary_plan, summary_meta = _select_history_summary_candidate(reason=reason)
+        if summary_plan is None:
             _log_console(f"; full-auto: stop requested ({reason}) but no best plan available; stopping.")
             _log_console(_solution_quality_message(None))
             return _finalize(2)
         _log_console(f"; full-auto: stop requested ({reason}); accepting best-so-far.")
-        return _emit_summary_and_send(best_plan, summary_meta=best_meta)
+        return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
 
     def _stop_file_requested() -> bool:
         try:
@@ -7111,6 +7199,9 @@ def full_auto_loop(
                 max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
                 warnings = _plan_data_quality_warnings(plan)
                 noise_metrics = _plan_noise_metrics(plan)
+                rank_coverage_adjust, rank_coverage_info = _rank_coverage_adjustment_from_noise_metrics(
+                    noise_metrics
+                )
                 underconstrained_penalty = _plan_hits_underconstrained_penalty(plan, primary_cost)
                 if underconstrained_penalty:
                     warnings.append("underconstrained_penalty")
@@ -7123,7 +7214,10 @@ def full_auto_loop(
                     f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
                     f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
                     f"chi2_red={_fmt_float(chi2_val)} score_ui={_fmt_float(score_ui)} "
-                    f"score_basis={score_basis}"
+                    f"score_basis={score_basis} "
+                    f"rank_coverage_adjust={_fmt_float(rank_coverage_adjust)} "
+                    f"effective_obs={_fmt_float(rank_coverage_info.get('effective_obs'), fmt='.0f')} "
+                    f"filtered_ratio={_fmt_float(rank_coverage_info.get('filtered_ratio'))}"
                 )
 
                 run_results.append(
@@ -7149,6 +7243,12 @@ def full_auto_loop(
                             "rel_std": rel_std,
                             "covariance_ok": cov_ok,
                             "underconstrained_penalty": underconstrained_penalty,
+                            "rank_coverage_adjust": rank_coverage_adjust,
+                            "rank_effective_obs": rank_coverage_info.get("effective_obs"),
+                            "rank_total_obs": rank_coverage_info.get("total_obs"),
+                            "rank_filtered_ratio": rank_coverage_info.get("filtered_ratio"),
+                            "rank_obs_bonus": rank_coverage_info.get("obs_bonus"),
+                            "rank_filtered_penalty": rank_coverage_info.get("filtered_penalty"),
                             "warnings": warnings,
                             "valid": valid,
                             "line_model_prefit": (
@@ -7259,6 +7359,34 @@ def full_auto_loop(
             elif not selected_underconstrained:
                 no_improve += 1
 
+            if (not selected_underconstrained) and np.isfinite(selected_rank_score):
+                history_candidates.append(
+                    {
+                        "plan": plan,
+                        "iteration": step,
+                        "run_id": selected_id,
+                        "flags": selected_flags,
+                        "rank_score": selected_rank_score,
+                        "rank_coverage_adjust": metrics.get("rank_coverage_adjust"),
+                        "score_ui": selected_score_ui,
+                        "score_basis": selected_score_basis,
+                        "cost": selected_cost,
+                        "rel_std": selected_rel_std,
+                        "max_std_mm": selected_max_std,
+                        "summary_meta": {
+                            "iteration": step,
+                            "run_id": selected_id,
+                            "flags": selected_flags,
+                            "score_ui": selected_score_ui,
+                            "score_basis": selected_score_basis,
+                            "cost": selected_cost,
+                            "rel_std": selected_rel_std,
+                            "max_std_mm": selected_max_std,
+                        },
+                    }
+                )
+            history_total_iterations = max(history_total_iterations, int(step))
+
             stop_cost_hit = False
             stop_std_hit = False
             if best_plan is not None:
@@ -7336,31 +7464,14 @@ def full_auto_loop(
             )
 
             if decision == "accept":
-                if best_plan is None:
+                summary_plan, summary_meta = _select_history_summary_candidate(reason="patience-or-threshold")
+                if summary_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
                     _log_console(_solution_quality_message(None))
                     return _finalize(2)
-                accepted_meta = (
-                    {
-                        "iteration": step,
-                        "run_id": selected_id,
-                        "flags": selected_flags,
-                        "score_ui": selected_score_ui,
-                        "score_basis": selected_score_basis,
-                        "cost": selected_cost,
-                        "rel_std": selected_rel_std,
-                        "max_std_mm": selected_max_std,
-                    }
-                    if isinstance(plan, dict)
-                    else best_meta
-                )
-                # Full-auto iterations fit against progressively larger datasets.
-                # When patience is exhausted, the current plan is the one trained
-                # on the largest accepted dataset, while best-so-far may come from
-                # an easier early subset and can be materially farther from truth.
                 return _emit_summary_and_send(
-                    plan if isinstance(plan, dict) else best_plan,
-                    summary_meta=accepted_meta,
+                    summary_plan,
+                    summary_meta=summary_meta,
                 )
 
             if replay_mode:
@@ -7396,18 +7507,25 @@ def full_auto_loop(
             if no_collect:
                 _log_line("; --no-collect set; stopping before live collection.")
                 _log_console("; --no-collect set; stopping before live collection.")
-                if best_plan is None:
-                    best_plan = plan
-                return _emit_summary_and_send(plan, summary_meta={
-                    "iteration": step,
-                    "run_id": selected_id,
-                    "flags": selected_flags,
-                    "score_ui": selected_score_ui,
-                    "score_basis": selected_score_basis,
-                    "cost": selected_cost,
-                    "rel_std": selected_rel_std,
-                    "max_std_mm": selected_max_std,
-                })
+                summary_plan, summary_meta = _select_history_summary_candidate(
+                    reason="no-collect",
+                    fallback_plan=plan if isinstance(plan, dict) else None,
+                    fallback_meta={
+                        "iteration": step,
+                        "run_id": selected_id,
+                        "flags": selected_flags,
+                        "score_ui": selected_score_ui,
+                        "score_basis": selected_score_basis,
+                        "cost": selected_cost,
+                        "rel_std": selected_rel_std,
+                        "max_std_mm": selected_max_std,
+                    },
+                )
+                if summary_plan is None:
+                    _log_console("; full-auto: no summary candidate available; stopping.")
+                    _log_console(_solution_quality_message(None))
+                    return _finalize(2)
+                return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
 
             cmd = plan.get("collect_command")
             if not isinstance(cmd, list) or not cmd:
@@ -8578,6 +8696,128 @@ def _noise_metric_float(noise_metrics: dict, key: str) -> Optional[float]:
         if nested is not None:
             return float(nested)
     return None
+
+
+def _rank_coverage_adjustment_from_noise_metrics(
+    noise_metrics: Optional[dict],
+    *,
+    obs_ref: float = _SCORE_UI_RANK_OBS_REF,
+    obs_bonus_weight: float = _SCORE_UI_RANK_OBS_BONUS_WEIGHT,
+    filtered_ratio_weight: float = _SCORE_UI_RANK_FILTERED_RATIO_WEIGHT,
+) -> Tuple[float, Dict[str, Optional[float]]]:
+    info: Dict[str, Optional[float]] = {
+        "effective_obs": None,
+        "total_obs": None,
+        "obs_bonus": None,
+        "filtered_ratio": None,
+        "filtered_penalty": None,
+    }
+    if not isinstance(noise_metrics, dict):
+        return 0.0, info
+
+    effective_obs = None
+    for key in (
+        "n_inlier_rows_used_for_tau",
+        "tau_mad_inlier_points",
+        "n_obs_trimmed",
+        "n_obs",
+    ):
+        val = _float_or_none(noise_metrics.get(key))
+        if val is not None and val > 0.0:
+            effective_obs = float(val)
+            break
+
+    total_obs = None
+    for key in (
+        "tau_mad_total_points",
+        "n_obs",
+        "n_obs_trimmed",
+    ):
+        val = _float_or_none(noise_metrics.get(key))
+        if val is not None and val > 0.0:
+            total_obs = float(val)
+            break
+
+    if effective_obs is not None:
+        info["effective_obs"] = float(effective_obs)
+    if total_obs is not None:
+        if effective_obs is not None and total_obs < effective_obs:
+            total_obs = float(effective_obs)
+        info["total_obs"] = float(total_obs)
+
+    adjustment = 0.0
+
+    obs_bonus = 0.0
+    if (
+        effective_obs is not None
+        and np.isfinite(effective_obs)
+        and effective_obs > max(1.0, float(obs_ref))
+    ):
+        obs_bonus = float(obs_bonus_weight) * float(
+            np.log(max(float(effective_obs) / max(float(obs_ref), 1e-9), 1.0))
+        )
+        adjustment -= float(obs_bonus)
+    info["obs_bonus"] = float(obs_bonus)
+
+    filtered_ratio = None
+    filtered_penalty = 0.0
+    if (
+        effective_obs is not None
+        and total_obs is not None
+        and np.isfinite(effective_obs)
+        and np.isfinite(total_obs)
+        and total_obs > 0.0
+    ):
+        filtered_ratio = max(0.0, 1.0 - (float(effective_obs) / float(total_obs)))
+        filtered_penalty = float(filtered_ratio_weight) * float(filtered_ratio)
+        adjustment += float(filtered_penalty)
+    info["filtered_ratio"] = None if filtered_ratio is None else float(filtered_ratio)
+    info["filtered_penalty"] = float(filtered_penalty)
+
+    return float(adjustment), info
+
+
+def _full_auto_history_progress_adjustment(progress: float) -> float:
+    p = float(np.clip(float(progress), 0.0, 1.0))
+    return float(
+        _FULL_AUTO_HISTORY_PROGRESS_LINEAR * p
+        + _FULL_AUTO_HISTORY_PROGRESS_QUADRATIC * p * p
+    )
+
+
+def _full_auto_history_selection_score(
+    rank_score: Optional[float],
+    *,
+    iteration_index: int,
+    total_iterations: int,
+    coverage_adjust: Optional[float] = None,
+    coverage_weight: float = _FULL_AUTO_HISTORY_COVERAGE_WEIGHT,
+) -> Tuple[float, Dict[str, Optional[float]]]:
+    info: Dict[str, Optional[float]] = {
+        "progress": None,
+        "progress_adjust": None,
+        "coverage_adjust": None,
+        "selection_score": None,
+    }
+    rank = _float_or_none(rank_score)
+    if rank is None or not np.isfinite(rank):
+        return float("inf"), info
+
+    total = max(1, int(total_iterations))
+    idx = max(1, int(iteration_index))
+    progress = min(float(idx) / float(total), 1.0)
+    progress_adjust = _full_auto_history_progress_adjustment(progress)
+
+    coverage = _float_or_none(coverage_adjust)
+    if coverage is None or not np.isfinite(coverage):
+        coverage = 0.0
+
+    selection_score = float(rank + progress_adjust + float(coverage_weight) * coverage)
+    info["progress"] = float(progress)
+    info["progress_adjust"] = float(progress_adjust)
+    info["coverage_adjust"] = float(coverage)
+    info["selection_score"] = float(selection_score)
+    return float(selection_score), info
 
 
 def _layered_internal_metric_from_noise_metrics(

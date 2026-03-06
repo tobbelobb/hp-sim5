@@ -210,6 +210,82 @@ def test_plan_score_ui_non_layered_matches_primary_cost():
     assert ac._solution_quality_label(score_ui) == "good"
 
 
+def test_rank_coverage_adjustment_rewards_more_retained_observations():
+    adjust_base, info_base = ac._rank_coverage_adjustment_from_noise_metrics(
+        {
+            "n_inlier_rows_used_for_tau": 60.0,
+            "tau_mad_total_points": 60.0,
+        }
+    )
+    adjust_more, info_more = ac._rank_coverage_adjustment_from_noise_metrics(
+        {
+            "n_inlier_rows_used_for_tau": 120.0,
+            "tau_mad_total_points": 120.0,
+        }
+    )
+
+    expected_bonus = ac._SCORE_UI_RANK_OBS_BONUS_WEIGHT * np.log(120.0 / ac._SCORE_UI_RANK_OBS_REF)
+
+    assert np.isclose(adjust_base, 0.0, atol=1e-12)
+    assert np.isclose(info_base["obs_bonus"], 0.0, atol=1e-12)
+    assert np.isclose(info_more["obs_bonus"], expected_bonus, atol=1e-12)
+    assert np.isclose(adjust_more, -expected_bonus, atol=1e-12)
+    assert adjust_more < adjust_base
+
+
+def test_rank_coverage_adjustment_penalizes_filtered_ratio():
+    adjust, info = ac._rank_coverage_adjustment_from_noise_metrics(
+        {
+            "n_inlier_rows_used_for_tau": 60.0,
+            "tau_mad_total_points": 80.0,
+        }
+    )
+
+    expected_ratio = 0.25
+    expected_penalty = ac._SCORE_UI_RANK_FILTERED_RATIO_WEIGHT * expected_ratio
+
+    assert np.isclose(info["filtered_ratio"], expected_ratio, atol=1e-12)
+    assert np.isclose(info["filtered_penalty"], expected_penalty, atol=1e-12)
+    assert np.isclose(adjust, expected_penalty, atol=1e-12)
+
+
+def test_full_auto_history_progress_adjustment_prefers_three_quarters_progress():
+    early = ac._full_auto_history_progress_adjustment(0.25)
+    mid = ac._full_auto_history_progress_adjustment(0.50)
+    late = ac._full_auto_history_progress_adjustment(0.75)
+    final = ac._full_auto_history_progress_adjustment(1.00)
+
+    assert late < mid < early
+    assert late < final
+
+
+def test_full_auto_history_selection_score_applies_progress_and_coverage():
+    sel_early, info_early = ac._full_auto_history_selection_score(
+        1.0,
+        iteration_index=1,
+        total_iterations=4,
+        coverage_adjust=0.0,
+    )
+    sel_mid, info_mid = ac._full_auto_history_selection_score(
+        1.1,
+        iteration_index=3,
+        total_iterations=4,
+        coverage_adjust=0.0,
+    )
+    sel_mid_filtered, info_mid_filtered = ac._full_auto_history_selection_score(
+        1.1,
+        iteration_index=3,
+        total_iterations=4,
+        coverage_adjust=0.2,
+    )
+
+    assert np.isclose(info_mid["progress"], 0.75, atol=1e-12)
+    assert info_mid["progress_adjust"] < info_early["progress_adjust"]
+    assert sel_mid < sel_early
+    expected_coverage_delta = ac._FULL_AUTO_HISTORY_COVERAGE_WEIGHT * 0.2
+    assert np.isclose(sel_mid_filtered - sel_mid, expected_coverage_delta, atol=1e-12)
+
+
 def test_layered_internal_metric_fit_structure_tail_ratio_penalty():
     noise_metrics = {
         "chi2_red_rescored_tau_3bin_debiased": 64.0,
