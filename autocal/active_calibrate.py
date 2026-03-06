@@ -2381,10 +2381,11 @@ def _estimate_effective_radii_with_spool_model(
                         seed_cost = float(score_try)
                         seed_rank_score = float(rank_try)
                         seed_choice = f"seed_{idx}"
-            x_opt, opt_info = _optimize_spool_step_lbfgsb(
+            x_opt, opt_info = _coordinate_descent_spool(
                 x_seed,
                 lo=lo,
                 hi=hi,
+                kinds=kinds,
                 max_iters=int(inner_iters),
                 objective=_objective,
             )
@@ -4968,61 +4969,6 @@ def _coordinate_descent_spool(
         "start_cost": float(start_cost),
         "fitted_cost": float(best),
         "step_final": [float(v) for v in np.asarray(steps, dtype=float).tolist()],
-    }
-
-
-def _optimize_spool_step_lbfgsb(
-    x0: np.ndarray,
-    *,
-    lo: np.ndarray,
-    hi: np.ndarray,
-    max_iters: int,
-    objective: Any,
-) -> Tuple[np.ndarray, Dict[str, object]]:
-    x = np.clip(np.asarray(x0, dtype=float).reshape(-1), lo, hi)
-    if x.size == 0:
-        cost0 = float(objective(x))
-        return x, {
-            "success": True,
-            "message": "no spool parameters selected for fitting",
-            "nfev": 1,
-            "nit": 0,
-            "start_cost": cost0,
-            "fitted_cost": cost0,
-            "step_final": [],
-        }
-
-    start_cost = float(objective(x))
-    bounds = list(zip(np.asarray(lo, dtype=float).tolist(), np.asarray(hi, dtype=float).tolist()))
-    # Preserve the rough search budget of the old spool_inner_iters knob when
-    # mapping from coarse spool rounds to a quasi-Newton optimizer.
-    lbfgsb_maxiter = max(20, int(max_iters) * 10)
-    result = minimize(
-        objective,
-        x,
-        method="L-BFGS-B",
-        bounds=bounds,
-        options={"maxiter": lbfgsb_maxiter, "ftol": 1e-12, "maxls": 40, "disp": False},
-    )
-    x_result = np.clip(np.asarray(getattr(result, "x", x), dtype=float).reshape(-1), lo, hi)
-    fitted_cost_result = float(objective(x_result))
-    if np.isfinite(fitted_cost_result) and fitted_cost_result <= start_cost + 1e-12:
-        x_opt = x_result
-        fitted_cost = float(fitted_cost_result)
-    else:
-        x_opt = np.asarray(x, dtype=float).copy()
-        fitted_cost = float(start_cost)
-    success = bool(np.isfinite(fitted_cost) and fitted_cost + 1e-12 < start_cost)
-    message_raw = getattr(result, "message", "")
-    message = str(message_raw) if message_raw else "L-BFGS-B completed"
-    return x_opt, {
-        "success": success,
-        "message": message,
-        "nfev": int(getattr(result, "nfev", 0) or 0),
-        "nit": int(getattr(result, "nit", 0) or 0),
-        "start_cost": float(start_cost),
-        "fitted_cost": float(fitted_cost),
-        "step_final": [],
     }
 
 

@@ -333,51 +333,28 @@ def test_anchor_step_skips_when_spool_objective_does_not_improve(monkeypatch):
     assert history[0].get("anchor_step_trigger_reason") == "spool_objective_not_improved"
 
 
-def test_spool_step_lbfgsb_uses_bounded_minimize(monkeypatch):
+def test_coordinate_descent_shrinks_non_improving_axes():
     x0 = np.array([5.0, 0.25], dtype=float)
     lo = np.array([-10.0, -1.0], dtype=float)
     hi = np.array([10.0, 1.0], dtype=float)
-    calls = []
-
-    def fake_minimize(fun, x_init, **kwargs):
-        calls.append(
-            {
-                "x0": np.asarray(x_init, dtype=float).copy(),
-                "method": kwargs.get("method"),
-                "bounds": kwargs.get("bounds"),
-                "options": dict(kwargs.get("options", {})),
-                "value_at_start": float(fun(np.asarray(x_init, dtype=float))),
-            }
-        )
-        return SimpleNamespace(
-            x=np.array([1.0, 0.25], dtype=float),
-            message="stubbed lbfgsb",
-            nfev=7,
-            nit=3,
-        )
-
-    monkeypatch.setattr(ac, "minimize", fake_minimize)
+    kinds = ["r", "k"]
+    initial_steps = ac._initial_spool_steps(x0, lo, hi, kinds)
 
     def objective(x):
         vec = np.asarray(x, dtype=float).reshape(-1)
         return float((vec[0] - 1.0) ** 2.0)
 
-    x_opt, info = ac._optimize_spool_step_lbfgsb(
+    _x_opt, info = ac._coordinate_descent_spool(
         x0,
         lo=lo,
         hi=hi,
+        kinds=kinds,
         max_iters=4,
         objective=objective,
     )
-
-    assert len(calls) == 1
-    assert calls[0]["method"] == "L-BFGS-B"
-    assert calls[0]["bounds"] == [(-10.0, 10.0), (-1.0, 1.0)]
-    assert int(calls[0]["options"]["maxiter"]) == 40
-    assert np.allclose(x_opt, [1.0, 0.25])
-    assert info.get("message") == "stubbed lbfgsb"
-    assert info.get("success") is True
-    assert float(info.get("fitted_cost")) < float(info.get("start_cost"))
+    final_steps = np.asarray(info.get("step_final", []), dtype=float)
+    assert final_steps.size == 2
+    assert final_steps[1] < initial_steps[1]
 
 
 def test_format_m666_from_length_model_includes_r_and_q():
@@ -1249,7 +1226,7 @@ def test_spool_prefit_grid_avoids_false_basin_for_low_base_radius(monkeypatch):
             spool_to_motor_gearing_factor=np.ones(3, dtype=float),
             mechanical_advantage=np.ones(3, dtype=float),
             lines_per_spool=np.ones(3, dtype=float),
-            r0_bounds=(30.0, 45.0),
+            r0_bounds=None,
             b_bounds=None,
             r0_prior_sigma_mm=None,
             b_prior_sigma=None,
@@ -2207,8 +2184,8 @@ def test_final_scale_polish_requires_total_objective_improvement(monkeypatch):
             _ = anchor_vec
             return []
 
-    def fake_optimize_spool_step_lbfgsb(x0, *, lo, hi, max_iters, objective):
-        _ = (lo, hi, max_iters, objective)
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters, objective)
         return np.asarray(x0, dtype=float).reshape(-1), {
             "success": True,
             "message": "stubbed optimizer",
@@ -2223,7 +2200,7 @@ def test_final_scale_polish_requires_total_objective_improvement(monkeypatch):
     monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
     monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
     monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
-    monkeypatch.setattr(ac, "_optimize_spool_step_lbfgsb", fake_optimize_spool_step_lbfgsb)
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
     monkeypatch.setattr(
         ac,
         "_spool_seed_candidates",
@@ -3229,8 +3206,8 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
         initial = np.asarray(kwargs.get("initial_guess"), dtype=float)
         return {"anchors": np.asarray(initial + 0.1, dtype=float), "cost": 0.0}
 
-    def fake_optimize_spool_step_lbfgsb(x0, *, lo, hi, max_iters, objective):
-        _ = (lo, hi, max_iters, objective)
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters, objective)
         return np.asarray(x0, dtype=float).reshape(-1), {
             "success": True,
             "message": "stubbed optimizer",
@@ -3248,7 +3225,7 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
         "_compute_tau_mad_rescore_from_rows",
         lambda *_args, **_kwargs: {"chi2_red_tau_d_trimmed_direct": 8.0},
     )
-    monkeypatch.setattr(ac, "_optimize_spool_step_lbfgsb", fake_optimize_spool_step_lbfgsb)
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
     monkeypatch.setattr(
         ac,
         "_spool_seed_candidates",
@@ -3348,8 +3325,8 @@ def test_spool_fit_rank_score_rescores_rows_even_when_direct_metric_exists(monke
                 }
             ]
 
-    def fake_optimize_spool_step_lbfgsb(x0, *, lo, hi, max_iters, objective):
-        _ = (lo, hi, max_iters, objective)
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters, objective)
         return np.asarray(x0, dtype=float).reshape(-1), {
             "success": True,
             "message": "stubbed optimizer",
@@ -3367,7 +3344,7 @@ def test_spool_fit_rank_score_rescores_rows_even_when_direct_metric_exists(monke
             "cost_noise_normalized_tau_d_trimmed_direct": 0.5,
         },
     )
-    monkeypatch.setattr(ac, "_optimize_spool_step_lbfgsb", fake_optimize_spool_step_lbfgsb)
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
 
     dataset = {
         "machine_type": "slideprinter",
