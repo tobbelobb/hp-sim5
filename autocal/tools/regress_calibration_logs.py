@@ -6,8 +6,12 @@ What it does
 - Runs fixed commands (one per dataset in DATASETS)
 - Locates the generated log path from stdout/stderr (looks for "Writing additional info to log:")
 - Compares generated vs reference logs by parsing:
-  * Final "== Calibration summary ==" block (fit score + M669 anchors + M666 radii)
-  * Each iteration triple: "Anchors:", "line_model ... effective=[...]", "Score: ..."
+  * Final "== Calibration summary ==" block (fit/UI score when present + M669 anchors + M666 radii)
+  * Each iteration triple:
+    - "Anchors:"
+    - "line_model ... effective=[...]"
+    - machine-readable "; selected run=..." line
+    - legacy fallback console "Score: ..."
 
 Comparison metrics
 - Anchor distance: sum_i ||anchor_i - anchor_i_ref||  (Euclidean, mm)
@@ -66,18 +70,20 @@ TRUE_R: float = 39.184
 class Params:
     anchors: Optional[List[Tuple[float, float]]]  # len=3
     radii: Optional[List[float]]  # len=3
-    score: Optional[float]  # "Fit quality score" for summary, or iteration Score
+    fit_score_ui: Optional[float]  # "Fit quality score" from the summary block
 
 
 @dataclass
 class Iteration:
     anchors: Optional[List[Tuple[float, float]]]
     radii: Optional[List[float]]
-    score: Optional[float]
-    score_kind: Optional[str] = None
+    fit_score_ui: Optional[float] = None
+    rank_score: Optional[float] = None
+    history_rank_score: Optional[float] = None
     anchors_line: Optional[str] = None
     radii_line: Optional[str] = None
-    score_line: Optional[str] = None
+    fit_score_line: Optional[str] = None
+    rank_score_line: Optional[str] = None
 
 
 @dataclass
@@ -105,7 +111,10 @@ class DatasetRunResult:
 _RE_LOGPATH = re.compile(r"Writing additional info to log:\s*(.+)\s*$")
 _RE_ANCHORS = re.compile(r"Anchors:\s*(\[\[.*\]\])")
 _RE_EFFECTIVE = re.compile(r"effective=\[([^\]]+)\]")
-_RE_ITER_RANK = re.compile(r"\b(?:Rank score|Score):\s*([0-9.+-eE]+)\b")
+_RE_LEGACY_FIT_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
+_RE_SELECTED_FIT_SCORE_UI = re.compile(r"\b(?:fit_score_ui|score_ui)=([0-9.+-eE]+)\b")
+_RE_SELECTED_RANK_SCORE = re.compile(r"\brank_score=([0-9.+-eE]+)\b")
+_RE_SELECTED_HISTORY_RANK_SCORE = re.compile(r"\b(?:history_rank_score|selection_rank)=([0-9.+-eE]+)\b")
 _RE_M669_PARTS = re.compile(
     r"([ABC])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,
@@ -114,7 +123,7 @@ _RE_M666_R = re.compile(
     r"R\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,
 )
-_RE_FIT_SCORE = re.compile(r"Fit quality score.*?:\s*([0-9.+-eE]+)\s*$")
+_RE_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$")
 _RE_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
@@ -139,9 +148,9 @@ def parse_generated_log_path(run_output: str) -> Optional[str]:
 
 def parse_iterations(text: str) -> List[Iteration]:
     """
-    Extracts per-iteration (anchors, effective radii, rank/score) triplets in order.
-    Assumes the rank line terminates an iteration. Older logs use "Score:" while
-    newer logs use "Rank score:".
+    Extracts per-iteration (anchors, effective radii, score fields) tuples in order.
+    Newer logs terminate iterations on the machine-readable "; selected run=..." line.
+    Older logs may only have a console "Score:" line, which we still accept.
     """
     iters: List[Iteration] = []
     cur: dict = {}
@@ -168,20 +177,46 @@ def parse_iterations(text: str) -> List[Iteration]:
                 except Exception:
                     cur["radii"] = None
                     cur["radii_line"] = line.strip()
-        if "Rank score:" in line or "Score:" in line:
-            m = _RE_ITER_RANK.search(line)
+        if "; selected run=" in line:
+            fit_score_ui = None
+            rank_score = None
+            history_rank_score = None
+            m_fit = _RE_SELECTED_FIT_SCORE_UI.search(line)
+            if m_fit:
+                fit_score_ui = _safe_float(m_fit.group(1))
+            m_rank = _RE_SELECTED_RANK_SCORE.search(line)
+            if m_rank:
+                rank_score = _safe_float(m_rank.group(1))
+            m_history_rank = _RE_SELECTED_HISTORY_RANK_SCORE.search(line)
+            if m_history_rank:
+                history_rank_score = _safe_float(m_history_rank.group(1))
+            iters.append(
+                Iteration(
+                    anchors=cur.get("anchors"),
+                    radii=cur.get("radii"),
+                    fit_score_ui=fit_score_ui,
+                    rank_score=rank_score,
+                    history_rank_score=history_rank_score,
+                    anchors_line=cur.get("anchors_line"),
+                    radii_line=cur.get("radii_line"),
+                    fit_score_line=line.strip() if m_fit else None,
+                    rank_score_line=line.strip() if (m_rank or m_history_rank) else None,
+                )
+            )
+            cur = {}
+            continue
+        if "Score:" in line and cur:
+            m = _RE_LEGACY_FIT_SCORE.search(line)
             if m:
-                score = _safe_float(m.group(1))
-                score_kind = "rank" if "Rank score:" in line else "fit"
+                fit_score_ui = _safe_float(m.group(1))
                 iters.append(
                     Iteration(
                         anchors=cur.get("anchors"),
                         radii=cur.get("radii"),
-                        score=score,
-                        score_kind=score_kind,
+                        fit_score_ui=fit_score_ui,
                         anchors_line=cur.get("anchors_line"),
                         radii_line=cur.get("radii_line"),
-                        score_line=line.strip(),
+                        fit_score_line=line.strip(),
                     )
                 )
                 cur = {}
@@ -215,7 +250,7 @@ def parse_summary(text: str) -> Optional[Params]:
     radii: Optional[List[float]] = None
 
     for line in lines:
-        if "Fit quality score" in line:
+        if "quality score" in line:
             m = _RE_FIT_SCORE.search(line)
             if m:
                 fit_score = _safe_float(m.group(1))
@@ -234,11 +269,11 @@ def parse_summary(text: str) -> Optional[Params]:
                 else:
                     radii = [float(v) for v in radii]  # type: ignore
 
-    if fit_score is None or radii is None or len(anchors_map) != 3:
+    if radii is None or len(anchors_map) != 3:
         return None
 
     anchors = [anchors_map["A"], anchors_map["B"], anchors_map["C"]]
-    return Params(anchors=anchors, radii=radii, score=fit_score)
+    return Params(anchors=anchors, radii=radii, fit_score_ui=fit_score)
 
 
 def parse_log_file(path: Path) -> ParsedLog:
@@ -436,6 +471,22 @@ def compute_final_score(total_error_sum: float, mean_delta_sum: float) -> float:
     return total_error_sum + mean_delta_sum
 
 
+def iteration_effective_rank_score(iteration: Iteration) -> Optional[float]:
+    if iteration.history_rank_score is not None:
+        return iteration.history_rank_score
+    if iteration.rank_score is not None:
+        return iteration.rank_score
+    return None
+
+
+def iteration_effective_rank_kind(iteration: Iteration) -> Optional[str]:
+    if iteration.history_rank_score is not None:
+        return "history_rank"
+    if iteration.rank_score is not None:
+        return "rank_score"
+    return None
+
+
 def report_dataset(
     name: str,
     ref: ParsedLog,
@@ -468,7 +519,11 @@ def report_dataset(
 
     if ref.summary and gen.summary:
         delta = total_param_distance(gen.summary.anchors, gen.summary.radii, ref.summary.anchors, ref.summary.radii)
-        score_delta = (gen.summary.score - ref.summary.score) if (gen.summary.score is not None and ref.summary.score is not None) else None
+        fit_score_ui_delta = (
+            gen.summary.fit_score_ui - ref.summary.fit_score_ui
+            if (gen.summary.fit_score_ui is not None and ref.summary.fit_score_ui is not None)
+            else None
+        )
 
         ref_true = error_to_true(ref.summary.anchors, ref.summary.radii)
         gen_true = error_to_true(gen.summary.anchors, gen.summary.radii)
@@ -478,7 +533,7 @@ def report_dataset(
             ok = False
         else:
             total_d, ad, rd = delta
-            exact = (total_d == 0.0) and (score_delta == 0.0)
+            exact = (total_d == 0.0) and (fit_score_ui_delta in (None, 0.0))
             small = total_d < tol_mm_total
 
             summary_rows: List[List[str]] = [
@@ -487,17 +542,16 @@ def report_dataset(
                 ["param_R*2π", "-", "-", fmt(rd), "-"],
             ]
 
-            if score_delta is None:
-                summary_rows.append(["score", "N/A", "N/A", "N/A", "N/A (parse missing)"])
-                ok = False
+            if fit_score_ui_delta is None:
+                summary_rows.append(["fit_score_ui", fmt(ref.summary.fit_score_ui), fmt(gen.summary.fit_score_ui), "N/A", "optional"])
             else:
                 summary_rows.append(
                     [
-                        "score",
-                        fmt(ref.summary.score),
-                        fmt(gen.summary.score),
-                        fmt(score_delta),
-                        verdict_text(score_delta, color),
+                        "fit_score_ui",
+                        fmt(ref.summary.fit_score_ui),
+                        fmt(gen.summary.fit_score_ui),
+                        fmt(fit_score_ui_delta),
+                        verdict_text(fit_score_ui_delta, color),
                     ]
                 )
 
@@ -556,7 +610,8 @@ def report_dataset(
     # Track worst param delta among iterations (between ref and gen)
     worst_iter_delta = 0.0
     mismatches = 0
-    mixed_score_scales = 0
+    mixed_rank_scales = 0
+    missing_rank_pairs = 0
 
     # Print per-iter details only if something changed a lot or count mismatch,
     # but we still compute everything.
@@ -580,10 +635,12 @@ def report_dataset(
                     fmt(g_true[0]) if g_true else "N/A",
                     "N/A",
                     "N/A",
-                    fmt(r.score) if r is not None else "N/A",
-                    fmt(g.score) if g is not None else "N/A",
+                    fmt(iteration_effective_rank_score(r)) if r is not None else "N/A",
+                    fmt(iteration_effective_rank_score(g)) if g is not None else "N/A",
                     "N/A",
                     "N/A",
+                    fmt(r.fit_score_ui) if r is not None else "N/A",
+                    fmt(g.fit_score_ui) if g is not None else "N/A",
                     "N/A",
                 ]
             )
@@ -595,6 +652,8 @@ def report_dataset(
             detailed_rows.append(
                 [
                     str(i),
+                    "N/A",
+                    "N/A",
                     "N/A",
                     "N/A",
                     "N/A",
@@ -620,35 +679,41 @@ def report_dataset(
         r_true = error_to_true(r.anchors, r.radii)
         g_true = error_to_true(g.anchors, g.radii)
 
-        score_kind_mixed = (
-            r.score_kind is not None
-            and g.score_kind is not None
-            and r.score_kind != g.score_kind
+        r_rank_score = iteration_effective_rank_score(r)
+        g_rank_score = iteration_effective_rank_score(g)
+        r_rank_kind = iteration_effective_rank_kind(r)
+        g_rank_kind = iteration_effective_rank_kind(g)
+        rank_scale_mixed = (
+            r_rank_kind is not None
+            and g_rank_kind is not None
+            and r_rank_kind != g_rank_kind
         )
-        if score_kind_mixed:
-            mixed_score_scales += 1
+        if rank_scale_mixed:
+            mixed_rank_scales += 1
+        elif r_rank_score is None or g_rank_score is None:
+            missing_rank_pairs += 1
 
-        # Score reflection check (direction)
-        score_delta_iter = None
-        if (not score_kind_mixed) and r.score is not None and g.score is not None:
-            score_delta_iter = g.score - r.score
+        # Ranking score reflection check (direction)
+        rank_delta_iter = None
+        if (not rank_scale_mixed) and r_rank_score is not None and g_rank_score is not None:
+            rank_delta_iter = g_rank_score - r_rank_score
 
         fit_delta_iter = None
         if r_true and g_true:
             fit_delta_iter = g_true[0] - r_true[0]
 
-        exact_iter = (total_d == 0.0) and (score_delta_iter == 0.0)
+        exact_iter = (total_d == 0.0) and (rank_delta_iter in (None, 0.0))
         small_iter = total_d < tol_mm_total
 
-        # Score reflects fit?
+        # Rank score reflects fit?
         reflect = "N/A"
         mismatch = False
-        if score_kind_mixed:
+        if rank_scale_mixed:
             reflect = "mixed-scale"
-        elif fit_delta_iter is not None and score_delta_iter is not None:
+        elif fit_delta_iter is not None and rank_delta_iter is not None:
             fit_dir = dir_label(fit_delta_iter)   # better/worse/equal (lower is better)
-            score_dir = dir_label(score_delta_iter)
-            reflect = "OK" if (fit_dir == score_dir) or (fit_dir == "equal") or (score_dir == "equal") else "MISMATCH"
+            rank_dir = dir_label(rank_delta_iter)
+            reflect = "OK" if (fit_dir == rank_dir) or (fit_dir == "equal") or (rank_dir == "equal") else "MISMATCH"
             mismatch = (reflect == "MISMATCH")
             if mismatch:
                 mismatches += 1
@@ -664,10 +729,12 @@ def report_dataset(
                 fmt(g_true[0]) if g_true else "N/A",
                 fmt(fit_delta_iter),
                 verdict_text(fit_delta_iter, color),
-                fmt(r.score),
-                fmt(g.score),
-                fmt(score_delta_iter),
-                verdict_text(score_delta_iter, color),
+                fmt(r_rank_score),
+                fmt(g_rank_score),
+                fmt(rank_delta_iter),
+                verdict_text(rank_delta_iter, color),
+                fmt(r.fit_score_ui),
+                fmt(g.fit_score_ui),
                 reflect if reflect != "MISMATCH" else _ansi("31", reflect, color),
             ]
         )
@@ -679,15 +746,18 @@ def report_dataset(
             ok = False
 
     lines.append(f"ITERATIONS: worst_param_delta_total={fmt(worst_iter_delta)} (tol={tol_mm_total}mm)")
-    if mixed_score_scales:
+    lines.append("ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score")
+    if mixed_rank_scales:
         lines.append(
-            f"ITERATIONS: mixed score scales in {mixed_score_scales} rows "
-            f"(reference fit-score vs generated rank-score)"
+            f"ITERATIONS: mixed rank scales in {mixed_rank_scales} rows "
+            f"(history_rank vs raw rank_score)"
         )
+    if missing_rank_pairs:
+        lines.append(f"ITERATIONS: rank comparisons unavailable in {missing_rank_pairs} rows (missing rank score)")
     if mismatches:
-        lines.append(f"ITERATIONS: score/fit direction mismatches: {mismatches}" + (" => FAIL" if fail_on_score_mismatch else " (warn-only)"))
+        lines.append(f"ITERATIONS: rank/true direction mismatches: {mismatches}" + (" => FAIL" if fail_on_score_mismatch else " (warn-only)"))
     else:
-        lines.append("ITERATIONS: score/fit direction mismatches: 0")
+        lines.append("ITERATIONS: rank/true direction mismatches: 0")
 
     # Decide if we should print detailed rows:
     if (not ok) or (worst_iter_delta > 0.0) or (n_ref != n_gen):
@@ -703,10 +773,12 @@ def report_dataset(
                 "true_gen",
                 "Δtrue",
                 "true_verdict",
-                "score_ref",
-                "score_gen",
-                "Δscore",
-                "score_verdict",
+                "rank_ref",
+                "rank_gen",
+                "Δrank",
+                "rank_verdict",
+                "fit_ui_ref",
+                "fit_ui_gen",
                 "reflect",
             ],
             rows=detailed_rows,

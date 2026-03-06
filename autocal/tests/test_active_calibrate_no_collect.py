@@ -618,6 +618,10 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
     out = capsys.readouterr().out
     assert "M669 iter_1" in out
     assert "M669 iter_3" not in out
+    assert "Rank score:" not in out
+    assert "Fit score:" not in out
+    assert "try so far." in out
+    assert "Ranking: fit quality first, retained data second." in out
 
 
 def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, monkeypatch, capsys):
@@ -769,3 +773,7 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
     assert "M669 iter_3" in out
     assert "M669 iter_1" not in out
     assert "M669 iter_4" not in out
+    assert "Rank score:" not in out
+    assert "Fit score:" not in out
+    assert "try so far." in out
+    assert "Ranking: fit quality first, retained data second." in out

@@ -5924,8 +5924,8 @@ def _print_ellipse_plan(
                 print(
                     f"; line_model_filter_schedule: passes={_fmt_float(len(filter_schedule_history), fmt='.0f')} "
                     f"schedule=[{schedule_text}] "
-                    f"last_score_ui={_fmt_float(last_filter_pass.get('score_ui'))} "
-                    f"last_rank={_fmt_float(last_filter_pass.get('rank_score'))} "
+                    f"last_fit_score_ui={_fmt_float(last_filter_pass.get('score_ui'))} "
+                    f"last_rank_score={_fmt_float(last_filter_pass.get('rank_score'))} "
                     f"last_cost={_fmt_float(last_filter_pass.get('cost_noise_normalized'))}"
                 )
     if isinstance(cal, dict):
@@ -6670,15 +6670,15 @@ def full_auto_loop(
             anchor_str = np.array2string(anchors, precision=2, separator=", ")
         elif anchors is not None:
             anchor_str = str(np.asarray(anchors))
-        summary_score_ui, _, summary_score_basis = _plan_score_ui(best_plan)
-        summary_score_for_quality = (
-            float(summary_score_ui) if np.isfinite(summary_score_ui) else None
+        summary_fit_score_ui, _, summary_score_basis = _plan_score_ui(best_plan)
+        summary_fit_score_for_quality = (
+            float(summary_fit_score_ui) if np.isfinite(summary_fit_score_ui) else None
         )
-        quality_label = _solution_quality_label(summary_score_for_quality)
+        quality_label = _solution_quality_label(summary_fit_score_for_quality)
         _log_console("")
         _log_console("== Calibration summary ==")
         _log_console(f"Found parameters of {quality_label} quality")
-        _log_console(f"Fit quality score (lower is better): {_fmt_float(summary_score_for_quality)}")
+        _log_console(f"Fit/UI quality score (lower is better): {_fmt_float(summary_fit_score_for_quality)}")
         if m669:
             _log_console(f"Parameters (M669): {m669}")
         elif anchor_str:
@@ -6690,8 +6690,8 @@ def full_auto_loop(
             best_flags = str(meta_for_summary.get("flags", "")).strip()
             best_run = str(meta_for_summary.get("run_id", "")).strip()
             label = best_flags or best_run or "default"
-            _log_console(f"Variant/flag setup giving best score_ui: {label}")
-        _log_console(_solution_quality_message(summary_score_for_quality))
+            _log_console(f"Selected variant/flag setup: {label}")
+        _log_console(_solution_quality_message(summary_fit_score_for_quality))
 
         skip_sim_send = bool(sim and no_collect and not server_explicit)
         if m669:
@@ -6949,8 +6949,6 @@ def full_auto_loop(
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     patience_limit = max(1, int(patience))
     has_variants = bool(full_auto_runs)
-    selected_scores: List[float] = []
-
     def _select_history_summary_candidate(
         *,
         reason: str,
@@ -7009,6 +7007,33 @@ def full_auto_loop(
         if fallback_plan is not None:
             return fallback_plan, dict(fallback_meta or {})
         return None, None
+
+    def _current_history_rank_position(*, iteration: int) -> Optional[int]:
+        if not history_candidates:
+            return None
+        scored: List[Tuple[Tuple[float, float, float, float, float], Dict[str, object]]] = []
+        for candidate in history_candidates:
+            candidate_rank = _float_or_none(candidate.get("rank_score"))
+            selection_score, _selection_info = _full_auto_history_selection_score(
+                candidate_rank,
+                iteration_index=int(candidate.get("iteration", 1)),
+                coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
+            )
+            rel_std = _float_or_none(candidate.get("rel_std"))
+            cost = _float_or_none(candidate.get("cost"))
+            sort_key = (
+                float(selection_score),
+                float(candidate_rank) if candidate_rank is not None else float("inf"),
+                float(rel_std) if rel_std is not None else float("inf"),
+                float(cost) if cost is not None else float("inf"),
+                -float(candidate.get("iteration", 0)),
+            )
+            scored.append((sort_key, candidate))
+        scored.sort(key=lambda item: item[0])
+        for idx, (_sort_key, candidate) in enumerate(scored, start=1):
+            if int(candidate.get("iteration", -1)) == int(iteration):
+                return idx
+        return None
 
     def _accept_best(reason: str) -> int:
         summary_plan, summary_meta = _select_history_summary_candidate(reason=reason)
@@ -7191,7 +7216,7 @@ def full_auto_loop(
                     )
 
                 primary_cost = _plan_primary_cost(plan)
-                score_ui, rank_score, score_basis = _plan_score_ui(plan)
+                fit_score_ui, rank_score, score_basis = _plan_score_ui(plan)
                 max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
                 warnings = _plan_data_quality_warnings(plan)
                 noise_metrics = _plan_noise_metrics(plan)
@@ -7209,7 +7234,7 @@ def full_auto_loop(
                 _log_line(
                     f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
                     f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
-                    f"chi2_red={_fmt_float(chi2_val)} score_ui={_fmt_float(score_ui)} "
+                    f"chi2_red={_fmt_float(chi2_val)} fit_score_ui={_fmt_float(fit_score_ui)} "
                     f"score_basis={score_basis} "
                     f"rank_coverage_adjust={_fmt_float(rank_coverage_adjust)} "
                     f"effective_obs={_fmt_float(rank_coverage_info.get('effective_obs'), fmt='.0f')} "
@@ -7225,7 +7250,7 @@ def full_auto_loop(
                         "plan": plan,
                         "metrics": {
                             "primary_cost": primary_cost,
-                            "score_ui": score_ui,
+                            "score_ui": fit_score_ui,
                             "rank_score": rank_score,
                             "score_basis": score_basis,
                             "cost_noise_normalized": plan.get("cost_noise_normalized"),
@@ -7300,14 +7325,14 @@ def full_auto_loop(
             selected_id = str(selected.get("id", "run"))
             selected_flags = str(selected.get("flags", "")).strip()
             selected_cost = float(metrics.get("primary_cost", float("nan")))
-            selected_score_ui = float(metrics.get("score_ui", float("nan")))
+            selected_fit_score_ui = float(metrics.get("score_ui", float("nan")))
             selected_rank_score = float(metrics.get("rank_score", float("inf")))
             selected_score_basis = str(metrics.get("score_basis", "standard-noise"))
             selected_underconstrained = bool(metrics.get("underconstrained_penalty", False))
             selected_max_std = metrics.get("max_std_mm")
             selected_rel_std = metrics.get("rel_std")
             selected_warnings = list(metrics.get("warnings") or [])
-            selected_selection_score, selected_selection_info = _full_auto_history_selection_score(
+            selected_history_rank_score, selected_history_rank_info = _full_auto_history_selection_score(
                 selected_rank_score,
                 iteration_index=step,
                 coverage_adjust=_float_or_none(metrics.get("rank_coverage_adjust")),
@@ -7341,7 +7366,7 @@ def full_auto_loop(
             if (not selected_underconstrained) and np.isfinite(selected_rank_score) and (
                 best_plan is None or selected_rank_score <= best_rank_score - min_delta
             ):
-                best_score_ui = float(selected_score_ui)
+                best_score_ui = float(selected_fit_score_ui)
                 best_rank_score = float(selected_rank_score)
                 best_cost = float(selected_cost)
                 best_plan = plan
@@ -7349,7 +7374,7 @@ def full_auto_loop(
                     "iteration": step,
                     "run_id": selected_id,
                     "flags": selected_flags,
-                    "score_ui": selected_score_ui,
+                    "score_ui": selected_fit_score_ui,
                     "score_basis": selected_score_basis,
                     "cost": selected_cost,
                     "rel_std": selected_rel_std,
@@ -7368,8 +7393,9 @@ def full_auto_loop(
                         "run_id": selected_id,
                         "flags": selected_flags,
                         "rank_score": selected_rank_score,
+                        "history_rank_score": selected_history_rank_score,
                         "rank_coverage_adjust": metrics.get("rank_coverage_adjust"),
-                        "score_ui": selected_score_ui,
+                        "score_ui": selected_fit_score_ui,
                         "score_basis": selected_score_basis,
                         "cost": selected_cost,
                         "rel_std": selected_rel_std,
@@ -7378,7 +7404,7 @@ def full_auto_loop(
                             "iteration": step,
                             "run_id": selected_id,
                             "flags": selected_flags,
-                            "score_ui": selected_score_ui,
+                            "score_ui": selected_fit_score_ui,
                             "score_basis": selected_score_basis,
                             "cost": selected_cost,
                             "rel_std": selected_rel_std,
@@ -7399,25 +7425,28 @@ def full_auto_loop(
                         and float(best_meta["max_std_mm"]) <= float(stop_std_mm)
                     )
 
-            selected_scores.append(selected_score_ui)
             summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
             summary_rel = _fmt_float(selected_rel_std)
             summary_std = _fmt_float(selected_max_std, suffix="mm")
             summary_cost = _fmt_float(selected_cost)
-            summary_score_ui = _fmt_float(selected_score_ui)
+            summary_fit_score_ui = _fmt_float(selected_fit_score_ui)
             _log_line(
-                f"; selected run={selected_id}{summary_flags} score_ui={summary_score_ui} "
+                f"; selected run={selected_id}{summary_flags} fit_score_ui={summary_fit_score_ui} "
                 f"score_basis={selected_score_basis} cost={summary_cost} "
                 f"rel_std={summary_rel} max_std={summary_std} "
                 f"rank_score={_fmt_float(selected_rank_score)} "
-                f"iteration_adjust={_fmt_float(selected_selection_info.get('iteration_adjust'))} "
-                f"coverage_adjust={_fmt_float(selected_selection_info.get('coverage_adjust'))} "
-                f"selection_rank={_fmt_float(selected_selection_score)}"
+                f"iteration_adjust={_fmt_float(selected_history_rank_info.get('iteration_adjust'))} "
+                f"coverage_adjust={_fmt_float(selected_history_rank_info.get('coverage_adjust'))} "
+                f"history_rank_score={_fmt_float(selected_history_rank_score)}"
             )
             if has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
-            _log_console(f"Rank score: {_fmt_float(selected_selection_score)} (lower is better)")
-            _log_console(f"Fit score: {summary_score_ui} (UI quality only)")
+            if not selected_underconstrained:
+                score_rank = _current_history_rank_position(iteration=step)
+                if score_rank is not None:
+                    rank_label = "best" if score_rank == 1 else _ordinal(score_rank) + " best"
+                    _log_console(f"The {rank_label} try so far.")
+                _log_console("Ranking: fit quality first, retained data second.")
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
@@ -7452,10 +7481,13 @@ def full_auto_loop(
                     "decision": decision,
                     "cost": selected_cost,
                     "cost_improvement": improvement,
-                    "score_ui": selected_score_ui,
-                    "selection_rank_score": selected_selection_score,
-                    "selection_iteration_adjust": selected_selection_info.get("iteration_adjust"),
-                    "selection_coverage_adjust": selected_selection_info.get("coverage_adjust"),
+                    "score_ui": selected_fit_score_ui,
+                    "history_rank_score": selected_history_rank_score,
+                    "history_iteration_adjust": selected_history_rank_info.get("iteration_adjust"),
+                    "history_coverage_adjust": selected_history_rank_info.get("coverage_adjust"),
+                    "selection_rank_score": selected_history_rank_score,
+                    "selection_iteration_adjust": selected_history_rank_info.get("iteration_adjust"),
+                    "selection_coverage_adjust": selected_history_rank_info.get("coverage_adjust"),
                     "score_ui_improvement": score_improvement,
                     "improved_best": improved,
                     "best_cost": best_cost,
@@ -7523,7 +7555,7 @@ def full_auto_loop(
                         "iteration": step,
                         "run_id": selected_id,
                         "flags": selected_flags,
-                        "score_ui": selected_score_ui,
+                        "score_ui": selected_fit_score_ui,
                         "score_basis": selected_score_basis,
                         "cost": selected_cost,
                         "rel_std": selected_rel_std,
@@ -7543,14 +7575,7 @@ def full_auto_loop(
                 _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
                 return _finalize(2)
 
-            finite_scores = [s for s in selected_scores if np.isfinite(s)]
-            if not np.isfinite(selected_score_ui) or not finite_scores:
-                score_rank = 1
-            else:
-                score_rank = sorted(finite_scores).index(selected_score_ui) + 1
-            rank_label = "best" if score_rank == 1 else _ordinal(score_rank) + " best"
             remaining = max(0, patience_limit - no_improve)
-            _log_console(f"The {rank_label} try so far.")
             _log_console("Collecting new sweep to try and beat it.")
             _log_console(f"Still has patience for {remaining} more attempts.")
             _log_line(f"; collecting next sweep ({selected_id})")

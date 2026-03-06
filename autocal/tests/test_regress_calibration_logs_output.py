@@ -12,25 +12,39 @@ sys.modules[SPEC.name] = rcl
 SPEC.loader.exec_module(rcl)
 
 
-def _parsed(*, score_ref=10.0, score_gen=11.0):
+def _parsed(*, fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=2.0, rank_gen=3.0):
     ref_summary = rcl.Params(
         anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
         radii=[39.184, 39.184, 39.184],
-        score=score_ref,
+        fit_score_ui=fit_score_ui_ref,
     )
     gen_summary = rcl.Params(
         anchors=[(0.3, -1899.8), (1645.54826719, 949.9), (-1645.44826719, 950.2)],
         radii=[39.185, 39.183, 39.184],
-        score=score_gen,
+        fit_score_ui=fit_score_ui_gen,
     )
     ref = rcl.ParsedLog(
         summary=ref_summary,
-        iterations=[rcl.Iteration(anchors=ref_summary.anchors, radii=ref_summary.radii, score=score_ref)],
+        iterations=[
+            rcl.Iteration(
+                anchors=ref_summary.anchors,
+                radii=ref_summary.radii,
+                fit_score_ui=fit_score_ui_ref,
+                rank_score=rank_ref,
+            )
+        ],
         summary_block_lines=["== Calibration summary ==", "Fit quality score: 10.0"],
     )
     gen = rcl.ParsedLog(
         summary=gen_summary,
-        iterations=[rcl.Iteration(anchors=gen_summary.anchors, radii=gen_summary.radii, score=score_gen)],
+        iterations=[
+            rcl.Iteration(
+                anchors=gen_summary.anchors,
+                radii=gen_summary.radii,
+                fit_score_ui=fit_score_ui_gen,
+                rank_score=rank_gen,
+            )
+        ],
         summary_block_lines=["== Calibration summary ==", "Fit quality score: 11.0"],
     )
     return ref, gen
@@ -49,8 +63,37 @@ def test_format_table_keeps_columns_aligned():
     assert all(pos == bar_positions[0] for pos in bar_positions)
 
 
+def test_parse_iterations_uses_selected_run_line_without_console_score():
+    text = """
+; Anchors: [[0.0, -1900.0], [1645.4, 950.0], [-1645.4, 950.0]]
+; line_model: ... effective=[39.1, 39.1, 39.1]
+; selected run=default fit_score_ui=0.8264 score_basis=layered-calibrated cost=143.7 rel_std=5.376 max_std=1.159e+04mm rank_score=4.351 iteration_adjust=-0.1557 coverage_adjust=-0.2892 history_rank_score=4.379
+""".strip()
+
+    iters = rcl.parse_iterations(text)
+
+    assert len(iters) == 1
+    assert iters[0].fit_score_ui == 0.8264
+    assert iters[0].rank_score == 4.351
+    assert iters[0].history_rank_score == 4.379
+
+
+def test_parse_iterations_legacy_console_score_does_not_duplicate_selected_run_iteration():
+    text = """
+; Anchors: [[0.0, -1900.0], [1645.4, 950.0], [-1645.4, 950.0]]
+; line_model: ... effective=[39.1, 39.1, 39.1]
+; selected run=default score_ui=1.130 score_basis=layered-calibrated cost=193.8 rel_std=4.495 max_std=1.325e+04mm
+Wrote to console: Score: 1.13 (lower is better)
+""".strip()
+
+    iters = rcl.parse_iterations(text)
+
+    assert len(iters) == 1
+    assert iters[0].fit_score_ui == 1.13
+
+
 def test_report_dataset_has_readable_summary_and_verdicts():
-    ref, gen = _parsed(score_ref=10.0, score_gen=11.0)
+    ref, gen = _parsed(fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=10.0, rank_gen=11.0)
     ok, lines, true_delta = rcl.report_dataset(
         name="demo",
         ref=ref,
@@ -65,6 +108,8 @@ def test_report_dataset_has_readable_summary_and_verdicts():
     assert "delta(gen-ref)" in text
     assert "verdict" in text
     assert "worse" in text
+    assert "rank_ref" in text
+    assert "fit_ui_ref" in text
     assert "RUN_TRACKER: true_err_total delta(gen-ref)=" in text
     assert "true_iter_mean_delta=" in text
     assert "true_iter_mean_delta=0.715 [worse]" in text
@@ -74,7 +119,7 @@ def test_report_dataset_has_readable_summary_and_verdicts():
 
 
 def test_report_dataset_can_colorize_verdicts():
-    ref, gen = _parsed(score_ref=10.0, score_gen=11.0)
+    ref, gen = _parsed(fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=10.0, rank_gen=11.0)
     _, lines, _ = rcl.report_dataset(
         name="demo",
         ref=ref,
@@ -91,12 +136,12 @@ def test_report_dataset_shows_extra_generated_iterations():
     ref_summary = rcl.Params(
         anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
         radii=[39.184, 39.184, 39.184],
-        score=2000.0,
+        fit_score_ui=2000.0,
     )
     gen_summary = rcl.Params(
         anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
         radii=[39.184, 39.184, 39.184],
-        score=100.0,
+        fit_score_ui=100.0,
     )
     ref = rcl.ParsedLog(
         summary=ref_summary,
@@ -104,7 +149,8 @@ def test_report_dataset_shows_extra_generated_iterations():
             rcl.Iteration(
                 anchors=[(10.0, -1890.0), (1640.0, 955.0), (-1640.0, 955.0)],
                 radii=[40.0, 40.0, 40.0],
-                score=2000.0,
+                fit_score_ui=2000.0,
+                rank_score=2000.0,
             ),
         ],
         summary_block_lines=["== Calibration summary ==", "Fit quality score: 2000.0"],
@@ -115,12 +161,14 @@ def test_report_dataset_shows_extra_generated_iterations():
             rcl.Iteration(
                 anchors=[(12.0, -1888.0), (1638.0, 957.0), (-1638.0, 957.0)],
                 radii=[40.1, 40.1, 40.1],
-                score=2100.0,
+                fit_score_ui=2100.0,
+                rank_score=2100.0,
             ),
             rcl.Iteration(
                 anchors=gen_summary.anchors,
                 radii=gen_summary.radii,
-                score=100.0,
+                fit_score_ui=100.0,
+                rank_score=100.0,
             ),
         ],
         summary_block_lines=["== Calibration summary ==", "Fit quality score: 100.0"],
@@ -158,12 +206,14 @@ def test_compute_true_gen_iter_stats_returns_mean_and_std():
         rcl.Iteration(
             anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
             radii=[39.184, 39.184, 39.184],
-            score=1.0,
+            fit_score_ui=1.0,
+            rank_score=1.0,
         ),
         rcl.Iteration(
             anchors=[(1.0, -1900.0), (1645.44826719, 951.0), (-1644.44826719, 950.0)],
             radii=[39.184, 39.184, 39.184],
-            score=2.0,
+            fit_score_ui=2.0,
+            rank_score=2.0,
         ),
     ]
 
@@ -207,7 +257,7 @@ def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp
     (repo_root / "data").mkdir()
     (repo_root / "refs").mkdir()
     (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
-    (repo_root / "refs" / "demo.full_auto_reference_run_march_3.log").write_text("log", encoding="utf-8")
+    (repo_root / "refs" / "demo.full_auto_reference_run_march_6.log").write_text("log", encoding="utf-8")
 
     monkeypatch.setattr(rcl, "DATASETS", ["demo"])
 
@@ -217,7 +267,7 @@ def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp
             ok=True,
             lines=["demo lines"],
             generated_log=repo_root / "generated.log",
-            reference_log=repo_root / "refs" / "demo.full_auto_reference_run_march_3.log",
+            reference_log=repo_root / "refs" / "demo.full_auto_reference_run_march_6.log",
             true_err_total_delta=1.25,
             true_iter_mean_delta=-0.5,
             true_gen_iter_std=0.75,
