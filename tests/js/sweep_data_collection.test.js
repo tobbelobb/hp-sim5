@@ -1,4 +1,5 @@
 import {
+  computeInitialForceSweepStepMm,
   expandSubSweepsForConfig,
   generateSweepConfigs,
   MACHINE_CONFIGS,
@@ -36,5 +37,16 @@ describe('sweep config generation', () => {
     expect(subSweeps).toHaveLength(1);
     expect(subSweeps[0].sensorAnchor).not.toBe(3);
     expect(subSweeps[0].driveAnchor).toBe(3);
+  });
+});
+
+describe('force sweep initial rewind step', () => {
+  test('uses base radius over a quarter turn', () => {
+    expect(computeInitialForceSweepStepMm(30)).toBeCloseTo(30 * Math.PI / 2);
+  });
+
+  test('falls back to legacy step when base radius is unavailable', () => {
+    expect(computeInitialForceSweepStepMm(Number.NaN)).toBe(100);
+    expect(computeInitialForceSweepStepMm(0)).toBe(100);
   });
 });

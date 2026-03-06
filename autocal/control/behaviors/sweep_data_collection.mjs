@@ -306,6 +306,15 @@ export function buildM666AdjustmentCommand({ forcedBaseRadii = null, forcedBuild
   return `M666 ${fields.join(' ')}`;
 }
 
+// In case spool was fully wound out, wind back in a quarter of a rotation so that line
+// attachment point is tangent to the spool.
+export function computeInitialForceSweepStepMm(baseRadiusMm) {
+  if (!Number.isFinite(baseRadiusMm) || baseRadiusMm <= 0) {
+    return 100;
+  }
+  return baseRadiusMm * Math.PI / 2;
+}
+
 function resolveFixedTargets(fixedCount, explicitTargets, maxTravelMm) {
   if (fixedCount <= 0) {
     return [];
@@ -896,6 +905,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     fixedTargets,
     projectZeroTension,
     forbiddenForceAnchors = [],
+    baseRadiusMm = null,
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
@@ -962,7 +972,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const stepCount = steps - 1;
   const totalDelta = driveStartPointMm - driveEndPointMm;
   const stepDirection = Math.sign(totalDelta) || 1;
-  const initialStepMm = 100 * stepDirection;
+  const initialStepMm = computeInitialForceSweepStepMm(baseRadiusMm) * stepDirection;
   const remainingSteps = Math.max(1, stepCount - 1);
   const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
   let currentDrive = driveEndPointMm;
@@ -1302,6 +1312,9 @@ export async function collectSweepData(send, context) {
         fixedTargets,
         projectZeroTension: options.projectZeroTension,
         forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        baseRadiusMm: Array.isArray(m666ForCollection?.R)
+          ? m666ForCollection.R[subCfg.driveAnchor]
+          : m666ForCollection?.R,
       });
       const remapped = remapDataPointsToCanonical(
         sweepResult.dataPoints,
