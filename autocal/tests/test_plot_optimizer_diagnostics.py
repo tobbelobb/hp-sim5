@@ -3,9 +3,12 @@ import json
 import numpy as np
 
 from scripts.plot_optimizer_diagnostics import (
+    _parse_iteration_models_from_log_text,
+    _parse_summary_model_from_log_text,
     _json_ready,
     _sample_theoretical_raw_curve,
     _signed_fill_rgb,
+    _svg_per_sweep_residual_order_plot,
     _svg_scatter_plot,
 )
 
@@ -52,6 +55,62 @@ def test_svg_scatter_plot_keeps_legend_labels_and_point_colors_aligned(tmp_path)
     assert ">-10<" in text
     assert 'fill="rgb(220,0,0)"' in text
     assert 'fill="rgb(0,0,220)"' in text
+
+
+def test_parse_iteration_models_accepts_selected_run_without_console_score():
+    text = """
+; Anchors: [[0.0, -1900.0], [1645.4, 950.0], [-1645.4, 950.0]]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30] effective=[39.1,39.1,39.1]
+; selected run=default fit_score_ui=0.4983 score_basis=layered-calibrated cost=111.6 rel_std=4.536 max_std=1.036e+04mm rank_score=4.427 iteration_adjust=-0.2544 coverage_adjust=-0.1532 history_rank_score=4.142
+""".strip()
+
+    items = _parse_iteration_models_from_log_text(text)
+
+    assert len(items) == 1
+    assert np.allclose(items[0]["anchors"], np.asarray([[0.0, -1900.0], [1645.4, 950.0], [-1645.4, 950.0]]))
+    assert np.allclose(items[0]["radii"], np.asarray([39.1, 39.1, 39.1]))
+    assert np.allclose(items[0]["buildup"], np.asarray([0.6366, 0.6366, 0.6366]))
+
+
+def test_parse_summary_model_accepts_new_anchor_and_spool_labels():
+    text = """
+Wrote to console:
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of good quality
+Wrote to console: Fit/UI quality score (lower is better): 4.037
+Wrote to console: Anchors (M669): M669 A0.00:-1901.21:0.00 B1647.09:951.03:0.00 C-1647.44:950.90:0.00
+Wrote to console: Spools (M666): M666 R39.13:39.13:39.13 Q0.636619
+""".strip()
+
+    parsed = _parse_summary_model_from_log_text(text)
+
+    assert parsed is not None
+    assert np.allclose(parsed["anchors"], np.asarray([[0.0, -1901.21], [1647.09, 951.03], [-1647.44, 950.90]]))
+    assert np.allclose(parsed["radii"], np.asarray([39.13, 39.13, 39.13]))
+    assert np.allclose(parsed["buildup"], np.asarray([0.636619, 0.636619, 0.636619]))
+    assert parsed["fit_score_ui"] == 4.037
+
+
+def test_svg_per_sweep_residual_order_plot_marks_midpoint_split(tmp_path):
+    out_path = tmp_path / "sweep_demo.residual_order.svg"
+    sweep = {"id": "sweep_demo"}
+    rows = [
+        {"point_idx": idx, "residual_mm_signed": resid, "residual_mm": abs(resid)}
+        for idx, resid in enumerate([0.4, 0.2, -0.3, -0.5])
+    ]
+
+    _svg_per_sweep_residual_order_plot(
+        label="demo",
+        sweep=sweep,
+        rows=rows,
+        out_path=out_path,
+        color_limit=1.0,
+    )
+
+    text = out_path.read_text(encoding="utf-8")
+    assert "signed residual [mm]" in text
+    assert "measured point order" in text
+    assert "sub-sweep split" in text
 
 
 def test_json_ready_converts_numpy_scalars_and_arrays():

@@ -53,12 +53,13 @@ _RE_ANCHORS = re.compile(r"Anchors:\s*(\[\[.*\]\])")
 _RE_EFFECTIVE = re.compile(r"effective=\[([^\]]+)\]")
 _RE_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_K = re.compile(r"\bk=([^\s;]+)")
+_RE_SUMMARY_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$", re.IGNORECASE)
 _RE_M669_PARTS = re.compile(
     r"([ABC])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,
 )
 _RE_M666_R = re.compile(
-    r"R\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?):([+-]?\d+(?:e[+-]?\d+)?|[+-]?\d+(?:\.\d+)?)",
+    r"R\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,
 )
 _RE_M666_Q = re.compile(r"Q([^\s]+)", re.IGNORECASE)
@@ -373,6 +374,53 @@ def _safe_filename(text: object) -> str:
     return cleaned.strip("._") or "sweep"
 
 
+def _rects_overlap(a: Tuple[float, float, float, float], b: Tuple[float, float, float, float], *, pad: float = 2.0) -> bool:
+    ax0, ay0, ax1, ay1 = a
+    bx0, by0, bx1, by1 = b
+    return not (ax1 + pad < bx0 or bx1 + pad < ax0 or ay1 + pad < by0 or by1 + pad < ay0)
+
+
+def _place_label(
+    *,
+    px: float,
+    py: float,
+    text: str,
+    plot_left: float,
+    plot_right: float,
+    plot_top: float,
+    plot_bottom: float,
+    used_boxes: List[Tuple[float, float, float, float]],
+) -> Tuple[float, float, Tuple[float, float, float, float]]:
+    width = max(16.0, 5.4 * float(len(text)))
+    height = 10.0
+    offsets = [
+        (6.0, -4.0),
+        (6.0, -16.0),
+        (6.0, 10.0),
+        (-width - 6.0, -4.0),
+        (-width - 6.0, -16.0),
+        (-width - 6.0, 10.0),
+        (12.0, -28.0),
+        (-width - 12.0, -28.0),
+        (12.0, 22.0),
+        (-width - 12.0, 22.0),
+    ]
+    for dx, dy in offsets:
+        tx = px + dx
+        ty = py + dy
+        tx = min(max(tx, plot_left + 2.0), plot_right - width - 2.0)
+        ty = min(max(ty, plot_top + height), plot_bottom - 2.0)
+        box = (tx, ty - height + 2.0, tx + width, ty + 2.0)
+        if not any(_rects_overlap(box, other) for other in used_boxes):
+            used_boxes.append(box)
+            return tx, ty, box
+    tx = min(max(px + 6.0, plot_left + 2.0), plot_right - width - 2.0)
+    ty = min(max(py - 4.0, plot_top + height), plot_bottom - 2.0)
+    box = (tx, ty - height + 2.0, tx + width, ty + 2.0)
+    used_boxes.append(box)
+    return tx, ty, box
+
+
 def _sample_theoretical_raw_curve(
     *,
     anchors: np.ndarray,
@@ -535,6 +583,7 @@ def _svg_per_sweep_fit_plot(
             f'<polyline points="{theory_points}" fill="none" stroke="#cc0000" stroke-width="1.4" stroke-dasharray="6,4"/>'
         )
 
+    used_label_boxes: List[Tuple[float, float, float, float]] = []
     for row in ordered_rows:
         x_val = float(row["l_drive_mm"])
         y_val = float(row["l_sensor_mm"])
@@ -549,8 +598,18 @@ def _svg_per_sweep_fit_plot(
         )
         if annotate_points:
             label_text = f'{int(row.get("point_idx", 0))}:{_fmt_num(resid, 1)}'
+            tx, ty, _box = _place_label(
+                px=px,
+                py=py,
+                text=label_text,
+                plot_left=float(left),
+                plot_right=float(right),
+                plot_top=float(top),
+                plot_bottom=float(bottom),
+                used_boxes=used_label_boxes,
+            )
             svg.append(
-                f'<text x="{px + 6:.2f}" y="{py - 4:.2f}" font-family="monospace" font-size="9" fill="#333333">{label_text}</text>'
+                f'<text x="{tx:.2f}" y="{ty:.2f}" font-family="monospace" font-size="9" fill="#333333">{label_text}</text>'
             )
 
     legend_x = 810
@@ -605,7 +664,128 @@ def _svg_per_sweep_fit_plot(
     out_path.write_text("\n".join(svg), encoding="utf-8")
 
 
-def _write_per_sweep_fit_svgs(
+def _svg_per_sweep_residual_order_plot(
+    *,
+    label: str,
+    sweep: dict,
+    rows: Sequence[dict],
+    out_path: Path,
+    color_limit: float,
+) -> None:
+    width = 980
+    height = 520
+    left = 70
+    right = 920
+    top = 55
+    bottom = 430
+
+    ordered_rows = sorted(rows, key=lambda row: int(row.get("point_idx", 0)))
+    if not ordered_rows:
+        raise ValueError("residual-order plot requires at least one row")
+
+    residuals = np.asarray([float(row.get("residual_mm_signed", 0.0)) for row in ordered_rows], dtype=float)
+    n = int(residuals.size)
+    y_limit = float(max(np.max(np.abs(residuals)) * 1.15 if residuals.size else 0.0, 1.0))
+
+    def sx(idx: float) -> float:
+        denom = max(float(max(n - 1, 1)), 1.0)
+        return left + float(idx) * (right - left) / denom
+
+    def sy(value: float) -> float:
+        return bottom - (float(value) + y_limit) * (bottom - top) / (2.0 * y_limit)
+
+    zero_y = sy(0.0)
+    svg: List[str] = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="white"/>',
+        f'<text x="{0.5 * width:.1f}" y="24" text-anchor="middle" font-family="monospace" font-size="17">{label}: {sweep.get("id", "")} residual by point order</text>',
+        f'<line x1="{left}" y1="{bottom}" x2="{right}" y2="{bottom}" stroke="black" stroke-width="1"/>',
+        f'<line x1="{left}" y1="{top}" x2="{left}" y2="{bottom}" stroke="black" stroke-width="1"/>',
+        f'<line x1="{left}" y1="{zero_y:.2f}" x2="{right}" y2="{zero_y:.2f}" stroke="#999999" stroke-width="1" stroke-dasharray="4,4"/>',
+    ]
+
+    tick_step = 1 if n <= 20 else (2 if n <= 40 else max(5, int(round(n / 10.0))))
+    for idx in range(n):
+        if idx % tick_step != 0 and idx != n - 1:
+            continue
+        x_pos = sx(float(idx))
+        svg.append(f'<line x1="{x_pos:.2f}" y1="{bottom}" x2="{x_pos:.2f}" y2="{bottom + 6}" stroke="black" stroke-width="1"/>')
+        svg.append(
+            f'<text x="{x_pos:.2f}" y="{bottom + 22}" text-anchor="middle" font-family="monospace" font-size="11">{idx}</text>'
+        )
+
+    for frac in (-1.0, -0.5, 0.0, 0.5, 1.0):
+        y_val = frac * y_limit
+        y_pos = sy(y_val)
+        svg.append(f'<line x1="{left - 6}" y1="{y_pos:.2f}" x2="{left}" y2="{y_pos:.2f}" stroke="black" stroke-width="1"/>')
+        svg.append(
+            f'<text x="{left - 10}" y="{y_pos + 4:.2f}" text-anchor="end" font-family="monospace" font-size="11">{_fmt_num(y_val, 1)}</text>'
+        )
+
+    if n >= 4 and n % 2 == 0:
+        split_idx = (n // 2) - 0.5
+        split_x = sx(split_idx)
+        svg.append(
+            f'<line x1="{split_x:.2f}" y1="{top}" x2="{split_x:.2f}" y2="{bottom}" stroke="#bbbbbb" stroke-width="1" stroke-dasharray="4,4"/>'
+        )
+        svg.append(
+            f'<text x="{split_x + 4:.2f}" y="{top + 14}" font-family="monospace" font-size="10" fill="#666666">sub-sweep split</text>'
+        )
+
+    svg.append(
+        f'<text x="{0.5 * (left + right):.1f}" y="{height - 34}" text-anchor="middle" font-family="monospace" font-size="13">measured point order</text>'
+    )
+    svg.append(
+        f'<text x="24" y="{0.5 * (top + bottom):.1f}" text-anchor="middle" transform="rotate(-90 24 {0.5 * (top + bottom):.1f})" font-family="monospace" font-size="13">signed residual [mm]</text>'
+    )
+
+    for row in ordered_rows:
+        idx = int(row.get("point_idx", 0))
+        resid = float(row.get("residual_mm_signed", 0.0))
+        cutoff = ac._float_or_none(row.get("cutoff_mm"))
+        resid_abs = abs(float(ac._float_or_none(row.get("residual_mm")) or resid))
+        clipped = cutoff is not None and resid_abs > (float(cutoff) + 1e-12)
+        x_pos = sx(float(idx))
+        y_pos = sy(resid)
+        color = _signed_fill_rgb(resid, limit=color_limit)
+        svg.append(
+            f'<line x1="{x_pos:.2f}" y1="{zero_y:.2f}" x2="{x_pos:.2f}" y2="{y_pos:.2f}" stroke="{color}" stroke-width="{2.2 if clipped else 1.6:.1f}"/>'
+        )
+        svg.append(
+            f'<circle cx="{x_pos:.2f}" cy="{y_pos:.2f}" r="{4.0 if clipped else 3.2:.1f}" fill="{color}" fill-opacity="0.95" stroke="#202020" stroke-width="{1.2 if clipped else 0.8:.1f}"/>'
+        )
+
+    legend_x = 760
+    legend_y = 72
+    svg.append(
+        f'<text x="{legend_x}" y="{legend_y}" font-family="monospace" font-size="11">color = signed residual [mm]</text>'
+    )
+    color_levels = [1.0, 0.66, 0.33, 0.0, -0.33, -0.66, -1.0]
+    for idx, frac in enumerate(color_levels):
+        y0 = legend_y + 10 + idx * 12
+        val = frac * color_limit
+        svg.append(
+            f'<rect x="{legend_x}" y="{y0}" width="18" height="10" fill="{_signed_fill_rgb(val, limit=color_limit)}" stroke="#666666" stroke-width="0.3"/>'
+        )
+    svg.append(
+        f'<text x="{legend_x + 24}" y="{legend_y + 20}" font-family="monospace" font-size="10">+{_fmt_num(color_limit, 1)}</text>'
+    )
+    svg.append(
+        f'<text x="{legend_x + 24}" y="{legend_y + 56}" font-family="monospace" font-size="10">0</text>'
+    )
+    svg.append(
+        f'<text x="{legend_x + 24}" y="{legend_y + 92}" font-family="monospace" font-size="10">-{_fmt_num(color_limit, 1)}</text>'
+    )
+    svg.append(
+        f'<text x="{legend_x}" y="{legend_y + 116}" font-family="monospace" font-size="10">thick stem/circle = clipped</text>'
+    )
+    svg.append("</svg>")
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("\n".join(svg), encoding="utf-8")
+
+
+def _write_per_sweep_svgs(
     *,
     label: str,
     dataset: dict,
@@ -643,6 +823,13 @@ def _write_per_sweep_fit_svgs(
             color_limit=color_limit,
             annotate_points=bool(annotate_points),
         )
+        _svg_per_sweep_residual_order_plot(
+            label=label,
+            sweep=sweep,
+            rows=sweep_rows,
+            out_path=target_dir / f"{_safe_filename(sweep_id)}.residual_order.svg",
+            color_limit=color_limit,
+        )
         count += 1
     return count
 
@@ -669,6 +856,20 @@ def _parse_iteration_models_from_log_text(text: str) -> List[Dict[str, object]]:
                     raw_k,
                     num_anchors=int(np.asarray(cur.get("radii", [])).size or 3),
                 )
+        if "; selected run=" in line:
+            if "anchors" in cur and "radii" in cur:
+                buildup = cur.get("buildup")
+                if buildup is None:
+                    buildup = np.zeros(int(np.asarray(cur["radii"]).size), dtype=float)
+                items.append(
+                    {
+                        "anchors": np.asarray(cur["anchors"], dtype=float),
+                        "radii": np.asarray(cur["radii"], dtype=float).reshape(-1),
+                        "buildup": np.asarray(buildup, dtype=float).reshape(-1),
+                    }
+                )
+            cur = {}
+            continue
         if "Score:" in line and _RE_SCORE.search(line):
             if "anchors" in cur and "radii" in cur:
                 buildup = cur.get("buildup")
@@ -693,11 +894,15 @@ def _parse_summary_model_from_log_text(text: str) -> Optional[Dict[str, object]]
     anchors_map: Dict[str, Tuple[float, float]] = {}
     radii = None
     buildup = None
+    fit_score = None
     for line in summary_text.splitlines():
-        if "Parameters (M669)" in line:
+        match_fit = _RE_SUMMARY_FIT_SCORE.search(line)
+        if match_fit:
+            fit_score = float(match_fit.group(1))
+        if "Parameters (M669)" in line or "Anchors (M669)" in line:
             for label, x_str, y_str, _z_str in _RE_M669_PARTS.findall(line):
                 anchors_map[str(label).upper()] = (float(x_str), float(y_str))
-        if "Line model (M666)" in line:
+        if "Line model (M666)" in line or "Spools (M666)" in line:
             match_r = _RE_M666_R.search(line)
             if match_r:
                 radii = np.asarray(
@@ -718,7 +923,12 @@ def _parse_summary_model_from_log_text(text: str) -> Optional[Dict[str, object]]
         if buildup is not None
         else np.zeros(3, dtype=float)
     )
-    return {"anchors": anchors, "radii": np.asarray(radii, dtype=float), "buildup": buildup_arr}
+    return {
+        "anchors": anchors,
+        "radii": np.asarray(radii, dtype=float),
+        "buildup": buildup_arr,
+        "fit_score_ui": fit_score,
+    }
 
 
 def _resolve_model_from_args(args: argparse.Namespace, dataset: dict) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
@@ -969,7 +1179,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     per_sweep_count = 0
     if args.per_sweep_fits:
-        per_sweep_count = _write_per_sweep_fit_svgs(
+        per_sweep_count = _write_per_sweep_svgs(
             label=label,
             dataset=dataset_eval,
             rows=rows,
@@ -985,7 +1195,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"Wrote {out_dir / f'{label}.avg_len_vs_residual.svg'}")
     print(f"Wrote {out_dir / f'{label}.drive_sensor_colored.svg'}")
     if per_sweep_count > 0:
-        print(f"Wrote {per_sweep_count} per-sweep fit SVGs under {out_dir / f'{label}.per_sweep'}")
+        print(f"Wrote {per_sweep_count} per-sweep SVG sets under {out_dir / f'{label}.per_sweep'}")
     return 0
 
 
