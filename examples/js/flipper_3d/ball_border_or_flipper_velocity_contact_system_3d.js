@@ -7,7 +7,8 @@ import {
   RestitutionComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
-  CoefficientOfFrictionComponent
+  CoefficientOfFrictionComponent,
+  layeringEnabled
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   FlipperStateComponent,
@@ -19,7 +20,34 @@ const EPSILON = 1e-9;
 export class BallBorderOrFlipperVelocityContactSystem3D {
   runInPause = false;
 
-  _handleBallContact(world, ballId, normal, surfaceVelocity, restitutionOther, frictionOther, deltaLambda, dt) {
+  _finiteNumber(value, fallback = 0.0) {
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  _nonNegativeNumber(value, fallback = 0.0) {
+    const finite = this._finiteNumber(value, fallback);
+    return finite > 0.0 ? finite : 0.0;
+  }
+
+  _clampedRestitution(value, fallback = 0.0) {
+    const finite = this._finiteNumber(value, fallback);
+    if (finite <= 0.0) return 0.0;
+    if (finite >= 1.0) return 1.0;
+    return finite;
+  }
+
+  _handleBallContact(
+    world,
+    ballId,
+    normal,
+    surfaceVelocity,
+    restitutionOther,
+    frictionOther,
+    frictionSelf,
+    deltaLambda,
+    dt,
+    contactOffset = null
+  ) {
     const posComp = world.getComponent(ballId, PositionComponent);
     const velComp = world.getComponent(ballId, VelocityComponent);
     const radiusComp = world.getComponent(ballId, RadiusComponent);
@@ -35,23 +63,35 @@ export class BallBorderOrFlipperVelocityContactSystem3D {
 
     const mass = massComp.mass;
     const invMass = mass > 0 ? 1.0 / mass : 0.0;
-    const invInertia = moiComp.invInertia;
+    const invInertia = this._finiteNumber(moiComp.invInertia, 0.0);
 
     if (invMass === 0.0 && invInertia === 0.0) {
       return;
     }
 
-    const radius = radiusComp.radius;
-    const restitutionBall = restitutionComp.restitution;
-    const muBall = frictionComp ? frictionComp.mu : 0.0;
+    const radius = this._finiteNumber(radiusComp.radius, 0.0);
+    const restitutionBall = this._clampedRestitution(restitutionComp.restitution, 0.0);
+    const muBallBase = this._nonNegativeNumber(frictionComp ? frictionComp.mu : 0.0, 0.0);
+    const muBall = this._nonNegativeNumber(frictionSelf, muBallBase);
 
-    const restitutionOtherResolved = Number.isFinite(restitutionOther) ? restitutionOther : 0.0;
-    const frictionOtherResolved = Number.isFinite(frictionOther) ? frictionOther : 0.0;
+    const restitutionOtherResolved = this._clampedRestitution(restitutionOther, 0.0);
+    const frictionOtherResolved = this._nonNegativeNumber(frictionOther, 0.0);
 
-    const restitution = (restitutionBall + restitutionOtherResolved) / 2.0;
-    const mu = (muBall + frictionOtherResolved) / 2.0;
+    const restitution = 0.5 * (restitutionBall + restitutionOtherResolved);
+    const mu = 0.5 * (muBall + frictionOtherResolved);
 
-    const rBall = normal.clone().scale(-radius);
+    const useContactOffset =
+      layeringEnabled(world) &&
+      world.getResource('layeringVelocityContactOffset') !== false;
+    const useOffset =
+      useContactOffset &&
+      contactOffset &&
+      Number.isFinite(contactOffset.x) &&
+      Number.isFinite(contactOffset.y) &&
+      Number.isFinite(contactOffset.z);
+    const rBall = useOffset
+      ? new Vector3(contactOffset.x, contactOffset.y, contactOffset.z)
+      : normal.clone().scale(-radius);
 
     const vAngularAtContact = new Vector3().crossVectors(angVelComp.omega, rBall);
     const vBallAtContact = velComp.vel.clone().add(vAngularAtContact);
@@ -76,9 +116,9 @@ export class BallBorderOrFlipperVelocityContactSystem3D {
 
     let jNormalForce = 0.0;
     if (dt > EPSILON) {
-      jNormalForce = deltaLambda / dt;
+      jNormalForce = this._finiteNumber(deltaLambda, 0.0) / dt;
     }
-    const jNormalForFriction = jNormalRestitution + jNormalForce;
+    const jNormalForFriction = Math.max(0.0, jNormalRestitution + jNormalForce);
 
     const vAngularAfterNormal = new Vector3().crossVectors(angVelComp.omega, rBall);
     const vBallAfterNormal = velComp.vel.clone().add(vAngularAfterNormal);
@@ -117,8 +157,10 @@ export class BallBorderOrFlipperVelocityContactSystem3D {
           new Vector3(0, 0, 0),
           contact.restitution,
           contact.friction,
+          contact.ball_friction,
           contact.delta_lambda,
-          dt
+          dt,
+          contact.ball_contact_offset
         );
       }
     }
@@ -170,8 +212,10 @@ export class BallBorderOrFlipperVelocityContactSystem3D {
         vFlipper,
         restitutionFlipper,
         frictionFlipper,
+        contact.ball_friction,
         contact.delta_lambda,
-        dt
+        dt,
+        contact.ball_contact_offset
       );
     }
   }

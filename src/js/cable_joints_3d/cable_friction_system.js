@@ -1,6 +1,7 @@
 import {
   RadiusComponent,
-  CoefficientOfFrictionComponent
+  CoefficientOfFrictionComponent,
+  layeringEnabled
 } from './ecs.js';
 import {
   CablePathComponent,
@@ -16,6 +17,20 @@ import {
 
 const BASE_ITERATIONS = 4;
 const TARGET_DT = 1 / 500;
+
+function _effectiveFrictionRadius(world, path, linkEntityId, baseRadius) {
+  if (!Number.isFinite(baseRadius) || baseRadius <= 0.0) {
+    return baseRadius;
+  }
+  if (!layeringEnabled(world)) {
+    return baseRadius;
+  }
+  const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+  if (!(halfWidth > 1e-9)) {
+    return baseRadius;
+  }
+  return baseRadius + halfWidth;
+}
 
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
@@ -48,7 +63,8 @@ function _evenOutTensionFriction(world) {
         const mu = frictionComp ? frictionComp.mu : 0.0;
 
         const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
-        const radius = radiusComp ? radiusComp.radius : 0.0;
+        const baseRadius = radiusComp ? radiusComp.radius : 0.0;
+        const radius = _effectiveFrictionRadius(world, path, linkEntityId, baseRadius);
 
         if (mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
@@ -140,7 +156,14 @@ function _sanityCheck(world) {
     if (Math.abs(error) > 1e-9) {
       console.warn(`Non-zero error for path ${pathId}: ${error}`);
     }
-    if (path.stored.some(s => s < -1e-9)) {
+    const negativeStoredThreshold = (
+      layeringEnabled(world) &&
+      Number.isFinite(path?.cableHalfWidth) &&
+      path.cableHalfWidth > 1e-9
+    )
+      ? -Math.max(1e-9, 0.25 * path.cableHalfWidth)
+      : -1e-9;
+    if (path.stored.some((s) => s < negativeStoredThreshold)) {
       console.warn(`Negative stored lengths for path ${pathId}: ${path.stored}`);
     }
   }

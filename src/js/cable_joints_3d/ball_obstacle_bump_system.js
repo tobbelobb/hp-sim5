@@ -6,7 +6,8 @@ import {
   AngularVelocityComponent,
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
-  ObstaclePushComponent
+  ObstaclePushComponent,
+  layeringEnabled
 } from './ecs.js';
 
 export class BallObstacleBumpSystem {
@@ -19,9 +20,15 @@ export class BallObstacleBumpSystem {
     }
 
     const epsilon = 1e-9;
+    const requireRawHit =
+      layeringEnabled(world) &&
+      world.getResource('layeringObstacleRawHitFilter') !== false;
 
     for (const contact of contacts) {
       const { ball_id, obs_id, direction } = contact;
+      if (requireRawHit && contact.raw_hit === false) {
+        continue;
+      }
 
       const v1Comp = world.getComponent(ball_id, VelocityComponent);
       const r1Comp = world.getComponent(ball_id, RadiusComponent);
@@ -46,7 +53,11 @@ export class BallObstacleBumpSystem {
 
       const omegaBall = ballAngVelComp ? ballAngVelComp.omega : null;
       const omegaObs = obsAngVelComp ? obsAngVelComp.omega : null;
-      const mu = obsFrictionComp ? obsFrictionComp.mu : 0.0;
+      const muObs = Number.isFinite(contact.obstacle_friction)
+        ? Math.max(0.0, contact.obstacle_friction)
+        : (obsFrictionComp ? obsFrictionComp.mu : 0.0);
+      const muBall = Number.isFinite(contact.ball_friction) ? Math.max(0.0, contact.ball_friction) : 0.0;
+      const mu = Math.max(0.0, 0.5 * (muObs + muBall));
 
       const normal = direction.clone().normalize();
 

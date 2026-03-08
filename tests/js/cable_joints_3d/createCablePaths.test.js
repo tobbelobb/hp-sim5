@@ -232,6 +232,25 @@ describe('createCablePaths (3D planar)', () => {
     expect(pathComp.totalRestLength).toBeCloseTo(0.5);
   });
 
+  test('preserves cable half width on created path components', () => {
+    const e0 = createMockLinkEntity(world.createEntity(), true, new Vector3(0, 0, 0), 1);
+    const e1 = createMockLinkEntity(world.createEntity(), true, new Vector3(2, 0, 0), 1);
+    const j0 = createMockJointEntity(e0, e1, 1.0, new Vector3(0, 1, 0), new Vector3(2, 1, 0));
+
+    const pathEntityIds = createCablePaths(
+      world,
+      [j0],
+      ['hybrid-attachment', 'hybrid-attachment'],
+      [true, true],
+      springConstant,
+      [0.0, 0.0],
+      0.125
+    );
+
+    expect(pathEntityIds).toHaveLength(1);
+    expect(world.getComponent(pathEntityIds[0], CablePathComponent).cableHalfWidth).toBeCloseTo(0.125);
+  });
+
   test('should create one path for a single attachment link (no joints)', () => {
     const linkTypes = ['attachment'];
     const cw = [true];

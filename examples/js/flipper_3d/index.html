@@ -85,6 +85,19 @@
       transition: transform 0.1s ease, filter 0.1s ease;
     }
 
+    #cableFeatureFlags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      align-items: center;
+      font-size: 0.76rem;
+      color: var(--text-dim);
+    }
+
+    #cableFeatureFlags label {
+      white-space: nowrap;
+    }
+
     #controls button:hover,
     #controls button:focus-visible {
       transform: translateY(-1px);
@@ -149,6 +162,7 @@
       <button id="resetBtn" tabindex="-1">Reset</button>
       <button id="stepBtn">Step</button>
       <button id="dumpBtn" tabindex="-1">Dump State</button>
+      <div id="cableFeatureFlags"></div>
       <span>Score: <span id="score">0</span></span>
       <div id="stats">
         <span>dt: <span id="dt">N/A</span></span>
@@ -171,11 +185,17 @@
     import { runGame } from './runner.js';
     import { setupScene } from './setupScene.js';
     import { RenderSystem3D } from '../../../src/js/cable_joints_3d/render_system_3d.js';
+    import {
+      bindCableFeatureFlagCheckboxes,
+      ensureCableFeatureFlags
+    } from './cable_feature_flags.js';
 
     const canvas = document.getElementById('myCanvas');
+    const cableFeatureFlags = document.getElementById('cableFeatureFlags');
 
     const world = new World();
     window.world = world;
+    const cableFlagUi = bindCableFeatureFlagCheckboxes(world, cableFeatureFlags);
 
     window.getGameStateForTest = () => {
       if (!world || !world.query) {
@@ -219,7 +239,11 @@
     const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;
     UsdOpen(usdaPath)
       .then((stage) => {
-        runGame(world, () => setupScene(world, stage, canvas));
+        runGame(world, () => {
+          setupScene(world, stage, canvas);
+          ensureCableFeatureFlags(world);
+          cableFlagUi.syncFromWorld();
+        });
       })
       .catch((error) => {
         console.error('Failed to load 3D flipper scene:', error);

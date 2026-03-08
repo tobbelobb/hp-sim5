@@ -49,10 +49,8 @@ import {
   FlipperTipComponent,
   FlipperMotionSystem,
   FlipperTipLinkSystem,
-  PBDBallBorderCollisions,
-  PBDBallBallCollisions,
-  PBDBallObstacleCollisions,
-  PBDBallFlipperCollisions,
+  OverlayRadiusAndCircleSectorSystem,
+  PBDUnifiedContactManifoldSystem,
   PauseStateComponent,
   InputReplaySystem,
   InputSystem
@@ -60,6 +58,9 @@ import {
 
 import { BallObstacleBumpSystem } from '../../../src/js/cable_joints_3d/ball_obstacle_bump_system.js';
 import { BallBorderOrFlipperVelocityContactSystem3D } from './ball_border_or_flipper_velocity_contact_system_3d.js';
+import { LineLayersBumperVelocityContactSystem3D } from './line_layers_bumper_velocity_contact_system_3d.js';
+import { BallBallVelocityContactSystem3D } from './ball_ball_velocity_contact_system_3d.js';
+import { LayerContactStaticFrictionSystem3D } from './layer_contact_static_friction_system_3d.js';
 import { RenderSystem3D } from '../../../src/js/cable_joints_3d/render_system_3d.js';
 import {
   PrevFinalPosSystem,
@@ -70,6 +71,7 @@ import {
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem
 } from '../../../src/js/cable_joints_3d/commonSystems.js';
+import { ensureCableFeatureFlags } from './cable_feature_flags.js';
 
 const FLIPPER_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -105,6 +107,8 @@ export function setupScene(world, stage, canvas) {
   world.setResource('ball_obstacle_contacts', []);
   world.setResource('ball_border_contacts', []);
   world.setResource('ball_flipper_contacts', []);
+  world.setResource('ball_ball_contacts', []);
+  ensureCableFeatureFlags(world);
 
   const simWidth = 1.0;
   const simHeight = 1.7;
@@ -317,6 +321,10 @@ export function setupScene(world, stage, canvas) {
     const linkTypes = getAttribute(cablePathPrim, 'cablePath:linkTypes');
     const clockwise = getAttribute(cablePathPrim, 'cablePath:clockwise');
     const stored = getAttribute(cablePathPrim, 'cablePath:stored');
+    const cableHalfWidth = getAttribute(cablePathPrim, 'cablePath:halfWidth');
+    const clockwiseFlags = Array.isArray(clockwise)
+      ? clockwise.map((value) => value === true || value === 1 || value === '1' || value === 'true')
+      : null;
 
     world.addComponent(
       cablePathEntity,
@@ -324,9 +332,10 @@ export function setupScene(world, stage, canvas) {
         world,
         jointEntities,
         linkTypes ? [...linkTypes] : null,
-        clockwise ? [...clockwise] : null,
+        clockwiseFlags,
         getAttribute(cablePathPrim, 'stiffness') || Infinity,
-        stored ? [...stored] : null
+        stored ? [...stored] : null,
+        cableHalfWidth ?? 0.0
       )
     );
   }
@@ -365,15 +374,14 @@ export function setupScene(world, stage, canvas) {
 
     world.registerSystem(new FlipperTipLinkSystem());
     world.registerSystem(new CableAttachmentUpdateSystem());
+    world.registerSystem(new OverlayRadiusAndCircleSectorSystem());
     world.registerSystem(new CableAttachmentCacheSystem());
     world.registerSystem(new CableSlackSystem());
 
     world.registerSystem(new PBDCableConstraintSolver());
     world.registerSystem(new PBDResolveCableOverCorrections());
-    world.registerSystem(new PBDBallBorderCollisions());
-    world.registerSystem(new PBDBallBallCollisions());
-    world.registerSystem(new PBDBallObstacleCollisions());
-    world.registerSystem(new PBDBallFlipperCollisions());
+    world.registerSystem(new PBDUnifiedContactManifoldSystem());
+    world.registerSystem(new LayerContactStaticFrictionSystem3D());
     world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 
     world.registerSystem(new CableFrictionSystem());
@@ -382,6 +390,8 @@ export function setupScene(world, stage, canvas) {
     world.registerSystem(new PBDAngularVelocityUpdateSystem());
 
     world.registerSystem(new BallObstacleBumpSystem());
+    world.registerSystem(new LineLayersBumperVelocityContactSystem3D());
+    world.registerSystem(new BallBallVelocityContactSystem3D());
     world.registerSystem(new BallBorderOrFlipperVelocityContactSystem3D());
     world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 

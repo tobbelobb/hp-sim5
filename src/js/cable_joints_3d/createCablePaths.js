@@ -2,7 +2,15 @@ import {
   CablePathComponent
 } from './cable_joints_core.js';
 
-export function createCablePaths(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6, userStored = null) {
+export function createCablePaths(
+  world,
+  jointEntities = [],
+  linkTypes = [],
+  cw = [],
+  spring_constant = 1e6,
+  userStored = null,
+  cableHalfWidth = 0.0
+) {
   const createdPathEntityIds = [];
 
   if (linkTypes.length !== jointEntities.length + 1) {
@@ -20,7 +28,15 @@ export function createCablePaths(world, jointEntities = [], linkTypes = [], cw =
 
   if (jointEntities.length === 0) {
     const pathEntityId = world.createEntity();
-    const pathComponent = new CablePathComponent(world, [], linkTypes, cw, spring_constant, userStored);
+    const pathComponent = new CablePathComponent(
+      world,
+      [],
+      linkTypes,
+      cw,
+      spring_constant,
+      userStored,
+      cableHalfWidth
+    );
     world.addComponent(pathEntityId, pathComponent);
     createdPathEntityIds.push(pathEntityId);
     return createdPathEntityIds;
@@ -52,7 +68,15 @@ export function createCablePaths(world, jointEntities = [], linkTypes = [], cw =
 
     if (linkTypeAfterJoint === 'attachment' && (i + 1) < (linkTypes.length - 1)) {
       const pathEntityId = world.createEntity();
-      const pathComponent = new CablePathComponent(world, currentPathJoints, currentPathLinkTypes, currentPathCw, spring_constant, currentPathStored);
+      const pathComponent = new CablePathComponent(
+        world,
+        currentPathJoints,
+        currentPathLinkTypes,
+        currentPathCw,
+        spring_constant,
+        currentPathStored,
+        cableHalfWidth
+      );
       world.addComponent(pathEntityId, pathComponent);
       createdPathEntityIds.push(pathEntityId);
 
@@ -67,7 +91,15 @@ export function createCablePaths(world, jointEntities = [], linkTypes = [], cw =
 
   if (currentPathJoints.length > 0 || (createdPathEntityIds.length === 0 && linkTypes.length > 0)) {
     const pathEntityId = world.createEntity();
-    const pathComponent = new CablePathComponent(world, currentPathJoints, currentPathLinkTypes, currentPathCw, spring_constant, currentPathStored);
+    const pathComponent = new CablePathComponent(
+      world,
+      currentPathJoints,
+      currentPathLinkTypes,
+      currentPathCw,
+      spring_constant,
+      currentPathStored,
+      cableHalfWidth
+    );
     world.addComponent(pathEntityId, pathComponent);
     createdPathEntityIds.push(pathEntityId);
   }

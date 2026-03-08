@@ -15,9 +15,11 @@ import {
   RadiusComponent,
   MassComponent,
   OrientationComponent,
+  HybridKnotAngleComponent,
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
-  MachineTagComponent
+  MachineTagComponent,
+  layeringEnabled
 } from './ecs.js';
 
 export class CableLinkComponent {
@@ -67,7 +69,15 @@ export class CableJointComponent {
 
 // Connects individual cable joints into a cable path
 export class CablePathComponent {
-  constructor(world, jointEntities = [], linkTypes = [], cw = [], spring_constant = 1e6, stored = null) {
+  constructor(
+    world,
+    jointEntities = [],
+    linkTypes = [],
+    cw = [],
+    spring_constant = 1e6,
+    stored = null,
+    cableHalfWidth = 0.0
+  ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
@@ -75,6 +85,7 @@ export class CablePathComponent {
     this.spring_constant = spring_constant;
     this.compliance = 1.0 / spring_constant;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
+    this.cableHalfWidth = Number.isFinite(cableHalfWidth) ? Math.max(0.0, cableHalfWidth) : 0.0;
 
     for (const jointId of jointEntities) {
       const joint = world.getComponent(jointId, CableJointComponent);
@@ -94,7 +105,8 @@ export class CablePathComponent {
       const isRolling = linkTypes[i + 1] === 'rolling';
       if (isRolling) {
         const center = world.getComponent(linkId, PositionComponent).pos;
-        const radius = world.getComponent(linkId, RadiusComponent).radius;
+        const baseRadius = world.getComponent(linkId, RadiusComponent).radius;
+        const radius = baseRadius + (layeringEnabled(world) ? this.cableHalfWidth : 0.0);
         const isCw = cw[i + 1];
 
         const planeNormal = world.getComponent(linkId, CableLinkComponent)?.cablePlaneNormal;
@@ -122,12 +134,22 @@ export class CablePathComponent {
         }
       }
     }
+
+    const lastLinkIndex = this.linkTypes.length - 1;
+    if (lastLinkIndex >= 0) {
+      _ensureHybridKnotAngleComponentForEndpoint(world, this, 0);
+      if (lastLinkIndex !== 0) {
+        _ensureHybridKnotAngleComponentForEndpoint(world, this, lastLinkIndex);
+      }
+    }
   }
 }
 
 export const linecolor1 = '#FFFF00';
 
 const EPSILON = 1e-9;
+const MIN_JOINT_REST_LENGTH = 1e-6;
+const KNOT_SPAN = Math.PI / 30.0;
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -236,6 +258,511 @@ function _effectiveCW(path, linkIndex, travellingFromCircle) {
   return path.cw[linkIndex];
 }
 
+function _resourceBool(world, key, fallback = true) {
+  const value = world?.getResource?.(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function _featureFlag(world, key, fallback = true) {
+  return _resourceBool(world, key, fallback);
+}
+
+function _normalizeAngleSigned(angle) {
+  let wrapped = angle;
+  const twoPi = 2.0 * Math.PI;
+  while (wrapped > Math.PI) wrapped -= twoPi;
+  while (wrapped < -Math.PI) wrapped += twoPi;
+  return wrapped;
+}
+
+function _unwrapAngleNear(reference, wrappedValue) {
+  let value = wrappedValue;
+  const twoPi = 2.0 * Math.PI;
+  while (value - reference > Math.PI) value -= twoPi;
+  while (value - reference < -Math.PI) value += twoPi;
+  return value;
+}
+
+function _planeBasisForAxis(axis) {
+  const n = (axis ?? DEFAULT_PLANE_NORMAL).clone();
+  if (n.lengthSq() <= EPSILON) {
+    return {
+      n: DEFAULT_PLANE_NORMAL.clone(),
+      u: new Vector3(1, 0, 0),
+      v: new Vector3(0, 1, 0)
+    };
+  }
+  n.normalize();
+  let reference = Math.abs(n.x) < 0.9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0);
+  const nDotRef = n.dot(reference);
+  let u = reference.clone().subtract(n, nDotRef);
+  if (u.lengthSq() <= EPSILON) {
+    reference = new Vector3(0, 0, 1);
+    const altDot = n.dot(reference);
+    u = reference.clone().subtract(n, altDot);
+  }
+  u.normalize();
+  const v = n.cross(u);
+  return { n, u, v };
+}
+
+function _orientationAngleAroundAxis(quaternion, axis) {
+  if (!quaternion) {
+    return 0.0;
+  }
+  const basis = _planeBasisForAxis(axis);
+  const rotatedU = quaternion.transformVector(basis.u);
+  const projected = rotatedU.clone().subtract(basis.n, rotatedU.dot(basis.n));
+  if (projected.lengthSq() <= EPSILON) {
+    return 0.0;
+  }
+  projected.normalize();
+  return Math.atan2(projected.dot(basis.v), projected.dot(basis.u));
+}
+
+function _applyAxisAngleDelta(quaternion, axis, deltaAngle) {
+  if (!quaternion || !Number.isFinite(deltaAngle) || Math.abs(deltaAngle) <= EPSILON) {
+    return;
+  }
+  const normalizedAxis = (axis ?? DEFAULT_PLANE_NORMAL).clone();
+  if (normalizedAxis.lengthSq() <= EPSILON) {
+    return;
+  }
+  normalizedAxis.normalize();
+  const dq = new Quaternion().setFromAxisAngle(normalizedAxis, deltaAngle);
+  quaternion.multiplyQuaternions(dq, quaternion).normalize();
+}
+
+function _hybridTransitionArcThreshold(path) {
+  const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+  if (!(halfWidth > 1e-9)) {
+    return 1e-6;
+  }
+  return Math.max(1e-6, 0.25 * halfWidth);
+}
+
+function _layerWrapParams(r0, dr, rampLength, layerIndex) {
+  const twoPi = 2.0 * Math.PI;
+  const rn = r0 + dr * layerIndex;
+
+  let dPhiRamp = 0.0;
+  if (rampLength > EPSILON) {
+    dPhiRamp = rampLength / (rn + 0.5 * dr);
+    if (dPhiRamp > twoPi) dPhiRamp = twoPi;
+    if (dPhiRamp < 0.0) dPhiRamp = 0.0;
+  }
+
+  const phiConst = twoPi - dPhiRamp;
+  const Lconst = rn * phiConst;
+  const Lwrap = Lconst + dPhiRamp * (rn + 0.5 * dr);
+  return { rn, dPhiRamp, phiConst, Lconst, Lwrap };
+}
+
+function _storedInWrapAtPhi(phi, dr, wrap) {
+  const twoPi = 2.0 * Math.PI;
+  const phiClamped = Math.max(0.0, Math.min(twoPi, phi));
+  if (!(wrap.dPhiRamp > EPSILON) || phiClamped <= wrap.phiConst + EPSILON) {
+    return wrap.rn * Math.min(wrap.phiConst, phiClamped);
+  }
+
+  const x = phiClamped - wrap.phiConst;
+  const a = dr / (2.0 * wrap.dPhiRamp);
+  return wrap.Lconst + wrap.rn * x + a * x * x;
+}
+
+function _thetaToStoredLength(theta, baseRadius, halfWidth, rampLength) {
+  if (!Number.isFinite(theta) || Math.abs(theta) <= EPSILON) {
+    return 0.0;
+  }
+  if (theta < 0.0) {
+    return -_thetaToStoredLength(-theta, baseRadius, halfWidth, rampLength);
+  }
+
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  if (!(r0 > EPSILON) || !(dr > EPSILON)) {
+    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
+    return linearRadius * theta;
+  }
+
+  const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
+  const twoPi = 2.0 * Math.PI;
+  const MAX_LAYERS = 2048;
+
+  let remainingTheta = theta;
+  let stored = 0.0;
+  let n = 0;
+  while (remainingTheta > twoPi + EPSILON && n < MAX_LAYERS) {
+    const wrap = _layerWrapParams(r0, dr, LrampTarget, n);
+    stored += wrap.Lwrap;
+    remainingTheta -= twoPi;
+    n += 1;
+  }
+
+  if (n >= MAX_LAYERS) {
+    const rn = r0 + dr * MAX_LAYERS;
+    return stored + rn * remainingTheta;
+  }
+
+  const wrap = _layerWrapParams(r0, dr, LrampTarget, n);
+  stored += _storedInWrapAtPhi(remainingTheta, dr, wrap);
+  return stored;
+}
+
+function _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength) {
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  const twoPi = 2.0 * Math.PI;
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
+
+  if (!(r0 > EPSILON) || !(dr > EPSILON)) {
+    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
+    const theta = linearRadius > EPSILON ? (stored / linearRadius) : 0.0;
+    return { radius: linearRadius, theta, layer: 0, phi: theta, inRamp: false };
+  }
+
+  let s = stored;
+  let thetaBase = 0.0;
+  let n = 0;
+  const MAX_LAYERS = 2048;
+
+  while (n < MAX_LAYERS) {
+    const wrap = _layerWrapParams(r0, dr, LrampTarget, n);
+    if (s > wrap.Lwrap + EPSILON) {
+      s -= wrap.Lwrap;
+      thetaBase += twoPi;
+      n += 1;
+      continue;
+    }
+
+    if (s <= wrap.Lconst + EPSILON || !(wrap.dPhiRamp > EPSILON)) {
+      const phi = wrap.rn > EPSILON ? Math.min(wrap.phiConst, s / wrap.rn) : 0.0;
+      return { radius: wrap.rn, theta: thetaBase + phi, layer: n, phi, inRamp: false };
+    }
+
+    const sRamp = Math.max(0.0, s - wrap.Lconst);
+    const a = dr / (2.0 * wrap.dPhiRamp);
+    const b = wrap.rn;
+    const disc = b * b + 4.0 * a * sRamp;
+    const x = (-b + Math.sqrt(Math.max(0.0, disc))) / (2.0 * a);
+    const xClamped = Math.max(0.0, Math.min(wrap.dPhiRamp, x));
+    const alpha = xClamped / wrap.dPhiRamp;
+    const radius = wrap.rn + dr * alpha;
+    const phi = wrap.phiConst + xClamped;
+    return { radius, theta: thetaBase + phi, layer: n, phi, inRamp: true };
+  }
+
+  const rn = r0 + dr * MAX_LAYERS;
+  return { radius: rn, theta: thetaBase, layer: MAX_LAYERS, phi: 0.0, inRamp: false };
+}
+
+function _storedToThetaSigned(storedLength, baseRadius, halfWidth, rampLength) {
+  if (!Number.isFinite(storedLength) || Math.abs(storedLength) <= EPSILON) {
+    return 0.0;
+  }
+  if (storedLength < 0.0) {
+    return -_storedToRadiusAndTheta(-storedLength, baseRadius, halfWidth, rampLength).theta;
+  }
+  return _storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength).theta;
+}
+
+function _hybridStoredDeltaFromRotation(thetaBefore, deltaAngle, cw, baseRadius, halfWidth, radiusFallback) {
+  const signedDeltaTheta = (cw ? 1.0 : -1.0) * deltaAngle;
+  if (!Number.isFinite(signedDeltaTheta) || Math.abs(signedDeltaTheta) <= EPSILON) {
+    return 0.0;
+  }
+
+  if (Number.isFinite(baseRadius) && Number.isFinite(halfWidth) && halfWidth > EPSILON) {
+    const rampLength = Math.max(0.0, baseRadius) * KNOT_SPAN;
+    const thetaStart = Number.isFinite(thetaBefore) ? thetaBefore : 0.0;
+    const thetaEnd = thetaStart + signedDeltaTheta;
+    const storedStart = _thetaToStoredLength(thetaStart, baseRadius, halfWidth, rampLength);
+    const storedEnd = _thetaToStoredLength(thetaEnd, baseRadius, halfWidth, rampLength);
+    return storedEnd - storedStart;
+  }
+
+  const fallbackRadius = Number.isFinite(radiusFallback)
+    ? radiusFallback
+    : (Number.isFinite(baseRadius) ? baseRadius : 0.0);
+  return signedDeltaTheta * fallbackRadius;
+}
+
+function _hybridAngleCorrectionFromStoredShift(
+  thetaBefore,
+  deltaAngle,
+  cw,
+  baseRadius,
+  halfWidth,
+  storedShift,
+  radiusFallback
+) {
+  if (!Number.isFinite(storedShift) || Math.abs(storedShift) <= EPSILON) {
+    return 0.0;
+  }
+
+  const signedDirection = cw ? 1.0 : -1.0;
+  const signedDeltaTheta = signedDirection * deltaAngle;
+  if (!Number.isFinite(signedDeltaTheta)) {
+    return 0.0;
+  }
+
+  if (Number.isFinite(baseRadius) && Number.isFinite(halfWidth) && halfWidth > EPSILON) {
+    const rampLength = Math.max(0.0, baseRadius) * KNOT_SPAN;
+    const thetaStart = Number.isFinite(thetaBefore) ? thetaBefore : 0.0;
+    const storedAfterCurrent = _thetaToStoredLength(thetaStart + signedDeltaTheta, baseRadius, halfWidth, rampLength);
+    const storedAfterTarget = storedAfterCurrent + storedShift;
+    const thetaAfterTarget = _storedToThetaSigned(storedAfterTarget, baseRadius, halfWidth, rampLength);
+    if (!Number.isFinite(thetaAfterTarget)) {
+      return 0.0;
+    }
+    const deltaAngleTarget = (thetaAfterTarget - thetaStart) / signedDirection;
+    if (!Number.isFinite(deltaAngleTarget)) {
+      return 0.0;
+    }
+    return deltaAngleTarget - deltaAngle;
+  }
+
+  const fallbackRadius = Number.isFinite(radiusFallback)
+    ? radiusFallback
+    : (Number.isFinite(baseRadius) ? baseRadius : 0.0);
+  if (!(Math.abs(fallbackRadius) > EPSILON)) {
+    return 0.0;
+  }
+  return storedShift / (signedDirection * fallbackRadius);
+}
+
+function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
+  if (!layeringEnabled(world) || !Number.isFinite(baseRadius) || !path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored)) {
+    return { radius: baseRadius, theta: 0.0 };
+  }
+
+  const halfWidth = path.cableHalfWidth ?? 0.0;
+  if (!(halfWidth > EPSILON)) {
+    return { radius: baseRadius, theta: 0.0 };
+  }
+
+  const effectiveRadius = baseRadius + halfWidth;
+  const isEndpoint = linkIndex === 0 || linkIndex === path.linkTypes.length - 1;
+  if (!isEndpoint || !_isHybrid(path.linkTypes[linkIndex])) {
+    return { radius: effectiveRadius, theta: 0.0 };
+  }
+
+  const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+  if (!(stored > EPSILON)) {
+    return { radius: effectiveRadius, theta: 0.0 };
+  }
+
+  const { radius, theta } = _storedToRadiusAndTheta(stored, baseRadius, halfWidth, baseRadius * KNOT_SPAN);
+  return { radius: Math.max(effectiveRadius, radius), theta };
+}
+
+function _pathLinkIndicesForEntity(world, path, entityId) {
+  if (!world || !path || entityId === undefined || entityId === null) {
+    return [];
+  }
+  if (!Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities)) {
+    return [];
+  }
+  if (path.linkTypes.length < 1 || path.jointEntities.length < 1) {
+    return [];
+  }
+
+  const indices = [];
+  const firstJoint = world.getComponent(path.jointEntities[0], CableJointComponent);
+  if (firstJoint && firstJoint.entityA === entityId) {
+    indices.push(0);
+  }
+
+  for (let i = 1; i < path.linkTypes.length - 1; i++) {
+    const leftJoint = world.getComponent(path.jointEntities[i - 1], CableJointComponent);
+    const rightJoint = world.getComponent(path.jointEntities[i], CableJointComponent);
+    if (!leftJoint || !rightJoint) {
+      continue;
+    }
+    if (leftJoint.entityB === entityId && rightJoint.entityA === entityId) {
+      indices.push(i);
+    }
+  }
+
+  const lastJoint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+  const lastIndex = path.linkTypes.length - 1;
+  if (lastJoint && lastJoint.entityB === entityId) {
+    indices.push(lastIndex);
+  }
+  return indices;
+}
+
+function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex = null) {
+  const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
+  if (!Number.isFinite(baseRadius) || baseRadius <= EPSILON) {
+    return baseRadius;
+  }
+
+  let effectiveRadius = baseRadius;
+  if (Number.isInteger(preferredLinkIndex) && preferredLinkIndex >= 0 && preferredLinkIndex < path.linkTypes.length) {
+    effectiveRadius = Math.max(
+      effectiveRadius,
+      _effectiveRollingRadius(world, path, preferredLinkIndex, baseRadius).radius
+    );
+  }
+
+  const candidateIndices = _pathLinkIndicesForEntity(world, path, entityId);
+  for (const linkIndex of candidateIndices) {
+    effectiveRadius = Math.max(
+      effectiveRadius,
+      _effectiveRollingRadius(world, path, linkIndex, baseRadius).radius
+    );
+  }
+  return effectiveRadius;
+}
+
+function _knotPathKey(pathId) {
+  if (pathId === null || pathId === undefined) {
+    return '__default__';
+  }
+  return String(pathId);
+}
+
+function _hybridKnotAngleForPath(knotComp, pathId) {
+  if (!knotComp) {
+    return null;
+  }
+  if (pathId !== null && pathId !== undefined) {
+    const pathAngles = knotComp.pathAngles;
+    const key = _knotPathKey(pathId);
+    if (pathAngles && typeof pathAngles === 'object' && !Array.isArray(pathAngles)) {
+      const value = pathAngles[key];
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+    return null;
+  }
+  return Number.isFinite(knotComp.angle) ? knotComp.angle : null;
+}
+
+function _setHybridKnotAngleForPath(knotComp, pathId, angle) {
+  if (!knotComp || !Number.isFinite(angle)) {
+    return;
+  }
+  if (!knotComp.pathAngles || typeof knotComp.pathAngles !== 'object' || Array.isArray(knotComp.pathAngles)) {
+    knotComp.pathAngles = {};
+  }
+  knotComp.pathAngles[_knotPathKey(pathId)] = angle;
+  knotComp.angle = angle;
+}
+
+function _copyDefaultKnotAngleToPathIfUnambiguous(knotComp, pathId) {
+  if (!knotComp || pathId === null || pathId === undefined) {
+    return false;
+  }
+  const pathAngles = knotComp.pathAngles;
+  if (!pathAngles || typeof pathAngles !== 'object' || Array.isArray(pathAngles)) {
+    return false;
+  }
+  const defaultAngle = pathAngles[_knotPathKey(null)];
+  if (!Number.isFinite(defaultAngle)) {
+    return false;
+  }
+  let nonDefaultPathCount = 0;
+  for (const key in pathAngles) {
+    if (key === _knotPathKey(null)) {
+      continue;
+    }
+    if (Number.isFinite(pathAngles[key])) {
+      nonDefaultPathCount += 1;
+    }
+  }
+  if (nonDefaultPathCount > 0) {
+    return false;
+  }
+  _setHybridKnotAngleForPath(knotComp, pathId, defaultAngle);
+  return true;
+}
+
+function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, pathId = null, options = null) {
+  if (!world || !path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities)) {
+    return;
+  }
+  if (endpointIndex !== 0 && endpointIndex !== path.linkTypes.length - 1) {
+    return;
+  }
+  if (path.linkTypes[endpointIndex] !== 'hybrid' || !(path.jointEntities.length > 0)) {
+    return;
+  }
+
+  let joint = null;
+  let entityId = null;
+  let attachmentPoint = null;
+  if (endpointIndex === 0) {
+    joint = world.getComponent(path.jointEntities[0], CableJointComponent);
+    if (joint) {
+      entityId = joint.entityA;
+      attachmentPoint = joint.attachmentPointA_world;
+    }
+  } else {
+    joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+    if (joint) {
+      entityId = joint.entityB;
+      attachmentPoint = joint.attachmentPointB_world;
+    }
+  }
+
+  const createIfMissing = options && typeof options.createIfMissing === 'boolean'
+    ? options.createIfMissing
+    : true;
+  const resolvedAttachmentPoint = options?.attachmentPoint ?? attachmentPoint;
+  if (entityId === null || entityId === undefined || !resolvedAttachmentPoint) {
+    return;
+  }
+
+  let knotComp = world.getComponent(entityId, HybridKnotAngleComponent);
+  if (_hybridKnotAngleForPath(knotComp, pathId) !== null) {
+    return;
+  }
+  if (_copyDefaultKnotAngleToPathIfUnambiguous(knotComp, pathId)) {
+    return;
+  }
+  if (!knotComp && createIfMissing === false) {
+    return;
+  }
+
+  const center = options?.center ?? world.getComponent(entityId, PositionComponent)?.pos;
+  if (!center) {
+    return;
+  }
+
+  const axis = _getPlaneNormal(world, entityId);
+  const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
+  const pathHalfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
+  const rampLength = Math.max(0.0, baseRadius ?? 0.0) * KNOT_SPAN;
+  const thetaAtState = Math.abs(
+    _storedToThetaSigned(path.stored[endpointIndex] ?? 0.0, baseRadius, pathHalfWidth, rampLength)
+  );
+  const cwAtState = _effectiveCW(path, endpointIndex, endpointIndex === 0);
+  const thetaSignAtState = endpointIndex === 0
+    ? (cwAtState ? -1.0 : 1.0)
+    : (cwAtState ? 1.0 : -1.0);
+  const thetaSignedAtState = thetaSignAtState * thetaAtState;
+  const orientation = Number.isFinite(options?.orientation)
+    ? options.orientation
+    : _orientationAngleAroundAxis(world.getComponent(entityId, OrientationComponent)?.quaternion, axis);
+  const basis = _planeBasisForAxis(axis);
+  const rel = resolvedAttachmentPoint.clone().subtract(center);
+  const relAttachmentAngle = Math.atan2(rel.dot(basis.v), rel.dot(basis.u)) - orientation;
+  const knotAngle = _normalizeAngleSigned(relAttachmentAngle - thetaSignedAtState);
+  if (!Number.isFinite(knotAngle)) {
+    return;
+  }
+
+  if (!knotComp) {
+    knotComp = new HybridKnotAngleComponent(knotAngle);
+    world.addComponent(entityId, knotComp);
+  }
+  _setHybridKnotAngleForPath(knotComp, pathId, knotAngle);
+}
+
 function _clearDebugPoints(world) {
   const debugPoints = world.getResource('debugRenderPoints');
   if (debugPoints) {
@@ -257,7 +784,7 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
-export function calculateAttachmentPoints(world, joint, path, i) {
+export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
   const A = i;
   const B = i + 1;
 
@@ -265,14 +792,12 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   const entityB = joint.entityB;
 
   const posAComp = world.getComponent(entityA, PositionComponent);
-  const radiusAComp = world.getComponent(entityA, RadiusComponent);
   const linkAComp = world.getComponent(entityA, CableLinkComponent);
   const orientationAComp = world.getComponent(entityA, OrientationComponent);
 
   const posA = posAComp?.pos;
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-  const radiusA = radiusAComp?.radius;
   const planeNormalA = _getPlaneNormal(world, entityA);
   const angleA = orientationAComp?.quaternion;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeOrientation;
@@ -291,14 +816,12 @@ export function calculateAttachmentPoints(world, joint, path, i) {
   }
 
   const posBComp = world.getComponent(entityB, PositionComponent);
-  const radiusBComp = world.getComponent(entityB, RadiusComponent);
   const linkBComp = world.getComponent(entityB, CableLinkComponent);
   const orientationBComp = world.getComponent(entityB, OrientationComponent);
 
   const posB = posBComp?.pos;
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-  const radiusB = radiusBComp?.radius;
   const planeNormalB = _getPlaneNormal(world, entityB);
   const angleB = orientationBComp?.quaternion;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeOrientation;
@@ -352,10 +875,13 @@ export function calculateAttachmentPoints(world, joint, path, i) {
 }
 
 export function _updateAttachmentPoints(world) {
+  const allowRestLengthClamp = true;
+  const enforceKnotPhase = true;
   const pathEntities = world.query([CablePathComponent]);
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
+    const pathHalfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
 
     for (let i = 0; i < path.jointEntities.length; i++) {
       const jointId = path.jointEntities[i];
@@ -364,80 +890,270 @@ export function _updateAttachmentPoints(world) {
       const attachmentA_previous = joint.attachmentPointA_world.clone();
       const attachmentB_previous = joint.attachmentPointB_world.clone();
 
-      const { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(world, joint, path, i);
-
       const A = i;
       const B = i + 1;
       const entityA = joint.entityA;
       const entityB = joint.entityB;
 
       const posAComp = world.getComponent(entityA, PositionComponent);
-      const radiusAComp = world.getComponent(entityA, RadiusComponent);
       const linkAComp = world.getComponent(entityA, CableLinkComponent);
       const orientationAComp = world.getComponent(entityA, OrientationComponent);
       const posA = posAComp?.pos;
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-      const radiusA = radiusAComp?.radius;
+      const baseRadiusA = world.getComponent(entityA, RadiusComponent)?.radius;
+      const { radius: radiusA, theta: thetaA } = _effectiveRollingRadius(world, path, A, baseRadiusA);
       const planeNormalA = _getPlaneNormal(world, entityA);
-      const angleA = orientationAComp?.quaternion;
-      const prevAngleA = linkAComp?.prevCableAttachmentTimeOrientation;
-      const deltaAngleA = _deltaAngleAroundAxis(prevAngleA, angleA, planeNormalA);
+      const currentQuatA = orientationAComp?.quaternion;
+      const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
+      const angleA = _orientationAngleAroundAxis(currentQuatA, planeNormalA);
+      const prevAngleA = _orientationAngleAroundAxis(prevQuatA, planeNormalA);
+      const deltaAngleA = _deltaAngleAroundAxis(prevQuatA, currentQuatA, planeNormalA);
       const cwA = _effectiveCW(path, A, true);
       const rollingLinkA = _isRolling(path.linkTypes[A]);
       const isHybridA = _isHybrid(path.linkTypes[A]);
       const hasFrictionA = world.getComponent(entityA, CoefficientOfFrictionComponent);
 
       const posBComp = world.getComponent(entityB, PositionComponent);
-      const radiusBComp = world.getComponent(entityB, RadiusComponent);
       const linkBComp = world.getComponent(entityB, CableLinkComponent);
       const orientationBComp = world.getComponent(entityB, OrientationComponent);
       const posB = posBComp?.pos;
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-      const radiusB = radiusBComp?.radius;
+      const baseRadiusB = world.getComponent(entityB, RadiusComponent)?.radius;
+      const { radius: radiusB, theta: thetaB } = _effectiveRollingRadius(world, path, B, baseRadiusB);
       const planeNormalB = _getPlaneNormal(world, entityB);
-      const angleB = orientationBComp?.quaternion;
-      const prevAngleB = linkBComp?.prevCableAttachmentTimeOrientation;
-      const deltaAngleB = _deltaAngleAroundAxis(prevAngleB, angleB, planeNormalB);
+      const currentQuatB = orientationBComp?.quaternion;
+      const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
+      const angleB = _orientationAngleAroundAxis(currentQuatB, planeNormalB);
+      const prevAngleB = _orientationAngleAroundAxis(prevQuatB, planeNormalB);
+      const deltaAngleB = _deltaAngleAroundAxis(prevQuatB, currentQuatB, planeNormalB);
       const cwB = _effectiveCW(path, B, false);
       const rollingLinkB = _isRolling(path.linkTypes[B]);
       const isHybridB = _isHybrid(path.linkTypes[B]);
       const hasFrictionB = world.getComponent(entityB, CoefficientOfFrictionComponent);
 
-      let sA = 0;
-      let sB = 0;
+      let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(
+        world,
+        joint,
+        path,
+        i,
+        radiusA,
+        radiusB
+      );
+
+      if (isHybridA && i === 0) {
+        _ensureHybridKnotAngleComponentForEndpoint(world, path, A, pathId, {
+          attachmentPoint: attachmentA_previous,
+          center: prevPosA,
+          orientation: prevAngleA,
+          createIfMissing: false
+        });
+      }
+      if (isHybridB && i === path.jointEntities.length - 1) {
+        _ensureHybridKnotAngleComponentForEndpoint(world, path, B, pathId, {
+          attachmentPoint: attachmentB_previous,
+          center: prevPosB,
+          orientation: prevAngleB,
+          createIfMissing: false
+        });
+      }
+
+      const knotCompA = world.getComponent(entityA, HybridKnotAngleComponent);
+      const knotAngleA = _hybridKnotAngleForPath(knotCompA, pathId);
+      const knotCompB = world.getComponent(entityB, HybridKnotAngleComponent);
+      const knotAngleB = _hybridKnotAngleForPath(knotCompB, pathId);
+
+      let sA = 0.0;
+      let sB = 0.0;
+      const restBefore = joint.restLength;
 
       if (rollingLinkA && attachmentA_previous && attachmentA_current && prevPosA && posA && radiusA !== undefined) {
-          sA = signedArcLengthOnWheel(
-            attachmentA_previous.clone().subtract(prevPosA),
-            attachmentA_current.clone().subtract(posA),
-            new Vector3(0.0, 0.0, 0.0),
-            radiusA,
+        sA = signedArcLengthOnWheel(
+          attachmentA_previous.clone().subtract(prevPosA),
+          attachmentA_current.clone().subtract(posA),
+          new Vector3(0.0, 0.0, 0.0),
+          radiusA,
+          cwA,
+          planeNormalA
+        );
+        if (isHybridA) {
+          sA += _hybridStoredDeltaFromRotation(
+            thetaA,
+            deltaAngleA,
             cwA,
-            planeNormalA
+            baseRadiusA,
+            pathHalfWidth,
+            radiusA
           );
-          if (isHybridA || hasFrictionA) {
-            sA += (cwA ? deltaAngleA * radiusA : -deltaAngleA * radiusA);
-          }
+        } else if (hasFrictionA) {
+          sA += (cwA ? deltaAngleA * radiusA : -deltaAngleA * radiusA);
+        }
       }
 
       if (rollingLinkB && attachmentB_previous && attachmentB_current && prevPosB && posB && radiusB !== undefined) {
-          sB = signedArcLengthOnWheel(
-            attachmentB_previous.clone().subtract(prevPosB),
-            attachmentB_current.clone().subtract(posB),
-            new Vector3(0.0, 0.0, 0.0),
-            radiusB,
+        sB = signedArcLengthOnWheel(
+          attachmentB_previous.clone().subtract(prevPosB),
+          attachmentB_current.clone().subtract(posB),
+          new Vector3(0.0, 0.0, 0.0),
+          radiusB,
+          cwB,
+          planeNormalB
+        );
+        if (isHybridB) {
+          sB += _hybridStoredDeltaFromRotation(
+            thetaB,
+            deltaAngleB,
             cwB,
-            planeNormalB
+            baseRadiusB,
+            pathHalfWidth,
+            radiusB
           );
-          if (isHybridB || hasFrictionB) {
-            sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
-          }
+        } else if (hasFrictionB) {
+          sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
+        }
       }
 
-      path.stored[A] += sA;
-      joint.restLength -= sA;
-      path.stored[B] -= sB;
-      joint.restLength += sB;
+      let sAEffective = sA;
+      let sBEffective = sB;
+      const clampEnabled = allowRestLengthClamp && _featureFlag(world, 'layeringClampJointRestLength', true);
+      if (clampEnabled && Number.isFinite(restBefore)) {
+        const unclampedRest = restBefore - sAEffective + sBEffective;
+        if (unclampedRest < MIN_JOINT_REST_LENGTH) {
+          const requiredLift = MIN_JOINT_REST_LENGTH - unclampedRest;
+          const decreaseFromA = Math.max(0.0, sAEffective);
+          const decreaseFromB = Math.max(0.0, -sBEffective);
+          const totalDecrease = decreaseFromA + decreaseFromB;
+          if (totalDecrease > EPSILON) {
+            const shiftA = requiredLift * (decreaseFromA / totalDecrease);
+            const shiftB = requiredLift - shiftA;
+            sAEffective -= shiftA;
+            sBEffective += shiftB;
+
+            if ((isHybridB || hasFrictionB) && currentQuatB) {
+              if (isHybridB) {
+                _applyAxisAngleDelta(
+                  currentQuatB,
+                  planeNormalB,
+                  _hybridAngleCorrectionFromStoredShift(
+                    thetaB,
+                    deltaAngleB,
+                    cwB,
+                    baseRadiusB,
+                    pathHalfWidth,
+                    shiftB,
+                    radiusB
+                  )
+                );
+              } else if (Math.abs((cwB ? 1.0 : -1.0) * radiusB) > EPSILON) {
+                _applyAxisAngleDelta(currentQuatB, planeNormalB, shiftB / ((cwB ? 1.0 : -1.0) * radiusB));
+              }
+            }
+
+            if ((isHybridA || hasFrictionA) && currentQuatA) {
+              if (isHybridA) {
+                _applyAxisAngleDelta(
+                  currentQuatA,
+                  planeNormalA,
+                  _hybridAngleCorrectionFromStoredShift(
+                    thetaA,
+                    deltaAngleA,
+                    cwA,
+                    baseRadiusA,
+                    pathHalfWidth,
+                    -shiftA,
+                    radiusA
+                  )
+                );
+              } else if (Math.abs((cwA ? 1.0 : -1.0) * radiusA) > EPSILON) {
+                _applyAxisAngleDelta(currentQuatA, planeNormalA, -shiftA / ((cwA ? 1.0 : -1.0) * radiusA));
+              }
+            }
+          } else {
+            sBEffective += requiredLift;
+            if ((isHybridB || hasFrictionB) && currentQuatB) {
+              if (isHybridB) {
+                _applyAxisAngleDelta(
+                  currentQuatB,
+                  planeNormalB,
+                  _hybridAngleCorrectionFromStoredShift(
+                    thetaB,
+                    deltaAngleB,
+                    cwB,
+                    baseRadiusB,
+                    pathHalfWidth,
+                    requiredLift,
+                    radiusB
+                  )
+                );
+              } else if (Math.abs((cwB ? 1.0 : -1.0) * radiusB) > EPSILON) {
+                _applyAxisAngleDelta(currentQuatB, planeNormalB, requiredLift / ((cwB ? 1.0 : -1.0) * radiusB));
+              }
+            }
+          }
+        }
+      }
+
+      path.stored[A] += sAEffective;
+      joint.restLength -= sAEffective;
+      path.stored[B] -= sBEffective;
+      joint.restLength += sBEffective;
+
+      if (enforceKnotPhase && isHybridA && i === 0 && Number.isFinite(baseRadiusA)) {
+        if (knotAngleA !== null && posA && attachmentA_current) {
+          const rampLengthA = Math.max(0.0, baseRadiusA) * KNOT_SPAN;
+          let thetaCurrentA = Math.abs(
+            _storedToThetaSigned(path.stored[A] ?? 0.0, baseRadiusA, pathHalfWidth, rampLengthA)
+          );
+          if (!Number.isFinite(thetaCurrentA)) {
+            thetaCurrentA = _effectiveRollingRadius(world, path, A, baseRadiusA).theta;
+          }
+          const thetaSignA = cwA ? -1.0 : 1.0;
+          const basisA = _planeBasisForAxis(planeNormalA);
+          const relA = attachmentA_current.clone().subtract(posA);
+          const attachmentAngleWorldA = Math.atan2(relA.dot(basisA.v), relA.dot(basisA.u));
+          const attachmentRelOrientationA = _normalizeAngleSigned(attachmentAngleWorldA - angleA);
+          const thetaSignedWrappedA = _normalizeAngleSigned(attachmentRelOrientationA - knotAngleA);
+          const thetaSignedCurrentA = thetaSignA * thetaCurrentA;
+          const thetaSignedTargetA = _unwrapAngleNear(thetaSignedCurrentA, thetaSignedWrappedA);
+          const thetaTargetA = thetaSignA * thetaSignedTargetA;
+          const storedTargetA = _thetaToStoredLength(thetaTargetA, baseRadiusA, pathHalfWidth, rampLengthA);
+          if (Number.isFinite(storedTargetA)) {
+            const storedDeltaA = storedTargetA - (path.stored[A] ?? 0.0);
+            if (Math.abs(storedDeltaA) > 1e-3) {
+              path.stored[A] = storedTargetA;
+              joint.restLength -= storedDeltaA;
+            }
+          }
+        }
+      }
+
+      if (enforceKnotPhase && isHybridB && i === path.jointEntities.length - 1 && Number.isFinite(baseRadiusB)) {
+        if (knotAngleB !== null && posB && attachmentB_current) {
+          const rampLengthB = Math.max(0.0, baseRadiusB) * KNOT_SPAN;
+          let thetaCurrentB = Math.abs(
+            _storedToThetaSigned(path.stored[B] ?? 0.0, baseRadiusB, pathHalfWidth, rampLengthB)
+          );
+          if (!Number.isFinite(thetaCurrentB)) {
+            thetaCurrentB = _effectiveRollingRadius(world, path, B, baseRadiusB).theta;
+          }
+          const thetaSignB = cwB ? 1.0 : -1.0;
+          const basisB = _planeBasisForAxis(planeNormalB);
+          const relB = attachmentB_current.clone().subtract(posB);
+          const attachmentAngleWorldB = Math.atan2(relB.dot(basisB.v), relB.dot(basisB.u));
+          const attachmentRelOrientationB = _normalizeAngleSigned(attachmentAngleWorldB - angleB);
+          const thetaSignedWrappedB = _normalizeAngleSigned(attachmentRelOrientationB - knotAngleB);
+          const thetaSignedCurrentB = thetaSignB * thetaCurrentB;
+          const thetaSignedTargetB = _unwrapAngleNear(thetaSignedCurrentB, thetaSignedWrappedB);
+          const thetaTargetB = thetaSignB * thetaSignedTargetB;
+          const storedTargetB = _thetaToStoredLength(thetaTargetB, baseRadiusB, pathHalfWidth, rampLengthB);
+          if (Number.isFinite(storedTargetB)) {
+            const storedDeltaB = storedTargetB - (path.stored[B] ?? 0.0);
+            if (Math.abs(storedDeltaB) > 1e-3) {
+              path.stored[B] = storedTargetB;
+              joint.restLength -= storedDeltaB;
+            }
+          }
+        }
+      }
 
       if (attachmentA_current) {
         joint.attachmentPointA_world.set(attachmentA_current);
@@ -471,18 +1187,18 @@ export function _mergeJoints(world) {
           console.warn("Merge loop saw disconnected cable path");
           continue;
         }
-        if (joint_i.entityA === joint_i_plus_1.entityB) {
+        if (!layeringEnabled(world) && joint_i.entityA === joint_i_plus_1.entityB) {
           continue;
         }
         if (path.stored[i + 1] < 0.0) {
           const pA1 = joint_i.attachmentPointA_world;
           const pB2 = joint_i_plus_1.attachmentPointB_world;
           const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
-          const radiusA = world.getComponent(joint_i.entityA, RadiusComponent)?.radius;
+          const radiusA = _effectivePathRadiusForEntity(world, path, joint_i.entityA, i);
           const planeNormalA = _getPlaneNormal(world, joint_i.entityA);
           const cwA = _effectiveCW(path, i, true);
           const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
-          const radiusB = world.getComponent(joint_i_plus_1.entityB, RadiusComponent)?.radius;
+          const radiusB = _effectivePathRadiusForEntity(world, path, joint_i_plus_1.entityB, i + 2);
           const planeNormalB = _getPlaneNormal(world, joint_i_plus_1.entityB);
           const cwB = path.cw[i + 2];
 
@@ -557,7 +1273,7 @@ export function _splitJoints(world) {
           continue;
         }
         const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
-        const radiusSplitter = world.getComponent(splitterId, RadiusComponent)?.radius;
+        const radiusSplitter = _effectivePathRadiusForEntity(world, path, splitterId, null);
         if (lineSegmentSphereIntersection(pA, pB, posSplitter, radiusSplitter)) {
           const entityA = joint.entityA;
           const entityB = joint.entityB;
@@ -568,7 +1284,7 @@ export function _splitJoints(world) {
           const linkTypeA = path.linkTypes[i];
           const isAttachmentA = _isAttachment(linkTypeA);
           const isRollingA = _isRolling(linkTypeA);
-          const radiusA = world.getComponent(entityA, RadiusComponent)?.radius;
+          const radiusA = _effectivePathRadiusForEntity(world, path, entityA, i);
           const planeNormalA = _getPlaneNormal(world, entityA);
           const cwA = _effectiveCW(path, i, true);
 
@@ -576,7 +1292,7 @@ export function _splitJoints(world) {
           const linkTypeB = path.linkTypes[i + 1];
           const isAttachmentB = _isAttachment(linkTypeB);
           const isRollingB = _isRolling(linkTypeB);
-          const radiusB = world.getComponent(entityB, RadiusComponent)?.radius;
+          const radiusB = _effectivePathRadiusForEntity(world, path, entityB, i + 1);
           const planeNormalB = _getPlaneNormal(world, entityB);
           const cwB = path.cw[i + 1];
 
@@ -686,15 +1402,22 @@ export function _updateHybridLinkStates(world) {
     const path = world.getComponent(pathId, CablePathComponent);
     for (const i of [0, path.linkTypes.length - 1]) {
       if (path.linkTypes[i] === 'hybrid') {
-        if (path.stored[i] < 0.0) {
+        const transitionArcThreshold = _hybridTransitionArcThreshold(path);
+        if (path.stored[i] < -transitionArcThreshold) {
           path.linkTypes[i] = 'hybrid-attachment';
           const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
-          const radius = world.getComponent(linkEntity, RadiusComponent).radius;
+          const radius = _effectiveRollingRadius(
+            world,
+            path,
+            i,
+            world.getComponent(linkEntity, RadiusComponent)?.radius
+          ).radius;
           const pos = world.getComponent(linkEntity, PositionComponent).pos;
           const planeNormal = _getPlaneNormal(world, linkEntity);
-          joint.restLength += path.stored[i];
-          const rotAng = -path.stored[i] / radius;
+          const stored = path.stored[i];
+          joint.restLength += stored;
+          const rotAng = -stored / radius;
           if (i === 0) {
             const rotated = _rotateAroundAxis(joint.attachmentPointA_world, pos, planeNormal, rotAng, path.cw[i]);
             joint.attachmentPointA_world.set(rotated);
@@ -725,9 +1448,18 @@ export function _updateHybridLinkStates(world) {
         }
 
         const C = world.getComponent(entityId, PositionComponent).pos;
-        const P = world.getComponent(neighborId, PositionComponent).pos;
-        const R = world.getComponent(entityId, RadiusComponent).radius;
+        const R = _effectiveRollingRadius(
+          world,
+          path,
+          i,
+          world.getComponent(entityId, RadiusComponent)?.radius
+        ).radius;
         const planeNormal = _getPlaneNormal(world, entityId);
+        const attachmentDistance = attachmentPoint?.distanceTo?.(neighborAttachmentPoint) ?? Infinity;
+        const degenerateThreshold = Math.max(1e-6, 2.0 * (path.cableHalfWidth ?? 0.0) + 1e-6);
+        if (attachmentDistance <= degenerateThreshold) {
+          continue;
+        }
 
         const tanCW  = tangentFromSphereToPoint(neighborAttachmentPoint, C, R, planeNormal, true).a_sphere;
         const tanCCW = tangentFromSphereToPoint(neighborAttachmentPoint, C, R, planeNormal, false).a_sphere;
@@ -737,23 +1469,28 @@ export function _updateHybridLinkStates(world) {
         const distSqCW = attachmentPoint.distanceToSq(tanCW);
         const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
-        let newCW = null, crossingTangent = null;
+        const transitionArcThreshold = _hybridTransitionArcThreshold(path);
+        let newCW = null, crossingTangent = null, candidateStored = null;
         if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
             newCW = true;
             crossingTangent = tanCCW;
-            path.stored[i] = crossedCCW;
-            joint.restLength -= crossedCCW;
+            candidateStored = crossedCCW;
         } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
             newCW = false;
             crossingTangent = tanCW;
-            path.stored[i] = crossedCW;
-            joint.restLength -= crossedCW;
+            candidateStored = crossedCW;
         }
 
-        if (newCW !== null) {
+        if (newCW !== null && candidateStored > transitionArcThreshold) {
           path.linkTypes[i] = 'hybrid';
           path.cw[i]        = newCW;
+          path.stored[i] = candidateStored;
+          joint.restLength -= candidateStored;
           attachmentPoint.set(crossingTangent);
+          _ensureHybridKnotAngleComponentForEndpoint(world, path, i, pathId, {
+            attachmentPoint,
+            createIfMissing: true
+          });
         }
       }
     }
@@ -763,12 +1500,20 @@ export function _updateHybridLinkStates(world) {
 export class CableAttachmentUpdateSystem {
   runInPause = false;
 
-  update(world, dt) {
+  update(world, _dt_unused) {
     _clearDebugPoints(world);
-    _updateAttachmentPoints(world);
-    _mergeJoints(world);
-    _splitJoints(world);
-    _updateHybridLinkStates(world);
+    if (_featureFlag(world, 'layeringAttachmentUpdatePoints', true)) {
+      _updateAttachmentPoints(world);
+    }
+    if (_featureFlag(world, 'layeringMergeJoints', true)) {
+      _mergeJoints(world);
+    }
+    if (_featureFlag(world, 'layeringSplitJoints', true)) {
+      _splitJoints(world);
+    }
+    if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
+      _updateHybridLinkStates(world);
+    }
   }
 }
 

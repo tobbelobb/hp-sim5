@@ -59,8 +59,24 @@ export class PrevFinalOrientationComponent {
   }
 }
 
+export class HybridKnotAngleComponent {
+  constructor(angle = 0.0) {
+    this.angle = angle;
+    this.pathAngles = {};
+  }
+}
+
 export class AngularVelocityComponent {
     constructor(x = 0, y = 0, z = 0) {
         this.omega = new Vector3(x, y, z); // Axis = normalize(omega), speed = norm_L2(omega) [Radians per second]
     }
+}
+
+function _resourceBool(world, key, fallback = true) {
+  const value = world?.getResource?.(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+export function layeringEnabled(world) {
+  return _resourceBool(world, 'enableLayering', true);
 }

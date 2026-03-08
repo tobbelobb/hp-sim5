@@ -5,7 +5,8 @@ import Vector3 from './vector3.js';
 import {
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  layeringEnabled
 } from './ecs.js';
 import { RenderableComponent } from '../cable_joints/ecs.js';
 import {
@@ -51,6 +52,84 @@ function angleOnPlane(point, center, basis) {
   const x = rel.dot(basis.u);
   const y = rel.dot(basis.v);
   return Math.atan2(y, x);
+}
+
+function appendStoredWrapArcSpecs(arcSpecs, path, linkIndex, center, bodyRadius, attachmentPoint, basis, color, layering) {
+  if (!center || !Number.isFinite(bodyRadius) || bodyRadius <= EPSILON || !attachmentPoint) {
+    return;
+  }
+
+  const stored = Math.max(0.0, path?.stored?.[linkIndex] ?? 0.0);
+  if (!(stored > EPSILON)) {
+    return;
+  }
+
+  const startAngle = angleOnPlane(attachmentPoint, center, basis);
+  const cw = Boolean(path?.cw?.[linkIndex]);
+  const maxRenderableAngle = (2.0 * Math.PI) - 0.0001;
+
+  if (!layering) {
+    let deltaTheta = stored / bodyRadius;
+    if (deltaTheta >= maxRenderableAngle) {
+      deltaTheta = maxRenderableAngle;
+    }
+    arcSpecs.push({
+      center,
+      radius: bodyRadius,
+      basis,
+      startAngle,
+      endAngle: cw ? (startAngle - deltaTheta) : (startAngle + deltaTheta),
+      cw,
+      color
+    });
+    return;
+  }
+
+  const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+  const baseRadius = bodyRadius + halfWidth;
+  if (!(baseRadius > EPSILON)) {
+    return;
+  }
+
+  const fullWidth = 2.0 * halfWidth;
+  const MAX_LAYERS = 128;
+  let remainingLength = stored;
+  let layerIndex = 0;
+
+  while (remainingLength > EPSILON && layerIndex < MAX_LAYERS) {
+    const layerRadius = baseRadius + fullWidth * layerIndex;
+    if (!(layerRadius > EPSILON)) {
+      break;
+    }
+    const layerCircumference = 2.0 * Math.PI * layerRadius;
+    if (!(layerCircumference > EPSILON)) {
+      break;
+    }
+    const layerArcLength = Math.min(remainingLength, layerCircumference);
+    if (!(layerArcLength > EPSILON)) {
+      break;
+    }
+
+    const fullCircle = layerArcLength >= layerCircumference - 1e-6;
+    const deltaTheta = fullCircle
+      ? (2.0 * Math.PI)
+      : Math.min(layerArcLength / layerRadius, maxRenderableAngle);
+    arcSpecs.push({
+      center,
+      radius: layerRadius,
+      basis,
+      startAngle,
+      endAngle: cw ? (startAngle - deltaTheta) : (startAngle + deltaTheta),
+      cw,
+      color
+    });
+
+    remainingLength -= layerArcLength;
+    if (!(fullWidth > EPSILON)) {
+      break;
+    }
+    layerIndex += 1;
+  }
 }
 
 function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw) {
@@ -671,6 +750,9 @@ export class RenderSystem3D {
 
   _syncCable(world) {
     const pathEntities = world.query([CablePathComponent]);
+    const layering =
+      layeringEnabled(world) &&
+      world.getResource('layeringRenderWraps') !== false;
 
     if (pathEntities.length === 0) {
       this._hideLines(this.jointLines);
@@ -713,7 +795,10 @@ export class RenderSystem3D {
 
         const rollerId = prevJoint.entityB;
         const center = world.getComponent(rollerId, PositionComponent)?.pos;
-        const radius = world.getComponent(rollerId, RadiusComponent)?.radius;
+        const bodyRadius = world.getComponent(rollerId, RadiusComponent)?.radius;
+        const radius = Number.isFinite(bodyRadius)
+          ? bodyRadius + (layering ? Math.max(0.0, path.cableHalfWidth ?? 0.0) : 0.0)
+          : bodyRadius;
         if (!center || !Number.isFinite(radius) || radius <= EPSILON) continue;
 
         const planeNormal = world.getComponent(rollerId, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
@@ -753,29 +838,22 @@ export class RenderSystem3D {
           const color = renderComp?.color || DEFAULT_CABLE_COLOR;
           const rollerA = joint0.entityA;
           const center = world.getComponent(rollerA, PositionComponent)?.pos;
-          const radius = world.getComponent(rollerA, RadiusComponent)?.radius;
+          const bodyRadius = world.getComponent(rollerA, RadiusComponent)?.radius;
 
-          if (center && Number.isFinite(radius) && radius > EPSILON) {
-            const p = joint0.attachmentPointA_world;
+          if (center && Number.isFinite(bodyRadius) && bodyRadius > EPSILON) {
             const planeNormal = world.getComponent(rollerA, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
             const basis = buildPlaneBasis(planeNormal);
-
-            const a1 = angleOnPlane(p, center, basis);
-            const stored = Number.isFinite(path.stored?.[0]) ? path.stored[0] : 0.0;
-            const maxAngle = 2.0 * Math.PI - 1e-4;
-            const delta = Math.min(stored / radius, maxAngle);
-            const cw = Boolean(path.cw[0]);
-            const a2 = cw ? a1 - delta : a1 + delta;
-
-            arcSpecs.push({
+            appendStoredWrapArcSpecs(
+              arcSpecs,
+              path,
+              0,
               center,
-              radius,
+              bodyRadius,
+              joint0.attachmentPointA_world,
               basis,
-              startAngle: a1,
-              endAngle: a2,
-              cw,
-              color
-            });
+              color,
+              layering
+            );
           }
         }
       }
@@ -787,29 +865,22 @@ export class RenderSystem3D {
           const color = renderComp?.color || DEFAULT_CABLE_COLOR;
           const rollerB = jointN.entityB;
           const center = world.getComponent(rollerB, PositionComponent)?.pos;
-          const radius = world.getComponent(rollerB, RadiusComponent)?.radius;
+          const bodyRadius = world.getComponent(rollerB, RadiusComponent)?.radius;
 
-          if (center && Number.isFinite(radius) && radius > EPSILON) {
-            const p = jointN.attachmentPointB_world;
+          if (center && Number.isFinite(bodyRadius) && bodyRadius > EPSILON) {
             const planeNormal = world.getComponent(rollerB, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
             const basis = buildPlaneBasis(planeNormal);
-
-            const a1 = angleOnPlane(p, center, basis);
-            const stored = Number.isFinite(path.stored?.[nLinks - 1]) ? path.stored[nLinks - 1] : 0.0;
-            const maxAngle = 2.0 * Math.PI - 1e-4;
-            const delta = Math.min(stored / radius, maxAngle);
-            const cw = Boolean(path.cw[nLinks - 1]);
-            const a2 = cw ? a1 - delta : a1 + delta;
-
-            arcSpecs.push({
+            appendStoredWrapArcSpecs(
+              arcSpecs,
+              path,
+              nLinks - 1,
               center,
-              radius,
+              bodyRadius,
+              jointN.attachmentPointB_world,
               basis,
-              startAngle: a1,
-              endAngle: a2,
-              cw,
-              color
-            });
+              color,
+              layering
+            );
           }
         }
       }

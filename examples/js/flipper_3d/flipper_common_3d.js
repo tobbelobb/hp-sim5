@@ -10,7 +10,9 @@ import {
   OrientationComponent,
   PrevFinalOrientationComponent,
   AngularVelocityComponent,
+  MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
+  layeringEnabled,
   BallTagComponent,
   ObstacleTagComponent,
   ObstaclePushComponent
@@ -191,6 +193,521 @@ export class PauseStateComponent {
   }
 }
 
+export class CircleCamTag {}
+
+export class OverlayRadiusComponent {
+  constructor(radius = 0.0, mu = null) {
+    this.radius = Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
+    this.mu = Number.isFinite(mu) ? Math.max(0.0, mu) : null;
+  }
+}
+
+export class CircleSectorComponent {
+  constructor(radius = 0.0, startAngle = 0.0, endAngle = 0.0, cw = false, mu = null) {
+    this.radius = Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
+    this.startAngle = Number.isFinite(startAngle) ? startAngle : 0.0;
+    this.endAngle = Number.isFinite(endAngle) ? endAngle : 0.0;
+    this.cw = cw === true;
+    this.mu = Number.isFinite(mu) ? Math.max(0.0, mu) : null;
+  }
+}
+
+export class CircleSectorsComponent {
+  constructor(sectors = []) {
+    this.sectors = Array.isArray(sectors)
+      ? sectors
+        .filter((sector) => sector && Number.isFinite(sector.radius) && sector.radius > 1e-9)
+        .map((sector) => ({
+          radius: Math.max(0.0, Number(sector.radius)),
+          startAngle: Number.isFinite(sector.startAngle) ? sector.startAngle : 0.0,
+          endAngle: Number.isFinite(sector.endAngle) ? sector.endAngle : 0.0,
+          cw: sector.cw === true,
+          mu: Number.isFinite(sector.mu) ? Math.max(0.0, Number(sector.mu)) : null
+        }))
+      : [];
+  }
+}
+
+function entityPlaneNormal(world, entityId) {
+  const linkNormal = world.getComponent(entityId, CableLinkComponent)?.cablePlaneNormal;
+  if (linkNormal) {
+    return normalizePlaneNormal(linkNormal);
+  }
+  const flipperNormal = world.getComponent(entityId, FlipperStateComponent)?.planeNormal;
+  if (flipperNormal) {
+    return normalizePlaneNormal(flipperNormal);
+  }
+  return DEFAULT_PLANE_NORMAL.clone();
+}
+
+function angleOnPlane(point, center, planeNormal) {
+  const activeBasis = buildPlaneBasis(planeNormal ?? DEFAULT_PLANE_NORMAL);
+  const rel = point.clone().subtract(center);
+  return Math.atan2(rel.dot(activeBasis.v), rel.dot(activeBasis.u));
+}
+
+function angleForDirection(direction, planeNormal) {
+  const basis = buildPlaneBasis(planeNormal ?? DEFAULT_PLANE_NORMAL);
+  return Math.atan2(direction.dot(basis.v), direction.dot(basis.u));
+}
+
+function offsetFromAngle(radius, angle, planeNormal) {
+  const basis = buildPlaneBasis(planeNormal ?? DEFAULT_PLANE_NORMAL);
+  return basis.u.clone().scale(Math.cos(angle) * radius).add(basis.v, Math.sin(angle) * radius);
+}
+
+function _normalizeAngle(angle) {
+  if (!Number.isFinite(angle)) {
+    return 0.0;
+  }
+  let value = angle;
+  const twoPi = 2.0 * Math.PI;
+  while (value <= -Math.PI) value += twoPi;
+  while (value > Math.PI) value -= twoPi;
+  return value;
+}
+
+function _ccwDiff(fromAngle, toAngle) {
+  const twoPi = 2.0 * Math.PI;
+  let diff = _normalizeAngle(toAngle - fromAngle);
+  if (diff < 0.0) {
+    diff += twoPi;
+  }
+  return diff;
+}
+
+function _isAngleInSector(angle, startAngle, endAngle, cw) {
+  const a = _normalizeAngle(angle);
+  const s = _normalizeAngle(startAngle);
+  const e = _normalizeAngle(endAngle);
+  if (cw) {
+    return _isAngleInSector(-a, -s, -e, false);
+  }
+  const span = _ccwDiff(s, e);
+  const rel = _ccwDiff(s, a);
+  return rel <= span + 1e-9;
+}
+
+export function getRawCollisionRadius(world, entityId) {
+  const radius = world.getComponent(entityId, RadiusComponent)?.radius;
+  return Number.isFinite(radius) ? Math.max(0.0, radius) : 0.0;
+}
+
+function _frictionMu(world, entityId) {
+  const mu = world.getComponent(entityId, CoefficientOfFrictionComponent)?.mu;
+  return Number.isFinite(mu) ? Math.max(0.0, mu) : 0.0;
+}
+
+function _getBaseCollisionRadius(world, entityId) {
+  let radius = getRawCollisionRadius(world, entityId);
+  const overlayComp = world.getComponent(entityId, OverlayRadiusComponent);
+  if (overlayComp && Number.isFinite(overlayComp.radius)) {
+    radius = Math.max(radius, overlayComp.radius);
+  }
+  return radius;
+}
+
+function _getBaseCollisionSupport(world, entityId) {
+  const rawRadius = getRawCollisionRadius(world, entityId);
+  const baseMu = _frictionMu(world, entityId);
+  const overlayComp = world.getComponent(entityId, OverlayRadiusComponent);
+  if (overlayComp && Number.isFinite(overlayComp.radius) && overlayComp.radius > rawRadius + 1e-9) {
+    const overlayMu = Number.isFinite(overlayComp.mu) ? Math.max(0.0, overlayComp.mu) : baseMu;
+    return { radius: overlayComp.radius, mu: overlayMu };
+  }
+  return { radius: rawRadius, mu: baseMu };
+}
+
+export function getMaxCollisionRadius(world, entityId) {
+  let radius = _getBaseCollisionRadius(world, entityId);
+  const sectorsComp = world.getComponent(entityId, CircleSectorsComponent);
+  if (sectorsComp && Array.isArray(sectorsComp.sectors)) {
+    for (const sector of sectorsComp.sectors) {
+      if (Number.isFinite(sector?.radius)) {
+        radius = Math.max(radius, sector.radius);
+      }
+    }
+  } else {
+    const sectorComp = world.getComponent(entityId, CircleSectorComponent);
+    if (sectorComp && Number.isFinite(sectorComp.radius)) {
+      radius = Math.max(radius, sectorComp.radius);
+    }
+  }
+  return radius;
+}
+
+function _normalizedDirection(vec, planeNormal, fallback = null) {
+  const normal = planeNormal ?? DEFAULT_PLANE_NORMAL;
+  const projected = vec ? vec.clone() : (fallback ? fallback.clone() : new Vector3(1.0, 0.0, 0.0));
+  projectVectorToPlane(projected, normal);
+  if (projected.lengthSq() <= 1e-12) {
+    if (fallback) {
+      const fallbackProjected = fallback.clone();
+      projectVectorToPlane(fallbackProjected, normal);
+      if (fallbackProjected.lengthSq() > 1e-12) {
+        return fallbackProjected.normalize();
+      }
+    }
+    const basis = buildPlaneBasis(normal);
+    return basis.u.clone();
+  }
+  return projected.normalize();
+}
+
+function _entitySectorList(world, entityId) {
+  const sectorsComp = world.getComponent(entityId, CircleSectorsComponent);
+  if (sectorsComp && Array.isArray(sectorsComp.sectors) && sectorsComp.sectors.length > 0) {
+    return sectorsComp.sectors;
+  }
+  const single = world.getComponent(entityId, CircleSectorComponent);
+  if (single && Number.isFinite(single.radius) && single.radius > 1e-9) {
+    return [single];
+  }
+  return [];
+}
+
+function _compositeSupportToward(world, entityId, directionTowardOther) {
+  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!center) {
+    return null;
+  }
+  const planeNormal = entityPlaneNormal(world, entityId);
+  const dir = _normalizedDirection(directionTowardOther, planeNormal);
+  const baseSupport = _getBaseCollisionSupport(world, entityId);
+  const baseRadius = baseSupport.radius;
+  let projection = baseRadius;
+  let offset = dir.clone().scale(baseRadius);
+  let frictionMu = baseSupport.mu;
+  const sectorList = _entitySectorList(world, entityId);
+  const angle = angleForDirection(dir, planeNormal);
+  for (const sector of sectorList) {
+    if (!sector || !Number.isFinite(sector.radius) || !(sector.radius > baseRadius + 1e-9)) {
+      continue;
+    }
+    if (_isAngleInSector(angle, sector.startAngle, sector.endAngle, sector.cw === true)) {
+      if (sector.radius > projection + 1e-9) {
+        projection = sector.radius;
+        offset = dir.clone().scale(projection);
+        frictionMu = Number.isFinite(sector.mu) ? Math.max(0.0, sector.mu) : baseSupport.mu;
+      }
+    }
+
+    const cornerAngles = [sector.startAngle, sector.endAngle];
+    for (const cornerAngle of cornerAngles) {
+      const cornerOffset = offsetFromAngle(sector.radius, cornerAngle, planeNormal);
+      const cornerProjection = cornerOffset.dot(dir);
+      if (cornerProjection > projection + 1e-9) {
+        projection = cornerProjection;
+        offset = cornerOffset;
+        frictionMu = Number.isFinite(sector.mu) ? Math.max(0.0, sector.mu) : baseSupport.mu;
+      }
+    }
+  }
+
+  return {
+    center,
+    baseRadius,
+    projection,
+    offset,
+    friction: frictionMu,
+    planeNormal
+  };
+}
+
+function _collisionSupportToward(world, entityId, directionTowardOther, useSectorSupports) {
+  if (useSectorSupports) {
+    return _compositeSupportToward(world, entityId, directionTowardOther);
+  }
+  const center = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!center) {
+    return null;
+  }
+  const planeNormal = entityPlaneNormal(world, entityId);
+  const dir = _normalizedDirection(directionTowardOther, planeNormal);
+  const baseSupport = _getBaseCollisionSupport(world, entityId);
+  return {
+    center,
+    baseRadius: baseSupport.radius,
+    projection: baseSupport.radius,
+    offset: dir.clone().scale(baseSupport.radius),
+    friction: baseSupport.mu,
+    planeNormal
+  };
+}
+
+function _pathLinkEntity(world, path, linkIndex) {
+  if (!Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
+    return null;
+  }
+  if (linkIndex === 0) {
+    const joint = world.getComponent(path.jointEntities[0], CableJointComponent);
+    return joint ? joint.entityA : null;
+  }
+  if (linkIndex === path.linkTypes.length - 1) {
+    const joint = world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent);
+    return joint ? joint.entityB : null;
+  }
+  const leftJoint = world.getComponent(path.jointEntities[linkIndex - 1], CableJointComponent);
+  return leftJoint ? leftJoint.entityB : null;
+}
+
+function _pathLinkStartAttachment(world, path, linkIndex) {
+  if (!Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
+    return null;
+  }
+  if (linkIndex === 0) {
+    return world.getComponent(path.jointEntities[0], CableJointComponent)?.attachmentPointA_world?.clone() ?? null;
+  }
+  if (linkIndex === path.linkTypes.length - 1) {
+    return world.getComponent(path.jointEntities[path.jointEntities.length - 1], CableJointComponent)?.attachmentPointB_world?.clone() ?? null;
+  }
+  return world.getComponent(path.jointEntities[linkIndex - 1], CableJointComponent)?.attachmentPointB_world?.clone() ?? null;
+}
+
+function _decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  if (!(firstLayerRadius > 1e-9) || !(layerStep > 1e-9)) {
+    return null;
+  }
+  if (!(stored > 1e-9)) {
+    return { fullLayers: 0, partialLength: 0, partialRadius: firstLayerRadius };
+  }
+  let remaining = stored;
+  let fullLayers = 0;
+  const maxLayers = 2048;
+  while (fullLayers < maxLayers) {
+    const layerRadius = firstLayerRadius + fullLayers * layerStep;
+    const circumference = 2.0 * Math.PI * layerRadius;
+    if (remaining + 1e-9 >= circumference) {
+      remaining -= circumference;
+      if (remaining < 0.0) remaining = 0.0;
+      fullLayers += 1;
+      continue;
+    }
+    return { fullLayers, partialLength: remaining, partialRadius: layerRadius };
+  }
+  return {
+    fullLayers,
+    partialLength: 0.0,
+    partialRadius: firstLayerRadius + fullLayers * layerStep
+  };
+}
+
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
+
+function _closingOverlayBlend(span) {
+  const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
+  const remaining = Math.max(0.0, (2.0 * Math.PI) - spanValue);
+  if (remaining >= LAYER_RADIUS_RAMP_ANGLE) {
+    return 0.0;
+  }
+  return 1.0 - (remaining / LAYER_RADIUS_RAMP_ANGLE);
+}
+
+function _smoothedSectorRadius(rawRadius, decomposition, halfWidth, span) {
+  if (!(halfWidth > 1e-9)) {
+    return 0.0;
+  }
+  const fullLayers = Math.max(0, decomposition?.fullLayers ?? 0);
+  const layerWidth = 2.0 * halfWidth;
+  const rampStartRadius = rawRadius + layerWidth * fullLayers;
+  const rampTargetRadius = rawRadius + layerWidth * (fullLayers + 1);
+  if (!(rampTargetRadius > 1e-9)) {
+    return 0.0;
+  }
+  const spanValue = Number.isFinite(span) ? Math.max(0.0, span) : 0.0;
+  const rampAlpha = Math.max(0.0, Math.min(1.0, spanValue / LAYER_RADIUS_RAMP_ANGLE));
+  return rampStartRadius + (rampTargetRadius - rampStartRadius) * rampAlpha;
+}
+
+export class OverlayRadiusAndCircleSectorSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    if (!layeringEnabled(world)) {
+      for (const entityId of world.query([OverlayRadiusComponent])) {
+        world.removeComponent(entityId, OverlayRadiusComponent);
+      }
+      for (const entityId of world.query([CircleSectorComponent])) {
+        world.removeComponent(entityId, CircleSectorComponent);
+      }
+      for (const entityId of world.query([CircleSectorsComponent])) {
+        world.removeComponent(entityId, CircleSectorsComponent);
+      }
+      for (const entityId of world.query([CircleCamTag])) {
+        world.removeComponent(entityId, CircleCamTag);
+      }
+      return;
+    }
+
+    const overlayEnabled = world.getResource('layeringCollisionOverlayRadius') !== false;
+    const overlayRampEnabled = world.getResource('layeringCollisionOverlayRamp') !== false;
+    const sectorEnabled = world.getResource('layeringCollisionCircleSectors') !== false;
+    const overlayByEntity = new Map();
+    const sectorListByEntity = new Map();
+
+    for (const pathId of world.query([CablePathComponent])) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.stored) || !Array.isArray(path.cw)) {
+        continue;
+      }
+      const halfWidth = Number.isFinite(path.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+      if (!(halfWidth > 1e-9)) {
+        continue;
+      }
+      const layerStep = 2.0 * halfWidth;
+
+      for (let linkIndex = 0; linkIndex < path.linkTypes.length; linkIndex++) {
+        const linkType = path.linkTypes[linkIndex];
+        if (!(linkType === 'rolling' || linkType === 'hybrid' || linkType === 'hybrid-attachment')) {
+          continue;
+        }
+        const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+        const entityId = _pathLinkEntity(world, path, linkIndex);
+        if ((stored <= 1e-9 && linkType !== 'hybrid-attachment') || entityId === null || entityId === undefined) {
+          continue;
+        }
+        const center = world.getComponent(entityId, PositionComponent)?.pos;
+        const rawRadius = getRawCollisionRadius(world, entityId);
+        if (!center || !(rawRadius > 1e-9)) {
+          continue;
+        }
+
+        const firstLayerRadius = rawRadius + halfWidth;
+        const decomposition = _decomposeStoredWrap(stored, firstLayerRadius, layerStep);
+        if (!decomposition || (decomposition.fullLayers === 0 && decomposition.partialLength < 1e-9 && linkType !== 'hybrid-attachment')) {
+          continue;
+        }
+
+        const baseOverlayRadius = rawRadius + layerStep * decomposition.fullLayers;
+        let overlayEnvelopeRadius = baseOverlayRadius;
+        if (overlayRampEnabled && decomposition.partialLength > 1e-9 && decomposition.partialRadius > 1e-9) {
+          const span = decomposition.partialLength / decomposition.partialRadius;
+          const closingBlend = _closingOverlayBlend(span);
+          if (closingBlend > 1e-9) {
+            overlayEnvelopeRadius = baseOverlayRadius + layerStep * closingBlend;
+          }
+        }
+
+        if (overlayEnabled && overlayEnvelopeRadius > rawRadius + 1e-9) {
+          const prev = overlayByEntity.get(entityId);
+          const mu = _frictionMu(world, entityId);
+          if (prev === undefined || overlayEnvelopeRadius > prev.radius + 1e-9) {
+            overlayByEntity.set(entityId, { radius: overlayEnvelopeRadius, mu });
+          }
+        }
+
+        if (sectorEnabled) {
+          const startPoint = _pathLinkStartAttachment(world, path, linkIndex);
+          if (!startPoint) {
+            continue;
+          }
+          const planeNormal = entityPlaneNormal(world, entityId);
+          const rel = startPoint.clone().subtract(center);
+          if (rel.lengthSq() <= 1e-12) {
+            continue;
+          }
+          const cw = Boolean(path.cw[linkIndex]);
+          const knotSpan = Math.PI / 30.0;
+          const startAngle = linkType === 'hybrid'
+            ? angleOnPlane(startPoint, center, planeNormal) + (cw ? 1.0 : -1.0) * knotSpan * (rawRadius / decomposition.partialRadius)
+            : angleOnPlane(startPoint, center, planeNormal);
+          const spanBase = decomposition.partialLength / decomposition.partialRadius;
+          const span = (decomposition.fullLayers === 0 && linkType === 'hybrid-attachment')
+            ? Math.max(spanBase, knotSpan)
+            : spanBase;
+          const sectorRadius = (decomposition.fullLayers === 0 && linkType === 'hybrid-attachment')
+            ? rawRadius + 2.0 * halfWidth
+            : _smoothedSectorRadius(rawRadius, decomposition, halfWidth, span);
+          if (!(sectorRadius > rawRadius + 1e-9)) {
+            continue;
+          }
+          const endAngle = cw ? (startAngle - span) : (startAngle + span);
+          const list = sectorListByEntity.get(entityId) ?? [];
+          list.push({
+            radius: sectorRadius,
+            startAngle,
+            endAngle,
+            cw,
+            mu: _frictionMu(world, entityId)
+          });
+          sectorListByEntity.set(entityId, list);
+        }
+      }
+    }
+
+    for (const [entityId, overlay] of overlayByEntity.entries()) {
+      if (world.hasComponent(entityId, OverlayRadiusComponent)) {
+        const comp = world.getComponent(entityId, OverlayRadiusComponent);
+        comp.radius = overlay.radius;
+        comp.mu = overlay.mu;
+      } else {
+        world.addComponent(entityId, new OverlayRadiusComponent(overlay.radius, overlay.mu));
+      }
+    }
+    for (const entityId of world.query([OverlayRadiusComponent])) {
+      if (!overlayByEntity.has(entityId)) {
+        world.removeComponent(entityId, OverlayRadiusComponent);
+      }
+    }
+
+    for (const [entityId, sectors] of sectorListByEntity.entries()) {
+      const validSectors = Array.isArray(sectors)
+        ? sectors.filter((sector) => sector && Number.isFinite(sector.radius) && sector.radius > 1e-9)
+        : [];
+      if (validSectors.length < 1) {
+        continue;
+      }
+      const sector = validSectors.reduce((best, candidate) => (!best || candidate.radius > best.radius ? candidate : best), null);
+      if (world.hasComponent(entityId, CircleSectorComponent)) {
+        const comp = world.getComponent(entityId, CircleSectorComponent);
+        comp.radius = sector.radius;
+        comp.startAngle = sector.startAngle;
+        comp.endAngle = sector.endAngle;
+        comp.cw = sector.cw;
+        comp.mu = sector.mu;
+      } else {
+        world.addComponent(entityId, new CircleSectorComponent(sector.radius, sector.startAngle, sector.endAngle, sector.cw, sector.mu));
+      }
+
+      if (world.hasComponent(entityId, CircleSectorsComponent)) {
+        const comp = world.getComponent(entityId, CircleSectorsComponent);
+        comp.sectors = validSectors.map((entry) => ({
+          radius: entry.radius,
+          startAngle: entry.startAngle,
+          endAngle: entry.endAngle,
+          cw: entry.cw === true,
+          mu: Number.isFinite(entry.mu) ? Math.max(0.0, entry.mu) : null
+        }));
+      } else {
+        world.addComponent(entityId, new CircleSectorsComponent(validSectors));
+      }
+    }
+    for (const entityId of world.query([CircleSectorComponent])) {
+      if (!sectorListByEntity.has(entityId)) {
+        world.removeComponent(entityId, CircleSectorComponent);
+      }
+    }
+    for (const entityId of world.query([CircleSectorsComponent])) {
+      if (!sectorListByEntity.has(entityId)) {
+        world.removeComponent(entityId, CircleSectorsComponent);
+      }
+    }
+
+    const camEntities = new Set([...overlayByEntity.keys(), ...sectorListByEntity.keys()]);
+    for (const entityId of camEntities) {
+      if (!world.hasComponent(entityId, CircleCamTag)) {
+        world.addComponent(entityId, new CircleCamTag());
+      }
+    }
+    for (const entityId of world.query([CircleCamTag])) {
+      if (!camEntities.has(entityId)) {
+        world.removeComponent(entityId, CircleCamTag);
+      }
+    }
+  }
+}
+
 export class InputSystem {
   runInPause = true;
 
@@ -349,7 +866,7 @@ export class InputSystem {
 
     for (const ballId of this.world.query([BallTagComponent, PositionComponent, RadiusComponent])) {
       const pos = this.world.getComponent(ballId, PositionComponent).pos;
-      const radius = this.world.getComponent(ballId, RadiusComponent).radius + extraClickableRadius;
+      const radius = getMaxCollisionRadius(this.world, ballId) + extraClickableRadius;
       const distSq = clickPos.clone().subtract(pos).lengthSq();
       if (distSq <= radius * radius && distSq < closestDistSq) {
         closestBall = ballId;
@@ -652,6 +1169,528 @@ export class FlipperTipLinkSystem {
       const tipPos = pivotPos.clone().add(dir, state.length);
 
       world.getComponent(tipId, PositionComponent).pos.set(tipPos);
+    }
+  }
+}
+
+function _borderCollisionNormal(point, closestPoint, edgeStart, edgeEnd, planeNormal) {
+  const ballToClosest = point.clone().subtract(closestPoint);
+  const edgeVec = edgeEnd.clone().subtract(edgeStart);
+  const normal = planeNormal.clone().cross(edgeVec).normalize();
+
+  let collisionNormal;
+  if (ballToClosest.lengthSq() < 1e-9) {
+    collisionNormal = normal.clone();
+  } else {
+    collisionNormal = ballToClosest.clone().normalize();
+  }
+
+  if (ballToClosest.dot(normal) < 0) {
+    collisionNormal = normal.clone();
+  }
+  return collisionNormal;
+}
+
+function _applyPlanarOrientationDelta(world, entityId, deltaAngle, planeNormal) {
+  const orientation = world.getComponent(entityId, OrientationComponent)?.quaternion;
+  if (!orientation || !Number.isFinite(deltaAngle) || Math.abs(deltaAngle) <= 1e-12) {
+    return;
+  }
+  const axis = normalizePlaneNormal(planeNormal);
+  const dq = new Quaternion().setFromAxisAngle(axis, deltaAngle);
+  orientation.multiplyQuaternions(dq, orientation).normalize();
+}
+
+function _resolveRigidContactSingle(world, entityId, contactOffset, normal, penetration) {
+  if (!(penetration > 0.0)) {
+    return 0.0;
+  }
+  const posComp = world.getComponent(entityId, PositionComponent);
+  if (!posComp?.pos) {
+    return 0.0;
+  }
+
+  const massComp = world.getComponent(entityId, MassComponent);
+  const invMass = massComp && massComp.mass > 0.0 ? 1.0 / massComp.mass : 0.0;
+  const invInertia = world.getComponent(entityId, MomentOfInertiaComponent)?.invInertia ?? 0.0;
+  const planeNormal = entityPlaneNormal(world, entityId);
+  const r = contactOffset?.clone?.() ?? new Vector3(0.0, 0.0, 0.0);
+  const rn = r.cross(normal).dot(planeNormal);
+  const denom = invMass + invInertia * rn * rn;
+  if (denom <= 1e-12) {
+    return 0.0;
+  }
+
+  const lambda = penetration / denom;
+  if (invMass > 0.0) {
+    posComp.pos.add(normal, invMass * lambda);
+  }
+  if (invInertia > 0.0) {
+    _applyPlanarOrientationDelta(world, entityId, invInertia * rn * lambda, planeNormal);
+  }
+  return lambda;
+}
+
+function _resolveRigidContactPair(world, entityA, offsetA, entityB, offsetB, normalAB, penetration) {
+  if (!(penetration > 0.0)) {
+    return 0.0;
+  }
+  const posAComp = world.getComponent(entityA, PositionComponent);
+  const posBComp = world.getComponent(entityB, PositionComponent);
+  if (!posAComp?.pos || !posBComp?.pos) {
+    return 0.0;
+  }
+
+  const invMassA = (world.getComponent(entityA, MassComponent)?.mass > 0.0) ? (1.0 / world.getComponent(entityA, MassComponent).mass) : 0.0;
+  const invMassB = (world.getComponent(entityB, MassComponent)?.mass > 0.0) ? (1.0 / world.getComponent(entityB, MassComponent).mass) : 0.0;
+  const invInertiaA = world.getComponent(entityA, MomentOfInertiaComponent)?.invInertia ?? 0.0;
+  const invInertiaB = world.getComponent(entityB, MomentOfInertiaComponent)?.invInertia ?? 0.0;
+  const planeNormalA = entityPlaneNormal(world, entityA);
+  const planeNormalB = entityPlaneNormal(world, entityB);
+  const rA = offsetA?.clone?.() ?? new Vector3(0.0, 0.0, 0.0);
+  const rB = offsetB?.clone?.() ?? new Vector3(0.0, 0.0, 0.0);
+  const rnA = rA.cross(normalAB).dot(planeNormalA);
+  const rnB = rB.cross(normalAB).dot(planeNormalB);
+  const denom = invMassA + invMassB + invInertiaA * rnA * rnA + invInertiaB * rnB * rnB;
+  if (denom <= 1e-12) {
+    return 0.0;
+  }
+
+  const lambda = penetration / denom;
+  if (invMassA > 0.0) {
+    posAComp.pos.add(normalAB, -invMassA * lambda);
+  }
+  if (invMassB > 0.0) {
+    posBComp.pos.add(normalAB, invMassB * lambda);
+  }
+  if (invInertiaA > 0.0) {
+    _applyPlanarOrientationDelta(world, entityA, -invInertiaA * rnA * lambda, planeNormalA);
+  }
+  if (invInertiaB > 0.0) {
+    _applyPlanarOrientationDelta(world, entityB, invInertiaB * rnB * lambda, planeNormalB);
+  }
+  return lambda;
+}
+
+function _flipperTipFromState(flipperPos, flipperState) {
+  const angle = flipperState.restAngle + flipperState.sign * flipperState.rotation;
+  return flipperPos.clone().add(new Vector3(Math.cos(angle), Math.sin(angle), 0), flipperState.length);
+}
+
+function _projectToPlane2(point, basisOrigin, basis) {
+  const rel = point.clone().subtract(basisOrigin);
+  return { x: rel.dot(basis.u), y: rel.dot(basis.v) };
+}
+
+function _segmentsProperlyIntersect(a0, a1, b0, b1, planeNormal, eps = 1e-9) {
+  const basis = buildPlaneBasis(planeNormal ?? DEFAULT_PLANE_NORMAL);
+  const a02 = _projectToPlane2(a0, a0, basis);
+  const a12 = _projectToPlane2(a1, a0, basis);
+  const b02 = _projectToPlane2(b0, a0, basis);
+  const b12 = _projectToPlane2(b1, a0, basis);
+
+  const rX = a12.x - a02.x;
+  const rY = a12.y - a02.y;
+  const sX = b12.x - b02.x;
+  const sY = b12.y - b02.y;
+  const rCrossS = (rX * sY) - (rY * sX);
+  if (Math.abs(rCrossS) <= eps) {
+    return false;
+  }
+
+  const qpX = b02.x - a02.x;
+  const qpY = b02.y - a02.y;
+  const t = ((qpX * sY) - (qpY * sX)) / rCrossS;
+  const u = ((qpX * rY) - (qpY * rX)) / rCrossS;
+  if (!Number.isFinite(t) || !Number.isFinite(u)) {
+    return false;
+  }
+
+  const rLen = Math.hypot(rX, rY);
+  const sLen = Math.hypot(sX, sY);
+  const endpointLinearMargin = 1e-4;
+  const tMargin = Math.min(0.49, endpointLinearMargin / Math.max(rLen, 1e-9));
+  const uMargin = Math.min(0.49, endpointLinearMargin / Math.max(sLen, 1e-9));
+  return t > tMargin && t < (1.0 - tMargin) && u > uMargin && u < (1.0 - uMargin);
+}
+
+function _segmentEndpointAtCurrentPose(world, entityId, attachmentPointWorld) {
+  if (!attachmentPointWorld) {
+    return null;
+  }
+  const currentPos = world.getComponent(entityId, PositionComponent)?.pos;
+  if (!currentPos) {
+    return attachmentPointWorld.clone();
+  }
+  const currentQuat = world.getComponent(entityId, OrientationComponent)?.quaternion ?? new Quaternion();
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  const cachedPos = linkComp?.prevCableAttachmentTimePos ?? currentPos;
+  const cachedQuat = linkComp?.prevCableAttachmentTimeOrientation ?? currentQuat;
+  const local = cachedQuat.clone().conjugate().normalize().transformVector(attachmentPointWorld.clone().subtract(cachedPos));
+  return currentPos.clone().add(currentQuat.transformVector(local));
+}
+
+function _collectCableJointSegments(world) {
+  const segmentByJointId = new Map();
+  for (const pathId of world.query([CablePathComponent])) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
+    if (!(halfWidth > 1e-9)) {
+      continue;
+    }
+    for (const jointId of path?.jointEntities ?? []) {
+      const joint = world.getComponent(jointId, CableJointComponent);
+      if (!joint) {
+        continue;
+      }
+      const segmentA = _segmentEndpointAtCurrentPose(world, joint.entityA, joint.attachmentPointA_world);
+      const segmentB = _segmentEndpointAtCurrentPose(world, joint.entityB, joint.attachmentPointB_world);
+      if (!segmentA || !segmentB) {
+        continue;
+      }
+      const prev = segmentByJointId.get(jointId);
+      if (!prev || halfWidth > prev.halfWidth) {
+        segmentByJointId.set(jointId, {
+          halfWidth,
+          a: segmentA.clone(),
+          b: segmentB.clone(),
+          entityA: joint.entityA,
+          entityB: joint.entityB,
+          planeNormal: entityPlaneNormal(world, joint.entityA)
+        });
+      }
+    }
+  }
+  return Array.from(segmentByJointId.values());
+}
+
+function _crossingCableHalfWidth(cableSegments, centerA, centerB, pairEntityA, pairEntityB, planeNormal) {
+  if (!Array.isArray(cableSegments) || cableSegments.length === 0 || pairEntityA === pairEntityB) {
+    return 0.0;
+  }
+  let maxHalfWidth = 0.0;
+  for (const segment of cableSegments) {
+    if (!(segment?.halfWidth > 1e-9)) {
+      continue;
+    }
+    if (
+      segment.entityA === pairEntityA ||
+      segment.entityB === pairEntityA ||
+      segment.entityA === pairEntityB ||
+      segment.entityB === pairEntityB
+    ) {
+      continue;
+    }
+    if (_segmentsProperlyIntersect(centerA, centerB, segment.a, segment.b, planeNormal ?? segment.planeNormal ?? DEFAULT_PLANE_NORMAL)) {
+      maxHalfWidth = Math.max(maxHalfWidth, segment.halfWidth);
+    }
+  }
+  return maxHalfWidth;
+}
+
+export class PBDUnifiedContactManifoldSystem {
+  runInPause = false;
+
+  update(world, _dt_unused) {
+    const ballEntities = world.query([BallTagComponent, PositionComponent, RadiusComponent, MassComponent]);
+    const obstacleEntities = world.query([ObstacleTagComponent, PositionComponent, RadiusComponent, ObstaclePushComponent]);
+    const flipperEntities = world.query([FlipperTagComponent, PositionComponent, RadiusComponent, FlipperStateComponent]);
+    const borderEntities = world.query([BorderComponent]);
+
+    let borderContacts = world.getResource('ball_border_contacts');
+    if (!Array.isArray(borderContacts)) {
+      borderContacts = [];
+      world.setResource('ball_border_contacts', borderContacts);
+    }
+    borderContacts.length = 0;
+
+    let obstacleContacts = world.getResource('ball_obstacle_contacts');
+    if (!Array.isArray(obstacleContacts)) {
+      obstacleContacts = [];
+      world.setResource('ball_obstacle_contacts', obstacleContacts);
+    }
+    obstacleContacts.length = 0;
+
+    let flipperContacts = world.getResource('ball_flipper_contacts');
+    if (!Array.isArray(flipperContacts)) {
+      flipperContacts = [];
+      world.setResource('ball_flipper_contacts', flipperContacts);
+    }
+    flipperContacts.length = 0;
+
+    let ballBallContacts = world.getResource('ball_ball_contacts');
+    if (!Array.isArray(ballBallContacts)) {
+      ballBallContacts = [];
+      world.setResource('ball_ball_contacts', ballBallContacts);
+    }
+    ballBallContacts.length = 0;
+
+    let obstacleActivePairs = world.getResource('ball_obstacle_active_pairs');
+    if (!(obstacleActivePairs instanceof Set)) {
+      obstacleActivePairs = new Set();
+      world.setResource('ball_obstacle_active_pairs', obstacleActivePairs);
+    }
+    const nextObstacleActivePairs = new Set();
+    const grabbed = world.getResource('grabbedBall');
+
+    const useSectorSupports = layeringEnabled(world) && world.getResource('layeringCollisionSectorSolvers') !== false;
+    const pinchShareEnabled = layeringEnabled(world) && world.getResource('layeringCollisionPinchShare') !== false;
+    const cableJointSegments = pinchShareEnabled ? _collectCableJointSegments(world) : null;
+
+    const borderId = borderEntities.length > 0 ? borderEntities[0] : null;
+    const borderPoints = borderId !== null ? (world.getComponent(borderId, BorderComponent)?.points ?? []) : [];
+    const borderPlaneNormal = borderId !== null
+      ? normalizePlaneNormal(world.getComponent(borderId, BorderComponent)?.planeNormal ?? DEFAULT_PLANE_NORMAL)
+      : DEFAULT_PLANE_NORMAL.clone();
+    const borderRestitution = borderId !== null ? world.getComponent(borderId, RestitutionComponent)?.restitution : null;
+    const borderFriction = borderId !== null ? world.getComponent(borderId, CoefficientOfFrictionComponent)?.mu : null;
+
+    for (let i = 0; i < ballEntities.length; i++) {
+      const ballId = ballEntities[i];
+      const pBall = world.getComponent(ballId, PositionComponent)?.pos;
+      if (!pBall) {
+        continue;
+      }
+
+      if (borderPoints.length >= 2) {
+        const broadRadius = useSectorSupports ? getMaxCollisionRadius(world, ballId) : _getBaseCollisionRadius(world, ballId);
+        for (let segmentIndex = 0; segmentIndex < borderPoints.length; segmentIndex++) {
+          const a = borderPoints[segmentIndex].clone();
+          const b = borderPoints[(segmentIndex + 1) % borderPoints.length].clone();
+          const closest = closestPointOnSegment(pBall, a, b);
+          const distSq = pBall.distanceToSq(closest);
+          if (distSq > (broadRadius + 1e-9) * (broadRadius + 1e-9)) {
+            continue;
+          }
+          const normal = _borderCollisionNormal(pBall, closest, a, b, borderPlaneNormal);
+          const support = _collisionSupportToward(world, ballId, normal.clone().scale(-1.0), useSectorSupports);
+          if (!support) {
+            continue;
+          }
+          const dist = Math.sqrt(distSq);
+          const penetration = support.projection - dist;
+          if (penetration <= 0.0) {
+            continue;
+          }
+          const deltaLambda = _resolveRigidContactSingle(world, ballId, support.offset, normal, penetration);
+          borderContacts.push({
+            ball_id: ballId,
+            normal: normal.clone(),
+            delta_lambda: deltaLambda,
+            ball_contact_radius: support.projection,
+            ball_contact_offset: support.offset.clone(),
+            ball_friction: support.friction,
+            restitution: borderRestitution,
+            friction: borderFriction,
+            border_segment_index: segmentIndex
+          });
+        }
+      }
+
+      for (const obsId of obstacleEntities) {
+        const pObs = world.getComponent(obsId, PositionComponent)?.pos;
+        if (!pObs) {
+          continue;
+        }
+        const planeNormal = entityPlaneNormal(world, ballId);
+        const normal = _normalizedDirection(pBall.clone().subtract(pObs), planeNormal);
+        const d = pBall.distanceTo(pObs);
+        const betweenHalfWidth = (
+          pinchShareEnabled &&
+          cableJointSegments &&
+          world.hasComponent(ballId, CableLinkComponent) &&
+          world.hasComponent(obsId, CableLinkComponent)
+        )
+          ? _crossingCableHalfWidth(cableJointSegments, pBall, pObs, ballId, obsId, planeNormal)
+          : 0.0;
+        const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
+        const broadBall = useSectorSupports ? getMaxCollisionRadius(world, ballId) : _getBaseCollisionRadius(world, ballId);
+        const broadObs = useSectorSupports ? getMaxCollisionRadius(world, obsId) : _getBaseCollisionRadius(world, obsId);
+        if (d > broadBall + broadObs + betweenGapAllowance + 1e-9) {
+          continue;
+        }
+        const supportBall = _collisionSupportToward(world, ballId, normal.clone().scale(-1.0), useSectorSupports);
+        const supportObs = _collisionSupportToward(world, obsId, normal, useSectorSupports);
+        if (!supportBall || !supportObs) {
+          continue;
+        }
+
+        let resolvedSupportBall = supportBall;
+        let resolvedSupportObs = supportObs;
+        let pinchShared = false;
+        if (betweenHalfWidth > 1e-9) {
+          pinchShared = true;
+          const baseBall = getRawCollisionRadius(world, ballId);
+          const baseObs = getRawCollisionRadius(world, obsId);
+          const sharedProjectionBall = baseBall + betweenHalfWidth;
+          const sharedProjectionObs = baseObs + betweenHalfWidth;
+          resolvedSupportBall = {
+            ...supportBall,
+            projection: sharedProjectionBall,
+            offset: normal.clone().scale(-sharedProjectionBall)
+          };
+          resolvedSupportObs = {
+            ...supportObs,
+            projection: sharedProjectionObs,
+            offset: normal.clone().scale(sharedProjectionObs)
+          };
+        }
+
+        const rSum = resolvedSupportBall.projection + resolvedSupportObs.projection;
+        if (d > rSum + 1e-9) {
+          continue;
+        }
+        const penetration = rSum - d;
+        if (penetration <= 0.0) {
+          continue;
+        }
+        const deltaLambda = _resolveRigidContactSingle(world, ballId, resolvedSupportBall.offset, normal, penetration);
+        const rawBallRadius = getRawCollisionRadius(world, ballId);
+        const rawObsRadius = getRawCollisionRadius(world, obsId);
+        const rawHit = d <= (rawBallRadius + rawObsRadius + 1e-9);
+        obstacleContacts.push({
+          ball_id: ballId,
+          obs_id: obsId,
+          direction: normal.clone(),
+          raw_hit: rawHit,
+          delta_lambda: deltaLambda,
+          ball_contact_radius: resolvedSupportBall.projection,
+          ball_contact_offset: resolvedSupportBall.offset.clone(),
+          ball_friction: resolvedSupportBall.friction,
+          obstacle_contact_radius: resolvedSupportObs.projection,
+          obstacle_friction: resolvedSupportObs.friction,
+          pinch_shared: pinchShared
+        });
+        const pairKey = `${ballId}:${obsId}`;
+        if (rawHit) {
+          nextObstacleActivePairs.add(pairKey);
+        }
+        if (rawHit && !obstacleActivePairs.has(pairKey) && ballId !== grabbed) {
+          world.addComponent(ballId, new ScoredTagComponent());
+        }
+      }
+
+      for (const flipId of flipperEntities) {
+        const pFlip = world.getComponent(flipId, PositionComponent)?.pos;
+        const flipperState = world.getComponent(flipId, FlipperStateComponent);
+        if (!pFlip || !flipperState) {
+          continue;
+        }
+        const tip = _flipperTipFromState(pFlip, flipperState);
+        const closest = closestPointOnSegment(pBall, pFlip, tip);
+        const planeNormal = flipperState.planeNormal ?? DEFAULT_PLANE_NORMAL;
+        const normal = _normalizedDirection(pBall.clone().subtract(closest), planeNormal);
+        const d = pBall.distanceTo(closest);
+        const broadBall = useSectorSupports ? getMaxCollisionRadius(world, ballId) : _getBaseCollisionRadius(world, ballId);
+        const broadFlipper = useSectorSupports ? getMaxCollisionRadius(world, flipId) : _getBaseCollisionRadius(world, flipId);
+        if (d > broadBall + broadFlipper + 1e-9) {
+          continue;
+        }
+        const supportBall = _collisionSupportToward(world, ballId, normal.clone().scale(-1.0), useSectorSupports);
+        if (!supportBall) {
+          continue;
+        }
+        const flipperRadius = useSectorSupports ? getMaxCollisionRadius(world, flipId) : _getBaseCollisionRadius(world, flipId);
+        const rSum = supportBall.projection + flipperRadius;
+        if (d > rSum + 1e-9) {
+          continue;
+        }
+        const penetration = rSum - d;
+        if (penetration <= 0.0) {
+          continue;
+        }
+        const deltaLambda = _resolveRigidContactSingle(world, ballId, supportBall.offset, normal, penetration);
+        flipperContacts.push({
+          ball_id: ballId,
+          flip_id: flipId,
+          normal: normal.clone(),
+          contact_point_on_flipper: closest.clone(),
+          ball_contact_radius: supportBall.projection,
+          ball_contact_offset: supportBall.offset.clone(),
+          ball_friction: supportBall.friction,
+          delta_lambda: deltaLambda
+        });
+      }
+
+      for (let j = i + 1; j < ballEntities.length; j++) {
+        const otherId = ballEntities[j];
+        const pOther = world.getComponent(otherId, PositionComponent)?.pos;
+        if (!pOther) {
+          continue;
+        }
+        const planeNormal = entityPlaneNormal(world, ballId);
+        const normalAB = _normalizedDirection(pOther.clone().subtract(pBall), planeNormal);
+        const d = pBall.distanceTo(pOther);
+        const betweenHalfWidth = (
+          pinchShareEnabled &&
+          cableJointSegments &&
+          world.hasComponent(ballId, CableLinkComponent) &&
+          world.hasComponent(otherId, CableLinkComponent)
+        )
+          ? _crossingCableHalfWidth(cableJointSegments, pBall, pOther, ballId, otherId, planeNormal)
+          : 0.0;
+        const betweenGapAllowance = betweenHalfWidth > 1e-9 ? (2.0 * betweenHalfWidth) : 0.0;
+        const broadA = useSectorSupports ? getMaxCollisionRadius(world, ballId) : _getBaseCollisionRadius(world, ballId);
+        const broadB = useSectorSupports ? getMaxCollisionRadius(world, otherId) : _getBaseCollisionRadius(world, otherId);
+        if (d > broadA + broadB + betweenGapAllowance + 1e-9) {
+          continue;
+        }
+        const supportA = _collisionSupportToward(world, ballId, normalAB, useSectorSupports);
+        const supportB = _collisionSupportToward(world, otherId, normalAB.clone().scale(-1.0), useSectorSupports);
+        if (!supportA || !supportB) {
+          continue;
+        }
+
+        let resolvedSupportA = supportA;
+        let resolvedSupportB = supportB;
+        let pinchShared = false;
+        if (betweenHalfWidth > 1e-9) {
+          pinchShared = true;
+          const baseA = getRawCollisionRadius(world, ballId);
+          const baseB = getRawCollisionRadius(world, otherId);
+          const sharedProjectionA = baseA + betweenHalfWidth;
+          const sharedProjectionB = baseB + betweenHalfWidth;
+          resolvedSupportA = {
+            ...supportA,
+            projection: sharedProjectionA,
+            offset: normalAB.clone().scale(sharedProjectionA)
+          };
+          resolvedSupportB = {
+            ...supportB,
+            projection: sharedProjectionB,
+            offset: normalAB.clone().scale(-sharedProjectionB)
+          };
+        }
+
+        const rSum = resolvedSupportA.projection + resolvedSupportB.projection;
+        if (d > rSum + 1e-9) {
+          continue;
+        }
+        const penetration = rSum - d;
+        if (penetration <= 0.0) {
+          continue;
+        }
+        const deltaLambda = _resolveRigidContactPair(world, ballId, resolvedSupportA.offset, otherId, resolvedSupportB.offset, normalAB, penetration);
+        ballBallContacts.push({
+          ball_a: ballId,
+          ball_b: otherId,
+          normal: normalAB.clone(),
+          delta_lambda: deltaLambda,
+          penetration,
+          radius_a: resolvedSupportA.projection,
+          radius_b: resolvedSupportB.projection,
+          contact_offset_a: resolvedSupportA.offset.clone(),
+          contact_offset_b: resolvedSupportB.offset.clone(),
+          friction_a: resolvedSupportA.friction,
+          friction_b: resolvedSupportB.friction,
+          pinch_shared: pinchShared
+        });
+      }
+    }
+
+    obstacleActivePairs.clear();
+    for (const pairKey of nextObstacleActivePairs) {
+      obstacleActivePairs.add(pairKey);
     }
   }
 }
